@@ -252,3 +252,65 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   revalidateStaff(ctx.tenant.slug)
   return { success: 'Tjänster kopplade.' }
 }
+
+// ── Working hours (schedules, per staff) ──────────────────────────────────────
+const TIME_RE = /^\d{2}:\d{2}$/
+
+export async function addStaffWorkingHours(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const staffId = String(fd.get('staff_id') ?? '')
+  const weekday = Number(fd.get('weekday'))
+  const start = String(fd.get('start_time') ?? '')
+  const end = String(fd.get('end_time') ?? '')
+
+  if (!staffId) return { error: 'Välj en medarbetare.' }
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return { error: 'Välj en veckodag.' }
+  if (!TIME_RE.test(start) || !TIME_RE.test(end)) return { error: 'Ange giltiga tider (HH:MM).' }
+  if (end <= start) return { error: 'Sluttiden måste vara efter starttiden.' }
+
+  const supabase = await createClient()
+  // Confirm the staff row is ours (and grab its location) before writing.
+  const { data: member } = await supabase
+    .from('staff')
+    .select('id, location_id')
+    .eq('id', staffId)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!member) return { error: 'Okänd medarbetare.' }
+
+  const { error } = await supabase.from('working_hours').insert({
+    tenant_id: ctx.tenant.id,
+    staff_id: member.id,
+    location_id: member.location_id ?? ctx.tenant.locationId,
+    weekday,
+    start_time: start,
+    end_time: end,
+  })
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/scheman')
+  return { success: 'Arbetstid tillagd.' }
+}
+
+export async function deleteStaffWorkingHours(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const id = String(fd.get('id') ?? '')
+  if (!id) return { error: 'Saknar rad.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('working_hours')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/scheman')
+  return { success: 'Arbetstid borttagen.' }
+}
