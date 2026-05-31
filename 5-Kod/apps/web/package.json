@@ -1,0 +1,38 @@
+{
+  "name": "@corevo/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+  },
+  "dependencies": {
+    "@corevo/auth": "workspace:*",
+    "@corevo/db": "workspace:*",
+    "@corevo/ui": "workspace:*",
+    "@supabase/ssr": "0.10.3",
+    "@supabase/supabase-js": "2.106.2",
+    "next": "15.5.18",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@corevo/config": "workspace:*",
+    "@opennextjs/cloudflare": "1.19.11",
+    "@tailwindcss/postcss": "4.3.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "15.5.18",
+    "tailwindcss": "4.3.0",
+    "typescript": "^5.7.2",
+    "wrangler": "4.95.0"
+  }
+}

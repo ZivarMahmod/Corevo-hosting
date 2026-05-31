@@ -1,0 +1,24 @@
+{
+  "name": "corevo",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "preview": "turbo run preview",
+    "deploy": "turbo run deploy",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,css,mjs}\"",
+    "verify:tenant": "node apps/web/scripts/verify-tenant.ts"
+  },
+  "devDependencies": {
+    "prettier": "3.8.3",
+    "turbo": "2.9.16",
+    "typescript": "^5.7.2"
+  }
+}

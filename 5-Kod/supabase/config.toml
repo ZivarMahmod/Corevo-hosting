@@ -1,0 +1,22 @@
+# Supabase config (Corevo). Project runs on Supabase Cloud (no local stack).
+# This file documents the intended config and enables local `supabase db reset`
+# once Docker is available.
+project_id = "clylvowtowbtotrahuad"
+
+[db]
+major_version = 17
+
+[db.migrations]
+# Apply seed.sql after `supabase db reset`.
+enabled = true
+
+[auth]
+enable_signup = true
+
+# ── Custom Access Token Hook (ADR 01 §4) ───────────────────────────────────
+# Injects app_metadata.tenant_id (+ platform_admin) into every JWT so RLS can
+# read it via auth.tenant_id(). On Supabase Cloud this must ALSO be enabled in
+# Dashboard → Authentication → Hooks (point it at public.custom_access_token_hook).
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"

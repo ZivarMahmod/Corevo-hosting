@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Standalone preview Worker → corevo-platform.<account>.workers.dev.
+  // Isolated from corevo.se + POS (no routes; see commented block below).
+  "name": "corevo-platform",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // R2 media bucket binding — DISABLED for now: R2 is not enabled on the account
+  // and the app does not use BUCKET yet. Re-add when media upload lands (G11).
+  //   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media" }],
+  "observability": {
+    "enabled": true
+  }
+  // ── Wildcard tenant routing (PREPARED, NOT ACTIVATED) ───────────────────────
+  // *.corevo.se → this platform Worker. DNS/route activation happens only when
+  // Zivar approves (ADR 01 / G08). No real customer domain, no custom hostname.
+  //   "routes": [
+  //     { "pattern": "*.corevo.se/*", "zone_name": "corevo.se" },
+  //     { "pattern": "booking.corevo.se/*", "zone_name": "corevo.se" }
+  //   ]
+}

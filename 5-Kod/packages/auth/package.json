@@ -1,0 +1,16 @@
+{
+  "name": "@corevo/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@corevo/db": "workspace:*",
+    "@supabase/ssr": "0.10.3",
+    "@supabase/supabase-js": "2.106.2"
+  }
+}
