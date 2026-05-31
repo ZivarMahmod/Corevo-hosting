@@ -1,8 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  // Standalone preview Worker → corevo-platform.<account>.workers.dev.
+  // Standalone preview Worker → bokningsplatformen.zivar68.workers.dev.
   // Isolated from corevo.se + POS (no routes; see commented block below).
-  "name": "corevo-platform",
+  "name": "bokningsplatformen",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
