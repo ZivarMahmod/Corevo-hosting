@@ -1,18 +1,100 @@
 import type { Metadata } from 'next'
-import { getCurrentUser } from '@/lib/auth/session'
+import { requirePortal } from '@/lib/auth/session'
+import { getMyStaff } from '@/lib/personal/staff'
+import {
+  getBookingsInRange,
+  dayRangeUtc,
+  weekRangeUtc,
+  type StaffBooking,
+} from '@/lib/personal/calendar'
+import { addDays, mondayOf, todayInTz, fmtTime } from '@/lib/personal/format'
+import { Calendar, type CalendarGroup } from '@/components/personal/Calendar'
+import { DateNav } from '@/components/personal/DateNav'
+import styles from '@/components/personal/personal.module.css'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Personal' }
+export const metadata: Metadata = { title: 'Personal — idag' }
 
-export default async function PersonalPage() {
-  const user = await getCurrentUser()
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+export default async function PersonalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string; view?: string }>
+}) {
+  const sp = await searchParams
+  const user = await requirePortal('personal')
+  const staff = await getMyStaff(user.id)
+
+  if (staff.length === 0) {
+    return (
+      <section className="portal-section">
+        <h1>Idag</h1>
+        <p className="prose">
+          Ingen personalprofil är kopplad till ditt konto. Kontakta salongsadmin för att kopplas
+          till en personalrad.
+        </p>
+      </section>
+    )
+  }
+
+  const primaryTz = staff[0]?.timeZone ?? 'Europe/Stockholm'
+  const staffIds = staff.map((s) => s.id)
+  const today = todayInTz(primaryTz)
+  const dateStr = sp.date && DATE_RE.test(sp.date) ? sp.date : today
+  const view: 'dag' | 'vecka' = sp.view === 'vecka' ? 'vecka' : 'dag'
+
+  // Viewed calendar (day or week), bucketed by local calendar day.
+  let groups: CalendarGroup[] = []
+  if (view === 'vecka') {
+    const monday = mondayOf(dateStr)
+    const { fromUtc, toUtc } = weekRangeUtc(monday, primaryTz)
+    const all = await getBookingsInRange(staffIds, fromUtc, toUtc)
+    groups = Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(monday, i)
+      const { fromUtc: f, toUtc: t } = dayRangeUtc(d, primaryTz)
+      const fMs = new Date(f).getTime()
+      const tMs = new Date(t).getTime()
+      const bookings = all.filter((b: StaffBooking) => {
+        const s = new Date(b.startTs).getTime()
+        return s >= fMs && s < tMs
+      })
+      return { dateStr: d, bookings }
+    })
+  } else {
+    const { fromUtc, toUtc } = dayRangeUtc(dateStr, primaryTz)
+    groups = [{ dateStr, bookings: await getBookingsInRange(staffIds, fromUtc, toUtc) }]
+  }
+
+  // "Idag"-overview (always today, independent of the viewed date).
+  const { fromUtc: tFrom, toUtc: tTo } = dayRangeUtc(today, primaryTz)
+  const todays = await getBookingsInRange(staffIds, tFrom, tTo)
+  const activeToday = todays.filter((b) => b.status === 'pending' || b.status === 'confirmed')
+  const now = Date.now()
+  const next =
+    activeToday
+      .filter((b) => new Date(b.startTs).getTime() >= now)
+      .sort((a, b) => (a.startTs < b.startTs ? -1 : 1))[0] ?? null
+
   return (
     <section className="portal-section">
-      <h1>Personalvy</h1>
-      <p className="prose">
-        Inloggad som {user?.email} ({user?.roleName}). Ditt schema och dina bokningar
-        för dagen visas här — personal-portalen byggs i G06.
-      </p>
+      <h1>Idag</h1>
+      <div className={styles.stats}>
+        <div className={styles.stat}>
+          <div className={styles.statValue}>{activeToday.length}</div>
+          <div className={styles.statLabel}>bokningar idag</div>
+        </div>
+        <div className={styles.stat}>
+          <div className={styles.statValue}>{next ? fmtTime(next.startTs, next.timeZone) : '–'}</div>
+          <div className={styles.statLabel}>
+            {next ? `nästa kund: ${next.customerLabel}` : 'inga fler bokningar idag'}
+          </div>
+        </div>
+      </div>
+
+      <h2>Kalender</h2>
+      <DateNav dateStr={dateStr} view={view} today={today} />
+      <Calendar groups={groups} />
     </section>
   )
 }
