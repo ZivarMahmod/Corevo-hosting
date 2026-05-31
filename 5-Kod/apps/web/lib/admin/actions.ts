@@ -6,6 +6,7 @@ import { requirePortal, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
 import { uploadImage, uploadErrorMessage } from '@/lib/r2/upload'
+import { BOOKING_STATUSES } from './format'
 
 export type ActionState = { error?: string; success?: string }
 
@@ -457,4 +458,33 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/installningar')
   return { success: 'Inställningar sparade.' }
+}
+
+// ── Bookings overview ─────────────────────────────────────────────────────────
+export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const bookingId = String(fd.get('bookingId') ?? '')
+  const status = String(fd.get('status') ?? '')
+  if (!bookingId) return { error: 'Saknar bokning.' }
+  if (!BOOKING_STATUSES.includes(status as (typeof BOOKING_STATUSES)[number]))
+    return { error: 'Ogiltig status.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status })
+    .eq('id', bookingId)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) {
+    // Reactivating a booking can collide with the no_double_booking EXCLUDE.
+    if (error.code === '23P01')
+      return { error: 'Tiden krockar med en annan aktiv bokning för medarbetaren.' }
+    return { error: GENERIC }
+  }
+
+  revalidatePath('/admin/bokningar')
+  revalidatePath('/admin')
+  return { success: 'Status uppdaterad.' }
 }
