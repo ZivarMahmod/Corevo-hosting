@@ -1,45 +1,35 @@
-## Goal 05 — Kundportal M4
+/goal
 
-**Spår:** C · **Beror på:** G04 · **Modul:** M4 (Kundportal)
+KÖR: kundportalen (G05, modul M4). Du är en av 3 Code i den parallella portal-vågen (Våg A) — G05 kund, G06 personal, G07 admin bygger samtidigt. Bygg bara kund-reviret, så glider vågen rent.
 
-**Mål:** Inloggad kund kan se, om-/avboka sina tider, se historik och hantera sin profil — kopplat till bokningsmotorn (M3).
+KONTEXT (ny session — läs först):
+- Repo: privat Frisor-sas, kod i 5-Kod/ (monorepo: pnpm + Turborepo, Next.js 15, Supabase, OpenNext/Cloudflare Workers). Jobba lokalt.
+- main har KLAR + mergat: G01 scaffold, G02 DB/RLS/seed, G03 publik, G04 bokningsmotor, G4.5 auth/login + roll-routing. DB live i Supabase-molnet (clylvowtowbtotrahuad).
+- Jobba direkt på main i mappen du redan har. `git pull` först. En commit per punkt. (Sekventiell körning — du är ensam Code i mappen, ingen branch behövs.)
 
-**Kontext:** G02 (DB/RLS), G04 (bokningsmotor + `createBooking`) klara. Supabase Auth finns från G01. `profiles.role='customer'`.
+DITT REVIR (skriv bara här):
+- app/(kund)/...  +  components/kund/  +  lib/kund/ (egen undermapp).
 
-**Omfattning (bygg detta):**
-- Kund-auth: registrering/inloggning (e-post + lösenord och/eller magic link) via Supabase Auth; skapa/koppla `profiles`-rad med role=customer + `tenant_id`.
-- Skyddade routes `app/(customer)/konto/...` (kräver session + role=customer).
-- Vyer:
-  - "Mina tider" (kommande + tidigare bokningar för tenant).
-  - Bokningsdetalj med av-/ombokning (respekterar tenant-regler/tidsgräns).
-  - Profil (namn, telefon, e-post).
-- Koppling: när inloggad kund bokar via M3 sätts `customer_profile_id` automatiskt.
-- Om-/avboknings-Actions som frigör slot (statusändring + krockfrigöring).
+DELAT (läs/återanvänd, ändra ALDRIG): packages/auth (kräv-roll/kräv-inloggad-helpern från G4.5), packages/db, packages/ui, packages/config, middleware.ts, supabase/migrations, lib/booking/ (availability + createBooking från G04). Behövs en schemaändring → STANNA och flagga; den görs solo före vågen, inte här. Allt i denna goal är ren app-kod mot befintligt schema.
 
-**Utanför scope:**
-- Betalning/återbetalning (G09).
-- Personal-/admin-vyer.
-- Notiser (e-post/SMS stubbas, G10).
+NAMN-FAKTA (använd EXAKT — goal-filens äldre namn är ersatta):
+- RLS-helper: private.tenant_id(). Roll: users.role_id → roles.level (8-nivå). INTE profiles / profiles.role / current_profile_id() (gammalt).
+- Route-grupp heter (kund) — inte (customer). Tabeller: bookings, services, staff/staff_id, locations/location_id, start_ts/end_ts, tenant_settings.
+- Login + guards FINNS i G4.5 — bygg inte om dem, återanvänd den delade auth-helpern.
 
-**Berörda områden/filer:** `5-Kod/app/(customer)/`, `5-Kod/app/(auth)/`, `5-Kod/lib/auth/`, `5-Kod/components/customer/`.
+MÅL: Inloggad kund ser, om-/avbokar sina tider, ser historik och hanterar profil — kopplat till bokningsmotorn (M3).
 
-**Steg:**
-1. Bygg auth-sidor (login/register/magic link) med `@supabase/ssr`; säkerställ tenant-koppling vid signup.
-2. Skapa skyddad layout `(customer)` som kräver session + role-check (annars redirect).
-3. Bygg "Mina tider", bokningsdetalj, profil.
-4. Implementera om-/avboknings-Actions (med tidsgräns-regel per tenant).
-5. Koppla inloggad kund till M3-bokningsflödet.
-6. `pnpm build` + lint.
+BYGG:
+1. Kund-signup/koppling: e-post+lösen och/eller magic link via befintliga @supabase/ssr-klienter (packages/auth). Skapa/koppla users-rad med kund-roll + tenant_id vid signup. (Login själv finns redan.)
+2. Skyddad layout app/(kund)/konto/ — använd den delade kräv-inloggad + kräv-roll(kund)-helpern; annars redirect till login.
+3. Vyer: "Mina tider" (kommande + tidigare, egna), bokningsdetalj med om-/avbokning (respektera tenantens tidsgräns från tenant_settings), profil (namn, telefon, e-post).
+4. Om-/avboknings-Actions: statusändring som frigör slotten (krockfrigöring). Vid ombokning — återanvänd createBooking-krocklogiken från G04, dubblera inte.
+5. Koppling inloggad kund → M3: sätt kundens id på bokningen enligt schemat (slå upp rätt kolumn på bookings, gissa inte).
 
-**Verifieras (DoD):**
-- Kund kan registrera sig, logga in, se sina bokningar (endast egna, RLS-bevis).
-- Av-/ombokning ändrar status och frigör slotten (ny bokning på samma tid möjlig).
-- Kund från tenant A ser inte tenant B:s data.
-- Oinloggad åtkomst till `/konto/*` → redirect till login.
-- `pnpm build` grön.
+DoD (bevis krävs):
+- Kund kan signa upp, logga in, se BARA sina bokningar (RLS-bevis; tenant A ser ej tenant B).
+- Av-/ombokning ändrar status + frigör slotten (ny bokning på samma tid möjlig efteråt).
+- Oinloggad på /konto/* → redirect till login.
+- pnpm build + lint gröna.
 
-**Tekniska noter:**
-- RLS: kund får endast `select/update` egna bokningar (`customer_profile_id = current_profile_id()` inom tenant).
-- Auth callback-route för magic link/email confirm enligt App Router-mönster.
-- Avbokningsregel (t.ex. min X h innan) konfigureras per tenant; läs från `tenants`-inställning.
-- Återanvänd `createBooking`-krocklogik från G04 vid ombokning.
+Klart → rapportera KLAR med DoD-bevis och STANNA. Nörden verifierar + mergar en i taget.

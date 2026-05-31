@@ -1,43 +1,37 @@
-## Goal 06 — Personalportal M5
+/goal
 
-**Spår:** C · **Beror på:** G04 · **Modul:** M5 (Personalportal)
+KÖR: personalportalen (G06, modul M5). Du är en av 3 Code i den parallella portal-vågen (Våg A) — G05 kund, G06 personal, G07 admin bygger samtidigt. Bygg bara personal-reviret, så glider vågen rent.
 
-**Mål:** Inloggad personal ser sin egen dagskalender/bokningar, kan markera frånvaro och hantera sina arbetstider — så salongen drivs operativt.
+KONTEXT (ny session — läs först):
+- Repo: privat Frisor-sas, kod i 5-Kod/ (monorepo: pnpm + Turborepo, Next.js 15, Supabase, OpenNext/Cloudflare Workers). Jobba lokalt.
+- main har KLAR + mergat: G01 scaffold, G02 DB/RLS/seed, G03 publik, G04 bokningsmotor, G4.5 auth/login + roll-routing. DB live i Supabase-molnet (clylvowtowbtotrahuad).
+- Jobba direkt på main i mappen du redan har. `git pull` först. En commit per punkt. (Sekventiell körning — du är ensam Code i mappen, ingen branch behövs.)
 
-**Kontext:** G02 (DB/RLS: `staff`, `working_hours`, `time_off`, `bookings`), G04 (bokningsmotor) klara. Auth-mönster finns från G05 (kan delas) men role=staff.
+DITT REVIR (skriv bara här):
+- app/(personal)/...  +  components/personal/  +  lib/personal/ (egen undermapp).
 
-**Omfattning (bygg detta):**
-- Staff-auth + skyddad layout `app/(staff)/...` (session + role=staff).
-- Vyer:
-  - Dag-/veckokalender med personalens egna bokningar (kund, tjänst, tid, status).
-  - Markera bokning som `completed`/`no_show`.
-  - Hantera egna `working_hours`.
-  - Lägg/ta bort `time_off` (frånvaro) — påverkar tillgänglighet i M3 direkt.
-- Snabböversikt "idag": antal bokningar, nästa kund.
+DELAT (läs/återanvänd, ändra ALDRIG): packages/auth (kräv-roll/kräv-inloggad från G4.5), packages/db, packages/ui, packages/config, middleware.ts, supabase/migrations, lib/booking/availability.ts (från G04 — återanvänd, dubblera aldrig logiken). Behövs en schemaändring → STANNA och flagga; görs solo före vågen. Allt här är ren app-kod mot befintligt schema.
 
-**Utanför scope:**
-- Skapa/redigera tjänster och prislista (G07 Salon Admin).
-- Hantera andra anställda (G07).
-- Löner/rapporter (G07/senare).
+NAMN-FAKTA (använd EXAKT — goal-filens äldre namn är ersatta):
+- RLS-helper: private.tenant_id(). Roll: users.role_id → roles.level (8-nivå). INTE profiles / current_staff_id() (gammalt).
+- Route-grupp heter (personal) — inte (staff). Tabeller: staff/staff_id, bookings, working_hours, time_off, locations/location_id, start_ts/end_ts.
+- Login + guards FINNS i G4.5 — återanvänd, bygg inte om.
 
-**Berörda områden/filer:** `5-Kod/app/(staff)/`, `5-Kod/components/staff/`, `5-Kod/lib/booking/` (återanvänd availability).
+MÅL: Inloggad personal ser egen dagskalender/bokningar, markerar frånvaro och hanterar egna arbetstider — salongen drivs operativt.
 
-**Steg:**
-1. Skyddad `(staff)`-layout med role=staff-check.
-2. Kalendervy som hämtar personalens egna bokningar (RLS scoped).
-3. Status-Actions (`completed`/`no_show`).
-4. UI + Actions för egna `working_hours`.
-5. UI + Actions för `time_off` (verifiera att M3-tillgänglighet uppdateras).
-6. `pnpm build` + lint.
+BYGG:
+1. Skyddad layout app/(personal)/ — delad kräv-roll(personal)-helper.
+2. Dag-/veckokalender med personalens EGNA bokningar (kund, tjänst, tid, status), RLS-scoped, i locationens tidszon. Slå upp hur personalens staff-rad knyts till inloggad user i schemat — gissa inte.
+3. Status-Actions: markera bokning completed / no_show.
+4. UI + Actions för egna working_hours.
+5. UI + Actions för time_off (frånvaro) — verifiera att M3-tillgängligheten uppdateras direkt (availability läser time_off).
+6. "Idag"-snabböversikt: antal bokningar, nästa kund.
 
-**Verifieras (DoD):**
-- Personal ser endast egna bokningar (inte kollegors, inte annan tenant).
-- Lägg time_off → slotten försvinner i M3 bokningsflöde.
-- Ändring av working_hours → nya/borttagna slots i M3.
-- Statusändring sparas och syns.
-- `pnpm build` grön.
+DoD (bevis krävs):
+- Personal ser BARA egna bokningar (ej kollegors, ej annan tenant — RLS-bevis).
+- Lägg time_off → slotten försvinner i M3 boka-flödet.
+- Ändra working_hours → nya/borttagna slots i M3.
+- Statusändring sparas + syns.
+- pnpm build + lint gröna.
 
-**Tekniska noter:**
-- RLS: staff `select` bokningar där `staff_id = current_staff_id()`; salon_admin ser alla i tenant.
-- Tillgänglighetsberäkning återanvänds från G04 (`lib/booking/availability.ts`) — ingen dubblerad logik.
-- Kalender i salongens tidszon.
+Klart → rapportera KLAR med DoD-bevis och STANNA. Nörden verifierar + mergar en i taget.

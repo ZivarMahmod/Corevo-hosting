@@ -1,47 +1,38 @@
-## Goal 09 — Betalningar / Stripe Connect M8
+/goal
 
-**Spår:** F · **Beror på:** G04 · **Modul:** M8 (Betalningar)
+KÖR: betalningar (G09). Flöde 1 — kund betalar för TJÄNSTEN vid bokning, pengar till salongen via Stripe Connect.
 
-**Mål:** Koppla Stripe Connect på den färdiga bokningsmotorn: varje salong (tenant) har eget Connect-konto, kunder betalar/depositionar vid bokning, plattformen tar ev. avgift, och webhooks håller `payments`/`bookings` i synk.
+KONTEXT (läs först):
+- Repo: privat Frisor-sas, kod i 5-Kod/ (pnpm + Turborepo, Next.js 15, Supabase, OpenNext/Cloudflare Workers). Jobba direkt på main, `git pull` först, en commit per punkt (sekventiell körning, ensam Code).
+- main har KLAR: G01–G08 + G4.5. DB live i Supabase (clylvowtowbtotrahuad).
+- Sekventiell solo på main → MIGRATIONER TILLÅTNA. Numrera i sekvens, idempotent, med rollback, RLS på nya tabeller.
 
-**Kontext:** G04 (bokningsmotor med `createBooking` som returnerar `requiresPayment`-krok), G02 (`payments`, `tenants.stripe_account_id`) klara. Stripe-env stubbad i G01. G07 har en stub-knapp för Stripe-onboarding.
+NAMN-FAKTA (EXAKT): private.tenant_id(); users + roles.level; bookings (start_ts/end_ts, staff_id, location_id); tenant_settings. Stripe Connect Express + DIRECT charges.
 
-**Omfattning (bygg detta):**
-- **Stripe Connect onboarding** för salong: salon_admin startar onboarding (Express/Standard), `stripe_account_id` sparas på `tenants`. Färdigställ stub-knappen i G07.
-- **Checkout vid bokning:** vid `createBooking` med `requiresPayment` → skapa PaymentIntent på tenantens Connect-konto (med ev. `application_fee`), kund betalar (Stripe Elements eller Checkout).
-- **Webhook-endpoint** (`app/api/stripe/webhook/route.ts`): verifiera signatur, hantera `payment_intent.succeeded/failed`, `account.updated`; uppdatera `payments` + sätt `bookings.status` (confirmed vid betald).
-- Stöd för deposition vs full betalning vs ingen (per tenant-inställning).
-- Återbetalning vid avbokning (koppla till M4-avbokning, om policy tillåter).
-- Visa betalningsstatus i M4 (kund), M6/M7 (personal/admin), och i G07-bokningsöversikt.
+⚠️ LIVE-SPÄRR: Stripe i TEST-mode tills Zivar säger live. Ingen riktig kunddomän/DNS. Inga skarpa utbetalningar.
 
-**Utanför scope:**
-- Tenant-fakturering/abonnemang (Corevo→salong) — separat, senare.
-- Komplex skatte-/momslogik utöver Stripes standard.
-- Payout-rapporter (senare).
+MODELL (spikat — bygg exakt så):
+- Kund betalar FULLT belopp för tjänsten vid bokning → DIRECT charge rakt till salongens connected account.
+- **application_fee = 0** (Corevo tar inget snitt på transaktionen).
+- Betalning vid bokning = per-tenant toggle `tenant_settings.payments_enabled`. Av → bokning utan betalning (betala i salongen), oförändrat flöde.
+- Avbokning inom tenantens regel → refund via Stripe.
+- ⛔ Bygg INTE Corevos plattformsavgift här (flöde 2 = config + manuell faktura i G08).
 
-**Berörda områden/filer:** `5-Kod/lib/stripe/`, `5-Kod/app/api/stripe/webhook/route.ts`, `5-Kod/app/(admin)/installningar/betalningar/`, `5-Kod/app/boka/` (payment-steg).
+BYGG:
+1. Migration: `stripe_account_id` på tenant (tenants/tenant_settings); `payments_enabled` (bool, default false); payments-tabell (id, tenant_id, booking_id, amount, currency, status, stripe_payment_intent_id, created_at) med tenant-RLS.
+2. Stripe Connect Express onboarding: Account Link-flöde — gör G07 admins Stripe-knapp skarp. Spara stripe_account_id, visa status (charges_enabled/payouts_enabled).
+3. Booking-betalning: i boka-flödet, om payments_enabled → skapa PaymentIntent som DIRECT charge på salongens konto (application_fee=0). Använd G04:s `requiresPayment`-krok. Payment Element eller Checkout Session.
+4. Webhook: payment_intent.succeeded/failed → uppdatera payment + booking-status. Idempotent (dubbel-leverans = en effekt).
+5. Refund-Action vid avbokning (inom tenantregel).
+6. Kvitto/bekräftelse på bekräftelsesidan.
 
-**Steg:**
-1. `lib/stripe/client.ts` (server-only) + types. Konfig av Connect-läge.
-2. Onboarding-flöde: skapa Account Link, redirect, spara `stripe_account_id`, `account.updated`-webhook sätter "klar".
-3. PaymentIntent-skapande kopplat till `createBooking`-kroken (på connected account, application_fee).
-4. Betalsteg i `/boka` (Elements/Checkout) — bokning bekräftas först vid lyckad betalning eller pending tills webhook.
-5. Webhook-route med signaturverifiering (raw body) + idempotens.
-6. Återbetalning vid avbokning (policy-styrt).
-7. Statusvisning i berörda portaler.
-8. `pnpm build` + lint + Stripe CLI webhook-test.
+DoD (bevis krävs, Stripe test-mode):
+- Tenant utan Connect → onboarding-länk funkar, charges_enabled syns efter koppling.
+- payments_enabled=på → bokning tar betalning, pengar landar på salongens konto, application_fee=0 (verifierat i Stripe).
+- payments_enabled=av → bokning utan betalning, flödet oförändrat.
+- Avbokning → refund syns i Stripe.
+- Webhook idempotent.
+- RLS: tenant ser bara egna payments; ej annan tenants.
+- pnpm build + lint gröna.
 
-**Verifieras (DoD):**
-- Salong kan slutföra Connect-onboarding; `stripe_account_id` sparas och markeras klar via webhook.
-- Testbokning med betalning: PaymentIntent skapas på tenantens konto, betalning i testläge lyckas, webhook sätter `bookings.status=confirmed` + `payments.status=succeeded`.
-- Misslyckad betalning lämnar bokning ej bekräftad.
-- Webhook avvisar fel signatur; dubbla events är idempotenta.
-- Avbokning inom policy → återbetalning skapas.
-- `pnpm build` grön.
-
-**Tekniska noter:**
-- Webhook MÅSTE läsa **raw body** för signaturverifiering — i App Router: läs `await req.text()`, ingen JSON-parse innan verify. På Cloudflare/OpenNext: säkerställ att routen kör i rätt runtime och får rå body.
-- `payments` scoped på `tenant_id`; webhook (service-role) skriver, men validera tenant via `stripe_account_id`→tenant-lookup.
-- Idempotens: lagra hanterade `event.id` (eller använd PaymentIntent-status) för att undvika dubbelbearbetning.
-- Hemligheter (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_CLIENT_ID`) som Cloudflare secrets i prod.
-- application_fee_amount per plan (koppla mot tenant.plan).
+Klart → rapportera KLAR med DoD-bevis och STANNA.
