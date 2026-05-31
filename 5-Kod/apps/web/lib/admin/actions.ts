@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requirePortal, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
+import { uploadImage, uploadErrorMessage } from '@/lib/r2/upload'
 
 export type ActionState = { error?: string; success?: string }
 
@@ -313,4 +314,70 @@ export async function deleteStaffWorkingHours(_p: ActionState, fd: FormData): Pr
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/scheman')
   return { success: 'Arbetstid borttagen.' }
+}
+
+// ── Branding (white-label) ────────────────────────────────────────────────────
+const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
+
+function hexOrNull(raw: FormDataEntryValue | null): string | null | undefined {
+  const v = String(raw ?? '').trim()
+  if (v === '') return null
+  return HEX_RE.test(v) ? v : undefined // undefined = invalid (caller rejects)
+}
+
+type Branding = {
+  color_primary?: string | null
+  color_bg?: string | null
+  color_fg?: string | null
+  font_body?: string | null
+  logo_url?: string | null
+}
+
+export async function saveBranding(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const colorPrimary = hexOrNull(fd.get('color_primary'))
+  const colorBg = hexOrNull(fd.get('color_bg'))
+  const colorFg = hexOrNull(fd.get('color_fg'))
+  if (colorPrimary === undefined || colorBg === undefined || colorFg === undefined)
+    return { error: 'Ogiltig färgkod. Använd hex, t.ex. #1f6feb.' }
+  const fontBody = String(fd.get('font_body') ?? '').trim().slice(0, 120)
+  const removeLogo = String(fd.get('remove_logo') ?? '') === 'true'
+  const logo = fd.get('logo')
+
+  const supabase = await createClient()
+  // Merge onto existing branding so a colors-only save keeps the logo and vice versa.
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('branding')
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  const prev = (existing?.branding ?? {}) as Branding
+
+  let logoUrl = prev.logo_url ?? null
+  let warning: string | null = null
+  if (removeLogo) logoUrl = null
+  if (logo instanceof File && logo.size > 0) {
+    const res = await uploadImage(logo, `tenants/${ctx.tenant.id}/branding`)
+    if (res.ok) logoUrl = res.url
+    else warning = uploadErrorMessage(res.reason)
+  }
+
+  const branding: Branding = {
+    color_primary: colorPrimary,
+    color_bg: colorBg,
+    color_fg: colorFg,
+    font_body: fontBody || null,
+    logo_url: logoUrl,
+  }
+
+  const { error } = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: ctx.tenant.id, branding }, { onConflict: 'tenant_id' })
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/varumarke')
+  return warning ? { error: warning } : { success: 'Varumärke sparat. Publika webbplatsen uppdaterad.' }
 }

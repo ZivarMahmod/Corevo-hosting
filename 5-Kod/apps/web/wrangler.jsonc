@@ -10,9 +10,10 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  // R2 media bucket binding — DISABLED for now: R2 is not enabled on the account
-  // and the app does not use BUCKET yet. Re-add when media upload lands (G11).
-  //   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media" }],
+  // R2 media bucket binding — used by lib/r2/upload.ts (G07 admin logo upload).
+  // Build/lint/`next dev` don't need it; `preview` simulates R2 locally (miniflare).
+  // OPS (G08): create the bucket on the account + set R2_PUBLIC_BASE_URL before deploy.
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media" }],
   "observability": {
     "enabled": true
   }
