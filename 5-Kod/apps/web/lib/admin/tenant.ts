@@ -9,6 +9,8 @@ export type AdminTenant = {
   name: string
   /** IANA tz of the tenant's primary location (display + range bucketing). */
   timeZone: string
+  /** Primary location id — new services/staff/working_hours are pinned to it. */
+  locationId: string | null
 }
 
 const FALLBACK_TZ = 'Europe/Stockholm'
@@ -27,7 +29,7 @@ export async function getAdminTenant(user: CurrentUser): Promise<AdminTenant | n
     supabase.from('tenants').select('id, slug, name').eq('id', user.tenantId).maybeSingle(),
     supabase
       .from('locations')
-      .select('timezone')
+      .select('id, timezone')
       .eq('tenant_id', user.tenantId)
       .eq('is_primary', true)
       .maybeSingle(),
@@ -38,6 +40,7 @@ export async function getAdminTenant(user: CurrentUser): Promise<AdminTenant | n
     slug: tenant.slug,
     name: tenant.name,
     timeZone: loc?.timezone ?? FALLBACK_TZ,
+    locationId: loc?.id ?? null,
   }
 }
 
