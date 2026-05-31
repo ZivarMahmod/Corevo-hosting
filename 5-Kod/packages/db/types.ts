@@ -61,6 +61,7 @@ export type Database = {
           customer_profile_id: string | null
           end_ts: string
           id: string
+          location_id: string
           note: string | null
           price_cents: number | null
           service_id: string
@@ -75,6 +76,7 @@ export type Database = {
           customer_profile_id?: string | null
           end_ts: string
           id?: string
+          location_id: string
           note?: string | null
           price_cents?: number | null
           service_id: string
@@ -89,6 +91,7 @@ export type Database = {
           customer_profile_id?: string | null
           end_ts?: string
           id?: string
+          location_id?: string
           note?: string | null
           price_cents?: number | null
           service_id?: string
@@ -99,6 +102,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_service_id_fkey"
             columns: ["service_id"]
@@ -115,6 +125,47 @@ export type Database = {
           },
           {
             foreignKeyName: "bookings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          name: string
+          tenant_id: string
+          timezone: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          tenant_id: string
+          timezone?: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          tenant_id?: string
+          timezone?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -213,6 +264,7 @@ export type Database = {
           description: string | null
           duration_min: number
           id: string
+          location_id: string | null
           name: string
           price_cents: number
           tenant_id: string
@@ -225,6 +277,7 @@ export type Database = {
           description?: string | null
           duration_min: number
           id?: string
+          location_id?: string | null
           name: string
           price_cents?: number
           tenant_id: string
@@ -237,12 +290,20 @@ export type Database = {
           description?: string | null
           duration_min?: number
           id?: string
+          location_id?: string | null
           name?: string
           price_cents?: number
           tenant_id?: string
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "services_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "services_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -257,6 +318,7 @@ export type Database = {
           active: boolean
           created_at: string
           id: string
+          location_id: string | null
           profile_id: string | null
           tenant_id: string
           title: string | null
@@ -266,6 +328,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          location_id?: string | null
           profile_id?: string | null
           tenant_id: string
           title?: string | null
@@ -275,12 +338,20 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          location_id?: string | null
           profile_id?: string | null
           tenant_id?: string
           title?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "staff_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "staff_profile_id_fkey"
             columns: ["profile_id"]
@@ -454,6 +525,7 @@ export type Database = {
           created_at: string
           end_ts: string
           id: string
+          location_id: string | null
           reason: string | null
           staff_id: string
           start_ts: string
@@ -463,6 +535,7 @@ export type Database = {
           created_at?: string
           end_ts: string
           id?: string
+          location_id?: string | null
           reason?: string | null
           staff_id: string
           start_ts: string
@@ -472,12 +545,20 @@ export type Database = {
           created_at?: string
           end_ts?: string
           id?: string
+          location_id?: string | null
           reason?: string | null
           staff_id?: string
           start_ts?: string
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "time_off_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "time_off_staff_id_fkey"
             columns: ["staff_id"]
@@ -546,6 +627,7 @@ export type Database = {
         Row: {
           end_time: string
           id: string
+          location_id: string | null
           staff_id: string
           start_time: string
           tenant_id: string
@@ -554,6 +636,7 @@ export type Database = {
         Insert: {
           end_time: string
           id?: string
+          location_id?: string | null
           staff_id: string
           start_time: string
           tenant_id: string
@@ -562,12 +645,20 @@ export type Database = {
         Update: {
           end_time?: string
           id?: string
+          location_id?: string | null
           staff_id?: string
           start_time?: string
           tenant_id?: string
           weekday?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "working_hours_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "working_hours_staff_id_fkey"
             columns: ["staff_id"]
@@ -589,7 +680,48 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_public_booking: {
+        Args: {
+          p_customer?: string
+          p_note?: string
+          p_service: string
+          p_staff: string
+          p_start: string
+          p_tenant_slug: string
+        }
+        Returns: string
+      }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      get_busy_intervals: {
+        Args: {
+          p_from: string
+          p_staff_ids: string[]
+          p_tenant: string
+          p_to: string
+        }
+        Returns: {
+          end_ts: string
+          staff_id: string
+          start_ts: string
+        }[]
+      }
+      get_public_booking: {
+        Args: { p_id: string }
+        Returns: {
+          end_ts: string
+          id: string
+          location_name: string
+          location_timezone: string
+          payment_mode: string
+          price_cents: number
+          service_name: string
+          staff_title: string
+          start_ts: string
+          status: string
+          tenant_name: string
+          tenant_slug: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

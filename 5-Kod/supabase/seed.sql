@@ -131,3 +131,70 @@ insert into public.services
   ('56565656-0000-0000-0000-000000000003', '12121212-1212-1212-1212-121212121212',
    'Föning', 'Tvätt och föning', 'Styling', 30, 34500, true)
 on conflict (id) do nothing;
+
+-- ============================================================================
+-- Auth foundation + booking engine (M3) extras.
+-- ============================================================================
+
+-- ── global super_admin role (platform-wide, tenant_id NULL, level 8) ──
+-- on conflict (id): a NULL tenant_id makes (tenant_id, name) non-unique, so we
+-- key idempotency off the PK instead.
+insert into public.roles (id, tenant_id, name, level)
+values ('22222222-9999-9999-9999-000000000008', null, 'super_admin', 8)
+on conflict (id) do nothing;
+
+-- ── platform super-admin user (för roll-guard "når tvärs"-testet) ──
+-- platform_admin baked into raw_app_meta_data so the JWT carries it even before
+-- the Custom Access Token Hook is enabled in the Dashboard. tenant_id = frisor1
+-- is just the home tenant; is_platform_admin() unlocks cross-tenant via RLS.
+insert into auth.users (
+  id, instance_id, aud, role, email, encrypted_password,
+  email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) values
+  ('33333333-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000',
+   'authenticated', 'authenticated', 'platform@corevo.se',
+   crypt('Demo!1234', gen_salt('bf')), now(),
+   '{"provider":"email","providers":["email"],"tenant_id":"11111111-1111-1111-1111-111111111111","platform_admin":true}'::jsonb,
+   '{}'::jsonb, now(), now())
+on conflict (id) do nothing;
+
+insert into public.users (id, tenant_id, email, role_id, status) values
+  ('33333333-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111',
+   'platform@corevo.se', '22222222-9999-9999-9999-000000000008', 'active')
+on conflict (id) do nothing;
+
+-- GoTrue scans these token columns into Go strings and chokes on NULL
+-- ("Database error querying schema" / "converting NULL to string"). When seeding
+-- auth.users by hand they must be '' not NULL. Normalise after the inserts.
+update auth.users set
+  confirmation_token         = coalesce(confirmation_token, ''),
+  recovery_token             = coalesce(recovery_token, ''),
+  email_change_token_new     = coalesce(email_change_token_new, ''),
+  email_change               = coalesce(email_change, ''),
+  email_change_token_current = coalesce(email_change_token_current, ''),
+  phone_change               = coalesce(phone_change, ''),
+  phone_change_token         = coalesce(phone_change_token, ''),
+  reauthentication_token     = coalesce(reauthentication_token, '')
+where id in (
+  '33333333-0000-0000-0000-000000000001',
+  '33333333-0000-0000-0000-000000000002',
+  '33333333-0000-0000-0000-000000000003'
+);
+
+-- ── locations (primary per tenant) + location_id backfill (migration 0005) ──
+-- On a fresh local `supabase db reset` the 0005 migration runs before any tenant
+-- exists (no-op), so the seed carries the equivalent location rows + backfill.
+insert into public.locations (id, tenant_id, name, timezone, is_primary) values
+  ('77777777-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Frisör Ett', 'Europe/Stockholm', true),
+  ('77777777-0000-0000-0000-000000000002', '12121212-1212-1212-1212-121212121212', 'Salong Två', 'Europe/Stockholm', true)
+on conflict (id) do nothing;
+
+update public.staff s set location_id = l.id
+  from public.locations l
+ where l.tenant_id = s.tenant_id and l.is_primary and s.location_id is null;
+update public.services sv set location_id = l.id
+  from public.locations l
+ where l.tenant_id = sv.tenant_id and l.is_primary and sv.location_id is null;
+update public.working_hours wh set location_id = l.id
+  from public.locations l
+ where l.tenant_id = wh.tenant_id and l.is_primary and wh.location_id is null;

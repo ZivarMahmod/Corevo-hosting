@@ -7,6 +7,10 @@ import { createServerSupabase } from '@corevo/auth'
  * Server Components via headers(). Refreshed auth cookies are re-synced onto the
  * forwarded request so the SSR session is never regressed.
  * Do not run logic between createServerSupabase() and getUser().
+ *
+ * Returns the rotated `response` plus the resolved `user` (null when signed out)
+ * so the middleware can run a cheap authenticated-only gate without a second
+ * round-trip. Authorization (role level) stays in the DAL/layouts, not here.
  */
 export async function updateSession(request: NextRequest, requestHeaders?: Headers) {
   const headers = requestHeaders ?? new Headers(request.headers)
@@ -27,7 +31,9 @@ export async function updateSession(request: NextRequest, requestHeaders?: Heade
   })
 
   // Refreshes the auth token if needed and rotates cookies onto `response`.
-  await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  return response
+  return { response, user }
 }
