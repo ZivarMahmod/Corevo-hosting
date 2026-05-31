@@ -1,0 +1,118 @@
+'use client'
+
+import { useActionState } from 'react'
+import { saveSettings, type ActionState } from '@/lib/admin/actions'
+import styles from './admin.module.css'
+
+const TIMEZONES = [
+  'Europe/Stockholm',
+  'Europe/Oslo',
+  'Europe/Copenhagen',
+  'Europe/Helsinki',
+  'Europe/London',
+  'UTC',
+]
+
+const PAYMENT_MODES: { value: string; label: string }[] = [
+  { value: 'on_site', label: 'Betala på plats' },
+  { value: 'online', label: 'Betala online' },
+  { value: 'both', label: 'Online + på plats' },
+  { value: 'coming_soon', label: 'Online (kommer snart)' },
+]
+
+export type SettingsFormProps = {
+  name: string
+  paymentMode: string
+  cancellationHours: number
+  timezone: string
+  locationName: string
+  address: string
+  contactEmail: string
+  contactPhone: string
+}
+
+export function SettingsForm(props: SettingsFormProps) {
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(saveSettings, {})
+  const tzOptions = TIMEZONES.includes(props.timezone) ? TIMEZONES : [props.timezone, ...TIMEZONES]
+
+  return (
+    <form action={formAction} className={`${styles.form} ${styles.formStacked}`}>
+      <label className={styles.field}>
+        <span>Salongsnamn</span>
+        <input name="name" defaultValue={props.name} required />
+      </label>
+
+      <div className={styles.fieldRow}>
+        <label className={styles.field} style={{ flex: '1 1 12rem' }}>
+          <span>E-post (kontakt)</span>
+          <input name="contact_email" type="email" defaultValue={props.contactEmail} />
+        </label>
+        <label className={styles.field} style={{ flex: '1 1 10rem' }}>
+          <span>Telefon</span>
+          <input name="contact_phone" defaultValue={props.contactPhone} />
+        </label>
+      </div>
+
+      <label className={styles.field}>
+        <span>Adress</span>
+        <input name="address" defaultValue={props.address} />
+      </label>
+
+      <div className={styles.fieldRow}>
+        <label className={styles.field} style={{ flex: '1 1 10rem' }}>
+          <span>Platsnamn</span>
+          <input name="location_name" defaultValue={props.locationName} />
+        </label>
+        <label className={styles.field} style={{ flex: '1 1 10rem' }}>
+          <span>Tidszon</span>
+          <select name="timezone" defaultValue={props.timezone}>
+            {tzOptions.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className={styles.fieldRow}>
+        <label className={styles.field} style={{ flex: '1 1 12rem' }}>
+          <span>Betalning</span>
+          <select name="payment_mode" defaultValue={props.paymentMode}>
+            {PAYMENT_MODES.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.field} style={{ flex: '1 1 12rem' }}>
+          <span>Avbokning senast (timmar före)</span>
+          <input
+            name="cancellation_cutoff_hours"
+            type="number"
+            min="0"
+            max="8760"
+            defaultValue={props.cancellationHours}
+          />
+        </label>
+      </div>
+
+      <div className={styles.actions}>
+        <button type="submit" className="btn-primary" disabled={pending}>
+          {pending ? 'Sparar…' : 'Spara inställningar'}
+        </button>
+        {state.error ? (
+          <span className={`${styles.feedback} auth-error`} role="alert">
+            {state.error}
+          </span>
+        ) : null}
+        {state.success ? (
+          <span className={`${styles.feedback} ${styles.feedbackOk}`} role="status">
+            {state.success}
+          </span>
+        ) : null}
+      </div>
+    </form>
+  )
+}

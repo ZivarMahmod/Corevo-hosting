@@ -381,3 +381,80 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
   revalidatePath('/admin/varumarke')
   return warning ? { error: warning } : { success: 'Varumärke sparat. Publika webbplatsen uppdaterad.' }
 }
+
+// ── Salon settings ────────────────────────────────────────────────────────────
+const PAYMENT_MODES = ['on_site', 'online', 'both', 'coming_soon'] as const
+
+function isValidTz(tz: string): boolean {
+  if (!tz) return false
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz })
+    return true
+  } catch {
+    return false
+  }
+}
+
+export async function saveSettings(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const name = String(fd.get('name') ?? '').trim()
+  const paymentMode = String(fd.get('payment_mode') ?? 'on_site')
+  const cancelRaw = String(fd.get('cancellation_cutoff_hours') ?? '').trim()
+  const timezone = String(fd.get('timezone') ?? '').trim()
+  const locationName = String(fd.get('location_name') ?? '').trim()
+  const address = String(fd.get('address') ?? '').trim()
+  const contactEmail = String(fd.get('contact_email') ?? '').trim()
+  const contactPhone = String(fd.get('contact_phone') ?? '').trim()
+
+  if (!name) return { error: 'Ange ett salongsnamn.' }
+  if (!PAYMENT_MODES.includes(paymentMode as (typeof PAYMENT_MODES)[number]))
+    return { error: 'Ogiltigt betalningsläge.' }
+  const cancelHours = cancelRaw === '' ? 24 : Number(cancelRaw)
+  if (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760)
+    return { error: 'Avbokningsregel måste vara ett antal timmar (0–8760).' }
+  if (timezone && !isValidTz(timezone)) return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
+
+  const supabase = await createClient()
+
+  // 1) tenant name (feeds the cached public bundle).
+  const t = await supabase.from('tenants').update({ name }).eq('id', ctx.tenant.id)
+  if (t.error) return { error: GENERIC }
+
+  // 2) tenant_settings: merge into the existing settings jsonb so we never clobber
+  //    layout / custom_override that the public theming layer relies on.
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  const settings = {
+    ...prev,
+    cancellation_cutoff_hours: cancelHours, // read by M4 (kund avbokning)
+    contact: { email: contactEmail || null, phone: contactPhone || null },
+  }
+  const s = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: ctx.tenant.id, payment_mode: paymentMode, settings }, { onConflict: 'tenant_id' })
+  if (s.error) return { error: GENERIC }
+
+  // 3) primary location (timezone + name + address), if the tenant has one.
+  if (ctx.tenant.locationId) {
+    const locUpdate: { timezone?: string; name?: string; address?: string | null } = {}
+    if (timezone) locUpdate.timezone = timezone
+    if (locationName) locUpdate.name = locationName
+    locUpdate.address = address || null
+    const l = await supabase
+      .from('locations')
+      .update(locUpdate)
+      .eq('id', ctx.tenant.locationId)
+      .eq('tenant_id', ctx.tenant.id)
+    if (l.error) return { error: GENERIC }
+  }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/installningar')
+  return { success: 'Inställningar sparade.' }
+}

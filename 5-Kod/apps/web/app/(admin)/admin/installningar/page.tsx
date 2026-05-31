@@ -1,0 +1,86 @@
+import type { Metadata } from 'next'
+import { requirePortal } from '@/lib/auth/session'
+import { getAdminTenant } from '@/lib/admin/tenant'
+import { getSettingsRow, listLocations, listDomains } from '@/lib/admin/data'
+import { SettingsForm } from '@/components/admin/SettingsForm'
+import styles from '@/components/admin/admin.module.css'
+
+export const dynamic = 'force-dynamic'
+export const metadata: Metadata = { title: 'Inställningar · Salongsadmin' }
+
+const ROOT_DOMAIN = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se').replace(/:\d+$/, '')
+
+export default async function SettingsPage() {
+  const user = await requirePortal('admin')
+  const tenant = await getAdminTenant(user)
+  if (!tenant) {
+    return (
+      <section className="portal-section">
+        <h1>Inställningar</h1>
+        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+      </section>
+    )
+  }
+
+  const [settings, locations, domains] = await Promise.all([
+    getSettingsRow(tenant.id),
+    listLocations(tenant.id),
+    listDomains(tenant.id),
+  ])
+  const primary = locations.find((l) => l.is_primary) ?? locations[0] ?? null
+  const sjson = (settings?.settings ?? {}) as {
+    cancellation_cutoff_hours?: number
+    contact?: { email?: string | null; phone?: string | null }
+  }
+  const contact = sjson.contact ?? {}
+
+  return (
+    <section className="portal-section">
+      <h1>Inställningar</h1>
+      <p className="prose">
+        Salongens namn, kontakt, tidszon, betalningssätt och avbokningsregel. Avbokningsregeln läses
+        av kundportalen när en kund vill avboka eller boka om.
+      </p>
+
+      <SettingsForm
+        name={tenant.name}
+        paymentMode={settings?.payment_mode ?? 'on_site'}
+        cancellationHours={
+          typeof sjson.cancellation_cutoff_hours === 'number' ? sjson.cancellation_cutoff_hours : 24
+        }
+        timezone={primary?.timezone ?? tenant.timeZone}
+        locationName={primary?.name ?? tenant.name}
+        address={primary?.address ?? ''}
+        contactEmail={contact.email ?? ''}
+        contactPhone={contact.phone ?? ''}
+      />
+
+      <div className={styles.section} style={{ marginTop: '2rem' }}>
+        <h2>Egen domän</h2>
+        <p className="prose">
+          Din salong nås på{' '}
+          <span className={styles.code}>
+            {tenant.slug}.{ROOT_DOMAIN}
+          </span>
+          . Vill du koppla en egen domän (t.ex. <span className={styles.code}>dinsalong.se</span>)
+          kontaktar du Corevo — själva DNS-/Cloudflare-kopplingen görs av oss (G08).
+        </p>
+        {domains.length > 0 ? (
+          <ul className={styles.list}>
+            {domains.map((d) => (
+              <li key={d.id} className={styles.row}>
+                <span className={styles.code}>{d.domain}</span>
+                <span className={`${styles.badge}`}>
+                  {d.verified ? 'Verifierad' : 'Väntar på verifiering'}
+                  {d.is_primary ? ' · primär' : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={styles.muted}>Ingen egen domän kopplad ännu.</p>
+        )}
+      </div>
+    </section>
+  )
+}
