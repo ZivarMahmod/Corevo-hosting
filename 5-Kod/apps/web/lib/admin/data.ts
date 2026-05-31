@@ -203,11 +203,13 @@ export async function dashboardData(
       .lt('start_ts', week.toUtc),
     listBookings(tenantId, { fromUtc: today.fromUtc, toUtc: today.toUtc }),
   ])
+  // Keep the list consistent with `todayCount` (both exclude cancelled/no_show).
+  const active = new Set<string>(ACTIVE_BOOKING)
   return {
     servicesActive: services.count ?? 0,
     staffActive: staff.count ?? 0,
     todayCount: todayB.count ?? 0,
     weekCount: weekCount.count ?? 0,
-    upcomingToday: upcoming,
+    upcomingToday: upcoming.filter((b) => active.has(b.status)),
   }
 }

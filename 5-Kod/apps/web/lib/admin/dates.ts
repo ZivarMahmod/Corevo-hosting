@@ -16,11 +16,10 @@ export function todayInTz(timeZone: string, now = new Date()): string {
 
 /** [start, end) UTC ISO instants spanning the local calendar day `date`. */
 export function dayRangeUtc(date: string, timeZone: string): { fromUtc: string; toUtc: string } {
+  // `to` is the wall-clock next-midnight (not +24h) so 23h/25h DST days stay exact.
   const from = zonedTimeToUtc(date, '00:00', timeZone)
-  const to = new Date(from.getTime() + 24 * 3_600_000)
-  // Re-anchor `to` via wall-clock +1 day so 23h/25h DST days stay exact.
-  const next = addDays(date, 1)
-  return { fromUtc: from.toISOString(), toUtc: zonedTimeToUtc(next, '00:00', timeZone).toISOString() }
+  const to = zonedTimeToUtc(addDays(date, 1), '00:00', timeZone)
+  return { fromUtc: from.toISOString(), toUtc: to.toISOString() }
 }
 
 /** [Mon 00:00, next Mon 00:00) UTC window for the local week containing `date`. */
