@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { listBookings, listStaff } from '@/lib/admin/data'
@@ -86,7 +87,14 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
       </form>
 
       {bookings.length === 0 ? (
-        <p className={styles.muted}>Inga bokningar matchar filtret.</p>
+        <div className={styles.empty}>
+          <strong>Inga bokningar matchar filtret.</strong>
+          Justera datum, medarbetare eller status ovan — eller{' '}
+          <Link href="/admin/bokningar" className={styles.navLink} style={{ fontSize: 'inherit' }}>
+            nollställ filtret
+          </Link>{' '}
+          för att se alla.
+        </div>
       ) : (
         <table className={styles.table}>
           <thead>

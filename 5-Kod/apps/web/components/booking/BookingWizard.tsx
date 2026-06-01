@@ -8,6 +8,7 @@ import {
   startBookingCheckout,
   type SlotOption,
 } from '@/app/boka/actions'
+import styles from './booking.module.css'
 
 type WizardStaff = { id: string; title: string | null }
 export type WizardService = {
@@ -24,6 +25,17 @@ const kr = new Intl.NumberFormat('sv-SE', {
   currency: 'SEK',
   maximumFractionDigits: 0,
 })
+
+// Gold "selected" fill via the product accent token. Applied inline because the
+// frozen global selectors (.wizard-day.selected etc.) out-specify a module class.
+const goldSelected = {
+  background: 'var(--color-accent, var(--color-primary))',
+  color: 'var(--color-fg, #15281f)',
+  borderColor: 'var(--color-accent, var(--color-primary))',
+} as const
+
+// Card "selected" border-only highlight (gold ring, no fill).
+const goldBorder = { borderColor: 'var(--color-accent, var(--color-primary))' } as const
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -42,6 +54,11 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
   const [slot, setSlot] = useState<SlotOption | null>(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', note: '' })
   const [error, setError] = useState<string | null>(null)
+  // Step-3 specific load/error so it never gets confused with the empty state.
+  const [slotsError, setSlotsError] = useState<string | null>(null)
+  // "Tiden togs precis"-notis: visas överst i steg 3 efter en krock; överlever
+  // slot-uppdateringen så användaren förstår varför hen är tillbaka här.
+  const [slotTakenNotice, setSlotTakenNotice] = useState<string | null>(null)
 
   const days = useMemo(() => {
     const out: Date[] = []
@@ -67,6 +84,9 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
     setDate(null)
     setSlots([])
     setSlot(null)
+    setSlotsError(null)
+    setSlotTakenNotice(null)
+    setError(null)
     setStep(2)
   }
 
@@ -75,6 +95,8 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
     setDate(null)
     setSlots([])
     setSlot(null)
+    setSlotsError(null)
+    setSlotTakenNotice(null)
     setStep(3)
   }
 
@@ -83,6 +105,7 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
     setDate(d)
     setSlot(null)
     setError(null)
+    setSlotsError(null)
     startTransition(async () => {
       const res = await getAvailableSlots(service.id, staffChoice === 'any' ? null : staffChoice, d)
       if (res.ok) {
@@ -90,7 +113,7 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
         setTimeZone(res.timeZone)
       } else {
         setSlots([])
-        setError(res.error)
+        setSlotsError(res.error)
       }
     })
   }
@@ -120,44 +143,77 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
         }
         router.push(`/boka/bekraftelse/${res.bookingId}`)
       } else {
-        setError(res.message)
         if (res.reason === 'slot_taken' && date) {
+          // Krock: gå tillbaka till tidsvalet, visa notisen, ladda om tiderna.
+          // pickDate nollställer error/slotsError men INTE slotTakenNotice.
           setStep(3)
           pickDate(date) // refresh slots
+          setSlotTakenNotice(res.message)
+        } else {
+          setError(res.message)
         }
       }
     })
   }
 
+  const stepLabels = ['Tjänst', 'Personal', 'Tid', 'Uppgifter']
+
   return (
     <div className="wizard">
       <ol className="wizard-steps">
-        {['Tjänst', 'Personal', 'Tid', 'Uppgifter'].map((label, i) => (
-          <li key={label} className={step === i + 1 ? 'active' : step > i + 1 ? 'done' : ''}>
-            <span className="wizard-step-num">{i + 1}</span>
-            {label}
-          </li>
-        ))}
+        {stepLabels.map((label, i) => {
+          const isActive = step === i + 1
+          const isDone = step > i + 1
+          return (
+            <li key={label} className={isActive ? 'active' : isDone ? 'done' : ''}>
+              <span
+                className="wizard-step-num"
+                // active dot = gold; completed dot = forest (the frozen default).
+                style={isActive ? goldSelected : undefined}
+              >
+                {isDone ? '✓' : i + 1}
+              </span>
+              {label}
+            </li>
+          )
+        })}
       </ol>
 
       {/* Step 1 — service */}
-      {step === 1 && (
-        <ul className="wizard-list">
-          {services.map((s) => (
-            <li key={s.id}>
-              <button type="button" className="wizard-card" onClick={() => pickService(s)}>
-                <span className="wizard-card-main">
-                  <strong>{s.name}</strong>
-                  {s.description ? <span className="wizard-card-sub">{s.description}</span> : null}
-                </span>
-                <span className="wizard-card-meta">
-                  {s.durationMin} min · {kr.format(s.priceCents / 100)}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {step === 1 &&
+        (services.length === 0 ? (
+          <div className={styles.empty}>
+            <div className={styles.emptyIcon} aria-hidden>
+              ✂️
+            </div>
+            <p className={styles.emptyTitle}>Inga tjänster att boka just nu</p>
+            <p className={styles.emptyText}>
+              Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare eller
+              kontakta salongen direkt.
+            </p>
+          </div>
+        ) : (
+          <ul className="wizard-list">
+            {services.map((s) => (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  className="wizard-card"
+                  onClick={() => pickService(s)}
+                  style={service?.id === s.id ? goldBorder : undefined}
+                >
+                  <span className="wizard-card-main">
+                    <strong>{s.name}</strong>
+                    {s.description ? <span className="wizard-card-sub">{s.description}</span> : null}
+                  </span>
+                  <span className="wizard-card-meta">
+                    {s.durationMin} min · {kr.format(s.priceCents / 100)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ))}
 
       {/* Step 2 — staff (or anyone) */}
       {step === 2 && service && (
@@ -167,18 +223,51 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
           </button>
           <ul className="wizard-list">
             <li>
-              <button type="button" className="wizard-card" onClick={() => pickStaff('any')}>
-                <strong>Alla</strong>
-                <span className="wizard-card-meta">Första lediga tid</span>
+              <button
+                type="button"
+                className="wizard-card"
+                onClick={() => pickStaff('any')}
+                style={staffChoice === 'any' ? goldBorder : undefined}
+              >
+                <span className="wizard-card-main">
+                  <strong>Alla</strong>
+                  <span className="wizard-card-sub">Tidigast möjliga tid hos vem som helst</span>
+                </span>
+                {staffChoice === 'any' ? (
+                  <span className={styles.pickedChip} aria-hidden>
+                    ✓
+                  </span>
+                ) : (
+                  <span className="wizard-card-meta">Första lediga tid</span>
+                )}
               </button>
             </li>
             {service.staff.map((m) => (
               <li key={m.id}>
-                <button type="button" className="wizard-card" onClick={() => pickStaff(m.id)}>
-                  <strong>{m.title ?? 'Frisör'}</strong>
+                <button
+                  type="button"
+                  className="wizard-card"
+                  onClick={() => pickStaff(m.id)}
+                  style={staffChoice === m.id ? goldBorder : undefined}
+                >
+                  <span className="wizard-card-main">
+                    <strong>{m.title ?? 'Frisör'}</strong>
+                  </span>
+                  {staffChoice === m.id ? (
+                    <span className={styles.pickedChip} aria-hidden>
+                      ✓
+                    </span>
+                  ) : null}
                 </button>
               </li>
             ))}
+            {service.staff.length === 0 && (
+              <li>
+                <p className={styles.emptyText} style={{ padding: '0.5rem 0.25rem' }}>
+                  Ingen specifik personal är kopplad — välj “Alla” för tidigast lediga tid.
+                </p>
+              </li>
+            )}
           </ul>
         </div>
       )}
@@ -189,15 +278,33 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
           <button type="button" className="wizard-back" onClick={() => setStep(2)}>
             ← Välj personal
           </button>
-          <div className="wizard-days">
+
+          {/* Krock-notis: tiden togs precis. Vänligt, ej blockerande. */}
+          {slotTakenNotice ? (
+            <p className="auth-error" role="alert">
+              {slotTakenNotice}
+            </p>
+          ) : (
+            <p className="wizard-muted" style={{ marginTop: 0 }}>
+              Välj en dag och en ledig tid.
+            </p>
+          )}
+
+          <div className="wizard-days" role="group" aria-label="Välj dag">
             {days.map((d) => {
               const key = ymd(d)
+              const isSel = date === key
               return (
                 <button
                   key={key}
                   type="button"
-                  className={`wizard-day${date === key ? ' selected' : ''}`}
-                  onClick={() => pickDate(key)}
+                  className={`wizard-day${isSel ? ' selected' : ''}`}
+                  aria-pressed={isSel}
+                  onClick={() => {
+                    setSlotTakenNotice(null)
+                    pickDate(key)
+                  }}
+                  style={isSel ? goldSelected : undefined}
                 >
                   {fmtDay(d)}
                 </button>
@@ -205,28 +312,80 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
             })}
           </div>
 
-          {pending && <p className="wizard-muted">Hämtar lediga tider…</p>}
-          {!pending && date && slots.length === 0 && (
-            <p className="wizard-muted">Inga lediga tider denna dag. Välj en annan dag.</p>
+          {/* loading: shimmer chips while slots resolve */}
+          {pending && (
+            <>
+              <div className={styles.loadingRow}>
+                <span className={styles.spinner} aria-hidden />
+                <span>Hämtar lediga tider…</span>
+              </div>
+              <div className={styles.skeletonTimes} aria-hidden>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <span key={i} className={styles.skeletonChip} />
+                ))}
+              </div>
+            </>
           )}
-          <div className="wizard-times">
-            {slots.map((sl) => (
+
+          {/* error: ink-red box + retry */}
+          {!pending && slotsError && (
+            <div style={{ marginTop: '1rem' }}>
+              <p className="auth-error" role="alert">
+                {slotsError}
+              </p>
               <button
-                key={sl.start + sl.staffId}
                 type="button"
-                className={`wizard-time${slot?.start === sl.start && slot?.staffId === sl.staffId ? ' selected' : ''}`}
-                onClick={() => {
-                  setSlot(sl)
-                  setStep(4)
-                }}
+                className={styles.retry}
+                onClick={() => date && pickDate(date)}
               >
-                {fmtTime(sl.start)}
-                {staffChoice === 'any' && sl.staffTitle ? (
-                  <span className="wizard-time-staff">{sl.staffTitle}</span>
-                ) : null}
+                ↻ Försök igen
               </button>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* empty: only when we genuinely have a day, no error, not loading */}
+          {!pending && !slotsError && date && slots.length === 0 && (
+            <div className={styles.slotsEmpty}>
+              <div className={styles.emptyIcon} aria-hidden>
+                📅
+              </div>
+              <p className={styles.emptyTitle}>Inga lediga tider denna dag</p>
+              <p className={styles.emptyText}>Välj en annan dag ovan så visar vi lediga tider.</p>
+            </div>
+          )}
+
+          {/* prompt before any day is chosen */}
+          {!pending && !slotsError && !date && (
+            <p className="wizard-muted">Välj en dag ovan för att se lediga tider.</p>
+          )}
+
+          {/* success: the slot grid */}
+          {!pending && !slotsError && slots.length > 0 && (
+            <div className="wizard-times" role="group" aria-label="Välj tid">
+              {slots.map((sl) => {
+                const isSel = slot?.start === sl.start && slot?.staffId === sl.staffId
+                return (
+                  <button
+                    key={sl.start + sl.staffId}
+                    type="button"
+                    className={`wizard-time${isSel ? ' selected' : ''}`}
+                    aria-pressed={isSel}
+                    style={isSel ? goldSelected : undefined}
+                    onClick={() => {
+                      setSlot(sl)
+                      setSlotTakenNotice(null)
+                      setStep(4)
+                    }}
+                  >
+                    {fmtTime(sl.start)}
+                    {staffChoice === 'any' && sl.staffTitle ? (
+                      <span className="wizard-time-staff">{sl.staffTitle}</span>
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -237,8 +396,14 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
             ← Välj tid
           </button>
           <div className="wizard-summary">
-            <strong>{service.name}</strong> · {fmtTime(slot.start)}
-            {slot.staffTitle ? ` · ${slot.staffTitle}` : ''} · {kr.format(service.priceCents / 100)}
+            <div className={styles.summaryRow}>
+              <strong>{service.name}</strong>
+              <span style={{ opacity: 0.75 }}>
+                {fmtTime(slot.start)}
+                {slot.staffTitle ? ` · ${slot.staffTitle}` : ''} · {service.durationMin} min
+              </span>
+              <span className={styles.summaryPrice}>{kr.format(service.priceCents / 100)}</span>
+            </div>
           </div>
           <form
             className="wizard-form"
@@ -251,6 +416,7 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
               <span>Namn</span>
               <input
                 required
+                autoComplete="name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
@@ -260,6 +426,7 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
               <input
                 required
                 type="email"
+                autoComplete="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
@@ -268,6 +435,8 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
               <span>Telefon</span>
               <input
                 required
+                type="tel"
+                autoComplete="tel"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
               />

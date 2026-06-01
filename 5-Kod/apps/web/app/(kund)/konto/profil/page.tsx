@@ -4,6 +4,7 @@ import { requirePortal } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
 import { ProfileForm } from '@/components/kund/ProfileForm'
 import { GdprControls } from '@/components/kund/GdprControls'
+import styles from '@/components/kund/kund.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Min profil' }
@@ -25,7 +26,7 @@ export default async function ProfilePage() {
 
   return (
     <section className="portal-section">
-      <Link href="/konto" className="prose">
+      <Link href="/konto" className={styles.back}>
         ← Mina tider
       </Link>
       <h1>Min profil</h1>

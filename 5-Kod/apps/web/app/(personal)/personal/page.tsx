@@ -30,10 +30,13 @@ export default async function PersonalPage({
     return (
       <section className="portal-section">
         <h1>Idag</h1>
-        <p className="prose">
-          Ingen personalprofil är kopplad till ditt konto. Kontakta salongsadmin för att kopplas
-          till en personalrad.
-        </p>
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
+          <p className={styles.emptyHint}>
+            Ditt konto är inte kopplat till en personalrad ännu. Kontakta salongsadmin så kopplas du
+            till din profil — sedan dyker dina bokningar och tider upp här.
+          </p>
+        </div>
       </section>
     )
   }
@@ -82,7 +85,9 @@ export default async function PersonalPage({
       <div className={styles.stats}>
         <div className={styles.stat}>
           <div className={styles.statValue}>{activeToday.length}</div>
-          <div className={styles.statLabel}>bokningar idag</div>
+          <div className={styles.statLabel}>
+            {activeToday.length === 1 ? 'aktiv bokning idag' : 'aktiva bokningar idag'}
+          </div>
         </div>
         <div className={styles.stat}>
           <div className={styles.statValue}>{next ? fmtTime(next.startTs, next.timeZone) : '–'}</div>

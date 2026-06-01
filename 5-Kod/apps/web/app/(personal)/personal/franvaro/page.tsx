@@ -3,6 +3,7 @@ import { requirePortal } from '@/lib/auth/session'
 import { getMyStaff } from '@/lib/personal/staff'
 import { getMyTimeOff } from '@/lib/personal/schedule'
 import { TimeOffManager } from '@/components/personal/TimeOffManager'
+import styles from '@/components/personal/personal.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Frånvaro' }
@@ -15,7 +16,13 @@ export default async function FranvaroPage() {
     return (
       <section className="portal-section">
         <h1>Frånvaro</h1>
-        <p className="prose">Ingen personalprofil är kopplad till ditt konto.</p>
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
+          <p className={styles.emptyHint}>
+            Kontakta salongsadmin för att kopplas till en personalrad — sedan kan du registrera din
+            frånvaro här.
+          </p>
+        </div>
       </section>
     )
   }

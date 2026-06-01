@@ -33,39 +33,45 @@ export default async function PlatformOverviewPage() {
         </Link>
       </div>
 
-      <table className="portal-table">
-        <thead>
-          <tr>
-            <th>Subdomän</th>
-            <th>Namn</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {recent.slice(0, 8).map((t) => (
-            <tr key={t.id}>
-              <td>
-                <Link href={`/salonger/${t.id}`}>
-                  <code className={styles.code}>{t.slug}</code>
-                </Link>
-              </td>
-              <td>{t.name}</td>
-              <td>
-                <span className={`${styles.badge} ${t.status === 'active' ? styles.badgeActive : styles.badgeSuspended}`}>
-                  {t.status}
-                </span>
-              </td>
-            </tr>
-          ))}
-          {recent.length === 0 ? (
+      {recent.length === 0 ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>Inga salonger ännu</p>
+          <p className={styles.emptyText}>
+            Onboarda din första kund — skapa salong, välj temamall och färger, så är
+            den live på en egen subdomän direkt.
+          </p>
+          <Link href="/salonger/ny" className="btn-primary">
+            + Skapa den första salongen
+          </Link>
+        </div>
+      ) : (
+        <table className="portal-table">
+          <thead>
             <tr>
-              <td colSpan={3} className={styles.muted}>
-                Inga salonger ännu. <Link href="/salonger/ny">Skapa den första →</Link>
-              </td>
+              <th>Subdomän</th>
+              <th>Namn</th>
+              <th>Status</th>
             </tr>
-          ) : null}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {recent.slice(0, 8).map((t) => (
+              <tr key={t.id}>
+                <td>
+                  <Link href={`/salonger/${t.id}`}>
+                    <code className={styles.code}>{t.slug}</code>
+                  </Link>
+                </td>
+                <td>{t.name}</td>
+                <td>
+                  <span className={`${styles.badge} ${t.status === 'active' ? styles.badgeActive : styles.badgeSuspended}`}>
+                    {t.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
   )
 }

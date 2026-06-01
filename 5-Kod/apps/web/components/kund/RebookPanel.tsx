@@ -78,7 +78,8 @@ export function RebookPanel({
   }
 
   return (
-    <div>
+    <div className={styles.rebookOpen}>
+      <p className={styles.pickerLabel}>Välj ny dag</p>
       <div className={styles.days}>
         {days.map((d) => {
           const key = ymd(d)
@@ -105,6 +106,8 @@ export function RebookPanel({
         <p className={styles.muted}>Inga lediga tider den dagen. Välj en annan dag.</p>
       ) : null}
 
+      {!pending && slots.length > 0 ? <p className={styles.pickerLabel}>Välj ny tid</p> : null}
+
       <div className={styles.times}>
         {slots.map((sl) => (
           <button
@@ -128,7 +131,7 @@ export function RebookPanel({
         <button type="submit" className="btn-primary" disabled={!slot || submitting}>
           {submitting ? 'Bokar om…' : 'Bekräfta ny tid'}
         </button>
-        <button type="button" className={styles.day} onClick={() => setOpen(false)}>
+        <button type="button" className={styles.btnSecondary} onClick={() => setOpen(false)}>
           Avbryt
         </button>
       </form>

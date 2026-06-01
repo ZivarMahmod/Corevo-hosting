@@ -41,13 +41,18 @@ export function WorkingHoursManager({ rows }: { rows: WorkingHoursRow[] }) {
         </p>
       ) : null}
       {state.success ? (
-        <p className={styles.feedback} role="status">
+        <p className={`${styles.feedback} ${styles.feedbackOk}`} role="status">
           {state.success}
         </p>
       ) : null}
 
       {rows.length === 0 ? (
-        <p className={styles.muted}>Inga arbetstider tillagda.</p>
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>Inga arbetstider tillagda</p>
+          <p className={styles.emptyHint}>
+            Lägg till din första veckodag ovan så blir du bokningsbar för kunder.
+          </p>
+        </div>
       ) : (
         <ul className={styles.list}>
           {rows.map((r) => (

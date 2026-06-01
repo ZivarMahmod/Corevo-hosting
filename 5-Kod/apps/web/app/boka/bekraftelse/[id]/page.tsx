@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createPublicClient } from '@/lib/supabase/public'
+import styles from '@/components/booking/booking.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Bokning bekräftad' }
@@ -11,6 +12,45 @@ const kr = new Intl.NumberFormat('sv-SE', {
   currency: 'SEK',
   maximumFractionDigits: 0,
 })
+
+// ── "Lägg till i kalender": en RFC5545-iCal-fil (.ics) byggd server-side från
+// fält vi redan har (start_ts/end_ts/service/personal/salong). Inget extra
+// data-anrop. Levereras som data:-URL så <a download> sparar filen direkt. ──
+function icsStamp(iso: string): string {
+  // → YYYYMMDDTHHMMSSZ (UTC). Date.toISOString ger UTC; strippa skiljetecken/ms.
+  return new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+}
+function icsEscape(text: string): string {
+  return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n')
+}
+function buildIcs(opts: {
+  id: string
+  startISO: string
+  endISO: string
+  summary: string
+  description: string
+  location: string
+}): string {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Corevo//Booking//SV',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${opts.id}@corevo.booking`,
+    `DTSTAMP:${icsStamp(new Date().toISOString())}`,
+    `DTSTART:${icsStamp(opts.startISO)}`,
+    `DTEND:${icsStamp(opts.endISO)}`,
+    `SUMMARY:${icsEscape(opts.summary)}`,
+    `DESCRIPTION:${icsEscape(opts.description)}`,
+    `LOCATION:${icsEscape(opts.location)}`,
+    'STATUS:CONFIRMED',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ]
+  return lines.join('\r\n')
+}
 
 export default async function ConfirmationPage({
   params,
@@ -40,10 +80,37 @@ export default async function ConfirmationPage({
   const refunded = booking.payment_status === 'refunded'
   const checkoutCancelled = avbruten === '1'
 
+  // .ics-fil (lägg till i kalender). end_ts finns i RPC:n → exakt sluttid.
+  const tenantName = booking.tenant_name ?? ''
+  const summary = tenantName
+    ? `${booking.service_name} – ${tenantName}`
+    : (booking.service_name ?? 'Bokning')
+  const descParts = [
+    booking.staff_title ? `Hos ${booking.staff_title}` : null,
+    booking.price_cents ? `Pris: ${kr.format((booking.price_cents ?? 0) / 100)}` : null,
+  ].filter(Boolean) as string[]
+  const icsHref = `data:text/calendar;charset=utf-8,${encodeURIComponent(
+    buildIcs({
+      id: booking.id ?? id,
+      startISO: booking.start_ts,
+      endISO: booking.end_ts ?? booking.start_ts,
+      summary,
+      description: descParts.join(' · '),
+      location: booking.location_name ?? tenantName,
+    }),
+  )}`
+
   return (
     <section className="section">
       <div className="section-inner booking-confirm">
-        <div className="confirm-badge" aria-hidden>
+        <div
+          className="confirm-badge"
+          aria-hidden
+          style={{
+            background: 'var(--color-accent, var(--color-primary))',
+            color: 'var(--color-fg, #15281f)',
+          }}
+        >
           ✓
         </div>
         <h1>Tack, din tid är bokad!</h1>
@@ -86,9 +153,19 @@ export default async function ConfirmationPage({
         {/* Recension-nudge (Google review): fyrar när booking.status = 'completed'.
             Byggs senare — lämnar bara kroken här. */}
 
-        <Link href="/" className="btn-primary">
-          Till startsidan
-        </Link>
+        <div className={styles.confirmActions}>
+          <a
+            href={icsHref}
+            download="bokning.ics"
+            className={styles.calendarBtn}
+            aria-label="Lägg till bokningen i din kalender"
+          >
+            📅 Lägg till i kalender
+          </a>
+          <Link href="/" className="btn-primary">
+            Till startsidan
+          </Link>
+        </div>
       </div>
     </section>
   )

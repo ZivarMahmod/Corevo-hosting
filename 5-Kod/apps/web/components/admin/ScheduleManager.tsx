@@ -53,7 +53,10 @@ export function ScheduleManager({
       </form>
 
       {rows.length === 0 ? (
-        <p className={styles.muted}>Inga arbetstider för denna medarbetare.</p>
+        <div className={styles.empty}>
+          <strong>Inga arbetstider för denna medarbetare.</strong>
+          Lägg till veckovisa tider ovan — bokningsmotorn erbjuder bara tider inom dessa intervall.
+        </div>
       ) : (
         <ul className={styles.list}>
           {rows.map((r) => (

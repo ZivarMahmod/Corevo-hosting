@@ -15,6 +15,20 @@ const GENERIC = 'Något gick fel. Försök igen.'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DEFAULT_TZ = 'Europe/Stockholm'
 
+// Theme template (ADR 01 §3, nivå 2): which nav + hero variant a NEW salon ships
+// with. Kept in sync with components/brand/variants.ts (NAV_VARIANTS / HERO_VARIANTS)
+// so each onboarded salon gets a DISTINCT storefront, never a copy.
+const NAV_VARIANTS = ['A', 'B'] as const
+const HERO_VARIANTS = ['1', '2'] as const
+function pickNavVariant(raw: FormDataEntryValue | null): 'A' | 'B' {
+  const v = String(raw ?? '').trim().toUpperCase()
+  return (NAV_VARIANTS as readonly string[]).includes(v) ? (v as 'A' | 'B') : 'A'
+}
+function pickHeroVariant(raw: FormDataEntryValue | null): '1' | '2' {
+  const v = String(raw ?? '').trim()
+  return (HERO_VARIANTS as readonly string[]).includes(v) ? (v as '1' | '2') : '1'
+}
+
 // ── Step 1: create tenant (transaktion via cascade-rollback) ────────────────────
 /**
  * Create a tenant + default settings + primary location + salon_admin role, then
@@ -35,11 +49,28 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   const perBookingFee = kronorToCents(String(fd.get('per_booking_fee') ?? '')) ?? 0
   const flatMonthlyFee = kronorToCents(String(fd.get('flat_monthly_fee') ?? '')) ?? 0
 
+  // Theme template (nivå 2) + initial branding (nivå 1) so the new salon launches
+  // with a DISTINCT look. All optional: nav/hero fall back to A/1; colours that are
+  // absent or invalid are skipped → branding stays {} (legacy default), keeping
+  // onboarding step 2 on "att göra" until the operator actually brands the salon.
+  const navVariant = pickNavVariant(fd.get('nav_variant'))
+  const heroVariant = pickHeroVariant(fd.get('hero_variant'))
+  const colorPrimary = hexOrSkip(fd.get('color_primary'))
+  const colorBg = hexOrSkip(fd.get('color_bg'))
+  const colorFg = hexOrSkip(fd.get('color_fg'))
+
   if (!name) return { error: 'Ange ett salongsnamn.' }
   if (!slugCheck.ok) return { error: slugCheck.reason }
   if (!isBillingModel(billingModel)) return { error: 'Ogiltig prismodell.' }
   if (adminEmail && !EMAIL_RE.test(adminEmail)) return { error: 'Ogiltig e-postadress för salongsadmin.' }
   const slug = slugCheck.slug
+
+  // Only persist colours the operator actually picked (valid hex). A blank/invalid
+  // field is skipped → smakfull Corevo-neutral default on the storefront.
+  const initialBranding: Branding = {}
+  if (colorPrimary) initialBranding.color_primary = colorPrimary
+  if (colorBg) initialBranding.color_bg = colorBg
+  if (colorFg) initialBranding.color_fg = colorFg
 
   // 1) tenant
   const { data: tenant, error: tErr } = await supabase
@@ -56,12 +87,14 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     await supabase.from('tenants').delete().eq('id', tenantId) // cascades to children
   }
 
-  // 2) tenant_settings (defaults + FLÖDE 2 billing)
+  // 2) tenant_settings (defaults + theme template + initial branding + FLÖDE 2 billing).
+  //    layout.{nav,hero}_variant is read by the storefront (pickNav/pickHero) so the
+  //    new salon ships a distinct template, not a clone of the last one.
   const { error: sErr } = await supabase.from('tenant_settings').insert({
     tenant_id: tenantId,
     payment_mode: 'on_site',
-    branding: {},
-    settings: {},
+    branding: initialBranding,
+    settings: { layout: { nav_variant: navVariant, hero_variant: heroVariant } },
     billing_model: billingModel,
     setup_fee_cents: setupFee,
     per_booking_fee_cents: perBookingFee,
@@ -153,6 +186,11 @@ function hexOrNull(raw: FormDataEntryValue | null): string | null | undefined {
   const v = String(raw ?? '').trim()
   if (v === '') return null
   return HEX_RE.test(v) ? v : undefined
+}
+/** Create-time colour: return a valid hex, else null (skip — keep neutral default). */
+function hexOrSkip(raw: FormDataEntryValue | null): string | null {
+  const v = String(raw ?? '').trim()
+  return HEX_RE.test(v) ? v : null
 }
 type Branding = {
   color_primary?: string | null

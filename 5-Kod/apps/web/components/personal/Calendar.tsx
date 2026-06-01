@@ -20,7 +20,10 @@ export function Calendar({ groups }: { groups: CalendarGroup[] }) {
         <div key={g.dateStr} className={styles.dayGroup}>
           <h3 className={styles.dayHeading}>{fmtDateHeading(g.dateStr)}</h3>
           {g.bookings.length === 0 ? (
-            <p className={styles.muted}>Inga bokningar.</p>
+            <div className={styles.empty}>
+              <p className={styles.emptyTitle}>Inga bokningar</p>
+              <p className={styles.emptyHint}>Den här dagen är fri – inga inbokade kunder.</p>
+            </div>
           ) : (
             <ul className={styles.list}>
               {g.bookings.map((b) => (

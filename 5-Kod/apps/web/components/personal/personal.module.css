@@ -1,79 +1,125 @@
-/* Staff-portal-scoped styles (G06). CSS module → hashed class names, no leakage. */
+/* Staff-portal-scoped styles (G06). CSS module → hashed class names, no leakage.
+   Uses the frozen Corevo design tokens (--color-primary forest, --color-accent gold,
+   --radius-*, --shadow-*, state colors). Components reference variables only. */
 
+/* ── Sub-nav (Idag / Arbetstider / Frånvaro) ─────────────────────────────── */
 .nav {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.75rem;
 }
 .navLink {
   text-decoration: none;
   color: inherit;
-  padding: 0.4rem 0.85rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 14%, transparent);
   font-size: 0.9rem;
+  font-weight: 500;
+  transition:
+    color var(--dur-fast, 0.15s) var(--ease-out, ease),
+    border-color var(--dur-fast, 0.15s) var(--ease-out, ease),
+    background var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
-.navLinkActive {
-  background: color-mix(in srgb, currentColor 12%, transparent);
+.navLink:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.navLinkActive,
+.navLinkActive:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
   font-weight: 600;
 }
 
+/* ── Date navigation + view toggle ───────────────────────────────────────── */
 .dateNav {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin: 0.75rem 0 1rem;
+  margin: 0.75rem 0 1.25rem;
 }
 .dateNav a {
   text-decoration: none;
   color: inherit;
-  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
-  border-radius: 8px;
-  padding: 0.35rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 16%, transparent);
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
+  transition:
+    border-color var(--dur-fast, 0.15s) var(--ease-out, ease),
+    color var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.dateNav a:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 .dateNavSpacer {
   flex: 1;
 }
-.viewToggle a {
-  font-size: 0.85rem;
+.viewToggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
 }
-.viewToggleActive {
-  background: color-mix(in srgb, currentColor 12%, transparent);
+.viewToggle a {
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.85rem;
+}
+.viewToggle a:hover {
+  border-color: transparent;
+  color: var(--color-primary);
+}
+.viewToggleActive,
+.viewToggleActive:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
   font-weight: 600;
+  box-shadow: var(--shadow-soft);
 }
 
+/* ── Today overview stats ────────────────────────────────────────────────── */
 .stats {
-  display: flex;
+  display: grid;
   gap: 1rem;
-  flex-wrap: wrap;
-  margin: 1rem 0 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  margin: 1.25rem 0 2rem;
 }
 .stat {
-  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  border-radius: 10px;
-  padding: 0.85rem 1.1rem;
-  min-width: 9rem;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border-radius: var(--radius-lg, 0.625rem);
+  padding: 1.1rem 1.25rem;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-soft);
 }
 .statValue {
-  font-size: 1.5rem;
+  font-family: var(--font-display);
+  font-size: 1.9rem;
   font-weight: 700;
   line-height: 1.1;
+  color: var(--color-primary);
 }
 .statLabel {
-  font-size: 0.8rem;
-  opacity: 0.7;
+  font-size: 0.82rem;
+  opacity: 0.72;
+  margin-top: 0.2rem;
 }
 
+/* ── Day groups + booking list ───────────────────────────────────────────── */
 .dayGroup {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 .dayHeading {
-  font-size: 1rem;
-  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  margin: 0 0 0.6rem;
   text-transform: capitalize;
+  color: var(--color-primary);
 }
 
 .list {
@@ -82,16 +128,17 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 .row {
-  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  background: color-mix(in srgb, currentColor 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border-radius: var(--radius-lg, 0.625rem);
+  padding: 0.85rem 1.1rem;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 .rowHead {
   display: flex;
@@ -102,32 +149,46 @@
 .rowMain {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
 }
 .rowTime {
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--color-primary);
 }
 .rowSub {
   font-size: 0.85rem;
-  opacity: 0.75;
+  opacity: 0.78;
 }
+
+/* ── Status badges ───────────────────────────────────────────────────────── */
 .badge {
   display: inline-block;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
+  padding: 0.18rem 0.6rem;
+  border-radius: var(--radius-pill, 999px);
   font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
-  background: color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--color-fg) 10%, transparent);
+}
+.badgePending {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  color: color-mix(in srgb, var(--color-fg) 80%, var(--color-accent));
+}
+.badgeConfirmed {
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  color: var(--color-primary);
 }
 .badgeCompleted {
-  background: color-mix(in srgb, #16a34a 22%, transparent);
+  background: color-mix(in srgb, var(--color-success, #36a165) 22%, transparent);
+  color: color-mix(in srgb, var(--color-success, #36a165) 85%, var(--color-fg));
 }
 .badgeNo_show,
 .badgeCancelled {
-  background: color-mix(in srgb, #dc2626 18%, transparent);
+  background: color-mix(in srgb, var(--color-destructive, #d62f2f) 16%, transparent);
+  color: color-mix(in srgb, var(--color-destructive, #d62f2f) 80%, var(--color-fg));
 }
 
+/* ── Booking status actions + generic delete ─────────────────────────────── */
 .actions {
   display: flex;
   gap: 0.5rem;
@@ -135,53 +196,155 @@
   align-items: center;
 }
 .btn {
-  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 20%, transparent);
   background: transparent;
   color: inherit;
-  border-radius: 8px;
-  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.45rem 0.85rem;
   cursor: pointer;
   font: inherit;
   font-size: 0.85rem;
+  font-weight: 500;
+  transition:
+    border-color var(--dur-fast, 0.15s) var(--ease-out, ease),
+    color var(--dur-fast, 0.15s) var(--ease-out, ease),
+    background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.btnDone:hover:not(:disabled) {
+  border-color: var(--color-success, #36a165);
+  color: var(--color-success, #36a165);
 }
 .btn:disabled {
   opacity: 0.5;
-  cursor: default;
+  cursor: progress;
 }
 .btnDanger {
-  border-color: color-mix(in srgb, #dc2626 45%, transparent);
+  border-color: color-mix(in srgb, var(--color-destructive, #d62f2f) 45%, transparent);
+}
+.btnDanger:hover:not(:disabled) {
+  border-color: var(--color-destructive, #d62f2f);
+  color: var(--color-destructive, #d62f2f);
 }
 
+/* ── Add forms (working hours / time off) ────────────────────────────────── */
 .form {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.85rem;
   align-items: flex-end;
   margin: 1rem 0 1.5rem;
-  padding: 1rem;
-  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  border-radius: 10px;
+  padding: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border-radius: var(--radius-lg, 0.625rem);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-soft);
 }
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.85rem;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 .field input,
 .field select {
   font: inherit;
-  padding: 0.4rem 0.5rem;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-  background: transparent;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-md, 0.5rem);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent);
+  background: var(--color-bg);
   color: inherit;
+  transition: outline-color var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* ── Helper text + inline feedback ───────────────────────────────────────── */
 .muted {
-  opacity: 0.7;
+  opacity: 0.72;
   font-size: 0.9rem;
 }
 .feedback {
   font-size: 0.85rem;
-  margin: 0.25rem 0 0;
+  margin: 0.35rem 0 0;
+}
+.feedbackOk {
+  color: var(--color-success, #36a165);
+  background: color-mix(in srgb, var(--color-success, #36a165) 8%, transparent);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md, 0.5rem);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.empty {
+  border: 1px dashed color-mix(in srgb, var(--color-fg) 22%, transparent);
+  border-radius: var(--radius-lg, 0.625rem);
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+.emptyTitle {
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+  color: var(--color-primary);
+}
+.emptyHint {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.72;
+}
+
+/* ── Loading skeletons ───────────────────────────────────────────────────── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  border-radius: var(--radius-md, 0.5rem);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-bg) 60%, transparent),
+    transparent
+  );
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
+.skelStats {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  margin: 1.25rem 0 2rem;
+}
+.skelStat {
+  height: 5.5rem;
+}
+.skelRow {
+  height: 3.75rem;
+  margin-bottom: 0.6rem;
+}
+.skelHeading {
+  height: 1.4rem;
+  width: 12rem;
+  margin: 1.5rem 0 0.75rem;
 }

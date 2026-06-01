@@ -36,13 +36,18 @@ export function TimeOffManager({ rows, timeZone }: { rows: TimeOffRow[]; timeZon
         </p>
       ) : null}
       {state.success ? (
-        <p className={styles.feedback} role="status">
+        <p className={`${styles.feedback} ${styles.feedbackOk}`} role="status">
           {state.success}
         </p>
       ) : null}
 
       {rows.length === 0 ? (
-        <p className={styles.muted}>Ingen frånvaro registrerad.</p>
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>Ingen frånvaro registrerad</p>
+          <p className={styles.emptyHint}>
+            Registrera semester eller ledighet ovan så blockeras tiderna automatiskt i boka-flödet.
+          </p>
+        </div>
       ) : (
         <ul className={styles.list}>
           {rows.map((r) => (

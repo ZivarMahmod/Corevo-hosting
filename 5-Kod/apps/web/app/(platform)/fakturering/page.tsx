@@ -86,7 +86,8 @@ export default async function FaktureringPage({
           {rows.length === 0 ? (
             <tr>
               <td colSpan={5} className={styles.muted}>
-                Inga salonger.
+                Inga salonger att fakturera för {label}.{' '}
+                <Link href="/salonger/ny">Skapa en salong →</Link>
               </td>
             </tr>
           ) : null}

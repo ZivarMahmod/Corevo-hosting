@@ -12,8 +12,14 @@ export function BookingStatusActions({ bookingId }: { bookingId: string }) {
     <div>
       <form action={formAction} className={styles.actions}>
         <input type="hidden" name="bookingId" value={bookingId} />
-        <button type="submit" name="status" value="completed" className={styles.btn} disabled={pending}>
-          Genomförd
+        <button
+          type="submit"
+          name="status"
+          value="completed"
+          className={`${styles.btn} ${styles.btnDone}`}
+          disabled={pending}
+        >
+          {pending ? 'Sparar…' : 'Genomförd'}
         </button>
         <button
           type="submit"
@@ -28,6 +34,11 @@ export function BookingStatusActions({ bookingId }: { bookingId: string }) {
       {state.error ? (
         <p className={`${styles.feedback} auth-error`} role="alert">
           {state.error}
+        </p>
+      ) : null}
+      {state.success ? (
+        <p className={`${styles.feedback} ${styles.feedbackOk}`} role="status">
+          {state.success}
         </p>
       ) : null}
     </div>

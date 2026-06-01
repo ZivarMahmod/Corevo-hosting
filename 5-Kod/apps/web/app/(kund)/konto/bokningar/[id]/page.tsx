@@ -29,7 +29,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
 
   return (
     <section className="portal-section">
-      <Link href="/konto" className="prose">
+      <Link href="/konto" className={styles.back}>
         ← Mina tider
       </Link>
       <h1>{booking.serviceName ?? 'Bokning'}</h1>
@@ -59,12 +59,12 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           <CancelButton bookingId={booking.id} />
         </div>
       ) : isActive ? (
-        <p className="prose">
+        <p className={styles.notice}>
           Den här tiden kan inte längre ändras online (avbokning måste ske minst {cutoff} timmar i
-          förväg). Kontakta salongen.
+          förväg). Kontakta salongen för att ändra eller avboka.
         </p>
       ) : (
-        <p className="prose">Den här bokningen är avslutad.</p>
+        <p className={styles.notice}>Den här bokningen är avslutad.</p>
       )}
     </section>
   )

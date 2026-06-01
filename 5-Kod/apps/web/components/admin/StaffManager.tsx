@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import Link from 'next/link'
 import type { ServiceRow, StaffWithServices } from '@/lib/admin/data'
 import {
   createStaff,
@@ -35,7 +36,10 @@ export function StaffManager({
       </form>
 
       {staff.length === 0 ? (
-        <p className={styles.muted}>Ingen personal ännu.</p>
+        <div className={styles.empty}>
+          <strong>Ingen personal ännu.</strong>
+          Lägg till din första medarbetare ovan och koppla sedan vilka tjänster hen utför.
+        </div>
       ) : (
         <ul className={styles.list}>
           {staff.map((s) => (
@@ -84,7 +88,12 @@ function StaffItem({ member, services }: { member: StaffWithServices; services: 
           Utför tjänster:
         </p>
         {services.length === 0 ? (
-          <p className={styles.muted}>Skapa tjänster först.</p>
+          <p className={styles.muted}>
+            Inga tjänster att koppla ännu —{' '}
+            <Link href="/admin/tjanster" className={styles.navLink} style={{ fontSize: 'inherit' }}>
+              skapa tjänster först
+            </Link>
+          </p>
         ) : (
           <div className={styles.checks}>
             {services.map((svc) => (

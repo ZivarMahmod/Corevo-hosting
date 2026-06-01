@@ -1,0 +1,451 @@
+/* Storefront (M2) brand-scoped polish + the 3rd theme template (nav C / hero 3).
+   CSS module → class names are hashed, so nothing here leaks into the global
+   sheet or another module. We LAYER these next to the FROZEN global base
+   classes (.hero, .service-card, .nav, .section, .footer …) — we never replace
+   them, because .hero/.service-card are nivå-3 tenant-override hooks.
+
+   Every rule references the design-token CSS variables (Corevo family):
+   --color-primary/-bg/-fg are tenant-overridable; --color-accent (gold),
+   --font-display, radii, shadows and motion are the fixed Corevo signature. */
+
+/* ── shared storefront polish ─────────────────────────────────────────────── */
+
+/* Soft tonal lift for elevated section blocks (populära tjänster, CTA). */
+.sectionInner {
+  position: relative;
+}
+
+/* "Populära tjänster" — let the heading carry the gold eyebrow rhythm. */
+.sectionEyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin: 0 0 0.6rem;
+}
+
+.sectionLead {
+  max-width: 40rem;
+  margin: 0 0 2rem;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  opacity: 0.82;
+}
+
+/* Service cards get a soft card shadow + hover lift on top of the frozen
+   .service-card border. Applied via an extra module class on the same <li>. */
+.cardLift {
+  background: var(--color-card, #fff);
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+.cardLift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+/* "Se alla tjänster →" as a quiet inline link with a gold underline on hover. */
+.moreLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  transition: border-color var(--dur-fast) var(--ease-out), gap var(--dur-fast) var(--ease-out);
+}
+.moreLink:hover {
+  border-color: var(--color-accent);
+  gap: 0.65rem;
+}
+
+/* CTA band — gold-tinted ribbon that reads as the family signature. */
+.ctaBand {
+  background:
+    radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--color-accent) 14%, transparent), transparent 60%),
+    color-mix(in srgb, var(--color-primary) 7%, var(--color-bg));
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+}
+.ctaLead {
+  font-size: 1.1rem;
+  opacity: 0.85;
+  margin: 0 auto 2rem;
+  max-width: 34rem;
+}
+
+/* ── editorial info blocks (/om, /kontakt) ────────────────────────────────── */
+
+/* Two-column "facts" grid used for opening-hours / contact placeholders so the
+   page never looks empty even before the salon fills in its profile. */
+.infoGrid {
+  list-style: none;
+  margin: 2rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.infoCard {
+  border: 1px solid color-mix(in srgb, var(--color-fg) 14%, transparent);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem 1.35rem;
+  background: var(--color-card, #fff);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.infoLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.6;
+}
+.infoValue {
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.infoHint {
+  font-size: 0.85rem;
+  opacity: 0.65;
+  line-height: 1.5;
+}
+
+/* Feature list of trust/value points on /om. */
+.points {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.point {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+.pointMark {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  color: var(--color-accent-fg, var(--color-fg));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+/* ── loading skeletons ────────────────────────────────────────────────────── */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skeleton {
+  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  min-height: 120px;
+}
+.skeletonBar {
+  height: 0.85rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-fg) 12%, transparent);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-fg) 8%, transparent) 0%,
+    color-mix(in srgb, var(--color-fg) 16%, transparent) 50%,
+    color-mix(in srgb, var(--color-fg) 8%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s var(--ease-out) infinite;
+  margin-bottom: 0.7rem;
+}
+.skeletonBar:last-child { margin-bottom: 0; }
+.skeletonShort { width: 55%; }
+.skeletonTiny { width: 35%; }
+.heroSkeleton {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  text-align: center;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeletonBar { animation: none; }
+}
+
+/* ── error boundary ───────────────────────────────────────────────────────── */
+.errorMain {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 4.5rem 1.5rem;
+  text-align: center;
+}
+.errorTitle {
+  margin: 0 0 0.75rem;
+}
+.errorActions {
+  margin-top: 1.75rem;
+  display: flex;
+  gap: 0.85rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.retryBtn { cursor: pointer; font: inherit; }
+
+/* ── footer ───────────────────────────────────────────────────────────────── */
+/* The frozen global .footer sets text-align:center + opacity:.7. We don't try to
+   override that parent opacity (cascade order vs globals.css isn't guaranteed,
+   and opacity multiplies down regardless) — the gentle muted footer is fine. We
+   only add LAYOUT via uniquely-hashed child classes, which always apply. Keep it
+   white-label (tenant name only, no Corevo branding). */
+.footerInner {
+  text-align: left;
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.footerBrand {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.footerName {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.footerLinks {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+}
+.footerLinks a {
+  opacity: 0.75;
+  transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.footerLinks a:hover {
+  opacity: 1;
+  color: var(--color-primary);
+}
+.footerLegal {
+  max-width: 1080px;
+  margin: 1.5rem auto 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+@media (max-width: 560px) {
+  .footerInner { flex-direction: column; align-items: flex-start; }
+}
+
+/* ===========================================================================
+   THEME TEMPLATE 3 — nav variant C + hero variant 3.
+   Must look GENUINELY different from A (centered column) / B (split + rule)
+   and from hero 1 (centered) / hero 2 (left + eyebrow). With only name +
+   branding + services (no imagery), differentiation is structural & typographic.
+   =========================================================================== */
+
+/* ── Nav C — sticky transparent bar, pill-grouped links, gold "Boka" ──────── */
+.navC {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  -webkit-backdrop-filter: saturate(1.1) blur(10px);
+  backdrop-filter: saturate(1.1) blur(10px);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+}
+.navCInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+.navCLinks {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+}
+/* Re-style the shared .nav-links anchors when grouped inside the pill. */
+.navCLinks :global(.nav-links) {
+  gap: 0.15rem;
+}
+.navCLinks :global(.nav-links a) {
+  padding: 0.4rem 0.95rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.navCLinks :global(.nav-links a:hover) {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+.navCActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.navCAccount {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+.navCAccount:hover { opacity: 0.75; }
+
+@media (max-width: 720px) {
+  .navCInner { flex-wrap: wrap; }
+  .navCLinks { order: 3; width: 100%; justify-content: center; }
+}
+
+/* ── Hero 3 — split: editorial headline left, gradient brand panel right ───── */
+.hero3 {
+  padding: 0;
+  overflow: clip;
+}
+.hero3Grid {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 0;
+  align-items: stretch;
+  min-height: clamp(26rem, 60vh, 34rem);
+}
+.hero3Copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 4rem 2.5rem 4rem 1.5rem;
+}
+.hero3Eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin: 0;
+}
+.hero3Title {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--color-fg);
+}
+.hero3Sub {
+  font-size: 1.18rem;
+  line-height: 1.6;
+  max-width: 34rem;
+  margin: 0;
+  opacity: 0.82;
+}
+.hero3Cta {
+  margin-top: 0.75rem;
+}
+/* The decorative brand panel — pure tokens, no imagery. Reads as a premium
+   colour field built from the tenant's own primary + the gold signature. */
+.hero3Panel {
+  position: relative;
+  border-radius: 0;
+  background:
+    radial-gradient(120% 120% at 80% 15%, color-mix(in srgb, var(--color-accent) 38%, transparent), transparent 55%),
+    linear-gradient(150deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 55%, #000));
+  overflow: hidden;
+}
+.hero3Panel::after {
+  /* Oversized monogram of the salon initial as a quiet watermark. */
+  content: attr(data-monogram);
+  position: absolute;
+  right: -0.1em;
+  bottom: -0.18em;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22rem;
+  line-height: 1;
+  color: color-mix(in srgb, #fff 14%, transparent);
+  pointer-events: none;
+  user-select: none;
+}
+.hero3Mark {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: color-mix(in srgb, #fff 90%, transparent);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+}
+.hero3Dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: var(--glow-gold);
+}
+
+@media (max-width: 820px) {
+  .hero3Grid {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .hero3Copy {
+    padding: 3.25rem 1.5rem 2.5rem;
+    text-align: center;
+    align-items: center;
+  }
+  .hero3Panel {
+    min-height: 12rem;
+    order: -1;
+  }
+  .hero3Panel::after { font-size: 12rem; }
+}

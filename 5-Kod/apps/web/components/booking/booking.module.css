@@ -1,0 +1,208 @@
+/* Booking-wizard-scoped styles (Module B). CSS module → class names are hashed,
+   so nothing here leaks into other portals or collides with the global sheet.
+   We REUSE the global .wizard- and .confirm- classes for layout; this file only
+   adds genuinely new patterns (skeleton shimmer, focus-ring, empty state) that
+   globals.css does not provide. Gold selected-states are applied inline via
+   var(--color-accent) on the elements themselves, because the frozen global
+   selectors (.wizard-day.selected etc.) out-specify a single hashed class. */
+
+/* ---- Loading skeleton (shimmer) ---- */
+.skeletonList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.skeletonCard {
+  height: 4.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--color-fg) 5%, transparent) 30%,
+    color-mix(in srgb, var(--color-fg) 11%, transparent) 50%,
+    color-mix(in srgb, var(--color-fg) 5%, transparent) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.3s var(--ease-out, ease) infinite;
+}
+.skeletonTimes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.skeletonChip {
+  height: 2.6rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--color-fg) 5%, transparent) 30%,
+    color-mix(in srgb, var(--color-fg) 11%, transparent) 50%,
+    color-mix(in srgb, var(--color-fg) 5%, transparent) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.3s var(--ease-out, ease) infinite;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeletonCard,
+  .skeletonChip {
+    animation: none;
+  }
+}
+
+/* ---- Loading row inside the time area (small inline spinner) ---- */
+.loadingRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+.spinner {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--color-fg) 18%, transparent);
+  border-top-color: var(--color-accent, var(--color-primary));
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.6s;
+  }
+}
+
+/* ---- Friendly empty state ---- */
+.empty {
+  text-align: center;
+  padding: 2.5rem 1.25rem;
+  border: 1px dashed color-mix(in srgb, var(--color-fg) 20%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+}
+.emptyIcon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.emptyTitle {
+  margin: 0.6rem 0 0.25rem;
+  font-weight: 700;
+}
+.emptyText {
+  margin: 0;
+  opacity: 0.7;
+  font-size: 0.92rem;
+}
+
+/* Empty slots block — same friendly treatment but with a retry CTA */
+.slotsEmpty {
+  margin-top: 1.1rem;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  border: 1px dashed color-mix(in srgb, var(--color-fg) 20%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+}
+
+/* ---- Inline retry button (ghost, forest) ---- */
+.retry {
+  margin-top: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  color: var(--color-primary);
+  border-radius: var(--radius-pill, 999px);
+  padding: 0.5rem 1.1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.retry:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+/* ---- Selected affordance for service/staff cards (check chip) ---- */
+.pickedChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-accent, var(--color-primary));
+  color: var(--color-fg);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* ---- Price/duration pill in summary ---- */
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+}
+.summaryPrice {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+/* keep focus visible & gold across new interactive bits */
+.retry:focus-visible,
+.pickedChip:focus-visible {
+  outline: 2px solid var(--color-accent, var(--color-primary));
+  outline-offset: 2px;
+}
+
+/* ---- Confirmation: actions row + "lägg till i kalender" (secondary) ---- */
+.confirmActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+.calendarBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  color: var(--color-primary);
+  border-radius: var(--radius-pill, 999px);
+  padding: 0.7rem 1.4rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast, 0.15s) var(--ease-out, ease),
+    transform var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.calendarBtn:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  transform: translateY(-1px);
+}
+.calendarBtn:focus-visible {
+  outline: 2px solid var(--color-accent, var(--color-primary));
+  outline-offset: 2px;
+}

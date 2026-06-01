@@ -164,19 +164,20 @@ nästa steg) · fel (ink-röd ruta, retry) · lyckat. Inga döda knappar; varje 
 
 ---
 
-## 7. Integration (FAS 1 steg 0 — SOLO, innan modulagenter)
-1. Importera `@corevo/ui/tokens.css` (denna leverans, se `packages/ui/tokens.css`)
-   överst i `globals.css` (efter `@import 'tailwindcss'`). Den definierar `:root`
-   produkt-defaults = Corevo + scopen ovan.
-2. Lägg Playfair Display + Inter via `next/font` i `app/layout.tsx`; sätt
-   `--font-display` + `--font-body`.
-3. Uppdatera `globals.css` `:root` att referera de nya tokens (ersätt den lösa
-   `--color-primary: #b5651d`-defaulten med Corevo forest/kräm/ink).
-4. Bekräfta tenant-override fortfarande vinner på storefront (demo behåller sin brand).
-5. Bygg från ASCII-väg (`ö`-buggen) vid deploy. Verifiera live före FAS 1-grönt.
+## 7. Integration — ✅ KLAR (Steg 0, deployad + live-verifierad)
+**Allt nedan är GJORT. Modulagenter: RÖR INTE dessa filer (frysta).**
+- ✅ `@corevo/ui/tokens.css` importeras först i `app/layout.tsx` (före `globals.css`).
+- ✅ `globals.css` inline-`:root` borttaget → tokens.css är enda produkt-defaults (Corevo).
+- ✅ Playfair Display + Inter via `next/font` i `app/layout.tsx` → `--font-display`/`--font-body`.
+- ✅ Serif-rubriker (`h1,h2,h3`), pill `.btn-primary` + guld `.btn-accent` i `globals.css`.
+- ✅ Tenant-override bekräftad live: demo (forest) vs studio (koppar) skiljer sig.
+- ✅ Deployad live (`bokningsplatformen`) + verifierad (forest/Playfair/pill, 0 console-fel).
 
-> Tills steg 1–3 körs ändras INTE live-utseendet (tokens.css är inert tills importerad).
-> Det är avsiktligt: Nörden granskar designsystemet före look-skiftet.
+### ⛔ FRYSTA FILER (ingen modulagent rör dessa — solo-only)
+`app/layout.tsx` · `app/globals.css` · `packages/**` (inkl. `@corevo/ui/tokens.css`) ·
+`middleware.ts` · `lib/tenant*.ts` · `lib/auth/**` · `lib/supabase/**` · `lib/booking/**`
+(testad kärna, 17 tester). Agenter ANVÄNDER klasserna/tokens — definierar dem inte.
+Ny modul-specifik CSS → agentens egen `components/<modul>/<modul>.module.css`.
 
 ---
 

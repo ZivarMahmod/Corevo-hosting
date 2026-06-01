@@ -17,8 +17,9 @@ export default function NewTenantPage() {
       </div>
       <p className="prose">
         Steg 1 i onboarding-trappan. Skapar salong + unik subdomän + standard­inställningar +
-        salon_admin-roll, och bjuder in salongsadmin. Salongen blir live på{' '}
-        <code className={styles.code}>&lt;subdomän&gt;.corevo.se</code> direkt.
+        salon_admin-roll, och bjuder in salongsadmin. Välj <strong>temamall</strong> och{' '}
+        <strong>färgpalett</strong> så får salongen en egen look — inte en kopia. Salongen blir
+        live på <code className={styles.code}>&lt;subdomän&gt;.corevo.se</code> direkt.
       </p>
       <CreateTenantForm />
     </section>

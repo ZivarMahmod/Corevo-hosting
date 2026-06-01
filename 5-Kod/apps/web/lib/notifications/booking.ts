@@ -6,6 +6,7 @@ import {
   cancellationEmail,
   reminderEmail,
   receiptEmail,
+  rebookEmail,
   type BookingEmailData,
 } from './templates'
 
@@ -38,6 +39,14 @@ export async function sendBookingCancellation(to: string, d: BookingEmailData): 
 
 export async function sendBookingReminder(to: string, d: BookingEmailData): Promise<void> {
   await safeSend('booking.reminder', to, reminderEmail(d))
+}
+
+// Rebook / "ny tid"-bekräftelse (M9, additive). Today rebookBooking() reuses
+// sendBookingConfirmation for the new time; the orchestrator should switch that
+// call site to this dedicated sender (see crossModuleGaps). Same best-effort
+// contract as the others — never throws into the caller.
+export async function sendBookingRebook(to: string, d: BookingEmailData): Promise<void> {
+  await safeSend('booking.rebook', to, rebookEmail(d))
 }
 
 export async function sendPaymentReceipt(

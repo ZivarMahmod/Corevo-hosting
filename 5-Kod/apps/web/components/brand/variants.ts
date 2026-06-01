@@ -3,10 +3,11 @@
 // new component + new key here — never scattered if-statements.
 import { NavA } from './NavA'
 import { NavB } from './NavB'
-import { Hero1, Hero2 } from './Hero'
+import { NavC } from './NavC'
+import { Hero1, Hero2, Hero3 } from './Hero'
 
-export const NAV_VARIANTS = { A: NavA, B: NavB } as const
-export const HERO_VARIANTS = { '1': Hero1, '2': Hero2 } as const
+export const NAV_VARIANTS = { A: NavA, B: NavB, C: NavC } as const
+export const HERO_VARIANTS = { '1': Hero1, '2': Hero2, '3': Hero3 } as const
 
 export function pickNav(variant?: string) {
   return NAV_VARIANTS[(variant ?? 'A') as keyof typeof NAV_VARIANTS] ?? NAV_VARIANTS.A

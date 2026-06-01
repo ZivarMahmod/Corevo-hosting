@@ -1,0 +1,99 @@
+import 'server-only'
+import { sendEmail } from './email'
+import { shell } from './templates'
+import { logger } from '@/lib/observability'
+
+// Google-review NUDGE (M9). Designed to fire AFTER a visit (booking status =
+// 'completed'): a short, warm Swedish email asking the happy customer to leave a
+// Google review. EXPORTED but intentionally NOT wired into any action/route — the
+// orchestrator picks the call site (e.g. a "mark completed" action or a cron sweep
+// over completed bookings). See docs/notifications-architecture.md for timing.
+//
+// Best-effort + graceful no-op, mirroring the rest of lib/notifications:
+//   · no reviewUrl  → skip (owner hasn't set settings.google_review_url)
+//   · no recipient  → skip
+//   · review nudge disabled (settings.notifications.review=false) → caller skips
+//     it via getEnabledNotifications (consulted at the call site, not here)
+// It never throws into the caller; a mail hiccup must never break the visit flow.
+
+// Inline-only brand mirror (email clients ignore CSS vars / web fonts) — kept in
+// sync with templates.ts; the shared shell() carries the rest of the chrome.
+const GOLD = '#F5A623'
+const INK = '#0E1411'
+const SANS = `-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`
+
+export type GoogleReviewData = {
+  tenantName: string
+  /** Owner's Google review link (from settings.google_review_url). No-op if empty. */
+  reviewUrl: string | null | undefined
+  /** Optional first name for a warmer greeting ("Hej Anna,"). */
+  customerName?: string | null
+}
+
+export function googleReviewEmail(d: {
+  tenantName: string
+  reviewUrl: string
+  customerName?: string | null
+}): { subject: string; html: string } {
+  const hej = d.customerName ? `Hej ${escapeText(d.customerName)},` : 'Hej,'
+  const button = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px">
+    <tr><td style="border-radius:9999px;background:${GOLD}">
+      <a href="${escapeAttr(d.reviewUrl)}" style="display:inline-block;padding:13px 28px;font-family:${SANS};font-size:15px;font-weight:700;color:${INK};text-decoration:none;border-radius:9999px">Lämna ett omdöme</a>
+    </td></tr>
+  </table>`
+  return {
+    subject: `Hur var ditt besök hos ${d.tenantName}?`,
+    html: shell(
+      'Vi hoppas du trivdes',
+      `<p style="margin:0 0 14px;font-family:${SANS};font-size:15px;line-height:1.6;color:${INK}">${hej}</p>
+       <p style="margin:0 0 8px;font-family:${SANS};font-size:15px;line-height:1.6;color:${INK}">Tack för ditt besök! Om du blev nöjd skulle vi bli jätteglada om du tog en stund och lämnade ett omdöme på Google — det hjälper oss enormt och tar bara en minut.</p>
+       ${button}
+       <p style="margin:14px 0 0;font-family:${SANS};font-size:13px;line-height:1.6;color:#677E73">Tack på förhand, och varmt välkommen åter!</p>`,
+      d.tenantName,
+      'Berätta gärna',
+    ),
+  }
+}
+
+/**
+ * Send a Google-review nudge. No-op (returns { ok:false, skipped:true }) when the
+ * tenant has no review URL configured, so it is safe to call unconditionally after
+ * a completed visit. Never throws.
+ */
+export async function sendGoogleReviewNudge(
+  to: string | null | undefined,
+  d: GoogleReviewData,
+): Promise<{ ok: boolean; skipped?: true; error?: string }> {
+  const reviewUrl = d.reviewUrl?.trim()
+  if (!reviewUrl) {
+    logger.info('review.skipped_no_url', { tenant: d.tenantName })
+    return { ok: false, skipped: true }
+  }
+  if (!to) {
+    logger.info('review.skipped_no_recipient', { tenant: d.tenantName })
+    return { ok: false, skipped: true }
+  }
+
+  const mail = googleReviewEmail({
+    tenantName: d.tenantName,
+    reviewUrl,
+    customerName: d.customerName,
+  })
+  const res = await sendEmail({ to, subject: mail.subject, html: mail.html })
+  if (res.ok) {
+    logger.info('review.sent', { tenant: d.tenantName, to })
+    return { ok: true }
+  }
+  if (res.skipped) return { ok: false, skipped: true }
+  logger.warn('review.failed', { tenant: d.tenantName, to, error: res.error })
+  return { ok: false, error: res.error }
+}
+
+// Local escapers (google-review keeps its own small body strings; templates.ts'
+// esc() is module-private, so we don't reach across files).
+function escapeText(s: string): string {
+  return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
+}
+function escapeAttr(s: string): string {
+  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+}

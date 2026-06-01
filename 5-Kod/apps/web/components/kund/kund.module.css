@@ -69,13 +69,22 @@
   flex-direction: column;
   gap: 0.4rem;
   margin: 1rem 0 1.5rem;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: var(--radius-lg, 0.625rem);
+  background: var(--color-bg, #fff);
+  box-shadow: var(--shadow-soft);
+  padding: 1.1rem 1.25rem;
 }
 .detailRow {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.4rem 0;
+  padding: 0.5rem 0;
   border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+.detailRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 .detailLabel {
   opacity: 0.65;
@@ -90,17 +99,55 @@
 }
 
 .danger {
-  border: 1px solid color-mix(in srgb, #dc2626 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--destructive, #d62f2f) 50%, transparent);
   background: transparent;
-  color: inherit;
-  border-radius: 8px;
-  padding: 0.55rem 1rem;
+  color: var(--destructive, #d62f2f);
+  border-radius: var(--radius-pill, 9999px);
+  padding: 0.55rem 1.2rem;
   cursor: pointer;
   font: inherit;
+  font-weight: 600;
+  transition: background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--destructive, #d62f2f) 10%, transparent);
 }
 .danger:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* Outline secondary action (e.g. Avbryt in the rebook picker) */
+.btnSecondary {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  background: transparent;
+  color: var(--color-primary);
+  border-radius: var(--radius-pill, 9999px);
+  padding: 0.55rem 1.2rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  transition: background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.btnSecondary:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+/* Rebook picker section labels */
+.pickerLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.75;
+  margin: 0.75rem 0 0;
+}
+
+/* Expanded rebook picker — take the full row so Avboka wraps cleanly below */
+.rebookOpen {
+  flex: 1 1 100%;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: var(--radius-lg, 0.625rem);
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  padding: 1rem 1.25rem;
 }
 
 .days {
@@ -113,15 +160,24 @@
   border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   background: transparent;
   color: inherit;
-  border-radius: 8px;
+  border-radius: var(--radius-md, 8px);
   padding: 0.4rem 0.6rem;
   cursor: pointer;
   font: inherit;
   font-size: 0.85rem;
+  transition:
+    border-color var(--dur-fast, 0.15s) var(--ease-out, ease),
+    background var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
-.daySelected {
-  border-color: currentColor;
-  font-weight: 600;
+.day:hover {
+  border-color: var(--color-primary);
+}
+.daySelected,
+.daySelected:hover {
+  background: var(--color-accent, #f5a623);
+  border-color: var(--color-accent, #f5a623);
+  color: var(--color-fg, #0e1411);
+  font-weight: 700;
 }
 
 .times {
@@ -134,7 +190,7 @@
   border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   background: transparent;
   color: inherit;
-  border-radius: 8px;
+  border-radius: var(--radius-md, 8px);
   padding: 0.4rem 0.7rem;
   cursor: pointer;
   font: inherit;
@@ -142,10 +198,19 @@
   flex-direction: column;
   align-items: center;
   line-height: 1.2;
+  transition:
+    border-color var(--dur-fast, 0.15s) var(--ease-out, ease),
+    background var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
-.timeSelected {
-  border-color: currentColor;
-  font-weight: 600;
+.time:hover {
+  border-color: var(--color-primary);
+}
+.timeSelected,
+.timeSelected:hover {
+  background: var(--color-accent, #f5a623);
+  border-color: var(--color-accent, #f5a623);
+  color: var(--color-fg, #0e1411);
+  font-weight: 700;
 }
 .timeStaff {
   font-size: 0.7rem;
@@ -155,4 +220,172 @@
 .muted {
   opacity: 0.7;
   font-size: 0.9rem;
+}
+
+/* ── Section heading row (Mina tider: title + Min profil link) ───────────── */
+.headRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.headLink {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.headLink:hover {
+  text-decoration: underline;
+}
+
+.groupTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 1.75rem 0 0.75rem;
+}
+
+/* ── Friendly empty state (tom-vy + nästa steg) ─────────────────────────── */
+.empty {
+  border: 1px dashed color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: var(--radius-lg, 0.625rem);
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.emptyText {
+  margin: 0;
+  opacity: 0.75;
+  max-width: 28rem;
+}
+
+/* ── Small inline form hint (e.g. email read-only) ──────────────────────── */
+.fieldHint {
+  font-size: 0.78rem;
+  opacity: 0.6;
+}
+
+/* ── Success notice (profilen sparad) ───────────────────────────────────── */
+.success {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: 0.9rem;
+  color: var(--success, #36a165);
+  background: color-mix(in srgb, var(--success, #36a165) 12%, transparent);
+}
+
+/* ── Back link (← Mina tider) ───────────────────────────────────────────── */
+.back {
+  display: inline-block;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+  margin-bottom: 0.75rem;
+}
+.back:hover {
+  text-decoration: underline;
+}
+
+/* ── Cutoff / closed notices on the detail page ─────────────────────────── */
+.notice {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md, 0.5rem);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  opacity: 0.85;
+  font-size: 0.92rem;
+}
+
+/* ── GDPR controls (tokenised — was hardcoded #eee / #a33) ──────────────── */
+.gdpr {
+  margin-top: 2.5rem;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  padding-top: 1.75rem;
+}
+.gdprExport {
+  margin: 1rem 0;
+}
+.gdprWarn {
+  font-size: 0.85rem;
+  color: var(--destructive, #d62f2f);
+  opacity: 0.95;
+}
+.dangerSolid {
+  border: 1px solid color-mix(in srgb, var(--destructive, #d62f2f) 55%, transparent);
+  background: color-mix(in srgb, var(--destructive, #d62f2f) 10%, transparent);
+  color: var(--destructive, #d62f2f);
+  border-radius: var(--radius-pill, 9999px);
+  padding: 0.6rem 1.3rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  align-self: flex-start;
+  transition: background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.dangerSolid:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--destructive, #d62f2f) 18%, transparent);
+}
+.dangerSolid:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* ── Skeleton shimmer (loading.tsx route files) ─────────────────────────── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md, 0.5rem);
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, currentColor 10%, transparent),
+    transparent
+  );
+  animation: kundShimmer 1.4s ease-in-out infinite;
+}
+@keyframes kundShimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+.skelLine {
+  height: 0.85rem;
+  margin: 0.5rem 0;
+}
+.skelTitle {
+  height: 1.8rem;
+  width: 12rem;
+  margin-bottom: 1.25rem;
+}
+.skelGroupTitle {
+  height: 1.1rem;
+  width: 7rem;
+  margin: 1.75rem 0 0.9rem;
+}
+.skelRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.skelRow {
+  height: 3.4rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
 }

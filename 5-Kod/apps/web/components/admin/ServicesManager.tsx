@@ -41,7 +41,11 @@ export function ServicesManager({ services }: { services: ServiceRow[] }) {
       </form>
 
       {services.length === 0 ? (
-        <p className={styles.muted}>Inga tjänster ännu.</p>
+        <div className={styles.empty}>
+          <strong>Inga tjänster ännu.</strong>
+          Lägg till din första tjänst i formuläret ovan — namn, varaktighet och pris. Den blir genast
+          bokningsbar på din publika sajt.
+        </div>
       ) : (
         <ul className={styles.list}>
           {services.map((s) => (

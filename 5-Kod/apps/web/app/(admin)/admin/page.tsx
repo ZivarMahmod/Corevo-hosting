@@ -55,7 +55,10 @@ export default async function AdminPage() {
           </Link>
         </div>
         {data.upcomingToday.length === 0 ? (
-          <p className={styles.muted}>Inga bokningar idag.</p>
+          <div className={styles.empty}>
+            <strong>Inga bokningar idag.</strong>
+            Nya bokningar från din publika sajt dyker upp här automatiskt.
+          </div>
         ) : (
           <ul className={styles.list}>
             {data.upcomingToday.map((b) => (

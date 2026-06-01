@@ -21,9 +21,8 @@ export type StripeConnectCardProps = {
 
 function Badge({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <span className={styles.badge} style={{ color: ok ? '#15803d' : '#9a6700' }}>
-      {ok ? '✓ ' : '• '}
-      {label}
+    <span className={`${styles.statePill} ${ok ? styles.statePillOn : styles.statePillOff}`}>
+      {ok ? '✓' : '•'} {label}
     </span>
   )
 }
@@ -56,8 +55,8 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
   const feedback = onboardState.error || refreshState.error || toggleState.error || refreshState.success || toggleState.success
 
   return (
-    <div className={styles.section} style={{ marginTop: '2rem' }}>
-      <h2>Betalningar (Stripe)</h2>
+    <div className={`${styles.section} ${styles.card}`} style={{ marginTop: '2rem' }}>
+      <h2 style={{ marginTop: 0 }}>Betalningar (Stripe)</h2>
       <p className="prose">
         Ta betalt för tjänsten direkt vid bokning. Pengarna går rakt till din salong via Stripe —
         Corevo tar inget på transaktionen. Koppla ett Stripe-konto, slutför onboarding och slå sedan
@@ -65,13 +64,22 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
       </p>
 
       {props.hasAccount ? (
-        <div className={styles.row} style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
-          <Badge ok={props.detailsSubmitted} label="Uppgifter inskickade" />
-          <Badge ok={props.chargesEnabled} label="Kortbetalning aktiv" />
-          <Badge ok={props.payoutsEnabled} label="Utbetalningar aktiva" />
-        </div>
+        <ul className={styles.stripeStatus}>
+          <li>
+            <Badge ok={props.detailsSubmitted} label="Uppgifter inskickade" />
+          </li>
+          <li>
+            <Badge ok={props.chargesEnabled} label="Kortbetalning aktiv" />
+          </li>
+          <li>
+            <Badge ok={props.payoutsEnabled} label="Utbetalningar aktiva" />
+          </li>
+        </ul>
       ) : (
-        <p className={styles.muted}>Inget Stripe-konto kopplat ännu.</p>
+        <div className={styles.empty}>
+          <strong>Inget Stripe-konto kopplat ännu.</strong>
+          Koppla Stripe för att kunna ta betalt online vid bokning.
+        </div>
       )}
 
       <div className={styles.actions} style={{ marginTop: '1rem' }}>
@@ -97,7 +105,7 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
       </div>
 
       {/* Master-toggle: bara aktiverbar när kortbetalning är aktiv. */}
-      <form action={toggleAction} style={{ marginTop: '1rem' }}>
+      <form action={toggleAction} className={styles.actions} style={{ marginTop: '1rem' }}>
         <input type="hidden" name="payments_enabled" value={(!props.paymentsEnabled).toString()} />
         <button
           type="submit"
@@ -107,12 +115,14 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
             !props.chargesEnabled ? 'Slutför Stripe-onboarding först' : undefined
           }
         >
-          {props.paymentsEnabled
-            ? 'Stäng av onlinebetalning vid bokning'
-            : 'Slå på onlinebetalning vid bokning'}
+          {toggling
+            ? 'Uppdaterar…'
+            : props.paymentsEnabled
+              ? 'Stäng av onlinebetalning vid bokning'
+              : 'Slå på onlinebetalning vid bokning'}
         </button>
-        <span className={styles.muted} style={{ marginLeft: '0.75rem' }}>
-          Status: {props.paymentsEnabled ? 'PÅ' : 'AV'}
+        <span className={`${styles.statusTag} ${props.paymentsEnabled ? styles.statusTagOn : styles.statusTagOff}`}>
+          Onlinebetalning: {props.paymentsEnabled ? 'PÅ' : 'AV'}
         </span>
       </form>
 

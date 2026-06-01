@@ -8,10 +8,31 @@ function badgeClass(status: string): string {
   return [styles.badge, styles[key]].filter(Boolean).join(' ')
 }
 
-/** Presentational list of a customer's bookings. Each row links to its detail. */
-export function BookingList({ bookings, empty }: { bookings: KundBooking[]; empty: string }) {
+/**
+ * Presentational list of a customer's bookings. Each row links to its detail.
+ * When `emptyCta` is set the empty state offers a primary "Boka tid" action,
+ * which is the meaningful next step for the upcoming list.
+ */
+export function BookingList({
+  bookings,
+  empty,
+  emptyCta = false,
+}: {
+  bookings: KundBooking[]
+  empty: string
+  emptyCta?: boolean
+}) {
   if (bookings.length === 0) {
-    return <p className="prose">{empty}</p>
+    return (
+      <div className={styles.empty}>
+        <p className={styles.emptyText}>{empty}</p>
+        {emptyCta ? (
+          <Link href="/boka" className="btn-primary">
+            Boka tid
+          </Link>
+        ) : null}
+      </div>
+    )
   }
   return (
     <ul className={styles.list}>

@@ -79,8 +79,8 @@ export default async function SettingsPage({
         justReturned={stripe === 'return'}
       />
 
-      <div className={styles.section} style={{ marginTop: '2rem' }}>
-        <h2>Egen domän</h2>
+      <div className={`${styles.section} ${styles.card}`} style={{ marginTop: '2rem' }}>
+        <h2 style={{ marginTop: 0 }}>Egen domän</h2>
         <p className="prose">
           Din salong nås på{' '}
           <span className={styles.code}>
@@ -102,7 +102,11 @@ export default async function SettingsPage({
             ))}
           </ul>
         ) : (
-          <p className={styles.muted}>Ingen egen domän kopplad ännu.</p>
+          <div className={styles.empty}>
+            <strong>Ingen egen domän kopplad ännu.</strong>
+            Din salong nås på {tenant.slug}.{ROOT_DOMAIN}. Kontakta Corevo för att koppla en egen
+            domän.
+          </div>
         )}
       </div>
     </section>

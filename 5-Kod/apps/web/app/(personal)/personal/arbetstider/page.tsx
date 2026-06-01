@@ -3,6 +3,7 @@ import { requirePortal } from '@/lib/auth/session'
 import { getMyStaff } from '@/lib/personal/staff'
 import { getMyWorkingHours } from '@/lib/personal/schedule'
 import { WorkingHoursManager } from '@/components/personal/WorkingHoursManager'
+import styles from '@/components/personal/personal.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Arbetstider' }
@@ -15,7 +16,13 @@ export default async function ArbetstiderPage() {
     return (
       <section className="portal-section">
         <h1>Arbetstider</h1>
-        <p className="prose">Ingen personalprofil är kopplad till ditt konto.</p>
+        <div className={styles.empty}>
+          <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
+          <p className={styles.emptyHint}>
+            Kontakta salongsadmin för att kopplas till en personalrad — sedan kan du lägga till dina
+            arbetstider här.
+          </p>
+        </div>
       </section>
     )
   }

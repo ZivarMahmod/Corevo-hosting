@@ -26,8 +26,8 @@ export default async function BrandingPage() {
     <section className="portal-section">
       <h1>Varumärke</h1>
       <p className="prose">
-        Logotyp, färger och typsnitt för din publika webbplats. Ändringar slår igenom direkt på
-        den publika sajten.
+        Logotyp, färger och typsnitt för din publika webbplats. Förhandsvisningen till höger
+        uppdateras direkt — och när du sparar slår ändringarna igenom på den publika sajten.
       </p>
       <BrandingForm branding={branding} />
     </section>

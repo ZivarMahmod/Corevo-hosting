@@ -4,6 +4,7 @@ import { currentTenant, getServices } from '@/lib/tenant-data'
 import { pickHero } from '@/components/brand/variants'
 import { ServiceList } from '@/components/brand/ServiceList'
 import { BookCta } from '@/components/brand/BookCta'
+import styles from '@/components/brand/brand.module.css'
 
 export default async function HomePage() {
   const bundle = await currentTenant()
@@ -22,21 +23,27 @@ export default async function HomePage() {
       />
 
       <section className="section">
-        <div className="section-inner">
+        <div className={`section-inner ${styles.sectionInner}`}>
+          <p className={styles.sectionEyebrow}>Utvalda behandlingar</p>
           <h2>Populära tjänster</h2>
           <ServiceList services={featured} />
           {services.length > featured.length ? (
             <p className="section-more">
-              <Link href="/tjanster">Se alla tjänster →</Link>
+              <Link href="/tjanster" className={styles.moreLink}>
+                Se alla tjänster <span aria-hidden="true">→</span>
+              </Link>
             </p>
           ) : null}
         </div>
       </section>
 
-      <section className="section section-muted">
+      <section className={`section ${styles.ctaBand}`}>
         <div className="section-inner section-cta">
+          <p className={styles.sectionEyebrow}>Boka direkt</p>
           <h2>Redo att boka?</h2>
-          <p>Hitta en tid som passar dig — boka direkt online.</p>
+          <p className={styles.ctaLead}>
+            Hitta en tid som passar dig och boka online på under en minut — bekräftelse direkt.
+          </p>
           <BookCta />
         </div>
       </section>

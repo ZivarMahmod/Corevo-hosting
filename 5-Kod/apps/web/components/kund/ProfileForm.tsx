@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { updateProfile, type ProfileState } from '@/lib/kund/actions'
+import styles from './kund.module.css'
 
 export function ProfileForm({
   email,
@@ -29,6 +30,7 @@ export function ProfileForm({
       <label className="auth-field">
         <span>E-post</span>
         <input type="email" value={email ?? ''} readOnly disabled />
+        <span className={styles.fieldHint}>E-postadressen kan inte ändras.</span>
       </label>
 
       {state.error ? (
@@ -36,7 +38,11 @@ export function ProfileForm({
           {state.error}
         </p>
       ) : null}
-      {state.success ? <p className="prose" role="status">{state.success}</p> : null}
+      {state.success ? (
+        <p className={styles.success} role="status">
+          {state.success}
+        </p>
+      ) : null}
 
       <button type="submit" className="btn-primary" disabled={pending}>
         {pending ? 'Sparar…' : 'Spara'}
