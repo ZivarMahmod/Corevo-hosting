@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getSettingsRow, listLocations, listDomains } from '@/lib/admin/data'
+import { createClient } from '@/lib/supabase/server'
 import { SettingsForm } from '@/components/admin/SettingsForm'
+import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
 import styles from '@/components/admin/admin.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -10,7 +12,11 @@ export const metadata: Metadata = { title: 'Inställningar · Salongsadmin' }
 
 const ROOT_DOMAIN = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se').replace(/:\d+$/, '')
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ stripe?: string }>
+}) {
   const user = await requirePortal('admin')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
@@ -22,10 +28,17 @@ export default async function SettingsPage() {
     )
   }
 
-  const [settings, locations, domains] = await Promise.all([
+  const supabase = await createClient()
+  const [settings, locations, domains, { data: stripeRow }, { stripe }] = await Promise.all([
     getSettingsRow(tenant.id),
     listLocations(tenant.id),
     listDomains(tenant.id),
+    supabase
+      .from('tenants')
+      .select('stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted')
+      .eq('id', tenant.id)
+      .maybeSingle(),
+    searchParams.then((s) => ({ stripe: s.stripe })),
   ])
   const primary = locations.find((l) => l.is_primary) ?? locations[0] ?? null
   const sjson = (settings?.settings ?? {}) as {
@@ -53,6 +66,15 @@ export default async function SettingsPage() {
         address={primary?.address ?? ''}
         contactEmail={contact.email ?? ''}
         contactPhone={contact.phone ?? ''}
+      />
+
+      <StripeConnectCard
+        hasAccount={Boolean(stripeRow?.stripe_account_id)}
+        chargesEnabled={stripeRow?.stripe_charges_enabled ?? false}
+        payoutsEnabled={stripeRow?.stripe_payouts_enabled ?? false}
+        detailsSubmitted={stripeRow?.stripe_details_submitted ?? false}
+        paymentsEnabled={settings?.payments_enabled ?? false}
+        justReturned={stripe === 'return'}
       />
 
       <div className={styles.section} style={{ marginTop: '2rem' }}>
