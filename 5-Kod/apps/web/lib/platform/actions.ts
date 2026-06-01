@@ -141,7 +141,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   })
 
   revalidatePath('/platform')
-  revalidatePath('/platform/tenants')
+  revalidatePath('/salonger')
   return {
     success: `Salong "${name}" skapad och live på ${slug}.corevo.se.${inviteNote}`,
   }
@@ -210,7 +210,7 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
 
   // CRITICAL: bust the cached public bundle so branding shows immediately (M2/M3).
   revalidateTenant(tenant.slug)
-  revalidatePath(`/platform/tenants/${tenantId}`)
+  revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, { action: 'tenant.branding', tenantId, actorId: user.id })
   return warning ? { error: warning } : { success: 'Varumärke sparat. Publika sajten uppdaterad.' }
 }
@@ -235,8 +235,8 @@ export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<Ac
   // Without busting the tag a suspend stays live up to 5 min — DoD would "fail".
   revalidateTenant(tenant.slug)
   revalidatePath('/platform')
-  revalidatePath('/platform/tenants')
-  revalidatePath(`/platform/tenants/${tenantId}`)
+  revalidatePath('/salonger')
+  revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: status === 'suspended' ? 'tenant.suspend' : 'tenant.activate',
     tenantId,
@@ -274,8 +274,8 @@ export async function saveBilling(_p: ActionState, fd: FormData): Promise<Action
   )
   if (error) return { error: GENERIC }
 
-  revalidatePath(`/platform/tenants/${tenantId}`)
-  revalidatePath('/platform/fakturering')
+  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/fakturering')
   await logPlatformAction(supabase, {
     action: 'tenant.billing',
     tenantId,

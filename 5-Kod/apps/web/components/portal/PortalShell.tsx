@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { injectTenantTokens } from '@corevo/ui'
-import { currentTenant } from '@/lib/tenant-data'
+import { currentTenant, getTenantById } from '@/lib/tenant-data'
 import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 
@@ -14,7 +14,14 @@ export async function PortalShell({
   title: string
   children: ReactNode
 }) {
-  const bundle = await currentTenant()
+  // Storefront/kund portals resolve the tenant from the host. Back-office portals
+  // (admin/personal) run on booking.corevo.se where the host carries NO tenant —
+  // so fall back to the logged-in account's own tenant (G12). platform_admin has
+  // no single tenant → stays "Corevo".
+  let bundle = await currentTenant()
+  if (!bundle && user.tenantId && !user.platformAdmin) {
+    bundle = await getTenantById(user.tenantId)
+  }
   const branding = bundle?.settings.branding ?? {}
   const tenantName = bundle?.tenant.name ?? 'Corevo'
 

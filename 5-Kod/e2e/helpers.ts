@@ -11,23 +11,40 @@ export const SEED = {
   platformAdmin: 'platform@corevo.se',
 } as const
 
-/** Enter the app as a given tenant via the ?tenant= dev override (cookie-persisted). */
+// G12 two-zone hosts. `*.localhost` is loopback in Chromium → no DNS needed.
+// booking.localhost = platform host (back-office); the storefront uses the
+// ?tenant= dev override on the default host.
+export const BOOKING_HOST = process.env.E2E_BOOKING_HOST ?? 'http://booking.localhost:3000'
+
+/** Enter the storefront as a given tenant via the ?tenant= dev override (cookie-persisted). */
 export async function gotoTenant(page: Page, path: string, slug = SEED.tenant.slug) {
   const sep = path.includes('?') ? '&' : '?'
   await page.goto(`${path}${sep}tenant=${slug}`)
 }
 
-/**
- * Log in through the real login form. `tenant` keeps the ?tenant= override alive
- * across the auth redirect (the form forwards it; middleware persists the cookie).
- */
-export async function login(page: Page, email: string, slug = SEED.tenant.slug) {
-  await gotoTenant(page, '/login', slug)
+async function submitLogin(page: Page, email: string) {
   await page.getByLabel('E-post').fill(email)
   await page.getByLabel('Lösenord').fill(SEED.password)
   await page.getByRole('button', { name: 'Logga in' }).click()
-  // Land on a portal home (away from /login) once the session cookie is set.
   await expect(page).not.toHaveURL(/\/login/)
+}
+
+/**
+ * G12 back-office login on the PLATFORM host (booking.<root>). super_admin /
+ * salon_admin / staff all sign in here; role decides the landing route.
+ */
+export async function loginBackoffice(page: Page, email: string) {
+  await page.goto(`${BOOKING_HOST}/login`)
+  await submitLogin(page, email)
+}
+
+/**
+ * Storefront CUSTOMER login on the tenant host (via ?tenant=). Only meaningful
+ * when the tenant has customer accounts enabled (seed: frisor1 = on).
+ */
+export async function loginCustomer(page: Page, email: string, slug = SEED.tenant.slug) {
+  await gotoTenant(page, '/login', slug)
+  await submitLogin(page, email)
 }
 
 /**

@@ -21,7 +21,7 @@ export default async function TenantsPage({
     <section className="portal-section">
       <div className={styles.sectionHead}>
         <h1 style={{ margin: 0 }}>Salonger</h1>
-        <Link href="/platform/tenants/ny" className="btn-primary">
+        <Link href="/salonger/ny" className="btn-primary">
           + Ny salong
         </Link>
       </div>
@@ -58,7 +58,7 @@ export default async function TenantsPage({
           {tenants.map((t) => (
             <tr key={t.id}>
               <td>
-                <Link href={`/platform/tenants/${t.id}`}>
+                <Link href={`/salonger/${t.id}`}>
                   <code className={styles.code}>{t.slug}</code>
                 </Link>
               </td>

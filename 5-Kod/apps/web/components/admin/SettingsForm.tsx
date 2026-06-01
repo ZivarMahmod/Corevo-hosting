@@ -29,6 +29,7 @@ export type SettingsFormProps = {
   address: string
   contactEmail: string
   contactPhone: string
+  customerAccountsEnabled: boolean
 }
 
 export function SettingsForm(props: SettingsFormProps) {
@@ -97,6 +98,18 @@ export function SettingsForm(props: SettingsFormProps) {
           />
         </label>
       </div>
+
+      {/* G12: storefront customer accounts (login + "Mitt konto" + signup). Off = guest booking only. */}
+      <label className={styles.check}>
+        <input
+          type="checkbox"
+          name="customer_accounts_enabled"
+          value="true"
+          defaultChecked={props.customerAccountsEnabled}
+        />
+        Tillåt kundkonton — visar inloggning + “Mitt konto” på din publika sajt (annars endast
+        gästbokning)
+      </label>
 
       <div className={styles.actions}>
         <button type="submit" className="btn-primary" disabled={pending}>

@@ -2,10 +2,10 @@ import Link from 'next/link'
 import { Logo } from './Logo'
 import { NavLinks } from './NavLinks'
 import { BookCta } from './BookCta'
-import type { BrandProps } from './types'
+import type { NavProps } from './types'
 
 /** Nav variant B — split row: logo left, uppercase links + CTA right, accent rule. */
-export function NavB(props: BrandProps) {
+export function NavB({ customerAccountsEnabled, ...props }: NavProps) {
   return (
     <header className="nav nav-b">
       <div className="nav-inner nav-b-inner">
@@ -14,6 +14,12 @@ export function NavB(props: BrandProps) {
         </Link>
         <div className="nav-b-row">
           <NavLinks />
+          {/* G12: storefront customer login — only when the owner enabled it. */}
+          {customerAccountsEnabled ? (
+            <Link href="/login" className="nav-account">
+              Logga in
+            </Link>
+          ) : null}
           <BookCta />
         </div>
       </div>

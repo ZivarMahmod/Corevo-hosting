@@ -9,6 +9,7 @@ import { unstable_cache } from 'next/cache'
 import type { Tables } from '@corevo/db'
 import type { TenantBranding } from '@corevo/ui'
 import { createPublicClient } from '@/lib/supabase/public'
+import { createClient } from '@/lib/supabase/server'
 import { getTenantFromHost } from '@/lib/tenant'
 
 export type Tenant = Tables<'tenants'>
@@ -24,6 +25,8 @@ export type TenantSettings = {
   /** non-null only when an actual css override string is present (nivå 3). */
   customOverride: CustomOverride | null
   paymentMode: string
+  /** G12: storefront exposes customer login/signup/konto only when the owner opts in. */
+  customerAccountsEnabled: boolean
 }
 
 export type TenantBundle = { tenant: Tenant; settings: TenantSettings }
@@ -39,6 +42,9 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     layout,
     customOverride: hasCss ? override : null,
     paymentMode: row?.payment_mode ?? 'on_site',
+    // Lives in the settings JSON (no dedicated column — same seam as
+    // cancellation_cutoff_hours). Default OFF: guest booking only.
+    customerAccountsEnabled: raw.customer_accounts_enabled === true,
   }
 }
 
@@ -108,4 +114,23 @@ export async function currentTenant(): Promise<TenantBundle | null> {
   const res = getTenantFromHost(h.get('host'))
   if (res.kind !== 'tenant') return null
   return getTenantBySlug(res.slug)
+}
+
+/**
+ * G12 back-office chrome: resolve a tenant bundle by id via the AUTHED client.
+ * On the platform host (booking.corevo.se) there is no host tenant, so the portal
+ * shell needs the logged-in staff/admin's OWN tenant (from their JWT). Uses the
+ * authed server client so RLS lets them read their tenant even when suspended —
+ * NOT the anon public client (which only sees active tenants).
+ */
+export async function getTenantById(id: string): Promise<TenantBundle | null> {
+  const supabase = await createClient()
+  const { data: tenant } = await supabase.from('tenants').select('*').eq('id', id).maybeSingle()
+  if (!tenant) return null
+  const { data: settingsRow } = await supabase
+    .from('tenant_settings')
+    .select('*')
+    .eq('tenant_id', id)
+    .maybeSingle()
+  return { tenant, settings: parseSettings(settingsRow ?? null) }
 }

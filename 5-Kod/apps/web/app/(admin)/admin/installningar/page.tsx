@@ -44,6 +44,7 @@ export default async function SettingsPage({
   const sjson = (settings?.settings ?? {}) as {
     cancellation_cutoff_hours?: number
     contact?: { email?: string | null; phone?: string | null }
+    customer_accounts_enabled?: boolean
   }
   const contact = sjson.contact ?? {}
 
@@ -66,6 +67,7 @@ export default async function SettingsPage({
         address={primary?.address ?? ''}
         contactEmail={contact.email ?? ''}
         contactPhone={contact.phone ?? ''}
+        customerAccountsEnabled={sjson.customer_accounts_enabled === true}
       />
 
       <StripeConnectCard

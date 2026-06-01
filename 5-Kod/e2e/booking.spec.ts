@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { gotoTenant, login, pickFirstAvailableSlot, SEED } from './helpers'
+import { gotoTenant, loginCustomer, pickFirstAvailableSlot, SEED } from './helpers'
 
 // @mutating — writes a booking row. RUN AGAINST SEEDED STAGING ONLY.
 // frisor1 seed is payment_mode=on_site (payments_enabled=false) ⇒ no Stripe leg;
@@ -27,7 +27,7 @@ test.describe('@mutating booking end-to-end', () => {
   })
 
   test('logged-in customer keeps their session through the booking flow', async ({ page }) => {
-    await login(page, SEED.salonAdmin) // any seeded account proves the auth path
+    await loginCustomer(page, SEED.salonAdmin) // storefront login; any seeded acct proves the path
     await gotoTenant(page, '/boka', SEED.tenant.slug)
     await page.getByRole('button', { name: /Klippning/ }).first().click()
     await page.getByRole('button', { name: 'Alla' }).click()

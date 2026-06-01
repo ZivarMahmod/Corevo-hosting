@@ -31,7 +31,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     <section className="portal-section">
       <div className={styles.sectionHead}>
         <h1 style={{ margin: 0 }}>{tenant.name}</h1>
-        <Link href="/platform/tenants" className={styles.navLink}>
+        <Link href="/salonger" className={styles.navLink}>
           ← Salonger
         </Link>
       </div>

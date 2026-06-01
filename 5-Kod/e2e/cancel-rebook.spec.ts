@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { gotoTenant, login, SEED } from './helpers'
+import { gotoTenant, loginCustomer, SEED } from './helpers'
 
 // @mutating — exercises the customer self-service cancel + rebook flow.
 // DEPENDS ON STAGING SEED: a `kund`-role account that owns at least one active
@@ -10,7 +10,7 @@ import { gotoTenant, login, SEED } from './helpers'
 
 test.describe('@mutating cancel & rebook', () => {
   test('customer can rebook then cancel an active booking', async ({ page }) => {
-    await login(page, SEED.salonAdmin) // replace with a seeded kund account on staging
+    await loginCustomer(page, SEED.salonAdmin) // replace with a seeded kund account on staging
     await gotoTenant(page, '/konto', SEED.tenant.slug)
 
     const firstBooking = page.locator('a[href^="/konto/bokningar/"]').first()

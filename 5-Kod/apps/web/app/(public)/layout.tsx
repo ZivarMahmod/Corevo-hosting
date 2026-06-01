@@ -50,7 +50,7 @@ export default async function PublicLayout({ children }: { children: React.React
         />
       ) : null}
 
-      <Nav {...brandProps} />
+      <Nav {...brandProps} customerAccountsEnabled={settings.customerAccountsEnabled} />
       <main className="tenant-main">{children}</main>
       <Footer tenant={{ name: tenant.name }} />
     </div>

@@ -20,7 +20,8 @@ values (
   '11111111-1111-1111-1111-111111111111',
   'on_site',
   '{"color_primary":"#b5651d","font_body":"Inter","logo_url":"/demo-logo-frisor1.svg"}'::jsonb,
-  '{"layout":{"nav_variant":"A","hero_variant":"1"}}'::jsonb,
+  -- G12: frisor1 opts INTO customer accounts (storefront login + /konto). frisor2 leaves it off.
+  '{"layout":{"nav_variant":"A","hero_variant":"1"},"customer_accounts_enabled":true}'::jsonb,
   'fixed', 500
 )
 on conflict (tenant_id) do nothing;

@@ -28,7 +28,7 @@ export default async function PlatformOverviewPage() {
 
       <div className={styles.sectionHead} style={{ marginTop: '2rem' }}>
         <h2 style={{ margin: 0 }}>Senaste salonger</h2>
-        <Link href="/platform/tenants" className={styles.navLink}>
+        <Link href="/salonger" className={styles.navLink}>
           Alla salonger →
         </Link>
       </div>
@@ -45,7 +45,7 @@ export default async function PlatformOverviewPage() {
           {recent.slice(0, 8).map((t) => (
             <tr key={t.id}>
               <td>
-                <Link href={`/platform/tenants/${t.id}`}>
+                <Link href={`/salonger/${t.id}`}>
                   <code className={styles.code}>{t.slug}</code>
                 </Link>
               </td>
@@ -60,7 +60,7 @@ export default async function PlatformOverviewPage() {
           {recent.length === 0 ? (
             <tr>
               <td colSpan={3} className={styles.muted}>
-                Inga salonger ännu. <Link href="/platform/tenants/ny">Skapa den första →</Link>
+                Inga salonger ännu. <Link href="/salonger/ny">Skapa den första →</Link>
               </td>
             </tr>
           ) : null}

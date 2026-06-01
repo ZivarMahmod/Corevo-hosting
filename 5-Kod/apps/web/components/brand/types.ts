@@ -4,3 +4,6 @@ export type BrandTenant = { id: string; name: string; slug: string }
 
 /** Props shared by every theme-variant component (nav, hero, …). */
 export type BrandProps = { tenant: BrandTenant; branding: TenantBranding }
+
+/** Nav adds the storefront customer-accounts toggle (G12) on top of BrandProps. */
+export type NavProps = BrandProps & { customerAccountsEnabled?: boolean }

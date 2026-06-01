@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant } from '@/lib/tenant-data'
 import { getCurrentUser } from '@/lib/auth/session'
@@ -17,8 +17,10 @@ export default async function RegistreraPage() {
   if (user) redirect(portalHomeFor(user))
 
   const bundle = await currentTenant()
-  const branding = bundle?.settings.branding ?? {}
-  const tenantName = bundle?.tenant.name ?? 'Corevo'
+  // G12: signup exists only when the storefront owner enabled customer accounts.
+  if (!bundle?.settings.customerAccountsEnabled) notFound()
+  const branding = bundle.settings.branding ?? {}
+  const tenantName = bundle.tenant.name ?? 'Corevo'
 
   return (
     <div

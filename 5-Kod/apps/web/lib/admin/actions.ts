@@ -408,6 +408,7 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const address = String(fd.get('address') ?? '').trim()
   const contactEmail = String(fd.get('contact_email') ?? '').trim()
   const contactPhone = String(fd.get('contact_phone') ?? '').trim()
+  const customerAccounts = String(fd.get('customer_accounts_enabled') ?? '') === 'true'
 
   if (!name) return { error: 'Ange ett salongsnamn.' }
   if (!PAYMENT_MODES.includes(paymentMode as (typeof PAYMENT_MODES)[number]))
@@ -435,6 +436,7 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     ...prev,
     cancellation_cutoff_hours: cancelHours, // read by M4 (kund avbokning)
     contact: { email: contactEmail || null, phone: contactPhone || null },
+    customer_accounts_enabled: customerAccounts, // G12: storefront login/konto toggle
   }
   const s = await supabase
     .from('tenant_settings')

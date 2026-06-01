@@ -43,11 +43,11 @@ export default async function FaktureringPage({
       </p>
 
       <div className={styles.filters}>
-        <Link href={`/platform/fakturering?year=${prev.year}&month=${prev.month}`} className={styles.btn}>
+        <Link href={`/fakturering?year=${prev.year}&month=${prev.month}`} className={styles.btn}>
           ← {MONTHS_SV[prev.month - 1]}
         </Link>
         <strong style={{ alignSelf: 'center', textTransform: 'capitalize' }}>{label}</strong>
-        <Link href={`/platform/fakturering?year=${next.year}&month=${next.month}`} className={styles.btn}>
+        <Link href={`/fakturering?year=${next.year}&month=${next.month}`} className={styles.btn}>
           {MONTHS_SV[next.month - 1]} →
         </Link>
       </div>
@@ -66,7 +66,7 @@ export default async function FaktureringPage({
           {rows.map((r) => (
             <tr key={r.tenantId}>
               <td>
-                <Link href={`/platform/tenants/${r.tenantId}`}>
+                <Link href={`/salonger/${r.tenantId}`}>
                   <code className={styles.code}>{r.slug}</code>
                 </Link>{' '}
                 {r.name}

@@ -23,12 +23,28 @@ export const PORTAL_MIN_LEVEL: Record<Portal, number> = {
   platform: 7,
 }
 
-/** Path prefixes the middleware treats as authenticated-only (cheap gate). */
-export const PROTECTED_PREFIXES = ['/konto', '/personal', '/admin', '/platform'] as const
+// Path prefixes the middleware treats as authenticated-only (cheap gate).
+// G12: back-office now lives on the platform host (booking.corevo.se) at clean
+// URLs — `/salonger` + `/fakturering` join the list; the dashboard route is
+// `/platform` (served at `/` via middleware rewrite, so the gate is applied to
+// the post-rewrite path).
+export const PROTECTED_PREFIXES = [
+  '/konto',
+  '/personal',
+  '/admin',
+  '/platform',
+  '/salonger',
+  '/fakturering',
+] as const
 
-/** Where to send a user after login / when they hit '/' of the app, by level. */
+/**
+ * Where to send a user after login (G12: role decides the destination, host does
+ * not). super_admin → `/` (platform dashboard on booking.corevo.se, rewritten);
+ * salon_admin → `/admin`; staff → `/personal` (both back-office on booking.corevo.se);
+ * customer → `/konto` (storefront on the tenant host).
+ */
 export function portalHomeFor(opts: { roleLevel: number; platformAdmin: boolean }): string {
-  if (opts.platformAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return '/platform'
+  if (opts.platformAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return '/'
   if (opts.roleLevel >= PORTAL_MIN_LEVEL.admin) return '/admin'
   if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return '/personal'
   return '/konto'
