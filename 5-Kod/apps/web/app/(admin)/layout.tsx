@@ -9,7 +9,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // (RLS is tenant-scoped, NOT role-aware — see lib/admin/actions.ts).
   const user = await requirePortal('admin')
   return (
-    <PortalShell user={user} title="Salongsadmin">
+    <PortalShell user={user} title="Salongsadmin" world="backoffice">
       <AdminNav />
       {children}
     </PortalShell>

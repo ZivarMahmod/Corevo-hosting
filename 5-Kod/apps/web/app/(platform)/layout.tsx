@@ -9,7 +9,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
   // (platformCtx). A salon_admin (level 6) is redirected to /ingen-atkomst.
   const user = await requirePlatformAdmin()
   return (
-    <PortalShell user={user} title="Plattform">
+    <PortalShell user={user} title="Plattform" world="backoffice">
       <PlatformNav />
       {children}
     </PortalShell>

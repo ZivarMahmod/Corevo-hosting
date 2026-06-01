@@ -19,6 +19,22 @@ type TenantSettingsRow = Tables<'tenant_settings'>
 export type LayoutConfig = { nav_variant?: string; hero_variant?: string }
 export type CustomOverride = { css?: string }
 
+/** Storefront visual theme (two-CSS-worlds system). Drives [data-theme] on the
+ *  storefront root, which selects the theme's color/font base tokens in
+ *  @corevo/ui/tokens.css. injectTenantTokens() then layers any per-tenant override
+ *  inline on top. Default = leander. */
+export const STOREFRONT_THEMES = ['salvia', 'leander', 'zigge', 'linnea', 'edit'] as const
+export type StorefrontTheme = (typeof STOREFRONT_THEMES)[number]
+export const DEFAULT_STOREFRONT_THEME: StorefrontTheme = 'leander'
+
+/** Validate a raw settings.theme value against the known set; fall back to the
+ *  default for anything missing/unknown so a typo never yields an un-themed root. */
+function parseTheme(raw: unknown): StorefrontTheme {
+  return STOREFRONT_THEMES.includes(raw as StorefrontTheme)
+    ? (raw as StorefrontTheme)
+    : DEFAULT_STOREFRONT_THEME
+}
+
 /** Public contact details the salon saved in admin (settings jsonb `contact`).
  *  Each field is null until the owner fills it in — render-on-present only. */
 export type TenantContact = { email: string | null; phone: string | null }
@@ -26,6 +42,8 @@ export type TenantContact = { email: string | null; phone: string | null }
 export type TenantSettings = {
   branding: TenantBranding
   layout: LayoutConfig
+  /** Storefront theme preset (validated; default leander) → [data-theme] on root. */
+  theme: StorefrontTheme
   /** non-null only when an actual css override string is present (nivå 3). */
   customOverride: CustomOverride | null
   paymentMode: string
@@ -71,6 +89,9 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
   return {
     branding,
     layout,
+    // Lives in the settings JSON (`theme: "leander"`); validated against the known
+    // preset set so an unknown/typo value safely falls back to the default.
+    theme: parseTheme(raw.theme),
     customOverride: hasCss ? override : null,
     paymentMode: row?.payment_mode ?? 'on_site',
     // Lives in the settings JSON (no dedicated column — same seam as

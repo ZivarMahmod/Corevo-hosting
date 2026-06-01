@@ -26,10 +26,14 @@ const csp = [
   `default-src 'self'`,
   // Stripe.js is loaded from js.stripe.com; inline bootstrap needs 'unsafe-inline'.
   `script-src 'self' 'unsafe-inline' https://js.stripe.com${isProd ? '' : " 'unsafe-eval'"}`,
-  `style-src 'self' 'unsafe-inline'`,
+  // Google Fonts stylesheet (@import in @corevo/ui/tokens.css) → fonts.googleapis.com.
+  // The storefront themes reference literal font families (Playfair, Inter,
+  // Cormorant, Bebas, Jost, Archivo, DM Serif) loaded from the Google Fonts CDN.
+  `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
   // Tenant logos (R2 / arbitrary branding URLs) + Stripe assets → allow https images.
   `img-src 'self' data: blob: https:`,
-  `font-src 'self' data:`,
+  // Google Fonts files are served from fonts.gstatic.com.
+  `font-src 'self' data: https://fonts.gstatic.com`,
   // Supabase REST/Realtime/Auth + Stripe API. ws: only in dev (HMR).
   `connect-src 'self' https://api.stripe.com ${supabaseUrl} https://*.supabase.co wss://*.supabase.co${isProd ? '' : ' ws:'}`,
   // Stripe Checkout/Elements iframes + the storefront's embedded OpenStreetMap map.

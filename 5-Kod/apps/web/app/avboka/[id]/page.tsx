@@ -48,6 +48,8 @@ function Shell({
   return (
     <div
       className={`tenant-root ${storefront.tplRoot}`}
+      data-world="storefront"
+      data-theme={settings.theme}
       data-tenant={tenant.id}
       data-template={template}
       style={injectTenantTokens(settings.branding) as CSSProperties}

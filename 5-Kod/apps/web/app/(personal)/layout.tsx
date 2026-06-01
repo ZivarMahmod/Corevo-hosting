@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export default async function PersonalLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePortal('personal')
   return (
-    <PortalShell user={user} title="Personal">
+    <PortalShell user={user} title="Personal" world="backoffice">
       <PersonalNav />
       {children}
     </PortalShell>

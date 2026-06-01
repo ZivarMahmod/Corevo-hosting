@@ -12,6 +12,16 @@
      • PRODUCT tokens (accent/gold, display font, radius, shadows, motion, sidebar,
        state colors) — fixed Corevo identity, NOT tenant-overridable. */
 
+/* Storefront theme fonts. next/font self-hosts Playfair Display + Inter and
+   exposes them as HASHED variable names (--font-playfair/--font-inter) used by the
+   :root Corevo defaults below. The storefront THEMES, however, reference the fonts
+   by their LITERAL family names ('Playfair Display', 'Inter', 'Cormorant Garamond',
+   …), so those literal families must be loaded too — hence this CDN @import. It
+   covers ALL families the five storefront themes need (keep Playfair + Inter here;
+   the themes use the literal names, not the next/font variables). Per CSS, only
+   comments may precede an @import, so this sits at the top of the cascade. */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Bebas+Neue&family=Jost:wght@300;400;500;600&family=Archivo:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
+
 :root {
   /* ── Contract tokens (overridable; defaults = Corevo) ─────────────────────── */
   --color-primary: #1f4636; /* forest */
@@ -49,6 +59,31 @@
   --color-info: #338ccc;
   --color-destructive: #d62f2f;
   --color-ring: var(--forest);
+
+  /* ── Global primitives (neutral; safe in both worlds — from the design-system
+     handoff). ADDITIVE: only keys NOT already defined below are introduced here,
+     so the existing radius/motion scales (POS-derived) stay authoritative for the
+     current look. The handoff's slower durations / larger radii belong to the
+     later reskin, not this step. ──────────────────────────────────────────────── */
+  /* spacing scale (8px base, with a couple of editorial half-steps) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+  --space-11: 160px;
+  /* extra radius step the handoff adds (xs); sm/md/lg/xl/pill already defined below */
+  --radius-xs: 4px;
+  /* extra easing the handoff adds; --ease-out already defined below */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* tracking helpers (eyebrows / big display) */
+  --tracking-wide: 0.18em;
+  --tracking-tight: -0.02em;
 
   /* radius scale (base .625rem from POS) */
   --radius-sm: 0.375rem;
@@ -97,3 +132,121 @@
   --border: 140 15% 88%;
   --ring: 152 35% 22%;
 }
+
+/* =====================================================================
+   WORLD 1 — STOREFRONT  (per-tenant salon sites) — from the design-system
+   handoff (colors_and_type.css).
+
+   ⛔ TWO CSS WORLDS: the back-office keeps its Corevo forest/gold look from the
+   :root contract tokens above (no [data-world] block redefines its colours — only
+   the data-world="backoffice" ATTRIBUTE is added, to namespace it for a later
+   reskin). The storefront, scoped under [data-world="storefront"], picks a THEME
+   via [data-theme]; injectTenantTokens() then layers the per-tenant overrides
+   INLINE on top (inline always wins over these theme base values).
+
+   ADDITIVE contract: existing storefront classes read --color-primary/-bg/-fg/
+   -font-body. Those keep resolving — from the chosen theme (default leander), then
+   from the inline per-tenant override, then from the :root defaults as a final
+   fallback. NEVER any Corevo green/gold on the storefront.
+   ===================================================================== */
+[data-world="storefront"] {
+  /* neutral storefront scaffolding (theme overrides the rest) */
+  --sf-overlay: linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.55) 100%);
+  --sf-shadow-card: 0 24px 60px rgba(0,0,0,.12);
+  --sf-shadow-soft: 0 10px 30px rgba(0,0,0,.06);
+  --sf-radius: var(--radius-md);
+
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- TEMPLATE A — "Studio Salvia" : sage, airy, minimal */
+[data-world="storefront"][data-theme="salvia"] {
+  --color-primary:   #5E7361;  /* sage */
+  --color-primary-d: #44543F;  /* deep olive for hovers */
+  --color-bg:        #F6F4EE;  /* warm paper */
+  --color-surface:   #FFFFFF;
+  --color-fg:        #232520;  /* near-black olive ink */
+  --color-fg-2:      #5C5F55;
+  --color-line:      #E2DED2;
+  --color-accent-soft:#EAEBE3;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Jost', 'Inter', sans-serif;
+  --sf-radius: 10px;
+}
+
+/* ---- TEMPLATE B — "Maison Leander" : lavender, romantic editorial (DEFAULT) */
+[data-world="storefront"][data-theme="leander"] {
+  --color-primary:   #7E6E92;  /* lavender / mauve */
+  --color-primary-d: #5A4C6E;
+  --color-bg:        #FBFAF8;
+  --color-surface:   #FFFFFF;
+  --color-fg:        #2A2630;
+  --color-fg-2:      #6A6472;
+  --color-line:      #ECE7EF;
+  --color-accent-soft:#F1ECF3;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --sf-radius: 14px;
+}
+
+/* ---- TEMPLATE C — "Zigge" : bold, dark, barber + frisör */
+[data-world="storefront"][data-theme="zigge"] {
+  --color-primary:   #C8743C;  /* burnt amber / rust */
+  --color-primary-d: #A65B29;
+  --color-bg:        #14120E;  /* near-black warm */
+  --color-surface:   #1E1B16;
+  --color-fg:        #F2ECE2;  /* warm bone */
+  --color-fg-2:      #B3A998;
+  --color-line:      #322C24;
+  --color-accent-soft:#241F19;
+  --font-display: 'Bebas Neue', 'Archivo', sans-serif;
+  --font-body:    'Archivo', 'Inter', sans-serif;
+  --sf-radius: 4px;
+}
+
+/* ---- TEMPLATE D — "Salong Linnea" : warm Scandinavian natural (clay + sand) */
+[data-world="storefront"][data-theme="linnea"] {
+  --color-primary:   #B0693F;  /* terracotta / clay */
+  --color-primary-d: #8E5230;
+  --color-bg:        #F4EDE1;  /* warm sand */
+  --color-surface:   #FFFFFF;
+  --color-fg:        #2E2820;
+  --color-fg-2:      #6E6452;
+  --color-line:      #E3D9C8;
+  --color-accent-soft:#ECE3D3;
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --sf-radius: 12px;
+}
+
+/* ---- TEMPLATE E — "Edit" : elegant editorial minimal (charcoal on ivory) */
+[data-world="storefront"][data-theme="edit"] {
+  --color-primary:   #3A3733;  /* near-charcoal */
+  --color-primary-d: #1F1D1A;
+  --color-bg:        #F8F6F1;  /* ivory */
+  --color-surface:   #FFFFFF;
+  --color-fg:        #232220;
+  --color-fg-2:      #6B675F;
+  --color-line:      #E5E0D6;
+  --color-accent-soft:#EEEAE1;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --sf-radius: 2px;
+}
+
+/* storefront type roles (theme-agnostic — pull from the theme's families) */
+[data-world="storefront"] .sf-eyebrow { font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--color-primary); }
+[data-world="storefront"] .sf-hero    { font-family: var(--font-display); font-weight: 600; font-size: clamp(36px, 4.6vw, 62px); line-height: 1.08; letter-spacing: -0.01em; }
+[data-world="storefront"] .sf-h1      { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 4vw, 56px); line-height: 1.04; }
+[data-world="storefront"] .sf-h2      { font-family: var(--font-display); font-weight: 600; font-size: clamp(22px, 2.4vw, 34px); line-height: 1.12; }
+[data-world="storefront"] .sf-lede    { font-family: var(--font-body); font-weight: 400; font-size: clamp(16px, 1.4vw, 20px); line-height: 1.6; color: var(--color-fg-2); }
+[data-world="storefront"] .sf-body    { font-family: var(--font-body); font-weight: 400; font-size: 16px; line-height: 1.7; color: var(--color-fg-2); }
+[data-world="storefront"] .sf-italic  { font-family: var(--font-display); font-style: italic; font-weight: 500; }
+
+/* Bebas needs a different sizing rhythm — it's all caps + condensed */
+[data-world="storefront"][data-theme="zigge"] .sf-hero { font-size: clamp(60px, 8.5vw, 116px); letter-spacing: 0.01em; line-height: 0.92; font-weight: 400; }
+[data-world="storefront"][data-theme="zigge"] .sf-h1   { letter-spacing: 0.01em; font-weight: 400; }
+[data-world="storefront"][data-theme="zigge"] .sf-h2   { letter-spacing: 0.02em; font-weight: 400; }

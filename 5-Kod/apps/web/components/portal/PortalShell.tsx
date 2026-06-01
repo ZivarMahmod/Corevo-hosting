@@ -4,14 +4,23 @@ import { currentTenant, getTenantById } from '@/lib/tenant-data'
 import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 
-/** Shared, tenant-themed chrome for every portal (kund/personal/admin/platform). */
+/** Shared, tenant-themed chrome for every portal (kund/personal/admin/platform).
+ *
+ * `world` namespaces the surface for the two-CSS-worlds system. The three
+ * back-office portals (admin/personal/platform) pass `"backoffice"`; the
+ * customer-facing /konto area passes nothing (left un-worlded for now — it runs on
+ * the storefront host and keeps resolving its tokens from injectTenantTokens/:root,
+ * exactly as before). The attribute is currently visually inert — it only marks the
+ * boundary a later back-office reskin keys off — so this changes no colours. */
 export async function PortalShell({
   user,
   title,
+  world,
   children,
 }: {
   user: CurrentUser
   title: string
+  world?: 'backoffice' | 'storefront'
   children: ReactNode
 }) {
   // Storefront/kund portals resolve the tenant from the host. Back-office portals
@@ -28,6 +37,7 @@ export async function PortalShell({
   return (
     <div
       className="tenant-root"
+      data-world={world}
       data-tenant={bundle?.tenant.id}
       style={injectTenantTokens(branding) as CSSProperties}
     >
