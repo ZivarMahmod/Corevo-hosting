@@ -1,0 +1,131 @@
+name: Deploy
+
+# CD (G11). Builds Next→Cloudflare via OpenNext and deploys the Worker, and runs
+# Supabase migrations against the matching environment.
+#
+#   push to main        → STAGING (auto)         worker: bokningsplatformen-staging
+#   push tag v*          → PRODUCTION (gated)     worker: bokningsplatformen
+#   workflow_dispatch    → choose target manually
+#
+# Production NEVER auto-deploys from a PR (live-blocker / DoD): it requires a tag
+# or a manual run, AND the `production` GitHub Environment approval gate.
+#
+# OpenNext bundling runs here on Linux on purpose — the local Windows bundle hits
+# an EPERM symlink error (live-blocker #3); `next build` itself is green either way.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deploy target
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: 5-Kod
+
+jobs:
+  # ── STAGING ────────────────────────────────────────────────────────────────
+  staging:
+    name: deploy staging
+    runs-on: ubuntu-latest
+    if: >-
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'workflow_dispatch' && inputs.target == 'staging')
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.33.0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: 5-Kod/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+
+      # 1) Supabase migrations → staging project
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - name: Push migrations (staging)
+        working-directory: 5-Kod # contains supabase/ (config.toml + migrations)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref "${{ secrets.STAGING_SUPABASE_PROJECT_REF }}"
+          supabase db push
+
+      # 2) OpenNext build — NEXT_PUBLIC_* inlined at build time (live-blocker #1)
+      - name: Build (OpenNext, staging env)
+        run: pnpm --filter @corevo/web exec opennextjs-cloudflare build
+        env:
+          NEXT_PUBLIC_ROOT_DOMAIN: corevo.se
+          NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
+          NEXT_PUBLIC_TENANT_MODE: live
+          NEXT_PUBLIC_SITE_URL: https://bokningsplatformen-staging.${{ secrets.CF_WORKERS_SUBDOMAIN }}.workers.dev
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+
+      # 3) Deploy Worker (staging). Secrets are pre-set via `wrangler secret put`.
+      - name: Deploy (wrangler --env staging)
+        run: pnpm --filter @corevo/web exec wrangler deploy --env staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # ── PRODUCTION ───────────────────────────────────────────────────────────────
+  production:
+    name: deploy production
+    runs-on: ubuntu-latest
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.target == 'production')
+    environment: production # ← approval gate; configure required reviewers in repo settings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.33.0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: 5-Kod/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - name: Push migrations (production)
+        working-directory: 5-Kod # contains supabase/ (config.toml + migrations)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PROD_SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref "${{ secrets.PROD_SUPABASE_PROJECT_REF }}"
+          supabase db push
+
+      - name: Build (OpenNext, production env)
+        run: pnpm --filter @corevo/web exec opennextjs-cloudflare build
+        env:
+          NEXT_PUBLIC_ROOT_DOMAIN: corevo.se
+          NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
+          NEXT_PUBLIC_TENANT_MODE: live
+          NEXT_PUBLIC_SITE_URL: https://booking.corevo.se
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+
+      - name: Deploy (wrangler, production)
+        run: pnpm --filter @corevo/web exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

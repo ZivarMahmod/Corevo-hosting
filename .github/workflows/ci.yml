@@ -1,0 +1,92 @@
+name: CI
+
+# PR gate (G11). lint + typecheck + unit + build always block the PR.
+# Full Playwright E2E runs against a seeded STAGING Supabase and is gated on the
+# repo variable E2E_ENABLED=true (set it once staging secrets exist) so that an
+# unconfigured repo skips E2E instead of red-washing every PR.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: 5-Kod
+
+jobs:
+  quality:
+    name: lint · typecheck · unit · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: 5-Kod/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      # next build inlines NEXT_PUBLIC_* at BUILD time (live-blocker #1) — set the
+      # production-shaped values so a wrong-host default ("salongen inte tillgänglig")
+      # can never ship. Supabase publishable values are safe to expose to the client.
+      - run: pnpm build
+        env:
+          NEXT_PUBLIC_ROOT_DOMAIN: corevo.se
+          NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
+          NEXT_PUBLIC_TENANT_MODE: live
+          NEXT_PUBLIC_SITE_URL: https://booking.corevo.se
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+
+  e2e:
+    name: playwright e2e (staging)
+    runs-on: ubuntu-latest
+    needs: quality
+    if: vars.E2E_ENABLED == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: 5-Kod/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # Build with STAGING env, then Playwright starts `next start` and runs the
+      # full suite (incl. @mutating) against the seeded staging Supabase.
+      - run: pnpm build
+        env:
+          NEXT_PUBLIC_ROOT_DOMAIN: corevo.se
+          NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
+          NEXT_PUBLIC_TENANT_MODE: live
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+      - run: pnpm test:e2e
+        env:
+          E2E_WEBSERVER_CMD: pnpm --filter @corevo/web start
+          # Runtime secrets the started app reads server-side.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_ROOT_DOMAIN: corevo.se
+          NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: 5-Kod/playwright-report/
+          retention-days: 7

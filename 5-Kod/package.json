@@ -15,9 +15,13 @@
     "preview": "turbo run preview",
     "deploy": "turbo run deploy",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,css,mjs}\"",
-    "verify:tenant": "node apps/web/scripts/verify-tenant.ts"
+    "verify:tenant": "node apps/web/scripts/verify-tenant.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:readonly": "playwright test --grep @readonly",
+    "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
+    "@playwright/test": "1.60.0",
     "prettier": "3.8.3",
     "turbo": "2.9.16",
     "typescript": "^5.7.2"

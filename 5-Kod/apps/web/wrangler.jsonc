@@ -16,12 +16,31 @@
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media" }],
   "observability": {
     "enabled": true
-  }
+  },
   // ── Wildcard tenant routing (PREPARED, NOT ACTIVATED) ───────────────────────
   // *.corevo.se → this platform Worker. DNS/route activation happens only when
   // Zivar approves (ADR 01 / G08). No real customer domain, no custom hostname.
+  // Until then deploy targets *.workers.dev (production = top-level config below).
   //   "routes": [
   //     { "pattern": "*.corevo.se/*", "zone_name": "corevo.se" },
   //     { "pattern": "booking.corevo.se/*", "zone_name": "corevo.se" }
   //   ]
+  //
+  // ── Named environments (G11) ────────────────────────────────────────────────
+  // `wrangler deploy`                → top-level config = PRODUCTION worker
+  //                                    `bokningsplatformen` (already live).
+  // `wrangler deploy --env staging`  → isolated `bokningsplatformen-staging`
+  //                                    Worker on *.workers.dev for E2E.
+  // Named envs do NOT inherit bindings, so r2/observability are repeated below.
+  // NEXT_PUBLIC_* are inlined at BUILD time (live-blocker #1) and are NOT set as
+  // Worker vars here — the CI/CD build step exports them before opennext build.
+  // Server secrets (SUPABASE_SERVICE_ROLE_KEY, STRIPE_*) are set via
+  // `wrangler secret put ... [--env staging]`, never committed.
+  "env": {
+    "staging": {
+      "name": "bokningsplatformen-staging",
+      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media" }],
+      "observability": { "enabled": true }
+    }
+  }
 }
