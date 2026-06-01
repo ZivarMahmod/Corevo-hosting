@@ -1,63 +1,68 @@
 import { BookCta } from './BookCta'
 import type { BrandProps } from './types'
-import styles from './brand.module.css'
+import { HeroCarousel } from '@/components/storefront/HeroCarousel'
+import { HERO_PHOTOS } from '@/components/storefront/images'
+import styles from '@/components/storefront/storefront.module.css'
 
-/** Hero variant 1 — centered, large headline. */
+/* The three heroes are now ALL photo-first (full-bleed carousel + dark overlay),
+   but compose differently per template so two tenants read as unrelated sites:
+   - Hero1 (Template A 'Salong'): CENTERED — headline + short welcome + pill CTA,
+     all centred. Soft, airy, feminine.
+   - Hero2 (Template B 'Atelier'): LEFT-ALIGNED EDITORIAL — eyebrow label, giant
+     uppercase headline, italic tagline, square CTA, carousel arrows + dots.
+   - Hero3 (Template C 'Studio'): SPLIT — content offset/structured, modern.
+   Headlines use the display serif (var(--font-display)); the CTA is the gold
+   accent pill. All copy sits in cream/white over the photo. */
+
+/** Hero variant 1 — Salong: centered, photo carousel, pill CTA. */
 export function Hero1({ tenant }: BrandProps) {
   return (
-    <section className="hero hero-1">
-      <div className="hero-inner">
-        <h1>{tenant.name}</h1>
-        <p className="hero-sub">
-          Välkommen till {tenant.name}. Boka din tid online — enkelt, snabbt och när det passar dig.
+    <section className={`hero ${styles.heroSection}`} aria-label="Välkommen">
+      <HeroCarousel images={HERO_PHOTOS} align="center">
+        <p className={styles.heroEyebrow}>Välkommen till {tenant.name}</p>
+        <h1 className={styles.heroTitle}>{tenant.name}</h1>
+        <p className={styles.heroLead}>
+          En stund för dig. Boka din tid online — enkelt, snabbt och när det passar dig.
         </p>
-        <BookCta className="hero-cta" />
-      </div>
+        <div className={styles.heroActions}>
+          <BookCta className={styles.heroCta} />
+        </div>
+      </HeroCarousel>
     </section>
   )
 }
 
-/** Hero variant 2 — left-aligned with eyebrow label. */
+/** Hero variant 2 — Atelier: left-aligned editorial, uppercase, arrows + dots. */
 export function Hero2({ tenant }: BrandProps) {
   return (
-    <section className="hero hero-2">
-      <div className="hero-inner">
-        <p className="hero-eyebrow">Salong</p>
-        <h1>{tenant.name}</h1>
-        <p className="hero-sub">
-          Hos {tenant.name} möts hantverk och omtanke. Välj en tid som passar dig.
-        </p>
-        <BookCta className="hero-cta" />
-      </div>
+    <section className={`hero ${styles.heroSection}`} aria-label="Välkommen">
+      <HeroCarousel images={HERO_PHOTOS} align="left" controls="arrows-dots">
+        <p className={styles.heroEyebrow}>{tenant.name} · Frisörsalong</p>
+        <h1 className={styles.heroTitle}>{tenant.name}</h1>
+        <p className={styles.heroTagline}>Skarpt klippt. Skönt mottagen.</p>
+        <div className={styles.heroActions}>
+          <BookCta className={styles.heroCta} />
+        </div>
+      </HeroCarousel>
     </section>
   )
 }
 
-/** Hero variant 3 — split editorial: headline + copy left, a decorative brand
- *  colour panel (built purely from --color-primary + --color-accent, no imagery)
- *  with an oversized monogram watermark on the right. Structurally distinct from
- *  the centered (1) and left-eyebrow (2) heroes. */
+/** Hero variant 3 — Studio: split-offset content over the photo, modern grid. */
 export function Hero3({ tenant }: BrandProps) {
-  const monogram = tenant.name.trim().charAt(0).toUpperCase() || '·'
   return (
-    <section className={`hero ${styles.hero3}`}>
-      <div className={styles.hero3Grid}>
-        <div className={styles.hero3Copy}>
-          <p className={styles.hero3Eyebrow}>Boka online · när det passar dig</p>
-          <h1 className={styles.hero3Title}>{tenant.name}</h1>
-          <p className={styles.hero3Sub}>
-            Hantverk, omsorg och en upplevelse som sitter. Hitta en ledig tid och boka
-            direkt — utan telefonköer.
-          </p>
-          <BookCta className={styles.hero3Cta} />
+    <section className={`hero ${styles.heroSection}`} aria-label="Välkommen">
+      <HeroCarousel images={HERO_PHOTOS} align="split">
+        <p className={styles.heroEyebrow}>Boka online · när det passar dig</p>
+        <h1 className={styles.heroTitle}>{tenant.name}</h1>
+        <p className={styles.heroLead}>
+          Hantverk, omsorg och en upplevelse som sitter. Hitta en ledig tid och boka direkt —
+          utan telefonköer.
+        </p>
+        <div className={styles.heroActions}>
+          <BookCta className={styles.heroCta} />
         </div>
-        <div className={styles.hero3Panel} data-monogram={monogram} aria-hidden="true">
-          <span className={styles.hero3Mark}>
-            <span className={styles.hero3Dot} />
-            {tenant.name}
-          </span>
-        </div>
-      </div>
+      </HeroCarousel>
     </section>
   )
 }

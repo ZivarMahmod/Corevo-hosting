@@ -16,3 +16,18 @@ export function pickNav(variant?: string) {
 export function pickHero(variant?: string) {
   return HERO_VARIANTS[(variant ?? '1') as keyof typeof HERO_VARIANTS] ?? HERO_VARIANTS['1']
 }
+
+// Editorial template (A/B/C) — the per-tenant style personality. Driven off the
+// nav variant (the primary composition axis): A 'Salong' (centered, soft, round),
+// B 'Atelier' (left editorial, uppercase, square, dark-warm), C 'Studio' (split,
+// grid-driven, medium radius). Set as `data-template` on the storefront root so
+// the SHARED editorial sections (numbered services, about, …) restyle per
+// template too — not just nav + hero. Two tenants on two templates read as
+// genuinely unrelated sites.
+export const TEMPLATES = ['A', 'B', 'C'] as const
+export type TemplateKey = (typeof TEMPLATES)[number]
+
+export function pickTemplate(navVariant?: string): TemplateKey {
+  const v = (navVariant ?? 'A').toUpperCase()
+  return (TEMPLATES as readonly string[]).includes(v) ? (v as TemplateKey) : 'A'
+}

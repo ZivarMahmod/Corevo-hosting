@@ -1,12 +1,16 @@
 import styles from '@/components/brand/brand.module.css'
 
 /** Shared storefront loading skeleton (hero band + service-grid). Renders while
- *  the per-request tenant + services resolve. Covers every (public) route; the
- *  service-card skeleton matches the data-heavy /tjanster + home grids. */
+ *  the per-request tenant + services resolve. Covers every (public) route.
+ *
+ *  NOTE: the skeleton intentionally does NOT use the `.hero` class — the nav
+ *  shell detects `.hero` to go transparent (white text), which would be
+ *  illegible over this cream skeleton. Keeping a plain section means the fixed
+ *  nav stays SOLID during loading. */
 export default function PublicLoading() {
   return (
     <>
-      <section className="hero" aria-hidden="true">
+      <section className="section" aria-hidden="true">
         <div className={styles.heroSkeleton}>
           <div className={`${styles.skeletonBar} ${styles.skeletonTiny}`} />
           <div className={styles.skeletonBar} style={{ height: '2.5rem', width: '60%' }} />

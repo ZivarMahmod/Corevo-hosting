@@ -1,0 +1,201 @@
+/* Nav shell — fixed top cluster (utility strip + nav), shared by Nav A/B/C.
+   SOLID by default (SSR, first render, no-JS, every non-hero page). TRANSPARENT
+   with light text only via the .transparent class, which the client adds only
+   when a hero is present AND the page isn't scrolled — so light-on-cream is
+   structurally impossible on tjanster/om/kontakt.
+
+   Class names are hashed (module) → no leak. Frozen global .nav keeps its
+   border/layout; we only own positioning + the (transparent vs solid) skin and
+   neutralise the inner header background so the shell's skin shows through. */
+
+.root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  transition: background var(--dur-slow) var(--ease-out), box-shadow var(--dur-slow) var(--ease-out),
+    color var(--dur-slow) var(--ease-out);
+}
+
+/* The nav header row (children) sits below the utility strip inside the cluster. */
+.navRow {
+  position: relative;
+}
+
+/* ── per-variant flourishes (keep the three templates distinct in the nav) ─── */
+/* A — Salong: airy/soft, nothing extra. */
+.vA {
+}
+/* B — Atelier: square, uppercase wordmark + overlay links. */
+.vB :global(.nav-logo),
+.vB :global(.logo-text) {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.vB .overlayLinks a {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.vB .overlayClose,
+.vB .burger {
+  border-radius: 0;
+}
+/* C — Studio: modern, slightly tighter. */
+.vC :global(.nav-logo),
+.vC :global(.logo-text) {
+  letter-spacing: -0.01em;
+}
+
+/* Neutralise the inner header backgrounds so the shell skin (solid/transparent)
+   is the single source of truth. The global .nav has only a border; NavC adds a
+   frosted bg we override here. */
+.root :global(.nav) {
+  background: transparent;
+}
+
+/* ── SOLID skin (default) ─────────────────────────────────────────────────── */
+.solid {
+  background: var(--color-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+}
+.scrolled.solid {
+  box-shadow: var(--shadow-soft);
+}
+
+/* ── TRANSPARENT skin (over the hero, additive) ───────────────────────────── */
+.transparent {
+  background: transparent;
+  /* faint top scrim — the hero overlay is lightest at the very top where the nav
+     sits, so this guarantees legibility of the white nav text. */
+  background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0));
+  color: #fff;
+}
+.transparent :global(.nav) {
+  border-bottom-color: transparent;
+}
+/* Force every nav text/link to white over the photo (they're tokened to
+   --color-primary and would otherwise vanish). */
+.transparent :global(.nav-logo),
+.transparent :global(.logo-text),
+.transparent :global(.nav-links a),
+.transparent :global(.nav-account) {
+  color: #fff;
+}
+.transparent :global(.nav-links a:hover),
+.transparent :global(.nav-account:hover) {
+  color: #fff;
+  opacity: 0.78;
+}
+/* NavC's link pill — make it readable over a photo. */
+.transparent :global([class*='navCLinks']) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.transparent :global(.nav-b) {
+  border-bottom-color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Mobile hamburger + full-screen overlay ───────────────────────────────── */
+.burger {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: 1.25rem;
+  transform: translateY(-50%);
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 2;
+}
+.burger span {
+  display: block;
+  width: 1.5rem;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out),
+    visibility var(--dur-slow);
+}
+.overlayOpen {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.overlayClose {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 18%, transparent);
+  background: transparent;
+  color: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.overlayLinks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  font-family: var(--font-display);
+}
+.overlayLinks a {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+.overlayLinks a:hover {
+  color: var(--color-primary);
+}
+.overlayCta {
+  margin-top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root, .overlay { transition: none; }
+}
+
+/* Show hamburger / hide desktop nav links below 720px. The global .nav-links and
+   the variant rows are hidden; the overlay carries navigation on mobile. */
+@media (max-width: 720px) {
+  .burger { display: inline-flex; }
+  .root :global(.nav-links),
+  .root :global(.nav-account),
+  .root :global([class*='navCLinks']),
+  .root :global([class*='navCAccount']) {
+    display: none;
+  }
+  /* keep the Boka CTA visible & out of the hamburger's way */
+  .root :global(.nav-a-row),
+  .root :global(.nav-b-row),
+  .root :global([class*='navCActions']) {
+    gap: 0.75rem;
+    padding-right: 3.25rem;
+  }
+}

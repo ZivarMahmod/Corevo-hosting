@@ -2,9 +2,14 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
 import { pickHero } from '@/components/brand/variants'
-import { ServiceList } from '@/components/brand/ServiceList'
-import { BookCta } from '@/components/brand/BookCta'
-import styles from '@/components/brand/brand.module.css'
+import { ServiceMenu } from '@/components/storefront/ServiceMenu'
+import { SectionHeader, AccentPhrase, StylistSpotlights, AboutSplit, LocationHours, ClosingCta } from '@/components/storefront/sections'
+import { GallerySection } from '@/components/storefront/GallerySection'
+import { Reveal } from '@/components/storefront/Reveal'
+import styles from '@/components/storefront/storefront.module.css'
+
+// Per-request, host-resolved tenant → never prerender.
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const bundle = await currentTenant()
@@ -13,40 +18,52 @@ export default async function HomePage() {
 
   const Hero = pickHero(settings.layout.hero_variant)
   const services = await getServices(tenant.id, tenant.slug)
-  const featured = services.slice(0, 3)
+  const hasMore = services.length > 5
 
   return (
     <>
+      {/* 3. HERO — full-bleed photo carousel + serif display headline + Boka */}
       <Hero
         tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
         branding={settings.branding}
       />
 
-      <section className="section">
-        <div className={`section-inner ${styles.sectionInner}`}>
-          <p className={styles.sectionEyebrow}>Utvalda behandlingar</p>
-          <h2>Populära tjänster</h2>
-          <ServiceList services={featured} />
-          {services.length > featured.length ? (
-            <p className="section-more">
+      {/* 4. Tjänster — numbered editorial menu (01–05) with real tenant prices */}
+      <section className={`section ${styles.menuSection}`}>
+        <div className="section-inner">
+          <SectionHeader
+            eyebrow="— Behandlingar"
+            title="Tjänster & priser"
+            lead="Varje behandling utförs med omsorg om dig och ditt hår."
+          />
+          <ServiceMenu services={services} limit={5} />
+          {hasMore ? (
+            <Reveal className="section-more">
               <Link href="/tjanster" className={styles.moreLink}>
                 Se alla tjänster <span aria-hidden="true">→</span>
               </Link>
-            </p>
+            </Reveal>
           ) : null}
         </div>
       </section>
 
-      <section className={`section ${styles.ctaBand}`}>
-        <div className="section-inner section-cta">
-          <p className={styles.sectionEyebrow}>Boka direkt</p>
-          <h2>Redo att boka?</h2>
-          <p className={styles.ctaLead}>
-            Hitta en tid som passar dig och boka online på under en minut — bekräftelse direkt.
-          </p>
-          <BookCta />
-        </div>
-      </section>
+      {/* 5. Italic accent-phrase band — warmth */}
+      <AccentPhrase text="Varje stol är en stund för sig själv." />
+
+      {/* 6. Våra frisörer — stylist spotlights */}
+      <StylistSpotlights salonName={tenant.name} />
+
+      {/* 7. Galleri / Portfolio — image grid + lightbox */}
+      <GallerySection />
+
+      {/* 8. Om salongen — split photo/copy + stat-trio */}
+      <AboutSplit salonName={tenant.name} />
+
+      {/* 9. Plats & öppettider — address + hours + embedded OpenStreetMap */}
+      <LocationHours salonName={tenant.name} />
+
+      {/* 10. Closing CTA — full-bleed photo (parallax) + big serif + Boka */}
+      <ClosingCta />
     </>
   )
 }

@@ -10,9 +10,11 @@ Konsekvenser för bygget:
 - Ingen "Corevo"-branding påtvingad kunden (till skillnad från Voady-footern). Sidan är salongens, inte Corevos.
 - Varje tenant är fristående och unik — inga nätverks-listningar, inga kopia-sidor.
 
-## ⚠️ TVÅ OLIKA DESIGN-MÅL (blanda inte ihop)
-- **Storefront** (kundens sida: `demo.corevo.se`, `frisorN.corevo.se`) = vacker salongssajt enligt referensen nedan. Per-tenant tema (färg/logga/font) ovanpå denna STRUKTUR + kvalitet.
-- **Back-office** (`booking.corevo.se`: dashboard, admin, personal, platform) = Corevo-POS-designspråket (skogsgrön + guld, dashboard-känsla) i `design-system.md`. Det är INTE storefront-looken.
+## ⛔ TVÅ HELT SEPARATA CSS-VÄRLDAR — blanda ALDRIG ihop
+Viktigaste regeln. Storefront och back-office delar INTE stil/tokens. Corevo-dashboard-looken (grön/guld) får ALDRIG läcka in i storefronten — då ser kundens sida ut som en admin-panel.
+- **Storefront** (kundens sida: `demo.corevo.se`, `frisorN.corevo.se`) = PRODUKTEN, viktigast. Vacker salongssajt enligt referenserna. **Per-tenant tema** (salongens egen färg/logga/font) — INGEN Corevo-grön/guld här. Det är salongens identitet, inte Corevos.
+- **Back-office** (`booking.corevo.se`: dashboard, admin, personal, platform) = också viktig, egen stil. Corevo-POS-look (skogsgrön + guld) i `design-system.md`. Ägaren jobbar här dagligen → ska vara riktigt bra. ALDRIG samma CSS som storefronten.
+- **Båda ska vara snygga.** Storefronten är högsta prioritet (det säljs), men admin är inte en eftertanke — bara en annan stil-värld.
 
 ## Referenser (studera live)
 - **Egna exempel (känsla/struktur):** https://zivarmahmod.github.io/Fris-ren/ ("Tofifi") + freshcut.se.

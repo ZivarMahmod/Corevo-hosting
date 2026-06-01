@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
-import { ServiceList } from '@/components/brand/ServiceList'
+import { ServiceMenu } from '@/components/storefront/ServiceMenu'
+import { SectionHeader } from '@/components/storefront/sections'
 import { BookCta } from '@/components/brand/BookCta'
-import styles from '@/components/brand/brand.module.css'
+import { Reveal } from '@/components/storefront/Reveal'
 
+export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Tjänster' }
 
 export default async function ServicesPage() {
@@ -15,18 +17,17 @@ export default async function ServicesPage() {
 
   return (
     <section className="section">
-      <div className={`section-inner ${styles.sectionInner}`}>
-        <p className={styles.sectionEyebrow}>Behandlingar &amp; priser</p>
-        <h1>Tjänster</h1>
-        <p className={styles.sectionLead}>
-          Våra behandlingar hos {tenant.name}. Alla priser är inkl. moms — välj en tjänst och
-          boka en ledig tid online.
-        </p>
-        <ServiceList services={services} />
+      <div className="section-inner">
+        <SectionHeader
+          eyebrow="— Behandlingar & priser"
+          title="Tjänster"
+          lead={`Våra behandlingar hos ${tenant.name}. Alla priser är inkl. moms — välj en tjänst och boka en ledig tid online.`}
+        />
+        <ServiceMenu services={services} />
         {services.length > 0 ? (
-          <p className="section-more">
+          <Reveal className="section-more">
             <BookCta />
-          </p>
+          </Reveal>
         ) : null}
       </div>
     </section>

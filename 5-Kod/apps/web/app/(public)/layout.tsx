@@ -3,8 +3,11 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant } from '@/lib/tenant-data'
-import { pickNav } from '@/components/brand/variants'
+import { pickNav, pickTemplate } from '@/components/brand/variants'
 import { Footer } from '@/components/brand/Footer'
+import { BookingProvider } from '@/components/storefront/BookingProvider'
+import { getWizardServices } from '@/components/storefront/wizard-services'
+import storefront from '@/components/storefront/storefront.module.css'
 
 // Per-request, host-resolved tenant → never prerender.
 export const dynamic = 'force-dynamic'
@@ -27,16 +30,21 @@ export default async function PublicLayout({ children }: { children: React.React
   const { tenant, settings } = bundle
 
   const Nav = pickNav(settings.layout.nav_variant)
+  const template = pickTemplate(settings.layout.nav_variant)
   const brandProps = {
     tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
     branding: settings.branding,
   }
   const overrideCss = settings.customOverride?.css
 
+  // Services shaped for the embedded booking wizard — same join as /boka, cached.
+  const wizardServices = await getWizardServices(tenant.id, tenant.slug)
+
   return (
     <div
-      className="tenant-root"
+      className={`tenant-root ${storefront.tplRoot}`}
       data-tenant={tenant.id}
+      data-template={template}
       style={injectTenantTokens(settings.branding) as CSSProperties}
     >
       {/* Nivå 3 — tenant-isolated custom CSS. Emitted ONLY for tenants that have
@@ -50,9 +58,17 @@ export default async function PublicLayout({ children }: { children: React.React
         />
       ) : null}
 
-      <Nav {...brandProps} customerAccountsEnabled={settings.customerAccountsEnabled} />
-      <main className="tenant-main">{children}</main>
-      <Footer tenant={{ name: tenant.name }} />
+      {/* In-page booking embed (Zivar's #1): the WHOLE shell — nav, main, footer
+          — sits inside the provider, so every "Boka tid" CTA opens the same
+          slide-over drawer without ever leaving the salon's page. */}
+      <BookingProvider services={wizardServices} tenantName={tenant.name}>
+        <Nav {...brandProps} customerAccountsEnabled={settings.customerAccountsEnabled} />
+        {/* `.shellMain` reserves space for the fixed top cluster (--nav-h). The
+            home hero cancels it exactly with a negative margin, so the hero photo
+            still meets the viewport top under the nav. */}
+        <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
+        <Footer tenant={{ name: tenant.name }} />
+      </BookingProvider>
     </div>
   )
 }
