@@ -34,6 +34,11 @@ const ENV_RESERVED = (
   .filter(Boolean)
 const ENV_PLATFORM = process.env.NEXT_PUBLIC_PLATFORM_HOST ?? 'booking.corevo.se'
 
+// Single source of truth for reserved subdomains (G08): the platform slug
+// validator must reject exactly the names that never resolve to a tenant here.
+// Re-exported so lib/platform/slug.ts can't drift from this list.
+export const RESERVED_SUBDOMAINS: readonly string[] = ENV_RESERVED
+
 function stripPort(host: string): string {
   const i = host.indexOf(':')
   return i === -1 ? host : host.slice(0, i)
