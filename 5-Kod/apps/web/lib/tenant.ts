@@ -24,20 +24,27 @@ export type ResolveOptions = {
   pathname?: string
 }
 
-const ENV_ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost:3000'
-const ENV_RESERVED = (
-  process.env.NEXT_PUBLIC_RESERVED_SUBDOMAINS ??
-  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo'
-)
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean)
-const ENV_PLATFORM = process.env.NEXT_PUBLIC_PLATFORM_HOST ?? 'booking.corevo.se'
+const DEFAULT_ROOT = 'localhost:3000'
+const DEFAULT_RESERVED = 'booking,admin,app,www,api,superadmin,kiosk,dev,odoo'
+const DEFAULT_PLATFORM = 'booking.corevo.se'
+
+// READ AT CALL TIME, not module load. On the OpenNext/Workers adapter, `vars`
+// are injected into process.env per request — NOT necessarily when this module
+// is first evaluated. Reading these as top-level consts made
+// NEXT_PUBLIC_ROOT_DOMAIN fall back to 'localhost:3000' on the Worker, so real
+// subdomains (demo.corevo.se) resolved to `unknown` → storefront 404. Resolving
+// inside the function (which runs per request) sees the live vars.
+const splitReserved = (v: string): string[] => v.split(',').map((s) => s.trim()).filter(Boolean)
+const envRoot = (): string => process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? DEFAULT_ROOT
+const envReserved = (): string[] =>
+  splitReserved(process.env.NEXT_PUBLIC_RESERVED_SUBDOMAINS ?? DEFAULT_RESERVED)
+const envPlatform = (): string => process.env.NEXT_PUBLIC_PLATFORM_HOST ?? DEFAULT_PLATFORM
 
 // Single source of truth for reserved subdomains (G08): the platform slug
 // validator must reject exactly the names that never resolve to a tenant here.
-// Re-exported so lib/platform/slug.ts can't drift from this list.
-export const RESERVED_SUBDOMAINS: readonly string[] = ENV_RESERVED
+// Re-exported so lib/platform/slug.ts can't drift from this list. (The default
+// list is the canonical one, so a module-load read here is always correct.)
+export const RESERVED_SUBDOMAINS: readonly string[] = envReserved()
 
 function stripPort(host: string): string {
   const i = host.indexOf(':')
@@ -48,9 +55,9 @@ export function getTenantFromHost(
   host: string | null | undefined,
   opts: ResolveOptions = {},
 ): TenantResolution {
-  const rootDomain = opts.rootDomain ?? ENV_ROOT
-  const reserved = opts.reserved ?? ENV_RESERVED
-  const platformHost = opts.platformHost ?? ENV_PLATFORM
+  const rootDomain = opts.rootDomain ?? envRoot()
+  const reserved = opts.reserved ?? envReserved()
+  const platformHost = opts.platformHost ?? envPlatform()
 
   const classify = (raw: string): TenantResolution => {
     const slug = raw.trim().toLowerCase()
