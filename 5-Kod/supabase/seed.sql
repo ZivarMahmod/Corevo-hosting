@@ -1,17 +1,23 @@
 -- ============================================================================
--- Seed — 1 demo tenant (frisor1) + settings + admin + staff + 3 services.
--- Idempotent (safe to re-run). app_metadata.tenant_id is set directly on the
--- auth.users rows (belt-and-suspenders alongside the Custom Access Token Hook),
--- so RLS works end-to-end immediately.
+-- Seed — ONE demo salon (G13 go-live). Tenant "Frisör Demo", slug `demo`,
+-- host demo.corevo.se, customer accounts ON. + 3 login accounts (all Demo!1234):
+--   platform@corevo.se   super_admin (level 8)  -> booking.corevo.se back-office
+--   admin@frisor1.se     salon_admin (level 6)  -> demo back-office
+--   klippare@frisor1.se  staff       (level 3)  -> personalvy
+-- (The admin/klippare email domain is historical; kept so seed == cloud accounts.)
+--
+-- app_metadata.tenant_id is baked onto the auth.users rows (belt-and-suspenders
+-- alongside the Custom Access Token Hook) so RLS works end-to-end immediately.
+-- Idempotent (safe to re-run).
 -- ============================================================================
 
 -- ── tenant ──
 insert into public.tenants (id, slug, name)
-values ('11111111-1111-1111-1111-111111111111', 'frisor1', 'Frisör Ett')
+values ('11111111-1111-1111-1111-111111111111', 'demo', 'Frisör Demo')
 on conflict (slug) do nothing;
 
 insert into public.tenant_domains (tenant_id, domain, is_primary, verified)
-values ('11111111-1111-1111-1111-111111111111', 'frisor1.corevo.se', true, true)
+values ('11111111-1111-1111-1111-111111111111', 'demo.corevo.se', true, true)
 on conflict (domain) do nothing;
 
 insert into public.tenant_settings
@@ -20,7 +26,7 @@ values (
   '11111111-1111-1111-1111-111111111111',
   'on_site',
   '{"color_primary":"#b5651d","font_body":"Inter","logo_url":"/demo-logo-frisor1.svg"}'::jsonb,
-  -- G12: frisor1 opts INTO customer accounts (storefront login + /konto). frisor2 leaves it off.
+  -- G12: demo opts INTO customer accounts (storefront login + /konto).
   '{"layout":{"nav_variant":"A","hero_variant":"1"},"customer_accounts_enabled":true}'::jsonb,
   'fixed', 500
 )
@@ -93,48 +99,7 @@ where not exists (
 );
 
 -- ============================================================================
--- Second demo tenant (frisor2) — for the G03 white-label DoD. Differs from
--- frisor1 on exactly the three theme axes + its own services:
---   · branding   → teal + serif (frisor1 = terracotta + Inter)
---   · layout     → nav_variant=B, hero_variant=2 (frisor1 = A / 1)
---   · custom_override → scoped CSS (frisor1 has none) — proves nivå-3 isolation.
--- Public site only needs tenant + settings + services (no auth/staff/roles).
--- ============================================================================
-insert into public.tenants (id, slug, name)
-values ('12121212-1212-1212-1212-121212121212', 'frisor2', 'Salong Två')
-on conflict (slug) do nothing;
-
-insert into public.tenant_domains (tenant_id, domain, is_primary, verified)
-values ('12121212-1212-1212-1212-121212121212', 'frisor2.corevo.se', true, true)
-on conflict (domain) do nothing;
-
-insert into public.tenant_settings
-  (tenant_id, payment_mode, branding, settings, service_fee_type, service_fee_value)
-values (
-  '12121212-1212-1212-1212-121212121212',
-  'on_site',
-  '{"color_primary":"#0f766e","color_bg":"#f5f3ee","color_fg":"#102a26","font_body":"Georgia, \"Times New Roman\", serif","logo_url":null}'::jsonb,
-  -- nav_variant=B + hero_variant=2 (nivå 2) and a scoped custom_override (nivå 3).
-  -- custom_override.css is wrapped by the app as [data-tenant="<id>"]{ … } (CSS nesting),
-  -- so it physically cannot apply to any other tenant's subtree.
-  '{"layout":{"nav_variant":"B","hero_variant":"2"},"custom_override":{"css":".hero{background:#0b132b;color:#ffffff} .hero h1{letter-spacing:.14em;text-transform:uppercase} .service-card{border-color:#0f766e}"}}'::jsonb,
-  'fixed', 500
-)
-on conflict (tenant_id) do nothing;
-
--- ── frisor2 services (3, distinct from frisor1) ──
-insert into public.services
-  (id, tenant_id, name, description, category, duration_min, price_cents, active) values
-  ('56565656-0000-0000-0000-000000000001', '12121212-1212-1212-1212-121212121212',
-   'Färgning', 'Helfärg inkl. ton', 'Färg', 90, 129500, true),
-  ('56565656-0000-0000-0000-000000000002', '12121212-1212-1212-1212-121212121212',
-   'Klippning dam', 'Klippning och styling', 'Hår', 45, 64500, true),
-  ('56565656-0000-0000-0000-000000000003', '12121212-1212-1212-1212-121212121212',
-   'Föning', 'Tvätt och föning', 'Styling', 30, 34500, true)
-on conflict (id) do nothing;
-
--- ============================================================================
--- Auth foundation + booking engine (M3) extras.
+-- Platform super-admin (cross-tenant back-office on booking.corevo.se).
 -- ============================================================================
 
 -- ── global super_admin role (platform-wide, tenant_id NULL, level 8) ──
@@ -144,10 +109,9 @@ insert into public.roles (id, tenant_id, name, level)
 values ('22222222-9999-9999-9999-000000000008', null, 'super_admin', 8)
 on conflict (id) do nothing;
 
--- ── platform super-admin user (för roll-guard "når tvärs"-testet) ──
 -- platform_admin baked into raw_app_meta_data so the JWT carries it even before
--- the Custom Access Token Hook is enabled in the Dashboard. tenant_id = frisor1
--- is just the home tenant; is_platform_admin() unlocks cross-tenant via RLS.
+-- the Custom Access Token Hook is enabled in the Dashboard. tenant_id = demo is
+-- just the home tenant; is_platform_admin() unlocks cross-tenant via RLS.
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
@@ -182,12 +146,11 @@ where id in (
   '33333333-0000-0000-0000-000000000003'
 );
 
--- ── locations (primary per tenant) + location_id backfill (migration 0005) ──
+-- ── location (primary) + location_id backfill (migration 0005) ──
 -- On a fresh local `supabase db reset` the 0005 migration runs before any tenant
--- exists (no-op), so the seed carries the equivalent location rows + backfill.
+-- exists (no-op), so the seed carries the equivalent location row + backfill.
 insert into public.locations (id, tenant_id, name, timezone, is_primary) values
-  ('77777777-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Frisör Ett', 'Europe/Stockholm', true),
-  ('77777777-0000-0000-0000-000000000002', '12121212-1212-1212-1212-121212121212', 'Salong Två', 'Europe/Stockholm', true)
+  ('77777777-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'Frisör Demo', 'Europe/Stockholm', true)
 on conflict (id) do nothing;
 
 update public.staff s set location_id = l.id
