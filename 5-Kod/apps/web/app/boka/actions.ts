@@ -2,8 +2,12 @@
 
 import { headers } from 'next/headers'
 import { createPublicClient } from '@/lib/supabase/public'
+import { createServiceClient } from '@/lib/platform/service'
 import { computeSlots, type Interval } from '@/lib/booking/availability'
 import { weekdayOf, zonedTimeToUtc } from '@/lib/booking/tz'
+import { getPaymentGate } from '@/lib/booking/payment-gate'
+import { getStripe } from '@/lib/stripe/client'
+import { requestOrigin } from '@/lib/url'
 
 // The public booking flow runs as the anon role. Reads of staff/services/
 // working_hours are gated by the anon RLS policies; busy times come from the
@@ -194,13 +198,89 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
     return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
   }
 
-  // requiresPayment is the G09 seam — derived from the tenant's payment mode.
-  const { data: settings } = await supabase
-    .from('tenant_settings')
-    .select('payment_mode')
+  // requiresPayment (G09): the SINGLE gate — payments_enabled AND charges_enabled.
+  // True ⇒ the wizard starts Stripe Checkout; false ⇒ "betala på plats".
+  const gate = await getPaymentGate(supabase, ctx.tenantId)
+
+  return { ok: true, bookingId, requiresPayment: gate.canTakeOnline }
+}
+
+export type CheckoutResult =
+  | { ok: true; url: string }
+  | { ok: false; reason: 'unavailable' | 'error'; message: string }
+
+/**
+ * Start a Stripe Checkout Session for a just-created booking (G09 step 3).
+ * DIRECT charge on the salong's connected account (`stripeAccount`), full service
+ * price, application_fee_amount OMITTED ⇒ fee = 0 (Corevo tar inget snitt här).
+ *
+ * Runs service-role (RLS-bypass): the booking + payment row writes are invisible
+ * to anon, and the connected account id must stay server-side. Degrades to
+ * { unavailable } (→ "betala på plats") when Stripe/secret saknas eller gaten är av.
+ */
+export async function startBookingCheckout(bookingId: string): Promise<CheckoutResult> {
+  const ctx = await getTenantContext()
+  if (!ctx) return { ok: false, reason: 'error', message: 'Okänd salong.' }
+  if (!bookingId) return { ok: false, reason: 'error', message: 'Saknar bokning.' }
+
+  const stripe = getStripe()
+  const admin = createServiceClient()
+  if (!stripe || !admin) {
+    return { ok: false, reason: 'unavailable', message: 'Onlinebetalning är inte tillgänglig.' }
+  }
+
+  const [{ data: tenant }, { data: settings }] = await Promise.all([
+    admin.from('tenants').select('stripe_account_id, stripe_charges_enabled').eq('id', ctx.tenantId).maybeSingle(),
+    admin.from('tenant_settings').select('payments_enabled').eq('tenant_id', ctx.tenantId).maybeSingle(),
+  ])
+  const canTakeOnline = (settings?.payments_enabled ?? false) && (tenant?.stripe_charges_enabled ?? false)
+  if (!canTakeOnline || !tenant?.stripe_account_id) {
+    return { ok: false, reason: 'unavailable', message: 'Onlinebetalning är inte tillgänglig.' }
+  }
+
+  // Bokningen MÅSTE tillhöra denna tenant (bookingId kommer från klienten).
+  const { data: booking } = await admin
+    .from('bookings')
+    .select('id, price_cents, status, services(name)')
+    .eq('id', bookingId)
     .eq('tenant_id', ctx.tenantId)
     .maybeSingle()
-  const requiresPayment = settings?.payment_mode === 'online' || settings?.payment_mode === 'both'
+  if (!booking) return { ok: false, reason: 'error', message: 'Bokningen hittades inte.' }
+  const amount = booking.price_cents ?? 0
+  if (amount <= 0) return { ok: false, reason: 'unavailable', message: 'Inget pris att betala.' }
+  const serviceName = (booking.services as { name?: string } | null)?.name ?? 'Behandling'
 
-  return { ok: true, bookingId, requiresPayment }
+  // En payment-rad per bokning (UNIQUE(booking_id) → idempotensgrund för webhooken).
+  await admin.from('payments').upsert(
+    { tenant_id: ctx.tenantId, booking_id: bookingId, amount_cents: amount, currency: 'sek', status: 'pending' },
+    { onConflict: 'booking_id' },
+  )
+
+  const origin = await requestOrigin()
+  let session
+  try {
+    session = await stripe.checkout.sessions.create(
+      {
+        mode: 'payment',
+        line_items: [
+          {
+            quantity: 1,
+            price_data: { currency: 'sek', unit_amount: amount, product_data: { name: serviceName } },
+          },
+        ],
+        // application_fee_amount UTELÄMNAS medvetet ⇒ fee = 0.
+        payment_intent_data: { metadata: { booking_id: bookingId, tenant_id: ctx.tenantId } },
+        metadata: { booking_id: bookingId, tenant_id: ctx.tenantId },
+        success_url: `${origin}/boka/bekraftelse/${bookingId}?betald=1`,
+        cancel_url: `${origin}/boka/bekraftelse/${bookingId}?avbruten=1`,
+      },
+      { stripeAccount: tenant.stripe_account_id }, // DIRECT charge på salongens konto
+    )
+  } catch {
+    return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+  }
+
+  if (!session.url) return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+  await admin.from('payments').update({ stripe_checkout_session_id: session.id }).eq('booking_id', bookingId)
+  return { ok: true, url: session.url }
 }

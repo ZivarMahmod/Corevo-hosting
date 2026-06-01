@@ -2,7 +2,12 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAvailableSlots, createBooking, type SlotOption } from '@/app/boka/actions'
+import {
+  getAvailableSlots,
+  createBooking,
+  startBookingCheckout,
+  type SlotOption,
+} from '@/app/boka/actions'
 
 type WizardStaff = { id: string; title: string | null }
 export type WizardService = {
@@ -104,6 +109,15 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
         note: form.note,
       })
       if (res.ok) {
+        // Online-betalning på (payments_enabled && charges_enabled) → Stripe Checkout.
+        // Allt fel/degrade landar tyst på bekräftelsesidan (betala på plats).
+        if (res.requiresPayment) {
+          const pay = await startBookingCheckout(res.bookingId)
+          if (pay.ok) {
+            window.location.href = pay.url
+            return
+          }
+        }
         router.push(`/boka/bekraftelse/${res.bookingId}`)
       } else {
         setError(res.message)
