@@ -3,19 +3,20 @@ name: Deploy
 # CD (G11). Builds Next→Cloudflare via OpenNext and deploys the Worker, and runs
 # Supabase migrations against the matching environment.
 #
-#   push to main        → STAGING (auto)         worker: bokningsplatformen-staging
 #   push tag v*          → PRODUCTION (gated)     worker: bokningsplatformen
-#   workflow_dispatch    → choose target manually
+#   workflow_dispatch    → choose target manually (staging | production)
 #
-# Production NEVER auto-deploys from a PR (live-blocker / DoD): it requires a tag
-# or a manual run, AND the `production` GitHub Environment approval gate.
+# NOTHING auto-deploys on a push to main. Staging is MANUAL ONLY (no staging
+# Supabase project exists yet — auto-on-push failed every push). Run it from the
+# Actions tab ("Run workflow" → target: staging) once staging secrets exist.
+# Production NEVER auto-deploys: it requires a tag or a manual run, AND the
+# `production` GitHub Environment approval gate.
 #
 # OpenNext bundling runs here on Linux on purpose — the local Windows bundle hits
 # an EPERM symlink error (live-blocker #3); `next build` itself is green either way.
 
 on:
   push:
-    branches: [main]
     tags: ['v*']
   workflow_dispatch:
     inputs:
@@ -39,9 +40,9 @@ jobs:
   staging:
     name: deploy staging
     runs-on: ubuntu-latest
-    if: >-
-      github.ref == 'refs/heads/main' ||
-      (github.event_name == 'workflow_dispatch' && inputs.target == 'staging')
+    # MANUAL ONLY — never auto-runs on push. Needs a staging Supabase project +
+    # secrets that don't exist yet; auto-on-main failed every push (G11 ops-pending).
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'staging'
     environment: staging
     steps:
       - uses: actions/checkout@v4
