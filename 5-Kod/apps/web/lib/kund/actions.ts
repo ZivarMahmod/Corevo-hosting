@@ -9,6 +9,14 @@ import { currentKundTenant } from './tenant'
 import { getMyBooking } from './bookings'
 import { getCancellationCutoffHours, withinCancellationWindow } from './settings'
 import { refundBookingPayment } from '@/lib/stripe/refund'
+import { sendBookingCancellation, sendBookingConfirmation } from '@/lib/notifications/booking'
+
+/** Best-effort tenant display name for notifications (RLS: own tenant readable). */
+async function tenantName(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string): Promise<string> {
+  if (!tenantId) return 'Salongen'
+  const { data } = await supabase.from('tenants').select('name').eq('id', tenantId).maybeSingle()
+  return data?.name ?? 'Salongen'
+}
 
 const ACTIVE_STATUSES = ['pending', 'confirmed']
 
@@ -157,6 +165,17 @@ export async function cancelBooking(
   // No-op när ingen lyckad betalning finns / Stripe ej konfigurerat.
   await refundBookingPayment(bookingId, user.tenantId ?? '')
 
+  // Avboknings-notis (G10) — best-effort, före redirect (redirect kastar internt).
+  if (user.email) {
+    await sendBookingCancellation(user.email, {
+      tenantName: await tenantName(supabase, user.tenantId ?? ''),
+      serviceName: booking.serviceName ?? 'Behandling',
+      startISO: booking.startTs,
+      timeZone: booking.timeZone,
+      staffTitle: booking.staffTitle,
+    })
+  }
+
   revalidatePath('/konto')
   revalidatePath(`/konto/bokningar/${bookingId}`)
   redirect('/konto')
@@ -213,6 +232,16 @@ export async function rebookBooking(
     .eq('id', bookingId)
     .eq('customer_profile_id', user.id)
     .in('status', ACTIVE_STATUSES)
+
+  // Bekräftelse på den NYA tiden (G10) — best-effort, före redirect.
+  if (user.email) {
+    await sendBookingConfirmation(user.email, {
+      tenantName: await tenantName(supabase, user.tenantId ?? ''),
+      serviceName: old.serviceName ?? 'Behandling',
+      startISO: startISO,
+      timeZone: old.timeZone,
+    })
+  }
 
   revalidatePath('/konto')
   redirect(`/konto/bokningar/${newId}`)

@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { portalHomeFor } from '@/lib/auth/roles'
+import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 
 export type SignInState = { error?: string }
 
@@ -17,6 +18,13 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   const next = String(formData.get('next') ?? '')
 
   if (!email || !password) return { error: 'Fyll i både e-post och lösenord.' }
+
+  // Rate-limit by IP (G10) — slows credential-stuffing. App-layer complement to
+  // the Cloudflare WAF rule (primary, documented in ops). Fails open on DB error.
+  const ip = await getClientIp()
+  if (!(await checkRateLimit(rateLimitKey('login', ip), LIMITS.login))) {
+    return { error: 'För många inloggningsförsök. Vänta en stund och försök igen.' }
+  }
 
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })

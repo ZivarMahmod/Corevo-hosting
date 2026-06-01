@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { requirePortal } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
 import { ProfileForm } from '@/components/kund/ProfileForm'
+import { GdprControls } from '@/components/kund/GdprControls'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Min profil' }
@@ -29,6 +30,7 @@ export default async function ProfilePage() {
       </Link>
       <h1>Min profil</h1>
       <ProfileForm email={user.email} name={fullName} phone={profile?.phone ?? ''} />
+      <GdprControls />
     </section>
   )
 }

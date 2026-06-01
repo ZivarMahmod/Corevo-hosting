@@ -1,6 +1,8 @@
 import Stripe from 'stripe'
 import { getStripe, getWebhookSecret } from '@/lib/stripe/client'
 import { createServiceClient } from '@/lib/platform/service'
+import { sendPaymentReceipt, parseGuestEmail } from '@/lib/notifications/booking'
+import { captureException } from '@/lib/observability'
 
 // Stripe Connect webhook (G09 step 4).
 //
@@ -73,6 +75,35 @@ export async function POST(req: Request): Promise<Response> {
             .eq('id', bookingId)
             .eq('tenant_id', tenantId)
             .eq('status', 'pending')
+
+          // Kvitto (G10) — gästkontakt rider på note (G04-sömmen). Best-effort.
+          try {
+            const { data: b } = await admin
+              .from('bookings')
+              .select('note, start_ts, services(name), tenants(name), locations(timezone)')
+              .eq('id', bookingId)
+              .eq('tenant_id', tenantId)
+              .maybeSingle()
+            const to = parseGuestEmail((b as { note?: string | null } | null)?.note)
+            if (b && to) {
+              const rel = b as unknown as {
+                start_ts: string
+                services: { name?: string } | null
+                tenants: { name?: string } | null
+                locations: { timezone?: string } | null
+              }
+              await sendPaymentReceipt(to, {
+                tenantName: rel.tenants?.name ?? 'Salongen',
+                serviceName: rel.services?.name ?? 'Behandling',
+                startISO: rel.start_ts,
+                timeZone: rel.locations?.timezone ?? 'Europe/Stockholm',
+                amountCents: pi.amount_received ?? pi.amount ?? 0,
+                currency: pi.currency ?? 'sek',
+              })
+            }
+          } catch (e) {
+            await captureException(e, { where: 'webhook.receipt', bookingId })
+          }
         }
         break
       }
@@ -122,8 +153,9 @@ export async function POST(req: Request): Promise<Response> {
         // Övriga event-typer ignoreras tyst (200 → Stripe slutar leverera om).
         break
     }
-  } catch {
+  } catch (e) {
     // Intern fel → 500 så Stripe gör retry (idempotensen gör retry säker).
+    await captureException(e, { where: 'webhook.handler', type: event.type })
     return new Response('Webhook handler error', { status: 500 })
   }
 

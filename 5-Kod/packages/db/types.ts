@@ -64,6 +64,7 @@ export type Database = {
           location_id: string
           note: string | null
           price_cents: number | null
+          reminded_at: string | null
           service_id: string
           staff_id: string
           start_ts: string
@@ -79,6 +80,7 @@ export type Database = {
           location_id: string
           note?: string | null
           price_cents?: number | null
+          reminded_at?: string | null
           service_id: string
           staff_id: string
           start_ts: string
@@ -94,6 +96,7 @@ export type Database = {
           location_id?: string
           note?: string | null
           price_cents?: number | null
+          reminded_at?: string | null
           service_id?: string
           staff_id?: string
           start_ts?: string
@@ -707,6 +710,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: { p_key: string; p_max: number; p_window_secs: number }
+        Returns: boolean
+      }
       create_public_booking: {
         Args: {
           p_customer?: string

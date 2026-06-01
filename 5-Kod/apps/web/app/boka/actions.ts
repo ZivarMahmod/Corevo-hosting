@@ -8,6 +8,8 @@ import { weekdayOf, zonedTimeToUtc } from '@/lib/booking/tz'
 import { getPaymentGate } from '@/lib/booking/payment-gate'
 import { getStripe } from '@/lib/stripe/client'
 import { requestOrigin } from '@/lib/url'
+import { sendBookingConfirmation } from '@/lib/notifications/booking'
+import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 
 // The public booking flow runs as the anon role. Reads of staff/services/
 // working_hours are gated by the anon RLS policies; busy times come from the
@@ -164,6 +166,13 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'invalid', message: 'Okänd salong.' }
 
+  // Rate-limit booking writes per IP+tenant (G10) — guards the public, unauthed
+  // create path against spam. Fails open on DB error.
+  const ip = await getClientIp()
+  if (!(await checkRateLimit(rateLimitKey('booking', ctx.tenantId, ip), LIMITS.booking))) {
+    return { ok: false, reason: 'error', message: 'För många bokningsförsök. Vänta en stund och försök igen.' }
+  }
+
   const name = input.name.trim()
   const email = input.email.trim()
   const phone = input.phone.trim()
@@ -196,6 +205,24 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
   }
   if (!bookingId) {
     return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
+  }
+
+  // Bokningsbekräftelse (G10): fire at CREATION (not on the webhook) — on-site
+  // bookings never reach the webhook, so this is the only confirmation they get.
+  // Best-effort + awaited so the mail flushes before the Workers request ends.
+  try {
+    const [{ data: tRow }, { data: sRow }] = await Promise.all([
+      supabase.from('tenants').select('name').eq('id', ctx.tenantId).maybeSingle(),
+      supabase.from('services').select('name').eq('id', input.serviceId).eq('tenant_id', ctx.tenantId).maybeSingle(),
+    ])
+    await sendBookingConfirmation(email, {
+      tenantName: tRow?.name ?? ctx.slug,
+      serviceName: sRow?.name ?? 'Behandling',
+      startISO: input.startISO,
+      timeZone: ctx.timeZone,
+    })
+  } catch {
+    // notifications are best-effort — never block the booking on a mail error.
   }
 
   // requiresPayment (G09): the SINGLE gate — payments_enabled AND charges_enabled.
