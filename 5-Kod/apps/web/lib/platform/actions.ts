@@ -111,16 +111,24 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
         await svc.auth.admin.updateUserById(authId, {
           app_metadata: { tenant_id: tenantId, platform_admin: false },
         })
-        await svc
+        // The public.users row is a plain cross-tenant DB write — use the authed
+        // platform client (RLS bypass via is_platform_admin), NOT the service role.
+        // Only the auth.admin.* calls above genuinely require svc.
+        const { error: uErr } = await supabase
           .from('users')
           .insert({ id: authId, tenant_id: tenantId, email: adminEmail, role_id: role.id, status: 'active' })
-        await logPlatformAction(supabase, {
-          action: 'tenant.invite',
-          tenantId,
-          actorId: user.id,
-          meta: { email: adminEmail },
-        })
-        inviteNote = ` Inbjudan skickad till ${adminEmail}.`
+        if (uErr) {
+          // Don't claim success: most likely the email already has an account.
+          inviteNote = ` Salongen skapad, men salongsadmin kunde inte kopplas (kontot finns kanske redan).`
+        } else {
+          await logPlatformAction(supabase, {
+            action: 'tenant.invite',
+            tenantId,
+            actorId: user.id,
+            meta: { email: adminEmail },
+          })
+          inviteNote = ` Inbjudan skickad till ${adminEmail}.`
+        }
       }
     }
   }

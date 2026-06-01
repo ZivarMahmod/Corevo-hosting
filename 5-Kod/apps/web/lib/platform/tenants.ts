@@ -34,7 +34,11 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
 
   if (filters.status && filters.status !== 'all') q = q.eq('status', filters.status)
   if (filters.q && filters.q.trim()) {
-    const term = `%${filters.q.trim()}%`
+    // PostgREST parses .or() as a comma-separated filter list, so strip the chars
+    // that would break the parse (comma/parens/asterisk/quote/backslash) — else a
+    // term like "Klipp, Färg" 400s the request and silently returns no tenants.
+    const safe = filters.q.trim().replace(/[,()*"\\]/g, ' ')
+    const term = `%${safe}%`
     q = q.or(`slug.ilike.${term},name.ilike.${term}`)
   }
 
