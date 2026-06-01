@@ -6,6 +6,21 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
+  // Public client env, provided at RUNTIME. OpenNext maps `vars` -> process.env;
+  // Next's build-time NEXT_PUBLIC_* inlining is INCONSISTENT across server chunks
+  // on the Workers adapter (the (public) storefront read process.env at runtime
+  // and got undefined -> createPublicClient threw -> 500). These are all PUBLIC
+  // values (the anon key is browser-exposed by design), so plaintext vars are
+  // correct here. Real server secrets (SERVICE_ROLE_KEY, STRIPE_*) still go via
+  // `wrangler secret put`, never here.
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://clylvowtowbtotrahuad.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNseWx2b3d0b3didG90cmFodWFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTg4MDcsImV4cCI6MjA5NTc3NDgwN30.ZSm3eMT-PxqfDPN2P584EVBlWfUwpeQ6gKOnKBvqxJU",
+    "NEXT_PUBLIC_ROOT_DOMAIN": "corevo.se",
+    "NEXT_PUBLIC_PLATFORM_HOST": "booking.corevo.se",
+    "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo",
+    "NEXT_PUBLIC_SITE_URL": "https://booking.corevo.se"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
