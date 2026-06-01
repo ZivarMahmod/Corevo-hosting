@@ -8,6 +8,7 @@ import { createAdminClient } from './admin'
 import { currentKundTenant } from './tenant'
 import { getMyBooking } from './bookings'
 import { getCancellationCutoffHours, withinCancellationWindow } from './settings'
+import { refundBookingPayment } from '@/lib/stripe/refund'
 
 const ACTIVE_STATUSES = ['pending', 'confirmed']
 
@@ -151,6 +152,10 @@ export async function cancelBooking(
     .eq('customer_profile_id', user.id)
     .in('status', ACTIVE_STATUSES)
   if (error) return { error: 'Kunde inte avboka. Försök igen.' }
+
+  // Avbokning inom regeln (kontrollerad ovan) → refund om bokningen var betald.
+  // No-op när ingen lyckad betalning finns / Stripe ej konfigurerat.
+  await refundBookingPayment(bookingId, user.tenantId ?? '')
 
   revalidatePath('/konto')
   revalidatePath(`/konto/bokningar/${bookingId}`)

@@ -180,3 +180,4 @@ body {
 .confirm-summary li:last-child { border-bottom: none; }
 .confirm-summary span { opacity: 0.7; }
 .confirm-note { opacity: 0.8; margin: 0 0 1.5rem; }
+.confirm-paid { opacity: 1; font-weight: 600; color: #15803d; }

@@ -12,8 +12,15 @@ const kr = new Intl.NumberFormat('sv-SE', {
   maximumFractionDigits: 0,
 })
 
-export default async function ConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ConfirmationPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ betald?: string; avbruten?: string }>
+}) {
   const { id } = await params
+  const { avbruten } = await searchParams
 
   const supabase = createPublicClient()
   const { data } = await supabase.rpc('get_public_booking', { p_id: id })
@@ -26,7 +33,12 @@ export default async function ConfirmationPage({ params }: { params: Promise<{ i
     timeStyle: 'short',
     timeZone: tz,
   }).format(new Date(booking.start_ts))
-  const requiresPayment = booking.payment_mode === 'online' || booking.payment_mode === 'both'
+
+  // Effektiv gate (samma som boka-flödet): online bara om BÅDA flaggorna är på.
+  const canTakeOnline = booking.payments_enabled && booking.stripe_charges_enabled
+  const paid = booking.payment_status === 'succeeded'
+  const refunded = booking.payment_status === 'refunded'
+  const checkoutCancelled = avbruten === '1'
 
   return (
     <section className="section">
@@ -56,11 +68,17 @@ export default async function ConfirmationPage({ params }: { params: Promise<{ i
           </li>
         </ul>
 
-        {/* Betalning (G09-krok): on_site = betala på plats; online/both kopplas på här. */}
-        {requiresPayment ? (
-          <p className="confirm-note">
-            Onlinebetalning läggs till snart. Tills vidare betalar du i salongen.
+        {/* Betalning (G09): kvitto/status. paid > refunded > avbruten > väntar > på plats. */}
+        {paid ? (
+          <p className="confirm-note confirm-paid">
+            ✓ Betald online — {kr.format((booking.price_cents ?? 0) / 100)}. Kvitto skickas via Stripe.
           </p>
+        ) : refunded ? (
+          <p className="confirm-note">Betalningen är återbetald.</p>
+        ) : checkoutCancelled ? (
+          <p className="confirm-note">Betalningen avbröts. Du kan betala i salongen vid besöket.</p>
+        ) : canTakeOnline ? (
+          <p className="confirm-note">Betalningen behandlas — du får en bekräftelse strax.</p>
         ) : (
           <p className="confirm-note">Du betalar på plats vid besöket.</p>
         )}
