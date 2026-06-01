@@ -69,6 +69,28 @@ export async function getEnabledNotifications(
 }
 
 /**
+ * Whether the owner has opted INTO SMS notifications for this tenant. Reads
+ * `tenant_settings.settings.sms_enabled`, defaulting to FALSE — SMS is opt-in
+ * (a paid/secondary channel), the opposite default from the email toggles above,
+ * so the coercion is written explicitly rather than via flag().
+ */
+export async function getSmsEnabled(
+  supabase: SupabaseClient<Database>,
+  tenantId: string,
+): Promise<boolean> {
+  if (!tenantId) return false
+
+  const { data } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
+  const settings = (data?.settings ?? {}) as Record<string, unknown>
+  return settings.sms_enabled === true
+}
+
+/**
  * The tenant's Google-review URL (e.g. a Google Place review link), or null if
  * the owner hasn't set one. Read from `tenant_settings.settings.google_review_url`.
  * A null result means the review nudge is a graceful no-op (see google-review.ts).

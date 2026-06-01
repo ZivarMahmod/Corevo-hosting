@@ -415,6 +415,22 @@ function isValidTz(tz: string): boolean {
   }
 }
 
+/**
+ * Owner's Google-review link. Empty → null (review nudge no-ops gracefully).
+ * Otherwise must parse as an https URL; mirrors hexOrNull's contract so the caller
+ * rejects on `undefined`. Uses the WHATWG `URL` global (available on Workers).
+ */
+function httpsUrlOrNull(raw: FormDataEntryValue | null): string | null | undefined {
+  const v = String(raw ?? '').trim()
+  if (v === '') return null
+  try {
+    const url = new URL(v)
+    return url.protocol === 'https:' ? v : undefined // undefined = invalid (caller rejects)
+  } catch {
+    return undefined
+  }
+}
+
 export async function saveSettings(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await adminCtx()
   if (!ctx) return { error: NO_TENANT }
@@ -429,6 +445,18 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const contactPhone = String(fd.get('contact_phone') ?? '').trim()
   const customerAccounts = String(fd.get('customer_accounts_enabled') ?? '') === 'true'
 
+  // Notiser & integritet. Checkboxes only appear in FormData when checked, so an
+  // absent key means "unchecked" → persist explicit `false` (the M9 reader treats
+  // an absent jsonb key as ON, so we must write false to actually turn it off).
+  const notifications = {
+    confirmation: String(fd.get('notify_confirmation') ?? '') === 'true',
+    reminder: String(fd.get('notify_reminder') ?? '') === 'true',
+    review: String(fd.get('notify_review') ?? '') === 'true',
+  }
+  const smsEnabled = String(fd.get('sms_enabled') ?? '') === 'true'
+  const cookieBannerEnabled = String(fd.get('cookie_banner_enabled') ?? '') === 'true'
+  const googleReviewUrl = httpsUrlOrNull(fd.get('google_review_url'))
+
   if (!name) return { error: 'Ange ett salongsnamn.' }
   if (!PAYMENT_MODES.includes(paymentMode as (typeof PAYMENT_MODES)[number]))
     return { error: 'Ogiltigt betalningsläge.' }
@@ -436,6 +464,8 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   if (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760)
     return { error: 'Avbokningsregel måste vara ett antal timmar (0–8760).' }
   if (timezone && !isValidTz(timezone)) return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
+  if (googleReviewUrl === undefined)
+    return { error: 'Ogiltig recensionslänk. Använd en https-länk, t.ex. https://g.page/r/.../review.' }
 
   const supabase = await createClient()
 
@@ -456,6 +486,10 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     cancellation_cutoff_hours: cancelHours, // read by M4 (kund avbokning)
     contact: { email: contactEmail || null, phone: contactPhone || null },
     customer_accounts_enabled: customerAccounts, // G12: storefront login/konto toggle
+    notifications, // M9: per-channel toggles (confirmation/reminder/review)
+    google_review_url: googleReviewUrl, // M9: review-nudge link (null = off)
+    sms_enabled: smsEnabled, // SMS hook (provider wired later)
+    cookie_banner_enabled: cookieBannerEnabled, // storefront cookie banner
   }
   const s = await supabase
     .from('tenant_settings')

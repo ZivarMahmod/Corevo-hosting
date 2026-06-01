@@ -20,9 +20,9 @@ const FALLBACK = {
 // because @corevo/ui only re-exports injectTenantTokens, not the helper.
 function accentFg(hex: string): string {
   const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim())
-  if (!m) return '#15281f'
+  if (!m || !m[1]) return '#15281f'
   let h = m[1]
-  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]
+  if (h.length === 3) h = h[0]! + h[0]! + h[1]! + h[1]! + h[2]! + h[2]!
   const r = parseInt(h.slice(0, 2), 16)
   const g = parseInt(h.slice(2, 4), 16)
   const b = parseInt(h.slice(4, 6), 16)

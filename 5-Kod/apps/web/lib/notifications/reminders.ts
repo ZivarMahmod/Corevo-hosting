@@ -1,6 +1,8 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/platform/service'
 import { sendBookingReminder, parseGuestEmail } from './booking'
+import { sendSms, parseGuestPhone } from './sms'
+import { getEnabledNotifications, getSmsEnabled } from './settings'
 import { logger } from '@/lib/observability'
 
 // Reminder pipeline (G10 step 3). Sends a "din tid imorgon"-mail for LIVE bookings
@@ -28,6 +30,24 @@ type ReminderRow = {
   locations: { timezone?: string } | null
 }
 
+// Short Swedish reminder SMS — plain text, no links/PII.
+function reminderSmsBody(tenantName: string, serviceName: string, startISO: string, timeZone: string): string {
+  let when = startISO
+  try {
+    when = new Intl.DateTimeFormat('sv-SE', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone,
+    }).format(new Date(startISO))
+  } catch {
+    /* fall back to the raw ISO string */
+  }
+  return `Påminnelse från ${tenantName}: ${serviceName} ${when}. Vi ses!`
+}
+
 export async function sendDueReminders(): Promise<ReminderRun> {
   const admin = createServiceClient()
   if (!admin) {
@@ -53,24 +73,64 @@ export async function sendDueReminders(): Promise<ReminderRun> {
   }
   const rows = (data ?? []) as unknown as ReminderRow[]
 
+  // Per-tenant preference caches (the batch can span tenants; each lookup hits
+  // tenant_settings, so memoise to avoid N reads of the same row).
+  const reminderEnabled = new Map<string, boolean>()
+  const smsEnabled = new Map<string, boolean>()
+
   let sent = 0
   let skipped = 0
   for (const b of rows) {
+    // Owner pref: skip the whole reminder for this tenant when reminders are off.
+    let enabled = reminderEnabled.get(b.tenant_id)
+    if (enabled === undefined) {
+      enabled = (await getEnabledNotifications(admin, b.tenant_id)).reminder
+      reminderEnabled.set(b.tenant_id, enabled)
+    }
+    if (!enabled) {
+      // Do NOT stamp: "skip" means skip THIS send, not permanently. If the owner
+      // re-enables reminders before the appointment, the row is still unstamped and
+      // gets reminded on the next run. Re-scanning is cheap (prefs are memoised).
+      skipped++
+      continue
+    }
+
     let to = parseGuestEmail(b.note)
-    if (!to && b.customer_profile_id) {
-      const { data: u } = await admin.from('users').select('email').eq('id', b.customer_profile_id).maybeSingle()
-      to = u?.email ?? null
+    let phone = parseGuestPhone(b.note)
+    if ((!to || !phone) && b.customer_profile_id) {
+      const { data: u } = await admin
+        .from('users')
+        .select('email, phone')
+        .eq('id', b.customer_profile_id)
+        .maybeSingle()
+      to = to ?? u?.email ?? null
+      phone = phone ?? u?.phone ?? null
     }
     if (!to) {
       skipped++
       continue
     }
-    await sendBookingReminder(to, {
-      tenantName: b.tenants?.name ?? 'Salongen',
-      serviceName: b.services?.name ?? 'Behandling',
-      startISO: b.start_ts,
-      timeZone: b.locations?.timezone ?? 'Europe/Stockholm',
-    })
+    const tenantName = b.tenants?.name ?? 'Salongen'
+    const serviceName = b.services?.name ?? 'Behandling'
+    const timeZone = b.locations?.timezone ?? 'Europe/Stockholm'
+    await sendBookingReminder(to, { tenantName, serviceName, startISO: b.start_ts, timeZone })
+
+    // Best-effort opt-in SMS (secondary channel; email above is primary).
+    if (phone) {
+      let sms = smsEnabled.get(b.tenant_id)
+      if (sms === undefined) {
+        sms = await getSmsEnabled(admin, b.tenant_id)
+        smsEnabled.set(b.tenant_id, sms)
+      }
+      if (sms) {
+        try {
+          await sendSms({ to: phone, body: reminderSmsBody(tenantName, serviceName, b.start_ts, timeZone) })
+        } catch {
+          // SMS is best-effort — never abort the batch on a send error.
+        }
+      }
+    }
+
     // Stamp regardless of transport result — degrade means "don't retry forever".
     await admin.from('bookings').update({ reminded_at: now.toISOString() }).eq('id', b.id)
     sent++

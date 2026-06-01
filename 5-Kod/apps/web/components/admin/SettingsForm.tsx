@@ -20,6 +20,12 @@ const PAYMENT_MODES: { value: string; label: string }[] = [
   { value: 'coming_soon', label: 'Online (kommer snart)' },
 ]
 
+export type NotificationToggles = {
+  confirmation: boolean
+  reminder: boolean
+  review: boolean
+}
+
 export type SettingsFormProps = {
   name: string
   paymentMode: string
@@ -30,9 +36,20 @@ export type SettingsFormProps = {
   contactEmail: string
   contactPhone: string
   customerAccountsEnabled: boolean
+  /** Notiser & integritet — defaults match the "absent => on" reader semantics. */
+  notifications?: NotificationToggles
+  googleReviewUrl?: string
+  smsEnabled?: boolean
+  cookieBannerEnabled?: boolean
 }
 
-export function SettingsForm(props: SettingsFormProps) {
+export function SettingsForm({
+  notifications = { confirmation: true, reminder: true, review: true },
+  googleReviewUrl = '',
+  smsEnabled = false,
+  cookieBannerEnabled = true,
+  ...props
+}: SettingsFormProps) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(saveSettings, {})
   const tzOptions = TIMEZONES.includes(props.timezone) ? TIMEZONES : [props.timezone, ...TIMEZONES]
 
@@ -116,6 +133,73 @@ export function SettingsForm(props: SettingsFormProps) {
         />
         Tillåt kundkonton — visar inloggning + “Mitt konto” på din publika sajt (annars endast
         gästbokning)
+      </label>
+
+      {/* Notiser & integritet — toggles read by M9 (notifications) + the storefront
+          cookie-banner. Lives inside the same form so it saves with everything else. */}
+      <div className={styles.sectionHead} style={{ marginTop: '1rem' }}>
+        <h2 style={{ fontSize: '1.05rem' }}>Notiser &amp; integritet</h2>
+      </div>
+
+      <div className={styles.checks} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+        <label className={styles.check}>
+          <input
+            type="checkbox"
+            name="notify_confirmation"
+            value="true"
+            defaultChecked={notifications.confirmation}
+          />
+          Skicka bokningsbekräftelse
+        </label>
+        <label className={styles.check}>
+          <input
+            type="checkbox"
+            name="notify_reminder"
+            value="true"
+            defaultChecked={notifications.reminder}
+          />
+          Skicka påminnelse
+        </label>
+        <label className={styles.check}>
+          <input
+            type="checkbox"
+            name="notify_review"
+            value="true"
+            defaultChecked={notifications.review}
+          />
+          Skicka recensions-förfrågan efter besök
+        </label>
+      </div>
+
+      <label className={styles.field}>
+        <span>Google-recension-länk</span>
+        <input
+          name="google_review_url"
+          type="url"
+          placeholder="https://g.page/r/.../review"
+          defaultValue={googleReviewUrl}
+        />
+        <span className={styles.muted}>
+          Klistra in salongens Google-recensionslänk. Lämna tomt för att stänga av.
+        </span>
+      </label>
+
+      <label className={styles.check}>
+        <input type="checkbox" name="sms_enabled" value="true" defaultChecked={smsEnabled} />
+        SMS-notiser
+      </label>
+      <span className={styles.muted} style={{ marginTop: '-0.4rem' }}>
+        Kräver SMS-leverantör — kroken finns, leverantör kopplas senare.
+      </span>
+
+      <label className={styles.check}>
+        <input
+          type="checkbox"
+          name="cookie_banner_enabled"
+          value="true"
+          defaultChecked={cookieBannerEnabled}
+        />
+        Visa cookie-banner på sajten
       </label>
 
       <div className={styles.actions}>

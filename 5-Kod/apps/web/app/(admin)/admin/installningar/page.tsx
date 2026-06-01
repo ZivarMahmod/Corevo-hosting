@@ -45,6 +45,10 @@ export default async function SettingsPage({
     cancellation_cutoff_hours?: number
     contact?: { email?: string | null; phone?: string | null }
     customer_accounts_enabled?: boolean
+    notifications?: { confirmation?: boolean; reminder?: boolean; review?: boolean }
+    google_review_url?: string | null
+    sms_enabled?: boolean
+    cookie_banner_enabled?: boolean
   }
   const contact = sjson.contact ?? {}
 
@@ -68,6 +72,14 @@ export default async function SettingsPage({
         contactEmail={contact.email ?? ''}
         contactPhone={contact.phone ?? ''}
         customerAccountsEnabled={sjson.customer_accounts_enabled === true}
+        notifications={{
+          confirmation: sjson.notifications?.confirmation !== false,
+          reminder: sjson.notifications?.reminder !== false,
+          review: sjson.notifications?.review !== false,
+        }}
+        googleReviewUrl={sjson.google_review_url ?? ''}
+        smsEnabled={sjson.sms_enabled === true}
+        cookieBannerEnabled={sjson.cookie_banner_enabled !== false}
       />
 
       <StripeConnectCard

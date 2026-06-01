@@ -19,6 +19,10 @@ export type BookingEmailData = {
   startISO: string
   timeZone: string
   staffTitle?: string | null
+  /** Public self-service manage/cancel link (HMAC-token URL); omit/null = no link. */
+  manageUrl?: string | null
+  /** Hours-before-start the guest may still cancel; null/absent = no cutoff line. */
+  cancelCutoffHours?: number | null
 }
 
 // ── Corevo brand palette (inline-only HEX mirror of design-system.md §2) ──────
@@ -119,13 +123,36 @@ function note(text: string): string {
   return `<p style="margin:22px 0 0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.meta}">${text}</p>`
 }
 
+// Self-service manage block (NOTIF-GUEST): a forest pill linking to the public
+// avboka page, plus an optional "senast X timmar innan"-line. Rendered only when a
+// manageUrl is present; stays graceful (empty string) when absent.
+function manageBlock(manageUrl?: string | null, cancelCutoffHours?: number | null): string {
+  const url = manageUrl?.trim()
+  if (!url) return ''
+  const cutoff =
+    typeof cancelCutoffHours === 'number' && Number.isFinite(cancelCutoffHours) && cancelCutoffHours > 0
+      ? `<p style="margin:12px 0 0;font-family:${SANS};font-size:13px;line-height:1.6;color:${C.meta}">Du kan avboka senast ${cancelCutoffHours} timmar innan besöket.</p>`
+      : ''
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 0">
+      <tr><td style="border-radius:9999px;background:${C.forest}">
+        <a href="${url.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)}" style="display:inline-block;padding:12px 26px;font-family:${SANS};font-size:14px;font-weight:700;color:${C.paper};text-decoration:none;border-radius:9999px">Avboka eller ändra din tid</a>
+      </td></tr>
+    </table>${cutoff}`
+}
+
 export function confirmationEmail(d: BookingEmailData): { subject: string; html: string } {
+  // With a self-service manage link, show the avboka button (+ optional cutoff line)
+  // instead of the generic "logga in"-note; gäster har inget konto att logga in på.
+  const manage = manageBlock(d.manageUrl, d.cancelCutoffHours)
+  const tail = manage
+    ? manage
+    : note('Behöver du ändra eller avboka? Logga in på ditt konto så fixar du det på några sekunder.')
   return {
     subject: `Bokningsbekräftelse — ${d.tenantName}`,
     html: shell(
       'Vi ser fram emot ditt besök',
       `${lead('Tack för din bokning! Här är dina uppgifter:')}${details(d)}
-       ${note('Behöver du ändra eller avboka? Logga in på ditt konto så fixar du det på några sekunder.')}`,
+       ${tail}`,
       d.tenantName,
       'Bokning bekräftad',
     ),

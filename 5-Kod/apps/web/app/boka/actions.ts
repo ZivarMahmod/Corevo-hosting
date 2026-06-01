@@ -9,6 +9,7 @@ import { getPaymentGate } from '@/lib/booking/payment-gate'
 import { getStripe } from '@/lib/stripe/client'
 import { requestOrigin } from '@/lib/url'
 import { sendBookingConfirmation } from '@/lib/notifications/booking'
+import { getEnabledNotifications } from '@/lib/notifications/settings'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 
 // The public booking flow runs as the anon role. Reads of staff/services/
@@ -210,17 +211,28 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
   // Bokningsbekräftelse (G10): fire at CREATION (not on the webhook) — on-site
   // bookings never reach the webhook, so this is the only confirmation they get.
   // Best-effort + awaited so the mail flushes before the Workers request ends.
+  // Gated on the owner's `confirmation` toggle (anon can read tenant_settings via
+  // the public-read policy, migration 0004). Also carries the self-service cancel
+  // link + opt-in SMS via the confirmation context.
   try {
-    const [{ data: tRow }, { data: sRow }] = await Promise.all([
-      supabase.from('tenants').select('name').eq('id', ctx.tenantId).maybeSingle(),
-      supabase.from('services').select('name').eq('id', input.serviceId).eq('tenant_id', ctx.tenantId).maybeSingle(),
-    ])
-    await sendBookingConfirmation(email, {
-      tenantName: tRow?.name ?? ctx.slug,
-      serviceName: sRow?.name ?? 'Behandling',
-      startISO: input.startISO,
-      timeZone: ctx.timeZone,
-    })
+    const prefs = await getEnabledNotifications(supabase, ctx.tenantId)
+    if (prefs.confirmation) {
+      const [{ data: tRow }, { data: sRow }, origin] = await Promise.all([
+        supabase.from('tenants').select('name').eq('id', ctx.tenantId).maybeSingle(),
+        supabase.from('services').select('name').eq('id', input.serviceId).eq('tenant_id', ctx.tenantId).maybeSingle(),
+        requestOrigin(),
+      ])
+      await sendBookingConfirmation(
+        email,
+        {
+          tenantName: tRow?.name ?? ctx.slug,
+          serviceName: sRow?.name ?? 'Behandling',
+          startISO: input.startISO,
+          timeZone: ctx.timeZone,
+        },
+        { supabase, tenantId: ctx.tenantId, bookingId, origin, phone },
+      )
+    }
   } catch {
     // notifications are best-effort — never block the booking on a mail error.
   }
