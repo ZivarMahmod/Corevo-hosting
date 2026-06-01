@@ -181,6 +181,7 @@ export type Database = {
           currency: string
           id: string
           status: string
+          stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
           tenant_id: string
           updated_at: string | null
@@ -192,6 +193,7 @@ export type Database = {
           currency?: string
           id?: string
           status?: string
+          stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
           tenant_id: string
           updated_at?: string | null
@@ -203,6 +205,7 @@ export type Database = {
           currency?: string
           id?: string
           status?: string
+          stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
           tenant_id?: string
           updated_at?: string | null
@@ -451,6 +454,7 @@ export type Database = {
           flat_monthly_fee_cents: number
           id: string
           payment_mode: string
+          payments_enabled: boolean
           per_booking_fee_cents: number
           service_fee_type: string
           service_fee_value: number
@@ -466,6 +470,7 @@ export type Database = {
           flat_monthly_fee_cents?: number
           id?: string
           payment_mode?: string
+          payments_enabled?: boolean
           per_booking_fee_cents?: number
           service_fee_type?: string
           service_fee_value?: number
@@ -481,6 +486,7 @@ export type Database = {
           flat_monthly_fee_cents?: number
           id?: string
           payment_mode?: string
+          payments_enabled?: boolean
           per_booking_fee_cents?: number
           service_fee_type?: string
           service_fee_value?: number
@@ -508,6 +514,9 @@ export type Database = {
           slug: string
           status: string
           stripe_account_id: string | null
+          stripe_charges_enabled: boolean
+          stripe_details_submitted: boolean
+          stripe_payouts_enabled: boolean
           updated_at: string | null
         }
         Insert: {
@@ -518,6 +527,9 @@ export type Database = {
           slug: string
           status?: string
           stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean
+          stripe_details_submitted?: boolean
+          stripe_payouts_enabled?: boolean
           updated_at?: string | null
         }
         Update: {
@@ -528,6 +540,9 @@ export type Database = {
           slug?: string
           status?: string
           stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean
+          stripe_details_submitted?: boolean
+          stripe_payouts_enabled?: boolean
           updated_at?: string | null
         }
         Relationships: []
@@ -725,11 +740,14 @@ export type Database = {
           location_name: string
           location_timezone: string
           payment_mode: string
+          payment_status: string
+          payments_enabled: boolean
           price_cents: number
           service_name: string
           staff_title: string
           start_ts: string
           status: string
+          stripe_charges_enabled: boolean
           tenant_name: string
           tenant_slug: string
         }[]
