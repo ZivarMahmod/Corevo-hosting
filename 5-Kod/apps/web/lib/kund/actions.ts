@@ -186,6 +186,9 @@ export async function cancelBooking(
 // the DB EXCLUDE constraint — never duplicated here). Order matters: create the
 // NEW booking first; only cancel the OLD one once the new slot is secured, so a
 // lost race (23P01) leaves the original booking intact.
+// Steg 2 (släpp gamla bokningen) är result-kontrollerad: om den misslyckas eller
+// träffar 0 rader kompenserar vi genom att avboka den NYSS skapade bokningen, så
+// kunden aldrig kan hålla två aktiva bokningar samtidigt.
 export async function rebookBooking(
   _prev: BookingActionState,
   formData: FormData,
@@ -225,13 +228,28 @@ export async function rebookBooking(
     return { error: 'Kunde inte omboka. Försök igen.' }
   }
 
-  // 2) New slot secured → release the old one.
-  await supabase
+  // 2) New slot secured → release the old one. Result-kontrollerad: .select('id')
+  // ger tillbaka de uppdaterade raderna (RLS låter kunden läsa egna rader). Fel
+  // eller 0 rader = den gamla bokningen släpptes ALDRIG → kompensera genom att
+  // avboka den nyss skapade, annars hänger kunden på två aktiva bokningar.
+  const { data: released, error: releaseErr } = await supabase
     .from('bookings')
     .update({ status: 'cancelled' })
     .eq('id', bookingId)
     .eq('customer_profile_id', user.id)
     .in('status', ACTIVE_STATUSES)
+    .select('id')
+  if (releaseErr || !released || released.length === 0) {
+    // Rollback (best-effort): avboka den nya bokningen så slutläget är "ingen
+    // ändring". Samma RLS-klient + ägar-/status-fence som ordinarie avbokning.
+    await supabase
+      .from('bookings')
+      .update({ status: 'cancelled' })
+      .eq('id', newId)
+      .eq('customer_profile_id', user.id)
+      .in('status', ACTIVE_STATUSES)
+    return { error: 'Kunde inte omboka. Försök igen.' }
+  }
 
   // Ny tid-bekräftelse på den NYA tiden (M9, dedikerad rebook-mall) — best-effort, före redirect.
   if (user.email) {

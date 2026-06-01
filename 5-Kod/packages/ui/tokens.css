@@ -32,7 +32,10 @@
   --paper: #fefcf7;
 
   /* ── Product tokens (NOT tenant-overridable) ──────────────────────────────── */
-  --color-accent: var(--gold);
+  /* --color-accent IS tenant-overridable at runtime by injectTenantTokens()
+     (branding.color_accent → --color-accent). Default = Corevo gold (#f5a623),
+     so storefront visuals are unchanged when a tenant has not set an accent. */
+  --color-accent: var(--gold, #f5a623);
   --color-accent-fg: #15281f;
   --font-display: var(--font-playfair), 'Playfair Display', Georgia, serif;
 

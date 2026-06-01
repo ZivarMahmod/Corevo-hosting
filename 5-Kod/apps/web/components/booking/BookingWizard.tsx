@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   getAvailableSlots,
@@ -41,7 +42,21 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export function BookingWizard({ services }: { services: WizardService[] }) {
+export function BookingWizard({
+  services,
+  open,
+  onClose,
+}: {
+  services: WizardService[]
+  /** Drawer open-state (embedded only). On a closed→open rising edge AFTER a
+   *  completed booking we reset the wizard, so a reopened drawer starts fresh
+   *  rather than on a stale confirmation. Mid-flow closes (step 1–4) are NOT
+   *  reset, so an accidental close still resumes where the customer left off. */
+  open?: boolean
+  /** Set when the wizard is embedded in the storefront drawer. Lets step 5's
+   *  primary action close the drawer (instead of linking to "/"). */
+  onClose?: () => void
+}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -54,6 +69,8 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
   const [slot, setSlot] = useState<SlotOption | null>(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', note: '' })
   const [error, setError] = useState<string | null>(null)
+  // Bekräftelse-steget (in-page): satt när bokningen lyckats utan online-betalning.
+  const [bookingId, setBookingId] = useState<string | null>(null)
   // Step-3 specific load/error so it never gets confused with the empty state.
   const [slotsError, setSlotsError] = useState<string | null>(null)
   // "Tiden togs precis"-notis: visas överst i steg 3 efter en krock; överlever
@@ -77,6 +94,11 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
     )
   const fmtDay = (d: Date) =>
     new Intl.DateTimeFormat('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' }).format(d)
+  // Full datum + tid till bekräftelsesteget — speglar /boka/bekraftelse-rutten.
+  const fmtDateTime = (iso: string) =>
+    new Intl.DateTimeFormat('sv-SE', { dateStyle: 'full', timeStyle: 'short', timeZone }).format(
+      new Date(iso),
+    )
 
   function pickService(s: WizardService) {
     setService(s)
@@ -133,7 +155,7 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
       })
       if (res.ok) {
         // Online-betalning på (payments_enabled && charges_enabled) → Stripe Checkout.
-        // Allt fel/degrade landar tyst på bekräftelsesidan (betala på plats).
+        // Allt fel/degrade landar tyst på bekräftelsen (betala på plats).
         if (res.requiresPayment) {
           const pay = await startBookingCheckout(res.bookingId)
           if (pay.ok) {
@@ -141,7 +163,17 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
             return
           }
         }
-        router.push(`/boka/bekraftelse/${res.bookingId}`)
+        if (onClose) {
+          // ⭐ KÄRNKRAV (Zivar): inbäddat i storefront-drawern sker bekräftelsen
+          // IN-PAGE — vi byter till steg 5 i samma wizard istället för att navigera
+          // bort. Rutten /boka/bekraftelse/[id] finns kvar som delbar djuplänk.
+          setBookingId(res.bookingId)
+          setStep(5)
+        } else {
+          // Fristående /boka-rutten: behåll den rika kvittosidan (med .ics +
+          // betalstatus) — finding #11 gäller drawer-flödet, inte denna route.
+          router.push(`/boka/bekraftelse/${res.bookingId}`)
+        }
       } else {
         if (res.reason === 'slot_taken' && date) {
           // Krock: gå tillbaka till tidsvalet, visa notisen, ladda om tiderna.
@@ -156,10 +188,46 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
     })
   }
 
+  // Nollställ hela wizarden till steg 1. Körs på en stängd→öppen flank EFTER en
+  // klar bokning (se effekten nedan), så en återöppnad drawer börjar om från
+  // början istället för att visa en gammal bekräftelse.
+  function resetWizard() {
+    setStep(1)
+    setService(null)
+    setStaffChoice('any')
+    setDate(null)
+    setSlots([])
+    setSlot(null)
+    setForm({ name: '', email: '', phone: '', note: '' })
+    setError(null)
+    setSlotsError(null)
+    setSlotTakenNotice(null)
+    setBookingId(null)
+  }
+
+  // Reset på ÅTERÖPPNING (inte på stängning): så att drawern glider ut med
+  // bekräftelsen kvar synlig, men nästa öppning börjar om. Bara när förra flödet
+  // nådde bekräftelsen (step 5) — mitt-i-flödet-stängningar (X/Esc/scrim på steg
+  // 1–4) lämnas orörda så att kunden kan återuppta där hen var.
+  const prevOpen = useRef(open)
+  useEffect(() => {
+    if (open && !prevOpen.current && step === 5) resetWizard()
+    prevOpen.current = open
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  // "Klar" på bekräftelsesteget: stäng drawern (reseten sker vid nästa öppning).
+  function finish() {
+    onClose?.()
+  }
+
   const stepLabels = ['Tjänst', 'Personal', 'Tid', 'Uppgifter']
 
   return (
     <div className="wizard">
+      {/* Steg-indikatorn göms på bekräftelsesteget (steg 5) — då är flödet klart
+          och kvitto-vyn ska kännas ren, precis som /boka/bekraftelse-rutten. */}
+      {step < 5 && (
       <ol className="wizard-steps">
         {stepLabels.map((label, i) => {
           const isActive = step === i + 1
@@ -178,6 +246,7 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
           )
         })}
       </ol>
+      )}
 
       {/* Step 1 — service */}
       {step === 1 &&
@@ -457,6 +526,69 @@ export function BookingWizard({ services }: { services: WizardService[] }) {
               {pending ? 'Bokar…' : 'Bekräfta bokning'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Step 5 — in-page bekräftelse (⭐ kärnkrav). Kvitto-känsla utan att lämna
+          storefronten: vi återanvänder de globala .confirm-*-klasserna så att
+          steget ser identiskt ut med /boka/bekraftelse-rutten. Datan finns redan
+          i wizarden (tjänst, tid, personal, pris, bokningsid). */}
+      {step === 5 && service && slot && (
+        <div className="booking-confirm">
+          <div
+            className="confirm-badge"
+            aria-hidden
+            style={{
+              background: 'var(--color-accent, var(--color-primary))',
+              color: 'var(--color-fg, #15281f)',
+            }}
+          >
+            ✓
+          </div>
+          <h2>Tack, din tid är bokad!</h2>
+          <ul className="confirm-summary">
+            <li>
+              <span>Tjänst</span>
+              <strong>{service.name}</strong>
+            </li>
+            <li>
+              <span>Tid</span>
+              <strong>{fmtDateTime(slot.start)}</strong>
+            </li>
+            {slot.staffTitle ? (
+              <li>
+                <span>Hos</span>
+                <strong>{slot.staffTitle}</strong>
+              </li>
+            ) : null}
+            <li>
+              <span>Pris</span>
+              <strong>{kr.format(service.priceCents / 100)}</strong>
+            </li>
+          </ul>
+
+          <p className="confirm-note">Du betalar på plats vid besöket.</p>
+
+          <div className={styles.confirmActions}>
+            {bookingId ? (
+              <Link
+                href={`/boka/bekraftelse/${bookingId}`}
+                className={styles.calendarBtn}
+                aria-label="Visa kvitto och lägg till i kalender"
+              >
+                Visa kvitto
+              </Link>
+            ) : null}
+            {onClose ? (
+              <button type="button" className="btn-primary" onClick={finish}>
+                Klar
+              </button>
+            ) : (
+              <Link href="/" className="btn-primary">
+                Till startsidan
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </div>

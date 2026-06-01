@@ -6,6 +6,7 @@ export type TenantBranding = {
   color_primary?: string | null
   color_bg?: string | null
   color_fg?: string | null
+  color_accent?: string | null
   font_body?: string | null
   logo_url?: string | null
 }
@@ -21,6 +22,7 @@ export function injectTenantTokens(
   if (branding?.color_primary) vars['--color-primary'] = branding.color_primary
   if (branding?.color_bg) vars['--color-bg'] = branding.color_bg
   if (branding?.color_fg) vars['--color-fg'] = branding.color_fg
+  if (branding?.color_accent) vars['--color-accent'] = branding.color_accent
   if (branding?.font_body) vars['--font-body'] = branding.font_body
   return vars
 }

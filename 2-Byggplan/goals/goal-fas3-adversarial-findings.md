@@ -43,16 +43,27 @@ get_public_booking (oguessbar UUID-capability, host-filter = no-op), cancel-duri
 6. **Polish/dead-UI:** #4, #15, #16, #17.
 7. **Zivar-beslut:** #12 guld-på-storefront (brief vs design-system.md).
 
-## STATUS (uppdaterad efter remedierings-start)
+## STATUS (uppdaterad 2026-06-02 — säkerhet KLAR + verifierad, kod-fixar i arbete)
 
-### Säkerhet — migrationer SKRIVNA, BLOCKERADE på prod-apply
-- `5-Kod/supabase/migrations/0009_booking_rpc_identity_hardening.sql` — fixar #1 (identitet: anon→`p_customer` NULL, auth→`=auth.uid()`; + past-time-guard). Working-hours/alignment = medveten follow-up.
-- `5-Kod/supabase/migrations/0010_role_aware_booking_rls.sql` — fixar #2 (`private.role_level()` + roll-medveten RLS på bookings+payments; staff/admin ≥3 tenant-bред, kund egna rader).
-- **BEFORE-test (SQL-simulering av JWT-context) BEVISADE hålet:** simulerad kund (role_level 0) ser 1 bokning som inte är hens (gäst-E2E:n); admin (lvl 6) ser 1 (korrekt).
-- **BLOCKERARE:** `apply_migration` mot live multi-tenant prod-DB nekades av auto-mode (kräver Zivars uttryckliga OK). AFTER-verifiering väntar på apply.
+### Säkerhet — migrationer APPLICERADE + AFTER-verifierade live ✅
+Zivar auktoriserade prod-apply 2026-06-02. Båda applicerade till `clylvowtowbtotrahuad`:
+- `0009 booking_rpc_identity_hardening` (#1) — identitetsstaket (anon→`p_customer` NULL, auth→`=auth.uid()`) + past-time-guard + **explicit re-grant** (anon+authenticated EXECUTE; skydd mot tyst grant-förlust om signaturen driftar — signaturen matchade 0005 byte-för-byte).
+- `0010 role_aware_booking_rls` (#2) — `private.role_level()` (SECURITY DEFINER) + roll-medveten RLS på bookings+payments. Roll-nivåer verifierade i DB: **staff=3, salon_admin=6, super_admin=8, kund=ingen roll (→0)** → tröskeln `>=3` korrekt, ingen staff-utelåsning.
+- **AFTER-verifiering (6/6 PASS, JWT-context-simulering med `set local role`):** kund läs=0 (var 1 före → hålet stängt), kund write=0 rader, staff läs lvl3/2 synliga, admin läs lvl6/2 synliga, anon forged `p_customer`→`42501 forbidden_customer`, anon past-dated→`P0001 start_in_past`. Grants överlevde (anon+authenticated EXECUTE bekräftat).
+- Personal+admin läs-path går via cookie-bunden authenticated-klient (`calendar.ts:59`, `data.ts:41`) → staff(3)/admin(6) behåller tenant-bред, kund(0) egna rader. Bekräftat.
 
-### NY BLOCKERARE (ej i review — review läste kod, inte live-config)
-- **Kundregistrering 500 i prod.** `signUpCustomer` (`kund/actions.ts:42`) använder service-role admin-API (`createAdminClient`); workern saknar `SUPABASE_SERVICE_ROLE_KEY`-secret (kod-kommentar: "only in .env.local today") → null-klient → 500. Bryter även reminder-cron, GDPR-export, platform-invite. **Kräver: sätt `SUPABASE_SERVICE_ROLE_KEY` som wrangler-secret (Zivar har värdet).**
+### Testdata-städning
+- Gäst-bokning "E2E Test Kund" (`097ec7d2`) → status `cancelled` (service-role write).
+- KVAR (ej auktoriserad att radera): junk-gäst `13085a77` "gdfhs" 2026-06-04 pending — flagga om pristine showcase önskas.
+
+### #12 BESLUT (Zivar 2026-06-02): storefront-briefen vinner
+Guld ska vara **tenant-överstyrbart** på storefronten (salongens identitet, inte Corevos). Guld fryst kvar BARA i back-office (admin/personal/platform). Kontrakt: branding-nyckel `color_accent`, CSS-var `--color-accent`, default = nuvarande guld (oförändrad om ej satt). design-system.md §5 bör uppdateras till att guld-frysningen gäller back-office, ej storefront.
+
+### Kod-fixar (13 st, icke-DB) — KÖRS NU i workflow `fas3-code-fixes` (run wf_f8807f1d-10c)
+6 parallella agenter, disjunkt filägande: STORE-A11Y (#3,#4,#6,#7,#8,#10,#16,#17) · CONFIRM (#11 in-page) · NAV (#9) · TOKENS (#12-pipe) · SECLOGIC (#5,#14) · ADMIN (#13,#15,#12-form) → adversariell diff-review. Build+deploy+live-verify efter review.
+
+### KVARSTÅR för Zivar (1 blockerare)
+- **Kundregistrering 500 i prod.** `signUpCustomer` (`kund/actions.ts:42`) använder service-role admin-API (`createAdminClient`); workern saknar `SUPABASE_SERVICE_ROLE_KEY`-secret → null-klient → 500. Bryter även reminder-cron, GDPR-export, platform-invite. **Zivar sätter `SUPABASE_SERVICE_ROLE_KEY` som wrangler-secret själv** (har värdet).
 
 ### Verifierat live denna FAS (build 0fef5009)
 E2E (boka inbäddat→personal Genomförd m. M9-nudge→admin ser→branding-byte syns→revert), 3-roll-login, benchmark (desktop+mobil redaktionell), 0 console-fel på storefront.

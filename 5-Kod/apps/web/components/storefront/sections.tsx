@@ -1,4 +1,5 @@
 import { BookCta } from '@/components/brand/BookCta'
+import { currentTenant } from '@/lib/tenant-data'
 import { Reveal } from './Reveal'
 import { Parallax } from './Parallax'
 import { ABOUT_PHOTO, CLOSING_PHOTO, STYLIST_PHOTOS, type StorePhoto } from './images'
@@ -8,10 +9,11 @@ import styles from './storefront.module.css'
    a photo, keeps magazine rhythm + generous whitespace, and restyles per
    template via the [data-template] scope in storefront.module.css.
 
-   Address / phone / opening hours are NOT in the public data layer yet
-   (crossModuleGaps). We show graceful Swedish placeholders ("Visas snart" /
-   sensible defaults) and a default Stockholm map, so the page never looks empty
-   before the salon fills in its profile. */
+   Contact (email/phone), address and opening hours are REAL: contact comes from
+   the salon's saved settings (settings.contact), address from locations.address,
+   and hours are derived from the salon's real working_hours. When a field is not
+   filled in yet we omit it gracefully or show an honest "Visas snart" placeholder
+   — we never invent contact details, an address or opening hours. */
 
 /** Small eyebrow + display H2 header used to open most sections. */
 export function SectionHeader({
@@ -93,13 +95,10 @@ export function StylistSpotlights({ salonName }: { salonName: string }) {
   )
 }
 
-/** "Om salongen" — split: interior photo one side, copy + stat-trio the other. */
+/** "Om salongen" — split: interior photo one side, copy the other.
+ *  No fabricated statistics: we don't have real years/ratings numbers in the
+ *  data layer, so we lead with honest evergreen copy instead of inventing facts. */
 export function AboutSplit({ salonName }: { salonName: string }) {
-  const stats = [
-    { value: '8+', label: 'år av hantverk' },
-    { value: '5★', label: 'omdömen från gäster' },
-    { value: '100%', label: 'omsorg, varje gång' },
-  ]
   return (
     <section className={`section ${styles.aboutSection}`}>
       <div className={`section-inner ${styles.aboutGrid}`}>
@@ -114,32 +113,33 @@ export function AboutSplit({ salonName }: { salonName: string }) {
             {salonName} är en salong där hantverk och omtanke står i centrum. Vårt mål är att du
             ska lämna oss nöjd — varje gång. Vi tar emot både nya och återkommande gäster.
           </p>
-          <ul className={styles.stats}>
-            {stats.map((s) => (
-              <li key={s.label} className={styles.stat}>
-                <span className={styles.statValue}>{s.value}</span>
-                <span className={styles.statLabel}>{s.label}</span>
-              </li>
-            ))}
-          </ul>
         </Reveal>
       </div>
     </section>
   )
 }
 
-/** "Plats & öppettider" — address + opening-hours table + embedded OSM map.
- *  No API key needed (OpenStreetMap iframe). Real address/hours aren't in the
- *  data layer yet → graceful placeholders + a neutral default map view. */
-export function LocationHours({ salonName }: { salonName: string }) {
-  const hours: { day: string; time: string }[] = [
-    { day: 'Måndag–Fredag', time: '09–18' },
-    { day: 'Lördag', time: '10–15' },
-    { day: 'Söndag', time: 'Stängt' },
-  ]
-  // Neutral default map (central Sweden) until the salon sets its coordinates.
-  const mapSrc =
-    'https://www.openstreetmap.org/export/embed.html?bbox=11.8%2C57.6%2C12.1%2C57.8&layer=mapnik'
+/** "Plats & öppettider" — REAL address + REAL opening hours + contact + map.
+ *  Address comes from locations.address, hours are derived from the salon's real
+ *  working_hours, contact (email/phone) from the saved settings. Each field is
+ *  omitted gracefully (or shown as an honest "Visas snart") until it exists — we
+ *  never invent an address or opening hours. The map only loads once we have a
+ *  real address to search for; otherwise it is omitted (no misleading default). */
+export async function LocationHours({ salonName }: { salonName: string }) {
+  const bundle = await currentTenant()
+  const location = bundle?.location ?? null
+  const contact = bundle?.settings.contact ?? { email: null, phone: null }
+  const address = location?.address ?? null
+  const hours = location?.hours ?? null
+  const hasContact = !!contact.email || !!contact.phone
+
+  // Link to a real map search for the saved address. We don't embed an OSM iframe
+  // here: the embed needs a bounding box we can't derive without geocoding, so a
+  // fabricated default-bbox map would be misleading. A search link is honest and
+  // always points at the real address.
+  const mapHref = address
+    ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`
+    : null
 
   return (
     <section className={`section ${styles.locSection}`}>
@@ -149,36 +149,75 @@ export function LocationHours({ salonName }: { salonName: string }) {
           <Reveal className={styles.locInfo}>
             <div className={styles.locBlock}>
               <p className={styles.locLabel}>Adress</p>
-              <p className={styles.locValue}>Visas snart</p>
-              <p className={styles.locHint}>
-                {salonName} lägger till adress och vägbeskrivning i sin profil.
-              </p>
+              {address ? (
+                <>
+                  <p className={styles.locValue}>{address}</p>
+                  {mapHref ? (
+                    <p className={styles.locContactValue}>
+                      <a
+                        href={mapHref}
+                        className={styles.moreLink}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        Visa på karta <span aria-hidden="true">→</span>
+                      </a>
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <p className={styles.locValue}>Visas snart</p>
+                  <p className={styles.locHint}>
+                    {salonName} lägger till adress och vägbeskrivning i sin profil.
+                  </p>
+                </>
+              )}
             </div>
+
             <div className={styles.locBlock}>
               <p className={styles.locLabel}>Öppettider</p>
-              <table className={styles.hoursTable}>
-                <tbody>
-                  {hours.map((h) => (
-                    <tr key={h.day}>
-                      <th scope="row">{h.day}</th>
-                      <td>{h.time}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {hours ? (
+                <table className={styles.hoursTable}>
+                  <tbody>
+                    {hours.map((h) => (
+                      <tr key={h.day}>
+                        <th scope="row">{h.day}</th>
+                        <td>{h.time}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className={styles.locValue}>Visas snart</p>
+              )}
               <p className={styles.locHint}>
                 Lediga tider syns alltid i bokningen — välj den som passar dig.
               </p>
             </div>
-          </Reveal>
-          <Reveal className={styles.locMap} delay={80}>
-            <iframe
-              title={`Karta över ${salonName}`}
-              src={mapSrc}
-              className={styles.mapFrame}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+
+            {hasContact ? (
+              <div className={styles.locBlock}>
+                <p className={styles.locLabel}>Kontakt</p>
+                {contact.phone ? (
+                  <p className={styles.locValue}>
+                    <a
+                      href={`tel:${contact.phone.replace(/\s+/g, '')}`}
+                      className={styles.locContactLink}
+                    >
+                      {contact.phone}
+                    </a>
+                  </p>
+                ) : null}
+                {contact.email ? (
+                  <p className={styles.locContactValue}>
+                    <a href={`mailto:${contact.email}`} className={styles.locContactLink}>
+                      {contact.email}
+                    </a>
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </Reveal>
         </div>
       </div>

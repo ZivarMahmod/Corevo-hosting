@@ -38,16 +38,22 @@ export function HeroCarousel({
 }) {
   const slides = images.length > 0 ? images : []
   const [active, setActive] = useState(0)
+  // Transient pause (hover / keyboard focus) — auto-resumes when the pointer/focus
+  // leaves. Distinct from `userPaused`, the explicit pause/play intent below.
   const [paused, setPaused] = useState(false)
+  // WCAG 2.2.2: explicit, persistent pause control. Once the visitor pauses,
+  // auto-advance stays off until they press play — hover no longer matters.
+  const [userPaused, setUserPaused] = useState(false)
 
   const go = (i: number) => setActive((i + slides.length) % slides.length)
   const next = () => go(active + 1)
   const prev = () => go(active - 1)
 
-  // Auto-advance (after mount only → hydration-safe). Skipped for single slide
-  // and under reduced-motion.
+  // Auto-advance (after mount only → hydration-safe). Skipped for a single slide,
+  // under reduced-motion, while transiently paused, or when the visitor has
+  // explicitly paused.
   useEffect(() => {
-    if (slides.length <= 1 || paused) return
+    if (slides.length <= 1 || paused || userPaused) return
     const reduce =
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -56,7 +62,7 @@ export function HeroCarousel({
       setActive((a) => (a + 1) % slides.length)
     }, 6000)
     return () => window.clearInterval(id)
-  }, [slides.length, paused])
+  }, [slides.length, paused, userPaused])
 
   return (
     <div
@@ -100,14 +106,15 @@ export function HeroCarousel({
               <span aria-hidden="true">‹</span>
             </button>
           ) : null}
-          <div className={styles.heroDots} role="tablist" aria-label="Bildval">
+          {/* role="group" (not tablist): these dots have no associated tabpanels,
+              so tab/tablist ARIA would be a lie. aria-current marks the active dot. */}
+          <div className={styles.heroDots} role="group" aria-label="Bildval">
             {slides.map((img, i) => (
               <button
                 key={img.src}
                 type="button"
-                role="tab"
-                aria-selected={i === active}
-                aria-label={`Visa bild ${i + 1}`}
+                aria-current={i === active ? 'true' : undefined}
+                aria-label={`Gå till bild ${i + 1}`}
                 className={`${styles.heroDot} ${i === active ? styles.heroDotActive : ''}`}
                 onClick={() => go(i)}
               />
@@ -123,6 +130,16 @@ export function HeroCarousel({
               <span aria-hidden="true">›</span>
             </button>
           ) : null}
+          {/* WCAG 2.2.2 — visible pause/play for the auto-advancing carousel. */}
+          <button
+            type="button"
+            className={styles.heroPause}
+            onClick={() => setUserPaused((p) => !p)}
+            aria-pressed={userPaused}
+            aria-label={userPaused ? 'Spela upp bildspelet' : 'Pausa bildspelet'}
+          >
+            <span aria-hidden="true">{userPaused ? '▶' : '❚❚'}</span>
+          </button>
         </div>
       ) : null}
     </div>

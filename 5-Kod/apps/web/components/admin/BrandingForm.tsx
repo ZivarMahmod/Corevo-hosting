@@ -9,6 +9,9 @@ const FALLBACK = {
   color_primary: '#1f6feb',
   color_bg: '#ffffff',
   color_fg: '#111111',
+  // Default = storefront-guldet (--gold / --color-accent). Inget ändras visuellt
+  // förrän salongen själv väljer en accentfärg. Håll i synk med packages/ui/tokens.css.
+  color_accent: '#f5a623',
 }
 
 export function BrandingForm({ branding }: { branding: TenantBranding }) {
@@ -20,6 +23,7 @@ export function BrandingForm({ branding }: { branding: TenantBranding }) {
   const [primary, setPrimary] = useState(branding.color_primary || FALLBACK.color_primary)
   const [bg, setBg] = useState(branding.color_bg || FALLBACK.color_bg)
   const [fg, setFg] = useState(branding.color_fg || FALLBACK.color_fg)
+  const [accent, setAccent] = useState(branding.color_accent || FALLBACK.color_accent)
   const [font, setFont] = useState(branding.font_body ?? '')
   const [removeLogo, setRemoveLogo] = useState(false)
   const [localLogo, setLocalLogo] = useState<string | null>(null)
@@ -58,12 +62,14 @@ export function BrandingForm({ branding }: { branding: TenantBranding }) {
           />
           <ColorField name="color_bg" label="Bakgrund" value={bg} onChange={setBg} />
           <ColorField name="color_fg" label="Text" value={fg} onChange={setFg} />
+          <ColorField name="color_accent" label="Accent" value={accent} onChange={setAccent} />
         </div>
 
         <div className={styles.swatchRow}>
           <Chip label="Primär" hex={primary} />
           <Chip label="Bakgrund" hex={bg} />
           <Chip label="Text" hex={fg} />
+          <Chip label="Accent" hex={accent} />
         </div>
 
         <label className={styles.field}>
@@ -129,7 +135,7 @@ export function BrandingForm({ branding }: { branding: TenantBranding }) {
         </div>
       </form>
 
-      <BrandingPreview primary={primary} bg={bg} fg={fg} font={font} logo={shownLogo} />
+      <BrandingPreview primary={primary} bg={bg} fg={fg} accent={accent} font={font} logo={shownLogo} />
     </div>
   )
 }
@@ -139,12 +145,14 @@ function BrandingPreview({
   primary,
   bg,
   fg,
+  accent,
   font,
   logo,
 }: {
   primary: string
   bg: string
   fg: string
+  accent: string
   font: string
   logo: string | null
 }) {
@@ -170,7 +178,7 @@ function BrandingPreview({
           )}
         </div>
         <div className={styles.previewHero}>
-          <p className={styles.previewEyebrow} style={{ color: primary }}>
+          <p className={styles.previewEyebrow} style={{ color: accent }}>
             Välkommen
           </p>
           <h3 className={styles.previewTitle}>Boka din tid online</h3>
@@ -184,7 +192,7 @@ function BrandingPreview({
             <div className={styles.previewCardName}>Klippning</div>
             <div className={styles.previewCardMeta}>30 min</div>
           </div>
-          <div className={styles.previewCardPrice} style={{ color: primary }}>
+          <div className={styles.previewCardPrice} style={{ color: accent }}>
             450 kr
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { StorePhoto } from './images'
 import styles from './storefront.module.css'
 
@@ -17,6 +17,12 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null)
   const isOpen = openIdx !== null
 
+  // Mirrors the BookingDrawer a11y pattern: trap Tab inside the dialog, return
+  // focus to the tile that opened it on close, lock body scroll while open.
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
+  const restoreFocusRef = useRef<HTMLElement | null>(null)
+
   const close = useCallback(() => setOpenIdx(null), [])
   const move = useCallback(
     (delta: number) =>
@@ -24,20 +30,57 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
     [photos.length],
   )
 
+  // Body-scroll lock + focus restore. Remember the trigger when opening, move
+  // focus into the dialog after paint, and restore focus to the trigger on close.
   useEffect(() => {
     if (!isOpen) return
+    restoreFocusRef.current = document.activeElement as HTMLElement | null
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') close()
-      else if (e.key === 'ArrowRight') move(1)
-      else if (e.key === 'ArrowLeft') move(-1)
-    }
-    document.addEventListener('keydown', onKey)
+    const t = window.setTimeout(() => closeBtnRef.current?.focus(), 0)
     return () => {
       document.body.style.overflow = prev
-      document.removeEventListener('keydown', onKey)
+      window.clearTimeout(t)
+      restoreFocusRef.current?.focus?.()
     }
+  }, [isOpen])
+
+  // Esc closes, arrows navigate, Tab/Shift+Tab cycle within the dialog.
+  useEffect(() => {
+    if (!isOpen) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        close()
+        return
+      }
+      if (e.key === 'ArrowRight') {
+        move(1)
+        return
+      }
+      if (e.key === 'ArrowLeft') {
+        move(-1)
+        return
+      }
+      if (e.key !== 'Tab') return
+      const dialog = dialogRef.current
+      if (!dialog) return
+      const focusables = dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]!
+      const last = focusables[focusables.length - 1]!
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
   }, [isOpen, close, move])
 
   if (photos.length === 0) return null
@@ -62,6 +105,7 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
 
       {isOpen ? (
         <div
+          ref={dialogRef}
           className={styles.lightbox}
           role="dialog"
           aria-modal="true"
@@ -99,6 +143,7 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
             <span aria-hidden="true">›</span>
           </button>
           <button
+            ref={closeBtnRef}
             type="button"
             className={styles.lightboxClose}
             onClick={close}

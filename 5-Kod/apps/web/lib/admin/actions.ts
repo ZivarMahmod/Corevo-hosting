@@ -224,6 +224,16 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
 
   const supabase = await createClient()
 
+  // Confirm the staff row is ours before writing — staff_id is client-supplied,
+  // and RLS does not isolate roles within a tenant. Same fence as addStaffWorkingHours.
+  const { data: member } = await supabase
+    .from('staff')
+    .select('id')
+    .eq('id', staffId)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!member) return { error: 'Okänd medarbetare.' }
+
   // Keep only service ids that actually belong to this tenant (defence-in-depth:
   // staff_services.service_id has no same-tenant FK constraint).
   const { data: own } = await supabase
@@ -331,6 +341,7 @@ type Branding = {
   color_primary?: string | null
   color_bg?: string | null
   color_fg?: string | null
+  color_accent?: string | null
   font_body?: string | null
   logo_url?: string | null
 }
@@ -342,7 +353,13 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
   const colorPrimary = hexOrNull(fd.get('color_primary'))
   const colorBg = hexOrNull(fd.get('color_bg'))
   const colorFg = hexOrNull(fd.get('color_fg'))
-  if (colorPrimary === undefined || colorBg === undefined || colorFg === undefined)
+  const colorAccent = hexOrNull(fd.get('color_accent'))
+  if (
+    colorPrimary === undefined ||
+    colorBg === undefined ||
+    colorFg === undefined ||
+    colorAccent === undefined
+  )
     return { error: 'Ogiltig färgkod. Använd hex, t.ex. #1f6feb.' }
   const fontBody = String(fd.get('font_body') ?? '').trim().slice(0, 120)
   const removeLogo = String(fd.get('remove_logo') ?? '') === 'true'
@@ -370,6 +387,7 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
     color_primary: colorPrimary,
     color_bg: colorBg,
     color_fg: colorFg,
+    color_accent: colorAccent,
     font_body: fontBody || null,
     logo_url: logoUrl,
   }

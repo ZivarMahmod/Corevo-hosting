@@ -78,14 +78,21 @@ export function SettingsForm(props: SettingsFormProps) {
 
       <div className={styles.fieldRow}>
         <label className={styles.field} style={{ flex: '1 1 12rem' }}>
-          <span>Betalning</span>
-          <select name="payment_mode" defaultValue={props.paymentMode}>
+          <span>Betalning · Kommer snart</span>
+          {/* Online-betalning styrs i dag av Stripe-kortet nedan (payments_enabled +
+              Connect-kontot), inte av det här läget — så kontrollen är avstängd tills
+              den kopplas på. Hidden input bevarar sparat värde oförändrat vid spara. */}
+          <input type="hidden" name="payment_mode" value={props.paymentMode} />
+          <select defaultValue={props.paymentMode} disabled aria-disabled="true">
             {PAYMENT_MODES.map((m) => (
               <option key={m.value} value={m.value}>
                 {m.label}
               </option>
             ))}
           </select>
+          <span className={styles.muted}>
+            Online-betalning aktiveras via Stripe-kopplingen nedan.
+          </span>
         </label>
         <label className={styles.field} style={{ flex: '1 1 12rem' }}>
           <span>Avbokning senast (timmar före)</span>

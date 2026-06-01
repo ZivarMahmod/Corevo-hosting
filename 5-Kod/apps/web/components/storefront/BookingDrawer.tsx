@@ -14,10 +14,11 @@ import styles from './storefront.module.css'
  * in on open and returns to the trigger on close, simple focus trap, body scroll
  * locked while open. Honors prefers-reduced-motion via the stylesheet.
  *
- * Frozen-wizard limit (flagged in the manifest): BookingWizard navigates to the
- * branded same-domain `/boka/bekraftelse/[id]` route on confirm (and to Stripe
- * when online payment is enabled, which is OFF by default). Steps 1–4 happen
- * entirely in this drawer; the customer never sees a foreign portal.
+ * In-page confirmation (⭐ Zivar's core requirement): the whole flow — steps 1–4
+ * AND the confirmation (step 5) — happens inside this drawer; the customer never
+ * leaves the storefront. The shareable `/boka/bekraftelse/[id]` route still exists
+ * as a deep-link/receipt. Online payment (OFF by default) is the only case that
+ * leaves: it redirects to Stripe Checkout, which returns to that same route.
  */
 export function BookingDrawer({
   open,
@@ -116,7 +117,10 @@ export function BookingDrawer({
         </header>
 
         <div className={styles.drawerBody}>
-          <BookingWizard services={services} />
+          {/* onClose → wizardens steg 5 (in-page bekräftelse) kan stänga drawern.
+              open → wizarden nollställer sig vid en återöppning EFTER en klar
+              bokning, oavsett hur drawern stängdes (Klar/X/Esc/scrim). */}
+          <BookingWizard services={services} open={open} onClose={onClose} />
         </div>
       </div>
     </div>

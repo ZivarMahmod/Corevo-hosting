@@ -19,6 +19,10 @@ type TenantSettingsRow = Tables<'tenant_settings'>
 export type LayoutConfig = { nav_variant?: string; hero_variant?: string }
 export type CustomOverride = { css?: string }
 
+/** Public contact details the salon saved in admin (settings jsonb `contact`).
+ *  Each field is null until the owner fills it in — render-on-present only. */
+export type TenantContact = { email: string | null; phone: string | null }
+
 export type TenantSettings = {
   branding: TenantBranding
   layout: LayoutConfig
@@ -27,9 +31,28 @@ export type TenantSettings = {
   paymentMode: string
   /** G12: storefront exposes customer login/signup/konto only when the owner opts in. */
   customerAccountsEnabled: boolean
+  /** Salon contact (admin SettingsForm → settings.contact). Null fields = unset. */
+  contact: TenantContact
 }
 
-export type TenantBundle = { tenant: Tenant; settings: TenantSettings }
+/** One opening-hours row derived from real `working_hours`, weekday-ordered. */
+export type OpeningHour = { day: string; time: string }
+
+/** Real location + derived opening hours for the storefront contact area.
+ *  address is null until the owner fills it in; hours is null when no
+ *  working_hours exist yet (sections render an honest "Visas snart"). */
+export type TenantLocation = {
+  name: string | null
+  address: string | null
+  hours: OpeningHour[] | null
+}
+
+export type TenantBundle = {
+  tenant: Tenant
+  settings: TenantSettings
+  /** Primary location + derived opening hours; null when the tenant has none. */
+  location: TenantLocation | null
+}
 
 function parseSettings(row: TenantSettingsRow | null): TenantSettings {
   const branding = (row?.branding ?? {}) as TenantBranding
@@ -37,6 +60,14 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
   const layout = (raw.layout ?? {}) as LayoutConfig
   const override = (raw.custom_override ?? null) as CustomOverride | null
   const hasCss = !!override && typeof override.css === 'string' && override.css.trim().length > 0
+  // Contact lives in the settings JSON (`contact: { email, phone }`, written by
+  // the admin SettingsForm). Normalise blanks → null so the storefront can omit
+  // the field gracefully instead of rendering an empty value.
+  const contactRaw = (raw.contact ?? {}) as { email?: unknown; phone?: unknown }
+  const cleanStr = (v: unknown): string | null => {
+    const s = typeof v === 'string' ? v.trim() : ''
+    return s.length > 0 ? s : null
+  }
   return {
     branding,
     layout,
@@ -45,6 +76,94 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     // Lives in the settings JSON (no dedicated column — same seam as
     // cancellation_cutoff_hours). Default OFF: guest booking only.
     customerAccountsEnabled: raw.customer_accounts_enabled === true,
+    contact: { email: cleanStr(contactRaw.email), phone: cleanStr(contactRaw.phone) },
+  }
+}
+
+/** Swedish weekday labels indexed by working_hours.weekday (0 = Sunday … 6 = Saturday). */
+const WEEKDAYS_SV = ['Söndag', 'Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag'] as const
+
+/** "09:00:00" → "09". Tolerates "HH:MM" and "HH:MM:SS"; trims a lone ":00" minute
+ *  for a clean editorial look, keeps real minutes (e.g. "09:30"). */
+function fmtTime(t: string): string {
+  const [h = '', m = ''] = t.split(':')
+  const hh = h.padStart(2, '0')
+  return m === '00' || m === '' ? hh : `${hh}:${m}`
+}
+
+/**
+ * Collapse real per-staff `working_hours` rows into salon-level opening hours.
+ * For each weekday we take the OUTER ENVELOPE (earliest start → latest end across
+ * all staff): the window during which the salon has at least one staff member
+ * scheduled. This is an approximation, not a minute-by-minute guarantee (e.g.
+ * staff working 09–12 and 15–18 render as "09–18" even if no one is in midday);
+ * the task explicitly allows deriving hours "if reasonably feasible", and the
+ * authoritative free/busy is always the live booking grid (the section says so).
+ * Weekdays with no rows are "Stängt". Returns null when there are NO rows at all,
+ * so the section shows an honest placeholder instead of inventing hours.
+ */
+function deriveOpeningHours(
+  rows: { weekday: number; start_time: string; end_time: string }[],
+): OpeningHour[] | null {
+  if (rows.length === 0) return null
+  const span = new Map<number, { start: string; end: string }>()
+  for (const r of rows) {
+    if (r.weekday < 0 || r.weekday > 6) continue
+    const cur = span.get(r.weekday)
+    if (!cur) {
+      span.set(r.weekday, { start: r.start_time, end: r.end_time })
+    } else {
+      if (r.start_time < cur.start) cur.start = r.start_time
+      if (r.end_time > cur.end) cur.end = r.end_time
+    }
+  }
+  if (span.size === 0) return null
+  // Render Mon→Sun (1..6 then 0) — the order Swedish opening-hours tables use.
+  const order = [1, 2, 3, 4, 5, 6, 0]
+  return order.map((wd) => {
+    const s = span.get(wd)
+    return {
+      day: WEEKDAYS_SV[wd]!,
+      time: s ? `${fmtTime(s.start)}–${fmtTime(s.end)}` : 'Stängt',
+    }
+  })
+}
+
+/**
+ * Load the tenant's PRIMARY location (real address) + derive salon opening hours
+ * from its real `working_hours`. Both tables are anon-readable for active tenants
+ * (migration 0005) and we ALSO filter by tenant_id app-side (RLS does not isolate
+ * anon). Returns null when the tenant has no location row at all.
+ */
+async function loadLocation(
+  supabase: ReturnType<typeof createPublicClient>,
+  tenantId: string,
+): Promise<TenantLocation | null> {
+  const { data: loc } = await supabase
+    .from('locations')
+    .select('name, address')
+    .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+    .order('is_primary', { ascending: false })
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  if (!loc) return null
+
+  // Scope by tenant_id ONLY (not location_id): multi-location is unused
+  // future-proofing today, and some real rows carry a null location_id (seeded
+  // rows depend on the 0005 backfill). Filtering by location_id could silently
+  // drop real hours → a false "Visas snart". Tenant-only scoping can't hide data.
+  const { data: wh } = await supabase
+    .from('working_hours')
+    .select('weekday, start_time, end_time')
+    .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+    .order('weekday', { ascending: true })
+
+  const cleanAddr = typeof loc.address === 'string' && loc.address.trim().length > 0
+  return {
+    name: typeof loc.name === 'string' && loc.name.trim().length > 0 ? loc.name.trim() : null,
+    address: cleanAddr ? loc.address!.trim() : null,
+    hours: deriveOpeningHours(wh ?? []),
   }
 }
 
@@ -69,7 +188,8 @@ export async function getTenantBySlug(slug: string): Promise<TenantBundle | null
         .select('*')
         .eq('tenant_id', tenant.id) // app-layer scope
         .maybeSingle()
-      return { tenant, settings: parseSettings(settingsRow ?? null) }
+      const location = await loadLocation(supabase, tenant.id)
+      return { tenant, settings: parseSettings(settingsRow ?? null), location }
     },
     ['tenant-by-slug', norm],
     { tags: [`tenant:${norm}`], revalidate: 300 },
@@ -132,5 +252,7 @@ export async function getTenantById(id: string): Promise<TenantBundle | null> {
     .select('*')
     .eq('tenant_id', id)
     .maybeSingle()
-  return { tenant, settings: parseSettings(settingsRow ?? null) }
+  // Back-office chrome only needs name/branding/settings — the storefront contact
+  // area (location/hours) is not rendered here, so we skip the extra reads.
+  return { tenant, settings: parseSettings(settingsRow ?? null), location: null }
 }

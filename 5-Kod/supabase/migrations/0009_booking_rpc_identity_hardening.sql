@@ -81,3 +81,11 @@ begin
   return v_id;
 end;
 $function$;
+
+-- Re-assert grants explicitly. CREATE OR REPLACE keeps existing grants only when
+-- the signature is byte-identical to the deployed function (it is — same as 0005);
+-- re-granting makes grant survival unconditional + idempotent, and guards against
+-- a silent guest-booking outage if the signature ever drifts. anon = guest wizard,
+-- authenticated = rebookBooking (authenticated does NOT inherit anon's grant).
+revoke execute on function public.create_public_booking(text, uuid, uuid, timestamptz, text, uuid) from public;
+grant  execute on function public.create_public_booking(text, uuid, uuid, timestamptz, text, uuid) to anon, authenticated;

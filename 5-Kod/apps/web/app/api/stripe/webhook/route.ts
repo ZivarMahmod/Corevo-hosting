@@ -24,6 +24,28 @@ function ok(body: Record<string, unknown> = { received: true }) {
   return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
 }
 
+type AdminClient = NonNullable<ReturnType<typeof createServiceClient>>
+
+/**
+ * SÄKERHET: bevisar att `event.account` (connected account-id) verkligen är det
+ * konto som metadatans tenant är kopplad till. Stoppar cross-account-spoof där
+ * salong B signerar ett event vars metadata pekar på salong A. Returnerar false
+ * om account saknas, tenant inte hittas, eller stripe_account_id ej matchar.
+ */
+async function accountOwnsTenant(
+  admin: AdminClient,
+  account: string | null,
+  tenantId: string,
+): Promise<boolean> {
+  if (!account) return false
+  const { data } = await admin
+    .from('tenants')
+    .select('stripe_account_id')
+    .eq('id', tenantId)
+    .maybeSingle()
+  return Boolean(data?.stripe_account_id) && data?.stripe_account_id === account
+}
+
 export async function POST(req: Request): Promise<Response> {
   const stripe = getStripe()
   const secret = getWebhookSecret()
@@ -55,6 +77,14 @@ export async function POST(req: Request): Promise<Response> {
   // Connected account-id (Connect-events). null för plattforms-events.
   const account = event.account ?? null
 
+  // SÄKERHET (cross-account spoof): signaturen bevisar bara att eventet kom från
+  // ETT giltigt connected account — inte vilket. En salong B styr sin egen PI-
+  // metadata och kan sätta tenant_id som pekar på salong A; signaturen passerar
+  // ändå. Eftersom writes går via service-role-klienten (RLS-bypass) MÅSTE vi
+  // därför verifiera att `event.account` matchar den tenant metadatan pekar på,
+  // INNAN någon write körs. Mismatch = logga + no-op (200), så Stripe inte
+  // retry-loopar B:s äkta event; loggen avslöjar även en inaktuell
+  // stripe_account_id-felkonfig som annars tystas.
   try {
     switch (event.type) {
       case 'payment_intent.succeeded': {
@@ -62,6 +92,16 @@ export async function POST(req: Request): Promise<Response> {
         const bookingId = pi.metadata?.booking_id
         const tenantId = pi.metadata?.tenant_id
         if (bookingId && tenantId) {
+          // Account-fence: tenant (från metadata) MÅSTE äga `event.account`.
+          if (!(await accountOwnsTenant(admin, account, tenantId))) {
+            await captureException(new Error('stripe webhook account mismatch'), {
+              where: 'webhook.account_guard',
+              type: event.type,
+              account,
+              tenantId,
+            })
+            break
+          }
           // State-set: markera payment betald + spara PI-id (idempotent).
           await admin
             .from('payments')
@@ -113,6 +153,16 @@ export async function POST(req: Request): Promise<Response> {
         const bookingId = pi.metadata?.booking_id
         const tenantId = pi.metadata?.tenant_id
         if (bookingId && tenantId) {
+          // Account-fence: tenant (från metadata) MÅSTE äga `event.account`.
+          if (!(await accountOwnsTenant(admin, account, tenantId))) {
+            await captureException(new Error('stripe webhook account mismatch'), {
+              where: 'webhook.account_guard',
+              type: event.type,
+              account,
+              tenantId,
+            })
+            break
+          }
           await admin
             .from('payments')
             .update({ status: 'failed', stripe_payment_intent_id: pi.id })
@@ -127,6 +177,26 @@ export async function POST(req: Request): Promise<Response> {
         const charge = event.data.object as Stripe.Charge
         const piId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id
         if (piId) {
+          // Ingen tenant_id i metadatan här → lös tenant via payment-raden (PI-id)
+          // och hämta dess stripe_account_id i samma fråga. Account-fence FÖRE
+          // write; saknas matchande payment-rad → no-op (blind-uppdatera ALDRIG
+          // bara på PI-id, då ett spoofat konto kan ange ett annat tenants PI-id).
+          const { data: pay } = await admin
+            .from('payments')
+            .select('tenant_id, tenants(stripe_account_id)')
+            .eq('stripe_payment_intent_id', piId)
+            .maybeSingle()
+          const acctId = (pay as { tenants?: { stripe_account_id?: string | null } | null } | null)?.tenants
+            ?.stripe_account_id
+          if (!pay || !account || !acctId || acctId !== account) {
+            await captureException(new Error('stripe webhook account mismatch'), {
+              where: 'webhook.account_guard',
+              type: event.type,
+              account,
+              piId,
+            })
+            break
+          }
           // State-set: markera refunded. Matchar på PI-id (satt vid succeeded).
           await admin.from('payments').update({ status: 'refunded' }).eq('stripe_payment_intent_id', piId)
         }
@@ -136,6 +206,18 @@ export async function POST(req: Request): Promise<Response> {
       case 'account.updated': {
         const acct = event.data.object as Stripe.Account
         const acctId = acct.id ?? account
+        // Account-fence: objektets konto MÅSTE vara `event.account`. Writet är
+        // redan WHERE stripe_account_id = acctId, så denna check stänger cross-
+        // account-DoS (annars kan ett spoofat event nolla ett annat tenants flaggor).
+        if (acctId && account && acctId !== account) {
+          await captureException(new Error('stripe webhook account mismatch'), {
+            where: 'webhook.account_guard',
+            type: event.type,
+            account,
+            acctId,
+          })
+          break
+        }
         if (acctId) {
           await admin
             .from('tenants')
