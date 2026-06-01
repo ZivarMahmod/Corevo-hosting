@@ -445,35 +445,47 @@ export type Database = {
       }
       tenant_settings: {
         Row: {
+          billing_model: string
           branding: Json
           created_at: string
+          flat_monthly_fee_cents: number
           id: string
           payment_mode: string
+          per_booking_fee_cents: number
           service_fee_type: string
           service_fee_value: number
           settings: Json
+          setup_fee_cents: number
           tenant_id: string
           updated_at: string | null
         }
         Insert: {
+          billing_model?: string
           branding?: Json
           created_at?: string
+          flat_monthly_fee_cents?: number
           id?: string
           payment_mode?: string
+          per_booking_fee_cents?: number
           service_fee_type?: string
           service_fee_value?: number
           settings?: Json
+          setup_fee_cents?: number
           tenant_id: string
           updated_at?: string | null
         }
         Update: {
+          billing_model?: string
           branding?: Json
           created_at?: string
+          flat_monthly_fee_cents?: number
           id?: string
           payment_mode?: string
+          per_booking_fee_cents?: number
           service_fee_type?: string
           service_fee_value?: number
           settings?: Json
+          setup_fee_cents?: number
           tenant_id?: string
           updated_at?: string | null
         }
