@@ -2,6 +2,9 @@
 
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
+## ⭐ NÄSTA SESSION — GÖR DETTA FÖRST
+**Bygg en plan innan något annat.** Sätt dig med Zivar och lägg en tydlig plan för vad som ska hända härnäst — inte börja koda/deploya direkt. Triagera: var står vi (G01–G12-status, live-läge), vad återstår (design-passet, custom-domäner/goal "egen domän", live-secrets, staging), och i vilken ordning. Skriv planen, få Zivars OK, SEN kör. Status just nu: G01–G11 KLAR (kod, pushade), G12 inloggningsmodell pågår hos Code + ny deploy efter. Live kräver Zivars secrets + domän-OK (se NULÄGE + deploy-runbook).
+
 ## Vad projektet är
 Multi-tenant, white-label boknings-SaaS för salonger. EN kodbas, ny kund = ny tenant + config (aldrig ny template). Funktioner identiska för alla — bara utseende varierar. Freshcut = första tenant. Arbetsnamn: corevoboking.
 
