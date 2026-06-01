@@ -1,9 +1,96 @@
-/* Corevo design tokens (ADR 01 §3, level 1).
-   Canonical defaults. Tenants override --color-primary etc. at runtime via the
-   branding jsonb injected server-side (see injectTenantTokens). */
+/* @corevo/ui — canonical design tokens (Corevo family).
+   Source of truth: docs/design-system.md. Extracted live from the Corevo POS
+   (corevo.se + admin.corevo.se).
+
+   STATUS: LIVE — imported in app/layout.tsx (before globals.css), which dropped its
+   inline :root. This file is the single applied source for product defaults.
+   Tenant storefronts still override --color-primary/-bg/-fg/-font-body at runtime.
+
+   Two scopes:
+     • CONTRACT tokens (--color-primary/-bg/-fg/-font-body) — overridden per-tenant
+       at runtime by injectTenantTokens() from tenant_settings.branding. Keep names.
+     • PRODUCT tokens (accent/gold, display font, radius, shadows, motion, sidebar,
+       state colors) — fixed Corevo identity, NOT tenant-overridable. */
+
 :root {
-  --color-primary: #b5651d;
-  --color-bg: #ffffff;
-  --color-fg: #0a0a0a;
-  --font-body: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* ── Contract tokens (overridable; defaults = Corevo) ─────────────────────── */
+  --color-primary: #1f4636; /* forest */
+  --color-bg: #faf8f4;      /* cream/paper */
+  --color-fg: #15281f;      /* forest-ink */
+  /* next/font sets --font-inter/--font-playfair on <html> (app/layout.tsx). */
+  --font-body: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* ── Brand palette (hex mirrors) ──────────────────────────────────────────── */
+  --forest: #1f4636;
+  --forest-deep: #163127;
+  --forest-soft: #4a8170;
+  --gold: #f5a623;
+  --gold-deep: #d4af37;
+  --gold-muted: #ebd9b8;
+  --ink: #0e1411;
+  --cream: #f4f1ea;
+  --paper: #fefcf7;
+
+  /* ── Product tokens (NOT tenant-overridable) ──────────────────────────────── */
+  --color-accent: var(--gold);
+  --color-accent-fg: #15281f;
+  --font-display: var(--font-playfair), 'Playfair Display', Georgia, serif;
+
+  /* semantic surfaces / state */
+  --color-card: #fefdfb;
+  --color-border: #dce5df;
+  --color-muted: #e9eeeb;
+  --color-muted-fg: #677e73;
+  --color-success: #36a165;
+  --color-warning: #eca62a;
+  --color-info: #338ccc;
+  --color-destructive: #d62f2f;
+  --color-ring: var(--forest);
+
+  /* radius scale (base .625rem from POS) */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius: 0.625rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 0.9rem;
+  --radius-pill: 9999px;
+
+  /* shadows (forest-tinted) + gold glow */
+  --shadow-soft: 0 2px 15px -3px hsl(150 20% 20% / 0.08), 0 4px 6px -4px hsl(150 20% 20% / 0.05);
+  --shadow-card: 0 4px 24px -6px hsl(150 20% 20% / 0.1);
+  --shadow-lg: 0 12px 32px -8px hsl(150 20% 20% / 0.18);
+  --shadow-gold: 0 4px 20px -4px hsl(38 70% 55% / 0.25);
+  --glow-gold: 0 0 30px -5px hsl(38 70% 55% / 0.4), 0 0 60px -10px hsl(38 70% 55% / 0.15);
+
+  /* motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 0.15s;
+  --dur-base: 0.2s;
+  --dur-slow: 0.3s;
+
+  /* dashboard sidebar (dark forest chrome) */
+  --sidebar-bg: #1a3429;
+  --sidebar-fg: #e6e1d6;
+  --sidebar-accent: #274a3a;
+  --sidebar-primary: var(--gold);
+  --sidebar-border: #2e4d3f;
+
+  /* shadcn-style HSL triplets (for any shadcn/ui-style component an agent adds;
+     consume via hsl(var(--primary))). Mirrors POS exactly. */
+  --background: 40 33% 97%;
+  --foreground: 150 30% 12%;
+  --card: 40 30% 99%;
+  --primary: 152 35% 22%;
+  --primary-foreground: 40 33% 97%;
+  --secondary: 145 15% 90%;
+  --secondary-foreground: 152 35% 22%;
+  --muted: 140 12% 93%;
+  --muted-foreground: 150 10% 45%;
+  --accent: 38 70% 55%;
+  --accent-foreground: 150 30% 12%;
+  --destructive: 0 65% 50%;
+  --border: 140 15% 88%;
+  --ring: 152 35% 22%;
 }
