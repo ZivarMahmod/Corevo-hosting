@@ -3,3 +3,6 @@
 
 # Write-permission test artifacts
 .write_test_*
+
+# Disabled stale nested git repo (was 5-Kod/.git; renamed, kept local-only)
+5-Kod/.git.disabled-stale/
