@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requirePortal } from '@/lib/auth/session'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
+import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { getMyStaff } from './staff'
 
 export type ActionState = { error?: string; success?: string }
@@ -35,6 +36,10 @@ export async function setBookingStatus(_prev: ActionState, formData: FormData): 
     .in('staff_id', myStaffIds)
     .in('status', ['pending', 'confirmed'])
   if (error) return { error: 'Kunde inte spara statusen. Försök igen.' }
+
+  // Visit done → nudge the customer for a Google review (M9). Best-effort: the
+  // helper never throws, so a mail hiccup can't fail the status the staff just set.
+  if (status === 'completed') await sendReviewNudgeForBooking(supabase, bookingId)
 
   revalidatePath('/personal')
   return { success: 'Status sparad.' }

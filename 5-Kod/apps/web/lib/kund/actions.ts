@@ -9,7 +9,7 @@ import { currentKundTenant } from './tenant'
 import { getMyBooking } from './bookings'
 import { getCancellationCutoffHours, withinCancellationWindow } from './settings'
 import { refundBookingPayment } from '@/lib/stripe/refund'
-import { sendBookingCancellation, sendBookingConfirmation } from '@/lib/notifications/booking'
+import { sendBookingCancellation, sendBookingRebook } from '@/lib/notifications/booking'
 
 /** Best-effort tenant display name for notifications (RLS: own tenant readable). */
 async function tenantName(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string): Promise<string> {
@@ -233,9 +233,9 @@ export async function rebookBooking(
     .eq('customer_profile_id', user.id)
     .in('status', ACTIVE_STATUSES)
 
-  // Bekräftelse på den NYA tiden (G10) — best-effort, före redirect.
+  // Ny tid-bekräftelse på den NYA tiden (M9, dedikerad rebook-mall) — best-effort, före redirect.
   if (user.email) {
-    await sendBookingConfirmation(user.email, {
+    await sendBookingRebook(user.email, {
       tenantName: await tenantName(supabase, user.tenantId ?? ''),
       serviceName: old.serviceName ?? 'Behandling',
       startISO: startISO,

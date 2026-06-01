@@ -6,6 +6,7 @@ import { requirePortal, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
 import { uploadImage, uploadErrorMessage } from '@/lib/r2/upload'
+import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { BOOKING_STATUSES } from './format'
 
 export type ActionState = { error?: string; success?: string }
@@ -485,6 +486,10 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
       return { error: 'Tiden krockar med en annan aktiv bokning för medarbetaren.' }
     return { error: GENERIC }
   }
+
+  // Visit done → Google-review nudge (M9). Best-effort: never throws, so it can't
+  // fail the status the admin just set.
+  if (status === 'completed') await sendReviewNudgeForBooking(supabase, bookingId)
 
   revalidatePath('/admin/bokningar')
   revalidatePath('/admin')

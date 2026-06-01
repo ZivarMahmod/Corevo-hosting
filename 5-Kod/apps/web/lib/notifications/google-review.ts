@@ -1,7 +1,11 @@
 import 'server-only'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@corevo/db'
 import { sendEmail } from './email'
 import { shell } from './templates'
 import { logger } from '@/lib/observability'
+import { getEnabledNotifications, getGoogleReviewUrl } from './settings'
+import { parseGuestEmail, parseGuestName } from './parse'
 
 // Google-review NUDGE (M9). Designed to fire AFTER a visit (booking status =
 // 'completed'): a short, warm Swedish email asking the happy customer to leave a
@@ -87,6 +91,70 @@ export async function sendGoogleReviewNudge(
   if (res.skipped) return { ok: false, skipped: true }
   logger.warn('review.failed', { tenant: d.tenantName, to, error: res.error })
   return { ok: false, error: res.error }
+}
+
+type ReviewBookingRow = {
+  tenant_id: string
+  note: string | null
+  customer_profile_id: string | null
+  tenants: { name?: string } | null
+}
+
+/**
+ * Fire a Google-review nudge for a booking that JUST transitioned to `completed`
+ * (wired into the personal + admin setBookingStatus actions). STRICTLY best-effort:
+ * every failure — query, settings read, transport — is swallowed so the status
+ * update that triggered it always succeeds. Gated on the owner's `review` toggle
+ * and a configured review URL; both no-op gracefully when unset.
+ *
+ * Recipient resolution mirrors the reminder pipeline: the guest-note seam first
+ * (covers public storefront bookings), then the linked customer's users.email.
+ * The latter may be invisible to a tenant-scoped client under RLS — in that case
+ * the nudge simply no-ops, which is acceptable for a best-effort channel.
+ *
+ * Caller MUST have already verified ownership of `bookingId` (i.e. only call after
+ * a successful tenant-scoped status update), since this only reads it back.
+ */
+export async function sendReviewNudgeForBooking(
+  supabase: SupabaseClient<Database>,
+  bookingId: string,
+): Promise<void> {
+  try {
+    const { data } = await supabase
+      .from('bookings')
+      .select('tenant_id, note, customer_profile_id, tenants(name)')
+      .eq('id', bookingId)
+      .maybeSingle()
+    const b = data as unknown as ReviewBookingRow | null
+    if (!b) return
+
+    const prefs = await getEnabledNotifications(supabase, b.tenant_id)
+    if (!prefs.review) return
+    const reviewUrl = await getGoogleReviewUrl(supabase, b.tenant_id)
+    if (!reviewUrl) return
+
+    let to = parseGuestEmail(b.note)
+    if (!to && b.customer_profile_id) {
+      const { data: u } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', b.customer_profile_id)
+        .maybeSingle()
+      to = u?.email ?? null
+    }
+    if (!to) return
+
+    await sendGoogleReviewNudge(to, {
+      tenantName: b.tenants?.name ?? 'Salongen',
+      reviewUrl,
+      customerName: parseGuestName(b.note),
+    })
+  } catch (err) {
+    logger.warn('review.nudge_failed', {
+      bookingId,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
 }
 
 // Local escapers (google-review keeps its own small body strings; templates.ts'
