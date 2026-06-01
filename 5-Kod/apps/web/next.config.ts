@@ -32,8 +32,8 @@ const csp = [
   `font-src 'self' data:`,
   // Supabase REST/Realtime/Auth + Stripe API. ws: only in dev (HMR).
   `connect-src 'self' https://api.stripe.com ${supabaseUrl} https://*.supabase.co wss://*.supabase.co${isProd ? '' : ' ws:'}`,
-  // Stripe Checkout/Elements iframes.
-  `frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com`,
+  // Stripe Checkout/Elements iframes + the storefront's embedded OpenStreetMap map.
+  `frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://www.openstreetmap.org`,
   `form-action 'self' https://checkout.stripe.com`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
