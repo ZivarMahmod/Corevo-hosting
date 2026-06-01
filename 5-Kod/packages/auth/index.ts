@@ -13,6 +13,23 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'anon-pla
 // Session shared across *.corevo.se subdomains (frisorN.corevo.se + booking.corevo.se).
 // Empty in dev. Data isolation is via RLS + tenant_id, NEVER via cookie (ADR 01 §2).
 const AUTH_COOKIE_DOMAIN = process.env.AUTH_COOKIE_DOMAIN || undefined
+// Session lifetime is NOT controllable here. @supabase/ssr (0.10.3) hardcodes the
+// auth-cookie max-age to its own DEFAULT_COOKIE_OPTIONS.maxAge (400 days, Chrome's
+// cap) for every write — see ssr/dist/main/cookies.js: the set path spreads our
+// `cookieOptions` and THEN overwrites `maxAge: DEFAULT_COOKIE_OPTIONS.maxAge`.
+// So any maxAge we pass is silently ignored (an earlier FAS 2.1 attempt to scope a
+// 30-day "iPad" window did nothing and was removed). Only `domain` etc. survive.
+//
+// Consequence: "log in once on the iPad and stay logged in" is the OUT-OF-THE-BOX
+// behavior (400-day cookie + autoRefreshToken). The REAL session-lifetime lever —
+// the one that ends a session on a lost/shared device — is the Supabase project's
+// refresh-token policy (JWT expiry + rotation/reuse), set in the Dashboard, not in
+// code. 2FA is the planned step-up auth (see HANDOFF).
+function cookieOptions() {
+  return {
+    ...(AUTH_COOKIE_DOMAIN ? { domain: AUTH_COOKIE_DOMAIN } : {}),
+  }
+}
 
 export type CookieToSet = {
   name: string
@@ -29,14 +46,14 @@ export type ServerCookieAdapter = {
 export function createServerSupabase(cookies: ServerCookieAdapter) {
   return ssrCreateServerClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies,
-    ...(AUTH_COOKIE_DOMAIN ? { cookieOptions: { domain: AUTH_COOKIE_DOMAIN } } : {}),
+    cookieOptions: cookieOptions(),
   })
 }
 
 /** Browser client (Client Components). */
 export function createBrowserSupabase() {
   return ssrCreateBrowserClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    ...(AUTH_COOKIE_DOMAIN ? { cookieOptions: { domain: AUTH_COOKIE_DOMAIN } } : {}),
+    cookieOptions: cookieOptions(),
   })
 }
 
