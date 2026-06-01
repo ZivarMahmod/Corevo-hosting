@@ -1,0 +1,5 @@
+# Playwright MCP runtime output
+.playwright-mcp/
+
+# Write-permission test artifacts
+.write_test_*

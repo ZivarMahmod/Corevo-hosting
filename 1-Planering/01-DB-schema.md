@@ -1,5 +1,7 @@
 # 01 – Databas-schema (Corevo Booking Platform)
 
+> **Synkad mot ADR 01 (tenant/tema), 02 onboarding, 03 pengaflöde.** Theming i `tenant_settings.branding`/`settings`, avgift i `tenant_settings.service_fee_*`. Auth = Supabase Auth, `tenant_id` som JWT-claim i `app_metadata`.
+
 **Status:** Planering. Ingen kod körs, ingen migration appliceras.
 **Stack:** Next.js + Supabase (Postgres + Auth) + Cloudflare R2 + Stripe Connect.
 **Källa:** Arkitektur Modul 9 + modul-PDF:er (3 boknings, 4 kund, 5 personal, 6 admin, 8 betalning, 12 säkerhet).
@@ -32,7 +34,7 @@ Alla affärstabeller har dessutom `created_at timestamptz default now()` och `up
 |--------|----------------|----|----|---|
 | `tenants` | id, name, slug, status, plan, stripe_account_id | id | – | – (är tenant) |
 | `tenant_domains` | id, tenant_id, domain, is_primary, verified | id | tenant_id→tenants | T |
-| `tenant_settings` | id, tenant_id, key, value(jsonb), payment_mode, branding(jsonb) | id | tenant_id→tenants | T |
+| `tenant_settings` | id, tenant_id, payment_mode, branding(jsonb), settings(jsonb), service_fee_type, service_fee_value | id | tenant_id→tenants | T |
 
 ### Users / roller / behörigheter
 | Tabell | Nyckelkolumner | PK | FK | T |
@@ -131,8 +133,14 @@ create table tenant_settings (
   id           uuid primary key default gen_random_uuid(),
   tenant_id    uuid not null references tenants(id) on delete cascade,
   payment_mode text not null default 'on_site',        -- on_site | online | both | coming_soon
-  branding     jsonb not null default '{}'::jsonb,      -- logo, färger (white-label)
-  settings     jsonb not null default '{}'::jsonb,
+  -- ===== THEMING (ADR 01, tema-lager 3 nivåer) =====
+  branding     jsonb not null default '{}'::jsonb,      -- nivå 1: { logo_url, color_primary, font_body, ... }
+  settings     jsonb not null default '{}'::jsonb,      -- nivå 2: settings.layout {nav_variant,hero_variant,...}
+                                                        -- nivå 3: settings.custom_override (flagga + ref, scopad [data-tenant])
+  -- ===== SERVICE-AVGIFT (ADR 01 §5 + pengaflöde §3, per tenant) =====
+  service_fee_type  text not null default 'fixed'
+    check (service_fee_type in ('fixed','percent')),    -- 'fixed' = öre, 'percent' = procent
+  service_fee_value int  not null default 500,          -- 500 öre = 5 kr (default), eller procent-tal vid 'percent'
   unique (tenant_id)
 );
 

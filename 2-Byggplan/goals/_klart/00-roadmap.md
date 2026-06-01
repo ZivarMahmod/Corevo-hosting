@@ -1,121 +1,247 @@
-# Corevo Booking Platform — Byggplan / Roadmap
+# Roadmap — Corevo Booking Platform
 
-Multi-tenant white-label boknings-SaaS för salonger. Ingångspunkt för bygget.
-**Stack:** Next.js (App Router) + Supabase (Postgres + Auth) + Cloudflare (hosting via OpenNext/Workers + R2) + Stripe Connect.
-**Kod bor i:** `5-Kod/` (egen git, tom nu).
-**Status idag:** 2026-05-31. Planering klar, bygge ej startat.
-
-> Varje goal-brief ligger i `goals/`. Code kör en goal i taget — eller flera parallella spår samtidigt när beroenden tillåter.
-
----
-
-## 1. Översikt — parallella spår
-
-Bygget delas i **spår** som kan köras samtidigt av separata Code-sessioner. Ett spår får bara starta när dess beroenden är klara (DoD uppfylld).
-
-| Spår | Innehåll | Kan starta när |
-|------|----------|----------------|
-| **Fundament** | G01 scaffold, G02 DB/RLS | direkt (G01), sedan G02 |
-| **Spår A** | M2 Publik webbplats (G03) | G02 klar |
-| **Spår B** | M3 Bokningsmotor (G04) | G02 klar |
-| **Spår C** | M4 Kundportal (G05) + M5 Personalportal (G06) | G04 klar |
-| **Spår D** | M6 Salon Admin (G07) | G04 klar |
-| **Spår E** | M7 Platform Admin (G08) | G02 klar (egen tenant-data) |
-| **Spår F** | M8 Betalningar/Stripe (G09) | G04 klar (kopplar på M3) |
-| **Härdning** | G10 Säkerhet/compliance/ops, G11 E2E + deploy-pipeline | kärnan byggd |
-
-**Parallellitet i praktiken:**
-- **Fas 1 (ensam):** G01 → G02.
-- **Fas 2 (parallellt):** Spår A (G03) + Spår B (G04) + Spår E (G08) samtidigt.
-- **Fas 3 (parallellt):** Spår C (G05, G06) + Spår D (G07) + Spår F (G09) samtidigt.
-- **Fas 4 (härdning):** G10 + G11.
-
----
-
-## 2. Beroendediagram (ASCII)
+> Byggs i VÅGOR, inte faser. En våg = så många Claude Code-instanser
+> som kan köra SAMTIDIGT utan att röra varandras filer.
+> Hur-man-gör (worktrees, branch per goal, merge-ordning):
+> se `1-Planering/01-parallell-exekvering.md`.
+> (Finns den inte än — skapa den innan Våg 1 startar. Tills dess:
+> en branch per goal, merge i våg-ordning, kör `pnpm build` efter varje merge.)
 
 ```
-                        ┌─────────────┐
-                        │ G01 Scaffold│  (Fundament)
-                        │ Next+Supa+CF│
-                        └──────┬──────┘
-                               │
-                        ┌──────▼──────┐
-                        │ G02 DB/RLS  │  (Fundament, M9)
-                        │ migrations  │
-                        └──┬───┬───┬──┘
-              ┌────────────┘   │   └─────────────┐
-              │                │                 │
-        ┌─────▼─────┐   ┌──────▼──────┐   ┌──────▼──────┐
-        │ G03 M2    │   │ G04 M3      │   │ G08 M7      │
-        │ Publik web│   │ Bokmotor    │   │ Platform Adm│
-        │ (Spår A)  │   │ (Spår B)    │   │ (Spår E)    │
-        └───────────┘   └──┬───┬───┬──┘   └─────────────┘
-                           │   │   │
-              ┌────────────┘   │   └──────────────┐
-              │                │                  │
-        ┌─────▼─────┐   ┌──────▼──────┐    ┌──────▼──────┐
-        │ G05 M4    │   │ G07 M6      │    │ G09 M8      │
-        │ Kundportal│   │ Salon Admin │    │ Stripe/Bet. │
-        │ (Spår C)  │   │ (Spår D)    │    │ (Spår F)    │
-        ├───────────┤   └─────────────┘    └─────────────┘
-        │ G06 M5    │
-        │ Personalp.│
-        │ (Spår C)  │
-        └─────┬─────┘
-              │
-       ┌──────▼───────┐
-       │ G10 Säkerhet │  (Härdning)
-       │ G11 E2E+CI/CD│
-       └──────────────┘
++===========================================================+
+|  DOMÄN-REGEL  (gäller HELA bygget)                        |
+|                                                           |
+|   - INGEN riktig kunddomän rörs.                          |
+|   - INGEN CNAME / custom hostname skapas.                 |
+|   ...förrän ZIVAR säger OK.                               |
+|                                                           |
+|   Tills dess: localhost + preview-subdomän.               |
+|     Dev:     freshcut.localhost:3000                      |
+|     Preview: *.workers.dev (ev. *.preview.corevo.se)      |
+|   Tenant löses via subdomän-på-localhost ELLER            |
+|   ?tenant=freshcut / /t/freshcut (se G01).                |
++===========================================================+
 ```
 
 ---
 
-## 3. Goal-tabell
+## Vad det är
 
-| Goal# | Modul | Spår | Beror på | Status |
-|-------|-------|------|----------|--------|
-| G01 | — (infra) | Fundament | — | Att göra |
-| G02 | M9 DB/Arkitektur | Fundament | G01 | Att göra |
-| G03 | M2 Publik webbplats | A | G02 | Att göra |
-| G04 | M3 Bokningsmotor | B | G02 | Att göra |
-| G05 | M4 Kundportal | C | G04 | Att göra |
-| G06 | M5 Personalportal | C | G04 | Att göra |
-| G07 | M6 Salon Admin | D | G04 | Att göra |
-| G08 | M7 Platform Admin | E | G02 | Att göra |
-| G09 | M8 Betalningar/Stripe | F | G04 | Att göra |
-| G10 | Säkerhet/Compliance/Ops | Härdning | G05,G06,G07,G09 | Att göra |
-| G11 | E2E-test + deploy-pipeline | Härdning | G10 | Att göra |
+Corevo = multi-tenant, white-label boknings-SaaS för salonger.
+Freshcut = första tenant. Ny salong = ny tenant + config, aldrig ny kod.
+
+**All kod bor i ETT Next.js-projekt:** `5-Kod/` (App Router, egen git).
+INGEN monorepo, inga `packages/*`. Revir = mappar/route-grupper INNE i `5-Kod/`.
+
+**Stack:** Next.js (App Router, TS, pnpm) · Supabase (Postgres + Auth + RLS)
+· Cloudflare (OpenNext → Workers + R2) · Stripe Connect Express.
 
 ---
 
-## 4. Tvärgående regler (gäller ALLA goals)
+## Vågor (max parallellitet)
 
-- **Multi-tenant:** varje tenant-tabell har `tenant_id uuid not null`. RLS PÅ överallt. Ingen query utan tenant-scope.
-- **White-label:** inga hårdkodade varumärken på tenant-sidor. Tema/logo/färg per tenant från DB.
-- **Auth:** Supabase Auth (App Router, `@supabase/ssr`). Server Components läser session via cookies. RLS är sista försvarslinjen — lita aldrig bara på app-lager.
-- **Env:** alla hemligheter i `.env.local` (dev) + Cloudflare secrets (prod). Aldrig i git. `.env.example` committas.
-- **Deploy:** Cloudflare via OpenNext (`@opennextjs/cloudflare`) → Workers. R2 för fil-/bilduppladdning.
-- **Språk i UI:** svenska som default, i18n-redo.
-- **Definition of Done per goal:** `pnpm build` grön, lint grön, beskrivna DoD-kriterier verifierade.
+```
+VÅG 0  — FUNDAMENT          (1 instans, seriellt)
++-----------------------------------------------------------+
+|  G01 scaffold  -->  G02 db + rls                          |
+|  Lägger projektskelett + delade filer + hela DB-schemat.  |
+|  EFTER våg 0: delade filer + schema FRYSES (se fryslista).|
++-----------------------------------------------------------+
+        |
+        v
+VÅG 1  — KÄRNA              (3 instanser samtidigt)
++-----------------------------------------------------------+
+|  [A] G03 publik web   [B] G04 bokmotor   [C] G08 platform |
+|  Olika route-grupper / lib-mappar. Noll fil-krock.        |
++-----------------------------------------------------------+
+        |
+        v
+VÅG 2  — PORTALER + PENGAR  (4 instanser samtidigt)
++-----------------------------------------------------------+
+| [A] G05 kundportal  [B] G06 personal  [C] G07 salon-admin |
+|                     [D] G09 stripe/betalning              |
+|  Var sin route-grupp / eget lib-område. Bygger på G04.    |
++-----------------------------------------------------------+
+        |
+        v
+VÅG 3  — HÄRDNING           (1-2 instanser)
++-----------------------------------------------------------+
+|  G10 säkerhet/compliance/ops   -->   G11 e2e + deploy     |
+|  Rör tvärsöver allt -> körs sist, lugnt, ej parallellt.   |
++-----------------------------------------------------------+
+```
+
+| Våg | Vad | Instanser samtidigt | Goals |
+|-----|-----|---------------------|-------|
+| 0 | Fundament | **1** (seriellt) | G01 → G02 |
+| 1 | Kärna | **3** | G03, G04, G08 |
+| 2 | Portaler + pengar | **4** | G05, G06, G07, G09 |
+| 3 | Härdning | **1–2** | G10 → G11 |
+
+Max samtidiga instanser i en våg: **4** (Våg 2).
 
 ---
 
-## 5. Körordning för Code (kort)
+## FIL-REVIR-KARTA (vem äger vilka mappar i `5-Kod/`)
 
-1. Kör **G01**, verifiera DoD.
-2. Kör **G02**, verifiera DoD (RLS-test obligatoriskt).
-3. Starta **G03 + G04 + G08** parallellt (separata sessioner/brancher).
-4. När G04 klar: starta **G05 + G06 + G07 + G09** parallellt.
-5. Avsluta med **G10** sedan **G11**.
+Regel: en mapp/route-grupp har EN ägare per våg. Två parallella goals får
+ALDRIG skriva i samma mapp. Måste du röra någon annans revir -> vänta på
+nästa våg, eller be om en delad fil i Våg 0.
+
+Alla sökvägar är under `5-Kod/`.
+
+| Goal | Modul | Våg | ÄGER (skriver i) | Får BARA LÄSA / rör ej |
+|------|-------|-----|------------------|------------------------|
+| G01 | scaffold | 0 | hela skelettet + alla delade rotfiler | — |
+| G02 | db + rls | 0 | `supabase/`, `lib/database.types.ts` | resten (skelett från G01) |
+| G03 | publik web (M2) | 1 | `app/(public)/**`, `lib/cms/**`, `components/public/**` | bokmotor, platform, db |
+| G04 | bokmotor (M3) | 1 | `app/(booking)/**`, `lib/booking/**`, `app/api/booking/**`, `components/booking/**` | publik, platform, db |
+| G08 | platform-admin (M7) | 1 | `app/(platform)/**`, `lib/platform/**`, `app/api/platform/**` | publik, bokmotor, db |
+| G05 | kundportal (M4) | 2 | `app/(portal)/**`, `lib/portal/**`, `components/portal/**` | bokmotor-internals, övriga portaler |
+| G06 | personalportal (M5) | 2 | `app/(staff)/**`, `lib/staff/**`, `components/staff/**` | övriga portaler, bokmotor-internals |
+| G07 | salon-admin (M6) | 2 | `app/(salon)/**`, `lib/salon/**`, `components/salon/**` | övriga portaler, bokmotor-internals |
+| G09 | stripe/betalning (M8) | 2 | `lib/payments/**`, `app/api/stripe/**`, `app/api/webhooks/stripe/**` | portaler, bokmotor-internals |
+| G10 | säkerhet/ops | 3 | tvärsnitt: headers, rate-limit, logg, RLS-revision | (körs ensam) |
+| G11 | e2e + deploy | 3 | `e2e/**`, `wrangler.*`, CI-config, deploy-script | (körs ensam) |
+
+> Bokmotorn (G04) är KÄRNAN. Den är klar och fryst innan Våg 2 startar.
+> Portalerna (G05/G06/G07) och Stripe (G09) IMPORTERAR från `lib/booking/`
+> men SKRIVER bara i sina egna revir. Behöver de en ny funktion i bokmotorn
+> -> lägg en TODO, ta det seriellt efter vågen (rör ej G04:s filer parallellt).
+
+### Snabbkoll: route-grupp -> ägare
+
+```
+app/(public)   ......... G03   (våg 1)   publik salongssajt
+app/(booking)  ......... G04   (våg 1)   boka-flöde + tider
+app/(platform) ......... G08   (våg 1)   Corevo intern-admin
+app/(portal)   ......... G05   (våg 2)   kundens sida
+app/(staff)    ......... G06   (våg 2)   personalens arbetsyta
+app/(salon)    ......... G07   (våg 2)   salongsägarens admin
+app/api/stripe ......... G09   (våg 2)   betalning + webhooks
+supabase/      ......... G02   (våg 0)   [FRYST efter våg 0]
+```
 
 ---
 
-## 6. Beslutslogg
+## FRYSTA filer (rör ej efter Våg 0)
+
+Läggs EN gång i Våg 0. Parallella goals i Våg 1–2 får INTE ändra dem.
+Behöver något ändras här -> stoppa, fråga Zivar, gör det seriellt mellan vågor.
+
+```
+[FRYST]  package.json  +  pnpm-lock.yaml      (deps läggs seriellt)
+[FRYST]  tsconfig.json  /  eslint  /  prettier
+[FRYST]  next.config.*  /  open-next.config.ts  /  wrangler.*
+[FRYST]  middleware.ts  +  lib/supabase/*      (session + tenant-resolution)
+[FRYST]  lib/tenant.ts                          (tenant-lookup, alla litar på den)
+[FRYST]  supabase/migrations/*  +  RLS          (DB-kontraktet ALLA bygger mot)
+[FRYST]  lib/database.types.ts                  (genereras av G02)
+[FRYST]  .env.example                           (nya nycklar = lägg TILL, ta ej bort)
+[FRYST]  components/ui/*                         (delat UI om/när det skapas)
+```
+
+Varför: om två instanser ändrar t.ex. `package.json`, `middleware.ts`
+eller DB-schemat samtidigt -> merge-konflikt + trasigt bygge.
+Frys = noll krock, varje instans kan merge:as oberoende.
+
+> Undantag: behöver Våg 1/2 en NY delad dep eller ett NYTT schema-fält?
+> Pausa, lägg till det seriellt (en instans), commit, sen kör vidare parallellt.
+
+---
+
+## Beroendegraf
+
+```
+G01 scaffold
+   |
+G02 db + rls               (fundament — allt vilar på detta)
+   |   <<< delade filer + schema FRYSES här >>>
+   |
+   +-------------+-------------+
+   |             |             |
+ VÅG 1  (3 parallellt):
+ G03 publik    G04 bokmotor   G08 platform
+   |             |             |
+   |        (G04 fryst före våg 2)
+   |             |
+   +-------+-----+-----+------------+
+   |       |           |            |
+ VÅG 2  (4 parallellt):
+ G05      G06          G07          G09
+ kund     personal     salon-adm    stripe
+   |       |           |            |
+   +-------+-----+-----+------------+
+   |
+ VÅG 3  (seriellt):
+ G10 säkerhet/ops  -->  G11 e2e + deploy
+```
+
+Beroenden i klartext:
+- G02 kräver G01.
+- G03, G04, G08 kräver G02 (fryst fundament).
+- G05, G06, G07 kräver G04. G09 kräver G04.
+- G10 kräver G05+G06+G07+G09. G11 kräver G10.
+
+---
+
+## Goal-tabell
+
+| Goal | Modul | Våg | Äger mappar (i `5-Kod/`) | Beror på | Status |
+|------|-------|-----|--------------------------|----------|--------|
+| G01 | infra/scaffold | 0 | hela skelettet + rotfiler | — | ☐ |
+| G02 | M9 db + rls | 0 | `supabase/`, `lib/database.types.ts` | G01 | ☐ |
+| G03 | M2 publik web | 1 | `app/(public)`, `lib/cms`, `components/public` | G02 | ☐ |
+| G04 | M3 bokmotor | 1 | `app/(booking)`, `lib/booking`, `app/api/booking` | G02 | ☐ |
+| G08 | M7 platform-admin | 1 | `app/(platform)`, `lib/platform`, `app/api/platform` | G02 | ☐ |
+| G05 | M4 kundportal | 2 | `app/(portal)`, `lib/portal`, `components/portal` | G04 | ☐ |
+| G06 | M5 personalportal | 2 | `app/(staff)`, `lib/staff`, `components/staff` | G04 | ☐ |
+| G07 | M6 salon-admin | 2 | `app/(salon)`, `lib/salon`, `components/salon` | G04 | ☐ |
+| G09 | M8 stripe/betalning | 2 | `lib/payments`, `app/api/stripe`, `app/api/webhooks/stripe` | G04 | ☐ |
+| G10 | säkerhet/compliance/ops | 3 | tvärsnitt (headers, rate-limit, logg) | G05,G06,G07,G09 | ☐ |
+| G11 | e2e + deploy-pipeline | 3 | `e2e/`, `wrangler.*`, CI, deploy-script | G10 | ☐ |
+
+**Status-legend:** ☐ ej börjad · ◐ pågår · ☑ klar
+
+---
+
+## Tvärgående regler (gäller ALLA goals)
+
+- **Multi-tenant:** varje tenant-tabell har `tenant_id`. RLS PÅ överallt.
+  Ingen query utan tenant-scope.
+- **White-label:** inga hårdkodade varumärken på tenant-sidor. Tema från DB.
+- **Auth:** Supabase Auth + `@supabase/ssr` (cookie-baserad). RLS är sista
+  försvarslinjen — lita aldrig bara på app-lagret.
+- **Env:** hemligheter i `.env.local` (dev) + Cloudflare secrets (prod).
+  Aldrig i git. `.env.example` committas.
+- **DoD per goal:** `pnpm build` grön, lint grön, goal-briefens DoD verifierad.
+- **Domän:** se DOMÄN-REGEL högst upp. Localhost + preview tills Zivar godkänner.
+
+---
+
+## Hur kör jag flera instanser? (kort)
+
+1. **Våg 0:** kör G01 ensam, verifiera DoD. Sen G02 ensam, verifiera RLS-test.
+   Commit. Nu är fundamentet fryst.
+2. **Våg 1:** öppna 3 worktrees/branchar — en per goal (G03, G04, G08).
+   Varje instans rör BARA sitt revir enligt kartan. Merge in en i taget,
+   `pnpm build` efter varje, sen nästa.
+3. **Våg 2:** samma sak med 4 instanser (G05, G06, G07, G09).
+4. **Våg 3:** G10 ensam, sen G11 ensam.
+
+Detaljerad steg-för-steg (worktree-kommandon, merge-ordning, konflikt-skydd):
+**`1-Planering/01-parallell-exekvering.md`**.
+
+---
+
+## Beslutslogg
 
 | Datum | Beslut | Varför |
 |---|---|---|
-| 2026-05-31 | OpenNext (`@opennextjs/cloudflare`) på Workers, ej Pages | 2026-rekommendation för Next App Router på Cloudflare |
-| 2026-05-31 | `@supabase/ssr` cookie-baserad auth i App Router | Kanoniskt Supabase + Next App Router-mönster |
-| 2026-05-31 | Dubbelbokningsskydd via Postgres exclusion constraint (`btree_gist`) | DB-nivå garanti, inte bara app-logik |
+| 2026-05-31 | OpenNext (`@opennextjs/cloudflare`) på Workers, ej Pages | 2026-rek. för Next App Router på CF |
+| 2026-05-31 | `@supabase/ssr` cookie-auth i App Router | Kanoniskt Supabase + Next-mönster |
+| 2026-05-31 | Dubbelbokningsskydd via Postgres EXCLUDE (`btree_gist`) | DB-garanti, ej bara app-logik |
+| 2026-05-31 | Auth = Supabase Auth + egna tabeller, `tenant_id` JWT-claim, RLS via `auth.tenant_id()` | ADR 01 §4 |
+| 2026-05-31 | Stripe Connect Express + direct charges + `application_fee` per tenant | Pengaflöde 03 |
+| 2026-05-31 | Domän per tenant via Cloudflare for SaaS — SENARE, spärrad tills Zivar OK | Onboarding 02 + domän-regel |
+| 2026-05-31 | Roadmap i VÅGOR + fil-revir-karta (route-grupper i `5-Kod/`) | Max parallella Code-instanser, noll fil-krock |
