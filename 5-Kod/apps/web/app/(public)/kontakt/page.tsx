@@ -13,9 +13,10 @@ export default async function ContactPage() {
 
   return (
     <>
-      {/* Graceful placeholders: the public data layer doesn't expose address /
-          phone / opening hours yet (crossModuleGaps). LocationHours shows
-          "Visas snart" + a neutral map until the salon fills in its profile. */}
+      {/* LocationHours renders the salon's REAL address + opening hours + contact
+          (email/phone) from its saved settings/location, plus a map link to the
+          real address. Each field degrades gracefully — an honest "Visas snart"
+          placeholder (and the map is omitted) until that field is filled in. */}
       <LocationHours salonName={tenant.name} />
       <ClosingCta />
     </>

@@ -13,9 +13,11 @@ import { useBooking } from '@/components/storefront/BookingProvider'
  *  Fallback: with no provider (e.g. the standalone `/boka` route) it renders a
  *  real <Link href="/boka">, so the route keeps working.
  *
- *  Corevo family signature: gold accent pill (.btn-accent). The gold token is a
- *  fixed product token (not tenant-overridable), so the primary CTA reads the
- *  same across every salon — the family thread through all themes.
+ *  Corevo family signature: gold accent pill (.btn-accent). Gold is the FROZEN
+ *  default in back-office (which never injects tenant tokens), but on the
+ *  storefront --color-accent follows the tenant/preset accent via
+ *  injectTenantTokens — so this CTA reads as the salon's accent on their site and
+ *  as the Corevo gold default everywhere in back-office.
  *
  *  Rendered as a <button> (not an <a>) when embedded, which also removes the only
  *  anchor inside the various `<p>`/CTA wrappers — no nested-anchor / block-in-p

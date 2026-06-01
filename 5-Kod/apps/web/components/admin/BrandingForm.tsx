@@ -14,6 +14,21 @@ const FALLBACK = {
   color_accent: '#f5a623',
 }
 
+// Legible text colour for a given accent background — mirrors injectTenantTokens'
+// accentForeground() in @corevo/ui (identical luminance threshold + values) so the
+// preview's accent CTA matches what the published storefront renders. Kept local
+// because @corevo/ui only re-exports injectTenantTokens, not the helper.
+function accentFg(hex: string): string {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return '#15281f'
+  let h = m[1]
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 >= 0.6 ? '#15281f' : '#ffffff'
+}
+
 export function BrandingForm({ branding }: { branding: TenantBranding }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(saveBranding, {})
 
@@ -178,13 +193,19 @@ function BrandingPreview({
           )}
         </div>
         <div className={styles.previewHero}>
-          <p className={styles.previewEyebrow} style={{ color: accent }}>
+          {/* Eyebrow + price use PRIMARY (forest) to match the live storefront's
+              .eyebrow / .menuPrice (WCAG AA: small accent text fails contrast).
+              The accent field is demoed by the CTA chip below, which is the
+              element that genuinely uses --color-accent on the storefront. */}
+          <p className={styles.previewEyebrow} style={{ color: primary }}>
             Välkommen
           </p>
           <h3 className={styles.previewTitle}>Boka din tid online</h3>
           <p className={styles.previewText}>Enkel bokning, dygnet runt — direkt hos din salong.</p>
-          <span className={styles.previewCta} style={{ background: primary, color: bg }}>
-            Boka nu
+          {/* Mirrors the storefront's .btn-accent: accent background + auto-picked
+              legible foreground, so the Accent field gets a truthful live demo. */}
+          <span className={styles.previewCta} style={{ background: accent, color: accentFg(accent) }}>
+            Boka tid
           </span>
         </div>
         <div className={styles.previewCard}>
@@ -192,7 +213,7 @@ function BrandingPreview({
             <div className={styles.previewCardName}>Klippning</div>
             <div className={styles.previewCardMeta}>30 min</div>
           </div>
-          <div className={styles.previewCardPrice} style={{ color: accent }}>
+          <div className={styles.previewCardPrice} style={{ color: primary }}>
             450 kr
           </div>
         </div>

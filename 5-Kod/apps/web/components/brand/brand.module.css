@@ -1,12 +1,15 @@
-/* Storefront (M2) brand-scoped polish + the 3rd theme template (nav C / hero 3).
+/* Storefront (M2) brand-scoped polish + the 3rd theme template (nav C).
    CSS module → class names are hashed, so nothing here leaks into the global
    sheet or another module. We LAYER these next to the FROZEN global base
    classes (.hero, .service-card, .nav, .section, .footer …) — we never replace
    them, because .hero/.service-card are nivå-3 tenant-override hooks.
 
    Every rule references the design-token CSS variables (Corevo family):
-   --color-primary/-bg/-fg are tenant-overridable; --color-accent (gold),
-   --font-display, radii, shadows and motion are the fixed Corevo signature. */
+   --color-primary/-bg/-fg are tenant-overridable; --color-accent defaults to the
+   Corevo gold but is also tenant-overridable on the storefront (via
+   injectTenantTokens) — it stays frozen only in back-office, which never injects
+   tenant tokens. --font-display, radii, shadows and motion are the fixed
+   Corevo signature. */
 
 /* ── shared storefront polish ─────────────────────────────────────────────── */
 
@@ -340,112 +343,6 @@
   .navCLinks { order: 3; width: 100%; justify-content: center; }
 }
 
-/* ── Hero 3 — split: editorial headline left, gradient brand panel right ───── */
-.hero3 {
-  padding: 0;
-  overflow: clip;
-}
-.hero3Grid {
-  max-width: 1080px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 0;
-  align-items: stretch;
-  min-height: clamp(26rem, 60vh, 34rem);
-}
-.hero3Copy {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1.1rem;
-  padding: 4rem 2.5rem 4rem 1.5rem;
-}
-.hero3Eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.24em;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--color-accent);
-  margin: 0;
-}
-.hero3Title {
-  font-family: var(--font-display);
-  font-size: clamp(2.6rem, 6vw, 4.2rem);
-  font-weight: 800;
-  line-height: 1.02;
-  letter-spacing: -0.02em;
-  margin: 0;
-  color: var(--color-fg);
-}
-.hero3Sub {
-  font-size: 1.18rem;
-  line-height: 1.6;
-  max-width: 34rem;
-  margin: 0;
-  opacity: 0.82;
-}
-.hero3Cta {
-  margin-top: 0.75rem;
-}
-/* The decorative brand panel — pure tokens, no imagery. Reads as a premium
-   colour field built from the tenant's own primary + the gold signature. */
-.hero3Panel {
-  position: relative;
-  border-radius: 0;
-  background:
-    radial-gradient(120% 120% at 80% 15%, color-mix(in srgb, var(--color-accent) 38%, transparent), transparent 55%),
-    linear-gradient(150deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 55%, #000));
-  overflow: hidden;
-}
-.hero3Panel::after {
-  /* Oversized monogram of the salon initial as a quiet watermark. */
-  content: attr(data-monogram);
-  position: absolute;
-  right: -0.1em;
-  bottom: -0.18em;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 22rem;
-  line-height: 1;
-  color: color-mix(in srgb, #fff 14%, transparent);
-  pointer-events: none;
-  user-select: none;
-}
-.hero3Mark {
-  position: absolute;
-  top: 2rem;
-  left: 2rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  color: color-mix(in srgb, #fff 90%, transparent);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-weight: 700;
-}
-.hero3Dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: var(--color-accent);
-  box-shadow: var(--glow-gold);
-}
-
-@media (max-width: 820px) {
-  .hero3Grid {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-  .hero3Copy {
-    padding: 3.25rem 1.5rem 2.5rem;
-    text-align: center;
-    align-items: center;
-  }
-  .hero3Panel {
-    min-height: 12rem;
-    order: -1;
-  }
-  .hero3Panel::after { font-size: 12rem; }
-}
+/* Hero 3 (split editorial/brand-panel template) removed — the current Hero uses
+   HeroCarousel + the storefront .hero* classes; the .hero3* rules had zero TSX
+   references. nav C (.navC*) above is still live and kept. */

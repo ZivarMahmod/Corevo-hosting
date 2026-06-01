@@ -4,8 +4,12 @@
    modules. We LAYER next to the FROZEN global base classes (.hero, .section,
    .service-card, .nav, .footer …) and reference the design-token CSS variables:
      • --color-primary/-bg/-fg  → tenant-overridable (nivå 1)
-     • --color-accent (gold), --font-display, radii, shadows, motion → FROZEN
-       Corevo product tokens. NEVER redefined here.
+     • --color-accent → gold is the DEFAULT, but on the storefront it MAY be
+       tenant-overridden via injectTenantTokens (branding.color_accent). It stays
+       frozen only in back-office (admin/personal/platform), which never injects
+       tenant tokens, so --color-accent keeps its default there.
+     • --font-display, radii, shadows, motion → FROZEN Corevo product tokens.
+       NEVER redefined here.
    Template personality (A/B/C) is driven by OUR OWN scoped vars (--tpl-*),
    set on [data-template] — never by touching the frozen --radius etc.
    =========================================================================== */
