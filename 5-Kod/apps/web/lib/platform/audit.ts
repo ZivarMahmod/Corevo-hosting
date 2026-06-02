@@ -15,6 +15,10 @@ export type PlatformAuditAction =
   | 'tenant.branding'
   | 'tenant.billing'
   | 'tenant.invite'
+  // Operativ data-kontroll (M7 §2.1B) — no-code "Supabase med mitt UI".
+  | 'tenant.update' // edit safe tenant fields (name, review url, booking variant)
+  | 'tenant.password_reset' // generate a recovery link for the salon admin
+  | 'tenant.staff_create' // Zivar-assisted staff onboarding on a chosen tenant
 
 export async function logPlatformAction(
   supabase: SupabaseClient<Database>,

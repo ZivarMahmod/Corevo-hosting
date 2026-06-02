@@ -48,7 +48,6 @@ export default async function SettingsPage({
     customer_accounts_enabled?: boolean
     notifications?: { confirmation?: boolean; reminder?: boolean; review?: boolean }
     google_review_url?: string | null
-    sms_enabled?: boolean
     cookie_banner_enabled?: boolean
   }
   const contact = sjson.contact ?? {}
@@ -79,7 +78,6 @@ export default async function SettingsPage({
           review: sjson.notifications?.review !== false,
         }}
         googleReviewUrl={sjson.google_review_url ?? ''}
-        smsEnabled={sjson.sms_enabled === true}
         cookieBannerEnabled={sjson.cookie_banner_enabled !== false}
       />
 

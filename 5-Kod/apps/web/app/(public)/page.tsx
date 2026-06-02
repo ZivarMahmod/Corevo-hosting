@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
 import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
+import { getTenantCopy } from '@/components/storefront/tenant-copy'
 
 // Per-request, host-resolved tenant → never prerender.
 export const dynamic = 'force-dynamic'
@@ -19,7 +20,9 @@ export default async function HomePage() {
   const { tenant, settings, location } = bundle
 
   const Layout = STOREFRONT_LAYOUTS[settings.theme]
-  const content = resolveThemeContent(settings.theme, settings.branding)
+  // Owner copy (settings.copy) wins per-field; theme default fills the rest.
+  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const content = resolveThemeContent(settings.theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
   return (

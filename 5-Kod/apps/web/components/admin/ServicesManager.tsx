@@ -87,11 +87,30 @@ function ServiceItem({ service }: { service: ServiceRow }) {
 
       <div className={styles.actions}>
         <span className={styles.muted}>{formatPrice(service.price_cents)}</span>
+        <PlacementBadge active={service.active} />
         <ToggleButton id={service.id} active={service.active} />
         <DeleteButton id={service.id} />
       </div>
       <Feedback state={state} />
     </li>
+  )
+}
+
+/** Where the service shows up on the storefront (M6 §3.3). Active services appear
+ *  in the public service-menu (homepage section + the full /tjanster page) and are
+ *  bookable, ordered by price; inactive ones are hidden but keep their history. */
+function PlacementBadge({ active }: { active: boolean }) {
+  return (
+    <span
+      className={styles.badge}
+      title={
+        active
+          ? 'Syns i tjänstemenyn på startsidan och /tjanster, och går att boka.'
+          : 'Dold på den publika sajten. Historiken finns kvar.'
+      }
+    >
+      {active ? 'Syns på sajten + bokning' : 'Dold på sajten'}
+    </span>
   )
 }
 

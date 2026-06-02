@@ -53,3 +53,21 @@ export async function getAdminTenant(user: CurrentUser): Promise<AdminTenant | n
 export function revalidateTenant(slug: string): void {
   revalidateTag(`tenant:${slug.trim().toLowerCase()}`)
 }
+
+/**
+ * Absolute URL of a tenant's PUBLIC storefront, e.g. `https://demo.corevo.se`.
+ * The back-office lives on `booking.corevo.se`, so we build the storefront origin
+ * from the tenant slug + the configured root domain (NEXT_PUBLIC_ROOT_DOMAIN).
+ * On localhost there is no wildcard subdomain, so we fall back to `?tenant=<slug>`
+ * which the middleware already understands (lib/tenant.ts). Used by the "Se din
+ * sida"-links (dashboard + branding) and the branding preview button.
+ */
+export function storefrontUrl(slug: string): string {
+  const root = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se').trim()
+  const s = slug.trim().toLowerCase()
+  // localhost (with optional :port) → no real subdomains; use the ?tenant= seam.
+  if (/^localhost(:\d+)?$/.test(root) || root.startsWith('127.0.0.1')) {
+    return `http://${root}/?tenant=${encodeURIComponent(s)}`
+  }
+  return `https://${s}.${root.replace(/:\d+$/, '')}`
+}

@@ -5,22 +5,31 @@ import { ServiceMenu } from '@/components/storefront/ServiceMenu'
 import { SectionHeader } from '@/components/storefront/sections'
 import { BookCta } from '@/components/brand/BookCta'
 import { Reveal } from '@/components/storefront/Reveal'
+import { pageMetadata } from '@/components/storefront/seo'
+import { resolveThemeContent } from '@/components/storefront/theme-content'
+import { getTenantCopy } from '@/components/storefront/tenant-copy'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Tjänster' }
+
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('tjanster')
+}
 
 export default async function ServicesPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
-  const { tenant } = bundle
+  const { tenant, settings } = bundle
+  // Section header varies per theme (data-driven, no longer hardcoded).
+  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const content = resolveThemeContent(settings.theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
   return (
     <section className="section">
       <div className="section-inner">
         <SectionHeader
-          eyebrow="— Behandlingar & priser"
-          title="Tjänster"
+          eyebrow={content.servicesEyebrow}
+          title={content.servicesTitle}
           lead={`Våra behandlingar hos ${tenant.name}. Alla priser är inkl. moms — välj en tjänst och boka en ledig tid online.`}
         />
         <ServiceMenu services={services} />

@@ -9,6 +9,10 @@ import { uploadImage, uploadErrorMessage, pruneRemovedImages, type UploadResult 
 import { mergeBranding } from '@/lib/branding/merge'
 import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { BOOKING_STATUSES } from './format'
+import type { CopyOverride } from '@/components/storefront/theme-content'
+import { createAdminServiceClient } from './service'
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export type ActionState = { error?: string; success?: string }
 
@@ -267,6 +271,98 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   return { success: 'Tjänster kopplade.' }
 }
 
+/**
+ * Invite a staff member by email (M6 §3.4 onboarding). Sends a Supabase magic-link
+ * invite (one-time), provisions the public.users row with a tenant-scoped `staff`
+ * role (level 3), bakes tenant_id into app_metadata (JWT belt-and-suspenders, same
+ * as the platform create-tenant invite), and creates/links the staff row's
+ * profile_id so the new account maps to its staff record.
+ *
+ * ⚠️ Requires SUPABASE_SERVICE_ROLE_KEY (server secret) for the auth-user creation.
+ * When the secret is unset (local/dev, mirrors the R2 + platform pattern) the invite
+ * degrades gracefully with a clear message — never throws. HANDOFF: verify the
+ * secret is wired in the Worker before relying on this in production.
+ */
+export async function inviteStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const email = String(fd.get('email') ?? '').trim().toLowerCase()
+  const title = String(fd.get('title') ?? '').trim()
+  // Optional: invite into an EXISTING staff row (link it) instead of a new one.
+  const staffId = String(fd.get('staff_id') ?? '').trim()
+  if (!email || !EMAIL_RE.test(email)) return { error: 'Ange en giltig e-postadress.' }
+
+  const svc = createAdminServiceClient()
+  if (!svc) {
+    return {
+      error:
+        'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av drift). Medarbetaren kan läggas till utan konto under tiden.',
+    }
+  }
+
+  const supabase = await createClient()
+
+  // 1) Tenant-scoped `staff` role (level 3). Idempotent upsert on (tenant_id, name)
+  //    avoids a TOCTOU race / unique-violation, then re-select the id. RLS roles_write
+  //    admits tenant_id = private.tenant_id() (0002:50), so a salon_admin may do this.
+  //    Done BEFORE the auth-user invite so an RLS/DB failure can't orphan an auth user.
+  await supabase
+    .from('roles')
+    .upsert({ tenant_id: ctx.tenant.id, name: 'staff', level: 3 }, { onConflict: 'tenant_id,name', ignoreDuplicates: true })
+  const { data: role, error: rErr } = await supabase
+    .from('roles')
+    .select('id')
+    .eq('tenant_id', ctx.tenant.id)
+    .eq('name', 'staff')
+    .maybeSingle()
+  if (rErr || !role) return { error: GENERIC }
+  const roleId = role.id
+
+  // 2) Invite the auth user (one-time magic link). Only this step needs svc.
+  const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email)
+  if (iErr || !invited?.user) {
+    return { error: `Inbjudan misslyckades: ${iErr?.message ?? 'kontot finns kanske redan'}.` }
+  }
+  const authId = invited.user.id
+
+  // 3) Bake tenant_id into app_metadata so the JWT carries it before the access
+  //    token hook is enabled (same belt-and-suspenders as the platform invite).
+  await svc.auth.admin.updateUserById(authId, {
+    app_metadata: { tenant_id: ctx.tenant.id, platform_admin: false },
+  })
+
+  // 4) public.users row (authed client; RLS allows the admin within their tenant).
+  const { error: uErr } = await supabase
+    .from('users')
+    .insert({ id: authId, tenant_id: ctx.tenant.id, email, role_id: roleId, status: 'active' })
+  if (uErr) {
+    return { error: 'Medarbetaren kunde inte kopplas (kontot finns kanske redan).' }
+  }
+
+  // 5) Create or link the staff row → profile_id points at the new account.
+  if (staffId) {
+    const { error: linkErr } = await supabase
+      .from('staff')
+      .update({ profile_id: authId })
+      .eq('id', staffId)
+      .eq('tenant_id', ctx.tenant.id)
+    if (linkErr) return { error: GENERIC }
+  } else {
+    const { error: insErr } = await supabase.from('staff').insert({
+      tenant_id: ctx.tenant.id,
+      location_id: ctx.tenant.locationId,
+      profile_id: authId,
+      title: title || email,
+      active: true,
+    })
+    if (insErr) return { error: GENERIC }
+  }
+
+  revalidateStaff(ctx.tenant.slug)
+  return { success: `Inbjudan skickad till ${email}. Medarbetaren skapar lösenord via länken.` }
+}
+
 // ── Working hours (schedules, per staff) ──────────────────────────────────────
 const TIME_RE = /^\d{2}:\d{2}$/
 
@@ -327,6 +423,136 @@ export async function deleteStaffWorkingHours(_p: ActionState, fd: FormData): Pr
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/scheman')
   return { success: 'Arbetstid borttagen.' }
+}
+
+// ── Explicit bookable slots (working_hour_slots, per staff/weekday) — M6 §5 ─────
+// Coexists with working_hours: when a (staff, weekday) has explicit slots the
+// engine offers EXACTLY those starts; with none it falls back to the working_hours
+// raster. Uneven start times are allowed by design — the owner picks them.
+//
+// ⚠️ Activation dependency (OUT OF M6 REVIR): the public booking engine still reads
+// `working_hours` + a fixed step (app/boka/actions.ts) and does NOT yet read
+// working_hour_slots. The DB (anon-read policy 0011:598, seed fn) is built for M3
+// to consume in a later wave. Until M3 reads these, explicit slots are stored +
+// editable here but do not yet change the public bookable times. Copy reflects that.
+
+export async function addStaffSlots(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const staffId = String(fd.get('staff_id') ?? '')
+  const weekday = Number(fd.get('weekday'))
+  // One or more times: a single "start_time" and/or a comma/space/newline list in
+  // "start_times" (paste a whole day's cadence at once, e.g. "09:00, 09:30, 11:45").
+  const raw = [String(fd.get('start_time') ?? ''), String(fd.get('start_times') ?? '')]
+    .join(' ')
+    .split(/[\s,;]+/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+
+  if (!staffId) return { error: 'Välj en medarbetare.' }
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return { error: 'Välj en veckodag.' }
+  if (raw.length === 0) return { error: 'Ange minst en starttid (HH:MM).' }
+  const times = [...new Set(raw)]
+  if (!times.every((t) => TIME_RE.test(t)))
+    return { error: 'Ange giltiga tider (HH:MM), t.ex. 09:00, 09:30, 11:45.' }
+
+  const supabase = await createClient()
+  // Confirm the staff row is ours (and grab its location) before writing.
+  const { data: member } = await supabase
+    .from('staff')
+    .select('id, location_id')
+    .eq('id', staffId)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!member) return { error: 'Okänd medarbetare.' }
+
+  const rows = times.map((t) => ({
+    tenant_id: ctx.tenant.id,
+    staff_id: member.id,
+    location_id: member.location_id ?? ctx.tenant.locationId,
+    weekday,
+    start_time: t,
+  }))
+  // Idempotent: the (tenant, staff, weekday, start_time) unique index means a
+  // re-added time is a no-op rather than a duplicate. ignoreDuplicates so adding a
+  // partly-overlapping list doesn't error.
+  const { error } = await supabase
+    .from('working_hour_slots')
+    .upsert(rows, { onConflict: 'tenant_id,staff_id,weekday,start_time', ignoreDuplicates: true })
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/scheman')
+  return { success: times.length === 1 ? 'Tid sparad.' : `${times.length} tider sparade.` }
+}
+
+export async function deleteStaffSlot(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const id = String(fd.get('id') ?? '')
+  if (!id) return { error: 'Saknar rad.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('working_hour_slots')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/scheman')
+  return { success: 'Tid borttagen.' }
+}
+
+/**
+ * Boot-import: generate explicit slots for a staff member from their existing
+ * working_hours raster, via the seed_explicit_slots_from_hours RPC (SEC DEFINER,
+ * tenant-fenced inside). Idempotent (RPC uses ON CONFLICT DO NOTHING). The owner
+ * then tweaks the generated list. p_step = the raster used during generation only.
+ */
+export async function seedStaffSlots(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const staffId = String(fd.get('staff_id') ?? '')
+  const stepRaw = String(fd.get('step') ?? '15').trim()
+  const step = Number(stepRaw)
+  if (!staffId) return { error: 'Välj en medarbetare.' }
+  if (!Number.isInteger(step) || step < 1 || step > 240)
+    return { error: 'Ogiltigt steg (minuter, 1–240).' }
+
+  // Defence-in-depth: confirm the staff row is ours before invoking the RPC.
+  const supabase = await createClient()
+  const { data: member } = await supabase
+    .from('staff')
+    .select('id')
+    .eq('id', staffId)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!member) return { error: 'Okänd medarbetare.' }
+
+  const { data, error } = await supabase.rpc('seed_explicit_slots_from_hours', {
+    p_staff: staffId,
+    p_step: step,
+  })
+  if (error) {
+    if (error.code === 'P0002') return { error: 'Okänd medarbetare.' }
+    if (error.code === '22023') return { error: 'Ogiltigt steg.' }
+    return { error: GENERIC }
+  }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/scheman')
+  const n = typeof data === 'number' ? data : 0
+  return {
+    success:
+      n > 0
+        ? `${n} tider genererade och sparade. Justera fritt nedan.`
+        : 'Inga nya tider att generera — lägg till arbetstider först, eller så finns tiderna redan.',
+  }
 }
 
 // ── Branding (white-label) ────────────────────────────────────────────────────
@@ -591,6 +817,46 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
     : { success: 'Bilder & innehåll sparat. Publika webbplatsen uppdaterad.' }
 }
 
+// ── Storefront copy (owner editorial overrides) — M6 §3.6 / M2↔M6 contract ─────
+// Owner copy lives in tenant_settings.settings.copy (CopyOverride). The storefront
+// reads it through resolveTenantCopy/resolveThemeContent (the M2-built contract):
+// a non-empty string per field overrides the theme default; empty/missing reverts
+// to the theme copy. We MERGE onto the existing settings jsonb (...prev) so we never
+// clobber layout/theme/contact/notifications — same seam saveSettings uses.
+const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic'] as const
+
+export async function saveStorefrontCopy(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  // Build the copy patch from the form. An empty field is stored as '' — the
+  // resolver treats empty as "unset" → reverts to the theme default. That's the
+  // undo path: clear a field, save, and the theme copy comes back.
+  const copy: CopyOverride = {}
+  for (const f of COPY_FIELDS) {
+    // Trim only trailing/leading; inner newlines are preserved by the resolver.
+    copy[f] = String(fd.get(f) ?? '').slice(0, 600)
+  }
+
+  const supabase = await createClient()
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  const settings = { ...prev, copy }
+
+  const { error } = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: ctx.tenant.id, settings }, { onConflict: 'tenant_id' })
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/varumarke')
+  return { success: 'Texter sparade. Publika webbplatsen uppdaterad.' }
+}
+
 // ── Salon settings ────────────────────────────────────────────────────────────
 const PAYMENT_MODES = ['on_site', 'online', 'both', 'coming_soon'] as const
 
@@ -642,7 +908,6 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     reminder: String(fd.get('notify_reminder') ?? '') === 'true',
     review: String(fd.get('notify_review') ?? '') === 'true',
   }
-  const smsEnabled = String(fd.get('sms_enabled') ?? '') === 'true'
   const cookieBannerEnabled = String(fd.get('cookie_banner_enabled') ?? '') === 'true'
   const googleReviewUrl = httpsUrlOrNull(fd.get('google_review_url'))
 
@@ -677,7 +942,8 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     customer_accounts_enabled: customerAccounts, // G12: storefront login/konto toggle
     notifications, // M9: per-channel toggles (confirmation/reminder/review)
     google_review_url: googleReviewUrl, // M9: review-nudge link (null = off)
-    sms_enabled: smsEnabled, // SMS hook (provider wired later)
+    // sms_enabled intentionally NOT written here (M6 §3.7 — dead toggle removed
+    // from the UI). Any previously stored value is preserved by the `...prev` spread.
     cookie_banner_enabled: cookieBannerEnabled, // storefront cookie banner
   }
   const s = await supabase
@@ -702,6 +968,49 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/installningar')
   return { success: 'Inställningar sparade.' }
+}
+
+// ── Customers (M6 §3.1 + §4) ──────────────────────────────────────────────────
+/**
+ * Owner edits a customer's display-name privacy (M6 §4 "kund styr visningsnamn").
+ * Note: per spec the CUSTOMER owns this; the owner can set it on the customer's
+ * behalf (front-desk request) but the stored data still drives every surface.
+ *   show = 'full'    → show the full name (name_hidden=false, no display override)
+ *   show = 'initial' → name_hidden=true (renders the masked initial)
+ *   display_name     → optional explicit chosen name (e.g. first name / nickname)
+ */
+export async function setCustomerPrivacy(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const customerId = String(fd.get('customer_id') ?? '')
+  const mode = String(fd.get('mode') ?? 'full')
+  const displayName = String(fd.get('display_name') ?? '').trim().slice(0, 80)
+  if (!customerId) return { error: 'Saknar kund.' }
+  if (!['full', 'chosen', 'initial'].includes(mode)) return { error: 'Ogiltigt val.' }
+
+  // mode → stored shape (mirrors get_customer_contact's display_name rule):
+  //   full    : name_hidden=false, display_name=null  → full name shows
+  //   chosen  : name_hidden=false, display_name=<text> → chosen name shows
+  //   initial : name_hidden=true,  display_name=null  → masked initial shows
+  const patch =
+    mode === 'initial'
+      ? { name_hidden: true, display_name: null }
+      : mode === 'chosen'
+        ? { name_hidden: false, display_name: displayName || null }
+        : { name_hidden: false, display_name: null }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('customers')
+    .update(patch)
+    .eq('id', customerId)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidatePath('/admin/kunder')
+  revalidatePath(`/admin/kunder/${customerId}`)
+  return { success: 'Visningsnamn uppdaterat.' }
 }
 
 // ── Bookings overview ─────────────────────────────────────────────────────────

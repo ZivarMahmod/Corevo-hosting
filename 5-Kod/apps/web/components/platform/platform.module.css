@@ -61,6 +61,17 @@
 .feedbackOk {
   color: color-mix(in srgb, var(--c-success, #4e7a5e) 85%, #000);
 }
+/* Multiline feedback (e.g. a generated recovery link the operator copies). */
+.feedbackPre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.82rem;
+  background: color-mix(in srgb, var(--c-ink) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
+  border-radius: var(--radius-sm, 0.375rem);
+  padding: 0.6rem 0.7rem;
+  margin: 0.5rem 0 0;
+}
 
 /* ── forms ── */
 .form {

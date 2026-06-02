@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
-import { getAdminTenant } from '@/lib/admin/tenant'
+import { getAdminTenant, storefrontUrl } from '@/lib/admin/tenant'
 import { dashboardData } from '@/lib/admin/data'
 import { todayInTz, dayRangeUtc, weekRangeUtc } from '@/lib/admin/dates'
 import { formatTime, statusLabel } from '@/lib/admin/format'
+import { OpenSiteLink } from '@/components/admin/OpenSiteLink'
 import { PageHead, Stat, Card, Badge, Button } from '@/components/portal/ui'
 import type { BadgeTone } from '@/components/portal/ui'
 
@@ -35,11 +36,16 @@ export default async function AdminPage() {
     tenant.id,
     dayRangeUtc(today, tenant.timeZone),
     weekRangeUtc(today, tenant.timeZone),
+    tenant.timeZone,
   )
 
   return (
     <section className="portal-section">
       <PageHead eyebrow={tenant.name} title="Översikt">
+        <OpenSiteLink href={storefrontUrl(tenant.slug)}>Se din sida</OpenSiteLink>
+        <Button href="/admin/kunder" variant="ghost" icon="users">
+          Kunder
+        </Button>
         <Button href="/admin/bokningar" variant="ghost" icon="calendar">
           Alla bokningar
         </Button>
@@ -138,6 +144,112 @@ export default async function AdminPage() {
           </div>
         )}
       </Card>
+
+      {/* Insikter denna vecka — tjänste-mix + topptimmar (M6 §3.8). Ingen analytics. */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 16,
+          marginTop: 22,
+        }}
+      >
+        <Card>
+          <h2 className="h2" style={{ marginTop: 0 }}>
+            Tjänste-mix
+          </h2>
+          <p className="small" style={{ color: 'var(--c-ink-3)', marginTop: 2 }}>
+            Mest bokade tjänster denna vecka
+          </p>
+          {data.serviceMix.length === 0 ? (
+            <p style={{ color: 'var(--c-ink-2)', fontSize: 14, marginTop: 12 }}>
+              Inga bokningar denna vecka ännu.
+            </p>
+          ) : (
+            <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+              {data.serviceMix.map((s) => {
+                const max = data.serviceMix[0]!.count
+                return (
+                  <div key={s.name}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: 13.5,
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span style={{ color: 'var(--c-ink)' }}>{s.name}</span>
+                      <span className="num" style={{ color: 'var(--c-ink-2)' }}>
+                        {s.count}
+                      </span>
+                    </div>
+                    <div style={{ height: 7, borderRadius: 999, background: 'var(--c-paper-2)' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${Math.max(6, (s.count / max) * 100)}%`,
+                          borderRadius: 999,
+                          background: 'var(--c-forest)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <h2 className="h2" style={{ marginTop: 0 }}>
+            Topptimmar
+          </h2>
+          <p className="small" style={{ color: 'var(--c-ink-3)', marginTop: 2 }}>
+            När flest kunder bokar denna vecka ({tenant.timeZone})
+          </p>
+          {data.peakHours.length === 0 ? (
+            <p style={{ color: 'var(--c-ink-2)', fontSize: 14, marginTop: 12 }}>
+              Inga bokningar denna vecka ännu.
+            </p>
+          ) : (
+            <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+              {data.peakHours.map((h) => {
+                const max = data.peakHours[0]!.count
+                return (
+                  <div key={h.hour}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: 13.5,
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span className="num" style={{ color: 'var(--c-ink)' }}>
+                        {String(h.hour).padStart(2, '0')}:00–{String(h.hour).padStart(2, '0')}:59
+                      </span>
+                      <span className="num" style={{ color: 'var(--c-ink-2)' }}>
+                        {h.count}
+                      </span>
+                    </div>
+                    <div style={{ height: 7, borderRadius: 999, background: 'var(--c-paper-2)' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${Math.max(6, (h.count / max) * 100)}%`,
+                          borderRadius: 999,
+                          background: 'var(--c-gold)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </Card>
+      </div>
     </section>
   )
 }

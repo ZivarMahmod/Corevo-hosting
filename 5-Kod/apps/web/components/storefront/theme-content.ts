@@ -33,6 +33,15 @@ export type ThemeContent = {
   italic: string
   /** "Om salongen" body copy. */
   aboutCopy: string
+  /** Per-theme SECTION HEADERS (theme-default, not owner-editable). These vary the
+   *  editorial voice per theme and replace the previously hardcoded strings in
+   *  sections.tsx / tjanster page. They flow to consumers via `...base` in
+   *  resolveThemeContent; they are NOT part of the owner CopyOverride set. */
+  servicesEyebrow: string
+  servicesTitle: string
+  aboutTitle: string
+  teamEyebrow: string
+  teamTitle: string
   /** Strong per-theme defaults (used only when the owner hasn't uploaded). */
   heroImages: string[]
   galleryImages: string[]
@@ -85,6 +94,11 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     italic: 'Varje stol är en stund för sig själv.',
     aboutCopy:
       'Hos oss ska ett frisörbesök kännas som en paus, inte ett ärende. Vi är ett litet team som bryr oss om hantverket och om dig som sitter i stolen.',
+    servicesEyebrow: '— Behandlingar & priser',
+    servicesTitle: 'Tjänster',
+    aboutTitle: 'Hantverk, kvalitet och personlig service',
+    teamEyebrow: '— Våra frisörer',
+    teamTitle: 'Människorna bakom stolen',
     heroImages: [IMG.salonInterior, IMG.styling, IMG.salonChairs],
     galleryImages: [IMG.g1, IMG.g2, IMG.g3, IMG.g4, IMG.g5, IMG.g6],
     aboutImage: IMG.washing,
@@ -110,6 +124,11 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     italic: 'Vacker hårfärg börjar med ett samtal.',
     aboutCopy:
       'Hos oss möts hantverk och värme. Vi arbetar med skandinaviska färgtekniker och en lugn, personlig ton — för att du ska gå härifrån som mest lik dig själv.',
+    servicesEyebrow: '— Färg, klipp & behandlingar',
+    servicesTitle: 'Tjänster & priser',
+    aboutTitle: 'Hantverk och värme i varje besök',
+    teamEyebrow: '— Vårt team',
+    teamTitle: 'Människorna i ateljén',
     heroImages: [IMG.styling, IMG.color, IMG.salonInterior],
     galleryImages: [IMG.g4, IMG.g5, IMG.g2, IMG.g6, IMG.g1, IMG.g3],
     aboutImage: IMG.color,
@@ -135,6 +154,11 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     italic: 'Av frisörer, för alla.',
     aboutCopy:
       'Hörnsalongen där frisör möter barberare. Vi håller det enkelt, vasst och prisvärt — och vi minns hur du gillar din fade.',
+    servicesEyebrow: '— Klipp, skägg & priser',
+    servicesTitle: 'TJÄNSTER',
+    aboutTitle: 'RENT HANTVERK, INGEN KRÅNGEL',
+    teamEyebrow: '— Teamet',
+    teamTitle: 'KILLARNA & TJEJERNA BAKOM STOLEN',
     heroImages: [IMG.barberShop, IMG.barberCut, IMG.barberTools],
     galleryImages: [IMG.barberCut, IMG.beard, IMG.barberShop, IMG.barberTools, IMG.g6, IMG.cutting],
     aboutImage: IMG.barberTools,
@@ -160,6 +184,11 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     italic: 'Det vackraste håret är friskt hår.',
     aboutCopy:
       'Salongen för dig som vill vårda ditt hår på riktigt. Vi arbetar med skonsamma produkter och naturliga färger — och tar oss alltid tid.',
+    servicesEyebrow: '— Behandlingar & priser',
+    servicesTitle: 'Tjänster',
+    aboutTitle: 'Naturlig hårvård med omtanke',
+    teamEyebrow: '— Våra frisörer',
+    teamTitle: 'Människorna bakom stolen',
     heroImages: [IMG.washing, IMG.salonInterior, IMG.styling],
     galleryImages: [IMG.g3, IMG.g1, IMG.g5, IMG.g2, IMG.g4, IMG.g6],
     aboutImage: IMG.washing,
@@ -185,6 +214,11 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     italic: 'Ett klipp är arkitektur för håret.',
     aboutCopy:
       'Studion för dig som vill ha ett genomtänkt klipp. Vi ser på hår som form — rent, modernt och personligt, varje gång.',
+    servicesEyebrow: '— Behandlingar & priser',
+    servicesTitle: 'Tjänster',
+    aboutTitle: 'Form, färg och finess',
+    teamEyebrow: '— Studion',
+    teamTitle: 'Människorna bakom formen',
     heroImages: [IMG.cutting, IMG.color, IMG.salonChairs],
     galleryImages: [IMG.g2, IMG.g4, IMG.g1, IMG.g3, IMG.g6, IMG.g5],
     aboutImage: IMG.cutting,
@@ -203,15 +237,84 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
 }
 
 /**
+ * Owner-editable storefront COPY (the shared M2↔M6 copy-content contract).
+ *
+ * Where it lives: `tenant_settings.settings` JSON under the top-level key `copy`
+ * (NOT in `branding` jsonb — that column is co-owned by M7 and gets rewritten on
+ * platform branding saves; `settings` is merged `...prev` by M6's saveSettings, so
+ * `copy` survives partial updates). NO schema change — the schema is frozen.
+ *
+ * Every field is OPTIONAL. A missing field — and, deliberately, an EMPTY or
+ * whitespace-only string — falls back to the per-theme default in THEME_CONTENT,
+ * so clearing a field reverts to the evergreen theme copy rather than rendering a
+ * blank hero. `heroTitle` may contain a `\n` for a two-line display break (the
+ * default does); only the outer whitespace is trimmed for the "is it set?" test.
+ *
+ * NOTE: `utility` (the thin top utility-strip micro-copy) is intentionally NOT in
+ * this set — it stays theme-default always. Only the six editorial fields below
+ * are owner-editable. Media/team/stats keep their existing `branding.*` merge.
+ *
+ * M6 WRITER CONTRACT: M6 persists owner edits via its existing saveSettings
+ * `...prev` merge as `settings.copy = { heroEyebrow, heroTitle, heroLede,
+ * aboutCopy, tagline, italic }` (any subset; omit/blank a field to fall back).
+ * M6 does NOT call into this module — it only writes the `settings.copy` shape.
+ */
+export type CopyOverride = {
+  heroEyebrow?: string
+  heroTitle?: string
+  heroLede?: string
+  aboutCopy?: string
+  tagline?: string
+  italic?: string
+}
+
+/** The six theme-content fields the owner may override via `settings.copy`. */
+const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic'] as const
+
+/**
+ * Resolve the six editorial copy fields: owner override wins per field, otherwise
+ * the per-theme default. DEFENSIVE — `copy` arrives from frozen `parseSettings`
+ * which does NOT validate it, so it is treated as effectively `unknown`: only a
+ * non-empty (post-trim) STRING is accepted; null/undefined/number/empty all fall
+ * back to the theme default. The accepted string is used verbatim (inner `\n`
+ * preserved); we only inspect the trimmed form to decide "set vs. unset".
+ */
+export function resolveTenantCopy(
+  theme: StorefrontTheme,
+  copy: CopyOverride | null | undefined,
+): Pick<ThemeContent, (typeof COPY_FIELDS)[number]> {
+  const base = THEME_CONTENT[theme]
+  const c = (copy ?? {}) as Record<string, unknown>
+  const pick = (key: (typeof COPY_FIELDS)[number]): string => {
+    const v = c[key]
+    return typeof v === 'string' && v.trim().length > 0 ? v : base[key]
+  }
+  return {
+    heroEyebrow: pick('heroEyebrow'),
+    heroTitle: pick('heroTitle'),
+    heroLede: pick('heroLede'),
+    aboutCopy: pick('aboutCopy'),
+    tagline: pick('tagline'),
+    italic: pick('italic'),
+  }
+}
+
+/**
  * Resolve the per-theme content + owner overrides into a single object the layouts
  * consume. Owner-uploaded media in `settings.branding.*` wins; otherwise the strong
  * per-theme default fills in, so an un-uploaded salon still looks complete.
+ *
+ * `copy` (optional) is the owner's `settings.copy` override. When omitted the six
+ * editorial fields keep their theme defaults — so the three current two-arg callers
+ * compile and behave exactly as before. M2 threads `settings.copy` through as the
+ * third arg to surface owner-edited copy (see CopyOverride above).
  */
 export type ResolvedThemeContent = ThemeContent
 
 export function resolveThemeContent(
   theme: StorefrontTheme,
   branding: TenantBranding | null | undefined,
+  copy?: CopyOverride | null,
 ): ResolvedThemeContent {
   const base = THEME_CONTENT[theme]
   const b = branding ?? {}
@@ -222,6 +325,8 @@ export function resolveThemeContent(
   const stats = Array.isArray(b.stats) && b.stats.length ? b.stats : base.stats
   return {
     ...base,
+    // Owner copy overrides (per-field; empty/missing → theme default).
+    ...resolveTenantCopy(theme, copy),
     heroImages,
     galleryImages,
     aboutImage: typeof b.about_image === 'string' && b.about_image ? b.about_image : base.aboutImage,

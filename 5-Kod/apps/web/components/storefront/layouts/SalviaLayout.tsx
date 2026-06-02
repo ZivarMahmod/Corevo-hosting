@@ -45,9 +45,9 @@ export function SalviaLayout({ tenant, content, services, location }: Storefront
       <section className={styles.sfServices}>
         <div className={styles.sfNarrow}>
           <Reveal>
-            <p className="sf-eyebrow">— Tjänster</p>
+            <p className="sf-eyebrow">{content.servicesEyebrow}</p>
             <h2 className="sf-h1" style={{ marginTop: 12, maxWidth: '38rem' }}>
-              Behandlingar &amp; priser
+              {content.servicesTitle}
             </h2>
           </Reveal>
           {rows.length > 0 ? (
@@ -116,9 +116,9 @@ export function SalviaLayout({ tenant, content, services, location }: Storefront
       <section className={styles.sfTeam}>
         <div className={styles.sfWide}>
           <Reveal style={{ textAlign: 'center' }}>
-            <p className="sf-eyebrow">— Våra frisörer</p>
+            <p className="sf-eyebrow">{content.teamEyebrow}</p>
             <h2 className="sf-h1" style={{ marginTop: 12 }}>
-              Människorna bakom stolen
+              {content.teamTitle}
             </h2>
           </Reveal>
           <ul className={styles.sfTeamGrid}>

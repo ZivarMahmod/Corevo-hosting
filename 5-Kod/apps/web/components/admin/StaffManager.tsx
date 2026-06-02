@@ -9,6 +9,7 @@ import {
   toggleStaffActive,
   deleteStaff,
   setStaffServices,
+  inviteStaff,
   type ActionState,
 } from '@/lib/admin/actions'
 import styles from './admin.module.css'
@@ -21,6 +22,7 @@ export function StaffManager({
   services: ServiceRow[]
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createStaff, {})
+  const [invState, invAction, invPending] = useActionState<ActionState, FormData>(inviteStaff, {})
 
   return (
     <div>
@@ -34,6 +36,27 @@ export function StaffManager({
         </button>
         <Feedback state={state} />
       </form>
+
+      {/* Invite with a login (M6 §3.4): magic-link → medarbetaren skapar lösenord
+          och hamnar i personalvyn med rätt roll. Skapar samtidigt en medarbetarrad. */}
+      <form action={invAction} className={styles.form} style={{ marginTop: '0.5rem' }}>
+        <label className={styles.field} style={{ flex: '1 1 12rem' }}>
+          <span>Bjud in via mejl</span>
+          <input name="email" type="email" placeholder="medarbetare@exempel.se" required />
+        </label>
+        <label className={styles.field} style={{ flex: '1 1 10rem' }}>
+          <span>Namn / titel (valfritt)</span>
+          <input name="title" placeholder="t.ex. Hilal — frisör" />
+        </label>
+        <button type="submit" className={styles.btn} disabled={invPending}>
+          {invPending ? 'Skickar…' : 'Skicka inbjudan'}
+        </button>
+        <Feedback state={invState} />
+      </form>
+      <p className={styles.muted} style={{ marginTop: '-0.2rem' }}>
+        Medarbetaren får en engångslänk, sätter lösenord och får personal-åtkomst direkt. Du sätter
+        sedan schema och tjänster nedan.
+      </p>
 
       {staff.length === 0 ? (
         <div className={styles.empty}>

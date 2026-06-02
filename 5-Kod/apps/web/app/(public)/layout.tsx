@@ -3,13 +3,16 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant } from '@/lib/tenant-data'
+import { requestOrigin } from '@/lib/url'
 import { Nav } from '@/components/brand/Nav'
 import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
 import { getWizardServices } from '@/components/storefront/wizard-services'
-import { THEME_CONTENT } from '@/components/storefront/theme-content'
+import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
+import { getTenantCopy } from '@/components/storefront/tenant-copy'
+import { LocalBusinessJsonLd } from '@/components/storefront/seo'
 import storefront from '@/components/storefront/storefront.module.css'
 
 // Per-request, host-resolved tenant → never prerender.
@@ -20,10 +23,21 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!bundle) return { title: 'Salong' }
   const { tenant } = bundle
   const description = `Boka tid hos ${tenant.name} online.`
+  // metadataBase = this tenant's own origin so child-page openGraph/canonical
+  // URLs resolve absolutely against the right subdomain (no Next warning).
+  const origin = await requestOrigin()
+  let metadataBase: URL | undefined
+  try {
+    metadataBase = new URL(origin)
+  } catch {
+    metadataBase = undefined
+  }
   return {
+    metadataBase,
     title: { default: tenant.name, template: `%s · ${tenant.name}` },
     description,
-    openGraph: { title: tenant.name, description, type: 'website' },
+    alternates: { canonical: '/' },
+    openGraph: { title: tenant.name, description, type: 'website', url: '/', siteName: tenant.name },
   }
 }
 
@@ -45,7 +59,13 @@ export default async function PublicLayout({ children }: { children: React.React
     branding: settings.branding,
   }
   const overrideCss = settings.customOverride?.css
-  const content = THEME_CONTENT[settings.theme]
+  // Footer tagline honours the owner's settings.copy override (theme default
+  // otherwise); utility micro-copy is theme-default by contract. The thin
+  // utility strip stays theme-fixed — only `tagline` is owner-editable here.
+  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const themeBase = THEME_CONTENT[settings.theme]
+  const tagline = resolveTenantCopy(settings.theme, copy).tagline
+  const content = { utility: themeBase.utility, tagline }
 
   // Services shaped for the embedded booking wizard — same join as /boka, cached.
   const wizardServices = await getWizardServices(tenant.id, tenant.slug)
@@ -62,6 +82,15 @@ export default async function PublicLayout({ children }: { children: React.React
       data-tenant={tenant.id}
       style={injectTenantTokens(settings.branding) as CSSProperties}
     >
+      {/* schema.org LocalBusiness — tenant name/url/phone/image always; address +
+          opening hours only when real (no invented data, no fabricated geo). */}
+      <LocalBusinessJsonLd
+        name={tenant.name}
+        location={location}
+        contact={settings.contact}
+        logoUrl={settings.branding.logo_url ?? null}
+      />
+
       {/* Nivå 3 — tenant-isolated custom CSS, scoped under [data-tenant]. */}
       {overrideCss ? (
         <style

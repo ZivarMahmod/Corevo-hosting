@@ -19,8 +19,9 @@ export default async function ServicesPage() {
     <section className="portal-section">
       <PageHead eyebrow={tenant.name} title="Tjänster" />
       <p className="prose">
-        Priser och varaktighet styr den publika bokningen direkt. Inaktiverade tjänster döljs på
-        webbplatsen men behåller sin bokningshistorik.
+        Priser och varaktighet styr den publika bokningen direkt. Aktiva tjänster syns i
+        tjänstemenyn på startsidan och på /tjanster (ordnade efter pris) och går att boka.
+        Inaktiverade tjänster döljs på webbplatsen men behåller sin bokningshistorik.
       </p>
       <ServicesManager services={services} />
     </section>

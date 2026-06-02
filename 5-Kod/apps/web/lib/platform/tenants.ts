@@ -3,6 +3,7 @@ import type { Tables } from '@corevo/db'
 import type { TenantBranding } from '@corevo/ui'
 import { platformCtx } from './guard'
 import type { AuditRow } from './audit'
+import { readBookingVariant, type BookingVariant } from './booking-variant'
 
 // Cross-tenant reads for the platform control center. All reads go through the
 // authed platform_admin cookie client (platformCtx), whose JWT carries the
@@ -142,6 +143,8 @@ export type TenantDetail = {
   counts: { activeServices: number; activeStaff: number; workingHours: number; bookings: number }
   salonAdmin: { email: string | null; status: string } | null
   onboarding: OnboardingStep[]
+  /** Operativ data-kontroll (§2.1B): current values for the edit surface. */
+  operative: { googleReviewUrl: string | null; bookingVariant: BookingVariant }
 }
 
 const ACTIVE_BOOKING = ['pending', 'confirmed', 'completed']
@@ -177,6 +180,14 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
   const branding = (settings?.branding ?? {}) as TenantBranding
   const adminRow = adminRes.data as { email: string | null; status: string } | null
 
+  // Operative values for the §2.1B edit surface, parsed from the raw settings jsonb
+  // (the same raw-read seam M3 uses for booking.variant — NOT the frozen parseSettings).
+  const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
+  const reviewRaw = rawSettings.google_review_url
+  const googleReviewUrl =
+    typeof reviewRaw === 'string' && reviewRaw.trim().length > 0 ? reviewRaw.trim() : null
+  const bookingVariant = readBookingVariant(rawSettings)
+
   const counts = {
     activeServices: servicesRes.count ?? 0,
     activeStaff: staffRes.count ?? 0,
@@ -202,6 +213,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     counts,
     salonAdmin: adminRow ? { email: adminRow.email, status: adminRow.status } : null,
     onboarding,
+    operative: { googleReviewUrl, bookingVariant },
   }
 }
 

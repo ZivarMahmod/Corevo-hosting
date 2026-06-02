@@ -3,6 +3,13 @@
 import { useActionState, useState } from 'react'
 import { createTenant, type ActionState } from '@/lib/platform/actions'
 import { BILLING_MODELS, BILLING_MODEL_LABELS, type BillingModel } from '@/lib/platform/billing'
+import {
+  BOOKING_VARIANTS,
+  BOOKING_VARIANT_LABELS,
+  BOOKING_VARIANT_DESCRIPTIONS,
+  DEFAULT_BOOKING_VARIANT,
+  type BookingVariant,
+} from '@/lib/platform/booking-variant'
 import styles from './platform.module.css'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
@@ -51,6 +58,7 @@ export function CreateTenantForm() {
   // but no swatch ring shows until the operator deliberately picks one — so the UI
   // never claims "branded" while the data says "neutral default".
   const [paletteId, setPaletteId] = useState<string>('')
+  const [bookingVariant, setBookingVariant] = useState<BookingVariant>(DEFAULT_BOOKING_VARIANT)
   const [primary, setPrimary] = useState<string>(DEFAULT_PALETTE.primary)
   const [bg, setBg] = useState<string>(DEFAULT_PALETTE.bg)
   const [fg, setFg] = useState<string>(DEFAULT_PALETTE.fg)
@@ -127,6 +135,35 @@ export function CreateTenantForm() {
         </div>
         <input type="hidden" name="nav_variant" value={template.nav} />
         <input type="hidden" name="hero_variant" value={template.hero} />
+      </fieldset>
+
+      {/* ── Boknings-vy (§2.4) ── */}
+      <fieldset className={styles.group}>
+        <legend className={styles.groupTitle}>Boknings-vy</legend>
+        <p className={styles.hint} style={{ marginTop: 0 }}>
+          Konfigurerar vilken bokningsvy salongen ska ha. Valet sparas på salongen och
+          aktiveras av bokningsmotorn när den läser inställningen — det ändrar inte
+          startsidans utseende (det styrs av temamallen ovan). Kan ändras senare per salong.
+        </p>
+        <div className={styles.templateGrid} role="radiogroup" aria-label="Boknings-vy">
+          {BOOKING_VARIANTS.map((v) => {
+            const selected = v === bookingVariant
+            return (
+              <button
+                type="button"
+                key={v}
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setBookingVariant(v)}
+                className={`${styles.templateCard}${selected ? ` ${styles.templateCardSel}` : ''}`}
+              >
+                <span className={styles.templateName}>{BOOKING_VARIANT_LABELS[v]}</span>
+                <span className={styles.templateDesc}>{BOOKING_VARIANT_DESCRIPTIONS[v]}</span>
+              </button>
+            )
+          })}
+        </div>
+        <input type="hidden" name="booking_variant" value={bookingVariant} />
       </fieldset>
 
       {/* ── Varumärke (nivå 1) ── */}

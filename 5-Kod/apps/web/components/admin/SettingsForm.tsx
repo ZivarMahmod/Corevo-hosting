@@ -39,14 +39,12 @@ export type SettingsFormProps = {
   /** Notiser & integritet — defaults match the "absent => on" reader semantics. */
   notifications?: NotificationToggles
   googleReviewUrl?: string
-  smsEnabled?: boolean
   cookieBannerEnabled?: boolean
 }
 
 export function SettingsForm({
   notifications = { confirmation: true, reminder: true, review: true },
   googleReviewUrl = '',
-  smsEnabled = false,
   cookieBannerEnabled = true,
   ...props
 }: SettingsFormProps) {
@@ -184,13 +182,10 @@ export function SettingsForm({
         </span>
       </label>
 
-      <label className={styles.check}>
-        <input type="checkbox" name="sms_enabled" value="true" defaultChecked={smsEnabled} />
-        SMS-notiser
-      </label>
-      <span className={styles.muted} style={{ marginTop: '-0.4rem' }}>
-        Kräver SMS-leverantör — kroken finns, leverantör kopplas senare.
-      </span>
+      {/* SMS-notiser borttaget (M6 §3.7 — inga döda toggles): det fanns ingen
+          kopplad leverantör, så kontrollen gjorde inget. Återinförs när en
+          SMS-leverantör är kopplad. saveSettings rör inte sms_enabled längre →
+          ev. tidigare sparat värde bevaras orört via settings-mergen. */}
 
       <label className={styles.check}>
         <input

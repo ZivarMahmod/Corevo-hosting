@@ -13,7 +13,7 @@ import styles from '@/components/admin/admin.module.css'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Bokningar · Salongsadmin' }
 
-type SP = { from?: string; to?: string; staff?: string; status?: string }
+type SP = { from?: string; to?: string; staff?: string; status?: string; q?: string }
 
 export default async function BookingsPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams
@@ -38,20 +38,29 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
       ? sp.status
       : undefined
 
+  const query = sp.q?.trim() || undefined
   const staff = await listStaff(tenant.id)
   const bookings = await listBookings(tenant.id, {
     fromUtc: dayRangeUtc(fromDate, tz).fromUtc,
     toUtc: toDate ? dayRangeUtc(toDate, tz).toUtc : undefined,
     staffId: staffFilter,
     status: statusFilter,
+    query,
   })
 
   return (
     <section className="portal-section">
       <PageHead eyebrow={tenant.name} title="Bokningar" />
-      <p className="prose">Alla bokningar för {tenant.name}. Tider visas i {tz}.</p>
+      <p className="prose">
+        Alla bokningar för {tenant.name}. Tider visas i {tz}. När en kund avbokar uppdateras
+        statusen här och tiden frigörs automatiskt på din publika sajt.
+      </p>
 
       <form method="get" className={styles.filters}>
+        <label className={styles.field} style={{ flex: '1 1 12rem' }}>
+          <span>Sök</span>
+          <input type="text" name="q" defaultValue={sp.q ?? ''} placeholder="Tjänst, medarbetare…" />
+        </label>
         <label className={styles.field}>
           <span>Från</span>
           <input type="date" name="from" defaultValue={fromDate} />
@@ -105,6 +114,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
               <th>Medarbetare</th>
               <th>Pris</th>
               <th>Status</th>
+              <th>Bokad den</th>
               <th>Ändra</th>
             </tr>
           </thead>
@@ -118,6 +128,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                 <td>
                   <span className={badgeClass(b.status)}>{statusLabel(b.status)}</span>
                 </td>
+                <td style={{ color: 'var(--c-ink-3)' }}>{formatDateTime(b.createdAt, tz)}</td>
                 <td>
                   <BookingStatusControl bookingId={b.id} status={b.status} />
                 </td>

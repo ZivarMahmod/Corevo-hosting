@@ -15,6 +15,8 @@ export type SettingsRow = Tables<'tenant_settings'>
 export type DomainRow = Tables<'tenant_domains'>
 export type WorkingHourRow = Tables<'working_hours'>
 
+export type SlotRow = Tables<'working_hour_slots'>
+
 export type StaffWithServices = StaffRow & { serviceIds: string[]; displayName: string }
 
 export type AdminBooking = {
@@ -27,6 +29,8 @@ export type AdminBooking = {
   staffId: string
   serviceName: string
   staffTitle: string
+  /** When the booking was made (created_at) — "bokad den" column (M6 §3.2). */
+  createdAt: string
 }
 
 export type BookingFilters = {
@@ -34,7 +38,13 @@ export type BookingFilters = {
   toUtc?: string
   staffId?: string
   status?: string
+  /** Free-text search across service name, staff title and the (legacy) note. */
+  query?: string
 }
+
+/** Statuses that count as a real visit (exclude cancelled/no_show). Shared by the
+ *  dashboard counts and the customer visit tallies. */
+const ACTIVE_BOOKING = ['pending', 'confirmed', 'completed'] as const
 
 /** All services (active + inactive), grouped sensibly for the admin table. */
 export async function listServices(tenantId: string): Promise<ServiceRow[]> {
@@ -95,6 +105,32 @@ export function brandingOf(row: SettingsRow | null): TenantBranding {
   return (row?.branding ?? {}) as TenantBranding
 }
 
+/** Owner editorial copy override (settings.copy) for the branding editor's copy
+ *  fields. Returns a plain {field: string} map (missing → ''). Read-only mirror of
+ *  the M2 contract's CopyOverride shape; defensive against malformed jsonb. */
+export type CopyFields = {
+  heroEyebrow: string
+  heroTitle: string
+  heroLede: string
+  aboutCopy: string
+  tagline: string
+  italic: string
+}
+
+export function copyOf(row: SettingsRow | null): CopyFields {
+  const raw = ((row?.settings ?? {}) as Record<string, unknown>).copy
+  const c = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const str = (v: unknown): string => (typeof v === 'string' ? v : '')
+  return {
+    heroEyebrow: str(c.heroEyebrow),
+    heroTitle: str(c.heroTitle),
+    heroLede: str(c.heroLede),
+    aboutCopy: str(c.aboutCopy),
+    tagline: str(c.tagline),
+    italic: str(c.italic),
+  }
+}
+
 export async function listDomains(tenantId: string): Promise<DomainRow[]> {
   const supabase = await createClient()
   const { data } = await supabase
@@ -120,6 +156,24 @@ export async function listWorkingHours(
   return data ?? []
 }
 
+/** Explicit bookable start times per (staff, weekday) — M6 §5 model. Active only;
+ *  weekday→start ordered for a clean per-day grouping. */
+export async function listWorkingHourSlots(
+  tenantId: string,
+  staffId: string,
+): Promise<SlotRow[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('working_hour_slots')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('staff_id', staffId)
+    .eq('active', true)
+    .order('weekday', { ascending: true })
+    .order('start_time', { ascending: true })
+  return data ?? []
+}
+
 /** Tenant bookings with service name + staff title, filtered + chronological. */
 export async function listBookings(
   tenantId: string,
@@ -128,7 +182,7 @@ export async function listBookings(
   const supabase = await createClient()
   let q = supabase
     .from('bookings')
-    .select('id, start_ts, end_ts, status, price_cents, note, staff_id, services(name), staff(title)')
+    .select('id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, services(name), staff(title)')
     .eq('tenant_id', tenantId)
   if (filters.fromUtc) q = q.gte('start_ts', filters.fromUtc)
   if (filters.toUtc) q = q.lt('start_ts', filters.toUtc)
@@ -143,22 +197,225 @@ export async function listBookings(
     status: string
     price_cents: number | null
     note: string | null
+    created_at: string
     staff_id: string
     services: { name: string } | null
     staff: { title: string | null } | null
   }
-  return ((data ?? []) as Row[]).map((b) => ({
+  const mapped: AdminBooking[] = ((data ?? []) as Row[]).map((b) => ({
     id: b.id,
     startTs: b.start_ts,
     endTs: b.end_ts,
     status: b.status,
     priceCents: b.price_cents,
     note: b.note,
+    createdAt: b.created_at,
     staffId: b.staff_id,
     serviceName: b.services?.name ?? 'Okänd tjänst',
     staffTitle: b.staff?.title?.trim() || 'Medarbetare',
   }))
+
+  // Free-text search is applied app-side: the joined service/staff names live on
+  // related tables, so a single SQL ilike can't span them; the result set is
+  // already date/staff/status-narrowed, so this stays cheap.
+  const term = filters.query?.trim().toLowerCase()
+  if (!term) return mapped
+  return mapped.filter(
+    (b) =>
+      b.serviceName.toLowerCase().includes(term) ||
+      b.staffTitle.toLowerCase().includes(term) ||
+      (b.note?.toLowerCase().includes(term) ?? false),
+  )
 }
+
+// ── Customers (M6 §3.1 + §4 — identity vs time-bound PII) ─────────────────────
+export type CustomerRow = Tables<'customers'>
+
+/** One row in the owner's customer database list. Identity-level only — NO raw
+ *  PII (email/phone) is exposed here; the time-bound contact lives behind the
+ *  get_customer_contact RPC (see {@link getCustomerContact}). */
+export type AdminCustomer = {
+  id: string
+  /** What to SHOW: kund-chosen display_name, else masked initial when name_hidden,
+   *  else full_name, else a neutral placeholder. Never leaks a hidden full name. */
+  shownName: string
+  nameHidden: boolean
+  status: string
+  visits: number
+  lastVisitTs: string | null
+  firstSeenAt: string
+  isReturning: boolean
+}
+
+/** Public display name for a customer row WITHOUT leaking a hidden full name.
+ *  Mirrors get_customer_contact's display_name rule (migration 0011:340). */
+function shownNameOf(c: Pick<CustomerRow, 'display_name' | 'full_name' | 'name_hidden'>): string {
+  const display = c.display_name?.trim()
+  if (display) return display
+  const full = c.full_name?.trim()
+  if (!full) return 'Gäst'
+  return c.name_hidden ? `${full[0]!.toUpperCase()}.` : full
+}
+
+const RETURNING_VISITS = 5
+
+/** Tenant customer database with per-customer visit count (active bookings).
+ *  RLS (customers_rls, 0011:503) fences to role_level>=3 within the tenant; we
+ *  also pass tenant_id for stable ordering + defence-in-depth. */
+export async function listCustomers(tenantId: string): Promise<AdminCustomer[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('customers')
+    .select('id, display_name, full_name, name_hidden, status, first_seen_at, last_seen_at, bookings(start_ts, status)')
+    .eq('tenant_id', tenantId)
+    .eq('status', 'active')
+    .order('last_seen_at', { ascending: false })
+
+  type Row = CustomerRow & { bookings: { start_ts: string; status: string }[] | null }
+  return ((data ?? []) as Row[]).map((c) => {
+    const active = (c.bookings ?? []).filter((b) =>
+      (ACTIVE_BOOKING as readonly string[]).includes(b.status),
+    )
+    const lastVisit = active.reduce<string | null>(
+      (max, b) => (max == null || b.start_ts > max ? b.start_ts : max),
+      null,
+    )
+    return {
+      id: c.id,
+      shownName: shownNameOf(c),
+      nameHidden: c.name_hidden,
+      status: c.status,
+      visits: active.length,
+      lastVisitTs: lastVisit,
+      firstSeenAt: c.first_seen_at,
+      isReturning: active.length >= RETURNING_VISITS,
+    }
+  })
+}
+
+export type CustomerStats = {
+  total: number
+  returning: number
+  protectedNames: number
+}
+
+export function customerStats(rows: AdminCustomer[]): CustomerStats {
+  return {
+    total: rows.length,
+    returning: rows.filter((c) => c.isReturning).length,
+    protectedNames: rows.filter((c) => c.nameHidden).length,
+  }
+}
+
+/** A single customer's identity (the row) + their booking history. Identity only;
+ *  the operator reveals time-bound PII separately via getCustomerContact. */
+export type CustomerDetail = {
+  id: string
+  shownName: string
+  nameHidden: boolean
+  displayName: string | null
+  status: string
+  firstSeenAt: string
+  lastSeenAt: string
+  isLinkedAccount: boolean
+  history: AdminBooking[]
+  visits: number
+}
+
+export async function getCustomerDetail(
+  tenantId: string,
+  customerId: string,
+): Promise<CustomerDetail | null> {
+  const supabase = await createClient()
+  const { data: c } = await supabase
+    .from('customers')
+    .select('id, display_name, full_name, name_hidden, status, first_seen_at, last_seen_at, auth_user_id')
+    .eq('tenant_id', tenantId)
+    .eq('id', customerId)
+    .maybeSingle()
+  if (!c) return null
+
+  // History via the new stable band (bookings.customer_id). Newest first.
+  const { data: bd } = await supabase
+    .from('bookings')
+    .select('id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, services(name), staff(title)')
+    .eq('tenant_id', tenantId)
+    .eq('customer_id', customerId)
+    .order('start_ts', { ascending: false })
+
+  type BRow = {
+    id: string
+    start_ts: string
+    end_ts: string
+    status: string
+    price_cents: number | null
+    note: string | null
+    created_at: string
+    staff_id: string
+    services: { name: string } | null
+    staff: { title: string | null } | null
+  }
+  const history: AdminBooking[] = ((bd ?? []) as BRow[]).map((b) => ({
+    id: b.id,
+    startTs: b.start_ts,
+    endTs: b.end_ts,
+    status: b.status,
+    priceCents: b.price_cents,
+    note: b.note,
+    createdAt: b.created_at,
+    staffId: b.staff_id,
+    serviceName: b.services?.name ?? 'Okänd tjänst',
+    staffTitle: b.staff?.title?.trim() || 'Medarbetare',
+  }))
+  const visits = history.filter((b) =>
+    (ACTIVE_BOOKING as readonly string[]).includes(b.status),
+  ).length
+
+  return {
+    id: c.id,
+    shownName: shownNameOf(c),
+    nameHidden: c.name_hidden,
+    displayName: c.display_name,
+    status: c.status,
+    firstSeenAt: c.first_seen_at,
+    lastSeenAt: c.last_seen_at,
+    isLinkedAccount: Boolean(c.auth_user_id),
+    history,
+    visits,
+  }
+}
+
+export type CustomerContact = {
+  displayName: string | null
+  fullName: string | null
+  email: string | null
+  phone: string | null
+  /** False → outside the operational window: PII is masked, not available. */
+  piiVisible: boolean
+}
+
+/**
+ * Time-bound contact PII (M6 §4 / migration 0011:299). The RPC returns the real
+ * email/phone ONLY when the customer has a booking inside the operational window
+ * (or the caller is the customer); otherwise pii_visible=false and the fields are
+ * null. RLS-equivalent fence is re-checked inside the SECURITY DEFINER function.
+ */
+export async function getCustomerContact(customerId: string): Promise<CustomerContact | null> {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('get_customer_contact', { p_customer: customerId })
+  if (error || !data || data.length === 0) return null
+  const row = data[0]!
+  return {
+    displayName: row.display_name,
+    fullName: row.full_name,
+    email: row.email,
+    phone: row.phone,
+    piiVisible: row.pii_visible,
+  }
+}
+
+export type ServiceMixEntry = { name: string; count: number }
+export type PeakHourEntry = { hour: number; count: number }
 
 export type DashboardData = {
   servicesActive: number
@@ -166,17 +423,29 @@ export type DashboardData = {
   todayCount: number
   weekCount: number
   upcomingToday: AdminBooking[]
+  /** Most-booked services this week (top 5). */
+  serviceMix: ServiceMixEntry[]
+  /** Busiest hours-of-day this week (top 4), in the tenant's timezone. */
+  peakHours: PeakHourEntry[]
 }
 
-const ACTIVE_BOOKING = ['pending', 'confirmed', 'completed'] as const
+/** Hour-of-day (0–23) of an ISO instant in a given IANA timezone. */
+function hourInTz(iso: string, timeZone: string): number {
+  const h = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hour12: false, timeZone }).format(
+    new Date(iso),
+  )
+  const n = Number(h)
+  return Number.isInteger(n) && n >= 0 && n <= 23 ? n : 0
+}
 
 export async function dashboardData(
   tenantId: string,
   today: { fromUtc: string; toUtc: string },
   week: { fromUtc: string; toUtc: string },
+  timeZone: string,
 ): Promise<DashboardData> {
   const supabase = await createClient()
-  const [services, staff, todayB, weekCount, upcoming] = await Promise.all([
+  const [services, staff, todayB, weekRows, upcoming] = await Promise.all([
     supabase
       .from('services')
       .select('*', { count: 'exact', head: true })
@@ -194,22 +463,51 @@ export async function dashboardData(
       .in('status', ACTIVE_BOOKING as unknown as string[])
       .gte('start_ts', today.fromUtc)
       .lt('start_ts', today.toUtc),
+    // Week rows (not just a count) so we can derive service-mix + peak hours.
     supabase
       .from('bookings')
-      .select('*', { count: 'exact', head: true })
+      .select('start_ts, services(name)')
       .eq('tenant_id', tenantId)
       .in('status', ACTIVE_BOOKING as unknown as string[])
       .gte('start_ts', week.fromUtc)
       .lt('start_ts', week.toUtc),
     listBookings(tenantId, { fromUtc: today.fromUtc, toUtc: today.toUtc }),
   ])
+
+  type WRow = { start_ts: string; services: { name: string } | null }
+  const rows = (weekRows.data ?? []) as WRow[]
+
+  // Service-mix: count per service name, top 5.
+  const mix = new Map<string, number>()
+  for (const r of rows) {
+    const name = r.services?.name ?? 'Okänd tjänst'
+    mix.set(name, (mix.get(name) ?? 0) + 1)
+  }
+  const serviceMix: ServiceMixEntry[] = [...mix.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  // Peak hours: count per hour-of-day (tenant tz), top 4.
+  const hours = new Map<number, number>()
+  for (const r of rows) {
+    const h = hourInTz(r.start_ts, timeZone)
+    hours.set(h, (hours.get(h) ?? 0) + 1)
+  }
+  const peakHours: PeakHourEntry[] = [...hours.entries()]
+    .map(([hour, count]) => ({ hour, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4)
+
   // Keep the list consistent with `todayCount` (both exclude cancelled/no_show).
   const active = new Set<string>(ACTIVE_BOOKING)
   return {
     servicesActive: services.count ?? 0,
     staffActive: staff.count ?? 0,
     todayCount: todayB.count ?? 0,
-    weekCount: weekCount.count ?? 0,
+    weekCount: rows.length,
     upcomingToday: upcoming.filter((b) => active.has(b.status)),
+    serviceMix,
+    peakHours,
   }
 }

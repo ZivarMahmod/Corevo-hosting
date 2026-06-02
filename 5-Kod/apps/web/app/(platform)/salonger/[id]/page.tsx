@@ -7,6 +7,8 @@ import { PlatformBrandingForm } from '@/components/platform/PlatformBrandingForm
 import { BillingForm } from '@/components/platform/BillingForm'
 import { StatusControl } from '@/components/platform/StatusControl'
 import { DomainPanel } from '@/components/platform/DomainPanel'
+import { OperativeControls } from '@/components/platform/OperativeControls'
+import { hasServiceRole } from '@/lib/platform/service'
 import { PageHead, Button, Badge } from '@/components/portal/ui'
 import styles from '@/components/platform/platform.module.css'
 
@@ -23,9 +25,10 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const { id } = await params
   const detail = await getTenantDetail(id)
   if (!detail) notFound()
-  const { tenant, settings, branding, counts, salonAdmin, onboarding } = detail
+  const { tenant, settings, branding, counts, salonAdmin, onboarding, operative } = detail
   const audit = await getTenantAudit(id)
   const url = publicUrl(tenant.slug)
+  const serviceRoleAvailable = hasServiceRole()
 
   return (
     <section className="portal-section">
@@ -59,6 +62,21 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <em>ingen inbjuden ännu</em>
         )}
       </p>
+
+      {/* §2.1B — Operativ data-kontroll ("Supabase med mitt UI", no-code) */}
+      <h2 style={{ marginTop: '2rem' }}>Operativ kontroll</h2>
+      <p className={styles.muted}>
+        Klicka-och-redigera istället för rå Supabase: salongsdata, recensionslänk,
+        boknings-vy, lösenords-reset och personal-onboarding.
+      </p>
+      <OperativeControls
+        tenantId={tenant.id}
+        name={tenant.name}
+        googleReviewUrl={operative.googleReviewUrl}
+        bookingVariant={operative.bookingVariant}
+        salonAdminEmail={salonAdmin?.email ?? null}
+        serviceRoleAvailable={serviceRoleAvailable}
+      />
 
       {/* Step 6 — launch / suspend */}
       <h2 style={{ marginTop: '2rem' }}>Status &amp; lansering</h2>

@@ -60,8 +60,8 @@ export function StylistSpotlights({
     <section className="section">
       <div className="section-inner">
         <SectionHeader
-          eyebrow="— Våra frisörer"
-          title="Människorna bakom stolen"
+          eyebrow={content.teamEyebrow}
+          title={content.teamTitle}
           lead={`Teamet på ${salonName} brinner för hantverket och för att du ska känna dig hemma.`}
         />
         <ul className={styles.stylists}>
@@ -102,7 +102,7 @@ export function AboutSplit({
         </Reveal>
         <Reveal className={styles.aboutCopy} delay={80}>
           <p className={styles.eyebrow}>— Om {salonName}</p>
-          <h2 className={styles.secTitle}>Hantverk, kvalitet och personlig service</h2>
+          <h2 className={styles.secTitle}>{content.aboutTitle}</h2>
           <p className={styles.aboutText}>{content.aboutCopy}</p>
         </Reveal>
       </div>

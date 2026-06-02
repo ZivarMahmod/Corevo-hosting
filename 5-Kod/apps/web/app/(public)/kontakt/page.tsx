@@ -3,15 +3,21 @@ import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
 import { LocationHours, ClosingCta } from '@/components/storefront/sections'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
+import { getTenantCopy } from '@/components/storefront/tenant-copy'
+import { pageMetadata } from '@/components/storefront/seo'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Kontakt' }
+
+export function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('kontakt')
+}
 
 export default async function ContactPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings } = bundle
-  const content = resolveThemeContent(settings.theme, settings.branding)
+  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const content = resolveThemeContent(settings.theme, settings.branding, copy)
 
   return (
     <>
