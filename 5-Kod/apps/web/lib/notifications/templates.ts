@@ -92,10 +92,13 @@ function resolveAccent(accentColor?: string | null): { accent: string; accentFg:
 }
 
 /** Brand mark at the top: the salon logo (plain <img>) or a monogram in an accent
- *  circle when no logo is uploaded. */
+ *  circle. The <img> renders ONLY for an absolute http(s):// logo URL — a blank,
+ *  relative or otherwise non-absolute value falls back to the monogram so the
+ *  email never shows a broken-image icon (e.g. logo_url set but R2_PUBLIC_BASE_URL
+ *  missing → a bare key would render broken). */
 function brandHeader(tenantName: string, accent: string, accentFg: string, logoUrl?: string | null): string {
   const logo = logoUrl?.trim()
-  if (logo) {
+  if (logo && /^https?:\/\//i.test(logo)) {
     return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px"><tr><td>
       <img src="${esc(logo)}" alt="${esc(tenantName)}" style="display:block;max-height:46px;max-width:220px;border:0;outline:none;text-decoration:none" />
     </td></tr></table>`

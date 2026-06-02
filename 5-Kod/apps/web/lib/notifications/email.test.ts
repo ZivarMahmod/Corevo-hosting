@@ -145,9 +145,24 @@ describe('email rendering (brand in shell)', () => {
     expect(html).not.toContain('<img')
   })
 
-  it('renders the logo <img> when logoUrl is set (no monogram)', () => {
+  it('renders the logo <img> when logoUrl is an absolute http(s) URL (no monogram)', () => {
     const { html } = confirmationEmail({ ...baseMail, tenantName: 'Demo', logoUrl: 'https://cdn/x.png' })
     expect(html).toContain('<img src="https://cdn/x.png"')
+    expect(html).not.toContain('>D</td>')
+  })
+
+  // FX2: a logo_url that isn't an absolute http(s) URL (blank / relative / bare R2
+  // key when R2_PUBLIC_BASE_URL is unset) must fall back to the monogram, never a
+  // broken <img>.
+  it.each([
+    ['empty string', ''],
+    ['whitespace', '   '],
+    ['relative path', '/uploads/logo.png'],
+    ['bare key', 'tenants/abc/branding/x.png'],
+  ])('falls back to the monogram (no <img>) for a non-absolute logoUrl: %s', (_label, logoUrl) => {
+    const { html } = confirmationEmail({ ...baseMail, tenantName: 'Demo', logoUrl })
+    expect(html).not.toContain('<img')
+    expect(html).toContain('>D</td>')
   })
 
   it('falls back to Corevo gold when no accent is set', () => {
