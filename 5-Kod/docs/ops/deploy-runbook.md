@@ -69,9 +69,22 @@ Rules:
 - **Prefer CD** (§3): production from a `v*` tag, staging from `push:main`, both on
   Linux. A local deploy is a fallback.
 - **Local deploy (Windows, only if unavoidable):** OpenNext's build crashes on the
-  `ö` in the repo path, so build from an ASCII copy with `/PURGE`:
-  `robocopy <5-Kod> C:\tmp\kod /E /PURGE /XD node_modules .next .open-next .git /XF .env.local`
-  then `pnpm --dir C:\tmp\kod --filter @corevo/web run deploy`.
+  `ö` in the repo path, so build from an ASCII copy. ⚠️ **`.env.local` (dev,
+  `NEXT_PUBLIC_ROOT_DOMAIN=localhost:3000`) MUST NOT reach the build tree** — Next
+  inlines `NEXT_PUBLIC_*` at build time and `.env.local` outranks `.env.production`,
+  so a leaked `.env.local` bakes `localhost:3000` into the middleware bundle →
+  **every tenant storefront subdomain 404s** (`x-corevo-tenant-kind: unknown`;
+  `booking.corevo.se` admin stays up and HIDES it). `/XF .env.local` blocks the
+  *copy* but NOT `/PURGE`, so a pre-existing copy survives — delete it explicitly:
+  ```
+  Remove-Item C:\tmp\kod\apps\web\.env.local,C:\tmp\kod\apps\web\.next,C:\tmp\kod\apps\web\.open-next -Recurse -Force -ErrorAction SilentlyContinue
+  robocopy <5-Kod> C:\tmp\kod /E /PURGE /XD node_modules .next .open-next .git /XF .env.local
+  pnpm --dir C:\tmp\kod --filter @corevo/web run deploy
+  ```
+  **Guard (the only check independent of the copy mechanism):** after build, fail if
+  `Select-String C:\tmp\kod\apps\web\.next\server\middleware.js localhost:3000` matches.
+  **Post-deploy:** verify a REAL tenant storefront (`freshcut.corevo.se` → 200 +
+  `x-corevo-tenant-kind: tenant`), not just the admin host.
 - **Pre-deploy check (no live deploy needed):** confirm `wrangler.jsonc` still declares
   both custom domains + every remote plaintext var before shipping. The live set is
   read via the Cloudflare API — worker settings `bindings` (plain_text) +
