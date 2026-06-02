@@ -8,6 +8,8 @@ import { createServiceClient } from './service'
 import { logPlatformAction } from './audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages } from '@/lib/r2/upload'
+import { mergeBranding } from '@/lib/branding/merge'
+import type { TenantBranding } from '@corevo/ui'
 
 export type ActionState = { error?: string; success?: string }
 
@@ -222,7 +224,9 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
     .select('branding')
     .eq('tenant_id', tenantId)
     .maybeSingle()
-  const prev = (existing?.branding ?? {}) as Branding
+  // Read prev as the FULL branding shape (incl. owner storefront media + accent),
+  // not M7's narrow Branding — mergeBranding must preserve every prev field.
+  const prev = (existing?.branding ?? {}) as TenantBranding
 
   let logoUrl = prev.logo_url ?? null
   let warning: string | null = null
@@ -233,13 +237,16 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
     else warning = uploadErrorMessage(res.reason)
   }
 
-  const branding: Branding = {
+  // M7 owns ONLY colours/font/logo. Merge them onto prev so the owner's
+  // hero/gallery/about/closing/team/stats AND color_accent are never clobbered
+  // (the old fresh-object upsert wiped them). Patch keys are exactly these five.
+  const branding = mergeBranding(prev, {
     color_primary: colorPrimary,
     color_bg: colorBg,
     color_fg: colorFg,
     font_body: fontBody || null,
     logo_url: logoUrl,
-  }
+  })
 
   const { error } = await supabase
     .from('tenant_settings')
@@ -247,7 +254,8 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
   if (error) return { error: GENERIC }
 
   // FX-14: drop the previous logo object when replaced/removed. Logo-only — a
-  // platform branding-save must not touch owner storefront media.
+  // platform branding-save must not touch owner storefront media, and now that the
+  // DB clobber is gone `prev` keeps all media so it can never appear in this set.
   await pruneRemovedImages([prev.logo_url], [branding.logo_url])
 
   // CRITICAL: bust the cached public bundle so branding shows immediately (M2/M3).

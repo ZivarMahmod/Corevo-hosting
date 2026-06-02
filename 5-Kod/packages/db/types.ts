@@ -58,6 +58,7 @@ export type Database = {
       bookings: {
         Row: {
           created_at: string
+          customer_id: string | null
           customer_profile_id: string | null
           end_ts: string
           id: string
@@ -74,6 +75,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_id?: string | null
           customer_profile_id?: string | null
           end_ts: string
           id?: string
@@ -90,6 +92,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_id?: string | null
           customer_profile_id?: string | null
           end_ts?: string
           id?: string
@@ -105,6 +108,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bookings_location_id_fkey"
             columns: ["location_id"]
@@ -128,6 +138,201 @@ export type Database = {
           },
           {
             foreignKeyName: "bookings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_favorites: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          kind: string
+          service_id: string | null
+          staff_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          kind: string
+          service_id?: string | null
+          staff_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          kind?: string
+          service_id?: string | null
+          staff_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_favorites_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_favorites_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_favorites_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_favorites_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_notes: {
+        Row: {
+          allergies: string[]
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          hair_length: string | null
+          hair_type: string | null
+          id: string
+          internal_note: string | null
+          preferences: string[]
+          products: string[]
+          sensitivity: string | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          allergies?: string[]
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          hair_length?: string | null
+          hair_type?: string | null
+          id?: string
+          internal_note?: string | null
+          preferences?: string[]
+          products?: string[]
+          sensitivity?: string | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          allergies?: string[]
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          hair_length?: string | null
+          hair_type?: string | null
+          id?: string
+          internal_note?: string | null
+          preferences?: string[]
+          products?: string[]
+          sensitivity?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          auth_user_id: string | null
+          contact_hash: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          first_seen_at: string
+          full_name: string | null
+          id: string
+          last_seen_at: string
+          name_hidden: boolean
+          phone: string | null
+          status: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          contact_hash?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          first_seen_at?: string
+          full_name?: string | null
+          id?: string
+          last_seen_at?: string
+          name_hidden?: boolean
+          phone?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          contact_hash?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          first_seen_at?: string
+          full_name?: string | null
+          id?: string
+          last_seen_at?: string
+          name_hidden?: boolean
+          phone?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_auth_user_id_fkey"
+            columns: ["auth_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -169,6 +374,61 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "locations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_ledger: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          note: string | null
+          points_delta: number
+          reason: string
+          tenant_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          note?: string | null
+          points_delta: number
+          reason: string
+          tenant_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          note?: string | null
+          points_delta?: number
+          reason?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_ledger_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_ledger_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_ledger_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -265,6 +525,7 @@ export type Database = {
       services: {
         Row: {
           active: boolean
+          buffer_min: number | null
           category: string | null
           created_at: string
           description: string | null
@@ -273,11 +534,13 @@ export type Database = {
           location_id: string | null
           name: string
           price_cents: number
+          slot_step_min: number | null
           tenant_id: string
           updated_at: string | null
         }
         Insert: {
           active?: boolean
+          buffer_min?: number | null
           category?: string | null
           created_at?: string
           description?: string | null
@@ -286,11 +549,13 @@ export type Database = {
           location_id?: string | null
           name: string
           price_cents?: number
+          slot_step_min?: number | null
           tenant_id: string
           updated_at?: string | null
         }
         Update: {
           active?: boolean
+          buffer_min?: number | null
           category?: string | null
           created_at?: string
           description?: string | null
@@ -299,6 +564,7 @@ export type Database = {
           location_id?: string | null
           name?: string
           price_cents?: number
+          slot_step_min?: number | null
           tenant_id?: string
           updated_at?: string | null
         }
@@ -322,30 +588,36 @@ export type Database = {
       staff: {
         Row: {
           active: boolean
+          buffer_min: number | null
           created_at: string
           id: string
           location_id: string | null
           profile_id: string | null
+          slot_step_min: number | null
           tenant_id: string
           title: string | null
           updated_at: string | null
         }
         Insert: {
           active?: boolean
+          buffer_min?: number | null
           created_at?: string
           id?: string
           location_id?: string | null
           profile_id?: string | null
+          slot_step_min?: number | null
           tenant_id: string
           title?: string | null
           updated_at?: string | null
         }
         Update: {
           active?: boolean
+          buffer_min?: number | null
           created_at?: string
           id?: string
           location_id?: string | null
           profile_id?: string | null
+          slot_step_min?: number | null
           tenant_id?: string
           title?: string | null
           updated_at?: string | null
@@ -653,6 +925,64 @@ export type Database = {
           },
         ]
       }
+      working_hour_slots: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          location_id: string | null
+          staff_id: string
+          start_time: string
+          tenant_id: string
+          updated_at: string | null
+          weekday: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          staff_id: string
+          start_time: string
+          tenant_id: string
+          updated_at?: string | null
+          weekday: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          staff_id?: string
+          start_time?: string
+          tenant_id?: string
+          updated_at?: string | null
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "working_hour_slots_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "working_hour_slots_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "working_hour_slots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       working_hours: {
         Row: {
           end_time: string
@@ -726,6 +1056,10 @@ export type Database = {
         Returns: string
       }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      customer_contact_hash: {
+        Args: { p_email: string; p_phone: string; p_tenant: string }
+        Returns: string
+      }
       get_busy_intervals: {
         Args: {
           p_from: string
@@ -737,6 +1071,16 @@ export type Database = {
           end_ts: string
           staff_id: string
           start_ts: string
+        }[]
+      }
+      get_customer_contact: {
+        Args: { p_after_h?: number; p_before_h?: number; p_customer: string }
+        Returns: {
+          display_name: string
+          email: string
+          full_name: string
+          phone: string
+          pii_visible: boolean
         }[]
       }
       get_public_booking: {
@@ -758,6 +1102,10 @@ export type Database = {
           tenant_name: string
           tenant_slug: string
         }[]
+      }
+      seed_explicit_slots_from_hours: {
+        Args: { p_staff: string; p_step?: number }
+        Returns: number
       }
     }
     Enums: {

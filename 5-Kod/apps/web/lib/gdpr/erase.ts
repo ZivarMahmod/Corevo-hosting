@@ -12,9 +12,15 @@ import { logger } from '@/lib/observability'
 //                 keeps an intact schedule/financial history.
 //   · payments  → KEPT untouched. Swedish Bokföringslagen requires ~7-year
 //                 retention; the rows carry no direct PII (linked by booking_id).
+//   · customers  → ANONYMIZED across ALL tenants (white-label: one auth user may
+//                 be a customer in several salons). PII columns nulled + status
+//                 flipped to 'anonymized', which fires the scrub trigger that
+//                 DELETEs the internal customer_notes (right-to-be-forgotten).
+//   · customer_favorites → DELETED (personal data, no retention basis).
+//   · loyalty_ledger → KEPT untouched (append-only + PII-free: points + booking_id).
 //   · users + auth.users → DELETED (cascade). This removes name/email/phone.
 //   · audit_log → an erasure record is appended, but it is append-only and MUST
-//                 NOT carry PII: we log the user id + a booking count only.
+//                 NOT carry PII: we log the user id + counts only.
 
 export type EraseResult =
   | { ok: true; erasedBookings: number }
@@ -35,18 +41,106 @@ export async function eraseCustomerData(args: {
   }
 
   try {
-    // 1. Anonymize bookings: drop the PII note + unlink the customer, keep the row.
-    const { data: scrubbed, error: bErr } = await admin
-      .from('bookings')
-      .update({ customer_profile_id: null, note: null })
-      .eq('customer_profile_id', userId)
-      .eq('tenant_id', tenantId)
-      .select('id')
-    if (bErr) {
-      logger.warn('gdpr.erase.bookings_failed', { userId, error: bErr.message })
-      return { ok: false, reason: 'error' }
+    // 1. Look up the user's own contact so we can also reach UNLINKED guest
+    //    customer rows that share it (a person who booked as guest, then later
+    //    registered — the merge case the schema anticipates, 0011). Best-effort.
+    const { data: userRow } = await admin
+      .from('users')
+      .select('email, phone')
+      .eq('id', userId)
+      .maybeSingle()
+    const userEmail = userRow?.email?.trim() || null
+
+    // 2. Anonymize the customer identity ACROSS ALL TENANTS (white-label: one
+    //    person may be a customer in several salons). Reached two ways:
+    //      (a) auth_user_id = userId → rows linked to the logged-in account
+    //      (b) email = userEmail     → unlinked guest rows sharing the contact
+    //    Flipping status -> 'anonymized' fires trg_customers_anonymize_scrub_notes,
+    //    which DELETEs the internal customer_notes. PII columns nulled directly.
+    const anonPatch = {
+      full_name: null,
+      email: null,
+      phone: null,
+      contact_hash: null,
+      display_name: null,
+      status: 'anonymized',
     }
-    const erasedBookings = scrubbed?.length ?? 0
+    const customerIds = new Set<string>()
+    {
+      const { data, error } = await admin
+        .from('customers')
+        .update(anonPatch)
+        .eq('auth_user_id', userId)
+        .select('id')
+      if (error) {
+        logger.warn('gdpr.erase.customers_failed', { userId, error: error.message })
+        return { ok: false, reason: 'error' }
+      }
+      for (const c of data ?? []) customerIds.add(c.id)
+    }
+    if (userEmail) {
+      const { data, error } = await admin
+        .from('customers')
+        .update(anonPatch)
+        .ilike('email', userEmail)
+        .eq('status', 'active')
+        .select('id')
+      if (error) {
+        logger.warn('gdpr.erase.customers_email_failed', { userId, error: error.message })
+        return { ok: false, reason: 'error' }
+      }
+      for (const c of data ?? []) customerIds.add(c.id)
+    }
+    const ids = [...customerIds]
+    const anonymizedCustomers = ids.length
+
+    // 3. Delete favorites for the anonymized customers (personal data, no
+    //    retention basis). loyalty_ledger is KEPT (append-only + PII-free);
+    //    customer_notes were already scrubbed by the status trigger above.
+    if (ids.length > 0) {
+      const { error: fErr } = await admin
+        .from('customer_favorites')
+        .delete()
+        .in('customer_id', ids)
+      if (fErr) {
+        logger.warn('gdpr.erase.favorites_failed', { userId, error: fErr.message })
+        return { ok: false, reason: 'error' }
+      }
+    }
+
+    // 4. Anonymize bookings ACROSS ALL TENANTS — drop the PII note + unlink,
+    //    keep the row (schedule/financial history). Reached two ways:
+    //      (a) customer_profile_id = userId → the logged-in account's bookings
+    //      (b) customer_id IN (anonymized)  → guest bookings linked by the 0011
+    //          backfill, whose note carries the guest-PII seam.
+    //    Not tenant-scoped: erasure is global. (customer_profile_id has no FK, so
+    //    deleting the auth user would otherwise leave a dangling id behind, 0001.)
+    let erasedBookings = 0
+    {
+      const { data, error } = await admin
+        .from('bookings')
+        .update({ customer_profile_id: null, note: null })
+        .eq('customer_profile_id', userId)
+        .select('id')
+      if (error) {
+        logger.warn('gdpr.erase.bookings_failed', { userId, error: error.message })
+        return { ok: false, reason: 'error' }
+      }
+      erasedBookings += data?.length ?? 0
+    }
+    if (ids.length > 0) {
+      const { data, error } = await admin
+        .from('bookings')
+        .update({ note: null })
+        .in('customer_id', ids)
+        .not('note', 'is', null)
+        .select('id')
+      if (error) {
+        logger.warn('gdpr.erase.bookings_notes_failed', { userId, error: error.message })
+        return { ok: false, reason: 'error' }
+      }
+      erasedBookings += data?.length ?? 0
+    }
 
     // 2. Append a PII-FREE audit record (audit_log is append-only — never put
     //    name/email here, it can never be scrubbed back out).
@@ -56,7 +150,7 @@ export async function eraseCustomerData(args: {
       action: 'gdpr.erase',
       entity: 'user',
       entity_id: userId,
-      meta: { erased_bookings: erasedBookings } as never,
+      meta: { erased_bookings: erasedBookings, anonymized_customers: anonymizedCustomers } as never,
     })
 
     // 3. Delete the auth user → cascades public.users (FK on delete cascade).

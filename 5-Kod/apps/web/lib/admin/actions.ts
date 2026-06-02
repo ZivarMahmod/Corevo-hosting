@@ -6,6 +6,7 @@ import { requirePortal, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages, type UploadResult } from '@/lib/r2/upload'
+import { mergeBranding } from '@/lib/branding/merge'
 import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { BOOKING_STATUSES } from './format'
 
@@ -394,18 +395,17 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
     else warning = uploadErrorMessage(res.reason)
   }
 
-  const branding: Branding = {
-    // Preserve any owner-uploaded storefront media (hero/gallery/about/closing/
-    // team/stats) written by saveStorefrontMedia — without this spread a
-    // colors-only save would clobber the whole branding jsonb and wipe them.
-    ...prev,
+  // Preserve any owner-uploaded storefront media (hero/gallery/about/closing/
+  // team/stats) written by saveStorefrontMedia — mergeBranding spreads prev and
+  // applies only this action's slice, so a colours-only save never clobbers them.
+  const branding: Branding = mergeBranding(prev, {
     color_primary: colorPrimary,
     color_bg: colorBg,
     color_fg: colorFg,
     color_accent: colorAccent,
     font_body: fontBody || null,
     logo_url: logoUrl,
-  }
+  })
 
   const { error } = await supabase
     .from('tenant_settings')
@@ -555,15 +555,15 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
     .maybeSingle()
   const prev = (existing?.branding ?? {}) as Branding
 
-  const branding: Branding = {
-    ...prev,
+  // Owner media slice only — mergeBranding keeps colours/font/logo/accent intact.
+  const branding: Branding = mergeBranding(prev, {
     hero_images: heroImages,
     gallery_images: galleryImages,
     about_image: aboutImage,
     closing_image: closingImage,
     team,
     stats,
-  }
+  })
 
   const { error } = await supabase
     .from('tenant_settings')
