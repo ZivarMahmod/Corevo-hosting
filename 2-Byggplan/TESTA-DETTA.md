@@ -47,6 +47,7 @@ Allt nedan är byggt, tsc+eslint-rent, och **deployat live** (worker `bokningspl
 - **Multi-location-val i bokningen (2.2):** demo har 1 ställe → funkar. För salonger med FLERA ställen saknas "välj salong först"-steget + RPC tar bara primär location. Kräver migration (RPC location-param) + wizard-steg. Säg till så bygger jag.
 - **Lojalitet/poäng (2.8):** toggle-mönstret finns (kund-konto togglas redan per salong), men poäng-funktionen som sådan är ej byggd (större feature).
 - **5 teman pixel-finputs:** byggda pixel-nära handoffen; några stilar kan behöva visuell finjustering — kolla live och peka, så fixar jag.
+- **`/om` + `/kontakt` finputs (2026-06-02):** sektionerna drar nu temats innehåll + ägarbilder (about/team/closing) istället för platshållare. Live-verifierat ifyllt. OBS: scrolla — sektioner tonar in (`Reveal`-animation); en statisk helsides-screenshot kan se "tom" ut fast innehållet finns (det var detta som gav nattens falska "tom About"-flagga).
 
 ## Git
 Allt committat på `main`. Senaste: design-FAS4 (`ae8b66b`). Se `2-Byggplan/WAVE-3-BUILD-PLAN.md` + `NIGHT-BACKLOG.md` för fullständig logg.
