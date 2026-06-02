@@ -18,12 +18,12 @@ orkestreraren kopplar in nya anrop (se "Ej inkopplat" nedan).
 
 | Kanal | Status | Transport |
 |---|---|---|
-| **E-post** | live (M9) | **Resend över `fetch`** (`lib/notifications/email.ts`). Ren JSON-HTTP → körs på Cloudflare Workers utan Node-SMTP. |
+| **E-post** | live (M9; transport bytt i goal-14) | **HTTPS → Supabase Edge Function `send-email` → one.com SMTP** (`lib/notifications/email.ts`). Workern POST:ar renderat mejl med `x-relay-secret`; klassisk SMTP går ej på Workers. Per-salong From/Reply-To/brand via `lib/notifications/brand.ts`. (Resend borttaget.) Se `docs/ops/mejl-egen-smtp.md`. |
 | **SMS** | framtid | Ej byggt. Lägg som ny transport bredvid `sendEmail` (t.ex. en `sendSms` mot en HTTP-SMS-leverantör), behåll samma best-effort-kontrakt. |
 
 **Best-effort-kontrakt (gäller alla sändare):** en notis får ALDRIG kasta in i,
 eller blockera, flödet den observerar (bokning/avbokning/betalning/besök). Utan
-`RESEND_API_KEY` (lokalt/CI) loggar `sendEmail` avsikten och returnerar
+relä-secrets `EMAIL_RELAY_URL`/`EMAIL_RELAY_SECRET` (lokalt/CI) loggar `sendEmail` avsikten och returnerar
 `{ skipped: true }` i stället för att kasta. `SendResult` är `ok` / `skipped` / `failed`
 — det är notismodulens motsvarighet till laddar/tom/fel/lyckat-tillstånden.
 
@@ -141,8 +141,8 @@ utanför detta revir):
 
 | Secret | Roll | Saknas → |
 |---|---|---|
-| `RESEND_API_KEY` | Resend-API-nyckel (e-posttransport) | `sendEmail` no-op:ar (`{ skipped:true }`) — inga mejl skickas, inget kastar |
-| `NOTIFICATIONS_FROM` | Avsändare, verifierad domän. Default `Corevo <bokning@corevo.se>` | Faller tillbaka på default |
+| `EMAIL_RELAY_URL` + `EMAIL_RELAY_SECRET` | Edge Function-reläets URL + delad hemlighet (e-posttransport, goal-14) | `sendEmail` no-op:ar (`{ skipped:true }`) — inga mejl skickas, inget kastar |
+| `NOTIFICATIONS_FROM` | Avsändaradress (display-namn byts per salong). Default `Corevo <bokning@corevo.se>` | Faller tillbaka på default |
 | `CRON_SECRET` | Bearer-secret som skyddar `app/api/cron/reminders` | Endpoint stängd (401) — inga påminnelser |
 
 Relaterat (befintligt): `SUPABASE_SERVICE_ROLE_KEY` krävs av påminnelse-pipen

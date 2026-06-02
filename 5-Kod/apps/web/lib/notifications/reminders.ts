@@ -14,8 +14,8 @@ import { logger } from '@/lib/observability'
 // Driven by an EXTERNAL scheduler (Cloudflare Cron Trigger → app/api/cron/reminders,
 // or pg_cron) — Workers have no in-process timers. Runs service-role (cross-tenant,
 // reads guest email from the note seam / the customer's users row). Best-effort:
-// one bad row never aborts the batch. Needs SUPABASE_SERVICE_ROLE_KEY + RESEND_API_KEY
-// in prod; degrades to a no-op locally.
+// one bad row never aborts the batch. Needs SUPABASE_SERVICE_ROLE_KEY + the email
+// relay (EMAIL_RELAY_URL/EMAIL_RELAY_SECRET) in prod; degrades to a no-op locally.
 
 export type ReminderRun = { scanned: number; sent: number; skipped: number }
 

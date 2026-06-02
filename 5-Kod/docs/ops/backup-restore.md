@@ -91,8 +91,10 @@ Skapa i Cloudflare Dashboard → Security → WAF → Rate limiting rules:
 
 ## 4. Notiser (e-post)
 
-- Transport: **Resend över fetch** (`lib/notifications/email.ts`) — Workers-säkert
-  (ingen Node-SMTP). Degrade till no-op utan `RESEND_API_KEY`.
+- Transport (uppdaterat i goal-14): **HTTPS → Supabase Edge Function `send-email`
+  → one.com SMTP** (`lib/notifications/email.ts`) — Workers-säkert (ingen Node-SMTP).
+  Degrade till no-op utan `EMAIL_RELAY_URL`/`EMAIL_RELAY_SECRET`. Detaljer +
+  secrets: `docs/ops/mejl-egen-smtp.md`. (Resend borttaget.)
 - Inkopplat: **bekräftelse** vid bokning (`createBooking`/`rebookBooking`),
   **avbokning** (`cancelBooking`), **kvitto** (Stripe-webhook
   `payment_intent.succeeded`, gäst-mejl parsas ur `note`), **påminnelse** (cron).
@@ -126,7 +128,7 @@ Skapa i Cloudflare Dashboard → Security → WAF → Rate limiting rules:
 | `NEXT_PUBLIC_*` (site/tenant/domain) | Klient (publik, OK) | build/env |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Server-only** | Worker secret |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | **Server-only** | Worker secret |
-| `RESEND_API_KEY` / `NOTIFICATIONS_FROM` | **Server-only** | Worker secret |
+| `EMAIL_RELAY_URL` / `EMAIL_RELAY_SECRET` / `NOTIFICATIONS_FROM` (one.com-väg, goal-14) | **Server-only** | Worker secret |
 | `SENTRY_DSN` | Server-only | Worker secret |
 | `CRON_SECRET` | **Server-only** | Worker secret |
 

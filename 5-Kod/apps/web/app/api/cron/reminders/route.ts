@@ -6,7 +6,8 @@ import { sendDueReminders } from '@/lib/notifications/reminders'
 //
 // Auth: a static bearer in CRON_SECRET (Worker secret). Not user-facing; rejects
 // anything without the exact secret so the endpoint can't be triggered to fan out
-// mail. Degrades to a no-op when SUPABASE_SERVICE_ROLE_KEY / RESEND_API_KEY unset.
+// mail. Degrades to a no-op when SUPABASE_SERVICE_ROLE_KEY / the email relay
+// (EMAIL_RELAY_URL/EMAIL_RELAY_SECRET) is unset.
 
 export const dynamic = 'force-dynamic'
 

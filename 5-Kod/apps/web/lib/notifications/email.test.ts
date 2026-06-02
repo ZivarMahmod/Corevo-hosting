@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { sendEmail, buildFrom } from './email'
 import { resolveEmailBrand } from './brand'
+import { confirmationEmail } from './templates'
 import { THEME_CONTENT } from '@/components/storefront/theme-content'
+
+const baseMail = {
+  serviceName: 'Klippning',
+  startISO: '2026-07-01T10:00:00Z',
+  timeZone: 'Europe/Stockholm',
+}
 
 // goal-14 transport + brand contract. These read process.env at CALL time
 // (EMAIL_RELAY_URL/SECRET, NOTIFICATIONS_FROM), so each test sets/clears env
@@ -116,5 +123,35 @@ describe('resolveEmailBrand (pure)', () => {
   it('passes through logo_url, null when unset', () => {
     expect(resolveEmailBrand({ branding: { logo_url: 'https://cdn/x.png' } }).logoUrl).toBe('https://cdn/x.png')
     expect(resolveEmailBrand({ branding: {} }).logoUrl).toBeNull()
+  })
+})
+
+// E3 render DoD: the brand fields actually land in the shell() HTML.
+describe('email rendering (brand in shell)', () => {
+  it('paints the salon accent and renders the slogan', () => {
+    const { html } = confirmationEmail({
+      ...baseMail,
+      tenantName: 'Frisör Demo',
+      accentColor: '#123456',
+      slogan: 'Vår slogan',
+    })
+    expect(html).toContain('#123456')
+    expect(html).toContain('Vår slogan')
+  })
+
+  it('falls back to a monogram of the salon name when no logo', () => {
+    const { html } = confirmationEmail({ ...baseMail, tenantName: 'Demo' })
+    expect(html).toContain('>D</td>') // monogram initial in the accent circle
+    expect(html).not.toContain('<img')
+  })
+
+  it('renders the logo <img> when logoUrl is set (no monogram)', () => {
+    const { html } = confirmationEmail({ ...baseMail, tenantName: 'Demo', logoUrl: 'https://cdn/x.png' })
+    expect(html).toContain('<img src="https://cdn/x.png"')
+  })
+
+  it('falls back to Corevo gold when no accent is set', () => {
+    const { html } = confirmationEmail({ ...baseMail, tenantName: 'Demo' })
+    expect(html).toContain('#F5A623')
   })
 })

@@ -69,7 +69,8 @@ failure is irrelevant in CI.
 
 ### Worker secrets (server-only; set with `wrangler secret put NAME [--env staging]`, run in `5-Kod/apps/web`)
 `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
-`RESEND_API_KEY`, `SENTRY_DSN` (if used), `CRON_SECRET` (if the cron route checks it),
+`EMAIL_RELAY_URL` + `EMAIL_RELAY_SECRET` + `NOTIFICATIONS_FROM` (one.com email relay, goal-14 — see `docs/ops/mejl-egen-smtp.md`),
+`SENTRY_DSN` (if used), `CRON_SECRET` (if the cron route checks it),
 plus R2 access keys if `lib/r2/upload.ts` uses the S3 API (`R2_ACCESS_KEY_ID`,
 `R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`) and `R2_PUBLIC_BASE_URL`.
 
@@ -85,7 +86,7 @@ plus R2 access keys if `lib/r2/upload.ts` uses the S3 API (`R2_ACCESS_KEY_ID`,
 | 2 | Tenant routing: `booking.corevo.se`=platform done; `frisorN.corevo.se`→Worker | **OPS + Zivar OK.** Custom Domain per test-tenant (safe) **or** wildcard `*.corevo.se` route (touches the POS zone → needs Zivar's domain approval; routes are prepared/commented in `wrangler.jsonc`). |
 | 3 | Deploy via CI (Linux), not Windows | ✅ CD runs OpenNext on `ubuntu-latest`. |
 | 4 | Stripe `STRIPE_SECRET_KEY` (test) + `STRIPE_WEBHOOK_SECRET` | **OPS.** Webhook **MUST** be a Stripe **Connect** endpoint at `/api/stripe/webhook` (events carry `account`); a plain account endpoint silently never flips bookings to `confirmed`. Verify test-mode: onboarding · payment (`application_fee`=0) · refund · idempotency. |
-| 5 | Activate G10: `RESEND_API_KEY`, Sentry DSN, CF WAF rate-limit (login/boka), Cron `/api/cron/reminders` | **OPS.** Email/Sentry = Worker secrets. WAF rule = dashboard. Cron = a CF Cron Trigger or external scheduler hitting the route. |
+| 5 | Activate G10: email relay (`EMAIL_RELAY_URL`/`EMAIL_RELAY_SECRET`/`NOTIFICATIONS_FROM` + one.com Edge Function secrets, goal-14), Sentry DSN, CF WAF rate-limit (login/boka), Cron `/api/cron/reminders` | **OPS.** Email = Worker + Edge Function secrets (`docs/ops/mejl-egen-smtp.md`). Sentry = Worker secret. WAF rule = dashboard. Cron = a CF Cron Trigger or external scheduler hitting the route. |
 | 6 | R2 binding `corevo-media` | ✅ **Bucket exists** (verified). Binding present in both envs in `wrangler.jsonc`. Set `R2_PUBLIC_BASE_URL` for public logo URLs. |
 
 ## 6. Stripe Connect webhook (live-blocker #4 detail)
