@@ -54,11 +54,11 @@ export default async function SettingsPage({
 
   return (
     <section className="portal-section">
-      <PageHead eyebrow={tenant.name} title="Inställningar" />
-      <p className="prose">
-        Salongens namn, kontakt, tidszon, betalningssätt och avbokningsregel. Avbokningsregeln läses
-        av kundportalen när en kund vill avboka eller boka om.
-      </p>
+      <PageHead
+        eyebrow={tenant.name}
+        title="Inställningar"
+        lede="Salongens namn, kontakt, tidszon, betalningssätt och avbokningsregel. Avbokningsregeln läses av kundportalen när en kund vill avboka eller boka om."
+      />
 
       <SettingsForm
         name={tenant.name}

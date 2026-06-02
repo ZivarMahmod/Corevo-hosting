@@ -37,11 +37,8 @@ export default async function CustomersPage({
       <PageHead
         eyebrow={tenant.name}
         title="Kunder"
-      >
-        <span className="small" style={{ alignSelf: 'center', color: 'var(--c-ink-3)' }}>
-          Frisören känner igen återkommande kunder — utan att personuppgifterna ligger exponerade.
-        </span>
-      </PageHead>
+        lede="Din kunddatabas — sök, följ historik och se vem som kommer tillbaka. Allt byggs upp automatiskt från bokningarna."
+      />
 
       <div
         style={{

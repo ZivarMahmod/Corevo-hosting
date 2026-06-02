@@ -11,7 +11,8 @@ import { addDays, mondayOf, todayInTz, fmtTime } from '@/lib/personal/format'
 import { Calendar, type CalendarGroup } from '@/components/personal/Calendar'
 import { DateNav } from '@/components/personal/DateNav'
 import { WalkInForm } from '@/components/personal/WalkInForm'
-import { PageHead, Stat, Badge } from '@/components/portal/ui'
+import { MarkDoneButton } from '@/components/personal/MarkDoneButton'
+import { PageHead, Stat, Badge, Card } from '@/components/portal/ui'
 import styles from '@/components/personal/personal.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -82,13 +83,104 @@ export default async function PersonalPage({
       .filter((b) => new Date(b.startTs).getTime() >= now)
       .sort((a, b) => (a.startTs < b.startTs ? -1 : 1))[0] ?? null
 
+  // Hero display fields, derived ONLY from data already loaded above (no queries).
+  // The name is shown only when the booking truly carries one — customerLabel is
+  // already the resolved name / parsed guest name, and falls back to the generic
+  // 'Kund' when there is none; we never render that generic placeholder as a name.
+  const nextName = next && next.customerLabel !== 'Kund' ? next.customerLabel : null
+  const nextDurationMin = next
+    ? Math.max(0, Math.round((new Date(next.endTs).getTime() - new Date(next.startTs).getTime()) / 60000))
+    : 0
+
   return (
     <section className="portal-section">
-      <PageHead eyebrow="Personal" title="Idag">
+      <PageHead
+        eyebrow="Personal"
+        title="Idag"
+        lede="Din dag, live. Du behöver inte pyssla med admin — bara klippa."
+      >
         <Badge tone="gold">
           {activeToday.length} {activeToday.length === 1 ? 'bokning' : 'bokningar'} idag
         </Badge>
       </PageHead>
+
+      {/* "Nästa kund"-hero — forest surface, gold eyebrow, big Playfair time.
+          Text colors are set explicitly (the .h1/.body type roles bake in dark
+          ink/forest, invisible on forest), and all tokens resolve under the
+          back-office [data-world] shell. Additive: existing Stat grid + Kalender
+          + per-row actions are untouched below. */}
+      <Card
+        pad={26}
+        style={{
+          background: 'var(--c-forest)',
+          border: 'none',
+          marginBottom: 26,
+          color: 'var(--c-on-forest)',
+        }}
+      >
+        {next ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 20,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <span className="eyebrow" style={{ color: 'var(--c-gold)' }}>
+                Nästa kund
+              </span>
+              <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    fontSize: 38,
+                    lineHeight: 1,
+                    color: 'var(--c-on-forest)',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {fmtTime(next.startTs, next.timeZone)}
+                </span>
+                {nextName ? (
+                  <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--c-on-forest)' }}>
+                    {nextName}
+                  </span>
+                ) : null}
+              </div>
+              <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--c-on-forest-2)' }}>
+                {next.serviceName ?? 'Tjänst'}
+                {nextDurationMin > 0 ? ` · ${nextDurationMin} min` : ''}
+              </p>
+            </div>
+            <MarkDoneButton key={next.id} bookingId={next.id} />
+          </div>
+        ) : (
+          <div>
+            <span className="eyebrow" style={{ color: 'var(--c-gold)' }}>
+              Nästa kund
+            </span>
+            <p
+              style={{
+                margin: '8px 0 0',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 24,
+                lineHeight: 1.15,
+                color: 'var(--c-on-forest)',
+              }}
+            >
+              Inga fler kunder idag
+            </p>
+            <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--c-on-forest-2)' }}>
+              Du är ikapp — njut av lugnet.
+            </p>
+          </div>
+        )}
+      </Card>
 
       <div
         style={{

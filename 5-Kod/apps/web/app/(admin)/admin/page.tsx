@@ -39,9 +39,31 @@ export default async function AdminPage() {
     tenant.timeZone,
   )
 
+  // Calm, time-aware greeting (back-office "du" voice). No staff name exists on the
+  // user record, so we lead with the salon + date instead of a personal name.
+  const now = new Date()
+  const hour = Number(
+    new Intl.DateTimeFormat('sv-SE', {
+      hour: 'numeric',
+      hour12: false,
+      timeZone: tenant.timeZone,
+    }).format(now),
+  )
+  const greeting = hour < 10 ? 'God morgon' : hour < 18 ? 'God eftermiddag' : 'God kväll'
+  const dateLabel = new Intl.DateTimeFormat('sv-SE', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
+    timeZone: tenant.timeZone,
+  }).format(now)
+
   return (
     <section className="portal-section">
-      <PageHead eyebrow={tenant.name} title="Översikt">
+      <PageHead
+        eyebrow={`${tenant.name} · ${dateLabel}`}
+        title={greeting}
+        lede="Ditt kontrollcenter — följ dagen utan att behöva pyssla. Allt speglar verkligheten live."
+      >
         <OpenSiteLink href={storefrontUrl(tenant.slug)}>Se din sida</OpenSiteLink>
         <Button href="/admin/kunder" variant="ghost" icon="users">
           Kunder
@@ -166,38 +188,85 @@ export default async function AdminPage() {
               Inga bokningar denna vecka ännu.
             </p>
           ) : (
-            <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
-              {data.serviceMix.map((s) => {
-                const max = data.serviceMix[0]!.count
-                return (
-                  <div key={s.name}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        fontSize: 13.5,
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span style={{ color: 'var(--c-ink)' }}>{s.name}</span>
-                      <span className="num" style={{ color: 'var(--c-ink-2)' }}>
-                        {s.count}
-                      </span>
-                    </div>
-                    <div style={{ height: 7, borderRadius: 999, background: 'var(--c-paper-2)' }}>
+            (() => {
+              const total = data.serviceMix.reduce((sum, s) => sum + s.count, 0)
+              const COLORS = [
+                'var(--c-forest)',
+                'var(--c-forest-300)',
+                'var(--c-gold)',
+                'var(--c-gold-600)',
+                'var(--c-ink-3)',
+              ]
+              const pct = (n: number) => Math.round((n / total) * 100)
+              return (
+                <>
+                  {/* one stacked bar (segments share the week) + a two-col % legend */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      height: 14,
+                      borderRadius: 999,
+                      overflow: 'hidden',
+                      marginTop: 16,
+                      background: 'var(--c-paper-2)',
+                    }}
+                  >
+                    {data.serviceMix.map((s, i) => (
                       <div
+                        key={s.name}
+                        title={`${s.name} · ${pct(s.count)}%`}
                         style={{
-                          height: '100%',
-                          width: `${Math.max(6, (s.count / max) * 100)}%`,
-                          borderRadius: 999,
-                          background: 'var(--c-forest)',
+                          width: `${(s.count / total) * 100}%`,
+                          background: COLORS[i % COLORS.length],
                         }}
                       />
-                    </div>
+                    ))}
                   </div>
-                )
-              })}
-            </div>
+                  <ul
+                    style={{
+                      listStyle: 'none',
+                      margin: '16px 0 0',
+                      padding: 0,
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '10px 18px',
+                    }}
+                  >
+                    {data.serviceMix.map((s, i) => (
+                      <li
+                        key={s.name}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}
+                      >
+                        <span
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: 3,
+                            flex: 'none',
+                            background: COLORS[i % COLORS.length],
+                          }}
+                        />
+                        <span
+                          style={{
+                            color: 'var(--c-ink)',
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {s.name}
+                        </span>
+                        <span className="num" style={{ color: 'var(--c-ink-2)', fontWeight: 600 }}>
+                          {pct(s.count)}%
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )
+            })()
           )}
         </Card>
 
@@ -250,6 +319,35 @@ export default async function AdminPage() {
           )}
         </Card>
       </div>
+
+      {/* "Röd tråd" — the live-sync promise, forest band (design-system dashboard). */}
+      <Card
+        style={{
+          marginTop: 22,
+          background: 'var(--c-forest)',
+          border: 'none',
+          boxShadow: 'var(--shadow-md)',
+        }}
+      >
+        <span className="eyebrow" style={{ color: 'var(--c-gold)' }}>
+          Röd tråd
+        </span>
+        <h2
+          className="h2"
+          style={{
+            fontFamily: 'var(--font-display)',
+            color: '#fff',
+            fontSize: 24,
+            margin: '8px 0 6px',
+          }}
+        >
+          Din sida, live
+        </h2>
+        <p style={{ color: 'var(--c-on-forest)', fontSize: 14, lineHeight: 1.6, margin: 0, maxWidth: 640 }}>
+          Avboka en tid så blir den bokningsbar igen på din publika sida direkt — ingen extra knapp,
+          ingen deploy. Allt du ändrar här syns för dina kunder med en gång.
+        </p>
+      </Card>
     </section>
   )
 }

@@ -9,10 +9,13 @@ import type { ReactNode } from 'react'
 export function PageHead({
   eyebrow,
   title,
+  lede,
   children,
 }: {
   eyebrow?: ReactNode
   title: ReactNode
+  /** Optional calm one-liner under the H1 (back-office "du" voice). */
+  lede?: ReactNode
   children?: ReactNode
 }) {
   return (
@@ -31,6 +34,11 @@ export function PageHead({
         <h1 className="h1" style={{ margin: eyebrow ? '8px 0 0' : 0 }}>
           {title}
         </h1>
+        {lede && (
+          <p className="body" style={{ margin: '8px 0 0', maxWidth: 580 }}>
+            {lede}
+          </p>
+        )}
       </div>
       {children && <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>{children}</div>}
     </div>

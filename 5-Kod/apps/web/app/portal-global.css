@@ -449,3 +449,99 @@
     align-items: center;
   }
 }
+
+/* =====================================================================
+   SHARED PRIMITIVES — settings toggle (.pswitch) + status pill (.ppill)
+   Additive, back-office only. Used by Inställningar-style pages where a
+   real <input type="checkbox"> (server-wired) should LOOK like a switch,
+   and a small AKTIV / AV label sits beside it. Style is laid ON the
+   existing control — markup/name/onChange/checked are untouched.
+   ===================================================================== */
+
+/* ---- primitive: toggle switch (.pswitch) ----
+   Apply className="pswitch" DIRECTLY on the existing <input type="checkbox">.
+   appearance:none turns the native box into a track; ::before is the thumb.
+   The input keeps its real checked/onChange — only the paint changes.
+   Optional wrapper .pswitch-row puts label/description left, switch right. */
+[data-world="backoffice"] .pswitch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+[data-world="backoffice"] input.pswitch,
+[data-world="backoffice"] .pswitch {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  flex: none;
+  position: relative;
+  width: 44px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--c-line-strong);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+[data-world="backoffice"] input.pswitch::before,
+[data-world="backoffice"] .pswitch::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+[data-world="backoffice"] input.pswitch:checked,
+[data-world="backoffice"] .pswitch:checked {
+  background: var(--c-forest);
+}
+[data-world="backoffice"] input.pswitch:checked::before,
+[data-world="backoffice"] .pswitch:checked::before {
+  transform: translateX(20px);
+}
+[data-world="backoffice"] input.pswitch:focus-visible,
+[data-world="backoffice"] .pswitch:focus-visible {
+  outline: 2px solid var(--c-gold);
+  outline-offset: 2px;
+}
+[data-world="backoffice"] input.pswitch:disabled,
+[data-world="backoffice"] .pswitch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ---- primitive: status pill (.ppill) ----
+   Small uppercase AKTIV / AV chip beside a setting label.
+   <span className="ppill ppill--on">Aktiv</span> /
+   <span className="ppill ppill--off">Av</span> */
+[data-world="backoffice"] .ppill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--c-paper-2);
+  color: var(--c-ink-3);
+}
+[data-world="backoffice"] .ppill--on {
+  background: var(--c-success-bg);
+  color: var(--c-success);
+}
+[data-world="backoffice"] .ppill--off {
+  background: var(--c-paper-2);
+  color: var(--c-ink-3);
+}
