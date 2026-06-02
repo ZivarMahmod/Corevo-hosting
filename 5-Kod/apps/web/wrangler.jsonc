@@ -47,16 +47,20 @@
   },
   // ── Custom domains (FX-14): live production hostnames bound to THIS worker. ──
   // Declared here so a top-level `deploy` re-asserts them and can NEVER detach
-  // demo.corevo.se / booking.corevo.se from the worker — the failure mode goal-14's
-  // deploy exposed (wrangler reported it would REMOVE these because they lived only
-  // in the cloud, not in config). custom_domain routes take a BARE hostname (no
-  // path, no zone_name — that is for plain `routes`); Cloudflare manages DNS + cert.
-  // Both already exist on the `bokningsplatformen` service (verified against remote),
-  // so deploy is a no-op for them. Staging (workers.dev) MUST NOT claim these →
-  // env.staging deliberately has no routes.
+  // them — the failure mode goal-14's deploy exposed (wrangler reported it would
+  // REMOVE a domain because it lived only in the cloud, not in config).
+  // RECONCILED 2026-06-02 against the live worker-domains API (service=
+  // bokningsplatformen): the actual live set is booking.corevo.se + freshcut.corevo.se.
+  //  · demo.corevo.se was REMOVED from Cloudflare (no longer resolves), so it is
+  //    dropped here too — keeping it would make deploy try to RESURRECT a dead domain.
+  //  · freshcut.corevo.se (goal-15 pitch storefront) was dashboard-only; adding it so
+  //    a deploy RE-ASSERTS it instead of DETACHING it (the FX-14 trap).
+  // Config now == live domain set → deploy is a no-op for routes (zero churn).
+  // custom_domain routes take a BARE hostname (no path/zone_name); CF manages DNS+cert.
+  // Staging (workers.dev) MUST NOT claim these → env.staging deliberately has no routes.
   "routes": [
-    { "pattern": "demo.corevo.se", "custom_domain": true },
-    { "pattern": "booking.corevo.se", "custom_domain": true }
+    { "pattern": "booking.corevo.se", "custom_domain": true },
+    { "pattern": "freshcut.corevo.se", "custom_domain": true }
   ],
   //
   // ── Named environments (G11) ────────────────────────────────────────────────
