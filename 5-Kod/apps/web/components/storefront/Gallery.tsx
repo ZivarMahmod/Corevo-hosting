@@ -97,7 +97,15 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
               aria-label={`Öppna bild: ${p.alt}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.src} alt={p.alt} loading="lazy" className={styles.galleryImg} />
+              <img
+                src={p.src}
+                alt={p.alt}
+                loading="lazy"
+                className={styles.galleryImg}
+                onError={(e) => {
+                  e.currentTarget.style.visibility = 'hidden'
+                }}
+              />
             </button>
           </li>
         ))}
@@ -131,6 +139,9 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
               src={photos[openIdx!]!.src}
               alt={photos[openIdx!]!.alt}
               className={styles.lightboxImg}
+              onError={(e) => {
+                e.currentTarget.style.visibility = 'hidden'
+              }}
             />
             <figcaption className={styles.lightboxCaption}>{photos[openIdx!]!.alt}</figcaption>
           </figure>

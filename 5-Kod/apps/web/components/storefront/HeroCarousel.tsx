@@ -86,6 +86,12 @@ export function HeroCarousel({
               loading={i === 0 ? 'eager' : 'lazy'}
               fetchPriority={i === 0 ? 'high' : undefined}
               draggable={false}
+              // CDN/offline fallback: hide a broken photo so the tinted slide +
+              // dark overlay + server-rendered headline/CTA stay legible (never a
+              // blank white box). The slide carries a background-color fallback.
+              onError={(e) => {
+                e.currentTarget.style.visibility = 'hidden'
+              }}
             />
           </div>
         ))}
