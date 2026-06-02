@@ -75,34 +75,36 @@ export default async function TenantsPage({
           )}
         </div>
       ) : (
-        <table className="portal-table">
-          <thead>
-            <tr>
-              <th>Subdomän</th>
-              <th>Namn</th>
-              <th>Status</th>
-              <th>Prismodell</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tenants.map((t) => (
-              <tr key={t.id}>
-                <td>
-                  <Link href={`/salonger/${t.id}`}>
-                    <code className={styles.code}>{t.slug}</code>
-                  </Link>
-                </td>
-                <td>{t.name}</td>
-                <td>
-                  <Badge tone={t.status === 'active' ? 'success' : 'warning'}>
-                    {t.status === 'active' ? 'Aktiv' : 'Pausad'}
-                  </Badge>
-                </td>
-                <td>{BILLING_MODEL_LABELS[t.billingModel as BillingModel] ?? t.billingModel}</td>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="portal-table">
+            <thead>
+              <tr>
+                <th>Subdomän</th>
+                <th>Namn</th>
+                <th>Status</th>
+                <th>Prismodell</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tenants.map((t) => (
+                <tr key={t.id}>
+                  <td>
+                    <Link href={`/salonger/${t.id}`}>
+                      <code className={styles.code}>{t.slug}</code>
+                    </Link>
+                  </td>
+                  <td>{t.name}</td>
+                  <td>
+                    <Badge tone={t.status === 'active' ? 'success' : 'warning'}>
+                      {t.status === 'active' ? 'Aktiv' : 'Pausad'}
+                    </Badge>
+                  </td>
+                  <td>{BILLING_MODEL_LABELS[t.billingModel as BillingModel] ?? t.billingModel}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   )

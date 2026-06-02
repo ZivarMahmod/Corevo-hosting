@@ -27,6 +27,16 @@ export type ComputeSlotsInput = {
   bufferMin?: number
   /** Granularity of offered start times (minutes). Default 15. */
   slotStepMin?: number
+  /**
+   * OPT-IN explicit start times (wall-clock 'HH:MM' / 'HH:MM:SS' in `timeZone`),
+   * from `working_hour_slots` (migration 0011). When non-empty, these REPLACE the
+   * stepped raster: the engine offers exactly these starts (still bounded by the
+   * working window, busy intervals, buffer and `now`) and `slotStepMin` is ignored
+   * (the list IS the step — see 0011:183). When absent/empty, the stepped
+   * `slotStepMin` path runs unchanged — so range-only staff (the live default,
+   * zero rows) keep EXACTLY today's behaviour.
+   */
+  explicitStarts?: string[]
   /** If given, slots starting before this instant are dropped (no past slots). */
   now?: Date
 }
@@ -61,10 +71,32 @@ export function computeSlots(input: ComputeSlotsInput): Date[] {
   const stepMs = stepMin * MIN
   const busyMs = busy.map((b) => ({ start: b.start.getTime(), end: b.end.getTime() }))
 
+  // Explicit-slot mode (OPT-IN): when the staff member has explicit start times
+  // for this day, the candidate starts are precisely those times — NOT the stepped
+  // raster (so slotStepMin is intentionally unused here, per 0011:183). They are
+  // still validated against the same window-fit, busy, buffer and `now` rules.
+  // Empty/absent → fall through to the stepped raster below (the live default).
+  const useExplicit = !!input.explicitStarts && input.explicitStarts.length > 0
+
   const starts: number[] = []
   for (const win of workingWindows) {
     const winStart = zonedTimeToUtc(date, win.start, timeZone).getTime()
     const winEnd = zonedTimeToUtc(date, win.end, timeZone).getTime()
+
+    if (useExplicit) {
+      for (const hhmm of input.explicitStarts!) {
+        const t = zonedTimeToUtc(date, hhmm, timeZone).getTime()
+        // The appointment must still fit inside this window. A start may belong to
+        // a different window (split shifts) — it's accepted by whichever window it
+        // fits; the union dedupe below collapses any cross-window repeats.
+        if (t < winStart || t + durationMs > winEnd) continue
+        if (t < nowMs) continue
+        const reservedEnd = t + reservedMs
+        const blocked = busyMs.some((b) => overlaps(t, reservedEnd, b.start, b.end))
+        if (!blocked) starts.push(t)
+      }
+      continue
+    }
 
     for (let t = winStart; t + durationMs <= winEnd; t += stepMs) {
       if (t < nowMs) continue

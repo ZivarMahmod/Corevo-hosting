@@ -116,32 +116,34 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       {audit.length === 0 ? (
         <p className={styles.muted}>Inga loggade händelser ännu.</p>
       ) : (
-        <table className="portal-table">
-          <thead>
-            <tr>
-              <th>Tid</th>
-              <th>Åtgärd</th>
-              <th>Detalj</th>
-            </tr>
-          </thead>
-          <tbody>
-            {audit.map((a) => (
-              <tr key={a.id}>
-                <td className={styles.muted}>
-                  {new Intl.DateTimeFormat('sv-SE', {
-                    dateStyle: 'short',
-                    timeStyle: 'short',
-                    timeZone: 'Europe/Stockholm',
-                  }).format(new Date(a.created_at))}
-                </td>
-                <td>
-                  <code className={styles.code}>{a.action}</code>
-                </td>
-                <td className={styles.muted}>{JSON.stringify(a.meta)}</td>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="portal-table">
+            <thead>
+              <tr>
+                <th>Tid</th>
+                <th>Åtgärd</th>
+                <th>Detalj</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {audit.map((a) => (
+                <tr key={a.id}>
+                  <td className={styles.muted}>
+                    {new Intl.DateTimeFormat('sv-SE', {
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                      timeZone: 'Europe/Stockholm',
+                    }).format(new Date(a.created_at))}
+                  </td>
+                  <td>
+                    <code className={styles.code}>{a.action}</code>
+                  </td>
+                  <td className={styles.muted}>{JSON.stringify(a.meta)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   )

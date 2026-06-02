@@ -9,6 +9,7 @@ import { currentKundTenant } from './tenant'
 import { getMyBooking } from './bookings'
 import { getCancellationCutoffHours, withinCancellationWindow } from './settings'
 import { refundBookingPayment } from '@/lib/stripe/refund'
+import { carryBookingPayment } from '@/lib/stripe/rebook-payment'
 import { sendBookingCancellation, sendBookingRebook } from '@/lib/notifications/booking'
 
 /** Best-effort tenant display name for notifications (RLS: own tenant readable). */
@@ -254,6 +255,13 @@ export async function rebookBooking(
       .in('status', ACTIVE_STATUSES)
     return { error: 'Kunde inte omboka. Försök igen.' }
   }
+
+  // Flytt av betald bokning (M8 §2.3): den nya tiden är säkrad OCH den gamla är
+  // result-bekräftat släppt → flytta en ev. lyckad betalning från gamla bokningen
+  // till den nya (re-point + bekräfta), ingen refund-rundgång, ingen dubbel-charge.
+  // MÅSTE ligga EFTER släppet (annars strandar betalningen på newId om släppet
+  // failar och rollbacken avbokar newId). No-op för salonger utan betalning/Stripe.
+  await carryBookingPayment(bookingId, newId, user.tenantId ?? '')
 
   // Ny tid-bekräftelse på den NYA tiden (M9, dedikerad rebook-mall) — best-effort, före redirect.
   if (user.email) {

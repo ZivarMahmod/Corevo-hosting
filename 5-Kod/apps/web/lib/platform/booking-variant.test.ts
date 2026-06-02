@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   isBookingVariant,
   readBookingVariant,
+  readBookingMode,
   DEFAULT_BOOKING_VARIANT,
 } from './booking-variant'
 
@@ -44,5 +45,22 @@ describe('readBookingVariant (M3-facing contract)', () => {
 
   it('default is variant 3', () => {
     expect(DEFAULT_BOOKING_VARIANT).toBe('3')
+  })
+})
+
+describe('readBookingMode (M3 storefront seam: variant → BookingWizard mode)', () => {
+  it("maps variant '4' → 'compact'", () => {
+    expect(readBookingMode({ booking: { variant: '4' } })).toBe('compact')
+  })
+  it("maps variant '3' → 'wizard'", () => {
+    expect(readBookingMode({ booking: { variant: '3' } })).toBe('wizard')
+  })
+  it("unset/legacy/unknown → 'wizard' (Variant 3 = today's default flow)", () => {
+    expect(readBookingMode(null)).toBe('wizard')
+    expect(readBookingMode(undefined)).toBe('wizard')
+    expect(readBookingMode({})).toBe('wizard')
+    expect(readBookingMode({ booking: {} })).toBe('wizard')
+    expect(readBookingMode({ booking: { variant: '9' } })).toBe('wizard')
+    expect(readBookingMode('not-an-object')).toBe('wizard')
   })
 })

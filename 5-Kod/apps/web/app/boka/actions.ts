@@ -78,7 +78,9 @@ export async function getAvailableSlots(
 
   const { data: service } = await supabase
     .from('services')
-    .select('duration_min')
+    // slot_step_min / buffer_min (migr 0011): per-service raster + buffert. NULL på
+    // alla befintliga rader → faller tillbaka på staff-värdet, sen på konstanten.
+    .select('duration_min, slot_step_min, buffer_min')
     .eq('id', serviceId)
     .eq('tenant_id', ctx.tenantId)
     .eq('active', true)
@@ -97,12 +99,17 @@ export async function getAvailableSlots(
 
   const { data: staffRows } = await supabase
     .from('staff')
-    .select('id, title')
+    // slot_step_min / buffer_min (migr 0011): per-frisör raster + buffert. NULL →
+    // service-värdet om satt, annars konstanten (SLOT_STEP_MIN / 0).
+    .select('id, title, slot_step_min, buffer_min')
     .eq('tenant_id', ctx.tenantId)
     .eq('active', true)
     .in('id', candidateIds)
   const staffIds = (staffRows ?? []).map((s) => s.id)
   const titleById = new Map((staffRows ?? []).map((s) => [s.id, s.title]))
+  // Per-frisör steg/buffert-uppslag (för fallback-ordningen service ?? staff ?? konst).
+  const stepByStaff = new Map((staffRows ?? []).map((s) => [s.id, s.slot_step_min]))
+  const bufferByStaff = new Map((staffRows ?? []).map((s) => [s.id, s.buffer_min]))
   if (staffIds.length === 0) return { ok: true, timeZone: ctx.timeZone, slots: [] }
 
   const weekday = weekdayOf(date)
@@ -111,6 +118,19 @@ export async function getAvailableSlots(
     .select('staff_id, start_time, end_time')
     .eq('tenant_id', ctx.tenantId)
     .eq('weekday', weekday)
+    .in('staff_id', staffIds)
+
+  // working_hour_slots (migr 0011) — explicit bokbara starttider, OPT-IN per
+  // (frisör, veckodag). Tom lista för en frisör denna dag → motorn faller tillbaka
+  // på working_hours-rastret (range-vägen). KRITISKT: de flesta live-frisörer har
+  // NOLL rader → de tar range-vägen och får aldrig tom availability. active-filtret
+  // i app-lagret speglar 0011-policyn (working_hour_slots_public_read).
+  const { data: explicitSlotRows } = await supabase
+    .from('working_hour_slots')
+    .select('staff_id, start_time')
+    .eq('tenant_id', ctx.tenantId)
+    .eq('weekday', weekday)
+    .eq('active', true)
     .in('staff_id', staffIds)
 
   // busy intervals for the whole day (+margin for DST-long days) via RPC
@@ -135,18 +155,33 @@ export async function getAvailableSlots(
     list.push({ start: new Date(b.start_ts), end: new Date(b.end_ts) })
     busyByStaff.set(b.staff_id, list)
   }
+  // Explicit starttider per frisör för dagen (tom map → alla tar range-vägen).
+  const explicitByStaff = new Map<string, string[]>()
+  for (const r of explicitSlotRows ?? []) {
+    const list = explicitByStaff.get(r.staff_id) ?? []
+    list.push(r.start_time)
+    explicitByStaff.set(r.staff_id, list)
+  }
 
   const now = new Date()
   // start ISO → the (first) staff free at that time
   const byStart = new Map<string, string>()
   for (const id of staffIds) {
+    // Fallback-ordning (3a): service-värde ?? staff-värde ?? konstant. NULL i DB
+    // (default för befintliga rader) → exakt dagens beteende (15 / 0).
+    const stepMin = service.slot_step_min ?? stepByStaff.get(id) ?? SLOT_STEP_MIN
+    const bufferMin = service.buffer_min ?? bufferByStaff.get(id) ?? 0
+    // Explicit-slots för just denna frisör denna dag; undefined/tom → range-vägen.
+    const explicitStarts = explicitByStaff.get(id)
     const slots = computeSlots({
       date,
       timeZone: ctx.timeZone,
       workingWindows: windowsByStaff.get(id) ?? [],
       busy: busyByStaff.get(id) ?? [],
       durationMin: service.duration_min,
-      slotStepMin: SLOT_STEP_MIN,
+      slotStepMin: stepMin,
+      bufferMin,
+      explicitStarts,
       now,
     })
     for (const d of slots) {
@@ -201,6 +236,12 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
   if (error) {
     if (error.code === '23P01') {
       return { ok: false, reason: 'slot_taken', message: 'Tyvärr, tiden togs precis. Välj en annan tid.' }
+    }
+    // P0001 = start_in_past (migr 0009): kunden satt på en gammal sida och valde en
+    // tid som hunnit passera. Mappa till samma graceful "välj ny tid"-familj som
+    // 23P01 i stället för ett kryptiskt "Något gick fel" (M3-bygg-item 1, stale-sida).
+    if (error.code === 'P0001') {
+      return { ok: false, reason: 'slot_taken', message: 'Den tiden är inte längre ledig — välj en ny tid.' }
     }
     return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
   }

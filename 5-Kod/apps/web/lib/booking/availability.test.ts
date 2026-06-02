@@ -175,3 +175,102 @@ describe('computeSlots', () => {
     ).toEqual([])
   })
 })
+
+// ── M3 Våg 3 read-wiring (3a + 3b) ──────────────────────────────────────────
+// Explicit-slots (working_hour_slots, migr 0011) are OPT-IN. The live default is
+// ZERO rows → the range raster runs. These tests pin that an overnight regression
+// can never silently empty range-staff availability, and that the explicit path +
+// per-service/staff step overrides behave to spec.
+describe('computeSlots — explicit working_hour_slots (3b, OPT-IN) + step override (3a)', () => {
+  const baseRange = {
+    date: DAY,
+    timeZone: TZ,
+    workingWindows: [{ start: '09:00', end: '12:00' }],
+    busy: [] as Interval[],
+    durationMin: 30,
+    slotStepMin: 15,
+  }
+
+  it('(1) staff WITHOUT explicit slots → range path yields the SAME slots as today', () => {
+    // The exact range output, snapshotted from the existing stepped behaviour.
+    const expected = isoList(computeSlots(baseRange))
+    expect(expected).toEqual([
+      iso('09:00'), iso('09:15'), iso('09:30'), iso('09:45'),
+      iso('10:00'), iso('10:15'), iso('10:30'), iso('10:45'),
+      iso('11:00'), iso('11:15'), iso('11:30'),
+    ])
+    // undefined explicitStarts → identical
+    expect(isoList(computeSlots({ ...baseRange, explicitStarts: undefined }))).toEqual(expected)
+    // empty explicitStarts → still the range path (empty is NOT "use explicit")
+    expect(isoList(computeSlots({ ...baseRange, explicitStarts: [] }))).toEqual(expected)
+  })
+
+  it('(2) staff WITH explicit slots → ONLY those starts are offered (not the raster)', () => {
+    const slots = isoList(
+      computeSlots({
+        ...baseRange,
+        // Explicit list is irregular and NOT on the 15-min grid → proves the raster
+        // is bypassed (the list IS the step, 0011:183).
+        explicitStarts: ['09:00', '09:40', '11:20'],
+      }),
+    )
+    expect(slots).toEqual([iso('09:00'), iso('09:40'), iso('11:20')])
+    // A raster-only time like 09:15 must NOT appear in explicit mode.
+    expect(slots).not.toContain(iso('09:15'))
+  })
+
+  it('(2b) explicit slots still respect busy/buffer/window-fit/now', () => {
+    const slots = isoList(
+      computeSlots({
+        ...baseRange,
+        busy: [busy('09:30', '10:00')],
+        explicitStarts: [
+          '08:30', // before window → dropped
+          '09:00', // ok
+          '09:30', // overlaps busy → dropped
+          '11:45', // 11:45–12:15 exceeds 12:00 close → dropped
+        ],
+      }),
+    )
+    expect(slots).toEqual([iso('09:00')])
+  })
+
+  it('(2c) explicit slots ignore slotStepMin entirely', () => {
+    // A coarse step would normally drop 09:40/11:20; explicit mode keeps them.
+    const slots = isoList(
+      computeSlots({
+        ...baseRange,
+        slotStepMin: 60,
+        explicitStarts: ['09:40', '11:20'],
+      }),
+    )
+    expect(slots).toEqual([iso('09:40'), iso('11:20')])
+  })
+
+  it('(3) slot_step_min override applies; NULL → default 15 (range path)', () => {
+    // A 30-min override halves the offered starts vs the 15-min default.
+    const step30 = isoList(computeSlots({ ...baseRange, slotStepMin: 30 }))
+    expect(step30).toEqual([
+      iso('09:00'), iso('09:30'), iso('10:00'), iso('10:30'), iso('11:00'), iso('11:30'),
+    ])
+    // The call site resolves service ?? staff ?? 15. When both DB values are NULL
+    // the resolver passes 15 — mirrored here by the default param (slotStepMin
+    // omitted → 15), which must equal the explicit-15 baseline.
+    const { slotStepMin: _omit, ...noStep } = baseRange
+    void _omit
+    expect(isoList(computeSlots(noStep))).toEqual(isoList(computeSlots(baseRange)))
+  })
+
+  it('(3b) buffer override applies in the range path against busy (service ?? staff ?? 0)', () => {
+    // bufferMin omitted → 0 (today). The buffer guards the gap AFTER the slot vs
+    // BUSY intervals (not the bare window bound — see the existing buffer test).
+    // A booking at 10:00–10:30 leaves 09:30 free with no buffer, but a 15-min
+    // buffer pushes the 09:30 slot's reserved end to 10:15 → it now overlaps.
+    const withBusy = { ...baseRange, busy: [busy('10:00', '10:30')] }
+    const noBuffer = isoList(computeSlots({ ...withBusy, bufferMin: 0 }))
+    const buffered = isoList(computeSlots({ ...withBusy, bufferMin: 15 }))
+    expect(noBuffer).toContain(iso('09:30')) // 09:30–10:00 touches, ok with no buffer
+    expect(buffered).not.toContain(iso('09:30')) // +15 buffer → reserved to 10:15 overlaps
+    expect(buffered).toContain(iso('09:15')) // 09:15–10:00 (+buffer to 10:00) just fits
+  })
+})

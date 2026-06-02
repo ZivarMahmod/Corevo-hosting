@@ -666,3 +666,25 @@
   background: color-mix(in srgb, var(--c-ink) 4%, transparent);
   flex: 0 0 auto;
 }
+
+/* ── Touch targets (Våg 4): salon owners often manage on a tablet, so secondary
+   actions (.btn) + the pill sub-nav must clear the ~44px tap guideline. Gated on
+   `pointer: coarse` (touch devices only) so DESKTOP (fine pointer) stays
+   byte-identical — no padding/layout change there. Additive: min-height + center. */
+@media (pointer: coarse) {
+  .btn,
+  .navLink {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* The media-editor delete X (.mediaRemove) is absolutely positioned inside a
+     96×72 thumb, so it can't take a 44px min-height without spilling out. Bump it
+     to a finger-friendly ~28px hit area on touch instead — still inside the thumb,
+     still desktop-untouched (fine pointer keeps the petite 1.4rem). */
+  .mediaRemove {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}

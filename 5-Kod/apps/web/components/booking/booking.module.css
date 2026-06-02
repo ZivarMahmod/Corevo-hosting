@@ -148,7 +148,10 @@
   flex: 0 0 auto;
   border-radius: 50%;
   background: var(--color-accent, var(--color-primary));
-  color: var(--color-fg);
+  /* Solid accent fill → use accent-fg (white on the storefront, where accent is
+     the theme primary). --color-fg would be dark-on-dark on darker themes
+     (edit/zigge). Matches the wizard selected-state pairing. */
+  color: var(--color-accent-fg, #fff);
   font-size: 0.8rem;
   font-weight: 700;
 }

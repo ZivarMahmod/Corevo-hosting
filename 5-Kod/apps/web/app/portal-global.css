@@ -430,3 +430,22 @@
   [data-world="backoffice"] .portal-main { padding: 20px 16px; }
   [data-world="backoffice"] .portal-topbar { padding: 12px 16px; }
 }
+
+/* Touch targets (Våg 4): the back-office is operated on a tablet in the salon, so
+   the SHARED primitives — the .pbtn button family (incl. the petite --sm), the
+   topbar sign-out and the sidebar nav links — must clear the ~44px tap guideline.
+   Fixed once here, under [data-world="backoffice"], so it covers admin/personal/
+   platform without touching the un-worlded /konto (kund has its own rule). Gated
+   on `pointer: coarse` → DESKTOP (fine pointer) is byte-identical. Additive:
+   min-height only; .pbtn/.portal-aside-link already center their content. */
+@media (pointer: coarse) {
+  [data-world="backoffice"] .pbtn,
+  [data-world="backoffice"] .portal-aside-link {
+    min-height: 44px;
+  }
+  [data-world="backoffice"] .portal-topbar-right .portal-signout {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}

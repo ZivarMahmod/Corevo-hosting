@@ -106,36 +106,38 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
           för att se alla.
         </div>
       ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Tid</th>
-              <th>Tjänst</th>
-              <th>Medarbetare</th>
-              <th>Pris</th>
-              <th>Status</th>
-              <th>Bokad den</th>
-              <th>Ändra</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookings.map((b) => (
-              <tr key={b.id}>
-                <td>{formatDateTime(b.startTs, tz)}</td>
-                <td>{b.serviceName}</td>
-                <td>{b.staffTitle}</td>
-                <td>{formatPrice(b.priceCents)}</td>
-                <td>
-                  <span className={badgeClass(b.status)}>{statusLabel(b.status)}</span>
-                </td>
-                <td style={{ color: 'var(--c-ink-3)' }}>{formatDateTime(b.createdAt, tz)}</td>
-                <td>
-                  <BookingStatusControl bookingId={b.id} status={b.status} />
-                </td>
+        <div style={{ overflowX: 'auto' }}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Tid</th>
+                <th>Tjänst</th>
+                <th>Medarbetare</th>
+                <th>Pris</th>
+                <th>Status</th>
+                <th>Bokad den</th>
+                <th>Ändra</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {bookings.map((b) => (
+                <tr key={b.id}>
+                  <td>{formatDateTime(b.startTs, tz)}</td>
+                  <td>{b.serviceName}</td>
+                  <td>{b.staffTitle}</td>
+                  <td>{formatPrice(b.priceCents)}</td>
+                  <td>
+                    <span className={badgeClass(b.status)}>{statusLabel(b.status)}</span>
+                  </td>
+                  <td style={{ color: 'var(--c-ink-3)' }}>{formatDateTime(b.createdAt, tz)}</td>
+                  <td>
+                    <BookingStatusControl bookingId={b.id} status={b.status} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   )

@@ -51,3 +51,16 @@ export function readBookingVariant(settings: unknown): BookingVariant {
   }
   return DEFAULT_BOOKING_VARIANT
 }
+
+/**
+ * Storefront-facing presentation mode for `<BookingWizard mode={…} />`. The DB
+ * persists the variant as '3' | '4'; the component takes 'wizard' | 'compact'.
+ * This is the ONE place that bridges the two so the mapping never drifts:
+ *   '3' (default) → 'wizard'  (full guided steg-för-steg)
+ *   '4'           → 'compact' (snabbboka, allt på en skärm)
+ * Anything missing/unknown resolves to '3' via readBookingVariant → 'wizard',
+ * i.e. EXACTLY today's default flow (no behaviour change for unset tenants).
+ */
+export function readBookingMode(settings: unknown): 'wizard' | 'compact' {
+  return readBookingVariant(settings) === '4' ? 'compact' : 'wizard'
+}

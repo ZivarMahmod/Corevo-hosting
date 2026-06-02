@@ -606,3 +606,23 @@
   opacity: 0.75;
   max-width: 28rem;
 }
+
+/* ── Touch targets (Våg 4): the platform control center is operated on a tablet
+   too, so its interactive controls — pill sub-nav, ghost buttons, the theme/
+   palette pickers — must clear the ~44px tap guideline. Gated on `pointer: coarse`
+   (touch devices only) so DESKTOP (fine pointer) stays byte-identical — no
+   padding/layout change there. Additive: only adds min-height (+ centers the
+   pill/button text); the picker cards already lay out their own content. */
+@media (pointer: coarse) {
+  .btn,
+  .navLink {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .swatch,
+  .templateCard {
+    min-height: 44px;
+  }
+}

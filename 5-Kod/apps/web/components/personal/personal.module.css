@@ -534,6 +534,24 @@
     animation: none;
   }
 }
+
+/* ── Touch targets (Våg 4): tablet-in-salon is the primary staff context, so the
+   daily booking actions (Genomförd / Uteblev / Omboka / Avboka) + sub-nav must
+   clear the ~44px tap guideline. Gated on `pointer: coarse` (touch devices only)
+   so DESKTOP (fine pointer) stays byte-identical — no padding/layout change there.
+   Additive: only adds min-height + centers content on coarse pointers. */
+@media (pointer: coarse) {
+  .btn,
+  .navLink,
+  .viewToggle a,
+  .dateNav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 .skelStats {
   display: grid;
   gap: 1rem;

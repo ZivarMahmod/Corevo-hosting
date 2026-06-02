@@ -614,3 +614,29 @@
     animation: none;
   }
 }
+
+/* ── Touch targets (Våg 4): the customer /konto area is frequently opened on a
+   phone/tablet, so its actions — the rebook day/time chips, Avboka/Avbryt,
+   favorite book/add/remove, GDPR controls — must clear the ~44px tap guideline.
+   Gated on `pointer: coarse` (touch devices only) so DESKTOP (fine pointer) stays
+   byte-identical — no padding/layout change there. Additive: only adds min-height
+   and centers content on coarse pointers. */
+@media (pointer: coarse) {
+  .danger,
+  .btnSecondary,
+  .dangerSolid,
+  .day,
+  .time,
+  .favBook,
+  .favAdd,
+  .favRemove {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* .time stacks time-over-staff vertically; keep that column layout. */
+  .time {
+    flex-direction: column;
+  }
+}

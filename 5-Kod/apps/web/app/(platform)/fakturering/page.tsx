@@ -53,57 +53,59 @@ export default async function FaktureringPage({
         </Link>
       </div>
 
-      <table className="portal-table">
-        <thead>
-          <tr>
-            <th>Salong</th>
-            <th>Prismodell</th>
-            <th className={styles.right}>Genomförda</th>
-            <th className={styles.right}>Avgift</th>
-            <th className={styles.right}>Underlag</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.tenantId}>
-              <td>
-                <Link href={`/salonger/${r.tenantId}`}>
-                  <code className={styles.code}>{r.slug}</code>
-                </Link>{' '}
-                {r.name}
-              </td>
-              <td>{BILLING_MODEL_LABELS[r.billingModel as BillingModel] ?? r.billingModel}</td>
-              <td className={styles.right}>{r.completedBookings}</td>
-              <td className={styles.right}>
-                {r.billingModel === 'flat_monthly'
-                  ? `${formatPrice(r.flatMonthlyFeeCents)}/mån`
-                  : `${formatPrice(r.perBookingFeeCents)}/bokn.`}
-              </td>
-              <td className={`${styles.right}`} style={{ fontWeight: 700 }}>
-                {formatPrice(r.feeCents)}
-              </td>
-            </tr>
-          ))}
-          {rows.length === 0 ? (
+      <div style={{ overflowX: 'auto' }}>
+        <table className="portal-table">
+          <thead>
             <tr>
-              <td colSpan={5} className={styles.muted}>
-                Inga salonger att fakturera för {label}.{' '}
-                <Link href="/salonger/ny">Skapa en salong →</Link>
+              <th>Salong</th>
+              <th>Prismodell</th>
+              <th className={styles.right}>Genomförda</th>
+              <th className={styles.right}>Avgift</th>
+              <th className={styles.right}>Underlag</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.tenantId}>
+                <td>
+                  <Link href={`/salonger/${r.tenantId}`}>
+                    <code className={styles.code}>{r.slug}</code>
+                  </Link>{' '}
+                  {r.name}
+                </td>
+                <td>{BILLING_MODEL_LABELS[r.billingModel as BillingModel] ?? r.billingModel}</td>
+                <td className={styles.right}>{r.completedBookings}</td>
+                <td className={styles.right}>
+                  {r.billingModel === 'flat_monthly'
+                    ? `${formatPrice(r.flatMonthlyFeeCents)}/mån`
+                    : `${formatPrice(r.perBookingFeeCents)}/bokn.`}
+                </td>
+                <td className={`${styles.right}`} style={{ fontWeight: 700 }}>
+                  {formatPrice(r.feeCents)}
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={5} className={styles.muted}>
+                  Inga salonger att fakturera för {label}.{' '}
+                  <Link href="/salonger/ny">Skapa en salong →</Link>
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={4} className={styles.right} style={{ fontWeight: 700 }}>
+                Totalt underlag {label}
+              </td>
+              <td className={styles.right} style={{ fontWeight: 800 }}>
+                {formatPrice(totalCents)}
               </td>
             </tr>
-          ) : null}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={4} className={styles.right} style={{ fontWeight: 700 }}>
-              Totalt underlag {label}
-            </td>
-            <td className={styles.right} style={{ fontWeight: 800 }}>
-              {formatPrice(totalCents)}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+          </tfoot>
+        </table>
+      </div>
       <p className={styles.hint}>
         Startavgift (engångs) faktureras separat per salong och ingår inte i månadsunderlaget ovan.
       </p>

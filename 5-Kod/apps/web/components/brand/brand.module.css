@@ -145,7 +145,10 @@
   height: 1.6rem;
   border-radius: 50%;
   background: color-mix(in srgb, var(--color-accent) 22%, transparent);
-  color: var(--color-accent-fg, var(--color-fg));
+  /* Text sits on a PALE accent tint (22% on transparent), so it needs the body
+     ink, not --color-accent-fg. The latter is paired with a SOLID accent fill
+     (white on the storefront) → white-on-pale would be illegible on light themes. */
+  color: var(--color-fg);
   display: inline-flex;
   align-items: center;
   justify-content: center;

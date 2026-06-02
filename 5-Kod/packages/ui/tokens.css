@@ -43,8 +43,9 @@
 
   /* ── Product tokens (NOT tenant-overridable) ──────────────────────────────── */
   /* --color-accent IS tenant-overridable at runtime by injectTenantTokens()
-     (branding.color_accent → --color-accent). Default = Corevo gold (#f5a623),
-     so storefront visuals are unchanged when a tenant has not set an accent. */
+     (branding.color_accent → --color-accent). This :root default = Corevo gold
+     (#f5a623) and is the FROZEN back-office accent. The storefront re-points it to
+     the theme primary in the [data-world="storefront"] block below — never gold. */
   --color-accent: var(--gold, #f5a623);
   --color-accent-fg: #15281f;
   --font-display: var(--font-playfair), 'Playfair Display', Georgia, serif;
@@ -155,6 +156,29 @@
   --sf-shadow-card: 0 24px 60px rgba(0,0,0,.12);
   --sf-shadow-soft: 0 10px 30px rgba(0,0,0,.06);
   --sf-radius: var(--radius-md);
+
+  /* NEVER Corevo gold on the storefront. The :root default --color-accent is the
+     frozen Corevo gold (#f5a623), which is correct for back-office but a brand leak
+     here — when a tenant sets no branding.color_accent, injectTenantTokens injects
+     nothing and .btn-accent (+ wizard selected-states, accent focus rings, the
+     "Boka tid" CTA) would fall back to gold. Re-point the accent to THIS theme's
+     own primary so the storefront reads as the salon, not as Corevo.
+     A tenant's branding.color_accent still wins: injectTenantTokens writes
+     --color-accent INLINE on this same root element, and inline out-specifies a
+     selector rule. Back-office is unaffected — its .btn-accent hardcodes
+     var(--c-gold) (portal-global.css), independent of --color-accent. */
+  --color-accent: var(--color-primary);
+  /* All five theme primaries are mid-to-dark, so white CTA text reads cleanly on
+     the accent fill (matches .btn-primary's white-on-primary). The :root default
+     (#15281f dark ink, tuned for the light gold) would go dark-on-dark on the
+     darker themes (e.g. "edit" #3A3733). injectTenantTokens recomputes a legible
+     accent-fg whenever a tenant sets their own accent, so that path is unchanged. */
+  --color-accent-fg: #ffffff;
+  /* Drop the gold halo too — the :root --shadow-gold/--glow-gold are amber
+     (hsl(38…)); on the storefront the CTA shadow should be neutral, not Corevo
+     gold. Scoped here so back-office (platform.module.css) keeps its gold glow. */
+  --shadow-gold: var(--sf-shadow-soft);
+  --glow-gold: var(--sf-shadow-card);
 
   background: var(--color-bg);
   color: var(--color-fg);

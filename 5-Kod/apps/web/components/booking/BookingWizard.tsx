@@ -27,11 +27,15 @@ const kr = new Intl.NumberFormat('sv-SE', {
   maximumFractionDigits: 0,
 })
 
-// Gold "selected" fill via the product accent token. Applied inline because the
+// Accent "selected" fill via the product accent token. Applied inline because the
 // frozen global selectors (.wizard-day.selected etc.) out-specify a module class.
+// On the storefront --color-accent is re-pointed to the theme primary (never Corevo
+// gold), so the text must use --color-accent-fg (white on the storefront, tenant-
+// recomputed on override) — NOT --color-fg, which would be dark-on-dark on the
+// darker themes (e.g. "edit").
 const goldSelected = {
   background: 'var(--color-accent, var(--color-primary))',
-  color: 'var(--color-fg, #15281f)',
+  color: 'var(--color-accent-fg, #fff)',
   borderColor: 'var(--color-accent, var(--color-primary))',
 } as const
 
@@ -880,7 +884,7 @@ export function BookingWizard({
             aria-hidden
             style={{
               background: 'var(--color-accent, var(--color-primary))',
-              color: 'var(--color-fg, #15281f)',
+              color: 'var(--color-accent-fg, #fff)',
             }}
           >
             ✓
