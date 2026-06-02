@@ -7,6 +7,7 @@ import { Nav } from '@/components/brand/Nav'
 import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
+import { CookieConsent } from '@/components/storefront/CookieConsent'
 import { getWizardServices } from '@/components/storefront/wizard-services'
 import { THEME_CONTENT } from '@/components/storefront/theme-content'
 import storefront from '@/components/storefront/storefront.module.css'
@@ -93,6 +94,7 @@ export default async function PublicLayout({ children }: { children: React.React
         ) : (
           <Footer tenant={{ name: tenant.name }} />
         )}
+        {settings.cookieBannerEnabled ? <CookieConsent /> : null}
       </BookingProvider>
     </div>
   )

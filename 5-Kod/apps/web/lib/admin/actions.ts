@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requirePortal, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
-import { uploadImage, uploadErrorMessage } from '@/lib/r2/upload'
+import { uploadImage, uploadErrorMessage, type UploadResult } from '@/lib/r2/upload'
 import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { BOOKING_STATUSES } from './format'
 
@@ -337,6 +337,9 @@ function hexOrNull(raw: FormDataEntryValue | null): string | null | undefined {
   return HEX_RE.test(v) ? v : undefined // undefined = invalid (caller rejects)
 }
 
+type TeamMember = { name: string; role: string; img: string }
+type StatTuple = [value: string, label: string]
+
 type Branding = {
   color_primary?: string | null
   color_bg?: string | null
@@ -344,6 +347,14 @@ type Branding = {
   color_accent?: string | null
   font_body?: string | null
   logo_url?: string | null
+  // Owner-uploaded storefront media (saveStorefrontMedia). Kept here so a
+  // colors-only save (saveBranding) preserves them via the `...prev` spread.
+  hero_images?: string[] | null
+  gallery_images?: string[] | null
+  about_image?: string | null
+  closing_image?: string | null
+  team?: TeamMember[] | null
+  stats?: StatTuple[] | null
 }
 
 export async function saveBranding(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -384,6 +395,10 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
   }
 
   const branding: Branding = {
+    // Preserve any owner-uploaded storefront media (hero/gallery/about/closing/
+    // team/stats) written by saveStorefrontMedia — without this spread a
+    // colors-only save would clobber the whole branding jsonb and wipe them.
+    ...prev,
     color_primary: colorPrimary,
     color_bg: colorBg,
     color_fg: colorFg,
@@ -400,6 +415,156 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/varumarke')
   return warning ? { error: warning } : { success: 'Varumärke sparat. Publika webbplatsen uppdaterad.' }
+}
+
+// ── Storefront media (hero/gallery/about/closing + team + stats) ───────────────
+// Owner-uploaded media that OVERRIDES the per-theme defaults on the storefront
+// (read side: resolveThemeContent + parseSettings already consume these keys).
+// Empty → the storefront keeps showing the strong per-theme default photo.
+const HERO_MAX = 5
+const GALLERY_MAX = 8
+const TEAM_MAX = 12
+const STATS_MAX = 6
+
+/** Neutral upload-failure copy for storefront photos (uploadErrorMessage is logo-worded). */
+function mediaUploadMessage(reason: Exclude<UploadResult, { ok: true }>['reason']): string {
+  switch (reason) {
+    case 'bad_type':
+      return 'Bilderna måste vara PNG, JPG, WEBP, SVG eller GIF.'
+    case 'too_large':
+      return 'Någon bild är för stor (max 2 MB per bild).'
+    case 'no_public_base':
+    case 'no_binding':
+      return 'Bilduppladdning är inte aktiverad i denna miljö (kräver R2 + R2_PUBLIC_BASE_URL). Övriga ändringar sparades.'
+    default:
+      return 'En eller flera bilder kunde inte laddas upp. Försök igen.'
+  }
+}
+
+/**
+ * Save owner-uploaded storefront media into tenant_settings.branding (jsonb),
+ * MERGED onto the existing branding so colours/font/logo are never clobbered.
+ *
+ * FormData contract:
+ *   hero_existing  (multiple) — already-saved hero URLs to KEEP (drop to remove)
+ *   hero_files     (multiple) — newly chosen hero image files
+ *   gallery_existing (multiple) — already-saved gallery URLs to KEEP
+ *   gallery_files    (multiple) — newly chosen gallery image files
+ *   about_existing / about_file     — single retained URL / single new file
+ *   about_remove = 'true'           — drop the about image
+ *   closing_existing / closing_file — single retained URL / single new file
+ *   closing_remove = 'true'         — drop the closing image
+ *   team_name_<i> / team_role_<i> / team_img_<i> (retained URL) / team_photo_<i> (file)
+ *   stat_value_<i> / stat_label_<i>  (note: STORED as [value, label])
+ */
+export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const keyPrefix = `tenants/${ctx.tenant.id}/storefront`
+  let uploadWarning: string | null = null
+
+  // Upload a single file; on failure record a (first) warning and return null so
+  // the caller can degrade gracefully — exactly like saveBranding's logo path.
+  async function tryUpload(file: File): Promise<string | null> {
+    const res = await uploadImage(file, keyPrefix)
+    if (res.ok) return res.url
+    if (!uploadWarning) uploadWarning = mediaUploadMessage(res.reason)
+    return null
+  }
+
+  // ── Hero & gallery: retained URLs (hidden) + newly uploaded files, capped. ──
+  const heroRetained = fd.getAll('hero_existing').map(String).filter(Boolean)
+  const heroFiles = fd.getAll('hero_files').filter((f): f is File => f instanceof File && f.size > 0)
+  const heroUploaded: string[] = []
+  for (const f of heroFiles) {
+    const url = await tryUpload(f)
+    if (url) heroUploaded.push(url)
+  }
+  const heroImages = [...heroRetained, ...heroUploaded].slice(0, HERO_MAX)
+
+  const galleryRetained = fd.getAll('gallery_existing').map(String).filter(Boolean)
+  const galleryFiles = fd
+    .getAll('gallery_files')
+    .filter((f): f is File => f instanceof File && f.size > 0)
+  const galleryUploaded: string[] = []
+  for (const f of galleryFiles) {
+    const url = await tryUpload(f)
+    if (url) galleryUploaded.push(url)
+  }
+  const galleryImages = [...galleryRetained, ...galleryUploaded].slice(0, GALLERY_MAX)
+
+  // ── About / closing: single image each (retained URL unless removed/replaced). ──
+  async function singleImage(prefix: string): Promise<string | null> {
+    if (String(fd.get(`${prefix}_remove`) ?? '') === 'true') return null
+    const file = fd.get(`${prefix}_file`)
+    if (file instanceof File && file.size > 0) {
+      const url = await tryUpload(file)
+      if (url) return url
+      // Upload failed — fall back to the retained URL so we don't silently drop it.
+    }
+    const existing = String(fd.get(`${prefix}_existing`) ?? '').trim()
+    return existing || null
+  }
+  const aboutImage = await singleImage('about')
+  const closingImage = await singleImage('closing')
+
+  // ── Team: indexed rows (name + role + retained-img + optional photo file). ──
+  // Indexed (not parallel getAll) so an optional missing photo can't misalign rows.
+  const team: TeamMember[] = []
+  for (let i = 0; i < TEAM_MAX; i++) {
+    const name = String(fd.get(`team_name_${i}`) ?? '').trim()
+    const role = String(fd.get(`team_role_${i}`) ?? '').trim()
+    let img = String(fd.get(`team_img_${i}`) ?? '').trim()
+    const photo = fd.get(`team_photo_${i}`)
+    if (photo instanceof File && photo.size > 0) {
+      const url = await tryUpload(photo)
+      if (url) img = url
+    }
+    // Skip incomplete rows: storefront has no per-member fallback, so a member
+    // without an image renders a broken <img>. Require a name and an image.
+    if (name && img) team.push({ name, role, img })
+  }
+
+  // ── Stats: indexed value/label pairs. STORED as [value, label] (ThemeStat). ──
+  // Require BOTH fields: layouts render the label as the React key, so empty
+  // labels would collide (key=""); a half-filled stat is also not meaningful.
+  const stats: StatTuple[] = []
+  for (let i = 0; i < STATS_MAX; i++) {
+    const value = String(fd.get(`stat_value_${i}`) ?? '').trim()
+    const label = String(fd.get(`stat_label_${i}`) ?? '').trim()
+    if (value && label) stats.push([value, label])
+  }
+
+  const supabase = await createClient()
+  // Merge onto existing branding so colours/font/logo are never clobbered.
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('branding')
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  const prev = (existing?.branding ?? {}) as Branding
+
+  const branding: Branding = {
+    ...prev,
+    hero_images: heroImages,
+    gallery_images: galleryImages,
+    about_image: aboutImage,
+    closing_image: closingImage,
+    team,
+    stats,
+  }
+
+  const { error } = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: ctx.tenant.id, branding }, { onConflict: 'tenant_id' })
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/varumarke')
+  return uploadWarning
+    ? { error: uploadWarning }
+    : { success: 'Bilder & innehåll sparat. Publika webbplatsen uppdaterad.' }
 }
 
 // ── Salon settings ────────────────────────────────────────────────────────────

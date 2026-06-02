@@ -51,6 +51,8 @@ export type TenantSettings = {
   customerAccountsEnabled: boolean
   /** Salon contact (admin SettingsForm → settings.contact). Null fields = unset. */
   contact: TenantContact
+  /** EU cookie-consent banner on the storefront. Default ON (legal). */
+  cookieBannerEnabled: boolean
 }
 
 /** One opening-hours row derived from real `working_hours`, weekday-ordered. */
@@ -111,6 +113,8 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     // cancellation_cutoff_hours). Default OFF: guest booking only.
     customerAccountsEnabled: raw.customer_accounts_enabled === true,
     contact: { email: cleanStr(contactRaw.email), phone: cleanStr(contactRaw.phone) },
+    // EU cookie consent: default ON; owner can hide via settings.cookie_banner_enabled=false.
+    cookieBannerEnabled: raw.cookie_banner_enabled !== false,
   }
 }
 

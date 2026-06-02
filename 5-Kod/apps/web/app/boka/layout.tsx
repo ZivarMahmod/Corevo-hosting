@@ -4,6 +4,7 @@ import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant } from '@/lib/tenant-data'
 import { pickNav, pickTemplate } from '@/components/brand/variants'
 import { Footer } from '@/components/brand/Footer'
+import { CookieConsent } from '@/components/storefront/CookieConsent'
 import storefront from '@/components/storefront/storefront.module.css'
 
 // Per-request, host-resolved tenant theme → never prerender.
@@ -52,6 +53,7 @@ export default async function BokaLayout({ children }: { children: React.ReactNo
           these non-hero pages — only adds whitespace below the fixed nav. */}
       <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
       <Footer tenant={{ name: tenant.name }} />
+      {settings.cookieBannerEnabled ? <CookieConsent /> : null}
     </div>
   )
 }
