@@ -6,3 +6,8 @@
 
 # Disabled stale nested git repo (was 5-Kod/.git; renamed, kept local-only)
 5-Kod/.git.disabled-stale/
+
+# Large binary design-underlag — kept local, out of git (the extracted design
+# system already lives committed in 5-Kod). Relocated out of the repo root.
+4-Dokument-Underlag/skarmdumpar-bygg/
+2-Byggplan/Corevo Booking Design System-handoff/
