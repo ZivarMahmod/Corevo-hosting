@@ -477,25 +477,32 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
   }
 
   // ── Hero & gallery: retained URLs (hidden) + newly uploaded files, capped. ──
-  const heroRetained = fd.getAll('hero_existing').map(String).filter(Boolean)
-  const heroFiles = fd.getAll('hero_files').filter((f): f is File => f instanceof File && f.size > 0)
+  // Cap retained first, then upload only as many new files as still fit under the
+  // cap (FX-14): uploading files we'd slice off afterwards would orphan them in R2 —
+  // their URLs would be in neither prev nor the saved set, so prune never sees them.
+  const heroRetained = fd.getAll('hero_existing').map(String).filter(Boolean).slice(0, HERO_MAX)
+  const heroFiles = fd
+    .getAll('hero_files')
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, HERO_MAX - heroRetained.length)
   const heroUploaded: string[] = []
   for (const f of heroFiles) {
     const url = await tryUpload(f)
     if (url) heroUploaded.push(url)
   }
-  const heroImages = [...heroRetained, ...heroUploaded].slice(0, HERO_MAX)
+  const heroImages = [...heroRetained, ...heroUploaded]
 
-  const galleryRetained = fd.getAll('gallery_existing').map(String).filter(Boolean)
+  const galleryRetained = fd.getAll('gallery_existing').map(String).filter(Boolean).slice(0, GALLERY_MAX)
   const galleryFiles = fd
     .getAll('gallery_files')
     .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, GALLERY_MAX - galleryRetained.length)
   const galleryUploaded: string[] = []
   for (const f of galleryFiles) {
     const url = await tryUpload(f)
     if (url) galleryUploaded.push(url)
   }
-  const galleryImages = [...galleryRetained, ...galleryUploaded].slice(0, GALLERY_MAX)
+  const galleryImages = [...galleryRetained, ...galleryUploaded]
 
   // ── About / closing: single image each (retained URL unless removed/replaced). ──
   async function singleImage(prefix: string): Promise<string | null> {
