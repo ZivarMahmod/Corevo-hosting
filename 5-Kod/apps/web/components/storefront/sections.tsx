@@ -2,7 +2,7 @@ import { BookCta } from '@/components/brand/BookCta'
 import { currentTenant } from '@/lib/tenant-data'
 import { Reveal } from './Reveal'
 import { Parallax } from './Parallax'
-import { ABOUT_PHOTO, CLOSING_PHOTO, STYLIST_PHOTOS, type StorePhoto } from './images'
+import type { ResolvedThemeContent } from './theme-content'
 import styles from './storefront.module.css'
 
 /* Editorial section building blocks (server components). Each leads with type or
@@ -45,30 +45,17 @@ export function AccentPhrase({ text }: { text: string }) {
   )
 }
 
-/** "Våra frisörer" — stylist spotlights (portrait + name + role + one-line bio).
- *  Photo-driven; the portrait lifts on hover. Until staff bios exist in the data
- *  layer, generic but warm placeholders keep the section credible. */
-export function StylistSpotlights({ salonName }: { salonName: string }) {
-  const stylists: { photo: StorePhoto; name: string; role: string; bio: string }[] = [
-    {
-      photo: STYLIST_PHOTOS[0]!,
-      name: 'Vårt team',
-      role: 'Frisörer & stylister',
-      bio: 'Erfarna stylister som lyssnar på vad du vill ha och ser till att du trivs.',
-    },
-    {
-      photo: STYLIST_PHOTOS[1]!,
-      name: 'Färg & slingor',
-      role: 'Färgspecialister',
-      bio: 'Från subtila slingor till djärva förändringar — alltid med omsorg om håret.',
-    },
-    {
-      photo: STYLIST_PHOTOS[2]!,
-      name: 'Klippning',
-      role: 'Klipp & form',
-      bio: 'En frisyr som sitter, anpassad efter dig, din vardag och din stil.',
-    },
-  ]
+/** "Våra frisörer" — stylist spotlights (portrait + name + role).
+ *  Photo-driven; the portrait lifts on hover. Team comes from the resolved theme
+ *  content: the owner's uploaded team (settings.branding.team) when present,
+ *  otherwise the strong per-theme default — so the section is always credible. */
+export function StylistSpotlights({
+  salonName,
+  content,
+}: {
+  salonName: string
+  content: ResolvedThemeContent
+}) {
   return (
     <section className="section">
       <div className="section-inner">
@@ -78,15 +65,14 @@ export function StylistSpotlights({ salonName }: { salonName: string }) {
           lead={`Teamet på ${salonName} brinner för hantverket och för att du ska känna dig hemma.`}
         />
         <ul className={styles.stylists}>
-          {stylists.map((s, i) => (
-            <Reveal as="li" key={s.name} delay={i * 80} className={styles.stylist}>
+          {content.team.map((s, i) => (
+            <Reveal as="li" key={`${s.name}-${i}`} delay={i * 80} className={styles.stylist}>
               <div className={styles.stylistPhoto}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={s.photo.src} alt={s.photo.alt} loading="lazy" />
+                <img src={s.img} alt={s.name} loading="lazy" />
               </div>
               <h3 className={styles.stylistName}>{s.name}</h3>
               <p className={styles.stylistRole}>{s.role}</p>
-              <p className={styles.stylistBio}>{s.bio}</p>
             </Reveal>
           ))}
         </ul>
@@ -96,23 +82,28 @@ export function StylistSpotlights({ salonName }: { salonName: string }) {
 }
 
 /** "Om salongen" — split: interior photo one side, copy the other.
- *  No fabricated statistics: we don't have real years/ratings numbers in the
- *  data layer, so we lead with honest evergreen copy instead of inventing facts. */
-export function AboutSplit({ salonName }: { salonName: string }) {
+ *  Photo + body copy come from the resolved theme content: the owner's uploaded
+ *  about image (settings.branding.about_image) when present, otherwise the
+ *  per-theme default, plus the theme's evergreen about copy. No fabricated
+ *  statistics — we lead with honest copy instead of inventing facts. */
+export function AboutSplit({
+  salonName,
+  content,
+}: {
+  salonName: string
+  content: ResolvedThemeContent
+}) {
   return (
     <section className={`section ${styles.aboutSection}`}>
       <div className={`section-inner ${styles.aboutGrid}`}>
         <Reveal className={styles.aboutPhoto}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ABOUT_PHOTO.src} alt={ABOUT_PHOTO.alt} loading="lazy" />
+          <img src={content.aboutImage} alt={`Miljön hos ${salonName}`} loading="lazy" />
         </Reveal>
         <Reveal className={styles.aboutCopy} delay={80}>
           <p className={styles.eyebrow}>— Om {salonName}</p>
           <h2 className={styles.secTitle}>Hantverk, kvalitet och personlig service</h2>
-          <p className={styles.aboutText}>
-            {salonName} är en salong där hantverk och omtanke står i centrum. Vårt mål är att du
-            ska lämna oss nöjd — varje gång. Vi tar emot både nya och återkommande gäster.
-          </p>
+          <p className={styles.aboutText}>{content.aboutCopy}</p>
         </Reveal>
       </div>
     </section>
@@ -225,11 +216,13 @@ export async function LocationHours({ salonName }: { salonName: string }) {
   )
 }
 
-/** Closing CTA — full-bleed photo with parallax + big serif headline + Boka. */
-export function ClosingCta() {
+/** Closing CTA — full-bleed photo with parallax + big serif headline + Boka.
+ *  Photo comes from the resolved theme content (owner's closing image when
+ *  uploaded, otherwise the per-theme default). */
+export function ClosingCta({ content }: { content: ResolvedThemeContent }) {
   return (
     <section className={styles.closing} aria-label="Boka tid">
-      <Parallax src={CLOSING_PHOTO.src} alt={CLOSING_PHOTO.alt}>
+      <Parallax src={content.closingImage} alt="Inbjudande salongsmiljö redo att ta emot dig">
         <p className={styles.closingEyebrow}>Redo när du är</p>
         <h2 className={styles.closingTitle}>Redo för en ny stil?</h2>
         <p className={styles.closingLead}>
