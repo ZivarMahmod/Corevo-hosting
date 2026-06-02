@@ -19,7 +19,20 @@
     "NEXT_PUBLIC_ROOT_DOMAIN": "corevo.se",
     "NEXT_PUBLIC_PLATFORM_HOST": "booking.corevo.se",
     "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo",
-    "NEXT_PUBLIC_SITE_URL": "https://booking.corevo.se"
+    "NEXT_PUBLIC_SITE_URL": "https://booking.corevo.se",
+    // FX-14 durability: these are PUBLIC runtime values (read via process.env on
+    // the server), so they belong in `vars` — NOT only in the dashboard. A
+    // top-level `deploy` replaces the entire plaintext var set, so a dashboard-only
+    // value gets wiped on the next deploy (the goal-14 failure mode). Declaring
+    // them here makes every deploy re-assert them. Secrets (EMAIL_RELAY_SECRET,
+    // EMAIL_RELAY_URL, SUPABASE_SERVICE_ROLE_KEY) stay as `wrangler secret`.
+    // NOTIFICATIONS_FROM mirrors the live remote value; the address MUST be the
+    // real one.com mailbox booking@corevo.se (two o) for SPF/DKIM alignment.
+    "NOTIFICATIONS_FROM": "Corevo <booking@corevo.se>",
+    // Public origin of the R2 media bucket (r2.dev). lib/r2/upload.ts builds stored
+    // image URLs from this. Production later: swap to a custom subdomain
+    // (media.corevo.se) and keep stored links from breaking.
+    "R2_PUBLIC_BASE_URL": "https://pub-8f440f10134347eeb2491f9712f5a6f5.r2.dev"
   },
   "assets": {
     "directory": ".open-next/assets",
@@ -32,14 +45,19 @@
   "observability": {
     "enabled": true
   },
-  // ── Wildcard tenant routing (PREPARED, NOT ACTIVATED) ───────────────────────
-  // *.corevo.se → this platform Worker. DNS/route activation happens only when
-  // Zivar approves (ADR 01 / G08). No real customer domain, no custom hostname.
-  // Until then deploy targets *.workers.dev (production = top-level config below).
-  //   "routes": [
-  //     { "pattern": "*.corevo.se/*", "zone_name": "corevo.se" },
-  //     { "pattern": "booking.corevo.se/*", "zone_name": "corevo.se" }
-  //   ]
+  // ── Custom domains (FX-14): live production hostnames bound to THIS worker. ──
+  // Declared here so a top-level `deploy` re-asserts them and can NEVER detach
+  // demo.corevo.se / booking.corevo.se from the worker — the failure mode goal-14's
+  // deploy exposed (wrangler reported it would REMOVE these because they lived only
+  // in the cloud, not in config). custom_domain routes take a BARE hostname (no
+  // path, no zone_name — that is for plain `routes`); Cloudflare manages DNS + cert.
+  // Both already exist on the `bokningsplatformen` service (verified against remote),
+  // so deploy is a no-op for them. Staging (workers.dev) MUST NOT claim these →
+  // env.staging deliberately has no routes.
+  "routes": [
+    { "pattern": "demo.corevo.se", "custom_domain": true },
+    { "pattern": "booking.corevo.se", "custom_domain": true }
+  ],
   //
   // ── Named environments (G11) ────────────────────────────────────────────────
   // `wrangler deploy`                → top-level config = PRODUCTION worker

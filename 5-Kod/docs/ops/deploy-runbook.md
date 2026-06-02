@@ -47,6 +47,36 @@ red-washed.
 OpenNext bundling runs on Linux (live-blocker #3); the Windows EPERM-symlink bundle
 failure is irrelevant in CI.
 
+### 3.1 Safe deploy — deploys must never tear down domains/vars (FX-14)
+
+`wrangler deploy` (and `opennextjs-cloudflare deploy`, which wraps it) **replaces**
+the worker's entire plaintext `vars` set and its custom-domain/route list with
+whatever the targeted config declares. Anything that exists only in the Cloudflare
+dashboard — not in `wrangler.jsonc` — is **removed** on deploy. goal-14's deploy hit
+exactly this: wrangler reported it would drop `demo.corevo.se` + `booking.corevo.se`
+and `vars.NOTIFICATIONS_FROM` because they were dashboard-only.
+
+Rules:
+- **Source of truth = `wrangler.jsonc`.** The custom domains (`demo.corevo.se`,
+  `booking.corevo.se`) and public vars (`NOTIFICATIONS_FROM`, `R2_PUBLIC_BASE_URL`)
+  are now declared there, so a deploy **re-asserts** them and can no longer detach
+  them. Never reintroduce a dashboard-only domain/var — add it to `wrangler.jsonc`.
+- **Target the right env.** Top-level config = production worker `bokningsplatformen`
+  (`booking.corevo.se` + `demo.corevo.se`). A bare `wrangler deploy` targets it but
+  warns "no target environment specified"; the warning is benign — to silence it pass
+  `--env=""` (top-level) explicitly. Staging is `--env staging`
+  (`bokningsplatformen-staging`, *.workers.dev, **no** custom domains).
+- **Prefer CD** (§3): production from a `v*` tag, staging from `push:main`, both on
+  Linux. A local deploy is a fallback.
+- **Local deploy (Windows, only if unavoidable):** OpenNext's build crashes on the
+  `ö` in the repo path, so build from an ASCII copy with `/PURGE`:
+  `robocopy <5-Kod> C:\tmp\kod /E /PURGE /XD node_modules .next .open-next .git /XF .env.local`
+  then `pnpm --dir C:\tmp\kod --filter @corevo/web run deploy`.
+- **Pre-deploy check (no live deploy needed):** confirm `wrangler.jsonc` still declares
+  both custom domains + every remote plaintext var before shipping. The live set is
+  read via the Cloudflare API — worker settings `bindings` (plain_text) +
+  `GET /accounts/<id>/workers/domains` (filter `service=bokningsplatformen`).
+
 ## 4. Secrets & variables (OPS — set once)
 
 ### GitHub → repo Settings → Secrets and variables → Actions
@@ -69,10 +99,18 @@ failure is irrelevant in CI.
 
 ### Worker secrets (server-only; set with `wrangler secret put NAME [--env staging]`, run in `5-Kod/apps/web`)
 `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
-`EMAIL_RELAY_URL` + `EMAIL_RELAY_SECRET` + `NOTIFICATIONS_FROM` (one.com email relay, goal-14 — see `docs/ops/mejl-egen-smtp.md`),
+`EMAIL_RELAY_URL` + `EMAIL_RELAY_SECRET` (one.com email relay, goal-14 — see `docs/ops/mejl-egen-smtp.md`),
 `SENTRY_DSN` (if used), `CRON_SECRET` (if the cron route checks it),
 plus R2 access keys if `lib/r2/upload.ts` uses the S3 API (`R2_ACCESS_KEY_ID`,
-`R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`) and `R2_PUBLIC_BASE_URL`.
+`R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`).
+
+### Public Worker vars (committed in `wrangler.jsonc`, NOT secrets — FX-14)
+`NOTIFICATIONS_FROM` (`Corevo <booking@corevo.se>`, two-o address for SPF/DKIM) and
+`R2_PUBLIC_BASE_URL` (the r2.dev public origin) are PUBLIC runtime values read via
+`process.env`, so they live as `vars` in `wrangler.jsonc` — committed, not
+dashboard-only. A top-level `deploy` replaces the **entire** plaintext var set, so a
+dashboard-only value is wiped on the next deploy. Change them in `wrangler.jsonc`
+(then redeploy), never only in the dashboard. See §3.1.
 
 > **Build-time vs runtime (live-blocker #1):** every `NEXT_PUBLIC_*` is inlined at
 > `next build`. They are set as **build env** in the workflows, NOT as Worker vars.
@@ -83,11 +121,11 @@ plus R2 access keys if `lib/r2/upload.ts` uses the S3 API (`R2_ACCESS_KEY_ID`,
 | # | Item | Status / action |
 |---|------|-----------------|
 | 1 | `NEXT_PUBLIC_ROOT_DOMAIN=corevo.se` + `NEXT_PUBLIC_PLATFORM_HOST=booking.corevo.se` as **build** vars | ✅ wired into both workflows. Without them tenants 404 ("salongen inte tillgänglig"). |
-| 2 | Tenant routing: `booking.corevo.se`=platform done; `frisorN.corevo.se`→Worker | **OPS + Zivar OK.** Custom Domain per test-tenant (safe) **or** wildcard `*.corevo.se` route (touches the POS zone → needs Zivar's domain approval; routes are prepared/commented in `wrangler.jsonc`). |
+| 2 | Tenant routing: `booking.corevo.se`=platform done; `frisorN.corevo.se`→Worker | ✅ **`demo.corevo.se` + `booking.corevo.se` are active `custom_domain` routes in `wrangler.jsonc`** (FX-14), bound to the worker and re-asserted on every deploy. Further tenants: add a Custom Domain per tenant **or** the wildcard `*.corevo.se` route (touches the POS zone → needs Zivar's domain approval). |
 | 3 | Deploy via CI (Linux), not Windows | ✅ CD runs OpenNext on `ubuntu-latest`. |
 | 4 | Stripe `STRIPE_SECRET_KEY` (test) + `STRIPE_WEBHOOK_SECRET` | **OPS.** Webhook **MUST** be a Stripe **Connect** endpoint at `/api/stripe/webhook` (events carry `account`); a plain account endpoint silently never flips bookings to `confirmed`. Verify test-mode: onboarding · payment (`application_fee`=0) · refund · idempotency. |
 | 5 | Activate G10: email relay (`EMAIL_RELAY_URL`/`EMAIL_RELAY_SECRET`/`NOTIFICATIONS_FROM` + one.com Edge Function secrets, goal-14), Sentry DSN, CF WAF rate-limit (login/boka), Cron `/api/cron/reminders` | **OPS.** Email = Worker + Edge Function secrets (`docs/ops/mejl-egen-smtp.md`). Sentry = Worker secret. WAF rule = dashboard. Cron = a CF Cron Trigger or external scheduler hitting the route. |
-| 6 | R2 binding `corevo-media` | ✅ **Bucket exists** (verified). Binding present in both envs in `wrangler.jsonc`. Set `R2_PUBLIC_BASE_URL` for public logo URLs. |
+| 6 | R2 binding `corevo-media` | ✅ **Bucket exists** (verified). Binding present in both envs in `wrangler.jsonc`. `R2_PUBLIC_BASE_URL` set as a committed var in `wrangler.jsonc` (r2.dev origin, FX-14) so public image URLs resolve and survive deploys. |
 
 ## 6. Stripe Connect webhook (live-blocker #4 detail)
 
