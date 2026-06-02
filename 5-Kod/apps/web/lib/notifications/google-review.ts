@@ -1,8 +1,9 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
+import { accentForeground } from '@corevo/ui'
 import { sendEmail } from './email'
-import { shell } from './templates'
+import { shell, type EmailBrandFields } from './templates'
 import { logger } from '@/lib/observability'
 import { getEnabledNotifications, getGoogleReviewUrl } from './settings'
 import { parseGuestEmail, parseGuestName } from './parse'
@@ -26,23 +27,38 @@ const GOLD = '#F5A623'
 const INK = '#0E1411'
 const SANS = `-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`
 
+/** Resolve a salon accent into a {bg, legible-fg} pair (mirrors templates.ts). */
+function resolveAccent(accentColor?: string | null): { accent: string; accentFg: string } {
+  const raw = accentColor?.trim()
+  const accent = raw && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw) ? raw : GOLD
+  return { accent, accentFg: accentForeground(accent) ?? INK }
+}
+
 export type GoogleReviewData = {
   tenantName: string
   /** Owner's Google review link (from settings.google_review_url). No-op if empty. */
   reviewUrl: string | null | undefined
   /** Optional first name for a warmer greeting ("Hej Anna,"). */
   customerName?: string | null
+  /** Per-salon brand (goal-14) — accent/logo/slogan for the shell + CTA. */
+  brand?: EmailBrandFields
+  /** From display string ("<Salong>" <bokning@corevo.se>); default platform sender. */
+  from?: string
+  /** Reply-To (salon inbox); omitted when absent. */
+  replyTo?: string
 }
 
 export function googleReviewEmail(d: {
   tenantName: string
   reviewUrl: string
   customerName?: string | null
+  brand?: EmailBrandFields
 }): { subject: string; html: string } {
   const hej = d.customerName ? `Hej ${escapeText(d.customerName)},` : 'Hej,'
+  const { accent, accentFg } = resolveAccent(d.brand?.accentColor)
   const button = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px">
-    <tr><td style="border-radius:9999px;background:${GOLD}">
-      <a href="${escapeAttr(d.reviewUrl)}" style="display:inline-block;padding:13px 28px;font-family:${SANS};font-size:15px;font-weight:700;color:${INK};text-decoration:none;border-radius:9999px">Lämna ett omdöme</a>
+    <tr><td style="border-radius:9999px;background:${accent}">
+      <a href="${escapeAttr(d.reviewUrl)}" style="display:inline-block;padding:13px 28px;font-family:${SANS};font-size:15px;font-weight:700;color:${accentFg};text-decoration:none;border-radius:9999px">Lämna ett omdöme</a>
     </td></tr>
   </table>`
   return {
@@ -55,6 +71,7 @@ export function googleReviewEmail(d: {
        <p style="margin:14px 0 0;font-family:${SANS};font-size:13px;line-height:1.6;color:#677E73">Tack på förhand, och varmt välkommen åter!</p>`,
       d.tenantName,
       'Berätta gärna',
+      d.brand,
     ),
   }
 }
