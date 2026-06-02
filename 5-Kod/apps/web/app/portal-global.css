@@ -1,0 +1,33 @@
+/* ===========================================================================
+   Portal world — global classes. Split out of globals.css (FAS 0) so the
+   booking + back-office agents can work in parallel without colliding. These
+   stay GLOBAL (plain className strings, no CSS modules, no renames); the only
+   change vs. before is the file they live in. Imported in app/layout.tsx
+   (the root layout — the only place Next App Router allows extra global CSS),
+   right after globals.css, so cascade + scope are unchanged.
+
+   Used by PortalShell, which serves EVERY portal — back-office
+   (admin/personal/platform, data-world="backoffice") AND the customer-facing
+   /konto area (kund, currently un-worlded). Every rule references the tenant
+   design tokens so each salon's theme (nivå 1) carries through automatically.
+   =========================================================================== */
+
+/* ---- portal chrome ---- */
+.portal-header { border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent); }
+.portal-header-inner { max-width: 1080px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.portal-ident { display: flex; flex-direction: column; }
+.portal-tenant { font-weight: 800; color: var(--color-primary); }
+.portal-title { font-size: 0.85rem; opacity: 0.7; }
+.portal-user { display: flex; align-items: center; gap: 0.85rem; }
+.portal-user-meta { font-size: 0.85rem; opacity: 0.75; }
+.portal-signout { background: none; border: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent); border-radius: 0.5rem; padding: 0.4rem 0.8rem; font: inherit; cursor: pointer; color: inherit; }
+.portal-signout:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.portal-main { max-width: 1080px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+.portal-section h1 { font-size: 2rem; font-weight: 800; margin: 0 0 1rem; }
+.portal-stats { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.portal-stat { border: 1px solid color-mix(in srgb, var(--color-fg) 14%, transparent); border-radius: 0.75rem; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.portal-stat-value { font-size: 2rem; font-weight: 800; color: var(--color-primary); }
+.portal-stat-label { font-size: 0.85rem; opacity: 0.7; }
+.portal-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+.portal-table th, .portal-table td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent); }
+.portal-table th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; }

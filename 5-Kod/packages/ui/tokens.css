@@ -250,3 +250,74 @@
 [data-world="storefront"][data-theme="zigge"] .sf-hero { font-size: clamp(60px, 8.5vw, 116px); letter-spacing: 0.01em; line-height: 0.92; font-weight: 400; }
 [data-world="storefront"][data-theme="zigge"] .sf-h1   { letter-spacing: 0.01em; font-weight: 400; }
 [data-world="storefront"][data-theme="zigge"] .sf-h2   { letter-spacing: 0.02em; font-weight: 400; }
+
+/* =====================================================================
+   WORLD 2 — BACK-OFFICE  (Corevo system look)
+   The owner's tool. Clean, functional, secondary in priority.
+
+   ADDITIVE / INERT: ported verbatim from the design-system handoff
+   (colors_and_type.css). No current back-office component consumes any
+   --c-* token or the .h-display/.h1/.h2/.h3/.eyebrow/.body/.small/.num
+   type roles (verified by grep), so this changes nothing today. The
+   background/color/font-family on the selector stay overridden by
+   .tenant-root (globals.css, loaded after this file → equal specificity,
+   later wins), so the portal root keeps its tenant tokens. This block
+   only namespaces the back-office for a later reskin.
+   ===================================================================== */
+[data-world="backoffice"] {
+  /* brand */
+  --c-forest:      #1F4636;  /* primary — sidebar, headings, buttons */
+  --c-forest-700:  #173529;  /* darker hover / sidebar depth */
+  --c-forest-300:  #4E7363;  /* muted forest, borders on dark */
+  --c-gold:        #F5A623;  /* accent — highlights, active, KPI deltas */
+  --c-gold-600:    #D98E12;  /* gold hover */
+  --c-gold-100:    #FBEBCB;  /* gold tint fills */
+
+  /* surfaces */
+  --c-cream:       #FAF8F4;  /* app background */
+  --c-paper:       #FFFFFF;  /* cards / panels */
+  --c-paper-2:     #F3EFE8;  /* subtle alt fill, table stripes */
+  --c-line:        #E7E1D6;  /* hairline borders on cream */
+  --c-line-strong: #D8D0C2;
+
+  /* text */
+  --c-ink:         #21261F;  /* primary text */
+  --c-ink-2:       #555C50;  /* secondary text */
+  --c-ink-3:       #8A8F82;  /* muted / captions */
+  --c-on-forest:   #EFEAE0;  /* text on the dark sidebar */
+  --c-on-forest-2: #9DB1A6;  /* muted text on sidebar */
+
+  /* semantic status — muted & elegant */
+  --c-success:     #4E7A5E;
+  --c-success-bg:  #E8F0EA;
+  --c-warning:     #A37D3C;
+  --c-warning-bg:  #F3EBD9;
+  --c-danger:      #9E5A57;
+  --c-danger-bg:   #F1E2E0;
+  --c-info:        #5E748C;
+  --c-info-bg:     #E6EAF0;
+
+  /* elevation */
+  --shadow-sm: 0 1px 2px rgba(31,70,54,.06), 0 1px 3px rgba(31,70,54,.08);
+  --shadow-md: 0 4px 14px rgba(31,70,54,.08), 0 2px 6px rgba(31,70,54,.06);
+  --shadow-lg: 0 18px 48px rgba(23,53,41,.16);
+
+  /* type families */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-ui:      'Inter', system-ui, -apple-system, sans-serif;
+
+  background: var(--c-cream);
+  color: var(--c-ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* back-office type roles */
+[data-world="backoffice"] .h-display { font-family: var(--font-display); font-weight: 700; font-size: 40px; line-height: 1.08; letter-spacing: var(--tracking-tight); color: var(--c-forest); }
+[data-world="backoffice"] .h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.15; color: var(--c-forest); }
+[data-world="backoffice"] .h2 { font-family: var(--font-ui); font-weight: 600; font-size: 19px; line-height: 1.25; color: var(--c-ink); }
+[data-world="backoffice"] .h3 { font-family: var(--font-ui); font-weight: 600; font-size: 15px; line-height: 1.3; color: var(--c-ink); }
+[data-world="backoffice"] .eyebrow { font-family: var(--font-ui); font-weight: 600; font-size: 11px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--c-gold-600); }
+[data-world="backoffice"] .body { font-size: 14px; line-height: 1.55; color: var(--c-ink-2); }
+[data-world="backoffice"] .small { font-size: 12.5px; line-height: 1.45; color: var(--c-ink-3); }
+[data-world="backoffice"] .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }

@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Playfair_Display, Inter } from 'next/font/google'
 import '@corevo/ui/tokens.css'
 import './globals.css'
+import './booking-global.css'
+import './portal-global.css'
 
 // Corevo family typography (design-system.md §3): Playfair Display for display
 // headings, Inter for body/UI. Exposed as CSS vars consumed by --font-display /

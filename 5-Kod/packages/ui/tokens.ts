@@ -9,6 +9,15 @@ export type TenantBranding = {
   color_accent?: string | null
   font_body?: string | null
   logo_url?: string | null
+  // Owner-uploaded storefront media (read-path only; no upload UI yet). Optional
+  // so existing branding rows parse unchanged; injectTenantTokens reads none of
+  // these, so adding them is inert for theming.
+  hero_images?: string[] | null
+  gallery_images?: string[] | null
+  about_image?: string | null
+  closing_image?: string | null
+  team?: { name: string; role: string; img: string }[] | null
+  stats?: [string, string][] | null
 }
 
 /**

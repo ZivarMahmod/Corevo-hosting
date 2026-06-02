@@ -73,7 +73,20 @@ export type TenantBundle = {
 }
 
 function parseSettings(row: TenantSettingsRow | null): TenantSettings {
-  const branding = (row?.branding ?? {}) as TenantBranding
+  const rawBranding = (row?.branding ?? {}) as TenantBranding
+  // Owner-uploaded storefront media (read-path only). Normalise the new keys to
+  // safe defaults — empty array / null — so consumers can read them without
+  // guarding; existing branding fields (colours/fonts/logo) pass through
+  // untouched. Unknown/malformed jsonb safely collapses to the default.
+  const branding: TenantBranding = {
+    ...rawBranding,
+    hero_images: Array.isArray(rawBranding.hero_images) ? rawBranding.hero_images : [],
+    gallery_images: Array.isArray(rawBranding.gallery_images) ? rawBranding.gallery_images : [],
+    about_image: typeof rawBranding.about_image === 'string' ? rawBranding.about_image : null,
+    closing_image: typeof rawBranding.closing_image === 'string' ? rawBranding.closing_image : null,
+    team: Array.isArray(rawBranding.team) ? rawBranding.team : [],
+    stats: Array.isArray(rawBranding.stats) ? rawBranding.stats : [],
+  }
   const raw = (row?.settings ?? {}) as Record<string, unknown>
   const layout = (raw.layout ?? {}) as LayoutConfig
   const override = (raw.custom_override ?? null) as CustomOverride | null
