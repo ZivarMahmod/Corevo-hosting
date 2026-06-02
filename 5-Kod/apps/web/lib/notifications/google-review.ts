@@ -43,7 +43,7 @@ export type GoogleReviewData = {
   customerName?: string | null
   /** Per-salon brand (goal-14) — accent/logo/slogan for the shell + CTA. */
   brand?: EmailBrandFields
-  /** From display string ("<Salong>" <bokning@corevo.se>); default platform sender. */
+  /** From display string ("<Salong>" <booking@corevo.se>); default platform sender. */
   from?: string
   /** Reply-To (salon inbox); omitted when absent. */
   replyTo?: string

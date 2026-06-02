@@ -64,23 +64,23 @@ describe('buildFrom', () => {
     else process.env.NOTIFICATIONS_FROM = savedFrom
   })
 
-  // (c) From display name built from the salon name, address kept at bokning@corevo.se.
+  // (c) From display name built from the salon name, address kept at booking@corevo.se.
   it('builds a quoted-string From from the salon name', () => {
-    expect(buildFrom('Frisör Demo')).toBe('"Frisör Demo" <bokning@corevo.se>')
+    expect(buildFrom('Frisör Demo')).toBe('"Frisör Demo" <booking@corevo.se>')
   })
 
   it('falls back to the platform default when name is missing/blank', () => {
-    expect(buildFrom(undefined)).toBe('Corevo <bokning@corevo.se>')
-    expect(buildFrom('   ')).toBe('Corevo <bokning@corevo.se>')
+    expect(buildFrom(undefined)).toBe('Corevo <booking@corevo.se>')
+    expect(buildFrom('   ')).toBe('Corevo <booking@corevo.se>')
   })
 
   it('escapes quotes/backslashes in the display name', () => {
-    expect(buildFrom('A"B\\C')).toBe('"A\\"B\\\\C" <bokning@corevo.se>')
+    expect(buildFrom('A"B\\C')).toBe('"A\\"B\\\\C" <booking@corevo.se>')
   })
 
   it('keeps the salon name but takes the address from NOTIFICATIONS_FROM', () => {
-    process.env.NOTIFICATIONS_FROM = 'Corevo <bokning@corevo.se>'
-    expect(buildFrom('Salong X')).toBe('"Salong X" <bokning@corevo.se>')
+    process.env.NOTIFICATIONS_FROM = 'Corevo <booking@corevo.se>'
+    expect(buildFrom('Salong X')).toBe('"Salong X" <booking@corevo.se>')
   })
 })
 
@@ -102,7 +102,7 @@ describe('resolveEmailBrand (pure)', () => {
   })
 
   it('builds From from the salon name', () => {
-    expect(resolveEmailBrand({ tenantName: 'Frisör Demo' }).from).toBe('"Frisör Demo" <bokning@corevo.se>')
+    expect(resolveEmailBrand({ tenantName: 'Frisör Demo' }).from).toBe('"Frisör Demo" <booking@corevo.se>')
   })
 
   it('picks accent from color_accent → color_primary → undefined', () => {

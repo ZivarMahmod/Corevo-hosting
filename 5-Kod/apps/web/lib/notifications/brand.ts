@@ -10,14 +10,14 @@ import type { StorefrontTheme } from '@/lib/tenant-data'
 // Per-salon email brand resolution (goal-14). The customer should feel the email
 // comes FROM the salon: its name as the From display, its accent/logo on the
 // template, its slogan (the theme tagline) in the footer, and — crucially — its
-// own inbox as Reply-To so a reply never lands on bokning@corevo.se.
+// own inbox as Reply-To so a reply never lands on booking@corevo.se.
 //
 // Split in two on purpose (testability): resolveEmailBrand() is PURE (no I/O, no
 // mocks needed); loadEmailBrand() is the thin async loader that reads the one
 // tenant_settings row and delegates to the pure core.
 
 export type EmailBrand = EmailBrandFields & {
-  /** From display string: `"<Salong>" <bokning@corevo.se>` (Corevo when name absent). */
+  /** From display string: `"<Salong>" <booking@corevo.se>` (Corevo when name absent). */
   from: string
   /** Salon's own inbox; undefined when unset → replies fall back to From (never faked). */
   replyTo?: string
