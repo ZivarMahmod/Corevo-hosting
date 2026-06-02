@@ -20,9 +20,10 @@ Allt nedan är byggt, tsc+eslint-rent, och **deployat live** (worker `bokningspl
 - Admin → **Varumärke**: ladda upp hero-, galleri-, om-, avslutnings-bilder + team-medlemmar + statistik. Sparas per salong (R2), syns direkt på storefronten. Tomt = snygg standardbild per stil.
 - **KRÄVER secret `R2_PUBLIC_BASE_URL`** på workern för att bilderna ska visas (R2-bucket finns). Utan den degraderar den snällt (felmeddelande, ingen krasch). **→ sätt den.**
 
-## ✉️ Notiser (Wire G)
+## ✉️ Notiser (Wire G + goal-14 egen SMTP)
 - Admin → Inställningar → "Notiser & integritet": toggla bekräftelse/påminnelse/recensions-nudge, klistra in **Google-recensions-länk** (fält, ej kod).
-- **KRÄVER secret `RESEND_API_KEY`** för att riktiga mejl ska gå ut (annars no-op, loggar bara). **→ sätt den.**
+- **NYTT (goal-14): Resend ersatt av egen one.com-SMTP** via Supabase Edge Function (`send-email`, deployad). Mejlen är nu **per-salong**: From-namn = salongens namn (adress kvar `bokning@corevo.se`), **Reply-To = salongens kontaktmejl** (svar går till salongen, ej Corevo), mall får salongens accentfärg + logga + temats tagline.
+- **KRÄVER:** (1) one.com-konto `bokning@corevo.se`, (2) Edge Function-secrets (SMTP_* + EMAIL_RELAY_SECRET), (3) Worker-secrets (EMAIL_RELAY_URL + EMAIL_RELAY_SECRET + NOTIFICATIONS_FROM). Tills dess no-op (loggar bara). **Komplett secrets-tabell + live-test: `5-Kod/docs/ops/mejl-egen-smtp.md`.**
 - **SMS:** toggle finns (av som default), kroken är byggd men ingen leverantör inkopplad — välj leverantör + sätt `SMS_PROVIDER_API_KEY` senare, ingen omkodning.
 
 ## 🙋 Gäst utan konto
@@ -38,7 +39,7 @@ Allt nedan är byggt, tsc+eslint-rent, och **deployat live** (worker `bokningspl
 ## ⚙️ Secrets att sätta (workern) — utan dessa funkar bygget men vissa features är no-op
 | Secret | Ger |
 |---|---|
-| `RESEND_API_KEY` | Riktiga mejl (bekräftelse/påminnelse/recension/avboknings-mejl) |
+| `EMAIL_RELAY_URL` + `EMAIL_RELAY_SECRET` + `NOTIFICATIONS_FROM` (Worker) **och** SMTP_* + EMAIL_RELAY_SECRET (Edge Function) | Riktiga mejl via one.com (ersätter RESEND_API_KEY). Se `5-Kod/docs/ops/mejl-egen-smtp.md` |
 | `R2_PUBLIC_BASE_URL` | Visning av ägar-uppladdade bilder + logga |
 | `SMS_PROVIDER_API_KEY` | (senare) SMS-notiser |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ redan satt (kundregistrering/cron/gdpr/gäst-avboka) |
