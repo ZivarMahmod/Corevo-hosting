@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requirePortal, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
-import { uploadImage, uploadErrorMessage, type UploadResult } from '@/lib/r2/upload'
+import { uploadImage, uploadErrorMessage, pruneRemovedImages, type UploadResult } from '@/lib/r2/upload'
 import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { BOOKING_STATUSES } from './format'
 
@@ -412,6 +412,9 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
     .upsert({ tenant_id: ctx.tenant.id, branding }, { onConflict: 'tenant_id' })
   if (error) return { error: GENERIC }
 
+  // FX-14: drop the previous logo object when it was replaced or removed.
+  await pruneRemovedImages([prev.logo_url], [branding.logo_url])
+
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/varumarke')
   return warning ? { error: warning } : { success: 'Varumärke sparat. Publika webbplatsen uppdaterad.' }
@@ -559,6 +562,20 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
     .from('tenant_settings')
     .upsert({ tenant_id: ctx.tenant.id, branding }, { onConflict: 'tenant_id' })
   if (error) return { error: GENERIC }
+
+  // FX-14: delete storefront objects this save dropped or replaced (hero, gallery,
+  // about, closing, team photos). The logo is owned by saveBranding, so prev.logo_url
+  // is deliberately NOT in this set — a media save must never delete the live logo.
+  await pruneRemovedImages(
+    [
+      ...(prev.hero_images ?? []),
+      ...(prev.gallery_images ?? []),
+      prev.about_image,
+      prev.closing_image,
+      ...(prev.team ?? []).map((m) => m.img),
+    ],
+    [...heroImages, ...galleryImages, aboutImage, closingImage, ...team.map((m) => m.img)],
+  )
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/varumarke')

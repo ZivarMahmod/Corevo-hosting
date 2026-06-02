@@ -7,7 +7,7 @@ import { isBillingModel, kronorToCents } from './billing'
 import { createServiceClient } from './service'
 import { logPlatformAction } from './audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
-import { uploadImage, uploadErrorMessage } from '@/lib/r2/upload'
+import { uploadImage, uploadErrorMessage, pruneRemovedImages } from '@/lib/r2/upload'
 
 export type ActionState = { error?: string; success?: string }
 
@@ -245,6 +245,10 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
     .from('tenant_settings')
     .upsert({ tenant_id: tenantId, branding }, { onConflict: 'tenant_id' })
   if (error) return { error: GENERIC }
+
+  // FX-14: drop the previous logo object when replaced/removed. Logo-only — a
+  // platform branding-save must not touch owner storefront media.
+  await pruneRemovedImages([prev.logo_url], [branding.logo_url])
 
   // CRITICAL: bust the cached public bundle so branding shows immediately (M2/M3).
   revalidateTenant(tenant.slug)
