@@ -6,6 +6,7 @@ import { sendEmail } from './email'
 import { shell, type EmailBrandFields } from './templates'
 import { logger } from '@/lib/observability'
 import { getEnabledNotifications, getGoogleReviewUrl } from './settings'
+import { loadEmailBrand } from './brand'
 import { parseGuestEmail, parseGuestName } from './parse'
 
 // Google-review NUDGE (M9). Designed to fire AFTER a visit (booking status =
@@ -99,8 +100,9 @@ export async function sendGoogleReviewNudge(
     tenantName: d.tenantName,
     reviewUrl,
     customerName: d.customerName,
+    brand: d.brand,
   })
-  const res = await sendEmail({ to, subject: mail.subject, html: mail.html })
+  const res = await sendEmail({ to, subject: mail.subject, html: mail.html, from: d.from, replyTo: d.replyTo })
   if (res.ok) {
     logger.info('review.sent', { tenant: d.tenantName, to })
     return { ok: true }
@@ -161,10 +163,15 @@ export async function sendReviewNudgeForBooking(
     }
     if (!to) return
 
+    const tenantName = b.tenants?.name ?? 'Salongen'
+    const brand = await loadEmailBrand(supabase, b.tenant_id, tenantName)
     await sendGoogleReviewNudge(to, {
-      tenantName: b.tenants?.name ?? 'Salongen',
+      tenantName,
       reviewUrl,
       customerName: parseGuestName(b.note),
+      brand: { accentColor: brand.accentColor, logoUrl: brand.logoUrl, slogan: brand.slogan },
+      from: brand.from,
+      replyTo: brand.replyTo,
     })
   } catch (err) {
     logger.warn('review.nudge_failed', {

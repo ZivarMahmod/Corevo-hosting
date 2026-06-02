@@ -1,10 +1,11 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
-import { sendEmail } from './email'
+import { sendEmail, buildFrom } from './email'
 import { sendSms } from './sms'
 import { logger } from '@/lib/observability'
 import { getSmsEnabled } from './settings'
+import { loadEmailBrand } from './brand'
 import { getCancellationCutoffHours } from '@/lib/kund/settings'
 import { buildCancelToken, buildManageUrl } from '@/lib/booking/cancel-token'
 import {
@@ -15,6 +16,31 @@ import {
   rebookEmail,
   type BookingEmailData,
 } from './templates'
+
+// Tenant context for resolving per-salon email brand (From name, Reply-To, accent,
+// logo, slogan). When ABSENT, senders still set the From display name from
+// d.tenantName but send no Reply-To and no brand — fully backwards-compatible.
+export type BrandCtx = { supabase: SupabaseClient<Database>; tenantId: string }
+
+/**
+ * Fold per-salon brand into the email data + From/Reply-To. With no ctx, degrades
+ * to the salon name as From display (no Reply-To, Corevo-gold template). Best-effort:
+ * a brand-load failure is swallowed inside loadEmailBrand, never blocks the send.
+ */
+async function applyBrand(
+  d: BookingEmailData,
+  ctx?: BrandCtx,
+): Promise<{ data: BookingEmailData; from?: string; replyTo?: string }> {
+  if (!ctx?.supabase || !ctx.tenantId) {
+    return { data: d, from: buildFrom(d.tenantName) }
+  }
+  const brand = await loadEmailBrand(ctx.supabase, ctx.tenantId, d.tenantName)
+  return {
+    data: { ...d, accentColor: brand.accentColor, logoUrl: brand.logoUrl, slogan: brand.slogan },
+    from: brand.from,
+    replyTo: brand.replyTo,
+  }
+}
 
 // Optional, additive context for the confirmation send. When ABSENT, the sender
 // behaves exactly as before (email-only, no manage link, no SMS) — so the existing
@@ -40,12 +66,17 @@ export type ConfirmationContext = {
 // callers keep importing them from the orchestration module.
 export { parseGuestEmail, parseGuestName } from './parse'
 
-async function safeSend(kind: string, to: string | null | undefined, mail: { subject: string; html: string }): Promise<void> {
+async function safeSend(
+  kind: string,
+  to: string | null | undefined,
+  mail: { subject: string; html: string },
+  opts?: { from?: string; replyTo?: string },
+): Promise<void> {
   if (!to) {
     logger.info('notify.skipped_no_recipient', { kind })
     return
   }
-  const res = await sendEmail({ to, subject: mail.subject, html: mail.html })
+  const res = await sendEmail({ to, subject: mail.subject, html: mail.html, from: opts?.from, replyTo: opts?.replyTo })
   if (res.ok) logger.info('notify.sent', { kind, to })
   else if (!res.skipped) logger.warn('notify.failed', { kind, to, error: res.error })
 }
@@ -95,9 +126,12 @@ export async function sendBookingConfirmation(
 ): Promise<void> {
   let data = d
   const phone = ctx?.phone ?? null
+  let from: string | undefined = buildFrom(d.tenantName)
+  let replyTo: string | undefined
 
   if (ctx?.supabase && ctx.tenantId) {
-    // Self-service manage link + cutoff (best-effort; failures degrade to no link).
+    // Self-service manage link + cutoff + per-salon brand (best-effort; failures
+    // degrade to no link / Corevo-default brand).
     try {
       const cutoff = await getCancellationCutoffHours(ctx.supabase, ctx.tenantId)
       let manageUrl: string | null = null
@@ -105,7 +139,17 @@ export async function sendBookingConfirmation(
         const token = await buildCancelToken(ctx.bookingId)
         if (token) manageUrl = buildManageUrl(ctx.origin, ctx.bookingId, token)
       }
-      data = { ...d, manageUrl, cancelCutoffHours: cutoff }
+      const brand = await loadEmailBrand(ctx.supabase, ctx.tenantId, d.tenantName)
+      from = brand.from
+      replyTo = brand.replyTo
+      data = {
+        ...d,
+        manageUrl,
+        cancelCutoffHours: cutoff,
+        accentColor: brand.accentColor,
+        logoUrl: brand.logoUrl,
+        slogan: brand.slogan,
+      }
     } catch (err) {
       logger.warn('notify.confirmation_enrich_failed', {
         error: err instanceof Error ? err.message : String(err),
@@ -113,7 +157,7 @@ export async function sendBookingConfirmation(
     }
   }
 
-  await safeSend('booking.confirmation', to, confirmationEmail(data))
+  await safeSend('booking.confirmation', to, confirmationEmail(data), { from, replyTo })
 
   // Best-effort SMS — only when the owner opted in and we have a number.
   if (ctx?.supabase && ctx.tenantId && phone) {
@@ -129,25 +173,45 @@ export async function sendBookingConfirmation(
   }
 }
 
-export async function sendBookingCancellation(to: string, d: BookingEmailData): Promise<void> {
-  await safeSend('booking.cancellation', to, cancellationEmail(d))
+export async function sendBookingCancellation(
+  to: string,
+  d: BookingEmailData,
+  ctx?: BrandCtx,
+): Promise<void> {
+  const { data, from, replyTo } = await applyBrand(d, ctx)
+  await safeSend('booking.cancellation', to, cancellationEmail(data), { from, replyTo })
 }
 
-export async function sendBookingReminder(to: string, d: BookingEmailData): Promise<void> {
-  await safeSend('booking.reminder', to, reminderEmail(d))
+export async function sendBookingReminder(
+  to: string,
+  d: BookingEmailData,
+  ctx?: BrandCtx,
+): Promise<void> {
+  const { data, from, replyTo } = await applyBrand(d, ctx)
+  await safeSend('booking.reminder', to, reminderEmail(data), { from, replyTo })
 }
 
 // Rebook / "ny tid"-bekräftelse (M9, additive). Today rebookBooking() reuses
 // sendBookingConfirmation for the new time; the orchestrator should switch that
 // call site to this dedicated sender (see crossModuleGaps). Same best-effort
 // contract as the others — never throws into the caller.
-export async function sendBookingRebook(to: string, d: BookingEmailData): Promise<void> {
-  await safeSend('booking.rebook', to, rebookEmail(d))
+export async function sendBookingRebook(
+  to: string,
+  d: BookingEmailData,
+  ctx?: BrandCtx,
+): Promise<void> {
+  const { data, from, replyTo } = await applyBrand(d, ctx)
+  await safeSend('booking.rebook', to, rebookEmail(data), { from, replyTo })
 }
 
 export async function sendPaymentReceipt(
   to: string | null,
   d: BookingEmailData & { amountCents: number; currency: string },
+  ctx?: BrandCtx,
 ): Promise<void> {
-  await safeSend('payment.receipt', to, receiptEmail(d))
+  const { data, from, replyTo } = await applyBrand(d, ctx)
+  await safeSend('payment.receipt', to, receiptEmail({ ...data, amountCents: d.amountCents, currency: d.currency }), {
+    from,
+    replyTo,
+  })
 }

@@ -167,13 +167,17 @@ export async function cancelBooking(
 
   // Avboknings-notis (G10) — best-effort, före redirect (redirect kastar internt).
   if (user.email) {
-    await sendBookingCancellation(user.email, {
-      tenantName: await tenantName(supabase, user.tenantId ?? ''),
-      serviceName: booking.serviceName ?? 'Behandling',
-      startISO: booking.startTs,
-      timeZone: booking.timeZone,
-      staffTitle: booking.staffTitle,
-    })
+    await sendBookingCancellation(
+      user.email,
+      {
+        tenantName: await tenantName(supabase, user.tenantId ?? ''),
+        serviceName: booking.serviceName ?? 'Behandling',
+        startISO: booking.startTs,
+        timeZone: booking.timeZone,
+        staffTitle: booking.staffTitle,
+      },
+      { supabase, tenantId: user.tenantId ?? '' },
+    )
   }
 
   revalidatePath('/konto')
@@ -253,12 +257,16 @@ export async function rebookBooking(
 
   // Ny tid-bekräftelse på den NYA tiden (M9, dedikerad rebook-mall) — best-effort, före redirect.
   if (user.email) {
-    await sendBookingRebook(user.email, {
-      tenantName: await tenantName(supabase, user.tenantId ?? ''),
-      serviceName: old.serviceName ?? 'Behandling',
-      startISO: startISO,
-      timeZone: old.timeZone,
-    })
+    await sendBookingRebook(
+      user.email,
+      {
+        tenantName: await tenantName(supabase, user.tenantId ?? ''),
+        serviceName: old.serviceName ?? 'Behandling',
+        startISO: startISO,
+        timeZone: old.timeZone,
+      },
+      { supabase, tenantId: user.tenantId ?? '' },
+    )
   }
 
   revalidatePath('/konto')

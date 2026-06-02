@@ -89,7 +89,11 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
     }
 
     if (to) {
-      await sendBookingCancellation(to, { tenantName, serviceName, startISO: b.start_ts, timeZone })
+      await sendBookingCancellation(
+        to,
+        { tenantName, serviceName, startISO: b.start_ts, timeZone },
+        { supabase: admin, tenantId: b.tenant_id },
+      )
     }
     if (phone && (await getSmsEnabled(admin, b.tenant_id))) {
       await sendSms({ to: phone, body: `${tenantName}: din tid för ${serviceName} är avbokad.` })

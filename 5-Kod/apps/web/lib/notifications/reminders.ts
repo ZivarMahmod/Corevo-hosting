@@ -113,7 +113,11 @@ export async function sendDueReminders(): Promise<ReminderRun> {
     const tenantName = b.tenants?.name ?? 'Salongen'
     const serviceName = b.services?.name ?? 'Behandling'
     const timeZone = b.locations?.timezone ?? 'Europe/Stockholm'
-    await sendBookingReminder(to, { tenantName, serviceName, startISO: b.start_ts, timeZone })
+    await sendBookingReminder(
+      to,
+      { tenantName, serviceName, startISO: b.start_ts, timeZone },
+      { supabase: admin, tenantId: b.tenant_id },
+    )
 
     // Best-effort opt-in SMS (secondary channel; email above is primary).
     if (phone) {

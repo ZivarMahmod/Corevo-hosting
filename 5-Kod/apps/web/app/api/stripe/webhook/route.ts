@@ -132,14 +132,18 @@ export async function POST(req: Request): Promise<Response> {
                 tenants: { name?: string } | null
                 locations: { timezone?: string } | null
               }
-              await sendPaymentReceipt(to, {
-                tenantName: rel.tenants?.name ?? 'Salongen',
-                serviceName: rel.services?.name ?? 'Behandling',
-                startISO: rel.start_ts,
-                timeZone: rel.locations?.timezone ?? 'Europe/Stockholm',
-                amountCents: pi.amount_received ?? pi.amount ?? 0,
-                currency: pi.currency ?? 'sek',
-              })
+              await sendPaymentReceipt(
+                to,
+                {
+                  tenantName: rel.tenants?.name ?? 'Salongen',
+                  serviceName: rel.services?.name ?? 'Behandling',
+                  startISO: rel.start_ts,
+                  timeZone: rel.locations?.timezone ?? 'Europe/Stockholm',
+                  amountCents: pi.amount_received ?? pi.amount ?? 0,
+                  currency: pi.currency ?? 'sek',
+                },
+                { supabase: admin, tenantId },
+              )
             }
           } catch (e) {
             await captureException(e, { where: 'webhook.receipt', bookingId })
