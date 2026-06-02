@@ -3,7 +3,20 @@
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
 ## ⭐ NÄSTA SESSION — GÖR DETTA FÖRST
-**Bygg en plan innan något annat.** Sätt dig med Zivar och lägg en tydlig plan för vad som ska hända härnäst — inte börja koda/deploya direkt. Triagera: var står vi (G01–G12-status, live-läge), vad återstår (design-passet, custom-domäner/goal "egen domän", live-secrets, staging), och i vilken ordning. Skriv planen, få Zivars OK, SEN kör. Status just nu: G01–G11 KLAR (kod, pushade), G12 inloggningsmodell pågår hos Code + ny deploy efter. Live kräver Zivars secrets + domän-OK (se NULÄGE + deploy-runbook).
+**Läs `2-Byggplan/TESTA-DETTA.md`** — testlista + secrets för allt som byggdes natten 2026-06-02. Testa live på demo.corevo.se / booking.corevo.se, peka på det som ska finjusteras.
+
+### 2026-06-02 NATTKÖRNING (autopilot) — KLART + DEPLOYAT (worker ver `3557ada6`)
+Allt tsc+eslint-rent, byggt, deployat live, smoke 200. Commits på main `0f57670`→`ae8b66b`.
+- **Säkerhet:** migr 0009 (RPC identitet+past-time-fence) + 0010 (roll-medveten RLS bookings/payments) APPLICERADE + AFTER-verifierade 6/6 (kund ser ej andras bokningar). 
+- **FAS 3:** 13 adversarial-fixar (a11y focus-traps/ARIA/kontrast, in-drawer-bekräftelse #11, rebook-kompensation, webhook account-fence, staff_id-fence) + post-review.
+- **Wire G:** admin notis-toggles + Google-recensions-URL-fält; pref-guards på bekräftelse/påminnelse.
+- **SMS:** krok + per-salong-toggle (av; ingen leverantör än).
+- **Gäst-avboka:** HMAC-token-länk i mejl + `/avboka/[id]` publik sida (token-gated, avboknings-fönster).
+- **DESIGN (huvudgrejen):** 5 distinkta storefront-tema-layouter (Salvia/Leander/Zigge/Linnea/Edit) som `settings.theme`-presets; bokning Variant 3 (default) + Variant 4 (snabbboka) inbäddat, mobil bottom-sheet; back-office Corevo-reskin (forest sidebar + portal/ui-primitives, `[data-world=backoffice]`-scoped, kund/konto orörd); **två CSS-världar**; guld tenant-överstyrbart storefront/fryst back-office; **⭐ ägaren laddar upp egna storefront-bilder (R2)**; cookie-banner. Plan/partition: `2-Byggplan/WAVE-3-BUILD-PLAN.md`, logg `2-Byggplan/NIGHT-BACKLOG.md`.
+- **KVAR (Zivar):** sätt secrets `RESEND_API_KEY` (mejl) + `R2_PUBLIC_BASE_URL` (bildvisning); (senare) `SMS_PROVIDER_API_KEY`. **Kända luckor:** multi-location-val i bokning (demo=1 ställe funkar), lojalitet/poäng-feature, ev. visuell finputs per tema (t.ex. tom About-sektion utan demo-data). Se TESTA-DETTA.
+- **Deploy-not:** robocopy till ASCII-väg MÅSTE ha **/PURGE** (raderade filer annars kvar → bygget bryts). `robocopy <5-Kod> C:\tmp\kod /E /PURGE /XD node_modules .next .open-next .git /XF .env.local` → `pnpm --dir C:\tmp\kod --filter @corevo/web run deploy`.
+
+**Nästa stora steg:** bygg en plan med Zivar (custom-domäner/"egen domän", multi-location, staging, tema-finputs) innan kod.
 
 ## Vad projektet är
 Multi-tenant, white-label boknings-SaaS för salonger. EN kodbas, ny kund = ny tenant + config (aldrig ny template). Funktioner identiska för alla — bara utseende varierar. Freshcut = första tenant. Arbetsnamn: corevoboking.
