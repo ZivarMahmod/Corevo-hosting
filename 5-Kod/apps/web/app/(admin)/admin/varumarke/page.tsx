@@ -56,6 +56,11 @@ export default async function BrandingPage() {
   }
 
   const siteUrl = storefrontUrl(tenant.slug)
+  // Preview-hero: bara om vi har en färdig http-URL — annars faller preview:n
+  // tillbaka på en brand-färg-gradient (som dessutom repaintar live).
+  const firstHero = media.heroImages.find(
+    (u): u is string => typeof u === 'string' && u.startsWith('http'),
+  ) ?? null
 
   return (
     <section className="portal-section">
@@ -67,7 +72,13 @@ export default async function BrandingPage() {
         uppdateras direkt — och när du sparar slår ändringarna igenom på den publika sajten.
         Klicka <strong>Se din sida</strong> för att öppna din publika sajt i en ny flik.
       </p>
-      <BrandingForm branding={branding} />
+      <BrandingForm
+        branding={branding}
+        slug={tenant.slug}
+        salonName={tenant.name}
+        siteUrl={siteUrl}
+        heroImage={firstHero}
+      />
 
       <h2 style={{ marginTop: '2.5rem' }}>Texter</h2>
       <p className="prose">

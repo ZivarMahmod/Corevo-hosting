@@ -307,138 +307,374 @@
   background: color-mix(in srgb, var(--c-ink) 4%, transparent);
   padding: 4px;
 }
-.swatch {
-  display: inline-block;
-  width: 1.1rem;
-  height: 1.1rem;
-  border-radius: var(--radius-sm, 0.375rem);
-  border: 1px solid color-mix(in srgb, var(--c-ink) 25%, transparent);
-  vertical-align: middle;
+/* ════════════════════════════════════════════════════════════════════════
+   Varumärke-flaggskeppet (playbook §4.3) — working↔published dirty-workflow,
+   namngiven swatch-ring-picker, self-rendering font-tiles, browser-chrome
+   live-preview i salongens EGNA färger. Back-office-ramen är forest/gold;
+   preview-SKÄRMEN är storefront-världen och bär ALDRIG --c-forest/--c-gold.
+   ════════════════════════════════════════════════════════════════════════ */
+.brand {
+  margin: 1rem 0 1.75rem;
 }
 
-/* Branding split layout: editor on the left, live preview card on the right. */
+/* Top-actions: Ångra · Visa storefront · Publicera (gold, gatad på dirty). */
+.brandActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+.ghostBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--c-ink) 16%, transparent);
+  background: var(--c-paper);
+  color: inherit;
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.45rem 0.85rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.ghostBtn:hover:not(:disabled) {
+  border-color: var(--c-forest);
+  color: var(--c-forest);
+  transform: translateY(-1px);
+}
+.ghostBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.publishBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--c-gold);
+  background: var(--c-gold);
+  color: #2a1c00;
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.5rem 1.1rem;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--c-ink) 8%, transparent);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+.publishBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+.publishBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* Callout-band: dirty (warning) ↔ publicerat (success) ↔ fel (danger). */
+.band {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-md, 0.5rem);
+  border: 1px solid transparent;
+  font-size: 0.86rem;
+  margin-bottom: 1.1rem;
+}
+.bandIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: none;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #fff;
+}
+.bandWarn {
+  background: color-mix(in srgb, var(--c-warning, #9a6700) 12%, var(--c-paper));
+  border-color: color-mix(in srgb, var(--c-warning, #9a6700) 30%, transparent);
+  color: color-mix(in srgb, var(--c-warning, #9a6700) 90%, var(--c-ink));
+}
+.bandWarn .bandIcon {
+  background: var(--c-warning, #9a6700);
+}
+.bandOk {
+  background: color-mix(in srgb, var(--c-success, #16a34a) 10%, var(--c-paper));
+  border-color: color-mix(in srgb, var(--c-success, #16a34a) 28%, transparent);
+  color: color-mix(in srgb, var(--c-success, #16a34a) 86%, var(--c-ink));
+}
+.bandOk .bandIcon {
+  background: var(--c-success, #16a34a);
+}
+.bandErr {
+  background: color-mix(in srgb, var(--c-danger, #dc2626) 10%, var(--c-paper));
+  border-color: color-mix(in srgb, var(--c-danger, #dc2626) 30%, transparent);
+  color: color-mix(in srgb, var(--c-danger, #dc2626) 88%, var(--c-ink));
+}
+.bandErr .bandIcon {
+  background: var(--c-danger, #dc2626);
+}
+
+/* §4.3 layout: 390px editor-räcka + 1fr live-preview, align-start. Kollaps 920. */
 .brandGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  gap: 1.5rem;
+  grid-template-columns: 390px minmax(0, 1fr);
+  gap: 20px;
   align-items: start;
 }
-@media (max-width: 800px) {
+@media (max-width: 920px) {
   .brandGrid {
     grid-template-columns: 1fr;
   }
 }
+.brandControls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  min-width: 0;
+}
 
-/* Live storefront-mini preview — themed by the swatches the owner is editing. */
-.preview {
-  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
-  border-radius: var(--radius-lg, 0.75rem);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-  position: sticky;
-  top: 1rem;
+/* Fält-grupp: eyebrow-label + valfri "ändrad"-pill, sedan picker. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
 }
-.previewLabel {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 600;
-  opacity: 0.6;
-  padding: 0.75rem 1rem 0;
-}
-.previewBody {
-  margin: 0.75rem;
-  border-radius: var(--radius-md, 0.5rem);
-  border: 1px solid color-mix(in srgb, var(--prev-fg, #111) 14%, transparent);
-  overflow: hidden;
-}
-.previewNav {
+.groupHead {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--prev-fg, #111) 12%, transparent);
+  gap: 0.5rem;
 }
-.previewLogo {
-  max-height: 28px;
-  max-width: 110px;
-  width: auto;
-  display: block;
-}
-.previewBrand {
-  font-weight: 800;
-  font-size: 1.05rem;
-}
-.previewHero {
-  padding: 1.5rem 1.1rem;
-}
-.previewEyebrow {
+.eyebrowLabel {
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  opacity: 0.62;
+}
+.changedPill {
   font-size: 0.62rem;
   font-weight: 700;
-  margin: 0 0 0.4rem;
-}
-.previewTitle {
-  font-family: var(--font-display, Georgia, serif);
-  font-size: 1.5rem;
-  font-weight: 800;
-  line-height: 1.1;
-  margin: 0 0 0.5rem;
-}
-.previewText {
-  font-size: 0.82rem;
-  opacity: 0.78;
-  margin: 0 0 1rem;
-}
-.previewCta {
-  display: inline-block;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--c-gold) 78%, var(--c-ink));
+  background: color-mix(in srgb, var(--c-gold) 18%, transparent);
+  padding: 0.1rem 0.45rem;
   border-radius: var(--radius-pill);
-  padding: 0.5rem 1.1rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-.previewCard {
-  margin: 0 1.1rem 1.25rem;
-  border: 1px solid color-mix(in srgb, var(--prev-fg, #111) 14%, transparent);
-  border-radius: var(--radius-md, 0.5rem);
-  padding: 0.75rem 0.9rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.75rem;
-}
-.previewCardName {
-  font-weight: 600;
-  font-size: 0.88rem;
-}
-.previewCardMeta {
-  font-size: 0.72rem;
-  opacity: 0.6;
-}
-.previewCardPrice {
-  font-weight: 700;
-  white-space: nowrap;
 }
 
-/* Swatch chips row (under the color inputs) — quick read of the chosen palette. */
-.swatchRow {
+/* Namngiven swatch-ring-picker (38×38, vald = ring i egen färg) + egen-färg. */
+.swatches {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
+  align-items: center;
+  gap: 0.7rem;
 }
-.swatchChip {
+.swatch {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  padding: 0;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.swatch:hover {
+  transform: translateY(-1px);
+}
+.customSwatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+.customSwatch input[type='color'] {
+  width: 38px;
+  height: 38px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--c-ink) 16%, transparent);
+  border-radius: 10px;
+  background: var(--c-paper);
+  cursor: pointer;
+}
+.swatchHex {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+/* Self-rendering font-tiles — var bricka i sitt eget snitt @ 18px. */
+.fontTiles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.fontTile {
+  text-align: left;
+  border: 1.5px solid color-mix(in srgb, var(--c-ink) 14%, transparent);
+  background: var(--c-paper);
+  color: inherit;
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.6rem 0.85rem;
+  font-size: 18px;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.fontTile:hover {
+  border-color: color-mix(in srgb, var(--c-forest) 40%, transparent);
+}
+.fontTileSel {
+  border-color: var(--c-forest);
+  background: color-mix(in srgb, var(--c-forest) 5%, var(--c-paper));
+}
+
+/* ── Live-preview i browser-chrome (storefront-världen / salongens tema) ── */
+.previewWrap {
+  position: sticky;
+  top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.chrome {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
+  box-shadow: var(--shadow-card);
+}
+.chromeBar {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.78rem;
+  padding: 0.6rem 0.85rem;
+  background: #edeae3;
 }
-.swatchDot {
-  width: 1.4rem;
-  height: 1.4rem;
-  border-radius: var(--radius-sm, 0.375rem);
-  border: 1px solid color-mix(in srgb, var(--c-ink) 22%, transparent);
+.dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex: none;
+}
+.urlPill {
+  margin-left: 0.6rem;
+  background: #fff;
+  color: #5b554c;
+  font-size: 0.74rem;
+  padding: 0.22rem 0.7rem;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.screen {
+  position: relative;
+}
+.screenNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+.navLogo {
+  max-height: 30px;
+  max-width: 130px;
+  width: auto;
+  display: block;
+}
+.navBrand {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.navLinks {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+.hero {
+  min-height: 300px;
+  display: flex;
+  align-items: flex-end;
+  padding: 1.6rem 1.4rem;
+}
+.heroInner {
+  color: #fff;
+}
+.heroEyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.62rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  opacity: 0.92;
+}
+.heroTitle {
+  font-size: 2.3rem;
+  line-height: 1.05;
+  font-weight: 700;
+  margin: 0 0 1rem;
+}
+.heroCtas {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.cta {
+  display: inline-block;
+  border-radius: var(--radius-pill);
+  padding: 0.55rem 1.3rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.ctaGhost {
+  display: inline-block;
+  border: 1.5px solid #fff;
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.serviceRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.4rem 1.3rem;
+}
+.serviceName {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.serviceMeta {
+  font-size: 0.78rem;
+  opacity: 0.62;
+  margin-top: 0.15rem;
+}
+.servicePrice {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.previewMeta {
+  font-size: 0.78rem;
+  padding: 0 0.2rem;
+}
+.updated {
+  color: color-mix(in srgb, var(--c-gold) 70%, var(--c-ink));
+  font-weight: 600;
 }
 
 .code {
