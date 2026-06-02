@@ -1,6 +1,7 @@
 import type { StaffBooking } from '@/lib/personal/calendar'
 import { fmtTime, fmtDateHeading, statusLabel } from '@/lib/personal/format'
 import { BookingStatusActions } from './BookingStatusActions'
+import { ClientCard } from './ClientCard'
 import styles from './personal.module.css'
 
 const ACTIVE = new Set(['pending', 'confirmed'])
@@ -34,12 +35,19 @@ export function Calendar({ groups }: { groups: CalendarGroup[] }) {
                         {fmtTime(b.startTs, b.timeZone)}–{fmtTime(b.endTs, b.timeZone)}
                       </span>
                       <span className={styles.rowSub}>
-                        {b.serviceName ?? 'Tjänst'} · {b.customerLabel}
+                        {b.serviceName ?? 'Tjänst'} ·{' '}
+                        {b.customerId ? (
+                          <ClientCard customerId={b.customerId} label={b.customerLabel} />
+                        ) : (
+                          b.customerLabel
+                        )}
                       </span>
                     </div>
                     <span className={badgeClass(b.status)}>{statusLabel(b.status)}</span>
                   </div>
-                  {ACTIVE.has(b.status) ? <BookingStatusActions bookingId={b.id} /> : null}
+                  {ACTIVE.has(b.status) ? (
+                    <BookingStatusActions bookingId={b.id} timeZone={b.timeZone} />
+                  ) : null}
                 </li>
               ))}
             </ul>

@@ -20,8 +20,8 @@ export default async function ArbetstiderPage() {
         <div className={styles.empty}>
           <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
           <p className={styles.emptyHint}>
-            Kontakta salongsadmin för att kopplas till en personalrad — sedan kan du lägga till dina
-            arbetstider här.
+            Kontakta salongsadmin för att kopplas till en personalrad — sedan visas dina arbetstider
+            här.
           </p>
         </div>
       </section>
@@ -34,8 +34,9 @@ export default async function ArbetstiderPage() {
     <section className="portal-section">
       <PageHead eyebrow="Personal" title="Arbetstider" />
       <p className="prose">
-        Dina veckovisa arbetstider styr vilka tider kunder kan boka (M3). Ändringar slår igenom
-        direkt.
+        Dina veckovisa arbetstider sätts av salongen och styr vilka tider kunder kan boka (M3). De
+        visas här så du har koll på ditt schema. Vid sjukdom eller ledighet registrerar du frånvaro
+        under Frånvaro — vill du ändra själva grundschemat, hör av dig till salongsadmin.
       </p>
       <WorkingHoursManager rows={rows} />
     </section>

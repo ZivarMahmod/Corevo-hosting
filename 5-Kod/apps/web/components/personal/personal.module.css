@@ -300,6 +300,210 @@
   opacity: 0.72;
 }
 
+/* ── Client card: trigger link ───────────────────────────────────────────── */
+.cardLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--c-forest);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.cardLink:hover {
+  color: color-mix(in srgb, var(--c-forest) 80%, var(--c-ink));
+}
+
+/* ── Client card: drawer ─────────────────────────────────────────────────── */
+.drawerOverlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--c-ink) 35%, transparent);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 50;
+}
+.drawer {
+  width: min(30rem, 100vw);
+  height: 100%;
+  overflow-y: auto;
+  background: var(--c-paper);
+  box-shadow: var(--shadow-lifted, 0 10px 40px rgba(0, 0, 0, 0.25));
+  padding: 1.5rem;
+}
+.drawerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.drawerTitle {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--c-forest);
+  margin: 0;
+}
+.cardSections {
+  display: grid;
+  gap: 1.5rem;
+}
+.eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--c-forest);
+  margin-bottom: 0.6rem;
+}
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+}
+.detailLabel {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.detailValue {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
+/* ── Client card: PII box ────────────────────────────────────────────────── */
+.piiBox {
+  background: color-mix(in srgb, var(--c-ink) 5%, transparent);
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.piiGrid {
+  display: flex;
+  gap: 1.5rem;
+}
+
+/* ── Client card: loyalty ────────────────────────────────────────────────── */
+.loyaltyHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+.loyaltyPoints {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--c-gold-600, var(--c-gold));
+}
+.loyaltyTier {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.18rem 0.6rem;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--c-gold-100, color-mix(in srgb, var(--c-gold) 18%, transparent));
+  color: var(--c-gold-600, var(--c-gold));
+}
+
+/* ── Client card: history ────────────────────────────────────────────────── */
+.histList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.histRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
+}
+.histRow:last-child {
+  border-bottom: none;
+}
+.histService {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.histMeta {
+  font-size: 0.78rem;
+  opacity: 0.7;
+  margin-top: 0.1rem;
+}
+.histPrice {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+/* ── Notes form + inline forms ───────────────────────────────────────────── */
+.notesForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+.notesEnums {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+.notesEnums .field {
+  flex: 1;
+  min-width: 7rem;
+}
+.textarea {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-md, 0.5rem);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 22%, transparent);
+  background: var(--c-paper);
+  color: inherit;
+  resize: vertical;
+}
+.textarea:focus {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 1px;
+}
+.inlineForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-end;
+  margin-top: 0.6rem;
+  padding: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
+  border-radius: var(--radius-md, 0.5rem);
+  background: color-mix(in srgb, var(--c-ink) 4%, transparent);
+}
+
+/* ── Walk-in ─────────────────────────────────────────────────────────────── */
+.walkin {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+.walkin .form {
+  width: 100%;
+}
+
+/* ── Read-only schedule rows ─────────────────────────────────────────────── */
+.readonlyHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  opacity: 0.72;
+}
+
 /* ── Loading skeletons ───────────────────────────────────────────────────── */
 .skeleton {
   position: relative;

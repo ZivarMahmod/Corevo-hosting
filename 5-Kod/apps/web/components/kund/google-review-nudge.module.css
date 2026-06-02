@@ -1,0 +1,121 @@
+/* Google-review nudge popup (M4 §2.3). Themed via storefront tokens — the
+   confirmation page renders inside the salon's [data-world="storefront"][data-theme]
+   root, so --color-* resolve to the salon's theme/branding. No hardcoded brand. */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: nudgeFade var(--dur-base, 0.25s) var(--ease-out, ease);
+}
+
+.card {
+  position: relative;
+  width: min(420px, 100%);
+  background: var(--color-bg, #fff);
+  color: var(--color-fg, #15281f);
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: calc(var(--radius-lg, 0.75rem) + 4px);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
+  padding: 1.75rem 1.6rem 1.4rem;
+  text-align: center;
+  animation: nudgeRise var(--dur-base, 0.25s) var(--ease-out, ease);
+}
+
+.close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.55;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.5rem;
+  border-radius: var(--radius-md, 8px);
+  transition: opacity var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.close:hover {
+  opacity: 1;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.85rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent, var(--color-primary)) 22%, transparent);
+  color: var(--color-primary);
+  font-size: 1.4rem;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  font-family: var(--font-display, inherit);
+}
+
+.body {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  opacity: 0.8;
+}
+
+.cta {
+  display: block;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-pill, 9999px);
+  background: var(--color-primary);
+  color: var(--color-bg, #fff);
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.cta:hover {
+  opacity: 0.92;
+}
+
+.skip {
+  margin-top: 0.65rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+.skip:hover {
+  opacity: 0.9;
+}
+
+@keyframes nudgeFade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes nudgeRise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .card {
+    animation: none;
+  }
+}

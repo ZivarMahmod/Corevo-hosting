@@ -1,4 +1,6 @@
+import type { CSSProperties } from 'react'
 import { notFound } from 'next/navigation'
+import { injectTenantTokens } from '@corevo/ui'
 import { requirePortal } from '@/lib/auth/session'
 import { currentTenant } from '@/lib/tenant-data'
 import { PortalShell } from '@/components/portal/PortalShell'
@@ -19,9 +21,25 @@ export default async function KontoLayout({ children }: { children: React.ReactN
   const bundle = await currentTenant()
   if (!bundle?.settings.customerAccountsEnabled) notFound()
   const user = await requirePortal('kund')
+  const { branding, theme } = bundle.settings
+
+  // The /konto subtree is a STOREFRONT surface (the salon's own product), so it
+  // carries the storefront world + the salon's theme. data-world, data-theme AND
+  // injectTenantTokens MUST sit on the SAME element: the theme tokens in
+  // packages/ui/tokens.css are keyed on the compound [data-world="storefront"]
+  // [data-theme="…"], and the inline per-tenant overrides (injectTenantTokens) must
+  // win over that rule — which only holds when both live on one element. PortalShell
+  // (out of revir) doesn't apply a theme, so we set all three here on our own wrapper.
   return (
     <PortalShell user={user} title="Mitt konto">
-      {children}
+      <div
+        data-world="storefront"
+        data-theme={theme}
+        data-tenant={bundle.tenant.id}
+        style={injectTenantTokens(branding) as CSSProperties}
+      >
+        {children}
+      </div>
     </PortalShell>
   )
 }

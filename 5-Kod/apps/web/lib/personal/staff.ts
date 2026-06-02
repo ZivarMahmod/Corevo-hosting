@@ -40,3 +40,40 @@ export async function getMyStaff(userId: string): Promise<MyStaff[]> {
     timeZone: r.locations?.timezone ?? 'Europe/Stockholm',
   }))
 }
+
+export type StaffService = {
+  id: string
+  name: string
+  durationMin: number
+  priceCents: number
+}
+
+/**
+ * Active services the given staff member(s) offer (for the walk-in form). Reads
+ * staff_services → services; RLS tenant-fences. Deduped + alphabetical.
+ */
+export async function getMyServices(staffIds: string[]): Promise<StaffService[]> {
+  if (staffIds.length === 0) return []
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('staff_services')
+    .select('services(id, name, duration_min, price_cents, active)')
+    .in('staff_id', staffIds)
+
+  type Row = {
+    services: { id: string; name: string; duration_min: number; price_cents: number; active: boolean } | null
+  }
+  const byId = new Map<string, StaffService>()
+  for (const r of (data ?? []) as unknown as Row[]) {
+    const s = r.services
+    if (s && s.active && !byId.has(s.id)) {
+      byId.set(s.id, {
+        id: s.id,
+        name: s.name,
+        durationMin: s.duration_min,
+        priceCents: s.price_cents,
+      })
+    }
+  }
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'sv'))
+}

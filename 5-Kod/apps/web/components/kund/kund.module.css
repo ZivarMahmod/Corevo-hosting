@@ -174,8 +174,8 @@
 }
 .daySelected,
 .daySelected:hover {
-  background: var(--color-accent, #f5a623);
-  border-color: var(--color-accent, #f5a623);
+  background: var(--color-accent, var(--color-primary));
+  border-color: var(--color-accent, var(--color-primary));
   color: var(--color-fg, #0e1411);
   font-weight: 700;
 }
@@ -207,8 +207,8 @@
 }
 .timeSelected,
 .timeSelected:hover {
-  background: var(--color-accent, #f5a623);
-  border-color: var(--color-accent, #f5a623);
+  background: var(--color-accent, var(--color-primary));
+  border-color: var(--color-accent, var(--color-primary));
   color: var(--color-fg, #0e1411);
   font-weight: 700;
 }
@@ -335,6 +335,231 @@
 .dangerSolid:disabled {
   opacity: 0.55;
   cursor: progress;
+}
+
+/* ── Lojalitet (M4 §2.2) ─────────────────────────────────────────────────── */
+.loyaltyEmpty {
+  border: 1px dashed color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: var(--radius-lg, 0.625rem);
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  padding: 1.5rem 1.5rem;
+}
+.loyaltyCard {
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: var(--radius-lg, 0.625rem);
+  background: var(--color-bg, #fff);
+  box-shadow: var(--shadow-soft);
+  padding: 1.25rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.loyaltyHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.loyaltyTierLabel {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+}
+.loyaltyTier {
+  display: block;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--color-primary);
+}
+.loyaltyBalance {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.loyaltyBalance strong {
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--color-primary);
+}
+.loyaltyBalance span {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+.loyaltyProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.loyaltyBar {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  overflow: hidden;
+}
+.loyaltyBar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-accent, var(--color-primary));
+  transition: width var(--dur-base, 0.3s) var(--ease-out, ease);
+}
+
+.bandWrap {
+  border-top: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  padding-top: 0.9rem;
+}
+.bandTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.6rem;
+}
+.bandList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.bandRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.bandName {
+  font-weight: 600;
+}
+.bandMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ── Favoriter (M4 §2.3) ──────────────────────────────────────────────────── */
+.favList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.favItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  padding: 0.75rem 1rem;
+}
+.favMain {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.favKind {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  flex: none;
+  font-size: 0.9rem;
+}
+.favText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.favActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+}
+.favBook {
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+  border-radius: var(--radius-pill, 9999px);
+  padding: 0.35rem 0.85rem;
+  transition: background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.favBook:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+.favRemoveForm,
+.favAddForm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+.favRemove {
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.55;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.35rem 0.45rem;
+  border-radius: var(--radius-md, 8px);
+  transition:
+    opacity var(--dur-fast, 0.15s) var(--ease-out, ease),
+    background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.favRemove:hover:not(:disabled) {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.favRemove:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.favAdd {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+  background: transparent;
+  color: var(--color-primary);
+  border-radius: var(--radius-pill, 9999px);
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.favAdd:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+.favAdd:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.favPill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+.favError {
+  font-size: 0.78rem;
+  color: var(--destructive, #d62f2f);
 }
 
 /* ── Skeleton shimmer (loading.tsx route files) ─────────────────────────── */

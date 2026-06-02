@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
-import { getMyStaff } from '@/lib/personal/staff'
+import { getMyStaff, getMyServices } from '@/lib/personal/staff'
 import {
   getBookingsInRange,
   dayRangeUtc,
@@ -10,6 +10,7 @@ import {
 import { addDays, mondayOf, todayInTz, fmtTime } from '@/lib/personal/format'
 import { Calendar, type CalendarGroup } from '@/components/personal/Calendar'
 import { DateNav } from '@/components/personal/DateNav'
+import { WalkInForm } from '@/components/personal/WalkInForm'
 import { PageHead, Stat, Badge } from '@/components/portal/ui'
 import styles from '@/components/personal/personal.module.css'
 
@@ -44,6 +45,7 @@ export default async function PersonalPage({
 
   const primaryTz = staff[0]?.timeZone ?? 'Europe/Stockholm'
   const staffIds = staff.map((s) => s.id)
+  const services = await getMyServices(staffIds)
   const today = todayInTz(primaryTz)
   const dateStr = sp.date && DATE_RE.test(sp.date) ? sp.date : today
   const view: 'dag' | 'vecka' = sp.view === 'vecka' ? 'vecka' : 'dag'
@@ -112,9 +114,21 @@ export default async function PersonalPage({
         />
       </div>
 
-      <h2 className="h2" style={{ marginBottom: 12 }}>
-        Kalender
-      </h2>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap',
+          marginBottom: 12,
+        }}
+      >
+        <h2 className="h2" style={{ margin: 0 }}>
+          Kalender
+        </h2>
+        <WalkInForm services={services} timeZone={primaryTz} />
+      </div>
       <DateNav dateStr={dateStr} view={view} today={today} />
       <Calendar groups={groups} />
     </section>

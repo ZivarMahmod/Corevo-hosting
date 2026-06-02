@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createPublicClient } from '@/lib/supabase/public'
+import { GoogleReviewNudge } from '@/components/kund/GoogleReviewNudge'
 import styles from '@/components/booking/booking.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -150,8 +151,14 @@ export default async function ConfirmationPage({
           <p className="confirm-note">Du betalar på plats vid besöket.</p>
         )}
 
-        {/* Recension-nudge (Google review): fyrar när booking.status = 'completed'.
-            Byggs senare — lämnar bara kroken här. */}
+        {/* Recension-nudge (Google review) POPUP (M4 §2.3): ignorerbar, frikopplad
+            från betalning, visas oavsett betalstatus. Renderar inget om salongen
+            saknar google_review_url. Skild från e-post-nudgen (status=completed). */}
+        <GoogleReviewNudge
+          tenantSlug={booking.tenant_slug}
+          tenantName={tenantName}
+          bookingId={booking.id ?? id}
+        />
 
         <div className={styles.confirmActions}>
           <a
