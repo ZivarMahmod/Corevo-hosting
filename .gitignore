@@ -11,3 +11,12 @@
 # system already lives committed in 5-Kod). Relocated out of the repo root.
 4-Dokument-Underlag/skarmdumpar-bygg/
 2-Byggplan/Corevo Booking Design System-handoff/
+# Same handoff copies under their relocated paths (path-anchored rule above misses
+# these): the completed-goals folder picked up a copy, and a "v2" export landed in
+# 2-Byggplan. ~13 MB of PNGs/HTML prototypes — extracted essentials already in 5-Kod.
+2-Byggplan/_klart/Corevo Booking Design System-handoff/
+2-Byggplan/corevo-booking-design-system v2/
+
+# Stray vite/vitest cache that materializes as a node_modules dir at the repo root
+# (no real install lives here — the workspace install is under 5-Kod). Standard.
+node_modules/

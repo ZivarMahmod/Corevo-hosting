@@ -70,7 +70,38 @@ additivt-med-fallback.** Live tenants = frisor3 / studio / arsgw / kvikta.
 - Slut-e2e LOKALT (vitest + ev. @readonly-harness). INGEN live-deploy-verify (gate).
 - Final: typecheck+lint+vitest grönt → commit → push.
 
-## Sekvens
-Våg 2 (kör nu, wmyso2lob) klar → verifiera → commit. Sedan ETT workflow: Våg 3 (M3+M8 solo,
-seriellt — delad bokningskärna, ingen parallell-skrivning) → Våg 4 → verifiera → skriv 0013 →
-commit → uppdatera HANDOFF + memory → push EN gång.
+## Sekvens (UPPDATERAD 2026-06-02 — Zivar bad om live-deploy av icke-M8 FÖRE M8)
+Våg 2 KLAR + committad `49f5648`. NY ordning: M8 flyttad SIST så icke-betal-bygget kan gå live separat.
+1. Workflow `wc3aprruu` = M3 read-wiring + Våg 4 (M8 EXKLUDERAD). M3-granskning = HÅRD deploy-grind.
+2. M3-granskning grön + slutverifiering grön → commit (M3+Våg4+wrangler-fix) → push.
+3. **LIVE-DEPLOY** (icke-M8) — se nedan.
+4. Verifiera live (riktiga ytor).
+5. Separat workflow: M8 betalningar → granska → commit → push. M8-deploy gatad på Stripe-nycklar (saknas live).
+6. Skriv migration 0013 (READY, applicera EJ). Uppdatera HANDOFF + memory.
+
+## LIVE-DEPLOY (icke-M8, Zivar-auktoriserad 2026-06-02)
+**CF-auth finns** (wrangler whoami: OAuth zivar68, workers write, konto 0be2655be66efbfa5d9b36721ddae008).
+**Rollback-baslinje:** nuvarande live ≈ version `9e277e14` (skapad 06:57Z). RE-LISTA exakt id före deploy:
+`wrangler deployments list --config <apps/web/wrangler.jsonc>`. Rollback = `wrangler rollback <id> --config <...>`.
+
+**Domän-rekoncilierad (KLAR):** live worker-domains (API, service=bokningsplatformen) = `booking.corevo.se`
++ `freshcut.corevo.se`. wrangler.jsonc routes ändrad till EXAKT det (släppt döda `demo.corevo.se` som ej
+resolvar + lagt till dashboard-only `freshcut.corevo.se` som annars DETACHATS av deploy = FX-14-fällan).
+Nu config == live → deploy = noll domän-churn. **Vars rena** (alla 8 plaintext i config), **secrets kvar**
+(SERVICE_ROLE_KEY + EMAIL_RELAY_*; INGA Stripe-secrets live → betalning ej live, M8 gatad — ingen regress).
+
+**M3-risk EMPIRISKT minimal:** prod-query: working_hour_slots=0, staff/services slot_step_min+buffer_min ALLA
+NULL, inga tenant_settings.booking.variant. → ALLA nya M3-grenar DORMANT i prod. Risk = bara "range-vägen =
+dagens slots" (täckt av obligatoriskt fallback-test). 4 tenants, 10 working_hours-rader.
+
+**Deploy-steg (ö-path → ASCII-kopia, KÖR VIA PowerShell-verktyget, ej Bash — Bash manglar ö):**
+1. Från COMMITTAD+pushad träd: `robocopy <5-Kod> C:\tmp\kod /E /PURGE /XD node_modules .next .open-next .git /XF .env.local`
+2. Skriv `C:\tmp\kod\apps\web\.env.local` från wrangler.jsonc PUBLIKA vars (NEXT_PUBLIC_SUPABASE_URL/ANON_KEY,
+   ROOT_DOMAIN=corevo.se, PLATFORM_HOST=booking.corevo.se, SITE_URL, RESERVED_SUBDOMAINS) — alla publika, ej secrets.
+3. `pnpm --dir C:\tmp\kod install --frozen-lockfile` (FRESH — robocopy med node_modules dödar pnpm-symlänkar → dubbel React).
+4. `pnpm --dir C:\tmp\kod --filter @corevo/web run deploy` (= opennextjs-cloudflare build && deploy). Tar minuter.
+**HÅRD GRIND:** deploya BARA om M3-granskning grön (additive_fallback_ok + mandatory_test_present) + slut-go.
+**Build failar i C:\tmp\kod → STOPP, rapportera, hacka inte. Live står kvar på gammal kod (fail-safe).**
+
+**Smoke EFTER deploy (riktiga ytor, ej bara 200):** login 3 roller på booking.corevo.se; en tenant `/boka`
+renderar faktiska slots; freshcut.corevo.se ej 5xx; `corevo.se` POS = 200 (orörd). Trasigt → `wrangler rollback`.
