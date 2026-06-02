@@ -112,28 +112,32 @@ export function SalviaLayout({ tenant, content, services, location }: Storefront
         </div>
       </section>
 
-      {/* TEAM — 3-up */}
-      <section className={styles.sfTeam}>
-        <div className={styles.sfWide}>
-          <Reveal style={{ textAlign: 'center' }}>
-            <p className="sf-eyebrow">{content.teamEyebrow}</p>
-            <h2 className="sf-h1" style={{ marginTop: 12 }}>
-              {content.teamTitle}
-            </h2>
-          </Reveal>
-          <ul className={styles.sfTeamGrid}>
-            {content.team.map((m, i) => (
-              <Reveal as="li" key={m.name + i} delay={i * 90} className={styles.sfTeamCard}>
-                <div className={styles.sfTeamPhoto} style={{ backgroundImage: `url(${m.img})` }} />
-                <h3 className={styles.sfTeamName}>{m.name}</h3>
-                <p className="sf-body" style={{ fontSize: 14 }}>
-                  {m.role}
-                </p>
-              </Reveal>
-            ))}
-          </ul>
-        </div>
-      </section>
+      {/* TEAM — 3-up. Owner-only: rendered solely when the salon has uploaded real
+          team members (theme stock faces are never shown as the salon's staff).
+          Hidden entirely otherwise — no empty shell, no placeholder portraits. */}
+      {content.team.length > 0 ? (
+        <section className={styles.sfTeam}>
+          <div className={styles.sfWide}>
+            <Reveal style={{ textAlign: 'center' }}>
+              <p className="sf-eyebrow">{content.teamEyebrow}</p>
+              <h2 className="sf-h1" style={{ marginTop: 12 }}>
+                {content.teamTitle}
+              </h2>
+            </Reveal>
+            <ul className={styles.sfTeamGrid}>
+              {content.team.map((m, i) => (
+                <Reveal as="li" key={m.name + i} delay={i * 90} className={styles.sfTeamCard}>
+                  <div className={styles.sfTeamPhoto} style={{ backgroundImage: `url(${m.img})` }} />
+                  <h3 className={styles.sfTeamName}>{m.name}</h3>
+                  <p className="sf-body" style={{ fontSize: 14 }}>
+                    {m.role}
+                  </p>
+                </Reveal>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       {/* GALLERI — masonry grid + lightbox */}
       <section className={styles.sfGalleryBand}>

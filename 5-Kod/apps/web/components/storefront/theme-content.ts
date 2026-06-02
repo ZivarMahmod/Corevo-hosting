@@ -321,7 +321,12 @@ export function resolveThemeContent(
   const heroImages = Array.isArray(b.hero_images) && b.hero_images.length ? b.hero_images : base.heroImages
   const galleryImages =
     Array.isArray(b.gallery_images) && b.gallery_images.length ? b.gallery_images : base.galleryImages
-  const team = Array.isArray(b.team) && b.team.length ? b.team : base.team
+  // Team is OWNER-ONLY: the storefront shows the salon's own uploaded team, never
+  // theme stock faces presented as their staff. Empty → the layout hides the team
+  // section entirely (until the owner uploads real members). Blank-name entries drop.
+  const team = (Array.isArray(b.team) ? b.team : []).filter(
+    (m) => m && typeof m.name === 'string' && m.name.trim().length > 0,
+  )
   const stats = Array.isArray(b.stats) && b.stats.length ? b.stats : base.stats
   return {
     ...base,

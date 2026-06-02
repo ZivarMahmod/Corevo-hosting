@@ -101,7 +101,20 @@ describe('resolveThemeContent — copy override threaded through', () => {
     expect(out.heroEyebrow).toBe(base.heroEyebrow)
     // …and media is untouched by copy resolution.
     expect(out.heroImages).toEqual(base.heroImages)
-    expect(out.team).toEqual(base.team)
+    // Team is owner-only now (no stock-face default) → empty when no branding.team.
+    expect(out.team).toEqual([])
+  })
+
+  it('team is owner-only — no theme stock default, blank-name entries dropped', () => {
+    // No branding.team → empty (layout hides the section), NOT the stock default.
+    expect(resolveThemeContent('salvia', null).team).toEqual([])
+    expect(resolveThemeContent('salvia', { team: [] }).team).toEqual([])
+    // Real owner-uploaded members pass through; blank/nameless entries are filtered.
+    const owner = [
+      { name: 'Anna', role: 'Frisör', img: 'https://pub-test.r2.dev/t/anna.png' },
+      { name: '   ', role: 'x', img: 'y' },
+    ]
+    expect(resolveThemeContent('salvia', { team: owner }).team).toEqual([owner[0]])
   })
 
   it('owner branding media and owner copy compose without clobbering each other', () => {
