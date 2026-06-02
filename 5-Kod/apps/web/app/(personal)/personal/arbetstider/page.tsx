@@ -3,6 +3,7 @@ import { requirePortal } from '@/lib/auth/session'
 import { getMyStaff } from '@/lib/personal/staff'
 import { getMyWorkingHours } from '@/lib/personal/schedule'
 import { WorkingHoursManager } from '@/components/personal/WorkingHoursManager'
+import { PageHead } from '@/components/portal/ui'
 import styles from '@/components/personal/personal.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,7 @@ export default async function ArbetstiderPage() {
   if (staff.length === 0) {
     return (
       <section className="portal-section">
-        <h1>Arbetstider</h1>
+        <PageHead eyebrow="Personal" title="Arbetstider" />
         <div className={styles.empty}>
           <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
           <p className={styles.emptyHint}>
@@ -31,7 +32,7 @@ export default async function ArbetstiderPage() {
 
   return (
     <section className="portal-section">
-      <h1>Arbetstider</h1>
+      <PageHead eyebrow="Personal" title="Arbetstider" />
       <p className="prose">
         Dina veckovisa arbetstider styr vilka tider kunder kan boka (M3). Ändringar slår igenom
         direkt.

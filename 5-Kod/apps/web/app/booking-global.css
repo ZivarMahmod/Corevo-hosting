@@ -49,3 +49,165 @@
 .confirm-summary span { opacity: 0.7; }
 .confirm-note { opacity: 0.8; margin: 0 0 1.5rem; }
 .confirm-paid { opacity: 1; font-weight: 600; color: #15803d; }
+
+/* ===========================================================================
+   BOOKING VARIANTS (SF-B) — Variant 3 (steg-för-steg wizard, DEFAULT) and
+   Variant 4 (kompakt snabbboka). Mobile-first, big touch targets, primary CTA
+   pinned in thumb reach. All classes are global (plain className strings), same
+   convention as the .wizard-* set above. Selected fills are applied INLINE via
+   var(--color-accent) on the element (the frozen .selected rules out-specify a
+   single class), so these rules only style the unselected/idle state + layout.
+   =========================================================================== */
+
+/* ---- shared: the wizard becomes a column so the action bar can pin ---- */
+.wizard--steps, .wizard--compact { display: flex; flex-direction: column; min-height: 100%; margin-top: 0; }
+
+/* ---- V3: TOP PROGRESS BAR (5 segments + "n / 5"), sticky ---- */
+.wizard-progress {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--color-bg);
+  padding: 0.25rem 0 0.9rem;
+  margin: 0 0 0.5rem;
+}
+.wizard-progress-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.wizard-progress-label { font-family: var(--font-display, inherit); font-size: 1.05rem; font-weight: 600; color: var(--color-fg); }
+.wizard-progress-count { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; opacity: 0.65; white-space: nowrap; }
+.wizard-progress-track { display: flex; gap: 5px; margin-top: 0.7rem; }
+.wizard-progress-seg {
+  flex: 1; height: 5px; border-radius: 999px;
+  background: color-mix(in srgb, var(--color-fg) 14%, transparent);
+  transition: background var(--dur-slow, 0.3s) var(--ease-out, ease);
+}
+/* `.on` is a fallback; the active fill is set inline to var(--color-accent). */
+.wizard-progress-seg.on { background: var(--color-primary); }
+
+/* ---- V3: one big question per screen ---- */
+.wizard-q {
+  font-family: var(--font-display, inherit);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  line-height: 1.12;
+  color: var(--color-fg);
+  margin: 0.25rem 0 1.1rem;
+}
+
+/* ---- V3: the scrollable step body (between progress + action bar) ---- */
+.wizard-stepbody { flex: 1 1 auto; }
+
+/* Bigger, more tappable service/staff cards in the wizard (≥56px already in the
+   base; bump min-height to a comfortable 60px and tighten gap on mobile). */
+.wizard--steps .wizard-card { min-height: 60px; }
+
+/* ---- V3 + V4: BOTTOM ACTION BAR (sticky, thumb reach) ---- */
+.wizard-actionbar {
+  position: sticky; bottom: 0; z-index: 6;
+  display: flex; align-items: stretch; gap: 0.6rem;
+  margin-top: 1.25rem;
+  padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  background: var(--color-bg);
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+}
+.wizard-back-btn {
+  flex: 0 0 auto; width: 3.25rem; min-height: 54px;
+  border-radius: 0.85rem;
+  border: 1.5px solid color-mix(in srgb, var(--color-fg) 18%, transparent);
+  background: transparent; color: var(--color-fg);
+  font-size: 1.25rem; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.wizard-back-btn:hover { border-color: var(--color-primary); }
+.wizard-back-btn:focus-visible { outline: 2px solid var(--color-accent, var(--color-primary)); outline-offset: 2px; }
+.wizard-cta {
+  flex: 1 1 auto; min-height: 54px;
+  border-radius: 0.85rem; border: none;
+  background: var(--color-primary); color: #fff;
+  font: inherit; font-weight: 600; font-size: 1rem;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
+  line-height: 1.2;
+  transition: filter var(--dur-fast, 0.15s) var(--ease-out, ease), transform var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.wizard-cta:hover:not(:disabled) { filter: brightness(0.97); }
+.wizard-cta:active:not(:disabled) { transform: translateY(1px); }
+.wizard-cta:disabled {
+  background: color-mix(in srgb, var(--color-fg) 12%, transparent);
+  color: color-mix(in srgb, var(--color-fg) 45%, transparent);
+  cursor: not-allowed;
+}
+.wizard-cta:focus-visible { outline: 2px solid var(--color-accent, var(--color-primary)); outline-offset: 2px; }
+.wizard-cta-label { font-size: 1rem; }
+.wizard-cta-sub { font-size: 0.72rem; font-weight: 500; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Hidden submit inside the step-4 form (the visible CTA is the action bar). */
+.wizard-form-submit { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+
+/* ---- V4: kompakt en-sida ---- */
+.ckompakt { display: flex; flex-direction: column; flex: 1 1 auto; }
+.ckompakt-lede { margin: 0 0 1.1rem; font-size: 0.9rem; opacity: 0.7; }
+.ckompakt-label {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+  opacity: 0.6; margin: 0.9rem 0 0.5rem;
+}
+.ckompakt-label:first-of-type { margin-top: 0; }
+.ckompakt-chiprow { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.35rem; -webkit-overflow-scrolling: touch; }
+.ckompakt-chip {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.7rem 1rem; min-height: 44px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1.5px solid color-mix(in srgb, var(--color-fg) 16%, transparent);
+  background: var(--color-bg); color: var(--color-fg);
+  font: inherit; font-weight: 600; font-size: 0.88rem; white-space: nowrap; cursor: pointer;
+  transition: border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.ckompakt-chip:hover:not(.selected) { border-color: var(--color-primary); }
+.ckompakt-chip:focus-visible { outline: 2px solid var(--color-accent, var(--color-primary)); outline-offset: 2px; }
+.ckompakt-chip-meta { font-size: 0.78rem; font-weight: 500; opacity: 0.75; }
+.ckompakt-chip.selected .ckompakt-chip-meta { opacity: 0.9; }
+/* V4 slot grid — 4 columns, ≥48px tap targets */
+.ckompakt-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.1rem; }
+.ckompakt-slots .wizard-time { min-height: 48px; }
+/* name + phone side by side; stack on very narrow screens */
+.ckompakt-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.1rem; }
+@media (max-width: 360px) { .ckompakt-fields { grid-template-columns: 1fr; } }
+
+/* ---- Big tap-friendly time chips everywhere (≥48px) ---- */
+.wizard-time, .wizard-day { min-height: 48px; }
+
+/* ===========================================================================
+   MOBILE BOTTOM-SHEET (SF-B) — layered ON TOP of SF-A's .drawerPanel (which
+   owns the desktop right slide-over + the open/close transform). We only add
+   the booking-specific sheet affordances and override mobile GEOMETRY so the
+   panel reads as a rounded bottom-sheet with a top gap, not a full-screen
+   takeover. Equal-specificity vs. the hashed module class + unreliable CSS
+   injection order → !important on just the mobile geometry props. SF-A's panel
+   styling is otherwise untouched. The drag grabber is hidden on desktop.
+   =========================================================================== */
+.bk-grabber { display: none; }
+
+@media (max-width: 560px) {
+  /* Bottom-sheet: anchored to the bottom edge, grows upward to at most 92vh, so
+     a top gap always shows the dimmed storefront. Rounded top + grabber make it
+     read as a sheet rather than SF-A's full-screen (top:0;height:100%) overlay.
+     We DON'T touch `transform` → the translateY open/close stays SF-A's. */
+  .bk-sheet {
+    top: auto !important;
+    bottom: 0 !important;
+    height: auto !important;
+    max-height: 92vh !important;
+    border-radius: 1.25rem 1.25rem 0 0 !important;
+    overflow: hidden;
+  }
+  /* Drag grabber — tap to close; visual affordance for "swipe down". */
+  .bk-grabber {
+    display: grid; place-items: center;
+    width: 100%; flex: 0 0 auto;
+    padding: 0.6rem 0 0.2rem;
+    background: transparent; border: 0; cursor: pointer;
+  }
+  .bk-grabber-bar {
+    width: 2.5rem; height: 4px; border-radius: 999px;
+    background: color-mix(in srgb, var(--color-fg) 28%, transparent);
+  }
+}

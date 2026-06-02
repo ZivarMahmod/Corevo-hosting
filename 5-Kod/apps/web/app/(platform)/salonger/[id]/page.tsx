@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getTenantDetail, getTenantAudit } from '@/lib/platform/tenants'
 import { BILLING_MODEL_LABELS, formatPrice, type BillingModel } from '@/lib/platform/billing'
@@ -8,6 +7,7 @@ import { PlatformBrandingForm } from '@/components/platform/PlatformBrandingForm
 import { BillingForm } from '@/components/platform/BillingForm'
 import { StatusControl } from '@/components/platform/StatusControl'
 import { DomainPanel } from '@/components/platform/DomainPanel'
+import { PageHead, Button, Badge } from '@/components/portal/ui'
 import styles from '@/components/platform/platform.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -29,19 +29,17 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
   return (
     <section className="portal-section">
-      <div className={styles.sectionHead}>
-        <h1 style={{ margin: 0 }}>{tenant.name}</h1>
-        <Link href="/salonger" className={styles.navLink}>
-          ← Salonger
-        </Link>
-      </div>
-      <p className={styles.muted}>
-        <code className={styles.code}>{tenant.slug}</code> ·{' '}
-        <span className={`${styles.badge} ${tenant.status === 'active' ? styles.badgeActive : styles.badgeSuspended}`}>
-          {tenant.status}
-        </span>{' '}
-        ·{' '}
-        <a href={url} target="_blank" rel="noreferrer">
+      <PageHead eyebrow={`Plattform · ${tenant.slug}`} title={tenant.name}>
+        <Button href="/salonger" variant="ghost" icon="arrowLeft">
+          Salonger
+        </Button>
+      </PageHead>
+      <p className={styles.muted} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <code className={styles.code}>{tenant.slug}</code>
+        <Badge tone={tenant.status === 'active' ? 'success' : 'warning'}>
+          {tenant.status === 'active' ? 'Aktiv' : 'Pausad'}
+        </Badge>
+        <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--c-forest)' }}>
           {url} ↗
         </a>
       </p>

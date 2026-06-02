@@ -3,6 +3,7 @@ import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getSettingsRow, brandingOf } from '@/lib/admin/data'
 import { BrandingForm } from '@/components/admin/BrandingForm'
+import { PageHead } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Varumärke · Salongsadmin' }
@@ -24,7 +25,7 @@ export default async function BrandingPage() {
 
   return (
     <section className="portal-section">
-      <h1>Varumärke</h1>
+      <PageHead eyebrow={tenant.name} title="Varumärke" />
       <p className="prose">
         Logotyp, färger och typsnitt för din publika webbplats. Förhandsvisningen till höger
         uppdateras direkt — och när du sparar slår ändringarna igenom på den publika sajten.

@@ -1,5 +1,5 @@
 /* Staff-portal-scoped styles (G06). CSS module → hashed class names, no leakage.
-   Uses the frozen Corevo design tokens (--color-primary forest, --color-accent gold,
+   Uses the frozen Corevo design tokens (--c-forest forest, --c-gold gold,
    --radius-*, --shadow-*, state colors). Components reference variables only. */
 
 /* ── Sub-nav (Idag / Arbetstider / Frånvaro) ─────────────────────────────── */
@@ -14,7 +14,7 @@
   color: inherit;
   padding: 0.45rem 0.95rem;
   border-radius: var(--radius-pill, 999px);
-  border: 1px solid color-mix(in srgb, var(--color-fg) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 14%, transparent);
   font-size: 0.9rem;
   font-weight: 500;
   transition:
@@ -23,13 +23,13 @@
     background var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 .navLink:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--c-forest);
+  color: var(--c-forest);
 }
 .navLinkActive,
 .navLinkActive:hover {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  background: var(--c-forest);
+  border-color: var(--c-forest);
   color: #fff;
   font-weight: 600;
 }
@@ -45,7 +45,7 @@
 .dateNav a {
   text-decoration: none;
   color: inherit;
-  border: 1px solid color-mix(in srgb, var(--color-fg) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 16%, transparent);
   border-radius: var(--radius-md, 0.5rem);
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
@@ -54,8 +54,8 @@
     color var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 .dateNav a:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--c-forest);
+  color: var(--c-forest);
 }
 .dateNavSpacer {
   flex: 1;
@@ -65,7 +65,7 @@
   gap: 0.25rem;
   padding: 0.2rem;
   border-radius: var(--radius-pill, 999px);
-  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  background: color-mix(in srgb, var(--c-ink) 6%, transparent);
 }
 .viewToggle a {
   border: 1px solid transparent;
@@ -74,12 +74,12 @@
 }
 .viewToggle a:hover {
   border-color: transparent;
-  color: var(--color-primary);
+  color: var(--c-forest);
 }
 .viewToggleActive,
 .viewToggleActive:hover {
-  background: var(--color-bg);
-  color: var(--color-primary);
+  background: var(--c-paper);
+  color: var(--c-forest);
   font-weight: 600;
   box-shadow: var(--shadow-soft);
 }
@@ -92,10 +92,10 @@
   margin: 1.25rem 0 2rem;
 }
 .stat {
-  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
   padding: 1.1rem 1.25rem;
-  background: var(--color-bg);
+  background: var(--c-paper);
   box-shadow: var(--shadow-soft);
 }
 .statValue {
@@ -103,7 +103,7 @@
   font-size: 1.9rem;
   font-weight: 700;
   line-height: 1.1;
-  color: var(--color-primary);
+  color: var(--c-forest);
 }
 .statLabel {
   font-size: 0.82rem;
@@ -119,7 +119,7 @@
   font-size: 1.05rem;
   margin: 0 0 0.6rem;
   text-transform: capitalize;
-  color: var(--color-primary);
+  color: var(--c-forest);
 }
 
 .list {
@@ -131,10 +131,10 @@
   gap: 0.6rem;
 }
 .row {
-  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
   padding: 0.85rem 1.1rem;
-  background: var(--color-bg);
+  background: var(--c-paper);
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
@@ -153,7 +153,7 @@
 }
 .rowTime {
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--c-forest);
 }
 .rowSub {
   font-size: 0.85rem;
@@ -168,24 +168,24 @@
   font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
-  background: color-mix(in srgb, var(--color-fg) 10%, transparent);
+  background: color-mix(in srgb, var(--c-ink) 10%, transparent);
 }
 .badgePending {
-  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
-  color: color-mix(in srgb, var(--color-fg) 80%, var(--color-accent));
+  background: color-mix(in srgb, var(--c-gold) 22%, transparent);
+  color: color-mix(in srgb, var(--c-ink) 80%, var(--c-gold));
 }
 .badgeConfirmed {
-  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
-  color: var(--color-primary);
+  background: color-mix(in srgb, var(--c-forest) 16%, transparent);
+  color: var(--c-forest);
 }
 .badgeCompleted {
-  background: color-mix(in srgb, var(--color-success, #36a165) 22%, transparent);
-  color: color-mix(in srgb, var(--color-success, #36a165) 85%, var(--color-fg));
+  background: color-mix(in srgb, var(--c-success, #36a165) 22%, transparent);
+  color: color-mix(in srgb, var(--c-success, #36a165) 85%, var(--c-ink));
 }
 .badgeNo_show,
 .badgeCancelled {
-  background: color-mix(in srgb, var(--color-destructive, #d62f2f) 16%, transparent);
-  color: color-mix(in srgb, var(--color-destructive, #d62f2f) 80%, var(--color-fg));
+  background: color-mix(in srgb, var(--c-danger, #d62f2f) 16%, transparent);
+  color: color-mix(in srgb, var(--c-danger, #d62f2f) 80%, var(--c-ink));
 }
 
 /* ── Booking status actions + generic delete ─────────────────────────────── */
@@ -196,7 +196,7 @@
   align-items: center;
 }
 .btn {
-  border: 1px solid color-mix(in srgb, var(--color-fg) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 20%, transparent);
   background: transparent;
   color: inherit;
   border-radius: var(--radius-md, 0.5rem);
@@ -211,23 +211,23 @@
     background var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 .btn:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--c-forest);
+  color: var(--c-forest);
 }
 .btnDone:hover:not(:disabled) {
-  border-color: var(--color-success, #36a165);
-  color: var(--color-success, #36a165);
+  border-color: var(--c-success, #36a165);
+  color: var(--c-success, #36a165);
 }
 .btn:disabled {
   opacity: 0.5;
   cursor: progress;
 }
 .btnDanger {
-  border-color: color-mix(in srgb, var(--color-destructive, #d62f2f) 45%, transparent);
+  border-color: color-mix(in srgb, var(--c-danger, #d62f2f) 45%, transparent);
 }
 .btnDanger:hover:not(:disabled) {
-  border-color: var(--color-destructive, #d62f2f);
-  color: var(--color-destructive, #d62f2f);
+  border-color: var(--c-danger, #d62f2f);
+  color: var(--c-danger, #d62f2f);
 }
 
 /* ── Add forms (working hours / time off) ────────────────────────────────── */
@@ -238,9 +238,9 @@
   align-items: flex-end;
   margin: 1rem 0 1.5rem;
   padding: 1.25rem;
-  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
-  background: var(--color-bg);
+  background: var(--c-paper);
   box-shadow: var(--shadow-soft);
 }
 .field {
@@ -255,14 +255,14 @@
   font: inherit;
   padding: 0.5rem 0.6rem;
   border-radius: var(--radius-md, 0.5rem);
-  border: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent);
-  background: var(--color-bg);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 22%, transparent);
+  background: var(--c-paper);
   color: inherit;
   transition: outline-color var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 .field input:focus,
 .field select:focus {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--c-forest);
   outline-offset: 1px;
 }
 
@@ -276,15 +276,15 @@
   margin: 0.35rem 0 0;
 }
 .feedbackOk {
-  color: var(--color-success, #36a165);
-  background: color-mix(in srgb, var(--color-success, #36a165) 8%, transparent);
+  color: var(--c-success, #36a165);
+  background: color-mix(in srgb, var(--c-success, #36a165) 8%, transparent);
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-md, 0.5rem);
 }
 
 /* ── Empty state ─────────────────────────────────────────────────────────── */
 .empty {
-  border: 1px dashed color-mix(in srgb, var(--color-fg) 22%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--c-ink) 22%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
   padding: 1.5rem 1.25rem;
   text-align: center;
@@ -292,7 +292,7 @@
 .emptyTitle {
   font-weight: 600;
   margin: 0 0 0.35rem;
-  color: var(--color-primary);
+  color: var(--c-forest);
 }
 .emptyHint {
   margin: 0;
@@ -304,7 +304,7 @@
 .skeleton {
   position: relative;
   overflow: hidden;
-  background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  background: color-mix(in srgb, var(--c-ink) 8%, transparent);
   border-radius: var(--radius-md, 0.5rem);
 }
 .skeleton::after {
@@ -315,7 +315,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    color-mix(in srgb, var(--color-bg) 60%, transparent),
+    color-mix(in srgb, var(--c-paper) 60%, transparent),
     transparent
   );
   animation: shimmer 1.4s infinite;

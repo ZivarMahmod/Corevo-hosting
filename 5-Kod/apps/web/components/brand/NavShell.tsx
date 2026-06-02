@@ -9,31 +9,36 @@ import { UtilityBar } from '@/components/storefront/UtilityBar'
 import shell from './nav-shell.module.css'
 
 /**
- * Client shell shared by Nav A/B/C. Adds the editorial behaviours the static
- * global nav can't, correct-by-construction so it's safe without a live build:
+ * Client chrome shell for the ONE themed storefront nav. Adds the editorial
+ * behaviours the static markup can't, correct-by-construction so it's safe without
+ * a live build:
  *
  *  - Fixed top cluster (utility strip + nav). SOLID by default (every page, SSR,
  *    first client render, no-JS). Goes TRANSPARENT with light text ONLY when
- *    `hasHero && !scrolled` — so non-hero pages (tjanster/om/kontakt) are never
- *    light-on-cream, and server/first-render always match (no React #418).
- *  - Hamburger + full-screen overlay menu on mobile.
+ *    `hasHero && !scrolled` — i.e. over a full-bleed hero (Salvia only; the other
+ *    four layouts have a solid nav in normal flow and emit no `.hero` sentinel).
+ *    So non-hero pages and the four non-overlay layouts are never light-on-cream,
+ *    and server/first-render always match (no React #418).
+ *  - Hamburger + full-screen overlay menu on mobile, with focus-trap + restore.
  *
  * Geometry: the fixed cluster reserves space via `--nav-h` padding on <main>
- * (set in (public)/layout via a module class); the home hero cancels it with a
- * negative margin of exactly `-var(--nav-h)`, so the photo meets the viewport
- * top under the nav with nothing to hand-measure.
+ * (set in the storefront layouts via a module class); the Salvia hero cancels it
+ * with `margin-top: calc(-1 * var(--nav-h))`, so the photo meets the viewport top.
  *
- * The desktop nav markup (logo + links + CTA) is passed as `children` and stays
- * fully server-rendered.
+ * Layout (centered vs left/split) is driven purely by the `[data-theme]` ancestor
+ * in nav-shell.module.css — NOT by a prop — so this nav renders identically at all
+ * three call sites ((public)/layout, boka/layout, avboka/[id]/page), none of which
+ * pass a theme. The desktop nav markup is passed as `children` (server-rendered).
  */
 export function NavShell({
   children,
-  variant,
   customerAccountsEnabled,
+  utilityText,
 }: {
   children: ReactNode
-  variant: 'A' | 'B' | 'C'
   customerAccountsEnabled?: boolean
+  /** Per-theme utility-strip copy; falls back to UtilityBar's default. */
+  utilityText?: string
 }) {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
@@ -43,12 +48,10 @@ export function NavShell({
   const overlayRef = useRef<HTMLDivElement>(null)
   const overlayCloseRef = useRef<HTMLButtonElement>(null)
 
-  // Detect a full-bleed hero below the nav (home page only). Read after mount,
+  // Detect a full-bleed hero below the nav (Salvia home only). Read after mount,
   // so the SSR/first-render state stays SOLID (transparent is purely additive).
   // Re-checked on every client navigation (pathname dep) because the NavShell
-  // lives in the shared layout and does NOT remount — without this, going from
-  // home (hero) to /tjanster (no hero) would leave the nav transparent =
-  // white-on-cream. Close the mobile menu on navigation too.
+  // lives in the shared layout and does NOT remount. Close the mobile menu too.
   useEffect(() => {
     setHasHero(!!document.querySelector('.hero'))
     setMenuOpen(false)
@@ -63,15 +66,10 @@ export function NavShell({
 
   // While the mobile overlay is open: lock scroll, move focus in, trap Tab inside
   // the overlay, close on Escape, and restore focus to the burger on close.
-  // Mirrors BookingDrawer's dialog a11y; focus is restored to the known trigger
-  // (burgerRef) rather than document.activeElement, which a <button> click does
-  // not reliably focus in every browser.
   useEffect(() => {
     if (!menuOpen) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    // Move focus into the overlay after it paints, so the trap has something to
-    // hold (the burger sits outside the overlay and stays focusable otherwise).
     const t = window.setTimeout(() => overlayCloseRef.current?.focus(), 0)
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
@@ -110,14 +108,13 @@ export function NavShell({
     <div
       className={[
         shell.root,
-        shell[`v${variant}`],
         scrolled ? shell.scrolled : '',
         transparent ? shell.transparent : shell.solid,
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      <UtilityBar />
+      <UtilityBar {...(utilityText ? { text: utilityText } : {})} />
       <div className={shell.navRow}>
         {children}
 

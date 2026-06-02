@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { billingUnderlag } from '@/lib/platform/metrics'
 import { BILLING_MODEL_LABELS, formatPrice, type BillingModel } from '@/lib/platform/billing'
+import { PageHead } from '@/components/portal/ui'
 import styles from '@/components/platform/platform.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -35,7 +36,7 @@ export default async function FaktureringPage({
 
   return (
     <section className="portal-section">
-      <h1>Faktureringsunderlag</h1>
+      <PageHead eyebrow="Plattform" title="Faktureringsunderlag" />
       <p className="prose">
         FLÖDE 2 — läs-vy som Corevo fakturerar manuellt från. Per salong per kalendermånad:
         genomförda bokningar (exkl. avbokade/uteblivna) × avgift, eller fast månadsbelopp. Ingen

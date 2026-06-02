@@ -3,6 +3,7 @@ import { requirePortal } from '@/lib/auth/session'
 import { getMyStaff } from '@/lib/personal/staff'
 import { getMyTimeOff } from '@/lib/personal/schedule'
 import { TimeOffManager } from '@/components/personal/TimeOffManager'
+import { PageHead } from '@/components/portal/ui'
 import styles from '@/components/personal/personal.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,7 @@ export default async function FranvaroPage() {
   if (staff.length === 0) {
     return (
       <section className="portal-section">
-        <h1>Frånvaro</h1>
+        <PageHead eyebrow="Personal" title="Frånvaro" />
         <div className={styles.empty}>
           <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
           <p className={styles.emptyHint}>
@@ -31,7 +32,7 @@ export default async function FranvaroPage() {
 
   return (
     <section className="portal-section">
-      <h1>Frånvaro</h1>
+      <PageHead eyebrow="Personal" title="Frånvaro" />
       <p className="prose">
         Registrerad frånvaro blockerar bokningsbara tider direkt i boka-flödet (M3).
       </p>

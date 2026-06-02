@@ -345,4 +345,147 @@
 
 /* Hero 3 (split editorial/brand-panel template) removed — the current Hero uses
    HeroCarousel + the storefront .hero* classes; the .hero3* rules had zero TSX
-   references. nav C (.navC*) above is still live and kept. */
+   references. The .navC* rules are now dead (the A/B/C navs were consolidated into
+   the single themed Nav); CSS Modules tolerate unused classes, so they're left
+   inert rather than risk touching the still-imported skeleton/error/cardLift
+   classes above. */
+
+/* ===========================================================================
+   FOOTERS — MiniFooter (4 themes + boka/avboka) + FooterFull (Salvia home).
+   Both white-label (tenant name only). Colour from theme tokens; theme-flexed
+   via [data-theme] where it earns it. The global .footer sets text-align:center
+   + opacity:.7 — we override opacity locally so footer text reads at full weight.
+   =========================================================================== */
+
+/* ── MiniFooter — compact, centered ───────────────────────────────────────── */
+.miniFooter {
+  opacity: 1;
+  background: var(--color-surface, var(--color-bg));
+  border-top: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg) 10%, transparent));
+  padding: clamp(2.25rem, 5vw, 3rem) 1.5rem;
+  text-align: center;
+}
+.miniWordmark {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-fg);
+  letter-spacing: 0.03em;
+}
+:global([data-theme='zigge']) .miniWordmark {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.miniTagline {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--color-fg-2, color-mix(in srgb, var(--color-fg) 60%, transparent));
+  margin-top: 0.65rem;
+}
+.miniSign {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  margin-top: 0.85rem;
+}
+.miniLegal {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  color: var(--color-fg-2, color-mix(in srgb, var(--color-fg) 55%, transparent));
+  margin: 1rem 0 0;
+}
+
+/* ── FooterFull — 3-column (Salvia) ───────────────────────────────────────── */
+.fullFooter {
+  opacity: 1;
+  text-align: left;
+  background: var(--color-surface, var(--color-bg));
+  border-top: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg) 10%, transparent));
+  padding: clamp(3rem, 6vw, 4rem) clamp(1.25rem, 4vw, 1.75rem) 2.5rem;
+}
+.fullGrid {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 2.5rem;
+}
+.fullWordmark {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+.fullTagline {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--color-fg-2, color-mix(in srgb, var(--color-fg) 60%, transparent));
+  margin: 0.85rem 0 0;
+  max-width: 20rem;
+  line-height: 1.6;
+}
+.fullSocials {
+  display: flex;
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+}
+.fullSocial {
+  color: var(--color-fg);
+  opacity: 0.7;
+  display: inline-flex;
+}
+.fullHead {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0 0 0.9rem;
+}
+.fullText {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--color-fg-2, color-mix(in srgb, var(--color-fg) 60%, transparent));
+  margin: 0 0 0.4rem;
+  line-height: 1.6;
+}
+.fullLink {
+  color: var(--color-primary);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.fullLink:hover {
+  border-bottom-color: var(--color-primary);
+}
+.fullHoursRow {
+  display: flex;
+  justify-content: space-between;
+  max-width: 12.5rem;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--color-fg-2, color-mix(in srgb, var(--color-fg) 60%, transparent));
+  padding: 0.2rem 0;
+}
+.fullBottom {
+  max-width: 1240px;
+  margin: 2.5rem auto 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg) 10%, transparent));
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--color-fg-2, color-mix(in srgb, var(--color-fg) 55%, transparent));
+}
+.fullSign {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--color-primary);
+}
+@media (max-width: 760px) {
+  .fullGrid { grid-template-columns: 1fr; gap: 1.75rem; }
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type ElementType, type ReactNode } from 'react'
+import { useRef, useState, type CSSProperties, type ElementType, type ReactNode } from 'react'
 import styles from './storefront.module.css'
 
 /**
@@ -22,11 +22,15 @@ export function Reveal({
   as: Tag = 'div',
   delay = 0,
   className = '',
+  style,
 }: {
   children: ReactNode
   as?: ElementType
   delay?: number
   className?: string
+  /** Extra inline styles merged with the reveal transition-delay (layouts use it
+   *  for one-off alignment like centered section heads). */
+  style?: CSSProperties
 }) {
   const ref = useRef<HTMLElement | null>(null)
   const [shown, setShown] = useState(false)
@@ -60,7 +64,7 @@ export function Reveal({
     <Tag
       ref={setNode}
       className={`${styles.reveal} ${shown ? styles.revealShown : ''} ${className}`}
-      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
+      style={delay ? { transitionDelay: `${delay}ms`, ...style } : style}
     >
       {children}
     </Tag>

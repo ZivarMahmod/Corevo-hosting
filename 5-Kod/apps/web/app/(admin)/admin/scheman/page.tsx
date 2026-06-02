@@ -4,6 +4,7 @@ import { getAdminTenant } from '@/lib/admin/tenant'
 import { listStaff, listWorkingHours } from '@/lib/admin/data'
 import { StaffPicker } from '@/components/admin/StaffPicker'
 import { ScheduleManager } from '@/components/admin/ScheduleManager'
+import { PageHead } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Scheman · Salongsadmin' }
@@ -19,7 +20,7 @@ export default async function SchedulesPage({
   if (!tenant) {
     return (
       <section className="portal-section">
-        <h1>Scheman</h1>
+        <PageHead eyebrow="Salong-admin" title="Scheman" />
         <p className="prose">Ingen salong är kopplad till ditt konto.</p>
       </section>
     )
@@ -29,7 +30,7 @@ export default async function SchedulesPage({
   if (staff.length === 0) {
     return (
       <section className="portal-section">
-        <h1>Scheman</h1>
+        <PageHead eyebrow={tenant.name} title="Scheman" />
         <p className="prose">Lägg till personal först under Personal.</p>
       </section>
     )
@@ -40,7 +41,7 @@ export default async function SchedulesPage({
 
   return (
     <section className="portal-section">
-      <h1>Scheman</h1>
+      <PageHead eyebrow={`${tenant.name} · Scheman & öppettider`} title="Scheman" />
       <p className="prose">
         Veckovisa arbetstider per medarbetare (tidszon {tenant.timeZone}). Bokningsmotorn erbjuder
         bara tider inom dessa intervall.

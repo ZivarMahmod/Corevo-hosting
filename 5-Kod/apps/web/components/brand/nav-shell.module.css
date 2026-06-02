@@ -1,12 +1,13 @@
-/* Nav shell — fixed top cluster (utility strip + nav), shared by Nav A/B/C.
-   SOLID by default (SSR, first render, no-JS, every non-hero page). TRANSPARENT
-   with light text only via the .transparent class, which the client adds only
-   when a hero is present AND the page isn't scrolled — so light-on-cream is
-   structurally impossible on tjanster/om/kontakt.
+/* Nav shell — fixed top cluster (utility strip + the ONE themed nav).
+   SOLID by default (SSR, first render, no-JS, every non-hero page and all four
+   non-overlay layouts). TRANSPARENT with light text only via the .transparent
+   class, which the client adds only when a full-bleed hero is present (Salvia)
+   AND the page isn't scrolled — so light-on-cream is structurally impossible on
+   tjanster/om/kontakt or the solid-nav layouts.
 
-   Class names are hashed (module) → no leak. Frozen global .nav keeps its
-   border/layout; we only own positioning + the (transparent vs solid) skin and
-   neutralise the inner header background so the shell's skin shows through. */
+   Class names are hashed (module) → no leak. Nav LAYOUT (centered vs left/split)
+   is driven by the [data-theme] ancestor, NOT a prop, so the nav renders the same
+   at all three call sites (none pass a theme). */
 
 .root {
   position: fixed;
@@ -23,47 +24,121 @@
   position: relative;
 }
 
-/* ── per-variant flourishes (keep the three templates distinct in the nav) ─── */
-/* A — Salong: airy/soft, nothing extra. */
-.vA {
+/* ── The themed nav — one flat 3-zone grid: [links] [wordmark] [cluster] ───── */
+.navThemed {
+  display: grid;
+  /* Default (salvia / zigge / linnea / edit): wordmark LEFT, links + cluster
+     grouped on the RIGHT (handoff split/left MiniNav). */
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 1.25rem;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 1rem clamp(1.25rem, 4vw, 1.75rem);
 }
-/* B — Atelier: square, uppercase wordmark + overlay links. */
-.vB :global(.nav-logo),
-.vB :global(.logo-text) {
+
+.navWordmark {
+  grid-column: 1;
+  justify-self: start;
+  white-space: nowrap;
+}
+/* Re-style the global .logo-text (the inner text node) to the editorial display
+   wordmark; the global rule is sans/800/primary, we want display/600/fg. The
+   .logo-img path is left as-is. */
+.navWordmark :global(.logo-text) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: 0.01em;
+  color: var(--color-fg);
+}
+.navLinks {
+  grid-column: 2;
+  justify-self: end;
+  display: flex;
+  gap: 1.6rem;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.navLinks a {
+  color: var(--color-fg);
+  opacity: 0.82;
+  white-space: nowrap;
+  transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.navLinks a:hover {
+  opacity: 1;
+  color: var(--color-primary);
+}
+.navCluster {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.navAccount {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  background: transparent;
+  color: var(--color-fg);
+}
+.navAccount:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.navBook {
+  font-size: 0.9rem;
+  padding: 0.7rem 1.4rem;
+}
+
+/* ── leander → symmetric track so the wordmark viewport-centers: links left,
+   wordmark center, cluster right ──────────────────────────────────────────── */
+:global([data-theme='leander']) .navThemed {
+  grid-template-columns: 1fr auto 1fr;
+}
+:global([data-theme='leander']) .navWordmark {
+  grid-column: 2;
+  justify-self: center;
+}
+:global([data-theme='leander']) .navLinks {
+  grid-column: 1;
+  justify-self: start;
+}
+:global([data-theme='leander']) .navCluster {
+  grid-column: 3;
+}
+
+/* ── zigge → uppercase, letterspaced links + CTA (typographic only) ────────── */
+:global([data-theme='zigge']) .navWordmark :global(.logo-text) {
   text-transform: uppercase;
   letter-spacing: 0.12em;
 }
-.vB .overlayLinks a {
+:global([data-theme='zigge']) .navLinks a {
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-.vB .overlayClose,
-.vB .burger {
-  border-radius: 0;
-}
-/* C — Studio: modern, slightly tighter. */
-.vC :global(.nav-logo),
-.vC :global(.logo-text) {
-  letter-spacing: -0.01em;
-}
-
-/* Neutralise the inner header backgrounds so the shell skin (solid/transparent)
-   is the single source of truth. The global .nav has only a border; NavC adds a
-   frosted bg we override here. */
-.root :global(.nav) {
-  background: transparent;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
 }
 
 /* ── SOLID skin (default) ─────────────────────────────────────────────────── */
 .solid {
   background: var(--color-bg);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+  border-bottom: 1px solid var(--color-line);
 }
 .scrolled.solid {
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  backdrop-filter: saturate(140%) blur(12px);
   box-shadow: var(--shadow-soft);
 }
 
-/* ── TRANSPARENT skin (over the hero, additive) ───────────────────────────── */
+/* ── TRANSPARENT skin (over the Salvia hero, additive) ─────────────────────── */
 .transparent {
   background: transparent;
   /* faint top scrim — the hero overlay is lightest at the very top where the nav
@@ -71,29 +146,23 @@
   background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0));
   color: #fff;
 }
-.transparent :global(.nav) {
-  border-bottom-color: transparent;
-}
 /* Force every nav text/link to white over the photo (they're tokened to
-   --color-primary and would otherwise vanish). */
-.transparent :global(.nav-logo),
-.transparent :global(.logo-text),
-.transparent :global(.nav-links a),
-.transparent :global(.nav-account) {
+   --color-fg/--color-primary and would otherwise be dark-on-dark). */
+.transparent .navWordmark,
+.transparent .navWordmark :global(.logo-text),
+.transparent .navLinks a,
+.transparent .navAccount {
   color: #fff;
 }
-.transparent :global(.nav-links a:hover),
-.transparent :global(.nav-account:hover) {
+.transparent .navLinks a:hover {
   color: #fff;
   opacity: 0.78;
 }
-/* NavC's link pill — make it readable over a photo. */
-.transparent :global([class*='navCLinks']) {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.3);
+.transparent .navAccount {
+  border-color: rgba(255, 255, 255, 0.5);
 }
-.transparent :global(.nav-b) {
-  border-bottom-color: rgba(255, 255, 255, 0.4);
+.transparent .navAccount:hover {
+  border-color: #fff;
 }
 
 /* ── Mobile hamburger + full-screen overlay ───────────────────────────────── */
@@ -114,6 +183,7 @@
   justify-content: center;
   padding: 0;
   z-index: 2;
+  color: inherit;
 }
 .burger span {
   display: block;
@@ -181,21 +251,18 @@
   .root, .overlay { transition: none; }
 }
 
-/* Show hamburger / hide desktop nav links below 720px. The global .nav-links and
-   the variant rows are hidden; the overlay carries navigation on mobile. */
+/* Show hamburger / hide desktop nav links + cluster below 720px. The overlay
+   carries navigation on mobile; the wordmark stays. */
 @media (max-width: 720px) {
   .burger { display: inline-flex; }
-  .root :global(.nav-links),
-  .root :global(.nav-account),
-  .root :global([class*='navCLinks']),
-  .root :global([class*='navCAccount']) {
+  .navThemed { grid-template-columns: 1fr; justify-items: start; }
+  .navLinks,
+  .navCluster {
     display: none;
   }
-  /* keep the Boka CTA visible & out of the hamburger's way */
-  .root :global(.nav-a-row),
-  .root :global(.nav-b-row),
-  .root :global([class*='navCActions']) {
-    gap: 0.75rem;
-    padding-right: 3.25rem;
+  .navWordmark,
+  :global([data-theme='leander']) .navWordmark {
+    grid-column: 1;
+    justify-self: start;
   }
 }

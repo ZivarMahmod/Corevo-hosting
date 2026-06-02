@@ -7,8 +7,8 @@
   margin-bottom: 1.5rem;
   padding: 0.3rem;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
-  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
+  background: color-mix(in srgb, var(--c-ink) 3%, transparent);
   width: fit-content;
   max-width: 100%;
 }
@@ -24,16 +24,16 @@
     color var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 .navLink:hover {
-  background: color-mix(in srgb, var(--color-fg) 7%, transparent);
+  background: color-mix(in srgb, var(--c-ink) 7%, transparent);
 }
 .navLink:focus-visible {
-  outline: 2px solid var(--color-accent, #f5a623);
+  outline: 2px solid var(--c-gold, #f5a623);
   outline-offset: 2px;
 }
 .navLinkActive,
 .navLinkActive:hover {
-  background: var(--color-primary);
-  color: var(--color-primary-foreground, #f4f1ea);
+  background: var(--c-forest);
+  color: #fff;
   border-color: transparent;
   font-weight: 600;
   box-shadow: var(--shadow-soft, 0 2px 8px -3px rgba(20, 40, 30, 0.18));
@@ -59,7 +59,7 @@
   margin: 0.5rem 0 0;
 }
 .feedbackOk {
-  color: color-mix(in srgb, var(--success, #36a165) 85%, #000);
+  color: color-mix(in srgb, var(--c-success, #4e7a5e) 85%, #000);
 }
 
 /* ── forms ── */
@@ -71,9 +71,9 @@
   max-width: 38rem;
   margin: 1rem 0 1.5rem;
   padding: 1.25rem;
-  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
-  background: var(--color-bg, #fff);
+  background: var(--c-paper, #fff);
   box-shadow: var(--shadow-soft, 0 2px 15px -3px rgba(20, 40, 30, 0.08));
 }
 .field {
@@ -88,7 +88,7 @@
   font: inherit;
   padding: 0.45rem 0.55rem;
   border-radius: var(--radius-sm, 0.375rem);
-  border: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 22%, transparent);
   background: transparent;
   color: inherit;
   transition:
@@ -99,8 +99,8 @@
 .field select:focus,
 .field textarea:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent, #f5a623) 35%, transparent);
+  border-color: var(--c-forest);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-gold, #f5a623) 35%, transparent);
 }
 .field input[type='color'] {
   padding: 0.1rem;
@@ -134,7 +134,7 @@
 
 /* ── buttons ── */
 .btn {
-  border: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 22%, transparent);
   background: transparent;
   color: inherit;
   border-radius: var(--radius-md, 0.5rem);
@@ -151,11 +151,11 @@
     background var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 .btn:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  border-color: var(--c-forest);
+  background: color-mix(in srgb, var(--c-forest) 6%, transparent);
 }
 .btn:focus-visible {
-  outline: 2px solid var(--color-accent, #f5a623);
+  outline: 2px solid var(--c-gold, #f5a623);
   outline-offset: 2px;
 }
 .btn:disabled {
@@ -163,11 +163,11 @@
   cursor: default;
 }
 .btnDanger {
-  border-color: color-mix(in srgb, var(--destructive, #d62f2f) 45%, transparent);
-  color: color-mix(in srgb, var(--destructive, #d62f2f) 80%, #000);
+  border-color: color-mix(in srgb, var(--c-danger, #9e5a57) 45%, transparent);
+  color: color-mix(in srgb, var(--c-danger, #9e5a57) 80%, #000);
 }
 .btnDanger:hover {
-  background: color-mix(in srgb, var(--destructive, #d62f2f) 8%, transparent);
+  background: color-mix(in srgb, var(--c-danger, #9e5a57) 8%, transparent);
 }
 
 /* ── badges ── */
@@ -181,12 +181,12 @@
   background: color-mix(in srgb, currentColor 12%, transparent);
 }
 .badgeActive {
-  background: color-mix(in srgb, var(--success, #36a165) 20%, transparent);
-  color: color-mix(in srgb, var(--success, #36a165) 80%, #000);
+  background: color-mix(in srgb, var(--c-success, #4e7a5e) 20%, transparent);
+  color: color-mix(in srgb, var(--c-success, #4e7a5e) 80%, #000);
 }
 .badgeSuspended {
-  background: color-mix(in srgb, var(--destructive, #d62f2f) 16%, transparent);
-  color: color-mix(in srgb, var(--destructive, #d62f2f) 80%, #000);
+  background: color-mix(in srgb, var(--c-danger, #9e5a57) 16%, transparent);
+  color: color-mix(in srgb, var(--c-danger, #9e5a57) 80%, #000);
 }
 .code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -223,16 +223,16 @@
   gap: 0.85rem;
 }
 .stepDone {
-  border-left-color: var(--success, #36a165);
-  background: color-mix(in srgb, var(--success, #36a165) 8%, transparent);
+  border-left-color: var(--c-success, #4e7a5e);
+  background: color-mix(in srgb, var(--c-success, #4e7a5e) 8%, transparent);
 }
 .stepTodo {
-  border-left-color: var(--color-accent, #f5a623);
-  background: color-mix(in srgb, var(--color-accent, #f5a623) 9%, transparent);
+  border-left-color: var(--c-gold, #f5a623);
+  background: color-mix(in srgb, var(--c-gold, #f5a623) 9%, transparent);
 }
 .stepLocked {
-  border-left-color: color-mix(in srgb, var(--color-fg) 35%, transparent);
-  background: color-mix(in srgb, var(--color-fg) 5%, transparent);
+  border-left-color: color-mix(in srgb, var(--c-ink) 35%, transparent);
+  background: color-mix(in srgb, var(--c-ink) 5%, transparent);
   opacity: 0.85;
 }
 .stepNum {
@@ -283,10 +283,10 @@
   margin: 1rem 0;
 }
 .card {
-  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
   padding: 1.1rem 1.15rem;
-  background: var(--color-bg, #fff);
+  background: var(--c-paper, #fff);
   box-shadow: var(--shadow-soft, 0 2px 15px -3px rgba(20, 40, 30, 0.08));
 }
 .cardTitle {
@@ -302,21 +302,21 @@
 
 /* ── grouped form sections (onboarding create form) ── */
 .group {
-  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
   padding: 1rem 1.1rem 1.15rem;
   margin: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  background: color-mix(in srgb, var(--color-fg) 2%, transparent);
+  background: color-mix(in srgb, var(--c-ink) 2%, transparent);
 }
 .groupTitle {
   font-family: var(--font-display, inherit);
   font-weight: 700;
   font-size: 1.02rem;
   padding: 0 0.35rem;
-  color: var(--color-primary);
+  color: var(--c-forest);
   letter-spacing: -0.01em;
 }
 
@@ -332,9 +332,9 @@
   gap: 0.35rem;
   text-align: left;
   padding: 0.7rem;
-  border: 1.5px solid color-mix(in srgb, var(--color-fg) 16%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--c-ink) 16%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
-  background: var(--color-bg, #fff);
+  background: var(--c-paper, #fff);
   color: inherit;
   cursor: pointer;
   font: inherit;
@@ -344,15 +344,15 @@
     transform var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 .templateCard:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  border-color: color-mix(in srgb, var(--c-forest) 55%, transparent);
   transform: translateY(-1px);
 }
 .templateCard:focus-visible {
-  outline: 2px solid var(--color-accent, #f5a623);
+  outline: 2px solid var(--c-gold, #f5a623);
   outline-offset: 2px;
 }
 .templateCardSel {
-  border-color: var(--color-accent, #f5a623);
+  border-color: var(--c-gold, #f5a623);
   box-shadow: var(--shadow-gold, 0 4px 20px -4px rgba(245, 166, 35, 0.25));
 }
 .templateName {
@@ -379,7 +379,7 @@
   gap: 4px;
   height: 84px;
   border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
   padding: 6px;
   overflow: hidden;
 }
@@ -467,9 +467,9 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.35rem 0.6rem 0.35rem 0.4rem;
-  border: 1.5px solid color-mix(in srgb, var(--color-fg) 16%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--c-ink) 16%, transparent);
   border-radius: 999px;
-  background: var(--color-bg, #fff);
+  background: var(--c-paper, #fff);
   color: inherit;
   cursor: pointer;
   font: inherit;
@@ -477,14 +477,14 @@
   transition: border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 .swatch:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+  border-color: color-mix(in srgb, var(--c-forest) 50%, transparent);
 }
 .swatch:focus-visible {
-  outline: 2px solid var(--color-accent, #f5a623);
+  outline: 2px solid var(--c-gold, #f5a623);
   outline-offset: 2px;
 }
 .swatchSel {
-  border-color: var(--color-accent, #f5a623);
+  border-color: var(--c-gold, #f5a623);
   box-shadow: var(--shadow-gold, 0 4px 20px -4px rgba(245, 166, 35, 0.25));
 }
 .swatchDot {
@@ -502,9 +502,9 @@
   border-radius: 6px;
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--color-fg) 8%, transparent) 25%,
-    color-mix(in srgb, var(--color-fg) 14%, transparent) 37%,
-    color-mix(in srgb, var(--color-fg) 8%, transparent) 63%
+    color-mix(in srgb, var(--c-ink) 8%, transparent) 25%,
+    color-mix(in srgb, var(--c-ink) 14%, transparent) 37%,
+    color-mix(in srgb, var(--c-ink) 8%, transparent) 63%
   );
   background-size: 400% 100%;
   animation: platformShimmer 1.4s ease infinite;
@@ -573,7 +573,7 @@
 
 /* ── friendly empty state ── */
 .empty {
-  border: 1px dashed color-mix(in srgb, var(--color-fg) 22%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--c-ink) 22%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
   padding: 2rem 1.5rem;
   text-align: center;

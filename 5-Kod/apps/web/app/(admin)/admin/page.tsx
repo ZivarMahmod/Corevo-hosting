@@ -1,15 +1,22 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { dashboardData } from '@/lib/admin/data'
 import { todayInTz, dayRangeUtc, weekRangeUtc } from '@/lib/admin/dates'
 import { formatTime, statusLabel } from '@/lib/admin/format'
-import { badgeClass } from '@/components/admin/badge'
-import styles from '@/components/admin/admin.module.css'
+import { PageHead, Stat, Card, Badge, Button } from '@/components/portal/ui'
+import type { BadgeTone } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Salongsadmin' }
+
+const STATUS_TONE: Record<string, BadgeTone> = {
+  pending: 'gold',
+  confirmed: 'info',
+  completed: 'success',
+  cancelled: 'danger',
+  no_show: 'danger',
+}
 
 export default async function AdminPage() {
   const user = await requirePortal('admin')
@@ -24,57 +31,113 @@ export default async function AdminPage() {
   }
 
   const today = todayInTz(tenant.timeZone)
-  const data = await dashboardData(tenant.id, dayRangeUtc(today, tenant.timeZone), weekRangeUtc(today, tenant.timeZone))
-
-  const stats = [
-    { label: 'Bokningar idag', value: data.todayCount },
-    { label: 'Bokningar denna vecka', value: data.weekCount },
-    { label: 'Aktiva tjänster', value: data.servicesActive },
-    { label: 'Aktiv personal', value: data.staffActive },
-  ]
+  const data = await dashboardData(
+    tenant.id,
+    dayRangeUtc(today, tenant.timeZone),
+    weekRangeUtc(today, tenant.timeZone),
+  )
 
   return (
     <section className="portal-section">
-      <h1>Översikt</h1>
-      <p className="prose">{tenant.name} · {today}</p>
+      <PageHead eyebrow={tenant.name} title="Översikt">
+        <Button href="/admin/bokningar" variant="ghost" icon="calendar">
+          Alla bokningar
+        </Button>
+        <Button href="/admin/tjanster" variant="primary" icon="plus">
+          Ny tjänst
+        </Button>
+      </PageHead>
 
-      <ul className="portal-stats">
-        {stats.map((s) => (
-          <li key={s.label} className="portal-stat">
-            <span className="portal-stat-value">{s.value}</span>
-            <span className="portal-stat-label">{s.label}</span>
-          </li>
-        ))}
-      </ul>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap: 16,
+          marginBottom: 22,
+        }}
+      >
+        <Stat label="Bokningar idag" value={data.todayCount} icon="calendar" />
+        <Stat label="Denna vecka" value={data.weekCount} icon="trendUp" />
+        <Stat label="Aktiva tjänster" value={data.servicesActive} icon="scissors" />
+        <Stat label="Aktiv personal" value={data.staffActive} icon="users" />
+      </div>
 
-      <div className={styles.section} style={{ marginTop: '2rem' }}>
-        <div className={styles.sectionHead}>
-          <h2>Dagens bokningar</h2>
-          <Link className={styles.navLink} href="/admin/bokningar">
-            Alla bokningar →
-          </Link>
+      <Card pad={0}>
+        <div
+          style={{
+            padding: '18px 22px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <h2 className="h2">Dagens bokningar</h2>
+          <Button href="/admin/bokningar" variant="subtle" size="sm">
+            Visa alla
+          </Button>
         </div>
+
         {data.upcomingToday.length === 0 ? (
-          <div className={styles.empty}>
-            <strong>Inga bokningar idag.</strong>
-            Nya bokningar från din publika sajt dyker upp här automatiskt.
+          <div style={{ padding: '0 22px 22px' }}>
+            <div
+              style={{
+                border: '1px dashed var(--c-line-strong)',
+                background: 'var(--c-paper-2)',
+                borderRadius: 12,
+                padding: '22px 18px',
+                textAlign: 'center',
+                color: 'var(--c-ink-2)',
+                fontSize: 14,
+              }}
+            >
+              <strong style={{ display: 'block', color: 'var(--c-ink)', marginBottom: 4 }}>
+                Inga bokningar idag.
+              </strong>
+              Nya bokningar från din publika sajt dyker upp här automatiskt.
+            </div>
           </div>
         ) : (
-          <ul className={styles.list}>
+          <div style={{ padding: '0 10px 10px' }}>
             {data.upcomingToday.map((b) => (
-              <li key={b.id} className={styles.row}>
-                <div className={styles.rowMain}>
-                  <span className={styles.rowTitle}>
-                    {formatTime(b.startTs, tenant.timeZone)} · {b.serviceName}
-                  </span>
-                  <span className={styles.rowSub}>{b.staffTitle}</span>
+              <div
+                key={b.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: '12px 14px',
+                  borderRadius: 12,
+                }}
+              >
+                <div
+                  className="num"
+                  style={{
+                    width: 56,
+                    fontWeight: 700,
+                    color: 'var(--c-forest)',
+                    fontSize: 15,
+                    fontFamily: 'var(--font-ui)',
+                  }}
+                >
+                  {formatTime(b.startTs, tenant.timeZone)}
                 </div>
-                <span className={badgeClass(b.status)}>{statusLabel(b.status)}</span>
-              </li>
+                <div
+                  style={{ width: 3, height: 34, borderRadius: 999, background: 'var(--c-gold)' }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>
+                    {b.serviceName}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>{b.staffTitle}</div>
+                </div>
+                <Badge tone={STATUS_TONE[b.status] ?? 'neutral'}>{statusLabel(b.status)}</Badge>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
-      </div>
+      </Card>
     </section>
   )
 }

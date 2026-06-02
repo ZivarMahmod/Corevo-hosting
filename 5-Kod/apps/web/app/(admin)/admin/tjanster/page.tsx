@@ -3,6 +3,7 @@ import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { listServices } from '@/lib/admin/data'
 import { ServicesManager } from '@/components/admin/ServicesManager'
+import { PageHead } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Tjänster · Salongsadmin' }
@@ -16,7 +17,7 @@ export default async function ServicesPage() {
 
   return (
     <section className="portal-section">
-      <h1>Tjänster</h1>
+      <PageHead eyebrow={tenant.name} title="Tjänster" />
       <p className="prose">
         Priser och varaktighet styr den publika bokningen direkt. Inaktiverade tjänster döljs på
         webbplatsen men behåller sin bokningshistorik.
@@ -29,7 +30,7 @@ export default async function ServicesPage() {
 function NoTenant() {
   return (
     <section className="portal-section">
-      <h1>Tjänster</h1>
+      <PageHead eyebrow="Salong-admin" title="Tjänster" />
       <p className="prose">Ingen salong är kopplad till ditt konto.</p>
     </section>
   )

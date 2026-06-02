@@ -7,6 +7,7 @@ import { dayRangeUtc, isValidDate, todayInTz } from '@/lib/admin/dates'
 import { formatDateTime, formatPrice, statusLabel, BOOKING_STATUSES } from '@/lib/admin/format'
 import { badgeClass } from '@/components/admin/badge'
 import { BookingStatusControl } from '@/components/admin/BookingStatusControl'
+import { PageHead } from '@/components/portal/ui'
 import styles from '@/components/admin/admin.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -21,7 +22,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   if (!tenant) {
     return (
       <section className="portal-section">
-        <h1>Bokningar</h1>
+        <PageHead eyebrow="Salong-admin" title="Bokningar" />
         <p className="prose">Ingen salong är kopplad till ditt konto.</p>
       </section>
     )
@@ -47,7 +48,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
 
   return (
     <section className="portal-section">
-      <h1>Bokningar</h1>
+      <PageHead eyebrow={tenant.name} title="Bokningar" />
       <p className="prose">Alla bokningar för {tenant.name}. Tider visas i {tz}.</p>
 
       <form method="get" className={styles.filters}>

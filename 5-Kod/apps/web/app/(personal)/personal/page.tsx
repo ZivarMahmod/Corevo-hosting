@@ -10,6 +10,7 @@ import {
 import { addDays, mondayOf, todayInTz, fmtTime } from '@/lib/personal/format'
 import { Calendar, type CalendarGroup } from '@/components/personal/Calendar'
 import { DateNav } from '@/components/personal/DateNav'
+import { PageHead, Stat, Badge } from '@/components/portal/ui'
 import styles from '@/components/personal/personal.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -29,7 +30,7 @@ export default async function PersonalPage({
   if (staff.length === 0) {
     return (
       <section className="portal-section">
-        <h1>Idag</h1>
+        <PageHead eyebrow="Personal" title="Idag" />
         <div className={styles.empty}>
           <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
           <p className={styles.emptyHint}>
@@ -81,23 +82,39 @@ export default async function PersonalPage({
 
   return (
     <section className="portal-section">
-      <h1>Idag</h1>
-      <div className={styles.stats}>
-        <div className={styles.stat}>
-          <div className={styles.statValue}>{activeToday.length}</div>
-          <div className={styles.statLabel}>
-            {activeToday.length === 1 ? 'aktiv bokning idag' : 'aktiva bokningar idag'}
-          </div>
-        </div>
-        <div className={styles.stat}>
-          <div className={styles.statValue}>{next ? fmtTime(next.startTs, next.timeZone) : '–'}</div>
-          <div className={styles.statLabel}>
-            {next ? `nästa kund: ${next.customerLabel}` : 'inga fler bokningar idag'}
-          </div>
-        </div>
+      <PageHead eyebrow="Personal" title="Idag">
+        <Badge tone="gold">
+          {activeToday.length} {activeToday.length === 1 ? 'bokning' : 'bokningar'} idag
+        </Badge>
+      </PageHead>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: 16,
+          marginBottom: 26,
+        }}
+      >
+        <Stat
+          label="Aktiva idag"
+          value={activeToday.length}
+          delta={activeToday.length === 1 ? 'aktiv bokning idag' : 'aktiva bokningar idag'}
+          deltaTone="muted"
+          icon="calendar"
+        />
+        <Stat
+          label="Nästa kund"
+          value={next ? fmtTime(next.startTs, next.timeZone) : '–'}
+          delta={next ? next.customerLabel : 'inga fler bokningar idag'}
+          deltaTone="muted"
+          icon="user"
+        />
       </div>
 
-      <h2>Kalender</h2>
+      <h2 className="h2" style={{ marginBottom: 12 }}>
+        Kalender
+      </h2>
       <DateNav dateStr={dateStr} view={view} today={today} />
       <Calendar groups={groups} />
     </section>

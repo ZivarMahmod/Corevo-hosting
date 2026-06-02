@@ -42,10 +42,18 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+/** Presentation variant.
+ *  - `wizard`  → Variant 3: steg-för-steg, one decision per screen, top progress
+ *    bar + bottom action bar (DEFAULT).
+ *  - `compact` → Variant 4: kompakt snabbboka, every choice on one screen with a
+ *    single bottom "Boka tid" CTA. */
+export type BookingMode = 'wizard' | 'compact'
+
 export function BookingWizard({
   services,
   open,
   onClose,
+  mode = 'wizard',
 }: {
   services: WizardService[]
   /** Drawer open-state (embedded only). On a closed→open rising edge AFTER a
@@ -56,7 +64,10 @@ export function BookingWizard({
   /** Set when the wizard is embedded in the storefront drawer. Lets step 5's
    *  primary action close the drawer (instead of linking to "/"). */
   onClose?: () => void
+  /** Variant 3 wizard (default) or Variant 4 kompakt snabbboka. */
+  mode?: BookingMode
 }) {
+  const compact = mode === 'compact'
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -100,36 +111,15 @@ export function BookingWizard({
       new Date(iso),
     )
 
-  function pickService(s: WizardService) {
-    setService(s)
-    setStaffChoice('any')
-    setDate(null)
-    setSlots([])
-    setSlot(null)
-    setSlotsError(null)
-    setSlotTakenNotice(null)
-    setError(null)
-    setStep(2)
-  }
-
-  function pickStaff(choice: string) {
-    setStaffChoice(choice)
-    setDate(null)
-    setSlots([])
-    setSlot(null)
-    setSlotsError(null)
-    setSlotTakenNotice(null)
-    setStep(3)
-  }
-
-  function pickDate(d: string) {
-    if (!service) return
-    setDate(d)
+  // Core slot-fetch — the ONE place that calls getAvailableSlots. Used by both
+  // variants: the wizard's day handler (per service+staff+day) and compact's
+  // effect (refetch whenever service OR staff OR day changes).
+  function fetchSlots(serviceId: string, choice: string, d: string) {
     setSlot(null)
     setError(null)
     setSlotsError(null)
     startTransition(async () => {
-      const res = await getAvailableSlots(service.id, staffChoice === 'any' ? null : staffChoice, d)
+      const res = await getAvailableSlots(serviceId, choice === 'any' ? null : choice, d)
       if (res.ok) {
         setSlots(res.slots)
         setTimeZone(res.timeZone)
@@ -139,6 +129,59 @@ export function BookingWizard({
       }
     })
   }
+
+  // ── Variant 3 (wizard) navigation ─────────────────────────────────────────
+  // Selection NO LONGER auto-advances (handoff VWizard = one decision per screen
+  // + an explicit "Fortsätt"). Each picker only sets state; the bottom action
+  // bar advances. Selecting a service/staff still RESETS downstream choices.
+  function pickService(s: WizardService) {
+    setService(s)
+    setStaffChoice('any')
+    setDate(null)
+    setSlots([])
+    setSlot(null)
+    setSlotsError(null)
+    setSlotTakenNotice(null)
+    setError(null)
+  }
+
+  function pickStaff(choice: string) {
+    setStaffChoice(choice)
+    setDate(null)
+    setSlots([])
+    setSlot(null)
+    setSlotsError(null)
+    setSlotTakenNotice(null)
+  }
+
+  // Day selection still fires the slot fetch (the wiring the engine depends on),
+  // but stays on step 3 so the customer can read the grid and press Fortsätt.
+  function pickDate(d: string) {
+    if (!service) return
+    setDate(d)
+    fetchSlots(service.id, staffChoice, d)
+  }
+
+  // ── Variant 4 (compact) ────────────────────────────────────────────────────
+  // Everything is on one screen, so the slot grid must refetch whenever the
+  // service, staff, OR day changes — not only on an explicit day click. We seed
+  // a default service + today's date once services are known, then key an effect
+  // on [service, staffChoice, date]. Until it resolves the grid renders disabled.
+  useEffect(() => {
+    if (!compact) return
+    // Seed defaults on first compact mount: first service + today, like the
+    // handoff VCompact. (Re-seeding after a confirmation is handled directly in
+    // resetWizard, since this effect won't re-run on that render.)
+    if (!service && services.length > 0) setService(services[0]!)
+    if (!date) setDate(ymd(days[0]!))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compact, services])
+
+  useEffect(() => {
+    if (!compact || !service || !date) return
+    fetchSlots(service.id, staffChoice, date)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compact, service, staffChoice, date])
 
   function submit() {
     if (!service || !slot) return
@@ -193,9 +236,12 @@ export function BookingWizard({
   // början istället för att visa en gammal bekräftelse.
   function resetWizard() {
     setStep(1)
-    setService(null)
+    // Compact reopens straight back into the one-page form, so re-seed its
+    // defaults (first service + today) here rather than clearing to null — the
+    // seed effect won't re-run on the post-reset render (its deps are unchanged).
+    setService(compact && services.length > 0 ? services[0]! : null)
     setStaffChoice('any')
-    setDate(null)
+    setDate(compact ? ymd(days[0]!) : null)
     setSlots([])
     setSlot(null)
     setForm({ name: '', email: '', phone: '', note: '' })
@@ -221,32 +267,300 @@ export function BookingWizard({
     onClose?.()
   }
 
-  const stepLabels = ['Tjänst', 'Personal', 'Tid', 'Uppgifter']
+  // ── Variant 3 (wizard) bottom-action-bar wiring ────────────────────────────
+  // The handoff VWizard puts ALL forward/back navigation in a single bottom bar.
+  // Per-step gate: can the customer advance? Step 4's "Bekräfta" submits the
+  // step-4 <form> (so its required-field validation still runs) rather than
+  // calling submit() blindly.
+  const formRef = useRef<HTMLFormElement>(null)
+  const canAdvance =
+    step === 1
+      ? !!service
+      : step === 2
+        ? !!staffChoice
+        : step === 3
+          ? !!slot
+          : step === 4
+            ? !!(form.name && form.email && form.phone)
+            : true
 
-  return (
-    <div className="wizard">
-      {/* Steg-indikatorn göms på bekräftelsesteget (steg 5) — då är flödet klart
-          och kvitto-vyn ska kännas ren, precis som /boka/bekraftelse-rutten. */}
-      {step < 5 && (
-      <ol className="wizard-steps">
-        {stepLabels.map((label, i) => {
-          const isActive = step === i + 1
-          const isDone = step > i + 1
-          return (
-            <li key={label} className={isActive ? 'active' : isDone ? 'done' : ''}>
-              <span
-                className="wizard-step-num"
-                // active dot = gold; completed dot = forest (the frozen default).
-                style={isActive ? goldSelected : undefined}
+  function goNext() {
+    if (step === 4) {
+      // Trigger native form validation + submit (keeps required + types).
+      formRef.current?.requestSubmit()
+      return
+    }
+    if (step < 4) setStep((s) => s + 1)
+  }
+  function goBack() {
+    if (step > 1) setStep((s) => s - 1)
+  }
+
+  // ── Variant 4 (compact) submit ─────────────────────────────────────────────
+  // One CTA at the bottom. Validates name + phone (the only two fields compact
+  // shows) before delegating to the shared submit() — same engine, same Stripe /
+  // in-page-confirmation / slot-collision behaviour.
+  const compactReady = !!(service && slot && form.name && form.phone)
+  function submitCompact() {
+    if (!compactReady) {
+      setError('Fyll i tjänst, tid, namn och telefon.')
+      return
+    }
+    submit()
+  }
+
+  const stepLabels = ['Tjänst', 'Personal', 'Tid', 'Uppgifter']
+  const stepTitles = ['Vad vill du boka?', 'Hos vem?', 'När passar det?', 'Dina uppgifter']
+
+  // ── Variant 4 (compact) — kompakt snabbboka, allt på en skärm ───────────────
+  // The whole booking on one scroll: chip rows for tjänst/frisör/dag, a 4-col
+  // slot grid (disabled until getAvailableSlots resolves), name+phone side by
+  // side, and a single bottom "Boka tid" CTA with a summary sub-line. After a
+  // successful booking the shared step-5 confirmation takes over (below).
+  if (compact && step !== 5) {
+    return (
+      <div className="wizard wizard--compact">
+        {services.length === 0 ? (
+          <div className={styles.empty}>
+            <div className={styles.emptyIcon} aria-hidden>
+              ✂️
+            </div>
+            <p className={styles.emptyTitle}>Inga tjänster att boka just nu</p>
+            <p className={styles.emptyText}>
+              Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare eller
+              kontakta salongen direkt.
+            </p>
+          </div>
+        ) : (
+          <div className="ckompakt">
+            <p className="ckompakt-lede">Allt på en skärm — för dig som vet vad du vill.</p>
+
+            {/* Tjänst — chip row */}
+            <div className="ckompakt-label">Tjänst</div>
+            <div className="ckompakt-chiprow" role="group" aria-label="Välj tjänst">
+              {services.map((s) => {
+                const on = service?.id === s.id
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={`ckompakt-chip${on ? ' selected' : ''}`}
+                    aria-pressed={on}
+                    style={on ? goldSelected : undefined}
+                    onClick={() => {
+                      setService(s)
+                      setStaffChoice('any')
+                      setSlot(null)
+                      setError(null)
+                    }}
+                  >
+                    {s.name}
+                    <span className="ckompakt-chip-meta">{kr.format(s.priceCents / 100)}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Frisör — chip row (Alla + each staff of the chosen service) */}
+            <div className="ckompakt-label">Frisör</div>
+            <div className="ckompakt-chiprow" role="group" aria-label="Välj frisör">
+              <button
+                type="button"
+                className={`ckompakt-chip${staffChoice === 'any' ? ' selected' : ''}`}
+                aria-pressed={staffChoice === 'any'}
+                style={staffChoice === 'any' ? goldSelected : undefined}
+                onClick={() => setStaffChoice('any')}
               >
-                {isDone ? '✓' : i + 1}
-              </span>
-              {label}
-            </li>
-          )
-        })}
-      </ol>
+                Alla
+              </button>
+              {(service?.staff ?? []).map((m) => {
+                const on = staffChoice === m.id
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className={`ckompakt-chip${on ? ' selected' : ''}`}
+                    aria-pressed={on}
+                    style={on ? goldSelected : undefined}
+                    onClick={() => setStaffChoice(m.id)}
+                  >
+                    {m.title ?? 'Frisör'}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Dag — chip row (reuses the wizard-day visual) */}
+            <div className="ckompakt-label">Dag</div>
+            <div className="wizard-days" role="group" aria-label="Välj dag">
+              {days.map((d) => {
+                const key = ymd(d)
+                const isSel = date === key
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`wizard-day${isSel ? ' selected' : ''}`}
+                    aria-pressed={isSel}
+                    style={isSel ? goldSelected : undefined}
+                    onClick={() => {
+                      setSlotTakenNotice(null)
+                      setDate(key)
+                    }}
+                  >
+                    {fmtDay(d)}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Tid — 4-col grid. Async: disabled/empty until slots resolve. */}
+            <div className="ckompakt-label">Tid</div>
+            {pending ? (
+              <div className="ckompakt-slots" aria-hidden>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <span key={i} className={styles.skeletonChip} />
+                ))}
+              </div>
+            ) : slotsError ? (
+              <div style={{ marginTop: '0.25rem' }}>
+                <p className="auth-error" role="alert">
+                  {slotsError}
+                </p>
+                <button
+                  type="button"
+                  className={styles.retry}
+                  onClick={() => service && date && fetchSlots(service.id, staffChoice, date)}
+                >
+                  ↻ Försök igen
+                </button>
+              </div>
+            ) : slots.length === 0 ? (
+              <p className="wizard-muted" style={{ marginTop: '0.25rem' }}>
+                Inga lediga tider denna dag — välj en annan dag.
+              </p>
+            ) : (
+              <div className="ckompakt-slots" role="group" aria-label="Välj tid">
+                {slots.map((sl) => {
+                  const isSel = slot?.start === sl.start && slot?.staffId === sl.staffId
+                  return (
+                    <button
+                      key={sl.start + sl.staffId}
+                      type="button"
+                      className={`wizard-time${isSel ? ' selected' : ''}`}
+                      aria-pressed={isSel}
+                      style={isSel ? goldSelected : undefined}
+                      onClick={() => {
+                        setSlot(sl)
+                        setSlotTakenNotice(null)
+                      }}
+                    >
+                      {fmtTime(sl.start)}
+                      {staffChoice === 'any' && sl.staffTitle ? (
+                        <span className="wizard-time-staff">{sl.staffTitle}</span>
+                      ) : null}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Namn + Telefon side by side */}
+            <div className="ckompakt-fields">
+              <label className="auth-field">
+                <span>Namn</span>
+                <input
+                  autoComplete="name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+              </label>
+              <label className="auth-field">
+                <span>Telefon</span>
+                <input
+                  type="tel"
+                  autoComplete="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
+              </label>
+            </div>
+            <label className="auth-field">
+              <span>E-post</span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </label>
+
+            {slotTakenNotice ? (
+              <p className="auth-error" role="alert">
+                {slotTakenNotice}
+              </p>
+            ) : null}
+            {error ? (
+              <p className="auth-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </div>
+        )}
+
+        {/* Single bottom CTA — thumb reach, with a live summary sub-line. */}
+        {services.length > 0 && (
+          <div className="wizard-actionbar">
+            <button
+              type="button"
+              className="wizard-cta"
+              disabled={!compactReady || pending}
+              onClick={submitCompact}
+              style={compactReady && !pending ? goldSelected : undefined}
+            >
+              <span className="wizard-cta-label">{pending ? 'Bokar…' : 'Boka tid'}</span>
+              {compactReady && slot ? (
+                <span className="wizard-cta-sub">
+                  {service!.name} · {fmtTime(slot.start)}
+                </span>
+              ) : (
+                <span className="wizard-cta-sub">Välj tjänst, tid och fyll i dina uppgifter</span>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── Variant 3 (wizard) — steg-för-steg, en beslut per skärm ─────────────────
+  return (
+    <div className="wizard wizard--steps">
+      {/* TOP PROGRESS BAR (handoff VWizard): 5 segments + "n / 5". Sticky so it
+          stays visible while the step body scrolls. Hidden on the confirmation
+          step (step 5) so the kvitto-vy reads clean. */}
+      {step < 5 && (
+        <div className="wizard-progress">
+          <div className="wizard-progress-head">
+            <span className="wizard-progress-label">{stepLabels[step - 1]}</span>
+            <span className="wizard-progress-count">{Math.min(step, 5)} / 5</span>
+          </div>
+          <div className="wizard-progress-track" aria-hidden>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span
+                key={i}
+                className={`wizard-progress-seg${i < step ? ' on' : ''}`}
+                style={i < step ? { background: 'var(--color-accent, var(--color-primary))' } : undefined}
+              />
+            ))}
+          </div>
+        </div>
       )}
+
+      {/* Per-step heading (handoff: one big question per screen). */}
+      {step < 5 && <h2 className="wizard-q">{stepTitles[step - 1]}</h2>}
+
+      <div className="wizard-stepbody">
 
       {/* Step 1 — service */}
       {step === 1 &&
@@ -284,12 +598,9 @@ export function BookingWizard({
           </ul>
         ))}
 
-      {/* Step 2 — staff (or anyone) */}
+      {/* Step 2 — staff (or anyone). Back/forward now live in the bottom bar. */}
       {step === 2 && service && (
         <div>
-          <button type="button" className="wizard-back" onClick={() => setStep(1)}>
-            ← {service.name}
-          </button>
           <ul className="wizard-list">
             <li>
               <button
@@ -341,13 +652,9 @@ export function BookingWizard({
         </div>
       )}
 
-      {/* Step 3 — date + time */}
+      {/* Step 3 — date + time. Back/forward now live in the bottom bar. */}
       {step === 3 && service && (
         <div>
-          <button type="button" className="wizard-back" onClick={() => setStep(2)}>
-            ← Välj personal
-          </button>
-
           {/* Krock-notis: tiden togs precis. Vänligt, ej blockerande. */}
           {slotTakenNotice ? (
             <p className="auth-error" role="alert">
@@ -441,9 +748,9 @@ export function BookingWizard({
                     aria-pressed={isSel}
                     style={isSel ? goldSelected : undefined}
                     onClick={() => {
+                      // Select only — advancing is the bottom bar's "Fortsätt".
                       setSlot(sl)
                       setSlotTakenNotice(null)
-                      setStep(4)
                     }}
                   >
                     {fmtTime(sl.start)}
@@ -458,12 +765,11 @@ export function BookingWizard({
         </div>
       )}
 
-      {/* Step 4 — details + confirm */}
+      {/* Step 4 — details. The submit BUTTON moved to the bottom action bar;
+          the <form> stays (with a ref) so required-field + type validation still
+          runs when the bar's "Bekräfta bokning" calls requestSubmit(). */}
       {step === 4 && service && slot && (
         <div>
-          <button type="button" className="wizard-back" onClick={() => setStep(3)}>
-            ← Välj tid
-          </button>
           <div className="wizard-summary">
             <div className={styles.summaryRow}>
               <strong>{service.name}</strong>
@@ -475,6 +781,7 @@ export function BookingWizard({
             </div>
           </div>
           <form
+            ref={formRef}
             className="wizard-form"
             onSubmit={(e) => {
               e.preventDefault()
@@ -522,10 +829,43 @@ export function BookingWizard({
                 {error}
               </p>
             ) : null}
-            <button type="submit" className="btn-primary" disabled={pending}>
-              {pending ? 'Bokar…' : 'Bekräfta bokning'}
+            {/* Hidden submit keeps requestSubmit() + Enter-to-submit working;
+                the visible CTA is the sticky bottom action bar. */}
+            <button type="submit" className="wizard-form-submit" tabIndex={-1} aria-hidden>
+              Bekräfta bokning
             </button>
           </form>
+        </div>
+      )}
+
+      </div>{/* /.wizard-stepbody */}
+
+      {/* BOTTOM ACTION BAR (handoff VWizard): Back arrow + full-width
+          Fortsätt/Bekräfta. Sticky to the bottom so the primary action stays in
+          thumb reach while the step body scrolls. Hidden on the confirmation. */}
+      {step < 5 && (
+        <div className="wizard-actionbar">
+          {step > 1 ? (
+            <button
+              type="button"
+              className="wizard-back-btn"
+              onClick={goBack}
+              aria-label="Tillbaka"
+            >
+              <span aria-hidden>←</span>
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="wizard-cta"
+            disabled={!canAdvance || pending}
+            onClick={goNext}
+            style={canAdvance && !pending ? goldSelected : undefined}
+          >
+            <span className="wizard-cta-label">
+              {step === 4 ? (pending ? 'Bokar…' : 'Bekräfta bokning') : 'Fortsätt'}
+            </span>
+          </button>
         </div>
       )}
 

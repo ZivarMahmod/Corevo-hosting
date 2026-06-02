@@ -5,6 +5,7 @@ import { getSettingsRow, listLocations, listDomains } from '@/lib/admin/data'
 import { createClient } from '@/lib/supabase/server'
 import { SettingsForm } from '@/components/admin/SettingsForm'
 import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
+import { PageHead } from '@/components/portal/ui'
 import styles from '@/components/admin/admin.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -22,7 +23,7 @@ export default async function SettingsPage({
   if (!tenant) {
     return (
       <section className="portal-section">
-        <h1>Inställningar</h1>
+        <PageHead eyebrow="Salong-admin" title="Inställningar" />
         <p className="prose">Ingen salong är kopplad till ditt konto.</p>
       </section>
     )
@@ -54,7 +55,7 @@ export default async function SettingsPage({
 
   return (
     <section className="portal-section">
-      <h1>Inställningar</h1>
+      <PageHead eyebrow={tenant.name} title="Inställningar" />
       <p className="prose">
         Salongens namn, kontakt, tidszon, betalningssätt och avbokningsregel. Avbokningsregeln läses
         av kundportalen när en kund vill avboka eller boka om.

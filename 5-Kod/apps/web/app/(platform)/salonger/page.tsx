@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { listTenants } from '@/lib/platform/tenants'
 import { BILLING_MODEL_LABELS, type BillingModel } from '@/lib/platform/billing'
+import { PageHead, Button, Badge } from '@/components/portal/ui'
 import styles from '@/components/platform/platform.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -20,12 +21,11 @@ export default async function TenantsPage({
 
   return (
     <section className="portal-section">
-      <div className={styles.sectionHead}>
-        <h1 style={{ margin: 0 }}>Salonger</h1>
-        <Link href="/salonger/ny" className="btn-primary">
-          + Ny salong
-        </Link>
-      </div>
+      <PageHead eyebrow="Plattform" title="Salonger">
+        <Button href="/salonger/ny" variant="primary" icon="plus">
+          Ny salong
+        </Button>
+      </PageHead>
       <p className={styles.muted}>
         {tenants.length} salong{tenants.length === 1 ? '' : 'er'}
         {isFiltered ? ' (filtrerat)' : ''}
@@ -94,9 +94,9 @@ export default async function TenantsPage({
                 </td>
                 <td>{t.name}</td>
                 <td>
-                  <span className={`${styles.badge} ${t.status === 'active' ? styles.badgeActive : styles.badgeSuspended}`}>
-                    {t.status}
-                  </span>
+                  <Badge tone={t.status === 'active' ? 'success' : 'warning'}>
+                    {t.status === 'active' ? 'Aktiv' : 'Pausad'}
+                  </Badge>
                 </td>
                 <td>{BILLING_MODEL_LABELS[t.billingModel as BillingModel] ?? t.billingModel}</td>
               </tr>

@@ -31,3 +31,402 @@
 .portal-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
 .portal-table th, .portal-table td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent); }
 .portal-table th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; }
+
+/* ===========================================================================
+   WORLD 2 — BACK-OFFICE reskin (Corevo handoff look)
+   ──────────────────────────────────────────────────────────────────────────
+   EVERYTHING below is scoped under [data-world="backoffice"]. The customer
+   /konto area is un-worlded, so NONE of this touches it — the rules above stay
+   its only chrome. The back-office chrome reads ONLY the fixed Corevo --c-*
+   palette (set on [data-world="backoffice"] in packages/ui/tokens.css), never
+   the tenant-overridable --color-*, so the operator tools stay forest/gold for
+   every salon. Pixel-recreation of the design-system handoff
+   (2-Byggplan/.../back-office/Shell.jsx) fitted to the App-Router stack.
+   =========================================================================== */
+
+/* ---- shell: forest sidebar + content column on cream ---- */
+[data-world="backoffice"].portal-shell {
+  display: flex;
+  flex-direction: row; /* override .tenant-root's column (globals.css) */
+  min-height: 100vh;
+  background: var(--c-cream);
+  color: var(--c-ink);
+  font-family: var(--font-ui);
+}
+[data-world="backoffice"] .portal-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* sidebar (dark forest) */
+[data-world="backoffice"] .portal-aside {
+  width: 248px;
+  flex: none;
+  background: var(--c-forest);
+  color: var(--c-on-forest);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+[data-world="backoffice"] .portal-aside-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 4px 8px 22px;
+}
+[data-world="backoffice"] .portal-aside-mark {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 9px;
+  background: var(--c-gold);
+  color: var(--c-forest-700);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+}
+[data-world="backoffice"] .portal-aside-brand-text { min-width: 0; }
+[data-world="backoffice"] .portal-aside-brand-name {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-world="backoffice"] .portal-aside-brand-sub {
+  display: block;
+  font-size: 10.5px;
+  color: var(--c-on-forest-2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+[data-world="backoffice"] .portal-aside-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+[data-world="backoffice"] .portal-aside-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--c-on-forest-2);
+  background: transparent;
+  border-left: 2px solid transparent;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+[data-world="backoffice"] .portal-aside-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--c-on-forest);
+}
+[data-world="backoffice"] .portal-aside-link.is-active,
+[data-world="backoffice"] .portal-aside-link.is-active:hover {
+  font-weight: 600;
+  background: var(--c-forest-700);
+  color: #fff;
+  border-left: 2px solid var(--c-gold);
+}
+[data-world="backoffice"] .portal-aside-user {
+  border-top: 1px solid var(--c-forest-300);
+  padding-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+[data-world="backoffice"] .portal-aside-avatar {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--c-forest-300);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+}
+[data-world="backoffice"] .portal-aside-user-text { flex: 1; line-height: 1.2; min-width: 0; }
+[data-world="backoffice"] .portal-aside-user-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-world="backoffice"] .portal-aside-user-sub { display: block; font-size: 11px; color: var(--c-on-forest-2); }
+
+/* topbar */
+[data-world="backoffice"] .portal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 30px;
+  border-bottom: 1px solid var(--c-line);
+  background: color-mix(in srgb, var(--c-cream) 80%, transparent);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+[data-world="backoffice"] .portal-search { position: relative; width: 280px; max-width: 40vw; }
+[data-world="backoffice"] .portal-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--c-ink-3);
+}
+[data-world="backoffice"] .portal-search input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  color: var(--c-ink);
+  outline: none;
+  box-sizing: border-box;
+}
+[data-world="backoffice"] .portal-search input:focus { border-color: var(--c-forest); }
+[data-world="backoffice"] .portal-topbar-right { display: flex; align-items: center; gap: 14px; min-width: 0; }
+[data-world="backoffice"] .portal-topbar-title {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink-2);
+}
+[data-world="backoffice"] .portal-topbar-user {
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 22vw;
+}
+/* sign-out lives in the topbar here (handoff puts logout in the sidebar footer;
+   the task spec puts it in the topbar). Style it as a Corevo ghost button. */
+[data-world="backoffice"] .portal-topbar-right .portal-signout {
+  border: 1px solid var(--c-line-strong);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink);
+  background: var(--c-paper);
+  cursor: pointer;
+  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
+}
+[data-world="backoffice"] .portal-topbar-right .portal-signout:hover {
+  background: var(--c-paper-2);
+  border-color: var(--c-line-strong);
+  color: var(--c-forest);
+}
+
+/* content area — full-bleed within the column (override /konto's centered main) */
+[data-world="backoffice"] .portal-main {
+  max-width: none;
+  margin: 0;
+  padding: 30px;
+  flex: 1;
+}
+
+/* ---- restyle the shared .portal-* content classes (Corevo look) ---- */
+[data-world="backoffice"] .portal-section h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1.15;
+  color: var(--c-forest);
+  margin: 0 0 6px;
+}
+[data-world="backoffice"] .portal-section > .prose,
+[data-world="backoffice"] .portal-section > p:first-of-type {
+  color: var(--c-ink-2);
+  font-size: 14px;
+  margin: 0 0 22px;
+}
+[data-world="backoffice"] .portal-section h2 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--c-ink);
+}
+
+/* KPI grid + cards */
+[data-world="backoffice"] .portal-stats {
+  margin: 0 0 22px;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+[data-world="backoffice"] .portal-stat {
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  gap: 8px;
+}
+[data-world="backoffice"] .portal-stat-value {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--c-forest);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+[data-world="backoffice"] .portal-stat-label,
+[data-world="backoffice"] .portal-stat > span:last-child {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-gold-600);
+  opacity: 1;
+}
+
+/* shared .portal-table (platform översikt) */
+[data-world="backoffice"] .portal-table { margin-top: 18px; font-family: var(--font-ui); }
+[data-world="backoffice"] .portal-table th {
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+  font-weight: 600;
+  opacity: 1;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--c-line);
+}
+[data-world="backoffice"] .portal-table td {
+  padding: 13px 14px;
+  font-size: 13.5px;
+  color: var(--c-ink);
+  border-bottom: 1px solid var(--c-line);
+}
+[data-world="backoffice"] .portal-table tbody tr { transition: background var(--dur-fast); }
+[data-world="backoffice"] .portal-table tbody tr:hover { background: var(--c-paper-2); }
+
+/* ---- primitive: Button (.pbtn — hover handled here, server-safe) ---- */
+[data-world="backoffice"] .pbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
+}
+[data-world="backoffice"] .pbtn--md { font-size: 14px; padding: 11px 18px; }
+[data-world="backoffice"] .pbtn--sm { font-size: 13px; padding: 8px 14px; }
+[data-world="backoffice"] .pbtn--primary { background: var(--c-forest); color: #fff; }
+[data-world="backoffice"] .pbtn--primary:hover { background: var(--c-forest-700); }
+[data-world="backoffice"] .pbtn--gold { background: var(--c-gold); color: #3a2a06; }
+[data-world="backoffice"] .pbtn--gold:hover { background: var(--c-gold-600); }
+[data-world="backoffice"] .pbtn--ghost { background: transparent; color: var(--c-ink); border-color: var(--c-line-strong); }
+[data-world="backoffice"] .pbtn--ghost:hover { background: var(--c-paper-2); }
+[data-world="backoffice"] .pbtn--subtle { background: var(--c-paper-2); color: var(--c-ink); }
+[data-world="backoffice"] .pbtn--subtle:hover { background: var(--c-line); }
+[data-world="backoffice"] .pbtn:disabled { opacity: 0.55; cursor: default; }
+
+/* ---- primitive: Table (.ptable — hover handled here) ---- */
+[data-world="backoffice"] .ptable { width: 100%; border-collapse: collapse; font-family: var(--font-ui); }
+[data-world="backoffice"] .ptable th {
+  text-align: left;
+  padding: 11px 14px;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+  font-weight: 600;
+  border-bottom: 1px solid var(--c-line);
+}
+[data-world="backoffice"] .ptable th[data-last] { text-align: right; }
+[data-world="backoffice"] .ptable td {
+  padding: 13px 14px;
+  font-size: 13.5px;
+  color: var(--c-ink);
+  border-bottom: 1px solid var(--c-line);
+}
+[data-world="backoffice"] .ptable td[data-last] { text-align: right; }
+[data-world="backoffice"] .ptable tbody tr { transition: background var(--dur-fast); }
+[data-world="backoffice"] .ptable tbody tr:hover { background: var(--c-paper-2); }
+
+/* ---- back-office overrides for the SHARED global .btn-* (globals.css) ----
+   globals.css's .btn-primary/.btn-accent read --color-primary/--color-accent,
+   which are tenant-tinted on this root. Re-point them to the fixed Corevo palette
+   so back-office CTAs stay forest/gold for every salon. Scoped — storefront +
+   /konto keep the globals.css defaults. */
+[data-world="backoffice"] .btn-primary {
+  background: var(--c-forest);
+  border-color: var(--c-forest);
+  color: #fff;
+  border-radius: 10px;
+  border-width: 1px;
+  padding: 11px 18px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  box-shadow: none;
+}
+[data-world="backoffice"] .btn-primary:hover { background: var(--c-forest-700); border-color: var(--c-forest-700); opacity: 1; }
+[data-world="backoffice"] .btn-accent {
+  background: var(--c-gold);
+  border-color: var(--c-gold);
+  color: #3a2a06;
+  border-radius: 10px;
+  border-width: 1px;
+  padding: 11px 18px;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  box-shadow: none;
+}
+[data-world="backoffice"] .btn-accent:hover { background: var(--c-gold-600); border-color: var(--c-gold-600); }
+
+/* responsive: collapse the sidebar to a top strip on narrow screens */
+@media (max-width: 760px) {
+  [data-world="backoffice"].portal-shell { flex-direction: column; }
+  [data-world="backoffice"] .portal-aside {
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  [data-world="backoffice"] .portal-aside-brand { padding: 0; }
+  [data-world="backoffice"] .portal-aside-nav { flex-direction: row; flex-wrap: wrap; flex: 1 1 100%; }
+  [data-world="backoffice"] .portal-aside-link { border-left: none; border-bottom: 2px solid transparent; }
+  [data-world="backoffice"] .portal-aside-link.is-active { border-left: none; border-bottom: 2px solid var(--c-gold); }
+  [data-world="backoffice"] .portal-aside-user { border-top: none; padding-top: 0; margin-left: auto; }
+  [data-world="backoffice"] .portal-main { padding: 20px 16px; }
+  [data-world="backoffice"] .portal-topbar { padding: 12px 16px; }
+}
