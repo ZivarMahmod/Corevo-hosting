@@ -5,6 +5,7 @@ import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 import { PortalSidebar, type PortalRole } from './PortalSidebar'
 import { Icon } from './ui/Icon'
+import { ToastProvider } from './ui/Toast'
 
 /** Shared, tenant-themed chrome for every portal (kund/personal/admin/platform).
  *
@@ -89,7 +90,9 @@ export async function PortalShell({
               <SignOutButton />
             </div>
           </header>
-          <main className="portal-main">{children}</main>
+          <main className="portal-main">
+            <ToastProvider>{children}</ToastProvider>
+          </main>
         </div>
       </div>
     )

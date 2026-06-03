@@ -62,7 +62,7 @@
 
 /* sidebar (dark forest) */
 [data-world="backoffice"] .portal-aside {
-  width: 248px;
+  width: 244px; /* playbook §4.1 canon (was 248 — corrected per goal-17 delta) */
   flex: none;
   background: var(--c-forest);
   color: var(--c-on-forest);
@@ -408,8 +408,10 @@
 }
 [data-world="backoffice"] .btn-accent:hover { background: var(--c-gold-600); border-color: var(--c-gold-600); }
 
-/* responsive: collapse the sidebar to a top strip on narrow screens */
-@media (max-width: 760px) {
+/* responsive: collapse the sidebar to a top strip on narrow screens.
+   Breakpoint = 920px (playbook canon; was 760 — corrected per goal-17 delta).
+   The bo-* asymmetric grids (below) collapse at the same width. */
+@media (max-width: 920px) {
   [data-world="backoffice"].portal-shell { flex-direction: column; }
   [data-world="backoffice"] .portal-aside {
     width: 100%;
@@ -544,4 +546,212 @@
 [data-world="backoffice"] .ppill--off {
   background: var(--c-paper-2);
   color: var(--c-ink-3);
+}
+
+/* =====================================================================
+   P0 FOUNDATION (goal-17 / playbook §4 + T7) — additive, back-office only.
+   Asymmetric layout grids + the shared overlay primitives (Drawer, Toast)
+   + the ViewSwitcher. Every value references the --c-* / --space / --radius
+   / --shadow / --dur / --ease tokens. Animations are guarded by
+   prefers-reduced-motion at the bottom of this block.
+   ===================================================================== */
+
+/* ---- asymmetric layout grids (T7 — "arbetet dominerar") ----
+   bo-stat-grid: 4 KPI cards in one row · bo-2col: dashboard 1.5fr/1fr ·
+   bo-brand: branding editor 390px/1fr. All collapse at 920px. */
+[data-world="backoffice"] .bo-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 0 0 22px;
+}
+[data-world="backoffice"] .bo-2col {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+[data-world="backoffice"] .bo-brand {
+  display: grid;
+  grid-template-columns: 390px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 920px) {
+  [data-world="backoffice"] .bo-stat-grid { grid-template-columns: repeat(2, 1fr); }
+  [data-world="backoffice"] .bo-2col,
+  [data-world="backoffice"] .bo-brand { grid-template-columns: 1fr; }
+}
+
+/* ---- primitive: Drawer (§4.9 — shared right-anchored detail surface) ---- */
+[data-world="backoffice"] .bo-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(20, 30, 24, 0.34); /* green-tinted scrim, never neutral black */
+  animation: bo-overlay-in var(--dur-base) var(--ease-out);
+}
+[data-world="backoffice"] .bo-drawer {
+  width: 480px;
+  max-width: 94vw;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-cream);
+  box-shadow: var(--shadow-lg);
+  animation: bo-drawer-in 0.34s var(--ease-out);
+}
+[data-world="backoffice"] .bo-drawer.is-closing { animation: bo-drawer-out 0.34s var(--ease-out) forwards; }
+[data-world="backoffice"] .bo-drawer-overlay.is-closing { animation: bo-overlay-out var(--dur-base) var(--ease-out) forwards; }
+[data-world="backoffice"] .bo-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--c-paper);
+  border-bottom: 1px solid var(--c-line);
+  flex: none;
+}
+[data-world="backoffice"] .bo-drawer-head-text { flex: 1; min-width: 0; }
+[data-world="backoffice"] .bo-drawer-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--c-forest);
+  margin: 0;
+}
+[data-world="backoffice"] .bo-drawer-sub {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+  margin: 3px 0 0;
+}
+[data-world="backoffice"] .bo-drawer-close {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+[data-world="backoffice"] .bo-drawer-close:hover { background: var(--c-paper-2); color: var(--c-forest); }
+[data-world="backoffice"] .bo-drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+[data-world="backoffice"] .bo-drawer-foot {
+  flex: none;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+  background: var(--c-paper);
+  border-top: 1px solid var(--c-line);
+}
+
+/* ---- primitive: Toast (§4.10 — röd-tråd consequence backbone) ---- */
+[data-world="backoffice"] .bo-toast-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 28px;
+  pointer-events: none;
+}
+[data-world="backoffice"] .bo-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  max-width: min(92vw, 460px);
+  padding: 13px 20px 13px 13px;
+  border-radius: 12px;
+  background: var(--c-forest);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: bo-toast-in 0.42s var(--ease-out);
+}
+[data-world="backoffice"] .bo-toast.is-leaving { animation: bo-toast-out var(--dur-base) var(--ease-out) forwards; }
+[data-world="backoffice"] .bo-toast-chip {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+[data-world="backoffice"] .bo-toast-chip--success { background: var(--c-success); color: #fff; }
+[data-world="backoffice"] .bo-toast-chip--warning { background: var(--c-warning); color: #fff; }
+[data-world="backoffice"] .bo-toast-chip--info    { background: var(--c-info);    color: #fff; }
+[data-world="backoffice"] .bo-toast-chip--gold    { background: var(--c-gold);    color: var(--c-forest-700); }
+
+/* ---- primitive: ViewSwitcher (segmented, persisted) ---- */
+[data-world="backoffice"] .bo-viewswitch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--c-paper-2);
+  border: 1px solid var(--c-line);
+}
+[data-world="backoffice"] .bo-viewswitch button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink-3);
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+[data-world="backoffice"] .bo-viewswitch button:hover { color: var(--c-forest); }
+[data-world="backoffice"] .bo-viewswitch button.is-active {
+  background: var(--c-paper);
+  color: var(--c-forest);
+  box-shadow: var(--shadow-sm);
+}
+
+@keyframes bo-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bo-overlay-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes bo-drawer-in { from { transform: translateX(102%); } to { transform: translateX(0); } }
+@keyframes bo-drawer-out { from { transform: translateX(0); } to { transform: translateX(102%); } }
+@keyframes bo-toast-in { from { opacity: 0; transform: translateY(80px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes bo-toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-world="backoffice"] .bo-drawer-overlay,
+  [data-world="backoffice"] .bo-drawer,
+  [data-world="backoffice"] .bo-drawer.is-closing,
+  [data-world="backoffice"] .bo-drawer-overlay.is-closing,
+  [data-world="backoffice"] .bo-toast,
+  [data-world="backoffice"] .bo-toast.is-leaving {
+    animation-duration: 1ms;
+  }
 }

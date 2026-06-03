@@ -14,12 +14,15 @@ export function Stat({
   delta,
   deltaTone = 'success',
   icon,
+  hint,
 }: {
   label: ReactNode
   value: ReactNode
   delta?: ReactNode
   deltaTone?: 'success' | 'muted'
   icon?: IconName
+  /** Optional caption under the value/delta (playbook §4.2 — e.g. "mot förra veckan"). */
+  hint?: ReactNode
 }) {
   return (
     <Card>
@@ -69,6 +72,18 @@ export function Stat({
         >
           {deltaTone === 'success' && <Icon name="trendUp" size={15} />}
           {delta}
+        </div>
+      )}
+      {hint && (
+        <div
+          style={{
+            marginTop: 6,
+            fontSize: 12,
+            color: 'var(--c-ink-3)',
+            fontFamily: 'var(--font-ui)',
+          }}
+        >
+          {hint}
         </div>
       )}
     </Card>
