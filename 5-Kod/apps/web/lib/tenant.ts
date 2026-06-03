@@ -51,6 +51,29 @@ function stripPort(host: string): string {
   return i === -1 ? host : host.slice(0, i)
 }
 
+// goal-16 — is `host` a candidate for the custom-domain DB lookup? TRUE only for a
+// real external domain (a customer's own host) that is NOT one of ours and NOT
+// dev/staging noise. getTenantFromHost returns kind:'unknown' for anything outside
+// our apex; this further EXCLUDES *.workers.dev (the staging worker, which is
+// 'unknown' too) and IP/localhost forms so middleware doesn't fire a needless RPC
+// on every preview request. Pure (mirrors getTenantFromHost's env reads).
+export function isExternalHost(
+  host: string | null | undefined,
+  opts: { rootDomain?: string; platformHost?: string } = {},
+): boolean {
+  if (!host) return false
+  const hostname = stripPort(host).toLowerCase()
+  if (!hostname || !hostname.includes('.')) return false // bare label / not a domain
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return false
+  if (hostname.endsWith('.localhost') || hostname.endsWith('.workers.dev')) return false
+
+  const root = stripPort(opts.rootDomain ?? envRoot()).toLowerCase()
+  const platform = stripPort(opts.platformHost ?? envPlatform()).toLowerCase()
+  if (hostname === root || hostname === platform) return false
+  if (hostname.endsWith('.' + root)) return false // our own subdomains
+  return true
+}
+
 export function getTenantFromHost(
   host: string | null | undefined,
   opts: ResolveOptions = {},

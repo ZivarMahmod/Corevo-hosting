@@ -14,7 +14,8 @@
 // DAL/layouts — never from the host. Data isolation is RLS + tenant_id (ADR 01 §2).
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
-import { getTenantFromHost } from '@/lib/tenant'
+import { getTenantFromHost, isExternalHost } from '@/lib/tenant'
+import { resolveCustomDomainSlug } from '@/lib/custom-domain'
 import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
 
 // Internal dashboard route (file lives at app/(platform)/platform); served at `/`.
@@ -39,7 +40,8 @@ export async function middleware(request: NextRequest) {
   // 1. Resolve tenant from Host (host → slug) with dev/preview fallbacks
   //    (?tenant= / /t/<slug>). Data isolation is enforced by RLS + tenant_id,
   //    NEVER by this header (ADR 01 §2).
-  let tenant = getTenantFromHost(request.headers.get('host'), {
+  const host = request.headers.get('host')
+  let tenant = getTenantFromHost(host, {
     search: url.searchParams,
     pathname: url.pathname,
   })
@@ -52,6 +54,21 @@ export async function middleware(request: NextRequest) {
   if (tenant.kind !== 'tenant') {
     const cookieSlug = request.cookies.get(TENANT_OVERRIDE_COOKIE)?.value
     if (cookieSlug) tenant = { kind: 'tenant', slug: cookieSlug }
+  }
+
+  // 1c. Custom domain (goal-16): an EXTERNAL host (a customer's own domain DNS-routed
+  //     to the worker) doesn't match our *.corevo.se suffix, so it resolves to
+  //     kind:'unknown'. Fall back to an async tenant_domains lookup (verified + active
+  //     only, in-process cached). Purely ADDITIVE — a hit yields kind:'tenant' which
+  //     flows into the headers/guard exactly like a subdomain match; a miss leaves
+  //     'unknown' untouched. isExternalHost excludes *.workers.dev/localhost so the
+  //     RPC never fires on staging. Custom-domain hosts are kind:'tenant', so they
+  //     NEVER reach the isPlatformHost-gated VÅG 1 role→surface guard (step 4b).
+  //     DORMANT until a real external domain is DNS-routed (Zivar ops); demo.corevo.se
+  //     still classifies as a .corevo.se subdomain upstream and never reaches here.
+  if (tenant.kind === 'unknown' && isExternalHost(host)) {
+    const slug = await resolveCustomDomainSlug(host)
+    if (slug) tenant = { kind: 'tenant', slug }
   }
 
   const isPlatformHost = tenant.kind === 'platform'

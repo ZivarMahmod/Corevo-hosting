@@ -1110,6 +1110,10 @@ export type Database = {
           tenant_slug: string
         }[]
       }
+      resolve_tenant_by_domain: {
+        Args: { p_host: string }
+        Returns: string
+      }
       seed_explicit_slots_from_hours: {
         Args: { p_staff: string; p_step?: number }
         Returns: number
