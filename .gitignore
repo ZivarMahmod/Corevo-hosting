@@ -24,3 +24,10 @@
 # Stray vite/vitest cache that materializes as a node_modules dir at the repo root
 # (no real install lives here — the workspace install is under 5-Kod). Standard.
 node_modules/
+
+# Scratch / editor / build junk
+*.vsix
+*.log
+2-Byggplan/.design-canvas.state.json
+# temp goal-17 render-verify capture harness (deleted post-verify; ignore if regenerated)
+5-Kod/_goal17-cap.mjs

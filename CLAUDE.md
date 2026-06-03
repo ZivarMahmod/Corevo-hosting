@@ -7,6 +7,13 @@ Projekt-instruktioner för Claude (Code + Cowork). Nuläge + status bor i **`HAN
 Roten får BARA innehålla: `HANDOFF.md` (ingång/status), `CLAUDE.md` (denna), samt config som måste ligga där (`.gitignore`, `.mcp.json` osv).
 Allt annat — planering, doc, ops-referens, research, kod — går i sin mapp. Är du osäker → fråga, lägg inte i roten.
 
+## ⛔ DESIGN-TROHET — exakt kopia, aldrig improvisera (lärt dyrt: 18h brände)
+När uppgiften rör design/UI och underlaget är ett **Claude Design-paket** (t.ex. `2-Byggplan/` root + `acceptans/`): **paketet = LAG. Live ska bli en EXAKT kopia av filerna — inget annat.** Aldrig "inspirerad av", aldrig egna idéer, aldrig improvisera, aldrig re-härleda värden (lyft exakta px/hex/font ur kanon).
+- **LÄS HELA paketet noga FÖRST** (varje `.jsx`/`.css`/`.html`/spec/mock). 18h förlorades för att Code inte orkade läsa design-mappen och hittade på — underlaget var ALDRIG felet.
+- **"Klar" = mekaniskt 0 FAIL** via `acceptans/<sida>/*.accept.spec.ts` + `probe.js`. Aldrig ögonmått — "känns nära" ÄR buggen (→ 62%).
+- **Oberoende verify** — byggaren rättar inte sin egen läxa.
+- **IGNORERA OLD-mappar** (`corevo-booking-design-system v3/`, `Tillfällig map struktur/`). Root-paketet vinner alla konflikter.
+
 ## Mappstruktur — var saker hör hemma
 | Innehåll | Plats |
 |---|---|

@@ -1,0 +1,227 @@
+/* =====================================================================
+   COREVO BOOKING — colors_and_type.css
+   White-label booking SaaS for salons.
+
+   ⛔ TWO SEPARATE CSS WORLDS — NEVER MIX:
+     1. STOREFRONT  → the salon's own public site. THE PRODUCT.
+                      Per-tenant theme. NO Corevo green/gold here.
+                      Scoped under [data-world="storefront"] + a theme class.
+     2. BACK-OFFICE → Corevo system dashboards (super admin / salon admin /
+                      staff). Forest green + gold "Corevo" look.
+                      Scoped under [data-world="backoffice"].
+
+   Loading these tokens does nothing on its own — apply a world attribute
+   (and, for the storefront, a theme class) to the root of each surface.
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Bebas+Neue&family=Jost:wght@300;400;500;600&family=Archivo:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap');
+
+/* =====================================================================
+   GLOBAL PRIMITIVES (safe in both worlds — neutral scaffolding only)
+   ===================================================================== */
+:root {
+  /* spacing scale (8px base, with a couple of editorial half-steps) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+  --space-11: 160px;
+
+  /* radii */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* motion — calm, editorial. Never bouncy on the storefront. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 160ms;
+  --dur-base: 280ms;
+  --dur-slow: 520ms;
+
+  /* fluid type helper steps */
+  --tracking-wide: 0.18em;   /* eyebrows / labels */
+  --tracking-tight: -0.02em; /* big display */
+}
+
+/* =====================================================================
+   WORLD 2 — BACK-OFFICE  (Corevo system look)
+   The owner's tool. Clean, functional, secondary in priority.
+   ===================================================================== */
+[data-world="backoffice"] {
+  /* brand */
+  --c-forest:      #1F4636;  /* primary — sidebar, headings, buttons */
+  --c-forest-700:  #173529;  /* darker hover / sidebar depth */
+  --c-forest-300:  #4E7363;  /* muted forest, borders on dark */
+  --c-gold:        #F5A623;  /* accent — highlights, active, KPI deltas */
+  --c-gold-600:    #D98E12;  /* gold hover */
+  --c-gold-100:    #FBEBCB;  /* gold tint fills */
+
+  /* surfaces */
+  --c-cream:       #FAF8F4;  /* app background */
+  --c-paper:       #FFFFFF;  /* cards / panels */
+  --c-paper-2:     #F3EFE8;  /* subtle alt fill, table stripes */
+  --c-line:        #E7E1D6;  /* hairline borders on cream */
+  --c-line-strong: #D8D0C2;
+
+  /* text */
+  --c-ink:         #21261F;  /* primary text */
+  --c-ink-2:       #555C50;  /* secondary text */
+  --c-ink-3:       #8A8F82;  /* muted / captions */
+  --c-on-forest:   #EFEAE0;  /* text on the dark sidebar */
+  --c-on-forest-2: #9DB1A6;  /* muted text on sidebar */
+
+  /* semantic status — muted & elegant */
+  --c-success:     #4E7A5E;
+  --c-success-bg:  #E8F0EA;
+  --c-warning:     #A37D3C;
+  --c-warning-bg:  #F3EBD9;
+  --c-danger:      #9E5A57;
+  --c-danger-bg:   #F1E2E0;
+  --c-info:        #5E748C;
+  --c-info-bg:     #E6EAF0;
+
+  /* elevation */
+  --shadow-sm: 0 1px 2px rgba(31,70,54,.06), 0 1px 3px rgba(31,70,54,.08);
+  --shadow-md: 0 4px 14px rgba(31,70,54,.08), 0 2px 6px rgba(31,70,54,.06);
+  --shadow-lg: 0 18px 48px rgba(23,53,41,.16);
+
+  /* type families */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-ui:      'Inter', system-ui, -apple-system, sans-serif;
+
+  background: var(--c-cream);
+  color: var(--c-ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* back-office type roles */
+[data-world="backoffice"] .h-display { font-family: var(--font-display); font-weight: 700; font-size: 40px; line-height: 1.08; letter-spacing: var(--tracking-tight); color: var(--c-forest); }
+[data-world="backoffice"] .h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.15; color: var(--c-forest); }
+[data-world="backoffice"] .h2 { font-family: var(--font-ui); font-weight: 600; font-size: 19px; line-height: 1.25; color: var(--c-ink); }
+[data-world="backoffice"] .h3 { font-family: var(--font-ui); font-weight: 600; font-size: 15px; line-height: 1.3; color: var(--c-ink); }
+[data-world="backoffice"] .eyebrow { font-family: var(--font-ui); font-weight: 600; font-size: 11px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--c-gold-600); }
+[data-world="backoffice"] .body { font-size: 14px; line-height: 1.55; color: var(--c-ink-2); }
+[data-world="backoffice"] .small { font-size: 12.5px; line-height: 1.45; color: var(--c-ink-3); }
+[data-world="backoffice"] .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* =====================================================================
+   WORLD 1 — STOREFRONT  (per-tenant salon sites)
+   THE PRODUCT. Editorial, photo-driven. Tokens are theme-driven so the
+   branding editor can repaint everything. NEVER any Corevo green/gold.
+
+   Contract (set per tenant): --color-primary, --color-bg, --color-fg,
+   --font-display, --font-body. The three reference templates below show
+   genuinely distinct editorial directions.
+   ===================================================================== */
+[data-world="storefront"] {
+  /* neutral storefront scaffolding (theme overrides the rest) */
+  --sf-overlay: linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.55) 100%);
+  --sf-shadow-card: 0 24px 60px rgba(0,0,0,.12);
+  --sf-shadow-soft: 0 10px 30px rgba(0,0,0,.06);
+  --sf-radius: var(--radius-md);
+
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- TEMPLATE A — "Studio Salvia" : sage, airy, minimal (à la Studio22) */
+[data-world="storefront"][data-theme="salvia"] {
+  --color-primary:   #5E7361;  /* sage */
+  --color-primary-d: #44543F;  /* deep olive for hovers */
+  --color-bg:        #F6F4EE;  /* warm paper */
+  --color-surface:   #FFFFFF;
+  --color-fg:        #232520;  /* near-black olive ink */
+  --color-fg-2:      #5C5F55;
+  --color-line:      #E2DED2;
+  --color-accent-soft:#EAEBE3;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Jost', 'Inter', sans-serif;
+  --sf-radius: 10px;
+}
+
+/* ---- TEMPLATE B — "Maison Leander" : lavender, romantic editorial (à la Studio Leander) */
+[data-world="storefront"][data-theme="leander"] {
+  --color-primary:   #7E6E92;  /* lavender / mauve */
+  --color-primary-d: #5A4C6E;
+  --color-bg:        #FBFAF8;
+  --color-surface:   #FFFFFF;
+  --color-fg:        #2A2630;
+  --color-fg-2:      #6A6472;
+  --color-line:      #ECE7EF;
+  --color-accent-soft:#F1ECF3;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --sf-radius: 14px;
+}
+
+/* ---- TEMPLATE C — "Zigge" : bold, dark, barber + frisör (à la Zigges) */
+[data-world="storefront"][data-theme="zigge"] {
+  --color-primary:   #C8743C;  /* burnt amber / rust */
+  --color-primary-d: #A65B29;
+  --color-bg:        #14120E;  /* near-black warm */
+  --color-surface:   #1E1B16;
+  --color-fg:        #F2ECE2;  /* warm bone */
+  --color-fg-2:      #B3A998;
+  --color-line:      #322C24;
+  --color-accent-soft:#241F19;
+  --font-display: 'Bebas Neue', 'Archivo', sans-serif;
+  --font-body:    'Archivo', 'Inter', sans-serif;
+  --sf-radius: 4px;
+}
+
+/* ---- TEMPLATE D — "Salong Linnea" : warm Scandinavian natural (clay + sand) */
+[data-world="storefront"][data-theme="linnea"] {
+  --color-primary:   #B0693F;  /* terracotta / clay */
+  --color-primary-d: #8E5230;
+  --color-bg:        #F4EDE1;  /* warm sand */
+  --color-surface:   #FFFFFF;
+  --color-fg:        #2E2820;
+  --color-fg-2:      #6E6452;
+  --color-line:      #E3D9C8;
+  --color-accent-soft:#ECE3D3;
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --sf-radius: 12px;
+}
+
+/* ---- TEMPLATE E — "Edit" : elegant editorial minimal (charcoal on ivory) */
+[data-world="storefront"][data-theme="edit"] {
+  --color-primary:   #3A3733;  /* near-charcoal */
+  --color-primary-d: #1F1D1A;
+  --color-bg:        #F8F6F1;  /* ivory */
+  --color-surface:   #FFFFFF;
+  --color-fg:        #232220;
+  --color-fg-2:      #6B675F;
+  --color-line:      #E5E0D6;
+  --color-accent-soft:#EEEAE1;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --sf-radius: 2px;
+}
+
+/* storefront type roles (theme-agnostic — pull from the theme's families) */
+[data-world="storefront"] .sf-eyebrow { font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--color-primary); }
+[data-world="storefront"] .sf-hero    { font-family: var(--font-display); font-weight: 600; font-size: clamp(36px, 4.6vw, 62px); line-height: 1.08; letter-spacing: -0.01em; }
+[data-world="storefront"] .sf-h1      { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 4vw, 56px); line-height: 1.04; }
+[data-world="storefront"] .sf-h2      { font-family: var(--font-display); font-weight: 600; font-size: clamp(22px, 2.4vw, 34px); line-height: 1.12; }
+[data-world="storefront"] .sf-lede    { font-family: var(--font-body); font-weight: 400; font-size: clamp(16px, 1.4vw, 20px); line-height: 1.6; color: var(--color-fg-2); }
+[data-world="storefront"] .sf-body    { font-family: var(--font-body); font-weight: 400; font-size: 16px; line-height: 1.7; color: var(--color-fg-2); }
+[data-world="storefront"] .sf-italic  { font-family: var(--font-display); font-style: italic; font-weight: 500; }
+
+/* Bebas needs different sizing rhythm — it's all caps + condensed */
+[data-world="storefront"][data-theme="zigge"] .sf-hero { font-size: clamp(60px, 8.5vw, 116px); letter-spacing: 0.01em; line-height: 0.92; font-weight: 400; }
+[data-world="storefront"][data-theme="zigge"] .sf-h1   { letter-spacing: 0.01em; font-weight: 400; }
+[data-world="storefront"][data-theme="zigge"] .sf-h2   { letter-spacing: 0.02em; font-weight: 400; }
