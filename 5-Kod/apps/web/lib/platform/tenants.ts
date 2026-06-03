@@ -139,12 +139,14 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
   }
   const rows = (data ?? []) as Row[]
 
-  // Batched aggregates: ONE read each for bookings / staff / owners across ALL
-  // tenants, bucketed in JS by tenant_id (no per-tenant query fan-out).
-  const [bookingsRes, staffRes, ownersRes] = await Promise.all([
+  // Batched aggregates: ONE read each for bookings / staff / owners / services /
+  // hours across ALL tenants, bucketed in JS by tenant_id (no per-tenant fan-out).
+  const [bookingsRes, staffRes, ownersRes, servicesRes, hoursRes] = await Promise.all([
     supabase.from('bookings').select('tenant_id, status, created_at'),
     supabase.from('staff').select('tenant_id').eq('active', true),
     supabase.from('users').select('email, tenant_id, roles!inner(name)').eq('roles.name', 'salon_admin'),
+    supabase.from('services').select('tenant_id').eq('active', true),
+    supabase.from('working_hours').select('tenant_id'),
   ])
 
   const bk = new Map<string, { total: number; completed: number; last: string | null }>()
@@ -163,6 +165,12 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
   for (const r of (ownersRes.data ?? []) as { tenant_id: string; email: string | null }[]) {
     if (r.email && !owner.has(r.tenant_id)) owner.set(r.tenant_id, r.email)
   }
+  const hasServices = new Set<string>(
+    ((servicesRes.data ?? []) as { tenant_id: string }[]).map((r) => r.tenant_id),
+  )
+  const hasHours = new Set<string>(
+    ((hoursRes.data ?? []) as { tenant_id: string }[]).map((r) => r.tenant_id),
+  )
 
   return rows.map((t) => {
     const ts = Array.isArray(t.tenant_settings) ? t.tenant_settings[0] : t.tenant_settings
@@ -173,8 +181,13 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
     const themeRaw = typeof rawSettings.theme === 'string' && rawSettings.theme.trim() ? rawSettings.theme : null
     const primary = typeof branding.color_primary === 'string' ? branding.color_primary : null
     const stats = bk.get(t.id) ?? { total: 0, completed: 0, last: null }
+    // "Onboarding" is derived from REAL setup-completeness (not booking count): a
+    // launch-ready salon has staff + active services + working hours. A fully set-up
+    // salon with zero traffic still reads "Aktiv" — matching the mock's onboardStep
+    // semantics, not "no bookings yet = onboarding".
+    const launchReady = (staffCount.get(t.id) ?? 0) > 0 && hasServices.has(t.id) && hasHours.has(t.id)
     const displayStatus: TenantDisplayStatus =
-      t.status === 'suspended' ? 'suspended' : stats.total === 0 ? 'onboarding' : 'active'
+      t.status === 'suspended' ? 'suspended' : launchReady ? 'active' : 'onboarding'
     return {
       id: t.id,
       slug: t.slug,
