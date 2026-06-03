@@ -2,8 +2,19 @@
 
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
-## ⭐ NÄSTA SESSION — GÖR DETTA FÖRST
-**Planen för resten av bygget = `2-Byggplan/WORKFLOW-03-baseline-sakerhet-test.md`** (lager-djup orkestrering: recon-flotta → syntes → bygg → attack-flotta per fas; autonomt svep; går live + städar rot/git-träd på slutet). FreshCut-seed klar i `2-Byggplan/goals/freshcut-seed-data.md` (riktiga priser/öppettider/tel). Kör FAS 0 → VÅG 1 → … enligt dokumentet.
+## ✅ WORKFLOW-03 SLUTFÖRD (2026-06-03) — baseline fastställd, live, pushad
+**VÅG 1–5 + FAS SLUT klara.** Hela bygget mangelat och verifierat live (per-våg blocks nedan). Plan-dokumentet: `2-Byggplan/WORKFLOW-03-baseline-sakerhet-test.md`. **Live worker `36fea384`** (rollback `4bfead59`). **Senaste push: `e30d7ee`** (ZivarMahmod/Frisor-sas main). Gate: vitest **163/163**, advisors **15 WARN / 0 ERROR**. FreshCut ren baslinje: tenants=1, bookings=0, `branding={}` (temat driver). POS `corevo.se` orörd (200/200).
+
+### 🧪 DU testar: `2-Byggplan/TESTA-DETTA-03.md` (rollmatris-check + "försök tappa en bokning"-check, med inloggningar).
+
+### ⏳ ÄGAR-STEG (väntar på Zivar — ej blockerande, bygget funkar utan):
+1. **Auth-hook (roll-claim i JWT):** Supabase Dashboard-toggle (väg B). Middleware-grinden täcker rollmatrisen nu; hooken är finliret.
+2. **Stripe test-/live-nycklar:** aktiverar onlinebetalning (M8) + refund-paritet. Tills dess "betala på plats".
+3. **Kunddomän DNS + Cloudflare Custom Domain:** RPC `resolve_tenant_by_domain` + middleware klart; väntar på att du pekar DNS.
+4. **Leaked-password-skydd:** Supabase Dashboard-toggle (advisor WARN).
+5. **(Pre-launch)** Stäng anon-läsbar pris-/avgiftskonfig på `tenant_settings` bakom kolumn-vy före riktig multi-tenant (0 för FreshCut nu).
+
+### 🔭 Nästa kort (beslutade, EFTER baseline): dela plattform-admin från salong-admin (egen route/worker-isolering) · avboknings-/ångermodell (ångerknapp-lagkrav 19 juni 2026). Se sektioner längre ned.
 
 ### 2026-06-03 (WORKFLOW-03 VÅG 1 — rollgränser) KLAR + LIVE-VERIFIERAD ✅ (worker `b2895b3f`)
 - **Guard:** `middleware.ts` step-4b = app_metadata-only roll→yta-guard (bouncar `platform_admin` av tenant-scopade `/admin`+`/personal` → `/` platform-dashboard; INGEN DB-join — designen förbjuder roll-läs i middleware). `roles.ts` trösklar härdade mot verklig DB `{2,3,6,8}` (admin 5→6, platform 7→8; fantom-nivå-footgun bort). Nya `lib/auth/roles.test.ts` (3) + utökad `e2e/backoffice-routing.spec.ts` (rollmatris-celler).
