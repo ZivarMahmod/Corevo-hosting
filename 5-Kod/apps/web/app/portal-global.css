@@ -118,6 +118,17 @@
   gap: 3px;
   flex: 1;
 }
+/* area dividers in the rail (handoff Shell.jsx → group rows) */
+[data-world="backoffice"] .portal-aside-group {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-on-forest-2);
+  opacity: 0.65;
+  padding: 16px 13px 7px;
+}
+[data-world="backoffice"] .portal-aside-group.is-first { padding-top: 2px; }
 [data-world="backoffice"] .portal-aside-link {
   display: flex;
   align-items: center;
@@ -426,6 +437,7 @@
   }
   [data-world="backoffice"] .portal-aside-brand { padding: 0; }
   [data-world="backoffice"] .portal-aside-nav { flex-direction: row; flex-wrap: wrap; flex: 1 1 100%; }
+  [data-world="backoffice"] .portal-aside-group { display: none; }
   [data-world="backoffice"] .portal-aside-link { border-left: none; border-bottom: 2px solid transparent; }
   [data-world="backoffice"] .portal-aside-link.is-active { border-left: none; border-bottom: 2px solid var(--c-gold); }
   [data-world="backoffice"] .portal-aside-user { border-top: none; padding-top: 0; margin-left: auto; }

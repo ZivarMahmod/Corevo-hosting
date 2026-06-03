@@ -7,32 +7,44 @@ import { Icon, type IconName } from './ui/Icon'
 export type PortalRole = 'admin' | 'platform' | 'personal'
 
 type NavItem = { href: string; label: string; icon: IconName }
-type NavConfig = { sub: string; items: NavItem[] }
+/** A nav entry is either a group header (handoff Sidebar groups the rail by
+ *  area: Insyn/Tenants… for super, Din dag/Hantera/Din sida for salon) or a
+ *  link. We only group items whose routes actually exist — no 404 placeholders. */
+type NavEntry = { group: string } | NavItem
+type NavConfig = { sub: string; items: NavEntry[] }
+
+const isGroup = (e: NavEntry): e is { group: string } => 'group' in e
 
 /** Role-driven nav sets + their active-path matching. The three back-office
  *  portals live at different roots (admin → /admin, platform → / on
  *  booking.corevo.se, personal → /personal), so each keeps its own match rule —
- *  these are NOT unified (matches the existing AdminNav/PlatformNav/PersonalNav). */
+ *  these are NOT unified (matches the existing AdminNav/PlatformNav/PersonalNav).
+ *  Grouping + order follow the v3 handoff (design_handoff_backoffice/Shell.jsx → NAV). */
 const NAV: Record<PortalRole, NavConfig> = {
   platform: {
     sub: 'Plattform',
     items: [
+      { group: 'Insyn' },
       { href: '/', label: 'Översikt', icon: 'grid' },
+      { href: '/fakturering', label: 'Fakturering', icon: 'creditCard' },
+      { group: 'Tenants' },
       { href: '/salonger', label: 'Salonger', icon: 'building' },
       { href: '/salonger/ny', label: 'Onboarda salong', icon: 'plus' },
-      { href: '/fakturering', label: 'Fakturering', icon: 'creditCard' },
     ],
   },
   admin: {
     sub: 'Salong-admin',
     items: [
+      { group: 'Din dag' },
       { href: '/admin', label: 'Översikt', icon: 'home' },
       { href: '/admin/bokningar', label: 'Bokningar', icon: 'calendar' },
+      { group: 'Hantera' },
       { href: '/admin/kunder', label: 'Kunder', icon: 'user' },
       { href: '/admin/tjanster', label: 'Tjänster', icon: 'scissors' },
       { href: '/admin/personal', label: 'Personal', icon: 'users' },
       { href: '/admin/platser', label: 'Platser', icon: 'building' },
       { href: '/admin/scheman', label: 'Scheman', icon: 'clock' },
+      { group: 'Din sida' },
       { href: '/admin/varumarke', label: 'Varumärke', icon: 'palette' },
       { href: '/admin/installningar', label: 'Inställningar', icon: 'settings' },
     ],
@@ -88,17 +100,27 @@ export function PortalSidebar({
       </div>
 
       <nav className="portal-aside-nav">
-        {cfg.items.map((item) => {
-          const on = isActive(item.href, pathname)
+        {cfg.items.map((entry, i) => {
+          if (isGroup(entry)) {
+            return (
+              <div
+                key={`g-${entry.group}`}
+                className={`portal-aside-group${i === 0 ? ' is-first' : ''}`}
+              >
+                {entry.group}
+              </div>
+            )
+          }
+          const on = isActive(entry.href, pathname)
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={entry.href}
+              href={entry.href}
               className={`portal-aside-link${on ? ' is-active' : ''}`}
               aria-current={on ? 'page' : undefined}
             >
-              <Icon name={item.icon} size={18} stroke={1.7} />
-              {item.label}
+              <Icon name={entry.icon} size={18} stroke={1.7} />
+              {entry.label}
             </Link>
           )
         })}
