@@ -4,10 +4,9 @@ import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { listBookings, listStaff } from '@/lib/admin/data'
 import { dayRangeUtc, isValidDate, todayInTz } from '@/lib/admin/dates'
-import { formatDateTime, formatPrice, statusLabel, BOOKING_STATUSES } from '@/lib/admin/format'
-import { badgeClass } from '@/components/admin/badge'
-import { BookingStatusControl } from '@/components/admin/BookingStatusControl'
+import { statusLabel, BOOKING_STATUSES } from '@/lib/admin/format'
 import { PageHead } from '@/components/portal/ui'
+import { BookingsClient } from '@/components/admin/BookingsClient'
 import styles from '@/components/admin/admin.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -106,38 +105,18 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
           för att se alla.
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Tid</th>
-                <th>Tjänst</th>
-                <th>Medarbetare</th>
-                <th>Pris</th>
-                <th>Status</th>
-                <th>Bokad den</th>
-                <th>Ändra</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookings.map((b) => (
-                <tr key={b.id}>
-                  <td>{formatDateTime(b.startTs, tz)}</td>
-                  <td>{b.serviceName}</td>
-                  <td>{b.staffTitle}</td>
-                  <td>{formatPrice(b.priceCents)}</td>
-                  <td>
-                    <span className={badgeClass(b.status)}>{statusLabel(b.status)}</span>
-                  </td>
-                  <td style={{ color: 'var(--c-ink-3)' }}>{formatDateTime(b.createdAt, tz)}</td>
-                  <td>
-                    <BookingStatusControl bookingId={b.id} status={b.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <BookingsClient
+          bookings={bookings.map((b) => ({
+            id: b.id,
+            startTs: b.startTs,
+            serviceName: b.serviceName,
+            staffTitle: b.staffTitle,
+            priceCents: b.priceCents,
+            status: b.status,
+            createdAt: b.createdAt,
+          }))}
+          tz={tz}
+        />
       )}
     </section>
   )
