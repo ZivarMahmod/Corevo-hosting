@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { WizardService } from '@/components/booking/BookingWizard'
+import type { WizardService, WizardLocation } from '@/components/booking/BookingWizard'
 import { BookingDrawer } from './BookingDrawer'
 
 /**
@@ -53,10 +53,12 @@ export function useBooking(): BookingContextValue | null {
 
 export function BookingProvider({
   services,
+  locations = [],
   tenantName,
   children,
 }: {
   services: WizardService[]
+  locations?: WizardLocation[]
   tenantName: string
   children: ReactNode
 }) {
@@ -131,6 +133,7 @@ export function BookingProvider({
           open={open}
           onClose={closeDrawer}
           services={services}
+          locations={locations}
           tenantName={tenantName}
           mode={mode}
         />

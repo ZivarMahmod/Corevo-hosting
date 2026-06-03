@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { listStaff, listWorkingHours, listWorkingHourSlots } from '@/lib/admin/data'
+import { listStaff, listWorkingHours, listWorkingHourSlots, listLocations } from '@/lib/admin/data'
 import { StaffPicker } from '@/components/admin/StaffPicker'
 import { ScheduleManager } from '@/components/admin/ScheduleManager'
 import { SlotManager } from '@/components/admin/SlotManager'
@@ -38,10 +38,18 @@ export default async function SchedulesPage({
   }
 
   const selected = staff.find((s) => s.id === sp.staff) ?? staff[0]!
-  const [rows, slots] = await Promise.all([
+  const [rows, slots, allLocations] = await Promise.all([
     listWorkingHours(tenant.id, selected.id),
     listWorkingHourSlots(tenant.id, selected.id),
+    listLocations(tenant.id),
   ])
+
+  // The schedule's location <select> only offers ACTIVE locations (an inactive one
+  // shouldn't take new scheduled hours). Default = this staff member's own location,
+  // else the tenant primary — matches the server action's fallback, so the form
+  // pre-selects whatever it would have written anyway.
+  const locations = allLocations.filter((l) => l.active)
+  const defaultLocationId = selected.location_id ?? tenant.locationId ?? locations[0]?.id ?? ''
 
   return (
     <section className="portal-section">
@@ -58,7 +66,12 @@ export default async function SchedulesPage({
           Veckovisa intervall — styr salongens öppettider på den publika sajten och är grunden de
           bokbara tiderna genereras ur.
         </p>
-        <ScheduleManager staffId={selected.id} rows={rows} />
+        <ScheduleManager
+          staffId={selected.id}
+          rows={rows}
+          locations={locations}
+          defaultLocationId={defaultLocationId}
+        />
       </div>
 
       <div style={{ marginTop: '2rem' }}>
@@ -68,7 +81,12 @@ export default async function SchedulesPage({
           passet. Tiderna sparas nu och börjar styra bokningen när bokningsmotorn slår på explicita
           tider; tills dess erbjuder bokningen tider ur arbetstids-rastret.
         </p>
-        <SlotManager staffId={selected.id} rows={slots} />
+        <SlotManager
+          staffId={selected.id}
+          rows={slots}
+          locations={locations}
+          defaultLocationId={defaultLocationId}
+        />
       </div>
     </section>
   )

@@ -9,7 +9,7 @@ import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
-import { getWizardServices } from '@/components/storefront/wizard-services'
+import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { LocalBusinessJsonLd } from '@/components/storefront/seo'
@@ -67,8 +67,12 @@ export default async function PublicLayout({ children }: { children: React.React
   const tagline = resolveTenantCopy(settings.theme, copy).tagline
   const content = { utility: themeBase.utility, tagline }
 
-  // Services shaped for the embedded booking wizard — same join as /boka, cached.
-  const wizardServices = await getWizardServices(tenant.id, tenant.slug)
+  // Services + active locations shaped for the embedded booking wizard — same as
+  // /boka, cached. locations feed the drawer's picker (hidden for 1-location tenants).
+  const [wizardServices, wizardLocations] = await Promise.all([
+    getWizardServices(tenant.id, tenant.slug),
+    getWizardLocations(tenant.id, tenant.slug),
+  ])
 
   // Salvia leads with the richer 3-column footer (real address/hours/contact);
   // the other four themes (and boka/avboka) use the compact MiniFooter.
@@ -103,7 +107,7 @@ export default async function PublicLayout({ children }: { children: React.React
       {/* In-page booking embed (Zivar's #1): the WHOLE shell — nav, main, footer
           — sits inside the provider, so every "Boka tid" CTA opens the same
           slide-over drawer without ever leaving the salon's page. */}
-      <BookingProvider services={wizardServices} tenantName={tenant.name}>
+      <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name}>
         <Nav
           {...brandProps}
           customerAccountsEnabled={settings.customerAccountsEnabled}

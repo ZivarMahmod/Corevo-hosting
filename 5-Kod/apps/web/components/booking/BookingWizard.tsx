@@ -11,7 +11,7 @@ import {
 } from '@/app/boka/actions'
 import styles from './booking.module.css'
 
-type WizardStaff = { id: string; title: string | null }
+type WizardStaff = { id: string; title: string | null; locationIds: string[] }
 export type WizardService = {
   id: string
   name: string
@@ -19,6 +19,12 @@ export type WizardService = {
   durationMin: number
   priceCents: number
   staff: WizardStaff[]
+}
+/** En bokningsbar plats (VÅG 4b). Tom lista / en post → ingen picker (auto-väljs). */
+export type WizardLocation = {
+  id: string
+  name: string
+  isPrimary: boolean
 }
 
 const kr = new Intl.NumberFormat('sv-SE', {
@@ -55,11 +61,17 @@ export type BookingMode = 'wizard' | 'compact'
 
 export function BookingWizard({
   services,
+  locations = [],
   open,
   onClose,
   mode = 'wizard',
 }: {
   services: WizardService[]
+  /** Bokningsbara platser (VÅG 4b). OPTIONAL — utelämnad/tom/en post → ingen
+   *  picker visas, platsen auto-väljs (en-plats-salonger + alla nuvarande
+   *  callers, t.ex. storefront-drawern, blir byte-identiska). Endast /boka skickar
+   *  in den; flerplatsläget aktiveras först vid >1 aktiv plats. */
+  locations?: WizardLocation[]
   /** Drawer open-state (embedded only). On a closed→open rising edge AFTER a
    *  completed booking we reset the wizard, so a reopened drawer starts fresh
    *  rather than on a stale confirmation. Mid-flow closes (step 1–4) are NOT
@@ -74,6 +86,27 @@ export function BookingWizard({
   const compact = mode === 'compact'
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+
+  // ── Plats (VÅG 4b) ──────────────────────────────────────────────────────────
+  // Flerplatsläget aktiveras BARA vid >1 aktiv plats. Vid 0/1 plats auto-väljs den
+  // (eller null → servern faller tillbaka på primär plats), och INGEN picker visas
+  // → UX byte-identisk med dagens en-plats-flöde. Defaultval = primär ?? första.
+  const multiLocation = locations.length > 1
+  const defaultLocationId = useMemo(
+    () => locations.find((l) => l.isPrimary)?.id ?? locations[0]?.id ?? null,
+    [locations],
+  )
+  // Startval:
+  //  • ≤1 plats → auto-väljs (eller null vid 0 platser → servern tar primär).
+  //  • >1 i WIZARD → null, så grind-skärmen tvingar ett aktivt platsval först.
+  //  • >1 i COMPACT → default förvald (single-screen ska vara användbar direkt;
+  //    chip-raden låter kunden byta).
+  const [locationId, setLocationId] = useState<string | null>(
+    multiLocation && !compact ? null : defaultLocationId,
+  )
+  // Picker-grinden (BARA wizard): visa platsvalet före steg-maskinen tills en plats
+  // är vald. ≤1 plats eller compact → alltid false → ingen grind.
+  const needsLocationPick = multiLocation && !compact && !locationId
 
   const [step, setStep] = useState(1)
   const [service, setService] = useState<WizardService | null>(null)
@@ -118,12 +151,14 @@ export function BookingWizard({
   // Core slot-fetch — the ONE place that calls getAvailableSlots. Used by both
   // variants: the wizard's day handler (per service+staff+day) and compact's
   // effect (refetch whenever service OR staff OR day changes).
-  function fetchSlots(serviceId: string, choice: string, d: string) {
+  function fetchSlots(serviceId: string, choice: string, d: string, locId: string | null) {
     setSlot(null)
     setError(null)
     setSlotsError(null)
     startTransition(async () => {
-      const res = await getAvailableSlots(serviceId, choice === 'any' ? null : choice, d)
+      // locId vidarebefordras → location-aware availability. null (en-plats/saknat
+      // val) → servern faller tillbaka på tenantens primära plats.
+      const res = await getAvailableSlots(serviceId, choice === 'any' ? null : choice, d, locId)
       if (res.ok) {
         setSlots(res.slots)
         setTimeZone(res.timeZone)
@@ -132,6 +167,21 @@ export function BookingWizard({
         setSlotsError(res.error)
       }
     })
+  }
+
+  // Platsval (VÅG 4b): byter availability-scope → ALLT nedströms (tjänst/frisör/
+  // dag/tid) nollställs så inget val släpar med från en annan plats. Anropas bara
+  // i flerplatsläget; i en-plats-läget rörs detta aldrig.
+  function pickLocation(id: string) {
+    setLocationId(id)
+    setService(compact && services.length > 0 ? services[0]! : null)
+    setStaffChoice('any')
+    setDate(compact ? ymd(days[0]!) : null)
+    setSlots([])
+    setSlot(null)
+    setSlotsError(null)
+    setSlotTakenNotice(null)
+    setError(null)
   }
 
   // ── Variant 3 (wizard) navigation ─────────────────────────────────────────
@@ -163,7 +213,7 @@ export function BookingWizard({
   function pickDate(d: string) {
     if (!service) return
     setDate(d)
-    fetchSlots(service.id, staffChoice, d)
+    fetchSlots(service.id, staffChoice, d, locationId)
   }
 
   // ── Variant 4 (compact) ────────────────────────────────────────────────────
@@ -183,9 +233,10 @@ export function BookingWizard({
 
   useEffect(() => {
     if (!compact || !service || !date) return
-    fetchSlots(service.id, staffChoice, date)
+    // Refetcha även när platsen byts (location-aware availability i compact-läget).
+    fetchSlots(service.id, staffChoice, date, locationId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compact, service, staffChoice, date])
+  }, [compact, service, staffChoice, date, locationId])
 
   function submit() {
     if (!service || !slot) return
@@ -199,6 +250,8 @@ export function BookingWizard({
         email: form.email,
         phone: form.phone,
         note: form.note,
+        // Vald plats (VÅG 4b); null → servern faller tillbaka på primär plats.
+        locationId,
       })
       if (res.ok) {
         // Online-betalning på (payments_enabled && charges_enabled) → Stripe Checkout.
@@ -253,6 +306,9 @@ export function BookingWizard({
     setSlotsError(null)
     setSlotTakenNotice(null)
     setBookingId(null)
+    // Platsval nollställs till sitt utgångsläge (≤1 plats → auto; >1 wizard → grind;
+    // >1 compact → default förvald).
+    setLocationId(multiLocation && !compact ? null : defaultLocationId)
   }
 
   // Reset på ÅTERÖPPNING (inte på stängning): så att drawern glider ut med
@@ -316,6 +372,18 @@ export function BookingWizard({
   const stepLabels = ['Tjänst', 'Personal', 'Tid', 'Uppgifter']
   const stepTitles = ['Vad vill du boka?', 'Hos vem?', 'När passar det?', 'Dina uppgifter']
 
+  // Platsfiltrerad personal (VÅG 4b): en frisör erbjuds BARA på en plats hen
+  // faktiskt jobbar på (≥1 working_hours-rad med location_id = vald plats). Speglar
+  // availability-motorns location-scope (actions.ts) så pickern aldrig listar
+  // fel-plats-personal. locationId === null (en-plats-auto / ej valt) → visa alla;
+  // efter VÅG 4-backfillen har varje frisör en primär-plats-rad → en-plats byte-
+  // identisk (filtret släpper igenom alla). Beräknas en gång, används i båda
+  // render-lägena (compact + wizard). OBS: staffChoice nollställs redan i
+  // pickLocation (→ 'any'), så ett gammalt fel-plats-val kan aldrig släpa med.
+  const staffHere = (service?.staff ?? []).filter(
+    (m) => !locationId || m.locationIds.includes(locationId),
+  )
+
   // ── Variant 4 (compact) — kompakt snabbboka, allt på en skärm ───────────────
   // The whole booking on one scroll: chip rows for tjänst/frisör/dag, a 4-col
   // slot grid (disabled until getAvailableSlots resolves), name+phone side by
@@ -338,6 +406,32 @@ export function BookingWizard({
         ) : (
           <div className="ckompakt">
             <p className="ckompakt-lede">Allt på en skärm — för dig som vet vad du vill.</p>
+
+            {/* Plats — chip row (VÅG 4b). Visas BARA vid >1 aktiv plats; en-plats-
+                salonger ser ingenting (UX byte-identisk). Byte av plats nollställer
+                tjänst/frisör/tid via pickLocation. */}
+            {multiLocation && (
+              <>
+                <div className="ckompakt-label">Plats</div>
+                <div className="ckompakt-chiprow" role="group" aria-label="Välj plats">
+                  {locations.map((l) => {
+                    const on = locationId === l.id
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        className={`ckompakt-chip${on ? ' selected' : ''}`}
+                        aria-pressed={on}
+                        style={on ? goldSelected : undefined}
+                        onClick={() => pickLocation(l.id)}
+                      >
+                        {l.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
 
             {/* Tjänst — chip row */}
             <div className="ckompakt-label">Tjänst</div>
@@ -377,7 +471,7 @@ export function BookingWizard({
               >
                 Alla
               </button>
-              {(service?.staff ?? []).map((m) => {
+              {staffHere.map((m) => {
                 const on = staffChoice === m.id
                 return (
                   <button
@@ -434,7 +528,7 @@ export function BookingWizard({
                 <button
                   type="button"
                   className={styles.retry}
-                  onClick={() => service && date && fetchSlots(service.id, staffChoice, date)}
+                  onClick={() => service && date && fetchSlots(service.id, staffChoice, date, locationId)}
                 >
                   ↻ Försök igen
                 </button>
@@ -537,6 +631,41 @@ export function BookingWizard({
     )
   }
 
+  // ── Plats-grind (VÅG 4b, BARA flerplats-wizard) ─────────────────────────────
+  // Renderas FÖRE steg-maskinen, som en ledande grind — INTE som ett omnumrerat
+  // steg. Steg-räknaren (n / 5), canAdvance och alla `step === N` lämnas orörda.
+  // Vid ≤1 plats (alla nuvarande tenants + tester) körs detta aldrig → byte-
+  // identiskt. När en plats valts faller komponenten igenom till steg 1 (tjänst).
+  if (needsLocationPick) {
+    return (
+      <div className="wizard wizard--steps">
+        <h2 className="wizard-q">Var vill du boka?</h2>
+        <div className="wizard-stepbody">
+          <p className="wizard-muted" style={{ marginTop: 0 }}>
+            Välj salong — vi visar lediga tider för just den platsen.
+          </p>
+          <ul className="wizard-list">
+            {locations.map((l) => (
+              <li key={l.id}>
+                <button
+                  type="button"
+                  className="wizard-card"
+                  onClick={() => pickLocation(l.id)}
+                  style={locationId === l.id ? goldBorder : undefined}
+                >
+                  <span className="wizard-card-main">
+                    <strong>{l.name}</strong>
+                  </span>
+                  {l.isPrimary ? <span className="wizard-card-meta">Huvudsalong</span> : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
   // ── Variant 3 (wizard) — steg-för-steg, en beslut per skärm ─────────────────
   return (
     <div className="wizard wizard--steps">
@@ -626,7 +755,7 @@ export function BookingWizard({
                 )}
               </button>
             </li>
-            {service.staff.map((m) => (
+            {staffHere.map((m) => (
               <li key={m.id}>
                 <button
                   type="button"
@@ -645,7 +774,7 @@ export function BookingWizard({
                 </button>
               </li>
             ))}
-            {service.staff.length === 0 && (
+            {staffHere.length === 0 && (
               <li>
                 <p className={styles.emptyText} style={{ padding: '0.5rem 0.25rem' }}>
                   Ingen specifik personal är kopplad — välj “Alla” för tidigast lediga tid.

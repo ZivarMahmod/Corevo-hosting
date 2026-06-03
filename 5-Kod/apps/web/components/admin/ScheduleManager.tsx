@@ -1,17 +1,22 @@
 'use client'
 
 import { useActionState } from 'react'
-import type { WorkingHourRow } from '@/lib/admin/data'
+import type { WorkingHourRow, LocationRow } from '@/lib/admin/data'
 import { addStaffWorkingHours, deleteStaffWorkingHours, type ActionState } from '@/lib/admin/actions'
 import { WEEKDAYS_SV } from '@/lib/admin/format'
+import { LocationSelect } from './LocationSelect'
 import styles from './admin.module.css'
 
 export function ScheduleManager({
   staffId,
   rows,
+  locations,
+  defaultLocationId,
 }: {
   staffId: string
   rows: WorkingHourRow[]
+  locations: LocationRow[]
+  defaultLocationId: string
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(addStaffWorkingHours, {})
 
@@ -19,6 +24,7 @@ export function ScheduleManager({
     <div>
       <form action={formAction} className={styles.form}>
         <input type="hidden" name="staff_id" value={staffId} />
+        <LocationSelect locations={locations} defaultLocationId={defaultLocationId} />
         <label className={styles.field}>
           <span>Veckodag</span>
           <select name="weekday" defaultValue="1">

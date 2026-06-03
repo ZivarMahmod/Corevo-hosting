@@ -51,6 +51,21 @@ function stripPort(host: string): string {
   return i === -1 ? host : host.slice(0, i)
 }
 
+// Dev/preview hosts where the ?tenant=/​/t/ override (and its persistence cookie)
+// are honored — localhost, *.localhost, *.workers.dev, or a missing host. A real
+// production host (corevo.se apex/subdomain) returns false, so the override can
+// never serve a foreign tenant on a live salon/platform domain.
+export function isPreviewHost(host: string | null | undefined): boolean {
+  const h = host ? stripPort(host).toLowerCase() : ''
+  return (
+    !h ||
+    h === 'localhost' ||
+    h === '127.0.0.1' ||
+    h.endsWith('.localhost') ||
+    h.endsWith('.workers.dev')
+  )
+}
+
 // goal-16 — is `host` a candidate for the custom-domain DB lookup? TRUE only for a
 // real external domain (a customer's own host) that is NOT one of ours and NOT
 // dev/staging noise. getTenantFromHost returns kind:'unknown' for anything outside
@@ -92,12 +107,18 @@ export function getTenantFromHost(
     return { kind: 'tenant', slug }
   }
 
-  // Dev fallbacks take priority: ?tenant=slug, then /t/slug.
-  const qs = opts.search?.get('tenant')
-  if (qs) return classify(qs)
-  if (opts.pathname) {
-    const m = /^\/t\/([^/]+)/.exec(opts.pathname)
-    if (m && m[1]) return classify(m[1])
+  // Dev/preview overrides (?tenant=slug, /t/slug) are honored ONLY on non-production
+  // hosts (see isPreviewHost). On a REAL tenant/platform host the query param must
+  // NEVER override the subdomain: a stale or crafted `?tenant=` link would otherwise
+  // serve another salon on this salon's domain (tenant-confusion). Production tenant
+  // isolation = host only.
+  if (isPreviewHost(host)) {
+    const qs = opts.search?.get('tenant')
+    if (qs) return classify(qs)
+    if (opts.pathname) {
+      const m = /^\/t\/([^/]+)/.exec(opts.pathname)
+      if (m && m[1]) return classify(m[1])
+    }
   }
 
   if (!host) return { kind: 'unknown' }

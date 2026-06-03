@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getTenantFromHost, isExternalHost } from './tenant'
+import { getTenantFromHost, isExternalHost, isPreviewHost } from './tenant'
 
 // Explicit opts so these don't depend on NEXT_PUBLIC_* env in the test runner.
 const OPTS = { rootDomain: 'corevo.se', platformHost: 'booking.corevo.se' }
@@ -60,5 +60,43 @@ describe('isExternalHost — custom-domain lookup candidacy', () => {
 
   it('strips the port before classifying an external host', () => {
     expect(isExternalHost('minsalong.se:443', OPTS)).toBe(true)
+  })
+})
+
+describe('?tenant= / /t/ override is gated to preview hosts (tenant-confusion fix)', () => {
+  const qs = (s: string) => new URLSearchParams(s)
+
+  it('IGNORES ?tenant= on a real production tenant host (serves the host subdomain)', () => {
+    expect(getTenantFromHost('freshcut.corevo.se', { ...OPTS, search: qs('tenant=evil') })).toEqual({
+      kind: 'tenant',
+      slug: 'freshcut',
+    })
+  })
+
+  it('IGNORES ?tenant= on the production platform host', () => {
+    expect(getTenantFromHost('booking.corevo.se', { ...OPTS, search: qs('tenant=evil') })).toEqual({
+      kind: 'platform',
+    })
+  })
+
+  it('HONORS ?tenant= on preview/dev hosts (workers.dev, localhost)', () => {
+    expect(getTenantFromHost('app.abc.workers.dev', { ...OPTS, search: qs('tenant=demo') })).toEqual({
+      kind: 'tenant',
+      slug: 'demo',
+    })
+    expect(getTenantFromHost('localhost:3000', { ...OPTS, search: qs('tenant=demo') })).toEqual({
+      kind: 'tenant',
+      slug: 'demo',
+    })
+  })
+
+  it('isPreviewHost: true only for localhost/127.0.0.1/*.localhost/*.workers.dev/empty', () => {
+    expect(isPreviewHost('localhost:3000')).toBe(true)
+    expect(isPreviewHost('x.localhost')).toBe(true)
+    expect(isPreviewHost('app.abc.workers.dev')).toBe(true)
+    expect(isPreviewHost('127.0.0.1')).toBe(true)
+    expect(isPreviewHost(null)).toBe(true)
+    expect(isPreviewHost('freshcut.corevo.se')).toBe(false)
+    expect(isPreviewHost('corevo.se')).toBe(false)
   })
 })

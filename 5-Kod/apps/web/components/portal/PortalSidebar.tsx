@@ -31,6 +31,7 @@ const NAV: Record<PortalRole, NavConfig> = {
       { href: '/admin/kunder', label: 'Kunder', icon: 'user' },
       { href: '/admin/tjanster', label: 'Tjänster', icon: 'scissors' },
       { href: '/admin/personal', label: 'Personal', icon: 'users' },
+      { href: '/admin/platser', label: 'Platser', icon: 'building' },
       { href: '/admin/scheman', label: 'Scheman', icon: 'clock' },
       { href: '/admin/varumarke', label: 'Varumärke', icon: 'palette' },
       { href: '/admin/installningar', label: 'Inställningar', icon: 'settings' },

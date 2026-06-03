@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { BookingWizard, type WizardService } from '@/components/booking/BookingWizard'
+import { BookingWizard, type WizardService, type WizardLocation } from '@/components/booking/BookingWizard'
 import type { BookingMode } from './BookingProvider'
 import styles from './storefront.module.css'
 
@@ -25,12 +25,14 @@ export function BookingDrawer({
   open,
   onClose,
   services,
+  locations = [],
   tenantName,
   mode = 'wizard',
 }: {
   open: boolean
   onClose: () => void
   services: WizardService[]
+  locations?: WizardLocation[]
   tenantName: string
   /** Variant 3 wizard (default) or Variant 4 kompakt snabbboka. */
   mode?: BookingMode
@@ -148,7 +150,7 @@ export function BookingDrawer({
               open → wizarden nollställer sig vid en återöppning EFTER en klar
               bokning, oavsett hur drawern stängdes (Klar/X/Esc/scrim).
               mode → Variant 3 (wizard, default) eller Variant 4 (compact). */}
-          <BookingWizard services={services} open={open} onClose={onClose} mode={mode} />
+          <BookingWizard services={services} locations={locations} open={open} onClose={onClose} mode={mode} />
         </div>
       </div>
     </div>

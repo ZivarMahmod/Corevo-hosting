@@ -132,6 +132,151 @@ export async function deleteService(_p: ActionState, fd: FormData): Promise<Acti
   return { success: 'Tjänst borttagen.' }
 }
 
+// ── Locations (platser) ───────────────────────────────────────────────────────
+// VÅG 4b: per-salon multi-location management. The PRIMARY location is load-bearing
+// — create_public_booking pins bookings.location_id (NOT NULL) to it, and
+// getAdminTenant/storefront resolve tz + address from it. New locations default
+// is_primary=false + active=true; promotion is atomic via the set_primary_location
+// RPC (demote-then-promote, role-fenced). No hard-delete: 6 RESTRICT FKs block it,
+// so deactivation (active=false) is the only removal path.
+const DEFAULT_TZ = 'Europe/Stockholm'
+
+function revalidateLocations(slug: string) {
+  revalidateTenant(slug) // primary tz/address feeds the cached public bundle
+  revalidatePath('/admin/platser')
+  revalidatePath('/admin/scheman') // schedule location <select> options depend on the active set
+}
+
+export async function createLocation(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const name = String(fd.get('name') ?? '').trim()
+  const address = String(fd.get('address') ?? '').trim()
+  const timezone = String(fd.get('timezone') ?? '').trim()
+  if (!name) return { error: 'Ange ett namn.' }
+  if (timezone && !isValidTz(timezone)) return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('locations').insert({
+    tenant_id: ctx.tenant.id,
+    name,
+    address: address || null,
+    timezone: timezone || DEFAULT_TZ,
+    is_primary: false, // a new location never steals primary — use "Gör till primär"
+    active: true,
+  })
+  if (error) return { error: GENERIC }
+
+  revalidateLocations(ctx.tenant.slug)
+  return { success: 'Plats skapad.' }
+}
+
+export async function updateLocation(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const id = String(fd.get('id') ?? '')
+  const name = String(fd.get('name') ?? '').trim()
+  const address = String(fd.get('address') ?? '').trim()
+  const timezone = String(fd.get('timezone') ?? '').trim()
+  if (!id) return { error: 'Saknar plats.' }
+  if (!name) return { error: 'Ange ett namn.' }
+  if (timezone && !isValidTz(timezone)) return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
+
+  const supabase = await createClient()
+  const patch: { name: string; address: string | null; timezone?: string } = {
+    name,
+    address: address || null,
+  }
+  if (timezone) patch.timezone = timezone
+  const { error } = await supabase
+    .from('locations')
+    .update(patch)
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidateLocations(ctx.tenant.slug)
+  return { success: 'Plats uppdaterad.' }
+}
+
+/**
+ * Promote a location to PRIMARY via the set_primary_location RPC (SECURITY DEFINER,
+ * role-fenced, atomic demote-then-promote — exactly one is_primary per tenant). We
+ * defence-in-depth confirm the row is ours first (p_location is client-supplied),
+ * then surface the RPC's own errors. Refuse to promote an INACTIVE location: the
+ * primary is load-bearing, and an inactive primary can't be deactivated-away later.
+ */
+export async function setPrimaryLocation(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const id = String(fd.get('id') ?? '')
+  if (!id) return { error: 'Saknar plats.' }
+
+  const supabase = await createClient()
+  const { data: loc } = await supabase
+    .from('locations')
+    .select('id, active, is_primary')
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!loc) return { error: 'Okänd plats.' }
+  if (loc.is_primary) return { success: 'Platsen är redan primär.' }
+  if (!loc.active) return { error: 'Aktivera platsen innan du gör den till primär.' }
+
+  const { error } = await supabase.rpc('set_primary_location', { p_location: id })
+  if (error) {
+    // Role/tenant fence inside the RPC raises if denied; surface a clear message.
+    return { error: 'Kunde inte byta primär plats. Försök igen.' }
+  }
+
+  revalidateLocations(ctx.tenant.slug)
+  return { success: 'Primär plats uppdaterad.' }
+}
+
+/**
+ * Soft-deactivate / reactivate a location. REFUSES to deactivate the PRIMARY: it is
+ * load-bearing for create_public_booking + bookings.location_id (NOT NULL). Make
+ * another location primary first, then deactivate this one. Activating, or toggling
+ * a non-primary, always passes.
+ */
+export async function toggleLocationActive(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const id = String(fd.get('id') ?? '')
+  const active = String(fd.get('active') ?? '') === 'true'
+  if (!id) return { error: 'Saknar plats.' }
+
+  const supabase = await createClient()
+  const { data: loc } = await supabase
+    .from('locations')
+    .select('id, is_primary')
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!loc) return { error: 'Okänd plats.' }
+  // Refuse ONLY: deactivating the primary. Activating a primary or toggling a
+  // non-primary is fine.
+  if (!active && loc.is_primary)
+    return {
+      error:
+        'Den primära platsen kan inte inaktiveras — bokningar kräver den. Gör en annan plats till primär först.',
+    }
+
+  const { error } = await supabase
+    .from('locations')
+    .update({ active })
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidateLocations(ctx.tenant.slug)
+  return { success: active ? 'Plats aktiverad.' : 'Plats inaktiverad.' }
+}
+
 // ── Staff ─────────────────────────────────────────────────────────────────────
 function revalidateStaff(slug: string) {
   revalidateTenant(slug) // staff/staff_services are read live by M3, but services list is cached
@@ -367,6 +512,35 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
 // ── Working hours (schedules, per staff) ──────────────────────────────────────
 const TIME_RE = /^\d{2}:\d{2}$/
 
+/**
+ * Resolve the location_id a schedule row should be pinned to. `requested` is the
+ * client-supplied <select> value (UNTRUSTED): RLS fences working_hours.tenant_id
+ * but NOT its location_id FK (the FK to locations(id) accepts any tenant's id), so
+ * a crafted POST could otherwise pin our row to another tenant's location — same
+ * gap setStaffServices guards. We confirm the requested id is in OUR location set
+ * before trusting it; otherwise fall back to the staff member's location, then the
+ * tenant primary. Returns null only when the tenant has no location at all.
+ */
+async function resolveScheduleLocation(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tenantId: string,
+  requested: string,
+  staffLocationId: string | null,
+  primaryLocationId: string | null,
+): Promise<string | null> {
+  if (requested) {
+    const { data: own } = await supabase
+      .from('locations')
+      .select('id')
+      .eq('id', requested)
+      .eq('tenant_id', tenantId)
+      .eq('active', true)
+      .maybeSingle()
+    if (own) return own.id
+  }
+  return staffLocationId ?? primaryLocationId
+}
+
 export async function addStaffWorkingHours(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await adminCtx()
   if (!ctx) return { error: NO_TENANT }
@@ -375,6 +549,7 @@ export async function addStaffWorkingHours(_p: ActionState, fd: FormData): Promi
   const weekday = Number(fd.get('weekday'))
   const start = String(fd.get('start_time') ?? '')
   const end = String(fd.get('end_time') ?? '')
+  const requestedLocation = String(fd.get('location_id') ?? '')
 
   if (!staffId) return { error: 'Välj en medarbetare.' }
   if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return { error: 'Välj en veckodag.' }
@@ -391,10 +566,19 @@ export async function addStaffWorkingHours(_p: ActionState, fd: FormData): Promi
     .maybeSingle()
   if (!member) return { error: 'Okänd medarbetare.' }
 
+  // The chosen location keys availability (booking engine reads working_hours.location_id).
+  const locationId = await resolveScheduleLocation(
+    supabase,
+    ctx.tenant.id,
+    requestedLocation,
+    member.location_id,
+    ctx.tenant.locationId,
+  )
+
   const { error } = await supabase.from('working_hours').insert({
     tenant_id: ctx.tenant.id,
     staff_id: member.id,
-    location_id: member.location_id ?? ctx.tenant.locationId,
+    location_id: locationId,
     weekday,
     start_time: start,
     end_time: end,
@@ -443,6 +627,7 @@ export async function addStaffSlots(_p: ActionState, fd: FormData): Promise<Acti
 
   const staffId = String(fd.get('staff_id') ?? '')
   const weekday = Number(fd.get('weekday'))
+  const requestedLocation = String(fd.get('location_id') ?? '')
   // One or more times: a single "start_time" and/or a comma/space/newline list in
   // "start_times" (paste a whole day's cadence at once, e.g. "09:00, 09:30, 11:45").
   const raw = [String(fd.get('start_time') ?? ''), String(fd.get('start_times') ?? '')]
@@ -468,10 +653,19 @@ export async function addStaffSlots(_p: ActionState, fd: FormData): Promise<Acti
     .maybeSingle()
   if (!member) return { error: 'Okänd medarbetare.' }
 
+  // The chosen location keys availability (booking engine reads slots' location_id).
+  const locationId = await resolveScheduleLocation(
+    supabase,
+    ctx.tenant.id,
+    requestedLocation,
+    member.location_id,
+    ctx.tenant.locationId,
+  )
+
   const rows = times.map((t) => ({
     tenant_id: ctx.tenant.id,
     staff_id: member.id,
-    location_id: member.location_id ?? ctx.tenant.locationId,
+    location_id: locationId,
     weekday,
     start_time: t,
   }))

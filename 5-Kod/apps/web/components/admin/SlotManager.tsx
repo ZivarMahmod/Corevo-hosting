@@ -1,9 +1,10 @@
 'use client'
 
 import { useActionState } from 'react'
-import type { SlotRow } from '@/lib/admin/data'
+import type { SlotRow, LocationRow } from '@/lib/admin/data'
 import { addStaffSlots, deleteStaffSlot, seedStaffSlots, type ActionState } from '@/lib/admin/actions'
 import { WEEKDAYS_SV } from '@/lib/admin/format'
+import { LocationSelect } from './LocationSelect'
 import styles from './admin.module.css'
 
 /**
@@ -12,7 +13,17 @@ import styles from './admin.module.css'
  * service length drives each pass; the list is the cadence. Complements (does NOT
  * replace) the working_hours envelope above it.
  */
-export function SlotManager({ staffId, rows }: { staffId: string; rows: SlotRow[] }) {
+export function SlotManager({
+  staffId,
+  rows,
+  locations,
+  defaultLocationId,
+}: {
+  staffId: string
+  rows: SlotRow[]
+  locations: LocationRow[]
+  defaultLocationId: string
+}) {
   const [addState, addAction, addPending] = useActionState<ActionState, FormData>(addStaffSlots, {})
   const [seedState, seedAction, seedPending] = useActionState<ActionState, FormData>(
     seedStaffSlots,
@@ -60,6 +71,7 @@ export function SlotManager({ staffId, rows }: { staffId: string; rows: SlotRow[
       {/* Add explicit times */}
       <form action={addAction} className={styles.form} style={{ marginTop: '1rem', alignItems: 'flex-end' }}>
         <input type="hidden" name="staff_id" value={staffId} />
+        <LocationSelect locations={locations} defaultLocationId={defaultLocationId} />
         <label className={styles.field}>
           <span>Veckodag</span>
           <select name="weekday" defaultValue="1">

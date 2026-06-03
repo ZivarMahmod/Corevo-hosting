@@ -14,7 +14,7 @@
 // DAL/layouts — never from the host. Data isolation is RLS + tenant_id (ADR 01 §2).
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
-import { getTenantFromHost, isExternalHost } from '@/lib/tenant'
+import { getTenantFromHost, isExternalHost, isPreviewHost } from '@/lib/tenant'
 import { resolveCustomDomainSlug } from '@/lib/custom-domain'
 import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
 
@@ -49,9 +49,14 @@ export async function middleware(request: NextRequest) {
   // 1b. Preview fallback: hosts without per-tenant subdomains (e.g. *.workers.dev)
   //     persist the ?tenant=<slug> dev override in a cookie. Never overrides a real
   //     subdomain/host match (only fills an otherwise-unresolved tenant).
+  // The override (?tenant= and its persistence cookie) is a DEV/PREVIEW convenience
+  // ONLY — gated to non-production hosts so a real salon/platform domain can never
+  // be flipped to a foreign tenant (tenant-confusion). getTenantFromHost already
+  // ignores ?tenant= off-preview; this gates the cookie read/write to match.
+  const previewHost = isPreviewHost(host)
   const TENANT_OVERRIDE_COOKIE = 'corevo-tenant-override'
-  const qsTenant = url.searchParams.get('tenant')
-  if (tenant.kind !== 'tenant') {
+  const qsTenant = previewHost ? url.searchParams.get('tenant') : null
+  if (previewHost && tenant.kind !== 'tenant') {
     const cookieSlug = request.cookies.get(TENANT_OVERRIDE_COOKIE)?.value
     if (cookieSlug) tenant = { kind: 'tenant', slug: cookieSlug }
   }

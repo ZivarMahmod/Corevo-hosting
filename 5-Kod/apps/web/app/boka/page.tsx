@@ -3,7 +3,11 @@ import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
 import { createPublicClient } from '@/lib/supabase/public'
 import { readBookingMode } from '@/lib/platform/booking-variant'
-import { BookingWizard, type WizardService } from '@/components/booking/BookingWizard'
+import {
+  BookingWizard,
+  type WizardService,
+  type WizardLocation,
+} from '@/components/booking/BookingWizard'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Boka tid' }
@@ -16,19 +20,60 @@ export default async function BokaPage() {
   const services = await getServices(tenant.id, tenant.slug)
 
   const supabase = createPublicClient()
-  const [{ data: staff }, { data: links }, { data: settingsRow }] = await Promise.all([
-    supabase.from('staff').select('id, title').eq('tenant_id', tenant.id).eq('active', true),
-    supabase.from('staff_services').select('staff_id, service_id').eq('tenant_id', tenant.id),
-    // Variant-val (M7 §2.4) ligger i raw `tenant_settings.settings.booking.variant`
-    // — samma raw-read-söm som getGoogleReviewUrl, INTE den frysta parseSettings-
-    // bundlen. Osatt/okänd → readBookingMode faller tillbaka på 'wizard' (Variant 3
-    // = exakt dagens flöde).
-    supabase.from('tenant_settings').select('settings').eq('tenant_id', tenant.id).maybeSingle(),
-  ])
+  const [
+    { data: staff },
+    { data: links },
+    { data: hours },
+    { data: settingsRow },
+    { data: locationRows },
+  ] = await Promise.all([
+      supabase.from('staff').select('id, title').eq('tenant_id', tenant.id).eq('active', true),
+      supabase.from('staff_services').select('staff_id, service_id').eq('tenant_id', tenant.id),
+      // working_hours.location_id (VÅG 4b): en frisör är bokningsbar på plats L iff
+      // hen har ≥1 rad med location_id = L. Speglar wizard-services.ts så den
+      // fristående /boka-rutten och in-page-drawern filtrerar personal identiskt.
+      supabase.from('working_hours').select('staff_id, location_id').eq('tenant_id', tenant.id),
+      // Variant-val (M7 §2.4) ligger i raw `tenant_settings.settings.booking.variant`
+      // — samma raw-read-söm som getGoogleReviewUrl, INTE den frysta parseSettings-
+      // bundlen. Osatt/okänd → readBookingMode faller tillbaka på 'wizard' (Variant 3
+      // = exakt dagens flöde).
+      supabase.from('tenant_settings').select('settings').eq('tenant_id', tenant.id).maybeSingle(),
+      // Aktiva platser (VÅG 4b): location-picker i wizarden. Primär först. En-plats-
+      // salonger → picker döljs och auto-väljs i klienten (UX oförändrad).
+      supabase
+        .from('locations')
+        .select('id, name, is_primary')
+        .eq('tenant_id', tenant.id)
+        .eq('active', true)
+        .order('is_primary', { ascending: false })
+        .order('name', { ascending: true }),
+    ])
   const mode = readBookingMode(settingsRow?.settings)
+  const locations: WizardLocation[] = (locationRows ?? []).map((l) => ({
+    id: l.id,
+    name: l.name,
+    isPrimary: l.is_primary,
+  }))
 
-  const staffById = new Map((staff ?? []).map((s) => [s.id, { id: s.id, title: s.title }]))
-  const staffByService: Record<string, { id: string; title: string | null }[]> = {}
+  // staff_id → Set<location_id> (distinct, hoppa över null) — samma karta som
+  // wizard-services.ts bygger, så båda /boka-vägarna scopar personal likadant.
+  const locationsByStaff = new Map<string, Set<string>>()
+  for (const row of hours ?? []) {
+    if (!row.location_id) continue
+    ;(locationsByStaff.get(row.staff_id) ?? locationsByStaff.set(row.staff_id, new Set()).get(row.staff_id)!).add(
+      row.location_id,
+    )
+  }
+  const staffById = new Map(
+    (staff ?? []).map((s) => [
+      s.id,
+      { id: s.id, title: s.title, locationIds: [...(locationsByStaff.get(s.id) ?? [])] },
+    ]),
+  )
+  const staffByService: Record<
+    string,
+    { id: string; title: string | null; locationIds: string[] }[]
+  > = {}
   for (const row of links ?? []) {
     const member = staffById.get(row.staff_id)
     if (!member) continue
@@ -49,7 +94,7 @@ export default async function BokaPage() {
       <div className="section-inner">
         <h1>Boka tid hos {tenant.name}</h1>
         <p className="prose">Välj tjänst, personal och tid — klart på under en minut.</p>
-        <BookingWizard services={wizardServices} mode={mode} />
+        <BookingWizard services={wizardServices} locations={locations} mode={mode} />
       </div>
     </section>
   )

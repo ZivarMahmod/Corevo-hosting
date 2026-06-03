@@ -342,6 +342,7 @@ export type Database = {
       }
       locations: {
         Row: {
+          active: boolean
           address: string | null
           created_at: string
           id: string
@@ -352,6 +353,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          active?: boolean
           address?: string | null
           created_at?: string
           id?: string
@@ -362,6 +364,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          active?: boolean
           address?: string | null
           created_at?: string
           id?: string
@@ -1050,6 +1053,7 @@ export type Database = {
           p_guest_email?: string
           p_guest_name?: string
           p_guest_phone?: string
+          p_location?: string
           p_note?: string
           p_service: string
           p_staff: string
@@ -1117,6 +1121,10 @@ export type Database = {
       seed_explicit_slots_from_hours: {
         Args: { p_staff: string; p_step?: number }
         Returns: number
+      }
+      set_primary_location: {
+        Args: { p_location: string }
+        Returns: undefined
       }
     }
     Enums: {

@@ -8,15 +8,19 @@
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { getServices } from '@/lib/tenant-data'
-import type { WizardService } from '@/components/booking/BookingWizard'
+import type { WizardService, WizardLocation } from '@/components/booking/BookingWizard'
 
-type StaffMember = { id: string; title: string | null }
+type StaffMember = { id: string; title: string | null; locationIds: string[] }
 
 const loadStaffByService = (tenantId: string, slug: string) =>
   unstable_cache(
     async (): Promise<Record<string, StaffMember[]>> => {
       const supabase = createPublicClient()
-      const [{ data: staff }, { data: links }] = await Promise.all([
+      // working_hours.location_id (VÅG 4b): en frisör är bokningsbar på plats L iff
+      // hen har ≥1 working_hours-rad med location_id = L. Vi laddar (staff_id,
+      // location_id) och bygger en distinct-uppsättning per frisör så pickern kan
+      // dölja fel-plats-personal (speglar availability-motorns scope i actions.ts).
+      const [{ data: staff }, { data: links }, { data: hours }] = await Promise.all([
         supabase
           .from('staff')
           .select('id, title')
@@ -26,9 +30,31 @@ const loadStaffByService = (tenantId: string, slug: string) =>
           .from('staff_services')
           .select('staff_id, service_id')
           .eq('tenant_id', tenantId),
+        supabase
+          .from('working_hours')
+          .select('staff_id, location_id')
+          .eq('tenant_id', tenantId),
       ])
+      // staff_id → Set<location_id> (distinct, hoppa över null location_id).
+      const locationsByStaff = new Map<string, Set<string>>()
+      for (const row of hours ?? []) {
+        if (!row.location_id) continue
+        ;(locationsByStaff.get(row.staff_id) ?? locationsByStaff.set(row.staff_id, new Set()).get(row.staff_id)!).add(
+          row.location_id,
+        )
+      }
       const staffById = new Map(
-        (staff ?? []).map((s) => [s.id, { id: s.id, title: s.title } as StaffMember]),
+        (staff ?? []).map(
+          (s) =>
+            [
+              s.id,
+              {
+                id: s.id,
+                title: s.title,
+                locationIds: [...(locationsByStaff.get(s.id) ?? [])],
+              } as StaffMember,
+            ] as const,
+        ),
       )
       const byService: Record<string, StaffMember[]> = {}
       for (const row of links ?? []) {
@@ -59,4 +85,28 @@ export async function getWizardServices(
     priceCents: s.price_cents,
     staff: staffByService[s.id] ?? [],
   }))
+}
+
+/** Active locations for a tenant, shaped for <BookingWizard>'s location picker
+ *  (primary first). Mirrors the /boka route's load so the in-page drawer offers
+ *  the SAME location selection. A 1-location tenant → the wizard hides the picker. */
+export async function getWizardLocations(
+  tenantId: string,
+  slug: string,
+): Promise<WizardLocation[]> {
+  return unstable_cache(
+    async (): Promise<WizardLocation[]> => {
+      const supabase = createPublicClient()
+      const { data } = await supabase
+        .from('locations')
+        .select('id, name, is_primary')
+        .eq('tenant_id', tenantId)
+        .eq('active', true)
+        .order('is_primary', { ascending: false })
+        .order('name', { ascending: true })
+      return (data ?? []).map((l) => ({ id: l.id, name: l.name, isPrimary: l.is_primary }))
+    },
+    ['wizard-locations', tenantId],
+    { tags: [`tenant:${slug.trim().toLowerCase()}`], revalidate: 300 },
+  )()
 }

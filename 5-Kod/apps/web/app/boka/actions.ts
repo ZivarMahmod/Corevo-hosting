@@ -31,6 +31,9 @@ export type CreateBookingInput = {
   email: string
   phone: string
   note?: string
+  /** Vald plats (VÅG 4b). Utelämnad → create_public_booking faller tillbaka på
+   *  tenantens primära aktiva plats (oförändrat för en-plats-salonger). */
+  locationId?: string | null
 }
 export type CreateResult =
   | { ok: true; bookingId: string; requiresPayment: boolean }
@@ -38,7 +41,15 @@ export type CreateResult =
 
 const SLOT_STEP_MIN = 15
 
-type TenantContext = { tenantId: string; slug: string; timeZone: string }
+type TenantContext = {
+  tenantId: string
+  slug: string
+  timeZone: string
+  /** Primary active location — the default scope when a caller omits a location
+   *  (single-location tenants, /boka back-compat, rebok-flödet). May be null on
+   *  the rare tenant with no primary; callers then fall back to the RPC default. */
+  locationId: string | null
+}
 
 /** Resolve the request's tenant from the middleware header (never the client). */
 async function getTenantContext(): Promise<TenantContext | null> {
@@ -53,28 +64,50 @@ async function getTenantContext(): Promise<TenantContext | null> {
     .eq('status', 'active')
     .maybeSingle()
   if (!tenant) return null
+  // Primär aktiv plats: ger både tidszon (oförändrat) OCH default-scope (id) som
+  // location-aware availability faller tillbaka på när ingen plats valts.
   const { data: loc } = await supabase
     .from('locations')
-    .select('timezone')
+    .select('id, timezone')
     .eq('tenant_id', tenant.id)
     .eq('is_primary', true)
+    .eq('active', true)
     .maybeSingle()
-  return { tenantId: tenant.id, slug: tenant.slug, timeZone: loc?.timezone ?? 'Europe/Stockholm' }
+  return {
+    tenantId: tenant.id,
+    slug: tenant.slug,
+    timeZone: loc?.timezone ?? 'Europe/Stockholm',
+    locationId: loc?.id ?? null,
+  }
 }
 
 /**
  * Available start times for a service on a date, optionally for one staff member
  * (null = "Alla", any staff who offers it). Each returned slot carries the staff
  * member who would take it, so booking is unambiguous.
+ *
+ * LOCATION-AWARE (VÅG 4b): availability is scoped to ONE location. A staff member
+ * is bookable at location L iff they have ≥1 working_hours row at L, and only that
+ * location's working_hours / working_hour_slots count. `staff_services` stays
+ * tenant-global (a service is offered tenant-wide). When `locationId` is omitted we
+ * resolve the tenant's PRIMARY active location, so single-location tenants behave
+ * byte-identically to before (their rows already carry the primary's location_id).
  */
 export async function getAvailableSlots(
   serviceId: string,
   staffId: string | null,
   date: string,
+  locationId?: string | null,
 ): Promise<SlotsResult> {
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, error: 'Okänd salong.' }
   const supabase = createPublicClient()
+
+  // Default-scope: explicit val → annars tenantens primära plats. Saknas båda
+  // (tenant utan primär plats) → ingen location-scope kan beräknas → tomt utbud,
+  // konsekvent med create_public_booking som då reser 'no_location'.
+  const loc = locationId ?? ctx.locationId
+  if (!loc) return { ok: true, timeZone: ctx.timeZone, slots: [] }
 
   const { data: service } = await supabase
     .from('services')
@@ -87,7 +120,7 @@ export async function getAvailableSlots(
     .maybeSingle()
   if (!service) return { ok: false, error: 'Tjänsten hittades inte.' }
 
-  // staff who offer this service
+  // staff who offer this service (tenant-global: staff_services has no location)
   const { data: offers } = await supabase
     .from('staff_services')
     .select('staff_id')
@@ -95,6 +128,20 @@ export async function getAvailableSlots(
     .eq('service_id', serviceId)
   let candidateIds = (offers ?? []).map((r) => r.staff_id)
   if (staffId) candidateIds = candidateIds.filter((id) => id === staffId)
+  if (candidateIds.length === 0) return { ok: true, timeZone: ctx.timeZone, slots: [] }
+
+  // LOCATION SCOPE: a staff member is bookable at `loc` iff they have ≥1
+  // working_hours row there (any weekday — this defines "stationed at L", not the
+  // day's window). Restrict the candidate set to those; a person with no hours at
+  // this location must NOT surface. Weekday/window filtering happens below.
+  const { data: locStaffRows } = await supabase
+    .from('working_hours')
+    .select('staff_id')
+    .eq('tenant_id', ctx.tenantId)
+    .eq('location_id', loc)
+    .in('staff_id', candidateIds)
+  const locStaffIds = new Set((locStaffRows ?? []).map((r) => r.staff_id))
+  candidateIds = candidateIds.filter((id) => locStaffIds.has(id))
   if (candidateIds.length === 0) return { ok: true, timeZone: ctx.timeZone, slots: [] }
 
   const { data: staffRows } = await supabase
@@ -117,6 +164,7 @@ export async function getAvailableSlots(
     .from('working_hours')
     .select('staff_id, start_time, end_time')
     .eq('tenant_id', ctx.tenantId)
+    .eq('location_id', loc) // location-aware: bara denna plats fönster
     .eq('weekday', weekday)
     .in('staff_id', staffIds)
 
@@ -129,6 +177,7 @@ export async function getAvailableSlots(
     .from('working_hour_slots')
     .select('staff_id, start_time')
     .eq('tenant_id', ctx.tenantId)
+    .eq('location_id', loc) // location-aware: explicita starttider för denna plats
     .eq('weekday', weekday)
     .eq('active', true)
     .in('staff_id', staffIds)
@@ -234,6 +283,10 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
     p_guest_name: name,
     p_guest_email: email,
     p_guest_phone: phone,
+    // Vald plats → validerad tenant+aktiv i RPC:n. Utelämnad (undefined) → RPC:ns
+    // DEFAULT NULL → primär plats (back-compat). p_location är `string | undefined`
+    // i de genererade typerna, så vi coalescear bort null.
+    p_location: input.locationId ?? ctx.locationId ?? undefined,
   })
 
   if (error) {
