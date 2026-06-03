@@ -50,6 +50,8 @@ export type IconName =
   | 'link'
   | 'alert'
   | 'info'
+  | 'shield'
+  | 'gift'
 
 const PATHS: Record<IconName, ReactElement> = {
   calendar: (
@@ -246,6 +248,14 @@ const PATHS: Record<IconName, ReactElement> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 11v5M12 8h.01" />
+    </>
+  ),
+  shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />,
+  gift: (
+    <>
+      <path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7" />
+      <rect x="2" y="7" width="20" height="5" rx="1" />
+      <path d="M12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7ZM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7Z" />
     </>
   ),
 }

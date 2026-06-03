@@ -10,6 +10,21 @@ import { CustomerSearch } from '@/components/admin/CustomerSearch'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kunder · Salongsadmin' }
 
+/** Lojalitetsnivå → Badge-ton + svensk etikett (§4.6: Guld→gold, Silver→info,
+ *  Ny→success, annars neutral). Nivån är härledd från riktiga ledger-poäng. */
+function tierBadge(tier: 'guld' | 'silver' | 'brons' | 'ny') {
+  switch (tier) {
+    case 'guld':
+      return { tone: 'gold' as const, label: 'Guld' }
+    case 'silver':
+      return { tone: 'info' as const, label: 'Silver' }
+    case 'brons':
+      return { tone: 'neutral' as const, label: 'Brons' }
+    default:
+      return { tone: 'success' as const, label: 'Ny' }
+  }
+}
+
 export default async function CustomersPage({
   searchParams,
 }: {
@@ -40,20 +55,21 @@ export default async function CustomersPage({
         lede="Din kunddatabas — sök, följ historik och se vem som kommer tillbaka. Allt byggs upp automatiskt från bokningarna."
       />
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-          gap: 16,
-          marginBottom: 18,
-        }}
-      >
+      <div className="bo-stat-grid">
         <Stat label="Kunder totalt" value={stats.total} icon="users" />
         <Stat label="Återkommande" value={stats.returning} icon="user" delta="≥ 5 besök" deltaTone="muted" />
-        <Stat label="Skyddat namn" value={stats.protectedNames} icon="settings" delta="Kundens val" deltaTone="muted" />
+        <Stat label="Skyddat namn" value={stats.protectedNames} icon="shield" delta="Kundens val" deltaTone="muted" />
+        <Stat
+          label="Lojalitetspoäng"
+          value={stats.loyaltyPoints.toLocaleString('sv-SE')}
+          icon="gift"
+          hint="Summa över alla kunder"
+        />
       </div>
 
-      <CustomerSearch defaultValue={q} />
+      <div style={{ maxWidth: 360 }}>
+        <CustomerSearch defaultValue={q} />
+      </div>
 
       {all.length === 0 ? (
         <Card>
@@ -84,66 +100,76 @@ export default async function CustomersPage({
               <thead>
                 <tr>
                   <th>Kund</th>
-                  <th>Status</th>
+                  <th>Nivå</th>
                   <th>Besök</th>
                   <th data-last="">Senaste besök</th>
+                  <th style={{ textAlign: 'right' }}>Lojalitet</th>
                 </tr>
               </thead>
               <tbody>
-                {list.map((c) => (
-                  <tr key={c.id}>
-                    <td>
-                      <Link
-                        href={`/admin/kunder/${c.id}`}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 10,
-                          color: 'inherit',
-                          textDecoration: 'none',
-                        }}
-                      >
-                        <span
-                          aria-hidden="true"
+                {list.map((c) => {
+                  const tier = tierBadge(c.tier)
+                  return (
+                    <tr key={c.id}>
+                      <td>
+                        <Link
+                          href={`/admin/kunder/${c.id}`}
                           style={{
-                            width: 30,
-                            height: 30,
-                            borderRadius: 999,
-                            background: 'var(--c-forest)',
-                            color: '#fff',
-                            display: 'grid',
-                            placeItems: 'center',
-                            fontSize: 12.5,
-                            fontWeight: 700,
-                            flex: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            color: 'inherit',
+                            textDecoration: 'none',
                           }}
                         >
-                          {c.shownName[0]?.toUpperCase() ?? '?'}
-                        </span>
-                        <span style={{ fontWeight: 600 }}>{c.shownName}</span>
-                        {c.nameHidden && (
                           <span
-                            title="Kunden visar skyddat namn"
-                            style={{ display: 'inline-flex', color: 'var(--c-info)' }}
+                            aria-hidden="true"
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: 999,
+                              background: 'var(--c-forest)',
+                              color: '#fff',
+                              display: 'grid',
+                              placeItems: 'center',
+                              fontSize: 12.5,
+                              fontWeight: 700,
+                              flex: 'none',
+                            }}
                           >
-                            <Icon name="settings" size={13} />
+                            {c.shownName[0]?.toUpperCase() ?? '?'}
                           </span>
-                        )}
-                      </Link>
-                    </td>
-                    <td>
-                      {c.isReturning ? (
-                        <Badge tone="gold">Återkommande</Badge>
-                      ) : (
-                        <Badge tone="neutral">Ny</Badge>
-                      )}
-                    </td>
-                    <td className="num">{c.visits}</td>
-                    <td data-last="" style={{ color: 'var(--c-ink-2)' }}>
-                      {c.lastVisitTs ? formatDateTime(c.lastVisitTs, tenant.timeZone) : '—'}
-                    </td>
-                  </tr>
-                ))}
+                          <span style={{ fontWeight: 600 }}>{c.shownName}</span>
+                          {c.nameHidden && (
+                            <span
+                              title="Kunden visar skyddat namn"
+                              style={{ display: 'inline-flex', color: 'var(--c-info)' }}
+                            >
+                              <Icon name="shield" size={13} />
+                            </span>
+                          )}
+                        </Link>
+                      </td>
+                      <td>
+                        <Badge tone={tier.tone}>{tier.label}</Badge>
+                      </td>
+                      <td className="num">{c.visits}</td>
+                      <td data-last="" style={{ color: 'var(--c-ink-2)' }}>
+                        {c.lastVisitTs ? formatDateTime(c.lastVisitTs, tenant.timeZone) : '—'}
+                      </td>
+                      <td
+                        className="num"
+                        style={{
+                          textAlign: 'right',
+                          fontWeight: 600,
+                          color: 'var(--c-gold-600)',
+                        }}
+                      >
+                        {c.loyaltyPoints.toLocaleString('sv-SE')} p
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

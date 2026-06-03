@@ -234,6 +234,21 @@ export type CustomerRow = Tables<'customers'>
 /** One row in the owner's customer database list. Identity-level only — NO raw
  *  PII (email/phone) is exposed here; the time-bound contact lives behind the
  *  get_customer_contact RPC (see {@link getCustomerContact}). */
+/** Härledd lojalitetsnivå. INGA lagrade tier-kolumner — beräknas från livstids-
+ *  poäng (migr 0011:107). Trösklar nedan; tenant-konfigurerbara trösklar är en
+ *  framtida förbättring (idag standardvärden). */
+export type CustomerTier = 'guld' | 'silver' | 'brons' | 'ny'
+
+const TIER_GULD = 500
+const TIER_SILVER = 150
+
+function tierOf(points: number): CustomerTier {
+  if (points >= TIER_GULD) return 'guld'
+  if (points >= TIER_SILVER) return 'silver'
+  if (points > 0) return 'brons'
+  return 'ny'
+}
+
 export type AdminCustomer = {
   id: string
   /** What to SHOW: kund-chosen display_name, else masked initial when name_hidden,
@@ -245,6 +260,10 @@ export type AdminCustomer = {
   lastVisitTs: string | null
   firstSeenAt: string
   isReturning: boolean
+  /** Riktigt saldo = sum(points_delta) ur loyalty_ledger (append-only, härlett —
+   *  migr 0011:107). 0 = ingen lojalitets-aktivitet, aldrig fejkat. */
+  loyaltyPoints: number
+  tier: CustomerTier
 }
 
 /** Public display name for a customer row WITHOUT leaking a hidden full name.
@@ -271,6 +290,19 @@ export async function listCustomers(tenantId: string): Promise<AdminCustomer[]> 
     .eq('status', 'active')
     .order('last_seen_at', { ascending: false })
 
+  // Riktigt lojalitets-saldo per kund (sum signerad points_delta). loyalty_ledger
+  // är append-only + SELECT-only tenant-wide för admin (migr 0011:551). Saldo HÄRLEDS
+  // — inga lagrade saldokolumner. Tomt → 0 p (ärligt, aldrig fejkat).
+  const { data: ledger } = await supabase
+    .from('loyalty_ledger')
+    .select('customer_id, points_delta')
+    .eq('tenant_id', tenantId)
+  const points = new Map<string, number>()
+  for (const r of (ledger ?? []) as { customer_id: string | null; points_delta: number }[]) {
+    if (!r.customer_id) continue
+    points.set(r.customer_id, (points.get(r.customer_id) ?? 0) + r.points_delta)
+  }
+
   type Row = CustomerRow & { bookings: { start_ts: string; status: string }[] | null }
   return ((data ?? []) as Row[]).map((c) => {
     const active = (c.bookings ?? []).filter((b) =>
@@ -280,6 +312,7 @@ export async function listCustomers(tenantId: string): Promise<AdminCustomer[]> 
       (max, b) => (max == null || b.start_ts > max ? b.start_ts : max),
       null,
     )
+    const lp = points.get(c.id) ?? 0
     return {
       id: c.id,
       shownName: shownNameOf(c),
@@ -289,6 +322,8 @@ export async function listCustomers(tenantId: string): Promise<AdminCustomer[]> 
       lastVisitTs: lastVisit,
       firstSeenAt: c.first_seen_at,
       isReturning: active.length >= RETURNING_VISITS,
+      loyaltyPoints: lp,
+      tier: tierOf(lp),
     }
   })
 }
@@ -297,6 +332,8 @@ export type CustomerStats = {
   total: number
   returning: number
   protectedNames: number
+  /** Summa utestående lojalitetspoäng över alla kunder (negativa saldon räknas 0). */
+  loyaltyPoints: number
 }
 
 export function customerStats(rows: AdminCustomer[]): CustomerStats {
@@ -304,6 +341,7 @@ export function customerStats(rows: AdminCustomer[]): CustomerStats {
     total: rows.length,
     returning: rows.filter((c) => c.isReturning).length,
     protectedNames: rows.filter((c) => c.nameHidden).length,
+    loyaltyPoints: rows.reduce((s, c) => s + Math.max(0, c.loyaltyPoints), 0),
   }
 }
 
