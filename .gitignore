@@ -16,6 +16,10 @@
 # 2-Byggplan. ~13 MB of PNGs/HTML prototypes — extracted essentials already in 5-Kod.
 2-Byggplan/_klart/Corevo Booking Design System-handoff/
 2-Byggplan/corevo-booking-design-system v2/
+# v3 = the "maxed" handoff (goal-17 Steg 0 source-of-truth). 23.6 MB of
+# screenshots/prototype HTML — kept on disk as the contract, ignored like v2.
+# Canon tokens verified identical to the playbook (zero token delta).
+2-Byggplan/corevo-booking-design-system v3/
 
 # Stray vite/vitest cache that materializes as a node_modules dir at the repo root
 # (no real install lives here — the workspace install is under 5-Kod). Standard.
