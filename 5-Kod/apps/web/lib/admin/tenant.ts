@@ -26,7 +26,7 @@ export async function getAdminTenant(user: CurrentUser): Promise<AdminTenant | n
   if (!user.tenantId) return null
   const supabase = await createClient()
   const [{ data: tenant }, { data: loc }] = await Promise.all([
-    supabase.from('tenants').select('id, slug, name').eq('id', user.tenantId).maybeSingle(),
+    supabase.from('tenants').select('id, slug, name, status').eq('id', user.tenantId).maybeSingle(),
     supabase
       .from('locations')
       .select('id, timezone')
@@ -35,6 +35,8 @@ export async function getAdminTenant(user: CurrentUser): Promise<AdminTenant | n
       .maybeSingle(),
   ])
   if (!tenant) return null
+  // Soft-deleted tenant → no admin context, so every downstream admin action denies.
+  if (tenant.status === 'deleted') return null
   return {
     id: tenant.id,
     slug: tenant.slug,

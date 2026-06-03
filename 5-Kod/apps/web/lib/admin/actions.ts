@@ -8,7 +8,8 @@ import { kronorToCents } from './format'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages, type UploadResult } from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
 import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
-import { BOOKING_STATUSES } from './format'
+import { refundBookingPayment } from '@/lib/stripe/refund'
+import { BOOKING_STATUSES, ALLOWED_FROM, type BookingStatus } from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
 
@@ -1014,6 +1015,9 @@ export async function setCustomerPrivacy(_p: ActionState, fd: FormData): Promise
 }
 
 // ── Bookings overview ─────────────────────────────────────────────────────────
+// Status-transition matrix (ALLOWED_FROM) lives in ./format alongside
+// BOOKING_STATUSES so its invariant is unit-testable without this 'use server'
+// module (a 'use server' file may only export async functions).
 export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await adminCtx()
   if (!ctx) return { error: NO_TENANT }
@@ -1025,21 +1029,46 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
     return { error: 'Ogiltig status.' }
 
   const supabase = await createClient()
-  const { error } = await supabase
+
+  // No-op: the admin <select> defaults to the booking's CURRENT status, so the
+  // most trivial interaction (open a booking, click Spara without changing the
+  // dropdown) submits the same status. Treat that as a success without writing —
+  // and without re-firing the review-nudge/refund side-effects below.
+  const { data: current } = await supabase
+    .from('bookings')
+    .select('status')
+    .eq('id', bookingId)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!current) return { error: 'Saknar bokning.' }
+  if (current.status === status) return { success: 'Status uppdaterad.' }
+
+  const allowedFrom = ALLOWED_FROM[status as BookingStatus]
+  // Gate the write on the current status: .in('status', allowedFrom) means the
+  // UPDATE only matches when the transition is permitted. Zero rows back ⇒ the
+  // booking was in a status this target can't be reached from.
+  const { data: updated, error } = await supabase
     .from('bookings')
     .update({ status })
     .eq('id', bookingId)
     .eq('tenant_id', ctx.tenant.id)
+    .in('status', allowedFrom)
+    .select('id')
+    .maybeSingle()
   if (error) {
     // Reactivating a booking can collide with the no_double_booking EXCLUDE.
     if (error.code === '23P01')
       return { error: 'Tiden krockar med en annan aktiv bokning för medarbetaren.' }
     return { error: GENERIC }
   }
+  if (!updated) return { error: 'Otillåten statusövergång.' }
 
   // Visit done → Google-review nudge (M9). Best-effort: never throws, so it can't
-  // fail the status the admin just set.
+  // fail the status the admin just set. Only fires on a real transition.
   if (status === 'completed') await sendReviewNudgeForBooking(supabase, bookingId)
+  // Avbokning → återbetala ev. lyckad betalning. No-op om ingen 'succeeded'
+  // betalning finns; refundBookingPayment sväljer egna fel (kastar aldrig).
+  if (status === 'cancelled') await refundBookingPayment(bookingId, ctx.tenant.id)
 
   revalidatePath('/admin/bokningar')
   revalidatePath('/admin')

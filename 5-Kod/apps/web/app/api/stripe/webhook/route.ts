@@ -2,6 +2,7 @@ import Stripe from 'stripe'
 import { getStripe, getWebhookSecret } from '@/lib/stripe/client'
 import { createServiceClient } from '@/lib/platform/service'
 import { sendPaymentReceipt, parseGuestEmail } from '@/lib/notifications/booking'
+import { refundBookingPayment } from '@/lib/stripe/refund'
 import { captureException } from '@/lib/observability'
 
 // Stripe Connect webhook (G09 step 4).
@@ -103,11 +104,17 @@ export async function POST(req: Request): Promise<Response> {
             break
           }
           // State-set: markera payment betald + spara PI-id (idempotent).
+          // .neq('status','refunded'): en RE-leverans av succeeded på en redan
+          // återbetald betalning får ALDRIG återuppliva 'refunded' → 'succeeded'
+          // (det retriggade annars refundBookingPayment + lämnade raden felmärkt).
+          // pending→succeeded, failed→succeeded (retry) och succeeded→succeeded
+          // (no-op) passerar fortfarande.
           await admin
             .from('payments')
             .update({ status: 'succeeded', stripe_payment_intent_id: pi.id })
             .eq('booking_id', bookingId)
             .eq('tenant_id', tenantId)
+            .neq('status', 'refunded')
           // Bekräfta bokningen (bara från pending → confirmed; rör ej completed).
           await admin
             .from('bookings')
@@ -116,37 +123,53 @@ export async function POST(req: Request): Promise<Response> {
             .eq('tenant_id', tenantId)
             .eq('status', 'pending')
 
+          // Sen betalning på en redan AVBOKAD bokning: confirm-UPDATE ovan no-oppade
+          // (WHERE status='pending'), så bokningen står kvar cancelled. Återbetala
+          // då pengarna (refundBookingPayment är idempotent — no-op om redan refunded).
+          const { data: bk } = await admin
+            .from('bookings')
+            .select('status')
+            .eq('id', bookingId)
+            .eq('tenant_id', tenantId)
+            .maybeSingle()
+          if (bk?.status === 'cancelled') {
+            await refundBookingPayment(bookingId, tenantId)
+          }
+
           // Kvitto (G10) — gästkontakt rider på note (G04-sömmen). Best-effort.
-          try {
-            const { data: b } = await admin
-              .from('bookings')
-              .select('note, start_ts, services(name), tenants(name), locations(timezone)')
-              .eq('id', bookingId)
-              .eq('tenant_id', tenantId)
-              .maybeSingle()
-            const to = parseGuestEmail((b as { note?: string | null } | null)?.note)
-            if (b && to) {
-              const rel = b as unknown as {
-                start_ts: string
-                services: { name?: string } | null
-                tenants: { name?: string } | null
-                locations: { timezone?: string } | null
+          // Hoppas över för avbokade/återbetalda bokningar (inget kvitto då).
+          if (bk?.status !== 'cancelled') {
+            try {
+              const { data: b } = await admin
+                .from('bookings')
+                .select('note, start_ts, services(name), tenants(name), locations(timezone)')
+                .eq('id', bookingId)
+                .eq('tenant_id', tenantId)
+                .maybeSingle()
+              const to = parseGuestEmail((b as { note?: string | null } | null)?.note)
+              if (b && to) {
+                const rel = b as unknown as {
+                  start_ts: string
+                  services: { name?: string } | null
+                  tenants: { name?: string } | null
+                  locations: { timezone?: string } | null
+                }
+                await sendPaymentReceipt(
+                  to,
+                  {
+                    tenantName: rel.tenants?.name ?? 'Salongen',
+                    serviceName: rel.services?.name ?? 'Behandling',
+                    startISO: rel.start_ts,
+                    timeZone: rel.locations?.timezone ?? 'Europe/Stockholm',
+                    amountCents: pi.amount_received ?? pi.amount ?? 0,
+                    currency: pi.currency ?? 'sek',
+                  },
+                  { supabase: admin, tenantId },
+                )
               }
-              await sendPaymentReceipt(
-                to,
-                {
-                  tenantName: rel.tenants?.name ?? 'Salongen',
-                  serviceName: rel.services?.name ?? 'Behandling',
-                  startISO: rel.start_ts,
-                  timeZone: rel.locations?.timezone ?? 'Europe/Stockholm',
-                  amountCents: pi.amount_received ?? pi.amount ?? 0,
-                  currency: pi.currency ?? 'sek',
-                },
-                { supabase: admin, tenantId },
-              )
+            } catch (e) {
+              await captureException(e, { where: 'webhook.receipt', bookingId })
             }
-          } catch (e) {
-            await captureException(e, { where: 'webhook.receipt', bookingId })
           }
         }
         break

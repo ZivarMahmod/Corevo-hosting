@@ -54,6 +54,22 @@ export const BOOKING_STATUSES = [
 ] as const
 export type BookingStatus = (typeof BOOKING_STATUSES)[number]
 
+// Allowed SOURCE statuses per TARGET for an admin status change (setBookingStatus).
+// An admin may move a booking INTO a status only from one of the listed sources;
+// an empty source list ⇒ unreachable. Invariant: `cancelled` is the only
+// NON-revivable terminal state — it never appears as a source, because cancelling
+// moves money (refund) and reviving a refunded booking would desync Stripe.
+// `completed`/`no_show` ARE sources: the front desk can legitimately correct them
+// (undo a mis-mark, or cancel+refund a completed booking). Re-saving the current
+// status is a no-op handled in the action, not via this matrix.
+export const ALLOWED_FROM: Record<BookingStatus, BookingStatus[]> = {
+  pending: ['confirmed', 'completed', 'no_show'],
+  confirmed: ['pending', 'completed', 'no_show'],
+  completed: ['pending', 'confirmed'],
+  no_show: ['pending', 'confirmed'],
+  cancelled: ['pending', 'confirmed', 'completed', 'no_show'],
+}
+
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Ej bekräftad',
   confirmed: 'Bekräftad',

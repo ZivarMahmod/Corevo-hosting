@@ -279,7 +279,9 @@ export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<Ac
   const tenantId = String(fd.get('tenantId') ?? '')
   const status = String(fd.get('status') ?? '')
   if (!tenantId) return { error: 'Saknar salong.' }
-  if (status !== 'active' && status !== 'suspended') return { error: 'Ogiltig status.' }
+  // 'deleted' = soft delete: flip tenants.status (NEVER .delete() — keep the history).
+  if (status !== 'active' && status !== 'suspended' && status !== 'deleted')
+    return { error: 'Ogiltig status.' }
 
   const { data: tenant, error } = await supabase
     .from('tenants')
@@ -296,16 +298,23 @@ export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<Ac
   revalidatePath('/salonger')
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
-    action: status === 'suspended' ? 'tenant.suspend' : 'tenant.activate',
+    action:
+      status === 'deleted'
+        ? 'tenant.delete'
+        : status === 'suspended'
+          ? 'tenant.suspend'
+          : 'tenant.activate',
     tenantId,
     actorId: user.id,
     meta: { status },
   })
   return {
     success:
-      status === 'suspended'
-        ? 'Salongen är pausad — publika sajten blockeras.'
-        : 'Salongen är aktiv igen — publika sajten öppen.',
+      status === 'deleted'
+        ? 'Salongen är borttagen — publika sajten och admin blockeras.'
+        : status === 'suspended'
+          ? 'Salongen är pausad — publika sajten blockeras.'
+          : 'Salongen är aktiv igen — publika sajten öppen.',
   }
 }
 

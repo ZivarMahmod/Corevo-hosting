@@ -16,6 +16,8 @@ begin
     insert into public.bookings (tenant_id, staff_id, service_id, start_ts, end_ts, status)
       values (tenant_a, staff_a, svc_a, t0 + interval '15 min', t0 + interval '45 min', 'confirmed');
     -- should never reach here
+    -- 0017 guard: bookings are never hard-deleted; open the tx-local escape hatch (defensive — this path only runs on test failure).
+    set local corevo.allow_booking_delete = 'on';
     delete from public.bookings where staff_id = staff_a and start_ts >= t0 and start_ts < t0 + interval '1 hour';
     raise exception 'DOUBLE-BOOKING TEST FAILED: overlapping insert was allowed';
   exception
@@ -24,5 +26,7 @@ begin
   end;
 
   -- cleanup the first (committed) test booking
+  -- 0017 guard: bookings are never hard-deleted; open the tx-local escape hatch for this cleanup.
+  set local corevo.allow_booking_delete = 'on';
   delete from public.bookings where staff_id = staff_a and start_ts = t0;
 end $$;

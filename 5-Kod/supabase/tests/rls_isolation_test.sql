@@ -47,6 +47,8 @@ begin
   -- ---- back to postgres + cleanup ----
   reset role;
   perform set_config('request.jwt.claims', '', true);
+  -- 0017 guard: bookings are never hard-deleted; open the tx-local escape hatch for this test cleanup.
+  set local corevo.allow_booking_delete = 'on';
   delete from public.bookings where id in (book_a, book_b);
   delete from public.tenants where id = tenant_b;   -- cascades staff/services
 

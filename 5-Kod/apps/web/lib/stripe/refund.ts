@@ -31,9 +31,12 @@ export async function refundBookingPayment(bookingId: string, tenantId: string):
   if (!tenant?.stripe_account_id) return
 
   try {
+    // idempotencyKey (boknings-scopat, en betalning per bokning): om denna väg
+    // körs två gånger för samma bokning dedupar Stripe inom sitt 24h-fönster →
+    // ingen risk för dubbel återbetalning även om DB-guarden skulle missas.
     await stripe.refunds.create(
       { payment_intent: payment.stripe_payment_intent_id },
-      { stripeAccount: tenant.stripe_account_id },
+      { stripeAccount: tenant.stripe_account_id, idempotencyKey: `refund_${bookingId}` },
     )
     await admin
       .from('payments')

@@ -231,6 +231,9 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
     p_staff: input.staffId,
     p_start: input.startISO,
     p_note: contactNote,
+    p_guest_name: name,
+    p_guest_email: email,
+    p_guest_phone: phone,
   })
 
   if (error) {

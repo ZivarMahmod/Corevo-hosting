@@ -6,6 +6,7 @@ import { getCancellationCutoffHours, withinCancellationWindow } from '@/lib/kund
 import { sendBookingCancellation, parseGuestEmail } from '@/lib/notifications/booking'
 import { sendSms, parseGuestPhone } from '@/lib/notifications/sms'
 import { getSmsEnabled } from '@/lib/notifications/settings'
+import { refundBookingPayment } from '@/lib/stripe/refund'
 import { logger } from '@/lib/observability'
 
 // Guest self-service CANCEL action (NOTIF-GUEST). The only authorisation is the
@@ -70,6 +71,9 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
     // Someone else cancelled between our read and write — treat as already done.
     return { ok: false, reason: 'already_cancelled', message: 'Den här tiden är redan avbokad.' }
   }
+
+  // Refund a paid booking on guest self-service cancel (parity with kund/personal).
+  await refundBookingPayment(bookingId, b.tenant_id)
 
   // Best-effort cancellation notice. Never throws into the result — the cancel
   // itself already succeeded. The email is NOT gated on the owner's notification

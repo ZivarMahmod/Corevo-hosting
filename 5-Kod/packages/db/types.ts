@@ -1047,6 +1047,9 @@ export type Database = {
       create_public_booking: {
         Args: {
           p_customer?: string
+          p_guest_email?: string
+          p_guest_name?: string
+          p_guest_phone?: string
           p_note?: string
           p_service: string
           p_staff: string
@@ -1059,6 +1062,10 @@ export type Database = {
       customer_contact_hash: {
         Args: { p_email: string; p_phone: string; p_tenant: string }
         Returns: string
+      }
+      expire_abandoned_pending_bookings: {
+        Args: { p_ttl_min?: number }
+        Returns: number
       }
       get_busy_intervals: {
         Args: {

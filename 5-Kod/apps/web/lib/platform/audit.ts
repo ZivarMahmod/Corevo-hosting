@@ -12,6 +12,7 @@ export type PlatformAuditAction =
   | 'tenant.create'
   | 'tenant.suspend'
   | 'tenant.activate'
+  | 'tenant.delete' // soft delete (status='deleted') — admin context then resolves to null
   | 'tenant.branding'
   | 'tenant.billing'
   | 'tenant.invite'
