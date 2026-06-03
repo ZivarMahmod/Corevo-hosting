@@ -991,22 +991,31 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
     .upsert({ tenant_id: ctx.tenant.id, branding }, { onConflict: 'tenant_id' })
   if (error) return { error: GENERIC }
 
-  // FX-14: delete storefront objects this save dropped or replaced (hero, gallery,
-  // about, closing, team photos). The logo is owned by saveBranding, so prev.logo_url
-  // is deliberately NOT in this set — a media save must never delete the live logo.
-  await pruneRemovedImages(
-    [
-      ...(prev.hero_images ?? []),
-      ...(prev.gallery_images ?? []),
-      prev.about_image,
-      prev.closing_image,
-      ...(prev.team ?? []).map((m) => m.img),
-    ],
-    [...heroImages, ...galleryImages, aboutImage, closingImage, ...team.map((m) => m.img)],
-  )
-
-  revalidateTenant(ctx.tenant.slug)
-  revalidatePath('/admin/varumarke')
+  // VÅG 5 durability: the DB save has COMMITTED. Everything below is best-effort
+  // cleanup (R2 prune + cache revalidation) and must NEVER turn a successful save
+  // into an error-boundary crash — that's the "data saved but UI says it failed =
+  // appears to vanish" class WORKFLOW-03 hunts (Zivar repro: removing an image then
+  // saving). pruneRemovedImages is already best-effort internally; this wraps the
+  // whole tail (incl. revalidate*) so any throw here can't unwind a committed save.
+  try {
+    // FX-14: delete storefront objects this save dropped or replaced (hero, gallery,
+    // about, closing, team photos). The logo is owned by saveBranding, so prev.logo_url
+    // is deliberately NOT in this set — a media save must never delete the live logo.
+    await pruneRemovedImages(
+      [
+        ...(prev.hero_images ?? []),
+        ...(prev.gallery_images ?? []),
+        prev.about_image,
+        prev.closing_image,
+        ...(prev.team ?? []).map((m) => m.img),
+      ],
+      [...heroImages, ...galleryImages, aboutImage, closingImage, ...team.map((m) => m.img)],
+    )
+    revalidateTenant(ctx.tenant.slug)
+    revalidatePath('/admin/varumarke')
+  } catch {
+    // best-effort cleanup — a prune/revalidate miss never fails an already-saved write.
+  }
   return uploadWarning
     ? { error: uploadWarning }
     : { success: 'Bilder & innehåll sparat. Publika webbplatsen uppdaterad.' }

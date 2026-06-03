@@ -299,6 +299,14 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
     if (error.code === 'P0001') {
       return { ok: false, reason: 'slot_taken', message: 'Den tiden är inte längre ledig — välj en ny tid.' }
     }
+    // P0002 location-family (VÅG 5): the picked location was deactivated, or the
+    // staff's working_hours at it were removed (0022 staff↔location fence), between
+    // page-load and submit. A real user on a stale page can hit this → degrade to the
+    // same "pick a new time" family as a taken slot, not a cryptic "something went
+    // wrong". Other P0002s (invalid_service/invalid_staff) are start-over cases.
+    if (error.code === 'P0002' && /invalid_staff_location|invalid_location/.test(error.message ?? '')) {
+      return { ok: false, reason: 'slot_taken', message: 'Den tiden är inte längre ledig — välj en ny tid.' }
+    }
     return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
   }
   if (!bookingId) {

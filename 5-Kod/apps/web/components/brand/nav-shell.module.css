@@ -239,6 +239,14 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-fg);
+  /* VÅG 5 a11y: the glyph box is ~36px tall; pad the hit area to the 44px WCAG/Apple
+     minimum tap target (unconditional, matching the back-office pattern). The
+     overlay is centered so the wider box stays visually balanced. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.25rem 1rem;
 }
 .overlayLinks a:hover {
   color: var(--color-primary);
