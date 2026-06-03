@@ -16,7 +16,8 @@ export function ServicesManager({ services }: { services: ServiceRow[] }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createService, {})
 
   return (
-    <div>
+    <div className="bo-2col" style={{ alignItems: 'start' }}>
+      <div>
       <form action={formAction} className={styles.form}>
         <label className={styles.field}>
           <span>Namn</span>
@@ -53,7 +54,137 @@ export function ServicesManager({ services }: { services: ServiceRow[] }) {
           ))}
         </ul>
       )}
+      </div>
+      <StorefrontSiteMap services={services} />
     </div>
+  )
+}
+
+/** Live storefront site-map (playbook §4.4) — mirrors where each service shows up
+ *  on the public site, grouped by category section. Derived from the same services
+ *  prop, so a toggle/section edit re-revalidates the page and the map updates with
+ *  no extra code or deploy. Active = a chip under its section; inactive = listed as
+ *  hidden. Read-only reflection — the real edits live in the table on the left. */
+function StorefrontSiteMap({ services }: { services: ServiceRow[] }) {
+  const active = services.filter((s) => s.active)
+  const hidden = services.filter((s) => !s.active)
+
+  const sections = new Map<string, ServiceRow[]>()
+  for (const s of active) {
+    const key = s.category?.trim() || 'Övrigt'
+    const arr = sections.get(key)
+    if (arr) arr.push(s)
+    else sections.set(key, [s])
+  }
+  const sectionList = [...sections.entries()]
+
+  return (
+    <aside
+      style={{
+        position: 'sticky',
+        top: 84,
+        background: 'var(--c-cream)',
+        border: '1px solid var(--c-line)',
+        borderRadius: 16,
+        padding: 18,
+        boxShadow: 'var(--shadow-sm)',
+      }}
+    >
+      <div className="eyebrow" style={{ marginBottom: 2 }}>
+        Var det syns på hemsidan
+      </div>
+      <p className="num" style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: '0 0 14px' }}>
+        Din publika sajt → Tjänster
+      </p>
+
+      {sectionList.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--c-ink-2)' }}>
+          Inga aktiva tjänster — ingenting visas i tjänstemenyn ännu.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {sectionList.map(([name, items]) => (
+            <div
+              key={name}
+              style={{
+                background: 'var(--c-paper-2)',
+                border: '1px solid var(--c-line)',
+                borderRadius: 12,
+                padding: 12,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: '.06em',
+                  textTransform: 'uppercase',
+                  color: 'var(--c-forest)',
+                  marginBottom: 8,
+                }}
+              >
+                {name}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {items.map((s) => (
+                  <span
+                    key={s.id}
+                    style={{
+                      fontSize: 12.5,
+                      padding: '4px 10px',
+                      borderRadius: 999,
+                      background: 'var(--c-cream)',
+                      border: '1px solid var(--c-line)',
+                      color: 'var(--c-ink)',
+                    }}
+                  >
+                    {s.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {hidden.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '.06em',
+              textTransform: 'uppercase',
+              color: 'var(--c-ink-3)',
+              marginBottom: 8,
+            }}
+          >
+            Dold på sajten
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {hidden.map((s) => (
+              <span
+                key={s.id}
+                style={{
+                  fontSize: 12.5,
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  background: 'transparent',
+                  border: '1px dashed var(--c-line-strong)',
+                  color: 'var(--c-ink-3)',
+                }}
+              >
+                {s.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p style={{ fontSize: 12, color: 'var(--c-ink-3)', margin: '14px 0 0' }}>
+        Ändringar slår igenom utan kod eller deploy.
+      </p>
+    </aside>
   )
 }
 
