@@ -1,111 +1,49 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { listTenants } from '@/lib/platform/tenants'
-import { BILLING_MODEL_LABELS, type BillingModel } from '@/lib/platform/billing'
-import { PageHead, Button, Badge } from '@/components/portal/ui'
-import styles from '@/components/platform/platform.module.css'
+import { listTenantsWithStats } from '@/lib/platform/tenants'
+import { SalongerClient, type SalongCardVM } from '@/components/platform/SalongerClient'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Salonger' }
 
-export default async function TenantsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; status?: string }>
-}) {
-  const sp = await searchParams
-  const q = sp.q ?? ''
-  const status = sp.status ?? 'all'
-  const tenants = await listTenants({ q, status })
-  const isFiltered = q.trim() !== '' || status !== 'all'
+const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
+function publicUrl(slug: string): string {
+  const isLocal = ROOT.includes('localhost') || ROOT.includes('127.0.0.1')
+  return `${isLocal ? 'http' : 'https'}://${slug}.${ROOT}`
+}
 
-  return (
-    <section className="portal-section">
-      <PageHead eyebrow="Plattform" title="Salonger">
-        <Button href="/salonger/ny" variant="primary" icon="plus">
-          Ny salong
-        </Button>
-      </PageHead>
-      <p className={styles.muted}>
-        {tenants.length} salong{tenants.length === 1 ? '' : 'er'}
-        {isFiltered ? ' (filtrerat)' : ''}
-      </p>
+/** Relative "senast aktiv" label, formatted once on the server at request time so
+ *  the client never recomputes (no hydration drift). Derived from the salon's most
+ *  recent booking; "—" when the salon has no activity yet. */
+function relTime(iso: string | null): string {
+  if (!iso) return '—'
+  const diffMs = Date.now() - new Date(iso).getTime()
+  if (!Number.isFinite(diffMs) || diffMs < 0) return '—'
+  const min = Math.floor(diffMs / 60000)
+  if (min < 1) return 'nyss'
+  if (min < 60) return `för ${min} min`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `för ${hr} tim`
+  const d = Math.floor(hr / 24)
+  return d === 1 ? 'för 1 dag' : `för ${d} dagar`
+}
 
-      {/* GET form → server reads searchParams (no client JS needed). */}
-      <form className={styles.filters} method="get">
-        <label className={styles.field}>
-          <span>Sök (namn / subdomän)</span>
-          <input name="q" defaultValue={q} placeholder="frisor…" autoCapitalize="none" />
-        </label>
-        <label className={styles.field}>
-          <span>Status</span>
-          <select name="status" defaultValue={status}>
-            <option value="all">Alla</option>
-            <option value="active">Aktiva</option>
-            <option value="suspended">Pausade</option>
-          </select>
-        </label>
-        <button type="submit" className={styles.btn}>
-          Filtrera
-        </button>
-      </form>
-
-      {tenants.length === 0 ? (
-        <div className={styles.empty}>
-          {isFiltered ? (
-            <>
-              <p className={styles.emptyTitle}>Inga salonger matchar filtret</p>
-              <p className={styles.emptyText}>
-                Prova en bredare sökning eller återställ filtret för att se alla salonger.
-              </p>
-              <Link href="/salonger" className={styles.btn}>
-                Rensa filter
-              </Link>
-            </>
-          ) : (
-            <>
-              <p className={styles.emptyTitle}>Inga salonger ännu</p>
-              <p className={styles.emptyText}>
-                Skapa din första salong — välj temamall och färger, så är den live direkt.
-              </p>
-              <Link href="/salonger/ny" className="btn-primary">
-                + Ny salong
-              </Link>
-            </>
-          )}
-        </div>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table className="portal-table">
-            <thead>
-              <tr>
-                <th>Subdomän</th>
-                <th>Namn</th>
-                <th>Status</th>
-                <th>Prismodell</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tenants.map((t) => (
-                <tr key={t.id}>
-                  <td>
-                    <Link href={`/salonger/${t.id}`}>
-                      <code className={styles.code}>{t.slug}</code>
-                    </Link>
-                  </td>
-                  <td>{t.name}</td>
-                  <td>
-                    <Badge tone={t.status === 'active' ? 'success' : 'warning'}>
-                      {t.status === 'active' ? 'Aktiv' : 'Pausad'}
-                    </Badge>
-                  </td>
-                  <td>{BILLING_MODEL_LABELS[t.billingModel as BillingModel] ?? t.billingModel}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  )
+export default async function TenantsPage() {
+  const tenants = await listTenantsWithStats()
+  const vms: SalongCardVM[] = tenants.map((t) => ({
+    id: t.id,
+    slug: t.slug,
+    name: t.name,
+    markColor: t.markColor,
+    owner: t.owner,
+    themeLabel: t.themeLabel,
+    variantLabel: t.variantLabel,
+    level: t.level,
+    bookings: t.bookings,
+    completed: t.completed,
+    staff: t.staff,
+    displayStatus: t.displayStatus,
+    lastLabel: relTime(t.lastActivityAt),
+    storefrontUrl: publicUrl(t.slug),
+  }))
+  return <SalongerClient tenants={vms} />
 }

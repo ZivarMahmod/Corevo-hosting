@@ -1,7 +1,8 @@
 'use client'
 
-import { useTransition } from 'react'
-import { sendPasswordReset } from '@/lib/platform/actions'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { sendPasswordReset, setTenantStatus } from '@/lib/platform/actions'
 import { Button, Icon, useToast } from '@/components/portal/ui'
 import styles from './tenant-detail.module.css'
 
@@ -74,28 +75,66 @@ export function TenantHeaderActions({
 }
 
 /**
- * Riskzon-kort (law: SuperTenant.jsx Drift danger card). Build-once-never-delete:
- * the "Försök radera tenant" button is DELIBERATELY a blocked consequence-toast,
- * NOT a real delete. It never wires setTenantStatus('deleted') — the mock semantics
- * + the project rule both say a protected row is never removed; suspend (in the
- * StatusControl above) is the real lever.
+ * Riskzon-kort (law: SuperTenant.jsx Drift danger card) — Zivar-requested REAL
+ * delete. "Ta bort salong" is a two-step soft-delete: setTenantStatus('deleted')
+ * flips tenants.status only — the public storefront + admin are blocked while ALL
+ * rows + history are kept (build-once-never-delete). A HARD row-deletion is still
+ * permanently blocked by the audit-guard; this never issues a `.delete()`. On
+ * success we leave the (now-deleted) detail page back to the list.
  */
-export function TenantDangerCard() {
+export function TenantDangerCard({ tenantId, tenantName }: { tenantId: string; tenantName: string }) {
   const { notify } = useToast()
-  return (
-    <button
-      type="button"
-      className="pbtn pbtn--md"
-      style={{
-        background: 'var(--c-danger)',
-        color: '#fff',
-      }}
-      onClick={() =>
-        notify('Blockerad av audit-guard — skyddad rad raderas aldrig (build-once-never-delete).', 'warning')
+  const router = useRouter()
+  const [confirming, setConfirming] = useState(false)
+  const [pending, startTransition] = useTransition()
+
+  function remove() {
+    const fd = new FormData()
+    fd.set('tenantId', tenantId)
+    fd.set('status', 'deleted')
+    startTransition(async () => {
+      const res = await setTenantStatus({}, fd)
+      if (res.error) notify(res.error, 'warning')
+      else {
+        notify(res.success ?? 'Salongen är borttagen.', 'success')
+        router.push('/salonger')
       }
-    >
-      <Icon name="trash" size={17} />
-      Försök radera tenant
-    </button>
+    })
+  }
+
+  if (!confirming) {
+    return (
+      <button
+        type="button"
+        className="pbtn pbtn--md"
+        style={{ background: 'var(--c-danger)', color: '#fff' }}
+        onClick={() => setConfirming(true)}
+      >
+        <Icon name="trash" size={17} />
+        Ta bort salong
+      </button>
+    )
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 13, color: 'var(--c-ink)', flex: 1, minWidth: 200 }}>
+        Ta bort <b>{tenantName}</b>? Mjuk borttagning — publik sajt + admin blockeras, data &amp; historik
+        sparas.
+      </span>
+      <button type="button" className="pbtn pbtn--ghost pbtn--md" disabled={pending} onClick={() => setConfirming(false)}>
+        Avbryt
+      </button>
+      <button
+        type="button"
+        className="pbtn pbtn--md"
+        disabled={pending}
+        style={{ background: 'var(--c-danger)', color: '#fff' }}
+        onClick={remove}
+      >
+        <Icon name="trash" size={16} />
+        {pending ? 'Tar bort…' : 'Bekräfta borttagning'}
+      </button>
+    </div>
   )
 }

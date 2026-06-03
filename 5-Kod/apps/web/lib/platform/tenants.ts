@@ -59,6 +59,144 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
   })
 }
 
+// ── Card-grid feed (image #3 / SuperSalons.jsx — the Salonger card view) ──────────
+// Per-tenant stats + derived chips for the card grid. BATCHED: one bookings read +
+// one staff read + one owner read for the WHOLE platform, then aggregated in JS
+// (mirrors metrics.ts) — never an N×per-tenant query loop. Admin-scale volumes.
+
+const VARIANT_LABEL: Record<'3' | '4', string> = { '3': 'Steg-för-steg', '4': 'Snabbboka' }
+
+export type CustomizationLevel = 1 | 2 | 3
+
+/**
+ * Derive the salon's storefront customization tier (the "Nivå" chip) from REAL
+ * signals — there is NO stored level column, so we never invent a number:
+ *   • Nivå 3 = a scoped custom-CSS override string is present (premium, code-level —
+ *     the same `customOverride.css` seam tenant-data.ts reads on the storefront).
+ *   • Nivå 2 = a no-code template is in play (theme preset OR nav/hero layout variant
+ *     OR an uploaded logo/font) — the salon went past raw colour tokens.
+ *   • Nivå 1 = colour tokens only (or nothing) — the baseline no-code floor.
+ * Mirrors the codebase's nivå-1/2/3 convention (globals.css / tenant-data.ts).
+ */
+export function deriveCustomizationLevel(
+  rawSettings: Record<string, unknown> | null | undefined,
+  branding: Record<string, unknown> | null | undefined,
+): CustomizationLevel {
+  const s = rawSettings ?? {}
+  const b = branding ?? {}
+  const override = s.custom_override as { css?: unknown } | undefined
+  if (override && typeof override.css === 'string' && override.css.trim() !== '') return 3
+  const layout = (s.layout ?? {}) as Record<string, unknown>
+  const themeSet = typeof s.theme === 'string' && s.theme.trim() !== ''
+  const layoutSet = Boolean(layout.nav_variant || layout.hero_variant)
+  const noCodeRich = Boolean(b.logo_url || b.font_body)
+  if (themeSet || layoutSet || noCodeRich) return 2
+  return 1
+}
+
+/** Derived display status for the card pills (Aktiv/Pausad/Onboarding). The real DB
+ *  status is only active/suspended/deleted; "onboarding" is the honest derived label
+ *  for an active salon that has not taken a single booking yet (matches the mock:
+ *  Salong Nord, 0 bokningar = Onboarding). */
+export type TenantDisplayStatus = 'active' | 'suspended' | 'onboarding'
+
+export type TenantCardItem = TenantListItem & {
+  /** Brand mark colour: the salon's primary colour if set, else a deterministic
+   *  palette pick by slug (mock cards have varied avatar colours). */
+  markColor: string
+  owner: string | null
+  themeLabel: string | null
+  variantLabel: string
+  level: CustomizationLevel
+  bookings: number
+  completed: number
+  staff: number
+  lastActivityAt: string | null
+  displayStatus: TenantDisplayStatus
+}
+
+const MARK_PALETTE = ['#1F4636', '#7E6E92', '#C8743C', '#B0693F', '#3A3733', '#5E7361']
+function markColorFor(slug: string, primary: string | null): string {
+  if (primary && /^#[0-9a-fA-F]{3,8}$/.test(primary)) return primary
+  let h = 0
+  for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0
+  return MARK_PALETTE[h % MARK_PALETTE.length] ?? '#1F4636'
+}
+
+/** Card-grid feed: every non-deleted tenant + its batched stats + derived chips. */
+export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
+  const { supabase } = await platformCtx()
+  const { data } = await supabase
+    .from('tenants')
+    .select('id, slug, name, status, plan, created_at, tenant_settings(billing_model, settings, branding)')
+    .neq('status', 'deleted')
+    .order('created_at', { ascending: false })
+  type Row = TenantRow & {
+    tenant_settings:
+      | { billing_model: string; settings: unknown; branding: unknown }
+      | { billing_model: string; settings: unknown; branding: unknown }[]
+      | null
+  }
+  const rows = (data ?? []) as Row[]
+
+  // Batched aggregates: ONE read each for bookings / staff / owners across ALL
+  // tenants, bucketed in JS by tenant_id (no per-tenant query fan-out).
+  const [bookingsRes, staffRes, ownersRes] = await Promise.all([
+    supabase.from('bookings').select('tenant_id, status, created_at'),
+    supabase.from('staff').select('tenant_id').eq('active', true),
+    supabase.from('users').select('email, tenant_id, roles!inner(name)').eq('roles.name', 'salon_admin'),
+  ])
+
+  const bk = new Map<string, { total: number; completed: number; last: string | null }>()
+  for (const r of (bookingsRes.data ?? []) as { tenant_id: string; status: string; created_at: string }[]) {
+    const e = bk.get(r.tenant_id) ?? { total: 0, completed: 0, last: null }
+    e.total += 1
+    if (r.status === 'completed') e.completed += 1
+    if (!e.last || r.created_at > e.last) e.last = r.created_at
+    bk.set(r.tenant_id, e)
+  }
+  const staffCount = new Map<string, number>()
+  for (const r of (staffRes.data ?? []) as { tenant_id: string }[]) {
+    staffCount.set(r.tenant_id, (staffCount.get(r.tenant_id) ?? 0) + 1)
+  }
+  const owner = new Map<string, string>()
+  for (const r of (ownersRes.data ?? []) as { tenant_id: string; email: string | null }[]) {
+    if (r.email && !owner.has(r.tenant_id)) owner.set(r.tenant_id, r.email)
+  }
+
+  return rows.map((t) => {
+    const ts = Array.isArray(t.tenant_settings) ? t.tenant_settings[0] : t.tenant_settings
+    const rawSettings = (ts?.settings ?? {}) as Record<string, unknown>
+    const branding = (ts?.branding ?? {}) as Record<string, unknown>
+    const booking = (rawSettings.booking ?? {}) as Record<string, unknown>
+    const variant: '3' | '4' = booking.variant === '4' ? '4' : '3'
+    const themeRaw = typeof rawSettings.theme === 'string' && rawSettings.theme.trim() ? rawSettings.theme : null
+    const primary = typeof branding.color_primary === 'string' ? branding.color_primary : null
+    const stats = bk.get(t.id) ?? { total: 0, completed: 0, last: null }
+    const displayStatus: TenantDisplayStatus =
+      t.status === 'suspended' ? 'suspended' : stats.total === 0 ? 'onboarding' : 'active'
+    return {
+      id: t.id,
+      slug: t.slug,
+      name: t.name,
+      status: t.status,
+      plan: t.plan,
+      billingModel: ts?.billing_model ?? 'per_booking',
+      createdAt: t.created_at,
+      markColor: markColorFor(t.slug, primary),
+      owner: owner.get(t.id) ?? null,
+      themeLabel: themeRaw ? themeRaw.charAt(0).toUpperCase() + themeRaw.slice(1) : null,
+      variantLabel: VARIANT_LABEL[variant],
+      level: deriveCustomizationLevel(rawSettings, branding),
+      bookings: stats.total,
+      completed: stats.completed,
+      staff: staffCount.get(t.id) ?? 0,
+      lastActivityAt: stats.last,
+      displayStatus,
+    }
+  })
+}
+
 // ── Onboarding ladder (steg 1–6) ───────────────────────────────────────────────
 export type OnboardingStatus = 'done' | 'todo' | 'locked'
 export type OnboardingStep = {
@@ -140,7 +278,7 @@ export type TenantDetail = {
   tenant: TenantRow
   settings: TenantSettingsRow | null
   branding: TenantBranding
-  counts: { activeServices: number; activeStaff: number; workingHours: number; bookings: number }
+  counts: { activeServices: number; activeStaff: number; workingHours: number; bookings: number; completed: number }
   salonAdmin: { email: string | null; status: string } | null
   onboarding: OnboardingStep[]
   /** Operativ data-kontroll (§2.1B): current values for the edit surface. */
@@ -160,12 +298,13 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
   const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle()
   if (!tenant) return null
 
-  const [settingsRes, servicesRes, staffRes, hoursRes, bookingsRes, adminRes] = await Promise.all([
+  const [settingsRes, servicesRes, staffRes, hoursRes, bookingsRes, completedRes, adminRes] = await Promise.all([
     supabase.from('tenant_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
     supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
     supabase.from('staff').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
     supabase.from('working_hours').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ACTIVE_BOOKING),
+    supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'completed'),
     // salon_admin = the level-6 role's user for this tenant.
     supabase
       .from('users')
@@ -193,6 +332,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     activeStaff: staffRes.count ?? 0,
     workingHours: hoursRes.count ?? 0,
     bookings: bookingsRes.count ?? 0,
+    completed: completedRes.count ?? 0,
   }
 
   const onboarding = deriveOnboarding({

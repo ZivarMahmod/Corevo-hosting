@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { requirePlatformAdmin } from '@/lib/auth/session'
-import { getTenantDetail, getTenantAudit } from '@/lib/platform/tenants'
+import { getTenantDetail, getTenantAudit, deriveCustomizationLevel } from '@/lib/platform/tenants'
 import { listCustomersAllTenants, listStaffAllTenants } from '@/lib/platform/people'
 import { classifyAuditTone } from '@/lib/platform/audit'
 import type { AuditRow } from '@/lib/platform/audit'
@@ -65,6 +65,10 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const detail = await getTenantDetail(id)
   if (!detail) notFound()
   const { tenant, settings, branding, counts, salonAdmin, onboarding, operative } = detail
+  const customizationLevel = deriveCustomizationLevel(
+    (settings?.settings ?? null) as Record<string, unknown> | null,
+    branding as unknown as Record<string, unknown>,
+  )
 
   // Cross-tenant reads, scoped to THIS salon. listCustomersAllTenants takes a tenant
   // id filter; listStaffAllTenants has no tenant filter (foundation), so we filter
@@ -88,15 +92,15 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     Översikt: (
       <div className={styles.twoCol}>
         <div className={styles.col}>
-          {/* Mock Översikt-rutan = Bokningar/Completade/Kunder/Personal. Bokningar,
-              Kunder (customers.length) och Personal (staff.length) är riktiga; "Completade"
-              har ingen ärlig källa → vi visar Aktiva tjänster (riktig insyn) i stället för
-              en påhittad completed-siffra. */}
+          {/* Mock Översikt-rutan (SuperTenant.jsx) = Bokningar/Completade/Kunder/Personal.
+              Alla fyra är riktiga: bokningar = aktiva (pending/confirmed/completed),
+              completade = status='completed' (egen count-query), kunder = customers.length,
+              personal = staff.length. Inget påhittat. */}
           <div className="bo-stat-grid">
-            <Stat label="Aktiva bokningar" value={counts.bookings} icon="calendar" />
+            <Stat label="Bokningar" value={counts.bookings} icon="calendar" />
+            <Stat label="Completade" value={counts.completed} icon="checkCircle" />
             <Stat label="Kunder" value={customers.length} icon="users" />
             <Stat label="Personal" value={staff.length} icon="scissors" />
-            <Stat label="Aktiva tjänster" value={counts.activeServices} icon="layers" />
           </div>
           <Card>
             <div className="eyebrow" style={{ marginBottom: 12 }}>
@@ -153,12 +157,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <Card style={{ background: 'var(--c-paper-2)' }}>
             <div className={styles.noteHead}>
               <Icon name="info" size={15} style={{ color: 'var(--c-gold-600)' }} />
-              <span>Anpassningsnivå</span>
+              <span>Anpassningsnivå {customizationLevel}</span>
             </div>
             <p className={styles.noteText}>
-              Token-branding (no-code: färg/font/logo) görs i Branding-fliken och slår igenom utan
-              deploy. Premium nivå-3 scoped CSS-overrides görs med kod i säker miljö — aldrig via
-              no-code-UI.
+              {customizationLevel === 1
+                ? 'Bas — färgtokens (no-code). Välj temamall + logo/font i Branding-fliken för nivå 2.'
+                : customizationLevel === 2
+                  ? 'Token-branding (no-code: temamall + färg/font/logo) aktiv och slår igenom utan deploy. Premium nivå-3 scoped CSS-overrides görs med kod i säker miljö — aldrig via no-code-UI.'
+                  : 'Nivå 3 — scoped CSS-overrides (premium-design) aktiva, görs med kod i säker miljö. No-code-token-lagret nedan ligger kvar.'}
             </p>
           </Card>
         </div>
@@ -393,10 +399,11 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             <span>Riskzon · skyddad av audit-guard</span>
           </div>
           <p className={styles.dangerText}>
-            Radering av skyddade rader blockeras med flit (build-once-never-delete). Suspendera istället
-            för att radera.
+            Ta bort = mjuk borttagning: publik sajt + admin blockeras, men alla rader &amp; historik
+            sparas (build-once-never-delete — hård radering är permanent spärrad). Vill du bara dölja
+            tillfälligt? Suspendera ovan i stället.
           </p>
-          <TenantDangerCard />
+          <TenantDangerCard tenantId={tenant.id} tenantName={tenant.name} />
         </Card>
       </div>
     ),

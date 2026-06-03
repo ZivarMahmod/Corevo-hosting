@@ -1,0 +1,73 @@
+/* Salonger card-grid — hover lift + per-card kebab menu (SalongerClient.tsx).
+   Scoped to the back-office world; the card base styling is inline (faithful to
+   acceptans/SuperAdmin.jsx SuperSalons), only the hover/menu states live here. */
+
+.card {
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--c-line-strong, var(--c-line));
+}
+.card:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 2px;
+}
+
+.kebab {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--c-ink-3);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.kebab:hover {
+  background: var(--c-paper-2);
+  color: var(--c-ink);
+}
+
+/* invisible click-catcher so an outside click closes the menu */
+.menuScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+}
+
+.menu {
+  position: absolute;
+  top: 46px;
+  right: 14px;
+  z-index: 5;
+  min-width: 172px;
+  padding: 5px;
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--c-danger);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.menuItem:hover {
+  background: var(--c-danger-bg);
+}
