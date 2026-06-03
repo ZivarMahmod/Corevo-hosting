@@ -21,6 +21,13 @@ import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
 const DASHBOARD_ROUTE = '/platform'
 // Back-office surfaces that must NOT be served on a tenant (storefront) host.
 const BACKOFFICE_PREFIXES = ['/admin', '/personal', '/platform', '/salonger', '/fakturering']
+// Tenant-SCOPED back-office surfaces: each resolves exactly one tenant from the
+// logged-in account. A platform_admin has no single tenant to scope to, so these
+// would silently render/mutate whatever tenant the account is anchored to —
+// they're bounced to the platform dashboard (step 4b). The platform surfaces
+// (/platform, /salonger, /fakturering) are NOT here: a platform_admin SHOULD reach
+// them, and they're already flag-gated by requirePlatformAdmin() in the layout.
+const TENANT_SCOPED_BACKOFFICE = ['/admin', '/personal']
 
 const isPrefix = (path: string, prefixes: readonly string[]): boolean =>
   prefixes.some((p) => path === p || path.startsWith(p + '/'))
@@ -95,6 +102,21 @@ export async function middleware(request: NextRequest) {
   } else if (isTenantHost) {
     // The storefront host never serves the back-office — bounce those to `/`.
     if (isPrefix(path, BACKOFFICE_PREFIXES)) return bounce('/')
+  }
+
+  // 4b. Role→surface guard (app_metadata ONLY — role-LEVEL authz stays in the DAL,
+  //     see lib/supabase/middleware.ts). The route-group layouts fence by level
+  //     (requirePortal) which lets a platform_admin short-circuit INTO the
+  //     tenant-scoped back-office and silently render/mutate the account's anchored
+  //     tenant. Close that here without a role DB-read: a platform_admin on a
+  //     tenant-scoped surface is bounced to the platform dashboard. Reads the
+  //     verified JWT app_metadata flag the SSR session already resolved (never
+  //     client-spoofable). Only fires on the platform host; tenant hosts already
+  //     bounced every back-office path above.
+  if (user && isPlatformHost && isPrefix(effectivePath, TENANT_SCOPED_BACKOFFICE)) {
+    const isPlatformAdmin =
+      (user.app_metadata as { platform_admin?: boolean } | undefined)?.platform_admin === true
+    if (isPlatformAdmin) return bounce('/')
   }
 
   // 5. Cheap auth gate on the effective path (role-level authz stays in the DAL).

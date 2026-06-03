@@ -39,16 +39,33 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
     // The internal /platform prefix is never exposed — it bounces to the clean /.
     await page.goto(`${BOOKING}/platform`)
     await expect(page).toHaveURL(`${BOOKING}/`)
+
+    // VÅG 1 role→surface guard: a platform_admin has no single tenant to scope to,
+    // so the tenant-scoped back-office (/admin, /personal) bounces them back to the
+    // platform dashboard instead of silently rendering the account's anchored tenant.
+    for (const p of ['/admin', '/personal']) {
+      await page.goto(`${BOOKING}${p}`)
+      await expect(page, `${p} must bounce super_admin to the platform dashboard`).toHaveURL(`${BOOKING}/`)
+    }
   })
 
-  test('salon_admin → their salon admin (/admin)', async ({ page }) => {
+  test('salon_admin → their salon admin (/admin); platform surfaces denied', async ({ page }) => {
     await loginAt(page, BOOKING, SEED.salonAdmin)
     await expect(page).toHaveURL(new RegExp(`${BOOKING}/admin`))
+    // Platform surfaces are flag-gated (requirePlatformAdmin) — a salon_admin (level
+    // 6, platform_admin=false) is denied to /ingen-atkomst, never sees other tenants.
+    for (const p of ['/salonger', '/fakturering']) {
+      await page.goto(`${BOOKING}${p}`)
+      await expect(page, `${p} must deny a salon_admin`).toHaveURL(new RegExp(`${BOOKING}/ingen-atkomst`))
+    }
   })
 
-  test('staff → their schedule (/personal)', async ({ page }) => {
+  test('staff → their schedule (/personal); /admin denied', async ({ page }) => {
     await loginAt(page, BOOKING, SEED.staff)
     await expect(page).toHaveURL(new RegExp(`${BOOKING}/personal`))
+    // Level fence: staff (level 3) is below the admin portal minimum (6) → denied.
+    await page.goto(`${BOOKING}/admin`)
+    await expect(page).toHaveURL(new RegExp(`${BOOKING}/ingen-atkomst`))
   })
 })
 

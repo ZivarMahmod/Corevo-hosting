@@ -3,7 +3,40 @@
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
 ## ⭐ NÄSTA SESSION — GÖR DETTA FÖRST
-**Läs `2-Byggplan/TESTA-DETTA.md`** — testlista + secrets för allt som byggdes natten 2026-06-02. Testa live på demo.corevo.se / booking.corevo.se, peka på det som ska finjusteras.
+**Planen för resten av bygget = `2-Byggplan/WORKFLOW-03-baseline-sakerhet-test.md`** (lager-djup orkestrering: recon-flotta → syntes → bygg → attack-flotta per fas; autonomt svep; går live + städar rot/git-träd på slutet). FreshCut-seed klar i `2-Byggplan/goals/freshcut-seed-data.md` (riktiga priser/öppettider/tel). Kör FAS 0 → VÅG 1 → … enligt dokumentet.
+
+### 2026-06-03 (WORKFLOW-03 VÅG 1 — rollgränser) KLAR + LIVE-VERIFIERAD ✅ (worker `b2895b3f`)
+- **Guard:** `middleware.ts` step-4b = app_metadata-only roll→yta-guard (bouncar `platform_admin` av tenant-scopade `/admin`+`/personal` → `/` platform-dashboard; INGEN DB-join — designen förbjuder roll-läs i middleware). `roles.ts` trösklar härdade mot verklig DB `{2,3,6,8}` (admin 5→6, platform 7→8; fantom-nivå-footgun bort). Nya `lib/auth/roles.test.ts` (3) + utökad `e2e/backoffice-routing.spec.ts` (rollmatris-celler).
+- **Live-verifierat (Workflow `w4n6hq2t2`, 3 adversariella agenter): rollmatris 0 brytbara celler.** super_admin→/admin+/personal→**`/`** ✓ · staff→/personal, →/admin→/ingen-atkomst ✓ · salon_admin→/admin, →/salonger+/fakturering→/ingen-atkomst ✓ · http-edge 8/8 (POS 200, auth-gate på subpaths/trailing-slash, storefront-bounce) ✓ · code-adversary **`guardSound=true`** (7 vektorer, 0 bypass) ✓. Gates: typecheck+lint+**vitest 142/142**. opennext-build PASS, grep-guard byggd middleware = ren (ingen `localhost:3000`).
+- **🔧 FIX (pre-existing regression):** `platform@corevo.se` kunde EJ logga in live (lösen-hash ≠ `Demo!1234`, samma symptom som `_klart/fix-G13-login.md`) → blockade super_admin-verifieringen. `admin@`/`klippare@` loggade in fint via SAMMA action → isolerat till det kontot. **Reseedat på molnet:** `update auth.users set encrypted_password = crypt('Demo!1234', gen_salt('bf')) where email='platform@corevo.se'` → loggar nu in. (VÅG 3 reseedar ändå allt.)
+- **Residual (dokumenterat, ej hål):** guarden = GET-yta, ej action-POST (DAL re-fence:ar via `requirePortal`/`requirePlatformAdmin`); **väg B** (auth-hook → roleLevel i JWT → full matris i EN guard) = Zivars Dashboard-toggle, SQL+steg i `5-Kod/docs/ops/auth-hook-role-claims.md`; **om `/t/:slug/:path*`-rewrite nånsin läggs till MÅSTE den speglas i guarden** (annars HIGH platform_admin→/admin-bypass; idag 404, ej exploaterbar).
+- **Rollback:** `git revert` (rent tillägg) + redeploy. POS orörd (corevo.se+/admin → 200 före+efter).
+
+### 2026-06-03 (storefront-fix + Varumärke verifierat) — DÄR CODE STÅR NU
+- ✅ **Storefront restaurerad + live-verifierad.** `freshcut.corevo.se` → 200, `x-corevo-tenant-kind: tenant`, salvia renderar (hero "Skarpt klippt. Skönt mottagen.", nav, footer m. öppettider, `/tjanster` listar Klippning 450 kr, `/om`). **Worker-ver `06a960c1`.** POS orörd (`corevo.se` + `/admin` → 200).
+- ✅ **Varumärke §4.3-flaggskeppet live-verifierat** (som freshcut salon_admin): swatch-väljare (4 färgroller + egen färg), font-tiles, dirty→Publicera-gating, "ändrad"-pill, live browser-chrome-preview, Ångra rent. Hidden-input `color_primary` synkar work-state → `saveBranding` rätt värden. **Inga DB-muteringar** (testade klient-state + ångrade; freshcuts branding orörd).
+- 🔧 **Grundorsak till nattens 404 hittad + härdad:** deploy lät dev-filen `.env.local` (localhost:3000) läcka in i bygget → Next inlinade localhost som root-domän → alla tenant-subdomäner 404. **Härdat:** `/XF .env.local` räcker INTE (robocopy `/PURGE` rör ej redan-kopierad fil) → måste **radera `.env.local` ur bygg-trädet** + **grep-guard på byggd `middleware.js` efter `localhost:3000`** innan deploy. Runbook + minne uppdaterat. Commit `82cb4ce`.
+- 🧹 Skärmdumpar → `4-Dokument-Underlag/skarmdumpar-bygg/`, repo-roten ren.
+
+### ⚠️ ÖPPET BESLUT (Zivar) — committat LOKALT, EJ pushat
+Commits på main, **bara lokalt**: `5f7442e` (FAS0-docs), `34ce303` (Varumärke), `82cb4ce` (runbook). Live-fixen krävde ingen repo-ändring. **Ska Code pusha till GitHub?** Utåtriktad åtgärd → görs INTE autonomt, väntar på Zivars ja.
+
+### 🐛 NY BUGG (2026-06-03, Zivar live) — Varumärke "Spara bilder & innehåll" kraschar vid bildborttagning
+- **Symptom:** salon_admin (freshcut) → `/admin/varumarke` → ta bort en bild (closing-bild och/eller team-bild) → **"Spara bilder & innehåll"** → sidan kraschar med error-boundary **"Något gick fel / Sidan kunde inte laddas just nu"**. Spara UTAN att ta bort bild = funkar. (Code:s §4.3-verifiering täckte färg/font-vägen, INTE media-spar-vägen.)
+- **Var:** `saveStorefrontMedia` i `apps/web/lib/admin/actions.ts` (~rad 689–818). Borttagning triggar `pruneRemovedImages` (rad 802) → `removedImageKeys`/`keyFromPublicUrl`/`deleteKeys` i `apps/web/lib/r2/upload.ts`.
+- **Hypotes (Nörden):** removal-vägen kastar ett **ohanterat undantag** (troligast `new URL()` i `keyFromPublicUrl` på en icke-absolut/ogiltig lagrad URL — t.ex. när `R2_PUBLIC_BASE_URL` saknas — ELLER `getBucket()` i `deleteKeys` som kastar istället för null) → server-action rejectar → error-boundary. **VIKTIGT:** DB-upsert sker FÖRE prune (rad 794), så datan kan ha **sparats medan UI visar krasch = tyst halv-lyckat** — exakt den "data ser ut att försvinna"-klass Zivar oroar sig för.
+- **Fix-riktning:** wrappa hela svansen (prune + revalidate) så en städ-/parsnings-miss ALDRIG kraschar en redan-lyckad save (best-effort, logga, returnera success). Härda `keyFromPublicUrl` mot null/relativa/redan-borttagna URL:er. Repro: ta bort closing_image + team-bild, spara. Samma princip som FX-14/B1 ("best-effort cleanup blockerar aldrig en lyckad save").
+- **Prio:** hög — rör en kärnyta (Varumärke) + är i tyst-halv-lyckat-klassen. Lägg in i VÅG 2/VÅG 5-härdningen eller som egen liten fix-brief före.
+
+### KÖORDNING (parkerat för säkra fönster — följer WORKFLOW-03)
+1. **VÅG 1** rollgränser — bounce super_admin från `/admin` (liten middleware-stopgap → full guard).
+2. **VÅG 2** migr `0013` (loyalty-earn + boknings-spårbarhet, additivt, efter PITR-koll) + ingen hård-delete av bokning.
+3. **VÅG 3** destruktiv FreshCut-reset (goal-15) — **PITR-gated, kräver Zivars go** + goal-16 kunddomän.
+4. **VÅG 4** realtime + multi-location.
+5. **VÅG 5** djup säkerhets-/robusthet-svep (mangling).
+- Doc-skuld: runbooken nämner fortf. `demo.corevo.se` på ställen (slug bytte demo→freshcut) — städa vid tillfälle.
+
+**Äldre testlista:** `2-Byggplan/TESTA-DETTA.md` (natten 2026-06-02).
 
 ### 2026-06-02 (WORKFLOW-02 helsvep) — ALLA VÅGOR + M8 KLAR + DEPLOYAT LIVE ✅ (worker-ver `a4b6e1d2`)
 Kör `2-Byggplan/WORKFLOW-02-helsvep.md` uppifrån. Adversariell multi-agent-orkestrering.

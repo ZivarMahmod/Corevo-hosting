@@ -1,26 +1,31 @@
-// Role → portal mapping (ADR 01 §4: 8 levels, publik → kund → frisör →
-// reception → manager → owner → Corevo admin → super admin).
+// Role → portal mapping. ADR 01 §4 sketched an 8-level ladder (publik → kund →
+// frisör → reception → manager → owner → Corevo admin → super admin), but only
+// FOUR levels are actually seeded in the DB. Thresholds below are pinned to those
+// REAL levels so seeding a phantom level (4/5/7) can never silently shift the
+// surface matrix.
 //
-//   1 publik         (not a logged-in role)
-//   2 kund           → (kund) portal
-//   3 frisör/staff   → (personal) portal
-//   4 reception
-//   5 manager        → (admin) portal
-//   6 owner / salon_admin
-//   7 Corevo admin   → (platform) portal (platform_admin)
-//   8 super admin
+//   REAL seeded levels:
+//     2 kund         → (kund) portal
+//     3 staff        → (personal) portal
+//     6 salon_admin  → (admin) portal
+//     8 super_admin  → (platform) portal (platform_admin=true)
 //
-// Access is hierarchical: a level can enter any portal whose minimum level it
-// meets. platform_admin (global level 7-8) reaches every portal cross-tenant.
+// Access is hierarchical: a level can enter any portal whose minimum it meets
+// (a salon_admin=6 also reaches /personal, by design). The (platform) portal is
+// gated by the platform_admin BOOLEAN flag (requirePlatformAdmin), NOT by level —
+// the numeric `platform` threshold below is only the portalHomeFor() fallback.
+// A platform_admin reaches every portal cross-tenant; the middleware additionally
+// bounces them OFF the tenant-scoped surfaces (/admin, /personal) so they land on
+// the platform dashboard instead of an account-anchored tenant.
 
 export type Portal = 'kund' | 'personal' | 'admin' | 'platform'
 
-/** Minimum role level required to enter each portal. */
+/** Minimum role level required to enter each portal (pinned to real DB levels). */
 export const PORTAL_MIN_LEVEL: Record<Portal, number> = {
   kund: 2,
   personal: 3,
-  admin: 5,
-  platform: 7,
+  admin: 6,
+  platform: 8,
 }
 
 // Path prefixes the middleware treats as authenticated-only (cheap gate).
