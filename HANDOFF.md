@@ -16,6 +16,16 @@ Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
 ### 🔭 Nästa kort (beslutade, EFTER baseline): dela plattform-admin från salong-admin (egen route/worker-isolering) · avboknings-/ångermodell (ångerknapp-lagkrav 19 juni 2026). Se sektioner längre ned.
 
+### 2026-06-03 (goal-17 Fas 1 — per-sida-retrofit RUNDA 1) KLAR + LIVE-VERIFIERAD ✅ (worker `c576af1f-fdeb-43b6-bc52-75fe630ee60a`, rollback `588c684b-e0fe-4f99-86e5-e9a10c61630b`, commits `7e4e234`+`194f1f4` — PUSHAD origin/main)
+5 sidor konsumerar nu primitiverna (additivt, server-säkert, två-världar intakt, INGEN fejkad data):
+- **Kunder** (§4.6): äkta loyalty-tier + gold-poäng-kol (sum `loyalty_ledger.points_delta`, RLS admin 0011:551; 0 p där ledger tom — aldrig fejkat), 4-up stat (+Lojalitetspoäng), shield-glyf, sök-cap 360. `lib/admin/data.ts` utökad (ej fryst). Icon +shield+gift.
+- **Inställningar**: maxWidth 640 + Callout proof-band + Egen-domän→Card/Badge/Callout. Per-toggle-pills bor i SettingsForm (client, ej fejkat på sidnivå).
+- **Platform**: bo-stat-grid + cross-tenant Callout; status redan Badge.
+- **Personal**: PageHead + 3 KPI-stats + frisör-kort-grid (auto-fill 300, forest-avatar). Specialty-chips utelämnade (ingen kolumn). Detalj-drawer = ö-TODO.
+- **Scheman** (§4.5): read-only vecko-grid Mån–Fre från riktiga `working_hour_slots`, today-gold-tint, explicita starttider. Add/remove kvar i SlotManager.
+- **Gate:** typecheck+lint+**166/166**, opennext PASS, grep-guard ren, deploy OK. INLOGGAD live-verifierat (Kunder/Scheman/Inställningar/Personal = **0 console-fel**; screenshots i `4-Dokument-Underlag/skarmdumpar-bygg/retrofit-{kunder,scheman}.png`).
+- **KVAR i Fas 1:** öar (Bokningar ViewSwitcher+Drawer+Toast, Tjänster placement-map = `ServicesManager`), ögna Dashboard+Varumärke (redan-shippade) mot mock. Sen Fas 2 `/konto`, Fas 3 storefront.
+
 ### 2026-06-03 (goal-17 design-trohet — Fas 1 P0 delade primitiver) KLAR + LIVE-VERIFIERAD ✅ (worker `a38c943d-926d-44b0-a0f7-7a5e59ebd7b8`, rollback `e5888914-cf27-43e0-8e17-372305609107`, commit `daadb23` (kod) + `fc4606d` (docs) — PUSHAD origin/main 2026-06-03)
 "Make-it-match" startat: v3-handoffen (det maxade designpaketet, `/v1/design/h/NFp6CcGhuSXdmVNfsIoBTA`) hämtad → lagd i `2-Byggplan/corevo-booking-design-system v3/` (**gitignorad** som v2; 23.6 MB; **v3-tokens identiska med playbook-kanon → noll token-delta**). goal-17 = `2-Byggplan/goals/goal-17-design-trohet-make-it-match.md`, standard = `DESIGN-ELEGANS-playbook.md`.
 - **Byggt (allt `[data-world="backoffice"]`-scopat + additivt — storefront/`/konto`/POS orört):** `portal-global.css` sidebar 248→**244**, brytpunkt 760→**920** + `bo-stat-grid`/`bo-2col`/`bo-brand`-grids; nya `.bo-drawer*`/`.bo-toast*`/`.bo-viewswitch`-klasser + keyframes (reduced-motion-vaktade). Nya `components/portal/ui/`: **Callout** (§4.7 guard-band, 4 toner), **Drawer** (§4.9 höger-ankrad, grön scrim), **ToastProvider/useToast** (§4.10, monterad EN gång i `PortalShell` backoffice-grenen), **ViewSwitcher + usePersistentView**. `Stat` fick `hint`-rad (§4.2); `Icon` fick `alert`+`info`. Ren `lib/portal/view.ts pickPersistedView` + tester.
