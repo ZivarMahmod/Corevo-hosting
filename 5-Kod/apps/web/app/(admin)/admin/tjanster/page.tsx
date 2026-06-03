@@ -15,15 +15,12 @@ export default async function ServicesPage() {
 
   const services = await listServices(tenant.id)
 
+  // The header (PageHead + "Ny tjänst" CTA) lives inside the client manager: the
+  // CTA opens the create drawer (needs an onClick), which can't cross the
+  // server→client boundary from here. The server page just fetches + passes.
   return (
     <section className="portal-section">
-      <PageHead eyebrow={tenant.name} title="Tjänster" />
-      <p className="prose">
-        Priser och varaktighet styr den publika bokningen direkt. Aktiva tjänster syns i
-        tjänstemenyn på startsidan och på /tjanster (ordnade efter pris) och går att boka.
-        Inaktiverade tjänster döljs på webbplatsen men behåller sin bokningshistorik.
-      </p>
-      <ServicesManager services={services} />
+      <ServicesManager services={services} tenantName={tenant.name} />
     </section>
   )
 }

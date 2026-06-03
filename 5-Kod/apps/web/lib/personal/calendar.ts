@@ -17,6 +17,8 @@ export type StaffBooking = {
   customerId: string | null
   /** Resolved label for the row — never raw contact-PII (name/initial or "Kund"). */
   customerLabel: string
+  /** The booking's own note (single shared bookings.note field), or null. */
+  note: string | null
   timeZone: string
 }
 
@@ -131,6 +133,61 @@ export async function getBookingsInRange(
       (r.customer_id ? nameById.get(r.customer_id) : null) ??
       parseGuestName(r.note) ??
       'Kund',
+    note: r.note,
     timeZone: r.locations?.timezone ?? 'Europe/Stockholm',
+  }))
+}
+
+// ── Frisör "idag" list with recognition context (M5 §3) ──────────────────────
+// The "idag" view wants each booking row to carry enough context for the frisör
+// to recognise the customer: their preference chips (customer_notes.preferences,
+// staff-readable via role_level>=3 RLS, 0011:563) + the booking note (the single
+// shared bookings.note — the customer-channel message; NOT split into staff/kund,
+// because the schema has no channel column). The internal staff note lives on
+// customer_notes and is intentionally NOT folded into the row note here (keep the
+// two channels distinct). Both enrichments are batched (one notes query for the
+// whole day) on top of getBookingsInRange, so this stays a thin composition.
+
+export type StaffScheduleEntry = StaffBooking & {
+  /** Customer preference chips (staff-readable). [] when none / guest. */
+  customerPrefs: string[]
+  /** The booking's own note = customer-channel message (single shared field). */
+  customerNote: string | null
+}
+
+/**
+ * Own bookings in [fromUtc, toUtc) enriched with per-customer preference chips and
+ * the booking note. Reuses getBookingsInRange for the booking band + name resolve,
+ * then batches customer_notes.preferences for the day's linked customers in one
+ * query. Guests (no customer_id) get [] prefs. Read-only; RLS tenant-fences both.
+ */
+export async function getStaffScheduleWithNotes(
+  staffIds: string[],
+  fromUtc: string,
+  toUtc: string,
+): Promise<StaffScheduleEntry[]> {
+  const bookings = await getBookingsInRange(staffIds, fromUtc, toUtc)
+  if (bookings.length === 0) return []
+
+  // Batch the preference chips for every linked customer in the window.
+  const customerIds = [...new Set(bookings.map((b) => b.customerId).filter((v): v is string => !!v))]
+  const prefsById = new Map<string, string[]>()
+  if (customerIds.length > 0) {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from('customer_notes')
+      .select('customer_id, preferences')
+      .in('customer_id', customerIds)
+    for (const n of (data ?? []) as { customer_id: string; preferences: string[] | null }[]) {
+      prefsById.set(n.customer_id, n.preferences ?? [])
+    }
+  }
+
+  return bookings.map((b) => ({
+    ...b,
+    customerPrefs: (b.customerId ? prefsById.get(b.customerId) : null) ?? [],
+    // bookings.note is the single shared note (no channel column) — treated as the
+    // customer-channel message. Distinct from customer_notes (staff-internal).
+    customerNote: b.note,
   }))
 }

@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getMyStaff } from '@/lib/personal/staff'
 import { getMyTimeOff } from '@/lib/personal/schedule'
-import { TimeOffManager } from '@/components/personal/TimeOffManager'
+import { fmtDateTime } from '@/lib/personal/format'
 import { PageHead } from '@/components/portal/ui'
+import { AbsencePanel } from './AbsencePanel'
 import styles from '@/components/personal/personal.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -28,15 +29,33 @@ export default async function FranvaroPage() {
     )
   }
 
+  const timeZone = staff[0]?.timeZone ?? 'Europe/Stockholm'
   const rows = await getMyTimeOff(staff.map((s) => s.id))
+
+  // "Kommande frånvaro" = real time_off whose period has not ended yet. The
+  // active flag (period covers now) is genuine derived state — NOT an approval
+  // status (no workflow exists in the model). Sorted soonest-first.
+  const now = Date.now()
+  const upcoming = rows
+    .filter((r) => new Date(r.endTs).getTime() >= now)
+    .sort((a, b) => (a.startTs < b.startTs ? -1 : 1))
+    .map((row) => {
+      const start = new Date(row.startTs).getTime()
+      const end = new Date(row.endTs).getTime()
+      return {
+        row,
+        when: `${fmtDateTime(row.startTs, timeZone)} – ${fmtDateTime(row.endTs, timeZone)}`,
+        kind: row.reason ?? 'Frånvaro',
+        active: start <= now && now < end,
+      }
+    })
 
   return (
     <section className="portal-section">
-      <PageHead eyebrow="Personal" title="Frånvaro" />
-      <p className="prose">
-        Registrerad frånvaro blockerar bokningsbara tider direkt i boka-flödet (M3).
-      </p>
-      <TimeOffManager rows={rows} timeZone={staff[0]?.timeZone ?? 'Europe/Stockholm'} />
+      <div style={{ maxWidth: 560 }}>
+        <PageHead eyebrow="Personal" title="Frånvaro" />
+        <AbsencePanel upcoming={upcoming} timeZone={timeZone} />
+      </div>
     </section>
   )
 }

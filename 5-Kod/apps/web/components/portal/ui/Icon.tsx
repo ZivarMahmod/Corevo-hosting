@@ -52,6 +52,13 @@ export type IconName =
   | 'info'
   | 'shield'
   | 'gift'
+  | 'dollar'
+  | 'repeat'
+  | 'external'
+  | 'eye'
+  | 'eyeOff'
+  | 'message'
+  | 'undo'
 
 const PATHS: Record<IconName, ReactElement> = {
   calendar: (
@@ -256,6 +263,49 @@ const PATHS: Record<IconName, ReactElement> = {
       <path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7" />
       <rect x="2" y="7" width="20" height="5" rx="1" />
       <path d="M12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7ZM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7Z" />
+    </>
+  ),
+  dollar: (
+    <>
+      <path d="M12 2v20" />
+      <path d="M17 6.5a4 4 0 0 0-4-2.5h-1.5a3.5 3.5 0 0 0 0 7h3a3.5 3.5 0 0 1 0 7H10a4 4 0 0 1-4-2.5" />
+    </>
+  ),
+  repeat: (
+    <>
+      <path d="m17 2 4 4-4 4" />
+      <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+      <path d="m7 22-4-4 4-4" />
+      <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+    </>
+  ),
+  external: (
+    <>
+      <path d="M15 3h6v6" />
+      <path d="M10 14 21 3" />
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  eyeOff: (
+    <>
+      <path d="M10.7 6.2A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a16.6 16.6 0 0 1-3.2 4M6.6 6.6A16.4 16.4 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4.4-1" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      <path d="m2 2 20 20" />
+    </>
+  ),
+  message: (
+    <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.7L3 21l1.4-4.2A8.4 8.4 0 0 1 3 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 9 8.4Z" />
+  ),
+  undo: (
+    <>
+      <path d="M3 7v6h6" />
+      <path d="M3.5 13a9 9 0 1 0 2.1-9.4L3 7" />
     </>
   ),
 }

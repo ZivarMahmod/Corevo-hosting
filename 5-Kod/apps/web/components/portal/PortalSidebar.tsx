@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icon, type IconName } from './ui/Icon'
@@ -52,8 +53,8 @@ const NAV: Record<PortalRole, NavConfig> = {
   personal: {
     sub: 'Personal',
     items: [
-      { href: '/personal', label: 'Idag', icon: 'grid' },
-      { href: '/personal/arbetstider', label: 'Arbetstider', icon: 'calendar' },
+      { href: '/personal', label: 'Idag', icon: 'home' },
+      { href: '/personal/arbetstider', label: 'Mitt schema', icon: 'calendar' },
       { href: '/personal/franvaro', label: 'Frånvaro', icon: 'coffee' },
     ],
   },
@@ -78,11 +79,14 @@ export function PortalSidebar({
   brand,
   userLabel,
   userSub,
+  signOut,
 }: {
   role: PortalRole
   brand: string
   userLabel: string
   userSub: string
+  /** SignOutButton element — handoff puts logout in the sidebar footer cell. */
+  signOut?: ReactNode
 }) {
   const pathname = usePathname()
   const cfg = NAV[role]
@@ -134,6 +138,7 @@ export function PortalSidebar({
           <span className="portal-aside-user-name">{userLabel}</span>
           <span className="portal-aside-user-sub">{userSub}</span>
         </span>
+        {signOut ? <span className="portal-aside-logout">{signOut}</span> : null}
       </div>
     </aside>
   )

@@ -69,3 +69,52 @@ export async function getMyFavorites(customerId: string | null): Promise<Favorit
   })
   return favs
 }
+
+// ── DIN FRISÖR card (/konto, M7 P0) ──────────────────────────────────────────
+// The relationship card surfaces the ONE staff member the customer has saved as
+// a favorite. There is no schema constraint to exactly one, so we take the first
+// favorited staff (alphabetical, mirroring getMyFavorites' ordering) and resolve
+// its display title. null = the customer hasn't favorited anyone → the card shows
+// its written empty-state ("Välj din frisör"), never a fabricated stylist.
+//
+// NOTE (data-gated): the mock's "minns om dig" memory chips and a personal
+// stylist quote are NOT readable here — customer_notes is staff-only by RLS
+// (0011:563, no customer-self-scope branch), so /konto cannot read a customer's
+// own preference chips. Those parts of the card are an honest empty-state; this
+// helper deliberately exposes ONLY what the customer can actually read (the
+// favorited staff + title). It does not attempt to surface notes.
+
+export type StaffFavorite = {
+  staffId: string
+  /** Resolved staff display title, or null when the staff row has no title. */
+  title: string | null
+}
+
+/**
+ * The customer's favorited staff member (DIN FRISÖR), or null when none is saved.
+ * customerId is the resolved customers.id; null/empty → null. RLS scopes
+ * customer_favorites to the caller's own rows.
+ */
+export async function getCustomerStaffFavorite(
+  customerId: string | null,
+): Promise<StaffFavorite | null> {
+  if (!customerId) return null
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('customer_favorites')
+    .select('staff_id, staff(title)')
+    .eq('customer_id', customerId)
+    .eq('kind', 'staff')
+
+  type Row = { staff_id: string | null; staff: { title: string | null } | null }
+  const rows = ((data ?? []) as unknown as Row[]).filter((r): r is Row & { staff_id: string } =>
+    Boolean(r.staff_id),
+  )
+  if (rows.length === 0) return null
+  // Stable pick: first by resolved title (mirrors getMyFavorites' name sort).
+  rows.sort((a, b) =>
+    (a.staff?.title ?? '').localeCompare(b.staff?.title ?? '', 'sv'),
+  )
+  const pick = rows[0]!
+  return { staffId: pick.staff_id, title: pick.staff?.title?.trim() || null }
+}

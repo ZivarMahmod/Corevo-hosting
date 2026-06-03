@@ -280,8 +280,15 @@ const RETURNING_VISITS = 5
 
 /** Tenant customer database with per-customer visit count (active bookings).
  *  RLS (customers_rls, 0011:503) fences to role_level>=3 within the tenant; we
- *  also pass tenant_id for stable ordering + defence-in-depth. */
-export async function listCustomers(tenantId: string): Promise<AdminCustomer[]> {
+ *  also pass tenant_id for stable ordering + defence-in-depth.
+ *
+ *  `searchTerm` (optional) filters app-side on the SHOWN name (the same masked
+ *  label the list renders) so a name-hidden customer is never matched on their
+ *  hidden full name. Empty/whitespace term → no filtering. */
+export async function listCustomers(
+  tenantId: string,
+  searchTerm?: string,
+): Promise<AdminCustomer[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('customers')
@@ -304,7 +311,7 @@ export async function listCustomers(tenantId: string): Promise<AdminCustomer[]> 
   }
 
   type Row = CustomerRow & { bookings: { start_ts: string; status: string }[] | null }
-  return ((data ?? []) as Row[]).map((c) => {
+  const rows: AdminCustomer[] = ((data ?? []) as Row[]).map((c) => {
     const active = (c.bookings ?? []).filter((b) =>
       (ACTIVE_BOOKING as readonly string[]).includes(b.status),
     )
@@ -326,6 +333,11 @@ export async function listCustomers(tenantId: string): Promise<AdminCustomer[]> 
       tier: tierOf(lp),
     }
   })
+
+  const term = searchTerm?.trim().toLowerCase()
+  if (!term) return rows
+  // Match the SHOWN name only (never the hidden full name) — privacy-preserving.
+  return rows.filter((c) => c.shownName.toLowerCase().includes(term))
 }
 
 export type CustomerStats = {
@@ -547,5 +559,52 @@ export async function dashboardData(
     upcomingToday: upcoming.filter((b) => active.has(b.status)),
     serviceMix,
     peakHours,
+  }
+}
+
+// ── Booking payment status (M6 §3.2 drawer status-badge) ─────────────────────
+// payments_rls (0010:63) lets staff/admin (role_level>=3) read payments tenant-
+// wide via the authed client, so this is a REAL read (verified RLS). A booking
+// MAY have no payment row at all (payments are minted only on the Stripe-checkout
+// path, migration 0007): that is the HONEST "no payment" state, status=null — the
+// drawer renders no badge, never a fake "Betald"/"Väntar". UNIQUE(booking_id)
+// (0007:53) guarantees at most one row per booking.
+
+export type BookingPaymentStatus = 'pending' | 'succeeded' | 'failed'
+
+export type BookingPayment = {
+  /** Stripe-mirrored payment state, or null when no payment row exists. */
+  status: BookingPaymentStatus | null
+  /** Charged amount in minor units, or null when no payment row exists. */
+  amountCents: number | null
+}
+
+/** Normalise a raw payments.status string into the known set (defensive: any
+ *  unknown value collapses to null so the UI never shows a phantom badge). */
+export function normalisePaymentStatus(raw: string | null | undefined): BookingPaymentStatus | null {
+  if (raw === 'pending' || raw === 'succeeded' || raw === 'failed') return raw
+  return null
+}
+
+/**
+ * The payment row for a single booking (or the null no-payment state). tenant_id
+ * is passed for defence-in-depth + stable scoping (RLS already fences it).
+ */
+export async function getBookingPaymentStatus(
+  bookingId: string,
+  tenantId: string,
+): Promise<BookingPayment> {
+  if (!bookingId) return { status: null, amountCents: null }
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('payments')
+    .select('status, amount_cents')
+    .eq('tenant_id', tenantId)
+    .eq('booking_id', bookingId)
+    .maybeSingle()
+  if (!data) return { status: null, amountCents: null }
+  return {
+    status: normalisePaymentStatus(data.status),
+    amountCents: data.amount_cents ?? null,
   }
 }

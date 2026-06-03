@@ -23,6 +23,7 @@ export function Button({
   size = 'md',
   style = {},
   className = '',
+  onClick,
 }: {
   children: ReactNode
   variant?: ButtonVariant
@@ -33,6 +34,10 @@ export function Button({
   size?: ButtonSize
   style?: CSSProperties
   className?: string
+  /** Click handler for the <button> form (ignored when `href` renders an <a>;
+   *  use a Link there). Optional so server components can keep using Button
+   *  without a handler. */
+  onClick?: () => void
 }) {
   const cls = `pbtn pbtn--${variant} pbtn--${size}${className ? ` ${className}` : ''}`
   const inner = (
@@ -55,6 +60,7 @@ export function Button({
       type={type ?? 'button'}
       disabled={disabled}
       style={style}
+      onClick={onClick}
     >
       {inner}
     </button>

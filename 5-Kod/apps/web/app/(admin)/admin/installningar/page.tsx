@@ -59,17 +59,8 @@ export default async function SettingsPage({
       <PageHead
         eyebrow={tenant.name}
         title="Inställningar"
-        lede="Salongens namn, kontakt, tidszon, betalningssätt och avbokningsregel. Avbokningsregeln läses av kundportalen när en kund vill avboka eller boka om."
+        lede="Varje reglage är på riktigt kopplat. Slår du på något funkar funktionen — annars finns den inte här. Salongens namn, kontakt, tidszon, betalning och avbokningsregel styrs härifrån."
       />
-
-      {/* §6 T10 — produkten berättar om sig själv: en lugn explainer som ramar in
-          vad som styrs här. Påstår inget per-toggle (de pillarna + sina egna proof-
-          band bor i SettingsForm), så det är ärligt på sidnivå. */}
-      <Callout tone="info" icon="info">
-        Allt du ställer in här styr direkt vad kunden möter på din publika sajt — vid
-        bokning, i bekräftelsemejl och när hen vill avboka. Varje rad visar sitt nuläge
-        med en Aktiv/Av-markering.
-      </Callout>
 
       <SettingsForm
         name={tenant.name}
@@ -92,6 +83,10 @@ export default async function SettingsPage({
         cookieBannerEnabled={sjson.cookie_banner_enabled !== false}
       />
 
+      {/* ── Betalning ── mockens andra kärnkort. EN lean Card: h2 + live-toggle
+          ("Betalning vid bokning" = den wired payments_enabled-kontrollen) + amber
+          sköld-band + en kompakt Stripe-anslutningsrad. Stripe-kopplingen bor INNE
+          i kortet (inget fristående syskon-kort), exakt som mockens Stripe-rad. */}
       <StripeConnectCard
         hasAccount={Boolean(stripeRow?.stripe_account_id)}
         chargesEnabled={stripeRow?.stripe_charges_enabled ?? false}

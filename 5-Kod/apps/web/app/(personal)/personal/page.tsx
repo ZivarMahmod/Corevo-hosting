@@ -1,31 +1,18 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getMyStaff, getMyServices } from '@/lib/personal/staff'
-import {
-  getBookingsInRange,
-  dayRangeUtc,
-  weekRangeUtc,
-  type StaffBooking,
-} from '@/lib/personal/calendar'
-import { addDays, mondayOf, todayInTz, fmtTime } from '@/lib/personal/format'
-import { Calendar, type CalendarGroup } from '@/components/personal/Calendar'
-import { DateNav } from '@/components/personal/DateNav'
+import { getStaffScheduleWithNotes, dayRangeUtc } from '@/lib/personal/calendar'
+import { todayInTz, fmtTime, fmtDateHeading } from '@/lib/personal/format'
+import { Calendar } from '@/components/personal/Calendar'
 import { WalkInForm } from '@/components/personal/WalkInForm'
 import { MarkDoneButton } from '@/components/personal/MarkDoneButton'
-import { PageHead, Stat, Badge, Card } from '@/components/portal/ui'
+import { PageHead, Badge, Card } from '@/components/portal/ui'
 import styles from '@/components/personal/personal.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Personal — idag' }
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
-
-export default async function PersonalPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ date?: string; view?: string }>
-}) {
-  const sp = await searchParams
+export default async function PersonalPage() {
   const user = await requirePortal('personal')
   const staff = await getMyStaff(user.id)
 
@@ -48,40 +35,29 @@ export default async function PersonalPage({
   const staffIds = staff.map((s) => s.id)
   const services = await getMyServices(staffIds)
   const today = todayInTz(primaryTz)
-  const dateStr = sp.date && DATE_RE.test(sp.date) ? sp.date : today
-  const view: 'dag' | 'vecka' = sp.view === 'vecka' ? 'vecka' : 'dag'
 
-  // Viewed calendar (day or week), bucketed by local calendar day.
-  let groups: CalendarGroup[] = []
-  if (view === 'vecka') {
-    const monday = mondayOf(dateStr)
-    const { fromUtc, toUtc } = weekRangeUtc(monday, primaryTz)
-    const all = await getBookingsInRange(staffIds, fromUtc, toUtc)
-    groups = Array.from({ length: 7 }, (_, i) => {
-      const d = addDays(monday, i)
-      const { fromUtc: f, toUtc: t } = dayRangeUtc(d, primaryTz)
-      const fMs = new Date(f).getTime()
-      const tMs = new Date(t).getTime()
-      const bookings = all.filter((b: StaffBooking) => {
-        const s = new Date(b.startTs).getTime()
-        return s >= fMs && s < tMs
-      })
-      return { dateStr: d, bookings }
-    })
-  } else {
-    const { fromUtc, toUtc } = dayRangeUtc(dateStr, primaryTz)
-    groups = [{ dateStr, bookings: await getBookingsInRange(staffIds, fromUtc, toUtc) }]
-  }
+  // Frisörens "Idag" är EN levande dag-lista (mock §M5: hero → kort) — ingen
+  // datum-/veckonavigering (det reviret bor på salongens Bokningar / Mitt schema).
+  // En enda dagsläsning matar både badge-räknaren och listan, så siffran alltid
+  // = synliga rader. Den recognition-berikade läsningen ger preferens-chips +
+  // kund-noteringen per rad utan extra query (batchat i lib).
+  const { fromUtc, toUtc } = dayRangeUtc(today, primaryTz)
+  const todays = await getStaffScheduleWithNotes(staffIds, fromUtc, toUtc)
 
-  // "Idag"-overview (always today, independent of the viewed date).
-  const { fromUtc: tFrom, toUtc: tTo } = dayRangeUtc(today, primaryTz)
-  const todays = await getBookingsInRange(staffIds, tFrom, tTo)
-  const activeToday = todays.filter((b) => b.status === 'pending' || b.status === 'confirmed')
+  // Avbokade rader hör inte till dagslistan (mock: mine = status !== "avbokad").
+  // Listan + badgen driver från SAMMA filtrerade dag, precis som mockens `mine`.
+  const dayBookings = todays.filter((b) => b.status !== 'cancelled')
+
+  // "Nästa kund"-hero: första aktiva (ej bekräftad / bekräftad) bokning som ännu
+  // inte passerat — annars första aktiva. Härleds ur samma dagslista, ingen query.
+  const activeToday = dayBookings.filter((b) => b.status === 'pending' || b.status === 'confirmed')
   const now = Date.now()
   const next =
     activeToday
       .filter((b) => new Date(b.startTs).getTime() >= now)
-      .sort((a, b) => (a.startTs < b.startTs ? -1 : 1))[0] ?? null
+      .sort((a, b) => (a.startTs < b.startTs ? -1 : 1))[0] ??
+    activeToday[0] ??
+    null
 
   // Hero display fields, derived ONLY from data already loaded above (no queries).
   // The name is shown only when the booking truly carries one — customerLabel is
@@ -92,23 +68,29 @@ export default async function PersonalPage({
     ? Math.max(0, Math.round((new Date(next.endTs).getTime() - new Date(next.startTs).getTime()) / 60000))
     : 0
 
+  // Mock §M5 är EN dag-fokuserad kolumn vid maxWidth 720 (Staff.jsx rad 17):
+  // PageHead (badge högerställd på titelraden) → "Nästa kund"-hero → dag-lista.
+  const dayCount = dayBookings.length
   return (
-    <section className="portal-section">
+    <section className="portal-section" style={{ maxWidth: 720 }}>
+      {/* Eyebrow carries today's date (mock grammar: "tis 2 juni" over "Idag").
+          Badgen renderas i PageHeads högerslot — på titelraden, exakt som mocken
+          ({n} bokningar, utan "idag"-suffix så texten ryms och inte radbryter). */}
       <PageHead
-        eyebrow="Personal"
+        eyebrow={fmtDateHeading(today)}
         title="Idag"
-        lede="Din dag, live. Du behöver inte pyssla med admin — bara klippa."
+        lede="Din dag, live. Tryck på en kund för att snabbt minnas vad ni gjort sist — så du har koll utan att leta."
       >
         <Badge tone="gold">
-          {activeToday.length} {activeToday.length === 1 ? 'bokning' : 'bokningar'} idag
+          {dayCount} {dayCount === 1 ? 'bokning' : 'bokningar'}
         </Badge>
       </PageHead>
 
-      {/* "Nästa kund"-hero — forest surface, gold eyebrow, big Playfair time.
-          Text colors are set explicitly (the .h1/.body type roles bake in dark
-          ink/forest, invisible on forest), and all tokens resolve under the
-          back-office [data-world] shell. Additive: existing Stat grid + Kalender
-          + per-row actions are untouched below. */}
+      {/* "Nästa kund"-hero — inverted forest surface, gold eyebrow, big Playfair
+          time, gold "Markera klar" (Staff.jsx 23–32). Text colours are set
+          explicitly (the .h1/.body roles bake in dark ink, invisible on forest);
+          all tokens resolve under the back-office [data-world] shell. The day list
+          + per-row actions follow below — additive, not reduced. */}
       <Card
         pad={26}
         style={{
@@ -132,15 +114,15 @@ export default async function PersonalPage({
               <span className="eyebrow" style={{ color: 'var(--c-gold)' }}>
                 Nästa kund
               </span>
-              <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
                 <span
+                  className="num"
                   style={{
                     fontFamily: 'var(--font-display)',
                     fontWeight: 700,
-                    fontSize: 38,
+                    fontSize: 34,
                     lineHeight: 1,
                     color: 'var(--c-on-forest)',
-                    fontVariantNumeric: 'tabular-nums',
                   }}
                 >
                   {fmtTime(next.startTs, next.timeZone)}
@@ -151,7 +133,7 @@ export default async function PersonalPage({
                   </span>
                 ) : null}
               </div>
-              <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--c-on-forest-2)' }}>
+              <p style={{ margin: '6px 0 0', fontSize: 13.5, color: 'var(--c-on-forest-2)' }}>
                 {next.serviceName ?? 'Tjänst'}
                 {nextDurationMin > 0 ? ` · ${nextDurationMin} min` : ''}
               </p>
@@ -182,47 +164,16 @@ export default async function PersonalPage({
         )}
       </Card>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: 16,
-          marginBottom: 26,
-        }}
-      >
-        <Stat
-          label="Aktiva idag"
-          value={activeToday.length}
-          delta={activeToday.length === 1 ? 'aktiv bokning idag' : 'aktiva bokningar idag'}
-          deltaTone="muted"
-          icon="calendar"
-        />
-        <Stat
-          label="Nästa kund"
-          value={next ? fmtTime(next.startTs, next.timeZone) : '–'}
-          delta={next ? next.customerLabel : 'inga fler bokningar idag'}
-          deltaTone="muted"
-          icon="user"
-        />
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          flexWrap: 'wrap',
-          marginBottom: 12,
-        }}
-      >
-        <h2 className="h2" style={{ margin: 0 }}>
-          Kalender
-        </h2>
+      {/* Walk-in (drop-in) — shipped capability the day-mock saknar (createWalkIn
+          är verklig: insert på egen staff_id, no_double_booking-vakt). Behålls och
+          restylas till en liten, högerställd åtgärd ovanför listan, utan extra
+          eyebrow/datum-nav (det reviret hör till salongens Bokningar). */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
         <WalkInForm services={services} timeZone={primaryTz} />
       </div>
-      <DateNav dateStr={dateStr} view={view} today={today} />
-      <Calendar groups={groups} />
+
+      {/* EN levande dag-lista (mock §M5) — inga datum-rubriker, ingen vecko-vy. */}
+      <Calendar bookings={dayBookings} />
     </section>
   )
 }

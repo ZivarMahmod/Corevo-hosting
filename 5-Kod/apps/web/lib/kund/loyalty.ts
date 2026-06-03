@@ -191,3 +191,54 @@ export async function getLoyaltyView(
     completedVisits,
   }
 }
+
+// ── Points-per-visit history (/konto history row, Fas 2 P2) ──────────────────
+// loyalty_ledger is append-only; each EARN entry carries the booking_id it was
+// minted for (nullable: manual adjustments have none). The /konto history wants
+// "X poäng" next to each visit. Several ledger rows can share one booking_id
+// (e.g. a base earn + a bonus adjustment on the same visit), so we SUM the deltas
+// per booking_id. Only rows WITH a booking_id are visit-attributable; adjustments
+// (booking_id null) are deliberately excluded from the per-visit view.
+
+export type LoyaltyVisitPoints = {
+  bookingId: string
+  /** Net points attributed to this visit (sum of that booking's ledger deltas). */
+  pointsDelta: number
+}
+
+type LedgerVisitRow = { booking_id: string | null; points_delta: number }
+
+/**
+ * Pure: collapse ledger rows into one signed total per booking_id. Rows without a
+ * booking_id (manual adjustments) are dropped — they are not visit-attributable.
+ * A net-zero booking is kept (it represents a visit that earned then redeemed),
+ * so the consumer can decide whether to render a 0 row. Insertion order of the
+ * first-seen booking_id is preserved for stable display.
+ */
+export function pointsPerVisit(rows: LedgerVisitRow[]): LoyaltyVisitPoints[] {
+  const byBooking = new Map<string, number>()
+  for (const r of rows) {
+    if (!r.booking_id) continue
+    byBooking.set(r.booking_id, (byBooking.get(r.booking_id) ?? 0) + r.points_delta)
+  }
+  return [...byBooking.entries()].map(([bookingId, pointsDelta]) => ({ bookingId, pointsDelta }))
+}
+
+/**
+ * Per-visit loyalty points for the signed-in customer, keyed on booking_id so a
+ * consumer can join it to a booking's date/service. customerId is the resolved
+ * customers.id (loyalty_ledger keys on it); null → no customers row yet → []
+ * (honest empty, never fabricated). RLS scopes the ledger to this customer.
+ */
+export async function getCustomerLoyaltyPointsPerVisit(
+  customerId: string | null,
+): Promise<LoyaltyVisitPoints[]> {
+  if (!customerId) return []
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('loyalty_ledger')
+    .select('booking_id, points_delta')
+    .eq('customer_id', customerId)
+    .not('booking_id', 'is', null)
+  return pointsPerVisit((data ?? []) as LedgerVisitRow[])
+}

@@ -260,9 +260,37 @@ export function BrandingForm({
             {shownLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={shownLogo} alt="Nuvarande logotyp" className={styles.logoPreview} />
-            ) : (
-              <span className={styles.muted}>Ingen logotyp uppladdad ännu.</span>
-            )}
+            ) : null}
+            {/* Worlded dropzone (mock §3.6): dashed-glyph + copy. <label> sveper den
+                WIRADE <input type=file> (visuellt gömd, samma name="logo") → riktig
+                R2-uppladdning bevarad, bara grammatiken byts från native-kontrollen. */}
+            <label className={styles.dropzone}>
+              <span className={styles.dropzoneGlyph} aria-hidden>
+                ↑
+              </span>
+              <span className={styles.dropzoneText}>
+                Dra hit eller <b>välj fil</b>
+                <span className={styles.dropzoneHint}>Byts utan deploy (R2)</span>
+              </span>
+              <input
+                type="file"
+                name="logo"
+                className={styles.visuallyHidden}
+                accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  setLocalLogo((prev) => {
+                    if (prev) URL.revokeObjectURL(prev)
+                    return f ? URL.createObjectURL(f) : null
+                  })
+                  setNewLogo(!!f)
+                  if (f) {
+                    setRemoveLogo(false)
+                    setChanged('logo')
+                  }
+                }}
+              />
+            </label>
             {branding.logo_url && !localLogo ? (
               <label className={styles.check}>
                 <input
@@ -278,23 +306,6 @@ export function BrandingForm({
                 Ta bort logotyp
               </label>
             ) : null}
-            <input
-              type="file"
-              name="logo"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                setLocalLogo((prev) => {
-                  if (prev) URL.revokeObjectURL(prev)
-                  return f ? URL.createObjectURL(f) : null
-                })
-                setNewLogo(!!f)
-                if (f) {
-                  setRemoveLogo(false)
-                  setChanged('logo')
-                }
-              }}
-            />
             <span className={styles.muted}>PNG/JPG/WEBP/SVG/GIF, max 2 MB.</span>
           </div>
         </div>
@@ -392,6 +403,10 @@ function BrandingPreview({
 
   return (
     <div className={styles.previewWrap}>
+      <span className={`${styles.eyebrowLabel} ${styles.previewEyebrow}`}>
+        <span className={styles.previewEyebrowDot} aria-hidden />
+        Live-förhandsvisning · storefront
+      </span>
       <div className={styles.chrome}>
         <div className={styles.chromeBar}>
           <span className={styles.dot} style={{ background: '#E0726A' }} />
@@ -448,6 +463,16 @@ function BrandingPreview({
             </div>
           </div>
         </div>
+      </div>
+      {/* gold-100 runtime-explainer (mock §3.6 L114-117). */}
+      <div className={styles.runtimeNote}>
+        <span className={styles.runtimeNoteIcon} aria-hidden>
+          i
+        </span>
+        <span className={styles.runtimeNoteText}>
+          Färg och typsnitt läses som runtime-inställningar — därför syns ändringen direkt
+          utan deploy.
+        </span>
       </div>
       <div className={styles.previewMeta}>
         {changed ? (

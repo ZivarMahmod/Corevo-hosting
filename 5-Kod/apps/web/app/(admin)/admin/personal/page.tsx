@@ -1,23 +1,20 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { listServices, listStaff, type StaffWithServices } from '@/lib/admin/data'
-import { StaffManager } from '@/components/admin/StaffManager'
-import { PageHead, Stat, Card, Badge, Callout } from '@/components/portal/ui'
+import { listServices, listStaff, listLocations } from '@/lib/admin/data'
+import { getStaffScheduleWithNotes, dayRangeUtc } from '@/lib/personal/calendar'
+import { todayInTz } from '@/lib/personal/format'
+import {
+  StaffRoster,
+  AddStaffButton,
+  type StaffCard,
+  type StaffDayRow,
+  type ServiceOption,
+} from '@/components/admin/StaffRoster'
+import { PageHead, Card } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Personal · Salongsadmin' }
-
-/** Bokningsbar = aktiv OCH minst en kopplad tjänst (samma regel som den publika
- *  sajten tillämpar). Härlett ur riktig data — serviceIds kommer från staff_services. */
-function isBookable(s: StaffWithServices): boolean {
-  return s.active && s.serviceIds.length > 0
-}
-
-/** Initial för forest-avataren — första bokstaven i visningsnamnet. */
-function initialOf(name: string): string {
-  return name.trim()[0]?.toUpperCase() ?? '?'
-}
 
 export default async function StaffPage() {
   const user = await requirePortal('admin')
@@ -31,136 +28,93 @@ export default async function StaffPage() {
     )
   }
 
-  const [staff, services] = await Promise.all([listStaff(tenant.id), listServices(tenant.id)])
+  const [staff, services, locations] = await Promise.all([
+    listStaff(tenant.id),
+    listServices(tenant.id),
+    listLocations(tenant.id),
+  ])
 
-  const activeCount = staff.filter((s) => s.active).length
-  const bookableCount = staff.filter(isBookable).length
+  // Each staff member's REAL day — one batched read for the whole roster, then
+  // grouped by staff_id. getStaffScheduleWithNotes is RLS-tenant-fenced; cancelled
+  // bookings are excluded (mock SalonStaff dayOf = status !== "avbokad"). The
+  // prefs/note enrichment goes unused on this minimal admin list (harmless).
+  const today = todayInTz(tenant.timeZone)
+  const { fromUtc, toUtc } = dayRangeUtc(today, tenant.timeZone)
+  const staffIds = staff.map((s) => s.id)
+  const todaysSchedule = await getStaffScheduleWithNotes(staffIds, fromUtc, toUtc)
+  const dayByStaff = new Map<string, StaffDayRow[]>()
+  for (const b of todaysSchedule) {
+    if (b.status === 'cancelled') continue
+    const row: StaffDayRow = {
+      id: b.id,
+      startTs: b.startTs,
+      status: b.status,
+      serviceName: b.serviceName,
+      customerLabel: b.customerLabel,
+    }
+    const list = dayByStaff.get(b.staffId)
+    if (list) list.push(row)
+    else dayByStaff.set(b.staffId, [row])
+  }
+
+  // Resolve location_id → name for the roster cards (multi-location is real —
+  // location_id is an FK; KEEP it). Missing pin → null (written empty-state).
+  const locationName = new Map<string, string>(locations.map((l) => [l.id, l.name]))
+
+  // service_id → name, so each card's chips show the REAL coupled service names
+  // (the mock's specialty chips bound to staff_services). The full {id,name} set
+  // also feeds the Drawer's tjänst-coupling checkboxes (setStaffServices).
+  const serviceName = new Map<string, string>(services.map((sv) => [sv.id, sv.name]))
+  const serviceOptions: ServiceOption[] = services.map((sv) => ({ id: sv.id, name: sv.name }))
+
+  const cards: StaffCard[] = staff.map((s) => ({
+    id: s.id,
+    displayName: s.displayName,
+    title: s.title,
+    active: s.active,
+    serviceCount: s.serviceIds.length,
+    serviceIds: s.serviceIds,
+    serviceNames: s.serviceIds
+      .map((id) => serviceName.get(id))
+      .filter((n): n is string => Boolean(n)),
+    // Eget konto = staff har en kopplad inloggning (profile_id != null). Härlett,
+    // aldrig fejkat — magic-link-inbjudan sätter profile_id (se inviteStaff).
+    hasAccount: Boolean(s.profile_id),
+    locationName: (s.location_id && locationName.get(s.location_id)) || null,
+    today: (
+      dayByStaff.get(s.id) ?? []
+    ).sort((a, b) => (a.startTs < b.startTs ? -1 : 1)),
+  }))
 
   return (
     <section className="portal-section">
       <PageHead
         eyebrow={tenant.name}
         title="Personal"
-        lede="Lägg till medarbetare och koppla vilka tjänster de utför. Endast aktiv personal med minst en kopplad tjänst går att boka på den publika webbplatsen."
-      />
+        lede="Varje medarbetares riktiga dag — speglad live. Ge dem ett eget konto med egen vy, eller hantera dem härifrån. Endast aktiv personal med minst en kopplad tjänst går att boka."
+      >
+        <AddStaffButton />
+      </PageHead>
 
-      {/* Riktiga nyckeltal — räknade ur staff/staff_services, aldrig fejkat. */}
-      <div className="bo-stat-grid">
-        <Stat label="Medarbetare totalt" value={<span className="num">{staff.length}</span>} icon="users" />
-        <Stat
-          label="Aktiva"
-          value={<span className="num">{activeCount}</span>}
-          icon="user"
-          hint="Synliga internt"
-        />
-        <Stat
-          label="Bokningsbara"
-          value={<span className="num">{bookableCount}</span>}
-          icon="scissors"
-          hint="Aktiv + minst en tjänst"
-        />
-      </div>
-
-      {/* Personalöversikt — kort per medarbetare. Inga specialitets-/skill-fält finns
-          i schemat, så vi visar bara verklig data (namn, titel, status, antal kopplade
-          tjänster) — aldrig påhittade specialiteter. */}
+      {/* Personalöversikt — RICH kort per medarbetare (forest-avatar, namn, roll-rad,
+          bio-tomtillstånd, tjänst-chips ur staff_services, muted Aktiv-pill, plats ·
+          idag-antal). Klick öppnar Drawer med Om (tomtillstånd), namn/titel-redigering,
+          tjänst-koppling, eget-konto + magic-link, multi-location, verklig dag och
+          borttagning — all redigering som tidigare låg i StaffManager, nu samlad här.
+          Inga påhittade fält. */}
       {staff.length === 0 ? (
         <Card>
           <div style={{ textAlign: 'center', padding: '14px 8px', color: 'var(--c-ink-2)' }}>
             <strong style={{ display: 'block', color: 'var(--c-ink)', marginBottom: 4 }}>
               Ingen personal ännu.
             </strong>
-            Lägg till din första medarbetare i panelen nedan och koppla sedan vilka tjänster hen
-            utför — då blir hen bokningsbar på din publika sajt.
+            Tryck på “Lägg till” ovan för att skapa din första medarbetare och koppla sedan vilka
+            tjänster hen utför — då blir hen bokningsbar på din publika sajt.
           </div>
         </Card>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: 16,
-            margin: '0 0 22px',
-          }}
-        >
-          {staff.map((s) => {
-            const bookable = isBookable(s)
-            const count = s.serviceIds.length
-            return (
-              // TODO(goal-17 island): wire per-staff "Verklig dag · idag" detail
-              // <Drawer> as a 'use client' child triggered from this card — server
-              // shell renders the static roster, the island fetches today's bookings.
-              <Card key={s.id} style={s.active ? undefined : { opacity: 0.62 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 999,
-                      background: 'var(--c-forest)',
-                      color: 'var(--c-on-forest)',
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontFamily: 'var(--font-display)',
-                      fontSize: 18,
-                      fontWeight: 700,
-                      flex: 'none',
-                    }}
-                  >
-                    {initialOf(s.displayName)}
-                  </span>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-display)',
-                        fontSize: 17,
-                        fontWeight: 700,
-                        color: 'var(--c-forest)',
-                        lineHeight: 1.2,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {s.displayName}
-                    </div>
-                    <div className="small" style={{ marginTop: 2 }}>
-                      {s.title?.trim() ? 'Medarbetare' : 'Titel saknas'}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 8,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <Badge tone={bookable ? 'success' : s.active ? 'warning' : 'neutral'}>
-                    {bookable ? 'Bokningsbar' : s.active ? 'Saknar tjänst' : 'Inaktiv'}
-                  </Badge>
-                  <span className="small">
-                    <span className="num">{count}</span> {count === 1 ? 'tjänst' : 'tjänster'}
-                  </span>
-                </div>
-              </Card>
-            )
-          })}
-        </div>
+        <StaffRoster staff={cards} services={serviceOptions} tz={tenant.timeZone} />
       )}
-
-      <Callout tone="info" icon="info">
-        Endast aktiv personal med minst en kopplad tjänst går att boka på den publika sajten. Koppla
-        tjänster och sätt schema per medarbetare i panelen nedan.
-      </Callout>
-
-      {/* Hanteringspanel (skapa/bjud in/koppla tjänster) — befintlig klient-ö, oförändrad. */}
-      <StaffManager staff={staff} services={services} />
     </section>
   )
 }

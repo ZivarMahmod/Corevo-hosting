@@ -1,8 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState, type ReactNode } from 'react'
 import { saveSettings, type ActionState } from '@/lib/admin/actions'
-import { Card } from '@/components/portal/ui'
+import { Card, Callout } from '@/components/portal/ui'
 import styles from './admin.module.css'
 
 const TIMEZONES = [
@@ -13,31 +13,6 @@ const TIMEZONES = [
   'Europe/London',
   'UTC',
 ]
-
-const PAYMENT_MODES: { value: string; label: string }[] = [
-  { value: 'on_site', label: 'Betala på plats' },
-  { value: 'online', label: 'Betala online' },
-  { value: 'both', label: 'Online + på plats' },
-  { value: 'coming_soon', label: 'Online (kommer snart)' },
-]
-
-/** Left column of a .pswitch-row: stacks the title row over the muted description,
- *  so the toggle (the row's right child) is pushed to the far right. */
-const SWITCH_TEXT_STYLE = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '0.1rem',
-  minWidth: 0,
-} as const
-
-/** Left side of a .pswitch-row: setting title + its AKTIV/AV status pill, inline. */
-const SWITCH_LABEL_STYLE = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '0.5rem',
-  fontWeight: 600,
-  fontSize: '0.92rem',
-} as const
 
 export type NotificationToggles = {
   confirmation: boolean
@@ -62,16 +37,73 @@ export type SettingsFormProps = {
 }
 
 /**
- * Presentational status pill (AKTIV / AV) reflecting a setting's CURRENT saved
- * value. Rendered from the same prop that feeds the input's `defaultChecked`, so
- * it shows the persisted state — it deliberately carries no client state and adds
- * no `onChange`, leaving the uncontrolled, server-wired input untouched.
+ * Presentational status pill (AKTIV / AV) reflecting a toggle's LIVE value. Driven
+ * by the same React state that feeds the input's controlled echo, so it flips the
+ * instant the owner toggles — playbook §6 "every toggle: AKTIV/AV-pill".
  */
 function StatePill({ on }: { on: boolean }) {
   return on ? (
     <span className="ppill ppill--on">Aktiv</span>
   ) : (
     <span className="ppill ppill--off">Av</span>
+  )
+}
+
+/**
+ * One live toggle row (mock SalonSettings <Toggle> grammar). The input stays
+ * UNCONTROLLED (defaultChecked) so the server-action submission is byte-identical
+ * and `saveSettings` reads name/value unchanged — `onChange` only mirrors the value
+ * into React state so the AKTIV/AV pill (and an optional proof Callout) react live.
+ * Pass `proof` to render a consequence band that appears only while the toggle is on
+ * (playbook §6 "proof-callout, no dead toggles").
+ */
+function LiveToggleRow({
+  name,
+  defaultOn,
+  title,
+  desc,
+  proof,
+  disabled,
+}: {
+  name: string
+  defaultOn: boolean
+  title: string
+  desc: ReactNode
+  /** Rendered (as a child of the form) only while the toggle is ON. */
+  proof?: ReactNode
+  disabled?: boolean
+}) {
+  const [on, setOn] = useState(defaultOn)
+  return (
+    <>
+      <label className="pswitch-row">
+        <span style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', minWidth: 0 }}>
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontWeight: 600,
+              fontSize: '0.92rem',
+            }}
+          >
+            {title}
+            {disabled ? <span className="ppill ppill--off">Kommer snart</span> : <StatePill on={on} />}
+          </span>
+          <span className={styles.muted}>{desc}</span>
+        </span>
+        <input
+          className="pswitch"
+          type="checkbox"
+          name={name}
+          value="true"
+          defaultChecked={defaultOn}
+          disabled={disabled}
+          onChange={(e) => setOn(e.target.checked)}
+        />
+      </label>
+      {proof && on && !disabled ? proof : null}
+    </>
   )
 }
 
@@ -90,12 +122,12 @@ export function SettingsForm({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '1.25rem',
+        gap: '1rem',
         maxWidth: '40rem',
         margin: '1rem 0 1.75rem',
       }}
     >
-      {/* ── Bokning ── salongsuppgifter + kundkonton + avbokningsregel ── */}
+      {/* ── Bokning ── salongsuppgifter + bokningsreglagen (mock: Card "Bokning") ── */}
       <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <h2 className="h2" style={{ margin: 0 }}>
           Bokning
@@ -139,25 +171,41 @@ export function SettingsForm({
           </label>
         </div>
 
-        {/* G12: storefront customer accounts (login + "Mitt konto" + signup). Off = guest booking only. */}
-        <label className="pswitch-row">
-          <span style={SWITCH_TEXT_STYLE}>
-            <span style={SWITCH_LABEL_STYLE}>
-              Kund-konton
-              <StatePill on={props.customerAccountsEnabled} />
-            </span>
-            <span className={styles.muted}>
-              Visar inloggning + “Mitt konto” på din publika sajt (annars endast gästbokning).
-            </span>
-          </span>
-          <input
-            className="pswitch"
-            type="checkbox"
-            name="customer_accounts_enabled"
-            value="true"
-            defaultChecked={props.customerAccountsEnabled}
-          />
-        </label>
+        {/* Bokningsbekräftelse — live green proof-Callout when ON. Mock claims
+            "e-post + SMS testad", but actions.ts proves SMS was deliberately
+            removed (ingen kopplad leverantör). E-post IS wired (booking@corevo.se),
+            so the proof is e-post-only behaviour — never a fabricated SMS-QA claim. */}
+        <LiveToggleRow
+          name="notify_confirmation"
+          defaultOn={notifications.confirmation}
+          title="Bokningsbekräftelse"
+          desc="Kunden får en bekräftelse direkt vid bokning."
+          proof={
+            <Callout tone="success" icon="check">
+              Aktiv: kunden får en bokningsbekräftelse via e-post direkt vid bokning.
+            </Callout>
+          }
+        />
+
+        {/* G12: storefront customer accounts (login + "Mitt konto" + signup). */}
+        <LiveToggleRow
+          name="customer_accounts_enabled"
+          defaultOn={props.customerAccountsEnabled}
+          title="Kund-konton"
+          desc="Visar inloggning + ”Mitt konto” på din publika sajt (annars endast gästbokning)."
+        />
+
+        {/* Drop-in synligt (mock gap) — there is no settings key for this yet, and the
+            save path (lib/admin/actions.ts → saveSettings) is FROZEN, so a live toggle
+            would silently fail to persist. Per "no dead toggles" it is rendered DISABLED
+            with honest "kommer snart" copy. FLAGGED in the manifest notes for the orchestrator. */}
+        <LiveToggleRow
+          name="dropin_visible"
+          defaultOn={false}
+          disabled
+          title="Drop-in synligt"
+          desc="Visa ”Drop in eller boka online” i topp-baren på hemsidan. Kopplas på snart."
+        />
 
         <label className={styles.field}>
           <span>Avbokning senast (timmar före)</span>
@@ -172,87 +220,32 @@ export function SettingsForm({
         </label>
       </Card>
 
-      {/* ── Betalning ── online-betalning styrs av Stripe-kortet nedan ── */}
-      <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <h2 className="h2" style={{ margin: 0 }}>
-          Betalning
-        </h2>
+      {/* Betalningsläget styrs i dag av Stripe-kortet (payment_mode + Connect-kontot),
+          inte av ett fält här. Den synliga "Betalning"-sektionen + Stripe-kopplingen
+          bor i page.tsx (mockens Betalning-kort). Detta dolda fält bevarar bara det
+          sparade payment_mode-värdet oförändrat när formuläret sparas batchat. */}
+      <input type="hidden" name="payment_mode" value={props.paymentMode} />
 
-        <label className={styles.field} style={{ maxWidth: '20rem' }}>
-          <span>Betalning · Kommer snart</span>
-          {/* Online-betalning styrs i dag av Stripe-kortet nedan (payments_enabled +
-              Connect-kontot), inte av det här läget — så kontrollen är avstängd tills
-              den kopplas på. Hidden input bevarar sparat värde oförändrat vid spara. */}
-          <input type="hidden" name="payment_mode" value={props.paymentMode} />
-          <select defaultValue={props.paymentMode} disabled aria-disabled="true">
-            {PAYMENT_MODES.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-          <span className={styles.muted}>
-            Online-betalning aktiveras via Stripe-kopplingen nedan.
-          </span>
-        </label>
-      </Card>
-
-      {/* ── Notiser & integritet ── toggles read by M9 + the storefront cookie-banner ── */}
+      {/* ── Notiser & integritet ── shipped extras, behållna (additivt) ── */}
       <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <h2 className="h2" style={{ margin: 0 }}>
           Notiser &amp; integritet
         </h2>
 
-        <label className="pswitch-row">
-          <span style={SWITCH_TEXT_STYLE}>
-            <span style={SWITCH_LABEL_STYLE}>
-              Bokningsbekräftelse
-              <StatePill on={notifications.confirmation} />
-            </span>
-            <span className={styles.muted}>Skicka bokningsbekräftelse till kunden.</span>
-          </span>
-          <input
-            className="pswitch"
-            type="checkbox"
-            name="notify_confirmation"
-            value="true"
-            defaultChecked={notifications.confirmation}
-          />
-        </label>
+        {/* Provider-agnostisk formulering (ingen kopplad SMS-leverantör → påstå inte SMS). */}
+        <LiveToggleRow
+          name="notify_reminder"
+          defaultOn={notifications.reminder}
+          title="Påminnelse"
+          desc="Skicka påminnelse inför bokad tid."
+        />
 
-        <label className="pswitch-row">
-          <span style={SWITCH_TEXT_STYLE}>
-            <span style={SWITCH_LABEL_STYLE}>
-              Påminnelse
-              <StatePill on={notifications.reminder} />
-            </span>
-            <span className={styles.muted}>Skicka påminnelse inför bokad tid.</span>
-          </span>
-          <input
-            className="pswitch"
-            type="checkbox"
-            name="notify_reminder"
-            value="true"
-            defaultChecked={notifications.reminder}
-          />
-        </label>
-
-        <label className="pswitch-row">
-          <span style={SWITCH_TEXT_STYLE}>
-            <span style={SWITCH_LABEL_STYLE}>
-              Recensions-förfrågan
-              <StatePill on={notifications.review} />
-            </span>
-            <span className={styles.muted}>Skicka recensions-förfrågan efter besök.</span>
-          </span>
-          <input
-            className="pswitch"
-            type="checkbox"
-            name="notify_review"
-            value="true"
-            defaultChecked={notifications.review}
-          />
-        </label>
+        <LiveToggleRow
+          name="notify_review"
+          defaultOn={notifications.review}
+          title="Recensions-förfrågan"
+          desc="Skicka recensions-förfrågan efter besök."
+        />
 
         <label className={styles.field}>
           <span>Google-recension-länk</span>
@@ -267,27 +260,16 @@ export function SettingsForm({
           </span>
         </label>
 
-        {/* SMS-notiser borttaget (M6 §3.7 — inga döda toggles): det fanns ingen
-            kopplad leverantör, så kontrollen gjorde inget. Återinförs när en
-            SMS-leverantör är kopplad. saveSettings rör inte sms_enabled längre →
-            ev. tidigare sparat värde bevaras orört via settings-mergen. */}
+        {/* SMS-notiser borttaget (M6 §3.7 — inga döda toggles): ingen kopplad
+            leverantör. saveSettings rör inte sms_enabled → ev. tidigare sparat
+            värde bevaras orört via settings-mergen. */}
 
-        <label className="pswitch-row">
-          <span style={SWITCH_TEXT_STYLE}>
-            <span style={SWITCH_LABEL_STYLE}>
-              Cookie-banner
-              <StatePill on={cookieBannerEnabled} />
-            </span>
-            <span className={styles.muted}>Visa cookie-banner på din publika sajt.</span>
-          </span>
-          <input
-            className="pswitch"
-            type="checkbox"
-            name="cookie_banner_enabled"
-            value="true"
-            defaultChecked={cookieBannerEnabled}
-          />
-        </label>
+        <LiveToggleRow
+          name="cookie_banner_enabled"
+          defaultOn={cookieBannerEnabled}
+          title="Cookie-banner"
+          desc="Visa cookie-banner på din publika sajt."
+        />
       </Card>
 
       <div className={styles.actions}>

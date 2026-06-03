@@ -1,0 +1,839 @@
+'use client'
+
+import { useActionState, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import {
+  inviteStaff,
+  createStaff,
+  updateStaff,
+  toggleStaffActive,
+  deleteStaff,
+  setStaffServices,
+  type ActionState,
+} from '@/lib/admin/actions'
+import { statusLabel } from '@/lib/admin/format'
+import {
+  Badge,
+  Button,
+  Callout,
+  Card,
+  Drawer,
+  Icon,
+  useToast,
+  type BadgeTone,
+} from '@/components/portal/ui'
+
+/** One booking row in a staff member's "Verklig dag · idag" list. Shaped by the
+ *  server page from getStaffScheduleWithNotes — real data, never PII. */
+export type StaffDayRow = {
+  id: string
+  startTs: string
+  status: string
+  serviceName: string | null
+  customerLabel: string
+}
+
+/** The set of tjänster the salon offers, for the per-staff service-coupling form
+ *  inside the Drawer (setStaffServices). Mirrors ServiceRow's used fields. */
+export type ServiceOption = { id: string; name: string }
+
+/** Per-staff display bundle the server page hands down. `locationName` is resolved
+ *  from the locations table (location_id → name); null when the staff row has no
+ *  pinned location. `hasAccount` = staff.profile_id != null (eget konto). `today`
+ *  is that staff member's real bookings for today (cancelled already excluded).
+ *  `serviceNames` are the names of the services this member performs (staff_services
+ *  → services.name) — these are the mock's specialty chips, bound to live data.
+ *  `serviceIds` backs the Drawer's coupling checkboxes (which are pre-checked). */
+export type StaffCard = {
+  id: string
+  displayName: string
+  title: string | null
+  active: boolean
+  serviceCount: number
+  serviceIds: string[]
+  serviceNames: string[]
+  hasAccount: boolean
+  locationName: string | null
+  today: StaffDayRow[]
+}
+
+const initialOf = (name: string): string => name.trim()[0]?.toUpperCase() ?? '?'
+
+// Status → portal Badge tone. The primitive's bg tokens are muted tints with the
+// tone carried in the dot (§6: status muted on *-bg, dark ink, tone in the dot —
+// never saturated red/green panel fill).
+const STATUS_TONE: Record<string, BadgeTone> = {
+  pending: 'warning',
+  confirmed: 'info',
+  completed: 'success',
+  no_show: 'danger',
+}
+const statusTone = (status: string): BadgeTone => STATUS_TONE[status] ?? 'neutral'
+
+const timeLabel = (ts: string, tz: string) =>
+  new Intl.DateTimeFormat('sv-SE', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(
+    new Date(ts),
+  )
+
+// How many specialty chips a card shows before collapsing the rest into "+N fler"
+// (FreshCut staff can carry 7 services — the mock cards show ~3 dense chips).
+const CHIP_CAP = 3
+
+/**
+ * Personal-admin roster island (SalonStaff §3.4) — the client surface over the
+ * server-fetched staff. A clean ROSTER: the PageHead's "+ Lägg till" opens a
+ * create Drawer; below it a forest-avatar card grid (auto-fill 300) of RICH
+ * profile cards — avatar + name + role line + a bio paragraph (honest empty-state,
+ * no bio column in the schema) + the member's services as chips (real
+ * staff_services data) + a muted Aktiv/Inaktiv pill + a location · idag footer.
+ *
+ * Clicking a card opens a shared Drawer that holds ALL the per-staff editing that
+ * previously lived in the StaffManager list (now folded in here, never dropped):
+ *   • rename (updateStaff)         • activate/deactivate (toggleStaffActive)
+ *   • delete (deleteStaff)         • couple services (setStaffServices)
+ *   • eget-konto magic-link invite (inviteStaff) for un-linked staff
+ * plus the multi-location reminder and the staff member's real "Verklig dag · idag".
+ *
+ * No fabricated fields: bio/specialties have no backing column, so they render
+ * honest empty-states; the chips bind to the real coupled services.
+ */
+export function StaffRoster({
+  staff,
+  services,
+  tz,
+}: {
+  staff: StaffCard[]
+  services: ServiceOption[]
+  tz: string
+}) {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected = staff.find((s) => s.id === selectedId) ?? null
+
+  return (
+    <>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: 16,
+        }}
+      >
+        {staff.map((s) => (
+          <StaffGridCard key={s.id} member={s} onOpen={() => setSelectedId(s.id)} />
+        ))}
+      </div>
+
+      {selected && (
+        <StaffDrawer
+          member={selected}
+          services={services}
+          tz={tz}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
+    </>
+  )
+}
+
+/**
+ * The "+ Lägg till" head action (mock L19) — a client island the server page drops
+ * into the PageHead children slot so it sits top-right beside the H1. It owns the
+ * create Drawer (createStaff + invite-with-title), keeping the onClick out of the
+ * async server page.
+ */
+export function AddStaffButton() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button variant="primary" icon="plus" onClick={() => setOpen(true)}>
+        Lägg till
+      </Button>
+      {open && <AddStaffDrawer onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
+function StaffGridCard({ member, onOpen }: { member: StaffCard; onOpen: () => void }) {
+  const todayCount = member.today.length
+  const chips = member.serviceNames.slice(0, CHIP_CAP)
+  const extra = member.serviceNames.length - chips.length
+
+  return (
+    <Card style={member.active ? undefined : { opacity: 0.62 }}>
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Öppna ${member.displayName}`}
+        style={{
+          all: 'unset',
+          display: 'block',
+          width: '100%',
+          cursor: 'pointer',
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* Header — avatar + name + role line + eget-konto pill (mock L27-31). */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+          <span
+            aria-hidden="true"
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 999,
+              background: 'var(--c-forest)',
+              color: 'var(--c-on-forest)',
+              display: 'grid',
+              placeItems: 'center',
+              fontWeight: 600,
+              fontSize: 18,
+              flex: 'none',
+            }}
+          >
+            {initialOf(member.displayName)}
+          </span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: 15,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {member.displayName}
+            </div>
+            {/* Mock shows s.role here; the schema has no separate role field (staff
+                carries only `title`, which IS the displayName), so a role line would
+                duplicate the name — show the generic role descriptor instead. */}
+            <div style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>Medarbetare</div>
+          </div>
+          <Badge tone={member.hasAccount ? 'success' : 'neutral'} dot={false}>
+            {member.hasAccount ? 'Eget konto' : 'Hanteras här'}
+          </Badge>
+        </div>
+
+        {/* Bio paragraph — staff has no bio column (verified: title/active/
+            location_id/profile_id only). Honest written empty-state, never faked. */}
+        <p style={{ fontSize: 13, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '14px 0 0' }}>
+          Ingen presentation sparad ännu.
+        </p>
+
+        {/* Specialty chips = the member's coupled services (real staff_services
+            data). Absent → a calm one-liner instead of an empty row. */}
+        {chips.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+            {chips.map((name) => (
+              <span
+                key={name}
+                title={name}
+                style={{
+                  fontSize: 12,
+                  background: 'var(--c-paper-2)',
+                  borderRadius: 999,
+                  padding: '4px 10px',
+                  color: 'var(--c-ink-2)',
+                  // Cap long live service names so the inline pill rhythm survives —
+                  // ellipsis instead of a chip that wraps the whole row.
+                  maxWidth: 140,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {name}
+              </span>
+            ))}
+            {extra > 0 && (
+              <span
+                style={{
+                  fontSize: 12,
+                  background: 'var(--c-paper-2)',
+                  borderRadius: 999,
+                  padding: '4px 10px',
+                  color: 'var(--c-ink-3)',
+                }}
+              >
+                +{extra} fler
+              </span>
+            )}
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 12 }}>
+            Inga tjänster kopplade ännu.
+          </div>
+        )}
+
+        {/* Footer hairline — location + idag-count (mock L34-37: exactly one chip
+            per card, the top-right account-status pill; NO second footer pill). The
+            mock's "v.week" is omitted (no week field). Active/inactive isn't lost:
+            the card dims (opacity 0.62) when inactive and the Drawer carries the
+            full Aktiv/Inaktiv badge + toggle. */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            flexWrap: 'wrap',
+            marginTop: 16,
+            paddingTop: 14,
+            borderTop: '1px solid var(--c-line)',
+          }}
+        >
+          <span
+            style={{
+              fontSize: 12.5,
+              color: 'var(--c-ink-3)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              minWidth: 0,
+            }}
+          >
+            <Icon name="mapPin" size={14} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {member.locationName ?? 'Plats ej satt'}
+            </span>
+          </span>
+          <span
+            className="num"
+            style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-forest)', flex: 'none' }}
+          >
+            {todayCount} idag
+          </span>
+        </div>
+      </button>
+    </Card>
+  )
+}
+
+function StaffDrawer({
+  member,
+  services,
+  tz,
+  onClose,
+}: {
+  member: StaffCard
+  services: ServiceOption[]
+  tz: string
+  onClose: () => void
+}) {
+  return (
+    <Drawer
+      title={member.displayName}
+      sub={member.hasAccount ? 'Eget konto · egen vy' : 'Hanteras i salongens sida'}
+      accent={
+        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+          <Badge tone={member.active ? 'success' : 'neutral'}>
+            {member.active ? 'Aktiv' : 'Inaktiv'}
+          </Badge>
+          <Badge tone="gold" dot={false}>
+            {member.serviceCount} {member.serviceCount === 1 ? 'tjänst' : 'tjänster'}
+          </Badge>
+        </div>
+      }
+      onClose={onClose}
+      ariaLabel={`Medarbetare ${member.displayName}`}
+    >
+      <div style={{ display: 'grid', gap: 20 }}>
+        {/* Om — staff has no bio column in the schema (verified: staff Row =
+            active/buffer_min/created_at/id/location_id/profile_id/slot_step_min/
+            tenant_id/title/updated_at). Honest empty-state, never fabricated. */}
+        <section>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
+            Om
+          </div>
+          <p style={{ fontSize: 13.5, color: 'var(--c-ink-3)', lineHeight: 1.6, margin: 0 }}>
+            Ingen presentation sparad ännu. En bio-text per medarbetare finns inte i datamodellen
+            ännu — när fältet läggs till syns det här.
+          </p>
+        </section>
+
+        {/* Namn / titel — the real updateStaff edit (was inline in the StaffManager
+            list, now folded into the Drawer; same server action). */}
+        <RenameSection member={member} onSaved={onClose} />
+
+        {/* Tjänster (specialiteter) — the real setStaffServices coupling. These ARE
+            the card chips; couple/uncouple drives bookability on the public sajt. */}
+        <ServicesSection member={member} services={services} onSaved={onClose} />
+
+        <EgetKontoSection member={member} onInvited={onClose} />
+
+        {/* Multi-location — KEEP: location_id is a real FK, the name is resolved
+            server-side. The mock's cross-salon split is a future capability. */}
+        <Callout tone="info" icon="mapPin">
+          {member.locationName ? (
+            <>
+              Den här veckan på <b>{member.locationName}</b>. Att dela en medarbetare mellan två
+              salonger per vecka kommer — bokningarna får aldrig krocka.
+            </>
+          ) : (
+            <>
+              Ingen plats är satt för den här medarbetaren. Sätt en plats i panelen nedan så landar
+              bokningarna rätt.
+            </>
+          )}
+        </Callout>
+
+        {/* Verklig dag · idag — that staff member's REAL bookings today
+            (getStaffScheduleWithNotes, cancelled excluded server-side). */}
+        <section>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>
+            Verklig dag · idag
+          </div>
+          {member.today.length === 0 ? (
+            <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: 0 }}>Inga bokningar idag.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {member.today.map((b) => (
+                <div
+                  key={b.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    background: 'var(--c-paper)',
+                    border: '1px solid var(--c-line)',
+                  }}
+                >
+                  <span
+                    className="num"
+                    style={{
+                      width: 48,
+                      fontWeight: 700,
+                      color: 'var(--c-forest)',
+                      fontSize: 14,
+                      flex: 'none',
+                    }}
+                  >
+                    {timeLabel(b.startTs, tz)}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{b.customerLabel}</div>
+                    <div style={{ fontSize: 12, color: 'var(--c-ink-3)' }}>
+                      {b.serviceName ?? 'Okänd tjänst'}
+                    </div>
+                  </div>
+                  <Badge tone={statusTone(b.status)}>{statusLabel(b.status)}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Ta bort — the real deleteStaff (was the StaffManager row's "Ta bort").
+            Refuses on FK (member with bookings) → inaktivera instead; kept honest. */}
+        <DangerSection member={member} onDeleted={onClose} />
+      </div>
+    </Drawer>
+  )
+}
+
+/** Namn/titel edit + activate/deactivate (updateStaff + toggleStaffActive). Two
+ *  real server actions folded out of the old StaffManager list, restyled to the
+ *  Drawer grammar. Each fires one Swedish consequence toast + router.refresh(). */
+function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [nameState, nameAction, namePending] = useActionState<ActionState, FormData>(updateStaff, {})
+  const [actState, actAction, actPending] = useActionState<ActionState, FormData>(
+    toggleStaffActive,
+    {},
+  )
+
+  useEffect(() => {
+    if (nameState.success) {
+      notify('Sparat', 'success')
+      router.refresh()
+      onSaved()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nameState.success])
+
+  useEffect(() => {
+    if (actState.success) {
+      notify(member.active ? 'Medarbetaren inaktiverad' : 'Medarbetaren aktiverad', 'info')
+      router.refresh()
+      onSaved()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actState.success])
+
+  return (
+    <section>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>
+        Namn &amp; titel
+      </div>
+      <form action={nameAction} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input type="hidden" name="id" value={member.id} />
+        <input
+          name="title"
+          required
+          defaultValue={member.title ?? ''}
+          aria-label="Namn / titel"
+          style={fieldStyle}
+        />
+        <Button variant="subtle" type="submit" icon="check" size="sm" disabled={namePending}>
+          {namePending ? 'Sparar…' : 'Spara'}
+        </Button>
+      </form>
+      {nameState.error && (
+        <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+          {nameState.error}
+        </p>
+      )}
+
+      <form action={actAction} style={{ marginTop: 10 }}>
+        <input type="hidden" name="id" value={member.id} />
+        <input type="hidden" name="active" value={String(!member.active)} />
+        <Button
+          variant="ghost"
+          type="submit"
+          icon={member.active ? 'pause' : 'check'}
+          size="sm"
+          disabled={actPending}
+        >
+          {actPending ? '…' : member.active ? 'Inaktivera' : 'Aktivera'}
+        </Button>
+      </form>
+      <p style={{ fontSize: 12, color: 'var(--c-ink-3)', margin: '8px 0 0', lineHeight: 1.5 }}>
+        Inaktiv personal döljs på den publika sajten och går inte att boka.
+      </p>
+    </section>
+  )
+}
+
+/** Tjänster-coupling (setStaffServices) — the real checkbox set, restyled. These
+ *  are the card's chips; the set drives bookability (aktiv + ≥1 tjänst). */
+function ServicesSection({
+  member,
+  services,
+  onSaved,
+}: {
+  member: StaffCard
+  services: ServiceOption[]
+  onSaved: () => void
+}) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(setStaffServices, {})
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Tjänster kopplade', 'success')
+      router.refresh()
+      onSaved()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  return (
+    <section>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>
+        Tjänster
+      </div>
+      {services.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: 0, lineHeight: 1.55 }}>
+          Inga tjänster att koppla ännu —{' '}
+          <Link href="/admin/tjanster" style={{ color: 'var(--c-forest)', fontWeight: 600 }}>
+            skapa tjänster först
+          </Link>
+          .
+        </p>
+      ) : (
+        <form action={formAction}>
+          <input type="hidden" name="staff_id" value={member.id} />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
+            {services.map((svc) => (
+              <label
+                key={svc.id}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  fontSize: 13,
+                  color: 'var(--c-ink)',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  name="service_id"
+                  value={svc.id}
+                  defaultChecked={member.serviceIds.includes(svc.id)}
+                  style={{ accentColor: 'var(--c-forest)' }}
+                />
+                {svc.name}
+              </label>
+            ))}
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <Button variant="subtle" type="submit" icon="check" size="sm" disabled={pending}>
+              {pending ? 'Sparar…' : 'Spara tjänster'}
+            </Button>
+          </div>
+          {state.error && (
+            <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+              {state.error}
+            </p>
+          )}
+        </form>
+      )}
+    </section>
+  )
+}
+
+/** Delete a staff member (deleteStaff). FK-guarded server-side — a member with
+ *  bookings can't be hard-deleted; the action returns a clear "inaktivera"
+ *  message, surfaced here. One consequence toast + refresh on success. */
+function DangerSection({ member, onDeleted }: { member: StaffCard; onDeleted: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(deleteStaff, {})
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Medarbetaren borttagen', 'info')
+      router.refresh()
+      onDeleted()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  return (
+    <section style={{ borderTop: '1px solid var(--c-line)', paddingTop: 16 }}>
+      <form action={formAction}>
+        <input type="hidden" name="id" value={member.id} />
+        <Button variant="ghost" type="submit" icon="trash" size="sm" disabled={pending}>
+          {pending ? '…' : 'Ta bort medarbetare'}
+        </Button>
+      </form>
+      {state.error && (
+        <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+          {state.error}
+        </p>
+      )}
+    </section>
+  )
+}
+
+/**
+ * Eget-konto block (mock's "Eget konto · egen vy"). Derived status from
+ * profile_id (passed as member.hasAccount):
+ *  - linked → success callout explaining the frisör logs in themselves. We do NOT
+ *    render "Öppna frisörens vy" (no admin route to open another staff member's
+ *    personal view) nor "Ny magic-link" (inviteStaff only creates a fresh account;
+ *    there's no resend/de-link) — un-wireable controls are omitted, never faked.
+ *  - un-linked → a real magic-link invite form: inviteStaff with the hidden
+ *    staff_id links THIS staff row's profile_id to a new account. Fires one Swedish
+ *    consequence toast + router.refresh() so the status flips without a reload.
+ */
+function EgetKontoSection({ member, onInvited }: { member: StaffCard; onInvited: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(inviteStaff, {})
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Inbjudan skickad — medarbetaren får eget konto med egen vy', 'info')
+      router.refresh()
+      onInvited()
+    }
+    // fire once when the action reports success
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  if (member.hasAccount) {
+    return (
+      <section
+        style={{
+          background: 'var(--c-success-bg)',
+          borderRadius: 12,
+          padding: 16,
+        }}
+      >
+        <div
+          style={{
+            fontWeight: 600,
+            fontSize: 14,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            color: 'var(--c-ink)',
+          }}
+        >
+          <Icon name="calendar" size={15} style={{ color: 'var(--c-success)' }} />
+          Eget konto · egen vy
+        </div>
+        <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '6px 0 0', lineHeight: 1.5 }}>
+          Medarbetaren loggar in själv och får sin egen snabbvy — en kalender med bara sina tider.
+          Dagens tider visas också här nedan.
+        </p>
+      </section>
+    )
+  }
+
+  return (
+    <section style={{ background: 'var(--c-paper-2)', borderRadius: 12, padding: 16 }}>
+      <div
+        style={{
+          fontWeight: 600,
+          fontSize: 14,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          color: 'var(--c-ink)',
+        }}
+      >
+        <Icon name="calendar" size={15} style={{ color: 'var(--c-ink-3)' }} />
+        Eget konto · egen vy
+      </div>
+      <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '6px 0 12px', lineHeight: 1.5 }}>
+        Hanteras i salongens sida just nu. Bjud in med en engångslänk för att ge ett eget konto med
+        egen kalender — medarbetaren sätter lösenord och loggar in själv.
+      </p>
+      <form
+        action={formAction}
+        style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}
+      >
+        <input type="hidden" name="staff_id" value={member.id} />
+        <input
+          name="email"
+          type="email"
+          required
+          placeholder="medarbetare@exempel.se"
+          aria-label="E-post för inbjudan"
+          style={{ ...fieldStyle, flex: '1 1 12rem' }}
+        />
+        <Button variant="primary" type="submit" icon="mail" size="sm" disabled={pending}>
+          {pending ? 'Skickar…' : 'Skicka magic-link'}
+        </Button>
+      </form>
+      {state.error && (
+        <p className="auth-error" role="alert" style={{ margin: '10px 0 0', fontSize: 12.5 }}>
+          {state.error}
+        </p>
+      )}
+    </section>
+  )
+}
+
+/**
+ * Create-staff Drawer opened from the PageHead "+ Lägg till". Holds the two
+ * onboarding paths that lived at the top of the old StaffManager:
+ *  - createStaff: add a managed staff row (name/titel only — no login).
+ *  - inviteStaff (with title): magic-link a new staff member into their own login.
+ * Both are real server actions; each fires one consequence toast + refresh.
+ */
+function AddStaffDrawer({ onClose }: { onClose: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [createState, createAction, createPending] = useActionState<ActionState, FormData>(
+    createStaff,
+    {},
+  )
+  const [invState, invAction, invPending] = useActionState<ActionState, FormData>(inviteStaff, {})
+
+  useEffect(() => {
+    if (createState.success) {
+      notify('Medarbetare tillagd', 'success')
+      router.refresh()
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createState.success])
+
+  useEffect(() => {
+    if (invState.success) {
+      notify('Inbjudan skickad — medarbetaren får eget konto med egen vy', 'info')
+      router.refresh()
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invState.success])
+
+  return (
+    <Drawer title="Lägg till medarbetare" sub="Lägg till en rad eller bjud in med eget konto" onClose={onClose}>
+      <div style={{ display: 'grid', gap: 24 }}>
+        <section>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
+            Lägg till i salongen
+          </div>
+          <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
+            Skapa en medarbetarrad som du hanterar härifrån. Koppla tjänster och schema efteråt — ge
+            eget konto när du vill.
+          </p>
+          <form action={createAction} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input
+              name="title"
+              required
+              placeholder="t.ex. Hilal — frisör"
+              aria-label="Namn / titel"
+              style={{ ...fieldStyle, flex: '1 1 14rem' }}
+            />
+            <Button variant="primary" type="submit" icon="plus" size="sm" disabled={createPending}>
+              {createPending ? 'Sparar…' : 'Lägg till'}
+            </Button>
+          </form>
+          {createState.error && (
+            <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+              {createState.error}
+            </p>
+          )}
+        </section>
+
+        <section style={{ borderTop: '1px solid var(--c-line)', paddingTop: 20 }}>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
+            Bjud in med eget konto
+          </div>
+          <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
+            Medarbetaren får en engångslänk, sätter lösenord och får sin egen vy direkt. En
+            medarbetarrad skapas samtidigt.
+          </p>
+          <form action={invAction} style={{ display: 'grid', gap: 8 }}>
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder="medarbetare@exempel.se"
+              aria-label="E-post för inbjudan"
+              style={fieldStyle}
+            />
+            <input
+              name="title"
+              placeholder="Namn / titel (valfritt)"
+              aria-label="Namn / titel (valfritt)"
+              style={fieldStyle}
+            />
+            <div>
+              <Button variant="subtle" type="submit" icon="mail" size="sm" disabled={invPending}>
+                {invPending ? 'Skickar…' : 'Skicka inbjudan'}
+              </Button>
+            </div>
+          </form>
+          {invState.error && (
+            <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+              {invState.error}
+            </p>
+          )}
+        </section>
+      </div>
+    </Drawer>
+  )
+}
+
+const fieldStyle = {
+  minWidth: 0,
+  padding: '9px 12px',
+  borderRadius: 10,
+  border: '1px solid var(--c-line)',
+  background: 'var(--c-paper)',
+  color: 'var(--c-ink)',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 13.5,
+  boxSizing: 'border-box',
+} as const

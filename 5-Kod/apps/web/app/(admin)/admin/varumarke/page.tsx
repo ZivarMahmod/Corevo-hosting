@@ -80,14 +80,20 @@ export default async function BrandingPage() {
         heroImage={firstHero}
       />
 
-      <h2 style={{ marginTop: '2.5rem' }}>Texter</h2>
+      <div style={{ marginTop: '2.5rem' }}>
+        <span className="eyebrow">Startsida</span>
+        <h2 style={{ margin: '8px 0 0' }}>Texter</h2>
+      </div>
       <p className="prose">
         Skriv din egen text för startsidans hero, taglinen och om-stycket. Lämnar du ett fält tomt
         visar vi temats standardtext (placeholdern visar vad som då syns).
       </p>
       <StorefrontCopyForm copy={copy} themeDefaults={themeDefaults} />
 
-      <h2 style={{ marginTop: '2.5rem' }}>Bilder & innehåll</h2>
+      <div style={{ marginTop: '2.5rem' }}>
+        <span className="eyebrow">Galleri & team</span>
+        <h2 style={{ margin: '8px 0 0' }}>Bilder & innehåll</h2>
+      </div>
       <p className="prose">
         Ladda upp egna bilder för startsidan (hero, galleri, om oss, avslut) samt ditt team och
         nyckeltal. Lämnar du något tomt visar vi en snygg standardbild tills du laddar upp egen.

@@ -255,6 +255,48 @@
   border-color: var(--c-line-strong);
   color: var(--c-forest);
 }
+/* Topbar context link — "Se din sida" → public storefront (handoff Topbar). */
+[data-world="backoffice"] .portal-topbar-sitelink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 10px;
+  padding: 8px 13px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-forest);
+  background: var(--c-paper);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
+}
+[data-world="backoffice"] .portal-topbar-sitelink:hover {
+  background: var(--c-paper-2);
+  border-color: var(--c-gold);
+}
+[data-world="backoffice"] .portal-topbar-sitelink svg { color: var(--c-gold); }
+
+/* Sidebar-footer logout (handoff puts logout in the user cell, not the topbar). */
+[data-world="backoffice"] .portal-aside-logout { flex: none; margin-left: auto; }
+[data-world="backoffice"] .portal-aside-logout form { margin: 0; }
+[data-world="backoffice"] .portal-aside-logout .portal-signout {
+  border: none;
+  background: transparent;
+  color: var(--c-on-forest-2);
+  border-radius: 8px;
+  padding: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+[data-world="backoffice"] .portal-aside-logout .portal-signout:hover {
+  background: var(--c-forest-300);
+  color: #fff;
+}
 
 /* content area — full-bleed within the column (override /konto's centered main) */
 [data-world="backoffice"] .portal-main {
@@ -757,13 +799,214 @@
 @keyframes bo-toast-in { from { opacity: 0; transform: translateY(80px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes bo-toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
 
+/* =====================================================================
+   CHROME — Topbar ⌘K command-palette trigger + Bell (playbook §4.1 /
+   handoff Shell.jsx Topbar 253–271 + CommandPalette 276–329). Additive,
+   back-office only. The PortalTopbar client island owns the markup; these
+   classes own the paint. Keyframes registered in the reduced-motion block.
+   ===================================================================== */
+
+/* ---- topbar: ⌘K trigger (replaces the inert search input) ---- */
+[data-world="backoffice"] .bo-cmdk-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 340px;
+  max-width: 42vw;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  color: var(--c-ink-3);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+[data-world="backoffice"] .bo-cmdk-trigger:hover { border-color: var(--c-line-strong); background: var(--c-paper-2); }
+[data-world="backoffice"] .bo-cmdk-trigger:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
+[data-world="backoffice"] .bo-cmdk-trigger-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--c-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-world="backoffice"] .bo-cmdk-trigger-kbd {
+  flex: none;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-ink-3);
+  background: var(--c-paper-2);
+  border: 1px solid var(--c-line);
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+/* ---- topbar: Bell icon-button + gold unread dot ---- */
+[data-world="backoffice"] .bo-bell {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
+}
+[data-world="backoffice"] .bo-bell:hover { background: var(--c-paper-2); color: var(--c-forest); }
+[data-world="backoffice"] .bo-bell:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
+[data-world="backoffice"] .bo-bell-dot {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--c-gold); /* gold = accent-only: a dot, never a fill (T2) */
+}
+
+/* ---- command palette overlay (⌘K) ---- */
+[data-world="backoffice"] .bo-cmdk-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 12vh;
+  background: rgba(20, 30, 24, 0.4); /* green-tinted scrim */
+  backdrop-filter: blur(2px);
+  animation: bo-overlay-in var(--dur-base) var(--ease-out);
+}
+[data-world="backoffice"] .bo-cmdk {
+  position: relative;
+  width: 560px;
+  max-width: 92vw;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: bo-cmdk-in var(--dur-base) var(--ease-out);
+}
+[data-world="backoffice"] .bo-cmdk-search {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--c-line);
+  color: var(--c-ink-3);
+  flex: none;
+}
+[data-world="backoffice"] .bo-cmdk-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  color: var(--c-ink);
+}
+[data-world="backoffice"] .bo-cmdk-search input::placeholder { color: var(--c-ink-3); }
+[data-world="backoffice"] .bo-cmdk-search kbd {
+  flex: none;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-ink-3);
+  background: var(--c-paper-2);
+  border: 1px solid var(--c-line);
+  border-radius: 6px;
+  padding: 3px 7px;
+}
+[data-world="backoffice"] .bo-cmdk-list { overflow-y: auto; padding: 8px; min-height: 0; }
+[data-world="backoffice"] .bo-cmdk-empty {
+  padding: 26px 14px;
+  text-align: center;
+  color: var(--c-ink-3);
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+[data-world="backoffice"] .bo-cmdk-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+}
+[data-world="backoffice"] .bo-cmdk-item.is-active { background: var(--c-paper-2); }
+[data-world="backoffice"] .bo-cmdk-item-chip {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--c-cream);
+  color: var(--c-forest);
+}
+[data-world="backoffice"] .bo-cmdk-item-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-world="backoffice"] .bo-cmdk-item-sub { font-size: 12px; font-weight: 400; color: var(--c-ink-3); margin-left: 8px; }
+[data-world="backoffice"] .bo-cmdk-item-kind { flex: none; font-size: 11.5px; font-weight: 500; color: var(--c-ink-3); }
+
+/* ---- shared PII reveal button (PiiReveal §4.9) ---- */
+[data-world="backoffice"] .bo-pii-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  border: 1px solid var(--c-line-strong);
+  background: var(--c-paper);
+  color: var(--c-forest);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+[data-world="backoffice"] .bo-pii-btn:hover { background: var(--c-paper-2); }
+[data-world="backoffice"] .bo-pii-btn:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
+
+@keyframes bo-cmdk-in { from { opacity: 0; transform: translateY(-8px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
 @media (prefers-reduced-motion: reduce) {
   [data-world="backoffice"] .bo-drawer-overlay,
   [data-world="backoffice"] .bo-drawer,
   [data-world="backoffice"] .bo-drawer.is-closing,
   [data-world="backoffice"] .bo-drawer-overlay.is-closing,
   [data-world="backoffice"] .bo-toast,
-  [data-world="backoffice"] .bo-toast.is-leaving {
+  [data-world="backoffice"] .bo-toast.is-leaving,
+  [data-world="backoffice"] .bo-cmdk-overlay,
+  [data-world="backoffice"] .bo-cmdk {
     animation-duration: 1ms;
   }
 }

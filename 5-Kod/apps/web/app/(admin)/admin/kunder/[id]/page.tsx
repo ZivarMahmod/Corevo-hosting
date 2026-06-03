@@ -3,15 +3,44 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getCustomerDetail, getCustomerContact } from '@/lib/admin/data'
+import {
+  getCustomerDetail,
+  getCustomerContact,
+  listCustomers,
+  type CustomerTier,
+} from '@/lib/admin/data'
+import { getCustomerStaffFavorite } from '@/lib/kund/favorites'
 import { formatDateTime, formatPrice, statusLabel } from '@/lib/admin/format'
 import { badgeClass } from '@/components/admin/badge'
-import { PageHead, Card, Badge } from '@/components/portal/ui'
+import { PageHead, Card, Badge, LoyaltyBlock } from '@/components/portal/ui'
 import { CustomerContactCard } from '@/components/admin/CustomerContactCard'
 import { CustomerPrivacyForm } from '@/components/admin/CustomerPrivacyForm'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kund · Salongsadmin' }
+
+/** Härledd nivå → svensk etikett (samma mappning som listan; LoyaltyBlock/Badge
+ *  vill ha versal-initial-etiketten). */
+const TIER_LABEL: Record<CustomerTier, string> = {
+  guld: 'Guld',
+  silver: 'Silver',
+  brons: 'Brons',
+  ny: 'Ny',
+}
+
+/** Nästa riktiga nivåtröskel ovanför nuvarande poäng. Trösklarna speglar
+ *  lib/admin/data (Guld=500, Silver=150); guld = toppnivå → null (rail döljs). */
+function nextTierAt(tier: CustomerTier): number | null {
+  switch (tier) {
+    case 'ny':
+    case 'brons':
+      return 150
+    case 'silver':
+      return 500
+    default:
+      return null
+  }
+}
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -30,7 +59,21 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   if (!customer) notFound()
 
   // Time-bound contact PII (RPC; null fields when outside the operational window).
-  const contact = await getCustomerContact(id)
+  // Riktigt lojalitets-saldo + favoritfrisör (båda admin-läsbara via RLS). Kör
+  // parallellt — listCustomers härleder poäng/nivå ur loyalty_ledger; vi plockar
+  // ut just den här kundens rad (getCustomerDetail bär inte poäng).
+  const [contact, fav, allCustomers] = await Promise.all([
+    getCustomerContact(id),
+    getCustomerStaffFavorite(id),
+    listCustomers(tenant.id),
+  ])
+  // VIKTIGT: listCustomers är status='active'-filtrerad medan getCustomerDetail
+  // INTE filtrerar status — en 'anonymized' (GDPR-skrubbad) kund nås via direkt-URL
+  // men saknas i listan. Då är loyalty undefined → vi visar en ÄRLIG tom-text,
+  // ALDRIG ett påhittat 0/Ny-saldo. (lib saknar en single-customer-poängläsning —
+  // flaggat i manifestet.)
+  const loyalty = allCustomers.find((c) => c.id === id)
+  const favStaff = fav?.title?.trim() || '—'
   const tz = tenant.timeZone
 
   return (
@@ -63,9 +106,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             }}
           >
             <Detail label="Visningsnamn" value={customer.shownName} />
+            <Detail label="Återkommande" value={`${customer.visits} besök`} num />
+            <Detail label="Favoritfrisör" value={favStaff} />
             <Detail label="Konto" value={customer.isLinkedAccount ? 'Inloggad kund' : 'Gäst'} />
-            <Detail label="Kund sedan" value={formatDateTime(customer.firstSeenAt, tz)} />
-            <Detail label="Senast sedd" value={formatDateTime(customer.lastSeenAt, tz)} />
+            <Detail label="Kund sedan" value={formatDateTime(customer.firstSeenAt, tz)} num />
+            <Detail label="Senast sedd" value={formatDateTime(customer.lastSeenAt, tz)} num />
           </div>
         </Card>
 
@@ -83,14 +128,39 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           />
         </Card>
 
-        {/* Kontakt-PII — tidsbunden (RPC) */}
+        {/* Kontakt-PII — tidsbunden (RPC). Behåller den RPC-medvetna kortets
+            grindning (visas bara i driftfönstret) — ärlig maskering utanför. */}
         <Card>
-          <span className="eyebrow">Kontakt · tidsbunden</span>
+          <span className="eyebrow">Kontakt-PII · tidsbunden</span>
           <p className="prose" style={{ margin: '8px 0 14px', fontSize: 13 }}>
             Telefon och e-post visas bara i det operativa fönstret kring en bokning. Utanför fönstret
             är de maskerade — så data inte ligger framme i onödan.
           </p>
           <CustomerContactCard contact={contact} />
+        </Card>
+
+        {/* Lojalitet — stor guld-poängsiffra + Nästa nivå + progress (§4.6).
+            LoyaltyBlock äger sin egen "Lojalitet · {nivå}"-eyebrow, så Card:en
+            sätter ingen egen rubrik (undviker dubblering). Poäng/nivå härleds ur
+            loyalty_ledger (riktigt saldo, aldrig fejkat). Saknas raden (skrubbad
+            kund) → ärlig tom-text, aldrig påhittat saldo. */}
+        <Card>
+          {loyalty ? (
+            <LoyaltyBlock
+              world="backoffice"
+              tier={TIER_LABEL[loyalty.tier]}
+              points={loyalty.loyaltyPoints}
+              nextTierAt={nextTierAt(loyalty.tier)}
+            />
+          ) : (
+            <>
+              <span className="eyebrow">Lojalitet</span>
+              <p className="prose" style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--c-ink-2)' }}>
+                Lojalitetspoäng kunde inte hämtas för den här kunden (kunden kan vara avregistrerad
+                eller skrubbad). Inget saldo visas hellre än ett påhittat.
+              </p>
+            </>
+          )}
         </Card>
 
         {/* Bokningshistorik (via bookings.customer_id) */}
@@ -118,13 +188,15 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                 <tbody>
                   {customer.history.map((b) => (
                     <tr key={b.id}>
-                      <td>{formatDateTime(b.startTs, tz)}</td>
+                      <td className="num">{formatDateTime(b.startTs, tz)}</td>
                       <td>{b.serviceName}</td>
                       <td>{b.staffTitle}</td>
                       <td>
                         <span className={badgeClass(b.status)}>{statusLabel(b.status)}</span>
                       </td>
-                      <td style={{ color: 'var(--c-ink-3)' }}>{formatDateTime(b.createdAt, tz)}</td>
+                      <td className="num" style={{ color: 'var(--c-ink-3)' }}>
+                        {formatDateTime(b.createdAt, tz)}
+                      </td>
                       <td data-last="" className="num">
                         {formatPrice(b.priceCents)}
                       </td>
@@ -140,13 +212,25 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   )
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value, num }: { label: string; value: string; num?: boolean }) {
   return (
     <div>
-      <div style={{ fontSize: 11, color: 'var(--c-ink-3)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+      <div
+        style={{
+          fontSize: 11,
+          color: 'var(--c-ink-3)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >
         {label}
       </div>
-      <div style={{ fontSize: 14, fontWeight: 500, marginTop: 3, color: 'var(--c-ink)' }}>{value}</div>
+      <div
+        className={num ? 'num' : undefined}
+        style={{ fontSize: 14, fontWeight: 500, marginTop: 3, color: 'var(--c-ink)' }}
+      >
+        {value}
+      </div>
     </div>
   )
 }

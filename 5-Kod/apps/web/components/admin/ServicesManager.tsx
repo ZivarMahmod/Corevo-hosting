@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import type { ServiceRow } from '@/lib/admin/data'
 import {
   createService,
@@ -10,62 +11,251 @@ import {
   type ActionState,
 } from '@/lib/admin/actions'
 import { centsToKronorInput, formatPrice } from '@/lib/admin/format'
-import styles from './admin.module.css'
+import {
+  Badge,
+  Button,
+  Callout,
+  Card,
+  Drawer,
+  Icon,
+  PageHead,
+  Table,
+  useToast,
+} from '@/components/portal/ui'
 
-export function ServicesManager({ services }: { services: ServiceRow[] }) {
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(createService, {})
+/**
+ * Tjänster §4.4 — exact-copy composition of the SalonServices mock.
+ *   PageHead (eyebrow → Playfair-28 → sub → "Ny tjänst" CTA) · gold live-koppling
+ *   Callout · asymmetric 1.7fr/1fr worktop (align-start): left = the service Table
+ *   (Tjänst · Tid · Pris · Storefront · Online · edit), right = the live storefront
+ *   placement map. Inline edit is preserved by converting the old per-row form into
+ *   a detail Drawer that still carries EVERY field (namn/kategori/min/pris) + delete,
+ *   plus a create Drawer behind the header CTA. Online is a real wired toggle.
+ *
+ * ⛔ DATA-GATED (goal-17 truth report):
+ *  - "Populär" gold badge → NO backing column (getServicePopularityTag === false).
+ *    We render no badge, never a fake one.
+ *  - Mock's per-row Storefront <select> (Dam/Herr/Färg/Styling) is a PLACEHOLDER:
+ *    `services` has no `section` column, and the live storefront (homepage +
+ *    /tjanster) renders a FLAT price-ordered list — category drives NO placement
+ *    there. Building that enum would fake a field, its allowed-values, AND a
+ *    behaviour. The real, writable field the storefront map already groups by is
+ *    free-text `category`; we surface THAT in the Storefront column (label, edited
+ *    in the drawer) without claiming it reorders the public page. See sharedClass/
+ *    notes — section model FLAGGED, not faked.
+ */
+export function ServicesManager({
+  services,
+  tenantName,
+}: {
+  services: ServiceRow[]
+  tenantName: string
+}) {
+  const [editing, setEditing] = useState<ServiceRow | null>(null)
+  const [creating, setCreating] = useState(false)
 
   return (
-    <div className="bo-2col" style={{ alignItems: 'start' }}>
-      <div>
-      <form action={formAction} className={styles.form}>
-        <label className={styles.field}>
-          <span>Namn</span>
-          <input name="name" required />
-        </label>
-        <label className={styles.field}>
-          <span>Kategori</span>
-          <input name="category" placeholder="t.ex. Klippning" />
-        </label>
-        <label className={styles.field}>
-          <span>Varaktighet (min)</span>
-          <input name="duration_min" type="number" min="1" step="5" defaultValue="30" required />
-        </label>
-        <label className={styles.field}>
-          <span>Pris (kr)</span>
-          <input name="price" type="text" inputMode="decimal" placeholder="0" />
-        </label>
-        <button type="submit" className="btn-primary" disabled={pending}>
-          {pending ? 'Sparar…' : 'Lägg till tjänst'}
-        </button>
-        <Feedback state={state} />
-      </form>
+    <div>
+      <PageHead
+        eyebrow={tenantName}
+        title="Tjänster"
+        lede="När du lägger till eller redigerar en tjänst ser du direkt var på hemsidan den hamnar."
+      >
+        <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
+          Ny tjänst
+        </Button>
+      </PageHead>
 
-      {services.length === 0 ? (
-        <div className={styles.empty}>
-          <strong>Inga tjänster ännu.</strong>
-          Lägg till din första tjänst i formuläret ovan — namn, varaktighet och pris. Den blir genast
-          bokningsbar på din publika sajt.
-        </div>
-      ) : (
-        <ul className={styles.list}>
-          {services.map((s) => (
-            <ServiceItem key={s.id} service={s} />
-          ))}
-        </ul>
-      )}
+      <Callout tone="gold" icon="link">
+        Aktiva tjänster syns i tjänstemenyn på startsidan och på /tjanster (ordnade efter pris) och
+        går direkt att boka. Inaktiverade döljs på sajten men behåller sin bokningshistorik.
+        Ändringar slår igenom utan kod eller deploy.
+      </Callout>
+
+      <div
+        className="bo-2col"
+        style={{ gridTemplateColumns: '1.7fr 1fr', alignItems: 'start', marginTop: 16 }}
+      >
+        <Card pad={0}>
+          {services.length === 0 ? (
+            <div style={{ padding: 22 }}>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>
+                Inga tjänster ännu
+              </p>
+              <p className="body" style={{ margin: 0, maxWidth: 460, color: 'var(--c-ink-2)' }}>
+                Lägg till din första tjänst med <strong>Ny tjänst</strong> — namn, varaktighet och
+                pris. Den blir genast bokningsbar på din publika sajt.
+              </p>
+            </div>
+          ) : (
+            <Table
+              cols={['Tjänst', 'Tid', 'Pris', 'Storefront', 'Online', '']}
+              rows={services.map((s) => [
+                <ServiceCell key="namn" service={s} />,
+                <span key="tid" className="num">
+                  {s.duration_min} min
+                </span>,
+                <span key="pris" className="num" style={{ fontWeight: 600 }}>
+                  {formatPrice(s.price_cents)}
+                </span>,
+                <StorefrontCell key="sf" service={s} />,
+                <OnlineToggle key="online" service={s} />,
+                <button
+                  key="edit"
+                  type="button"
+                  onClick={() => setEditing(s)}
+                  aria-label={`Redigera ${s.name}`}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--c-ink-3)',
+                    cursor: 'pointer',
+                    padding: 4,
+                    display: 'inline-grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  <Icon name="edit" size={17} />
+                </button>,
+              ])}
+            />
+          )}
+        </Card>
+
+        <StorefrontSiteMap services={services} tenantName={tenantName} />
       </div>
-      <StorefrontSiteMap services={services} />
+
+      {creating && <CreateDrawer onClose={() => setCreating(false)} />}
+      {editing && (
+        <EditDrawer key={editing.id} service={editing} onClose={() => setEditing(null)} />
+      )}
     </div>
   )
 }
 
-/** Live storefront site-map (playbook §4.4) — mirrors where each service shows up
- *  on the public site, grouped by category section. Derived from the same services
- *  prop, so a toggle/section edit re-revalidates the page and the map updates with
- *  no extra code or deploy. Active = a chip under its section; inactive = listed as
- *  hidden. Read-only reflection — the real edits live in the table on the left. */
-function StorefrontSiteMap({ services }: { services: ServiceRow[] }) {
+/** First table cell — bold name + free-text category sub. NO "Populär" badge:
+ *  the badge has no backing column (data-gated), so we render nothing, never a
+ *  fake. (The Badge import stays available for when the feature is modeled.) */
+function ServiceCell({ service }: { service: ServiceRow }) {
+  return (
+    <div>
+      <b style={{ fontWeight: 600 }}>{service.name}</b>
+      <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 2 }}>
+        {service.category?.trim() || 'Ingen kategori'}
+      </div>
+    </div>
+  )
+}
+
+/** Storefront placement column. The mock's Dam/Herr/Färg/Styling <select> maps to
+ *  no real field — we show the honest, writable `category` (edited in the drawer)
+ *  for ONLINE services, and the written "— dold —" empty-state for inactive ones,
+ *  exactly as the mock does for hidden rows. No enum, no fabricated placement. */
+function StorefrontCell({ service }: { service: ServiceRow }) {
+  if (!service.active) {
+    return <span style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>— dold —</span>
+  }
+  const cat = service.category?.trim()
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        fontSize: 12.5,
+        color: 'var(--c-ink-2)',
+      }}
+    >
+      <Icon name="external" size={13} style={{ color: 'var(--c-gold-600)' }} />
+      {cat || 'Tjänstemenyn'}
+    </span>
+  )
+}
+
+/** Online toggle — a real wired switch over toggleServiceActive. Forest when on,
+ *  line-strong when off (mock track styling), with an AKTIV/AV pill + a Swedish
+ *  consequence toast on every change. No dead toggle (§6). */
+function OnlineToggle({ service }: { service: ServiceRow }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(
+    toggleServiceActive,
+    {},
+  )
+
+  useEffect(() => {
+    if (state.success) {
+      notify(
+        service.active
+          ? `${service.name} dold på sajten — historiken finns kvar`
+          : `${service.name} syns nu på sajten och går att boka`,
+        'success',
+      )
+      router.refresh()
+    }
+    // fire once per successful toggle
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+      <form action={formAction} style={{ display: 'inline-flex' }}>
+        <input type="hidden" name="id" value={service.id} />
+        <input type="hidden" name="active" value={String(!service.active)} />
+        <button
+          type="submit"
+          disabled={pending}
+          aria-label={service.active ? `Dölj ${service.name}` : `Visa ${service.name}`}
+          aria-pressed={service.active}
+          style={{
+            width: 42,
+            height: 24,
+            borderRadius: 999,
+            border: 'none',
+            cursor: pending ? 'default' : 'pointer',
+            background: service.active ? 'var(--c-forest)' : 'var(--c-line-strong)',
+            position: 'relative',
+            flex: 'none',
+            opacity: pending ? 0.6 : 1,
+            transition: 'background var(--dur-fast)',
+          }}
+        >
+          <span
+            style={{
+              position: 'absolute',
+              top: 3,
+              left: service.active ? 21 : 3,
+              width: 18,
+              height: 18,
+              borderRadius: 999,
+              background: '#fff',
+              transition: 'left var(--dur-fast)',
+            }}
+          />
+        </button>
+      </form>
+      <Badge tone={service.active ? 'success' : 'neutral'}>
+        {service.active ? 'Aktiv' : 'Av'}
+      </Badge>
+    </div>
+  )
+}
+
+/**
+ * Live storefront site-map (§4.4) — "Var det syns på hemsidan". Mirrors where each
+ * service lands on the public site, grouped by free-text category. Active = a chip
+ * under its section; inactive = listed as hidden. Read-only reflection of the same
+ * `services` prop — a toggle/edit revalidates the page and the map updates with no
+ * extra code or deploy. KEPT from the shipped page; restyled to the mock Card
+ * grammar (external/info icons, paper-2 section tiles, written empty-states).
+ */
+function StorefrontSiteMap({
+  services,
+  tenantName,
+}: {
+  services: ServiceRow[]
+  tenantName: string
+}) {
   const active = services.filter((s) => s.active)
   const hidden = services.filter((s) => !s.active)
 
@@ -79,46 +269,39 @@ function StorefrontSiteMap({ services }: { services: ServiceRow[] }) {
   const sectionList = [...sections.entries()]
 
   return (
-    <aside
-      style={{
-        position: 'sticky',
-        top: 84,
-        background: 'var(--c-cream)',
-        border: '1px solid var(--c-line)',
-        borderRadius: 16,
-        padding: 18,
-        boxShadow: 'var(--shadow-sm)',
-      }}
-    >
-      <div className="eyebrow" style={{ marginBottom: 2 }}>
-        Var det syns på hemsidan
+    <Card style={{ position: 'sticky', top: 84 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <Icon name="external" size={15} style={{ color: 'var(--c-gold-600)' }} />
+        <h2 className="h2" style={{ margin: 0 }}>
+          Var det syns på hemsidan
+        </h2>
       </div>
-      <p className="num" style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: '0 0 14px' }}>
-        Din publika sajt → Tjänster
+      <p className="small" style={{ margin: '0 0 14px', color: 'var(--c-ink-3)' }}>
+        {tenantName} · publika sajten → Tjänster
       </p>
 
       {sectionList.length === 0 ? (
-        <p style={{ fontSize: 13, color: 'var(--c-ink-2)' }}>
+        <p style={{ fontSize: 13, color: 'var(--c-ink-2)', margin: 0 }}>
           Inga aktiva tjänster — ingenting visas i tjänstemenyn ännu.
         </p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'grid', gap: 12 }}>
           {sectionList.map(([name, items]) => (
             <div
               key={name}
               style={{
-                background: 'var(--c-paper-2)',
                 border: '1px solid var(--c-line)',
                 borderRadius: 12,
-                padding: 12,
+                padding: '12px 14px',
+                background: 'var(--c-paper-2)',
               }}
             >
               <div
                 style={{
                   fontSize: 12,
                   fontWeight: 700,
-                  letterSpacing: '.06em',
                   textTransform: 'uppercase',
+                  letterSpacing: '.06em',
                   color: 'var(--c-forest)',
                   marginBottom: 8,
                 }}
@@ -131,10 +314,10 @@ function StorefrontSiteMap({ services }: { services: ServiceRow[] }) {
                     key={s.id}
                     style={{
                       fontSize: 12.5,
-                      padding: '4px 10px',
-                      borderRadius: 999,
-                      background: 'var(--c-cream)',
+                      background: 'var(--c-paper)',
                       border: '1px solid var(--c-line)',
+                      borderRadius: 999,
+                      padding: '4px 10px',
                       color: 'var(--c-ink)',
                     }}
                   >
@@ -181,112 +364,241 @@ function StorefrontSiteMap({ services }: { services: ServiceRow[] }) {
         </div>
       )}
 
-      <p style={{ fontSize: 12, color: 'var(--c-ink-3)', margin: '14px 0 0' }}>
-        Ändringar slår igenom utan kod eller deploy.
-      </p>
-    </aside>
-  )
-}
-
-function ServiceItem({ service }: { service: ServiceRow }) {
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateService, {})
-
-  return (
-    <li className={`${styles.row} ${service.active ? '' : styles.rowInactive}`}>
-      <form action={formAction} className={styles.fieldRow} style={{ flex: 1 }}>
-        <input type="hidden" name="id" value={service.id} />
-        <label className={styles.field} style={{ flex: '2 1 8rem' }}>
-          <span>Namn</span>
-          <input name="name" defaultValue={service.name} required />
-        </label>
-        <label className={styles.field} style={{ flex: '1 1 6rem' }}>
-          <span>Kategori</span>
-          <input name="category" defaultValue={service.category ?? ''} />
-        </label>
-        <label className={styles.field} style={{ flex: '0 1 6rem' }}>
-          <span>Min</span>
-          <input name="duration_min" type="number" min="1" step="5" defaultValue={service.duration_min} required />
-        </label>
-        <label className={styles.field} style={{ flex: '0 1 6rem' }}>
-          <span>Pris (kr)</span>
-          <input name="price" type="text" inputMode="decimal" defaultValue={centsToKronorInput(service.price_cents)} />
-        </label>
-        <button type="submit" className={styles.btn} disabled={pending}>
-          {pending ? '…' : 'Spara'}
-        </button>
-      </form>
-
-      <div className={styles.actions}>
-        <span className={styles.muted}>{formatPrice(service.price_cents)}</span>
-        <PlacementBadge active={service.active} />
-        <ToggleButton id={service.id} active={service.active} />
-        <DeleteButton id={service.id} />
+      <div
+        style={{
+          marginTop: 14,
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+          fontSize: 12,
+          color: 'var(--c-ink-3)',
+        }}
+      >
+        <Icon name="info" size={14} /> Ändringar slår igenom utan kod eller deploy.
       </div>
-      <Feedback state={state} />
-    </li>
+    </Card>
   )
 }
 
-/** Where the service shows up on the storefront (M6 §3.3). Active services appear
- *  in the public service-menu (homepage section + the full /tjanster page) and are
- *  bookable, ordered by price; inactive ones are hidden but keep their history. */
-function PlacementBadge({ active }: { active: boolean }) {
+/** Shared field markup for the create + edit drawers — eyebrow label over each
+ *  input, mock control radius/borders. Keeps inline-edit parity: namn, kategori,
+ *  varaktighet, pris are ALL editable here (RC: don't lose inline edit). */
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
   return (
-    <span
-      className={styles.badge}
-      title={
-        active
-          ? 'Syns i tjänstemenyn på startsidan och /tjanster, och går att boka.'
-          : 'Dold på den publika sajten. Historiken finns kvar.'
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span className="eyebrow">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+const inputStyle: CSSProperties = {
+  padding: '9px 12px',
+  borderRadius: 10,
+  border: '1px solid var(--c-line)',
+  background: 'var(--c-paper)',
+  color: 'var(--c-ink)',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 14,
+  width: '100%',
+}
+
+function CreateDrawer({ onClose }: { onClose: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(createService, {})
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Tjänst skapad — nu bokningsbar på din sajt', 'success')
+      router.refresh()
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  return (
+    <Drawer
+      title="Ny tjänst"
+      sub="Namn, varaktighet och pris styr den publika bokningen direkt."
+      onClose={onClose}
+      ariaLabel="Ny tjänst"
+      footer={
+        <form
+          action={formAction}
+          id="create-service"
+          style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
+        >
+          <Button variant="ghost" type="button" onClick={onClose}>
+            Avbryt
+          </Button>
+          <Button variant="primary" type="submit" icon="check" disabled={pending}>
+            {pending ? 'Sparar…' : 'Lägg till tjänst'}
+          </Button>
+        </form>
       }
     >
-      {active ? 'Syns på sajten + bokning' : 'Dold på sajten'}
-    </span>
+      {/* The footer form owns the fields via form="create-service" so the sticky
+          footer button submits them. */}
+      <div style={{ display: 'grid', gap: 14 }}>
+        <Field label="Namn">
+          <input form="create-service" name="name" required style={inputStyle} />
+        </Field>
+        <Field label="Kategori">
+          <input
+            form="create-service"
+            name="category"
+            placeholder="t.ex. Klippning"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Varaktighet (min)">
+          <input
+            form="create-service"
+            name="duration_min"
+            type="number"
+            min="1"
+            step="5"
+            defaultValue="30"
+            required
+            className="num"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Pris (kr)">
+          <input
+            form="create-service"
+            name="price"
+            type="text"
+            inputMode="decimal"
+            placeholder="0"
+            className="num"
+            style={inputStyle}
+          />
+        </Field>
+        {state.error && (
+          <p className="auth-error" role="alert" style={{ margin: 0 }}>
+            {state.error}
+          </p>
+        )}
+      </div>
+    </Drawer>
   )
 }
 
-function ToggleButton({ id, active }: { id: string; active: boolean }) {
-  const [, formAction, pending] = useActionState<ActionState, FormData>(toggleServiceActive, {})
+function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [save, saveAction, saving] = useActionState<ActionState, FormData>(updateService, {})
+  const [del, delAction, deleting] = useActionState<ActionState, FormData>(deleteService, {})
+
+  useEffect(() => {
+    if (save.success) {
+      notify('Tjänst uppdaterad — speglas på din sajt', 'success')
+      router.refresh()
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [save.success])
+
+  useEffect(() => {
+    if (del.success) {
+      notify('Tjänst borttagen', 'success')
+      router.refresh()
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [del.success])
+
+  const formId = `edit-service-${service.id}`
+
   return (
-    <form action={formAction}>
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="active" value={String(!active)} />
-      <button type="submit" className={styles.btn} disabled={pending}>
-        {pending ? '…' : active ? 'Inaktivera' : 'Aktivera'}
-      </button>
-    </form>
-  )
-}
+    <Drawer
+      title={service.name}
+      sub={service.active ? 'Syns på sajten + bokning' : 'Dold på sajten'}
+      accent={
+        <Badge tone={service.active ? 'success' : 'neutral'}>
+          {service.active ? 'Aktiv' : 'Av'}
+        </Badge>
+      }
+      onClose={onClose}
+      ariaLabel={`Redigera ${service.name}`}
+      footer={
+        <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center' }}>
+          <form action={delAction}>
+            <input type="hidden" name="id" value={service.id} />
+            <Button variant="ghost" type="submit" icon="trash" disabled={deleting}>
+              {deleting ? '…' : 'Ta bort'}
+            </Button>
+          </form>
+          <div style={{ flex: 1 }} />
+          <Button variant="ghost" type="button" onClick={onClose}>
+            Avbryt
+          </Button>
+          {/* Native <button> so the HTML form= association can submit the body
+              form from the sticky footer (the Button primitive forwards no `form`
+              attr). Carries the same .pbtn classes for identical styling. */}
+          <button
+            type="submit"
+            form={formId}
+            disabled={saving}
+            className="pbtn pbtn--primary pbtn--md"
+          >
+            <Icon name="check" size={17} />
+            {saving ? 'Sparar…' : 'Spara'}
+          </button>
+        </div>
+      }
+    >
+      {/* Inline edit preserved in full: every field the old per-row form carried. */}
+      <form action={saveAction} id={formId} style={{ display: 'grid', gap: 14 }}>
+        <input type="hidden" name="id" value={service.id} />
+        <Field label="Namn">
+          <input name="name" defaultValue={service.name} required style={inputStyle} />
+        </Field>
+        <Field label="Kategori">
+          <input
+            name="category"
+            defaultValue={service.category ?? ''}
+            placeholder="t.ex. Klippning"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Varaktighet (min)">
+          <input
+            name="duration_min"
+            type="number"
+            min="1"
+            step="5"
+            defaultValue={service.duration_min}
+            required
+            className="num"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Pris (kr)">
+          <input
+            name="price"
+            type="text"
+            inputMode="decimal"
+            defaultValue={centsToKronorInput(service.price_cents)}
+            className="num"
+            style={inputStyle}
+          />
+        </Field>
+      </form>
 
-function DeleteButton({ id }: { id: string }) {
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(deleteService, {})
-  return (
-    <form action={formAction}>
-      <input type="hidden" name="id" value={id} />
-      <button type="submit" className={`${styles.btn} ${styles.btnDanger}`} disabled={pending}>
-        {pending ? '…' : 'Ta bort'}
-      </button>
-      {state.error ? (
-        <span className={`${styles.feedback} auth-error`} role="alert">
-          {state.error}
-        </span>
-      ) : null}
-    </form>
+      {(save.error || del.error) && (
+        <p className="auth-error" role="alert" style={{ marginTop: 12 }}>
+          {save.error || del.error}
+        </p>
+      )}
+    </Drawer>
   )
-}
-
-function Feedback({ state }: { state: ActionState }) {
-  if (state.error)
-    return (
-      <p className={`${styles.feedback} auth-error`} role="alert">
-        {state.error}
-      </p>
-    )
-  if (state.success)
-    return (
-      <p className={`${styles.feedback} ${styles.feedbackOk}`} role="status">
-        {state.success}
-      </p>
-    )
-  return null
 }
