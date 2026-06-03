@@ -1,0 +1,168 @@
+/* Personal (cross-tenant) view-scoped styles — SuperData.jsx:SuperStaff.
+   Consumes the [data-world="backoffice"] --c-* tokens + type roles (.eyebrow/.num);
+   no global edits. CSS module → hashed class names. */
+
+/* ── search input (mock: 36px left-pad for the inline search glyph) ── */
+.search {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--c-ink);
+  outline: none;
+  box-sizing: border-box;
+}
+.search:focus {
+  border-color: var(--c-forest);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-gold) 30%, transparent);
+}
+
+/* ── status filter pills (mock: forest fill when active, paper otherwise) ── */
+.pill {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition:
+    background var(--dur-fast, 0.15s) var(--ease-out, ease),
+    color var(--dur-fast, 0.15s) var(--ease-out, ease),
+    border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.pill:hover {
+  border-color: color-mix(in srgb, var(--c-forest) 45%, transparent);
+}
+.pill:focus-visible {
+  outline: 2px solid var(--c-gold);
+  outline-offset: 2px;
+}
+.pill[data-active] {
+  background: var(--c-forest);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* ── name cell: avatar initial + name + email sub (mock staff row, non-clickable
+   — SuperStaff has no row-detail drawer, the name is a plain span) ── */
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--c-forest);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  flex: none;
+}
+.sub {
+  display: block;
+  font-size: 12px;
+  color: var(--c-ink-3);
+  margin-top: 1px;
+}
+
+/* ── "Påminn" nudge on a pending row (mock outline button) ── */
+.remind {
+  border: 1px solid var(--c-line-strong);
+  background: var(--c-paper);
+  color: var(--c-forest);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.remind:hover {
+  background: color-mix(in srgb, var(--c-forest) 6%, transparent);
+}
+.remind:focus-visible {
+  outline: 2px solid var(--c-gold);
+  outline-offset: 2px;
+}
+
+/* ── invite-drawer fields (mock label + input/select) ── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+.field input,
+.field select {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--c-ink);
+  box-sizing: border-box;
+}
+.field select {
+  cursor: pointer;
+}
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--c-forest);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-gold) 30%, transparent);
+}
+
+/* ── written empty-state (mock "Inget matchar" / honest sparse) ── */
+.empty {
+  border: 1px dashed var(--c-line-strong);
+  border-radius: 16px;
+  background: var(--c-paper-2);
+  padding: 30px 22px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.emptyTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--c-forest);
+  margin: 0;
+}
+.emptyText {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--c-ink-2);
+  max-width: 30rem;
+  line-height: 1.5;
+}
+
+/* Touch targets (tablet operation) — match platform.module.css convention. */
+@media (pointer: coarse) {
+  .pill,
+  .remind {
+    min-height: 44px;
+  }
+}

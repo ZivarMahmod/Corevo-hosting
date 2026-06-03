@@ -16,9 +16,15 @@ import { ToastProvider } from './ui/Toast'
 const PALETTE: Record<PortalRole, CommandItem[]> = {
   platform: [
     { href: '/', label: 'Översikt', icon: 'grid', kind: 'Gå till' },
-    { href: '/fakturering', label: 'Fakturering', icon: 'creditCard', kind: 'Gå till' },
+    { href: '/fakturering', label: 'Fakturering', icon: 'dollar', kind: 'Gå till' },
     { href: '/salonger', label: 'Salonger', icon: 'building', kind: 'Gå till' },
     { href: '/salonger/ny', label: 'Onboarda salong', icon: 'plus', kind: 'Gå till' },
+    { href: '/kunder', label: 'Kunder', icon: 'users', kind: 'Gå till' },
+    { href: '/personal-plattform', label: 'Personal', icon: 'scissors', kind: 'Gå till' },
+    { href: '/drift-och-logg', label: 'Drift & logg', icon: 'alert', kind: 'Gå till' },
+    { href: '/integrationer', label: 'Integrationer', icon: 'layers', kind: 'Gå till' },
+    { href: '/roller', label: 'Roller', icon: 'shield', kind: 'Gå till' },
+    { href: '/installningar', label: 'Inställningar', icon: 'settings', kind: 'Gå till' },
   ],
   admin: [
     { href: '/admin', label: 'Översikt', icon: 'home', kind: 'Gå till' },

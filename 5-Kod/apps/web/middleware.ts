@@ -21,7 +21,24 @@ import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
 // Internal dashboard route (file lives at app/(platform)/platform); served at `/`.
 const DASHBOARD_ROUTE = '/platform'
 // Back-office surfaces that must NOT be served on a tenant (storefront) host.
-const BACKOFFICE_PREFIXES = ['/admin', '/personal', '/platform', '/salonger', '/fakturering']
+// goal-17 added the six platform control-center routes (siblings of /salonger +
+// /fakturering); listing them bounces them to `/` on a tenant host, exactly like
+// the existing platform surfaces. NOTE: '/personal-plattform' is listed explicitly
+// — isPrefix only matches '/personal' as a whole segment ('/personal' or
+// '/personal/…'), so it never shadows the platform route.
+const BACKOFFICE_PREFIXES = [
+  '/admin',
+  '/personal',
+  '/platform',
+  '/salonger',
+  '/fakturering',
+  '/kunder',
+  '/personal-plattform',
+  '/drift-och-logg',
+  '/integrationer',
+  '/roller',
+  '/installningar',
+]
 // Tenant-SCOPED back-office surfaces: each resolves exactly one tenant from the
 // logged-in account. A platform_admin has no single tenant to scope to, so these
 // would silently render/mutate whatever tenant the account is anchored to —

@@ -1,0 +1,213 @@
+/* Översikt (super-admin dashboard) view-scoped styling — LAW: SuperAdmin.jsx
+ * (SuperOverview). All colour/space tokens come from [data-world="backoffice"]
+ * (--c-*, --font-*, --shadow-*); this module only lays out the composition the
+ * mock prescribes (health-pill row, 4-stat grid, 1.6/1fr split, forest card).
+ * No new palette — gold stays the single accent. */
+
+/* ── Health-pill row (mock §2.3) — muted insyn strip ───────────────────────── */
+.healthRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  flex: 1;
+  min-width: 168px;
+}
+.pillDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--c-ink-3);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-ink-3) 16%, transparent);
+}
+.pillBody {
+  min-width: 0;
+}
+.pillValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-ink);
+  line-height: 1.2;
+}
+.pillLabel {
+  font-size: 11.5px;
+  color: var(--c-ink-3);
+}
+
+/* ── 1.6fr / 1fr split (table + side rail) — collapses on narrow ──────────── */
+.split {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.rail {
+  display: grid;
+  gap: 16px;
+}
+@media (max-width: 960px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Card chrome shared by "Alla salonger" + "Senaste händelser" ──────────── */
+.cardHead {
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cardHeadTight {
+  padding: 16px 20px 8px;
+}
+.linkBtn {
+  border: none;
+  background: transparent;
+  color: var(--c-forest);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-ui);
+  text-decoration: none;
+}
+.linkBtn:hover {
+  text-decoration: underline;
+}
+
+/* ── Tenant cell (dot + name + subdomain) ─────────────────────────────────── */
+.tenantCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tenantDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  flex: none;
+}
+.tenantName {
+  font-weight: 600;
+  color: var(--c-ink);
+}
+.sub {
+  color: var(--c-ink-3);
+}
+.muted {
+  color: var(--c-ink-2);
+  font-size: 12.5px;
+}
+
+/* ── "Senaste händelser" audit list ───────────────────────────────────────── */
+.auditList {
+  padding: 0 12px 12px;
+}
+.auditRow {
+  display: flex;
+  gap: 11px;
+  padding: 9px 10px;
+  align-items: center;
+}
+.auditIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--c-paper-2);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.auditBody {
+  flex: 1;
+  min-width: 0;
+}
+.auditAction {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+.auditTarget {
+  font-size: 11.5px;
+  color: var(--c-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.auditAt {
+  font-size: 11px;
+  color: var(--c-ink-3);
+  flex: none;
+}
+.auditEmpty {
+  padding: 18px 12px 22px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--c-ink-3);
+}
+
+/* ── Inverted forest "Premium utan kod" card ──────────────────────────────── */
+.forestCard {
+  background: var(--c-forest);
+  color: var(--c-on-forest);
+  border: none;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+}
+.forestEyebrow {
+  color: var(--c-gold);
+}
+.forestTitle {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 8px 0 6px;
+}
+.forestBody {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--c-on-forest-2);
+  margin: 0 0 14px;
+}
+.forestActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── empty-state for the salonger table ───────────────────────────────────── */
+.tableEmpty {
+  border: 1px dashed var(--c-line-strong);
+  background: var(--c-paper-2);
+  border-radius: 12px;
+  padding: 26px 18px;
+  text-align: center;
+  margin: 0 22px 22px;
+}
+.tableEmptyTitle {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  color: var(--c-forest);
+}
+.tableEmptyText {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--c-ink-2);
+}

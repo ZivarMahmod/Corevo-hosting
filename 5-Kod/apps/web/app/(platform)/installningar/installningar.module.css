@@ -1,0 +1,175 @@
+/* Inställningar — view-scoped styles (goal-17 PLATFORM). CSS module → hashed names.
+   Consumes the [data-world="backoffice"] --c-* tokens set by the platform shell; do
+   NOT import outside a back-office surface. Composition mirrors the design-system law
+   source (components/SuperPlatform.jsx → SuperSettings + Shell.jsx → Toggle): a
+   max-680px column of Cards, each a section header + stacked reglage rows + an
+   optional consequence band, then the Fakturering posture card.
+
+   HONESTY (NEVER FAKE DATA + "no dead toggles"): no platform-settings store exists
+   (foundation: migration out of frozen scope), so the security/drift reglage are
+   rendered DISABLED with a "Kommer snart" pill — never the mock's live Aktiv/Av
+   badge, which would assert an introspected on/off state that has no source. Two
+   things ARE genuine truth and bind live: the audit-guard invariant (enforced by
+   design — build-once-never-delete, framed on, not a flippable toggle) and the
+   Fakturering model (the platform's real billing posture). Exact px/colour lifted
+   from the law source. */
+
+/* ── page column (mock: maxWidth 680) ── */
+.wrap {
+  max-width: 680px;
+}
+
+/* ── card section header (mock: h2 + 4px / 12px bottom-margin) ── */
+.cardHead {
+  margin-bottom: 4px;
+}
+.cardHeadGap {
+  margin-bottom: 12px;
+}
+
+/* ── reglage row (mock Toggle, Shell.jsx:126: 16px 0 padding + borderBottom 1px
+   var(--c-line) on EVERY row). The row is a flex split: label block (left) + the
+   control (right). Hairline-bottom on every row (incl. the last in a card) — exact
+   copy of the law source, which draws a divider under each toggle. */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--c-line);
+}
+
+.rowText {
+  padding-right: 20px;
+  min-width: 0;
+}
+
+.rowTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--c-ink);
+}
+
+.rowDesc {
+  font-size: 13px;
+  color: var(--c-ink-3);
+  margin-top: 3px;
+  max-width: 420px;
+  line-height: 1.45;
+}
+
+/* ── state pill on the title row ──
+   The mock's `live` prop renders a green "Aktiv" / muted "Av" badge that asserts a
+   real on/off state. We have NO store for the unwired reglage, so for those we show
+   a muted, gold-free "Kommer snart" pill instead of a fabricated live status. For
+   the one genuinely-enforced invariant (audit-guard) we show a real success pill. */
+.pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex: none;
+}
+.pillSoon {
+  color: var(--c-ink-3);
+  background: var(--c-paper-2);
+}
+.pillOn {
+  color: var(--c-success);
+  background: var(--c-success-bg);
+}
+
+/* ── toggle track (mock Toggle: 46×26 pill, 20px thumb, forest=on / line-strong=off).
+   `on` paints the forest track + thumb slid right; disabled dims it so the operator
+   reads "rendered, not yet wired". The genuine invariant variant is on + locked
+   (cursor:not-allowed but full opacity — it IS the live truth, just not flippable). */
+.track {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  border: none;
+  background: var(--c-line-strong);
+  position: relative;
+  flex: none;
+  padding: 0;
+}
+.trackOn {
+  background: var(--c-forest);
+}
+.trackDisabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+/* enforced-by-design: on, full opacity, but not interactive (locked invariant). */
+.trackLocked {
+  cursor: not-allowed;
+}
+
+.thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.thumbOn {
+  left: 23px;
+}
+
+/* ── audit-guard consequence band (mock: success-bg, shield icon + line) ── */
+.guardBand {
+  display: flex;
+  gap: 9px;
+  padding: 10px 12px;
+  background: var(--c-success-bg);
+  border-radius: 10px;
+  margin-top: 12px;
+}
+.guardBand svg {
+  color: var(--c-success);
+  flex: none;
+  margin-top: 1px;
+}
+.guardBand span {
+  font-size: 12.5px;
+  color: var(--c-ink);
+  line-height: 1.45;
+}
+
+/* ── Fakturering posture row (mock: split label block + gold "Aktiv" badge) ── */
+.billRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.billTitle {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--c-ink);
+}
+.billDesc {
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+/* ── card spacing between the stacked sections (mock: marginTop 16) ── */
+.cardGap {
+  margin-top: 16px;
+}
+
+/* honest "ej kopplad" note under a section that holds only unwired reglage. */
+.notWired {
+  margin-top: 14px;
+}

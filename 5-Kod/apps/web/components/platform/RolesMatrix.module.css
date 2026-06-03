@@ -1,0 +1,168 @@
+/* Roller & behörighet — view-scoped styles (goal-17 PLATFORM). CSS module → hashed
+   names. Consumes the [data-world="backoffice"] --c-* tokens set by the platform
+   shell; do NOT import outside a back-office surface. The composition mirrors the
+   design-system law source (components/SuperPlatform.jsx → SuperRoles + PermCell):
+   a 2-col layout, the left a clickable role list, the right a role-detail card + a
+   Behörighetsmatris table with tone-coloured permission pills + a legend footer.
+   Exact px/colour lifted from the law source. */
+
+/* ── 2-col grid (mock inline: gridTemplateColumns "1fr 1.4fr", gap 16, align start).
+   The mock pairs this with .bo-2col ONLY for the ≤920px collapse — the inline ratio
+   wins over .bo-2col's default. We can't edit portal-global, so we own both the
+   ratio and the collapse here to copy the mock exactly (list narrower, detail wider). */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 920px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── card header (mock: padding 16px 20px, h2 + optional TableChip) ── */
+.cardHead {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── left: role list ── */
+.roleList {
+  padding: 0 10px 10px;
+}
+
+/* Role row — Badge (who) + name + live user count; selected = paper-2 fill. */
+.roleBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 11px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  background: transparent;
+  font-family: var(--font-ui);
+  color: inherit;
+  transition: background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.roleBtn:hover {
+  background: color-mix(in srgb, var(--c-ink) 4%, transparent);
+}
+.roleBtn:focus-visible {
+  outline: 2px solid var(--c-gold, #f5a623);
+  outline-offset: -2px;
+}
+.roleBtnSel,
+.roleBtnSel:hover {
+  background: var(--c-paper-2);
+}
+
+.roleName {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+.roleUsers {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink-3);
+  flex: none;
+}
+/* Honest "—" when no seeded DB role backs the count (never a fabricated number). */
+.roleUsersMuted {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink-3);
+  flex: none;
+  opacity: 0.7;
+}
+
+/* ── right: detail column ── */
+.detail {
+  display: grid;
+  gap: 16px;
+}
+
+.roleTitle {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 6px;
+}
+.note {
+  font-size: 13.5px;
+  color: var(--c-ink-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── permission matrix cells (mock PermCell) ──
+   full = grön · own = blå · view = orange · — = muted. Tinted fill + tone text. */
+.perm {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 7px;
+  padding: 3px 9px;
+}
+.perm_full {
+  color: var(--c-success);
+  background: var(--c-success-bg);
+}
+.perm_own {
+  color: var(--c-info);
+  background: var(--c-info-bg);
+}
+.perm_view {
+  color: var(--c-warning);
+  background: var(--c-warning-bg);
+}
+.permNone {
+  color: var(--c-ink-3);
+}
+
+/* ── legend footer (mock: hairline-top, gap 18px, perm pill + label) ── */
+.legend {
+  display: flex;
+  gap: 18px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--c-line);
+  flex-wrap: wrap;
+}
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--c-ink-3);
+}
+
+/* ── TableChip — backing-table pill (mock TableChip: layers icon + info tint) ── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--c-info);
+  background: var(--c-info-bg);
+  border: 1px solid color-mix(in srgb, var(--c-info) 20%, transparent);
+  border-radius: 7px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--c-ink-3);
+}

@@ -24,13 +24,25 @@ const isGroup = (e: NavEntry): e is { group: string } => 'group' in e
 const NAV: Record<PortalRole, NavConfig> = {
   platform: {
     sub: 'Plattform',
+    // Groups/labels/order/icons are the rendered handoff (Shell.jsx → NAV.super):
+    //   Insyn · Tenants · Data & drift · Plattform. ASCII routes only (the å in
+    //   "Inställningar" → /installningar, matching /admin/installningar — non-ASCII
+    //   in build paths is documented-fragile here). All icons are in IconName.
     items: [
       { group: 'Insyn' },
       { href: '/', label: 'Översikt', icon: 'grid' },
-      { href: '/fakturering', label: 'Fakturering', icon: 'creditCard' },
+      { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
       { group: 'Tenants' },
       { href: '/salonger', label: 'Salonger', icon: 'building' },
       { href: '/salonger/ny', label: 'Onboarda salong', icon: 'plus' },
+      { group: 'Data & drift' },
+      { href: '/kunder', label: 'Kunder', icon: 'users' },
+      { href: '/personal-plattform', label: 'Personal', icon: 'scissors' },
+      { href: '/drift-och-logg', label: 'Drift & logg', icon: 'alert' },
+      { group: 'Plattform' },
+      { href: '/integrationer', label: 'Integrationer', icon: 'layers' },
+      { href: '/roller', label: 'Roller', icon: 'shield' },
+      { href: '/installningar', label: 'Inställningar', icon: 'settings' },
     ],
   },
   admin: {

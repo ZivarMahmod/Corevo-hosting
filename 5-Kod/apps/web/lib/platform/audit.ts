@@ -1,6 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
+import { platformCtx } from './guard'
 
 // Append-only platform audit trail (audit_log, migration 0001/0002). audit_log is
 // tenant-scoped (tenant_id NOT NULL), so each platform action is logged against
@@ -46,3 +47,101 @@ export async function logPlatformAction(
 }
 
 export type AuditRow = Database['public']['Tables']['audit_log']['Row']
+
+// ── Cross-tenant audit stream (Drift & logg §2.3) ───────────────────────────────
+// Same RLS-bypass seam as the rest of lib/platform/*: the platform_admin JWT lets
+// audit_log return rows for EVERY tenant. Read-only — never mutates the log
+// (build-once-never-delete). The action keys are dotted enums (e.g.
+// 'tenant.suspend', 'booking.status.pending'); the view maps them to a human label
+// + icon + tone. We classify the actor + tone here so the (read) and the (render)
+// don't both have to know the action vocabulary.
+
+export type AuditActor = 'Zivar' | 'System' | 'Kund'
+export type AuditTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral'
+
+export type PlatformAuditEntry = {
+  id: string
+  at: string // ISO created_at — the view formats it ("idag 09:14")
+  action: string // raw dotted action key (the view humanizes it)
+  entity: string
+  tenant: string // salon NAME (or "—" when the tenant join is missing)
+  slug: string
+  actorId: string | null
+  actor: AuditActor
+  tone: AuditTone
+}
+
+/**
+ * Classify who an audit row is attributable to, for the actor filter
+ * (Alla/Zivar/System/Kund). A platform action (tenant.*) with an actor is Zivar;
+ * a customer-driven booking change is Kund; everything actor-less is System.
+ */
+export function classifyAuditActor(action: string, actorId: string | null): AuditActor {
+  if (action.startsWith('tenant.')) return 'Zivar'
+  if (action.startsWith('booking.') || action.startsWith('customer.')) {
+    return actorId ? 'Kund' : 'System'
+  }
+  return actorId ? 'Zivar' : 'System'
+}
+
+/** Map an action key to a status tone for the row icon (muted, not loud). */
+export function classifyAuditTone(action: string): AuditTone {
+  if (action.includes('delete') || action.includes('blocked') || action.includes('suspend'))
+    return action.includes('suspend') ? 'warning' : 'danger'
+  if (action.includes('cancel')) return 'warning'
+  if (action.includes('create') || action.includes('complete') || action.includes('activate'))
+    return 'success'
+  if (action.startsWith('booking.')) return 'neutral'
+  return 'info'
+}
+
+export type AuditFilters = { q?: string; actor?: AuditActor | 'all' }
+
+type AuditQueryRow = AuditRow & {
+  tenants: { slug: string; name: string } | { slug: string; name: string }[] | null
+}
+
+/**
+ * Recent audit-log entries cross-tenant (RLS bypass), newest first. Free-text
+ * matches the action/entity; the actor filter is applied in JS because the actor
+ * is a derived classification, not a stored column. Honest empty-state: returns []
+ * when nothing matches (the view writes "Inget matchar").
+ */
+export async function listAuditLogAllTenants(
+  filters: AuditFilters = {},
+  limit = 100,
+): Promise<PlatformAuditEntry[]> {
+  const { supabase } = await platformCtx()
+  let q = supabase
+    .from('audit_log')
+    .select('id, created_at, action, entity, actor_profile_id, tenant_id, tenants(name, slug)')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (filters.q && filters.q.trim()) {
+    const safe = filters.q.trim().replace(/[,()*"\\]/g, ' ')
+    const term = `%${safe}%`
+    q = q.or(`action.ilike.${term},entity.ilike.${term}`)
+  }
+
+  const { data } = await q
+  let rows = ((data ?? []) as AuditQueryRow[]).map((a) => {
+    const t = Array.isArray(a.tenants) ? a.tenants[0] : a.tenants
+    return {
+      id: a.id,
+      at: a.created_at,
+      action: a.action,
+      entity: a.entity,
+      tenant: t?.name ?? '—',
+      slug: t?.slug ?? '',
+      actorId: a.actor_profile_id,
+      actor: classifyAuditActor(a.action, a.actor_profile_id),
+      tone: classifyAuditTone(a.action),
+    }
+  })
+
+  if (filters.actor && filters.actor !== 'all') {
+    rows = rows.filter((r) => r.actor === filters.actor)
+  }
+  return rows
+}

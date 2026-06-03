@@ -1,0 +1,351 @@
+/* Salong-detalj (GOAL-17 PLATFORM) — view-scoped styling that ports the exact
+   composition of SuperTenant.jsx into the stack. Consumes the
+   [data-world="backoffice"] --c-* tokens (forest/gold on cream, Playfair+Inter)
+   set by the platform shell; never hardcodes brand colours. */
+
+/* ── header (avatar + name + meta + actions, mock SuperTenantDetail head) ── */
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+  margin-bottom: 10px;
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.ident {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  flex: none;
+}
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.meta {
+  margin-top: 5px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+}
+.meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.meta svg {
+  flex: none;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── SubTabs pill rail (mock SubTabs primitive) ── */
+.subtabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper-2);
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 22px;
+}
+.subtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--c-ink-2);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast, 0.15s) var(--ease-out, ease),
+    color var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.subtab svg {
+  flex: none;
+}
+.subtab:hover {
+  background: var(--c-paper);
+  color: var(--c-ink);
+}
+.subtab:focus-visible {
+  outline: 2px solid var(--c-gold, #f5a623);
+  outline-offset: 2px;
+}
+.subtabActive,
+.subtabActive:hover {
+  background: var(--c-forest);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── two-column översikt + section grids ── */
+.twoCol {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.col {
+  display: grid;
+  gap: 16px;
+}
+.maxCol {
+  max-width: 760px;
+  display: grid;
+  gap: 16px;
+}
+
+/* ── KV grid (Ägare card, grunddata) ── */
+.kvList {
+  display: grid;
+  gap: 10px;
+}
+.kv {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.kvLabel {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-ink-3);
+  font-family: var(--font-ui);
+}
+.kvValue,
+.kvValueMono {
+  font-size: 14px;
+  color: var(--c-ink);
+  word-break: break-word;
+}
+.kvValueMono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+/* ── Ägare card avatar ── */
+.ownerHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ownerAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 17px;
+  flex: none;
+}
+.ownerName {
+  font-weight: 600;
+  font-size: 15px;
+}
+.ownerRole {
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+}
+
+/* ── section head with TableChip ── */
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.h2 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--c-ink);
+  margin: 0;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-ink) 6%, transparent);
+  border: 1px solid var(--c-line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: var(--c-ink-2);
+  white-space: nowrap;
+}
+
+/* ── anpassningsnivå / soft note card ── */
+.noteHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--c-ink);
+}
+.noteText {
+  font-size: 12.5px;
+  color: var(--c-ink-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── integration rows (Integrationer subtab) ── */
+.intRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.intAvatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 17px;
+  flex: none;
+}
+.intBody {
+  flex: 1;
+  min-width: 0;
+}
+.intName {
+  font-weight: 600;
+  font-size: 14.5px;
+}
+.intDesc {
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── danger / riskzon card (mock Drift danger card) ── */
+.danger {
+  border: 1px solid var(--c-danger-bg);
+  background: color-mix(in srgb, var(--c-danger-bg) 40%, var(--c-paper));
+}
+.dangerHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--c-ink);
+}
+.dangerHead svg {
+  color: var(--c-danger);
+  flex: none;
+}
+.dangerText {
+  font-size: 12.5px;
+  color: var(--c-ink-2);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+/* ── audit list (Drift subtab — mirrors the mock's row layout) ── */
+.auditList {
+  padding: 0 4px 4px;
+}
+.auditRow {
+  display: flex;
+  gap: 11px;
+  padding: 10px;
+  align-items: center;
+}
+.auditIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--c-paper-2);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.auditBody {
+  flex: 1;
+  min-width: 0;
+}
+.auditAction {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+.auditMeta {
+  font-size: 11.5px;
+  color: var(--c-ink-3);
+}
+.auditAt {
+  font-size: 11px;
+  color: var(--c-ink-3);
+  white-space: nowrap;
+}
+
+/* ── written empty-state ── */
+.empty {
+  padding: 26px 16px;
+  text-align: center;
+  color: var(--c-ink-3);
+  font-size: 13.5px;
+}
+
+@media (max-width: 920px) {
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+}
+@media (pointer: coarse) {
+  .subtab {
+    min-height: 44px;
+  }
+}

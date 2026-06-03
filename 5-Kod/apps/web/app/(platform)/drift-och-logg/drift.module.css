@@ -1,0 +1,216 @@
+/* Drift & logg view-scoped styles (GOAL-17 PLATFORM). Exact px lifted from the
+   LAW source SuperPlatform.jsx → SuperOps + Shell.jsx → TableChip. All colours read
+   the [data-world="backoffice"] --c-* tokens (forest/gold on cream). View-only —
+   does NOT touch portal-global.css. */
+
+/* ── health row → 4 honest pills (getPlatformHealth = no telemetry → "—") ──
+   Mirrors the mock SuperOps health row + the Översikt health pills exactly: 4
+   flex pills, muted dot, "—" value, "{label} · ej kopplad" caption. Never a
+   fabricated live number. */
+.healthRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.healthPill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  flex: 1;
+  min-width: 168px;
+}
+.healthDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--c-ink-3);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-ink-3) 16%, transparent);
+}
+.healthBody {
+  min-width: 0;
+}
+.healthValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-ink);
+  line-height: 1.2;
+}
+.healthLabel {
+  font-size: 11.5px;
+  color: var(--c-ink-3);
+}
+
+/* ── filter row: search + actor pills + export (SuperOps controls) ── */
+.controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--c-ink-3);
+  display: grid;
+  place-items: center;
+}
+.search input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+.search input::placeholder {
+  color: var(--c-ink-3);
+}
+.search input:focus {
+  border-color: var(--c-forest);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-gold) 35%, transparent);
+}
+
+.actorPills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pill {
+  padding: 9px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--c-line);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  transition:
+    background var(--dur-fast, 0.15s) ease,
+    color var(--dur-fast, 0.15s) ease,
+    border-color var(--dur-fast, 0.15s) ease;
+}
+.pill:hover {
+  border-color: var(--c-line-strong);
+}
+.pill:focus-visible {
+  outline: 2px solid var(--c-gold);
+  outline-offset: 2px;
+}
+.pillOn,
+.pillOn:hover {
+  background: var(--c-forest);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* ── audit card head: h2 + TableChip ── */
+.cardHead {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+/* TableChip (Shell.jsx): info-toned monospace chip naming the backing table */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--c-info);
+  background: var(--c-info-bg);
+  border: 1px solid color-mix(in srgb, var(--c-info) 20%, transparent);
+  border-radius: 7px;
+  padding: 2px 8px;
+}
+
+/* ── audit rows (SuperOps log list) ── */
+.rows {
+  padding: 0 10px 10px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px;
+  border-top: 1px solid var(--c-line);
+}
+.tile {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--c-paper-2);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.rowBody {
+  flex: 1;
+  min-width: 0;
+}
+.rowAction {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+.rowTarget {
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+}
+.actor {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-ink-2);
+  background: var(--c-paper-2);
+  border-radius: 999px;
+  padding: 3px 10px;
+  flex: none;
+  white-space: nowrap;
+}
+.time {
+  font-size: 12px;
+  color: var(--c-ink-3);
+  flex: none;
+  width: 110px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* written empty-state (mock: "Inget matchar." / honest "no activity yet") */
+.empty {
+  padding: 26px;
+  text-align: center;
+  color: var(--c-ink-3);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* tablet tap targets (Våg 4) — desktop byte-identical (fine pointer untouched).
+   The export button is the Button primitive (its own pointer:coarse rule); only the
+   actor pills need a min-height here. */
+@media (pointer: coarse) {
+  .pill {
+    min-height: 44px;
+  }
+}

@@ -1,0 +1,109 @@
+/* Integrationer — view-scoped styles (goal-17 PLATFORM). CSS module → hashed
+   names. Consumes the [data-world="backoffice"] --c-* tokens set by the platform
+   shell; do NOT import outside a back-office surface. The card composition mirrors
+   the design-system law source (components/SuperPlatform.jsx → SuperIntegrations):
+   letter-avatar + name + tenants-line + status badge, then desc / flow-chip /
+   Hantera+Docs. */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ident {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Letter-avatar — solid brand colour fill, white glyph (mock `it.color`/`it.letter`). */
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 18px;
+  flex: none;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--c-ink);
+}
+
+/* Tenants-line — the honest connected-count sub-label (or "—" when no backing). */
+.tenants {
+  font-size: 12px;
+  color: var(--c-ink-3);
+  font-family: var(--font-ui);
+}
+.tenants .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.desc {
+  font-size: 13px;
+  color: var(--c-ink-2);
+  line-height: 1.5;
+  margin: 14px 0 12px;
+}
+
+.flow {
+  margin-bottom: 14px;
+}
+
+/* TableChip — small monospace pill that names the backing table/flow (mock TableChip). */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--c-paper-2);
+  border: 1px solid var(--c-line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--c-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.foot {
+  display: flex;
+  gap: 8px;
+  padding-top: 14px;
+  margin-top: auto;
+  border-top: 1px solid var(--c-line);
+}
+
+/* Push "Hantera" to fill, "Docs" stays auto-width (mock: flex:1 / auto). */
+.footPrimary {
+  flex: 1;
+  justify-content: center;
+}

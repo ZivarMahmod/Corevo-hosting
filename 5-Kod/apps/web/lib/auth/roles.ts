@@ -40,6 +40,16 @@ export const PROTECTED_PREFIXES = [
   '/platform',
   '/salonger',
   '/fakturering',
+  // goal-17 platform control-center surfaces (clean URLs on booking.corevo.se,
+  // siblings of /salonger + /fakturering). Each page ALSO self-gates with
+  // requirePlatformAdmin(); listing them here is the cheap auth gate (defence in
+  // depth) so an unauth hit bounces to /login before a server render.
+  '/kunder',
+  '/personal-plattform',
+  '/drift-och-logg',
+  '/integrationer',
+  '/roller',
+  '/installningar',
 ] as const
 
 /**
