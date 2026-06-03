@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { platformMetrics } from '@/lib/platform/metrics'
 import { listTenants } from '@/lib/platform/tenants'
-import { PageHead, Stat, Card, Badge, Button, Table } from '@/components/portal/ui'
+import { PageHead, Stat, Card, Badge, Button, Table, Callout } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Översikt' }
@@ -19,14 +19,16 @@ export default async function PlatformOverviewPage() {
         </Button>
       </PageHead>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: 16,
-          marginBottom: 22,
-        }}
-      >
+      {/* Cross-tenant proof band (§4.7): platform_admin RLS bypass means dessa
+          siffror räknar ÖVER alla salonger — ser du mer än en salong är det
+          beviset att plattformen når tvärs. Server-safe, inga påhittade tal. */}
+      <Callout tone="info" icon="building">
+        Plattformsvyn räknar tvärs över alla salonger via platform_admin — varje
+        siffra och rad nedan är aggregerad över hela plattformen, inte en enskild
+        salong.
+      </Callout>
+
+      <div className="bo-stat-grid" style={{ marginTop: 22 }}>
         <Stat label="Salonger totalt" value={metrics.tenantsTotal} icon="building" />
         <Stat label="Aktiva salonger" value={metrics.tenantsActive} icon="checkCircle" />
         <Stat

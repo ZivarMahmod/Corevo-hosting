@@ -5,7 +5,7 @@ import { getSettingsRow, listLocations, listDomains } from '@/lib/admin/data'
 import { createClient } from '@/lib/supabase/server'
 import { SettingsForm } from '@/components/admin/SettingsForm'
 import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
-import { PageHead } from '@/components/portal/ui'
+import { PageHead, Card, Badge, Callout } from '@/components/portal/ui'
 import styles from '@/components/admin/admin.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -52,13 +52,24 @@ export default async function SettingsPage({
   }
   const contact = sjson.contact ?? {}
 
+  const verifiedDomains = domains.filter((d) => d.verified).length
+
   return (
-    <section className="portal-section">
+    <section className="portal-section" style={{ maxWidth: '640px' }}>
       <PageHead
         eyebrow={tenant.name}
         title="Inställningar"
         lede="Salongens namn, kontakt, tidszon, betalningssätt och avbokningsregel. Avbokningsregeln läses av kundportalen när en kund vill avboka eller boka om."
       />
+
+      {/* §6 T10 — produkten berättar om sig själv: en lugn explainer som ramar in
+          vad som styrs här. Påstår inget per-toggle (de pillarna + sina egna proof-
+          band bor i SettingsForm), så det är ärligt på sidnivå. */}
+      <Callout tone="info" icon="info">
+        Allt du ställer in här styr direkt vad kunden möter på din publika sajt — vid
+        bokning, i bekräftelsemejl och när hen vill avboka. Varje rad visar sitt nuläge
+        med en Aktiv/Av-markering.
+      </Callout>
 
       <SettingsForm
         name={tenant.name}
@@ -90,9 +101,19 @@ export default async function SettingsPage({
         justReturned={stripe === 'return'}
       />
 
-      <div className={`${styles.section} ${styles.card}`} style={{ marginTop: '2rem' }}>
-        <h2 style={{ marginTop: 0 }}>Egen domän</h2>
-        <p className="prose">
+      {/* ── Egen domän ── den enda inställningsgruppen som sidan själv renderar,
+          så den får visa upp playbook-mönstret: Card-primitiv + eyebrow-rubrik +
+          Badge-status + proof-Callout. Endast riktiga fält: d.domain / d.verified /
+          d.is_primary. */}
+      <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
+        <div>
+          <span className="eyebrow">Egen domän</span>
+          <h2 className="h2" style={{ margin: '6px 0 0' }}>
+            Adress till din sajt
+          </h2>
+        </div>
+
+        <p className="body" style={{ margin: 0 }}>
           Din salong nås på{' '}
           <span className={styles.code}>
             {tenant.slug}.{ROOT_DOMAIN}
@@ -100,26 +121,51 @@ export default async function SettingsPage({
           . Vill du koppla en egen domän (t.ex. <span className={styles.code}>dinsalong.se</span>)
           kontaktar du Corevo — själva DNS-/Cloudflare-kopplingen görs av oss (G08).
         </p>
+
         {domains.length > 0 ? (
-          <ul className={styles.list}>
-            {domains.map((d) => (
-              <li key={d.id} className={styles.row}>
-                <span className={styles.code}>{d.domain}</span>
-                <span className={`${styles.badge}`}>
-                  {d.verified ? 'Verifierad' : 'Väntar på verifiering'}
-                  {d.is_primary ? ' · primär' : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className={styles.list}>
+              {domains.map((d) => (
+                <li key={d.id} className={styles.row}>
+                  <span className={styles.code}>{d.domain}</span>
+                  <span style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <Badge tone={d.verified ? 'success' : 'warning'}>
+                      {d.verified ? 'Verifierad' : 'Väntar på verifiering'}
+                    </Badge>
+                    {d.is_primary ? <Badge tone="gold">Primär</Badge> : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Callout
+              tone={verifiedDomains > 0 ? 'success' : 'warning'}
+              icon={verifiedDomains > 0 ? 'checkCircle' : 'alert'}
+            >
+              {verifiedDomains > 0 ? (
+                <>
+                  <span className="num">{verifiedDomains}</span> av{' '}
+                  <span className="num">{domains.length}</span> domän
+                  {domains.length === 1 ? '' : 'er'} är verifierad och pekar mot din salong —
+                  kunder kan nå sajten på din egna adress.
+                </>
+              ) : (
+                <>
+                  Domänen är tillagd men inte verifierad ännu. Tills DNS-kopplingen är klar når
+                  kunderna din sajt på {tenant.slug}.{ROOT_DOMAIN} — Corevo hör av sig när den är
+                  redo.
+                </>
+              )}
+            </Callout>
+          </>
         ) : (
-          <div className={styles.empty}>
-            <strong>Ingen egen domän kopplad ännu.</strong>
-            Din salong nås på {tenant.slug}.{ROOT_DOMAIN}. Kontakta Corevo för att koppla en egen
-            domän.
-          </div>
+          /* Behåller den befintliga svenska tomtillståndet (regel 6), om-skinnad som
+             en lugn info-Callout. */
+          <Callout tone="info" icon="info">
+            Ingen egen domän kopplad ännu. Din salong nås på {tenant.slug}.{ROOT_DOMAIN}. Kontakta
+            Corevo för att koppla en egen domän.
+          </Callout>
         )}
-      </div>
+      </Card>
     </section>
   )
 }
