@@ -7,11 +7,15 @@ import {
 } from './booking-variant'
 
 describe('isBookingVariant', () => {
-  it('accepts the known variants', () => {
-    expect(isBookingVariant('3')).toBe(true)
-    expect(isBookingVariant('4')).toBe(true)
+  it('accepts the four design variants', () => {
+    expect(isBookingVariant('wizard')).toBe(true)
+    expect(isBookingVariant('compact')).toBe(true)
+    expect(isBookingVariant('drawer')).toBe(true)
+    expect(isBookingVariant('inline')).toBe(true)
   })
-  it('rejects anything else', () => {
+  it('rejects legacy numeric ids and anything else (legacy is mapped, not a valid id)', () => {
+    expect(isBookingVariant('3')).toBe(false)
+    expect(isBookingVariant('4')).toBe(false)
     expect(isBookingVariant('5')).toBe(false)
     expect(isBookingVariant(3)).toBe(false)
     expect(isBookingVariant('')).toBe(false)
@@ -21,12 +25,19 @@ describe('isBookingVariant', () => {
 })
 
 describe('readBookingVariant (M3-facing contract)', () => {
-  it('reads settings.booking.variant when valid', () => {
-    expect(readBookingVariant({ booking: { variant: '4' } })).toBe('4')
-    expect(readBookingVariant({ booking: { variant: '3' } })).toBe('3')
+  it('reads settings.booking.variant when a valid design id', () => {
+    expect(readBookingVariant({ booking: { variant: 'wizard' } })).toBe('wizard')
+    expect(readBookingVariant({ booking: { variant: 'compact' } })).toBe('compact')
+    expect(readBookingVariant({ booking: { variant: 'drawer' } })).toBe('drawer')
+    expect(readBookingVariant({ booking: { variant: 'inline' } })).toBe('inline')
   })
 
-  it('falls back to default for missing/legacy/unknown', () => {
+  it('maps legacy numeric ids FORWARD so existing tenants never break', () => {
+    expect(readBookingVariant({ booking: { variant: '3' } })).toBe('wizard')
+    expect(readBookingVariant({ booking: { variant: '4' } })).toBe('compact')
+  })
+
+  it('falls back to default for missing/unknown', () => {
     expect(readBookingVariant({})).toBe(DEFAULT_BOOKING_VARIANT)
     expect(readBookingVariant(null)).toBe(DEFAULT_BOOKING_VARIANT)
     expect(readBookingVariant(undefined)).toBe(DEFAULT_BOOKING_VARIANT)
@@ -36,26 +47,32 @@ describe('readBookingVariant (M3-facing contract)', () => {
     expect(readBookingVariant('not-an-object')).toBe(DEFAULT_BOOKING_VARIANT)
   })
 
-  it('ignores unrelated settings keys (does not confuse layout variant)', () => {
-    // settings.layout.{nav,hero}_variant is the LAYOUT template, NOT the booking flow.
+  it('ignores unrelated settings keys (does not confuse the theme/layout)', () => {
+    // settings.theme is the storefront LOOK, NOT the booking flow.
+    expect(readBookingVariant({ theme: 'salvia' })).toBe(DEFAULT_BOOKING_VARIANT)
     expect(
       readBookingVariant({ layout: { nav_variant: 'B', hero_variant: '2' } }),
     ).toBe(DEFAULT_BOOKING_VARIANT)
   })
 
-  it('default is variant 3', () => {
-    expect(DEFAULT_BOOKING_VARIANT).toBe('3')
+  it("default is 'wizard'", () => {
+    expect(DEFAULT_BOOKING_VARIANT).toBe('wizard')
   })
 })
 
 describe('readBookingMode (M3 storefront seam: variant → BookingWizard mode)', () => {
-  it("maps variant '4' → 'compact'", () => {
+  it("maps 'compact' → 'compact'", () => {
+    expect(readBookingMode({ booking: { variant: 'compact' } })).toBe('compact')
+    // legacy '4' is forward-mapped to compact, so the mode is unchanged for old rows.
     expect(readBookingMode({ booking: { variant: '4' } })).toBe('compact')
   })
-  it("maps variant '3' → 'wizard'", () => {
-    expect(readBookingMode({ booking: { variant: '3' } })).toBe('wizard')
+  it("maps wizard/drawer/inline → 'wizard' (drawer/inline presentation deferred)", () => {
+    expect(readBookingMode({ booking: { variant: 'wizard' } })).toBe('wizard')
+    expect(readBookingMode({ booking: { variant: 'drawer' } })).toBe('wizard')
+    expect(readBookingMode({ booking: { variant: 'inline' } })).toBe('wizard')
+    expect(readBookingMode({ booking: { variant: '3' } })).toBe('wizard') // legacy guided
   })
-  it("unset/legacy/unknown → 'wizard' (Variant 3 = today's default flow)", () => {
+  it("unset/unknown → 'wizard' (today's default flow)", () => {
     expect(readBookingMode(null)).toBe('wizard')
     expect(readBookingMode(undefined)).toBe('wizard')
     expect(readBookingMode({})).toBe('wizard')

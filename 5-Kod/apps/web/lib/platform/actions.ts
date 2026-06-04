@@ -6,7 +6,8 @@ import { validateSlug } from './slug'
 import { isBillingModel, kronorToCents } from './billing'
 import { createServiceClient, hasServiceRole } from './service'
 import { logPlatformAction } from './audit'
-import { isBookingVariant, type BookingVariant } from './booking-variant'
+import { isBookingVariant, DEFAULT_BOOKING_VARIANT, type BookingVariant } from './booking-variant'
+import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, type StorefrontTheme } from '@/lib/tenant-data'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages } from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
@@ -18,18 +19,15 @@ const GENERIC = 'Något gick fel. Försök igen.'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DEFAULT_TZ = 'Europe/Stockholm'
 
-// Theme template (ADR 01 §3, nivå 2): which nav + hero variant a NEW salon ships
-// with. Kept in sync with components/brand/variants.ts (NAV_VARIANTS / HERO_VARIANTS)
-// so each onboarded salon gets a DISTINCT storefront, never a copy.
-const NAV_VARIANTS = ['A', 'B'] as const
-const HERO_VARIANTS = ['1', '2'] as const
-function pickNavVariant(raw: FormDataEntryValue | null): 'A' | 'B' {
-  const v = String(raw ?? '').trim().toUpperCase()
-  return (NAV_VARIANTS as readonly string[]).includes(v) ? (v as 'A' | 'B') : 'A'
-}
-function pickHeroVariant(raw: FormDataEntryValue | null): '1' | '2' {
-  const v = String(raw ?? '').trim()
-  return (HERO_VARIANTS as readonly string[]).includes(v) ? (v as '1' | '2') : '1'
+// Storefront theme (the five named layouts). Picking a theme writes settings.theme,
+// which the public layout reads → [data-theme] on the storefront root. The old A/B
+// nav + 1/2 hero system is RETIRED (components/brand/variants.ts); `theme` is now the
+// single look-axis, so each onboarded salon gets a DISTINCT storefront, never a clone.
+function pickTheme(raw: FormDataEntryValue | null): StorefrontTheme {
+  const v = String(raw ?? '').trim().toLowerCase()
+  return (STOREFRONT_THEMES as readonly string[]).includes(v)
+    ? (v as StorefrontTheme)
+    : DEFAULT_STOREFRONT_THEME
 }
 
 // ── Step 1: create tenant (transaktion via cascade-rollback) ────────────────────
@@ -46,38 +44,42 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
 
   const name = String(fd.get('name') ?? '').trim()
   const slugCheck = validateSlug(String(fd.get('slug') ?? ''))
-  const adminEmail = String(fd.get('admin_email') ?? '').trim().toLowerCase()
-  const billingModel = String(fd.get('billing_model') ?? 'per_booking')
-  const setupFee = kronorToCents(String(fd.get('setup_fee') ?? '')) ?? 0
-  const perBookingFee = kronorToCents(String(fd.get('per_booking_fee') ?? '')) ?? 0
-  const flatMonthlyFee = kronorToCents(String(fd.get('flat_monthly_fee') ?? '')) ?? 0
+  // Owner (design "Ägare & roll"): name is invite-metadata only (public.users has no
+  // name column — frozen schema), email triggers the magic-link invite when set.
+  const ownerName = String(fd.get('owner_name') ?? '').trim().slice(0, 120)
+  const ownerEmail = String(fd.get('owner_email') ?? '').trim().toLowerCase()
+  // Billing is NOT collected in the onboarding wizard (design drops it → edited later
+  // in tenant-detail / Fakturering). Defaults keep the tenant_settings row valid.
+  const billingModel = 'per_booking'
+  const setupFee = 0
+  const perBookingFee = 0
+  const flatMonthlyFee = 0
 
-  // Theme template (nivå 2) + initial branding (nivå 1) so the new salon launches
-  // with a DISTINCT look. All optional: nav/hero fall back to A/1; colours that are
-  // absent or invalid are skipped → branding stays {} (legacy default), keeping
-  // onboarding step 2 on "att göra" until the operator actually brands the salon.
-  const navVariant = pickNavVariant(fd.get('nav_variant'))
-  const heroVariant = pickHeroVariant(fd.get('hero_variant'))
-  // Booking-vy-val (§2.4): Variant 3 (guidad, default) / Variant 4 (snabbboka).
-  // Held apart from the nav/hero LAYOUT variant above. M3 reads settings.booking.variant.
+  // Storefront look (the five named themes) → settings.theme → [data-theme].
+  const theme = pickTheme(fd.get('theme'))
+  // Booking-vy-val (§2.4): one of the four design ids; 'wizard' default. M3 reads
+  // settings.booking.variant. Held apart from the theme (look) above.
   const bookingVariantRaw = String(fd.get('booking_variant') ?? '')
-  const bookingVariant: BookingVariant = isBookingVariant(bookingVariantRaw) ? bookingVariantRaw : '3'
-  const colorPrimary = hexOrSkip(fd.get('color_primary'))
-  const colorBg = hexOrSkip(fd.get('color_bg'))
-  const colorFg = hexOrSkip(fd.get('color_fg'))
+  const bookingVariant: BookingVariant = isBookingVariant(bookingVariantRaw)
+    ? bookingVariantRaw
+    : DEFAULT_BOOKING_VARIANT
+  // Token-branding (nivå 1, no-code): accent colour ONLY. We deliberately do NOT
+  // write color_primary/bg/fg — those inline overrides WIN over the [data-theme]
+  // palette (injectTenantTokens), which would MASK the theme just picked ("every
+  // salon looks the same" trap). The theme owns the palette; accent layers a single
+  // CTA colour on top. Tagline → settings.copy.tagline; logo → R2 (below).
+  const colorAccent = hexOrSkip(fd.get('color_accent'))
+  const tagline = String(fd.get('tagline') ?? '').trim().slice(0, 160)
 
   if (!name) return { error: 'Ange ett salongsnamn.' }
   if (!slugCheck.ok) return { error: slugCheck.reason }
-  if (!isBillingModel(billingModel)) return { error: 'Ogiltig prismodell.' }
-  if (adminEmail && !EMAIL_RE.test(adminEmail)) return { error: 'Ogiltig e-postadress för salongsadmin.' }
+  if (ownerEmail && !EMAIL_RE.test(ownerEmail)) return { error: 'Ogiltig e-postadress för ägaren.' }
   const slug = slugCheck.slug
 
-  // Only persist colours the operator actually picked (valid hex). A blank/invalid
-  // field is skipped → smakfull Corevo-neutral default on the storefront.
+  // Accent-only branding: the theme owns the palette, so we never write
+  // color_primary/bg/fg here. Logo is added below once the tenant id exists.
   const initialBranding: Branding = {}
-  if (colorPrimary) initialBranding.color_primary = colorPrimary
-  if (colorBg) initialBranding.color_bg = colorBg
-  if (colorFg) initialBranding.color_fg = colorFg
+  if (colorAccent) initialBranding.color_accent = colorAccent
 
   // 1) tenant
   const { data: tenant, error: tErr } = await supabase
@@ -94,16 +96,26 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     await supabase.from('tenants').delete().eq('id', tenantId) // cascades to children
   }
 
-  // 2) tenant_settings (defaults + theme template + initial branding + FLÖDE 2 billing).
-  //    layout.{nav,hero}_variant is read by the storefront (pickNav/pickHero) so the
-  //    new salon ships a distinct template, not a clone of the last one.
+  // Optional logo (Token-branding step): upload now that we have the tenant id for the
+  // R2 path. Best-effort — a failed/absent upload never blocks the atomic create.
+  const logo = fd.get('logo')
+  if (logo instanceof File && logo.size > 0) {
+    const res = await uploadImage(logo, `tenants/${tenantId}/branding`)
+    if (res.ok) initialBranding.logo_url = res.url
+  }
+
+  // 2) tenant_settings (defaults + theme + accent/tagline branding + FLÖDE 2 billing).
+  //    settings.theme is read by the public layout → [data-theme], so the new salon
+  //    ships the chosen named storefront, not the default. settings.copy.tagline is
+  //    the owner-editable footer/utility tagline (M2/M6 copy contract).
   const { error: sErr } = await supabase.from('tenant_settings').insert({
     tenant_id: tenantId,
     payment_mode: 'on_site',
     branding: initialBranding,
     settings: {
-      layout: { nav_variant: navVariant, hero_variant: heroVariant },
+      theme,
       booking: { variant: bookingVariant },
+      ...(tagline ? { copy: { tagline } } : {}),
     },
     billing_model: billingModel,
     setup_fee_cents: setupFee,
@@ -137,14 +149,19 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     return { error: GENERIC }
   }
 
-  // 5) invite salon_admin (service role; graceful degrade when key absent)
+  // 5) invite the owner (salon_admin) via magic-link (service role; graceful degrade
+  //    when key absent). Owner name rides along as auth user_metadata.full_name
+  //    (public.users has no name column — frozen schema).
   let inviteNote = ''
-  if (adminEmail) {
+  if (ownerEmail) {
     const svc = createServiceClient()
     if (!svc) {
       inviteNote = ' Inbjudan ej skickad: SUPABASE_SERVICE_ROLE_KEY saknas (sätts av ops).'
     } else {
-      const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(adminEmail)
+      const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(
+        ownerEmail,
+        ownerName ? { data: { full_name: ownerName } } : undefined,
+      )
       if (iErr || !invited?.user) {
         inviteNote = ` Salongen skapad, men inbjudan misslyckades: ${iErr?.message ?? 'okänt fel'}.`
       } else {
@@ -159,18 +176,18 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
         // Only the auth.admin.* calls above genuinely require svc.
         const { error: uErr } = await supabase
           .from('users')
-          .insert({ id: authId, tenant_id: tenantId, email: adminEmail, role_id: role.id, status: 'active' })
+          .insert({ id: authId, tenant_id: tenantId, email: ownerEmail, role_id: role.id, status: 'active' })
         if (uErr) {
           // Don't claim success: most likely the email already has an account.
-          inviteNote = ` Salongen skapad, men salongsadmin kunde inte kopplas (kontot finns kanske redan).`
+          inviteNote = ` Salongen skapad, men ägaren kunde inte kopplas (kontot finns kanske redan).`
         } else {
           await logPlatformAction(supabase, {
             action: 'tenant.invite',
             tenantId,
             actorId: user.id,
-            meta: { email: adminEmail },
+            meta: { email: ownerEmail },
           })
-          inviteNote = ` Inbjudan skickad till ${adminEmail}.`
+          inviteNote = ` Inbjudan skickad till ${ownerEmail}.`
         }
       }
     }
@@ -180,7 +197,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     action: 'tenant.create',
     tenantId,
     actorId: user.id,
-    meta: { slug, name, billing_model: billingModel },
+    meta: { slug, name, theme, booking_variant: bookingVariant },
   })
 
   revalidatePath('/platform')
@@ -206,6 +223,7 @@ type Branding = {
   color_primary?: string | null
   color_bg?: string | null
   color_fg?: string | null
+  color_accent?: string | null
   font_body?: string | null
   logo_url?: string | null
 }
@@ -388,7 +406,9 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
   if (!name) return { error: 'Ange ett salongsnamn.' }
   if (reviewUrl === undefined)
     return { error: 'Ogiltig recensionslänk. Använd en https-länk, t.ex. https://g.page/r/.../review.' }
-  const bookingVariant: BookingVariant = isBookingVariant(variantRaw) ? variantRaw : '3'
+  const bookingVariant: BookingVariant = isBookingVariant(variantRaw)
+    ? variantRaw
+    : DEFAULT_BOOKING_VARIANT
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd salong.' }
