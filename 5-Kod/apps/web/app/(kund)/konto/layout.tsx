@@ -1,6 +1,4 @@
-import type { CSSProperties } from 'react'
 import { notFound } from 'next/navigation'
-import { injectTenantTokens } from '@corevo/ui'
 import { requirePortal } from '@/lib/auth/session'
 import { currentTenant } from '@/lib/tenant-data'
 import { PortalShell } from '@/components/portal/PortalShell'
@@ -21,25 +19,17 @@ export default async function KontoLayout({ children }: { children: React.ReactN
   const bundle = await currentTenant()
   if (!bundle?.settings.customerAccountsEnabled) notFound()
   const user = await requirePortal('kund')
-  const { branding, theme } = bundle.settings
 
   // The /konto subtree is a STOREFRONT surface (the salon's own product), so it
-  // carries the storefront world + the salon's theme. data-world, data-theme AND
-  // injectTenantTokens MUST sit on the SAME element: the theme tokens in
-  // packages/ui/tokens.css are keyed on the compound [data-world="storefront"]
-  // [data-theme="…"], and the inline per-tenant overrides (injectTenantTokens) must
-  // win over that rule — which only holds when both live on one element. PortalShell
-  // (out of revir) doesn't apply a theme, so we set all three here on our own wrapper.
+  // carries the storefront world + the salon's theme. PortalShell now applies all
+  // three on its kund-branch root — data-world, data-theme AND the inline
+  // injectTenantTokens overrides on the SAME element (the override must beat the
+  // compound [data-world="storefront"][data-theme="…"] rule in packages/ui/tokens.css,
+  // which only holds when both live on one element) — so the salon header is themed
+  // alongside the body. No inner wrapper needed.
   return (
-    <PortalShell user={user} title="Mitt konto">
-      <div
-        data-world="storefront"
-        data-theme={theme}
-        data-tenant={bundle.tenant.id}
-        style={injectTenantTokens(branding) as CSSProperties}
-      >
-        {children}
-      </div>
+    <PortalShell user={user} title="Mina sidor" world="storefront" theme={bundle.settings.theme}>
+      {children}
     </PortalShell>
   )
 }

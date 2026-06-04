@@ -1,7 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react'
+import Link from 'next/link'
 import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant, getTenantById } from '@/lib/tenant-data'
 import { tenantStorefrontUrl } from '@/lib/storefront-url'
+import { createClient } from '@/lib/supabase/server'
 import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 import { PortalSidebar, type PortalRole } from './PortalSidebar'
@@ -65,12 +67,17 @@ export async function PortalShell({
   title,
   world,
   portal,
+  theme,
   children,
 }: {
   user: CurrentUser
   title: string
   world?: 'backoffice' | 'storefront'
   portal?: PortalRole
+  /** Salon theme key for the customer (/konto) branch, applied to the shell root
+   *  so the header is themed alongside the body. Ignored by the back-office branch
+   *  (operator tools stay forest/gold regardless of salon theme). */
+  theme?: string
   children: ReactNode
 }) {
   // Storefront/kund portals resolve the tenant from the host. Back-office portals
@@ -144,25 +151,40 @@ export async function PortalShell({
     )
   }
 
-  // Customer /konto — un-worlded, original top-header layout (unchanged).
+  // Customer /konto — a STOREFRONT salon header (the salon's own product), NOT the
+  // back-office portal chrome. data-world + data-theme + the inline tenant-token
+  // overrides all sit on THIS root element (the override must beat the
+  // [data-world][data-theme] block, which only holds on one element), so the header
+  // is themed alongside the body and no descendant re-declares the theme.
+  //
+  // The salon name is the wordmark (links to the storefront home), the customer's
+  // initial sits in a compact avatar, and Logga ut is the only action. The email +
+  // raw role enum ("· kund") are NOT surfaced — that was a back-office leak; a
+  // customer never sees their role on their own salon page.
+  const supabase = await createClient()
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser()
+  const fullName = ((authUser?.user_metadata ?? {}) as { full_name?: string }).full_name?.trim() || null
+  const initial = (fullName?.charAt(0) || user.email?.charAt(0) || '·').toUpperCase()
+
   return (
     <div
-      className="tenant-root"
+      className="tenant-root konto-shell"
       data-world={world}
+      data-theme={theme}
       data-tenant={bundle?.tenant.id}
       style={injectTenantTokens(branding) as CSSProperties}
     >
-      <header className="portal-header">
-        <div className="portal-header-inner">
-          <div className="portal-ident">
-            <span className="portal-tenant">{tenantName}</span>
-            <span className="portal-title">{title}</span>
-          </div>
-          <div className="portal-user">
-            <span className="portal-user-meta">
-              {user.email}
-              {user.roleName ? ` · ${user.roleName}` : ''}
-              {user.platformAdmin ? ' · platform' : ''}
+      <header className="konto-header">
+        <div className="konto-header-inner">
+          <Link href="/" className="konto-ident" aria-label={`${tenantName} – till startsidan`}>
+            <span className="konto-wordmark">{tenantName}</span>
+            <span className="konto-eyebrow">{title}</span>
+          </Link>
+          <div className="konto-user">
+            <span className="konto-avatar" aria-hidden>
+              {initial}
             </span>
             <SignOutButton />
           </div>
