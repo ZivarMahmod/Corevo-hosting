@@ -63,6 +63,7 @@ const ACTION_LABEL: Record<string, string> = {
   'tenant.update': 'Salongsdata uppdaterad',
   'tenant.password_reset': 'Lösenordsreset skickad',
   'tenant.staff_create': 'Personal tillagd',
+  'platform.help_mode_open': 'Hjälp-läge öppnat',
 }
 function actionLabel(action: string): string {
   return ACTION_LABEL[action] ?? action
@@ -229,7 +230,7 @@ export default async function PlatformOverviewPage() {
             </div>
           ) : (
             <Table
-              cols={['Salong', 'Subdomän', 'Stad', 'Senast aktiv', 'Bokningar', 'Status']}
+              cols={['Salong', 'Subdomän', 'Stad', 'Skapad', 'Bokningar', 'Status']}
               rows={tenants.slice(0, 8).map((t) => [
                 <Link
                   key={`${t.id}-name`}
@@ -251,14 +252,16 @@ export default async function PlatformOverviewPage() {
                 <span key={`${t.id}-city`} className={styles.sub}>
                   —
                 </span>,
-                // "Senast aktiv": no activity telemetry → honestly show when the
-                // salong was created (labelled "Skapad" in the cell), never a faked
-                // last-active timestamp.
+                // #16 — column is now honestly "Skapad" (the value is the real
+                // tenants.created_at). No faked last-active timestamp; the header
+                // carries the label, so the cell shows just the date.
                 <span key={`${t.id}-created`} className={styles.muted}>
-                  Skapad {formatDate(t.createdAt)}
+                  {formatDate(t.createdAt)}
                 </span>,
+                // #15 — real per-tenant booking count (listTenants groups it),
+                // honest 0 where none. No hardcoded 0.
                 <span key={`${t.id}-bookings`} className="num">
-                  0
+                  {t.bookingsCount}
                 </span>,
                 <span key={`${t.id}-status`}>{statusBadge(t.status)}</span>,
               ])}

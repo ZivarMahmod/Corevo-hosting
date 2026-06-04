@@ -21,6 +21,7 @@ export type PlatformAuditAction =
   | 'tenant.update' // edit safe tenant fields (name, review url, booking variant)
   | 'tenant.password_reset' // generate a recovery link for the salon admin
   | 'tenant.staff_create' // Zivar-assisted staff onboarding on a chosen tenant
+  | 'platform.help_mode_open' // platform admin opens help-mode for a tenant (logged platform-side)
 
 export async function logPlatformAction(
   supabase: SupabaseClient<Database>,

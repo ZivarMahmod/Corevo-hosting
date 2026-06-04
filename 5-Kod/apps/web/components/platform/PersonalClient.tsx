@@ -1,10 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useActionState, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Badge,
   Button,
-  Callout,
   Card,
   Drawer,
   Icon,
@@ -14,6 +14,7 @@ import {
   useToast,
   type BadgeTone,
 } from '@/components/portal/ui'
+import { createTenantStaff, type ActionState } from '@/lib/platform/actions'
 import type { StaffListItem } from '@/lib/platform/people'
 import styles from './personal-platform.module.css'
 
@@ -45,20 +46,21 @@ function invitedLabel(iso: string | null): string {
 }
 
 /**
- * Personal (cross-tenant) interaction island — SuperData.jsx:SuperStaff. Exact
- * copy of the law source's composition: PageHead (with the "Bjud in personal"
- * button in its actions slot), an honest derived stat grid, the SERVICE_ROLE_KEY
- * guard-band, a search + status-pill control row (live counts), the cross-tenant
- * staff table with a per-row "Påminn" nudge, and the "Bjud in personal" Drawer.
+ * Personal (cross-tenant) interaction island — SuperData.jsx:SuperStaff. PageHead
+ * (with the "Lägg till personal" button in its actions slot), an honest derived stat
+ * grid, a search + status-pill control row (live counts), the cross-tenant staff
+ * table, and the "Lägg till personal" Drawer.
  *
  * NO row-detail drawer + a non-clickable name cell — SuperStaff has neither (the
- * mock's only Drawer is the invite one; its name cell is a plain <span>). The
- * Kunder view (SuperCustomers) has the detail drawer; Personal does not.
+ * mock's only Drawer is the add one; its name cell is a plain <span>). The Kunder
+ * view (SuperCustomers) has the detail drawer; Personal does not.
  *
- * HONEST DATA: every figure is derived from the real `staff` rows (the mock's
- * `+32`/`+30`/`"24"` placeholder math is NOT carried). Mutations are toast-only —
- * the real magic-link invite + "Påminn" need SUPABASE_SERVICE_ROLE_KEY and a new
- * lib/platform action (frozen — flagged), and the mock itself is toast-only here.
+ * HONEST DATA (#2/#3 ärlighetspass): every figure is derived from the real `staff`
+ * rows (the mock's `+32`/`+30`/`"24"` placeholder math is NOT carried). The drawer
+ * runs the REAL createTenantStaff action (inserts a staff row on the chosen tenant —
+ * namn + salong, the only fields it stores). No email/roll inputs (they are NOT
+ * persisted by this action — never render fields that look saved), no "magic-link"
+ * claim (no e-post is sent), no per-row "Påminn" (no reminder action exists).
  */
 export function PersonalClient({
   staff,
@@ -110,10 +112,10 @@ export function PersonalClient({
       <PageHead
         eyebrow="Data & drift"
         title="Personal"
-        lede="Onboarda frisörer åt salonger som vill ha hjälp. Magic-link-invite — rätt roll tilldelas direkt."
+        lede="Lägg till frisörer åt salonger som vill ha hjälp. Skapar en personalrad direkt på vald salong."
       >
-        <Button variant="primary" icon="mail" onClick={() => setInviting(true)}>
-          Bjud in personal
+        <Button variant="primary" icon="plus" onClick={() => setInviting(true)}>
+          Lägg till personal
         </Button>
       </PageHead>
 
@@ -121,23 +123,13 @@ export function PersonalClient({
         <Stat label="Personal totalt" value={stats.total} icon="scissors" />
         <Stat label="Aktiva" value={stats.aktiva} icon="checkCircle" />
         <Stat
-          label="Väntar invite"
+          label="Ej aktiva"
           value={stats.vantar}
           deltaTone="muted"
           icon="mail"
-          hint="magic-link"
         />
         <Stat label="Salonger" value={stats.salonger} icon="building" />
       </div>
-
-      {/* SERVICE_ROLE_KEY guard-band (mock warning-bg band, §4.7) */}
-      <Callout tone="warning" icon="alert">
-        Invite-vägen kräver{' '}
-        <span className="num" style={{ fontWeight: 600 }}>
-          SERVICE_ROLE_KEY
-        </span>{' '}
-        som Worker-secret — kod-klar men overifierad. Verifiera i bygget.
-      </Callout>
 
       {/* search + status-pills (mock control row — search + pills only) */}
       <div
@@ -218,15 +210,17 @@ export function PersonalClient({
               <Badge key={`${s.id}-st`} tone={statusTone(s.status)} dot={false}>
                 {s.status}
               </Badge>,
-              s.status !== 'Aktiv' ? (
-                <RemindButton key={`${s.id}-act`} staff={s} />
-              ) : (
+              s.status === 'Aktiv' ? (
                 <Icon
                   key={`${s.id}-act`}
                   name="check"
                   size={16}
                   style={{ color: 'var(--c-success)' }}
                 />
+              ) : (
+                <span key={`${s.id}-act`} style={{ color: 'var(--c-ink-3)' }}>
+                  —
+                </span>
               ),
             ])}
           />
@@ -235,21 +229,6 @@ export function PersonalClient({
 
       {inviting && <InviteDrawer tenants={tenants} onClose={() => setInviting(false)} />}
     </>
-  )
-}
-
-/** Per-row nudge for a pending invite — toast-only (mirrors the mock; real remind
- *  needs SERVICE_ROLE_KEY + a frozen lib/platform action, flagged in the manifest). */
-function RemindButton({ staff }: { staff: StaffListItem }) {
-  const { notify } = useToast()
-  return (
-    <button
-      type="button"
-      className={styles.remind}
-      onClick={() => notify(`Påminnelse skickad till ${staff.email ?? staff.name}`, 'info')}
-    >
-      Påminn
-    </button>
   )
 }
 
@@ -269,7 +248,7 @@ function EmptyState({ filtered }: { filtered: boolean }) {
           <p className={styles.emptyTitle}>Ingen personal ännu</p>
           <p className={styles.emptyText}>
             När en salong onboardar frisörer dyker de upp här — tvärs alla salonger.
-            Bjud in den första med <b>Bjud in personal</b>.
+            Lägg till den första med <b>Lägg till personal</b>.
           </p>
         </>
       )}
@@ -277,8 +256,10 @@ function EmptyState({ filtered }: { filtered: boolean }) {
   )
 }
 
-/** "Bjud in personal" — engångs-invite via magic-link. Toast-only here: the real
- *  send needs SERVICE_ROLE_KEY + a frozen lib/platform action (flagged). */
+/** "Lägg till personal" — wired to the REAL createTenantStaff action: it inserts a
+ *  staff row (namn + salong) on the chosen tenant. Only those two fields are stored,
+ *  so only those two are shown — no email/roll inputs that look saved but aren't, and
+ *  no "magic-link" claim (no e-post is sent). */
 function InviteDrawer({
   tenants,
   onClose,
@@ -287,47 +268,33 @@ function InviteDrawer({
   onClose: () => void
 }) {
   const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(createTenantStaff, {})
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Personal tillagd', 'success')
+      router.refresh()
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
   return (
     <Drawer
-      title="Bjud in personal"
-      sub="Engångs-invite. Frisören sätter eget lösenord."
-      ariaLabel="Bjud in personal"
+      title="Lägg till personal"
+      sub="Skapar en personalrad direkt på vald salong."
+      ariaLabel="Lägg till personal"
       onClose={onClose}
-      footer={
-        <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            style={{ flex: 1, justifyContent: 'center' }}
-          >
-            Avbryt
-          </Button>
-          <Button
-            variant="primary"
-            icon="mail"
-            onClick={() => {
-              onClose()
-              notify('Invite skickad — magic-link på väg', 'info')
-            }}
-            style={{ flex: 1, justifyContent: 'center' }}
-          >
-            Skicka invite
-          </Button>
-        </div>
-      }
     >
-      <div style={{ display: 'grid', gap: 14 }}>
-        <label className={styles.field}>
-          <span>E-post</span>
-          <input type="email" placeholder="frisor@salong.se" autoCapitalize="none" />
-        </label>
+      <form action={formAction} style={{ display: 'grid', gap: 14 }}>
         <label className={styles.field}>
           <span>Namn</span>
-          <input placeholder="Valfritt — frisören kan fylla i själv" />
+          <input name="title" required placeholder="t.ex. Hilal — frisör" aria-label="Namn / titel" />
         </label>
         <label className={styles.field}>
           <span>Salong</span>
-          <select defaultValue={tenants[0]?.id ?? ''}>
+          <select name="tenantId" defaultValue={tenants[0]?.id ?? ''} required>
             {tenants.length === 0 ? (
               <option value="">Ingen salong ännu</option>
             ) : (
@@ -339,19 +306,30 @@ function InviteDrawer({
             )}
           </select>
         </label>
-        <label className={styles.field}>
-          <span>Roll</span>
-          <select defaultValue="Frisör">
-            <option>Frisör</option>
-            <option>Barber</option>
-            <option>Salongschef</option>
-          </select>
-        </label>
-        <Callout tone="info" icon="info">
-          Magic-link = engångs-invite, inte löpande login. Rätt roll/access tilldelas
-          direkt.
-        </Callout>
-      </div>
+        {state.error && (
+          <p className="auth-error" role="alert" style={{ margin: 0, fontSize: 12.5 }}>
+            {state.error}
+          </p>
+        )}
+        <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            style={{ flex: 1, justifyContent: 'center' }}
+          >
+            Avbryt
+          </Button>
+          <Button
+            variant="primary"
+            type="submit"
+            icon="plus"
+            disabled={pending || tenants.length === 0}
+            style={{ flex: 1, justifyContent: 'center' }}
+          >
+            {pending ? 'Lägger till…' : 'Lägg till'}
+          </Button>
+        </div>
+      </form>
     </Drawer>
   )
 }

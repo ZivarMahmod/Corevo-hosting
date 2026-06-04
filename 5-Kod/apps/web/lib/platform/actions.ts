@@ -522,3 +522,20 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
   })
   return { success: `Medarbetare "${title}" tillagd hos salongen.` }
 }
+
+/**
+ * Open "hjälp-läge" for a tenant. This is the HONEST minimal version (#1): it does
+ * NO impersonation and changes NO tenant data — it only writes ONE platform-side
+ * audit row so Zivar's act of opening a salon's help-view is logged at the platform.
+ * The actor comes from platformCtx (the authed platform_admin), never the client.
+ */
+export async function enterHelpMode(tenantId: string): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  if (!tenantId) return { error: 'Saknar salong.' }
+  await logPlatformAction(supabase, {
+    action: 'platform.help_mode_open',
+    tenantId,
+    actorId: user.id,
+  })
+  return { success: 'Hjälp-läge öppnat — loggat.' }
+}

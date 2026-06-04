@@ -3,6 +3,8 @@ import {
   isBookingVariant,
   readBookingVariant,
   readBookingMode,
+  BOOKING_VARIANTS,
+  BOOKING_VARIANT_LABELS,
   DEFAULT_BOOKING_VARIANT,
 } from './booking-variant'
 
@@ -57,6 +59,40 @@ describe('readBookingVariant (M3-facing contract)', () => {
 
   it("default is 'wizard'", () => {
     expect(DEFAULT_BOOKING_VARIANT).toBe('wizard')
+  })
+})
+
+describe('BOOKING_VARIANT_LABELS (#17 — the platform "Variant" column label)', () => {
+  it('maps all four canonical ids to a distinct label', () => {
+    expect(BOOKING_VARIANT_LABELS.wizard).toBe('Steg-för-steg')
+    expect(BOOKING_VARIANT_LABELS.compact).toBe('Snabbboka')
+    expect(BOOKING_VARIANT_LABELS.drawer).toBe('Drawer')
+    expect(BOOKING_VARIANT_LABELS.inline).toBe('Inline-sektion')
+  })
+
+  it('has a label for every variant (no missing key vs the legacy 2-value map)', () => {
+    for (const v of BOOKING_VARIANTS) {
+      expect(typeof BOOKING_VARIANT_LABELS[v]).toBe('string')
+      expect(BOOKING_VARIANT_LABELS[v].length).toBeGreaterThan(0)
+    }
+  })
+
+  it('resolves the right label end-to-end via readBookingVariant (drawer ≠ wizard)', () => {
+    // The exact #17 bug: a tenant on 'drawer'/'inline' used to collapse to the
+    // wizard/compact label. Through the canonical resolver each is distinct now.
+    expect(BOOKING_VARIANT_LABELS[readBookingVariant({ booking: { variant: 'drawer' } })]).toBe(
+      'Drawer',
+    )
+    expect(BOOKING_VARIANT_LABELS[readBookingVariant({ booking: { variant: 'inline' } })]).toBe(
+      'Inline-sektion',
+    )
+    // legacy numeric ids still forward-map to the right label.
+    expect(BOOKING_VARIANT_LABELS[readBookingVariant({ booking: { variant: '3' } })]).toBe(
+      'Steg-för-steg',
+    )
+    expect(BOOKING_VARIANT_LABELS[readBookingVariant({ booking: { variant: '4' } })]).toBe(
+      'Snabbboka',
+    )
   })
 })
 

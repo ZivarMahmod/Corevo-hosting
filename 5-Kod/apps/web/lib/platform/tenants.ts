@@ -3,7 +3,7 @@ import type { Tables } from '@corevo/db'
 import type { TenantBranding } from '@corevo/ui'
 import { platformCtx } from './guard'
 import type { AuditRow } from './audit'
-import { readBookingVariant, type BookingVariant } from './booking-variant'
+import { readBookingVariant, BOOKING_VARIANT_LABELS, type BookingVariant } from './booking-variant'
 
 // Cross-tenant reads for the platform control center. All reads go through the
 // authed platform_admin cookie client (platformCtx), whose JWT carries the
@@ -21,11 +21,31 @@ export type TenantListItem = {
   plan: string
   billingModel: string
   createdAt: string
+  /** Live booking count for this tenant (all statuses) — honest 0 where none. */
+  bookingsCount: number
 }
 
 export type TenantFilters = { q?: string; status?: string }
 
-/** All tenants (cross-tenant), filtered by free-text slug/name + status. */
+/**
+ * Bucket booking rows into a per-tenant count map (the #15 grouped-count core,
+ * extracted pure so it's testable without a DB). One pass over the rows; a tenant
+ * with no rows is simply absent → the caller reads an honest 0.
+ */
+export function countBookingsByTenant(
+  rows: { tenant_id: string }[],
+): Map<string, number> {
+  const m = new Map<string, number>()
+  for (const r of rows) m.set(r.tenant_id, (m.get(r.tenant_id) ?? 0) + 1)
+  return m
+}
+
+/**
+ * All tenants (cross-tenant), filtered by free-text slug/name + status. The
+ * per-tenant bookingsCount is a SINGLE grouped count: one `bookings` read bucketed
+ * in JS by tenant_id (the metrics.ts pattern), never an N+1 per-tenant fan-out.
+ * platform_admin reads cross-tenant via the RLS bypass. Honest 0 where none.
+ */
 export async function listTenants(filters: TenantFilters = {}): Promise<TenantListItem[]> {
   const { supabase } = await platformCtx()
   let q = supabase
@@ -43,7 +63,15 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
     q = q.or(`slug.ilike.${term},name.ilike.${term}`)
   }
 
-  const { data } = await q
+  const [{ data }, bookingsRes] = await Promise.all([
+    q,
+    supabase.from('bookings').select('tenant_id'),
+  ])
+
+  const bookingsByTenant = countBookingsByTenant(
+    (bookingsRes.data ?? []) as { tenant_id: string }[],
+  )
+
   type Row = TenantRow & { tenant_settings: { billing_model: string } | { billing_model: string }[] | null }
   return ((data ?? []) as Row[]).map((t) => {
     const ts = Array.isArray(t.tenant_settings) ? t.tenant_settings[0] : t.tenant_settings
@@ -55,6 +83,7 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
       plan: t.plan,
       billingModel: ts?.billing_model ?? 'per_booking',
       createdAt: t.created_at,
+      bookingsCount: bookingsByTenant.get(t.id) ?? 0,
     }
   })
 }
@@ -64,19 +93,21 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
 // one staff read + one owner read for the WHOLE platform, then aggregated in JS
 // (mirrors metrics.ts) — never an N×per-tenant query loop. Admin-scale volumes.
 
-const VARIANT_LABEL: Record<'3' | '4', string> = { '3': 'Steg-för-steg', '4': 'Snabbboka' }
-
 export type CustomizationLevel = 1 | 2 | 3
 
 /**
- * Derive the salon's storefront customization tier (the "Nivå" chip) from REAL
- * signals — there is NO stored level column, so we never invent a number:
- *   • Nivå 3 = a scoped custom-CSS override string is present (premium, code-level —
- *     the same `customOverride.css` seam tenant-data.ts reads on the storefront).
- *   • Nivå 2 = a no-code template is in play (theme preset OR nav/hero layout variant
- *     OR an uploaded logo/font) — the salon went past raw colour tokens.
+ * Derive the salon's storefront customization tier (the "Nivå" chip) from REAL,
+ * actually-set signals — there is NO stored level column, so we never invent a
+ * number and never read dead keys (#18):
+ *   • Nivå 2 = the salon went past the raw colour-token floor with no-code richness:
+ *     a named theme preset is set (settings.theme) OR an uploaded logo/font
+ *     (branding.logo_url / font_body).
  *   • Nivå 1 = colour tokens only (or nothing) — the baseline no-code floor.
- * Mirrors the codebase's nivå-1/2/3 convention (globals.css / tenant-data.ts).
+ * The old phantom Nivå-3 `custom_override.css` branch + the dead
+ * `settings.layout.nav_variant/hero_variant` reads are REMOVED — that nav/hero
+ * A/B system is retired (components/brand/variants.ts) and the scoped-CSS Nivå-3
+ * seam is never set via this surface, so reading them only faked a tier. The return
+ * type keeps `3` for callers' exhaustiveness; this derivation simply never returns it.
  */
 export function deriveCustomizationLevel(
   rawSettings: Record<string, unknown> | null | undefined,
@@ -84,13 +115,9 @@ export function deriveCustomizationLevel(
 ): CustomizationLevel {
   const s = rawSettings ?? {}
   const b = branding ?? {}
-  const override = s.custom_override as { css?: unknown } | undefined
-  if (override && typeof override.css === 'string' && override.css.trim() !== '') return 3
-  const layout = (s.layout ?? {}) as Record<string, unknown>
   const themeSet = typeof s.theme === 'string' && s.theme.trim() !== ''
-  const layoutSet = Boolean(layout.nav_variant || layout.hero_variant)
   const noCodeRich = Boolean(b.logo_url || b.font_body)
-  if (themeSet || layoutSet || noCodeRich) return 2
+  if (themeSet || noCodeRich) return 2
   return 1
 }
 
@@ -176,8 +203,10 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
     const ts = Array.isArray(t.tenant_settings) ? t.tenant_settings[0] : t.tenant_settings
     const rawSettings = (ts?.settings ?? {}) as Record<string, unknown>
     const branding = (ts?.branding ?? {}) as Record<string, unknown>
-    const booking = (rawSettings.booking ?? {}) as Record<string, unknown>
-    const variant: '3' | '4' = booking.variant === '4' ? '4' : '3'
+    // #17 — canonical 4-id variant resolver (maps legacy '3'/'4' forward), NOT the
+    // old 2-value legacy parser. So 'wizard'/'compact'/'drawer'/'inline' each get the
+    // right label instead of collapsing to "Steg-för-steg" / "Snabbboka".
+    const variant = readBookingVariant(rawSettings)
     const themeRaw = typeof rawSettings.theme === 'string' && rawSettings.theme.trim() ? rawSettings.theme : null
     const primary = typeof branding.color_primary === 'string' ? branding.color_primary : null
     const stats = bk.get(t.id) ?? { total: 0, completed: 0, last: null }
@@ -196,10 +225,11 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
       plan: t.plan,
       billingModel: ts?.billing_model ?? 'per_booking',
       createdAt: t.created_at,
+      bookingsCount: stats.total,
       markColor: markColorFor(t.slug, primary),
       owner: owner.get(t.id) ?? null,
       themeLabel: themeRaw ? themeRaw.charAt(0).toUpperCase() + themeRaw.slice(1) : null,
-      variantLabel: VARIANT_LABEL[variant],
+      variantLabel: BOOKING_VARIANT_LABELS[variant],
       level: deriveCustomizationLevel(rawSettings, branding),
       bookings: stats.total,
       completed: stats.completed,

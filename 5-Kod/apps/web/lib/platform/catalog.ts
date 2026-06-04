@@ -107,20 +107,24 @@ export async function getPlatformRoles(): Promise<PlatformRoleWithUsers[]> {
 }
 
 // ── Integrationer ───────────────────────────────────────────────────────────────
-export type IntegrationStatus = 'Aktiv' | 'Pilot' | 'Delvis' | 'Inaktiv'
-/** How the connected-count is sourced — drives whether we show a live count. */
+/** How the connected-count is sourced — drives whether we show a live count + a
+ *  derived status badge. null = no per-tenant backing column → no count, no badge. */
 export type IntegrationCountSource = 'stripe' | 'review_link' | 'custom_domain' | null
 
 export type Integration = {
   id: string
   name: string
   desc: string
-  status: IntegrationStatus
   color: string
   letter: string
   flow: string
   countSource: IntegrationCountSource
 }
+
+// NO static `status` field here (#13): a hardcoded "Aktiv"/"Pilot" string is exactly
+// the fake-live signal the ärlighetspass kills. The status badge is DERIVED at render
+// from the real `connected` count (see IntegrationsGrid.statusBadge), and cards with
+// no backing column get no badge at all.
 
 /** Static integration catalog (mock SU_INTEGRATIONS) — descriptions are config. */
 const INTEGRATION_CATALOG: Integration[] = [
@@ -128,7 +132,6 @@ const INTEGRATION_CATALOG: Integration[] = [
     id: 'stripe',
     name: 'Stripe Connect',
     desc: 'Betalning vid bokning + utbetalning per tenant.',
-    status: 'Aktiv',
     color: '#635BFF',
     letter: 'S',
     flow: 'Flöde 1 (kund betalar salongen direkt)',
@@ -138,7 +141,6 @@ const INTEGRATION_CATALOG: Integration[] = [
     id: 'google',
     name: 'Google-recensioner',
     desc: 'Recensionslänk per salong — visas i kundportal & bekräftelse.',
-    status: 'Aktiv',
     color: '#EA4335',
     letter: 'G',
     flow: 'tenant_settings.review_link',
@@ -148,7 +150,6 @@ const INTEGRATION_CATALOG: Integration[] = [
     id: 'sms',
     name: 'SMS (46elks)',
     desc: 'Bokningsbekräftelse + påminnelse 24 h innan.',
-    status: 'Aktiv',
     color: '#1F4636',
     letter: 'S',
     flow: 'Kö via Worker · sann-kopplad toggle',
@@ -158,7 +159,6 @@ const INTEGRATION_CATALOG: Integration[] = [
     id: 'mail',
     name: 'E-post (Resend)',
     desc: 'Bekräftelser, invites, lösenordsreset.',
-    status: 'Aktiv',
     color: '#0A0A0A',
     letter: '@',
     flow: 'Transaktionell',
@@ -168,7 +168,6 @@ const INTEGRATION_CATALOG: Integration[] = [
     id: 'domain',
     name: 'Cloudflare / Domän',
     desc: 'Subdomän salong.corevo.se. Egen domän = parkerat spår.',
-    status: 'Delvis',
     color: '#F38020',
     letter: 'C',
     flow: 'tenant_domains',
@@ -178,7 +177,6 @@ const INTEGRATION_CATALOG: Integration[] = [
     id: 'pos',
     name: 'Corevo POS',
     desc: 'Kassakoppling på plats. Guardrail aktiv.',
-    status: 'Pilot',
     color: '#B5760A',
     letter: 'P',
     flow: 'POS-guardrail på corevo.se',

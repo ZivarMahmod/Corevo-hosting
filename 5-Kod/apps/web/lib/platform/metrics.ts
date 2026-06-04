@@ -16,6 +16,7 @@ export type PlatformMetrics = {
   bookingsTotal: number
 }
 
+// DORMANT — build-once-never-delete; ersatt av platformOverview. Radera ej.
 export async function platformMetrics(): Promise<PlatformMetrics> {
   const { supabase } = await platformCtx()
   const [total, active, suspended, bookings] = await Promise.all([

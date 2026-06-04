@@ -1,34 +1,23 @@
-'use client'
-
-import { Badge, type BadgeTone, Button, useToast } from '@/components/portal/ui'
-import type { IntegrationStatus, IntegrationWithCount } from '@/lib/platform/catalog'
+import { Badge, type BadgeTone } from '@/components/portal/ui'
+import type { IntegrationWithCount } from '@/lib/platform/catalog'
 import styles from './IntegrationsGrid.module.css'
 
 /**
- * Integrationer card grid (goal-17 PLATFORM). EXACT copy of the design-system law
- * source composition (components/SuperPlatform.jsx → SuperIntegrations): a card per
- * integration with letter-avatar + name + tenants-line + status Badge, then desc /
- * flow-chip / Hantera+Docs.
+ * Integrationer card grid (goal-17 PLATFORM). Card per integration with letter-avatar
+ * + name + tenants-line + derived status Badge, then desc / flow-chip.
  *
- * Client component because the "Hantera" button fires a consequence-toast (§6) via
- * useToast — a client hook. The server page does the `getPlatformIntegrations()`
- * read (server-only, RLS-bypass) and hands the fully-serializable array down here.
+ * Plain server-renderable component: the dead "Hantera" (toast-only) and "Docs" (no
+ * onClick/href) controls were removed in the ärlighetspass (#4/#5) — there is no real
+ * target for either, so an honest gone beats a fake button. The server page does the
+ * `getPlatformIntegrations()` read (RLS-bypass) and hands the array down here.
  *
- * HONEST COUNTS (NEVER FAKE DATA): the tenants-line shows the LIVE
- * "{connected} / {total} anslutna" ONLY where a backing column exists
- * (connected !== null — Stripe/Google/Domän). Where no per-tenant column backs the
- * integration (SMS/E-post/POS → connected === null) we render an honest neutral
- * label instead of the mock's fabricated "21 / 24". The mock's hardcoded strings are
- * placeholders, not truth.
+ * HONEST COUNTS + BADGE (NEVER FAKE DATA, #13): the tenants-line shows the LIVE
+ * "{connected} / {total} anslutna" ONLY where a backing column exists (connected !==
+ * null — Stripe/Google/Domän). For those cards the status Badge is DERIVED from the
+ * real count (connected > 0 → "Aktiv", === 0 → "Inaktiv") — never the mock's
+ * hardcoded "Aktiv". Where no per-tenant column backs the integration (SMS/E-post/POS
+ * → connected === null) we render the honest neutral label and NO badge at all.
  */
-
-// Mock SuperIntegrations `tone()` ternary — status → muted Badge tone.
-const STATUS_TONE: Record<IntegrationStatus, BadgeTone> = {
-  Aktiv: 'success',
-  Pilot: 'info',
-  Delvis: 'warning',
-  Inaktiv: 'neutral',
-}
 
 /** The honest tenants-line: live count where backed, neutral label otherwise. */
 function tenantsLine(it: IntegrationWithCount) {
@@ -46,9 +35,16 @@ function tenantsLine(it: IntegrationWithCount) {
   )
 }
 
-export function IntegrationsGrid({ integrations }: { integrations: IntegrationWithCount[] }) {
-  const { notify } = useToast()
+/** Derived status badge from the REAL connected count (#13). Cards with no backing
+ *  column (connected === null) get NO badge — never a hardcoded "Aktiv". */
+function statusBadge(it: IntegrationWithCount) {
+  if (it.connected === null) return null
+  const active = it.connected > 0
+  const tone: BadgeTone = active ? 'success' : 'neutral'
+  return <Badge tone={tone}>{active ? 'Aktiv' : 'Inaktiv'}</Badge>
+}
 
+export function IntegrationsGrid({ integrations }: { integrations: IntegrationWithCount[] }) {
   return (
     <div className={styles.grid}>
       {integrations.map((it) => (
@@ -63,7 +59,7 @@ export function IntegrationsGrid({ integrations }: { integrations: IntegrationWi
                 {tenantsLine(it)}
               </div>
             </div>
-            <Badge tone={STATUS_TONE[it.status] ?? 'neutral'}>{it.status}</Badge>
+            {statusBadge(it)}
           </div>
 
           <p className={styles.desc}>{it.desc}</p>
@@ -72,22 +68,6 @@ export function IntegrationsGrid({ integrations }: { integrations: IntegrationWi
             <span className={styles.chip} title={it.flow}>
               {it.flow}
             </span>
-          </div>
-
-          <div className={styles.foot}>
-            <Button
-              variant="ghost"
-              size="sm"
-              icon="settings"
-              className={styles.footPrimary}
-              onClick={() => notify(`${it.name} — inställningar öppnade`, 'info')}
-            >
-              Hantera
-            </Button>
-            {/* Docs has no target in the law source — visual parity only. */}
-            <Button variant="subtle" size="sm" icon="external">
-              Docs
-            </Button>
           </div>
         </div>
       ))}
