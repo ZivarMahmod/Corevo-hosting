@@ -1,6 +1,9 @@
 # BRIEF-DB/KI-016: Custom-domän-uppslag (kunddomän → tenant, white-label)
 Thinking: 🔴 Think hard
 
+> ## ✅ KLAR (kod) — ops-gatad (2026-06-05)
+> Byggd i WORKFLOW-03 VÅG 3, verifierad as-built 2026-06-05. **Avvek medvetet från brief-stegen** (brief skrevs mot ett tidigare läge): migration = **`0019_resolve_tenant_by_domain.sql`** (INTE 0011), wrangler `routes` = **noll-churn** (INTE den i brief steg 5), kvikta-seed-stegen (5/6) = STALE, ej körda. Verifierat live: `resolve_tenant_by_domain('demo.corevo.se')` → `freshcut`; okänd host → `null`; `verified=false`/`status≠active` → `null`. Middleware `unknown→isExternalHost→RPC`-fallback wired + korrekt fence:ad (custom-domän = `kind:'tenant'`, når aldrig VÅG1 roll-guard; `isExternalHost` exkluderar localhost/`*.workers.dev`). `isExternalHost` enhetstester gröna (vitest). **DORMANT** tills en riktig extern kunddomän DNS-routas. **KVAR = ENBART Zivars ops** (Väg A apex-zon eller Väg B Cloudflare-for-SaaS, se OPS-sektionen nedan) — ej kod. Self-serve-skrivvägen (panel → skapa custom hostname) = **goal-23** i WORKFLOW-04.
+
 ## Mål
 Lär Workern att en kunds egen domän (t.ex. `kvikta.se`) ska visa rätt tenants storefront — med kundens domän kvar i adressfältet (white-label). Idag resolvar Workern bara `*.corevo.se`; allt annat blir `unknown` → 404. Detta bygger uppslags-LAGRET (DB-RPC + middleware). DNS/cert-aktivering per domän är ett ops-steg (sektion nedan), inte kod.
 
