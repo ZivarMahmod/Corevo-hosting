@@ -48,6 +48,26 @@ vi.mock('./service', () => ({
 
 vi.mock('./audit', () => ({ logPlatformAction: vi.fn(async () => {}) }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+
+// goal-23: control the Cloudflare client so domain-action tests never touch network.
+type CfDcv = { type: string; name: string; value: string; purpose: string }
+type CfHost = { id: string; hostname: string; status: string; sslStatus: string | null; dcv: CfDcv[] }
+type CfCreateResult = { ok: boolean; error?: string; data?: CfHost }
+type CfGetResult = { ok: boolean; error?: string; data?: CfHost | null }
+type CfDelResult = { ok: boolean; error?: string; data?: true }
+const cfCreate = vi.fn(
+  async (): Promise<CfCreateResult> => ({
+    ok: true,
+    data: { id: 'ch-1', hostname: 'boka.salong.se', status: 'pending', sslStatus: 'pending_validation', dcv: [] },
+  }),
+)
+const cfGet = vi.fn(async (): Promise<CfGetResult> => ({ ok: true, data: null }))
+const cfDelete = vi.fn(async (): Promise<CfDelResult> => ({ ok: true, data: true }))
+vi.mock('@/lib/cloudflare/custom-hostnames', () => ({
+  createCustomHostname: (...a: unknown[]) => cfCreate(...(a as [])),
+  getCustomHostnameByName: (...a: unknown[]) => cfGet(...(a as [])),
+  deleteCustomHostname: (...a: unknown[]) => cfDelete(...(a as [])),
+}))
 // Top-level imports in actions.ts that pull server-only/cloudflare deps — never
 // exercised by createTenant without a logo File, but must import cleanly.
 vi.mock('@/lib/admin/tenant', () => ({ revalidateTenant: vi.fn() }))
@@ -57,7 +77,13 @@ vi.mock('@/lib/r2/upload', () => ({
   pruneRemovedImages: vi.fn(async () => {}),
 }))
 
-import { createTenant, createPlatformCustomer } from './actions'
+import {
+  createTenant,
+  createPlatformCustomer,
+  addCustomDomain,
+  verifyCustomDomain,
+  removeCustomDomain,
+} from './actions'
 import { resolveOwnerRole } from './owner-role'
 
 // A fake service client whose invite + metadata calls succeed, so createTenant walks
@@ -255,5 +281,172 @@ describe('createPlatformCustomer (goal-22 #6)', () => {
     const res = await createPlatformCustomer({}, fd({ tenantId: 't1', full_name: 'Anna' }))
     expect(res.error).toBeTruthy()
     expect(captured.customers).toBeUndefined()
+  })
+})
+
+// ── goal-23 — addCustomDomain (CF provisioning + tenant_domains write) ─────────────
+describe('addCustomDomain (goal-23 #9)', () => {
+  // The action reads `tenants` (validate) + `tenant_domains` (dup + insert). The mock
+  // keys results by table: tenants active by default; tdResult drives both the dup-check
+  // (.data) and the insert terminal (.error).
+  function seedCtx(
+    tdResult: { data?: unknown; error?: unknown },
+    tenantResult: { data?: unknown; error?: unknown } = { data: { id: 't1', status: 'active' }, error: null },
+  ) {
+    const { client, captured } = makeSupabase({ tenants: tenantResult, tenant_domains: tdResult })
+    platformCtxMock.mockReturnValue(Promise.resolve({ user: { id: 'admin-1' }, supabase: client }))
+    return captured
+  }
+
+  it('creates the CF hostname + writes a verified:false tenant_domains row, returns DCV', async () => {
+    const captured = seedCtx({ data: null, error: null }) // no existing domain
+    cfCreate.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        id: 'ch-1',
+        hostname: 'boka.salong.se',
+        status: 'pending',
+        sslStatus: 'pending_validation',
+        dcv: [{ type: 'TXT', name: '_acme', value: 'x', purpose: 'SSL (DCV)' }],
+      },
+    })
+    const res = await addCustomDomain({}, fd({ tenantId: 't1', domain: 'Boka.Salong.SE' }))
+    expect(res.error).toBeUndefined()
+    expect(res.hostname?.dcv).toHaveLength(1)
+    expect(captured.tenant_domains?.[0]).toMatchObject({
+      tenant_id: 't1',
+      domain: 'boka.salong.se', // normalized
+      verified: false,
+      is_primary: false,
+    })
+  })
+
+  it('rejects a non-active / missing tenant BEFORE calling CF', async () => {
+    const captured = seedCtx({ data: null, error: null }, { data: { id: 't1', status: 'suspended' }, error: null })
+    const res = await addCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.error).toBeTruthy()
+    expect(cfCreate).not.toHaveBeenCalled()
+    expect(captured.tenant_domains).toBeUndefined()
+  })
+
+  it('rejects a duplicate domain BEFORE calling CF or inserting', async () => {
+    const captured = seedCtx({ data: { id: 'existing' }, error: null })
+    const res = await addCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.error).toBeTruthy()
+    expect(cfCreate).not.toHaveBeenCalled()
+    expect(captured.tenant_domains).toBeUndefined()
+  })
+
+  it('rejects an invalid domain — no CF, no row', async () => {
+    const captured = seedCtx({ data: null, error: null })
+    const res = await addCustomDomain({}, fd({ tenantId: 't1', domain: 'nodot' }))
+    expect(res.error).toBeTruthy()
+    expect(cfCreate).not.toHaveBeenCalled()
+    expect(captured.tenant_domains).toBeUndefined()
+  })
+
+  it('rejects a reserved corevo.se domain — no CF, no row', async () => {
+    const captured = seedCtx({ data: null, error: null })
+    const res = await addCustomDomain({}, fd({ tenantId: 't1', domain: 'x.corevo.se' }))
+    expect(res.error).toBeTruthy()
+    expect(cfCreate).not.toHaveBeenCalled()
+    expect(captured.tenant_domains).toBeUndefined()
+  })
+
+  it('writes NO row when Cloudflare fails (no orphan)', async () => {
+    const captured = seedCtx({ data: null, error: null })
+    cfCreate.mockResolvedValueOnce({ ok: false, error: 'CF down' })
+    const res = await addCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.error).toBe('CF down')
+    expect(captured.tenant_domains).toBeUndefined()
+  })
+
+  it('best-effort deletes the CF hostname when the DB insert fails (no orphan)', async () => {
+    // dup-check sees data:null (passes) but the insert terminal returns an error.
+    seedCtx({ data: null, error: { message: 'boom' } })
+    cfCreate.mockResolvedValueOnce({
+      ok: true,
+      data: { id: 'ch-orphan', hostname: 'boka.salong.se', status: 'pending', sslStatus: null, dcv: [] },
+    })
+    const res = await addCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.error).toBeTruthy()
+    expect(cfDelete).toHaveBeenCalledWith('ch-orphan')
+  })
+})
+
+// ── goal-23 — verifyCustomDomain (fail-CLOSED gate: only flip on active+active) ─────
+describe('verifyCustomDomain (goal-23)', () => {
+  function seedCtx() {
+    const { client, captured } = makeSupabase({ tenant_domains: { data: null, error: null } })
+    platformCtxMock.mockReturnValue(Promise.resolve({ user: { id: 'admin-1' }, supabase: client }))
+    return captured
+  }
+  const host = (status: string, sslStatus: string | null) => ({
+    ok: true as const,
+    data: { id: 'ch-1', hostname: 'boka.salong.se', status, sslStatus, dcv: [] },
+  })
+
+  it('flips verified=true ONLY when status active AND ssl active', async () => {
+    const captured = seedCtx()
+    cfGet.mockResolvedValueOnce(host('active', 'active'))
+    const res = await verifyCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.verified).toBe(true)
+    expect(captured['tenant_domains.update']?.[0]).toMatchObject({ verified: true })
+  })
+
+  it('does NOT flip when ssl is still pending', async () => {
+    const captured = seedCtx()
+    cfGet.mockResolvedValueOnce(host('active', 'pending_validation'))
+    const res = await verifyCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.verified).toBe(false)
+    expect(captured['tenant_domains.update']).toBeUndefined()
+  })
+
+  it('fail-CLOSED: does NOT flip when ssl status is null/absent', async () => {
+    const captured = seedCtx()
+    cfGet.mockResolvedValueOnce(host('active', null))
+    const res = await verifyCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.verified).toBe(false)
+    expect(captured['tenant_domains.update']).toBeUndefined()
+  })
+
+  it('errors when CF does not know the domain', async () => {
+    seedCtx()
+    cfGet.mockResolvedValueOnce({ ok: true, data: null })
+    const res = await verifyCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.error).toBeTruthy()
+  })
+})
+
+// ── goal-23 — removeCustomDomain (CF delete, then row delete; fail-closed) ──────────
+describe('removeCustomDomain (goal-23)', () => {
+  function seedCtx() {
+    const { client, captured } = makeSupabase({ tenant_domains: { data: null, error: null } })
+    platformCtxMock.mockReturnValue(Promise.resolve({ user: { id: 'admin-1' }, supabase: client }))
+    return captured
+  }
+
+  it('deletes the CF hostname then the row', async () => {
+    const captured = seedCtx()
+    cfGet.mockResolvedValueOnce({
+      ok: true,
+      data: { id: 'ch-1', hostname: 'boka.salong.se', status: 'active', sslStatus: 'active', dcv: [] },
+    })
+    const res = await removeCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.success).toBeTruthy()
+    expect(cfDelete).toHaveBeenCalledWith('ch-1')
+    expect(captured['tenant_domains.delete']).toBeDefined()
+  })
+
+  it('does NOT delete the row when the CF delete fails (no orphan-the-other-way)', async () => {
+    const captured = seedCtx()
+    cfGet.mockResolvedValueOnce({
+      ok: true,
+      data: { id: 'ch-1', hostname: 'boka.salong.se', status: 'active', sslStatus: 'active', dcv: [] },
+    })
+    cfDelete.mockResolvedValueOnce({ ok: false, error: 'CF delete failed' })
+    const res = await removeCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.error).toBeTruthy()
+    expect(captured['tenant_domains.delete']).toBeUndefined()
   })
 })

@@ -180,6 +180,94 @@
 .btnDanger:hover {
   background: color-mix(in srgb, var(--c-danger, #9e5a57) 8%, transparent);
 }
+.btnSubtle {
+  border: 1px solid color-mix(in srgb, var(--c-ink) 16%, transparent);
+  background: transparent;
+  color: inherit;
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+.btnSubtle:hover:not(:disabled) {
+  border-color: var(--c-forest);
+}
+.btnSubtle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── goal-23 DomänPanel (live) ── */
+.dcvBox {
+  margin: 0.9rem 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-md, 0.5rem);
+  background: color-mix(in srgb, var(--c-ink) 3%, transparent);
+}
+.dcvTitle {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.dcvList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.dcvRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.dcvType {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c-forest) 14%, transparent);
+  color: var(--c-forest);
+}
+.dcvPurpose {
+  font-size: 0.72rem;
+  color: var(--c-ink-2, #6b6b6b);
+}
+.domainList {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.domainRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-md, 0.5rem);
+}
+.pillOk,
+.pillPending {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pillOk {
+  background: color-mix(in srgb, var(--c-success, #4e7a5e) 20%, transparent);
+  color: color-mix(in srgb, var(--c-success, #4e7a5e) 80%, #000);
+}
+.pillPending {
+  background: color-mix(in srgb, var(--c-gold, #f5a623) 22%, transparent);
+  color: color-mix(in srgb, var(--c-gold, #b8810f) 90%, #000);
+}
 
 /* ── badges ── */
 .badge {

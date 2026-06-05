@@ -361,7 +361,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             <h2 className={styles.h2}>Domän</h2>
             <span className={styles.chip}>tenant_domains</span>
           </div>
-          <DomainPanel slug={tenant.slug} />
+          <DomainPanel slug={tenant.slug} tenantId={tenant.id} />
         </Card>
       </div>
     ),

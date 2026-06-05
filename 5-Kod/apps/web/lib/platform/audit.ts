@@ -24,6 +24,9 @@ export type PlatformAuditAction =
   | 'tenant.customer_create' // goal-22: manual customer row on a chosen tenant (a Zivar/platform act — NOT a customer.* event, so the actor-classifier reads it as Zivar)
   | 'platform.help_mode_open' // platform admin opens help-mode for a tenant (logged platform-side)
   | 'platform.role_permissions_save' // goal-21: edit the global RBAC permission matrix
+  | 'domain.add' // goal-23: provision a custom hostname + tenant_domains row
+  | 'domain.verify' // goal-23: poll CF DCV status → mark tenant_domains.verified
+  | 'domain.remove' // goal-23: delete custom hostname + tenant_domains row
 
 export async function logPlatformAction(
   supabase: SupabaseClient<Database>,

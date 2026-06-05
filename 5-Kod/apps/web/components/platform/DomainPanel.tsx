@@ -1,17 +1,25 @@
 import styles from './platform.module.css'
+import { listTenantDomains } from '@/lib/platform/domains'
+import { DomainManager } from './DomainManager'
 
-// Step 5 — Kundens EGNA domän. SPÄRRAD (domän-spärr, G08).
+// Step 5 — Kundens EGNA domän (goal-23). Two states, gated by DOMAIN_PROVISIONING_ENABLED:
 //
-// Tenants run live ONLY on *.corevo.se subdomains. Provisioning a customer's own
-// domain (CNAME / Cloudflare custom hostname) is HARD-DISABLED behind
-// DOMAIN_PROVISIONING_ENABLED. This panel is UI ONLY: it shows the planned CNAME
-// instruction + a status placeholder and fires NO Cloudflare call and writes NO
-// tenant_domains row (that table has no status column to represent
-// blocked/pending_manual anyway). The fields are disabled; there is no submit.
+//  • flag OFF (default, prod today): the honest ⛔-banner + disabled fieldset. NO
+//    Cloudflare call, NO tenant_domains write — unchanged from before goal-23.
+//  • flag ON (Zivar sets it after provisioning CF_API_TOKEN/CF_ZONE_ID): the live
+//    DomainManager — add a custom domain → Cloudflare for SaaS custom hostname →
+//    tenant_domains row → DCV instructions → verify → status. See docs/ops/custom-domains-ops.md.
+//
+// The resolution read (0019 resolve_tenant_by_domain) is unaffected either way.
 
 const ENABLED = process.env.DOMAIN_PROVISIONING_ENABLED === 'true'
 
-export function DomainPanel({ slug }: { slug: string }) {
+export async function DomainPanel({ slug, tenantId }: { slug: string; tenantId: string }) {
+  if (ENABLED) {
+    const domains = await listTenantDomains(tenantId)
+    return <DomainManager slug={slug} tenantId={tenantId} initialDomains={domains} />
+  }
+
   return (
     <div>
       <div className={styles.banner}>

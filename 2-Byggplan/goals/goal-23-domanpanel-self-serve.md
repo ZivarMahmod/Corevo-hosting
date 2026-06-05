@@ -1,6 +1,16 @@
 # BRIEF-DB/IN-023: DomänPanel self-serve — egen domän hela vägen (tenant_domains + Cloudflare for SaaS)
 Thinking: ⚫ Ultrathink (extern provider + DNS + secret — gatas, ops-beroende)
 
+---
+> ## ✅ KOD KLAR + VERIFIERAD — 🔒 LIVE-AKTIVERING OPS-GATAD (ej deployad), 2026-06-05
+> - **Bygge:** CF for SaaS-klient `lib/cloudflare/custom-hostnames.ts` (create/get-by-name/delete, lazy env, injicerbar fetch, **fail-closed** utan `CF_API_TOKEN`/`CF_ZONE_ID`); `lib/platform/domains.ts` (normalisera/validera/reserverad + read); actions `addCustomDomain`/`verifyCustomDomain`/`removeCustomDomain` (platform_admin-gated); `DomainPanel` async + flagg-gated (av → oförändrad ⛔-banner; på → `DomainManager`-island); audit `domain.add/verify/remove`; ops-doc `docs/ops/custom-domains-ops.md`. **Ingen migration** (tenant_domains finns; CF-hostname slås upp på namn).
+> - **Allt bakom `DOMAIN_PROVISIONING_ENABLED` (default false).** Resolutionsläsvägen (0019) orörd.
+> - **Gate:** typecheck 0 / lint 0 / **vitest 279/279** (+34 från baseline: CF-klient, validatorer, add/verify/remove, orphan, no-sibling).
+> - **Render-verifierat live (lokal harness):** flagga AV → oförändrad spärr-banner; flagga PÅ → aktivt formulär (aktiv-only? nej, alla — domän fritt) + submit → **fail-closed** "Cloudflare-uppgifter saknas" (ingen rad), 0 console-fel.
+> - **Oberoende adversarial review: NO-GO → fix → GO.** 3 HIGH: (1) `?? list[0]` returnerade främmande hostname (verify/remove fel domän) → exakt-match-only; (2) verify fail-OPEN på `sslStatus===null` → kräv `status==='active' && sslStatus==='active'`; (3) `domain.*`-audit skrev domän-sträng i uuid-kolumn → tyst tappad → entityId borttagen (domän i meta). + MEDIUM orphan-CF-städning, + 2 LOW (tenant-validate, klient-badge på server-`verified`).
+> - **🔒 KVAR (ops, ej autonomt):** Cloudflare for SaaS-setup på corevo.se-zonen + `CF_API_TOKEN`/`CF_ZONE_ID`/`CF_FALLBACK_ORIGIN` secrets + flaggan på → se `docs/ops/custom-domains-ops.md`. **EJ deployad** (ops-gatad; dessutom skulle en deploy nu åter-skeppa goal-21 som väntar Zivars beslut). Flytta `klart/` när aktiverad.
+---
+
 ## Mål
 Bygg skriv-vägen för egen domän: super-admin/salong skriver in sin domän i DomänPanel → en custom hostname provisioneras via Cloudflare for SaaS → en `tenant_domains`-rad skapas → DCV/verifierings-status visas. Resolutionsläsvägen finns redan (migration 0019) — detta är den saknade andra halvan.
 
