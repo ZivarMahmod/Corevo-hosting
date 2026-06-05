@@ -20,90 +20,30 @@ import { platformCtx } from './guard'
 // RolesMatrix client island can import the PERMISSION_AREAS value without dragging
 // this server-only module into the client bundle. Imported for local use here +
 // re-exported so every existing server-side importer of these from catalog is intact.
-import type { Perm, RoleTone } from './catalog-shared'
 export type { Perm, RoleTone } from './catalog-shared'
 export { PERMISSION_AREAS } from './catalog-shared'
 
-export type PlatformRole = {
-  /** DB role name(s) this card aggregates its live user count from (null = no
-   *  seeded DB role, e.g. Support/Ekonomi are org roles without a level). */
-  dbRoleNames: string[] | null
-  name: string
-  who: string
-  tone: RoleTone
-  note: string
-  /** Permission per area, aligned to PERMISSION_AREAS. */
-  perms: Perm[]
-}
+// goal-21: the role/permission matrix is no longer a hardcoded const — it is the
+// stored, editable role_permissions table overlaid on the code DEFAULT_ROLE_CATALOG
+// (table-less-safe fallback). The catalog read now delegates to roles-permissions.ts,
+// which folds the perm overlay INTO the existing live user-count contract so the
+// roller page + RolesMatrix stay props-driven exactly as today.
+export type { RolePermissions, DefaultRole } from './roles-permissions'
+import type { RolePermissions } from './roles-permissions'
+import { getRolePermissions } from './roles-permissions'
 
-/** Static least-privilege design (mock SU_ROLES). Order = matrix display order. */
-const ROLE_CATALOG: PlatformRole[] = [
-  {
-    dbRoleNames: ['super_admin'],
-    name: 'Super admin',
-    who: 'Zivar',
-    tone: 'gold',
-    note: 'Plattformsägare — full kontroll, kringgår tenant-isolering.',
-    perms: ['full', 'full', 'full', 'full', 'full', 'full', 'full'],
-  },
-  {
-    dbRoleNames: ['salon_admin'],
-    name: 'Salongsägare',
-    who: 'Ägare',
-    tone: 'success',
-    note: 'Leksakslådan: full kontroll i egen tenant, ser aldrig andras.',
-    perms: ['—', 'own', 'own', 'view', 'own', 'own', '—'],
-  },
-  {
-    dbRoleNames: ['staff'],
-    name: 'Frisör',
-    who: 'Personal',
-    tone: 'info',
-    note: 'Egen dag + egna kunder. PII tidsbunden.',
-    perms: ['—', 'view', 'own', '—', '—', '—', '—'],
-  },
-  {
-    dbRoleNames: null,
-    name: 'Support',
-    who: 'Corevo-team',
-    tone: 'neutral',
-    note: 'Läsläge för felsökning. Kan trigga lösenordsreset.',
-    perms: ['view', 'view', 'view', '—', '—', '—', 'view'],
-  },
-  {
-    dbRoleNames: null,
-    name: 'Ekonomi',
-    who: 'Bokföring',
-    tone: 'warning',
-    note: 'Endast faktureringsunderlag.',
-    perms: ['view', '—', '—', 'full', '—', '—', '—'],
-  },
-]
-
-export type PlatformRoleWithUsers = PlatformRole & {
-  /** Live cross-tenant user count, or null when no seeded DB role backs it. */
-  users: number | null
-}
+/** Back-compat alias — the matrix view consumes the merged role + live user count. */
+export type PlatformRoleWithUsers = RolePermissions
 
 /**
- * The role catalog with LIVE user counts per role name (RLS bypass — counts users
- * across every tenant). Support/Ekonomi have no seeded DB role → users:null so the
- * view shows an honest "—" rather than a fake count.
+ * The role catalog with DB-overlaid perms + LIVE cross-tenant user counts (RLS
+ * bypass). Delegates to getRolePermissions() (goal-21): perms come from the
+ * role_permissions table merged onto DEFAULT_ROLE_CATALOG (pure defaults when the
+ * table is absent), user counts from the live users→roles join. Support/Ekonomi have
+ * no seeded DB role → users:null so the view shows an honest "—".
  */
 export async function getPlatformRoles(): Promise<PlatformRoleWithUsers[]> {
-  const { supabase } = await platformCtx()
-  // One grouped read: users joined to their role name, cross-tenant.
-  const { data } = await supabase.from('users').select('roles(name)')
-  const counts = new Map<string, number>()
-  for (const row of (data ?? []) as { roles: { name: string | null } | { name: string | null }[] | null }[]) {
-    const role = Array.isArray(row.roles) ? row.roles[0] : row.roles
-    const name = role?.name
-    if (name) counts.set(name, (counts.get(name) ?? 0) + 1)
-  }
-  return ROLE_CATALOG.map((r) => ({
-    ...r,
-    users: r.dbRoleNames ? r.dbRoleNames.reduce((sum, n) => sum + (counts.get(n) ?? 0), 0) : null,
-  }))
+  return getRolePermissions()
 }
 
 // ── Integrationer ───────────────────────────────────────────────────────────────

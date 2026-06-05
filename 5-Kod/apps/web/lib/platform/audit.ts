@@ -22,6 +22,7 @@ export type PlatformAuditAction =
   | 'tenant.password_reset' // generate a recovery link for the salon admin
   | 'tenant.staff_create' // Zivar-assisted staff onboarding on a chosen tenant
   | 'platform.help_mode_open' // platform admin opens help-mode for a tenant (logged platform-side)
+  | 'platform.role_permissions_save' // goal-21: edit the global RBAC permission matrix
 
 export async function logPlatformAction(
   supabase: SupabaseClient<Database>,

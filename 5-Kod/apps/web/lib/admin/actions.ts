@@ -7,6 +7,8 @@ import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages, type UploadResult } from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
+import { resolveRoleMatrix } from '@/lib/platform/roles-permissions'
+import { canWrite } from '@/lib/platform/catalog-shared'
 import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { refundBookingPayment } from '@/lib/stripe/refund'
 import { BOOKING_STATUSES, ALLOWED_FROM, type BookingStatus } from './format'
@@ -782,6 +784,17 @@ type Branding = {
 export async function saveBranding(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await adminCtx()
   if (!ctx) return { error: NO_TENANT }
+
+  // goal-21 RBAC enforcement (ADDITIVE-RESTRICTIVE, on top of adminCtx's level gate):
+  // resolve the caller's role against the stored/merged permission matrix and deny if
+  // their Branding access is read-only/none. canWrite() can ONLY narrow — it returns
+  // true for an unknown/null role or missing cell (deferring to the outer guard), so it
+  // never grants. With defaults salon_admin/super_admin keep Branding write → zero
+  // behavior change today; it bites only if an admin sets a role's Branding to none.
+  const supabaseForPerms = await createClient()
+  const roleMatrix = await resolveRoleMatrix(supabaseForPerms)
+  if (!canWrite(roleMatrix, ctx.user.roleName, 'Branding'))
+    return { error: 'Din roll har inte behörighet att ändra varumärke. Kontakta plattformsadmin.' }
 
   const colorPrimary = hexOrNull(fd.get('color_primary'))
   const colorBg = hexOrNull(fd.get('color_bg'))

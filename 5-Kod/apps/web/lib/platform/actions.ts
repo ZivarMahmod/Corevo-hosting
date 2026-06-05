@@ -12,6 +12,8 @@ import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, type StorefrontTheme } fro
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages } from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
+import { saveRolePermissions, type RolePermissionChange } from './roles-permissions'
+import { PERMISSION_AREAS, type Perm } from './catalog-shared'
 import type { TenantBranding } from '@corevo/ui'
 
 export type ActionState = { error?: string; success?: string }
@@ -561,4 +563,25 @@ export async function enterHelpMode(tenantId: string): Promise<ActionState> {
     actorId: user.id,
   })
   return { success: 'Hjälp-läge öppnat — loggat.' }
+}
+
+// ── goal-21: save the editable RBAC permission matrix ───────────────────────────
+/**
+ * Persist edited matrix cells. The platform_admin fence + the super_admin
+ * self-lockout guard + the audit log live in saveRolePermissions (roles-permissions.ts,
+ * server-only). This 'use server' wrapper just adapts the client payload (a JSON array
+ * of {roleName, area, perm}) to that module call and revalidates the roller page.
+ */
+export async function saveRolePermissionsAction(
+  changes: { roleName: string; area: string; perm: Perm }[],
+): Promise<ActionState> {
+  const safe = (Array.isArray(changes) ? changes : []).filter(
+    (c): c is RolePermissionChange =>
+      typeof c?.roleName === 'string' &&
+      (PERMISSION_AREAS as readonly string[]).includes(c?.area) &&
+      ((['full', 'own', 'view', '—'] as const) as readonly string[]).includes(c?.perm),
+  )
+  const res = await saveRolePermissions(safe)
+  if (res.success) revalidatePath('/roller')
+  return res
 }

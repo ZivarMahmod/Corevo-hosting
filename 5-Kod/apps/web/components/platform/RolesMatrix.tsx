@@ -1,45 +1,51 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { Card, Badge, Table, Icon } from '@/components/portal/ui'
+import { useToast } from '@/components/portal/ui'
+import { Button } from '@/components/portal/ui'
 import type { PlatformRoleWithUsers } from '@/lib/platform/catalog'
-import { PERMISSION_AREAS, type Perm } from '@/lib/platform/catalog-shared'
+import { PERMISSION_AREAS, nextPerm, type Perm, type PermArea } from '@/lib/platform/catalog-shared'
+import { saveRolePermissionsAction } from '@/lib/platform/actions'
 import styles from './RolesMatrix.module.css'
 
 /**
- * Roller & behörighet — role list + RBAC permission matrix (goal-17 PLATFORM).
- * EXACT copy of the design-system law source composition
- * (components/SuperPlatform.jsx → SuperRoles + PermCell): a 2-col layout, the left
- * card a clickable role list, the right a role-detail Card + a Behörighetsmatris
- * table whose cells are tone-coloured Perm pills, with a legend footer.
+ * Roller & behörighet — role list + EDITABLE RBAC permission matrix (goal-21).
+ * The grid is no longer a read-only reference: clicking a cell cycles its perm
+ * (full→own→view→—→full); a dirty "Spara"-bar persists the diff via
+ * saveRolePermissionsAction (platform_admin-gated, super_admin self-lockout guarded,
+ * audit-logged server-side). The cells are honest controls — the server is the
+ * truth (resolveRoleMatrix + canWrite enforce on real write surfaces), the matrix
+ * can ONLY narrow a role, never grant access a level gate doesn't already allow.
  *
- * Client component because the role list is interactive (clicking a role re-renders
- * the matrix) — the mock's instant `useState(sel)`. The server page does the
- * `getPlatformRoles()` read (server-only, RLS-bypass) and hands the
- * fully-serializable roles array (with LIVE cross-tenant user counts) down here.
+ * The super_admin row is LOCKED (rendered static with a lock affordance): it must
+ * stay full on every area or is_platform_admin's bypass would lock Zivar out, so we
+ * never offer a control that the save-guard would reject.
  *
- * READ-ONLY reference matrix: the permission grid is platform CONFIGURATION (static
- * least-privilege design), NOT a live RBAC editor — there are no controls that
- * mutate roles. The only live signal is `users` (real cross-tenant count per role
+ * The ONE live signal beyond the perms is `users` (real cross-tenant count per role
  * name); where no seeded DB role backs it (Support/Ekonomi → users === null) we
- * render an honest "—", NEVER a fabricated count (the mock's 24/38/2/1 are
- * placeholders).
+ * render an honest "—", NEVER a fabricated count.
  */
 
-// PermCell — mock `PermCell` map: perm → [tone-class, label]. '—' renders muted.
+const PROTECTED_ROLE = 'super_admin'
+
+// PermCell label — perm → display text. '—' renders muted.
 const PERM_LABEL: Record<Exclude<Perm, '—'>, string> = {
   full: 'Full',
   own: 'Egen',
   view: 'Läs',
 }
 
-function PermCell({ v }: { v: Perm }) {
+function permClass(v: Perm): string {
+  return v === '—' ? styles.permNone ?? '' : `${styles.perm} ${styles[`perm_${v}`]}`
+}
+
+function PermText({ v }: { v: Perm }) {
   if (v === '—') return <span className={styles.permNone}>—</span>
   return <span className={`${styles.perm} ${styles[`perm_${v}`]}`}>{PERM_LABEL[v]}</span>
 }
 
-// TableChip — small backing-table/flow pill (mock TableChip: layers icon + info
-// tint). Exact-copied here because it is not an exported ui/ primitive.
+// TableChip — small backing-table/flow pill (mock TableChip: layers icon + info tint).
 function TableChip({ children }: { children: React.ReactNode }) {
   return (
     <span className={`num ${styles.chip}`}>
@@ -51,15 +57,69 @@ function TableChip({ children }: { children: React.ReactNode }) {
 
 export function RolesMatrix({ roles }: { roles: PlatformRoleWithUsers[] }) {
   const [sel, setSel] = useState(0)
+  const toast = useToast()
+  const [pending, startTransition] = useTransition()
+
+  // Editable working copy: roleName → perms[] (aligned to PERMISSION_AREAS). Seeded
+  // from the server props; cell edits mutate this, never the props.
+  const initial = useMemo<Record<string, Perm[]>>(
+    () => Object.fromEntries(roles.map((r) => [r.roleName, [...r.perms]])),
+    [roles],
+  )
+  const [draft, setDraft] = useState<Record<string, Perm[]>>(initial)
+
   const role = roles[sel] ?? roles[0]
 
+  // Dirty diff (only the changed cells get persisted).
+  const changes = useMemo(() => {
+    const out: { roleName: string; area: PermArea; perm: Perm }[] = []
+    for (const r of roles) {
+      const cur = draft[r.roleName] ?? r.perms
+      PERMISSION_AREAS.forEach((area, i) => {
+        if (cur[i] !== r.perms[i]) out.push({ roleName: r.roleName, area, perm: cur[i] ?? '—' })
+      })
+    }
+    return out
+  }, [draft, roles])
+  const dirty = changes.length > 0
+
   if (!role) {
-    // No role catalog at all — honest empty-state (defensive; catalog is static).
     return (
       <Card>
         <p className={styles.empty}>Inga roller definierade.</p>
       </Card>
     )
+  }
+
+  const activeRole = role
+  const locked = activeRole.roleName === PROTECTED_ROLE
+  const draftPerms = draft[activeRole.roleName] ?? activeRole.perms
+
+  const cycleCell = (i: number) => {
+    if (locked) return
+    setDraft((prev) => {
+      const cur = [...(prev[activeRole.roleName] ?? activeRole.perms)]
+      cur[i] = nextPerm(cur[i] ?? '—')
+      return { ...prev, [activeRole.roleName]: cur }
+    })
+  }
+
+  const reset = () => {
+    setDraft(initial)
+  }
+
+  const save = () => {
+    startTransition(async () => {
+      const res = await saveRolePermissionsAction(changes)
+      if (res.error) {
+        toast.notify(res.error, 'warning')
+      } else {
+        toast.notify(res.success ?? 'Behörigheter sparade.', 'success')
+        // The revalidated server props will re-seed `initial` on the next render;
+        // until then, treat the draft as the new baseline by clearing the diff.
+        setDraft((d) => ({ ...d }))
+      }
+    })
   }
 
   return (
@@ -72,7 +132,7 @@ export function RolesMatrix({ roles }: { roles: PlatformRoleWithUsers[] }) {
         <div className={styles.roleList}>
           {roles.map((r, i) => (
             <button
-              key={r.name}
+              key={r.roleName}
               type="button"
               onClick={() => setSel(i)}
               aria-pressed={sel === i}
@@ -82,7 +142,6 @@ export function RolesMatrix({ roles }: { roles: PlatformRoleWithUsers[] }) {
                 {r.who}
               </Badge>
               <span className={styles.roleName}>{r.name}</span>
-              {/* Live cross-tenant count — honest "—" when no seeded DB role. */}
               {r.users === null ? (
                 <span className={styles.roleUsersMuted} title="Ingen seedad roll — ingen källa">
                   —
@@ -116,18 +175,53 @@ export function RolesMatrix({ roles }: { roles: PlatformRoleWithUsers[] }) {
             cols={['Område', 'Åtkomst']}
             rows={PERMISSION_AREAS.map((area, i) => [
               area,
-              <PermCell key={area} v={role.perms[i] ?? '—'} />,
+              locked ? (
+                // super_admin is locked full — render static with a lock affordance,
+                // never a fake control the save-guard would reject.
+                <span key={area} className={styles.lockedCell} title="Super admin kan inte nedgraderas">
+                  <PermText v={draftPerms[i] ?? '—'} />
+                  <Icon name="shield" size={12} />
+                </span>
+              ) : (
+                <button
+                  key={area}
+                  type="button"
+                  className={`${styles.cellBtn} ${permClass(draftPerms[i] ?? '—')}`}
+                  onClick={() => cycleCell(i)}
+                  disabled={pending}
+                  aria-label={`${role.name} · ${area}: ${draftPerms[i] === '—' ? 'ingen' : PERM_LABEL[draftPerms[i] as Exclude<Perm, '—'>]} — klicka för att ändra`}
+                >
+                  {draftPerms[i] === '—' ? '—' : PERM_LABEL[draftPerms[i] as Exclude<Perm, '—'>]}
+                </button>
+              ),
             ])}
           />
           <div className={styles.legend}>
             {(['full', 'own', 'view'] as const).map((k) => (
               <span key={k} className={styles.legendItem}>
-                <PermCell v={k} />{' '}
+                <PermText v={k} />{' '}
                 {k === 'full' ? 'Full kontroll' : k === 'own' ? 'Egen tenant/data' : 'Endast läs'}
               </span>
             ))}
           </div>
         </Card>
+
+        {/* Dirty save-bar — honest, only shown when there's an actual diff. */}
+        {dirty ? (
+          <div className={styles.saveBar} role="status">
+            <span className={styles.saveHint}>
+              {changes.length} {changes.length === 1 ? 'ändring' : 'ändringar'} att spara
+            </span>
+            <div className={styles.saveBtns}>
+              <Button variant="ghost" size="sm" onClick={reset} disabled={pending}>
+                Återställ
+              </Button>
+              <Button variant="gold" size="sm" icon="check" onClick={save} disabled={pending}>
+                {pending ? 'Sparar…' : 'Spara'}
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

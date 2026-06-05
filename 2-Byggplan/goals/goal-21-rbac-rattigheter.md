@@ -1,6 +1,17 @@
 # BRIEF-DB-021: RBAC-rättigheter — riktig behörighetsmatris (lagring + redigering + enforcement)
 Thinking: ⚫ Ultrathink (auth/behörighet — kräver rollback + Zivar-OK före prod-deploy)
 
+---
+> ## ✅ KOD KLAR + VERIFIERAD — 🔒 DEPLOY GATED (väntar Zivar-OK), 2026-06-05
+> - **Migration `0025_role_permissions.sql`** skriven + **applicerad på prod av Zivar via SQL** (`list_migrations` ✓). Seed = diff-0 mot gamla `ROLE_CATALOG` (5 roller × 7 områden, exakt).
+> - **Bygge:** `role_permissions`-tabell + RLS (läs=authenticated, skriv=`private.is_platform_admin()`); editerbar matris (cykla full→own→view→—) + dirty save-bar; enforcement `canWrite()` på `saveBranding` (additivt-restriktiv — kan BARA snäva in, aldrig ge); `super_admin` låst på full (self-lockout-guard, hela batchen avvisas pre-write); table-less fallback till `DEFAULT_ROLE_CATALOG` (rollback-säker).
+> - **Gate:** typecheck 0 / lint 0 / **vitest 237/237** grön.
+> - **Oberoende adversarial review: GO** — 8 auth-invarianter håller; 2 LOW-fynd åtgärdade (avvisa okänt `role_name` + KNOWN_ROLE_NAMES-test; uppdaterad docstring).
+> - **Render-verifierat live** `/roller` (läser DB nu): seedade perms visas, `super_admin`-rad ärligt låst, äkta user-counts, 0 console-fel.
+> - **🔒 KVAR (enda steget):** prod-deploy av worker gated på Zivar-OK (mandatet: goal-21 = bygg+test+commit, INGEN autonom deploy). Live worker = goal-20:s; rör inte den nya tabellen → inget halv-trasigt. Flytta till `_klart/` EFTER deploy.
+> - **Not (audit):** `role_permissions_save` loggas under aktörens `tenant_id` (audit_log.tenant_id NOT NULL); `platform@corevo.se` = `tenant_id=demo` → loggas mot demo. Framtida "system-tenant" = städning.
+---
+
 ## Mål
 Gör den hårdkodade behörighetsmatrisen till riktig, lagrad, redigerbar konfiguration: rättigheter sparas i DB, matrisen kan redigeras + sparas i UI, och rättigheterna **enforce:as server-side** (inte bara visas). Modellen ska uttrycka exakt: salong-ägare = avgränsad self-service (branding, öppettider, bild, produkt) utan att störa Zivar; superadmin = full access.
 

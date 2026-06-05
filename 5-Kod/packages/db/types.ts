@@ -493,6 +493,12 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: { id: string; role_name: string; area: string; perm: string; updated_at: string }
+        Insert: { id?: string; role_name: string; area: string; perm: string; updated_at?: string }
+        Update: { id?: string; role_name?: string; area?: string; perm?: string; updated_at?: string }
+        Relationships: []
+      }
       roles: {
         Row: {
           created_at: string

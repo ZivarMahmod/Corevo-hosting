@@ -166,3 +166,55 @@
   font-size: 14px;
   color: var(--c-ink-3);
 }
+
+/* ── goal-21: editable matrix cell. A button styled exactly like the static perm pill
+   (so the read view is visually unchanged) + a cursor + focus ring to read as a
+   control. Clicking cycles the perm (full→own→view→—). */
+.cellBtn {
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  /* the .perm / .perm_* classes supply the pill fill + tone; this only adds affordance */
+}
+.cellBtn:hover {
+  outline: 1px solid color-mix(in srgb, var(--c-ink) 18%, transparent);
+  outline-offset: 1px;
+}
+.cellBtn:focus-visible {
+  outline: 2px solid var(--c-gold, #f5a623);
+  outline-offset: 1px;
+}
+.cellBtn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* super_admin row — locked full, static + shield affordance (no fake control). */
+.lockedCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--c-ink-3);
+}
+
+/* ── dirty save-bar (only rendered when there's an actual diff) ── */
+.saveBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: var(--c-paper-2);
+  flex-wrap: wrap;
+}
+.saveHint {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink-2);
+}
+.saveBtns {
+  display: flex;
+  gap: 8px;
+}
