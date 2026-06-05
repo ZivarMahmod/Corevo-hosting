@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { sendPasswordReset } from '@/lib/platform/actions'
+import { sendPasswordReset, createPlatformCustomer } from '@/lib/platform/actions'
 import type { CustomerListItem } from '@/lib/platform/people'
 import {
   PageHead,
@@ -17,7 +17,7 @@ import {
 } from '@/components/portal/ui'
 import styles from './kunder.module.css'
 
-type TenantOption = { id: string; name: string; slug: string }
+type TenantOption = { id: string; name: string; slug: string; status: string }
 
 /**
  * Cross-tenant Kunder island (law: SuperData.jsx → SuperCustomers). Search/filter
@@ -51,6 +51,13 @@ export function KunderView({
   const [query, setQuery] = useState(q)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  // Add-customer form state (goal-22). The view is cross-tenant, so a salong choice is
+  // mandatory — prefilled with the active salong filter when one is set.
+  const [addTenant, setAddTenant] = useState('')
+  const [addName, setAddName] = useState('')
+  const [addEmail, setAddEmail] = useState('')
+  const [addPhone, setAddPhone] = useState('')
+  const [addError, setAddError] = useState<string | null>(null)
 
   const selected = useMemo(
     () => customers.find((c) => c.id === selectedId) ?? null,
@@ -63,6 +70,10 @@ export function KunderView({
     for (const t of tenants) m.set(t.slug, t.id)
     return m
   }, [tenants])
+  // Add-customer can only target an ACTIVE salon (the server rejects others), so the
+  // form's salong-select offers only those — the search filter above still lists ALL
+  // (you may legitimately filter customers by a suspended salon).
+  const activeTenants = useMemo(() => tenants.filter((t) => t.status === 'active'), [tenants])
 
   function navigate(nextQ: string, nextTenant: string) {
     const params = new URLSearchParams()
@@ -97,7 +108,7 @@ export function KunderView({
         >
           Exportera
         </Button>
-        <Button variant="primary" icon="plus" onClick={() => setAdding(true)}>
+        <Button variant="primary" icon="plus" onClick={openAdd}>
           Lägg till kund
         </Button>
       </PageHead>
@@ -336,21 +347,33 @@ export function KunderView({
         </Drawer>
       )}
 
-      {/* ── Add-customer drawer (honest: stable customer rows are minted on first
-            booking; manual create is owner-side, so this is a guiding stub). ── */}
+      {/* ── Add-customer drawer (goal-22): a REAL form that inserts a customers row on
+            the chosen salong. The honest callout stays — most rows are still minted on
+            first booking — but the manual path now creates a real, immediately visible
+            row instead of a dead "Stäng"-stub. ── */}
       {adding && (
         <Drawer
-          onClose={() => setAdding(false)}
+          onClose={closeAdd}
           title="Lägg till kund"
-          sub="Kund-rader skapas oftast automatiskt vid första bokningen."
+          sub="Skapar en riktig kund-rad på vald salong."
           footer={
             <>
               <Button
                 variant="ghost"
                 style={{ flex: 1, justifyContent: 'center' }}
-                onClick={() => setAdding(false)}
+                onClick={closeAdd}
+                disabled={pending}
               >
-                Stäng
+                Avbryt
+              </Button>
+              <Button
+                variant="primary"
+                icon="plus"
+                style={{ flex: 1, justifyContent: 'center' }}
+                disabled={pending || !addName.trim() || !addTenant}
+                onClick={submitNewCustomer}
+              >
+                {pending ? 'Lägger till…' : 'Lägg till kund'}
               </Button>
             </>
           }
@@ -359,12 +382,89 @@ export function KunderView({
             <div className={styles.calloutInfo}>
               <Icon name="info" size={16} />
               <span>
-                En stabil kund-rad (med eget kund-id) skapas automatiskt när salongen tar emot
-                kundens första bokning — ingen manuell inmatning behövs. Vill du ändå lägga till en
-                kund i förväg gör salongen det i sin egen kundvy.
+                En stabil kund-rad skapas oftast automatiskt när salongen tar emot kundens första
+                bokning. Vill du lägga till en kund i förväg gör du det här — raden får eget kund-id
+                men ingen inloggning (kopplas till ett konto först när kunden själv loggar in).
               </span>
             </div>
-            <span className={styles.chip}>customers · stabil id</span>
+
+            <form
+              className={styles.addForm}
+              onSubmit={(e) => {
+                e.preventDefault()
+                submitNewCustomer()
+              }}
+            >
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Salong</span>
+                <select
+                  className={styles.fieldControl}
+                  value={addTenant}
+                  onChange={(e) => setAddTenant(e.target.value)}
+                  aria-label="Välj salong"
+                  disabled={pending}
+                  required
+                >
+                  <option value="">Välj salong…</option>
+                  {activeTenants.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Namn</span>
+                <input
+                  className={styles.fieldControl}
+                  value={addName}
+                  onChange={(e) => setAddName(e.target.value)}
+                  placeholder="t.ex. Anna Svensson"
+                  disabled={pending}
+                  required
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>
+                  E-post <span className={styles.fieldOpt}>(valfritt)</span>
+                </span>
+                <input
+                  className={styles.fieldControl}
+                  type="email"
+                  value={addEmail}
+                  onChange={(e) => setAddEmail(e.target.value)}
+                  placeholder="anna@exempel.se"
+                  autoCapitalize="none"
+                  disabled={pending}
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>
+                  Telefon <span className={styles.fieldOpt}>(valfritt)</span>
+                </span>
+                <input
+                  className={styles.fieldControl}
+                  type="tel"
+                  value={addPhone}
+                  onChange={(e) => setAddPhone(e.target.value)}
+                  placeholder="070-123 45 67"
+                  disabled={pending}
+                />
+              </label>
+
+              {addError && (
+                <p className={styles.formError} role="alert">
+                  {addError}
+                </p>
+              )}
+              {/* keyboard submit works via the form; the visible action lives in the footer */}
+              <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
+            </form>
+
+            <span className={styles.chip}>customers · {activeTenants.length} aktiva salonger</span>
           </div>
         </Drawer>
       )}
@@ -404,6 +504,58 @@ export function KunderView({
     } catch {
       notify('Kunde inte kopiera — markera och kopiera manuellt.', 'warning')
     }
+  }
+
+  // ── add-customer (goal-22) ──────────────────────────────────────────────────────
+  function openAdd() {
+    // Prefill the salong with the active filter so the common "add to this salong" flow
+    // is one field shorter — but only if that salon is active (the select lists active
+    // salons only; prefilling a suspended one would set a value with no matching option).
+    const prefill = activeTenants.some((t) => t.id === tenant) ? tenant : ''
+    setAddTenant(prefill)
+    setAddName('')
+    setAddEmail('')
+    setAddPhone('')
+    setAddError(null)
+    setAdding(true)
+  }
+
+  function closeAdd() {
+    if (pending) return
+    setAdding(false)
+    setAddError(null)
+  }
+
+  function submitNewCustomer() {
+    if (pending) return // guard the Enter-key path: the footer button is disabled while
+    // pending, but the form's onSubmit (Enter) is not — without this, a double Enter mints
+    // two identical rows (no contact_hash → no unique-index backstop → permanent dup).
+    const name = addName.trim()
+    if (!addTenant) {
+      setAddError('Välj en salong.')
+      return
+    }
+    if (!name) {
+      setAddError('Ange kundens namn.')
+      return
+    }
+    setAddError(null)
+    const fd = new FormData()
+    fd.set('tenantId', addTenant)
+    fd.set('full_name', name)
+    fd.set('email', addEmail.trim())
+    fd.set('phone', addPhone.trim())
+    startTransition(async () => {
+      const res = await createPlatformCustomer({}, fd)
+      if (res.error) {
+        setAddError(res.error)
+        notify(res.error, 'warning')
+        return
+      }
+      notify(res.success ?? `Kund "${name}" tillagd.`, 'success')
+      setAdding(false)
+      router.refresh()
+    })
   }
 
   // HONEST export: writes a CSV of EXACTLY the rows on screen (the current

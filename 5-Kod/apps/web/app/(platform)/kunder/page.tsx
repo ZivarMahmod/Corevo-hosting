@@ -47,7 +47,7 @@ export default async function CustomersPage({
     <section className="portal-section">
       <KunderView
         customers={customers}
-        tenants={tenants.map((t) => ({ id: t.id, name: t.name, slug: t.slug }))}
+        tenants={tenants.map((t) => ({ id: t.id, name: t.name, slug: t.slug, status: t.status }))}
         q={q}
         tenant={tenant}
         serviceRoleAvailable={hasServiceRole()}

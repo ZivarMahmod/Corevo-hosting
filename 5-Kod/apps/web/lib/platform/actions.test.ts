@@ -57,7 +57,7 @@ vi.mock('@/lib/r2/upload', () => ({
   pruneRemovedImages: vi.fn(async () => {}),
 }))
 
-import { createTenant } from './actions'
+import { createTenant, createPlatformCustomer } from './actions'
 import { resolveOwnerRole } from './owner-role'
 
 // A fake service client whose invite + metadata calls succeed, so createTenant walks
@@ -169,5 +169,91 @@ describe('createTenant writes the goal-20 columns', () => {
     createServiceClientMock.mockReturnValue(fakeSvc('auth-2'))
     await createTenant({}, fd({ name: 'K', slug: 'kx', owner_email: 'noname@x.se' }))
     expect((captured.users?.[0] as { full_name: unknown }).full_name).toBeNull()
+  })
+})
+
+// ── goal-22 — createPlatformCustomer (manual cross-tenant customer row) ────────────
+describe('createPlatformCustomer (goal-22 #6)', () => {
+  function seedCtx(tenantResult: { data?: unknown; error?: unknown }) {
+    const { client, captured } = makeSupabase({
+      tenants: tenantResult,
+      customers: { data: { id: 'cust-1' }, error: null },
+    })
+    platformCtxMock.mockReturnValue(
+      Promise.resolve({ user: { id: 'admin-1' }, supabase: client }),
+    )
+    return captured
+  }
+  const activeTenant = { data: { id: 't1', status: 'active' }, error: null }
+
+  it('inserts a customers row scoped to the chosen tenant, status active', async () => {
+    const captured = seedCtx(activeTenant)
+    const res = await createPlatformCustomer(
+      {},
+      fd({ tenantId: 't1', full_name: 'Anna Svensson', email: 'Anna@X.se', phone: '070-1' }),
+    )
+    expect(res.success).toBeTruthy()
+    expect(captured.customers?.[0]).toMatchObject({
+      tenant_id: 't1',
+      full_name: 'Anna Svensson',
+      display_name: 'Anna Svensson',
+      email: 'anna@x.se', // lowercased
+      phone: '070-1',
+      status: 'active',
+    })
+  })
+
+  it('never sets auth_user_id or contact_hash (no faked auth identity)', async () => {
+    const captured = seedCtx(activeTenant)
+    await createPlatformCustomer({}, fd({ tenantId: 't1', full_name: 'Bo' }))
+    const row = captured.customers?.[0] as Record<string, unknown>
+    expect('auth_user_id' in row).toBe(false)
+    expect('contact_hash' in row).toBe(false)
+  })
+
+  it('writes null email/phone (never empty string) when omitted', async () => {
+    const captured = seedCtx(activeTenant)
+    await createPlatformCustomer({}, fd({ tenantId: 't1', full_name: 'Bo' }))
+    const row = captured.customers?.[0] as { email: unknown; phone: unknown }
+    expect(row.email).toBeNull()
+    expect(row.phone).toBeNull()
+  })
+
+  it('rejects an empty name — no insert', async () => {
+    const captured = seedCtx(activeTenant)
+    const res = await createPlatformCustomer({}, fd({ tenantId: 't1', full_name: '   ' }))
+    expect(res.error).toBeTruthy()
+    expect(captured.customers).toBeUndefined()
+  })
+
+  it('rejects a missing tenant — no insert', async () => {
+    const captured = seedCtx(activeTenant)
+    const res = await createPlatformCustomer({}, fd({ full_name: 'Anna' }))
+    expect(res.error).toBeTruthy()
+    expect(captured.customers).toBeUndefined()
+  })
+
+  it('rejects an invalid email — no insert', async () => {
+    const captured = seedCtx(activeTenant)
+    const res = await createPlatformCustomer(
+      {},
+      fd({ tenantId: 't1', full_name: 'Anna', email: 'not-an-email' }),
+    )
+    expect(res.error).toBeTruthy()
+    expect(captured.customers).toBeUndefined()
+  })
+
+  it('rejects a non-existent tenant — no insert', async () => {
+    const captured = seedCtx({ data: null, error: null })
+    const res = await createPlatformCustomer({}, fd({ tenantId: 'ghost', full_name: 'Anna' }))
+    expect(res.error).toBeTruthy()
+    expect(captured.customers).toBeUndefined()
+  })
+
+  it('rejects a non-active (suspended/deleted) tenant — no insert', async () => {
+    const captured = seedCtx({ data: { id: 't1', status: 'suspended' }, error: null })
+    const res = await createPlatformCustomer({}, fd({ tenantId: 't1', full_name: 'Anna' }))
+    expect(res.error).toBeTruthy()
+    expect(captured.customers).toBeUndefined()
   })
 })

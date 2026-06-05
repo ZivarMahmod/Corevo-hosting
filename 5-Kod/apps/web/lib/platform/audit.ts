@@ -21,6 +21,7 @@ export type PlatformAuditAction =
   | 'tenant.update' // edit safe tenant fields (name, review url, booking variant)
   | 'tenant.password_reset' // generate a recovery link for the salon admin
   | 'tenant.staff_create' // Zivar-assisted staff onboarding on a chosen tenant
+  | 'tenant.customer_create' // goal-22: manual customer row on a chosen tenant (a Zivar/platform act — NOT a customer.* event, so the actor-classifier reads it as Zivar)
   | 'platform.help_mode_open' // platform admin opens help-mode for a tenant (logged platform-side)
   | 'platform.role_permissions_save' // goal-21: edit the global RBAC permission matrix
 
