@@ -8,7 +8,7 @@ Thinking: ⚫ Ultrathink (auth/behörighet — kräver rollback + Zivar-OK före
 > - **Gate:** typecheck 0 / lint 0 / **vitest 237/237** grön.
 > - **Oberoende adversarial review: GO** — 8 auth-invarianter håller; 2 LOW-fynd åtgärdade (avvisa okänt `role_name` + KNOWN_ROLE_NAMES-test; uppdaterad docstring).
 > - **Render-verifierat live** `/roller` (läser DB nu): seedade perms visas, `super_admin`-rad ärligt låst, äkta user-counts, 0 console-fel.
-> - **⚠️ UPPDATERING 2026-06-05 (efter commit):** goal-21 gick LIVE som SIDO-EFFEKT av goal-22-deployen (stackade commits → bygget tog hela trädet) i worker **`474e1768`**. Diff-0-säkert (seed = gamla matrisen; bara Zivar kan redigera; `saveBranding`-gate ger salon_admin Branding='own'→canWrite=true → ingen regression). Zivar applicerade redan migr 0025 = stark intent. **KVAR = Zivars retroaktiva OK ELLER rollback** (`fb7473d0` tar bort 21+22; alt. bygg om 22 utan 21). Flytta `klart/` när Zivar bekräftat.
+> - **✅ KLAR + LIVE — Zivar bekräftade KEEP (2026-06-05).** goal-21 gick live i worker **`474e1768`** som sido-effekt av goal-22-deployen (stackade commits); Zivar valde behåll-live (han hade redan applicerat migr 0025). Diff-0 by construction (seed = gamla matrisen; bara Zivar kan redigera; `saveBranding`-gate ger salon_admin Branding='own'→canWrite=true → ingen regression). ⚠️ enforcement unit-testad, ej live-körd. Rollback vid behov: `wrangler rollback 562c09ad… --config 5-Kod/apps/web/wrangler.jsonc` (eller fb7473d0 för pre-21).
 > - **Not (audit):** `role_permissions_save` loggas under aktörens `tenant_id` (audit_log.tenant_id NOT NULL); `platform@corevo.se` = `tenant_id=demo` → loggas mot demo. Framtida "system-tenant" = städning.
 ---
 
