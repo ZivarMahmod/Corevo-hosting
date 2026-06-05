@@ -247,10 +247,10 @@ export default async function PlatformOverviewPage() {
                 <span key={`${t.id}-sub`} className={styles.sub}>
                   {t.slug}.corevo.se
                 </span>,
-                // Stad: no source on tenants (schema-verified) → honest "—", same
-                // empty-state treatment as the health pills (column kept per mock).
+                // #14 — real tenants.city (listTenants returns it); honest "—" when
+                // the salon has no city yet (empty = honest, not hardcoded).
                 <span key={`${t.id}-city`} className={styles.sub}>
-                  —
+                  {t.city ?? '—'}
                 </span>,
                 // #16 — column is now honestly "Skapad" (the value is the real
                 // tenants.created_at). No faked last-active timestamp; the header

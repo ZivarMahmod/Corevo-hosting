@@ -34,7 +34,9 @@ export default async function TenantsPage() {
     slug: t.slug,
     name: t.name,
     markColor: t.markColor,
-    owner: t.owner,
+    // #10 — the "Ägare" slot prefers the owner's real name (users.full_name) and
+    // falls back to the email when no name was captured; honest "—" when neither.
+    owner: t.ownerName ?? t.owner,
     themeLabel: t.themeLabel,
     variantLabel: t.variantLabel,
     level: t.level,

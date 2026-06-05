@@ -94,6 +94,7 @@ export function CreateTenantForm() {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
+  const [city, setCity] = useState('')
   const [theme, setTheme] = useState<ThemeKey>('salvia')
   const [variant, setVariant] = useState<BookingVariant>(DEFAULT_BOOKING_VARIANT)
   const [accent, setAccent] = useState('') // '' = none picked yet
@@ -129,12 +130,17 @@ export function CreateTenantForm() {
             never drops a value, and the logo File survives step navigation. */}
         <input type="hidden" name="name" value={name} />
         <input type="hidden" name="slug" value={slug} />
+        <input type="hidden" name="city" value={city} />
         <input type="hidden" name="theme" value={theme} />
         <input type="hidden" name="booking_variant" value={variant} />
         {accent ? <input type="hidden" name="color_accent" value={accent} /> : null}
         <input type="hidden" name="tagline" value={tagline} />
         <input type="hidden" name="owner_name" value={ownerName} />
         <input type="hidden" name="owner_email" value={ownerEmail} />
+        {/* #11 — the owner role seam value. Only salon_admin is assignable today (the
+            multi-role taxonomy is goal-21), so this is a fixed honest value, NOT a
+            fake/disabled selector. createTenant resolves it via resolveOwnerRole. */}
+        <input type="hidden" name="owner_role" value="salon_admin" />
         <input
           ref={logoRef}
           type="file"
@@ -198,6 +204,7 @@ export function CreateTenantForm() {
                 </div>
                 <div style={{ marginTop: 8 }}><TableChip>tenants · tenant_settings</TableChip></div>
               </div>
+              <Field label="Stad" hint="Valfritt — syns i salongslistan." ph="t.ex. Göteborg" value={city} onChange={setCity} />
             </div>
           )}
 
@@ -347,9 +354,30 @@ export function CreateTenantForm() {
                 value={ownerEmail}
                 onChange={setOwnerEmail}
               />
+              {/* #11 — roll är ett ÄRLIGT konstaterat faktum, inte en fejkad väljare.
+                  Idag är salongsadmin den enda tilldelbara ägarrollen; fler roller
+                  kommer i behörighetsmodulen. owner_role skickas som hidden input. */}
+              <div>
+                <label style={fieldLabel}>Ägarroll</label>
+                <div
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, marginTop: 6, padding: '12px 14px',
+                    border: '1px solid var(--c-line)', borderRadius: 10, background: 'var(--c-paper-2)',
+                  }}
+                >
+                  <Badge tone="gold" dot={false}>Salongsadmin (ägare)</Badge>
+                  <span style={{ fontSize: 12.5, color: 'var(--c-ink-2)', lineHeight: 1.5 }}>
+                    Full åtkomst till sin egen salongspanel.
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 6 }}>
+                  Fler roller kommer i den kommande behörighetsmodulen.
+                </div>
+              </div>
               <Callout tone="success">
                 <b>{name || 'Salongen'}</b> skapas på <b>{(slug || 'subdomän')}.{ROOT}</b> med tema{' '}
-                <b>{t.name}</b> och variant <b>{BOOKING_VARIANT_LABELS[variant]}</b>. Ägaren bjuds in.
+                <b>{t.name}</b> och variant <b>{BOOKING_VARIANT_LABELS[variant]}</b>. Ägaren bjuds in som
+                salongsadmin.
               </Callout>
               <InfoLine icon="link">
                 Egen domän (steg 5 i stegen) är parkerat — subdomän räcker tills vidare.

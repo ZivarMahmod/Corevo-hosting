@@ -7,6 +7,7 @@ import { isBillingModel, kronorToCents } from './billing'
 import { createServiceClient, hasServiceRole } from './service'
 import { logPlatformAction } from './audit'
 import { isBookingVariant, DEFAULT_BOOKING_VARIANT, type BookingVariant } from './booking-variant'
+import { resolveOwnerRole } from './owner-role'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, type StorefrontTheme } from '@/lib/tenant-data'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages } from '@/lib/r2/upload'
@@ -48,6 +49,10 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // name column — frozen schema), email triggers the magic-link invite when set.
   const ownerName = String(fd.get('owner_name') ?? '').trim().slice(0, 120)
   const ownerEmail = String(fd.get('owner_email') ?? '').trim().toLowerCase()
+  // Salongens stad (#14): real public column. Empty → leave null (never write '').
+  const city = String(fd.get('city') ?? '').trim().slice(0, 120) || null
+  // Owner role (#11): resolved through the seam (default salon_admin, byte-identical).
+  const ownerRole = resolveOwnerRole(fd.get('owner_role'))
   // Billing is NOT collected in the onboarding wizard (design drops it → edited later
   // in tenant-detail / Fakturering). Defaults keep the tenant_settings row valid.
   const billingModel = 'per_booking'
@@ -84,7 +89,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // 1) tenant
   const { data: tenant, error: tErr } = await supabase
     .from('tenants')
-    .insert({ slug, name, status: 'active', plan: 'standard' })
+    .insert({ slug, name, status: 'active', plan: 'standard', city })
     .select('id, slug')
     .single()
   if (tErr || !tenant) {
@@ -138,10 +143,11 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     return { error: GENERIC }
   }
 
-  // 4) tenant-scoped salon_admin role (level 6 — owner; matches the seed)
+  // 4) tenant-scoped owner role. Resolved via the seam (#11): default salon_admin
+  //    level 6 — owner; matches the seed. goal-21 widens OWNER_ROLE_LEVELS.
   const { data: role, error: rErr } = await supabase
     .from('roles')
-    .insert({ tenant_id: tenantId, name: 'salon_admin', level: 6 })
+    .insert({ tenant_id: tenantId, name: ownerRole.name, level: ownerRole.level })
     .select('id')
     .single()
   if (rErr || !role) {
@@ -174,9 +180,19 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
         // The public.users row is a plain cross-tenant DB write — use the authed
         // platform client (RLS bypass via is_platform_admin), NOT the service role.
         // Only the auth.admin.* calls above genuinely require svc.
+        // #10: owner name is a READABLE column now (users.full_name), not just dead
+        // auth user_metadata — the platform Ägare-card reads it. Keep the metadata
+        // write above too (harmless). Empty name → null (never store '').
         const { error: uErr } = await supabase
           .from('users')
-          .insert({ id: authId, tenant_id: tenantId, email: ownerEmail, role_id: role.id, status: 'active' })
+          .insert({
+            id: authId,
+            tenant_id: tenantId,
+            email: ownerEmail,
+            full_name: ownerName || null,
+            role_id: role.id,
+            status: 'active',
+          })
         if (uErr) {
           // Don't claim success: most likely the email already has an account.
           inviteNote = ` Salongen skapad, men ägaren kunde inte kopplas (kontot finns kanske redan).`
@@ -400,6 +416,10 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const name = String(fd.get('name') ?? '').trim()
+  // Stad (#14): editable here too. Absent field → undefined = leave as-is; present but
+  // blank → null (clear). Lets a later edit-UI thread city without forcing it.
+  const cityRaw = fd.get('city')
+  const city = cityRaw === null ? undefined : String(cityRaw).trim().slice(0, 120) || null
   const reviewUrl = httpsUrlOrNull(fd.get('google_review_url'))
   const variantRaw = String(fd.get('booking_variant') ?? '')
 
@@ -413,8 +433,11 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd salong.' }
 
-  // 1) tenant name (feeds the cached public bundle — same field M6 saveSettings edits).
-  const { error: nErr } = await supabase.from('tenants').update({ name }).eq('id', tenantId)
+  // 1) tenant name (+ city when the field is present) — feeds the cached public bundle
+  //    (same field M6 saveSettings edits). city omitted = untouched; '' = cleared.
+  const tenantPatch: { name: string; city?: string | null } = { name }
+  if (city !== undefined) tenantPatch.city = city
+  const { error: nErr } = await supabase.from('tenants').update(tenantPatch).eq('id', tenantId)
   if (nErr) return { error: GENERIC }
 
   // 2) settings jsonb — MERGE prev (never replace). google_review_url is co-owned

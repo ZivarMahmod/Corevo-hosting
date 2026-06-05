@@ -21,6 +21,10 @@ export type TenantListItem = {
   plan: string
   billingModel: string
   createdAt: string
+  /** Salongens stad (#14) — real tenants.city; null = honest tom ("—"). */
+  city: string | null
+  /** Ägarens namn (#10) — users.full_name for the tenant's owner; null = honest tom. */
+  ownerName: string | null
   /** Live booking count for this tenant (all statuses) — honest 0 where none. */
   bookingsCount: number
 }
@@ -50,7 +54,7 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
   const { supabase } = await platformCtx()
   let q = supabase
     .from('tenants')
-    .select('id, slug, name, status, plan, created_at, tenant_settings(billing_model)')
+    .select('id, slug, name, status, plan, city, created_at, tenant_settings(billing_model)')
     .order('created_at', { ascending: false })
 
   if (filters.status && filters.status !== 'all') q = q.eq('status', filters.status)
@@ -63,14 +67,25 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
     q = q.or(`slug.ilike.${term},name.ilike.${term}`)
   }
 
-  const [{ data }, bookingsRes] = await Promise.all([
+  // Batched: one bookings read + one owner read across ALL tenants (mirrors
+  // listTenantsWithStats' ownersRes), bucketed in JS — never an N+1 per-tenant fan-out.
+  const [{ data }, bookingsRes, ownersRes] = await Promise.all([
     q,
     supabase.from('bookings').select('tenant_id'),
+    // Owner = the salon_admin user; read full_name (#10). platform_admin reads users
+    // cross-tenant via the RLS bypass (users_rls = is_platform_admin()).
+    supabase.from('users').select('tenant_id, full_name, roles!inner(name)').eq('roles.name', 'salon_admin').order('created_at'),
   ])
 
   const bookingsByTenant = countBookingsByTenant(
     (bookingsRes.data ?? []) as { tenant_id: string }[],
   )
+
+  // First salon_admin per tenant with a non-empty name wins (honest null otherwise).
+  const ownerName = new Map<string, string>()
+  for (const r of (ownersRes.data ?? []) as { tenant_id: string; full_name: string | null }[]) {
+    if (r.full_name && !ownerName.has(r.tenant_id)) ownerName.set(r.tenant_id, r.full_name)
+  }
 
   type Row = TenantRow & { tenant_settings: { billing_model: string } | { billing_model: string }[] | null }
   return ((data ?? []) as Row[]).map((t) => {
@@ -83,6 +98,8 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
       plan: t.plan,
       billingModel: ts?.billing_model ?? 'per_booking',
       createdAt: t.created_at,
+      city: t.city ?? null,
+      ownerName: ownerName.get(t.id) ?? null,
       bookingsCount: bookingsByTenant.get(t.id) ?? 0,
     }
   })
@@ -155,7 +172,7 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
   const { supabase } = await platformCtx()
   const { data } = await supabase
     .from('tenants')
-    .select('id, slug, name, status, plan, created_at, tenant_settings(billing_model, settings, branding)')
+    .select('id, slug, name, status, plan, city, created_at, tenant_settings(billing_model, settings, branding)')
     .neq('status', 'deleted')
     .order('created_at', { ascending: false })
   type Row = TenantRow & {
@@ -171,7 +188,7 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
   const [bookingsRes, staffRes, ownersRes, servicesRes, hoursRes] = await Promise.all([
     supabase.from('bookings').select('tenant_id, status, created_at'),
     supabase.from('staff').select('tenant_id').eq('active', true),
-    supabase.from('users').select('email, tenant_id, roles!inner(name)').eq('roles.name', 'salon_admin'),
+    supabase.from('users').select('email, full_name, tenant_id, roles!inner(name)').eq('roles.name', 'salon_admin').order('created_at'),
     supabase.from('services').select('tenant_id').eq('active', true),
     supabase.from('working_hours').select('tenant_id'),
   ])
@@ -189,8 +206,10 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
     staffCount.set(r.tenant_id, (staffCount.get(r.tenant_id) ?? 0) + 1)
   }
   const owner = new Map<string, string>()
-  for (const r of (ownersRes.data ?? []) as { tenant_id: string; email: string | null }[]) {
+  const ownerFullName = new Map<string, string>()
+  for (const r of (ownersRes.data ?? []) as { tenant_id: string; email: string | null; full_name: string | null }[]) {
     if (r.email && !owner.has(r.tenant_id)) owner.set(r.tenant_id, r.email)
+    if (r.full_name && !ownerFullName.has(r.tenant_id)) ownerFullName.set(r.tenant_id, r.full_name)
   }
   const hasServices = new Set<string>(
     ((servicesRes.data ?? []) as { tenant_id: string }[]).map((r) => r.tenant_id),
@@ -225,6 +244,8 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
       plan: t.plan,
       billingModel: ts?.billing_model ?? 'per_booking',
       createdAt: t.created_at,
+      city: t.city ?? null,
+      ownerName: ownerFullName.get(t.id) ?? null,
       bookingsCount: stats.total,
       markColor: markColorFor(t.slug, primary),
       owner: owner.get(t.id) ?? null,
@@ -322,7 +343,7 @@ export type TenantDetail = {
   settings: TenantSettingsRow | null
   branding: TenantBranding
   counts: { activeServices: number; activeStaff: number; workingHours: number; bookings: number; completed: number }
-  salonAdmin: { email: string | null; status: string } | null
+  salonAdmin: { email: string | null; fullName: string | null; status: string } | null
   onboarding: OnboardingStep[]
   /** Operativ data-kontroll (§2.1B): current values for the edit surface. */
   operative: { googleReviewUrl: string | null; bookingVariant: BookingVariant }
@@ -348,19 +369,22 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     supabase.from('working_hours').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ACTIVE_BOOKING),
     supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'completed'),
-    // salon_admin = the level-6 role's user for this tenant.
+    // salon_admin = the level-6 role's user for this tenant. full_name (#10) feeds the
+    // Ägare-card so the owner's real name shows, not just the email.
     supabase
       .from('users')
-      .select('email, status, roles!inner(name, tenant_id)')
+      .select('email, full_name, status, roles!inner(name, tenant_id)')
       .eq('tenant_id', tenantId)
       .eq('roles.name', 'salon_admin')
+      // Deterministic owner when a tenant has >1 salon_admin: oldest first.
+      .order('created_at')
       .limit(1)
       .maybeSingle(),
   ])
 
   const settings = settingsRes.data ?? null
   const branding = (settings?.branding ?? {}) as TenantBranding
-  const adminRow = adminRes.data as { email: string | null; status: string } | null
+  const adminRow = adminRes.data as { email: string | null; full_name: string | null; status: string } | null
 
   // Operative values for the §2.1B edit surface, parsed from the raw settings jsonb
   // (the same raw-read seam M3 uses for booking.variant — NOT the frozen parseSettings).
@@ -394,7 +418,9 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     settings,
     branding,
     counts,
-    salonAdmin: adminRow ? { email: adminRow.email, status: adminRow.status } : null,
+    salonAdmin: adminRow
+      ? { email: adminRow.email, fullName: adminRow.full_name, status: adminRow.status }
+      : null,
     onboarding,
     operative: { googleReviewUrl, bookingVariant },
   }

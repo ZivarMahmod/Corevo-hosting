@@ -136,14 +136,19 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
               <>
                 <div className={styles.ownerHead}>
                   <div className={styles.ownerAvatar} style={{ background: 'var(--c-forest)' }} aria-hidden="true">
-                    {salonAdmin.email.charAt(0).toUpperCase()}
+                    {(salonAdmin.fullName || salonAdmin.email).charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <div className={styles.ownerName}>Salongsägare</div>
+                    {/* #10 — owner name from users.full_name; honest "Salongsägare"
+                        label when no name was captured (never a fabricated name). */}
+                    <div className={styles.ownerName}>{salonAdmin.fullName || 'Salongsägare'}</div>
                     <div className={styles.ownerRole}>{salonAdmin.status === 'active' ? 'Aktivt konto' : 'Inbjuden'}</div>
                   </div>
                 </div>
                 <div className={styles.kvList}>
+                  {/* #11 — the owner's role is always salon_admin; show it whenever an
+                      owner exists (not gated on a captured name). */}
+                  <KV label="Roll" value="Salongsadmin (ägare)" />
                   <KV label="E-post" value={salonAdmin.email} />
                 </div>
               </>

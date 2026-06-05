@@ -785,6 +785,7 @@ export type Database = {
       }
       tenants: {
         Row: {
+          city: string | null
           created_at: string
           id: string
           name: string
@@ -798,6 +799,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          city?: string | null
           created_at?: string
           id?: string
           name: string
@@ -811,6 +813,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          city?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -884,6 +887,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string | null
+          full_name: string | null
           id: string
           phone: string | null
           role_id: string | null
@@ -894,6 +898,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email?: string | null
+          full_name?: string | null
           id: string
           phone?: string | null
           role_id?: string | null
@@ -904,6 +909,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string | null
+          full_name?: string | null
           id?: string
           phone?: string | null
           role_id?: string | null
