@@ -8,7 +8,7 @@ Roten får BARA innehålla: `HANDOFF.md` (ingång/status), `CLAUDE.md` (denna), 
 Allt annat — planering, doc, ops-referens, research, kod — går i sin mapp. Är du osäker → fråga, lägg inte i roten.
 
 ## ⛔ DESIGN-TROHET — exakt kopia, aldrig improvisera (lärt dyrt: 18h brände)
-När uppgiften rör design/UI och underlaget är ett **Claude Design-paket** (t.ex. `2-Byggplan/` root + `acceptans/`): **paketet = LAG. Live ska bli en EXAKT kopia av filerna — inget annat.** Aldrig "inspirerad av", aldrig egna idéer, aldrig improvisera, aldrig re-härleda värden (lyft exakta px/hex/font ur kanon).
+När uppgiften rör design/UI och underlaget är ett **Claude Design-paket** (bor i `4-Dokument-Underlag/01-acceptans/`, flyttat från 2-Byggplan 2026-06-07): **paketet = LAG. Live ska bli en EXAKT kopia av filerna — inget annat.** Aldrig "inspirerad av", aldrig egna idéer, aldrig improvisera, aldrig re-härleda värden (lyft exakta px/hex/font ur kanon).
 - **LÄS HELA paketet noga FÖRST** (varje `.jsx`/`.css`/`.html`/spec/mock). 18h förlorades för att Code inte orkade läsa design-mappen och hittade på — underlaget var ALDRIG felet.
 - **"Klar" = mekaniskt 0 FAIL** via `acceptans/<sida>/*.accept.spec.ts` + `probe.js`. Aldrig ögonmått — "känns nära" ÄR buggen (→ 62%).
 - **Oberoende verify** — byggaren rättar inte sin egen läxa.
@@ -20,7 +20,7 @@ När uppgiften rör design/UI och underlaget är ett **Claude Design-paket** (t.
 | Planering, arkitektur, DB-schema, ADR, modulkartor, nuläge (infra/cloudflare) | `1-Planering/` |
 | Roadmap, exekveringsplan | `2-Byggplan/` |
 | Goals (mål) — ej klara | `2-Byggplan/goals/goal-NN-*.md` |
-| Goals — verifierade klara | `2-Byggplan/goals/_klart/` |
+| Goals — verifierade klara | `2-Byggplan/klart/<kategori>/` — kategorier i `klart/0-LÄS-MIG-FÖRST.md` |
 | Bakgrund / research | `3-Bakgrund-Research/` |
 | Underlagsdokument | `4-Dokument-Underlag/` |
 | All kod | `5-Kod/` |
@@ -29,7 +29,7 @@ När uppgiften rör design/UI och underlaget är ett **Claude Design-paket** (t.
 | Källunderlag (PDF:er m.m.) | `Nörden/` |
 
 ## Placeringsregler i klartext
-- En **goal/brief** → `2-Byggplan/goals/`. När den verifierats KLAR → flytta till `2-Byggplan/goals/_klart/`.
+- En **goal/brief** → `2-Byggplan/goals/`. När den verifierats KLAR → flytta till rätt kategori i `2-Byggplan/klart/` (fixar → `08-fixar/`; se `klart/0-LÄS-MIG-FÖRST.md`).
 - En **ops/deploy/drift-referens** (runbook, inloggningar, secrets-inventering) → `5-Kod/docs/ops/`.
 - **Planeringsbeslut, arkitektur, scheman** → `1-Planering/`.
 - **Kod-doc** (API, moduler) → `5-Kod/docs/`.

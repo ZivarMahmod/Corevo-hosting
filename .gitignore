@@ -9,7 +9,7 @@
 
 # Large binary design-underlag — kept local, out of git (the extracted design
 # system already lives committed in 5-Kod). Relocated out of the repo root.
-4-Dokument-Underlag/skarmdumpar-bygg/
+4-Dokument-Underlag/06-skarmdumpar-bygg/
 2-Byggplan/Corevo Booking Design System-handoff/
 # Same handoff copies under their relocated paths (path-anchored rule above misses
 # these): the completed-goals folder picked up a copy, and a "v2" export landed in
@@ -29,5 +29,9 @@ node_modules/
 *.vsix
 *.log
 2-Byggplan/.design-canvas.state.json
+4-Dokument-Underlag/01-acceptans/.design-canvas.state.json
 # temp goal-17 render-verify capture harness (deleted post-verify; ignore if regenerated)
 5-Kod/_goal17-cap.mjs
+
+# Template-katalog: rådumpen (100+ templates) hålls utanför git — bara kandidater/valda versioneras
+4-Dokument-Underlag/03-template-katalog/00-inbox/
