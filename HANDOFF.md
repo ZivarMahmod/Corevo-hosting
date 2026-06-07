@@ -2,6 +2,20 @@
 
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
+## ✅ 2026-06-07 (sent, Cowork) — GOAL-23 STÄNGD: DomänPanel ögonkollad PASS · allt committat
+**Cowork-session med Zivar (verifiering + stängning, ingen kod).**
+- **DomänPanel ÖGONKOLLAD som platform@ (Zivar loggade in i Nördens flik):** `/salonger/[id]` → fliken **Integrationer** → Domän-kortet renderar **aktivt formulär** ("Kundens domän"-input + "Lägg till domän") — INTE ⛔-banner. Domänlista: `kvikta.se` + `demo.corevo.se` båda "Verifierad" (gamla test-rader — behåll/ta bort = Zivar-beslut, på FINSLIP B). **0 console-fel** efter ren omladdning. ⚠️ OBS: panelen bor under **Integrationer-fliken**, inte Översikt — Översiktens onboarding-steg 5 visar statiskt "🔒 SPÄRRAD" (`lib/platform/tenants.ts:328`) oavsett flagga = kosmetisk doc-skuld, på FINSLIP B.
+- **goal-23 → `klart/01-grund/goal-23-domanpanel-self-serve.md`** (bredvid goal-16). GOAL-23 HELT STÄNGD.
+- **"3 okommitterade" var redan klara:** avbokning-modell + research i `25aa7aa` (pushad), custom-domains-ops.md committad tidigare. Denna session committar: HANDOFF + FINSLIP-TODO + goal-23-flytten.
+- **NÄSTA: Zivar dumpar sin lista i FINSLIP-TODO sektion C** → sortera lättast→tyngst → alla briefs i förväg → en i taget.
+
+## 🟢 2026-06-07 (kväll, Cowork) — fix-24 OBEROENDE VERIFIERAD · repo-städat + pushat · FINSLIP-TODO skapad
+**Cowork-session med Zivar (städ + planering, ingen kod).**
+- **fix-24 oberoende ögonkollad i browser (Nörden):** freshcut hero + salvia + /tjanster 7 tjänster riktiga priser + 0 console-fel ✓. POS ✓. booking/login ✓. **Kvar för goal-23-stängning: DomänPanel-ögonkoll** (kräver platform@-login — Zivar loggar in i Nördens flik, Nörden klickar/verifierar; lösenord skrivs aldrig av agent).
+- **Repo-städat + pushat (`3d9e92f`):** `2-Byggplan/klart/` platt→8 kategorier (01-grund..08-fixar, se `klart/0-LÄS-MIG-FÖRST.md`) · `acceptans/` flyttad → `4-Dokument-Underlag/01-acceptans/` (internt ORÖRD — relativa referenser; TESTA-DETTA-03 + ROADMAP-efter-baseline lyfta ut → `2-Byggplan/`) · `4-Dokument-Underlag/` numrerad (01-acceptans..06-skarmdumpar-bygg; skärmdumpar sorterade i konkurrent-referenser/storefront/backoffice) · ny `03-template-katalog/` (00-inbox gitignorad → 01-kandidater → 02-valda + KATALOG.md; Zivar har ~100 frisör-templates att dumpa, ⚠️ licenskoll före användning) · CLAUDE.md + .gitignore synkade.
+- **🔲 Okommitterat (3 filer, Zivar sagt OK att committa):** `5-Kod/docs/ops/custom-domains-ops.md` + `1-Planering/avbokning-aterbetalning-modell.md` + `3-Bakgrund-Research/avbokning-lag-konkurrenter-research.md`.
+- **NÄSTA = fin-slipningsfasen:** master-listan i **`2-Byggplan/FINSLIP-TODO.md`** (A = 2-dagarsplan, B = Nördens granskningslista, C = Zivars dump — väntar). Flöde: Zivar dumpar → sortera lättast→tyngst → ALLA briefs skrivs i förväg → körs en i taget med verifiering.
+
 ## 🟢 2026-06-07 (senare) — FIX-24 KLAR: storefront-404 löst (.env.local-läcka), ombyggd + redeployad
 **Autonom körning (Cowork, ingen kodändring).** goal-23-deployen (2026-06-06 `c2e2fd91`) glömde radera `.env.local` ur byggträdet → `NEXT_PUBLIC_ROOT_DOMAIN=localhost:3000` inlinades vid byggtid → middleware klassade `*.corevo.se` som `unknown` → tenant-subdomäner 404. FIX = ren ombygg från `C:\tmp\kod` med `.env.local` raderad; goal-23-flaggan följde med (ingen rollback).
 - **Pipeline:** nuke+`robocopy /E` (undvik `/MIR` — sandbox-guard tolkar `/MIR` som radera-path) → `del .env.local` + `rm .next/.open-next` → `pnpm install` → build grön → **GREP-GUARD PASS** (middleware-bundlen: `rootDomain ?? "corevo.se"`, **0×** `localhost:3000`; de 2 `localhost:3000` i server-bundlen = Next intern URL-plumbing, ej env; DEFAULT_ROOT-fallbacken bortminifierad då env-värdet inlinades truthy) → deploy.
