@@ -2,6 +2,16 @@
 
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
+## 🟢 2026-06-07 (natt, Cowork) — RESEARCH-VÅGOR + ENKÄT LIVE + struktur-lås
+**Autonom körning på Zivars dump (research + planering, ingen kod).**
+- **Marknadsenkät LIVE:** surveymonkey.com/r/VTJ9L67 (12 frågor, gatuintervjuer frisörer). Analys när svar finns.
+- **3 research-rapporter i `3-Bakgrund-Research/`:** `cf-ekonomi-skalning` (Workers Paid 48kr/mån = reko NU, free-CPU-taket på gränsen; 40 kunder ≈ 48kr/mån CF; CF Registrar stöder EJ .se) · `supabase-ekonomi-skalning` (Pro räcker länge; ⚠️ verifiera `private.tenant_id()` transaction-säker i Supavisor transaction-mode; spend cap PÅ = stannar vid tak; auth-mejl 2/h på inbyggd SMTP) · `kassasystem-konkurrenter` (topp-3 integration: ES/DinKassa→Onslip→Zettle; Bokadirekt tar 399kr/mån BARA för API; ingen konkurrent ger egen domän = vår lucka).
+- **`2-Byggplan/FRÅGOR-TILL-ZIVAR.md`** — 13 beslutfrågor m. alternativ+reko (Workers Paid, spend cap, PITR, rails-ordning, subdomän för inloggsflytt, multi-bransch m.m.). Frågestund när Zivar säger till.
+- **Tankekarta:** `4-Dokument-Underlag/07-systemkarta/corevo-systemkarta.html` — interaktiv N8n-stil nodkarta (klick = visa kopplingar), 8 färgkategorier, vilande/framtid markerat.
+- **FINSLIP-TODO utökad till 69 poster** (Zivars dump insorterad: CF/Supabase-skola, kassasystem, inloggsflytt, templates×30, T&C, shop/Klarna/Instabox, arbetsmanual).
+- **2 nya briefs i `goals/`:** fix-25 (SPÄRRAD-text, 🟢) · fix-26 (refund-paritet VERIFIERA — motstridiga uppgifter VÅG2 vs ROADMAP, 🟡).
+- **1-Planering omstrukturerad** (01-arkitektur/02-floden/03-avbokning) + RYTMEN i CLAUDE.md + 6-Testing/ skapad.
+
 ## ✅ 2026-06-07 (sent, Cowork) — GOAL-23 STÄNGD: DomänPanel ögonkollad PASS · allt committat
 **Cowork-session med Zivar (verifiering + stängning, ingen kod).**
 - **DomänPanel ÖGONKOLLAD som platform@ (Zivar loggade in i Nördens flik):** `/salonger/[id]` → fliken **Integrationer** → Domän-kortet renderar **aktivt formulär** ("Kundens domän"-input + "Lägg till domän") — INTE ⛔-banner. Domänlista: `kvikta.se` + `demo.corevo.se` båda "Verifierad" (gamla test-rader — behåll/ta bort = Zivar-beslut, på FINSLIP B). **0 console-fel** efter ren omladdning. ⚠️ OBS: panelen bor under **Integrationer-fliken**, inte Översikt — Översiktens onboarding-steg 5 visar statiskt "🔒 SPÄRRAD" (`lib/platform/tenants.ts:328`) oavsett flagga = kosmetisk doc-skuld, på FINSLIP B.

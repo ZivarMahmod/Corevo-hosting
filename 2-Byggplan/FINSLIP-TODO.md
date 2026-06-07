@@ -75,6 +75,33 @@ Taggar: `(du)` = Zivar gör/beslutar · `(fix)` = bugg · `(verify)` = testa/bek
 - [ ] 47. Frisör-frånvaro → auto-omfördelning (bygg, ny feature ur avbokningsspecen)
 - [ ] 48. Dela plattform-admin från salong-admin — egen route/worker (bygg, stort)
 
+### 📚 Zivars dump 2026-06-07 — kunskap/ekonomi (research → dokument till dig)
+- [ ] 49. CF-EKONOMI-SKOLAN — free plan i verkligheten: vad ÄR en request, 100 samtidiga bokare, gränser, metrics förklarade, när kostar det (research → doc)
+- [ ] 50. Kostnadskalkyl per kund — exakt utgift vid 3/6/10/20/40 kunder, CF+Supabase+domäner, marginalskydd (research → kalkyl)
+- [ ] 51. Domän/NS-modellen — Miss Hosting äger domän+NS idag: hur funkar det med kunder, vem betalar, NS4.SIMPLY-frågan (egen NS-infra?) (research → doc)
+- [ ] 52. SUPABASE-SKOLAN — vad Pro 250kr klarar, "1 GB used" förklarat, storage Supabase vs R2, skalningströsklar, knivvassa oanvända funktioner (research → doc)
+- [ ] 53. Bokningsdata-livscykel — radstorlek, retention, vad händer när DB fylls, arkiveringsstrategi (research → doc)
+- [ ] 54. Workers/Pages oanvänt — funktioner vi borde använda men inte gör (queues, cron, KV, analytics?) (research → doc)
+- [ ] 55. Uptime mot kund — "hur vet kunden att det funkar": status-upplägg, redundans, aldrig fattig sida (röd-tråd + senare bygg)
+- [ ] 56. Multi-bransch-arkitekturen — bilverkstad som kund: samma DB? vertikal-toggles? vad ändras? (beslut + röd-tråd)
+
+### 💰 Zivars dump — kassasystem/marknad
+- [ ] 57. Kassasystem-research — 10 vanligaste i SE: priser, API:er, policyn, pluggbarhet (research → doc)
+- [ ] 58. Konkurrent-research — Bokadirekt/Fresha/Timma + hostingtjänster: vad får kunden, vad tar de, kan vi paketera billigare (research → doc)
+- [ ] 59. ES öppna API — vattentät integration (lyssna/skicka), Stage 0-mejl till api@eskassa.se (bygg-förberedelse)
+- [ ] 60. Bytes-playbook — hur vi approachar salong som "har allt": migrering åt dem, gratis flytt (process-doc)
+- [ ] 61. Marknadsundersökningen — enkät LIVE (surveymonkey.com/r/VTJ9L67) → analys när svar finns (du + Nörden)
+
+### 🎨 Zivars dump — produkt/plattform
+- [ ] 62. Inloggsflytt — ditt platform-login BORT från booking.corevo.se → egen subdomän (admin.corevo.se?) (bygg; del 1 av #48)
+- [ ] 63. Flik-för-flik-genomgång — varje flik unik, perfekt för sitt jobb, röd tråd; kan sidan förenklas MER? (röd-tråd, stor)
+- [ ] 64. Microcopy-svep — alla små klickbeskrivningar/tooltips/tomma states (bygg, efter 63)
+- [ ] 65. Terms & Conditions + användarpolicy + integritetspolicy (doc + bygg accept-flöde; hänger ihop med DPA #45)
+- [ ] 66. Template-motorn — 30 templates Corevo-brandade, demo-visningsläge, bransch-varianter (bilverkstad: boka tvätt) (bygg, stor; bygger på #36)
+- [ ] 67. Shop + Klarna + Instabox — köpflöde → kvitto-print → pickup-koppling: unik postdel, "solder proof" (framtidsuttag, störst; väcker ångerknapp #🔭)
+- [ ] 68. ZIVARS ARBETSMANUAL — hur du gör ditt jobb: vilka nycklar var, DB↔CF-kopplingen, vanliga åtgärder steg-för-steg (doc till 5-Kod/docs/ops/)
+- [ ] 69. Tankekarta HTML — N8n-stil systemkarta: noder, färg per kategori, kopplingar in/ut, rutnät (Nörden bygger, sparas separat)
+
 ### 🔭 Bevaka (blockerar inget nu)
 - Ångerknapp-lagkravet 19 juni — gäller presentkort/produkter, triggas när shop byggs
 - Produkt-shop per salong som toggle (Instabox/Klarna) — parkerad i avbokningsspecen
