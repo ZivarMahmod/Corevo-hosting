@@ -24,6 +24,7 @@ När uppgiften rör design/UI och underlaget är ett **Claude Design-paket** (bo
 | Bakgrund / research | `3-Bakgrund-Research/` |
 | Underlagsdokument | `4-Dokument-Underlag/` |
 | All kod | `5-Kod/` |
+| Testlistor, manuella tester, sånt ZIVAR ska köra/utföra | `6-Testing/` |
 | Teknisk dokumentation (kod) | `5-Kod/docs/` |
 | Drift / ops / runbooks / inloggnings-referens | `5-Kod/docs/ops/` |
 | Källunderlag (PDF:er m.m.) | `Nörden/` |
@@ -33,6 +34,7 @@ När uppgiften rör design/UI och underlaget är ett **Claude Design-paket** (bo
 - En **ops/deploy/drift-referens** (runbook, inloggningar, secrets-inventering) → `5-Kod/docs/ops/`.
 - **Planeringsbeslut, arkitektur, scheman** → `1-Planering/`.
 - **Kod-doc** (API, moduler) → `5-Kod/docs/`.
+- **Testlista / manuellt test som Zivar ska utföra** → `6-Testing/`. Körda workflow-/plandokument = historik → `2-Byggplan/klart/07-workflows-faser/`.
 - Skapar du en fil och tvekar om mappen → välj närmaste enligt tabellen, lägg den ALDRIG i roten.
 
 ## Övrigt
