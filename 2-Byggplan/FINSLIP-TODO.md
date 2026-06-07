@@ -1,102 +1,87 @@
-# FINSLIP-TODO — master-lista (start 2026-06-07)
+# FINSLIP-TODO — master-lista (omsorterad 2026-06-07)
 
-Arbetssätt (Zivars beslut): allt som ska kollas listas här → ordnas **lättast → tyngst** → Nörden skriver ALLA briefs i förväg (röda tråden hålls en gång) → Zivar kör dem mot Code en efter en → Nörden verifierar varje. Små poster, inga klumpar.
+Arbetssätt (Zivars beslut): allt listas EN gång → sorterat **absolut lättast → svårast** → Nörden skriver ALLA briefs i förväg → körs en i taget med verifiering. Små poster, inga klumpar.
 
----
-
-## A. KOMMANDE 2 DAGAR (förslag — Zivar fyller på/ändrar)
-
-### Dag 1 — stäng allt öppet, samla listan
-- [x] **Stäng goal-23 helt:** DomänPanel ögonkollad 2026-06-07 (Integrationer-fliken: aktivt formulär + kvikta.se/demo.corevo.se "Verifierad", 0 console-fel) → goal-23 flyttad → `klart/01-grund/`
-- [x] **Committa de 3 okommitterade** — klart: avbokning×2 i `25aa7aa` (pushad), custom-domains-ops committad tidigare
-- [ ] **Zivar dumpar SIN lista** (allt i huvudet → sektion C nedan) → Nörden sorterar in i B/C, ordnar lättast→tyngst
-- [ ] **Betal-rails-diskussion** (ES kassasystem / Swish Företag / Stripe / övriga) → beslut → underlag för policy-motor-brief
-- [ ] **Purge-OK + seed-OK från Zivar** → städa testdata på prod + seeda bokningar så Bokningar-ön kan verifieras visuellt
-
-### Dag 2 — briefs + börja beta av
-- [ ] Nörden skriver **alla briefs** för den sorterade listan (en brief = en post)
-- [ ] Kör de 2 kända buggarna: **personal-Idag-krasch** + **savePlatformBranding-clobber** (rotorsak obekräftad — repro: seeda media, ta bort bild, spara)
-- [ ] **Ägar-toggles** (Zivar, ~10 min): auth-hook (Supabase Dashboard) · leaked-password-skydd · Stripe-testnycklar
-- [ ] Börja beta av fin-slip-listan i ordning
+Taggar: `(du)` = Zivar gör/beslutar · `(fix)` = bugg · `(verify)` = testa/bekräfta · `(städ)` = docs/data · `(röd-tråd)` = byggt men vagt/ingen genomtänkt kedja — behöver klargöras INNAN ev. bygge · `(bygg)` = ny kod
 
 ---
 
-## B. NÖRDENS GRANSKNINGSLISTA (känt läge, från HANDOFF + dagens session)
-
-### Verifiering som aldrig gjordes klart
-- [ ] **Bokningar-ön visuellt** — ViewSwitcher/Drawer/Toast aldrig renderade (kräver seedad bokningsdata)
-- [ ] **TESTA-DETTA-03.md köras** — Zivars egen testlista (rollmatris + "försök tappa en bokning"), skriven men aldrig körd. Ligger nu i `2-Byggplan/`
-- [ ] **Realtime cross-tab push-test** — kanalen bevisad ren, men live-uppdatering mellan två flikar aldrig testad
-- [ ] **Mejl live-test end-to-end** — boka → bekräftelsemejl landar, SPF/DKIM grönt
-
-### Drift/process-härdning
-- [ ] **Innehållsbaserad smoke i deploy-runbooken** — dagens lärdom ×2: HTTP 200 ≠ funkar; body-grep på "Sidan kunde inte hittas" ljuger (RSC-boundary). Verifiera via `<title>`/`data-world`/hero
-- [ ] **Deploy-checklista som EN fil** (robocopy /E → del .env.local → grep-guard → deploy → innehålls-smoke → version-ID) — finns spritt i HANDOFF/minne, ska bli runbook
-- [ ] **CF Cron Triggers verifierade** — reminders + pending-expiry: är de aktiverade och kör de?
-- [ ] **Doc-skuld:** runbooks nämner `demo.corevo.se` (slug bytte till freshcut) — städa referenser
-- [ ] **Onboarding-steg 5 säger statiskt "SPÄRRAD"** (`lib/platform/tenants.ts:328`) fast DomänPanelen är live — texten ska spegla flaggan (kosmetiskt, fynd 2026-06-07)
-- [ ] **Städa test-domäner i tenant_domains?** `kvikta.se` + `demo.corevo.se` ligger som "Verifierad" på freshcut (gamla test-rader) — Zivar beslutar behåll/ta bort
-
-### Kända kod-gap (flaggade, ej fejkade — från HANDOFF)
-- [ ] **Refund-paritet gäst-avboka** (`cancelByToken` refundar ej) — MÅSTE täppas innan betalning aktiveras
-- [ ] **Poäng-revoke** — completed→cancelled återbetalar pengar men återkallar ej lojalitetspoäng (ofarligt tills redeem byggs — men bygg revoke FÖRE redeem)
-- [ ] **Anon-läsbar pris-/avgiftskonfig** på `tenant_settings` — stäng bakom kolumn-vy FÖRE riktig multi-tenant-launch
-- [ ] **Per-location pris = platt** — en prismodell oavsett plats (känt, beslut behövs om det ska byggas)
-- [ ] **Storefront reveal-on-scroll** (`opacity:0`) bryter mot micro-interactions-canon — Zivars val: behåll eller ta bort (orörd tills beslut)
-
-### Planerat men inte startat
-- [ ] **Policy-motor avbokning/återbetalning** (specen LÅST i `1-Planering/03-avbokning/avbokning-aterbetalning-modell.md`) — rail-agnostisk, brief efter betal-rails-beslutet
-- [ ] **Frisör-frånvaro → auto-omfördelning** av dagens bokningar (NY feature ur avboknings-specen)
-- [ ] **Dela plattform-admin från salong-admin** (egen route/worker-isolering) — beslutat kort, efter baseline
-- [ ] **Template-katalogen:** Zivar dumpar 100 templates i `4-Dokument-Underlag/03-template-katalog/00-inbox/` → ⚠️ licenskoll → svep → kandidater → Nörden deployar/screenshottar → val → ombrandnings-brief till Code
-- [ ] **Ångerknapp-lagkravet (19 juni 2026)** — gäller presentkort/produkter, EJ bokade tider → triggas först när shop/presentkort byggs. Bevaka, blockerar inget nu
-
-### Nördens kortlista (alla kända obekvämligheter — kortform, diskuteras vid sortering)
-
-**Buggar/fixar:**
-- [ ] Personal-Idag-kraschen
-- [ ] Branding-clobber (savePlatform)
-- [ ] "SPÄRRAD"-texten (steg 5)
-- [ ] Refund gäst-avboka
-- [ ] Poäng-revoke
-
-**Verifiera/testa:**
-- [ ] Bokningar-ön (seed först)
-- [ ] TESTA-DETTA köras
-- [ ] Realtime 2 flikar
-- [ ] Mejl end-to-end
-- [ ] Cron-triggers på?
-- [ ] DomänPanel skarp-test (riktig CNAME)
-
-**Städa/docs:**
-- [ ] ROADMAP stale → uppdatera
-- [ ] TESTA-DETTA stale → uppdatera
-- [ ] HANDOFF bantas (336 rader)
-- [ ] demo.corevo.se-referenser
-- [ ] `.probe.md` skräp?
-- [ ] Test-domäner bort? (kvikta/demo)
-- [ ] Testdata-purge prod
-- [ ] Version-ID-rutin deploy
-
-**Beslut (Zivar):**
-- [ ] Betal-rails-valet
-- [ ] Reveal-on-scroll behåll/bort
-- [ ] Per-location-pris ja/nej
-- [ ] Redeem-poäng när?
-- [ ] Deposition-toggle senare?
-- [ ] DNS nord/barberco/leander/zigge?
-
-**Säkerhet/launch-krav:**
-- [ ] Anon prisconfig stäng
-- [ ] Auth-hook toggle (du)
-- [ ] Leaked-pw toggle (du)
-- [ ] MFA super_admin
-- [ ] DPA-mall
-- [ ] Audit-logg-UI
+## ✅ KLART (logg)
+- [x] goal-23 stängd (DomänPanel ögonkollad PASS 2026-06-07)
+- [x] De "3 okommitterade" committade + pushade
+- [x] Repo-strukturen: 6-Testing + 1-Planering per del + RYTMEN i CLAUDE.md
 
 ---
 
-## C. ZIVARS LISTA (fyll på här — ostrukturerat är fint, Nörden sorterar)
+## MASTER — absolut lättast först, svårast sist
+
+### ⚡ Minuter (1–15 min styck)
+- [ ] 1. `.probe.md`-skräpet i 1-Planering — bort? (städ)
+- [ ] 2. Version-ID-rutin — en rad i deploy-runbook (städ)
+- [ ] 3. Test-domäner `kvikta.se`/`demo.corevo.se` bort ur tenant_domains? (du + städ)
+- [ ] 4. Auth-hook-togglen i Supabase Dashboard (du)
+- [ ] 5. Leaked-password-togglen i Supabase Dashboard (du)
+- [ ] 6. Cron-triggers på? — reminders + pending-expiry, kolla CF-dashboard (verify)
+- [ ] 7. "SPÄRRAD"-texten onboarding-steg 5 — spegla flaggan (fix, 1 rad + deploy)
+- [ ] 8. Exportera-knappen på Salonger — riktig eller skal? (verify)
+- [ ] 9. Notis-klockan + ⌘K — vad täcker de faktiskt? (verify)
+
+### 🕐 Timme-klassen
+- [ ] 10. demo.corevo.se-referenser i runbooks — städa (städ)
+- [ ] 11. ROADMAP stale → uppdatera mot dagens läge (städ)
+- [ ] 12. TESTA-DETTA stale → uppdatera (städ)
+- [ ] 13. Testdata-purge prod — purge-SQL finns, kräver ditt OK (du + städ)
+- [ ] 14. Mejl end-to-end — boka → bekräftelse landar, SPF/DKIM (verify)
+- [ ] 15. Seed bokningar (ditt OK) → Bokningar-ön visuellt (verify)
+- [ ] 16. Realtime 2 flikar — boka i storefront, admin uppdaterar live (verify)
+- [ ] 17. Lösenordsreset-knappen (plattform) — vad händer? mejl? länk? (röd-tråd)
+- [ ] 18. Kundregistrering `/registrera` — service-role-beroende, aldrig live-verifierad (röd-tråd + verify)
+- [ ] 19. HANDOFF bantas — 336 rader → arkivera gamla block (städ)
+- [ ] 20. Deploy-runbook EN fil — robocopy→env-guard→grep→smoke→version-ID (städ)
+- [ ] 21. TESTA-DETTA-03 köras — dina 6 tester (du, efter 12)
+
+### 📋 Beslut — snabba att TA, jobbet kommer sen (du)
+- [ ] 22. Reveal-on-scroll — behåll eller bort (canon säger bort)
+- [ ] 23. DNS för nord/barberco/leander/zigge — ska de finnas?
+- [ ] 24. Per-location-pris — bygga eller platt OK?
+- [ ] 25. Redeem-poäng — när? (revoke måste byggas FÖRE)
+- [ ] 26. Deposition-toggle — parkerad, bekräfta att den får ligga
+- [ ] 27. Betal-rails-valet — ES kassasystem / Swish / Stripe / fler (störst beslut, låser policy-motorn)
+
+### 🔍 Röd-tråd-klargöranden — byggt men VAGT, prata igenom före ev. kod
+- [ ] 28. SMS (46elks) — "Plattformsbred kö" är en badge; finns riktig sändning? hela SMS-kedjan klargörs
+- [ ] 29. Lojalitetsnivåer — BRONS/poäng visas men nivåREGLER finns inte (earn finns, nivålogik/förmåner = ?)
+- [ ] 30. Fakturering (plattform) — "underlag räknas manuellt", ingen motor: vad är flödet månad för månad?
+- [ ] 31. RBAC-matrisen — `/roller` redigerbar men enforce:as BARA på Branding-save; resten är display → vilken yta ska lyda matrisen och när?
+- [ ] 32. Onboarda salong end-to-end — har flödet körts på riktigt från noll? (ny tenant, invite, första login)
+- [ ] 33. Gäst → konto-koppling — gäst bokar, skapar konto sen: claimas historiken? (contact_hash-dedup har känd lucka från goal-22)
+- [ ] 34. Kund-consent/integritet på /konto — ärliga statiska indikatorer, inga save-actions: ska kunden kunna ändra? GDPR-kedjan
+- [ ] 35. Öppettider (salong) vs working_hours (personal) — två system, relationen aldrig uttalad (vad vinner vid konflikt?)
+- [ ] 36. Storefront riktigt innehåll — logo/foton/copy är ditt; + template-katalogen (dump → licens → val)
+
+### 🔧 Buggfixar — felsök + fix (medel)
+- [ ] 37. Personal-Idag-kraschen (fix)
+- [ ] 38. Branding-clobber savePlatformBranding (fix — rotorsak obekräftad; repro: seeda media → ta bort bild → spara)
+- [ ] 39. Refund-paritet gäst-avboka — `cancelByToken` refundar ej; MÅSTE före betalning på (fix)
+- [ ] 40. Poäng-revoke vid completed→cancelled (fix, före redeem)
+
+### 🏗️ Byggen — tyngst sist
+- [ ] 41. Anon prisconfig stängas — kolumn-vy/RLS före multi-tenant-launch (bygg)
+- [ ] 42. DomänPanel skarp-test — riktig kunddomän CNAME:as hela vägen till cert (verify + ops)
+- [ ] 43. MFA för super_admin (bygg)
+- [ ] 44. Audit-logg-UI — din tvärs-vy + salongens egen (bygg)
+- [ ] 45. DPA-mall + accept i onboarding (du + bygg)
+- [ ] 46. Policy-motor avbokning/återbetalning — specen LÅST i `1-Planering/03-avbokning/`, rail-agnostisk, EFTER beslut 27 (bygg, störst)
+- [ ] 47. Frisör-frånvaro → auto-omfördelning (bygg, ny feature ur avbokningsspecen)
+- [ ] 48. Dela plattform-admin från salong-admin — egen route/worker (bygg, stort)
+
+### 🔭 Bevaka (blockerar inget nu)
+- Ångerknapp-lagkravet 19 juni — gäller presentkort/produkter, triggas när shop byggs
+- Produkt-shop per salong som toggle (Instabox/Klarna) — parkerad i avbokningsspecen
+
+---
+
+## C. ZIVARS LISTA (dumpa här — ostrukturerat är fint, Nörden sorterar in i MASTER)
 
 - _(tomt — dumpa allt ur huvudet)_
 
@@ -106,3 +91,4 @@ Arbetssätt (Zivars beslut): allt som ska kollas listas här → ordnas **lätta
 | Datum | Vad | Status |
 |---|---|---|
 | 2026-06-07 | Listan skapad (A+B), C väntar på Zivar | öppen |
+| 2026-06-07 | Dedupad + omsorterad lättast→svårast, röd-tråd-sektion tillagd (9 nya klargöranden) | öppen |
