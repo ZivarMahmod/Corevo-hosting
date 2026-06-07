@@ -51,6 +51,49 @@ Arbetssätt (Zivars beslut): allt som ska kollas listas här → ordnas **lätta
 - [ ] **Template-katalogen:** Zivar dumpar 100 templates i `4-Dokument-Underlag/03-template-katalog/00-inbox/` → ⚠️ licenskoll → svep → kandidater → Nörden deployar/screenshottar → val → ombrandnings-brief till Code
 - [ ] **Ångerknapp-lagkravet (19 juni 2026)** — gäller presentkort/produkter, EJ bokade tider → triggas först när shop/presentkort byggs. Bevaka, blockerar inget nu
 
+### Nördens kortlista (alla kända obekvämligheter — kortform, diskuteras vid sortering)
+
+**Buggar/fixar:**
+- [ ] Personal-Idag-kraschen
+- [ ] Branding-clobber (savePlatform)
+- [ ] "SPÄRRAD"-texten (steg 5)
+- [ ] Refund gäst-avboka
+- [ ] Poäng-revoke
+
+**Verifiera/testa:**
+- [ ] Bokningar-ön (seed först)
+- [ ] TESTA-DETTA köras
+- [ ] Realtime 2 flikar
+- [ ] Mejl end-to-end
+- [ ] Cron-triggers på?
+- [ ] DomänPanel skarp-test (riktig CNAME)
+
+**Städa/docs:**
+- [ ] ROADMAP stale → uppdatera
+- [ ] TESTA-DETTA stale → uppdatera
+- [ ] HANDOFF bantas (336 rader)
+- [ ] demo.corevo.se-referenser
+- [ ] `.probe.md` skräp?
+- [ ] Test-domäner bort? (kvikta/demo)
+- [ ] Testdata-purge prod
+- [ ] Version-ID-rutin deploy
+
+**Beslut (Zivar):**
+- [ ] Betal-rails-valet
+- [ ] Reveal-on-scroll behåll/bort
+- [ ] Per-location-pris ja/nej
+- [ ] Redeem-poäng när?
+- [ ] Deposition-toggle senare?
+- [ ] DNS nord/barberco/leander/zigge?
+
+**Säkerhet/launch-krav:**
+- [ ] Anon prisconfig stäng
+- [ ] Auth-hook toggle (du)
+- [ ] Leaked-pw toggle (du)
+- [ ] MFA super_admin
+- [ ] DPA-mall
+- [ ] Audit-logg-UI
+
 ---
 
 ## C. ZIVARS LISTA (fyll på här — ostrukturerat är fint, Nörden sorterar)
