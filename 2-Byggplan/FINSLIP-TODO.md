@@ -45,7 +45,7 @@ Arbetssätt (Zivars beslut): allt som ska kollas listas här → ordnas **lätta
 - [ ] **Storefront reveal-on-scroll** (`opacity:0`) bryter mot micro-interactions-canon — Zivars val: behåll eller ta bort (orörd tills beslut)
 
 ### Planerat men inte startat
-- [ ] **Policy-motor avbokning/återbetalning** (specen LÅST i `1-Planering/avbokning-aterbetalning-modell.md`) — rail-agnostisk, brief efter betal-rails-beslutet
+- [ ] **Policy-motor avbokning/återbetalning** (specen LÅST i `1-Planering/03-avbokning/avbokning-aterbetalning-modell.md`) — rail-agnostisk, brief efter betal-rails-beslutet
 - [ ] **Frisör-frånvaro → auto-omfördelning** av dagens bokningar (NY feature ur avboknings-specen)
 - [ ] **Dela plattform-admin från salong-admin** (egen route/worker-isolering) — beslutat kort, efter baseline
 - [ ] **Template-katalogen:** Zivar dumpar 100 templates i `4-Dokument-Underlag/03-template-katalog/00-inbox/` → ⚠️ licenskoll → svep → kandidater → Nörden deployar/screenshottar → val → ombrandnings-brief till Code

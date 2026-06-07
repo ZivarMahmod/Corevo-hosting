@@ -14,10 +14,14 @@ När uppgiften rör design/UI och underlaget är ett **Claude Design-paket** (bo
 - **Oberoende verify** — byggaren rättar inte sin egen läxa.
 - **IGNORERA OLD-mappar** (`corevo-booking-design-system v3/`, `Tillfällig map struktur/`). Root-paketet vinner alla konflikter.
 
+## RYTMEN — flödet ett bygge följer (lag)
+**Research (`3`) → beslut/plan för delen (`1`, egen mapp per del) → underlag som matar bygget (`4`) → mål/goal (`2-Byggplan/goals/`) → kod (`5`) → Zivars test (`6`) → verifierat klart (`2-Byggplan/klart/`)**
+Ny del planeras → ny mapp `1-Planering/0N-<delen>/`. Planering för en specifik del bor IHOP i sin mapp — aldrig löst i 1-roten.
+
 ## Mappstruktur — var saker hör hemma
 | Innehåll | Plats |
 |---|---|
-| Planering, arkitektur, DB-schema, ADR, modulkartor, nuläge (infra/cloudflare) | `1-Planering/` |
+| Planering/beslut. Roten = bara `00-modulkarta.md` (ingången). Tvärgående arkitektur (DB-schema, ADR, domänstrategi, infra-nuläge) → `01-arkitektur/` · flöden (onboarding, pengaflöde) → `02-floden/` · per del → `0N-<delen>/` (t.ex. `03-avbokning/`) | `1-Planering/` |
 | Roadmap, exekveringsplan | `2-Byggplan/` |
 | Goals (mål) — ej klara | `2-Byggplan/goals/goal-NN-*.md` |
 | Goals — verifierade klara | `2-Byggplan/klart/<kategori>/` — kategorier i `klart/0-LÄS-MIG-FÖRST.md` |
