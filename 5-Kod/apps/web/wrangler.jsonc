@@ -32,7 +32,11 @@
     // Public origin of the R2 media bucket (r2.dev). lib/r2/upload.ts builds stored
     // image URLs from this. Production later: swap to a custom subdomain
     // (media.corevo.se) and keep stored links from breaking.
-    "R2_PUBLIC_BASE_URL": "https://pub-8f440f10134347eeb2491f9712f5a6f5.r2.dev"
+    "R2_PUBLIC_BASE_URL": "https://pub-8f440f10134347eeb2491f9712f5a6f5.r2.dev",
+    // goal-23: slår på DomänPanelens skriv-väg (custom hostnames via CF for SaaS).
+    // Kräver worker-secrets CF_API_TOKEN + CF_ZONE_ID (+ CF_FALLBACK_ORIGIN) — satta
+    // 2026-06-06. Av = sätt "false"/ta bort + redeploy → panelen spärras direkt.
+    "DOMAIN_PROVISIONING_ENABLED": "true"
   },
   "assets": {
     "directory": ".open-next/assets",
