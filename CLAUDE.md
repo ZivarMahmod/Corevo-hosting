@@ -4,7 +4,7 @@ Projekt-instruktioner för Claude (Code + Cowork). Nuläge + status bor i **`HAN
 
 ## ⛔ FILPLACERING — ingen dumpning i roten
 **Nya filer skrivs i rätt mapp enligt strukturen nedan. ALDRIG i repo-roten.**
-Roten får BARA innehålla: `HANDOFF.md` (ingång/status), `CLAUDE.md` (denna), samt config som måste ligga där (`.gitignore`, `.mcp.json` osv).
+Roten får BARA innehålla: `HANDOFF.md` (ingång/status), `CLAUDE.md` (denna), `MAPPSTRUKTUR.md` (full mappguide + beslutsträd), samt config som måste ligga där (`.gitignore`, `.mcp.json` osv).
 Allt annat — planering, doc, ops-referens, research, kod — går i sin mapp. Är du osäker → fråga, lägg inte i roten.
 
 ## ⛔ DESIGN-TROHET — exakt kopia, aldrig improvisera (lärt dyrt: 18h brände)
