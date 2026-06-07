@@ -20,16 +20,19 @@ zon-setup nedan. Resolutionsläsvägen (`0019 resolve_tenant_by_domain` + middle
 ## Steg för att aktivera (drift)
 1. **Cloudflare for SaaS på `corevo.se`-zonen**
    - Aktivera Cloudflare for SaaS (Custom Hostnames) på zonen.
-   - Skapa en **fallback origin** (t.ex. `ssl.corevo.se`) som pekar mot Workern. Det är
-     värdet kunderna CNAME:ar sin hostname till. (Se goal-16 OPS väg B.)
-2. **API-token** (Cloudflare dashboard → My Profile → API Tokens)
-   - Permissions: **Zone → SSL and Certificates → Edit** + **Zone → Custom Hostnames → Edit**
-     (på `corevo.se`-zonen). Minsta möjliga scope.
+   - Fallback origin = **`booking.corevo.se`** (beslut 2026-06-06: återbruk av befintlig
+     Worker-rad — ingen ny ssl-rad skapas). Det är värdet kunderna CNAME:ar sin hostname till.
+     Sätts i SSL/TLS → Custom Hostnames → Fallback Origin. (Se goal-16 OPS väg B.)
+2. **API-token** (Cloudflare dashboard → My Profile → API Tokens → Create Token → Custom)
+   - Permissions: **Zone → SSL and Certificates → Edit** — det räcker; någon separat
+     "Custom Hostnames"-permission finns inte (alla custom hostname-endpoints kräver
+     `SSL and Certificates Write` enligt CF-docs).
+   - Zone Resources: **Include → Specific zone → corevo.se** (aldrig All zones).
 3. **Worker-secrets** (kör i `5-Kod/apps/web`):
    ```
    wrangler secret put CF_API_TOKEN
    wrangler secret put CF_ZONE_ID            # corevo.se-zonens id
-   wrangler secret put CF_FALLBACK_ORIGIN    # t.ex. ssl.corevo.se (valfritt men rekommenderat)
+   wrangler secret put CF_FALLBACK_ORIGIN    # booking.corevo.se (= dashboardens fallback origin)
    ```
    Lokalt test: lägg samma i `apps/web/.env.local` (committas ALDRIG).
 4. **Slå på flaggan** — sätt `DOMAIN_PROVISIONING_ENABLED=true` som Worker-var i
