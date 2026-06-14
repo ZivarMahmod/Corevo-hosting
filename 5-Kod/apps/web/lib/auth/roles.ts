@@ -64,3 +64,23 @@ export function portalHomeFor(opts: { roleLevel: number; platformAdmin: boolean 
   if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return '/personal'
   return '/konto'
 }
+
+/**
+ * goal-27 — DOOR ISOLATION. Which single back-office host (TenantResolution kind) a
+ * role is allowed to SIGN IN on: super_admin ⇒ superbooking ('superadmin'),
+ * salon_admin ⇒ booking ('platform'), staff ⇒ minbooking ('staff_portal'). A
+ * customer (below the staff floor) has no back-office door → 'tenant'. The login
+ * action rejects + signs out any credential used on a host whose kind ≠ this, so a
+ * super-admin credential can NEVER establish a session on booking/minbooking (and
+ * vice-versa) — that's what protects the super-admin "godmode" login. Mirrors
+ * portalHomeFor's thresholds (platform_admin flag wins regardless of level).
+ */
+export function backofficeHostKindForRole(opts: {
+  roleLevel: number
+  platformAdmin: boolean
+}): 'superadmin' | 'platform' | 'staff_portal' | 'tenant' {
+  if (opts.platformAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return 'superadmin'
+  if (opts.roleLevel >= PORTAL_MIN_LEVEL.admin) return 'platform'
+  if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return 'staff_portal'
+  return 'tenant'
+}

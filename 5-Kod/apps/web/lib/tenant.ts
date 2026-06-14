@@ -8,10 +8,21 @@
 //   reserved (booking/admin/app/www/api/superadmin/kiosk/dev/odoo) NEVER resolve
 //   to a tenant — the extra names are already used by the POS on corevo.se, so
 //   reserving them lets both platforms coexist on the same apex.
+//
+// goal-27 — the back-office splits across THREE doors by host:
+//   booking.corevo.se        → { kind: 'platform' }      (salon admin, app/(admin))
+//   superbooking.corevo.se   → { kind: 'superadmin' }    (platform,    app/(platform))
+//   minbooking.corevo.se     → { kind: 'staff_portal' }  (staff,       app/(personal))
+// NAMING NOTE: the reserved POS label 'superadmin' (a corevo.se POS subdomain) is
+// distinct from BOTH the new 'superadmin' RESOLUTION KIND and the new
+// 'superbooking' host that carries it — they never collide because the host-equality
+// check below fires before classify() ever sees the reserved list.
 
 export type TenantResolution =
   | { kind: 'tenant'; slug: string }
   | { kind: 'platform' }
+  | { kind: 'superadmin' }
+  | { kind: 'staff_portal' }
   | { kind: 'reserved'; subdomain: string }
   | { kind: 'root' }
   | { kind: 'unknown' }
@@ -20,13 +31,34 @@ export type ResolveOptions = {
   rootDomain?: string
   reserved?: string[]
   platformHost?: string
+  superadminHost?: string
+  staffHost?: string
+  /** goal-28 — dedicated salon-storefront branch suffix (e.g. boka.corevo.se).
+   *  <slug>.<suffix> → tenant; the bare <suffix> apex → reserved (not a tenant). */
+  tenantHostSuffix?: string
   search?: URLSearchParams
   pathname?: string
 }
 
 const DEFAULT_ROOT = 'localhost:3000'
-const DEFAULT_RESERVED = 'booking,admin,app,www,api,superadmin,kiosk,dev,odoo'
+// goal-27: superbooking + minbooking join the reserved list so the slug validator
+// (lib/platform/slug.ts) rejects them as tenant names. The exact hosts are
+// classified by host-equality below BEFORE classify() reads this list, so they
+// resolve to 'superadmin'/'staff_portal', never 'reserved'.
+// fix-29 — 'boka' is the salon-storefront BRANCH apex (boka.corevo.se, goal-28), never
+// a tenant. Reserving it stops the slug validator (lib/platform/slug.ts) from ever
+// minting a salon named 'boka'. The branch apex is also caught by host-equality in
+// getTenantFromHost (so <slug>.boka.corevo.se still resolves the <slug>, not 'boka').
+const DEFAULT_RESERVED =
+  'booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka'
 const DEFAULT_PLATFORM = 'booking.corevo.se'
+const DEFAULT_SUPERADMIN = 'superbooking.corevo.se'
+const DEFAULT_STAFF = 'minbooking.corevo.se'
+// goal-28 — salon storefronts live on a DEDICATED wildcard branch so a blunt
+// *.corevo.se route never has to exist (it would hijack the POS subdomains on this
+// shared zone). The suffix is read from env (NEXT_PUBLIC_TENANT_HOST_SUFFIX), never
+// hardcoded, so the branch can move without a code change.
+const DEFAULT_TENANT_SUFFIX = 'boka.corevo.se'
 
 // READ AT CALL TIME, not module load. On the OpenNext/Workers adapter, `vars`
 // are injected into process.env per request — NOT necessarily when this module
@@ -39,6 +71,17 @@ const envRoot = (): string => process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? DEFAULT_ROO
 const envReserved = (): string[] =>
   splitReserved(process.env.NEXT_PUBLIC_RESERVED_SUBDOMAINS ?? DEFAULT_RESERVED)
 const envPlatform = (): string => process.env.NEXT_PUBLIC_PLATFORM_HOST ?? DEFAULT_PLATFORM
+const envSuperadmin = (): string => process.env.NEXT_PUBLIC_SUPERADMIN_HOST ?? DEFAULT_SUPERADMIN
+const envStaff = (): string => process.env.NEXT_PUBLIC_STAFF_HOST ?? DEFAULT_STAFF
+const envTenantSuffix = (): string =>
+  process.env.NEXT_PUBLIC_TENANT_HOST_SUFFIX ?? DEFAULT_TENANT_SUFFIX
+
+// goal-27 — back-office host names for the 3-door split, read at call time (same
+// per-request env caveat as envRoot/envPlatform above). Exported so middleware can
+// build cross-host redirects without re-reading process.env itself.
+export const getPlatformHost = (): string => envPlatform()
+export const getSuperadminHost = (): string => envSuperadmin()
+export const getStaffHost = (): string => envStaff()
 
 // Single source of truth for reserved subdomains (G08): the platform slug
 // validator must reject exactly the names that never resolve to a tenant here.
@@ -96,6 +139,9 @@ export function getTenantFromHost(
   const rootDomain = opts.rootDomain ?? envRoot()
   const reserved = opts.reserved ?? envReserved()
   const platformHost = opts.platformHost ?? envPlatform()
+  const superadminHost = opts.superadminHost ?? envSuperadmin()
+  const staffHost = opts.staffHost ?? envStaff()
+  const tenantHostSuffix = opts.tenantHostSuffix ?? envTenantSuffix()
 
   const classify = (raw: string): TenantResolution => {
     const slug = raw.trim().toLowerCase()
@@ -125,10 +171,37 @@ export function getTenantFromHost(
   const hostname = stripPort(host).toLowerCase()
   const root = stripPort(rootDomain).toLowerCase()
   const platform = stripPort(platformHost).toLowerCase()
+  const superadmin = stripPort(superadminHost).toLowerCase()
+  const staff = stripPort(staffHost).toLowerCase()
 
+  // goal-27 — the three back-office doors are matched by EXACT host BEFORE the
+  // suffix/classify path, so 'superbooking'/'minbooking' resolve to their own
+  // kinds instead of falling into classify()'s reserved branch.
   if (hostname === platform) return { kind: 'platform' }
+  if (hostname === superadmin) return { kind: 'superadmin' }
+  if (hostname === staff) return { kind: 'staff_portal' }
   if (hostname === root || hostname === 'localhost' || hostname === '127.0.0.1') {
     return { kind: 'root' }
+  }
+
+  // goal-28 — salon storefronts on the dedicated branch <slug>.boka.corevo.se.
+  // Checked BEFORE the generic rootSuffix below because <slug>.boka.corevo.se ends
+  // with BOTH '.boka.corevo.se' AND '.corevo.se' — the generic path would read the
+  // last label before the root ('boka') as the slug. classify() is reused so reserved
+  // names can't become tenants on this branch either. The bare apex (boka.corevo.se)
+  // is NOT a tenant: it's reserved so the generic path never resolves it to a 'boka'
+  // tenant. POS protection is intact — this only matches the boka branch, never a
+  // bare POS subdomain.
+  const tenantSuffix = stripPort(tenantHostSuffix).toLowerCase()
+  if (tenantSuffix) {
+    const tenantSuffixDot = '.' + tenantSuffix
+    if (hostname.endsWith(tenantSuffixDot)) {
+      const label = hostname.slice(0, -tenantSuffixDot.length).split('.').pop() ?? ''
+      return classify(label)
+    }
+    if (hostname === tenantSuffix) {
+      return { kind: 'reserved', subdomain: tenantSuffix.split('.')[0] ?? tenantSuffix }
+    }
   }
 
   const rootSuffix = '.' + root

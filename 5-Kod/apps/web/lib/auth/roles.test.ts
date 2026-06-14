@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { PORTAL_MIN_LEVEL, portalHomeFor } from './roles'
+import { PORTAL_MIN_LEVEL, portalHomeFor, backofficeHostKindForRole } from './roles'
 
 // Real seeded DB role levels are {2,3,6,8}. The portal thresholds must stay pinned
 // to those so that seeding a phantom level (4/5/7) can never silently shift the
@@ -24,5 +24,31 @@ describe('role thresholds (pinned to real DB levels {2,3,6,8})', () => {
     expect(portalHomeFor({ roleLevel: 7, platformAdmin: false })).toBe('/admin')
     expect(portalHomeFor({ roleLevel: 6, platformAdmin: false })).not.toBe('/')
     expect(portalHomeFor({ roleLevel: 0, platformAdmin: true })).toBe('/')
+  })
+})
+
+describe('goal-27 backofficeHostKindForRole — door isolation (one door per role)', () => {
+  it('maps each role to its single allowed back-office door', () => {
+    expect(backofficeHostKindForRole({ roleLevel: 8, platformAdmin: true })).toBe('superadmin')
+    expect(backofficeHostKindForRole({ roleLevel: 6, platformAdmin: false })).toBe('platform')
+    expect(backofficeHostKindForRole({ roleLevel: 3, platformAdmin: false })).toBe('staff_portal')
+    expect(backofficeHostKindForRole({ roleLevel: 2, platformAdmin: false })).toBe('tenant')
+    expect(backofficeHostKindForRole({ roleLevel: 0, platformAdmin: false })).toBe('tenant')
+  })
+
+  it('the platform_admin FLAG forces the superadmin door regardless of level', () => {
+    // A super-admin (godmode) credential is only ever valid on superbooking, never
+    // on booking/minbooking — even if its numeric level were low.
+    expect(backofficeHostKindForRole({ roleLevel: 0, platformAdmin: true })).toBe('superadmin')
+    expect(backofficeHostKindForRole({ roleLevel: 6, platformAdmin: true })).toBe('superadmin')
+  })
+
+  it('no role maps to two doors (super≠salon≠staff)', () => {
+    const doors = [
+      backofficeHostKindForRole({ roleLevel: 8, platformAdmin: true }),
+      backofficeHostKindForRole({ roleLevel: 6, platformAdmin: false }),
+      backofficeHostKindForRole({ roleLevel: 3, platformAdmin: false }),
+    ]
+    expect(new Set(doors).size).toBe(3)
   })
 })

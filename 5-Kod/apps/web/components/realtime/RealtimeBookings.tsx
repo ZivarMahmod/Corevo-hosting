@@ -28,7 +28,17 @@ export function RealtimeBookings({ tenantId }: { tenantId?: string }) {
     let cancelled = false
     let channel: RealtimeChannel | null = null
     let refreshTimer: ReturnType<typeof setTimeout> | null = null
-    const supabase = createClient()
+    // fix-29 — this invisible subscriber must NEVER take the page down. If the
+    // browser carries a malformed/stale auth cookie, createBrowserSupabase (or the
+    // session read below) can throw; swallow it here so the dashboard still renders
+    // (realtime is a nice-to-have refresh signal, not load-bearing). The page-level
+    // safety net is app/global-error.tsx; this keeps us from ever needing it.
+    let supabase: ReturnType<typeof createClient>
+    try {
+      supabase = createClient()
+    } catch {
+      return
+    }
 
     // ~500ms-debounced: a burst of writes collapses into a single server re-render.
     const debouncedRefresh = () => {
@@ -42,29 +52,33 @@ export function RealtimeBookings({ tenantId }: { tenantId?: string }) {
     })
 
     void (async () => {
-      // AUTH-RACE FIX: hydrate the session and push the token onto the socket
-      // BEFORE subscribing. getSession() populates the auth store but does not by
-      // itself guarantee the token is on the realtime socket, so we setAuth too.
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      // Strict-mode (or a fast tenant change) may have torn us down mid-await.
-      if (cancelled) return
-      if (session) await supabase.realtime.setAuth(session.access_token)
+      try {
+        // AUTH-RACE FIX: hydrate the session and push the token onto the socket
+        // BEFORE subscribing. getSession() populates the auth store but does not by
+        // itself guarantee the token is on the realtime socket, so we setAuth too.
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        // Strict-mode (or a fast tenant change) may have torn us down mid-await.
+        if (cancelled) return
+        if (session) await supabase.realtime.setAuth(session.access_token)
 
-      channel = supabase
-        .channel('rt-bookings')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'bookings',
-            ...(tenantId ? { filter: `tenant_id=eq.${tenantId}` } : {}),
-          },
-          () => debouncedRefresh(),
-        )
-        .subscribe()
+        channel = supabase
+          .channel('rt-bookings')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'bookings',
+              ...(tenantId ? { filter: `tenant_id=eq.${tenantId}` } : {}),
+            },
+            () => debouncedRefresh(),
+          )
+          .subscribe()
+      } catch {
+        // A malformed/stale auth cookie can make getSession throw — never fatal here.
+      }
     })()
 
     return () => {

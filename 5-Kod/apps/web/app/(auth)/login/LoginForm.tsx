@@ -1,10 +1,38 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { signIn, type SignInState } from '../actions'
+
+// fix-29 — purge a stale, BROADLY-scoped (.corevo.se) Supabase auth cookie before
+// login. Pre-host-split (G12/G13, AUTH_COOKIE_DOMAIN=.corevo.se) the session cookie
+// was shared across *.corevo.se; goal-27 made it host-locked (per-door). A browser
+// that logged in BEFORE the split still holds the old .corevo.se cookie, which is
+// sent to superbooking/booking/minbooking ALONGSIDE the new host-locked one — two
+// cookies, same name → the server reads the stale one, the session looks invalid,
+// and the user is bounced back to /login on every navigation ("loggar ut hela
+// tiden"). We can delete it from JS because @supabase/ssr stores it non-HttpOnly.
+// Only the .corevo.se-scoped duplicate is expired; the valid host-locked cookie is
+// host-scoped and survives. No-op for a browser that never had the legacy cookie.
+function purgeLegacySharedAuthCookie() {
+  if (typeof document === 'undefined') return
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const ref = url.replace(/^https?:\/\//, '').split('.')[0]
+  if (!ref) return
+  const base = `sb-${ref}-auth-token`
+  // base + chunk suffixes (.0..).4 — @supabase/ssr splits large tokens into chunks.
+  const names = [base, ...Array.from({ length: 5 }, (_, i) => `${base}.${i}`)]
+  for (const name of names) {
+    document.cookie = `${name}=; Path=/; Domain=.corevo.se; Max-Age=0; SameSite=Lax`
+  }
+}
 
 export function LoginForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState<SignInState, FormData>(signIn, {})
+
+  // Break the stale-cookie churn loop on the surface the churn always lands on.
+  useEffect(() => {
+    purgeLegacySharedAuthCookie()
+  }, [])
 
   return (
     <form action={formAction} className="auth-form">

@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { getTenantFromHost, isExternalHost, isPreviewHost } from './tenant'
+import { getTenantFromHost, isExternalHost, isPreviewHost, RESERVED_SUBDOMAINS } from './tenant'
 
 // Explicit opts so these don't depend on NEXT_PUBLIC_* env in the test runner.
-const OPTS = { rootDomain: 'corevo.se', platformHost: 'booking.corevo.se' }
+const OPTS = {
+  rootDomain: 'corevo.se',
+  platformHost: 'booking.corevo.se',
+  superadminHost: 'superbooking.corevo.se',
+  staffHost: 'minbooking.corevo.se',
+  tenantHostSuffix: 'boka.corevo.se',
+}
 
 describe('getTenantFromHost — host suffix classification', () => {
   it('resolves a real subdomain to its tenant slug', () => {
@@ -21,8 +27,71 @@ describe('getTenantFromHost — host suffix classification', () => {
     expect(getTenantFromHost('admin.corevo.se', OPTS)).toEqual({ kind: 'reserved', subdomain: 'admin' })
   })
 
+  it('goal-27: classifies the three back-office doors by exact host', () => {
+    expect(getTenantFromHost('superbooking.corevo.se', OPTS)).toEqual({ kind: 'superadmin' })
+    expect(getTenantFromHost('minbooking.corevo.se', OPTS)).toEqual({ kind: 'staff_portal' })
+    expect(getTenantFromHost('booking.corevo.se', OPTS)).toEqual({ kind: 'platform' })
+  })
+
+  it('goal-27: superbooking/minbooking resolve to their door kind, NOT reserved', () => {
+    // The host-equality check must win over classify()'s reserved branch even
+    // though both names are in the reserved list (for the slug validator).
+    expect(getTenantFromHost('superbooking.corevo.se', OPTS)).not.toMatchObject({ kind: 'reserved' })
+    expect(getTenantFromHost('minbooking.corevo.se', OPTS)).not.toMatchObject({ kind: 'reserved' })
+  })
+
   it('returns unknown for an external custom domain (→ goal-16 fallback territory)', () => {
     expect(getTenantFromHost('boka.minsalong.se', OPTS)).toEqual({ kind: 'unknown' })
+  })
+
+  it('goal-28: <slug>.boka.corevo.se resolves to the salon storefront tenant', () => {
+    expect(getTenantFromHost('demo.boka.corevo.se', OPTS)).toEqual({ kind: 'tenant', slug: 'demo' })
+    expect(getTenantFromHost('freshcut.boka.corevo.se', OPTS)).toEqual({
+      kind: 'tenant',
+      slug: 'freshcut',
+    })
+  })
+
+  it('goal-28: the bare boka.corevo.se branch apex is NOT a tenant', () => {
+    expect(getTenantFromHost('boka.corevo.se', OPTS)).toEqual({ kind: 'reserved', subdomain: 'boka' })
+    expect(getTenantFromHost('boka.corevo.se', OPTS)).not.toMatchObject({ kind: 'tenant' })
+  })
+
+  it('fix-29: a non-reserved subdomain that merely STARTS with "boka" is still a tenant', () => {
+    // 'boka' is reserved, but 'xboka' is not — the bare apex check is exact, so
+    // xboka.corevo.se must resolve to tenant(xboka), never collide with the branch.
+    expect(getTenantFromHost('xboka.corevo.se', OPTS)).toEqual({ kind: 'tenant', slug: 'xboka' })
+  })
+
+  it('fix-29: an external custom domain never becomes a tenant via the boka branch', () => {
+    expect(getTenantFromHost('app.evil.com', OPTS)).toEqual({ kind: 'unknown' })
+    expect(getTenantFromHost('boka.evil.com', OPTS)).toEqual({ kind: 'unknown' })
+  })
+
+  it('fix-29: slug "boka" is reserved (cannot be registered as a salon)', () => {
+    expect(RESERVED_SUBDOMAINS).toContain('boka')
+  })
+
+  it('goal-28: the boka branch is read from env, not hardcoded (suffix override honored)', () => {
+    expect(getTenantFromHost('demo.book.example.com', { ...OPTS, tenantHostSuffix: 'book.example.com' })).toEqual({
+      kind: 'tenant',
+      slug: 'demo',
+    })
+  })
+
+  it('POS-SAFETY: a bare *.corevo.se subdomain is unchanged by the boka branch', () => {
+    // The boka block must NEVER hijack a plain POS subdomain on the shared zone.
+    expect(getTenantFromHost('admin.corevo.se', OPTS)).toEqual({ kind: 'reserved', subdomain: 'admin' })
+    expect(getTenantFromHost('kiosk.corevo.se', OPTS)).toEqual({ kind: 'reserved', subdomain: 'kiosk' })
+    expect(getTenantFromHost('superadmin.corevo.se', OPTS)).toEqual({
+      kind: 'reserved',
+      subdomain: 'superadmin',
+    })
+    expect(getTenantFromHost('corevo.se', OPTS)).toEqual({ kind: 'root' })
+    // The three back-office doors stay on their own kinds.
+    expect(getTenantFromHost('booking.corevo.se', OPTS)).toEqual({ kind: 'platform' })
+    expect(getTenantFromHost('superbooking.corevo.se', OPTS)).toEqual({ kind: 'superadmin' })
+    expect(getTenantFromHost('minbooking.corevo.se', OPTS)).toEqual({ kind: 'staff_portal' })
   })
 
   it('REGRESSION: demo.corevo.se classifies as a .corevo.se subdomain BEFORE any custom-domain lookup', () => {

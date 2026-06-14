@@ -12,11 +12,27 @@
 // Tenant identity: the storefront resolves it from the HOST (the header set below);
 // the back-office resolves it from the logged-in ACCOUNT (JWT app_metadata) in the
 // DAL/layouts — never from the host. Data isolation is RLS + tenant_id (ADR 01 §2).
+//
+// goal-27 — on REAL *.corevo.se the back-office further splits into THREE doors by
+// host (decideBackofficeRoute): superbooking = platform/super-admin, booking = salon
+// admin (/admin), minbooking = staff (/personal). A surface that belongs to another
+// door redirects to that host (cookies are host-locked, so the user re-logs in there).
+// This split is GATED to non-preview hosts: dev/*.localhost + *.workers.dev keep the
+// G12 single-host back-office (booking serves all three families) below, so the
+// existing e2e/backoffice-routing.spec.ts (all *.localhost) is unaffected.
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
-import { getTenantFromHost, isExternalHost, isPreviewHost } from '@/lib/tenant'
+import {
+  getTenantFromHost,
+  getPlatformHost,
+  getSuperadminHost,
+  getStaffHost,
+  isExternalHost,
+  isPreviewHost,
+} from '@/lib/tenant'
 import { resolveCustomDomainSlug } from '@/lib/custom-domain'
 import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
+import { decideBackofficeRoute, type BackofficeHostKind } from '@/lib/auth/host-routing'
 
 // Internal dashboard route (file lives at app/(platform)/platform); served at `/`.
 const DASHBOARD_ROUTE = '/platform'
@@ -94,6 +110,8 @@ export async function middleware(request: NextRequest) {
   }
 
   const isPlatformHost = tenant.kind === 'platform'
+  const isSuperHost = tenant.kind === 'superadmin'
+  const isStaffHost = tenant.kind === 'staff_portal'
   const isTenantHost = tenant.kind === 'tenant'
 
   // 2. Forward the resolved tenant to Server Components via REQUEST headers
@@ -124,13 +142,42 @@ export async function middleware(request: NextRequest) {
   }
   const bounce = (to: string): NextResponse =>
     persistOverride(carryAuthCookies(NextResponse.redirect(new URL(to, request.url))))
+  // goal-27 — cross-door redirect: same path, DIFFERENT host. Force https — these are
+  // production *.corevo.se hosts behind Cloudflare. Setting .host on a bare hostname
+  // clears the port; .port = '' is belt-and-suspenders. Cookies are host-locked, so
+  // carrying them is harmless (the destination door can't read them → fresh login).
+  const crossHostBounce = (targetHost: string, to: string): NextResponse => {
+    const dest = new URL(to, request.url)
+    dest.protocol = 'https:'
+    dest.host = targetHost
+    dest.port = ''
+    return persistOverride(carryAuthCookies(NextResponse.redirect(dest)))
+  }
 
   // 4. G12 host routing. Decide rewrite/redirect BEFORE the auth gate, and gate
   //    against the EFFECTIVE (post-rewrite) path.
   let effectivePath = path
   let rewriteTo: string | null = null
 
-  if (isPlatformHost) {
+  // goal-27 — production 3-door split (REAL *.corevo.se only). The pure
+  // decideBackofficeRoute owns the policy; this just translates its intent. Gated to
+  // !previewHost so dev/*.localhost keeps the G12 single-host back-office (the else-if
+  // below). Cross-door surfaces redirect to the owning host; the rest bounce home.
+  if (!previewHost && (isSuperHost || isPlatformHost || isStaffHost)) {
+    const decision = decideBackofficeRoute({
+      hostKind: tenant.kind as BackofficeHostKind,
+      path,
+      hosts: { superadmin: getSuperadminHost(), platform: getPlatformHost(), staff: getStaffHost() },
+    })
+    if (decision.action === 'redirectHost') return crossHostBounce(decision.host, decision.to)
+    if (decision.action === 'redirect') return bounce(decision.to)
+    if (decision.action === 'rewrite') {
+      effectivePath = decision.to
+      rewriteTo = decision.to
+    }
+    // 'pass' → fall through to the cheap auth gate on the effective path.
+  } else if (isPlatformHost) {
+    // Preview/dev (booking.localhost): keep the G12 single-host back-office.
     // Never expose the internal `/platform` prefix — bounce it to the clean root.
     if (isPrefix(path, [DASHBOARD_ROUTE])) return bounce('/')
     // `/` serves the platform dashboard (rewrite; the URL stays `/`).
@@ -155,7 +202,15 @@ export async function middleware(request: NextRequest) {
   if (user && isPlatformHost && isPrefix(effectivePath, TENANT_SCOPED_BACKOFFICE)) {
     const isPlatformAdmin =
       (user.app_metadata as { platform_admin?: boolean } | undefined)?.platform_admin === true
-    if (isPlatformAdmin) return bounce('/')
+    if (isPlatformAdmin) {
+      // goal-27 — in the production split, booking `/` redirects to `/admin`, so the
+      // old bounce('/') here formed a `/` ⇄ `/admin` loop (ERR_TOO_MANY_REDIRECTS) for
+      // a platform_admin holding a stale booking session. Send them to THEIR door
+      // (superbooking) instead — host-locked cookies mean they re-login there. On
+      // preview hosts booking `/` still SERVES the dashboard (rewrite, not redirect),
+      // so bounce('/') stays loop-free and correct there.
+      return previewHost ? bounce('/') : crossHostBounce(getSuperadminHost(), '/')
+    }
   }
 
   // 5. Cheap auth gate on the effective path (role-level authz stays in the DAL).
