@@ -35,3 +35,16 @@ node_modules/
 
 # Template-katalog: rådumpen (100+ templates) hålls utanför git — bara kandidater/valda versioneras
 4-Dokument-Underlag/03-template-katalog/00-inbox/
+# Råa vendor-dumpar (73 MB) landade i katalog-roten istället för 00-inbox/ — håll dem
+# lokala likt resten av rådumpen. Bara KATALOG.md + 01-kandidater/02-valda versioneras.
+4-Dokument-Underlag/03-template-katalog/alotan-master/
+4-Dokument-Underlag/03-template-katalog/BarberX-master/
+4-Dokument-Underlag/03-template-katalog/barberz-master/
+4-Dokument-Underlag/03-template-katalog/base-1.0.0/
+4-Dokument-Underlag/03-template-katalog/brber-master/
+4-Dokument-Underlag/03-template-katalog/carserv-1.0.0/
+4-Dokument-Underlag/03-template-katalog/Free.Bundle.2023/
+4-Dokument-Underlag/03-template-katalog/haircare-master/
+4-Dokument-Underlag/03-template-katalog/hairsal-gh-pages/
+4-Dokument-Underlag/03-template-katalog/materio-1.0.0/
+4-Dokument-Underlag/03-template-katalog/razor-master/
