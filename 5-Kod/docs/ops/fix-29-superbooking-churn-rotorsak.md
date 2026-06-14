@@ -20,6 +20,16 @@ bekräftelse. **Riktig verifiering:** Zivar öppnar superbooking på den webblä
 kraschade UTAN att rensa först (testar self-healen); kvarstår det → rensa
 webbplatsdata / privat fönster.
 
+## Bevis — `wrangler tail` på LIVE-workern (2026-06-15, avgörande)
+Inloggad super_admin, hela plattform-flödet (login-POST → dashboard `/` → alla 9
+plattform-ytor → salong-detalj). **Varenda request = `Ok` i tail, NOLL server-fel /
+exceptions. NOLL console-fel i webbläsaren.** Hade den raderade anchor-tenanten (suspect
+a) kastat server-side hade tail visat det på `/` eller `/salonger` — det gör den inte.
+→ **Den deployade koden kraschar varken server- eller klient-sida för en ren session.**
+Krascen kräver därför **gammalt klient-tillstånd** (cachat pre-goal-27-bundle →
+hydrerings-mismatch, eller cookie-krock) — lämnar inget server-spår och går per
+definition inte att reproducera från en ren webbläsare.
+
 ## Bevis (reproducerat 2026-06-14)
 - Inloggad super_admin på LIVE `superbooking.corevo.se` → **plattform-dashboarden
   renderar helt korrekt**, 0 console-fel, även med:
