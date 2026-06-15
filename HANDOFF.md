@@ -2,6 +2,17 @@
 
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
+## 🟢 2026-06-14 (Cowork, Zivar) — PLATTFORM → MULTI-BRANSCH · admin-split · wildcard · baseline-reset
+**Stor riktningssession. NÄSTA SESSIONS INGÅNG = `1-Planering/01-arkitektur/multibransch-plattform-arkitektur.md` (läs den + denna entry, hoppa resten). Börja i doc:ens sektion 14 (5 öppna beslut) → sen DB-grund-goal.**
+- **VISION LÅST:** Corevo = multi-bransch-plattform (EN motor, konfig per bransch + moduler med livscykel `off→draft→live→paused`), ej bara frisör. Bransch = preset; moduler = à la carte toggle per kund. Admin + storefront renderar på-moduler. DB-grund som saknas: `verticals` + `tenants.vertical_id` + `tenant_modules` (state+config) + modul-tabeller per modul.
+- **goal-27 (3-dörrars admin-split) DEPLOYAD:** `superbooking.corevo.se` (super) / `booking.corevo.se` (salong) / `minbooking.corevo.se` (personal). Host-grind i middleware, preview-gatad, host-låsta cookies. ⚠️ **Känd bugg:** superbooking client-side crash + login-churn → **fix-29**.
+- **goal-28 (wildcard `*.boka.corevo.se`)** för salong-storefronts: BYGGD + oberoende granskad **GO**, deployas i fix-29. DNS-wildcard + route i wrangler.jsonc; POS (delad zon) bevisat orörd. Salonger = `<slug>.boka.corevo.se` (egen kund-domän via CF for SaaS senare).
+- **fix-29 (superbooking-krasch-fix + deploy av goal-28):** hos Code (`2-Byggplan/goals/fix-29-superbooking-krasch-deploy.md`). EJ verifierad — **Cowork ska oberoende live-verifiera** (seeda demo-salong → `demo.boka.corevo.se`, `*.boka`-cert Active, 3 dörrarna, POS orörd).
+- **DB NOLLSTÄLLD till baseline:** bara superadmin `zivar.mahmod@corevo.se` (var `platform@`); allt annat purgat. Kvar: 1 dold anchor-tenant `corevo-system` (status deleted) pga `users.tenant_id` NOT NULL → fix = gör nullable (köad, ej brådska).
+- **Supabase prod = `clylvowtowbtotrahuad`** (INTE `ygieacwrpevytghdxecd` = annat restaurang-projekt = fel-connector-fällan).
+- **Hub-princip (multi-projekt POS/Booking/Sadaqa):** separata motorer + DB:er, en tunn hub/SSO ovanför. Aldrig en app som kopplar alla DB:er.
+- Betalningar PAUSADE (Zivars beslut denna session).
+
 ## 🟢 2026-06-07 (natt, Cowork) — RESEARCH-VÅGOR + ENKÄT LIVE + struktur-lås
 **Autonom körning på Zivars dump (research + planering, ingen kod).**
 - **Marknadsenkät LIVE:** surveymonkey.com/r/VTJ9L67 (12 frågor, gatuintervjuer frisörer). Analys när svar finns.

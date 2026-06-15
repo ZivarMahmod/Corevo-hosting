@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useRef, useState, type ReactNode } from 'react'
+import { useActionState, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createTenant, type ActionState } from '@/lib/platform/actions'
 import {
   BOOKING_VARIANTS,
@@ -11,10 +11,30 @@ import {
   DEFAULT_BOOKING_VARIANT,
   type BookingVariant,
 } from '@/lib/platform/booking-variant'
+import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
+import { modulesForVertical, type VerticalPresetData, type TemplateOption } from '@/lib/platform/verticals'
 import { PageHead, Card, Button, Badge, Icon } from '@/components/portal/ui'
 import { Callout } from '@/components/portal/ui'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
+
+// ── Module-state UI metadata (the "Moduler" step / multi-bransch spår 5) ─────────
+// state-toggle per module: a tenant_modules.state. booking is floored to 'live' in
+// the UI (the platform baseline + FreshCut-parity), so its only choices are live/
+// paused; every other module can also sit at draft/off. The publishable states the
+// operator can pick in the wizard (the DB also knows 'off' = simply not selected).
+const MODULE_STATE_LABELS: Record<ModuleState, string> = {
+  off: 'Av',
+  draft: 'Utkast',
+  live: 'Live',
+  paused: 'Pausad',
+}
+const MODULE_STATE_HINTS: Record<ModuleState, string> = {
+  off: 'Inte aktiverad.',
+  draft: 'Aktiverad men dold publikt — syns bara internt.',
+  live: 'Publik på storefronten.',
+  paused: 'Tillfälligt stängd — visar "stängt" publikt.',
+}
 
 // ── The five storefront themes ──────────────────────────────────────────────────
 // Palette / fonts MIRROR the live [data-theme] tokens (packages/ui/tokens.css) and
@@ -76,8 +96,31 @@ const WIZARD_THEMES: Record<ThemeKey, ThemeDef> = {
   },
 }
 
-const STEPS = ['Namn & subdomän', 'Temamall', 'Bokningsvariant', 'Token-branding', 'Ägare & roll']
-// Accent swatches = the five theme primaries (design step 4 "Token-branding").
+// Multi-bransch: the chosen template key is now a free string (it comes from the
+// `templates` catalog filtered by bransch, not just the built-in five). A key that
+// matches one of the five renders its rich preview; an unknown DB key falls back to
+// this neutral ThemeDef so the preview never crashes on a not-yet-styled template.
+function neutralTheme(name: string): ThemeDef {
+  return {
+    name, primary: '#5E7361', bg: '#F6F4EE', fg: '#232520', fg2: '#5C5F55', line: '#E2DED2',
+    display: "'Cormorant Garamond', Georgia, serif", radius: 10, caps: false, vibe: 'Förhandsvisning',
+    eyebrow: 'Storefront', hero: 'Din sida. Din stil.',
+    lede: 'Mallens egna färger och bilder sätts när den är färdigstylad.', img: uns('1521590832167-7bcbfaa6381f'),
+  }
+}
+/** Preview metadata for a template key: the rich built-in theme when known, else a
+ *  neutral fallback carrying the template's display name. */
+function wizardTheme(key: string, name?: string): ThemeDef {
+  return (WIZARD_THEMES as Record<string, ThemeDef>)[key] ?? neutralTheme(name ?? key)
+}
+
+// Multi-bransch (spår 5): a NEW step 0 "Bransch" leads the wizard (preset-driven),
+// and the old "Bokningsvariant" step is replaced by "Moduler" (state-toggle per
+// module; booking.variant survives as a sub-choice there). The remaining steps keep
+// their design intent, shifted one index down.
+const STEPS = ['Bransch', 'Namn & subdomän', 'Temamall', 'Moduler', 'Token-branding', 'Ägare & roll']
+const LAST_STEP = STEPS.length - 1
+// Accent swatches = the five theme primaries (design step "Token-branding").
 const ACCENTS = ['#5E7361', '#7E6E92', '#C8743C', '#B0693F', '#3A3733']
 
 /** name → a clean storefront slug (a–z, 0–9, bindestreck) — mirrors validateSlug. */
@@ -88,15 +131,37 @@ function slugify(s: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-export function CreateTenantForm() {
+/** "Bokning (Live), Bildbibliotek (Utkast)" — the non-off modules for the summary. */
+function liveModuleSummary(
+  options: { key: string; name: string }[],
+  stateFor: (key: string) => ModuleState,
+): string {
+  return options
+    .map((m) => ({ m, st: stateFor(m.key) }))
+    .filter(({ st }) => st !== 'off')
+    .map(({ m, st }) => `${m.name} (${MODULE_STATE_LABELS[st]})`)
+    .join(', ')
+}
+
+export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createTenant, {})
   const [step, setStep] = useState(0)
+  // Multi-bransch (spår 5): the chosen vertical (bransch). null = none picked yet —
+  // the operator can still skip it (vertical_id is a mjuk, mutabel FK). Picking a
+  // bransch prefills the theme + the per-module preset states (see chooseVertical).
+  const [verticalKey, setVerticalKey] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
   const [city, setCity] = useState('')
-  const [theme, setTheme] = useState<ThemeKey>('salvia')
+  // Multi-bransch: theme = the chosen template key (free string from the bransch-
+  // filtered `templates` catalog; defaults to the built-in 'salvia'). Rendered via
+  // wizardTheme() so a DB template key outside the built-in five still previews.
+  const [theme, setTheme] = useState<string>('salvia')
   const [variant, setVariant] = useState<BookingVariant>(DEFAULT_BOOKING_VARIANT)
+  // Per-module states (the "Moduler" step) → tenant_modules rows. Keyed by module_key.
+  // Seeded from the bransch preset; booking is always floored to 'live' before submit.
+  const [moduleStates, setModuleStates] = useState<Record<string, ModuleState>>({})
   const [accent, setAccent] = useState('') // '' = none picked yet
   const [tagline, setTagline] = useState('')
   const [ownerName, setOwnerName] = useState('')
@@ -104,24 +169,95 @@ export function CreateTenantForm() {
   const [logoName, setLogoName] = useState('')
   const logoRef = useRef<HTMLInputElement>(null)
 
-  const t = WIZARD_THEMES[theme]
   const onName = (v: string) => {
     setName(v)
     if (!slugTouched) setSlug(slugify(v))
   }
 
+  // The picked bransch (for terminology + summary). null until step 0 is answered.
+  const vertical = verticalKey ? presets.verticals.find((v) => v.key === verticalKey) ?? null : null
+  // What we call the customer everywhere: the bransch name when picked, else "kund".
+  const kundLabel = vertical?.name ?? 'kund'
+
+  // The module options for the chosen bransch (catalog × preset state). booking is
+  // floored to at least 'live' for display; the rest reflect the bransch preset.
+  const moduleOptions = useMemo(
+    () => modulesForVertical(presets, verticalKey),
+    [presets, verticalKey],
+  )
+  // The Temamall options for the chosen bransch: the `templates` catalog filtered by
+  // tags.bransch (presets.templatesByVertical[verticalKey]). Fallback to the built-in
+  // five themes when no bransch is picked OR the bransch has no templates seeded yet,
+  // so the step is never empty. The first option's key is the safe default theme.
+  const BUILTIN_TEMPLATES: TemplateOption[] = useMemo(
+    () => THEME_KEYS.map((k) => ({ key: k, name: WIZARD_THEMES[k].name })),
+    [],
+  )
+  const templateOptions: TemplateOption[] = useMemo(() => {
+    const forVertical = verticalKey ? presets.templatesByVertical[verticalKey] : undefined
+    return forVertical && forVertical.length > 0 ? forVertical : BUILTIN_TEMPLATES
+  }, [presets, verticalKey, BUILTIN_TEMPLATES])
+  // Display name of the currently chosen template (from the option list when present).
+  const themeName = templateOptions.find((o) => o.key === theme)?.name
+  const t = wizardTheme(theme, themeName)
+  // Resolve a module's CURRENT chosen state: explicit pick → preset default → 'off'.
+  // booking can never read below 'live' (the floor) regardless of stored value.
+  const stateFor = (key: string): ModuleState => {
+    const picked = moduleStates[key]
+    const preset = moduleOptions.find((m) => m.key === key)?.defaultState ?? 'off'
+    const resolved = picked ?? preset
+    return key === 'booking' && resolved !== 'live' && resolved !== 'paused' ? 'live' : resolved
+  }
+  // The exact { module_key: state } map submitted to the server (hidden `modules`
+  // field). booking floored to live; off-state modules included as 'off' (the write
+  // helper drops them) so the operator's explicit "off" is unambiguous.
+  const moduleSubmitMap = useMemo(() => {
+    const out: Record<string, ModuleState> = {}
+    for (const m of moduleOptions) out[m.key] = stateFor(m.key)
+    out.booking = stateFor('booking') === 'paused' ? 'paused' : 'live'
+    return out
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moduleOptions, moduleStates])
+
+  /** Pick a bransch: set it, prefill the theme from its default_template (when that
+   *  maps to a known wizard theme), and seed the module states from its preset. The
+   *  operator can still override theme + module states in their own steps after. */
+  const chooseVertical = (key: string) => {
+    setVerticalKey(key)
+    const v = presets.verticals.find((x) => x.key === key)
+    if (!v) return
+    // Prefill the theme from the bransch's default_template (a free template key now).
+    // Prefer the bransch's own default; else the first bransch-filtered template; else
+    // keep the current theme. The Temamall step then lists the bransch's templates.
+    const branschTemplates = presets.templatesByVertical[key] ?? []
+    const next =
+      v.defaultTemplate ??
+      branschTemplates[0]?.key ??
+      null
+    if (next) setTheme(next)
+    // Seed module states from the preset (booking floored to live on read via stateFor).
+    const seeded: Record<string, ModuleState> = {}
+    for (const m of modulesForVertical(presets, key)) seeded[m.key] = m.defaultState
+    setModuleStates(seeded)
+  }
+
+  /** Toggle/cycle a module's state. booking is restricted to live↔paused (floor);
+   *  other modules cycle off→draft→live→paused→off. */
+  const setModule = (key: string, next: ModuleState) =>
+    setModuleStates((prev) => ({ ...prev, [key]: next }))
+
   return (
     <div style={{ maxWidth: 820 }}>
       <PageHead
         eyebrow="Plattform"
-        title="Onboarda ny salong"
-        lede="Du skapar salongerna — inte publik self-service. Fyll det du vill, inget fält är tvingande."
+        title="Onboarda ny kund"
+        lede="Du skapar kunderna — inte publik self-service. Välj bransch först; fyll resten du vill, inget fält är tvingande."
       />
 
       <div style={{ marginBottom: 18 }}>
         <Callout tone="info">
-          Inga forcerade måste-fält — du la friction på det förut. Skapandet är <b>atomiskt</b>:
-          slug + settings + ägarroll i ett svep.
+          Inga forcerade måste-fält. Skapandet är <b>atomiskt</b>: bransch + moduler + slug +
+          settings + ägarroll i ett svep.
         </Callout>
       </div>
 
@@ -133,6 +269,11 @@ export function CreateTenantForm() {
         <input type="hidden" name="city" value={city} />
         <input type="hidden" name="theme" value={theme} />
         <input type="hidden" name="booking_variant" value={variant} />
+        {/* Multi-bransch (spår 5): vertical_id (null → empty = no bransch) + the
+            module-state map (JSON { module_key: state }) the server writes to
+            tenant_modules. */}
+        {verticalKey ? <input type="hidden" name="vertical_id" value={verticalKey} /> : null}
+        <input type="hidden" name="modules" value={JSON.stringify(moduleSubmitMap)} />
         {accent ? <input type="hidden" name="color_accent" value={accent} /> : null}
         <input type="hidden" name="tagline" value={tagline} />
         <input type="hidden" name="owner_name" value={ownerName} />
@@ -178,10 +319,59 @@ export function CreateTenantForm() {
             ))}
           </div>
 
-          {/* ── Step 0 · Namn & subdomän ── */}
+          {/* ── Step 0 · Bransch (multi-bransch spår 5 — preset-driven) ── */}
           {step === 0 && (
+            <div>
+              <p className="body" style={{ marginTop: 0, marginBottom: 16 }}>
+                Vilken bransch är kunden i? Branschen förväljer mall + moduler — du kan ändra allt
+                i nästa steg. (Valfritt — du kan hoppa över och välja moduler manuellt.)
+              </p>
+              {presets.verticals.length === 0 ? (
+                <Callout tone="warning">
+                  Inga branscher i katalogen ännu. Du kan fortsätta utan bransch och välja moduler
+                  manuellt i steget "Moduler".
+                </Callout>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+                  {presets.verticals.map((v) => {
+                    const on = verticalKey === v.key
+                    const mods = modulesForVertical(presets, v.key).filter((m) => m.defaultState !== 'off')
+                    return (
+                      <button
+                        key={v.key}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => chooseVertical(v.key)}
+                        style={{
+                          textAlign: 'left', padding: 16, border: `2px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                          borderRadius: 14, cursor: 'pointer', background: on ? 'var(--c-paper-2)' : 'var(--c-paper)',
+                          transition: 'all var(--dur-fast)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>{v.name}</span>
+                          {on ? <IconTint color="var(--c-forest)"><Icon name="check" size={15} /></IconTint> : null}
+                        </div>
+                        <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', lineHeight: 1.5, margin: 0 }}>
+                          {v.defaultTemplate ? <>Mall <b>{v.defaultTemplate}</b>. </> : null}
+                          {mods.length > 0
+                            ? <>Moduler: {mods.map((m) => `${m.name} (${MODULE_STATE_LABELS[m.defaultState]})`).join(', ')}.</>
+                            : 'Inga förvalda moduler.'}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              <div style={{ marginTop: 14 }}><TableChip>verticals · tenants.vertical_id</TableChip></div>
+            </div>
+          )}
+
+          {/* ── Step 1 · Namn & subdomän ── */}
+          {step === 1 && (
             <div style={{ display: 'grid', gap: 16 }}>
-              <Field label="Salongsnamn" hint="Valfritt nu — går att ändra sen." ph="t.ex. Klippoteket" value={name} onChange={onName} />
+              <Field label={`Namn på ${kundLabel}`} hint="Valfritt nu — går att ändra sen." ph="t.ex. Klippoteket" value={name} onChange={onName} />
               <div>
                 <label style={fieldLabel}>Subdomän</label>
                 <div
@@ -204,24 +394,38 @@ export function CreateTenantForm() {
                 </div>
                 <div style={{ marginTop: 8 }}><TableChip>tenants · tenant_settings</TableChip></div>
               </div>
-              <Field label="Stad" hint="Valfritt — syns i salongslistan." ph="t.ex. Göteborg" value={city} onChange={setCity} />
+              <Field label="Stad" hint="Valfritt — syns i kundlistan." ph="t.ex. Göteborg" value={city} onChange={setCity} />
             </div>
           )}
 
-          {/* ── Step 1 · Temamall (the live preview the operator chooses from) ── */}
-          {step === 1 && (
+          {/* ── Step 2 · Temamall (the live preview the operator chooses from) ──
+              Multi-bransch: the choices come from the `templates` catalog filtered by
+              the chosen bransch (tags.bransch). Falls back to the built-in five when no
+              bransch is picked or the bransch has no templates seeded yet. */}
+          {step === 2 && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10, marginBottom: 22 }}>
-                {THEME_KEYS.map((key) => {
-                  const on = theme === key
-                  const tk = WIZARD_THEMES[key]
+              <p className="body" style={{ marginTop: 0, marginBottom: 14 }}>
+                {vertical
+                  ? <>Mallar för <b>{vertical.name}</b>. Välj utseendet — du ser kundens riktiga startsida live nedan.</>
+                  : <>Välj utseendet — du ser kundens riktiga startsida live nedan. (Välj en bransch i steg 1 för att se branschens egna mallar.)</>}
+              </p>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${Math.min(5, Math.max(2, templateOptions.length))},1fr)`,
+                  gap: 10, marginBottom: 22,
+                }}
+              >
+                {templateOptions.map((opt) => {
+                  const on = theme === opt.key
+                  const tk = wizardTheme(opt.key, opt.name)
                   return (
                     <button
-                      key={key}
+                      key={opt.key}
                       type="button"
                       role="radio"
                       aria-checked={on}
-                      onClick={() => setTheme(key)}
+                      onClick={() => setTheme(opt.key)}
                       style={{
                         textAlign: 'left', padding: 5, border: `2px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
                         borderRadius: 14, cursor: 'pointer', background: 'var(--c-paper)',
@@ -233,7 +437,7 @@ export function CreateTenantForm() {
                         <span style={{ display: 'inline-block', marginTop: 6, width: 30, height: 7, borderRadius: 999, background: tk.primary }} />
                       </div>
                       <div style={{ padding: '8px 6px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--c-ink)' }}>{tk.name}</span>
+                        <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--c-ink)' }}>{opt.name}</span>
                         {on ? <IconTint color="var(--c-forest)"><Icon name="check" size={14} /></IconTint> : null}
                       </div>
                     </button>
@@ -244,52 +448,114 @@ export function CreateTenantForm() {
                 <IconTint color="var(--c-gold-600)"><Icon name="sun" size={14} /></IconTint>
                 <span className="eyebrow">Förhandsvisning · {t.name} — {t.vibe}</span>
               </div>
-              <ThemePreview themeKey={theme} salon={name || 'Din salong'} />
+              <ThemePreview themeKey={theme} themeName={themeName} salon={name || `Din ${kundLabel}`} />
+              <div style={{ marginTop: 12 }}><TableChip>templates · tags.bransch</TableChip></div>
             </div>
           )}
 
-          {/* ── Step 2 · Bokningsvariant ── */}
-          {step === 2 && (
+          {/* ── Step 3 · Moduler (multi-bransch spår 5 — state-toggle per modul) ── */}
+          {step === 3 && (
             <div>
               <p className="body" style={{ marginTop: 0, marginBottom: 16 }}>
-                Välj hur bokningen presenteras på salongens storefront. 99 % av bokningarna sker på mobil.
+                Slå på modulerna kunden ska ha. Varje modul har ett <b>läge</b>: utkast (dold publikt),
+                live (publik) eller pausad. Bokning är alltid minst live.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {BOOKING_VARIANTS.map((v) => {
-                  const on = variant === v
-                  const rec = v === RECOMMENDED_BOOKING_VARIANT
+              <div style={{ display: 'grid', gap: 12 }}>
+                {moduleOptions.map((m) => {
+                  const isBooking = m.key === 'booking'
+                  const cur = stateFor(m.key)
+                  // booking → live/paused only; others → off/draft/live/paused.
+                  const choices: ModuleState[] = isBooking
+                    ? (['live', 'paused'] as ModuleState[])
+                    : ([...MODULE_STATES] as ModuleState[])
                   return (
-                    <button
-                      key={v}
-                      type="button"
-                      role="radio"
-                      aria-checked={on}
-                      onClick={() => setVariant(v)}
+                    <div
+                      key={m.key}
                       style={{
-                        textAlign: 'left', padding: 16, border: `2px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
-                        borderRadius: 14, cursor: 'pointer', background: on ? 'var(--c-paper-2)' : 'var(--c-paper)',
-                        transition: 'all var(--dur-fast)',
+                        padding: 16, border: '1px solid var(--c-line)', borderRadius: 14,
+                        background: 'var(--c-paper)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>{BOOKING_VARIANT_LABELS[v]}</span>
-                        {rec ? (
-                          <Badge tone="gold" dot={false}>Rekommenderad</Badge>
-                        ) : (
-                          <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', fontWeight: 600 }}>{BOOKING_VARIANT_TAGS[v]}</span>
-                        )}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                        <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>
+                          {m.name}
+                          {isBooking ? <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', fontWeight: 600, marginLeft: 8 }}>Kärnmodul</span> : null}
+                        </span>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {choices.map((st) => {
+                            const on = cur === st
+                            return (
+                              <button
+                                key={st}
+                                type="button"
+                                role="radio"
+                                aria-checked={on}
+                                onClick={() => setModule(m.key, st)}
+                                style={{
+                                  padding: '6px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 12.5,
+                                  fontWeight: 600, fontFamily: 'var(--font-ui)',
+                                  border: `1.5px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                                  background: on ? 'var(--c-paper-2)' : 'var(--c-paper)',
+                                  color: on ? 'var(--c-ink)' : 'var(--c-ink-3)',
+                                }}
+                              >
+                                {MODULE_STATE_LABELS[st]}
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
-                      <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', lineHeight: 1.5, margin: 0 }}>{BOOKING_VARIANT_DESCRIPTIONS[v]}</p>
-                    </button>
+                      <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '4px 0 0' }}>
+                        {MODULE_STATE_HINTS[cur]}
+                      </p>
+                      {/* booking.variant survives here as a sub-choice of the booking module. */}
+                      {isBooking ? (
+                        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--c-line)' }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--c-ink)', marginBottom: 8 }}>
+                            Bokningsvariant — hur bokningen presenteras (99 % sker på mobil)
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                            {BOOKING_VARIANTS.map((v) => {
+                              const von = variant === v
+                              const rec = v === RECOMMENDED_BOOKING_VARIANT
+                              return (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={von}
+                                  onClick={() => setVariant(v)}
+                                  style={{
+                                    textAlign: 'left', padding: 12, border: `2px solid ${von ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                                    borderRadius: 12, cursor: 'pointer', background: von ? 'var(--c-paper-2)' : 'var(--c-paper)',
+                                    transition: 'all var(--dur-fast)',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                    <span style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)' }}>{BOOKING_VARIANT_LABELS[v]}</span>
+                                    {rec ? (
+                                      <Badge tone="gold" dot={false}>Rek.</Badge>
+                                    ) : (
+                                      <span style={{ fontSize: 11, color: 'var(--c-ink-3)', fontWeight: 600 }}>{BOOKING_VARIANT_TAGS[v]}</span>
+                                    )}
+                                  </div>
+                                  <p style={{ fontSize: 12, color: 'var(--c-ink-2)', lineHeight: 1.45, margin: 0 }}>{BOOKING_VARIANT_DESCRIPTIONS[v]}</p>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                   )
                 })}
               </div>
-              <div style={{ marginTop: 14 }}><TableChip>kopplar M3 · booking-variants</TableChip></div>
+              <div style={{ marginTop: 14 }}><TableChip>tenant_modules · modules</TableChip></div>
             </div>
           )}
 
-          {/* ── Step 3 · Token-branding ── */}
-          {step === 3 && (
+          {/* ── Step 4 · Token-branding ── */}
+          {step === 4 && (
             <div style={{ display: 'grid', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="eyebrow">Leksakslådan · no-code</span>
@@ -342,14 +608,14 @@ export function CreateTenantForm() {
             </div>
           )}
 
-          {/* ── Step 4 · Ägare & roll ── */}
-          {step === 4 && (
+          {/* ── Step 5 · Ägare & roll ── */}
+          {step === 5 && (
             <div style={{ display: 'grid', gap: 16 }}>
               <Field label="Ägarens namn" ph="Förnamn Efternamn" value={ownerName} onChange={setOwnerName} />
               <Field
                 label="Ägarens e-post"
                 hint="Får en magic-link-invite — bekräftar och sätter eget lösenord."
-                ph="agare@salong.se"
+                ph="agare@kund.se"
                 type="email"
                 value={ownerEmail}
                 onChange={setOwnerEmail}
@@ -375,12 +641,14 @@ export function CreateTenantForm() {
                 </div>
               </div>
               <Callout tone="success">
-                <b>{name || 'Salongen'}</b> skapas på <b>{(slug || 'subdomän')}.{ROOT}</b> med tema{' '}
-                <b>{t.name}</b> och variant <b>{BOOKING_VARIANT_LABELS[variant]}</b>. Ägaren bjuds in som
-                salongsadmin.
+                <b>{name || `${kundLabel[0]?.toUpperCase()}${kundLabel.slice(1)}`}</b> skapas på{' '}
+                <b>{(slug || 'subdomän')}.{ROOT}</b>
+                {vertical ? <> i branschen <b>{vertical.name}</b></> : null} med tema <b>{t.name}</b>.
+                Moduler: <b>{liveModuleSummary(moduleOptions, stateFor) || 'Bokning (Live)'}</b>.
+                Ägaren bjuds in som salongsadmin.
               </Callout>
               <InfoLine icon="link">
-                Egen domän (steg 5 i stegen) är parkerat — subdomän räcker tills vidare.
+                Egen domän är parkerat — subdomän räcker tills vidare.
               </InfoLine>
             </div>
           )}
@@ -390,13 +658,13 @@ export function CreateTenantForm() {
             <Button variant="ghost" icon="arrowLeft" onClick={() => setStep((s) => Math.max(0, s - 1))} style={{ opacity: step === 0 ? 0.4 : 1 }}>
               Tillbaka
             </Button>
-            {step < 4 ? (
-              <Button variant="primary" icon="arrowRight" onClick={() => setStep((s) => Math.min(4, s + 1))}>
+            {step < LAST_STEP ? (
+              <Button variant="primary" icon="arrowRight" onClick={() => setStep((s) => Math.min(LAST_STEP, s + 1))}>
                 Fortsätt
               </Button>
             ) : (
               <Button variant="gold" icon="check" type="submit" disabled={pending}>
-                {pending ? 'Skapar…' : 'Skapa salong'}
+                {pending ? 'Skapar…' : `Skapa ${kundLabel}`}
               </Button>
             )}
           </div>
@@ -476,9 +744,11 @@ function InfoLine({ icon, children }: { icon: 'info' | 'link'; children: ReactNo
 }
 
 /** Live storefront mock for the chosen theme — browser chrome + the real two-column
- *  hero so the operator sees exactly what the salon's start page will look like. */
-function ThemePreview({ themeKey, salon }: { themeKey: ThemeKey; salon: string }) {
-  const t = WIZARD_THEMES[themeKey]
+ *  hero so the operator sees exactly what the salon's start page will look like.
+ *  themeKey is a free template key now; wizardTheme() resolves the rich built-in
+ *  preview when known, else a neutral fallback carrying the template's display name. */
+function ThemePreview({ themeKey, themeName, salon }: { themeKey: string; themeName?: string; salon: string }) {
+  const t = wizardTheme(themeKey, themeName)
   const slug = (salon || 'salong').toLowerCase().replace(/[^a-z0-9]/g, '') || 'salong'
   const dot = (bg: string) => <span style={{ width: 10, height: 10, borderRadius: 999, background: bg }} />
   return (

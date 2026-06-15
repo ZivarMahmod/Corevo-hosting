@@ -12,6 +12,8 @@ import { BillingForm } from '@/components/platform/BillingForm'
 import { StatusControl } from '@/components/platform/StatusControl'
 import { DomainPanel } from '@/components/platform/DomainPanel'
 import { OperativeControls } from '@/components/platform/OperativeControls'
+import { ModulesCard } from '@/components/platform/ModulesCard'
+import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import {
   TenantDetailTabs,
   type TenantTabKey,
@@ -73,10 +75,11 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // Cross-tenant reads, scoped to THIS salon. listCustomersAllTenants takes a tenant
   // id filter; listStaffAllTenants has no tenant filter (foundation), so we filter
   // by the salon's slug in-page (volume is tiny).
-  const [audit, customers, allStaff] = await Promise.all([
+  const [audit, customers, allStaff, modules] = await Promise.all([
     getTenantAudit(id),
     listCustomersAllTenants({ tenant: id }),
     listStaffAllTenants(),
+    listTenantModules(id),
   ])
   const staff = allStaff.filter((s) => s.slug === tenant.slug)
 
@@ -380,6 +383,18 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             </div>
           </div>
           <StatusControl tenantId={tenant.id} status={tenant.status} />
+        </Card>
+
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Moduler</h2>
+            <span className={styles.chip}>tenant_modules</span>
+          </div>
+          <p className={styles.noteText} style={{ marginBottom: 4 }}>
+            Per-modul livscykel: av → utkast → live → pausad. Aktivering (av→utkast) är
+            super-admin-spärrad i DB. Live slår igenom på storefronten direkt (cache-bust).
+          </p>
+          <ModulesCard tenantId={tenant.id} modules={modules} />
         </Card>
 
         <Card pad={0}>

@@ -48,3 +48,12 @@ node_modules/
 4-Dokument-Underlag/03-template-katalog/hairsal-gh-pages/
 4-Dokument-Underlag/03-template-katalog/materio-1.0.0/
 4-Dokument-Underlag/03-template-katalog/razor-master/
+
+# Claude Cowork session-artefakter
+.claude/
+mappar i katalog-roten (numrerade 01–100
+# + namngivna) — licens-/storleksskäl. Ignorera bara KATALOGER; rot-filer (KATALOG.md,
+# KATALOG-RAPPORT.md, templates-staging.json, templates-import.sql, _*-script) versioneras.
+4-Dokument-Underlag/03-template-katalog/*/
+!4-Dokument-Underlag/03-template-katalog/01-kandidater/
+!4-Dokument-Underlag/03-template-katalog/02-valda/

@@ -9,6 +9,8 @@ import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
+import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
+import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
@@ -67,12 +69,26 @@ export default async function PublicLayout({ children }: { children: React.React
   const tagline = resolveTenantCopy(settings.theme, copy).tagline
   const content = { utility: themeBase.utility, tagline }
 
+  // Multi-bransch (spår 5): the tenant's per-module lifecycle. The storefront renders
+  // only LIVE modules; 'draft'/'off' booking is not public; 'paused' booking shows a
+  // "stängt"-banner and the CTAs go inert. BACKWARD-COMPAT: a tenant with no
+  // tenant_modules row defaults booking→'live' (moduleState), so FreshCut (and any
+  // un-migrated salon) renders EXACTLY as before.
+  const moduleStates = await getTenantModuleStates(tenant.id, tenant.slug)
+  const bookingState = moduleState(moduleStates, 'booking')
+  const bookingLive = bookingState === 'live'
+  const bookingPaused = bookingState === 'paused'
+
   // Services + active locations shaped for the embedded booking wizard — same as
   // /boka, cached. locations feed the drawer's picker (hidden for 1-location tenants).
-  const [wizardServices, wizardLocations] = await Promise.all([
+  // Booking gating: only a LIVE booking module gets real services; draft/off/paused
+  // pass an EMPTY list so every "Boka tid" CTA is inert (BookingProvider.available
+  // is false), without removing the storefront's content/pages.
+  const [allWizardServices, wizardLocations] = await Promise.all([
     getWizardServices(tenant.id, tenant.slug),
     getWizardLocations(tenant.id, tenant.slug),
   ])
+  const wizardServices = bookingLive ? allWizardServices : []
 
   // Salvia leads with the richer 3-column footer (real address/hours/contact);
   // the other four themes (and boka/avboka) use the compact MiniFooter.
@@ -108,6 +124,9 @@ export default async function PublicLayout({ children }: { children: React.React
           — sits inside the provider, so every "Boka tid" CTA opens the same
           slide-over drawer without ever leaving the salon's page. */}
       <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name}>
+        {/* Paused booking → "stängt"-banner at the very top (draft/off render
+            nothing public, so only 'paused' surfaces here). */}
+        {bookingPaused ? <ModulePausedBanner /> : null}
         <Nav
           {...brandProps}
           customerAccountsEnabled={settings.customerAccountsEnabled}

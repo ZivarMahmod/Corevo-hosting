@@ -55,6 +55,53 @@ export type Database = {
           },
         ]
       }
+      booking_status_history: {
+        Row: {
+          booking_id: string
+          changed_at: string
+          changed_by: string | null
+          from_status: string | null
+          id: string
+          rebooked_from: string | null
+          rebooked_to: string | null
+          source: string
+          tenant_id: string
+          to_status: string
+        }
+        Insert: {
+          booking_id: string
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: string | null
+          id?: string
+          rebooked_from?: string | null
+          rebooked_to?: string | null
+          source?: string
+          tenant_id: string
+          to_status: string
+        }
+        Update: {
+          booking_id?: string
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: string | null
+          id?: string
+          rebooked_from?: string | null
+          rebooked_to?: string | null
+          source?: string
+          tenant_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_status_history_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           created_at: string
@@ -141,6 +188,70 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_slots: {
+        Row: {
+          asset_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          module_ref: Json | null
+          slot_key: string
+          template_key: string
+          tenant_id: string
+          text_value: Json | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          asset_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          module_ref?: Json | null
+          slot_key: string
+          template_key: string
+          tenant_id: string
+          text_value?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          asset_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          module_ref?: Json | null
+          slot_key?: string
+          template_key?: string
+          tenant_id?: string
+          text_value?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_slots_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_slots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_slots_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -439,6 +550,98 @@ export type Database = {
           },
         ]
       }
+      media_assets: {
+        Row: {
+          alt: string | null
+          content_hash: string | null
+          created_at: string
+          height: number | null
+          id: string
+          library_item_id: string | null
+          r2_key: string
+          size_bytes: number
+          source: string
+          tenant_id: string
+          type: string
+          updated_at: string | null
+          url: string
+          width: number | null
+        }
+        Insert: {
+          alt?: string | null
+          content_hash?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          library_item_id?: string | null
+          r2_key: string
+          size_bytes?: number
+          source?: string
+          tenant_id: string
+          type?: string
+          updated_at?: string | null
+          url: string
+          width?: number | null
+        }
+        Update: {
+          alt?: string | null
+          content_hash?: string | null
+          created_at?: string
+          height?: number | null
+          id?: string
+          library_item_id?: string | null
+          r2_key?: string
+          size_bytes?: number
+          source?: string
+          tenant_id?: string
+          type?: string
+          updated_at?: string | null
+          url?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_assets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modules: {
+        Row: {
+          created_at: string
+          default_config: Json
+          default_section_position: string | null
+          key: string
+          name: string
+          owns_tables: Json
+          updated_at: string | null
+          variant_schema: Json
+        }
+        Insert: {
+          created_at?: string
+          default_config?: Json
+          default_section_position?: string | null
+          key: string
+          name: string
+          owns_tables?: Json
+          updated_at?: string | null
+          variant_schema?: Json
+        }
+        Update: {
+          created_at?: string
+          default_config?: Json
+          default_section_position?: string | null
+          key?: string
+          name?: string
+          owns_tables?: Json
+          updated_at?: string | null
+          variant_schema?: Json
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount_cents: number
@@ -494,9 +697,27 @@ export type Database = {
         ]
       }
       role_permissions: {
-        Row: { id: string; role_name: string; area: string; perm: string; updated_at: string }
-        Insert: { id?: string; role_name: string; area: string; perm: string; updated_at?: string }
-        Update: { id?: string; role_name?: string; area?: string; perm?: string; updated_at?: string }
+        Row: {
+          area: string
+          id: string
+          perm: string
+          role_name: string
+          updated_at: string
+        }
+        Insert: {
+          area: string
+          id?: string
+          perm: string
+          role_name: string
+          updated_at?: string
+        }
+        Update: {
+          area?: string
+          id?: string
+          perm?: string
+          role_name?: string
+          updated_at?: string
+        }
         Relationships: []
       }
       roles: {
@@ -695,6 +916,101 @@ export type Database = {
           },
         ]
       }
+      template_slots: {
+        Row: {
+          aspect_hint: string | null
+          asset_role: string | null
+          default_asset_key: string | null
+          default_kind: string | null
+          default_text: string | null
+          id: string
+          kind: string
+          label: string
+          module_key: string | null
+          module_view: string | null
+          repeatable: boolean
+          section_key: string
+          slot_key: string
+          sort_order: number
+          template_key: string
+        }
+        Insert: {
+          aspect_hint?: string | null
+          asset_role?: string | null
+          default_asset_key?: string | null
+          default_kind?: string | null
+          default_text?: string | null
+          id?: string
+          kind: string
+          label: string
+          module_key?: string | null
+          module_view?: string | null
+          repeatable?: boolean
+          section_key: string
+          slot_key: string
+          sort_order?: number
+          template_key: string
+        }
+        Update: {
+          aspect_hint?: string | null
+          asset_role?: string | null
+          default_asset_key?: string | null
+          default_kind?: string | null
+          default_text?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          module_key?: string | null
+          module_view?: string | null
+          repeatable?: boolean
+          section_key?: string
+          slot_key?: string
+          sort_order?: number
+          template_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_slots_template_key_fkey"
+            columns: ["template_key"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      templates: {
+        Row: {
+          created_at: string
+          key: string
+          name: string
+          sections: Json
+          status: string
+          tags: Json
+          tokens: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          name: string
+          sections?: Json
+          status?: string
+          tags?: Json
+          tokens?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          name?: string
+          sections?: Json
+          status?: string
+          tags?: Json
+          tokens?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tenant_domains: {
         Row: {
           created_at: string
@@ -723,6 +1039,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tenant_domains_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_modules: {
+        Row: {
+          activated_at: string | null
+          config: Json
+          created_at: string
+          id: string
+          module_key: string
+          state: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          module_key: string
+          state?: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          module_key?: string
+          state?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_modules_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "tenant_modules_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -803,6 +1167,7 @@ export type Database = {
           stripe_details_submitted: boolean
           stripe_payouts_enabled: boolean
           updated_at: string | null
+          vertical_id: string | null
         }
         Insert: {
           city?: string | null
@@ -817,6 +1182,7 @@ export type Database = {
           stripe_details_submitted?: boolean
           stripe_payouts_enabled?: boolean
           updated_at?: string | null
+          vertical_id?: string | null
         }
         Update: {
           city?: string | null
@@ -831,8 +1197,17 @@ export type Database = {
           stripe_details_submitted?: boolean
           stripe_payouts_enabled?: boolean
           updated_at?: string | null
+          vertical_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenants_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "verticals"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       time_off: {
         Row: {
@@ -939,6 +1314,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      verticals: {
+        Row: {
+          created_at: string
+          default_modules: Json
+          default_template: string | null
+          key: string
+          name: string
+          rules: Json
+          terminology: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          default_modules?: Json
+          default_template?: string | null
+          key: string
+          name: string
+          rules?: Json
+          terminology?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          default_modules?: Json
+          default_template?: string | null
+          key?: string
+          name?: string
+          rules?: Json
+          terminology?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       working_hour_slots: {
         Row: {
@@ -1126,18 +1534,12 @@ export type Database = {
           tenant_slug: string
         }[]
       }
-      resolve_tenant_by_domain: {
-        Args: { p_host: string }
-        Returns: string
-      }
+      resolve_tenant_by_domain: { Args: { p_host: string }; Returns: string }
       seed_explicit_slots_from_hours: {
         Args: { p_staff: string; p_step?: number }
         Returns: number
       }
-      set_primary_location: {
-        Args: { p_location: string }
-        Returns: undefined
-      }
+      set_primary_location: { Args: { p_location: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

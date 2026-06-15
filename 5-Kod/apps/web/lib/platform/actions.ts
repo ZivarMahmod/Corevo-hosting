@@ -8,6 +8,7 @@ import { createServiceClient, hasServiceRole } from './service'
 import { logPlatformAction } from './audit'
 import { isBookingVariant, DEFAULT_BOOKING_VARIANT, type BookingVariant } from './booking-variant'
 import { resolveOwnerRole } from './owner-role'
+import { parseModuleSelections, writeTenantVerticalAndModules } from './tenant-modules-write'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, type StorefrontTheme } from '@/lib/tenant-data'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages } from '@/lib/r2/upload'
@@ -84,6 +85,13 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // CTA colour on top. Tagline → settings.copy.tagline; logo → R2 (below).
   const colorAccent = hexOrSkip(fd.get('color_accent'))
   const tagline = String(fd.get('tagline') ?? '').trim().slice(0, 160)
+  // Multi-bransch (spår 5): the wizard's bransch (step 0) → tenants.vertical_id, and
+  // the "Moduler" step's per-module states → tenant_modules rows. vertical_id is a
+  // mjuk, mutabel FK (null = no bransch picked). `modules` is a JSON map
+  // { module_key: state }; parseModuleSelections drops garbage, the write helper
+  // floors booking→live (FreshCut-parity) + fences to the catalog.
+  const verticalKey = String(fd.get('vertical_id') ?? '').trim().slice(0, 64) || null
+  const moduleSelections = parseModuleSelections(fd.get('modules'))
 
   if (!name) return { error: 'Ange ett salongsnamn.' }
   if (!slugCheck.ok) return { error: slugCheck.reason }
@@ -164,6 +172,18 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     return { error: GENERIC }
   }
 
+  // 4b) vertical + modules (multi-bransch spår 5). Atomic with the steps above
+  //     (same cascade-rollback window): writes tenants.vertical_id + tenant_modules
+  //     rows (chosen states; booking floored to live). Runs under the platform client
+  //     → the DB state-guard (0026 §9) admits off→draft/live because the JWT carries
+  //     platform_admin. A failure rolls the whole tenant back so no half-provisioned
+  //     module set lingers.
+  const modRes = await writeTenantVerticalAndModules(supabase, tenantId, verticalKey, moduleSelections)
+  if (!modRes.ok) {
+    await rollback()
+    return { error: GENERIC }
+  }
+
   // 5) invite the owner (salon_admin) via magic-link (service role; graceful degrade
   //    when key absent). Owner name rides along as auth user_metadata.full_name
   //    (public.users has no name column — frozen schema).
@@ -222,7 +242,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     action: 'tenant.create',
     tenantId,
     actorId: user.id,
-    meta: { slug, name, theme, booking_variant: bookingVariant },
+    meta: { slug, name, theme, booking_variant: bookingVariant, vertical_id: verticalKey },
   })
 
   revalidatePath('/platform')
