@@ -93,7 +93,10 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   const verticalKey = String(fd.get('vertical_id') ?? '').trim().slice(0, 64) || null
   const moduleSelections = parseModuleSelections(fd.get('modules'))
 
-  if (!name) return { error: 'Ange ett salongsnamn.' }
+  // Multi-bransch: the wizard serves every bransch (frisör, restaurang, …), so the
+  // validation text stays bransch-neutral ("namn", not "salongsnamn"). The branschens
+  // egna ord visas i wizard-UI:t (terminology); detta är server-sidans säkra fallback.
+  if (!name) return { error: 'Ange ett namn.' }
   if (!slugCheck.ok) return { error: slugCheck.reason }
   if (ownerEmail && !EMAIL_RE.test(ownerEmail)) return { error: 'Ogiltig e-postadress för ägaren.' }
   const slug = slugCheck.slug

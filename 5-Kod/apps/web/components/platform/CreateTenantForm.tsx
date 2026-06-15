@@ -12,7 +12,7 @@ import {
   type BookingVariant,
 } from '@/lib/platform/booking-variant'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
-import { modulesForVertical, type VerticalPresetData, type TemplateOption } from '@/lib/platform/verticals'
+import { modulesForVertical, type VerticalPresetData, type TemplateOption } from '@/lib/platform/verticals-shared'
 import { PageHead, Card, Button, Badge, Icon } from '@/components/portal/ui'
 import { Callout } from '@/components/portal/ui'
 
@@ -178,6 +178,12 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   const vertical = verticalKey ? presets.verticals.find((v) => v.key === verticalKey) ?? null : null
   // What we call the customer everywhere: the bransch name when picked, else "kund".
   const kundLabel = vertical?.name ?? 'kund'
+  // Multi-bransch terminologi: the chosen bransch's terminology overlay (e.g.
+  // { staff:'Stylist', service:'Klippning', unit:'bord' }) supplies bransch-specific
+  // labels. term(key, fallback) reads it safely → neutral fallback when the bransch
+  // has no terminology (or none is picked yet), so the wizard never hardcodes "salong".
+  const terminology = vertical?.terminology ?? {}
+  const term = (key: string, fallback: string): string => terminology[key]?.trim() || fallback
 
   // The module options for the chosen bransch (catalog × preset state). booking is
   // floored to at least 'live' for display; the rest reflect the bransch preset.
@@ -448,7 +454,12 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                 <IconTint color="var(--c-gold-600)"><Icon name="sun" size={14} /></IconTint>
                 <span className="eyebrow">Förhandsvisning · {t.name} — {t.vibe}</span>
               </div>
-              <ThemePreview themeKey={theme} themeName={themeName} salon={name || `Din ${kundLabel}`} />
+              <ThemePreview
+                themeKey={theme}
+                themeName={themeName}
+                salon={name || `Din ${kundLabel}`}
+                serviceLabel={term('service', '')}
+              />
               <div style={{ marginTop: 12 }}><TableChip>templates · tags.bransch</TableChip></div>
             </div>
           )}
@@ -747,9 +758,23 @@ function InfoLine({ icon, children }: { icon: 'info' | 'link'; children: ReactNo
  *  hero so the operator sees exactly what the salon's start page will look like.
  *  themeKey is a free template key now; wizardTheme() resolves the rich built-in
  *  preview when known, else a neutral fallback carrying the template's display name. */
-function ThemePreview({ themeKey, themeName, salon }: { themeKey: string; themeName?: string; salon: string }) {
+function ThemePreview({
+  themeKey,
+  themeName,
+  salon,
+  serviceLabel,
+}: {
+  themeKey: string
+  themeName?: string
+  salon: string
+  /** Bransch `service` term (e.g. "Klippning"). '' → keep the generic example chips. */
+  serviceLabel?: string
+}) {
   const t = wizardTheme(themeKey, themeName)
-  const slug = (salon || 'salong').toLowerCase().replace(/[^a-z0-9]/g, '') || 'salong'
+  const slug = (salon || 'sida').toLowerCase().replace(/[^a-z0-9]/g, '') || 'sida'
+  // Lead the example chips with the bransch's own service word when it has one, so a
+  // non-frisör bransch doesn't preview "Klippning". Falls back to the generic set.
+  const chips = serviceLabel ? [serviceLabel, 'Färg', 'Styling'] : ['Klippning', 'Färg', 'Styling']
   const dot = (bg: string) => <span style={{ width: 10, height: 10, borderRadius: 999, background: bg }} />
   return (
     <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--c-line)', boxShadow: 'var(--shadow-md)' }}>
@@ -772,7 +797,7 @@ function ThemePreview({ themeKey, themeName, salon }: { themeKey: string; themeN
             <div style={{ fontFamily: t.display, fontSize: 34, fontWeight: 600, color: t.fg, lineHeight: t.caps ? 1.12 : 1.04, margin: '8px 0 0', textTransform: t.caps ? 'uppercase' : 'none', letterSpacing: t.caps ? '.01em' : '-0.01em' }}>{t.hero}</div>
             <p style={{ fontFamily: 'var(--font-ui)', fontSize: 12.5, color: t.fg2, lineHeight: 1.5, margin: t.caps ? '14px 0 0' : '10px 0 0', maxWidth: 280 }}>{t.lede}</p>
             <div style={{ display: 'flex', gap: 7, marginTop: 16, flexWrap: 'wrap' }}>
-              {['Klippning', 'Färg', 'Styling'].map((s) => (
+              {chips.map((s) => (
                 <span key={s} style={{ fontFamily: 'var(--font-ui)', fontSize: 11, color: t.fg2, border: `1px solid ${t.line}`, borderRadius: t.radius + 4, padding: '5px 11px' }}>{s}</span>
               ))}
             </div>

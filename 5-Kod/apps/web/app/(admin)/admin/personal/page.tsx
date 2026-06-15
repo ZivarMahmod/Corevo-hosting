@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
+import { resolveTerm, termPlural } from '@/lib/platform/verticals-shared'
 import { listServices, listStaff, listLocations } from '@/lib/admin/data'
 import { getStaffScheduleWithNotes, dayRangeUtc } from '@/lib/personal/calendar'
 import { todayInTz } from '@/lib/personal/format'
@@ -90,7 +91,7 @@ export default async function StaffPage() {
     <section className="portal-section">
       <PageHead
         eyebrow={tenant.name}
-        title="Personal"
+        title={termPlural(tenant.terminology, 'staff', 'Personal')}
         lede="Varje medarbetares riktiga dag — speglad live. Ge dem ett eget konto med egen vy, eller hantera dem härifrån. Endast aktiv personal med minst en kopplad tjänst går att boka."
       >
         <AddStaffButton />
@@ -113,7 +114,12 @@ export default async function StaffPage() {
           </div>
         </Card>
       ) : (
-        <StaffRoster staff={cards} services={serviceOptions} tz={tenant.timeZone} />
+        <StaffRoster
+          staff={cards}
+          services={serviceOptions}
+          tz={tenant.timeZone}
+          staffNoun={resolveTerm(tenant.terminology, 'staff', 'Medarbetare')}
+        />
       )}
     </section>
   )

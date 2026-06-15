@@ -1,0 +1,84 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { createClient } from '@/lib/supabase/server'
+import { requirePortal } from '@/lib/auth/session'
+import { getAdminTenant, revalidateTenant } from '@/lib/admin/tenant'
+import { kronorToCents } from '@/lib/admin/format'
+import type { ActionState } from '@/lib/admin/actions'
+import { OFFERT_STATUSES } from './types'
+
+const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
+const GENERIC = 'Något gick fel. Försök igen.'
+
+async function adminCtx() {
+  const user = await requirePortal('admin')
+  const tenant = await getAdminTenant(user)
+  if (!tenant) return null
+  return { user, tenant }
+}
+
+export async function updateOffertRequest(
+  _p: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const id = String(fd.get('id') ?? '').trim()
+  if (!id) return { error: 'Saknar förfrågan.' }
+
+  const status = String(fd.get('status') ?? '').trim()
+  if (!(OFFERT_STATUSES as readonly string[]).includes(status))
+    return { error: 'Ogiltig status.' }
+
+  const noteRaw = String(fd.get('note') ?? '').trim()
+  const note = noteRaw === '' ? null : noteRaw
+
+  const estimateRaw = String(fd.get('estimate') ?? '').trim()
+  let estimate_cents: number | null = null
+  if (estimateRaw !== '') {
+    const parsed = kronorToCents(estimateRaw)
+    if (parsed === null || parsed < 0) return { error: 'Ogiltigt belopp.' }
+    estimate_cents = parsed
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('offert_requests')
+    .update({ status, note, estimate_cents })
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/offerter')
+  return { success: 'Förfrågan uppdaterad.' }
+}
+
+export async function setOffertStatus(
+  _p: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const id = String(fd.get('id') ?? '').trim()
+  if (!id) return { error: 'Saknar förfrågan.' }
+
+  const status = String(fd.get('status') ?? '').trim()
+  if (!(OFFERT_STATUSES as readonly string[]).includes(status))
+    return { error: 'Ogiltig status.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('offert_requests')
+    .update({ status })
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/offerter')
+  return { success: 'Status uppdaterad.' }
+}

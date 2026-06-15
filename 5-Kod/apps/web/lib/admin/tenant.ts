@@ -2,6 +2,7 @@ import 'server-only'
 import { revalidateTag } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { CurrentUser } from '@/lib/auth/session'
+import { cleanTerminology, type Terminology } from '@/lib/platform/verticals-shared'
 
 export type AdminTenant = {
   id: string
@@ -11,6 +12,11 @@ export type AdminTenant = {
   timeZone: string
   /** Primary location id — new services/staff/working_hours are pinned to it. */
   locationId: string | null
+  /** This tenant's bransch (verticals.key), or null when unset → terminology = {}. */
+  verticalId: string | null
+  /** Bransch label overlay (verticals.terminology). Empty for the 'generell' bransch
+   *  or an unset vertical; admin label surfaces resolve through it via resolveTerm. */
+  terminology: Terminology
 }
 
 const FALLBACK_TZ = 'Europe/Stockholm'
@@ -26,7 +32,11 @@ export async function getAdminTenant(user: CurrentUser): Promise<AdminTenant | n
   if (!user.tenantId) return null
   const supabase = await createClient()
   const [{ data: tenant }, { data: loc }] = await Promise.all([
-    supabase.from('tenants').select('id, slug, name, status').eq('id', user.tenantId).maybeSingle(),
+    supabase
+      .from('tenants')
+      .select('id, slug, name, status, vertical_id')
+      .eq('id', user.tenantId)
+      .maybeSingle(),
     supabase
       .from('locations')
       .select('id, timezone')
@@ -37,12 +47,30 @@ export async function getAdminTenant(user: CurrentUser): Promise<AdminTenant | n
   if (!tenant) return null
   // Soft-deleted tenant → no admin context, so every downstream admin action denies.
   if (tenant.status === 'deleted') return null
+
+  // Bransch terminology overlay (verticals.terminology) → admin label surfaces.
+  // Separate read (NOT an embedded join) on purpose: a verticals RLS/shape change
+  // can then never null the tenant read and lock the admin out; on any miss the
+  // overlay simply stays {}. verticals_read is SELECT-open to authenticated, so the
+  // salon admin can read it.
+  let terminology: Terminology = {}
+  if (tenant.vertical_id) {
+    const { data: vertical } = await supabase
+      .from('verticals')
+      .select('terminology')
+      .eq('key', tenant.vertical_id)
+      .maybeSingle()
+    terminology = cleanTerminology(vertical?.terminology)
+  }
+
   return {
     id: tenant.id,
     slug: tenant.slug,
     name: tenant.name,
     timeZone: loc?.timezone ?? FALLBACK_TZ,
     locationId: loc?.id ?? null,
+    verticalId: tenant.vertical_id ?? null,
+    terminology,
   }
 }
 

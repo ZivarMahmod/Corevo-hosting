@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
+import { resolveTerm } from '@/lib/platform/verticals-shared'
 import {
   getCustomerDetail,
   getCustomerContact,
@@ -179,7 +180,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   <tr>
                     <th>Tid</th>
                     <th>Tjänst</th>
-                    <th>Medarbetare</th>
+                    <th>{resolveTerm(tenant.terminology, 'staff', 'Medarbetare')}</th>
                     <th>Status</th>
                     <th>Bokad den</th>
                     <th data-last="">Pris</th>

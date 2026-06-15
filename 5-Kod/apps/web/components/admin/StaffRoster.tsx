@@ -102,10 +102,15 @@ export function StaffRoster({
   staff,
   services,
   tz,
+  staffNoun = 'Medarbetare',
 }: {
   staff: StaffCard[]
   services: ServiceOption[]
   tz: string
+  /** Bransch-resolved SINGULAR staff noun (e.g. 'Stylist' for frisör, 'Barberare'
+   *  for barbershop). Resolved server-side from the tenant's vertical terminology;
+   *  defaults to 'Medarbetare' so any caller without it keeps today's wording. */
+  staffNoun?: string
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = staff.find((s) => s.id === selectedId) ?? null
@@ -120,7 +125,12 @@ export function StaffRoster({
         }}
       >
         {staff.map((s) => (
-          <StaffGridCard key={s.id} member={s} onOpen={() => setSelectedId(s.id)} />
+          <StaffGridCard
+            key={s.id}
+            member={s}
+            staffNoun={staffNoun}
+            onOpen={() => setSelectedId(s.id)}
+          />
         ))}
       </div>
 
@@ -129,6 +139,7 @@ export function StaffRoster({
           member={selected}
           services={services}
           tz={tz}
+          staffNoun={staffNoun}
           onClose={() => setSelectedId(null)}
         />
       )}
@@ -154,7 +165,15 @@ export function AddStaffButton() {
   )
 }
 
-function StaffGridCard({ member, onOpen }: { member: StaffCard; onOpen: () => void }) {
+function StaffGridCard({
+  member,
+  staffNoun,
+  onOpen,
+}: {
+  member: StaffCard
+  staffNoun: string
+  onOpen: () => void
+}) {
   const todayCount = member.today.length
   const chips = member.serviceNames.slice(0, CHIP_CAP)
   const extra = member.serviceNames.length - chips.length
@@ -206,8 +225,9 @@ function StaffGridCard({ member, onOpen }: { member: StaffCard; onOpen: () => vo
             </div>
             {/* Mock shows s.role here; the schema has no separate role field (staff
                 carries only `title`, which IS the displayName), so a role line would
-                duplicate the name — show the generic role descriptor instead. */}
-            <div style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>Medarbetare</div>
+                duplicate the name — show the bransch role descriptor instead
+                (staffNoun: 'Stylist'/'Barberare'/… per vertical, else 'Medarbetare'). */}
+            <div style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>{staffNoun}</div>
           </div>
           <Badge tone={member.hasAccount ? 'success' : 'neutral'} dot={false}>
             {member.hasAccount ? 'Eget konto' : 'Hanteras här'}
@@ -313,11 +333,13 @@ function StaffDrawer({
   member,
   services,
   tz,
+  staffNoun,
   onClose,
 }: {
   member: StaffCard
   services: ServiceOption[]
   tz: string
+  staffNoun: string
   onClose: () => void
 }) {
   return (
@@ -335,7 +357,7 @@ function StaffDrawer({
         </div>
       }
       onClose={onClose}
-      ariaLabel={`Medarbetare ${member.displayName}`}
+      ariaLabel={`${staffNoun} ${member.displayName}`}
     >
       <div style={{ display: 'grid', gap: 20 }}>
         {/* Om — staff has no bio column in the schema (verified: staff Row =

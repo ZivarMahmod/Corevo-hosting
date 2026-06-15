@@ -14,6 +14,9 @@ import { DomainPanel } from '@/components/platform/DomainPanel'
 import { OperativeControls } from '@/components/platform/OperativeControls'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
+import { TenantPreviewFrame } from '@/components/platform/TenantPreviewFrame'
+import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
+import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
 import {
   TenantDetailTabs,
   type TenantTabKey,
@@ -90,6 +93,17 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const isActive = tenant.status === 'active'
   const statusLabel = isActive ? 'Aktiv' : tenant.status === 'suspended' ? 'Pausad' : tenant.status
   const statusTone: BadgeTone = isActive ? 'success' : 'warning'
+
+  // Visual hub (spår 4): the tenant's active template = settings.theme (the five named
+  // layouts), fenced to the catalog keys that 1:1 match the `templates` table. The
+  // preview iframe points at the REAL public storefront (slug/custom-domain origin).
+  const rawTheme = (settings?.settings as { theme?: unknown } | null)?.theme
+  const activeTemplateKey =
+    typeof rawTheme === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
+      ? rawTheme
+      : DEFAULT_STOREFRONT_THEME
+  const storefrontUrl = tenantStorefrontUrl(tenant.slug) ?? url
+  const storefrontHost = tenantStorefrontHost(tenant.slug) ?? `${tenant.slug}.${ROOT}`
 
   const tabs: Record<TenantTabKey, React.ReactNode> = {
     Översikt: (
@@ -395,6 +409,29 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             super-admin-spärrad i DB. Live slår igenom på storefronten direkt (cache-bust).
           </p>
           <ModulesCard tenantId={tenant.id} modules={modules} />
+        </Card>
+
+        {/* Visuell hub (spår 4, v1) — live-preview av kundens skarpa sida + bild-swap
+            på storefrontens bild-slots. Iframe mot den RIKTIGA publika sidan; slot-
+            overlay-scaffold (postMessage) + redigera-läge med drawer. Full sidbyggare
+            är senare — v1 är bild-slot-byte (content_slots). */}
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Sida &amp; innehåll</h2>
+            <span className={styles.chip}>content_slots · live-preview</span>
+          </div>
+          <p className={styles.noteText} style={{ marginBottom: 12 }}>
+            Live-förhandsvisning av salongens skarpa storefront. Slå på redigeringsläget för
+            att byta bilder i sidans bild-slots direkt — ändringen slår igenom på den publika
+            sidan (cache-bustas). Texter och hela sektioner kommer i nästa steg.
+          </p>
+          <TenantPreviewFrame
+            tenantId={tenant.id}
+            storefrontUrl={storefrontUrl}
+            storefrontHost={storefrontHost}
+            templateKey={activeTemplateKey}
+            isActive={isActive}
+          />
         </Card>
 
         <Card pad={0}>
