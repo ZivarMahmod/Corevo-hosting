@@ -49,6 +49,12 @@ node_modules/
 4-Dokument-Underlag/03-template-katalog/materio-1.0.0/
 4-Dokument-Underlag/03-template-katalog/razor-master/
 
+# Råa template-data-dumpar (fill/backfill) — körs mot DB out-of-band, ej i git.
+# templates-import.sql versioneras dock (kanonisk import, se nedan).
+4-Dokument-Underlag/03-template-katalog/*-fill.sql
+4-Dokument-Underlag/03-template-katalog/*-fill-2.sql
+4-Dokument-Underlag/03-template-katalog/*-backfill.sql
+
 # Claude Cowork session-artefakter
 .claude/
 mappar i katalog-roten (numrerade 01–100

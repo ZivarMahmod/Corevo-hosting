@@ -5,7 +5,7 @@ begin;
 
 -- ===== haircut  (frisör/storefront, licens=kräver-kredit) =====
 insert into templates (key, name, tags, tokens, sections, status) values (
-  'haircut', 'Corevo Haircut', '{"bransch":"frisör","typ":"storefront","stil":"bold","licens":"kräver-kredit","scope":"internal"}'::jsonb, '{"color":{"primary":"#eb1616","secondary":"#191c24","accent":"#191c24","bg":null,"surface":null,"text":"#000000","muted":null},"font":{"heading":"Roboto","body":"Oswald"},"layout":{"max_width":null,"border_radius":null,"nav_position":"sticky"}}'::jsonb, array['hero','services','team','testimonials','footer']::text[], 'draft'
+  'haircut', 'Corevo Haircut', '{"bransch":"frisör","typ":"storefront","stil":"bold","licens":"kräver-kredit","scope":"internal"}'::jsonb, '{"color":{"primary":"#eb1616","secondary":"#191c24","accent":"#191c24","bg":null,"surface":null,"text":"#000000","muted":null},"font":{"heading":"Roboto","body":"Oswald"},"layout":{"max_width":null,"border_radius":null,"nav_position":"sticky"}}'::jsonb, '["hero","services","team","testimonials","footer"]'::jsonb, 'draft'
 )
 on conflict (key) do update set
   name = excluded.name,
@@ -153,7 +153,7 @@ on conflict (template_key, slot_key) do update set
 
 -- ===== training-studio  (frisör/storefront, licens=kräver-kredit) =====
 insert into templates (key, name, tags, tokens, sections, status) values (
-  'training-studio', 'Corevo Training Studio', '{"bransch":"frisör","typ":"storefront","stil":"modern","licens":"kräver-kredit","scope":"internal"}'::jsonb, '{"color":{"primary":"#ed563b","secondary":"#232d39","accent":"#232d39","bg":null,"surface":null,"text":null,"muted":null},"font":{"heading":"Poppins","body":"Poppins"},"layout":{"max_width":"1200px","border_radius":"5px","nav_position":"sticky"}}'::jsonb, array['hero','services','cta','booking','contact','footer']::text[], 'draft'
+  'training-studio', 'Corevo Training Studio', '{"bransch":"frisör","typ":"storefront","stil":"modern","licens":"kräver-kredit","scope":"internal"}'::jsonb, '{"color":{"primary":"#ed563b","secondary":"#232d39","accent":"#232d39","bg":null,"surface":null,"text":null,"muted":null},"font":{"heading":"Poppins","body":"Poppins"},"layout":{"max_width":"1200px","border_radius":"5px","nav_position":"sticky"}}'::jsonb, '["hero","services","cta","booking","contact","footer"]'::jsonb, 'draft'
 )
 on conflict (key) do update set
   name = excluded.name,
@@ -310,7 +310,7 @@ on conflict (template_key, slot_key) do update set
 
 -- ===== studio  (frisör/storefront, licens=kräver-kredit) =====
 insert into templates (key, name, tags, tokens, sections, status) values (
-  'studio', 'Corevo Studio', '{"bransch":"frisör","typ":"storefront","stil":"minimal","licens":"kräver-kredit","scope":"internal"}'::jsonb, '{"color":{"primary":"#d62d20","secondary":"#0057e7","accent":"#0057e7","bg":null,"surface":null,"text":null,"muted":null},"font":{"heading":"Poppins","body":"Poppins"},"layout":{"max_width":"1199px","border_radius":"6px","nav_position":"top"}}'::jsonb, array['hero','contact','footer']::text[], 'draft'
+  'studio', 'Corevo Studio', '{"bransch":"frisör","typ":"storefront","stil":"minimal","licens":"kräver-kredit","scope":"internal"}'::jsonb, '{"color":{"primary":"#d62d20","secondary":"#0057e7","accent":"#0057e7","bg":null,"surface":null,"text":null,"muted":null},"font":{"heading":"Poppins","body":"Poppins"},"layout":{"max_width":"1199px","border_radius":"6px","nav_position":"top"}}'::jsonb, '["hero","contact","footer"]'::jsonb, 'draft'
 )
 on conflict (key) do update set
   name = excluded.name,
@@ -395,7 +395,7 @@ on conflict (template_key, slot_key) do update set
 
 -- ===== star-admin2  (generell/admin, licens=fri) =====
 insert into templates (key, name, tags, tokens, sections, status) values (
-  'star-admin2', 'Corevo Star Admin2', '{"bransch":"generell","typ":"admin","stil":"clean","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":"#1f3bb3","secondary":"#f1f1f1","accent":"#f1f1f1","bg":null,"surface":"#ffffff","text":"#0f1531","muted":"#434a54"},"font":{"heading":null,"body":"var(--bs-font-sans-serif)"},"layout":{"max_width":"1320px","border_radius":"8px","nav_position":"side"}}'::jsonb, array['dashboard']::text[], 'draft'
+  'star-admin2', 'Corevo Star Admin2', '{"bransch":"generell","typ":"admin","stil":"clean","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":"#1f3bb3","secondary":"#f1f1f1","accent":"#f1f1f1","bg":null,"surface":"#ffffff","text":"#0f1531","muted":"#434a54"},"font":{"heading":null,"body":"var(--bs-font-sans-serif)"},"layout":{"max_width":"1320px","border_radius":"8px","nav_position":"side"}}'::jsonb, '["dashboard"]'::jsonb, 'draft'
 )
 on conflict (key) do update set
   name = excluded.name,
@@ -426,7 +426,7 @@ on conflict (template_key, slot_key) do update set
 
 -- ===== sneat  (generell/admin, licens=fri) =====
 insert into templates (key, name, tags, tokens, sections, status) values (
-  'sneat', 'Corevo Sneat', '{"bransch":"generell","typ":"admin","stil":"clean","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":null,"secondary":null,"accent":null,"bg":null,"surface":null,"text":null,"muted":null},"font":{"heading":"Open Sans","body":"Open Sans"},"layout":{"max_width":null,"border_radius":null,"nav_position":null}}'::jsonb, array['dashboard']::text[], 'draft'
+  'sneat', 'Corevo Sneat', '{"bransch":"generell","typ":"admin","stil":"clean","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":null,"secondary":null,"accent":null,"bg":null,"surface":null,"text":null,"muted":null},"font":{"heading":"Open Sans","body":"Open Sans"},"layout":{"max_width":null,"border_radius":null,"nav_position":null}}'::jsonb, '["dashboard"]'::jsonb, 'draft'
 )
 on conflict (key) do update set
   name = excluded.name,
@@ -457,7 +457,7 @@ on conflict (template_key, slot_key) do update set
 
 -- ===== connect-plus  (generell/storefront, licens=fri) =====
 insert into templates (key, name, tags, tokens, sections, status) values (
-  'connect-plus', 'Corevo Connect Plus', '{"bransch":"generell","typ":"storefront","stil":"clean","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":"#0062ff","secondary":"#8e94a9","accent":"#8e94a9","bg":null,"surface":"#ffffff","text":"#0f1531","muted":"#434a54"},"font":{"heading":"nunito-regular","body":null},"layout":{"max_width":"1140px","border_radius":"0.25rem","nav_position":"fixed-top"}}'::jsonb, array['hero','footer']::text[], 'draft'
+  'connect-plus', 'Corevo Connect Plus', '{"bransch":"generell","typ":"storefront","stil":"clean","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":"#0062ff","secondary":"#8e94a9","accent":"#8e94a9","bg":null,"surface":"#ffffff","text":"#0f1531","muted":"#434a54"},"font":{"heading":"nunito-regular","body":null},"layout":{"max_width":"1140px","border_radius":"0.25rem","nav_position":"fixed-top"}}'::jsonb, '["hero","footer"]'::jsonb, 'draft'
 )
 on conflict (key) do update set
   name = excluded.name,
@@ -515,7 +515,7 @@ on conflict (template_key, slot_key) do update set
 
 -- ===== celestial-admin  (generell/admin, licens=fri) =====
 insert into templates (key, name, tags, tokens, sections, status) values (
-  'celestial-admin', 'Corevo Celestial Admin', '{"bransch":"generell","typ":"admin","stil":"dark","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":"#f2125e","secondary":"#392ccd","accent":"#392ccd","bg":null,"surface":"#ffffff","text":"#0f1531","muted":"#434a54"},"font":{"heading":null,"body":null},"layout":{"max_width":"1140px","border_radius":"0.25rem","nav_position":"side"}}'::jsonb, array['dashboard']::text[], 'draft'
+  'celestial-admin', 'Corevo Celestial Admin', '{"bransch":"generell","typ":"admin","stil":"dark","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":"#f2125e","secondary":"#392ccd","accent":"#392ccd","bg":null,"surface":"#ffffff","text":"#0f1531","muted":"#434a54"},"font":{"heading":null,"body":null},"layout":{"max_width":"1140px","border_radius":"0.25rem","nav_position":"side"}}'::jsonb, '["dashboard"]'::jsonb, 'draft'
 )
 on conflict (key) do update set
   name = excluded.name,
@@ -546,7 +546,7 @@ on conflict (template_key, slot_key) do update set
 
 -- ===== breeze-admin  (generell/admin, licens=fri) =====
 insert into templates (key, name, tags, tokens, sections, status) values (
-  'breeze-admin', 'Corevo Breeze Admin', '{"bransch":"generell","typ":"admin","stil":"clean","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":null,"secondary":null,"accent":null,"bg":null,"surface":null,"text":null,"muted":null},"font":{"heading":null,"body":null},"layout":{"max_width":null,"border_radius":null,"nav_position":"side"}}'::jsonb, array['dashboard']::text[], 'draft'
+  'breeze-admin', 'Corevo Breeze Admin', '{"bransch":"generell","typ":"admin","stil":"clean","licens":"fri","scope":"public"}'::jsonb, '{"color":{"primary":null,"secondary":null,"accent":null,"bg":null,"surface":null,"text":null,"muted":null},"font":{"heading":null,"body":null},"layout":{"max_width":null,"border_radius":null,"nav_position":"side"}}'::jsonb, '["dashboard"]'::jsonb, 'draft'
 )
 on conflict (key) do update set
   name = excluded.name,
