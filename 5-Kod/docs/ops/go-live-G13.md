@@ -47,7 +47,9 @@ Dashboard → Auth → Hooks → `public.custom_access_token_hook`. De 3 seed-ko
 ## Bygg-bugg (permanent fix rekommenderas)
 `opennextjs-cloudflare build` kraschar i mappen `firsör-sas` pga **`ö` i sökvägen** (esbuild edge-config
 ENOENT — INTE EPERM/Developer-Mode). Workaround denna gång: bygg från ASCII-kopia (`C:\tmp\kod`,
-`pnpm install` + build + `wrangler deploy`). **Permanent fix:** döp om repo-mappen ASCII (`firsör-sas`→`frisor-sas`).
+`pnpm install` + build + `node scripts/deploy-prod.mjs`). ⚠️ ALDRIG bare `wrangler deploy` mot prod —
+det detachar alla DB-drivna kund-domäner (`<slug>.corevo.se` → NXDOMAIN, se deploy-runbook §3.1 + fix-33).
+**Permanent fix:** döp om repo-mappen ASCII (`firsör-sas`→`frisor-sas`).
 
 ## Rollback
 - DNS: ta bort Custom Domains booking/demo → tjänst nere, POS opåverkad.
