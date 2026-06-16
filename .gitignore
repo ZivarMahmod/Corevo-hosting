@@ -28,6 +28,10 @@ node_modules/
 # Scratch / editor / build junk
 *.vsix
 *.log
+# goal-32: generated PROD deploy config (wrangler.jsonc routes ∪ DB customer
+# domains). Build artifact — produced by scripts/gen-deploy-config.mjs at deploy
+# time, never hand-edited, never committed. Source of truth = wrangler.jsonc.
+5-Kod/apps/web/wrangler.deploy.json
 2-Byggplan/.design-canvas.state.json
 4-Dokument-Underlag/01-acceptans/.design-canvas.state.json
 # temp goal-17 render-verify capture harness (deleted post-verify; ignore if regenerated)

@@ -16,6 +16,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['lib/**/*.test.ts'],
+    // goal-32: also cover the ops deploy-config generator (pure route-merge +
+    // fail-closed DB fetch live in scripts/*.mjs, gated like app logic).
+    include: ['lib/**/*.test.ts', 'scripts/**/*.test.mjs'],
   },
 })

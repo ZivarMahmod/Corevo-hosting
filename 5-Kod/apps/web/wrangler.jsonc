@@ -88,6 +88,16 @@
   // 🛑 NEVER widen this to *.corevo.se: that would capture the POS subdomains
   // (admin/kiosk/superadmin/www/dev) on this SHARED zone and break the POS. The
   // 'boka' branch is isolated and never touches a bare POS subdomain.
+  // goal-32 — this block holds ONLY the fixed infra hosts (the 3 back-office doors +
+  // the boka wildcard). PER-CUSTOMER storefront domains (<slug>.corevo.se) are NO
+  // LONGER hand-listed here: scripts/gen-deploy-config.mjs reads the active tenants
+  // from the DB and APPENDS one custom_domain route per salon, writing
+  // wrangler.deploy.json. PROD deploys run through scripts/deploy-prod.mjs (which
+  // uses that generated config) so every deploy RE-ASSERTS every customer domain
+  // and none can be detached. ⚠️ A bare `wrangler deploy` against THIS file would
+  // ship only the fixed hosts and detach all customer domains — never bare-deploy
+  // prod; always go through deploy-prod.mjs. (test-barber.corevo.se used to sit here
+  // as a temp manual line; it now arrives automatically from the DB.)
   "routes": [
     { "pattern": "booking.corevo.se", "custom_domain": true },
     { "pattern": "superbooking.corevo.se", "custom_domain": true },
