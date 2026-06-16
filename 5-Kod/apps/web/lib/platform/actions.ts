@@ -22,6 +22,7 @@ import {
   deleteCustomHostname,
   type DcvRecord,
 } from '@/lib/cloudflare/custom-hostnames'
+import { attachWorkerSubdomain } from '@/lib/cloudflare/worker-domains'
 import type { TenantBranding } from '@corevo/ui'
 
 export type ActionState = { error?: string; success?: string }
@@ -247,6 +248,20 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     actorId: user.id,
     meta: { slug, name, theme, booking_variant: bookingVariant, vertical_id: verticalKey },
   })
+
+  // goal-32 F2 — couple <slug>.corevo.se to the worker. The DURABLE coupling is
+  // mechanism (A): this tenant row is now in the DB, so scripts/gen-deploy-config.mjs
+  // includes <slug>.corevo.se in the NEXT deploy and every deploy after re-asserts it
+  // (it can never be detached). This call ALSO tries to attach it IMMEDIATELY (no
+  // deploy wait) via the Workers Domains API — but it is best-effort and DORMANT in
+  // prod (fail-closed without a scoped CF token + DOMAIN_AUTOATTACH_ENABLED). It must
+  // NEVER block or fail onboarding: a miss just means the domain goes live at the next
+  // deploy instead of instantly. Idempotent + add-only — never removes anything.
+  try {
+    await attachWorkerSubdomain(slug)
+  } catch {
+    // swallow — domain still rides the next deploy via the generator.
+  }
 
   revalidatePath('/platform')
   revalidatePath('/salonger')
