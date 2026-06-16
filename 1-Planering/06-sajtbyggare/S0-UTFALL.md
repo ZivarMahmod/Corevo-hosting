@@ -48,10 +48,11 @@ Tunn vertikal skiva genom hela stacken, bakom flagga:
 ## 3. F2 — Motor-jämförelse (på bevis)
 
 ### 3a. GrapesJS — bevisad round-trip
-Headless-harness (GrapesJS **0.23.2**) importerade samma reservations-snippet, redigerade en rubrik, exporterade:
+Headless-harness (GrapesJS **0.23.2**) importerade samma reservations-snippet, redigerade **text + bild**, exporterade:
 - `<corevo-module type="booking" pos="reservation">` **överlevde byte-intakt** (både `type` och `pos`).
 - Text-redigering ("Reservation" → "Reservera bord") **persisterade** i exporten.
-- Markören kvar efter edit. (Whitespace normaliserades 529→483 tecken — kosmetiskt.)
+- Bild-redigering (img-`src` bytt) **persisterade**. OBS: bild-src sätts via komponent-modellens `src`-property (i editorn = Asset Manager), INTE via rå `addAttributes` (det reflekterar inte för image-komponenten — ett API-fynd, ej en GrapesJS-begränsning).
+- Markören kvar efter BÅDA redigeringarna. (Whitespace normaliserades 529→483 tecken — kosmetiskt.)
 - Embedd i appen verifierad: `…/sajtbyggare-spike/editor` bygger + deployar rent (klient-chunk, `dynamic import`, `storageManager:false`).
 
 **Slutsats GrapesJS:** importerar vendor-HTML **troget och billigt** (hela F1-troheten kom gratis ur råa HTML), round-trippar redigeringar, och **bevarar modul-markören** så samma render-bro väver in modulen. Bygger på Backbone.js (därav `backbone-undo`-deprecation-varningarna — ofarliga).
@@ -140,7 +141,8 @@ Spiken vävde in **salongs**-varianten av bokningen (tjänst → personal → ti
 
 ## 9. Deploy / gates / rollback (för ops)
 - **Worker:** `bokningsplatformen-staging` (workers.dev, inga custom domains, `routes:[]` → isolerad). Senaste version-id: **`2bae50dd-cac9-4bd9-8754-a88fc37544bb`**. Rollback-kedja: F2 `90948346` → F1 `82564076` → skelett `6c8adebc`.
-- **Prod (`bokningsplatformen`) ORÖRD** — ingen prod-deploy gjord. `SAJTBYGGARE_ENABLED="false"` i top-level vars (flaggan finns, av). `booking.corevo.se/login` = 200 verifierad. Bad slug → 404 (notFound funkar → av-flagga = noll yta).
+- **Prod (`bokningsplatformen`) ORÖRD** — ingen prod-deploy gjord; no-prod-deploy ÄR beviset att POS/FreshCut/de-5-temana är byte-identiska. Verifierat live: `corevo.se` (POS) 200 · `booking.corevo.se/login` 200 + **0 console-fel** (Playwright). `SAJTBYGGARE_ENABLED="false"` i top-level vars (flaggan finns, av).
+- **Av-flagga = noll publik yta:** INFERENS (ej direkt observerbar utan förbjuden prod-deploy). Grund: bad-slug → 404 (observerat på staging → `notFound()` renderar korrekt) + prod-var `"false"` ⇒ `=== 'true'` är falskt ⇒ rutan `notFound()`:ar oavsett `undefined`/`false`.
 - **Gates gröna före varje push/deploy:** vitest 386/386 · typecheck 0 · lint 0 · opennext build PASS · grep-guard ren (ingen `localhost:3000`). `verify_render` 8/8 mot deployad yta.
 - **Bygg:** ENDAST via `C:\tmp\kod` (ö-path kraschar opennext). `.env.local`/`.next`/`.open-next` rensas före bygge (footgun).
 - **Commits (main):** F1 `31d06b7` · F2a `1049958` · F6 `e77be45`.
