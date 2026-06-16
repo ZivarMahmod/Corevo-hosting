@@ -148,6 +148,23 @@ Offline-vakt: listar aktiva tenants (samma källa som generatorn) + 3 fasta host
 HTTP-probar var och en (< 500 = lever), exit 1 vid drift. Körd grön (`ALL UP`) efter
 deploy #3 och #4. Ligger i `apps/web/scripts/` (bredvid generatorn den importerar).
 
+### Deploy-vägen wired (blockare-fix efter F1–F4)
+Standard- + CI-deploy går nu genom `deploy-prod.mjs` (annars hade nästa `pnpm deploy`
+/ CI-tag bare-deployat `wrangler.jsonc` och detachat ALLA kund-domäner — inkl
+test-barber som nu är DB-driven):
+- `package.json` `"deploy"` = `opennextjs-cloudflare build && node scripts/deploy-prod.mjs`.
+- `.github/workflows/deploy.yml` prod-steg = `pnpm --filter @corevo/web exec node
+  scripts/deploy-prod.mjs` (ej bare `wrangler deploy`).
+- ⚠️ **Ops-check (ej verifierbar i denna körning):** CI-`CLOUDFLARE_API_TOKEN` måste
+  ha **Zone DNS:Edit** på corevo.se utöver Workers Scripts/Routes:Edit, annars 403 när
+  wrangler ska SKAPA DNS-posten för en NY `<slug>.corevo.se`. Mina prod-deploys denna
+  körning gick via Zivars breda OAuth-token (funkade); CI-token-scopet är en pre-flight.
+
+### F3 inloggad render — ÄRLIGT KVAR
+`/domaner` route-gating (307) verifierad, men **inloggad render + 0 console-fel är EJ
+verifierad** i denna autonoma körning (inga platform-admin-creds / service-role-nyckel
+tillgänglig för att minta en session). Lämnas till Cowork/Nördens oberoende verify.
+
 ### Slutläge
 Prod-worker `f5348d21` (3 fasta + wildcard + test-barber). Filer: F2
 `lib/cloudflare/worker-domains.ts`(+test), `actions.ts`; F3 `lib/platform/
