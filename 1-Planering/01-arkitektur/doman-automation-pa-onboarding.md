@@ -227,3 +227,62 @@ onboarding, inloggad /domaner) — lita ej på "klart".
 ### Friska (ingen regression — verifierat samma mätning)
 `booking.corevo.se` 307 · `superbooking.corevo.se` 307 · `minbooking.corevo.se` 307 ·
 `corevo.se` (POS) 200. Endast test-barber är drabbad.
+
+---
+
+## UTFALL-FX2 — detach-vektorn sealad (fix-33, 2026-06-16)
+Rotorsaken (en deploy förbi `wrangler.deploy.json` detachar DB-drivna kund-domäner)
+hade **kod-vägen redan sealad** i commit `33d03cd` (`package.json` `deploy` +
+`.github/workflows/deploy.yml` prod-jobb → båda `node scripts/deploy-prod.mjs`).
+Grep-svep bekräftar: inga andra automatiska `wrangler deploy`-anrop mot prod;
+staging-jobbet (`deploy.yml:83`) är `--env staging` (workers.dev, `routes: []`) →
+kan inte detacha prod-domäner. **Kvarvarande öppen vektor = den DOKUMENTERADE
+människo-vägen:** `5-Kod/docs/ops/deploy-runbook.md` §3/§3.1 sa fortfarande
+"`wrangler deploy` (top-level)" för prod. **Nu rättat** (commit `4416502`): §3 prod =
+`deploy-prod.mjs`; §3.1 beskriver bare deploy som DET som detachar kund-domäner +
+mandaterar `check_domains` efter varje deploy. `check_domains` fångar redan NXDOMAIN
+(fetch-throw → `ok:false`) och 530 (status ≥ 500 → `ok:false`) → ingen ny guard
+byggd; luckan var operationell (den kördes inte efter den detachande deployen).
+
+## UTFALL-FX3 — re-attach + live, bevisat på riktig deploy (fix-33, 2026-06-16)
+Sanktionerad väg: ASCII-bygge (C:\tmp\kod, ö-path-workaround) → `node
+scripts/deploy-prod.mjs` (gen → invariant → dry-run → `opennextjs-cloudflare deploy
+-c wrangler.deploy.json`). Generatorn skrev 5 routes (3 fasta + boka-wildcard +
+`test-barber.corevo.se`).
+
+| Bevis (efter Deploy #1, worker `c1b7628e-52bc-4bc7-9c5f-7be6e50a618c`) | Värde |
+|---|---|
+| Deploy-triggers publicerade | `test-barber.corevo.se (custom domain)` + 3 fasta + `*.boka` |
+| CF worker-bindning (`GET /accounts/<id>/workers/domains`) | `test-barber.corevo.se → bokningsplatformen` ✓ |
+| CF DNS (`GET /zones/<id>/dns_records?name=test-barber.corevo.se`) | `AAAA 100:: (proxied)` ✓ (samma form som minbooking) |
+| HTTP `https://test-barber.corevo.se/` | **200**, `x-corevo-tenant-kind: tenant` |
+| `check_domains` | **ALL UP (exit 0)** |
+| 3 fasta + POS | booking 307 · superbooking 307 · minbooking 307 · `corevo.se` 200 |
+
+→ **Token-frågan avgjord empiriskt:** nuvarande OAuth (`zivar68`, `zone (read)`, ingen
+separat DNS-write) attachade kund-domänen **utan behörighetsfel**. H1 (token-scope)
+**motbevisad**; H2 (engångs-detach, re-attachbar) **bekräftad**. → **Ingen ny CF-token
+behövs, ingen Zivar-ops-uppgift.** (Workers Custom Domains hanterar sin DNS under
+Workers-produkten, inte via `dns_records:edit` — som g32demo redan antydde.)
+
+## UTFALL-FX4 — överlever en efterföljande deploy (det som NO-GO:ade) (fix-33, 2026-06-16)
+Deploy #2, worker `9ae34d87-620a-4aea-a481-d9faae1c0d66` (idempotent re-assert, inget
+"already exists"-fel): `test-barber.corevo.se` → **fortfarande 200** (`kind: tenant`).
+`check_domains` → **ALL UP (exit 0)** efter BÅDA deploys. 3 fasta + POS = 200/307 hela
+vägen genom båda. → Garantin "kund-domän blir live OCH överlever nästa deploy" är nu
+**bevisad på riktig prod-deploy** (inte motbevisad som i goal-32:s slutläge).
+
+## UTFALL-FX5 — rättat slutläge + citat
+- **Falskt i goal-32:** "Slutläge: prod-worker `f5348d21` (3 fasta + wildcard +
+  test-barber)" implicerade att test-barber var live — den var DETACHED (NXDOMAIN).
+  F1-tabellens "test-barber 200 genom 2 deploys" stämde vid den mätningen men höll
+  inte i `f5348d21`-slutläget. **Sant slutläge nu:** prod-worker
+  `9ae34d87-620a-4aea-a481-d9faae1c0d66`, `test-barber.corevo.se` = **200 live**,
+  re-attachad + överlevande deploy, bevisat ovan (FX3/FX4).
+- **"Phantom-sökväg":** granskaren flaggade citatet `deploy-runbook.md §3.1` som
+  saknad/fel. Verifierat: filen finns på `5-Kod/docs/ops/deploy-runbook.md` och §3.1
+  finns (rubrik "Safe deploy — deploys must never tear down domains/vars (FX-14)").
+  Citatet är korrekt; §3.1 är dessutom uppdaterad (FX2) så den nu pekar på
+  `deploy-prod.mjs` istället för bare deploy.
+- **Rollback om något fallerar:** `pnpm exec wrangler rollback c1b7628e` (FX3-läge) /
+  `9ae34d87` (FX4-läge) / `51cd64a2` (goal-32-baslinje). Inga DB-ändringar i fix-33.
