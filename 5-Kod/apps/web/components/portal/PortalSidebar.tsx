@@ -41,6 +41,7 @@ const NAV: Record<PortalRole, NavConfig> = {
       { href: '/drift-och-logg', label: 'Drift & logg', icon: 'alert' },
       { group: 'Plattform' },
       { href: '/integrationer', label: 'Integrationer', icon: 'layers' },
+      { href: '/domaner', label: 'Domäner', icon: 'link' },
       { href: '/roller', label: 'Roller', icon: 'shield' },
       { href: '/installningar', label: 'Inställningar', icon: 'settings' },
     ],
