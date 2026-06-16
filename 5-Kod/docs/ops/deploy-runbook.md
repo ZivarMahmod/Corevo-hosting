@@ -42,7 +42,13 @@ red-washed.
   migrations against staging, OpenNext build (staging env), `wrangler deploy --env staging`.
 - **Production** — only on a `v*` **tag** or manual dispatch → production, behind the
   `production` GitHub Environment approval gate. **Never auto from a PR** (DoD).
-  Migrations → prod, OpenNext build (prod env), `wrangler deploy` (top-level).
+  Migrations → prod, OpenNext build (prod env), then **`node scripts/deploy-prod.mjs`**
+  — NOT bare `wrangler deploy`. Since goal-32 the per-customer storefront domains
+  (`<slug>.corevo.se`) are DB-driven: `deploy-prod.mjs` reads the active tenants and
+  writes `wrangler.deploy.json` (3 fixed hosts + one `custom_domain` per salon), then
+  deploys THAT. A bare `wrangler deploy` ships only `wrangler.jsonc` (the 4 fixed
+  routes) and **detaches every customer domain** (binding + managed DNS removed →
+  NXDOMAIN). This is exactly what took `test-barber.corevo.se` down (fix-33). See §3.1.
 
 OpenNext bundling runs on Linux (live-blocker #3); the Windows EPERM-symlink bundle
 failure is irrelevant in CI.
@@ -57,15 +63,24 @@ exactly this: wrangler reported it would drop `demo.corevo.se` + `booking.corevo
 and `vars.NOTIFICATIONS_FROM` because they were dashboard-only.
 
 Rules:
-- **Source of truth = `wrangler.jsonc`.** The custom domains (`demo.corevo.se`,
-  `booking.corevo.se`) and public vars (`NOTIFICATIONS_FROM`, `R2_PUBLIC_BASE_URL`)
-  are now declared there, so a deploy **re-asserts** them and can no longer detach
-  them. Never reintroduce a dashboard-only domain/var — add it to `wrangler.jsonc`.
-- **Target the right env.** Top-level config = production worker `bokningsplatformen`
-  (`booking.corevo.se` + `demo.corevo.se`). A bare `wrangler deploy` targets it but
-  warns "no target environment specified"; the warning is benign — to silence it pass
-  `--env=""` (top-level) explicitly. Staging is `--env staging`
-  (`bokningsplatformen-staging`, *.workers.dev, **no** custom domains).
+- **Prod deploy path = `scripts/deploy-prod.mjs`, never bare `wrangler deploy`.**
+  Since goal-32 the source of truth is split: the **fixed infra hosts** (the 3
+  back-office doors + the `*.boka` wildcard) + public vars live in `wrangler.jsonc`;
+  the **per-customer storefront domains (`<slug>.corevo.se`) are DB-driven** —
+  `deploy-prod.mjs` reads active tenants and appends one `custom_domain` route per
+  salon into the generated `wrangler.deploy.json`, then deploys that. So every prod
+  deploy re-asserts BOTH the fixed hosts AND every live customer domain. A bare
+  `wrangler deploy` against `wrangler.jsonc` omits all customer domains and
+  **detaches them** (the fix-33 outage: `test-barber.corevo.se` → NXDOMAIN).
+- **Never reintroduce a dashboard-only domain/var** — fixed hosts/vars go in
+  `wrangler.jsonc`; customer domains come from the DB (a new salon row → next
+  `deploy-prod.mjs` attaches it). After any prod deploy, run
+  `node scripts/check_domains.mjs` (exit 0 = all live; it catches a detached/NXDOMAIN
+  customer domain that a bare deploy would have silently dropped).
+- **Target the right env.** Top-level config = production worker `bokningsplatformen`;
+  prod ships via `deploy-prod.mjs` (which uses `-c wrangler.deploy.json`). Staging is
+  `wrangler deploy --env staging` (`bokningsplatformen-staging`, *.workers.dev,
+  **no** custom domains, `routes: []` → cannot detach prod domains).
 - **Prefer CD** (§3): production from a `v*` tag, staging from `push:main`, both on
   Linux. A local deploy is a fallback.
 - **Local deploy (Windows, only if unavoidable):** OpenNext's build crashes on the
