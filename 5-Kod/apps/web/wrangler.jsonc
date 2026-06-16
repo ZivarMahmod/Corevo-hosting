@@ -45,7 +45,11 @@
     // goal-23: slår på DomänPanelens skriv-väg (custom hostnames via CF for SaaS).
     // Kräver worker-secrets CF_API_TOKEN + CF_ZONE_ID (+ CF_FALLBACK_ORIGIN) — satta
     // 2026-06-06. Av = sätt "false"/ta bort + redeploy → panelen spärras direkt.
-    "DOMAIN_PROVISIONING_ENABLED": "true"
+    "DOMAIN_PROVISIONING_ENABLED": "true",
+    // goal-31 (S0 sajtbyggare-spike): deploy-wide flag for the site-builder spike.
+    // OFF here = zero new public surface on PRODUCTION (the spike route notFound()s).
+    // ON only on the staging worker (env.staging.vars below). Read at call-time.
+    "SAJTBYGGARE_ENABLED": "false"
   },
   "assets": {
     "directory": ".open-next/assets",
@@ -104,8 +108,38 @@
   "env": {
     "staging": {
       "name": "bokningsplatformen-staging",
+      // Named envs do NOT inherit top-level bindings/vars → assets + vars are
+      // repeated here. Without `assets` the staging worker serves no static files
+      // (Next chunks + /sajtbyggare/restoran/* 404); without the public Supabase
+      // vars the anon client throws → 500 on every DB read (goal-31 spike needs
+      // real booking data). The anon key is browser-exposed by design (same as the
+      // top-level block), so plaintext here is correct; server secrets still go via
+      // `wrangler secret put --env staging`.
+      "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
       "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media" }],
-      "observability": { "enabled": true }
+      "observability": { "enabled": true },
+      // Staging is workers.dev-only. wrangler 4.95 INHERITS the top-level `routes`
+      // into named envs unless overridden → an EMPTY array stops staging from trying
+      // to claim *.boka.corevo.se/* (owned by the prod worker) and keeps it isolated.
+      "routes": [],
+      "vars": {
+        "NEXT_PUBLIC_SUPABASE_URL": "https://clylvowtowbtotrahuad.supabase.co",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNseWx2b3d0b3didG90cmFodWFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTg4MDcsImV4cCI6MjA5NTc3NDgwN30.ZSm3eMT-PxqfDPN2P584EVBlWfUwpeQ6gKOnKBvqxJU",
+        "NEXT_PUBLIC_ROOT_DOMAIN": "corevo.se",
+        "NEXT_PUBLIC_PLATFORM_HOST": "booking.corevo.se",
+        "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
+        "NEXT_PUBLIC_STAFF_HOST": "minbooking.corevo.se",
+        "NEXT_PUBLIC_RESERVED_SUBDOMAINS": "booking,admin,app,www,api,superadmin,kiosk,dev,odoo,superbooking,minbooking,boka",
+        "NEXT_PUBLIC_TENANT_HOST_SUFFIX": "boka.corevo.se",
+        "NEXT_PUBLIC_SITE_URL": "https://bokningsplatformen-staging.zivar68.workers.dev",
+        // Mirrored from top-level so wrangler doesn't warn about un-inherited vars and
+        // no code reads `undefined`. DomainPanel stays OFF on staging (no CF secrets here).
+        "NOTIFICATIONS_FROM": "Corevo <booking@corevo.se>",
+        "R2_PUBLIC_BASE_URL": "https://pub-8f440f10134347eeb2491f9712f5a6f5.r2.dev",
+        "DOMAIN_PROVISIONING_ENABLED": "false",
+        // goal-31 — spike ENABLED on staging only.
+        "SAJTBYGGARE_ENABLED": "true"
+      }
     }
   }
 }
