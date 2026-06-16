@@ -165,7 +165,10 @@ test-barber som nu är DB-driven):
 verifierad** i denna autonoma körning (inga platform-admin-creds / service-role-nyckel
 tillgänglig för att minta en session). Lämnas till Cowork/Nördens oberoende verify.
 
-### Slutläge
+### Slutläge (UPPDATERAS av fix-33 — se UTFALL-FX nedan)
+> ⚠️ Detta slutläge stämde INTE: `test-barber.corevo.se` var i själva verket
+> DETACHED (NXDOMAIN) — inte live. Rättat slutläge står i UTFALL-FX5.
+
 Prod-worker `f5348d21` (3 fasta + wildcard + test-barber). Filer: F2
 `lib/cloudflare/worker-domains.ts`(+test), `actions.ts`; F3 `lib/platform/
 domain-overview.ts`, `components/platform/DomainOverview.tsx`, `app/(platform)/
@@ -173,3 +176,54 @@ domaner/page.tsx`, nav; F4 `scripts/check_domains.mjs`; ops `docs/ops/
 doman-automation-ops.md`. Gates alla gröna (vitest 404 · tsc 0 · lint 0 · opennext
 build · grep-guard ren). Cowork/Nörden gör oberoende live-verify (två deploys, ny
 onboarding, inloggad /domaner) — lita ej på "klart".
+
+---
+
+## UTFALL-FX1 — diagnos av `test-barber.corevo.se`-felet (fix-33, 2026-06-16)
+
+### Vad som faktiskt felar (mätt, inte gissat)
+- **HTTP/DNS:** `curl https://test-barber.corevo.se/` → `Could not resolve host`
+  (**NXDOMAIN**) — inte ens 530. (Granskaren såg 530 tidigare; nu finns ingen
+  DNS alls. Båda är samma grundfel: domänen är inte kopplad.)
+- **DNS-post i `corevo.se`-zonen (CF API `GET /zones/<id>/dns_records?name=test-barber.corevo.se`):**
+  **tom (`[]`)** — ingen post finns. Kontrast: `minbooking.corevo.se` har den av
+  Workers hanterade posten `AAAA 100:: (proxied)` → den svarar 307 (frisk).
+- **Worker custom-domain-bindning (CF API `GET /accounts/<id>/workers/domains`):**
+  listar ENDAST `booking` / `superbooking` / `minbooking` på `corevo.se`-zonen
+  (service `bokningsplatformen`). **`test-barber.corevo.se` saknas helt** i listan.
+- **Slutsats:** test-barber har VARKEN worker-bindning ELLER DNS-post → domänen är
+  **DETACHED**. Den var live genom goal-32 deploy #1/#2 (probe 200), så den blev
+  **bortkopplad efteråt** — den skapades aldrig "halvt".
+
+### Varför detachad (rotorsak)
+- **test-barber är `status=active` i DB** (anon REST: `[{slug:"test-barber",status:"active"}]`),
+  så generatorn (`gen-deploy-config.mjs`) **tar med** dess `custom_domain`-route i
+  `wrangler.deploy.json`. Config-sidan är alltså korrekt — felet sitter i att en
+  deploy gått FÖRBI den genererade configen.
+- **Detach-vektorn = en deploy mot bara `wrangler.jsonc`** (som listar enbart de 4
+  fasta infra-routarna). En sådan deploy reconcilar workern till de 4 → **tar bort
+  test-barbers bindning + dess hanterade DNS-post** (FX-14-beteendet). Koden är NU
+  rutad genom `deploy-prod.mjs` (commit `33d03cd`: `package.json` + CI prod-jobb),
+  MEN **`docs/ops/deploy-runbook.md` §3/§3.1 dokumenterar fortfarande prod som bare
+  `wrangler deploy` (top-level)** → en människa som följer runbooken bare-deployar
+  och detachar varje DB-driven kund-domän. Det är den osealade vektorn (→ FX2).
+
+### Token-frågan (granskarens hypotes: deploy-token saknar `Zone DNS:Edit`)
+- **Wrangler-auth nu:** Zivars OAuth (`zivar68@gmail.com`). Scopes inkluderar
+  `workers (write)`, `workers_routes (write)`, `workers_scripts (write)`,
+  `ssl_certs (write)` — men zonen endast `zone (read)` (ingen separat DNS-write-grant).
+- **MEN diskriminerande bevis pekar bort från token-hypotesen:** en HELT NY
+  `<slug>.corevo.se` (`g32demo`) blev live genom EXAKT denna OAuth + `deploy-prod.mjs`
+  i goal-32 (deploy #3, 200 efter ~50s cert). Workers Custom Domains hanterar sin
+  DNS-post UNDER Workers-produkten (inte via en fristående `dns_records:edit`-grant),
+  så credentialet/vägen *kan* skapa worker-custom-domains. → **Lead-hypotes:
+  engångs-detach (H2), inte token-scope (H1).**
+- **ÖPPEN fråga (avgörs i FX3, inte i förväg):** lyckas `deploy-prod.mjs` RE-ATTACHa
+  test-barber med nuvarande token? **Om attach failar med behörighetsfel** → H1
+  bekräftas → batcha token-uppgift till Zivar (Workers Scripts:Edit + Zone DNS:Edit
+  + Zone:Read, ENBART `corevo.se`) och stanna med "kör om FX3–FX4 när token finns".
+  **Om attach lyckas** → H2 bekräftad, fixen = seala bare-deploy-doc-vektorn (FX2).
+
+### Friska (ingen regression — verifierat samma mätning)
+`booking.corevo.se` 307 · `superbooking.corevo.se` 307 · `minbooking.corevo.se` 307 ·
+`corevo.se` (POS) 200. Endast test-barber är drabbad.
