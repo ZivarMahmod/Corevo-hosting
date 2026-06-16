@@ -105,3 +105,54 @@ gitignored). Gates: vitest 395 · tsc 0 · lint 0 · opennext build · grep-guar
 `pnpm exec wrangler rollback 51cd64a2` (baslinje före F1) eller `d8f8be4c` (sista
 gröna). Mekanism av: ta bort generations-steget → bare deploy `wrangler.jsonc`
 (statiska routes). Inga DB-migrationer i F1.
+
+---
+
+## UTFALL F2–F4 (2026-06-16)
+
+### F2 — auto-attach vid onboarding (DB-durabelt + dormant instant-attach)
+- **Durabel koppling = mekanism (A):** `createTenant` (`lib/platform/actions.ts`)
+  skriver tenant-raden → generatorn tar med `<slug>.corevo.se` i nästa deploy +
+  varje deploy re-asserterar den. Ingen handpåläggning, inget CF-pillande.
+- **Instant-attach (no-deploy-wait):** `lib/cloudflare/worker-domains.ts` +
+  best-effort `attachWorkerSubdomain()` i onboarding. **Fail-closed + DORMANT i
+  prod** (no-op utan CF_API_TOKEN/CF_ACCOUNT_ID/CF_ZONE_ID + DOMAIN_AUTOATTACH_ENABLED).
+  Blockerar/failar ALDRIG onboarding. Token-scope för att slå på: Workers
+  Scripts:Edit + Zone DNS:Edit + Zone:Read (se `docs/ops/doman-automation-ops.md`).
+- **Ärligt läge:** live vid NÄSTA deploy (sanktionerad väg), INTE instant — instant
+  kräver ops-token som inte är satt.
+
+### F2/F4 deploy-bevis — NY onboarding → live → överlever → bara radering tar bort
+Throwaway-tenant `g32demo` (skapad i DB som onboarding gör):
+
+| Steg | Worker-version | g32demo.corevo.se | Övriga 4 + POS |
+|---|---|---|---|
+| Deploy #3 (g32demo aktiv) | `947664a6` | **200 UP** (cert via Universal SSL efter ~50s) | alla UP |
+| Deploy #4 (re-assert) | `3d8a3a22` | **200 UP** (överlevde deploy) | alla UP |
+| soft-delete g32demo → Deploy #5 | `f5348d21` | **530 — DETACHED** | alla UP, POS 200 |
+
+→ En NY salong blir live (utan handpåläggning), **överlever en efterföljande deploy**,
+och försvinner ENBART när den soft-deletas (manuell radering). En deploy ENSAM tog
+aldrig ner någon. `check_domains` = `ALL UP` efter #3 och #4. g32demo-raden städad
+(hard-delete) efteråt → DB tillbaka till baslinje (bara test-barber aktiv).
+
+### F3 — Domäner-vy i super-admin
+`/domaner` (platform-host, nav "Domäner"): de 3 fasta hostarna + varje aktiv salongs
+`<slug>.corevo.se` med ärlig status-pill (`live`/`cert väntar` via CF-läsning när
+token finns, annars `managed` = re-asserteras vid deploy). Render-verify: `/domaner`
+→ **307** (route finns + platform-gated, ej 404/500). Inloggad render = oberoende
+verify (inga platform-creds i denna körning).
+
+### F4 — `scripts/check_domains.mjs`
+Offline-vakt: listar aktiva tenants (samma källa som generatorn) + 3 fasta hosts →
+HTTP-probar var och en (< 500 = lever), exit 1 vid drift. Körd grön (`ALL UP`) efter
+deploy #3 och #4. Ligger i `apps/web/scripts/` (bredvid generatorn den importerar).
+
+### Slutläge
+Prod-worker `f5348d21` (3 fasta + wildcard + test-barber). Filer: F2
+`lib/cloudflare/worker-domains.ts`(+test), `actions.ts`; F3 `lib/platform/
+domain-overview.ts`, `components/platform/DomainOverview.tsx`, `app/(platform)/
+domaner/page.tsx`, nav; F4 `scripts/check_domains.mjs`; ops `docs/ops/
+doman-automation-ops.md`. Gates alla gröna (vitest 404 · tsc 0 · lint 0 · opennext
+build · grep-guard ren). Cowork/Nörden gör oberoende live-verify (två deploys, ny
+onboarding, inloggad /domaner) — lita ej på "klart".
