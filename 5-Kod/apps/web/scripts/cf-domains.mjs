@@ -77,3 +77,20 @@ export async function attachWorkerDomain(request, { accountId, hostname, service
     zone_id: zoneId,
   })
 }
+
+/**
+ * Deploy publish-gate (fix-35 review): a REAL publish must be refused unless the
+ * live⊆file domain guard can run — and that guard needs a CF token. Without one, a
+ * publish could reconcile routes to the committed file and detach a live-but-
+ * uncommitted domain (FX-14). Returns a blocking reason string, or null if publishing
+ * is allowed (token present, or an explicit ALLOW_NO_CF_TOKEN=1 risk-accept).
+ */
+export function publishGateReason(env = process.env) {
+  if (env.CLOUDFLARE_API_TOKEN) return null
+  if (env.ALLOW_NO_CF_TOKEN === '1') return null
+  return (
+    'CLOUDFLARE_API_TOKEN not set — the live⊆file domain guard could not run, so a real ' +
+    'deploy could detach a live-but-uncommitted domain (FX-14). Set the token, or set ' +
+    'ALLOW_NO_CF_TOKEN=1 to override (you accept the detach risk).'
+  )
+}

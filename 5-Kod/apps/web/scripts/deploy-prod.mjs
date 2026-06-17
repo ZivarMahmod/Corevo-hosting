@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
 import { readCustomDomainPatterns, readAllRoutePatterns, REQUIRED_FIXED_ROUTES } from './domain-routes.mjs'
+import { publishGateReason } from './cf-domains.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appDir = resolve(here, '..')
@@ -66,15 +67,11 @@ if (dryRunOnly) {
 
 // 3.5 PUBLISH GATE — the validator's live⊆file guard only runs WITH a CF token; a real
 //     publish without it could reconcile routes to the committed file and detach a
-//     live-but-uncommitted domain (the FX-14 hole on the LOCAL deploy path). Refuse to
-//     publish without the token unless an explicit opt-out accepts the risk. Dry-run is
+//     live-but-uncommitted domain (the FX-14 hole on the LOCAL deploy path). Dry-run is
 //     exempt above — it never publishes.
-if (!process.env.CLOUDFLARE_API_TOKEN && process.env.ALLOW_NO_CF_TOKEN !== '1') {
-  console.error(
-    '\n✖ CLOUDFLARE_API_TOKEN not set — the live⊆file domain guard could not run, so a real ' +
-      'deploy could detach a live-but-uncommitted domain (FX-14). Set the token, or set ' +
-      'ALLOW_NO_CF_TOKEN=1 to override (you accept the detach risk). Aborting before publish.',
-  )
+const gateReason = publishGateReason(process.env)
+if (gateReason) {
+  console.error(`\n✖ ${gateReason} Aborting before publish.`)
   process.exit(1)
 }
 

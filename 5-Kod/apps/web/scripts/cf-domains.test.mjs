@@ -5,6 +5,7 @@ import {
   resolveAccountId,
   listWorkerDomains,
   attachWorkerDomain,
+  publishGateReason,
 } from './cf-domains.mjs'
 
 const fakeFetch = (status, json) => async () => ({
@@ -88,6 +89,21 @@ describe('listWorkerDomains', () => {
     expect(hosts).toEqual(['booking.corevo.se', 'test-barber.corevo.se'])
     expect(hosts).not.toContain('sadaqahsweden.se') // other worker
     expect(hosts).not.toContain('staging-thing.corevo.se') // non-prod env
+  })
+})
+
+describe('publishGateReason (deploy publish-gate)', () => {
+  it('ALLOWS publish (null) when a token is present', () => {
+    expect(publishGateReason({ CLOUDFLARE_API_TOKEN: 'tok' })).toBeNull()
+  })
+  it('ALLOWS publish (null) on explicit ALLOW_NO_CF_TOKEN=1 risk-accept', () => {
+    expect(publishGateReason({ ALLOW_NO_CF_TOKEN: '1' })).toBeNull()
+  })
+  it('BLOCKS publish (reason string) when no token + no override', () => {
+    expect(publishGateReason({})).toMatch(/CLOUDFLARE_API_TOKEN not set/)
+  })
+  it('does NOT accept a non-"1" override value', () => {
+    expect(publishGateReason({ ALLOW_NO_CF_TOKEN: 'true' })).toMatch(/FX-14/)
   })
 })
 
