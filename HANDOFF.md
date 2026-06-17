@@ -2,6 +2,19 @@
 
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
+## 🟢 2026-06-18 (sent, Cowork) — goal-37 (S2) HELA EDITORN byggd + STAGING-RENDER-BEVISAD · ENDA KVAR = Zivars login-klick-verify
+**Fortsättning på dagens session ("bygg vidare bli klar" + använd workflows). S2-editorn nu FULLT byggd + mekaniskt staging-bevisad. Flytta goal-37 → klart EFTER en 5-min inloggad klick-verify (nedan).**
+- **Byggt (commits `bd4cda0` skal + `5a0f75f` granskar-fix + `f9d3b98` spar-test, main opushat):**
+  - `app/(admin)/admin/sajtbyggare/page.tsx` — admin-rutt, flag+`requirePortal('admin')`-gatad, mappar regioner+bildbibliotek → `SiteEditor`.
+  - `components/admin/SiteEditor.tsx` — editor-skal: sidopanel (text→textarea, bild/logo→MediaPicker över redan-laddade assets (ingen ny R2-uppladdare), färg→color+hex, font→select) + debouncad iframe-preview + Spara→`saveSiteContent`. (TipTap EJ tillagt — nät-dep undveks; textarea = v0.)
+  - `app/sajtbyggare-spike/preview/[slug]/page.tsx` — **draft-preview (LÅST B):** RIKTIGA `SalviaLayout` + chrome (Nav/FooterFull/BookingProvider/injectTenantTokens) med utkast via query, SAMMA origin, ALDRIG iframe av live-URL. Återanvänder den testade sanerande `applySiteContentEdits`-kärnan.
+  - `lib/sajtbyggare/editor/` draft-url + overlay-model; `save-site-content.test.ts` (spar-wrappern exekverad).
+- **BYGGD VIA WORKFLOWS (ultracode):** understand-svep (5 läsare) → build-svep (3 fil-författare, låsta kontrakt) → adversariell review-svep (4 linser + verify). Review fann 4 → 3 fixade (`5a0f75f`: indexed-clear `[null]`-bugg, preview booking-gate + customOverride-CSS), 1 pre-existing (closing.image renderas ej i SalviaLayout — dokumenterat, ej regression).
+- **STAGING-RENDER-BEVIS (mekaniskt 0 FAIL):** worker `bokningsplatformen-staging` v **`49a50905-4a94-455f-8408-947fab08f1d8`** (`SAJTBYGGARE_ENABLED="true"` ENDAST env.staging; **prod top-level fortsatt `"false"`, prod ORÖRD**). opennext build PASS · tsc 0 · vitest **612**. curl mot `test-barber` (enda aktiva salvia-tenant): draft `hero.title` → renderas i riktiga `<h1>` (200) · `<script>alert(1)</script>` → **strippad live på Workers**, renderad `<h1>KVARTEXT9</h1>`, draft-färg applicerad, 0 exekverbart script · `corevo.se`+`booking.corevo.se` = 200 (ingen regression) · staging `/admin/sajtbyggare` = 307→login (auth-gatad). Detaljer: `5-Kod/docs/sajtbyggare-editor.md` §STAGING-RENDER-BEVIS.
+- **⛔ goal-37 EJ flyttad till klart/ (ärligt) — ENDA KVAR = Zivars inloggade klick-verify:** logga in på `bokningsplatformen-staging…workers.dev` som test-barber-admin → `/admin/sajtbyggare` → klicka kontroll → ändra → "Spara" → ladda om storefront → nytt värde UTAN deploy. Spar-LOGIKEN är bevisad (wrapper-test 9 + draft-render live); den interaktiva UI-klick-loopen + prod-revalidate kräver browser-session (samma slags verify som goal-17/20). **EFTER → flytta goal-37 → `2-Byggplan/klart/02-ytor/sajtbyggare/` → avblockar goal-38.**
+- **goal-38 (S3) — fortsatt blockerad** tills 37 i klart/. Mount/prop/spar-kontraktet nu KONKRET i doc:en (förkravs-gaten mött) → S3 "bara monterar" `SiteEditor` + `saveSiteContent` (plus en plattforms-scopad spar-variant för annan-tenant, se doc).
+- **goal-36 — oförändrad PROVA-LÄGE** (4 verifierade; full grind väntar "kör 116").
+
 ## 🟢 2026-06-18 (Cowork, ultracode/lfg) — goal-37 (S2) KÄRNOR byggda+verifierade · skal+staging-bevis KVAR · 38 blockerad · 36 i PROVA-LÄGE
 **Mål denna körning: avklara goal 36-37-38 + flytta klart→klart. Utfall (ärligt): S2:s mekaniskt-bevisbara kärnor klara; resten av S2 = React-skal + staging-render-bevis (deploy-gatat, separat skiva). 38 förblir blockerad. 36 förblir gated. Inget nytt att flytta till klart.**
 - **goal-37 (S2-editor) — 4 PURE kärnor BYGGDA + VERIFIERADE (tsc 0 · vitest 594/594, 63 nya · prod ORÖRD, flagga av):**
