@@ -14,6 +14,9 @@ export default defineConfig({
       'server-only': fileURLToPath(new URL('./test/server-only-stub.ts', import.meta.url)),
     },
   },
+  // Compile component JSX with the automatic runtime (matches Next/react-jsx) so
+  // .tsx render tests (renderToStaticMarkup) don't need an explicit React import.
+  esbuild: { jsx: 'automatic' },
   test: {
     environment: 'node',
     // goal-32: also cover the ops deploy-config generator (pure route-merge +
