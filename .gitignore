@@ -25,6 +25,12 @@
 # (no real install lives here — the workspace install is under 5-Kod). Standard.
 node_modules/
 
+# ce-optimize restoran harness — local measurement artifacts (never committed):
+# the merged metrics snapshot + the dual fidelity screenshots.
+5-Kod/apps/web/lib/sajtbyggare/_optimize/.last-metrics.json
+4-Dokument-Underlag/skarmdumpar-bygg/restoran-ours.png
+4-Dokument-Underlag/skarmdumpar-bygg/restoran-vendor.png
+
 # Scratch / editor / build junk
 *.vsix
 *.log
