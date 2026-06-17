@@ -10,5 +10,12 @@
     "incremental": true
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next", ".open-next", "scripts"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    ".open-next",
+    "scripts",
+    "lib/sajtbyggare/_optimize/**",
+    "**/*.test.ts"
+  ]
 }
