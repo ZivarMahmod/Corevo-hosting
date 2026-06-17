@@ -43,8 +43,8 @@ create table if not exists public.site_content_vertical_defaults (
   unique (vertical_id, template_key, region_key)
 );
 
-create index if not exists site_content_vertical_defaults_lookup_idx
-  on public.site_content_vertical_defaults (vertical_id, template_key);
+-- No separate lookup index: the F3 resolver reads by (vertical_id, template_key),
+-- which Postgres serves from the leftmost prefix of the unique index above.
 
 -- ── updated_at trigger (public.set_updated_at from 0001; mirror 0026) ──────────
 drop trigger if exists trg_site_content_vertical_defaults_updated_at

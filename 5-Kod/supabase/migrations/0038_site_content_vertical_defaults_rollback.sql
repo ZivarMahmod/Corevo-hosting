@@ -19,6 +19,4 @@ drop policy if exists site_content_vertical_defaults_admin_write
 drop trigger if exists trg_site_content_vertical_defaults_updated_at
   on public.site_content_vertical_defaults;
 
-drop index if exists public.site_content_vertical_defaults_lookup_idx;
-
 drop table if exists public.site_content_vertical_defaults cascade;
