@@ -29,6 +29,41 @@
 | lib/sajtbyggare/manifest/{carserv,drivin,klinik,restoran}.ts | SWEEP-DEFER | goal-36 100-templates aktivt revir; konsumeras av *.proof.test.ts, route-wiring in-flight hos sweepen | RÖR EJ (sweepens) |
 | lib/sajtbyggare/templates/{carserv,drivin,klinik}.ts | SWEEP-DEFER | dito (round-trip-proofs 59d00a3) | RÖR EJ (sweepens) |
 
+## Coverage-komplettering (24 filer som FAS 1-fan-out missade — alla kopplad)
+
+Coverage-kontroll (glob 132 komponenter + 109 app-filer mot denna fil) visade att stora domän-agenter (admin "82", platform "57") samplade och hoppade 24 filer. Klassade här → **0 nya lösa noder** (alla kopplad). Totalkoll: 241 komponent+app-filer ALLA klassade.
+
+**1 riktig komponent — kopplad:**
+- `components/admin/OpenSiteLink.tsx` — **kopplad**. "Se din sida"-länk (öppnar tenant-storefront i ny flik). Importeras+används av `app/(admin)/admin/page.tsx:161` + `app/(admin)/admin/varumarke/page.tsx:68`. Ingen DB (presentational länk). Röd tråd: n/a (extern länk).
+
+**23 Next.js-konventionsfiler — kopplad (ramverks-scaffolding, ingen DB, ingen lös-nod-risk):**
+Auto-wirade av Next routing efter filplats. error.tsx = error-boundary, loading.tsx = loading-skeleton, layout.tsx = route-layout, not-found/global-error = root-fallbacks.
+```
+app/layout.tsx
+app/not-found.tsx
+app/global-error.tsx
+app/(platform)/drift-och-logg/error.tsx
+app/(platform)/drift-och-logg/loading.tsx
+app/(platform)/fakturering/error.tsx
+app/(platform)/fakturering/loading.tsx
+app/(platform)/installningar/error.tsx
+app/(platform)/installningar/loading.tsx
+app/(platform)/integrationer/error.tsx
+app/(platform)/integrationer/loading.tsx
+app/(platform)/kunder/error.tsx
+app/(platform)/kunder/loading.tsx
+app/(platform)/personal-plattform/error.tsx
+app/(platform)/personal-plattform/loading.tsx
+app/(platform)/platform/error.tsx
+app/(platform)/platform/loading.tsx
+app/(platform)/roller/error.tsx
+app/(platform)/roller/loading.tsx
+app/(platform)/salonger/error.tsx
+app/(platform)/salonger/loading.tsx
+app/(platform)/salonger/[id]/error.tsx
+app/(platform)/salonger/[id]/loading.tsx
+```
+
 ---
 
 ## FAS 2 ARBETSLISTA — lösa noder (sorterade på domän)
