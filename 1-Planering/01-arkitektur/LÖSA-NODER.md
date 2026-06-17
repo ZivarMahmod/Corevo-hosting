@@ -7,6 +7,30 @@
 - Filer kartlagda: **376** · kopplad: 337 · AVSIKTLIG: 22 · **lösa noder (FAS 2-arbetslista): 18**
 - Domäner: brand(0 lösa) · personal(4 lösa) · portal(1 lösa) · storefront(1 lösa) · realtime(0 lösa) · admin (salongsadmin) — components/admin, app/(admin), lib/admin(3 lösa) · platform(0 lösa) · kund(2 lösa) · booking(0 lösa) · sajtbyggare(6 lösa)
 
+## FAS 2 BESLUT (verifierat 2026-06-17, 6 adversariella cluster-agenter + egen grep)
+
+**Utfall: WIRE 0 · SUPERSEDED 9 · FUTURE-INTENTIONAL 2 · SWEEP-DEFER 7.**
+
+**Röda tråden är i grunden frisk.** Ingen av de 18 "lösa noderna" ska wire:as — alla är build-once-döda dubbletter (vars exakta action+DB-tråd redan sluts av ett wired syskon på samma sida), avsiktligt vilande, eller sweepens (goal-36) aktiva revir. Att wire:a någon = dubblerad UI/dubblerad action (regression) el. att riva upp ett medvetet beslut. **0 schema-mismatch → inga migrationer behövs (DB↔kod redan i synk).** Verktygsval: `@deprecated`-flagg i koden på de 9 dubbletterna (build-once: ej raderade); 2 vilande + 7 sweep orörda.
+
+| Fil | Beslut | Ersatt av / motiv | Åtgärd |
+|---|---|---|---|
+| components/admin/BookingStatusControl.tsx | SUPERSEDED | BookingsClient status-Drawer (/admin/bokningar, ALLOWED_FROM-guards + Toast); denna = äldre oguardad `<select>` | @deprecated-flagg, behåll |
+| components/admin/ScheduleManager.tsx | SUPERSEDED | SlotManager WorkingHoursEditor (/admin/scheman, identiska actions) | @deprecated-flagg, behåll |
+| components/admin/StaffPicker.tsx | SUPERSEDED | SlotManager StaffChips (§4.5-kanon, chip- ej dropdown-nav) | @deprecated-flagg, behåll |
+| components/kund/BookingList.tsx | SUPERSEDED | AccountBookings (worldade /konto §4.8) | @deprecated-flagg, behåll |
+| components/kund/LoyaltyCard.tsx | SUPERSEDED | AccountLoyalty (/konto §4.8); stamkund-band → StylistCard | @deprecated-flagg, behåll |
+| components/personal/WorkingHoursManager.tsx | SUPERSEDED | ScheduleGrid (/personal/arbetstider) | @deprecated-flagg, behåll |
+| components/personal/TimeOffManager.tsx | SUPERSEDED | AbsencePanel (/personal/franvaro, samma addTimeOff/deleteTimeOff) | @deprecated-flagg, behåll |
+| components/personal/DeleteRowButton.tsx | SUPERSEDED* | *delad primitiv; enda konsument (TimeOffManager) deprecated → f.n. oanvänd, EJ ersatt (DeleteAbsenceButton speglar denna) | NOTE-flagg, behåll som återanvändbar |
+| components/storefront/GallerySection.tsx | SUPERSEDED | layoutens galleri-band (SalviaLayout sfGalleryBand → `<Gallery>`, backat av branding.gallery_images) | @deprecated-flagg, behåll |
+| lib/personal/data-gated.ts | FUTURE-INTENTIONAL | cadence/drink saknar backande kolumn (goal-17 NEVER-FAKE); args reserverade för framtida migration | orörd (redan dokumenterad) |
+| lib/auth/mfa.ts | FUTURE-INTENTIONAL | ingen 2FA-enrollment-UI byggd ännu | orörd (redan dokumenterad) |
+| lib/sajtbyggare/manifest/{carserv,drivin,klinik,restoran}.ts | SWEEP-DEFER | goal-36 100-templates aktivt revir; konsumeras av *.proof.test.ts, route-wiring in-flight hos sweepen | RÖR EJ (sweepens) |
+| lib/sajtbyggare/templates/{carserv,drivin,klinik}.ts | SWEEP-DEFER | dito (round-trip-proofs 59d00a3) | RÖR EJ (sweepens) |
+
+---
+
 ## FAS 2 ARBETSLISTA — lösa noder (sorterade på domän)
 
 | Domän | Fil | Klass | Conf | Åtgärd (FAS 2) |

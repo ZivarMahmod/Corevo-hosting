@@ -6,7 +6,13 @@ import styles from './personal.module.css'
 
 type DeleteAction = (prev: ActionState, formData: FormData) => Promise<ActionState>
 
-/** Generic delete-one-row button backed by a server action (working_hours / time_off). */
+/**
+ * Generic delete-one-row button backed by a server action (working_hours / time_off).
+ *
+ * NOTE (goal-46 audit 2026-06-17): delad återanvändbar primitiv. Enda nuvarande
+ * konsument (TimeOffManager) är deprecated → f.n. oanvänd, MEN ej ersatt — behålls
+ * som delad util (DeleteAbsenceButton speglar denna, inte tvärtom). Build-once.
+ */
 export function DeleteRowButton({
   id,
   action,

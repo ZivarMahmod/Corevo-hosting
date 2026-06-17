@@ -52,8 +52,9 @@ FAS 2 klar → ce-code-review (mode:agent) → applicera fixar → residual-hand
 Varje av 132+109 klassad · `LÖSA-NODER.md` = 0 oavsiktliga lösa noder · DB↔kod i synk · `pnpm build` grön + oberoende verify ren per domän · branch redo att merge:a.
 
 ## Status-logg (uppdateras löpande — resumabel)
-- [x] Setup: worktree, schema-snapshot, deps installerade, plan skriven.
-- [ ] FAS 1 MAP (10 domäner) → LÖSA-NODER.md
-- [ ] FAS 2 OPTIMERA (sweep-fria → sweep-domäner)
-- [ ] Migrationer (om mismatch)
+- [x] Setup: worktree, schema-snapshot, deps installerade, plan skriven. (commit 48952a9)
+- [x] FAS 1 MAP (10 domäner) → LÖSA-NODER.md. **376 filer · 337 kopplad · 22 AVSIKTLIG · 18 lösa (alla "oanvänd", 0 död-knapp/schema-mismatch).** (commit 2ee85e7)
+- [~] FAS 2 verify+decide (6 cluster-agenter, read-only) — per orphan: WIRE/SUPERSEDED/FUTURE/SWEEP-DEFER. 7 sajtbyggare = sweep-defer. 11 + mfa under bedömning.
+- [ ] FAS 2 implementera WIRE-beslut (sweep-fria domäner, build-gate per batch)
+- [ ] Migrationer (om mismatch — inga hittade i FAS 1)
 - [ ] lfg-svans (review → PR → CI)

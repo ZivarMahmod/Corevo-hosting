@@ -7,6 +7,12 @@ import { WEEKDAYS_SV } from '@/lib/admin/format'
 import { LocationSelect } from './LocationSelect'
 import styles from './admin.module.css'
 
+/**
+ * @deprecated goal-46 audit 2026-06-17: oanvänd build-once-dubblett. Ersatt av
+ * SlotManager.tsx (WorkingHoursEditor på /admin/scheman — identiska
+ * addStaffWorkingHours/deleteStaffWorkingHours, samma working_hours-tabell).
+ * Behålls (build-once-never-delete), ej raderad.
+ */
 export function ScheduleManager({
   staffId,
   rows,

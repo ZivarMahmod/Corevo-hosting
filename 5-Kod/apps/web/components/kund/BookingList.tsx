@@ -9,6 +9,10 @@ function badgeClass(status: string): string {
 }
 
 /**
+ * @deprecated goal-46 audit 2026-06-17: oanvänd build-once-dubblett. Ersatt av
+ * AccountBookings (components/kund/AccountBookings.tsx) på worldade /konto §4.8,
+ * samma KundBooking-källa. Behålls (build-once-never-delete), ej raderad.
+ *
  * Presentational list of a customer's bookings. Each row links to its detail.
  * When `emptyCta` is set the empty state offers a primary "Boka tid" action,
  * which is the meaningful next step for the upcoming list.
