@@ -17,8 +17,9 @@
 // shared _optimize/proof-kit.ts spine.
 
 import { describe, expect, it } from 'vitest'
-import { createElement } from 'react'
+import { createElement, Fragment } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { renderTemplate } from '../render-bridge'
 import { CARSERV_PAGE_HTML } from './carserv'
 import { CARSERV_REGION_MANIFEST } from '../manifest/carserv'
 import { resolveSiteContent } from '../resolve'
@@ -238,5 +239,32 @@ describe('carserv MarkedRegions DOM render-proof', () => {
 
   it('about.title → Universal (theme) layer, provenance standard', () => {
     expect(html).toMatch(/data-editable="about\.title"[^>]*data-provenance="standard"[^>]*data-source="universal"/)
+  })
+})
+
+// ── 6. RENDER-BRON round-trip: PAGE_HTML actually parses + the marker swaps ───
+// Proves the verbatim vendor HTML parses through html-react-parser without
+// throwing AND that the booking marker is REPLACED by a live module node (not
+// degraded to an orphan <span data-corevo-module-missing>). The "render-bevisa" gate.
+describe('carserv render-bron round-trip', () => {
+  const out = renderToStaticMarkup(
+    createElement(
+      Fragment,
+      null,
+      renderTemplate(CARSERV_PAGE_HTML, {
+        booking: createElement('div', { 'data-testid': 'booking-mounted' }),
+      }),
+    ),
+  )
+
+  it('parses the full vendor HTML through the render-bridge (body content renders)', () => {
+    expect(out).toContain('Book For A Service')
+    expect(out).toContain('HTML Codex') // footer credit near the end → whole doc parsed
+  })
+
+  it('swaps the booking marker for the live module (no orphaned/missing marker)', () => {
+    expect(out).toContain('data-testid="booking-mounted"')
+    expect(out).not.toContain('data-corevo-module-missing')
+    expect(out).not.toContain('<corevo-module')
   })
 })

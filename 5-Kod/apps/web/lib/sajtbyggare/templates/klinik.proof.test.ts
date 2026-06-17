@@ -16,8 +16,9 @@
 // shared _optimize/proof-kit.ts spine.
 
 import { describe, expect, it } from 'vitest'
-import { createElement } from 'react'
+import { createElement, Fragment } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { renderTemplate } from '../render-bridge'
 import { KLINIK_PAGE_HTML } from './klinik'
 import { KLINIK_REGION_MANIFEST } from '../manifest/klinik'
 import { resolveSiteContent } from '../resolve'
@@ -192,5 +193,33 @@ describe('klinik MarkedRegions DOM render-proof', () => {
 
   it('about.title → Universal (theme) layer, provenance standard', () => {
     expect(html).toMatch(/data-editable="about\.title"[^>]*data-provenance="standard"[^>]*data-source="universal"/)
+  })
+})
+
+// ── 6. RENDER-BRON round-trip: PAGE_HTML actually parses + the marker swaps ───
+// The string/manifest proofs above never feed PAGE_HTML through the render-bridge.
+// This is the "render-bevisa" gate: prove the verbatim vendor HTML parses through
+// html-react-parser without throwing AND that the booking marker is REPLACED by a
+// live module node (not degraded to an orphan <span data-corevo-module-missing>).
+describe('klinik render-bron round-trip', () => {
+  const out = renderToStaticMarkup(
+    createElement(
+      Fragment,
+      null,
+      renderTemplate(KLINIK_PAGE_HTML, {
+        booking: createElement('div', { 'data-testid': 'booking-mounted' }),
+      }),
+    ),
+  )
+
+  it('parses the full vendor HTML through the render-bridge (body content renders)', () => {
+    expect(out).toContain('Good Health Is The Root Of All Heppiness')
+    expect(out).toContain('HTML Codex') // footer credit near the end → whole doc parsed
+  })
+
+  it('swaps the booking marker for the live module (no orphaned/missing marker)', () => {
+    expect(out).toContain('data-testid="booking-mounted"')
+    expect(out).not.toContain('data-corevo-module-missing')
+    expect(out).not.toContain('<corevo-module')
   })
 })
