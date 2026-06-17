@@ -1,0 +1,186 @@
+# ce-optimize spec — Sajtbyggare PILOT: converge the per-template authoring
+# pattern on ONE template (restoran) so the winning pattern can drive the
+# goal-36 100-template build loop. NOT a build loop — a convergence loop.
+#
+# Decided interactively with Zivar 2026-06-17:
+#  - Target  = ONE pilot template (restoran), not all 100.
+#  - Metric  = visual-fidelity LLM-as-judge (the quality gradient render-proof
+#              is blind to: "looks close / module in wrong spot" passes
+#              structurally but fails the exact-copy law — the 18h-burn).
+#  - Referent= editable-EXACT-copy of the template's OWN vendor original
+#              (NOT a locked copy — must stay editable + weave Corevo modules
+#              in at the right places). Module surfaces judged vs design-kanon.
+#  - Hard mechanical gates keep the project's "never ögonmått" law intact:
+#    exact tokens + render-proof must pass BEFORE the judge ever runs.
+
+name: sajtbyggare-pilot-fidelity
+description: >
+  Converge the best authoring pattern for ONE sajtbyggare pilot template
+  (restoran) — maximal editable-exact-copy fidelity to its vendor original +
+  correct Corevo module integration/placement — gated by mechanical render-proof
+  and exact-token checks. Output = a proven pattern + reusable fidelity harness
+  to hand to the goal-36 build loop.
+
+metric:
+  primary:
+    type: judge
+    name: mean_fidelity
+    direction: maximize
+    # target left null on a first run — converge, don't chase a number blindly.
+
+  # Cheap boolean checks run FIRST. Any fail -> outcome=degenerate, judge skipped
+  # (saves money) AND the project's mechanical-exactness law is enforced here, not
+  # by eyeball. The judge only ever scores work that already passed these.
+  degenerate_gates:
+    - name: render_proof_failures
+      check: "== 0"
+      description: Restoran render-proof (vitest, FIXED/immutable) must be 0 FAIL.
+    - name: exact_token_mismatches
+      check: "== 0"
+      description: Every color/font token must equal the vendor source EXACTLY (no re-härled values).
+    - name: unresolved_module_markers
+      check: "== 0"
+      description: No <corevo-module> marker may degrade to the inert placeholder (typo'd/missing module).
+    - name: editable_regions
+      check: ">= 1"
+      description: Template must expose >=1 data-editable region (editable-copy, not a locked copy).
+    - name: modules_woven
+      check: ">= 1"
+      description: At least the booking module must be woven in at a real marker position.
+
+  diagnostics:
+    - name: section_coverage          # vendor top-level sections reproduced / total (0..1)
+    - name: editable_regions          # how many editable regions (also a gate; logged for trend)
+    - name: modules_woven             # how many modules woven (also a gate; logged for trend)
+    - name: dom_node_count            # rendered DOM size — sanity vs degenerate/empty renders
+    - name: missing_assets            # template asset refs that 404 (font/icon/img gaps, e.g. CSP-blocked)
+
+  judge:
+    # Vision judge: compares a screenshot of OUR render-bridge output against a
+    # screenshot of the vendor original (both rendered by the SAME engine in the
+    # harness — apples-to-apples, no stale preview images). Module placement +
+    # integration judged for "is it woven in at the right place, does it belong".
+    rubric: |
+      You are judging VISUAL FIDELITY of a Corevo "sajtbyggare" template render
+      against its vendor original, section by section. You are given two
+      screenshots (OURS vs ORIGINAL) and, for module sections, the design-kanon
+      module surface reference.
+
+      Rate each section 1-5:
+      - 5: Pixel-faithful — layout, type, colour, spacing, imagery match the
+           original; any woven Corevo module sits exactly where the original's
+           equivalent block was and looks native to the template.
+      - 4: Strong match; only minor, non-structural differences a normal user
+           would not notice.
+      - 3: Recognisably the same section but with visible drift (off colour/font,
+           wrong spacing, or a module placed slightly wrong / styled foreign).
+      - 2: Weak — same content idea but layout/style clearly diverged, or a module
+           is in roughly the wrong place / visually jarring.
+      - 1: Broken or absent — section missing, garbled, or a module dropped in
+           with no integration.
+      "Looks close" is NOT a 5. The bar is EXACT copy that happens to be editable.
+
+      STATIC-MODE CAVEAT (do NOT penalise these — they are a documented,
+      intentional tradeoff, not fidelity failures): BOTH screenshots are STATIC
+      renders (vendor JS is stripped by design — the app CSP blocks per-template
+      CDN scripts). So absent motion/carousels/scroll-animation, fallback fonts
+      where the original used a CDN webfont, and blank Font-Awesome icon glyphs
+      are EXPECTED on both sides. Judge layout, colour, typography (from the
+      vendor's own CSS), spacing, and imagery — never animation or CDN assets.
+
+      MODULE SCOPE: score module_integration on PLACEMENT + STYLING FIT only —
+      does the woven Corevo module sit where the original's equivalent block was
+      and look native to this template's CSS. Do NOT judge module internals/logic
+      (e.g. restaurant table/party_size vs salon service/staff) — that is a
+      separate out-of-pilot track.
+
+      Also report: module_integration (1-5, only for sections containing a Corevo
+      module — placement + styling fit per above), and worst_section (string, the
+      section you scored lowest).
+    scoring:
+      primary: mean_fidelity
+      secondary:
+        - mean_module_integration
+        - min_section_score
+    model: sonnet              # design fidelity needs nuance + vision; haiku too weak here
+    sample_size: 8             # ~one rendered page = a handful of sections; sample by section
+    stratification:
+      - bucket: chrome          # navbar + footer (brand/identity fidelity)
+        count: 2
+      - bucket: hero            # hero/header (the first-impression block)
+        count: 2
+      - bucket: module          # sections hosting a Corevo module (booking) — integration focus
+        count: 2
+      - bucket: content         # remaining content sections (about/service/menu...)
+        count: 2
+    singleton_sample: 0
+    sample_seed: 42
+    batch_size: 4
+    minimum_improvement: 0.3   # judge score must rise >=0.3 to count as a real win
+    max_total_cost_usd: 5      # first-run cap; raise only after the harness is trusted
+
+measurement:
+  # Built + validated in Phase 1 (does not exist yet). Node (cross-platform,
+  # dodges the ö-path bash/opennext footguns). Runs the FIXED render-proof,
+  # computes the structural gate/diagnostic metrics, renders+screenshots BOTH
+  # OURS and ORIGINAL to fixed paths the judge reads, and prints JSON to stdout
+  # containing every gate + diagnostic key above.
+  command: "node 5-Kod/apps/web/lib/sajtbyggare/_optimize/measure-restoran.mjs"
+  timeout_seconds: 600
+  output_format: json
+  working_directory: "."
+  stability:
+    mode: stable               # render + structural metrics are deterministic; no repeat needed
+
+scope:
+  mutable:
+    # ONLY the pilot template source the experiments may rewrite to improve fidelity.
+    - "5-Kod/apps/web/lib/sajtbyggare/templates/restoran.ts"
+    - "5-Kod/apps/web/lib/sajtbyggare/manifest/restoran.ts"        # new — experiments author the editable-region manifest
+    - "5-Kod/apps/web/public/sajtbyggare/restoran/"                 # vendor assets (may re-derive faithfully from source)
+  immutable:
+    # The harness + the proof are FIXED so experiments cannot grade their own homework.
+    - "5-Kod/apps/web/lib/sajtbyggare/_optimize/"                   # measurement harness (built Phase 1)
+    - "5-Kod/apps/web/lib/sajtbyggare/templates/restoran.proof.test.ts"  # fixed render-proof (built Phase 1)
+    # Read-only shared contracts (goal-36 §9 — do NOT fork unilaterally).
+    - "5-Kod/apps/web/lib/sajtbyggare/render-bridge.tsx"
+    - "5-Kod/apps/web/lib/sajtbyggare/manifest/types.ts"
+    - "5-Kod/apps/web/lib/sajtbyggare/booking-mount.tsx"
+    - "5-Kod/apps/web/lib/sajtbyggare/flag.ts"
+    # Reference pattern + canon source — read, never mutate.
+    - "5-Kod/apps/web/lib/sajtbyggare/manifest/salvia.ts"
+    - "4-Dokument-Underlag/03-template-katalog/23 restoran-1.0.0/" # the vendor ORIGINAL (chrome/section fidelity referent)
+    - "4-Dokument-Underlag/01-acceptans/"                          # design-kanon (baseline/architecture)
+    - "4-Dokument-Underlag/01-acceptans-ARKIV-M6-20260616/components/"   # Mod*/surface components — MODULE-surface referent (02-RITNING §0.3)
+    - "4-Dokument-Underlag/01-acceptans-ARKIV-M6-20260616/preview/"      # rendered preview surfaces — module-surface referent
+
+execution:
+  mode: serial
+  backend: worktree
+  max_concurrent: 1
+
+parallel:
+  port_strategy: none
+  shared_files: []
+
+dependencies:
+  approved: []                 # no new deps on the first run (Playwright likely already present — confirm in Phase 1, not as a "new dep")
+
+constraints:
+  - "Design = EXACT copy of the vendor original, never improvise or re-härled values (18h burned before; kanon/vendor source = LAG)."
+  - "The copy must stay EDITABLE: every fidelity gain must keep/grow the data-editable region manifest — never hardcode a region a tenant should own."
+  - "Corevo modules are WOVEN at <corevo-module> markers — never reimplemented inline; module appearance follows design-kanon surfaces."
+  - "Do NOT touch the read-only contracts (render-bridge, manifest/types.ts, booking-mount, flag). Need a new region type -> STOP and note for goal-37, do not fork the schema."
+  - "Everything stays behind SAJTBYGGARE_ENABLED. No deploy in this run (deploy detaches customer domains — Zivar-OK required separately)."
+  - "Status-honesty: an experiment is only 'better' on a real, mechanically-measured gain — never an eyeball impression."
+  - "Static-render IS the model: do NOT re-add vendor JS / CDN scripts / carousels to chase motion or CDN webfonts (CSP blocks them; hydration crashes). Fidelity = layout+colour+typography from the vendor's same-origin CSS."
+  - "CSS scoping under [data-tenant] is the main fidelity lever — prefix the vendor CSS so Bootstrap globals don't leak/clash; per-template fidelity is won here (S0: 2–4h/template)."
+  - "Booking is salon-mode today; making it bransch-aware (table/party_size) is OUT OF SCOPE for this pilot (touches read-only booking-mount). Weave + PLACE the existing module faithfully; do not rebuild its internals."
+
+stopping:
+  max_iterations: 4            # first-run cap — converge on signal, not throughput
+  max_hours: 1
+  plateau_iterations: 3
+  target_reached: true
+
+max_runner_up_merges_per_batch: 0   # serial first run — no runner-up merges

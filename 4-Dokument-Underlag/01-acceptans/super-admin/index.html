@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corevo — Onboarding-studio</title>
+
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="#1F4636"/>
+  <rect x="30" y="30" width="40" height="40" rx="9" fill="#F5A623"/>
+  <text x="50" y="64" font-family="Georgia,serif" font-size="34" font-weight="800" fill="#173529" text-anchor="middle">C</text>
+</svg>
+</template>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Bebas+Neue&family=Jost:wght@300;400;500;600&family=Archivo:wght@400;500;600;700;800&family=DM+Serif+Display&family=Marcellus&family=Mulish:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+  :root {
+    /* back-office brand (forest + gold) — from colors_and_type.css */
+    --c-forest:#1F4636; --c-forest-700:#173529; --c-forest-300:#4E7363;
+    --c-gold:#F5A623; --c-gold-600:#D98E12; --c-gold-100:#FBEBCB;
+    --c-cream:#FAF8F4; --c-paper:#FFFFFF; --c-paper-2:#F3EFE8;
+    --c-line:#E7E1D6; --c-line-strong:#D8D0C2;
+    --c-ink:#21261F; --c-ink-2:#555C50; --c-ink-3:#8A8F82;
+    --c-on-forest:#EFEAE0; --c-on-forest-2:#9DB1A6;
+    --c-success:#4E7A5E; --c-success-bg:#E8F0EA;
+    --c-warning:#A37D3C; --c-warning-bg:#F3EBD9;
+    --c-danger:#9E5A57; --c-danger-bg:#F1E2E0;
+    --c-info:#5E748C; --c-info-bg:#E6EAF0;
+    --shadow-sm:0 1px 2px rgba(31,70,54,.06),0 1px 3px rgba(31,70,54,.08);
+    --shadow-md:0 4px 14px rgba(31,70,54,.08),0 2px 6px rgba(31,70,54,.06);
+    --shadow-lg:0 18px 48px rgba(23,53,41,.16);
+    --font-display:'Playfair Display',Georgia,serif;
+    --font-ui:'Inter',system-ui,-apple-system,sans-serif;
+    --dur-fast:160ms; --dur-base:280ms;
+    --ease-out:cubic-bezier(.22,1,.36,1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--c-cream); color: var(--c-ink); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
+  #root { height: 100%; }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: rgba(31,70,54,.18); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(31,70,54,.3); background-clip: padding-box; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- data spine (plain JS, no JSX) -->
+<script src="cfg-data.js"></script>
+
+<!-- components (JSX, transpiled in order) -->
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="primitives.jsx"></script>
+<script type="text/babel" src="preview.jsx"></script>
+<script type="text/babel" src="studio.jsx"></script>
+<script type="text/babel" src="stages.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

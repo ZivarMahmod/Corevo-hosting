@@ -1,3 +1,29 @@
 {
-    "claudeCode.useTerminal": true
+    "claudeCode.useTerminal": true,
+
+    // Stoppa fil-bevakaren från att kvävas på ~41 580 råa template-filer (1.3 GB)
+    // i 03-template-katalog + byggartefakter. Det var dessa som flödade "ändringsträdet"
+    // med ~10k poster och saktade ner IDE:n. Filerna ligger KVAR på disk och syns i
+    // utforskaren — bara live-bevakningen stängs av (de är redan gitignorade).
+    "files.watcherExclude": {
+        "**/.git/**": true,
+        "**/node_modules/**": true,
+        "**/.next/**": true,
+        "**/.open-next/**": true,
+        "**/.turbo/**": true,
+        "**/test-results/**": true,
+        "**/4-Dokument-Underlag/03-template-katalog/**": true
+    },
+
+    // Håll sökningen snabb — uteslut byggbrus (template-katalogen är fortf. sökbar).
+    "search.exclude": {
+        "**/node_modules/**": true,
+        "**/.next/**": true,
+        "**/.open-next/**": true,
+        "**/.turbo/**": true,
+        "**/test-results/**": true
+    },
+
+    // Visa inte den onödiga "for många ändringar"-varningen om bevakaren ändå råkar räkna högt.
+    "git.ignoreLimitWarning": true
 }

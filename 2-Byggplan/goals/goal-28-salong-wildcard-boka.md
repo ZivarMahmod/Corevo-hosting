@@ -1,4 +1,7 @@
 # goal-28 — Salong-storefronts via wildcard `*.boka.corevo.se`
+
+> **⚠️ STATUS-KORRIGERING 2026-06-17:** DELVIS-SHIPPED 2026-06-14 (worker live) MEN `*.boka`-cert BLOCKAD (CF Free plan, kräver ~$10/mo ACM) + modellen förbigången av `<slug>.corevo.se` (goal-32/fix-35). Flytta INTE rakt av till klart/ — markera delvis-shipped. DoD-raden "cert Active" är ej uppfylld.
+
 Thinking: 🔴 (routing/prod, delad zon med POS — rollback + Zivar-OK före deploy)
 
 ## Mål

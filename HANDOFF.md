@@ -2,6 +2,44 @@
 
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
+## 🟢 2026-06-17 (Cowork) — DESIGN V3 LÅST + 16 MODUL-DJUPSPEC + goal-34 IGÅNG hos Code
+**NÄSTA INGÅNG: när Code rapporterat goal-34 klar → (1) oberoende verify, (2) triagera 5 öppna beslut i `1-Planering/05-multibransch-bygge/moduler/00-INDEX.md`. Plan längst ner i denna entry.**
+- **Design v3 (FINAL) granskad + promotad → `4-Dokument-Underlag/01-acceptans/`** (kanon; identisk m. tidigare FINAL, krock löst: `live:true`(7)/`false`(9 roadmap)-taggar + rätta tabellnamn i cfg-data). Old M6 → `01-acceptans-ARKIV-M6-20260616/` (sparat, ej raderat). Provenans: `01-acceptans/_PROVENANS.md`.
+- **Princip LÅST:** universal motor + variant per bransch, ALDRIG fork. `1-Planering/05-multibransch-bygge/10-arkitekturprincip-universal-vs-variant.md`. Webshop = EN motor + `fulfilment`-variant (ej olika per bransch).
+- **Ritning v3→storefront:** `1-Planering/06-sajtbyggare/02-RITNING-v3-moduler-storefront.md`. Recon-fynd: **6/7 modul-sektioner finns redan** (goal-30) → S3 = trohet-pass, EJ nybygge. **booking ej bransch-medveten = enda nybygget i modul-lagret.**
+- **Backlog + 16 djupspec:** `05-multibransch-bygge/09-modul-bransch-spec-backlog.md` (15 branscher × moduler, LIVE/VARIANT/NY) + `05-multibransch-bygge/moduler/` (16 specer, ingång `00-INDEX.md`). Verifierad **PASS-med-anmärkning** (alla branscher täckta, DB-sant, inga forks). Research: svensk GDPR/moms/allergen.
+- **goal-34 (Sajtbyggare S1) KÖRS NU hos Code** — F1 region-manifest → F2 kaskad+provenance (migr **0038**) → F3 `data-editable`-markörer → F4 bevis salvia+test-barber. base SHA `76dee59`. Pekad mot kanon + ritning. Flagga `SAJTBYGGARE_ENABLED` av i prod.
+- **⚠️ Git-skuld (ej Code:s):** design-canon-flytten (~245 "deletions" = mv→ARKIV) + mycket pre-existing ocommittad planering + en `.gitignore`-ändring ligger ocommittat i tree:n. Code scopar till 5-Kod (orört). Städa NÄSTA session.
+
+### NÄSTA SESSION — plan (när goal-34 rapporterad klar)
+1. **Verify goal-34 oberoende** (Cowork-subagent, ej Code:s ord): region-manifest · kaskad Universal→Bransch→Kund m. provenance (standard/modifierad) · `data-editable`-markörer i DOM på staging · 0 console-fel · gates gröna · worker-version+rollback. PASS → flytta `goal-34` → `2-Byggplan/klart/`.
+2. **Triagera 5 öppna beslut** (`moduler/00-INDEX.md`): (a) booking `object:table`-kapacitetsmodell (bryter `no_double_booking`) + `party_size`/`address`-kolumner, (b) intag legal grund (Patientdatalag 2008:355 + DPA, EJ samtycke), (c) namn `vehicles`/`pets` vs `_profiles`, (d) café-loyalty earn-source (ny trigger på `shop_orders`), (e) booking `variant_schema`-OK.
+3. **Git-städning** (scopad doc-commit, ej 5-Kod) + **gitignorea 6.9 MB `01-acceptans/standalone/`-HTML**.
+4. **Sen bygg:** S2 (editor)-brief ELLER booking-bransch-brief (kräver beslut 2a). En goal i taget → verify → `klart/`.
+
+## 🟢 2026-06-16 (sent) — DOMÄN-DEPLOY-PROOF GO (om-verifierad live) · NÄSTA = goal-34 (Sajtbyggare S1)
+**`test-barber.corevo.se` = 200 live (oberoende mätt: riktig DNS + CF-served + `x-corevo-tenant-kind:tenant`).** goal-32:s NO-GO **upphävd** — "kund-domäner aldrig nere vid deploy" nu GENUINT bevisat (överlever deploy; bara manuell radering tar bort). **fix-33:** rotorsak = en BARE `wrangler deploy` (mänsklig väg) detachade domänen; kod-vägen redan sealad (`33d03cd`), runbook/doc-vektorer sealade (`d6c2486`/`4416502`/`76dee59`/`3efafb1`). **Ingen ny CF-token behövdes** (OAuth attachade utan rättighetsfel → token-hypotesen motbevisad). Live-bevis: deploys `c1b7628e` + `9ae34d87`, `check_domains` ALL UP.
+- **KVAR (litet, Zivars login):** inloggad `/domaner`-render + 0 console-fel (`superbooking.corevo.se/domaner`). Flytta `goal-32` → `klart/` när den är gjord.
+- **NÄSTA BYGGE = goal-34 (Sajtbyggare S1):** redigerbara regioner + override-kaskad, mot **LÅST inriktning** (visuell klick-editor, EJ page-builder — `1-Planering/06-sajtbyggare/01-INRIKTNING-LAST-visuell-innehalls-editor.md`). Editor-motor (S2) = lätt klick-overlay + **TipTap** (MIT), EJ GrapesJS (research 2026-06-16).
+
+## 🟢 2026-06-16 (Cowork + Code) — Fas A STÄNGD (inloggad) · S0 sajtbyggare-spike BEVISAD (oberoende GO) · goal-32 köad
+**NÄSTA INGÅNG: kör `goal-32` (auto-domän + deploy-proof) → SEN S1. `MASTER-LISTA-allt-pa-bordet.md` = hela backloggen. Levande tracker = artefakten "corevo-master-lista".**
+- **Fas A stängd:** Zivar inloggad på `booking.corevo.se` som `zivar68@gmail.com` (salon_admin, nivå 6) på återupplivad tenant **Test Barber** (nagelstudio, 7 moduler live). Skapad via SQL (auth.users+identities+public.users+roll), super-admin = `zivar.mahmod@corevo.se`.
+- **goal-31 (S0) — render-bron BEVISAD på riktiga Workers.** Restoran-mallen renderar troget med riktiga `booking`-modulen invävd vid `<corevo-module>`-markör (html-react-parser), riktig DB-data, 0 console-fel. Live (staging, bakom flagga `SAJTBYGGARE_ENABLED`): `bokningsplatformen-staging.zivar68.workers.dev/sajtbyggare-spike/test-barber`. **Motor = GrapesJS** (Puck = per-mall-React-omskrivning, dyrare). Per-mall-jobb ~1,5–2 dgr → 0,5–1 vid moget. Vendor-JS = statiskt först. Commits main `31d06b7`/`1049958`/`e77be45`. Rapport: `1-Planering/06-sajtbyggare/S0-UTFALL.md`.
+- **OBEROENDE VERIFIERAD (Cowork-subagent, ej Code:s ord): GO.** Bron äkta på Workers + prod ORÖRD (flagga av i top-level vars, prod-spike-route läcker ej, `corevo.se`+`booking/login` 200). PARTIAL (reproducerbarhets-luckor, ej motbevis): GrapesJS-round-trip + 8/8 verify_render + gate-tal vilar på Code:s egna körningar. Liten doc-överdrift: vendor-JS "strippad" = egentligen CSP-blockerad, ej borttagen ur källan.
+- **Nyckelfynd:** render-bron är bransch-agnostisk, MEN modulen måste bli bransch-MEDVETEN (restaurang = bordsbokning ≠ frisör-val) → eget modul-spår (task #14, S0-UTFALL §7).
+- **⚠️ Domän-bugg bekräftad LIVE:** `test-barber.corevo.se` (dashboard-only Custom Domain) åkte vid deploy 2× = FX-14-fällan (deploy reconcilar routes mot config). TEMP: inlagd i `wrangler.jsonc` routes. RIKTIG fix = **goal-32** (auto-koppla `<slug>.corevo.se` via CF-API vid onboarding + deploy-proof, bevisat på 2 deploys; "Domäner"-lista i super-admin; återbruk goal-23). Arkitektur: `1-Planering/01-arkitektur/doman-automation-pa-onboarding.md`.
+- **Staging-workern lämnas UPP** för S1/S2-granskning. test-barber seedad m. test-data (rollback-SQL i S0-UTFALL §10).
+- **TODO:** flytta `goal-31` → `klart/` (verifierad). Nya planeringsdelar denna session: `06-sajtbyggare/`, `07-efter-sajtbyggaren/`, `08-fakturering/`.
+
+## 🟢 2026-06-15 (Cowork + Code) — goal-30: MULTIBRANSCH-MOTORN DEPLOYAD · Fas A klar (inloggad verify kvar)
+**Loopen bruten — det byggda är nu LIVE. NÄSTA INGÅNG = `2-Byggplan/ROADMAP-bryt-loopen-2026-06-15.md` → Fas B (bevisa med 1 riktig icke-frisör-tenant) + inloggad verify.**
+- **Git var EJ korrupt** på riktiga maskinen (sandbox-artefakt): fsck ren, HEAD=90c56ab, 72 äkta ändringar (ej 1032). Ingen .git-reparation/backup behövdes.
+- **Push main** `90c56ab..af9e0f2`: `021c1ac` K10–K20-motorn (83 filer — admin webshop/blogg/offerter/lojalitet/presentkort/media + storefront-sektioner + tenant-preview + migr 0031–0037 som källa, ej körda) · `af9e0f2` planering/CI/gitignore. Inga `--force`/`--hard`. Råa template-dumpar gitignorade.
+- **Deploy:** worker `bokningsplatformen` v **769c55aa-7a13-42e8-80f7-ab0a855080f3** (rollback **df545466-2385-471f-ac0f-be220746f910**). Gates: vitest 386/386 · tsc 0 · lint 0 · opennext build PASS · grep-guard ren. Byggt via `C:\tmp\kod`.
+- **Oberoende verifierat (Nörden):** `booking.corevo.se/login` 200 · `/admin/webshop` → 307 `/login?next=%2Fadmin%2Fwebshop` (ny route finns + auth-grindad, ej 404) · DB **0 aktiva tenants** (1 deleted) = ~noll blast radius · POS `corevo.se` saknar worker-route = orörd.
+- **KVAR (ärligt, EJ deploy-regression):** inloggad modul-UI + wizardens bransch/temaval ALDRIG renderade live (Code ej inloggad) → inloggad verify (Zivar loggar in, Nörden klickar). Storefront end-to-end blockerad: 0 tenants + freshcut saknar DNS + `*.boka` TLS-cert blockerad (CF Free). **goal-30 EJ flyttad till klart/** (storefront-verify ofullständig).
+
 ## 🟢 2026-06-14 (Cowork, Zivar) — PLATTFORM → MULTI-BRANSCH · admin-split · wildcard · baseline-reset
 **Stor riktningssession. NÄSTA SESSIONS INGÅNG = `1-Planering/01-arkitektur/multibransch-plattform-arkitektur.md` (läs den + denna entry, hoppa resten). Börja i doc:ens sektion 14 (5 öppna beslut) → sen DB-grund-goal.**
 - **VISION LÅST:** Corevo = multi-bransch-plattform (EN motor, konfig per bransch + moduler med livscykel `off→draft→live→paused`), ej bara frisör. Bransch = preset; moduler = à la carte toggle per kund. Admin + storefront renderar på-moduler. DB-grund som saknas: `verticals` + `tenants.vertical_id` + `tenant_modules` (state+config) + modul-tabeller per modul.
