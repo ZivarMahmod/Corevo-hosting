@@ -61,7 +61,7 @@ export function draftToEdits(draft: Draft): SiteContentEdit[] {
  *  default via render-vägen, som resolveSiteContent gör). */
 export function effectiveValue(region: ResolvedRegion, draft: Draft): string | null {
   if (region.key in draft) {
-    const v = draft[region.key]
+    const v = draft[region.key] ?? ''
     return v.trim() === '' ? null : v
   }
   return region.value
@@ -70,7 +70,7 @@ export function effectiveValue(region: ResolvedRegion, draft: Draft): string | n
 /** Visar editorn "modifierad"-badge? Draftad till icke-tomt → ja; draftad till tomt
  *  (rensad) → nej (= standard igen); ej draftad → spegla sparat provenance. */
 export function isModified(region: ResolvedRegion, draft: Draft): boolean {
-  if (region.key in draft) return draft[region.key].trim() !== ''
+  if (region.key in draft) return (draft[region.key] ?? '').trim() !== ''
   return region.provenance === 'modifierad'
 }
 
