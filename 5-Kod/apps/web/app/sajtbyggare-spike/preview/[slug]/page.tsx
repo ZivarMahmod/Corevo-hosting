@@ -29,6 +29,7 @@ import { resolveThemeContent } from '@/components/storefront/theme-content'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
+import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import storefront from '@/components/storefront/storefront.module.css'
 
 // Per-request, slug-resolverad preview → aldrig prerender.
@@ -48,6 +49,9 @@ export default async function SajtbyggarePreviewPage({
   const bundle = await getTenantBySlug(slug)
   if (!bundle) notFound()
   const { tenant, settings, location } = bundle
+  // Nivå 3 — tenantens egna scoped CSS-override (samma som (public)/layout.tsx) så
+  // previewen visar exakt det live-utseendet, inte bara temadefault.
+  const overrideCss = settings.customOverride?.css
 
   // Endast salvia är redigerbar i S2. Allt annat → 404 (ingen preview-yta).
   if (settings.theme !== 'salvia') notFound()
@@ -82,10 +86,16 @@ export default async function SajtbyggarePreviewPage({
 
   // Tjänster + bokningsdata — samma laddning som (public)/page.tsx och layout.tsx.
   const services = await getServices(tenant.id, tenant.slug)
-  const [wizardServices, wizardLocations] = await Promise.all([
+  const [allWizardServices, wizardLocations, moduleStates] = await Promise.all([
     getWizardServices(tenant.id, tenant.slug),
     getWizardLocations(tenant.id, tenant.slug),
+    getTenantModuleStates(tenant.id, tenant.slug),
   ])
+  // Booking-gate EXAKT som (public)/layout.tsx: bara LIVE booking ger riktiga tjänster
+  // → BookingProvider.available speglar om bokning faktiskt är aktiv (annars inerta CTA:er),
+  // så previewen ljuger inte om bokningsläget.
+  const bookingLive = moduleState(moduleStates, 'booking') === 'live'
+  const wizardServices = bookingLive ? allWizardServices : []
 
   const Layout = STOREFRONT_LAYOUTS['salvia']
 
@@ -100,6 +110,11 @@ export default async function SajtbyggarePreviewPage({
       data-tenant={tenant.id}
       style={injectTenantTokens(draftBranding as TenantBranding) as CSSProperties}
     >
+      {/* Nivå 3 tenant-scoped CSS — speglar (public)/layout.tsx exakt (samma admin-satta
+          override, scopad under [data-tenant]); inget nytt XSS-yta (saneras ej i prod heller). */}
+      {overrideCss ? (
+        <style dangerouslySetInnerHTML={{ __html: `[data-tenant="${tenant.id}"]{${overrideCss}}` }} />
+      ) : null}
       <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name}>
         <Nav
           tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}

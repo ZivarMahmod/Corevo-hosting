@@ -59,9 +59,14 @@ export function applySiteContentEdits(
       if (binding.store === 'copy') {
         copy[binding.field] = ''
       } else if (binding.index !== undefined) {
+        // Array-bundet fält (hero_images[0]): TA BORT indexet (splice) — skriv ALDRIG
+        // null in i arrayen. resolveThemeContent (storefronten) kollar bara array-LÄNGD,
+        // så ett kvarlämnat [null] skulle rendera en trasig <img src=null>. Tom array →
+        // ta bort fältet → faller tillbaka till temadefault (precis som en rensad scalar).
         const arr = Array.isArray(branding[binding.field]) ? [...(branding[binding.field] as unknown[])] : []
-        arr[binding.index] = null
-        branding[binding.field] = arr
+        arr.splice(binding.index, 1)
+        if (arr.length > 0) branding[binding.field] = arr
+        else delete branding[binding.field]
       } else {
         branding[binding.field] = null
       }

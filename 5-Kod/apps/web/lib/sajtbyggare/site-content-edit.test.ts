@@ -72,6 +72,21 @@ describe('applySiteContentEdits — branding (color/font/logo/image)', () => {
     expect(r.branding.hero_images).toEqual(['https://cdn/new0.jpg', 'keep1'])
   })
 
+  it('clearing hero.image when it is the ONLY image removes the field (→ theme default), never [null]', () => {
+    const r = applySiteContentEdits(M, null, { hero_images: ['only'] }, [{ regionKey: 'hero.image', value: '' }])
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    // never [null] (would render a broken <img>); field gone → resolveThemeContent falls back
+    expect('hero_images' in r.branding).toBe(false)
+  })
+
+  it('clearing hero.image when others exist splices index 0 (promotes the next image)', () => {
+    const r = applySiteContentEdits(M, null, { hero_images: ['a', 'b'] }, [{ regionKey: 'hero.image', value: '' }])
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.branding.hero_images).toEqual(['b'])
+  })
+
   it('logo URL (https) is accepted', () => {
     const r = applySiteContentEdits(M, null, null, [{ regionKey: 'logo', value: 'https://cdn/logo.png' }])
     expect(r.ok).toBe(true)
