@@ -55,7 +55,7 @@ export function isSafeUrl(value: unknown): boolean {
   const v = Array.from(value).filter((c) => c.charCodeAt(0) > 0x20).join("").toLowerCase()
   if (v === '') return false
   const scheme = /^([a-z][a-z0-9+.-]*):/.exec(v)
-  if (scheme) return ['http', 'https', 'mailto', 'tel'].includes(scheme[1])
+  if (scheme) return ['http', 'https', 'mailto', 'tel'].includes(scheme[1] ?? '')
   if (v.startsWith('//')) return false
   return true
 }
@@ -116,7 +116,8 @@ function serializeNode(node: DOMNode, insideModule: boolean): string {
     const inner = serializeChildren((node.children ?? []) as DOMNode[], insideModule)
     if (name === 'a') {
       const href = attribs.href
-      const hrefAttr = isSafeUrl(href) ? ` href="${escapeAttr(href.trim())}"` : ''
+      const hrefAttr =
+        typeof href === 'string' && isSafeUrl(href) ? ` href="${escapeAttr(href.trim())}"` : ''
       return `<a${hrefAttr}>${inner}</a>`
     }
     return `<${name}>${inner}</${name}>`
