@@ -1,31 +1,31 @@
-// goal-32 F1 — sanctioned PRODUCTION deploy. The ONLY safe way to ship the prod
-// worker once customer domains are DB-driven: it (1) regenerates the deploy config
-// from the DB, (2) re-asserts the 3 fixed-host invariant against the written file,
-// (3) DRY-RUNS the deploy so wrangler validates the config and we can eyeball the
-// route plan, then (4) deploys for real. A bare `wrangler deploy` (top-level
-// wrangler.jsonc) would NOT include the DB customer domains and would detach them
-// (FX-14, deploy-runbook §3.1) — always deploy through this script.
+// fix-35 — sanctioned PRODUCTION deploy. Customer domains now live in COMMITTED
+// wrangler.jsonc (top-level routes[], alongside the 3 fixed back-office hosts), so a
+// plain deploy of that file re-asserts EVERY domain and can never detach one — the
+// fragile DB-generated `-c wrangler.deploy.json` path is gone (it was the FX-14 hole:
+// a bare deploy or an RLS-hidden paused salon dropped a live domain).
+//
+// Steps: (1) run the fail-closed VALIDATOR (gen-deploy-config.mjs) — proves the
+// committed file is a superset of what is LIVE + active, so the deploy can't silently
+// drop a domain that exists in Cloudflare but was forgotten in the file; (2) re-assert
+// the 3 fixed hosts against wrangler.jsonc; (3) DRY-RUN (wrangler validates + prints
+// the route plan, no publish); (4) deploy for real from wrangler.jsonc.
 //
 // Assumes the OpenNext build already produced .open-next/ (run
 // `opennextjs-cloudflare build` first). Run from apps/web:
-//   node scripts/deploy-prod.mjs            # gen + dry-run + real deploy
-//   node scripts/deploy-prod.mjs --dry-run  # gen + dry-run only (no deploy)
-// Wrangler command is overridable via WRANGLER_CMD (default: "npx wrangler").
+//   node scripts/deploy-prod.mjs            # validate + dry-run + real deploy
+//   node scripts/deploy-prod.mjs --dry-run  # validate + dry-run only (no deploy)
+// Commands overridable via WRANGLER_CMD / OPENNEXT_CMD for CI.
 
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
+import { readCustomDomainPatterns, readAllRoutePatterns, REQUIRED_FIXED_ROUTES } from './domain-routes.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appDir = resolve(here, '..')
-const deployConfig = resolve(appDir, 'wrangler.deploy.json')
+const wranglerPath = resolve(appDir, 'wrangler.jsonc')
 const dryRunOnly = process.argv.includes('--dry-run')
-// Dry-run uses raw wrangler (it has --dry-run; opennext deploy does not). The real
-// deploy uses `opennextjs-cloudflare deploy` — the established path that also
-// populates the OpenNext cache — passing the generated config via -c. Both
-// overridable for CI.
 const WRANGLER = process.env.WRANGLER_CMD || 'npx wrangler'
 const OPENNEXT = process.env.OPENNEXT_CMD || 'npx opennextjs-cloudflare'
 
@@ -38,30 +38,47 @@ function run(cmd, label) {
   }
 }
 
-// 1. Regenerate the deploy config from the DB (throws + exits non-zero on any
-//    DB error or broken invariant → we never reach the deploy step).
-run('node scripts/gen-deploy-config.mjs', 'Generate deploy config from DB')
+// 1. Fail-closed validator: committed wrangler.jsonc ⊇ live + active domains. Exits
+//    non-zero on any drift → we never deploy a file that would detach a live domain.
+run('node scripts/gen-deploy-config.mjs', 'Validate domains (committed ⊇ live + active)')
 
-// 2. Defense-in-depth: re-assert the invariant against the file we are about to ship.
-const cfg = JSON.parse(readFileSync(deployConfig, 'utf8'))
-const patterns = new Set((cfg.routes || []).map((r) => r.pattern))
-const missing = REQUIRED_FIXED_HOSTS.filter((h) => !patterns.has(h))
+// 2. Defense-in-depth: re-assert EVERY fixed route directly against wrangler.jsonc —
+//    the 3 back-office custom_domains AND the *.boka.corevo.se/* storefront wildcard
+//    (a zone_name route, so it is checked against the FULL routes[], not just
+//    custom_domain entries). A manual edit/merge that drops any one is caught here.
+const allRoutes = new Set(readAllRoutePatterns(wranglerPath))
+const missing = REQUIRED_FIXED_ROUTES.filter((p) => !allRoutes.has(p))
 if (missing.length) {
-  console.error(`\n✖ Generated config is missing fixed host(s): ${missing.join(', ')}. Aborting.`)
+  console.error(`\n✖ wrangler.jsonc is missing fixed route(s): ${missing.join(', ')}. Aborting.`)
   process.exit(1)
 }
-console.log(`\n✓ Invariant OK — fixed hosts present: ${REQUIRED_FIXED_HOSTS.join(', ')}`)
-console.log(`✓ Total routes to deploy: ${(cfg.routes || []).length}`)
+console.log(`\n✓ Invariant OK — fixed routes present: ${REQUIRED_FIXED_ROUTES.join(', ')}`)
+const customerCount = readCustomDomainPatterns(wranglerPath).filter((p) => !REQUIRED_FIXED_HOSTS.includes(p)).length
+console.log(`✓ Committed customer custom-domains: ${customerCount}`)
 
-// 3. Dry-run: wrangler validates the config + prints the bindings/route plan
-//    WITHOUT publishing. The cheap pre-flight that catches a malformed config.
-run(`${WRANGLER} deploy --dry-run -c wrangler.deploy.json`, 'Dry-run (no publish)')
+// 3. Dry-run from wrangler.jsonc (no -c): wrangler validates + prints the route plan.
+run(`${WRANGLER} deploy --dry-run`, 'Dry-run (no publish)')
 
 if (dryRunOnly) {
   console.log('\n✓ --dry-run only: stopping before the real deploy.')
   process.exit(0)
 }
 
-// 4. Real deploy — re-asserts ALL routes (fixed + every customer domain).
-run(`${OPENNEXT} deploy -c wrangler.deploy.json`, 'Deploy to production')
+// 3.5 PUBLISH GATE — the validator's live⊆file guard only runs WITH a CF token; a real
+//     publish without it could reconcile routes to the committed file and detach a
+//     live-but-uncommitted domain (the FX-14 hole on the LOCAL deploy path). Refuse to
+//     publish without the token unless an explicit opt-out accepts the risk. Dry-run is
+//     exempt above — it never publishes.
+if (!process.env.CLOUDFLARE_API_TOKEN && process.env.ALLOW_NO_CF_TOKEN !== '1') {
+  console.error(
+    '\n✖ CLOUDFLARE_API_TOKEN not set — the live⊆file domain guard could not run, so a real ' +
+      'deploy could detach a live-but-uncommitted domain (FX-14). Set the token, or set ' +
+      'ALLOW_NO_CF_TOKEN=1 to override (you accept the detach risk). Aborting before publish.',
+  )
+  process.exit(1)
+}
+
+// 4. Real deploy from wrangler.jsonc — re-asserts ALL routes (fixed + every committed
+//    customer domain). No DB read, no -c override file: the one committed config.
+run(`${OPENNEXT} deploy`, 'Deploy to production')
 console.log('\n✓ Production deploy complete.')

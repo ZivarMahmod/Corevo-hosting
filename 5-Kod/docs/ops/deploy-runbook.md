@@ -43,12 +43,14 @@ red-washed.
 - **Production** — only on a `v*` **tag** or manual dispatch → production, behind the
   `production` GitHub Environment approval gate. **Never auto from a PR** (DoD).
   Migrations → prod, OpenNext build (prod env), then **`node scripts/deploy-prod.mjs`**
-  — NOT bare `wrangler deploy`. Since goal-32 the per-customer storefront domains
-  (`<slug>.corevo.se`) are DB-driven: `deploy-prod.mjs` reads the active tenants and
-  writes `wrangler.deploy.json` (3 fixed hosts + one `custom_domain` per salon), then
-  deploys THAT. A bare `wrangler deploy` ships only `wrangler.jsonc` (the 4 fixed
-  routes) and **detaches every customer domain** (binding + managed DNS removed →
-  NXDOMAIN). This is exactly what took `test-barber.corevo.se` down (fix-33). See §3.1.
+  — NOT bare `wrangler deploy`. Since **fix-35** the per-customer storefront domains
+  (`<slug>.corevo.se`) live in **committed `wrangler.jsonc`** top-level `routes[]`
+  (alongside the 3 fixed back-office hosts), so deploying that file re-asserts every
+  one and can NEVER detach it. `deploy-prod.mjs` runs a fail-closed VALIDATOR
+  (`gen-deploy-config.mjs`) proving committed `wrangler.jsonc` ⊇ what is LIVE + active,
+  then deploys `wrangler.jsonc` directly (no DB-generated `-c` file). The earlier
+  goal-32 DB-gen path (`wrangler.deploy.json`) was the FX-14 hole — a bare deploy or an
+  RLS-hidden `paused` salon dropped a live domain; it is retired. See §3.1.
 
 OpenNext bundling runs on Linux (live-blocker #3); the Windows EPERM-symlink bundle
 failure is irrelevant in CI.
@@ -64,23 +66,33 @@ and `vars.NOTIFICATIONS_FROM` because they were dashboard-only.
 
 Rules:
 - **Prod deploy path = `scripts/deploy-prod.mjs`, never bare `wrangler deploy`.**
-  Since goal-32 the source of truth is split: the **fixed infra hosts** (the 3
-  back-office doors + the `*.boka` wildcard) + public vars live in `wrangler.jsonc`;
-  the **per-customer storefront domains (`<slug>.corevo.se`) are DB-driven** —
-  `deploy-prod.mjs` reads active tenants and appends one `custom_domain` route per
-  salon into the generated `wrangler.deploy.json`, then deploys that. So every prod
-  deploy re-asserts BOTH the fixed hosts AND every live customer domain. A bare
-  `wrangler deploy` against `wrangler.jsonc` omits all customer domains and
-  **detaches them** (the fix-33 outage: `test-barber.corevo.se` → NXDOMAIN).
-- **Never reintroduce a dashboard-only domain/var** — fixed hosts/vars go in
-  `wrangler.jsonc`; customer domains come from the DB (a new salon row → next
-  `deploy-prod.mjs` attaches it). After any prod deploy, run
-  `node scripts/check_domains.mjs` (exit 0 = all live; it catches a detached/NXDOMAIN
-  customer domain that a bare deploy would have silently dropped).
+  Since **fix-35** the source of truth is ONE committed file: ALL live hostnames —
+  the 3 fixed back-office doors, the `*.boka` wildcard, AND every per-customer
+  `<slug>.corevo.se` — are `custom_domain`/route entries in committed `wrangler.jsonc`.
+  `deploy-prod.mjs` runs the fail-closed validator (committed ⊇ live + active; exit 1
+  on drift) then deploys `wrangler.jsonc`. Because the customer domains are now IN the
+  base file, even a bare `wrangler deploy` would no longer detach them — but keep
+  using `deploy-prod.mjs` for the validator pre-flight + dry-run.
+- **Add a new customer domain WITHOUT a deploy:** `node scripts/add-domain.mjs <slug>`
+  does both halves — (a) live-attach `<slug>.corevo.se` via the CF Workers Domains API
+  (live in seconds, no redeploy) and (b) insert it as a committed `custom_domain` route
+  in `wrangler.jsonc` (comment-preserving, idempotent). **Writing the line is a COMMIT,
+  not a deploy — you must commit `wrangler.jsonc`** so future deploys re-assert it.
+  Needs `CLOUDFLARE_API_TOKEN` with **Zone DNS:Edit** (+ Workers Routes:Edit) for a NEW
+  subdomain's DNS+cert; without a token it still file-protects (goes live next deploy).
+  `attachWorkerSubdomain` (`lib/cloudflare/worker-domains.ts`) is the runtime twin for a
+  future onboarding-auto path; the shared file-edit contract is
+  `upsertCustomDomainRoute(wranglerPath, slug)` in `scripts/domain-routes.mjs`.
+- **Validator (`gen-deploy-config.mjs`, repurposed from the generator):** guard #1
+  LIVE ⊆ FILE (lists CF Workers Domains for our service — sees PAUSED salons too,
+  because it reads Cloudflare, not the DB → neutralizes the old anon-RLS trap where a
+  `paused` salon was invisible to `tenants_public_read = USING (status='active')`);
+  guard #2 ACTIVE ⊆ FILE (anon read, best-effort). After any prod deploy also run
+  `node scripts/check_domains.mjs` (exit 0 = all live).
 - **Target the right env.** Top-level config = production worker `bokningsplatformen`;
-  prod ships via `deploy-prod.mjs` (which uses `-c wrangler.deploy.json`). Staging is
-  `wrangler deploy --env staging` (`bokningsplatformen-staging`, *.workers.dev,
-  **no** custom domains, `routes: []` → cannot detach prod domains).
+  prod ships via `deploy-prod.mjs` (deploys `wrangler.jsonc` directly — no `-c`
+  override). Staging is `wrangler deploy --env staging` (`bokningsplatformen-staging`,
+  *.workers.dev, **no** custom domains, `routes: []` → cannot detach prod domains).
 - **Prefer CD** (§3): production from a `v*` tag, staging from `push:main`, both on
   Linux. A local deploy is a fallback.
 - **Local deploy (Windows, only if unavoidable):** OpenNext's build crashes on the

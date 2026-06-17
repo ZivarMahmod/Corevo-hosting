@@ -119,15 +119,17 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
 
-      # goal-32 — deploy via deploy-prod.mjs, NOT bare `wrangler deploy`. The script
-      # regenerates the route set from the DB (every active tenant's <slug>.corevo.se)
-      # + the fixed hosts, asserts the 3 back-office hosts are present (fail-closed),
-      # dry-runs, then deploys the generated config. A bare `wrangler deploy` would ship
-      # only wrangler.jsonc's fixed routes and DETACH every customer domain (FX-14).
+      # fix-35 — deploy via deploy-prod.mjs, NOT bare `wrangler deploy`. Customer domains
+      # now live in COMMITTED wrangler.jsonc (top-level routes[], alongside the 3 fixed
+      # back-office hosts + the *.boka wildcard), so deploying that file re-asserts every
+      # one and can never detach it. The script runs a fail-closed VALIDATOR
+      # (gen-deploy-config.mjs: committed ⊇ live + active; the live⊆file guard needs the
+      # token below and is hard-required for a real publish), asserts all fixed routes,
+      # dry-runs, then deploys wrangler.jsonc directly (no DB-generated -c config).
       # NOTE (ops): CLOUDFLARE_API_TOKEN must also carry **Zone → DNS → Edit** on the
-      # corevo.se zone so wrangler can CREATE the DNS record for a NEW <slug>.corevo.se
-      # custom_domain (Workers Scripts/Routes:Edit alone can 403 on first attach).
-      - name: Deploy (production via deploy-prod.mjs — DB-driven routes)
+      # corevo.se zone so a NEW <slug>.corevo.se custom_domain gets its DNS record + cert
+      # (Workers Scripts/Routes:Edit alone can 403 on first attach).
+      - name: Deploy (production via deploy-prod.mjs — committed wrangler.jsonc routes)
         run: pnpm --filter @corevo/web exec node scripts/deploy-prod.mjs
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

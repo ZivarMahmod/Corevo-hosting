@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildRoutes, fetchActiveSlugs, REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
+import { buildRoutes, fetchActiveSlugs, validateDomains, REQUIRED_FIXED_HOSTS } from './gen-deploy-config.mjs'
 
 // The fixed infra routes as they appear in wrangler.jsonc (the generator's base).
 const BASE = [
@@ -74,5 +74,78 @@ describe('fetchActiveSlugs', () => {
   it('filters out null/empty slugs', async () => {
     const slugs = await fetchActiveSlugs('https://x', 'anon', fakeFetch(200, [{ slug: 'a' }, { slug: null }, {}]))
     expect(slugs).toEqual(['a'])
+  })
+})
+
+describe('validateDomains', () => {
+  const FILE = ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se', 'test-barber.corevo.se']
+
+  it('passes when committed ⊇ live + active', () => {
+    const out = validateDomains({
+      committedPatterns: FILE,
+      liveDomains: ['booking.corevo.se', 'test-barber.corevo.se'],
+      activeSlugs: ['test-barber'],
+    })
+    expect(out.missingLive).toEqual([])
+    expect(out.missingActive).toEqual([])
+  })
+
+  it('flags a LIVE customer domain missing from the committed file (deploy would detach it)', () => {
+    const out = validateDomains({
+      committedPatterns: FILE,
+      liveDomains: ['booking.corevo.se', 'orphan.corevo.se'],
+      activeSlugs: [],
+    })
+    expect(out.missingLive).toEqual(['orphan.corevo.se'])
+  })
+
+  it('ignores the 3 fixed hosts and reserved labels', () => {
+    const out = validateDomains({
+      committedPatterns: FILE,
+      liveDomains: ['booking.corevo.se', 'superbooking.corevo.se', 'minbooking.corevo.se'],
+      activeSlugs: ['booking', 'admin', 'boka'], // reserved → never required
+    })
+    expect(out.missingLive).toEqual([])
+    expect(out.missingActive).toEqual([])
+  })
+
+  // The RLS-trap regression — the whole root cause from the spec.
+  it('PAUSED salon: guard #1 (live) catches it even though anon-DB read hides it', async () => {
+    // RLS: anon policy `USING (status='active')` → a paused salon is INVISIBLE to anon,
+    // even though the query asks neq.deleted. Model the two reads:
+    const anonFetch = (_url, _init) =>
+      Promise.resolve({ ok: true, status: 200, json: async () => [{ slug: 'test-barber' }] }) // paused 'klippstudio' hidden
+    const serviceRoleFetch = (_url, _init) =>
+      Promise.resolve({ ok: true, status: 200, json: async () => [{ slug: 'test-barber' }, { slug: 'klippstudio' }] })
+
+    const anonSlugs = await fetchActiveSlugs('https://x', 'anon', anonFetch)
+    const srSlugs = await fetchActiveSlugs('https://x', 'sr', serviceRoleFetch)
+    expect(anonSlugs).not.toContain('klippstudio') // proves the trap exists
+    expect(srSlugs).toContain('klippstudio')
+
+    // Committed file HAS the active salon (test-barber) but is MISSING the paused one
+    // (klippstudio). The anon-only active guard PASSES — it never saw klippstudio — so
+    // the old DB-gen path would have detached it. That blindness is the FX-14 trap.
+    const fileHasActiveNotPaused = [
+      'booking.corevo.se',
+      'superbooking.corevo.se',
+      'minbooking.corevo.se',
+      'test-barber.corevo.se',
+    ]
+    const anonOnly = validateDomains({
+      committedPatterns: fileHasActiveNotPaused,
+      liveDomains: [],
+      activeSlugs: anonSlugs,
+    })
+    expect(anonOnly.missingActive).toEqual([]) // trap: DB-read alone is blind to the paused domain
+
+    // But the paused salon is LIVE-attached in Cloudflare (CF API sees it regardless of
+    // DB status) → guard #1 catches it. THIS is why the live⊆file guard cures FX-14.
+    const withLive = validateDomains({
+      committedPatterns: fileHasActiveNotPaused,
+      liveDomains: ['booking.corevo.se', 'klippstudio.corevo.se'],
+      activeSlugs: anonSlugs,
+    })
+    expect(withLive.missingLive).toEqual(['klippstudio.corevo.se'])
   })
 })
