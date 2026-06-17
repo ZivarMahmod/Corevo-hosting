@@ -166,7 +166,7 @@ function buildOursDoc(pageHtml) {
   // reservation form mirroring the vendor's; NOT the real module — the live
   // module is mounted client-side and is intentionally script-blocked here).
   const bookingStandIn = `
-    <!-- STATIC stand-in for <corevo-module type="booking"> (live module mounts client-side; scripts are blocked in this static render) -->
+    <!-- STATIC stand-in for <corevo-module type="booking"> (live module mounts client-side; scripts are blocked in this static render). Mirrors the vendor reservation form field-for-field. -->
     <form class="corevo-booking-standin">
       <div class="row g-3">
         <div class="col-md-6"><div class="form-floating">
@@ -175,14 +175,17 @@ function buildOursDoc(pageHtml) {
         <div class="col-md-6"><div class="form-floating">
           <input type="email" class="form-control" id="email" placeholder="Your Email">
           <label for="email">Your Email</label></div></div>
+        <div class="col-md-6"><div class="form-floating date" id="date3" data-target-input="nearest">
+          <input type="text" class="form-control datetimepicker-input" id="datetime" placeholder="Date & Time" data-target="#date3" data-toggle="datetimepicker" />
+          <label for="datetime">Date &amp; Time</label></div></div>
         <div class="col-md-6"><div class="form-floating">
-          <input type="date" class="form-control" id="date" placeholder="Date">
-          <label for="date">Date</label></div></div>
-        <div class="col-md-6"><div class="form-floating">
-          <select class="form-select" id="party"><option>People 1</option><option>People 2</option><option>People 3</option></select>
-          <label for="party">No Of People</label></div></div>
+          <select class="form-select" id="select1"><option value="1">People 1</option><option value="2">People 2</option><option value="3">People 3</option></select>
+          <label for="select1">No Of People</label></div></div>
+        <div class="col-12"><div class="form-floating">
+          <textarea class="form-control" placeholder="Special Request" id="message" style="height: 100px"></textarea>
+          <label for="message">Special Request</label></div></div>
         <div class="col-12">
-          <button class="btn btn-primary w-100 py-3" type="button">Book A Table</button>
+          <button class="btn btn-primary w-100 py-3" type="button">Book Now</button>
         </div>
       </div>
     </form>`
@@ -313,6 +316,14 @@ async function renderStage2(oursDoc) {
         return route.continue()
       })
       await page.goto(pathToFileURL(VENDOR_INDEX).href, { waitUntil: 'load', timeout: 30000 })
+      // The vendor index.html ships a full-viewport <div id="spinner" class="show …">
+      // loading overlay that the (blocked) vendor JS would normally remove on load.
+      // With scripts off it stays and COVERS the real navbar+hero, blanking the top
+      // section of the referent. Hide/remove it so the vendor's real content paints —
+      // symmetric with OURS, which has no spinner. (Scripts stay blocked; this only
+      // forces the spinner overlay off via CSS + element removal.)
+      await page.addStyleTag({ content: '#spinner{display:none!important;opacity:0!important;visibility:hidden!important}' })
+      await page.evaluate(() => { document.getElementById('spinner')?.remove() })
       await page.waitForTimeout(300)
       await page.screenshot({ path: VENDOR_PNG, fullPage: true })
       await ctx.close()
