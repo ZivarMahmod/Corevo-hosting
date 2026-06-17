@@ -63,3 +63,6 @@ Loopen enumererar från katalogen, applicerar buildable-definitionen + booking-p
 Prioritera mallar med en LIVE Corevo-modul-vertikal (restaurang/salong/klinik) + native boknings-form först.
 
 _Mönster, harness och fällor: se `PILOT-UTFALL.md`. Keep-tröskel ≥0.5 (domar-varians ~±0.5). Allt bakom `SAJTBYGGARE_ENABLED`; deploy = separat Zivar-OK._
+
+---
+**2026-06-18:** Oförändrad — fortsatt PROVA-LÄGE (4 mallar VERIFIERAD 0FAIL). Full ~90-grind väntar fortfarande på Zivars "kör 116". Sajtbyggare-fokus denna session låg på **goal-37 (S2-editor)**: spar-vägen (`saveSiteContent`) + edge-saneraren + overlay-modellen byggda+verifierade (se `5-Kod/docs/sajtbyggare-editor.md`). När 116-grinden släpps: editorn (goal-37) kommer redigera regionerna dessa mallar producerar — håll region-markup till det delade kontraktet.
