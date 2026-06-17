@@ -3,6 +3,27 @@
 > Genererad 2026-06-17 av FAS 1-flottan (10 read-only domän-agenter) i worktree `components-audit`. DB-sanning = `_schema-snapshot-live.md` (prod `clylvowtowbtotrahuad`).
 > Klassning: kopplad / oanvänd / död-knapp / UI-utan-DB / DB-utan-UI / schema-mismatch / AVSIKTLIG. **Lös nod = oanvänd/död-knapp/UI-utan-DB/DB-utan-UI/schema-mismatch** (ej kopplad/AVSIKTLIG).
 
+## ROUND 2 (2026-06-17) — bunden-signal-pass (djupare lins)
+
+Round 1 visade röd-tråd-connectivity frisk. Round 2 körde en DJUPARE men BUNDEN lins (falsifierbara, enumererbara signaler — ej öppen "är logiken verklig"-svep som hittar på). 8 domän-agenter, **113 server-actions enumererade** (täckningsbevis). Bas: merged till latest `main` (db3ec59 — sweepen hade fixat round-1:s tsc-fynd + raderat GrapesJS).
+
+**Utfall: 7 äkta fynd (0 false-positive) — 1 dead-action + 6 hardcoded-bransch.** Inga dead-columns/live-stubs (loyalty-earn = AVSIKTLIG-deferred; shop/blogg-moduler OFF; honest-empty korrekt uteslutet).
+
+**dead-action:** `lib/admin/offert/actions.ts setOffertStatus` — 0 anropare, ersatt av `updateOffertRequest`. → `@deprecated`-flaggad (build-once, ej raderad).
+
+**hardcoded-bransch (guardrail "inget hårdkodat per bransch"):** universella ytor hårdkodade "Frisör" trots att `resolveTerm(verticals.terminology,'staff',…)` finns + syster-ytor använder det. **Live-tenant (Test Barber = nagelstudio) borde visa "Nagelteknolog" men såg "Frisör".** FIXAT med terminologi-wiring (diff-0: fallback = nuvarande ord → ingen regression för no-override-tenants, korrekt specialisering för övriga). 14 filer + ny `components/storefront/staff-noun.ts` (cachad, anon-läsbar verticals verifierad):
+- admin: BookingsClient (+bokningar/page), kunder/page, kunder/[id]/page.
+- kund-portal (serveras på ALLA verticals subdomäner): konto/page (terminology-loader) → StylistCard, FavoritesList.
+- booking (kund-vänd): BookingWizard + storefront-mount (BookingProvider/BookingDrawer/(public)layout) + /boka.
+- portal: PortalShell roleLabel (backoffice-gren).
+Gate: **tsc 0 · lint 0.** Ingen DB/schema/logik-ändring (bara etiketter + fail-safe terminology-reads).
+
+**Deferrade (ärligt, lämnade på nuvarande ord — ingen regression):** svensk bestämd/sammansatt form (resolveTerm inflekterar ej: 'Frisören', 'favoritfrisör'), LoyaltyCard (död/omonterad), `lib/kund/favorites*.ts` data-lager-fallbacks (kräver signatur-ändring), `lib/sajtbyggare/booking-mount` (sweep), CreateTenantForm-chips ('Färg'/'Styling' = service-exempel, ej terminology-nyckel), AccountPrivacy/FavoriteStaffButton (bestämd form).
+
+**⚠️ Flaggat för Zivar (beslut, ej tyst ändrat):** kunder-LISTAN (:135) faller nu tillbaka på 'Frisör', men historik-tabellen (kunder/[id]:183, tidigare runda) faller tillbaka på 'Medarbetare'. Båda visar tenantens override korrekt (nagelstudio→'Nagelteknolog'); skiljer sig BARA för no-override-tenants. Välj en konvention.
+
+---
+
 ## Summa
 - Filer kartlagda: **376** · kopplad: 337 · AVSIKTLIG: 22 · **lösa noder (FAS 2-arbetslista): 18**
 - Domäner: brand(0 lösa) · personal(4 lösa) · portal(1 lösa) · storefront(1 lösa) · realtime(0 lösa) · admin (salongsadmin) — components/admin, app/(admin), lib/admin(3 lösa) · platform(0 lösa) · kund(2 lösa) · booking(0 lösa) · sajtbyggare(6 lösa)

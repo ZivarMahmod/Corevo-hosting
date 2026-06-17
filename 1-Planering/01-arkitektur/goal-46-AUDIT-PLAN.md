@@ -58,4 +58,5 @@ Varje av 132+109 klassad · `LÖSA-NODER.md` = 0 oavsiktliga lösa noder · DB�
 - [x] FAS 2 implementera: 0 WIRE (röd tråd frisk). `@deprecated`-flagg på 9 dubbletter (build-once, ej raderade), korrekt riktning per fil. tsc-clean + lint 0 för alla 9. (commit 9ee5fe4)
 - [x] Migrationer: **inga** — 0 schema-mismatch (DB↔kod i synk).
 - [~] lfg-svans: oberoende review → push + PR (no-auto-merge, efter sweep) → CI.
-- ⚠️ Pre-existing tsc-fel i `lib/sajtbyggare/_optimize/` (proof-kit, restoran-metrics.test) — sweepens revir, orörda, deferred till efter merge.
+- [x] ~~Pre-existing tsc-fel i `lib/sajtbyggare/_optimize/`~~ — FIXAT av sweepen (merged `db3ec59`/`6aaedf9`); branch typecheckar nu GRÖNT.
+- [x] **ROUND 2 (bunden-signal-pass)**: merged latest main; 113 actions enumererade; 7 fynd (1 dead-action @deprecated + 6 hardcoded-bransch). Terminologi-wiring (resolveTerm, diff-0) i 15 filer; tsc 0/lint 0; oberoende review clean. Detaljer i `LÖSA-NODER.md` §ROUND 2.

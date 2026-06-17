@@ -4,6 +4,7 @@ import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant, getTenantById } from '@/lib/tenant-data'
 import { tenantStorefrontUrl } from '@/lib/storefront-url'
 import { createClient } from '@/lib/supabase/server'
+import { cleanTerminology, resolveTerm } from '@/lib/platform/verticals-shared'
 import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 import { PortalSidebar, type PortalRole } from './PortalSidebar'
@@ -97,12 +98,30 @@ export async function PortalShell({
     const brand = portal === 'platform' ? 'Corevo' : tenantName
     const email = user.email ?? ''
     const userLabel = email.split('@')[0] || email || 'Konto'
+    // Bransch terminology overlay for the sidebar identity cell. Resolve the
+    // tenant's vertical terminology on the server (mirrors getAdminTenant's
+    // separate-read seam: a verticals shape/RLS change can never null the
+    // chrome — on any miss the overlay stays {} → today's hardcoded word). The
+    // platform portal has no single tenant (bundle null) → overlay stays {} and
+    // the platform_admin path below never consults the staff entry anyway.
+    let terminology: ReturnType<typeof cleanTerminology> = {}
+    if (bundle?.tenant.vertical_id) {
+      const supabase = await createClient()
+      const { data: vertical } = await supabase
+        .from('verticals')
+        .select('terminology')
+        .eq('key', bundle.tenant.vertical_id)
+        .maybeSingle()
+      terminology = cleanTerminology(vertical?.terminology)
+    }
     // Humanize the raw role enum for the sidebar identity cell (mock shows
     // "Ägare", not "salon_admin"). Falls back to the raw name for unmapped roles.
+    // 'staff' speaks the tenant's bransch via terminology (fallback 'Frisör' = the
+    // historical hardcoded word → a no-override tenant renders exactly today's text).
     const roleLabel: Record<string, string> = {
       salon_admin: 'Ägare',
       owner: 'Ägare',
-      staff: 'Frisör',
+      staff: resolveTerm(terminology, 'staff', 'Frisör'),
       platform_admin: 'Plattform',
     }
     const userSub = user.platformAdmin

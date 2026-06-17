@@ -55,11 +55,16 @@ export function BookingProvider({
   services,
   locations = [],
   tenantName,
+  staffNoun = 'Frisör',
   children,
 }: {
   services: WizardService[]
   locations?: WizardLocation[]
   tenantName: string
+  /** Bransch-resolved staff noun (singular) for the embedded wizard. Resolved on
+   *  the server (layout) and threaded down as a plain string. OPTIONAL — defaults
+   *  to 'Frisör' so any caller that omits it is byte-identical to today. */
+  staffNoun?: string
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -135,6 +140,7 @@ export function BookingProvider({
           services={services}
           locations={locations}
           tenantName={tenantName}
+          staffNoun={staffNoun}
           mode={mode}
         />
       ) : null}

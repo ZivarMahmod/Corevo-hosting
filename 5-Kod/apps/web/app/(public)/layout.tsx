@@ -12,6 +12,7 @@ import { CookieConsent } from '@/components/storefront/CookieConsent'
 import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
+import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { LocalBusinessJsonLd } from '@/components/storefront/seo'
@@ -90,6 +91,10 @@ export default async function PublicLayout({ children }: { children: React.React
   ])
   const wizardServices = bookingLive ? allWizardServices : []
 
+  // Bransch-resolved staff noun (default 'Frisör') for the embedded booking wizard,
+  // so a non-frisör tenant's drawer reads e.g. "Barberare"/"Nagelteknolog".
+  const staffNoun = await resolveStaffNoun(tenant.vertical_id)
+
   // Salvia leads with the richer 3-column footer (real address/hours/contact);
   // the other four themes (and boka/avboka) use the compact MiniFooter.
   const isSalvia = settings.theme === 'salvia'
@@ -123,7 +128,7 @@ export default async function PublicLayout({ children }: { children: React.React
       {/* In-page booking embed (Zivar's #1): the WHOLE shell — nav, main, footer
           — sits inside the provider, so every "Boka tid" CTA opens the same
           slide-over drawer without ever leaving the salon's page. */}
-      <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name}>
+      <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name} staffNoun={staffNoun}>
         {/* Paused booking → "stängt"-banner at the very top (draft/off render
             nothing public, so only 'paused' surfaces here). */}
         {bookingPaused ? <ModulePausedBanner /> : null}

@@ -27,6 +27,7 @@ export function BookingDrawer({
   services,
   locations = [],
   tenantName,
+  staffNoun = 'Frisör',
   mode = 'wizard',
 }: {
   open: boolean
@@ -34,6 +35,9 @@ export function BookingDrawer({
   services: WizardService[]
   locations?: WizardLocation[]
   tenantName: string
+  /** Bransch-resolved staff noun (singular) for the embedded wizard. OPTIONAL —
+   *  defaults to 'Frisör' so any caller that omits it is byte-identical to today. */
+  staffNoun?: string
   /** Variant 3 wizard (default) or Variant 4 kompakt snabbboka. */
   mode?: BookingMode
 }) {
@@ -150,7 +154,7 @@ export function BookingDrawer({
               open → wizarden nollställer sig vid en återöppning EFTER en klar
               bokning, oavsett hur drawern stängdes (Klar/X/Esc/scrim).
               mode → Variant 3 (wizard, default) eller Variant 4 (compact). */}
-          <BookingWizard services={services} locations={locations} open={open} onClose={onClose} mode={mode} />
+          <BookingWizard services={services} locations={locations} open={open} onClose={onClose} mode={mode} staffNoun={staffNoun} />
         </div>
       </div>
     </div>
