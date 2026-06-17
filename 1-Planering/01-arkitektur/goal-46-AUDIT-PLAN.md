@@ -54,7 +54,8 @@ Varje av 132+109 klassad · `LÖSA-NODER.md` = 0 oavsiktliga lösa noder · DB�
 ## Status-logg (uppdateras löpande — resumabel)
 - [x] Setup: worktree, schema-snapshot, deps installerade, plan skriven. (commit 48952a9)
 - [x] FAS 1 MAP (10 domäner) → LÖSA-NODER.md. **376 filer · 337 kopplad · 22 AVSIKTLIG · 18 lösa (alla "oanvänd", 0 död-knapp/schema-mismatch).** (commit 2ee85e7)
-- [~] FAS 2 verify+decide (6 cluster-agenter, read-only) — per orphan: WIRE/SUPERSEDED/FUTURE/SWEEP-DEFER. 7 sajtbyggare = sweep-defer. 11 + mfa under bedömning.
-- [ ] FAS 2 implementera WIRE-beslut (sweep-fria domäner, build-gate per batch)
-- [ ] Migrationer (om mismatch — inga hittade i FAS 1)
-- [ ] lfg-svans (review → PR → CI)
+- [x] FAS 2 verify+decide (6 cluster-agenter, read-only) — **WIRE 0 · SUPERSEDED 9 · FUTURE-INTENTIONAL 2 · SWEEP-DEFER 7**. Egen grep bekräftade 0 importörer.
+- [x] FAS 2 implementera: 0 WIRE (röd tråd frisk). `@deprecated`-flagg på 9 dubbletter (build-once, ej raderade), korrekt riktning per fil. tsc-clean + lint 0 för alla 9. (commit 9ee5fe4)
+- [x] Migrationer: **inga** — 0 schema-mismatch (DB↔kod i synk).
+- [~] lfg-svans: oberoende review → push + PR (no-auto-merge, efter sweep) → CI.
+- ⚠️ Pre-existing tsc-fel i `lib/sajtbyggare/_optimize/` (proof-kit, restoran-metrics.test) — sweepens revir, orörda, deferred till efter merge.
