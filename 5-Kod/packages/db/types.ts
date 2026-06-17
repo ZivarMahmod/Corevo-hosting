@@ -1440,6 +1440,44 @@ export type Database = {
           },
         ]
       }
+      site_content_vertical_defaults: {
+        Row: {
+          created_at: string
+          id: string
+          region_key: string
+          template_key: string
+          updated_at: string | null
+          value: string
+          vertical_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          region_key: string
+          template_key: string
+          updated_at?: string | null
+          value: string
+          vertical_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          region_key?: string
+          template_key?: string
+          updated_at?: string | null
+          value?: string
+          vertical_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_content_vertical_defaults_vertical_id_fkey"
+            columns: ["vertical_id"]
+            isOneToOne: false
+            referencedRelation: "verticals"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       tenant_modules: {
         Row: {
           activated_at: string | null
