@@ -30,7 +30,7 @@ export function moduleMarkerTypes(html: string): string[] {
   const out: string[] = []
   const re = /<corevo-module\b[^>]*\btype=["']([^"']+)["']/g
   let m: RegExpExecArray | null
-  while ((m = re.exec(html)) !== null) out.push(m[1])
+  while ((m = re.exec(html)) !== null) out.push(m[1]!)
   return out
 }
 
@@ -50,7 +50,7 @@ export function modulesWoven(html: string): number {
 export function firstModuleMarker(html: string): { type: string; pos: string | null } | null {
   const m = html.match(/<corevo-module\b([^>]*)>/)
   if (!m) return null
-  const attrs = m[1]
+  const attrs = m[1] ?? ''
   const type = attrs.match(/\btype=["']([^"']+)["']/)?.[1] ?? ''
   const pos = attrs.match(/\bpos=["']([^"']+)["']/)?.[1] ?? null
   return { type, pos }
@@ -61,7 +61,7 @@ export function extractTokenLiterals(text: string): string[] {
   const literals: string[] = []
   for (const m of text.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) literals.push(m[0])
   for (const m of text.matchAll(/font-family\s*:\s*([^;"'`}]+)/gi)) {
-    for (const fam of m[1].split(',')) {
+    for (const fam of (m[1] ?? '').split(',')) {
       const f = fam.trim().replace(/^["']|["']$/g, '')
       if (f) literals.push(f)
     }

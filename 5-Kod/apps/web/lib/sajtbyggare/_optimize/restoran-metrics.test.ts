@@ -67,7 +67,7 @@ function moduleMarkerTypes(html: string): string[] {
   const out: string[] = []
   const re = /<corevo-module\b[^>]*\btype=["']([^"']+)["']/g
   let m: RegExpExecArray | null
-  while ((m = re.exec(html)) !== null) out.push(m[1])
+  while ((m = re.exec(html)) !== null) out.push(m[1]!)
   return out
 }
 
@@ -78,7 +78,7 @@ function extractTokenLiterals(text: string): string[] {
   for (const m of text.matchAll(/#[0-9a-fA-F]{3,8}\b/g)) literals.push(m[0])
   // explicit font-family declarations: font-family: <value> ;
   for (const m of text.matchAll(/font-family\s*:\s*([^;"'`}]+)/gi)) {
-    for (const fam of m[1].split(',')) {
+    for (const fam of (m[1] ?? '').split(',')) {
       const f = fam.trim().replace(/^["']|["']$/g, '')
       if (f) literals.push(f)
     }
