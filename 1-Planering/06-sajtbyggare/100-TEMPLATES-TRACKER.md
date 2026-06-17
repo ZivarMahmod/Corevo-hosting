@@ -52,7 +52,7 @@ Vill du bevisa cross-familj redan nu → byt en slot mot `haircare` (colorlib, f
 |---|---|---|---|---|
 | 42 | klinik | vård/klinik | **VERIFIERAD 0FAIL (proof 18/18: 22 regioner + booking@appointment + kanon-tokens + 9/9 sektioner), oberoende fidelity-verify PASS** | CSS-scoping (mönster-pkt 4); resolver-wiring för copy-fält (goal-37/F2) |
 | 72 | drivin | körskola | **VERIFIERAD 0FAIL (proof 21/21: 21 regioner + booking@appointment + kanon-tokens + 11/11 sektioner), oberoende fidelity-verify PASS** | CSS-scoping; resolver-wiring (goal-37/F2) |
-| 87 | carserv | fordon/bil | BYGGER | — |
+| 87 | carserv | fordon/bil | **VERIFIERAD 0FAIL (proof 22/22: 19 regioner + booking@booking + kanon-tokens + 11/11 sektioner inkl. 2 service-block), oberoende fidelity-verify PASS** | CSS-scoping; resolver-wiring (goal-37/F2) |
 
 > **Hus-mönster-normaliseringar** (bekräftade inerta, matchar restoran-piloten — INTE fidelity-brott): döda/tomma länkar
 > `href=""` → `href="#"`; trailing-space i `class`-attribut trimmas. Visuellt/beteendemässigt identiska; flaggas här
