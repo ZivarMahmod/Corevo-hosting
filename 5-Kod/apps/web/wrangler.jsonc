@@ -102,7 +102,8 @@
     { "pattern": "booking.corevo.se", "custom_domain": true },
     { "pattern": "superbooking.corevo.se", "custom_domain": true },
     { "pattern": "minbooking.corevo.se", "custom_domain": true },
-    { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" }
+    { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" },
+    { "pattern": "test-barber.corevo.se", "custom_domain": true }
   ],
   //
   // ── Named environments (G11) ────────────────────────────────────────────────
