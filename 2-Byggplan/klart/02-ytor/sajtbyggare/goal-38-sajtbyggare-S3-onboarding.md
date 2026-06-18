@@ -1,3 +1,5 @@
+> ✅ **KLAR + LIVE I PROD 2026-06-18** (Zivar "deploya allt i prod"). S2-editorn monterad i onboarding-wizarden (`CreateTenantForm` "Designa sidan"-steg, flagg-gatad STEPS, flag-off byte-identisk); draften foldas via pure `foldOnboardingDraft` (återbrukar sanerande `applySiteContentEdits`, fail-open). tsc0 · vitest 626 (14 regression: STEPS båda grenar + draft-fold inkl XSS-strip + fail-open) · opennext build PASS. **LIVE: prod-worker v `dd0e8902`, `SAJTBYGGARE_ENABLED=true`**, `superbooking.corevo.se/salonger/ny` 200/auth-gatad. Kontrakt: `5-Kod/docs/sajtbyggare-editor.md`. Kvar = Zivars interaktiva klick-genomgång.
+
 # goal-38 — Sajtbyggare S3: onboarding-integration
 Thinking: 🔴 (rör onboarding-flödet som skapar kunder + sajtbyggar-editorn. BLOCKERAD av goal-37/S2 — får INTE startas innan S2 är verifierad klar. Flagga AV i prod tills klar. Zivar-OK före kod KRÄVS.)
 
