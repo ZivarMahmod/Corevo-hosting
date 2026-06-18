@@ -33,6 +33,7 @@ import {
 import { resolveCustomDomainSlug } from '@/lib/custom-domain'
 import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
 import { decideBackofficeRoute, type BackofficeHostKind } from '@/lib/auth/host-routing'
+import { sajtbyggareEnabled } from '@/lib/sajtbyggare/flag'
 
 // Internal dashboard route (file lives at app/(platform)/platform); served at `/`.
 const DASHBOARD_ROUTE = '/platform'
@@ -152,6 +153,19 @@ export async function middleware(request: NextRequest) {
     dest.host = targetHost
     dest.port = ''
     return persistOverride(carryAuthCookies(NextResponse.redirect(dest)))
+  }
+
+  // 3b. Sajtbyggare preview/spike routes (flag-gated) — the S2-editorns same-origin
+  //     iframe-mål. De renderar en tenants PUBLIKA storefront ur SLUG i URL:en (värd-
+  //     oberoende), så de måste serveras på VILKEN host editorn än kör på (inkl. admin-
+  //     dörrarna booking/superbooking). Utan detta bouncar back-office-routern nedan dem
+  //     (de är inte /admin-paths) → editorns preview-iframe 307:ar. Rutterna själv-gatar
+  //     (sajtbyggareEnabled() + notFound() + slug-lookup); flagga AV → fall-igenom fyrar
+  //     ej → noll yta (oförändrat). Före host-routningen så bouncen aldrig hinner före.
+  if (sajtbyggareEnabled() && isPrefix(path, ['/sajtbyggare-spike'])) {
+    response.headers.set('x-corevo-tenant-kind', tenant.kind)
+    if (tenant.kind === 'tenant') response.headers.set('x-corevo-tenant-slug', tenant.slug)
+    return persistOverride(response)
   }
 
   // 4. G12 host routing. Decide rewrite/redirect BEFORE the auth gate, and gate
