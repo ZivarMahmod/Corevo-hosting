@@ -13,8 +13,20 @@ import {
 } from '@/lib/platform/booking-variant'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 import { modulesForVertical, type VerticalPresetData, type TemplateOption } from '@/lib/platform/verticals-shared'
+import { onboardingSteps } from '@/lib/platform/onboarding-steps'
 import { PageHead, Card, Button, Badge, Icon } from '@/components/portal/ui'
 import { Callout } from '@/components/portal/ui'
+// Sajtbyggare S3 (goal-38): den flagg-gatade "Designa sidan"-onboardingeditorn.
+// SiteEditor i 'onboarding'-läge (ingen Spara/iframe — tenant finns ej än) lyfter
+// draften hit via onDraftChange → dolt <input name="site_content_draft">. Region-
+// frö = resolveSiteContent på salvia-manifestet (alla theme-defaults, PURE).
+import {
+  SiteEditor,
+  type SiteEditorRegion,
+} from '@/components/admin/SiteEditor'
+import { resolveSiteContent } from '@/lib/sajtbyggare/resolve'
+import { SALVIA_REGION_MANIFEST } from '@/lib/sajtbyggare/manifest/salvia'
+import { type Draft } from '@/lib/sajtbyggare/editor/overlay-model'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
@@ -118,10 +130,39 @@ function wizardTheme(key: string, name?: string): ThemeDef {
 // and the old "Bokningsvariant" step is replaced by "Moduler" (state-toggle per
 // module; booking.variant survives as a sub-choice there). The remaining steps keep
 // their design intent, shifted one index down.
-const STEPS = ['Bransch', 'Namn & subdomän', 'Temamall', 'Moduler', 'Token-branding', 'Ägare & roll']
-const LAST_STEP = STEPS.length - 1
+//
+// Sajtbyggare S3 (goal-38): two step-sequences. STEPS_LEGACY = the flag-OFF wizard,
+// BYTE-IDENTICAL to before (Temamall + Token-branding as separate steps). STEPS_EDITOR
+// = the flag-ON wizard, where Temamall + Token-branding are REPLACED by a single
+// "Designa sidan" step (the in-wizard SiteEditor; theme comes from the vertical default
+// chooseVertical already sets, so no theme-picker is needed). The active sequence is
+// chosen per-render from `editorEnabled`; every step's JSX is gated on the step LABEL
+// (STEPS[step]) — never a hardcoded index — so both sequences map to the right block.
+// Stegsekvenserna (legacy vs editor) bor i lib/platform/onboarding-steps.ts (PURE +
+// testad, onboarding-steps.test.ts) — onboardingSteps(editorEnabled) väljer aktiv.
 // Accent swatches = the five theme primaries (design step "Token-branding").
 const ACCENTS = ['#5E7361', '#7E6E92', '#C8743C', '#B0693F', '#3A3733']
+
+// Svenska etiketter per salvia-region-nyckel (mirror av admin/sajtbyggare/page.tsx
+// REGION_LABELS — kopierad så onboardingeditorn visar samma etiketter). Saknad nyckel
+// faller tillbaka på själva nyckeln så en framtida region aldrig blir osynlig.
+const REGION_LABELS: Record<string, string> = {
+  'hero.eyebrow': 'Etikett ovanför rubrik',
+  'hero.title': 'Rubrik (hero)',
+  'hero.lede': 'Ingress (hero)',
+  'about.copy': 'Om oss — text',
+  'footer.tagline': 'Slogan (sidfot)',
+  'about.italic': 'Om oss — kursiv fras',
+  'hero.image': 'Hero-bild',
+  'about.image': 'Om oss — bild',
+  'closing.image': 'Avslutningsbild',
+  'color.primary': 'Primärfärg',
+  'color.bg': 'Bakgrundsfärg',
+  'color.fg': 'Textfärg',
+  'color.accent': 'Accentfärg',
+  'font.body': 'Brödtypsnitt',
+  logo: 'Logotyp',
+}
 
 /** name → a clean storefront slug (a–z, 0–9, bindestreck) — mirrors validateSlug. */
 function slugify(s: string): string {
@@ -143,7 +184,21 @@ function liveModuleSummary(
     .join(', ')
 }
 
-export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
+export function CreateTenantForm({
+  presets,
+  editorEnabled,
+}: {
+  presets: VerticalPresetData
+  /** Sajtbyggare S3 (goal-38): SAJTBYGGARE_ENABLED, beräknad server-side och
+   *  inskickad. true → "Designa sidan"-steget (in-wizard SiteEditor) ersätter
+   *  Temamall + Token-branding. false → BYTE-IDENTISK legacy-wizard. */
+  editorEnabled: boolean
+}) {
+  // Aktiv stegsekvens + sista index — härledda ur flaggan. Stepper + footer-navigering
+  // är index-baserade (de fungerar för båda sekvenserna); varje stegs JSX gatas på
+  // etiketten STEPS[step], aldrig på ett hårdkodat index.
+  const STEPS = onboardingSteps(editorEnabled)
+  const LAST_STEP = STEPS.length - 1
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createTenant, {})
   const [step, setStep] = useState(0)
   // Multi-bransch (spår 5): the chosen vertical (bransch). null = none picked yet —
@@ -168,6 +223,10 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   const [ownerEmail, setOwnerEmail] = useState('')
   const [logoName, setLogoName] = useState('')
   const logoRef = useRef<HTMLInputElement>(null)
+  // Sajtbyggare S3 (goal-38): den onboarding-editorns osparade region-draft (regionKey
+  // → värde). SiteEditor i 'onboarding'-läge lyfter den hit; den speglas i ett dolt
+  // <input name="site_content_draft"> som createTenant läser. Tomt {} när oanvänd.
+  const [siteDraft, setSiteDraft] = useState<Draft>({})
 
   const onName = (v: string) => {
     setName(v)
@@ -206,6 +265,25 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
   // Display name of the currently chosen template (from the option list when present).
   const themeName = templateOptions.find((o) => o.key === theme)?.name
   const t = wizardTheme(theme, themeName)
+  // Sajtbyggare S3 (goal-38): seed-regionerna för "Designa sidan"-steget. resolveSiteContent
+  // på salvia-manifestet utan tenant/bransch-data → alla theme-defaults (provenance
+  // 'standard'). Theme-oberoende → tom dep-lista. Mappas till SiteEditors prop-form
+  // (släpp `source`, lägg på svensk etikett ur REGION_LABELS).
+  const onboardingRegions: SiteEditorRegion[] = useMemo(
+    () =>
+      resolveSiteContent(SALVIA_REGION_MANIFEST, {
+        verticalDefaults: {},
+        tenantCopy: null,
+        tenantBranding: null,
+      }).map((r) => ({
+        key: r.key,
+        type: r.type,
+        value: r.value,
+        provenance: r.provenance,
+        label: REGION_LABELS[r.key] ?? r.key,
+      })),
+    [],
+  )
   // Resolve a module's CURRENT chosen state: explicit pick → preset default → 'off'.
   // booking can never read below 'live' (the floor) regardless of stored value.
   const stateFor = (key: string): ModuleState => {
@@ -280,6 +358,10 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
             tenant_modules. */}
         {verticalKey ? <input type="hidden" name="vertical_id" value={verticalKey} /> : null}
         <input type="hidden" name="modules" value={JSON.stringify(moduleSubmitMap)} />
+        {/* Sajtbyggare S3 (goal-38): "Designa sidan"-editorns region-draft (regionKey →
+            värde). Alltid monterad — '{}' när oanvänd (legacy-flöde / inget redigerat).
+            createTenant läser detta, JSON.parse i try/catch, → applySiteContentEdits. */}
+        <input type="hidden" name="site_content_draft" value={JSON.stringify(siteDraft)} />
         {accent ? <input type="hidden" name="color_accent" value={accent} /> : null}
         <input type="hidden" name="tagline" value={tagline} />
         <input type="hidden" name="owner_name" value={ownerName} />
@@ -325,8 +407,8 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
             ))}
           </div>
 
-          {/* ── Step 0 · Bransch (multi-bransch spår 5 — preset-driven) ── */}
-          {step === 0 && (
+          {/* ── Bransch (multi-bransch spår 5 — preset-driven) ── */}
+          {STEPS[step] === 'Bransch' && (
             <div>
               <p className="body" style={{ marginTop: 0, marginBottom: 16 }}>
                 Vilken bransch är kunden i? Branschen förväljer mall + moduler — du kan ändra allt
@@ -374,8 +456,8 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
             </div>
           )}
 
-          {/* ── Step 1 · Namn & subdomän ── */}
-          {step === 1 && (
+          {/* ── Namn & subdomän ── */}
+          {STEPS[step] === 'Namn & subdomän' && (
             <div style={{ display: 'grid', gap: 16 }}>
               <Field label={`Namn på ${kundLabel}`} hint="Valfritt nu — går att ändra sen." ph="t.ex. Klippoteket" value={name} onChange={onName} />
               <div>
@@ -404,11 +486,12 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
             </div>
           )}
 
-          {/* ── Step 2 · Temamall (the live preview the operator chooses from) ──
+          {/* ── Temamall (the live preview the operator chooses from) ──
               Multi-bransch: the choices come from the `templates` catalog filtered by
               the chosen bransch (tags.bransch). Falls back to the built-in five when no
-              bransch is picked or the bransch has no templates seeded yet. */}
-          {step === 2 && (
+              bransch is picked or the bransch has no templates seeded yet.
+              Sajtbyggare S3: legacy-only — i editor-läget ersätts detta av "Designa sidan". */}
+          {STEPS[step] === 'Temamall' && (
             <div>
               <p className="body" style={{ marginTop: 0, marginBottom: 14 }}>
                 {vertical
@@ -464,8 +547,69 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
             </div>
           )}
 
-          {/* ── Step 3 · Moduler (multi-bransch spår 5 — state-toggle per modul) ── */}
-          {step === 3 && (
+          {/* ── Designa sidan (Sajtbyggare S3 / goal-38 — endast editor-läge) ──
+              Ersätter Temamall + Token-branding. Temat kommer från branschens default
+              (chooseVertical satte det redan), så ingen tema-väljare behövs här. När
+              temat är 'salvia' monteras SiteEditor i 'onboarding'-läge (ingen Spara,
+              ingen iframe — tenant finns ej än) och lyfter sin draft hit via
+              onDraftChange → dolt site_content_draft. Andra mallar saknar S2-manifest →
+              en notis + de gamla accent/tagline-fälten så även de får branding. */}
+          {STEPS[step] === 'Designa sidan' && (
+            <div>
+              {theme === 'salvia' ? (
+                <>
+                  <p className="body" style={{ marginTop: 0, marginBottom: 14 }}>
+                    Designa kundens startsida — ändra texter, bilder och färger. Allt sparas
+                    tillsammans med salongen när du skapar den. (Förhandsvisning visas när kunden
+                    har skapats.)
+                  </p>
+                  <SiteEditor
+                    slug=""
+                    templateKey="salvia"
+                    regions={onboardingRegions}
+                    mediaAssets={[]}
+                    mode="onboarding"
+                    onDraftChange={setSiteDraft}
+                  />
+                  <div style={{ marginTop: 12 }}><TableChip>tenant_settings · settings.copy + branding</TableChip></div>
+                </>
+              ) : (
+                <div style={{ display: 'grid', gap: 16 }}>
+                  <Callout tone="info" icon="info">
+                    Full sajt-redigering finns för mallen ”salvia”. Den här mallen designas efter
+                    skapande.
+                  </Callout>
+                  <Field label="Tagline" ph="Hårvård med lugn hand" value={tagline} onChange={setTagline} />
+                  <div>
+                    <label style={fieldLabel}>Accentfärg</label>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                      {ACCENTS.map((c) => {
+                        const on = accent === c
+                        return (
+                          <button
+                            key={c}
+                            type="button"
+                            aria-label={`Accentfärg ${c}`}
+                            aria-pressed={on}
+                            onClick={() => setAccent(on ? '' : c)}
+                            style={{
+                              width: 34, height: 34, borderRadius: 9, background: c, cursor: 'pointer',
+                              border: '2px solid var(--c-paper)',
+                              boxShadow: on ? '0 0 0 2px var(--c-forest)' : '0 0 0 1px var(--c-line)',
+                            }}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 2 }}><TableChip>tenant_settings</TableChip></div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Moduler (multi-bransch spår 5 — state-toggle per modul) ── */}
+          {STEPS[step] === 'Moduler' && (
             <div>
               <p className="body" style={{ marginTop: 0, marginBottom: 16 }}>
                 Slå på modulerna kunden ska ha. Varje modul har ett <b>läge</b>: utkast (dold publikt),
@@ -565,8 +709,9 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
             </div>
           )}
 
-          {/* ── Step 4 · Token-branding ── */}
-          {step === 4 && (
+          {/* ── Token-branding (Sajtbyggare S3: legacy-only — i editor-läget ingår
+              accent/tagline i "Designa sidan") ── */}
+          {STEPS[step] === 'Token-branding' && (
             <div style={{ display: 'grid', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="eyebrow">Leksakslådan · no-code</span>
@@ -619,8 +764,8 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
             </div>
           )}
 
-          {/* ── Step 5 · Ägare & roll ── */}
-          {step === 5 && (
+          {/* ── Ägare & roll ── */}
+          {STEPS[step] === 'Ägare & roll' && (
             <div style={{ display: 'grid', gap: 16 }}>
               <Field label="Ägarens namn" ph="Förnamn Efternamn" value={ownerName} onChange={setOwnerName} />
               <Field

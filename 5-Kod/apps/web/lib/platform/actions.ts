@@ -23,7 +23,9 @@ import {
   type DcvRecord,
 } from '@/lib/cloudflare/custom-hostnames'
 import { attachWorkerSubdomain } from '@/lib/cloudflare/worker-domains'
+import { foldOnboardingDraft } from '@/lib/sajtbyggare/onboarding-fold'
 import type { TenantBranding } from '@corevo/ui'
+import type { Json } from '@corevo/db'
 
 export type ActionState = { error?: string; success?: string }
 
@@ -134,15 +136,35 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   //    settings.theme is read by the public layout → [data-theme], so the new salon
   //    ships the chosen named storefront, not the default. settings.copy.tagline is
   //    the owner-editable footer/utility tagline (M2/M6 copy contract).
+  const settings = {
+    theme,
+    booking: { variant: bookingVariant },
+    ...(tagline ? { copy: { tagline } } : {}),
+  }
+
+  // Sajtbyggare (goal-37/38): the onboarding editor posts a JSON draft (region.key →
+  // value) in the hidden `site_content_draft` input. We FOLD it ON TOP of the base
+  // settings/branding above (accent + logo + tagline are the base; the draft becomes
+  // the new tenant's sanitized Kund-overrides). PURE + fail-open: a bad draft NEVER
+  // fails tenant creation — we just keep the base. Only the salvia manifest is wired
+  // today; any other theme ignores the draft.
+  // Fold the onboarding editor's site_content_draft on top of the base settings/branding
+  // via the sanitizing apply-core (PURE + fail-open — a bad/empty draft keeps the base,
+  // never blocks onboarding). Only salvia is wired today. Tested: onboarding-fold.test.ts.
+  const folded = foldOnboardingDraft(
+    theme,
+    String(fd.get('site_content_draft') ?? ''),
+    settings,
+    initialBranding as unknown as Record<string, unknown>,
+  )
+  const settingsForInsert: Json = folded.settings as unknown as Json
+  const brandingForInsert: Json = folded.branding as unknown as Json
+
   const { error: sErr } = await supabase.from('tenant_settings').insert({
     tenant_id: tenantId,
     payment_mode: 'on_site',
-    branding: initialBranding,
-    settings: {
-      theme,
-      booking: { variant: bookingVariant },
-      ...(tagline ? { copy: { tagline } } : {}),
-    },
+    branding: brandingForInsert,
+    settings: settingsForInsert,
     billing_model: billingModel,
     setup_fee_cents: setupFee,
     per_booking_fee_cents: perBookingFee,

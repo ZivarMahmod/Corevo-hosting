@@ -49,6 +49,13 @@ type SiteEditorProps = {
   templateKey: string
   regions: SiteEditorRegion[]
   mediaAssets: SiteEditorMediaAsset[]
+  /** 'live' (default) = dagens beteende (Spara → saveSiteContent + iframe-preview).
+   *  'onboarding' = tenant finns ej än → ingen Spara, ingen iframe; draften lyfts
+   *  i stället till föräldern via onDraftChange (CreateTenantForm fångar den). */
+  mode?: 'live' | 'onboarding'
+  /** Anropas (i onboarding-läge) varje gång draften ändras så föräldern kan
+   *  spegla den till sitt dolda <input name="site_content_draft">. */
+  onDraftChange?: (draft: Draft) => void
 }
 
 // ── Konstanter ──────────────────────────────────────────────────────────────
@@ -548,8 +555,16 @@ function fontOptions(current: string): { value: string; label: string }[] {
 
 // ── Huvudkomponent ────────────────────────────────────────────────────────────
 
-export function SiteEditor({ slug, templateKey, regions, mediaAssets }: SiteEditorProps) {
+export function SiteEditor({
+  slug,
+  templateKey,
+  regions,
+  mediaAssets,
+  mode = 'live',
+  onDraftChange,
+}: SiteEditorProps) {
   const router = useRouter()
+  const isOnboarding = mode === 'onboarding'
   const [draft, setDraft] = useState<Draft>({})
   const [pickerFor, setPickerFor] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -566,6 +581,13 @@ export function SiteEditor({ slug, templateKey, regions, mediaAssets }: SiteEdit
     }, PREVIEW_DEBOUNCE_MS)
     return () => clearTimeout(t)
   }, [draft, slug])
+
+  // Onboarding-läge: lyft draften till föräldern (CreateTenantForm) vid varje ändring
+  // så dess dolda <input name="site_content_draft"> alltid speglar nuläget. Live-läget
+  // rör inte detta (onDraftChange är undefined där → optional-call är en no-op).
+  useEffect(() => {
+    if (isOnboarding) onDraftChange?.(draft)
+  }, [isOnboarding, onDraftChange, draft])
 
   const dirty = hasUnsavedChanges(draft)
 
@@ -641,50 +663,72 @@ export function SiteEditor({ slug, templateKey, regions, mediaAssets }: SiteEdit
             gap: 10,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={!dirty || isSaving}
+          {isOnboarding ? (
+            <p
               style={{
-                fontSize: 14,
-                fontWeight: 600,
-                padding: '9px 18px',
-                borderRadius: 9,
-                border: 'none',
-                cursor: !dirty || isSaving ? 'default' : 'pointer',
-                color: '#fff',
-                background:
-                  !dirty || isSaving ? 'var(--c-ink-4, #9ca3af)' : 'var(--c-forest, #2f4733)',
+                margin: 0,
+                fontSize: 12.5,
+                color: 'var(--c-ink-3, #6b7280)',
+                lineHeight: 1.5,
               }}
             >
-              {isSaving ? 'Sparar…' : 'Spara'}
-            </button>
-            {dirty && !isSaving && (
-              <span style={{ fontSize: 12, color: 'var(--c-ink-3, #6b7280)' }}>
-                Du har osparade ändringar
-              </span>
-            )}
-            {savedNote && !dirty && !isSaving && (
-              <span style={{ fontSize: 12, color: 'var(--c-forest, #2f4733)' }} role="status">
-                Sparat — ändringen är live.
-              </span>
-            )}
-          </div>
-
-          {saveError && (
-            <p
-              role="alert"
-              style={{ margin: 0, fontSize: 12.5, color: 'var(--c-danger, #b42318)' }}
-            >
-              {saveError}
+              Förhandsvisning visas när kunden har skapats.
             </p>
-          )}
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={onSave}
+                  disabled={!dirty || isSaving}
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    padding: '9px 18px',
+                    borderRadius: 9,
+                    border: 'none',
+                    cursor: !dirty || isSaving ? 'default' : 'pointer',
+                    color: '#fff',
+                    background:
+                      !dirty || isSaving ? 'var(--c-ink-4, #9ca3af)' : 'var(--c-forest, #2f4733)',
+                  }}
+                >
+                  {isSaving ? 'Sparar…' : 'Spara'}
+                </button>
+                {dirty && !isSaving && (
+                  <span style={{ fontSize: 12, color: 'var(--c-ink-3, #6b7280)' }}>
+                    Du har osparade ändringar
+                  </span>
+                )}
+                {savedNote && !dirty && !isSaving && (
+                  <span style={{ fontSize: 12, color: 'var(--c-forest, #2f4733)' }} role="status">
+                    Sparat — ändringen är live.
+                  </span>
+                )}
+              </div>
 
-          <p style={{ margin: 0, fontSize: 12, color: 'var(--c-ink-3, #6b7280)', lineHeight: 1.5 }}>
-            Förhandsvisa live: dina ändringar går live direkt när du sparar — utan att sidan
-            behöver byggas om eller publiceras.
-          </p>
+              {saveError && (
+                <p
+                  role="alert"
+                  style={{ margin: 0, fontSize: 12.5, color: 'var(--c-danger, #b42318)' }}
+                >
+                  {saveError}
+                </p>
+              )}
+
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 12,
+                  color: 'var(--c-ink-3, #6b7280)',
+                  lineHeight: 1.5,
+                }}
+              >
+                Förhandsvisa live: dina ändringar går live direkt när du sparar — utan att sidan
+                behöver byggas om eller publiceras.
+              </p>
+            </>
+          )}
         </div>
 
         {/* Region-sektioner */}
@@ -751,14 +795,41 @@ export function SiteEditor({ slug, templateKey, regions, mediaAssets }: SiteEdit
         >
           <strong style={{ fontSize: 14 }}>Förhandsvisning</strong>
           <span style={{ fontSize: 12, color: 'var(--c-ink-3, #6b7280)' }}>
-            Förhandsvisningen visar den riktiga sidan med dina ändringar — så här blir den live.
+            {isOnboarding
+              ? 'Förhandsvisning visas när kunden har skapats.'
+              : 'Förhandsvisningen visar den riktiga sidan med dina ändringar — så här blir den live.'}
           </span>
         </div>
-        <iframe
-          title="Förhandsvisning"
-          src={previewSrc}
-          style={{ flex: 1, width: '100%', border: 'none', background: 'var(--c-cream, #f3f1ea)' }}
-        />
+        {isOnboarding ? (
+          <div
+            style={{
+              flex: 1,
+              display: 'grid',
+              placeItems: 'center',
+              padding: 24,
+              background: 'var(--c-cream, #f3f1ea)',
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                maxWidth: 320,
+                textAlign: 'center',
+                fontSize: 13,
+                lineHeight: 1.5,
+                color: 'var(--c-ink-3, #6b7280)',
+              }}
+            >
+              Förhandsvisning visas när kunden har skapats.
+            </p>
+          </div>
+        ) : (
+          <iframe
+            title="Förhandsvisning"
+            src={previewSrc}
+            style={{ flex: 1, width: '100%', border: 'none', background: 'var(--c-cream, #f3f1ea)' }}
+          />
+        )}
       </section>
 
       {pickerFor !== null && (
