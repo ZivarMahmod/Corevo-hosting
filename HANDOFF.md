@@ -2,6 +2,15 @@
 
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
 
+## 🟢 2026-06-18 (natt, Cowork) — goal-38 (S3 onboarding-editor) BYGGD + STAGING · main pushad · 37+38 LIVE-TESTBARA på staging
+**Zivar: "gör klart 37 så 38 kan bli gjort, pusha, deploy så jag kan testa direkt." Utfall: 37 i klart/, 38 byggd+staging, main PUSHAD (`e1f6705`), staging redeployad m. 37+38+goal-46-merge. ⚠️ "pusha main" deployar INTE prod — bara `v*`-tag → CI gör det. Editorn är testbar NU på staging (länkar nedan).**
+- **goal-38 (S3) BYGGD via workflow (3 författare, låsta kontrakt) + 2 pure-refaktorer för testbarhet:** onboarding-wizarden (`CreateTenantForm`) får ett flagg-gatat **"Designa sidan"-steg** som ersätter Temamall+Token-branding och monterar **S2:s SiteEditor i 'onboarding'-läge** (ingen Spara/iframe — tenant finns ej än; draften lyfts via `onDraftChange` → dolt `site_content_draft`). `createTenant` **foldar** draften ovanpå bas-settings/branding via **`foldOnboardingDraft`** (pure, återbrukar den SANERANDE `applySiteContentEdits` → gratis XSS-paritet; **fail-open**: dålig draft blockerar ALDRIG tenant-skapande). STEPS-sekvensen i pure `lib/platform/onboarding-steps.ts`. Flag-OFF = **byte-identisk** legacy-wizard. Commit `e1f6705`.
+- **Gates:** tsc 0 · vitest **626** (14 nya regression: STEPS båda grenar + draft-fold inkl XSS-strip + fail-open) · opennext build PASS · **staging redeployad v `4d3492bd-ace8-4fcf-b01f-34a813d5137e`**.
+- **STAGING-PROBA (mekaniskt):** 37-editorn fungerar EFTER merge+38 (draft→riktig `<h1>`, XSS strippad live) · `/salonger/ny` = 307→login (38-wizarden finns + auth-gatad) · prod `corevo.se`+`booking` = 200 (orörd).
+- **▶ TESTA LIVE NU (staging, flagga PÅ):** logga in som test-barber-admin på `https://bokningsplatformen-staging.zivar68.workers.dev` → **editorn:** `/admin/sajtbyggare` (klicka kontroll → ändra → Spara → ladda om storefront). **onboarding:** `/salonger/ny` (steget "Designa sidan"). Samma DB + kod som pushad main.
+- **⛔ KVAR (Zivars gates, ej mekaniskt-bart):** (1) interaktiv inloggad klick-verify (37+38) i browser. (2) **PROD go-live** = flippa `SAJTBYGGARE_ENABLED` "false"→"true" i committad `wrangler.jsonc` (rad 52) + pusha en **`v*`-tag** → CI kör `deploy-prod.mjs` (har token, re-asserterar domäner; test-barber = committad route → överlever). Det är den PUBLIKA go-liven + första riktiga fix-35-prod-deployen → **Zivars uttryckliga beslut** (gjordes EJ autonomt: bara `v*`-tag deployar prod; bare `wrangler deploy` detachar domäner; jag saknar `CLOUDFLARE_API_TOKEN` lokalt).
+- **goal-36 — DEFERRAD** (Zivar: "skippa 36 for now, dela upp i mindre vågor senare"). 4 verifierade kvarstår.
+
 ## 🟢 2026-06-18 (sent, Cowork) — goal-37 (S2) HELA EDITORN byggd + STAGING-RENDER-BEVISAD · ENDA KVAR = Zivars login-klick-verify
 **Fortsättning på dagens session ("bygg vidare bli klar" + använd workflows). S2-editorn nu FULLT byggd + mekaniskt staging-bevisad. Flytta goal-37 → klart EFTER en 5-min inloggad klick-verify (nedan).**
 - **Byggt (commits `bd4cda0` skal + `5a0f75f` granskar-fix + `f9d3b98` spar-test, main opushat):**
