@@ -49,7 +49,9 @@
     // goal-31 (S0 sajtbyggare-spike): deploy-wide flag for the site-builder spike.
     // OFF here = zero new public surface on PRODUCTION (the spike route notFound()s).
     // ON only on the staging worker (env.staging.vars below). Read at call-time.
-    "SAJTBYGGARE_ENABLED": "false"
+    // 2026-06-18: PROD go-live av sajtbyggaren (S1+S2+S3 byggda + staging-bevisade,
+    // Zivar-auktoriserat "deploy så jag kan testa direkt" + CF-token tillhandahållen).
+    "SAJTBYGGARE_ENABLED": "true"
   },
   "assets": {
     "directory": ".open-next/assets",
