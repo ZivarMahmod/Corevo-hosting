@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { StaffFavorite } from '@/lib/kund/favorites'
 import type { StaffBand } from '@/lib/kund/loyalty'
+import { resolveTerm, termPlural, type Terminology } from '@/lib/platform/verticals-shared'
 import { FavoriteStaffButton } from './FavoriteStaffButton'
 import styles from './account.module.css'
 
@@ -30,20 +31,31 @@ export function StylistCard({
   favorite,
   staffBands,
   favoriteStaffIds,
+  terminology = {},
 }: {
   favorite: StaffFavorite | null
   staffBands: StaffBand[]
   favoriteStaffIds: string[]
+  /** Bransch label overlay (verticals.terminology). Optional → default {} means a
+   *  no-override tenant renders today's exact text (DIFF-0). The mount that has the
+   *  tenant context (/konto) passes the resolved overlay; any other mount stays as-is. */
+  terminology?: Terminology
 }) {
+  // Resolve the bransch nouns ONCE per render, per exact-case literal. Nominative
+  // forms only — inflected/compound forms ('frisören', 'favoritfrisör') are left
+  // hardcoded (resolveTerm/termPlural never inflect Swedish).
+  const staffLc = resolveTerm(terminology, 'staff', 'frisör') // base, lowercase nominative
+  const staffUc = resolveTerm(terminology, 'staff', 'Frisör') // base, capitalized
+  const staffPlUc = termPlural(terminology, 'staff', 'Frisörer') // plural, capitalized
   if (favorite) {
-    const name = favorite.title?.trim() || 'Din frisör'
+    const name = favorite.title?.trim() || `Din ${staffLc}`
     const initial = name.charAt(0).toUpperCase()
     const band = staffBands.find((b) => b.staffId === favorite.staffId)
     const rel = band
       ? band.visits === 1
-        ? 'Din sparade frisör · ni har setts 1 gång'
-        : `Din sparade frisör · ni har setts ${band.visits} gånger`
-      : 'Din sparade frisör hos salongen.'
+        ? `Din sparade ${staffLc} · ni har setts 1 gång`
+        : `Din sparade ${staffLc} · ni har setts ${band.visits} gånger`
+      : `Din sparade ${staffLc} hos salongen.`
     return (
       <section className={styles.card}>
         <div className={styles.stylistHead}>
@@ -51,7 +63,7 @@ export function StylistCard({
             {initial}
           </div>
           <div className={styles.heroText}>
-            <div className={styles.sectionEyebrow}>Din frisör</div>
+            <div className={styles.sectionEyebrow}>Din {staffLc}</div>
             <div className={styles.stylistName}>{name}</div>
             <div className={styles.stylistRel}>{rel}</div>
           </div>
@@ -62,8 +74,8 @@ export function StylistCard({
             quote. We say so honestly rather than faking memory/notes. */}
         <div className={styles.emptyNote}>
           <p>
-            Din frisör lär känna dig med tiden. Det ni går igenom under besöket stannar hos din
-            frisör.
+            Din {staffLc} lär känna dig med tiden. Det ni går igenom under besöket stannar hos din{' '}
+            {staffLc}.
           </p>
         </div>
 
@@ -87,8 +99,8 @@ export function StylistCard({
           ?
         </div>
         <div className={styles.heroText}>
-          <div className={styles.sectionEyebrow}>Din frisör</div>
-          <div className={styles.stylistName}>Välj din frisör</div>
+          <div className={styles.sectionEyebrow}>Din {staffLc}</div>
+          <div className={styles.stylistName}>Välj din {staffLc}</div>
           <div className={styles.stylistRel}>
             Spara din favoritfrisör så samlar vi din relation och dina bokningar på ett ställe.
           </div>
@@ -97,11 +109,11 @@ export function StylistCard({
 
       {staffBands.length > 0 ? (
         <div className={styles.cardBlock}>
-          <div className={styles.blockLabel}>Frisörer du träffat</div>
+          <div className={styles.blockLabel}>{staffPlUc} du träffat</div>
           <ul className={styles.bandList}>
             {staffBands.map((b) => (
               <li key={b.staffId} className={styles.bandRow}>
-                <span className={styles.bandName}>{b.staffTitle ?? 'Frisör'}</span>
+                <span className={styles.bandName}>{b.staffTitle ?? staffUc}</span>
                 <span className={styles.bandMeta}>
                   <span className={styles.bandVisits}>
                     {b.visits === 1 ? 'sett 1 gång' : `sett ${b.visits} gånger`}
@@ -120,7 +132,7 @@ export function StylistCard({
 
       <div className={styles.stylistEmpty}>
         <Link href="/boka" className={styles.btn}>
-          Hitta din frisör
+          Hitta din {staffLc}
         </Link>
       </div>
     </section>

@@ -5,6 +5,12 @@ import { setBookingStatus, type ActionState } from '@/lib/admin/actions'
 import { BOOKING_STATUSES, statusLabel } from '@/lib/admin/format'
 import styles from './admin.module.css'
 
+/**
+ * @deprecated goal-46 audit 2026-06-17: oanvänd build-once-dubblett. Ersatt av
+ * BookingsClient.tsx (status-Drawer på /admin/bokningar, med ALLOWED_FROM-guards
+ * + konsekvens-Toast). Detta är den äldre oguarderade <select>-varianten — wire
+ * ALDRIG in. Behålls (build-once-never-delete), ej raderad.
+ */
 export function BookingStatusControl({ bookingId, status }: { bookingId: string; status: string }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setBookingStatus, {})
 

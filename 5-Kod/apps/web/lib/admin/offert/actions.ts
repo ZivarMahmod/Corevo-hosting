@@ -56,6 +56,13 @@ export async function updateOffertRequest(
   return { success: 'Förfrågan uppdaterad.' }
 }
 
+/**
+ * @deprecated Superseded by {@link updateOffertRequest} (the only offert-status UI,
+ * OffertInbox.tsx, dispatches updateOffertRequest — which also persists note +
+ * estimate_cents). setOffertStatus has 0 call sites and is a divergent dead
+ * write-path (status-only). Kept per build-once-never-delete; do NOT wire new UI
+ * to it — use updateOffertRequest so note/estimate stay in sync.
+ */
 export async function setOffertStatus(
   _p: ActionState,
   fd: FormData,

@@ -113,10 +113,14 @@ export function BookingsClient({
   bookings,
   tz,
   weekTemplate,
+  staffNoun = 'Frisör',
 }: {
   bookings: BookingRow[]
   tz: string
   weekTemplate: WeekTemplate
+  /** Bransch-noun for the staff column/label (resolved server-side). Default
+   *  'Frisör' so an unwired mount renders exactly today's text (DIFF-0). */
+  staffNoun?: string
 }) {
   const [view, setView] = usePersistentView<View>('corevo.bookings.view', VIEWS, 'vecka')
   const [filter, setFilter] = useState<StatusFilter>('Alla')
@@ -186,7 +190,7 @@ export function BookingsClient({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Sök tjänst, frisör…"
+            placeholder={`Sök tjänst, ${staffNoun.toLowerCase()}…`}
             aria-label="Sök bokningar"
             style={{
               width: '100%',
@@ -239,13 +243,18 @@ export function BookingsClient({
       </div>
 
       {view === 'lista' ? (
-        <ListaView bookings={list} tz={tz} onSelect={setSelected} />
+        <ListaView bookings={list} tz={tz} onSelect={setSelected} staffNoun={staffNoun} />
       ) : (
         <VeckaView bookings={list} tz={tz} weekTemplate={weekTemplate} onSelect={setSelected} />
       )}
 
       {selectedLive && (
-        <BookingDrawer booking={selectedLive} tz={tz} onClose={() => setSelected(null)} />
+        <BookingDrawer
+          booking={selectedLive}
+          tz={tz}
+          onClose={() => setSelected(null)}
+          staffNoun={staffNoun}
+        />
       )}
     </>
   )
@@ -256,10 +265,12 @@ function ListaView({
   bookings,
   tz,
   onSelect,
+  staffNoun,
 }: {
   bookings: BookingRow[]
   tz: string
   onSelect: (b: BookingRow) => void
+  staffNoun: string
 }) {
   if (bookings.length === 0) return <EmptyMatch />
   return (
@@ -270,7 +281,7 @@ function ListaView({
             <th>Tid</th>
             <th>Kund</th>
             <th>Tjänst</th>
-            <th>Frisör</th>
+            <th>{staffNoun}</th>
             <th data-last="">Pris</th>
             <th>Status</th>
           </tr>
@@ -675,7 +686,17 @@ function actionsFor(status: string): DrawerAction[] {
   return out
 }
 
-function BookingDrawer({ booking, tz, onClose }: { booking: BookingRow; tz: string; onClose: () => void }) {
+function BookingDrawer({
+  booking,
+  tz,
+  onClose,
+  staffNoun,
+}: {
+  booking: BookingRow
+  tz: string
+  onClose: () => void
+  staffNoun: string
+}) {
   const { notify } = useToast()
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setBookingStatus, {})
@@ -799,7 +820,7 @@ function BookingDrawer({ booking, tz, onClose }: { booking: BookingRow; tz: stri
               value={`${dayLabel(booking.startTs, tz)} ${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)}`}
               num
             />
-            <DetailPair label="Frisör" value={booking.staffTitle} />
+            <DetailPair label={staffNoun} value={booking.staffTitle} />
             <DetailPair label="Pris" value={priceLabel(booking.priceCents)} num />
             <DetailPair label="Betalning" value={paymentLabel(booking)} num />
             <DetailPair

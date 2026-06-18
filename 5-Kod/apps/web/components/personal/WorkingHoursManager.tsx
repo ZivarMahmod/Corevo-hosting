@@ -3,6 +3,11 @@ import type { WorkingHoursRow } from '@/lib/personal/schedule'
 import styles from './personal.module.css'
 
 /**
+ * @deprecated goal-46 audit 2026-06-17: oanvänd build-once-dubblett. Ersatt av
+ * ScheduleGrid (app/(personal)/personal/arbetstider/ScheduleGrid.tsx) — samma
+ * working_hours-baseline som streckade fönsterceller. Behålls (build-once),
+ * ej raderad.
+ *
  * Read-only view of the staff member's bookable baseline (M5 §2.1). The baseline is
  * OWNER authority (M6) — the frisör no longer self-edits it. Operative changes
  * (sick day / vacation) live on /personal/franvaro; per-booking changes (rebook /

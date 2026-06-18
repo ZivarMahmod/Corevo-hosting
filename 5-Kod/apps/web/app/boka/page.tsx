@@ -8,6 +8,7 @@ import {
   type WizardService,
   type WizardLocation,
 } from '@/components/booking/BookingWizard'
+import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Boka tid' }
@@ -49,6 +50,8 @@ export default async function BokaPage() {
         .order('name', { ascending: true }),
     ])
   const mode = readBookingMode(settingsRow?.settings)
+  // Bransch-resolved staff noun (default 'Frisör') for the customer-facing wizard.
+  const staffNoun = await resolveStaffNoun(tenant.vertical_id)
   const locations: WizardLocation[] = (locationRows ?? []).map((l) => ({
     id: l.id,
     name: l.name,
@@ -94,7 +97,7 @@ export default async function BokaPage() {
       <div className="section-inner">
         <h1>Boka tid hos {tenant.name}</h1>
         <p className="prose">Välj tjänst, personal och tid — klart på under en minut.</p>
-        <BookingWizard services={wizardServices} locations={locations} mode={mode} />
+        <BookingWizard services={wizardServices} locations={locations} mode={mode} staffNoun={staffNoun} />
       </div>
     </section>
   )

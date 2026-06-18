@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
+import { resolveTerm } from '@/lib/platform/verticals-shared'
 import { listCustomers, customerStats } from '@/lib/admin/data'
 import { getCustomerStaffFavorite } from '@/lib/kund/favorites'
 import { formatDateTime } from '@/lib/admin/format'
@@ -132,7 +133,7 @@ export default async function CustomersPage({
                   <th>Nivå</th>
                   <th>Besök</th>
                   <th>Senaste</th>
-                  <th>Frisör</th>
+                  <th>{resolveTerm(tenant.terminology, 'staff', 'Frisör')}</th>
                   <th data-last="">Lojalitet</th>
                 </tr>
               </thead>

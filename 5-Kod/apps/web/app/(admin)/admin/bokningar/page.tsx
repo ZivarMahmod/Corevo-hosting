@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
+import { resolveTerm } from '@/lib/platform/verticals-shared'
 import {
   listBookings,
   listStaff,
@@ -148,7 +149,12 @@ export default async function BookingsPage() {
         </Button>
       </PageHead>
 
-      <BookingsClient bookings={rows} tz={tz} weekTemplate={weekTemplate} />
+      <BookingsClient
+        bookings={rows}
+        tz={tz}
+        weekTemplate={weekTemplate}
+        staffNoun={resolveTerm(tenant.terminology, 'staff', 'Frisör')}
+      />
     </section>
   )
 }

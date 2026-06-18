@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { Favorite } from '@/lib/kund/favorites'
 import { removeFavorite, type FavoriteActionState } from '@/lib/kund/favorites-actions'
 import { formatPrice } from '@/lib/kund/format'
+import { resolveTerm, type Terminology } from '@/lib/platform/verticals-shared'
 import styles from './kund.module.css'
 
 function RemoveButton({ favoriteId, label }: { favoriteId: string; label: string }) {
@@ -39,12 +40,22 @@ function RemoveButton({ favoriteId, label }: { favoriteId: string; label: string
  * param (?staff= / ?service=) so the M3 booking wizard can prefill the selection;
  * harmless if M3 ignores it (it just lands on /boka). Honest empty state.
  */
-export function FavoritesList({ favorites }: { favorites: Favorite[] }) {
+export function FavoritesList({
+  favorites,
+  terminology = {},
+}: {
+  favorites: Favorite[]
+  /** Bransch label overlay (verticals.terminology). Optional → default {} renders
+   *  today's exact text (DIFF-0). Passed by the /konto mount which has tenant ctx. */
+  terminology?: Terminology
+}) {
+  const staffLc = resolveTerm(terminology, 'staff', 'frisör') // lowercase nominative
+  const staffUc = resolveTerm(terminology, 'staff', 'Frisör') // capitalized nominative
   if (favorites.length === 0) {
     return (
       <div className={styles.empty}>
         <p className={styles.emptyText}>
-          Inga favoriter än. Spara din frisör eller en favorittjänst så får du snabbare till nästa
+          Inga favoriter än. Spara din {staffLc} eller en favorittjänst så får du snabbare till nästa
           bokning.
         </p>
         <Link href="/boka" className="btn-primary">
@@ -65,7 +76,7 @@ export function FavoritesList({ favorites }: { favorites: Favorite[] }) {
             <span className={styles.favText}>
               <strong>{f.name}</strong>
               <span className={styles.sub}>
-                {f.kind === 'staff' ? 'Frisör' : 'Tjänst'}
+                {f.kind === 'staff' ? staffUc : 'Tjänst'}
                 {f.kind === 'service' && f.priceCents != null ? ` · ${formatPrice(f.priceCents)}` : ''}
               </span>
             </span>

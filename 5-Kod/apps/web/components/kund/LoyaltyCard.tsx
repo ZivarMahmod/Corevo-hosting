@@ -3,6 +3,10 @@ import { FavoriteStaffButton } from './FavoriteStaffButton'
 import styles from './kund.module.css'
 
 /**
+ * @deprecated goal-46 audit 2026-06-17: oanvänd build-once-dubblett. Ersatt av
+ * AccountLoyalty (components/kund/AccountLoyalty.tsx) på worldade /konto §4.8;
+ * stamkund-bandet om-hemmat till StylistCard. Behålls (build-once), ej raderad.
+ *
  * Loyalty visning (M4 §2.2). Presentational — all derivation lives in
  * lib/kund/loyalty.ts. HONEST about earning, which is NOT wired here (points are
  * minted by a separate DB trigger, migration 0013). Three states:

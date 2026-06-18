@@ -4,7 +4,12 @@ import { useRouter } from 'next/navigation'
 import type { StaffWithServices } from '@/lib/admin/data'
 import styles from './admin.module.css'
 
-/** Navigates to ?staff=<id> so the server page loads that staff's schedule. */
+/**
+ * Navigates to ?staff=<id> so the server page loads that staff's schedule.
+ * @deprecated goal-46 audit 2026-06-17: oanvänd build-once-dubblett. Ersatt av
+ * SlotManager.tsx StaffChips (chip-navigering på /admin/scheman, §4.5-kanon —
+ * chips, ej dropdown). Behålls (build-once-never-delete), ej raderad.
+ */
 export function StaffPicker({
   staff,
   selectedId,

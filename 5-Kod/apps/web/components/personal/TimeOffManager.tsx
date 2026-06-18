@@ -7,6 +7,12 @@ import type { TimeOffRow } from '@/lib/personal/schedule'
 import { DeleteRowButton } from './DeleteRowButton'
 import styles from './personal.module.css'
 
+/**
+ * @deprecated goal-46 audit 2026-06-17: oanvänd build-once-dubblett. Ersatt av
+ * AbsencePanel (app/(personal)/personal/franvaro/AbsencePanel.tsx) — rikare wired
+ * variant över samma addTimeOff/deleteTimeOff + time_off-tabell. Behålls
+ * (build-once-never-delete), ej raderad.
+ */
 export function TimeOffManager({ rows, timeZone }: { rows: TimeOffRow[]; timeZone: string }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(addTimeOff, {})
 

@@ -65,6 +65,7 @@ export function BookingWizard({
   open,
   onClose,
   mode = 'wizard',
+  staffNoun = 'Frisör',
 }: {
   services: WizardService[]
   /** Bokningsbara platser (VÅG 4b). OPTIONAL — utelämnad/tom/en post → ingen
@@ -82,6 +83,13 @@ export function BookingWizard({
   onClose?: () => void
   /** Variant 3 wizard (default) or Variant 4 kompakt snabbboka. */
   mode?: BookingMode
+  /** Customer-facing staff noun (singular), bransch-resolved on the SERVER mount
+   *  and passed down as a plain string. OPTIONAL — defaults to 'Frisör' so the
+   *  un-edited sajtbyggare mount (and any caller that doesn't pass it) renders
+   *  EXACTLY today's text. Tenants with a bransch override read e.g. 'Barberare',
+   *  'Nagelteknolog', 'Stylist'. Resolve via resolveTerm(terminology,'staff',
+   *  'Frisör') — NEVER pass the raw terminology object to this client component. */
+  staffNoun?: string
 }) {
   const compact = mode === 'compact'
   const router = useRouter()
@@ -459,9 +467,10 @@ export function BookingWizard({
               })}
             </div>
 
-            {/* Frisör — chip row (Alla + each staff of the chosen service) */}
-            <div className="ckompakt-label">Frisör</div>
-            <div className="ckompakt-chiprow" role="group" aria-label="Välj frisör">
+            {/* Personal-chip-row (Alla + each staff of the chosen service). Label
+                is the bransch-resolved staff noun (default 'Frisör'). */}
+            <div className="ckompakt-label">{staffNoun}</div>
+            <div className="ckompakt-chiprow" role="group" aria-label={`Välj ${staffNoun.toLowerCase()}`}>
               <button
                 type="button"
                 className={`ckompakt-chip${staffChoice === 'any' ? ' selected' : ''}`}
@@ -482,7 +491,7 @@ export function BookingWizard({
                     style={on ? goldSelected : undefined}
                     onClick={() => setStaffChoice(m.id)}
                   >
-                    {m.title ?? 'Frisör'}
+                    {m.title ?? staffNoun}
                   </button>
                 )
               })}
@@ -764,7 +773,7 @@ export function BookingWizard({
                   style={staffChoice === m.id ? goldBorder : undefined}
                 >
                   <span className="wizard-card-main">
-                    <strong>{m.title ?? 'Frisör'}</strong>
+                    <strong>{m.title ?? staffNoun}</strong>
                   </span>
                   {staffChoice === m.id ? (
                     <span className={styles.pickedChip} aria-hidden>

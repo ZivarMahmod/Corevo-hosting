@@ -108,7 +108,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           >
             <Detail label="Visningsnamn" value={customer.shownName} />
             <Detail label="Återkommande" value={`${customer.visits} besök`} num />
-            <Detail label="Favoritfrisör" value={favStaff} />
+            <Detail
+              label={`Favorit${resolveTerm(tenant.terminology, 'staff', 'Frisör').toLowerCase()}`}
+              value={favStaff}
+            />
             <Detail label="Konto" value={customer.isLinkedAccount ? 'Inloggad kund' : 'Gäst'} />
             <Detail label="Kund sedan" value={formatDateTime(customer.firstSeenAt, tz)} num />
             <Detail label="Senast sedd" value={formatDateTime(customer.lastSeenAt, tz)} num />

@@ -14,6 +14,7 @@ import { AccountBookings, CancelledBookings } from '@/components/kund/AccountBoo
 import { AccountHistory } from '@/components/kund/AccountHistory'
 import { AccountPrivacy, type NameMode } from '@/components/kund/AccountPrivacy'
 import { FavoritesList } from '@/components/kund/FavoritesList'
+import { cleanTerminology, type Terminology } from '@/lib/platform/verticals-shared'
 import account from '@/components/kund/account.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -36,6 +37,31 @@ export default async function KontoPage() {
   // Durable customer id (favorites + loyalty ledger key on it). null for a
   // never-booked account → all reads degrade to honest empty-states.
   const customerId = await getCustomerId(user.id, tenantId)
+
+  // Bransch terminology overlay (verticals.terminology) → universal kund-portal
+  // surfaces speak the tenant's bransch instead of a hardcoded 'Frisör'. Mirrors
+  // getAdminTenant's SEPARATE read (not an embedded join): verticals_read is
+  // SELECT-open to authenticated (a kund IS authenticated), and on ANY miss the
+  // overlay stays {} → every wired leaf falls back to its EXACT current word, so a
+  // no-override / 'generell' tenant renders precisely today's text (DIFF-0). The
+  // resolved object is plain serialisable JSON → safe to pass to client leaves.
+  let terminology: Terminology = {}
+  if (tenantId) {
+    const { data: tenantRow } = await supabase
+      .from('tenants')
+      .select('vertical_id')
+      .eq('id', tenantId)
+      .maybeSingle()
+    const verticalId = (tenantRow?.vertical_id as string | null) ?? null
+    if (verticalId) {
+      const { data: vertical } = await supabase
+        .from('verticals')
+        .select('terminology')
+        .eq('key', verticalId)
+        .maybeSingle()
+      terminology = cleanTerminology(vertical?.terminology)
+    }
+  }
 
   const [{ upcoming, past }, loyalty, favorites, staffFavorite, pointsPerVisit] = await Promise.all([
     getMyBookings(user.id),
@@ -85,6 +111,7 @@ export default async function KontoPage() {
         favorite={staffFavorite}
         staffBands={loyalty.staffBands}
         favoriteStaffIds={favoriteStaffIds}
+        terminology={terminology}
       />
 
       <AccountLoyalty view={loyalty} />
@@ -102,7 +129,7 @@ export default async function KontoPage() {
       {favorites.length > 0 ? (
         <section>
           <h2 className={account.sectionTitle}>Sparade favoriter</h2>
-          <FavoritesList favorites={favorites} />
+          <FavoritesList favorites={favorites} terminology={terminology} />
         </section>
       ) : null}
 
