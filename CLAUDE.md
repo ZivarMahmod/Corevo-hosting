@@ -1,4 +1,6 @@
-# CLAUDE.md — Corevo Booking
+# CLAUDE.md — Corevo (multi-bransch-plattform)
+
+Corevo är en GENERELL multi-bransch-plattform — EN motor/DB/kodbas som bygger sidor + verkliga moduler (bokning, webshop, offert, fordon, lojalitet, blogg, presentkort …) åt **vilken bransch som helst**, med mallar och moduler som slås på/av per kund. Frisör är bara EN bransch bland flera, aldrig projektets definition. Kanon för produkten = `1-Planering/01-arkitektur/multibransch-plattform-arkitektur.md`.
 
 Projekt-instruktioner för Claude (Code + Cowork). Nuläge + status bor i **`HANDOFF.md`** (läs den först för var bygget står). Den här filen styr HUR vi jobbar i repot — särskilt var filer ska ligga.
 

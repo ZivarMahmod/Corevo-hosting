@@ -1,5 +1,7 @@
 # Plattforms-arkitektur — multi-bransch (Corevo)
 
+> ⭐ KANON — produktdefinitionen för hela Corevo (LÅST med Zivar 2026-06-14/15). Vid konflikt mellan denna fil och någon "booking/salong/frisör"-framing i CLAUDE.md/HANDOFF/minnen: **DENNA fil vinner**. Frisör = ETT exempel; plattformen är multi-bransch.
+>
 > Fastställd 2026-06-14 med Zivar. Detta är **grunddokumentet** för hela plattformen — den modell allt annat byggs mot. Tas till nästa planeringssession (DB → hela vägen → storefront).
 
 ## 1. Syfte / vision

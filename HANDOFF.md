@@ -1,6 +1,16 @@
-# HANDOFF — Corevo Booking Platform
+# HANDOFF — Corevo (multi-bransch-plattform)
 
 Klistra in detta i nästa Cowork-session så Nörden är ikapp direkt.
+
+## ⭐ VAD ÄR COREVO — läs detta FÖRST (stående, ej historik)
+▶️ **NÄSTA / ENDA ROADMAPEN = `2-Byggplan/ROADMAP.md`** — rak väg till launch + scope kvar + öppna beslut + lagkrav. (Daterade "NÄSTA INGÅNG"-rader längre ner = historik, överspelade av denna.)
+
+Corevo är EN multi-bransch-plattform: EN motor, EN databas, EN kodbas där super-admin (Zivar) klickar fram en färdig kundsida för **vilken bransch som helst** — frisör, verkstad, florist, butik, restaurang, klinik, café … Frisör är BARA EN bransch (preset) bland flera, ALDRIG "projektet". Aldrig en fork per bransch.
+- **Bransch (vertical/preset)** = ett paket: default-moduler + default-mall + terminologi. Ny bransch = ny preset, inte nytt repo.
+- **Moduler à la carte** (Bokning · Webshop · Offert · Fordon · Betalning · Lojalitet · Blogg · Presentkort …) togglas PER KUND (off→draft→live→paused). En kund kan ha vilken kombination som helst oavsett bransch.
+- **Sajtbyggaren** = den visuella huben där Zivar/kunden bygger sidan; bokning är en av modulerna den väver in, inte plattformens syfte.
+- ⚠️ Stöter du på "salong/frisör = projektet" någonstans → det är legacy-framing, INTE sanningen. KANON = `1-Planering/01-arkitektur/multibransch-plattform-arkitektur.md` (LÅST med Zivar 2026-06-14/15). Bygg bransch-neutralt; frisör = exempel.
+- Operativa namn (`bokningsplatformen`, `booking.corevo.se`, Supabase-projektet, repo-namnet) är legacy-infra och DEFINIERAR inte produkten — rör dem inte, men låt dem inte heller styra hur du tänker om scopet.
 
 ## 🟢🚀 2026-06-18 (natt, Cowork) — SAJTBYGGAREN LIVE I PROD (S1+S2+S3, flagga PÅ) · fix-35 BEVISAD på riktig deploy · 1 känd preview-bugg
 **Zivar: "deploya allt i prod omg" → kört. Prod-worker `bokningsplatformen` v `f972a15c-b335-469f-b565-1dbf66bd5fb6` (rollback `16735d4f`). `SAJTBYGGARE_ENABLED="true"` committad+pushad (`2ab2713`). Deploy via `scripts/deploy-prod.mjs` + CF-token ur `.env.local`.**

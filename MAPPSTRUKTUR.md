@@ -30,7 +30,7 @@ Tankar som blivit beslut. Inte research, inte mål — beslut och modeller.
 - **Så växer den:** ny del planeras → ny numrerad mapp. Aldrig lösa filer i roten.
 
 ### `2-Byggplan/` — det vi SKA göra + det vi GJORT
-- Roten = bara levande styrfiler: `FINSLIP-TODO.md` (master-listan), `ROADMAP-*.md` (stora bilden), `FRÅGOR-TILL-ZIVAR.md` (öppna beslut).
+- Roten = en levande styrfil: `ROADMAP.md` (enda roadmapen — rak väg, scope kvar, öppna beslut, lagkrav). Öppna goals i `goals/`, fixar i `fix/`.
 - `goals/` = mål/briefs som INTE körts än. En fil = ett mål = `goal-NN-*` eller `fix-NN-*`.
 - `klart/` = arkivet. 8 kategorier (se `klart/0-LÄS-MIG-FÖRST.md`): 01-grund · 02-ytor · 03-betalning · 04-sakerhet-drift · 05-design · 06-mejl-notiser · 07-workflows-faser · 08-fixar.
 - **Livscykel för en goal:** skrivs i `goals/` → körs av Code → verifieras (aldrig ögonmått) → FLYTTAS till rätt `klart/`-kategori. Aldrig kopia — flytt. `goals/` tom = inget pågår.
