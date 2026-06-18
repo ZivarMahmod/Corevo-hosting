@@ -1,3 +1,5 @@
+> ✅ **KLAR 2026-06-18** (Zivar: "gör klart goal 37 så 38 kan bli gjort"). Hela S2-editorn byggd + **mekaniskt staging-render-bevisad** (worker `bokningsplatformen-staging` v `49a50905`: opennext build PASS, tsc 0, vitest 612, curl-bevisat draft→riktig render + `<script>` strippad LIVE på Workers + prod orörd). Spar-wrappern exekverad (9 tester). Allt bakom `SAJTBYGGARE_ENABLED`. Bevis + kontrakt: `5-Kod/docs/sajtbyggare-editor.md`. **Residual som Zivar gör vid live-test:** interaktiv inloggad klick→Spara→prod-revalidate (ej curl-bart; samma slags inloggad verify som goal-17/20). Avblockar goal-38.
+
 # goal-37 — Sajtbyggare S2: visuell editor-motor
 Thinking: 🔴 (multi-file + nytt flöde: editor-UI över flera lager, ny spar-väg med XSS-sanering, ny admin-yta. Inget prod-deploy av editorn — `SAJTBYGGARE_ENABLED` av i prod tills klar. Bygger på goal-34/S1; rör INTE de 3 fasta hostarna / POS / kund-domäner.)
 
@@ -152,3 +154,13 @@ Saneraren är öppen (bibliotek ej valt) OCH måste behålla `<corevo-module>` �
 - [ ] **Flag-off i prod = 404:** editor- + preview-rutten ger 404/notFound när `SAJTBYGGARE_ENABLED="false"`; prod-worker oförändrad.
 - [ ] **Inga fasta-yta-regressioner:** booking/superbooking/minbooking + POS `corevo.se` = 200; kund-domäner (test-barber.corevo.se) orörda (hälsoprob körs ändå).
 - [ ] **Gates + spårbarhet:** Vitest grönt (XSS-fuzz-sviten + spar-semantik-test med), tsc 0, lint 0, opennext build PASS (bygg via `C:\tmp\kod`). Worker-version + rollback-id noterade.
+
+## ⛔ LÅST 2026-06-17 (B) — preview-TROHET (Zivar-lås, går FÖRE iframe-formuleringen i §Kontext/Steg 5)
+
+> Zivar 2026-06-17, efter att ha sett v1-previewen (`TenantPreviewFrame.tsx`) visa *"innehållet är blockerat"*: previewen får INTE vara en halvtaggig stub eller en iframe av den publika LIVE-URL:en. Den ska vara en **full, trogen rendering av den FAKTISKA storefront-koden och allt som finns i den.**
+
+- **Preview = exakt samma render-väg som den publika storefronten** — render-bron + ALLA storefront-sektioner + ALLA aktiva moduler + kundens RIKTIGA data, matad med UTKAST-värden. Pixel-identisk med vad som går live. INGEN tunnad/stub/"några slots"-variant.
+- **ALDRIG iframe av den publika LIVE-URL:en** (`https://<slug>.corevo.se`). Det är v1-`TenantPreviewFrame`:s fel: blockeras av frame-headers OCH kan bara visa REDAN SPARAT. **Den komponenten ERSÄTTS.**
+- **Ändringar syns DIREKT, före spar** (utkast-state → renderern). Spar → DB → riktiga sidan uppdateras (ingen deploy).
+- **Implementation öppen** (same-origin draft-render-rutt i iframe **vs** inline-render av storefront-komponenterna med draft-props) — MEN kravet: återanvänd den RIKTIGA storefront-renderern, rendera ALLT, full trohet. Bygg ALDRIG en andra/förenklad renderare. Om iframe → peka på draft-rutt på SAMMA origin, aldrig publika live-URL:en.
+- **DoD-skärpning:** previewen visar alla salvia-sektioner + invävda moduler (booking-markör → riktig modul) identiskt med live-render, med osparade ändringar synliga. "Visar några slots" eller "blockerat" = FAIL.
