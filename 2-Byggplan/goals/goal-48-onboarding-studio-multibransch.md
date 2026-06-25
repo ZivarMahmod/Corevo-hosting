@@ -33,11 +33,14 @@ Paket: `4-Dokument-Underlag/01-acceptans/super-admin/` (källan) + `standalone/O
 ## Wave 0 — DB-SANNING FÖRST (goal-47-lärdomen: designen 2026-06-16 ljuger om DB)
 **Verifiera mot LIVE-DB innan en rad byggs (DB vinner):**
 - [x] `templates`/`template_slots`/`content_slots` finns (migr 0026). ✓
-- [ ] ⚠️ `tenant_site_pages` finns **INTE** → designens "text"+"modplace" kan inte skriva dit. Persistera till `content_slots` (template-bron-vägen, kopplar till goal-47 slice 2) eller interim `tenant_settings.copy`. **Beslut krävs i wave 4/5.**
-- [ ] `services` pris-kolumnform (inline `price_cents` vs separat `service_prices`) — designen säger `service_prices (öre)`; verifiera vad som finns. Styr "tjanster"-stegets write.
-- [ ] Lojalitet-nyckel-bugg: `verticals.default_modules` säger `"loyalty"` men modulen heter `"lojalitet"` → default-aktivering trasig. **Rätta i staging FÖRST** (sanningsdoc §6). Hör direkt ihop med "modulerna funkar".
-- [ ] 4 tomma mallar (`edit`/`leander`/`linnea`/`zigge` = 0 sektioner) → t.ex. nagel-default `linnea` ger tom sajt. Seedas innan icke-salvia-onboarding ger en riktig sida.
-- [ ] Live-sanning: vilka `verticals` (`live`/seedade) + vilka `modules`-rader finns idag. Bara dessa wire:as; resten = Roadmap-märkta, byggs ej.
+- [x] ⚠️ `tenant_site_pages` finns **INTE** (verifierat live 2026-06-26) → "text"+"modplace" skriver `content_slots` (goal-47 slice 2-väg). Beslut låst till W5.
+- [x] `services` pris-kolumnform: **inline `price_cents` (int, öre)** finns — INGEN separat `service_prices`-tabell. W4 skriver inline. ✓
+- [x] Lojalitet-nyckel-bugg: bekräftad på **alla 5 verticals** (`default_modules ? 'loyalty'` = true överallt; `modules.key='lojalitet'`). Fix = `0039_w0_loyalty_key_fix.sql` (§7.1-rename, värde bevarat draft/off, idempotent). **Apply staging först.**
+- [x] ~~4 tomma mallar seedas~~ → **DROPPAD (falsk premiss, goal-47-mönstret igen).** Storefront renderar via **5 hårdkodade React-layouter** (`STOREFRONT_LAYOUTS[theme]`: Salvia/Leander/Zigge/Linnea/Edit) + starka per-tema-defaults i `theme-content.ts`. `templates.sections` läses ENDAST av `SkinRenderer`, som är gatad `theme==='salvia'` + flagga (av i prod). En nagel-onboard → `theme='linnea'` → `LinneaLayout` med fulla `THEME_CONTENT.linnea`-defaults (hero/lede/stats/bilder) → **redan en riktig sajt, ej tom.** Seed hade ändrat NOLL i prod-render (+ vilselett: antyder att de temana rider data-driven-vägen, vilket de inte gör). Klar-beviset "ej tom sajt" är alltså redan uppfyllt av befintlig kod. *Att seeda sektioner för icke-salvia-teman hör hemma när data-driven-render breddas bortom salvia (goal-47/template-bron), inte här.*
+- [x] Live-sanning: **5 verticals** (frisör/barbershop/nagelstudio/restaurang/generell) + **7 modules** (booking/shop/offert/lojalitet/presentkort/blogg/media_library). Bara dessa wire:as; resten = Roadmap-märkta.
+
+### W0 — UTFALL (2026-06-26)
+DB-sanning klar. **W0 = ENBART loyalty-key-fixen** (`0039`). Template-seed droppad som falsk premiss (se ovan) — avvikelse från runspec, ratificeras här. `services.price_cents` + `tenant_site_pages`-frånvaro bekräftade → W4/W5-writes låsta. Ingen TS-ändring i W0 (ren SQL).
 
 ## Vågor (en klar → staging-bevisa → nästa; flagga ny `ONBOARDING_STUDIO_ENABLED`, separat från SAJTBYGGARE_ENABLED)
 1. **Studio-skal (UX, inga nya writes).** Journey-bar (Kunder→Studio→Live) + SuperEntry (riktig kund-lista, ej DEMO_TENANTS) + rail (5 faser/12 steg, `cfg-data PHASES`) + 420px-panel + preview-pane. `cfg`-state per `app.jsx`. Lansera-knappen anropar befintliga `createTenant` (mappa `cfg`→FormData). Befintliga 5-stegs-fälten återanvänds inuti panelerna. **Inga nya DB-tabeller.**
