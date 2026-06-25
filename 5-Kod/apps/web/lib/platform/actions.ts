@@ -219,9 +219,12 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     if (!svc) {
       inviteNote = ' Inbjudan ej skickad: SUPABASE_SERVICE_ROLE_KEY saknas (sätts av ops).'
     } else {
+      // Carry the salon name into invite user_metadata so the Supabase invite
+      // template can greet with the salon's name ({{ .Data.tenant_name }}) instead
+      // of the generic "Corevo" default (W0 #3). full_name stays optional.
       const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(
         ownerEmail,
-        ownerName ? { data: { full_name: ownerName } } : undefined,
+        { data: { ...(ownerName ? { full_name: ownerName } : {}), tenant_name: name } },
       )
       if (iErr || !invited?.user) {
         inviteNote = ` Salongen skapad, men inbjudan misslyckades: ${iErr?.message ?? 'okänt fel'}.`
