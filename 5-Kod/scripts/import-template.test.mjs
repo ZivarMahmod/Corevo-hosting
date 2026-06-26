@@ -37,12 +37,14 @@ test('rewriteAssets rewrites relative img/css, keeps http + #', () => {
 })
 
 test('extractCssHrefs collects stylesheets, drops animate.css, rewrites relative', () => {
-  const head = '<head><link rel="stylesheet" href="css/bootstrap.min.css"><link rel="stylesheet" href="lib/animate/animate.min.css"><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="https://cdn/x.css"></head>'
+  const head = '<head><link rel="stylesheet" href="css/bootstrap.min.css"><link rel="stylesheet" href="lib/animate/animate.min.css"><link rel="stylesheet" href="css/owl.carousel.min.css"><link rel="stylesheet" href="css/owl.theme.default.min.css"><link rel="stylesheet" href="css/aos.css"><link rel="stylesheet" href="css/style.css"><link rel="stylesheet" href="https://cdn/x.css"></head>'
   const hrefs = extractCssHrefs(head, 'carserv')
   assert.ok(hrefs.includes('/sajtbyggare/carserv/css/bootstrap.min.css'))
   assert.ok(hrefs.includes('/sajtbyggare/carserv/css/style.css'))
   assert.ok(hrefs.includes('https://cdn/x.css'), 'CDN kept verbatim')
   assert.ok(!hrefs.some((h) => h.includes('animate')), 'animate.css dropped')
+  // goal-36 fidelity: owl/aos hide content with no JS → must be dropped.
+  assert.ok(!hrefs.some((h) => /owl\.carousel|owl\.theme|aos\.css/i.test(h)), 'owl/aos dropped')
 })
 
 test('extractCanonTokens lifts --primary + body bg/color/font', () => {

@@ -426,7 +426,9 @@ Copyright &copy; All rights reserved | This template is made with <i class="fa f
 export const ALOTAN_CSS_HREFS = [
   'https://fonts.googleapis.com/css?family=Roboto:300,400,700',
   '/sajtbyggare/alotan/css/bootstrap.css',
-  '/sajtbyggare/alotan/css/owl.carousel.min.css',
+  // owl.carousel.min.css DROPPED (goal-36): `.owl-carousel{display:none}` only flips to
+  // block via owl's (stripped) JS → it HID the Services slider. Without it the 12 service
+  // tiles render stacked + visible (static-first).
   '/sajtbyggare/alotan/css/magnific-popup.css',
   '/sajtbyggare/alotan/fonts/ionicons/css/ionicons.min.css',
   '/sajtbyggare/alotan/fonts/fontawesome/css/font-awesome.min.css',

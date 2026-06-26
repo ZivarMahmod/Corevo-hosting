@@ -405,10 +405,13 @@ export const HAIRSAL_PAGE_HTML = `
  *      JS, so it is dropped → the (inert) data-aos attrs have no effect, content shows.
  *    - magnific-popup / jquery-ui / bootstrap-datepicker / mediaelement: JS widgets
  *      with no static role here.
- *  External CDN deps (Google Fonts "Poppins"/"Display Playfair", icomoon/flaticon icon
- *  fonts) are also not loaded (CSP-blocked / static-first) — fonts fall back and the
- *  icon glyphs render blank, the documented static-mode tradeoff (as in carserv). */
+ *  Google Fonts ("Poppins"/"Display Playfair") fall back (CSP-blocked CDN). The LOCAL
+ *  icomoon + flaticon icon fonts ARE loaded (goal-36) so the service/social glyphs render. */
 export const HAIRSAL_CSS_HREFS = [
   '/sajtbyggare/hairsal/css/bootstrap.min.css',
+  // goal-36: load the LOCAL icon fonts (present on disk) so the Featured-Services glyphs
+  // (flaticon-razor / location-pin / shave) + social icons render instead of blank boxes.
+  '/sajtbyggare/hairsal/fonts/icomoon/style.css',
+  '/sajtbyggare/hairsal/fonts/flaticon/font/flaticon.css',
   '/sajtbyggare/hairsal/css/style.css',
 ] as const

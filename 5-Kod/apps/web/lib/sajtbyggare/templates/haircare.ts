@@ -47,7 +47,7 @@ export const HAIRCARE_PAGE_HTML = `
 	  </nav>
     <!-- END nav -->
 
-    <section class="hero-wrap js-fullheight" style="background-image: url(/sajtbyggare/haircare/images/bg-2.jpg);" data-stellar-background-ratio="0.5">
+    <section class="hero-wrap js-fullheight" style="min-height: 100vh; background-image: url(/sajtbyggare/haircare/images/bg-2.jpg);" data-stellar-background-ratio="0.5">
       <div class="overlay"></div>
       <div class="container">
         <div class="row no-gutters slider-text js-fullheight justify-content-center align-items-center">
@@ -586,10 +586,10 @@ export const HAIRCARE_CSS_HREFS = [
   'https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700',
   'https://fonts.googleapis.com/css?family=Barlow+Condensed:500,600,700&display=swap',
   '/sajtbyggare/haircare/css/open-iconic-bootstrap.min.css',
-  '/sajtbyggare/haircare/css/owl.carousel.min.css',
-  '/sajtbyggare/haircare/css/owl.theme.default.min.css',
+  // owl.carousel + owl.theme + aos DROPPED (goal-36): they set display:none / opacity:0
+  // and only reveal via stripped JS → they HID the Team ("Makeup Artist", 5 stylists)
+  // and Testimony carousels. Without them those sections render stacked + visible.
   '/sajtbyggare/haircare/css/magnific-popup.css',
-  '/sajtbyggare/haircare/css/aos.css',
   '/sajtbyggare/haircare/css/ionicons.min.css',
   '/sajtbyggare/haircare/css/bootstrap-datepicker.css',
   '/sajtbyggare/haircare/css/jquery.timepicker.css',

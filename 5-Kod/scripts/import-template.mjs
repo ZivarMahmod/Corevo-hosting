@@ -116,7 +116,12 @@ export function extractCssHrefs(html, key) {
   while ((m = re.exec(head)) !== null) {
     const href = m[0].match(/\bhref=["']([^"']+)["']/i)?.[1]
     if (!href) continue
-    if (/animate\.css|animate\.min\.css/i.test(href)) continue // animation CSS not loaded
+    // Hide/animation CSS whose content only shows once JS runs — and we strip all JS.
+    // animate.css → animation classes; owl.carousel/owl.theme → `.owl-carousel{display:none}`
+    // (hides whole carousel sections); aos.css → `[data-aos]{opacity:0}`. NEVER load these,
+    // else faithful markup renders invisible (goal-36 fidelity bug). The inert markup stays
+    // and renders stacked + visible without them.
+    if (/animate(\.min)?\.css|owl\.carousel|owl\.theme|aos\.css/i.test(href)) continue
     if (/^https?:|^\/\//i.test(href)) { hrefs.push(href); continue } // CDN (e.g. bootstrap-icons, fonts)
     const rel = href.replace(/^\.?\//, '')
     hrefs.push(`/sajtbyggare/${key}/${rel}`)

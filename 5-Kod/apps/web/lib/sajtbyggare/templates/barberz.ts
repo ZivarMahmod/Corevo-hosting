@@ -537,9 +537,8 @@ export const BARBERZ_CSS_HREFS = [
   '/sajtbyggare/barberz/css/bootstrap.min.css',
   '/sajtbyggare/barberz/css/bootstrap-datepicker.css',
   '/sajtbyggare/barberz/css/jquery.fancybox.min.css',
-  '/sajtbyggare/barberz/css/owl.carousel.min.css',
-  '/sajtbyggare/barberz/css/owl.theme.default.min.css',
+  // owl.carousel + owl.theme + aos DROPPED (goal-36): hid the carousel section body +
+  // aos reveal content with no JS. Dropped → content renders stacked + visible.
   '/sajtbyggare/barberz/fonts/flaticon/font/flaticon.css',
-  '/sajtbyggare/barberz/css/aos.css',
   '/sajtbyggare/barberz/css/style.css',
 ] as const
