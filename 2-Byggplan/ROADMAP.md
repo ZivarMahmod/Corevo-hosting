@@ -57,7 +57,8 @@
 - **AccountPrivacy:** ge namn-läget en spar-action (kund-yta-gap).
 
 ### B · TEMPLATE-BRON — bryter storefront-loopen (det stora spåret)
-- ✅ **Slice 1 KLAR (goal-47, i main + live, byte-identisk):** storefront-läsvägen för DB `content_slots` finns bakom flagga (`should-render-db`); 0 authored slots i prod → gaten false = byte-identisk render. Kvar = resten av punkterna nedan + goal-36.
+- ✅ **Slice 1 KLAR (goal-47, i main + live, byte-identisk):** storefront-läsvägen för DB `content_slots` finns bakom flagga (`should-render-db`); 0 authored slots i prod → gaten false = byte-identisk render.
+- ✅ **Template-bron 4→2→1 KLAR + RENDER-VERIFIERAD LIVE (2026-06-26, tag `v1.0.9`):** (4) salvia reconcilad till EN kanonisk slot-modell (migr `0040`) · (2) out-of-band mall-katalog fångad i migrations-historik (`0041`, repo==live) · (1) storefront renderar `content_slots` via `applySkinOverlay` (gatat på authored, ej present-värde). test-barber renderar nu rik SalviaLayout m. hub-bilder (skelett-regression borta, 0 FAIL). Kvar = resten nedan + goal-36.
 - Koppla **publik storefront → DB-template-slots** (`templates`/`template_slots` → `content_slots` via skin-loader som redan finns men är inert: `lib/storefront/skin/load-skin.ts` — wire:a den).
 - Ta bort `parseTheme`-allowlisten (lib/tenant-data.ts, 5 nycklar) → DB-mallnycklar (restoran/foody/polish…) får renderas i st f silent-downgrade till leander.
 - Default-copy/media per **bransch** ur slots, ej frisör-hårdkodning i `theme-content.ts`/`images.ts`.
@@ -66,7 +67,7 @@
 - ⚠️ Design-känsligt (18h-fällan) → render-verify **0 FAIL** + oberoende verify. (Behåll `sajtbyggare-spike/*` — det är LÅST-B draft-preview-render, ej skräp.)
 
 ### C · Moduler "på riktigt" (end-to-end per modul)
-- **Webshop** (HALV): kundvagn → checkout → betalning → `shop_orders`/`shop_order_items` → orderhistorik i /konto. *(Produkt-CRUD + render finns; bara köp-rälsen fattas — betal-rails pausade, beslut krävs.)*
+- **Webshop** (HALV) → **goal-49** (NÄST, Task 5): kundvagn → checkout → betalning → `shop_orders`/`shop_order_items` → orderhistorik i /konto. Underlag: `gap-analys-webshop-2026-06-26.md`. *(Produkt-CRUD + render finns; bara köp-rälsen fattas — betal-rails pausade bakom `payments_enabled`, compliance-gate krävs.)*
 - **Blogg** (HALV): publik artikelsida `/blogg/[slug]` (+ arkiv) med full body + SEO. *(Idag bara teaser, ingen läs-mer-länk.)*
 - **Lojalitet** (HALV): inlösen (poäng→rabatt) + signup-räls + admin-justering. *(Intjäning-trigger + kund-vy finns.)*
 - **Presentkort** (HALV): publikt köp + inlösen. *(Admin utfärdar/spärrar redan.)*
