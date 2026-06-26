@@ -1146,6 +1146,7 @@ export type Database = {
       }
       shop_orders: {
         Row: {
+          carrier: string | null
           created_at: string
           currency: string
           customer_email: string | null
@@ -1163,6 +1164,7 @@ export type Database = {
           ready_at: string | null
           session_token: string | null
           ship_address: string | null
+          shipped_at: string | null
           shipping_cents: number
           status: string
           stock_committed: boolean
@@ -1170,9 +1172,11 @@ export type Database = {
           tax_cents: number
           tenant_id: string
           total_cents: number
+          tracking_number: string | null
           updated_at: string | null
         }
         Insert: {
+          carrier?: string | null
           created_at?: string
           currency?: string
           customer_email?: string | null
@@ -1190,6 +1194,7 @@ export type Database = {
           ready_at?: string | null
           session_token?: string | null
           ship_address?: string | null
+          shipped_at?: string | null
           shipping_cents?: number
           status?: string
           stock_committed?: boolean
@@ -1197,9 +1202,11 @@ export type Database = {
           tax_cents?: number
           tenant_id: string
           total_cents?: number
+          tracking_number?: string | null
           updated_at?: string | null
         }
         Update: {
+          carrier?: string | null
           created_at?: string
           currency?: string
           customer_email?: string | null
@@ -1217,6 +1224,7 @@ export type Database = {
           ready_at?: string | null
           session_token?: string | null
           ship_address?: string | null
+          shipped_at?: string | null
           shipping_cents?: number
           status?: string
           stock_committed?: boolean
@@ -1224,6 +1232,7 @@ export type Database = {
           tax_cents?: number
           tenant_id?: string
           total_cents?: number
+          tracking_number?: string | null
           updated_at?: string | null
         }
         Relationships: [

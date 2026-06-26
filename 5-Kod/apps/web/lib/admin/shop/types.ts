@@ -17,6 +17,12 @@ export type ShopProductRow = {
   updated_at: string | null
 }
 
+export type ShopOrderItemRow = {
+  product_name: string
+  quantity: number
+  unit_price_cents: number
+}
+
 export type ShopOrderRow = {
   id: string
   customer_name: string | null
@@ -28,7 +34,12 @@ export type ShopOrderRow = {
   total_cents: number
   currency: string
   note: string | null
+  ship_address: string | null
+  tracking_number: string | null
+  carrier: string | null
+  shipped_at: string | null
   created_at: string
+  items: ShopOrderItemRow[]
 }
 
 /** DB CHECK values — do NOT change without a migration. */

@@ -14,6 +14,8 @@ import {
   toggleShopProductActive,
   deleteShopProduct,
   setShopOrderStatus,
+  setShopOrderTracking,
+  refundShopOrderAction,
 } from '@/lib/admin/shop/actions'
 import type { ActionState } from '@/lib/admin/actions'
 import type { MediaAssetRow } from '@/lib/admin/media/types'
@@ -79,6 +81,7 @@ export function ShopAdmin({
 }) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<ShopProductRow | null>(null)
+  const [openOrder, setOpenOrder] = useState<ShopOrderRow | null>(null)
 
   return (
     <div>
@@ -149,12 +152,15 @@ export function ShopAdmin({
         </Card>
       </div>
 
+      {/* ── Översikt (lean analytics) ── */}
+      {orders.length > 0 ? <ShopAnalytics orders={orders} /> : null}
+
       {/* ── Ordrar ── */}
       <div style={{ marginTop: 32 }}>
         <h2 className="h2" style={{ marginBottom: 12 }}>
           Ordrar
         </h2>
-        <OrdersSection orders={orders} />
+        <OrdersSection orders={orders} onOpen={setOpenOrder} />
       </div>
 
       {creating && <CreateDrawer assets={assets} onClose={() => setCreating(false)} />}
@@ -166,7 +172,59 @@ export function ShopAdmin({
           onClose={() => setEditing(null)}
         />
       )}
+      {openOrder && (
+        <OrderDetailDrawer key={openOrder.id} order={openOrder} onClose={() => setOpenOrder(null)} />
+      )}
     </div>
+  )
+}
+
+// ── Lean analytics + kund-översikt (härledd ur orders, ingen ny tabell) ──────
+function ShopAnalytics({ orders }: { orders: ShopOrderRow[] }) {
+  const real = orders.filter((o) => o.status !== 'cancelled')
+  const revenue = real.reduce((s, o) => s + o.total_cents, 0)
+  const currency = orders[0]?.currency ?? 'SEK'
+  const customers = new Set(orders.map((o) => o.customer_email ?? o.customer_name ?? o.id)).size
+  // topp-produkter (antal sålda) ur orderrader.
+  const byProduct = new Map<string, number>()
+  for (const o of real) for (const it of o.items) byProduct.set(it.product_name, (byProduct.get(it.product_name) ?? 0) + it.quantity)
+  const top = [...byProduct.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+
+  return (
+    <div style={{ marginTop: 24, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+      <Stat label="Ordrar" value={String(real.length)} />
+      <Stat label="Omsättning" value={formatCents(revenue, currency)} />
+      <Stat label="Kunder" value={String(customers)} />
+      <Card>
+        <span className="eyebrow" style={{ display: 'block', marginBottom: 6 }}>
+          Toppsäljare
+        </span>
+        {top.length === 0 ? (
+          <span style={{ fontSize: 13, color: 'var(--c-ink-3)' }}>—</span>
+        ) : (
+          <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+            {top.map(([name, qty]) => (
+              <li key={name}>
+                {name} <span style={{ color: 'var(--c-ink-3)' }}>×{qty}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Card>
+    </div>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <Card>
+      <span className="eyebrow" style={{ display: 'block', marginBottom: 4 }}>
+        {label}
+      </span>
+      <span className="num" style={{ fontSize: 22, fontWeight: 700 }}>
+        {value}
+      </span>
+    </Card>
   )
 }
 
@@ -299,7 +357,7 @@ function ActiveToggle({ product }: { product: ShopProductRow }) {
 
 // ── Orders section ──────────────────────────────────────────────────────────
 
-function OrdersSection({ orders }: { orders: ShopOrderRow[] }) {
+function OrdersSection({ orders, onOpen }: { orders: ShopOrderRow[]; onOpen: (o: ShopOrderRow) => void }) {
   if (orders.length === 0) {
     return (
       <Card>
@@ -319,7 +377,7 @@ function OrdersSection({ orders }: { orders: ShopOrderRow[] }) {
   return (
     <Card pad={0}>
       <Table
-        cols={['Kund', 'Leveranssätt', 'Status', 'Belopp', 'Datum']}
+        cols={['Kund', 'Leveranssätt', 'Status', 'Belopp', 'Datum', '']}
         rows={orders.map((o) => [
           <OrderCustomerCell key="kund" order={o} />,
           <span key="lev" style={{ fontSize: 13 }}>
@@ -332,9 +390,140 @@ function OrdersSection({ orders }: { orders: ShopOrderRow[] }) {
           <span key="datum" style={{ fontSize: 12, color: 'var(--c-ink-3)', whiteSpace: 'nowrap' }}>
             {new Date(o.created_at).toLocaleDateString('sv-SE')}
           </span>,
+          <button
+            key="visa"
+            type="button"
+            onClick={() => onOpen(o)}
+            aria-label={`Visa order ${o.id}`}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--c-ink-3)',
+              cursor: 'pointer',
+              padding: 4,
+              display: 'inline-grid',
+              placeItems: 'center',
+            }}
+          >
+            <Icon name="chevronRight" size={17} />
+          </button>,
         ])}
       />
     </Card>
+  )
+}
+
+// ── Order detail drawer (rader, kund, leveransadress, spårning, refund) ──────
+function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [track, trackAction, tracking] = useActionState<ActionState, FormData>(setShopOrderTracking, {})
+  const [refund, refundAction, refunding] = useActionState<ActionState, FormData>(refundShopOrderAction, {})
+
+  useEffect(() => {
+    if (track.success) {
+      notify('Spårning sparad.', 'success')
+      router.refresh()
+    }
+    if (track.error) notify(track.error, 'warning')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [track.success, track.error])
+
+  useEffect(() => {
+    if (refund.success) {
+      notify('Återbetalning genomförd.', 'success')
+      router.refresh()
+      onClose()
+    }
+    if (refund.error) notify(refund.error, 'warning')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refund.success, refund.error])
+
+  const trackFormId = `order-track-${order.id}`
+
+  return (
+    <Drawer
+      title={`Order #${order.id.slice(0, 8)}`}
+      sub={`${FULFILMENT_LABELS[order.fulfilment] ?? order.fulfilment} · ${new Date(order.created_at).toLocaleString('sv-SE')}`}
+      accent={<Badge tone={order.payment_status === 'paid' ? 'success' : 'neutral'}>{order.payment_status}</Badge>}
+      onClose={onClose}
+      ariaLabel={`Order ${order.id}`}
+    >
+      <div style={{ display: 'grid', gap: 18 }}>
+        {/* Kund */}
+        <div>
+          <span className="eyebrow" style={{ display: 'block', marginBottom: 4 }}>
+            Kund
+          </span>
+          <div style={{ fontWeight: 600 }}>{order.customer_name ?? '—'}</div>
+          {order.customer_email && <div style={{ fontSize: 13, color: 'var(--c-ink-3)' }}>{order.customer_email}</div>}
+          {order.customer_phone && <div style={{ fontSize: 13, color: 'var(--c-ink-3)' }}>{order.customer_phone}</div>}
+          {order.ship_address && <div style={{ fontSize: 13, marginTop: 4 }}>{order.ship_address}</div>}
+        </div>
+
+        {/* Rader */}
+        <div>
+          <span className="eyebrow" style={{ display: 'block', marginBottom: 6 }}>
+            Produkter
+          </span>
+          {order.items.map((it, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, padding: '3px 0' }}>
+              <span>
+                {it.product_name} × {it.quantity}
+              </span>
+              <span className="num">{formatCents(it.unit_price_cents * it.quantity, order.currency)}</span>
+            </div>
+          ))}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: 8,
+              paddingTop: 8,
+              borderTop: '1px solid var(--c-line)',
+              fontWeight: 700,
+            }}
+          >
+            <span>Totalt</span>
+            <span className="num">{formatCents(order.total_cents, order.currency)}</span>
+          </div>
+        </div>
+
+        {order.note && (
+          <div>
+            <span className="eyebrow" style={{ display: 'block', marginBottom: 4 }}>
+              Meddelande
+            </span>
+            <p style={{ margin: 0, fontSize: 13 }}>{order.note}</p>
+          </div>
+        )}
+
+        {/* Spårning */}
+        <form action={trackAction} id={trackFormId} style={{ display: 'grid', gap: 10 }}>
+          <input type="hidden" name="id" value={order.id} />
+          <span className="eyebrow">Leverans / spårning</span>
+          <Field label="Transportör">
+            <input name="carrier" defaultValue={order.carrier ?? ''} placeholder="t.ex. PostNord" style={inputStyle} />
+          </Field>
+          <Field label="Spårningsnummer">
+            <input name="tracking_number" defaultValue={order.tracking_number ?? ''} placeholder="—" style={inputStyle} />
+          </Field>
+          <Button variant="ghost" type="submit" icon="check" disabled={tracking}>
+            {tracking ? 'Sparar…' : 'Spara spårning'}
+          </Button>
+        </form>
+
+        {/* Refund (bara betald order; betal-rälsen pausad → knappen syns när paid) */}
+        {order.payment_status === 'paid' && (
+          <form action={refundAction} style={{ borderTop: '1px solid var(--c-line)', paddingTop: 14 }}>
+            <input type="hidden" name="id" value={order.id} />
+            <Button variant="ghost" type="submit" icon="undo" disabled={refunding}>
+              {refunding ? 'Återbetalar…' : 'Återbetala order'}
+            </Button>
+          </form>
+        )}
+      </div>
+    </Drawer>
   )
 }
 

@@ -30,10 +30,16 @@ export async function listShopOrders(tenantId: string): Promise<ShopOrderRow[]> 
   const { data } = await supabase
     .from('shop_orders')
     .select(
-      'id,customer_name,customer_email,customer_phone,fulfilment,status,payment_status,total_cents,currency,note,created_at',
+      'id,customer_name,customer_email,customer_phone,fulfilment,status,payment_status,' +
+        'total_cents,currency,note,ship_address,tracking_number,carrier,shipped_at,created_at,' +
+        'shop_order_items(product_name,quantity,unit_price_cents)',
     )
     .eq('tenant_id', tenantId)
+    // Transienta köp-räls-states (held/abandonerade) hör inte hemma i order-listan.
+    .not('status', 'in', '("reserved","awaiting_payment","expired")')
     .order('created_at', { ascending: false })
     .limit(100)
-  return data ?? []
+  type Joined = Omit<ShopOrderRow, 'items'> & { shop_order_items: ShopOrderRow['items'] | null }
+  const rows = (data ?? []) as unknown as Joined[]
+  return rows.map(({ shop_order_items, ...rest }) => ({ ...rest, items: shop_order_items ?? [] }))
 }
