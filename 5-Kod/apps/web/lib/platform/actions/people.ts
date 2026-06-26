@@ -1,0 +1,159 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { platformCtx } from '../guard'
+import { createServiceClient, hasServiceRole } from '../service'
+import { logPlatformAction } from '../audit'
+import { type ActionState, GENERIC, EMAIL_RE } from './shared'
+
+/**
+ * Trigger a password reset for the salon's admin. Generates a recovery link via
+ * the service role and surfaces it for Zivar to hand over (no cross-revir email
+ * wiring in v1). Gated on hasServiceRole() — degrades with a clear ops message
+ * when SUPABASE_SERVICE_ROLE_KEY is unset, never throws.
+ */
+export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  const tenantId = String(fd.get('tenantId') ?? '')
+  const email = String(fd.get('email') ?? '').trim().toLowerCase()
+  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!email || !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
+
+  if (!hasServiceRole())
+    return { error: 'Lösenords-reset kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
+  const svc = createServiceClient()
+  if (!svc) return { error: 'Lösenords-reset kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
+
+  const { data, error } = await svc.auth.admin.generateLink({ type: 'recovery', email })
+  if (error || !data?.properties?.action_link) {
+    return { error: `Kunde inte skapa återställningslänk: ${error?.message ?? 'okänt fel'}.` }
+  }
+
+  await logPlatformAction(supabase, {
+    action: 'tenant.password_reset',
+    tenantId,
+    actorId: user.id,
+    meta: { email },
+  })
+  return {
+    success: `Återställningslänk skapad för ${email}. Kopiera och dela den säkert:\n${data.properties.action_link}`,
+  }
+}
+
+/**
+ * Zivar-assisterad personal-onboarding (M7 §2.4): create a staff row on a CHOSEN
+ * tenant via the platform RLS-bypass. Mirrors M6 createStaff (title-only row; no
+ * forced fields beyond what the table needs) and attaches the tenant's primary
+ * location when one exists. Audit-logged against the tenant.
+ */
+export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  const tenantId = String(fd.get('tenantId') ?? '')
+  const title = String(fd.get('title') ?? '').trim()
+  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!title) return { error: 'Ange ett namn/en titel.' }
+
+  // Primary location (load-bearing for staff↔location, but optional in the schema).
+  const { data: loc } = await supabase
+    .from('locations')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .order('is_primary', { ascending: false })
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  const { error } = await supabase.from('staff').insert({
+    tenant_id: tenantId,
+    location_id: loc?.id ?? null,
+    title,
+    active: true,
+  })
+  if (error) return { error: GENERIC }
+
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.staff_create',
+    tenantId,
+    actorId: user.id,
+    meta: { title },
+  })
+  return { success: `Medarbetare "${title}" tillagd hos salongen.` }
+}
+
+/**
+ * Manuellt skapa en kund-rad på en VALD salong (goal-22, audit nod #6). The
+ * cross-tenant Kunder view is platform-only, so this is platform_admin-gated
+ * (platformCtx) and validates the chosen tenant server-side — the client must NOT be
+ * trusted to write an arbitrary tenant_id. The customers RLS WITH CHECK admits the
+ * cross-tenant insert via is_platform_admin (0011 §6.1). A manual row deliberately
+ * sets NO auth_user_id/contact_hash: it never fakes an auth identity, and a null
+ * contact_hash dodges the partial unique index (0011: ...where contact_hash is not
+ * null) so two manual rows never collide. The stable booking-mint path
+ * (private.resolve_customer_id) still owns the hashed/identity columns.
+ */
+export async function createPlatformCustomer(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+
+  const tenantId = String(fd.get('tenantId') ?? '')
+  const fullName = String(fd.get('full_name') ?? '').trim().slice(0, 120)
+  const email = String(fd.get('email') ?? '').trim().toLowerCase().slice(0, 254) // RFC max
+  const phone = String(fd.get('phone') ?? '').trim().slice(0, 40)
+
+  if (!tenantId) return { error: 'Välj en salong.' }
+  if (!fullName) return { error: 'Ange kundens namn.' }
+  if (email && !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
+
+  // Validate the chosen tenant server-side: must exist + be active. Never attach a
+  // customer to a non-existent / deleted / suspended salon, and never trust the
+  // client's tenant_id without this check.
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('id, status')
+    .eq('id', tenantId)
+    .maybeSingle()
+  if (!tenant) return { error: 'Salongen finns inte.' }
+  if (tenant.status !== 'active')
+    return { error: 'Salongen är inte aktiv — kan inte lägga till kund.' }
+
+  const { data: created, error } = await supabase
+    .from('customers')
+    .insert({
+      tenant_id: tenantId,
+      full_name: fullName,
+      display_name: fullName,
+      email: email || null,
+      phone: phone || null,
+      status: 'active',
+    })
+    .select('id')
+    .single()
+  if (error || !created) return { error: GENERIC }
+
+  revalidatePath('/kunder')
+  await logPlatformAction(supabase, {
+    action: 'tenant.customer_create',
+    tenantId,
+    actorId: user.id,
+    entityId: created.id,
+    meta: { full_name: fullName, email: email || null },
+  })
+  return { success: `Kund "${fullName}" tillagd.` }
+}
+
+/**
+ * Open "hjälp-läge" for a tenant. This is the HONEST minimal version (#1): it does
+ * NO impersonation and changes NO tenant data — it only writes ONE platform-side
+ * audit row so Zivar's act of opening a salon's help-view is logged at the platform.
+ * The actor comes from platformCtx (the authed platform_admin), never the client.
+ */
+export async function enterHelpMode(tenantId: string): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  if (!tenantId) return { error: 'Saknar salong.' }
+  await logPlatformAction(supabase, {
+    action: 'platform.help_mode_open',
+    tenantId,
+    actorId: user.id,
+  })
+  return { success: 'Hjälp-läge öppnat — loggat.' }
+}
