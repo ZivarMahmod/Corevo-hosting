@@ -19,7 +19,7 @@
 
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import { parseShopConfig, type ShopConfig, type ShopData, type ShopProduct } from './types'
+import { parseShopConfig, type ShopConfig, type ShopData, type ShopProduct, type ShopVariant } from './types'
 
 /** Max products pulled for the storefront listing (keeps the section bounded;
  *  a full paginated catalog is a later concern, not needed for the gate/variant). */
@@ -60,6 +60,34 @@ export async function loadShopData(tenantId: string, slug: string): Promise<Shop
         .order('sort_order', { ascending: true })
         .limit(PRODUCT_LIMIT)
 
+      const productIds = (rows ?? []).map((r) => r.id)
+
+      // Köpbara varianter (0042): pris/lager/bild per variant. available = stock −
+      // reserved_qty (held av pågående ordrar). Grupperas per produkt nedan.
+      const variantsByProduct = new Map<string, ShopVariant[]>()
+      if (productIds.length > 0) {
+        const { data: vRows } = await supabase
+          .from('shop_product_variants')
+          .select('id, product_id, name, price_cents, currency, stock, reserved_qty, media_assets(url)')
+          .eq('tenant_id', tenantId) // app-layer tenant isolation
+          .eq('active', true)
+          .in('product_id', productIds)
+          .order('sort_order', { ascending: true })
+        for (const v of vRows ?? []) {
+          const asset = Array.isArray(v.media_assets) ? v.media_assets[0] : v.media_assets
+          const list = variantsByProduct.get(v.product_id) ?? []
+          list.push({
+            id: v.id,
+            name: v.name,
+            priceCents: v.price_cents ?? 0,
+            currency: v.currency ?? config.currency,
+            available: v.stock == null ? null : Math.max(0, v.stock - (v.reserved_qty ?? 0)),
+            imageUrl: asset?.url ?? null,
+          })
+          variantsByProduct.set(v.product_id, list)
+        }
+      }
+
       const products: ShopProduct[] = (rows ?? []).map((r) => {
         // Supabase types the embedded relation as object | array depending on the
         // FK cardinality; normalize to a single asset defensively.
@@ -73,6 +101,7 @@ export async function loadShopData(tenantId: string, slug: string): Promise<Shop
           stock: r.stock ?? null,
           imageUrl: asset?.url ?? null,
           imageAlt: asset?.alt ?? null,
+          variants: variantsByProduct.get(r.id) ?? [],
         }
       })
 

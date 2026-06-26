@@ -8,6 +8,8 @@ import { Nav } from '@/components/brand/Nav'
 import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
+import { CartProvider } from '@/components/storefront/shop/CartProvider'
+import { CartButton } from '@/components/storefront/shop/CartButton'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
 import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
@@ -139,8 +141,13 @@ export default async function PublicLayout({ children }: { children: React.React
         />
         {/* `.shellMain` reserves space for the fixed top cluster (--nav-h). The
             Salvia home hero cancels it exactly with a negative margin, so the hero
-            photo still meets the viewport top under the nav. */}
-        <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
+            photo still meets the viewport top under the nav. CartProvider wraps the
+            content + flytande kundvagn (köp-räls, goal-49); CartButton döljer sig
+            själv när varukorgen är tom → inert för icke-shop-tenants. */}
+        <CartProvider>
+          <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
+          <CartButton />
+        </CartProvider>
         {isSalvia ? (
           <FooterFull
             tenant={{ name: tenant.name }}

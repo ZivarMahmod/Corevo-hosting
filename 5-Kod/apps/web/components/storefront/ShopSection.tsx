@@ -26,7 +26,7 @@
 // inert interaction shell; orders/payment are wired only when rails open.
 
 import { SectionHeader } from './sections'
-import { ShopCta } from './ShopCta'
+import { AddToCart } from './shop/AddToCart'
 import {
   fulfilmentPromise,
   formatShopPrice,
@@ -104,7 +104,6 @@ export async function ShopSection({
             }}
           >
             {products.map((p) => {
-              const soldOut = p.stock === 0
               return (
                 <li
                   key={p.id}
@@ -168,16 +167,11 @@ export async function ShopSection({
                     >
                       {formatShopPrice(p.priceCents, p.currency)}
                     </p>
-                    {/* CTA is inert while rails are paused; in 'paused' state we omit
-                        it entirely so the catalog reads as closed-for-orders. */}
+                    {/* Köp-räls (goal-49): live shop → variant-medveten add-to-cart;
+                        'paused' utelämnar CTA helt (katalogen läses som stängd). */}
                     {paused ? null : (
                       <div style={{ marginTop: 'auto' }}>
-                        <ShopCta
-                          fulfilment={config.fulfilment}
-                          productId={p.id}
-                          productName={p.name}
-                          soldOut={soldOut}
-                        />
+                        <AddToCart product={p} fulfilment={config.fulfilment} />
                       </div>
                     )}
                   </div>

@@ -38,6 +38,17 @@ export type ShopConfig = {
   payment: { provider: string | null; enabled: boolean }
 }
 
+/** A buyable variant (köp-räls: the unit added to cart). `available` = stock −
+ *  reserved_qty as computed by the loader; null = untracked (unlimited). */
+export type ShopVariant = {
+  id: string
+  name: string
+  priceCents: number
+  currency: string
+  available: number | null
+  imageUrl: string | null
+}
+
 /** One storefront-facing product (subset of shop_products needed to render). */
 export type ShopProduct = {
   id: string
@@ -49,12 +60,60 @@ export type ShopProduct = {
   stock: number | null
   imageUrl: string | null
   imageAlt: string | null
+  /** Köpbara varianter (alltid ≥1 efter 0042-seeden). */
+  variants: ShopVariant[]
 }
 
 /** Everything the ShopSection needs after the loader runs. */
 export type ShopData = {
   config: ShopConfig
   products: ShopProduct[]
+}
+
+/** One line in the client-side cart (browse-fasen lever klient-sida; ordern föds
+ *  vid kassa-start, 0042-arkitektur). Snapshottar pris/namn för stabil rendering;
+ *  servern re-summerar ALLTID totalen (klient-pris litas aldrig på). */
+export type CartLine = {
+  variantId: string
+  productId: string
+  productName: string
+  variantName: string
+  priceCents: number
+  currency: string
+  quantity: number
+  imageUrl: string | null
+  /** available vid add-tillfället (null = ospårat). Klient-hint, servern är sanning. */
+  maxQty: number | null
+}
+
+/** Sum of a cart's line subtotals in minor units (display only — server re-sums). */
+export function cartSubtotalCents(lines: CartLine[]): number {
+  return lines.reduce((sum, l) => sum + l.priceCents * l.quantity, 0)
+}
+
+/** Total item count (for the cart badge). */
+export function cartItemCount(lines: CartLine[]): number {
+  return lines.reduce((sum, l) => sum + l.quantity, 0)
+}
+
+/** Add a line to the cart (pure). Merges into an existing line by variantId and
+ *  caps the quantity at `maxQty` (available stock) when known. */
+export function mergeCartLine(lines: CartLine[], line: Omit<CartLine, 'quantity'>, qty: number): CartLine[] {
+  const existing = lines.find((l) => l.variantId === line.variantId)
+  if (!existing) return [...lines, { ...line, quantity: Math.max(1, qty) }]
+  const cap = line.maxQty ?? Infinity
+  return lines.map((l) =>
+    l.variantId === line.variantId ? { ...l, quantity: Math.min(l.quantity + qty, cap) } : l,
+  )
+}
+
+/** Set a line's quantity (pure). Caps at maxQty, drops the line at 0/negative. */
+export function setCartQty(lines: CartLine[], variantId: string, qty: number): CartLine[] {
+  return lines
+    .map((l) =>
+      l.variantId === variantId ? { ...l, quantity: Math.max(0, Math.min(qty, l.maxQty ?? Infinity)) } : l,
+    )
+    .filter((l) => l.quantity > 0)
 }
 
 const DEFAULT_SHOP_CONFIG: ShopConfig = {
