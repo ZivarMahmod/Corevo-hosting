@@ -1,5 +1,11 @@
 # goal-44 — Observability live + refaktor `platform/actions.ts` (39 KB-monoliten)
 
+> ✅ **KLART 2026-06-26** (båda spår, verifierat, i main — ej deployad än).
+> - **Spår B (refaktor):** `actions.ts`-monoliten splittrad → 9 filer i `lib/platform/actions/` + ren re-export-barrel. Beteende-identisk (0 importör-diff). Commit `b461816`. tsc 0, vitest 694=694 (samma testfil), **next build OK** (bevisar att server-actions är wire:ade genom barreln), oberoende reviewer: inga fynd.
+> - **Spår A (observability):** 13 oväntade server-action-fel-grenar route:ade genom ny best-effort `reportActionError` (loggar `action` + supabase-`code` + uuid/slug/domän, **aldrig PII**); `logAuthDenied` på `requirePlatformAdmin` före redirecten; statisk `https://*.sentry.io` i CSP; `SENTRY_DSN` dokumenterad ops-gatad (`.env.example` + `docs/ops/observability.md`); drift-och-logg orörd (redan ärlig). Commit `cfe186e`. tsc 0, vitest 698 (+4 sink-bevis-tester), next build OK, oberoende reviewer: inga fynd.
+> - **DoD-not (ärlig):** "provocerat fel landar i sinken" är **test-bevisat in-process** (`observe.test.ts` — sinken = `console.*` = Workers-strömmen, redaktion + aldrig-kastar verifierat). Den **LIVE Workers-strömmen** (`wrangler tail`) + extern Sentry-sink kräver en **deploy + `SENTRY_DSN`-secret** → deploy-gatad, ej körd. Graceful degrade utan DSN.
+
+
 Thinking: 🟡 (Spår B = REN refaktor, noll beteendeförändring — risken är tyst signatur-drift/trasig import som gates fångar. Spår A rör ops-secrets [DSN] + CSP + en riktig log-sink — risken är PII-läcka och en telemetri-väg som THROW:ar in i åtgärden den observerar. Inget schema. Två separabla spår — kör en i taget.)
 
 **Datum:** 2026-06-17
