@@ -55,6 +55,11 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setModule', key: 'shop', state: 'live' })
     expect(cfg.moduleStates.shop).toBe('live')
   })
+
+  it('setVariant records the chosen booking variant (W3)', () => {
+    const cfg = reducer(initStudioCfg('salvia'), { type: 'setVariant', variant: 'compact' })
+    expect(cfg.variant).toBe('compact')
+  })
 })
 
 describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', () => {
@@ -64,7 +69,12 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
     expect(fd.get('name')).toBe('Klippoteket')
     expect(fd.get('slug')).toBe('klippoteket')
     expect(fd.get('theme')).toBe('salvia')
-    expect(fd.get('booking_variant')).toBe('wizard')
+    expect(fd.get('booking_variant')).toBe('wizard') // cfg.variant default
+  })
+
+  it('emits the operator-picked booking_variant (W3 — no longer hardcoded)', () => {
+    const cfg = reducer(initStudioCfg('salvia'), { type: 'setVariant', variant: 'compact' })
+    expect(buildCreateTenantFormData(cfg).get('booking_variant')).toBe('compact')
   })
 
   it('floors booking to live in the modules JSON even when stored off', () => {

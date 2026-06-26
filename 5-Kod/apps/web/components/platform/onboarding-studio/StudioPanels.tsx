@@ -17,13 +17,20 @@
 // The registry is keyed by StepId and internal to this file + PanelHost (nothing else
 // imports it), so it carries the two extra callbacks the special panels need.
 import type { FC, ReactNode, CSSProperties } from 'react'
-import { Button, Card, Icon, type IconName } from '@/components/portal/ui'
+import { Badge, Button, Card, Icon, type IconName } from '@/components/portal/ui'
 import { Field, ModuleStatePills } from './controls'
 import type { PanelProps } from '@/lib/platform/onboarding-studio/state'
 import { type StepId, stepDone } from '@/lib/platform/onboarding-studio/phases'
 import { resolveModuleState } from '@/lib/platform/onboarding-studio/model'
 import { modulesForVertical, termPlural, type TemplateOption } from '@/lib/platform/verticals-shared'
 import { isReservedSlug } from '@/lib/platform/slug'
+import {
+  BOOKING_VARIANTS,
+  BOOKING_VARIANT_LABELS,
+  BOOKING_VARIANT_TAGS,
+  BOOKING_VARIANT_DESCRIPTIONS,
+  RECOMMENDED_BOOKING_VARIANT,
+} from '@/lib/platform/booking-variant'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
@@ -331,9 +338,11 @@ function PanelTema({ cfg, dispatch, presets }: PanelProps) {
   )
 }
 
-/** modval — W1-REAL UI. Real catalog × preset state from modulesForVertical; rec/opt
- *  grouping derived from defaultState!=='off' (§10.7); booking restricted to live/
- *  paused; everything else off/draft/live/paused. setModule writes cfg.moduleStates. */
+/** modval — W1-REAL UI + W3 booking-variant sub-choice. Real catalog × preset state
+ *  from modulesForVertical; rec/opt grouping derived from defaultState!=='off' (§10.7);
+ *  booking restricted to live/paused; everything else off/draft/live/paused. setModule
+ *  writes cfg.moduleStates. The booking row also carries the bokningsvariant picker
+ *  (W3, form-parity → setVariant → cfg.variant). */
 function PanelModval({ cfg, dispatch, presets }: PanelProps) {
   const options = modulesForVertical(presets, cfg.branch)
   const rec = options.filter((m) => m.defaultState !== 'off')
@@ -365,6 +374,52 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
         </div>
         <ModuleStatePills value={cur} choices={choices} onChange={(state) => dispatch({ type: 'setModule', key: moduleKey, state })} />
         <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '8px 0 0' }}>{MODULE_STATE_HINTS[cur]}</p>
+        {/* booking.variant — operator picks how the booking presents. FORM-PARITY port
+            of CreateTenantForm's booking sub-choice (the design data defines BOOKING_VARIANTS
+            but renders NO picker; the shipped form does, so the studio must not regress it).
+            drawer/inline are presentation-deferred (readBookingMode → wizard) but still
+            honest picks. → setVariant → buildCreateTenantFormData emits cfg.variant. */}
+        {isBooking ? (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--c-line)' }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--c-ink)', marginBottom: 8 }}>
+              Bokningsvariant — hur bokningen presenteras (99 % sker på mobil)
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {BOOKING_VARIANTS.map((v) => {
+                const von = cfg.variant === v
+                const isRec = v === RECOMMENDED_BOOKING_VARIANT
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={von}
+                    onClick={() => dispatch({ type: 'setVariant', variant: v })}
+                    style={{
+                      textAlign: 'left',
+                      padding: 12,
+                      border: `2px solid ${von ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                      background: von ? 'var(--c-paper-2)' : 'var(--c-paper)',
+                      transition: 'all var(--dur-fast)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)' }}>{BOOKING_VARIANT_LABELS[v]}</span>
+                      {isRec ? (
+                        <Badge tone="gold" dot={false}>Rek.</Badge>
+                      ) : (
+                        <span style={{ fontSize: 11, color: 'var(--c-ink-3)', fontWeight: 600 }}>{BOOKING_VARIANT_TAGS[v]}</span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--c-ink-2)', lineHeight: 1.45, margin: 0 }}>{BOOKING_VARIANT_DESCRIPTIONS[v]}</p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
     )
   }

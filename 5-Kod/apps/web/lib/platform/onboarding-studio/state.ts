@@ -6,6 +6,7 @@
 // (CreateTenantForm) is never touched.
 import type { Dispatch } from 'react'
 import { type ModuleState } from '@/lib/tenant-modules'
+import { type BookingVariant } from '@/lib/platform/booking-variant'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import {
   type StudioCfg,
@@ -25,6 +26,7 @@ export type StudioStage = 'super' | 'studio' | 'result'
  *   setSlug      { value }    — set slug by hand → locks slugTouched=true
  *   setTheme     { key }      — set template/theme key
  *   setModule    { key, state }— set one module's lifecycle state
+ *   setVariant   { variant }  — set the booking presentation variant (booking sub-choice)
  *   setAccent    { hex }      — set accent hex ('' = none)
  *   setTagline   { value }
  *   setOwnerName { value }
@@ -36,6 +38,7 @@ export type StudioAction =
   | { type: 'setSlug'; value: string }
   | { type: 'setTheme'; key: string }
   | { type: 'setModule'; key: string; state: ModuleState }
+  | { type: 'setVariant'; variant: BookingVariant }
   | { type: 'setAccent'; hex: string }
   | { type: 'setTagline'; value: string }
   | { type: 'setOwnerName'; value: string }
@@ -67,6 +70,8 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
         return { ...cfg, theme: action.key }
       case 'setModule':
         return { ...cfg, moduleStates: { ...cfg.moduleStates, [action.key]: action.state } }
+      case 'setVariant':
+        return { ...cfg, variant: action.variant }
       case 'setAccent':
         return { ...cfg, accent: action.hex }
       case 'setTagline':
@@ -97,7 +102,8 @@ export type PanelProps = {
  *
  * - `vertical_id`  emitted always (`branch ?? ''`); server coerces empty → null.
  * - `theme`        one of the 5 lowercase storefront keys, else server → 'leander'.
- * - `booking_variant` always 'wizard' (no variant UI in W1 — honest stub, §9).
+ * - `booking_variant` cfg.variant (operator-picked in the booking module row, W3;
+ *                  defaults to 'wizard'). createTenant re-validates via isBookingVariant.
  * - `modules`      JSON {key:state} of cfg.moduleStates with booking floored to
  *                  live/paused (mirrors moduleSubmitMap); off-keys allowed (server drops).
  * - `color_accent` ONLY when accent !== '' (omitted otherwise — theme owns palette).
@@ -110,7 +116,7 @@ export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
   fd.set('name', cfg.name)
   fd.set('slug', cfg.slug)
   fd.set('theme', cfg.theme)
-  fd.set('booking_variant', 'wizard')
+  fd.set('booking_variant', cfg.variant)
 
   const modules: Record<string, ModuleState> = { ...cfg.moduleStates }
   modules.booking = modules.booking === 'paused' ? 'paused' : 'live'

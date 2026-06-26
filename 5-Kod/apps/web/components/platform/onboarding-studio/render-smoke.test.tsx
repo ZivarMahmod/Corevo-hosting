@@ -147,6 +147,23 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     }
   })
 
+  it('the modval panel renders the booking-variant picker (W3, booking active)', () => {
+    const html = mounts(
+      <PanelHost
+        cfg={branched}
+        step="modval"
+        dispatch={noopDispatch}
+        presets={presets}
+        onPrev={noop}
+        onNext={noop}
+        onLaunch={noop}
+      />,
+    )
+    // booking is live in the branched cfg → the sub-choice picker renders all 4 variants
+    expect(html).toContain('Bokningsvariant')
+    expect(html).toContain('Snabbboka') // the compact variant label
+  })
+
   it('the live panel renders the real Lansera button', () => {
     const html = mounts(
       <PanelHost
