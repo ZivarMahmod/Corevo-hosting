@@ -94,6 +94,20 @@ function fakeSvc(authId = 'auth-1') {
       admin: {
         inviteUserByEmail: vi.fn(async () => ({ data: { user: { id: authId } }, error: null })),
         updateUserById: vi.fn(async () => ({ data: {}, error: null })),
+        deleteUser: vi.fn(async () => ({ data: {}, error: null })),
+      },
+    },
+  }
+}
+
+// A service client whose INVITE fails (no auth user created) — drives the iErr branch.
+function fakeSvcInviteFails() {
+  return {
+    auth: {
+      admin: {
+        inviteUserByEmail: vi.fn(async () => ({ data: null, error: { message: 'boom' } })),
+        updateUserById: vi.fn(async () => ({ data: {}, error: null })),
+        deleteUser: vi.fn(async () => ({ data: {}, error: null })),
       },
     },
   }
@@ -195,6 +209,58 @@ describe('createTenant writes the goal-20 columns', () => {
     createServiceClientMock.mockReturnValue(fakeSvc('auth-2'))
     await createTenant({}, fd({ name: 'K', slug: 'kx', owner_email: 'noname@x.se' }))
     expect((captured.users?.[0] as { full_name: unknown }).full_name).toBeNull()
+  })
+})
+
+// ── CHECKLISTA W0 #2 — orphan-salong: invite-fail must leave ZERO ghost salons ────
+describe('createTenant rolls back on owner-creation failure (no ghost salons)', () => {
+  function seed(opts: { usersError?: unknown } = {}) {
+    const { client, captured } = makeSupabase({
+      tenants: { data: { id: 't1', slug: 'klippoteket' }, error: null },
+      roles: { data: { id: 'role-1' }, error: null },
+      users: { data: null, error: opts.usersError ?? null },
+    })
+    platformCtxMock.mockReturnValue(Promise.resolve({ user: { id: 'admin-1' }, supabase: client }))
+    return captured
+  }
+  const ownerFd = () => fd({ name: 'Klippoteket', slug: 'klippoteket', owner_email: 'anna@x.se' })
+
+  it('no service role + owner email → rolls back the tenant + actionable error', async () => {
+    const captured = seed()
+    createServiceClientMock.mockReturnValue(null)
+    const res = await createTenant({}, ownerFd())
+    expect(res.error).toMatch(/SUPABASE_SERVICE_ROLE_KEY/)
+    expect(res.success).toBeUndefined()
+    expect(captured['tenants.delete']).toBeDefined() // cascade rollback fired → 0 ghosts
+  })
+
+  it('invite API failure → rolls back the tenant + error', async () => {
+    const captured = seed()
+    createServiceClientMock.mockReturnValue(fakeSvcInviteFails())
+    const res = await createTenant({}, ownerFd())
+    expect(res.error).toMatch(/inbjudan misslyckades/)
+    expect(res.success).toBeUndefined()
+    expect(captured['tenants.delete']).toBeDefined()
+  })
+
+  it('users-row link failure → deletes the orphan auth user AND rolls back the tenant', async () => {
+    const captured = seed({ usersError: { code: '23505' } })
+    const svc = fakeSvc('auth-9')
+    createServiceClientMock.mockReturnValue(svc)
+    const res = await createTenant({}, ownerFd())
+    expect(res.error).toMatch(/kunde inte kopplas/)
+    expect(captured['tenants.delete']).toBeDefined()
+    expect(svc.auth.admin.deleteUser).toHaveBeenCalledWith('auth-9') // orphan auth identity cleaned
+  })
+
+  it('owner-LESS onboarding still creates the salon (guard never trips without an email)', async () => {
+    const captured = seed()
+    createServiceClientMock.mockReturnValue(null)
+    const res = await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
+    expect(res.error).toBeUndefined()
+    expect(res.success).toBeDefined()
+    expect(captured['tenants.delete']).toBeUndefined() // no invite attempted → no rollback
+    expect(captured.tenants?.[0]).toMatchObject({ slug: 'klippoteket' })
   })
 })
 

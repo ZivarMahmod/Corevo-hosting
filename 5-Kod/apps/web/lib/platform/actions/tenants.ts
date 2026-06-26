@@ -259,10 +259,19 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   //    when key absent). Owner name rides along as auth user_metadata.full_name
   //    (public.users has no name column — frozen schema).
   let inviteNote = ''
+  // Orphan-salong guard (CHECKLISTA W0 #2): non-null = the owner was requested but
+  // couldn't be created+linked → roll the whole tenant back so no half-provisioned
+  // "ghost salon" lingers. Only set when ownerEmail was given; owner-less onboarding
+  // never trips it.
+  let ownerFailed: string | null = null
   if (ownerEmail) {
     const svc = createServiceClient()
     if (!svc) {
-      inviteNote = ' Inbjudan ej skickad: SUPABASE_SERVICE_ROLE_KEY saknas (sätts av ops).'
+      // No service role → we literally cannot create the owner's auth account. Don't
+      // leave an un-ownable salon behind; roll back below. Survivable: onboard WITHOUT
+      // an owner email and invite later, or ops sets SUPABASE_SERVICE_ROLE_KEY.
+      ownerFailed =
+        'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops) — eller skapa salongen utan ägar-epost och bjud in ägaren senare'
     } else {
       // Carry the salon name into invite user_metadata so the Supabase invite
       // template can greet with the salon's name ({{ .Data.tenant_name }}) instead
@@ -272,7 +281,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
         { data: { ...(ownerName ? { full_name: ownerName } : {}), tenant_name: name } },
       )
       if (iErr || !invited?.user) {
-        inviteNote = ` Salongen skapad, men inbjudan misslyckades: ${iErr?.message ?? 'okänt fel'}.`
+        ownerFailed = `inbjudan misslyckades (${iErr?.message ?? 'okänt fel'})`
       } else {
         const authId = invited.user.id
         // Bake tenant_id into app_metadata so the JWT carries it even before the
@@ -297,8 +306,11 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
             status: 'active',
           })
         if (uErr) {
-          // Don't claim success: most likely the email already has an account.
-          inviteNote = ` Salongen skapad, men ägaren kunde inte kopplas (kontot finns kanske redan).`
+          // The auth user WAS created but couldn't be linked (most likely the email
+          // already has an account). Best-effort delete it so the rollback below doesn't
+          // leave an orphan auth identity dangling without its tenant.
+          await svc.auth.admin.deleteUser(authId).catch(() => {})
+          ownerFailed = 'ägaren kunde inte kopplas (kontot finns kanske redan med den e-posten)'
         } else {
           await logPlatformAction(supabase, {
             action: 'tenant.invite',
@@ -309,6 +321,13 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
           inviteNote = ` Inbjudan skickad till ${ownerEmail}.`
         }
       }
+    }
+    // ROLL BACK on any owner-creation failure: a provoked invite-fail must leave ZERO
+    // ghost salons (CHECKLISTA W0 #2). rollback() deletes the tenant → cascades to
+    // settings/location/role/modules/services. The operator gets an actionable error.
+    if (ownerFailed) {
+      await rollback()
+      return { error: `Salongen skapades inte: ${ownerFailed}. Försök igen.` }
     }
   }
 
