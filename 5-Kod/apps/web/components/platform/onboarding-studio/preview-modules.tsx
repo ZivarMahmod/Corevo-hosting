@@ -24,6 +24,7 @@ import { resolveModuleState } from '@/lib/platform/onboarding-studio/model'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { makeTerm } from '@/lib/platform/verticals-shared'
+import { BUILT_MAIN, ROADMAP_MAIN, KONTO_KEYS, ALL_PREVIEW_MODULES } from '@/lib/platform/onboarding-studio/module-keys'
 
 /** The visible, honest "this is a preview, not the built feature" marker on each mock. */
 export const MODULE_LABEL = 'Förhandsvisning · byggs vid lansering'
@@ -46,18 +47,9 @@ export function isActive(state: ReturnType<typeof moduleState>): boolean {
   return state === 'live' || state === 'paused'
 }
 
-// The 5 BUILT main sections — exactly the real *Section set (page.tsx), in the real
-// composition order. booking is covered by the core <Layout/>, never a separate mock.
-export const BUILT_MAIN = ['shop', 'offert', 'blogg', 'lojalitet', 'presentkort'] as const
-// Roadmap modules that live in the public main flow (live:false in cfg-data.js) → the
-// honest dashed card. The four konto-position roadmap modules are handled separately.
-export const ROADMAP_MAIN = ['portfolio', 'meny', 'recurring', 'deposit', 'inlamning'] as const
-// defaultPos:"konto" modules (cfg-data.js) → the separate inloggad-kundportal panel.
-export const KONTO_KEYS = ['husdjur', 'fordon', 'intag', 'orderstatus'] as const
-
-/** Every module key the preview can render (5 built mains + roadmap + konto), EXCLUDING
- *  booking (woven into the look/layout itself, never a separate section). */
-export const ALL_PREVIEW_MODULES: string[] = [...BUILT_MAIN, ...ROADMAP_MAIN, ...KONTO_KEYS]
+// Module-key lists live in a plain (server-safe) module so the look preview ROUTE (a
+// server component) can import them; re-exported here for existing client importers.
+export { BUILT_MAIN, ROADMAP_MAIN, KONTO_KEYS, ALL_PREVIEW_MODULES }
 
 /** The module keys ACTIVE for this cfg — what flows into the render-bron look preview
  *  (goal-36: "välj modul → vävs in i den valda mallen, syns i previewen"). The studio
