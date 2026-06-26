@@ -57,6 +57,8 @@ const noop = () => {}
 // A cfg with a bransch applied → branch/tema/modval panels have real preset data.
 const branched = applyBranch(initStudioCfg('salvia'), 'frisor', presets)
 const fresh = initStudioCfg('salvia')
+// W4: a cfg with a typed service → tjanster panel rows + live preview reflect it.
+const withServices = { ...branched, services: [{ name: 'Klippning', price: '350' }] }
 
 const tenants: TenantCardItem[] = [
   {
@@ -162,6 +164,25 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     // booking is live in the branched cfg → the sub-choice picker renders all 4 variants
     expect(html).toContain('Bokningsvariant')
     expect(html).toContain('Snabbboka') // the compact variant label
+  })
+
+  it('the tjanster panel renders the real add-service control (W4, not a deferred stub)', () => {
+    const html = mounts(
+      <PanelHost cfg={branched} step="tjanster" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+    )
+    expect(html).toContain('Lägg till')
+    expect(html).not.toContain('senare våg') // old deferred-stub copy is gone
+  })
+
+  it('a typed service renders in both the tjanster panel and the live preview (W4)', () => {
+    const panel = mounts(
+      <PanelHost cfg={withServices} step="tjanster" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+    )
+    expect(panel).toContain('Klippning')
+    expect(panel).toContain('350') // the kr price string in the row input
+    // the live preview's booking section reflects the same service (not the empty-state)
+    const preview = mounts(<PreviewPane cfg={withServices} device="desktop" onDevice={noop} />)
+    expect(preview).toContain('Klippning')
   })
 
   it('the live panel renders the real Lansera button', () => {

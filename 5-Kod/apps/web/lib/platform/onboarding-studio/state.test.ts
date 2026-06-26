@@ -60,6 +60,11 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setVariant', variant: 'compact' })
     expect(cfg.variant).toBe('compact')
   })
+
+  it('setServices replaces the onboarding service list (W4)', () => {
+    const cfg = reducer(initStudioCfg('salvia'), { type: 'setServices', services: [{ name: 'Klippning', price: '350' }] })
+    expect(cfg.services).toEqual([{ name: 'Klippning', price: '350' }])
+  })
 })
 
 describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', () => {
@@ -75,6 +80,26 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
   it('emits the operator-picked booking_variant (W3 — no longer hardcoded)', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setVariant', variant: 'compact' })
     expect(buildCreateTenantFormData(cfg).get('booking_variant')).toBe('compact')
+  })
+
+  it('emits services as JSON with kr→öre price_cents, dropping empty names (W4)', () => {
+    const cfg = reducer(initStudioCfg('salvia'), {
+      type: 'setServices',
+      services: [
+        { name: 'Klippning', price: '350' },
+        { name: '', price: '99' }, // empty name → dropped
+        { name: ' Färg ', price: '12,50' }, // trimmed + comma decimal → öre
+      ],
+    })
+    const services = JSON.parse(String(buildCreateTenantFormData(cfg).get('services')))
+    expect(services).toEqual([
+      { name: 'Klippning', price_cents: 35000 },
+      { name: 'Färg', price_cents: 1250 },
+    ])
+  })
+
+  it('emits an empty services array by default', () => {
+    expect(buildCreateTenantFormData(initStudioCfg('salvia')).get('services')).toBe('[]')
   })
 
   it('floors booking to live in the modules JSON even when stored off', () => {

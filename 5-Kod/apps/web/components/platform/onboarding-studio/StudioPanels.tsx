@@ -21,7 +21,7 @@ import { Badge, Button, Card, Icon, type IconName } from '@/components/portal/ui
 import { Field, ModuleStatePills } from './controls'
 import type { PanelProps } from '@/lib/platform/onboarding-studio/state'
 import { type StepId, stepDone } from '@/lib/platform/onboarding-studio/phases'
-import { resolveModuleState } from '@/lib/platform/onboarding-studio/model'
+import { resolveModuleState, type StudioService } from '@/lib/platform/onboarding-studio/model'
 import { modulesForVertical, termPlural, type TemplateOption } from '@/lib/platform/verticals-shared'
 import { isReservedSlug } from '@/lib/platform/slug'
 import {
@@ -652,16 +652,121 @@ function PanelText({ cfg, dispatch }: PanelProps) {
   )
 }
 
-/** tjanster — DEFERRED-STUB (§9.7). No services in W1 cfg → honest empty state, NO
- *  fake list/add. Title uses the bransch's `service` plural term when declared. */
-function PanelTjanster({ cfg, presets }: PanelProps) {
+/** tjanster — W4-REAL. Numbered name+price rows → setServices (whole-array set, mirrors
+ *  the design's A.setContent). Names + price (kr); buildCreateTenantFormData converts
+ *  kr→öre, createTenant inserts services rows on Lansera. Title/labels use the bransch's
+ *  `service` term. price stored as the kr STRING the operator types (no controlled-
+ *  number fight); the design collected names only — price added per the brief + design
+ *  copy ("Pris i price_cents" / "minst en post med pris"). */
+function PanelTjanster({ cfg, dispatch, presets }: PanelProps) {
   const terminology = cfg.branch ? presets.verticals.find((v) => v.key === cfg.branch)?.terminology ?? {} : {}
   const servicePlural = termPlural(terminology, 'service', 'Tjänster')
+  const serviceWord = terminology.service ?? 'Tjänst'
+  const set = (services: StudioService[]) => dispatch({ type: 'setServices', services })
+  const add = () => set([...cfg.services, { name: '', price: '' }])
+  const editName = (i: number, name: string) => set(cfg.services.map((s, j) => (j === i ? { ...s, name } : s)))
+  const editPrice = (i: number, price: string) =>
+    // keep only digits + one decimal separator (comma/dot) so the kr field can't hold junk
+    set(cfg.services.map((s, j) => (j === i ? { ...s, price: price.replace(/[^0-9.,]/g, '') } : s)))
+  const del = (i: number) => set(cfg.services.filter((_, j) => j !== i))
+
+  const rowInput: CSSProperties = {
+    flex: 1,
+    minWidth: 0,
+    padding: '10px 12px',
+    border: '1px solid var(--c-line)',
+    borderRadius: 10,
+    background: 'var(--c-paper)',
+    fontFamily: 'var(--font-ui)',
+    fontSize: 14,
+    outline: 'none',
+    color: 'var(--c-ink)',
+    boxSizing: 'border-box',
+  }
   return (
-    <Panel title={`${servicePlural} & innehåll`} sub="Datat modulerna visar — bokningstjänster, produkter, meny.">
-      <DeferredStub icon="scissors">
-        {servicePlural} &amp; priser läggs till i en senare våg (W3). Då skrivs de till services + service_prices (öre).
-      </DeferredStub>
+    <Panel
+      title={`${servicePlural} & priser`}
+      sub="Datat bokningen visar. Minst en post för att kunden ska kunna boka. Pris i kr (sparas i öre) — ägaren finjusterar sen i sin admin."
+    >
+      <div style={{ display: 'grid', gap: 10 }}>
+        {cfg.services.map((s, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span
+              style={{
+                width: 28,
+                height: 28,
+                flex: 'none',
+                borderRadius: 7,
+                background: 'var(--c-paper-2)',
+                color: 'var(--c-forest)',
+                display: 'grid',
+                placeItems: 'center',
+                fontFamily: 'var(--font-ui)',
+                fontWeight: 700,
+                fontSize: 12,
+              }}
+            >
+              {i + 1}
+            </span>
+            <input
+              value={s.name}
+              onChange={(e) => editName(i, e.target.value)}
+              placeholder={`t.ex. ${serviceWord}`}
+              style={rowInput}
+            />
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flex: 'none',
+                width: 104,
+                border: '1px solid var(--c-line)',
+                borderRadius: 10,
+                background: 'var(--c-paper)',
+                overflow: 'hidden',
+              }}
+            >
+              <input
+                value={s.price}
+                onChange={(e) => editPrice(i, e.target.value)}
+                inputMode="decimal"
+                placeholder="0"
+                aria-label={`Pris för ${s.name || `${serviceWord} ${i + 1}`}`}
+                style={{ ...rowInput, border: 'none', borderRadius: 0, width: '100%', textAlign: 'right', padding: '10px 8px' }}
+              />
+              <span style={{ padding: '0 10px', color: 'var(--c-ink-3)', fontSize: 13, fontFamily: 'var(--font-ui)' }}>kr</span>
+            </div>
+            <button
+              type="button"
+              aria-label="Ta bort"
+              onClick={() => del(i)}
+              style={{
+                width: 34,
+                height: 34,
+                flex: 'none',
+                borderRadius: 8,
+                border: '1px solid var(--c-line)',
+                background: 'var(--c-paper)',
+                color: 'var(--c-ink-3)',
+                cursor: 'pointer',
+                display: 'grid',
+                placeItems: 'center',
+              }}
+            >
+              <Icon name="trash" size={15} />
+            </button>
+          </div>
+        ))}
+        {cfg.services.length === 0 ? (
+          <p style={{ fontSize: 12.5, color: 'var(--c-ink-3)', margin: '0 0 2px', lineHeight: 1.5 }}>
+            Inga {servicePlural.toLowerCase()} än. Lägg till minst en så bokningen har något att boka — du kan
+            lämna priset tomt (0 kr) och sätta det senare.
+          </p>
+        ) : null}
+        <Button variant="ghost" icon="plus" onClick={add} style={{ width: 'fit-content' }}>
+          Lägg till {serviceWord.toLowerCase()}
+        </Button>
+      </div>
     </Panel>
   )
 }
@@ -715,7 +820,12 @@ function PanelGranska({ cfg, presets, onNext }: StudioPanelProps) {
       optional: false,
     },
     { label: 'Ägare inbjuden', detail: 'Får magic-link vid lansering.', done: !!cfg.ownerEmail.trim(), optional: true },
-    { label: 'Tjänster & priser', detail: 'Läggs till i en senare våg (W3).', done: false, optional: true, deferred: true },
+    {
+      label: 'Tjänster & priser',
+      detail: 'Minst en tjänst — bokningen behöver något att boka.',
+      done: stepDone('tjanster', cfg, presets),
+      optional: true,
+    },
   ]
   return (
     <Panel title="Granska checklista" sub="Onboarding-checklistan. Grönt = klart, gult = valfritt/väntar.">

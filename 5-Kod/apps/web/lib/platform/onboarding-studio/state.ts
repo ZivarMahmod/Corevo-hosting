@@ -10,9 +10,11 @@ import { type BookingVariant } from '@/lib/platform/booking-variant'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import {
   type StudioCfg,
+  type StudioService,
   applyBranch,
   studioSlugify,
 } from './model'
+import { krToOre } from './services'
 
 /** The three top-level stages the studio walks through (port app.jsx stage). */
 export type StudioStage = 'super' | 'studio' | 'result'
@@ -27,6 +29,7 @@ export type StudioStage = 'super' | 'studio' | 'result'
  *   setTheme     { key }      — set template/theme key
  *   setModule    { key, state }— set one module's lifecycle state
  *   setVariant   { variant }  — set the booking presentation variant (booking sub-choice)
+ *   setServices  { services } — replace the onboarding service list (W4; whole-array set)
  *   setAccent    { hex }      — set accent hex ('' = none)
  *   setTagline   { value }
  *   setOwnerName { value }
@@ -39,6 +42,7 @@ export type StudioAction =
   | { type: 'setTheme'; key: string }
   | { type: 'setModule'; key: string; state: ModuleState }
   | { type: 'setVariant'; variant: BookingVariant }
+  | { type: 'setServices'; services: StudioService[] }
   | { type: 'setAccent'; hex: string }
   | { type: 'setTagline'; value: string }
   | { type: 'setOwnerName'; value: string }
@@ -72,6 +76,8 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
         return { ...cfg, moduleStates: { ...cfg.moduleStates, [action.key]: action.state } }
       case 'setVariant':
         return { ...cfg, variant: action.variant }
+      case 'setServices':
+        return { ...cfg, services: action.services }
       case 'setAccent':
         return { ...cfg, accent: action.hex }
       case 'setTagline':
@@ -107,6 +113,8 @@ export type PanelProps = {
  * - `modules`      JSON {key:state} of cfg.moduleStates with booking floored to
  *                  live/paused (mirrors moduleSubmitMap); off-keys allowed (server drops).
  * - `color_accent` ONLY when accent !== '' (omitted otherwise — theme owns palette).
+ * - `services`     JSON [{name, price_cents}] (W4); kr→öre via krToOre, empty names
+ *                  dropped. createTenant re-validates (parseServiceInputs) + inserts.
  * - `owner_role`   fixed 'salon_admin'; `site_content_draft` fixed '{}' (W1).
  * - logo / city are intentionally omitted (deferred / not in StudioCfg).
  */
@@ -123,6 +131,12 @@ export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
   fd.set('modules', JSON.stringify(modules))
 
   if (cfg.accent !== '') fd.set('color_accent', cfg.accent)
+  // Services (W4): kr string → integer öre at the boundary; drop empty names. The
+  // server (parseServiceInputs) is authoritative — it re-trims, re-clamps + caps count.
+  const services = cfg.services
+    .map((s) => ({ name: s.name.trim(), price_cents: krToOre(s.price) }))
+    .filter((s) => s.name !== '')
+  fd.set('services', JSON.stringify(services))
   fd.set('tagline', cfg.tagline)
   fd.set('owner_name', cfg.ownerName)
   fd.set('owner_email', cfg.ownerEmail)

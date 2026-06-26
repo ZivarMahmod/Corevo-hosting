@@ -18,8 +18,9 @@ import { injectTenantTokens } from '@corevo/ui'
 import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
 import type { StorefrontLayoutProps } from '@/components/storefront/layouts'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
-import type { StorefrontTheme } from '@/lib/tenant-data'
+import type { StorefrontTheme, Service } from '@/lib/tenant-data'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
+import { krToOre } from '@/lib/platform/onboarding-studio/services'
 import styles from '@/components/storefront/storefront.module.css'
 import { ModuleSections, KontoPanel, PreviewNav, PreviewFooter } from './preview-modules'
 
@@ -37,11 +38,34 @@ export function StorefrontPreview({ cfg }: { cfg: StudioCfg }) {
   // it is injected as a CSS var at the wrapper); only the owner tagline overrides copy.
   const content = resolveThemeContent(theme, null, cfg.tagline.trim() ? { tagline: cfg.tagline } : null)
 
+  // W4: reflect the services the operator is typing (kr→öre) so the preview's booking
+  // section is live, not an empty-state. Shaped as the real services row (Tables<'services'>);
+  // empty names dropped; duration is the same 30-min default createTenant seeds. Display-
+  // only (the whole subtree is pointer-events:none), so the synthetic ids never leak.
+  const previewServices: Service[] = cfg.services
+    .map((s) => ({ name: s.name.trim(), price_cents: krToOre(s.price) }))
+    .filter((s) => s.name !== '')
+    .map((s, i) => ({
+      id: `preview-${i}`,
+      tenant_id: '',
+      name: s.name,
+      description: null,
+      category: null,
+      duration_min: 30,
+      price_cents: s.price_cents,
+      active: true,
+      location_id: null,
+      buffer_min: null,
+      slot_step_min: null,
+      created_at: '',
+      updated_at: null,
+    }))
+
   const props: StorefrontLayoutProps = {
     tenant: { id: '', name: cfg.name || 'Din salong', slug: cfg.slug || 'dinsalong' },
     theme,
     content,
-    services: [], // unsaved → no services; every layout shows its honest empty-state
+    services: previewServices, // unsaved cfg → live preview of the typed services (empty → honest empty-state)
     location: null,
   }
 

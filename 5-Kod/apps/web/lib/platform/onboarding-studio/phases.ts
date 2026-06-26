@@ -112,7 +112,8 @@ export const FLAT_STEP_ORDER: StepId[] = PHASES.flatMap((p) => p.steps.map((s) =
  *   tema    → a theme is set (always truthy — theme defaults to the built-in default)
  *   modval  → at least one module resolves to live/draft (booking floors to live)
  *   agare   → an owner email is filled
- *   tjanster→ ALWAYS false in W1 (no services field in cfg — deferred, honest)
+ *   tjanster→ at least one service with a non-empty name (W4; matches design's
+ *             cfg.content.services.length > 0 launch gate)
  *   modplace/modconf/brand/text/granska/live → never a checkmark (matches design)
  */
 export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPresetData): boolean {
@@ -131,6 +132,7 @@ export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPreset
     case 'agare':
       return !!cfg.ownerEmail
     case 'tjanster':
+      return cfg.services.some((s) => s.name.trim() !== '')
     case 'modplace':
     case 'modconf':
     case 'brand':

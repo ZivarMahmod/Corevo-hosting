@@ -8,6 +8,11 @@ import type { ModuleState } from '@/lib/tenant-modules'
 import { type BookingVariant, DEFAULT_BOOKING_VARIANT } from '@/lib/platform/booking-variant'
 import { modulesForVertical, type VerticalPresetData } from '@/lib/platform/verticals-shared'
 
+/** One onboarding service row (W4). `price` is the kr string the operator types (UI-
+ *  friendly — no controlled-number fight); buildCreateTenantFormData converts it to
+ *  integer öre at the FormData boundary, the server re-validates (services.ts). */
+export type StudioService = { name: string; price: string }
+
 export type StudioCfg = {
   /** chosen bransch (vertical key) — null until the operator picks one. */
   branch: string | null
@@ -23,6 +28,10 @@ export type StudioCfg = {
   /** accent hex ('' = none picked → theme's own primary wins). */
   accent: string
   tagline: string
+  /** onboarding services (W4) → services rows on Lansera. Empty allowed (operator can
+   *  add them later in admin); a booking-active tenant needs ≥1 to actually be bookable
+   *  (bookings.service_id is NOT NULL). */
+  services: StudioService[]
   ownerName: string
   ownerEmail: string
 }
@@ -42,6 +51,7 @@ export function initStudioCfg(
     moduleStates: {},
     accent: '',
     tagline: '',
+    services: [],
     ownerName: '',
     ownerEmail: '',
   }

@@ -9,6 +9,7 @@ import { logPlatformAction } from './audit'
 import { isBookingVariant, DEFAULT_BOOKING_VARIANT, type BookingVariant } from './booking-variant'
 import { resolveOwnerRole } from './owner-role'
 import { parseModuleSelections, writeTenantVerticalAndModules } from './tenant-modules-write'
+import { parseServiceInputs } from './onboarding-studio/services'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, type StorefrontTheme } from '@/lib/tenant-data'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages } from '@/lib/r2/upload'
@@ -208,6 +209,31 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   if (!modRes.ok) {
     await rollback()
     return { error: GENERIC }
+  }
+
+  // 4c) services (onboarding-studio W4). The content the booking module reads —
+  //     bookings.service_id is NOT NULL, so a salon with zero services literally can't
+  //     take a booking (same load-bearing tier as the primary location). Conditional on
+  //     count>0 (the operator may skip + add them later in admin) and INSIDE the rollback
+  //     window: a provided-but-failed write rolls the whole tenant back so no broken,
+  //     half-provisioned salon lingers. parseServiceInputs is the trust boundary (trims,
+  //     clamps price_cents ≥0, caps count). duration_min: the design collects no
+  //     duration, so seed the universal default; the owner edits it per service in admin.
+  const serviceRows = parseServiceInputs(fd.get('services'))
+  if (serviceRows.length > 0) {
+    const { error: svcErr } = await supabase.from('services').insert(
+      serviceRows.map((s) => ({
+        tenant_id: tenantId,
+        name: s.name,
+        duration_min: 30, // ponytail: no duration field in the design; 30 = sane default, owner edits in admin
+        price_cents: s.price_cents,
+        active: true,
+      })),
+    )
+    if (svcErr) {
+      await rollback()
+      return { error: GENERIC }
+    }
   }
 
   // 5) invite the owner (salon_admin) via magic-link (service role; graceful degrade
