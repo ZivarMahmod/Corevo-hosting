@@ -248,7 +248,29 @@ describe('resolveSkin — (f) sections grouped + ordered by sort_order', () => {
       cssVars: {},
       slots: {},
       sections: [],
+      hasTenantContent: false,
     })
+  })
+
+  it('hasTenantContent reflects whether the tenant authored any content_slot', () => {
+    // No content_slots → false, even though template defaults populate sections.
+    const noContent = resolveSkin(
+      tmpl({ key: 'salvia' }),
+      [tslot({ slot_key: 'title', default_text: 'Default' })],
+      [],
+      [],
+    )
+    expect(noContent.hasTenantContent).toBe(false)
+    expect(noContent.sections.length).toBeGreaterThan(0) // defaults still fill sections
+
+    // One authored content_slot → true (this is the storefront DB-render gate).
+    const withContent = resolveSkin(
+      tmpl({ key: 'salvia' }),
+      [tslot({ slot_key: 'title', default_text: 'Default' })],
+      [cslot({ slot_key: 'title', kind: 'text', text_value: 'Tenant copy', template_key: 'salvia' })],
+      [],
+    )
+    expect(withContent.hasTenantContent).toBe(true)
   })
 
   it('parses tokens into cssVars on the resolved skin', () => {

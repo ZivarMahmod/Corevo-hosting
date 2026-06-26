@@ -193,5 +193,9 @@ export function resolveSkin(
   const cssVars = tokensToCssVars(tokens)
   const slots = resolveSlots(templateSlots, contentSlots, mediaAssets)
   const sections = groupSections(templateSlots, slots)
-  return { templateKey: template.key, tokens, cssVars, slots, sections }
+  // ponytail: any authored content_slot counts as "tenant has content" — the
+  // editor only writes content_slots for declared slots, so an orphan key here is
+  // not a real case. Tighten to "resolved-from-content" only if that ever changes.
+  const hasTenantContent = contentSlots.length > 0
+  return { templateKey: template.key, tokens, cssVars, slots, sections, hasTenantContent }
 }

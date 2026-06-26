@@ -67,8 +67,15 @@ export type ResolvedSection = {
  *  - `slots`    — every declared slot keyed by slot_key.
  *  - `sections` — slots grouped by section_key, sections + slots ordered by
  *                 the declaring template_slots.sort_order.
+ *  - `hasTenantContent` — true iff the tenant has authored ≥1 content_slot for
+ *                 this template. CRITICAL for the storefront wiring (goal-47):
+ *                 `sections`/`slots` are populated from TEMPLATE DEFAULTS even
+ *                 when the tenant authored nothing, so `sections.length > 0` is
+ *                 NOT a safe "render from DB" signal (salvia ships 19 template
+ *                 slots). The storefront flips to DB-render only when the tenant
+ *                 actually authored content — this flag is that gate.
  * Empty inputs (today's prod reality) yield empty tokens/cssVars/slots/sections
- * with no throw.
+ * with hasTenantContent=false and no throw.
  */
 export type ResolvedSkin = {
   templateKey: string
@@ -76,4 +83,5 @@ export type ResolvedSkin = {
   cssVars: Record<string, string>
   slots: Record<string, ResolvedSlot>
   sections: ResolvedSection[]
+  hasTenantContent: boolean
 }
