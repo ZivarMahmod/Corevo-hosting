@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icon, type IconName } from './ui/Icon'
@@ -110,9 +110,14 @@ export function PortalSidebar({
 }) {
   const pathname = usePathname()
   const cfg = NAV[role]
+  // Collapsible rail (Zivar: "sido­panelen ska kunna stängas" + de-layer the studio).
+  // A toggle, NOT a forced hide. Defaults collapsed ON the onboarding page so the
+  // full-screen studio reads as its own page; open everywhere else. usePathname is known
+  // on SSR + client alike, so the initial value can never hydrate-mismatch.
+  const [collapsed, setCollapsed] = useState(pathname === '/salonger/ny')
 
   return (
-    <aside className="portal-aside">
+    <aside className={`portal-aside${collapsed ? ' is-collapsed' : ''}`}>
       <div className="portal-aside-brand">
         <span className="portal-aside-mark" aria-hidden="true">
           C
@@ -121,6 +126,16 @@ export function PortalSidebar({
           <span className="portal-aside-brand-name">{brand}</span>
           <span className="portal-aside-brand-sub">{cfg.sub}</span>
         </span>
+        <button
+          type="button"
+          className="portal-aside-toggle"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? 'Visa sidopanelen' : 'Dölj sidopanelen'}
+          aria-expanded={!collapsed}
+          title={collapsed ? 'Visa meny' : 'Dölj meny'}
+        >
+          <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={16} />
+        </button>
       </div>
 
       <nav className="portal-aside-nav">
@@ -142,9 +157,10 @@ export function PortalSidebar({
               href={entry.href}
               className={`portal-aside-link${on ? ' is-active' : ''}`}
               aria-current={on ? 'page' : undefined}
+              title={entry.label}
             >
               <Icon name={entry.icon} size={18} stroke={1.7} />
-              {entry.label}
+              <span className="portal-aside-link-label">{entry.label}</span>
             </Link>
           )
         })}

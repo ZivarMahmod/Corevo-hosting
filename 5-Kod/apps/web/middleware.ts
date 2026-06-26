@@ -173,6 +173,13 @@ export async function middleware(request: NextRequest) {
   let effectivePath = path
   let rewriteTo: string | null = null
 
+  // Local dev comfort: bare localhost has no tenant, so `/` would otherwise fall
+  // into the public storefront layout and 404. Treat it as the salon admin start.
+  if (previewHost && tenant.kind === 'root' && path === '/') {
+    effectivePath = '/admin'
+    rewriteTo = '/admin'
+  }
+
   // goal-27 — production 3-door split (REAL *.corevo.se only). The pure
   // decideBackofficeRoute owns the policy; this just translates its intent. Gated to
   // !previewHost so dev/*.localhost keeps the G12 single-host back-office (the else-if

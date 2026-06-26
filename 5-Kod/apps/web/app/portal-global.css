@@ -196,6 +196,45 @@
 }
 [data-world="backoffice"] .portal-aside-user-sub { display: block; font-size: 11px; color: var(--c-on-forest-2); }
 
+/* ---- collapsible rail (Zivar: stäng sido­panelen + de-layer the onboarding studio) ----
+   `.is-collapsed` (toggled in PortalSidebar) narrows the forest rail to an icon-only
+   strip; the flex-row shell reflows the content column on its own (aside is flex:none).
+   The chevron toggle stays visible so it always reopens — no separate exit control. */
+[data-world="backoffice"] .portal-aside { transition: width var(--dur-fast) ease; }
+[data-world="backoffice"] .portal-aside.is-collapsed { width: 72px; padding-left: 14px; padding-right: 14px; }
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-brand { justify-content: center; padding: 4px 0 18px; }
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-mark,
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-brand-text,
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-group,
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-link-label,
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-user-text,
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-logout { display: none; }
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-link { justify-content: center; padding-left: 0; padding-right: 0; gap: 0; }
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-user { justify-content: center; }
+
+/* the rail's collapse/expand chevron (forest ghost button) */
+[data-world="backoffice"] .portal-aside-toggle {
+  margin-left: auto;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--c-on-forest-2);
+  cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+[data-world="backoffice"] .portal-aside-toggle:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+[data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-toggle { margin: 0 auto; }
+
+/* The onboarding studio carries its OWN top bar (JourneyBar) + brand, so the platform
+   search topbar would just be a second stacked bar (Zivar: "flera lager på varandra").
+   Hide it while the studio fills the content area — nav + signout stay in the rail. */
+[data-world="backoffice"].portal-shell:has(.onboarding-host) .portal-topbar { display: none; }
+
 /* topbar */
 [data-world="backoffice"] .portal-topbar {
   display: flex;

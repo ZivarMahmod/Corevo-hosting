@@ -136,74 +136,121 @@ function DeferredStub({ icon, children }: { icon: IconName; children: ReactNode 
 
 /* ════════════════════════════ step panels ════════════════════════════ */
 
-/** branch — W1-REAL. 2-col card grid of the REAL presets.verticals → applyBranch.
- *  Subline = honest preset-on module COUNT (derived from real presets, §10.7); no
- *  cfg-data icon/Roadmap-pill/staffWord (those were mockup). */
-function PanelBranch({ cfg, dispatch, presets }: PanelProps) {
+/**
+ * The bransch list (step 1) — the FULL canon registry (cfg-data.js BRANCHES), not just the
+ * 5 DB verticals. DISPLAY is canon: name + icon + staffWord + recommended-module count +
+ * «Roadmap» badge for the live:false branches (Image #2). The CLICK dispatches `key`:
+ *   • live overlaps (generell/frisör/barbershop/nagelstudio/restaurang) carry the DB
+ *     vertical key, so applyBranch finds the real preset (modules/theme/terminology).
+ *   • roadmap branches carry their canon key — applyBranch's `if (!v)` early-return just
+ *     sets the bransch label ("inga låsningar", no verticals row needed yet).
+ * `count` = canon rec.length (the recommendation hint shown in Image #2), NOT a live preset
+ * count. Icons absent from IconName (heart/sparkle/bookmark) fall back to 'building' (the
+ * icon every card used before). build-once-never-delete: barbershop is DB-live but missing
+ * from the canon data — kept here so onboarding never loses a working bransch.
+ */
+const BRANSCH_REGISTRY: { key: string; name: string; icon: IconName; staffWord: string; count: number; live: boolean }[] = [
+  { key: 'generell', name: 'Generell / egen mall', icon: 'layers', staffWord: 'Personal', count: 1, live: true },
+  { key: 'frisör', name: 'Frisörsalong', icon: 'scissors', staffWord: 'Frisör', count: 3, live: true },
+  { key: 'barbershop', name: 'Barbershop', icon: 'scissors', staffWord: 'Barberare', count: 2, live: true },
+  { key: 'florist', name: 'Florist', icon: 'building', staffWord: 'Florist', count: 3, live: false },
+  { key: 'klinik', name: 'Privatklinik', icon: 'shield', staffWord: 'Behandlare', count: 3, live: false },
+  { key: 'bilverkstad', name: 'Bilverkstad', icon: 'settings', staffWord: 'Mekaniker', count: 4, live: false },
+  { key: 'cykel', name: 'Cykelbutik', icon: 'repeat', staffWord: 'Mekaniker', count: 4, live: false },
+  { key: 'hund', name: 'Hundsalong / Grooming', icon: 'building', staffWord: 'Groomer', count: 3, live: false },
+  { key: 'nagelstudio', name: 'Nagelsalong', icon: 'building', staffWord: 'Nagelterapeut', count: 3, live: true },
+  { key: 'tatuering', name: 'Tatueringsstudio', icon: 'edit', staffWord: 'Artist', count: 4, live: false },
+  { key: 'optiker', name: 'Optiker', icon: 'eye', staffWord: 'Optiker', count: 2, live: false },
+  { key: 'cafe', name: 'Café / Konditori', icon: 'coffee', staffWord: 'Personal', count: 3, live: false },
+  { key: 'skraddare', name: 'Skräddare / Ändringsateljé', icon: 'scissors', staffWord: 'Skräddare', count: 4, live: false },
+  { key: 'lassmed', name: 'Låssmed', icon: 'shield', staffWord: 'Låssmed', count: 2, live: false },
+  { key: 'fotograf', name: 'Fotograf / Fotostudio', icon: 'eye', staffWord: 'Fotograf', count: 4, live: false },
+  { key: 'secondhand', name: 'Second hand', icon: 'building', staffWord: 'Personal', count: 2, live: false },
+  { key: 'stad', name: 'Städföretag', icon: 'building', staffWord: 'Städare', count: 3, live: false },
+  { key: 'restaurang', name: 'Restaurang', icon: 'coffee', staffWord: 'Personal', count: 3, live: true },
+]
+
+/** branch — 2-col card grid of BRANSCH_REGISTRY → applyBranch. Canon icon + name + Roadmap
+ *  pill (live:false) + "{count} moduler · {staffWord}" subline. presets is no longer read
+ *  here (the list is the static canon registry; the preset still applies on dispatch). */
+function PanelBranch({ cfg, dispatch }: PanelProps) {
   return (
     <Panel
       title="Välj startmall"
       sub="Branschen är bara en förinställning — den förväljer moduler, ord och innehåll. Inget låses, du ändrar allt fritt efteråt."
     >
-      {presets.verticals.length === 0 ? (
-        <DeferredStub icon="building">
-          Inga branscher i katalogen ännu. Du kan fortsätta utan bransch och välja moduler manuellt i steget «Välj moduler».
-        </DeferredStub>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
-          {presets.verticals.map((v) => {
-            const on = cfg.branch === v.key
-            const presetOn = modulesForVertical(presets, v.key).filter((m) => m.defaultState !== 'off').length
-            return (
-              <button
-                key={v.key}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() => dispatch({ type: 'applyBranch', key: v.key })}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
+        {BRANSCH_REGISTRY.map((b) => {
+          const on = cfg.branch === b.key
+          return (
+            <button
+              key={b.key}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => dispatch({ type: 'applyBranch', key: b.key })}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '13px 14px',
+                borderRadius: 12,
+                border: `2px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                background: on ? 'var(--c-paper-2)' : 'var(--c-paper)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all var(--dur-fast)',
+                minWidth: 0,
+                overflow: 'hidden',
+              }}
+            >
+              <span
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '13px 14px',
-                  borderRadius: 12,
-                  border: `2px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
-                  background: on ? 'var(--c-paper-2)' : 'var(--c-paper)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all var(--dur-fast)',
+                  width: 38,
+                  height: 38,
+                  flex: 'none',
+                  borderRadius: 10,
+                  background: on ? 'var(--c-forest)' : 'var(--c-paper-2)',
+                  color: on ? '#fff' : 'var(--c-forest)',
+                  display: 'grid',
+                  placeItems: 'center',
                 }}
               >
-                <span
-                  style={{
-                    width: 38,
-                    height: 38,
-                    flex: 'none',
-                    borderRadius: 10,
-                    background: on ? 'var(--c-forest)' : 'var(--c-paper-2)',
-                    color: on ? '#fff' : 'var(--c-forest)',
-                    display: 'grid',
-                    placeItems: 'center',
-                  }}
-                >
-                  <Icon name="building" size={19} />
+                <Icon name={b.icon} size={19} />
+              </span>
+              <span style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                  <span style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                  {!b.live ? (
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: '.04em',
+                        textTransform: 'uppercase',
+                        padding: '1px 6px',
+                        borderRadius: 999,
+                        background: 'var(--c-warning-bg)',
+                        color: 'var(--c-warning)',
+                      }}
+                    >
+                      Roadmap
+                    </span>
+                  ) : null}
                 </span>
-                <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ display: 'block', fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)' }}>{v.name}</span>
-                  <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)' }}>
-                    {presetOn} {presetOn === 1 ? 'modul' : 'moduler'} förvalda
-                  </span>
+                <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {b.count} {b.count === 1 ? 'modul' : 'moduler'} · {b.staffWord}
                 </span>
-                {on ? (
-                  <span style={{ color: 'var(--c-forest)', display: 'inline-flex' }}>
-                    <Icon name="check" size={16} />
-                  </span>
-                ) : null}
-              </button>
-            )
-          })}
-        </div>
-      )}
+              </span>
+              {on ? (
+                <span style={{ color: 'var(--c-forest)', display: 'inline-flex' }}>
+                  <Icon name="check" size={16} />
+                </span>
+              ) : null}
+            </button>
+          )
+        })}
+      </div>
     </Panel>
   )
 }

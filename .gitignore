@@ -1,3 +1,6 @@
+# pnpm content-addressable store (local cache, never commit)
+.pnpm-store/
+
 # Playwright MCP runtime output
 .playwright-mcp/
 
