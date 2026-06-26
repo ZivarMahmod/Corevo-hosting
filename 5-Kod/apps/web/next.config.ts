@@ -22,7 +22,7 @@ const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
 const isProd = process.env.NODE_ENV === 'production'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 
-const csp = [
+const cspDirectives = [
   `default-src 'self'`,
   // Stripe.js is loaded from js.stripe.com; inline bootstrap needs 'unsafe-inline'.
   `script-src 'self' 'unsafe-inline' https://js.stripe.com${isProd ? '' : " 'unsafe-eval'"}`,
@@ -49,7 +49,16 @@ const csp = [
   `base-uri 'self'`,
   `object-src 'none'`,
   ...(isProd ? [`upgrade-insecure-requests`] : []),
-].join('; ')
+]
+const csp = cspDirectives.join('; ')
+
+// goal-50: the look-preview route (/sajtbyggare-spike/look/[key]) is rendered INSIDE the
+// onboarding studio's SAME-ORIGIN <iframe>. The global `frame-ancestors 'none'` +
+// `X-Frame-Options: DENY` (correct default everywhere else) would block that → blank
+// preview. This variant allows SAME-ORIGIN framing only — no cross-origin embedding.
+const framableCsp = cspDirectives
+  .map((d) => (d.startsWith('frame-ancestors') ? `frame-ancestors 'self'` : d))
+  .join('; ')
 
 const securityHeaders = [
   { key: 'Content-Security-Policy', value: csp },
@@ -61,6 +70,15 @@ const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
 ]
 
+// Same headers, but framable by 'self' (for the look-preview route only).
+const framableSecurityHeaders = securityHeaders.map((h) =>
+  h.key === 'Content-Security-Policy'
+    ? { key: h.key, value: framableCsp }
+    : h.key === 'X-Frame-Options'
+      ? { key: h.key, value: 'SAMEORIGIN' }
+      : h,
+)
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: monorepoRoot,
@@ -70,7 +88,15 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: false },
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    // Global DENY first (covers EVERY route — never a CSP regression). The look-preview
+    // override is listed LAST so that for that path it wins (Next applies matching header
+    // rules in order; later entries override earlier ones for the same key). Worst case
+    // the override doesn't take → look route stays DENY (blank), never a security loss.
+    // Verified post-deploy by curling the look route's frame-ancestors.
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      { source: '/sajtbyggare-spike/look/:key*', headers: framableSecurityHeaders },
+    ]
   },
 }
 
