@@ -9,10 +9,6 @@ import { OffertSection } from '@/components/storefront/OffertSection'
 import { BloggSection } from '@/components/storefront/BloggSection'
 import { LojalitetSection } from '@/components/storefront/LojalitetSection'
 import { PresentkortSection } from '@/components/storefront/PresentkortSection'
-import { sajtbyggareEnabled } from '@/lib/sajtbyggare/flag'
-import { loadTenantSkin } from '@/lib/storefront/skin/load-skin'
-import { shouldRenderDbSkin } from '@/lib/storefront/skin/should-render-db'
-import { SkinRenderer } from '@/components/storefront/skin/SkinRenderer'
 
 // Per-request, host-resolved tenant → never prerender.
 export const dynamic = 'force-dynamic'
@@ -29,21 +25,14 @@ export default async function HomePage() {
   if (!bundle) notFound()
   const { tenant, settings, location } = bundle
 
-  // goal-47 slice 1 (template-bron READ path): a tenant that has authored
-  // content_slots on the `salvia` template renders from its resolved skin instead
-  // of the hardcoded layout. Everyone else is BYTE-IDENTICAL — the gate is false
-  // and the same <Layout> branch runs. The skin load only happens for flag+salvia
-  // (so the other themes never touch the new code path); loadTenantSkin is
-  // throw-safe (query errors → null, empty tables → empty skin). ponytail: the
-  // skin is discarded when renderDb is false; slice 2 wires the editor save-path
-  // to write content_slots that flip this on (today prod has 0 → nobody flips).
-  const sajtbyggare = sajtbyggareEnabled()
-  const skin =
-    sajtbyggare && settings.theme === 'salvia'
-      ? await loadTenantSkin(tenant.id, settings.theme)
-      : null
-  const renderDb = shouldRenderDbSkin(sajtbyggare, settings.theme, skin)
-
+  // Render-bron = the renderer. The public storefront renders via the per-theme
+  // layout (the 5 React themes today; the manifest/HTML render-bridge for the
+  // catalogue templates — goal-36). The skin-path (lib/storefront/skin + the
+  // content_slots/template_slots DB) is the KEPT data layer for the next slice
+  // (defs→templates, edits→content_slots), but its slice-1 SKELETON renderer
+  // (SkinRenderer) is PARKED — it never rendered a tenant (prod has 0
+  // content_slots) and a bare-skeleton render would regress the design. When the
+  // marriage slice lands a RICH renderer over the DB layer, it gets wired here.
   const Layout = STOREFRONT_LAYOUTS[settings.theme]
   // Owner copy (settings.copy) wins per-field; theme default fills the rest.
   const copy = await getTenantCopy(tenant.id, tenant.slug)
@@ -73,19 +62,13 @@ export default async function HomePage() {
 
   return (
     <>
-      {renderDb && skin ? (
-        // DB-driven skin (template-bron). Only reached for a salvia tenant with
-        // authored content_slots; never for today's tenants → byte-identical.
-        <SkinRenderer skin={skin} />
-      ) : (
-        <Layout
-          tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
-          theme={settings.theme}
-          content={content}
-          services={services}
-          location={location}
-        />
-      )}
+      <Layout
+        tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
+        theme={settings.theme}
+        content={content}
+        services={services}
+        location={location}
+      />
       {shopLive || shopPaused ? (
         <ShopSection tenantId={tenant.id} slug={tenant.slug} paused={shopPaused} />
       ) : null}

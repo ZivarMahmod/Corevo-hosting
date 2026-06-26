@@ -1,3 +1,10 @@
+// ⛔ PARKED (2026-06-26): render-bron is the canonical renderer (01-INRIKTNING-LAST).
+// This slice-1 SKELETON is NOT wired into any route — (public)/page.tsx renders via
+// the theme layouts / render-bridge, never this. The DB data layer it consumes
+// (lib/storefront/skin + content_slots/template_slots, migration 0026) is KEPT; only
+// THIS bare renderer is parked. The marriage slice (defs→templates, edits→content_slots)
+// replaces it with a RICH renderer before anything re-wires the public path here.
+//
 // Template-skin renderer (goal-47, slice 1) — SERVER component, SYNCHRONOUS (data
 // is already resolved by load-skin.ts and handed in as a prop, so this renders with
 // no I/O and is unit-testable via renderToStaticMarkup).
