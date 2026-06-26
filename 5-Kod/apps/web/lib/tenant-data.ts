@@ -44,6 +44,11 @@ export type TenantSettings = {
   layout: LayoutConfig
   /** Storefront theme preset (validated; default leander) → [data-theme] on root. */
   theme: StorefrontTheme
+  /** goal-50: a render-bron LOOK key chosen in onboarding (e.g. 'restoran'). When set
+   *  AND it resolves in the look-registry, the storefront renders that look's real HTML
+   *  instead of the theme layout. Raw string here (registry-validated at the dispatch
+   *  site, so tenant-data stays free of the heavy look HTML). null = use the theme. */
+  look: string | null
   /** non-null only when an actual css override string is present (nivå 3). */
   customOverride: CustomOverride | null
   paymentMode: string
@@ -107,6 +112,9 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     // Lives in the settings JSON (`theme: "leander"`); validated against the known
     // preset set so an unknown/typo value safely falls back to the default.
     theme: parseTheme(raw.theme),
+    // goal-50: optional render-bron look key (settings.look). Passed through as a raw
+    // string; the storefront validates it against the look-registry before dispatching.
+    look: typeof raw.look === 'string' && raw.look.trim().length > 0 ? raw.look.trim() : null,
     customOverride: hasCss ? override : null,
     paymentMode: row?.payment_mode ?? 'on_site',
     // Lives in the settings JSON (no dedicated column — same seam as

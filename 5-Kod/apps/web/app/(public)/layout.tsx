@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant } from '@/lib/tenant-data'
+import { getLook } from '@/lib/sajtbyggare/look-registry'
 import { requestOrigin } from '@/lib/url'
 import { Nav } from '@/components/brand/Nav'
 import { Footer } from '@/components/brand/Footer'
@@ -50,6 +51,27 @@ export default async function PublicLayout({ children }: { children: React.React
   const bundle = await currentTenant()
   if (!bundle) notFound() // unknown / reserved / platform / root host → 404
   const { tenant, settings, location } = bundle
+
+  // goal-50: a tenant that chose a render-bron LOOK from the box renders that look's
+  // OWN full page (its vendor nav + footer + CSS, loaded by page.tsx). So we serve a
+  // SLIM shell — no Corevo Nav/Footer/booking chrome that would double up. The look's
+  // booking module is the self-contained inline BookingMount (loads its own data), so
+  // no BookingProvider is needed. publika rendern är ALDRIG flagg-gatad: a tenant with
+  // a valid settings.look renders the look regardless of the deploy flag. An invalid/
+  // stray look key (getLook → undefined) falls through to the normal themed chrome.
+  const look = settings.look ? getLook(settings.look) : undefined
+  if (look) {
+    const overrideCssLook = settings.customOverride?.css
+    return (
+      <div className="tenant-root" data-world="storefront" data-tenant={tenant.id} data-look={look.key}>
+        {overrideCssLook ? (
+          <style dangerouslySetInnerHTML={{ __html: `[data-tenant="${tenant.id}"]{${overrideCssLook}}` }} />
+        ) : null}
+        {children}
+        {settings.cookieBannerEnabled ? <CookieConsent /> : null}
+      </div>
+    )
+  }
 
   // The chrome is the ONE themed nav (flexes per [data-theme]) + footer. We do NOT
   // emit data-template here: the legacy [data-template='B'] rules in

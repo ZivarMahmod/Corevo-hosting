@@ -12,6 +12,9 @@ import { PresentkortSection } from '@/components/storefront/PresentkortSection'
 import { loadTenantSkin } from '@/lib/storefront/skin/load-skin'
 import { applySkinOverlay } from '@/lib/storefront/skin/overlay'
 import { SALVIA_REGION_MANIFEST } from '@/lib/sajtbyggare/manifest/salvia'
+import { getLook } from '@/lib/sajtbyggare/look-registry'
+import { renderTemplate } from '@/lib/sajtbyggare/render-bridge'
+import { BookingMount } from '@/lib/sajtbyggare/booking-mount'
 
 // Per-request, host-resolved tenant → never prerender.
 export const dynamic = 'force-dynamic'
@@ -27,6 +30,27 @@ export default async function HomePage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings, location } = bundle
+
+  // goal-50: a tenant that chose a render-bron LOOK renders that look's REAL HTML (väg
+  // A) with the live booking module woven at its <corevo-module> marker. The (public)
+  // layout serves the slim shell for these tenants (no Corevo nav/footer). BookingMount
+  // is the self-contained inline wizard (loads its own services/locations). The look's
+  // vendor CSS loads page-level via its cssHrefs (same faithful surface as the spike;
+  // full CSS scoping is goal-36 R5 hardening). renderTemplate is R2-guarded → a broken
+  // look degrades to a fallback node, never a 500.
+  const look = settings.look ? getLook(settings.look) : undefined
+  if (look) {
+    return (
+      <>
+        {look.cssHrefs.map((href) => (
+          <link key={href} rel="stylesheet" href={href} />
+        ))}
+        <div data-look={look.key} className="corevo-tpl-scope">
+          {renderTemplate(look.html, { booking: <BookingMount tenantId={tenant.id} slug={tenant.slug} /> })}
+        </div>
+      </>
+    )
+  }
 
   // Render-bron = the renderer. The public storefront renders via the per-theme
   // layout (the 5 React themes today; the manifest/HTML render-bridge for the
