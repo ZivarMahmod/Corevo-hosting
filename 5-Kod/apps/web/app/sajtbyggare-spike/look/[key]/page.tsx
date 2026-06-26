@@ -98,6 +98,27 @@ export default async function LookPreviewPage({
   for (const k of activeKeys) moduleStates[k] = 'live'
   const cfg = { ...initStudioCfg(look.key), branch: branch ?? null, moduleStates }
 
+  // goal-36: the SELECTED modules, in the look's own palette/typography (its manifest
+  // tokens). Rendered RIGHT AFTER the booking module (see below) — i.e. in the look's
+  // main content flow, BEFORE the footer — so a chosen module is actually VISIBLE, not
+  // dumped under the footer. data-theme supplies base structural tokens; the look's
+  // tokens override palette/font. Empty selection → null (nothing extra).
+  const moduleBlock =
+    activeKeys.length > 0 ? (
+      <div
+        data-world="storefront"
+        data-theme="leander"
+        data-look-modules={look.key}
+        className={storefront.tplRoot}
+        style={{ ...lookTokenVars(look.manifest), background: 'var(--color-bg)', color: 'var(--color-fg)' } as CSSProperties}
+      >
+        <div style={{ display: 'grid', gap: 44, padding: '44px 40px' }}>
+          <ModuleSections cfg={cfg} />
+          <KontoPanel cfg={cfg} />
+        </div>
+      </div>
+    ) : null
+
   return (
     <>
       {look.cssHrefs.map((href) => (
@@ -109,28 +130,17 @@ export default async function LookPreviewPage({
         className="corevo-tpl-scope"
         style={accentVar ? ({ ['--corevo-accent' as string]: accentVar } as CSSProperties) : undefined}
       >
-        {renderTemplate(look.html, { booking: <BookingPlaceholder /> })}
+        {/* booking weaves at its marker; the selected modules render RIGHT AFTER it,
+            inside the look's main flow (before the footer) so they're visible. */}
+        {renderTemplate(look.html, {
+          booking: (
+            <>
+              <BookingPlaceholder />
+              {moduleBlock}
+            </>
+          ),
+        })}
       </div>
-
-      {/* goal-36: the SELECTED modules woven below the look, in the look's own palette/
-          typography. A separate storefront-scoped wrapper (not inside corevo-tpl-scope)
-          so the vendor CSS cascade can't mangle the mocks; data-theme supplies the base
-          structural tokens, the look's tokens override palette/font. booking is NOT here
-          (it weaves into the look HTML above). Empty selection → nothing extra. */}
-      {activeKeys.length > 0 ? (
-        <div
-          data-world="storefront"
-          data-theme="leander"
-          data-look-modules={look.key}
-          className={storefront.tplRoot}
-          style={{ ...lookTokenVars(look.manifest), background: 'var(--color-bg)', color: 'var(--color-fg)', pointerEvents: 'none' } as CSSProperties}
-        >
-          <div style={{ display: 'grid', gap: 44, padding: '44px 40px' }}>
-            <ModuleSections cfg={cfg} />
-            <KontoPanel cfg={cfg} />
-          </div>
-        </div>
-      ) : null}
     </>
   )
 }
