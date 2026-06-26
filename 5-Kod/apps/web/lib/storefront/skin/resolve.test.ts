@@ -249,6 +249,7 @@ describe('resolveSkin — (f) sections grouped + ordered by sort_order', () => {
       slots: {},
       sections: [],
       hasTenantContent: false,
+      authoredSlotKeys: [],
     })
   })
 

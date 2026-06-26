@@ -8,10 +8,13 @@
 // zero design regression.
 //
 // Precedence: this overlay is applied OVER the tenant_settings copy/branding base,
-// so content_slots WINS. Only PRESENT values override (text!=null / url!=null). The
-// canonical salvia template_slots carry NO defaults (default_text NULL, migration
-// 0040), so a present resolved value can only come from an authored content_slot —
-// an un-edited slot leaves the base (tenant_settings / theme default) untouched.
+// so content_slots WINS. It overrides ONLY slots the tenant actually AUTHORED
+// (skin.authoredSlotKeys) — never a template default. (Driving off "value present"
+// would be a landmine: a template default also resolves to a present value, so a
+// future default_text on a salvia slot would clobber the tenant's tenant_settings on
+// every un-edited slot. Salvia avoids that only because 0040 nulled its defaults;
+// the authored-key gate removes the dependence on that accident.) A present-value
+// guard still applies so a dangling asset (url=null) never blanks a working image.
 
 import type { ResolvedSkin } from './types'
 import type { RegionManifest } from '@/lib/sajtbyggare/manifest/types'
@@ -31,8 +34,12 @@ export function applySkinOverlay(
 ): { copy: Record<string, unknown>; branding: Record<string, unknown> } {
   const copy: Record<string, unknown> = { ...(baseCopy ?? {}) }
   const branding: Record<string, unknown> = { ...(baseBranding ?? {}) }
+  const authored = new Set(skin.authoredSlotKeys)
 
   for (const region of manifest.regions) {
+    // Provenance gate: only the tenant's OWN authored slots win over tenant_settings,
+    // never a template default (which also resolves to a present value). See types.ts.
+    if (!authored.has(region.key)) continue
     const slot = skin.slots[region.key]
     if (!slot) continue
     const binding = region.tenantBinding

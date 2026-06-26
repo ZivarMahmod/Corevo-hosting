@@ -46,26 +46,29 @@ export async function loadTenantSkin(
     .maybeSingle()
   if (error || !template) return null
 
-  // Slot declarations for this template (tenant-agnostic catalog; key-scoped).
-  const { data: templateSlots } = await supabase
-    .from('template_slots')
-    .select('*')
-    .eq('template_key', templateKey)
-    .order('sort_order', { ascending: true })
-
-  // Tenant VALUES for this template — scoped by BOTH tenant_id and template_key.
-  // tenant_id is the app-layer isolation filter (RLS does NOT do this for anon).
-  const { data: contentSlots } = await supabase
-    .from('content_slots')
-    .select('*')
-    .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
-    .eq('template_key', templateKey)
-
-  // Tenant media for asset resolution; scoped by tenant_id (app-layer isolation).
-  const { data: mediaAssets } = await supabase
-    .from('media_assets')
-    .select('*')
-    .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+  // Fetch the three remaining inputs in PARALLEL (they are independent; this runs on
+  // the public storefront hot path, so avoid sequential round-trips):
+  //  - template_slots: slot declarations (tenant-agnostic catalog; key-scoped).
+  //  - content_slots:  tenant VALUES, scoped by BOTH tenant_id and template_key
+  //                    (tenant_id is the app-layer isolation filter — RLS does NOT
+  //                    scope anon).
+  //  - media_assets:   tenant media for asset resolution; scoped by tenant_id.
+  const [{ data: templateSlots }, { data: contentSlots }, { data: mediaAssets }] = await Promise.all([
+    supabase
+      .from('template_slots')
+      .select('*')
+      .eq('template_key', templateKey)
+      .order('sort_order', { ascending: true }),
+    supabase
+      .from('content_slots')
+      .select('*')
+      .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+      .eq('template_key', templateKey),
+    supabase
+      .from('media_assets')
+      .select('*')
+      .eq('tenant_id', tenantId), // app-layer tenant isolation (RLS does NOT do this for anon)
+  ])
 
   return resolveSkin(
     template,

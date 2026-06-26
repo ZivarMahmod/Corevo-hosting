@@ -7,7 +7,7 @@ import { SkinRenderer } from './SkinRenderer'
 // (null text, null url, module, empty) → nothing. Tokens land as --sf-* inline vars.
 
 function skin(sections: ResolvedSkin['sections'], cssVars: Record<string, string> = {}): ResolvedSkin {
-  return { templateKey: 'salvia', tokens: {}, cssVars, slots: {}, sections, hasTenantContent: true }
+  return { templateKey: 'salvia', tokens: {}, cssVars, slots: {}, sections, hasTenantContent: true, authoredSlotKeys: [] }
 }
 
 describe('SkinRenderer', () => {

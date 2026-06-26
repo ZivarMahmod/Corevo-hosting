@@ -197,5 +197,8 @@ export function resolveSkin(
   // editor only writes content_slots for declared slots, so an orphan key here is
   // not a real case. Tighten to "resolved-from-content" only if that ever changes.
   const hasTenantContent = contentSlots.length > 0
-  return { templateKey: template.key, tokens, cssVars, slots, sections, hasTenantContent }
+  // Provenance: the slot_keys the tenant actually authored (vs template defaults).
+  // The overlay must override tenant_settings only for THESE keys — see types.ts.
+  const authoredSlotKeys = contentSlots.map((c) => c.slot_key)
+  return { templateKey: template.key, tokens, cssVars, slots, sections, hasTenantContent, authoredSlotKeys }
 }

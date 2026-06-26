@@ -3,15 +3,19 @@ import { applySkinOverlay } from './overlay'
 import { SALVIA_REGION_MANIFEST } from '@/lib/sajtbyggare/manifest/salvia'
 import type { ResolvedSkin, ResolvedSlot } from './types'
 
-// Build a minimal ResolvedSkin from a slot_key → ResolvedSlot map.
-function skin(slots: Record<string, ResolvedSlot>): ResolvedSkin {
+// Build a minimal ResolvedSkin from a slot_key → ResolvedSlot map. `authored`
+// defaults to ALL provided keys (they represent tenant content); pass an explicit
+// subset to simulate a slot that resolved from a TEMPLATE DEFAULT (present value but
+// NOT tenant-authored) — that must never override the base.
+function skin(slots: Record<string, ResolvedSlot>, authored: string[] = Object.keys(slots)): ResolvedSkin {
   return {
     templateKey: 'salvia',
     tokens: {},
     cssVars: {},
     slots,
     sections: [],
-    hasTenantContent: Object.keys(slots).length > 0,
+    hasTenantContent: authored.length > 0,
+    authoredSlotKeys: authored,
   }
 }
 const text = (slotKey: string, t: string | null): ResolvedSlot => ({ kind: 'text', slotKey, value: t, text: t })
@@ -47,6 +51,18 @@ describe('applySkinOverlay (content_slots → layout, content wins)', () => {
       { heroTitle: 'kvar' }, { hero_images: ['kvar0'] })
     expect(out.copy.heroTitle).toBe('kvar')
     expect(out.branding.hero_images).toEqual(['kvar0'])
+  })
+
+  it('a PRESENT value from a template default (not authored) never overrides the base', () => {
+    // Slot resolves to a present value but the tenant did NOT author it (authored=[]).
+    // This is the landmine the provenance gate closes: present ≠ tenant-authored.
+    const out = applySkinOverlay(
+      skin({ 'hero.title': text('hero.title', 'MALL-DEFAULT') }, []),
+      M,
+      { heroTitle: 'tenant_settings-värde' },
+      {},
+    )
+    expect(out.copy.heroTitle).toBe('tenant_settings-värde') // base wins, default ignored
   })
 
   it('does not mutate the input copy/branding objects', () => {

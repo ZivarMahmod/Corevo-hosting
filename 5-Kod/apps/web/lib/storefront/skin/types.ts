@@ -74,8 +74,16 @@ export type ResolvedSection = {
  *                 NOT a safe "render from DB" signal (salvia ships 19 template
  *                 slots). The storefront flips to DB-render only when the tenant
  *                 actually authored content — this flag is that gate.
+ *  - `authoredSlotKeys` — the slot_keys the tenant ACTUALLY authored a content_slot
+ *                 for (provenance). A `slots[key]` value can come from either the
+ *                 tenant's content_slot OR a template default; only the former should
+ *                 win over tenant_settings in the storefront overlay (overlay.ts).
+ *                 Drive any "tenant value vs template default" decision off THIS set,
+ *                 never off "is the resolved value present" — the latter is true for
+ *                 template defaults too (and salvia only avoids that trap because its
+ *                 defaults are NULL; catalogue templates carry real default_text).
  * Empty inputs (today's prod reality) yield empty tokens/cssVars/slots/sections
- * with hasTenantContent=false and no throw.
+ * with hasTenantContent=false, authoredSlotKeys=[] and no throw.
  */
 export type ResolvedSkin = {
   templateKey: string
@@ -84,4 +92,5 @@ export type ResolvedSkin = {
   slots: Record<string, ResolvedSlot>
   sections: ResolvedSection[]
   hasTenantContent: boolean
+  authoredSlotKeys: string[]
 }
