@@ -20,6 +20,7 @@ import {
   useMemo,
   useReducer,
   useState,
+  type CSSProperties,
 } from 'react'
 import { Button, Icon } from '@/components/portal/ui'
 import { createTenant } from '@/lib/platform/actions'
@@ -120,8 +121,6 @@ function StudioMachine({
     formAction(buildCreateTenantFormData(cfg))
   }
 
-  const url = `${cfg.slug || 'dinsalong'}.${ROOT}`
-
   return (
     <div
       style={{
@@ -179,9 +178,10 @@ function StudioMachine({
       )}
 
       {stage === 'result' && (
-        <ResultBanner
+        <ResultView
           name={cfg.name}
-          url={url}
+          slug={cfg.slug}
+          tenant={result.tenant}
           message={result.success ?? ''}
           onRestart={onRestart}
         />
@@ -192,20 +192,58 @@ function StudioMachine({
 
 /* ──────────────────────────────────────────────────────────────────────────── */
 
-/** REAL success banner (port app.jsx:133–145, success half only). Shows the actual
- *  createTenant message + slug. The design's site/admin tabs + CustomerAdmin mock are
- *  W-later (§9.3) → here we surface only the honest "what happened + what's next". */
-function ResultBanner({
+/**
+ * Honest result-vy (W6). The tenant is created and the booking engine + owner admin
+ * work immediately — but the PUBLIC host <slug>.corevo.se is NOT auto-attached (runtime
+ * auto-attach is dormant; the next-deploy path was retired in fix-35 → it's a separate
+ * add-domain.mjs step). VERIFIED by curl: a freshly-onboarded slug does not resolve. So
+ * this view links only surfaces that genuinely work (the platform tenant-detail + the
+ * real action message) and presents <slug>.corevo.se as a RESERVED address, never a live
+ * link. NO fake CustomerAdmin / storefront mock (the design's result mock is a prototype).
+ */
+export function ResultView({
   name,
-  url,
+  slug,
+  tenant,
   message,
   onRestart,
 }: {
   name: string
-  url: string
+  slug: string
+  tenant?: { id: string; slug: string }
   message: string
   onRestart: () => void
 }) {
+  const address = `${slug || 'dinsalong'}.${ROOT}`
+  // The platform tenant-detail always works (platform route). Its embedded storefront
+  // preview iframe points at the same unresolvable host, so we label this "öppna &
+  // hantera" — NOT "se den publika sidan".
+  const manageHref = tenant?.id ? `/salonger/${tenant.id}` : '/salonger'
+
+  const cardStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    padding: '14px 16px',
+    border: '1px solid var(--c-line)',
+    borderRadius: 12,
+    background: 'var(--c-paper)',
+    textDecoration: 'none',
+    color: 'inherit',
+  }
+  const iconWrap: CSSProperties = {
+    width: 36,
+    height: 36,
+    flex: 'none',
+    borderRadius: 9,
+    background: 'var(--c-paper-2)',
+    color: 'var(--c-forest)',
+    display: 'grid',
+    placeItems: 'center',
+  }
+  const cardTitle: CSSProperties = { fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }
+  const cardSub: CSSProperties = { fontSize: 12.5, color: 'var(--c-ink-3)', marginTop: 2, lineHeight: 1.45 }
+
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--c-cream)', overflowY: 'auto' }}>
       <div
@@ -227,11 +265,10 @@ function ResultBanner({
           </span>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19 }}>
-              {name || 'Kunden'} är live
+              {name || 'Kunden'} är skapad
             </div>
-            <div style={{ fontSize: 13, color: 'var(--c-on-forest-2)', display: 'flex', alignItems: 'center', gap: 7, marginTop: 2 }}>
-              <Icon name="globe" size={13} style={{ color: 'var(--c-gold)' }} />
-              {url}
+            <div style={{ fontSize: 13, color: 'var(--c-on-forest-2)', marginTop: 2 }}>
+              Kund, moduler, tjänster och ägar-konto är på plats.
             </div>
           </div>
         </div>
@@ -240,8 +277,7 @@ function ResultBanner({
         </Button>
       </div>
 
-      {/* the REAL action message + an honest "next waves" note (no mock admin/site) */}
-      <div style={{ padding: '28px 24px', maxWidth: 720, margin: '0 auto', width: '100%' }}>
+      <div style={{ padding: '28px 24px', maxWidth: 720, margin: '0 auto', width: '100%', display: 'grid', gap: 14 }}>
         {message ? (
           <div
             style={{
@@ -264,9 +300,61 @@ function ResultBanner({
           </div>
         ) : null}
 
-        <div style={{ marginTop: 18, fontSize: 12.5, color: 'var(--c-ink-2)', lineHeight: 1.6 }}>
-          Kunden ligger nu i kundlistan. Den skarpa förhandsvisningen av storefronten och kundens egen
-          admin-vy byggs i senare vågor.
+        {/* PRIMARY — genuinely works (platform route). Manage + the salon's data. */}
+        <a href={manageHref} style={cardStyle}>
+          <span style={iconWrap}>
+            <Icon name="sliders" size={18} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ ...cardTitle, display: 'block' }}>Öppna &amp; hantera salongen</span>
+            <span style={{ ...cardSub, display: 'block' }}>Bokningar, tjänster, personal och branding i plattformen.</span>
+          </span>
+          <Icon name="arrowRight" size={16} />
+        </a>
+
+        {/* Public address — HONEST: reserved, NOT yet reachable. No live link (curl: the
+            host does not resolve until add-domain.mjs connects it). */}
+        <div style={{ ...cardStyle, cursor: 'default', alignItems: 'flex-start' }}>
+          <span style={iconWrap}>
+            <Icon name="globe" size={18} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ ...cardTitle, display: 'block' }}>Kundens publika adress</span>
+            <span style={{ ...cardSub, display: 'block' }}>
+              <b style={{ color: 'var(--c-ink-2)' }}>{address}</b> — reserverad. Adressen kopplas in som ett separat steg
+              innan sidan syns publikt. Du har redan sett sidan i förhandsvisningen.
+            </span>
+          </span>
+        </div>
+
+        {/* Owner admin — the real login host. Invite status rides the message above. */}
+        <div style={{ ...cardStyle, cursor: 'default', alignItems: 'flex-start' }}>
+          <span style={iconWrap}>
+            <Icon name="user" size={18} />
+          </span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ ...cardTitle, display: 'block' }}>Ägarens admin</span>
+            <span style={{ ...cardSub, display: 'block' }}>
+              Ägaren loggar in på <b style={{ color: 'var(--c-ink-2)' }}>booking.{ROOT}</b> via magic-link-inbjudan (se
+              status ovan) och styr bara sin egen salong.
+            </span>
+          </span>
+        </div>
+
+        {/* Honest next-step guidance (port of the design's result "Nästa steg" list). */}
+        <div style={{ padding: '14px 16px', borderRadius: 12, background: 'var(--c-paper-2)', marginTop: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <Icon name="checkCircle" size={15} style={{ color: 'var(--c-gold-600)' }} />
+            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>Nästa steg</span>
+          </div>
+          <div style={{ display: 'grid', gap: 7 }}>
+            {['Koppla in den publika adressen när du vill ta sidan live', 'Bjud in personal och finjustera tjänsterna i adminen', 'Koppla Stripe när betalningar släpps på'].map((s) => (
+              <div key={s} style={{ display: 'flex', gap: 9, alignItems: 'center', fontSize: 13, color: 'var(--c-ink-2)' }}>
+                <Icon name="arrowRight" size={14} style={{ color: 'var(--c-gold-600)' }} />
+                {s}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -28,7 +28,7 @@ import { SuperEntry } from './SuperEntry'
 import { StepRail } from './StepRail'
 import { PanelHost } from './PanelHost'
 import { PreviewPane } from './PreviewPane'
-import { OnboardingStudio } from './OnboardingStudio'
+import { OnboardingStudio, ResultView } from './OnboardingStudio'
 
 // Minimal real-shaped presets (same as state.test.ts — VerticalPreset has no
 // hero/services/defaultPos).
@@ -213,6 +213,28 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       />,
     )
     expect(html).toContain('Lansera')
+  })
+
+  it('the result-vy (W6) links the real /salonger/[id], shows the reserved address, no theater', () => {
+    const html = mounts(
+      <ResultView
+        name="Klippoteket"
+        slug="klippoteket"
+        tenant={{ id: 't9', slug: 'klippoteket' }}
+        message="Salong skapad. Inbjudan skickad till a@b.se."
+        onRestart={noop}
+      />,
+    )
+    expect(html).toContain('href="/salonger/t9"') // real, working platform link
+    expect(html).toContain('klippoteket.corevo.se') // reserved address shown
+    expect(html).toContain('Onboarda nästa kund')
+    expect(html).toContain('är skapad') // honest header, NOT "är live" (host doesn't resolve yet)
+    expect(html).not.toContain('byggs i senare vågor') // old placeholder copy is gone
+  })
+
+  it('the result-vy falls back to /salonger when the tenant id is missing (W6)', () => {
+    const html = mounts(<ResultView name="X" slug="x" message="" onRestart={noop} />)
+    expect(html).toContain('href="/salonger"')
   })
 
   it('OnboardingStudio (root machine) mounts the super stage', () => {

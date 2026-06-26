@@ -28,7 +28,14 @@ import { foldOnboardingDraft } from '@/lib/sajtbyggare/onboarding-fold'
 import type { TenantBranding } from '@corevo/ui'
 import type { Json } from '@corevo/db'
 
-export type ActionState = { error?: string; success?: string }
+export type ActionState = {
+  error?: string
+  success?: string
+  /** On a successful createTenant: the new tenant's id + slug, so the onboarding-studio
+   *  result-vy (W6) can link the real /salonger/[id] + show the reserved public address.
+   *  Optional + additive — message-only consumers (CreateTenantForm) ignore it. */
+  tenant?: { id: string; slug: string }
+}
 
 const GENERIC = 'Något gick fel. Försök igen.'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -329,8 +336,13 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
 
   revalidatePath('/platform')
   revalidatePath('/salonger')
+  // HONEST status (W6): the tenant is created + the booking engine + owner admin work
+  // immediately, but the PUBLIC host <slug>.corevo.se is NOT auto-attached (runtime
+  // auto-attach is dormant + the next-deploy path was retired in fix-35 → connecting the
+  // domain is a separate add-domain.mjs step). So don't claim it's "live på <slug>" here.
   return {
-    success: `Salong "${name}" skapad och live på ${slug}.corevo.se.${inviteNote}`,
+    success: `Salong "${name}" skapad (${slug}.corevo.se).${inviteNote}`,
+    tenant: { id: tenantId, slug },
   }
 }
 
