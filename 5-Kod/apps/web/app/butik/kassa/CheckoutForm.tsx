@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/components/storefront/shop/CartProvider'
 import { formatShopPrice, type ShopFulfilment } from '@/lib/storefront/shop/types'
-import { reserveOrder, confirmOrder, cancelOrder } from '../actions'
+import { reserveOrder, confirmOrder, cancelOrder, startShopCheckout } from '../actions'
 
 export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
   const { lines, token, subtotalCents, clear } = useCart()
@@ -87,6 +87,17 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
       setSubmitting(false)
       setFormError(res.message)
       return
+    }
+    // Betalning krävs (Fas 3, bakom payments_enabled) → starta Stripe Checkout.
+    // Misslyckas/otillgänglig → fall igenom till bekräftelsen (ordern står awaiting,
+    // ärlig vy). Default (rälsen av) → requiresPayment=false → direkt bekräftelse.
+    if (res.requiresPayment) {
+      const co = await startShopCheckout(res.orderId)
+      if (co.ok) {
+        clear()
+        window.location.href = co.url
+        return
+      }
     }
     clear()
     router.push(`/butik/bekraftelse/${res.orderId}`)

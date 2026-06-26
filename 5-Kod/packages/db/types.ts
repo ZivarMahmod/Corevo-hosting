@@ -511,50 +511,6 @@ export type Database = {
           },
         ]
       }
-      locations: {
-        Row: {
-          active: boolean
-          address: string | null
-          created_at: string
-          id: string
-          is_primary: boolean
-          name: string
-          tenant_id: string
-          timezone: string
-          updated_at: string | null
-        }
-        Insert: {
-          active?: boolean
-          address?: string | null
-          created_at?: string
-          id?: string
-          is_primary?: boolean
-          name: string
-          tenant_id: string
-          timezone?: string
-          updated_at?: string | null
-        }
-        Update: {
-          active?: boolean
-          address?: string | null
-          created_at?: string
-          id?: string
-          is_primary?: boolean
-          name?: string
-          tenant_id?: string
-          timezone?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "locations_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       gift_cards: {
         Row: {
           balance_cents: number
@@ -604,6 +560,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "gift_cards_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          active: boolean
+          address: string | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          name: string
+          tenant_id: string
+          timezone: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          tenant_id: string
+          timezone?: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          tenant_id?: string
+          timezone?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locations_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -833,13 +833,71 @@ export type Database = {
           },
         ]
       }
+      payment_disputes: {
+        Row: {
+          amount_cents: number | null
+          created_at: string
+          currency: string
+          dispute_status: string | null
+          id: string
+          payment_id: string | null
+          reason: string | null
+          stripe_charge_id: string | null
+          stripe_dispute_id: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string
+          dispute_status?: string | null
+          id?: string
+          payment_id?: string | null
+          reason?: string | null
+          stripe_charge_id?: string | null
+          stripe_dispute_id: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string
+          dispute_status?: string | null
+          id?: string
+          payment_id?: string | null
+          reason?: string | null
+          stripe_charge_id?: string | null
+          stripe_dispute_id?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_disputes_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_disputes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_cents: number
-          booking_id: string
+          booking_id: string | null
           created_at: string
           currency: string
           id: string
+          order_id: string | null
           status: string
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
@@ -848,10 +906,11 @@ export type Database = {
         }
         Insert: {
           amount_cents: number
-          booking_id: string
+          booking_id?: string | null
           created_at?: string
           currency?: string
           id?: string
+          order_id?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -860,10 +919,11 @@ export type Database = {
         }
         Update: {
           amount_cents?: number
-          booking_id?: string
+          booking_id?: string | null
           created_at?: string
           currency?: string
           id?: string
+          order_id?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -876,6 +936,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
             referencedColumns: ["id"]
           },
           {
@@ -1006,6 +1073,256 @@ export type Database = {
           },
         ]
       }
+      shop_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string | null
+          product_name: string
+          quantity: number
+          tax_cents: number
+          tax_rate: number
+          tenant_id: string
+          unit_price_cents: number
+          variant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          tax_cents?: number
+          tax_rate?: number
+          tenant_id: string
+          unit_price_cents?: number
+          variant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          tax_cents?: number
+          tax_rate?: number
+          tenant_id?: string
+          unit_price_cents?: number
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shop_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "shop_product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_orders: {
+        Row: {
+          created_at: string
+          currency: string
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          discount_cents: number
+          expires_at: string | null
+          fulfilment: string
+          id: string
+          note: string | null
+          payment_status: string
+          pickup_by: string | null
+          pickup_location_id: string | null
+          ready_at: string | null
+          session_token: string | null
+          ship_address: string | null
+          shipping_cents: number
+          status: string
+          stock_committed: boolean
+          subtotal_cents: number
+          tax_cents: number
+          tenant_id: string
+          total_cents: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          discount_cents?: number
+          expires_at?: string | null
+          fulfilment?: string
+          id?: string
+          note?: string | null
+          payment_status?: string
+          pickup_by?: string | null
+          pickup_location_id?: string | null
+          ready_at?: string | null
+          session_token?: string | null
+          ship_address?: string | null
+          shipping_cents?: number
+          status?: string
+          stock_committed?: boolean
+          subtotal_cents?: number
+          tax_cents?: number
+          tenant_id: string
+          total_cents?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          discount_cents?: number
+          expires_at?: string | null
+          fulfilment?: string
+          id?: string
+          note?: string | null
+          payment_status?: string
+          pickup_by?: string | null
+          pickup_location_id?: string | null
+          ready_at?: string | null
+          session_token?: string | null
+          ship_address?: string | null
+          shipping_cents?: number
+          status?: string
+          stock_committed?: boolean
+          subtotal_cents?: number
+          tax_cents?: number
+          tenant_id?: string
+          total_cents?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_orders_pickup_location_id_fkey"
+            columns: ["pickup_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_product_variants: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          id: string
+          image_asset_id: string | null
+          name: string
+          price_cents: number
+          product_id: string
+          reserved_qty: number
+          sku: string | null
+          sort_order: number
+          stock: number | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          image_asset_id?: string | null
+          name?: string
+          price_cents?: number
+          product_id: string
+          reserved_qty?: number
+          sku?: string | null
+          sort_order?: number
+          stock?: number | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          image_asset_id?: string | null
+          name?: string
+          price_cents?: number
+          product_id?: string
+          reserved_qty?: number
+          sku?: string | null
+          sort_order?: number
+          stock?: number | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_product_variants_image_asset_id_fkey"
+            columns: ["image_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "shop_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_product_variants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_products: {
         Row: {
           active: boolean
@@ -1069,143 +1386,41 @@ export type Database = {
           },
         ]
       }
-      shop_orders: {
+      site_content_vertical_defaults: {
         Row: {
           created_at: string
-          currency: string
-          customer_email: string | null
-          customer_id: string | null
-          customer_name: string | null
-          customer_phone: string | null
-          fulfilment: string
           id: string
-          note: string | null
-          payment_status: string
-          pickup_by: string | null
-          pickup_location_id: string | null
-          ready_at: string | null
-          ship_address: string | null
-          status: string
-          tenant_id: string
-          total_cents: number
+          region_key: string
+          template_key: string
           updated_at: string | null
-        }
-        Insert: {
-          created_at?: string
-          currency?: string
-          customer_email?: string | null
-          customer_id?: string | null
-          customer_name?: string | null
-          customer_phone?: string | null
-          fulfilment?: string
-          id?: string
-          note?: string | null
-          payment_status?: string
-          pickup_by?: string | null
-          pickup_location_id?: string | null
-          ready_at?: string | null
-          ship_address?: string | null
-          status?: string
-          tenant_id: string
-          total_cents?: number
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string
-          currency?: string
-          customer_email?: string | null
-          customer_id?: string | null
-          customer_name?: string | null
-          customer_phone?: string | null
-          fulfilment?: string
-          id?: string
-          note?: string | null
-          payment_status?: string
-          pickup_by?: string | null
-          pickup_location_id?: string | null
-          ready_at?: string | null
-          ship_address?: string | null
-          status?: string
-          tenant_id?: string
-          total_cents?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shop_orders_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shop_orders_pickup_location_id_fkey"
-            columns: ["pickup_location_id"]
-            isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shop_orders_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      shop_order_items: {
-        Row: {
-          created_at: string
-          id: string
-          order_id: string
-          product_id: string | null
-          product_name: string
-          quantity: number
-          tenant_id: string
-          unit_price_cents: number
+          value: string
+          vertical_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          order_id: string
-          product_id?: string | null
-          product_name: string
-          quantity?: number
-          tenant_id: string
-          unit_price_cents?: number
+          region_key: string
+          template_key: string
+          updated_at?: string | null
+          value: string
+          vertical_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          order_id?: string
-          product_id?: string | null
-          product_name?: string
-          quantity?: number
-          tenant_id?: string
-          unit_price_cents?: number
+          region_key?: string
+          template_key?: string
+          updated_at?: string | null
+          value?: string
+          vertical_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "shop_order_items_order_id_fkey"
-            columns: ["order_id"]
+            foreignKeyName: "site_content_vertical_defaults_vertical_id_fkey"
+            columns: ["vertical_id"]
             isOneToOne: false
-            referencedRelation: "shop_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shop_order_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "shop_products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shop_order_items_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
+            referencedRelation: "verticals"
+            referencedColumns: ["key"]
           },
         ]
       }
@@ -1437,44 +1652,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      site_content_vertical_defaults: {
-        Row: {
-          created_at: string
-          id: string
-          region_key: string
-          template_key: string
-          updated_at: string | null
-          value: string
-          vertical_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          region_key: string
-          template_key: string
-          updated_at?: string | null
-          value: string
-          vertical_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          region_key?: string
-          template_key?: string
-          updated_at?: string | null
-          value?: string
-          vertical_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "site_content_vertical_defaults_vertical_id_fkey"
-            columns: ["vertical_id"]
-            isOneToOne: false
-            referencedRelation: "verticals"
-            referencedColumns: ["key"]
           },
         ]
       }
@@ -1895,9 +2072,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _commit_shop_order_stock: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       check_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_secs: number }
         Returns: boolean
+      }
+      confirm_shop_order: {
+        Args: {
+          p_customer?: string
+          p_guest_email?: string
+          p_guest_name?: string
+          p_guest_phone?: string
+          p_note?: string
+          p_order_id: string
+          p_pickup_location?: string
+          p_ship_address?: string
+          p_token: string
+        }
+        Returns: {
+          order_id: string
+          requires_payment: boolean
+        }[]
       }
       create_public_booking: {
         Args: {
@@ -1965,6 +2163,26 @@ export type Database = {
           tenant_name: string
           tenant_slug: string
         }[]
+      }
+      get_public_shop_order: {
+        Args: { p_id: string; p_token: string }
+        Returns: Json
+      }
+      mark_shop_order_paid: { Args: { p_order_id: string }; Returns: undefined }
+      prune_expired_shop_reserves: { Args: never; Returns: number }
+      release_shop_order: {
+        Args: { p_order_id: string; p_status?: string; p_token?: string }
+        Returns: undefined
+      }
+      reserve_shop_order: {
+        Args: {
+          p_fulfilment?: string
+          p_items: Json
+          p_tenant_slug: string
+          p_token?: string
+          p_ttl_min?: number
+        }
+        Returns: string
       }
       resolve_tenant_by_domain: { Args: { p_host: string }; Returns: string }
       seed_explicit_slots_from_hours: {

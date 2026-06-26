@@ -2,7 +2,7 @@ import Stripe from 'stripe'
 import { getStripe, getWebhookSecret } from '@/lib/stripe/client'
 import { createServiceClient } from '@/lib/platform/service'
 import { sendPaymentReceipt, parseGuestEmail } from '@/lib/notifications/booking'
-import { refundBookingPayment } from '@/lib/stripe/refund'
+import { refundBookingPayment, refundShopOrder } from '@/lib/stripe/refund'
 import { captureException } from '@/lib/observability'
 
 // Stripe Connect webhook (G09 step 4).
@@ -91,7 +91,54 @@ export async function POST(req: Request): Promise<Response> {
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent
         const bookingId = pi.metadata?.booking_id
+        const orderId = pi.metadata?.order_id
         const tenantId = pi.metadata?.tenant_id
+        // Webshop-order (Fas 3): account-fence → markera payment succeeded →
+        // mark_shop_order_paid committar lagret + status pending/paid (idempotent).
+        if (orderId && tenantId) {
+          if (!(await accountOwnsTenant(admin, account, tenantId))) {
+            await captureException(new Error('stripe webhook account mismatch'), {
+              where: 'webhook.account_guard',
+              type: event.type,
+              account,
+              tenantId,
+            })
+            break
+          }
+          // Ownership: order_id MÅSTE tillhöra fenced tenant. accountOwnsTenant bevisar
+          // bara tenant↔account; mark_shop_order_paid är tenant-blind → utan denna check
+          // kan ett spoofat konto B committa ett OFFER-tenants order. Verifiera FÖRE RPC.
+          const { data: ord } = await admin
+            .from('shop_orders')
+            .select('id')
+            .eq('id', orderId)
+            .eq('tenant_id', tenantId)
+            .maybeSingle()
+          if (!ord) {
+            await captureException(new Error('stripe webhook order/tenant mismatch'), {
+              where: 'webhook.account_guard',
+              type: event.type,
+              account,
+              tenantId,
+            })
+            break
+          }
+          await admin
+            .from('payments')
+            .update({ status: 'succeeded', stripe_payment_intent_id: pi.id })
+            .eq('order_id', orderId)
+            .eq('tenant_id', tenantId)
+            .neq('status', 'refunded')
+          await admin.rpc('mark_shop_order_paid', { p_order_id: orderId })
+          // Auto-refund-nät (spegla booking cancelled→refund): om ordern inte kunde
+          // committas (redan cancelled/expired pga abandon-release) men betalningen gick
+          // igenom → återbetala. Annars money-taken-no-fulfilment vid decline→retry.
+          const { data: o2 } = await admin.from('shop_orders').select('status').eq('id', orderId).maybeSingle()
+          if (o2?.status === 'cancelled' || o2?.status === 'expired') {
+            await refundShopOrder(orderId, tenantId)
+          }
+          break
+        }
         if (bookingId && tenantId) {
           // Account-fence: tenant (från metadata) MÅSTE äga `event.account`.
           if (!(await accountOwnsTenant(admin, account, tenantId))) {
@@ -178,7 +225,33 @@ export async function POST(req: Request): Promise<Response> {
       case 'payment_intent.payment_failed': {
         const pi = event.data.object as Stripe.PaymentIntent
         const bookingId = pi.metadata?.booking_id
+        const orderId = pi.metadata?.order_id
         const tenantId = pi.metadata?.tenant_id
+        // Webshop-order: account-fence → payment failed → release_shop_order frigör
+        // det held:a lagret (reserved_qty) + status cancelled (service_role → utan token).
+        if (orderId && tenantId) {
+          if (!(await accountOwnsTenant(admin, account, tenantId))) {
+            await captureException(new Error('stripe webhook account mismatch'), {
+              where: 'webhook.account_guard',
+              type: event.type,
+              account,
+              tenantId,
+            })
+            break
+          }
+          // failed är INTE terminal i Checkout (kort-decline → kund kan retry på samma
+          // session → en senare succeeded committar). Släpp därför INTE lagret här
+          // (annars money-taken-no-fulfilment vid retry); lämna 'awaiting_payment'.
+          // Terminal release sker på checkout.session.expired. Guard: en sen/omlevererad
+          // failed får ALDRIG klobbra en redan succeeded/refunded payment-rad.
+          await admin
+            .from('payments')
+            .update({ status: 'failed', stripe_payment_intent_id: pi.id })
+            .eq('order_id', orderId)
+            .eq('tenant_id', tenantId)
+            .not('status', 'in', '("succeeded","refunded")')
+          break
+        }
         if (bookingId && tenantId) {
           // Account-fence: tenant (från metadata) MÅSTE äga `event.account`.
           if (!(await accountOwnsTenant(admin, account, tenantId))) {
@@ -195,6 +268,7 @@ export async function POST(req: Request): Promise<Response> {
             .update({ status: 'failed', stripe_payment_intent_id: pi.id })
             .eq('booking_id', bookingId)
             .eq('tenant_id', tenantId)
+            .not('status', 'in', '("succeeded","refunded")') // ej klobbra terminal status
           // Bokningen lämnas pending → kund kan betala på plats / försöka igen.
         }
         break
@@ -210,7 +284,7 @@ export async function POST(req: Request): Promise<Response> {
           // bara på PI-id, då ett spoofat konto kan ange ett annat tenants PI-id).
           const { data: pay } = await admin
             .from('payments')
-            .select('tenant_id, tenants(stripe_account_id)')
+            .select('tenant_id, order_id, tenants(stripe_account_id)')
             .eq('stripe_payment_intent_id', piId)
             .maybeSingle()
           const acctId = (pay as { tenants?: { stripe_account_id?: string | null } | null } | null)?.tenants
@@ -226,6 +300,13 @@ export async function POST(req: Request): Promise<Response> {
           }
           // State-set: markera refunded. Matchar på PI-id (satt vid succeeded).
           await admin.from('payments').update({ status: 'refunded' }).eq('stripe_payment_intent_id', piId)
+          // Webshop-order: spegla payment_status → refunded OCH ta ordern ur fulfilment-
+          // kön (status cancelled) så återbetalda ordrar inte skickas. Full refund (v1
+          // har ingen delrefund).
+          const orderId = (pay as { order_id?: string | null }).order_id
+          if (orderId) {
+            await admin.from('shop_orders').update({ payment_status: 'refunded', status: 'cancelled' }).eq('id', orderId)
+          }
         }
         break
       }
@@ -254,6 +335,93 @@ export async function POST(req: Request): Promise<Response> {
               stripe_details_submitted: acct.details_submitted ?? false,
             })
             .eq('stripe_account_id', acctId)
+        }
+        break
+      }
+
+      case 'checkout.session.expired': {
+        // Terminal abandon (kunden nådde Checkout men betalade aldrig). Stripe garanterar
+        // ingen vidare betalning på en utgången session → säkert att släppa det held:a
+        // lagret. account-fence + ownership-check (order MÅSTE tillhöra fenced tenant).
+        const session = event.data.object as Stripe.Checkout.Session
+        const orderId = session.metadata?.order_id
+        const tenantId = session.metadata?.tenant_id
+        if (orderId && tenantId) {
+          if (!(await accountOwnsTenant(admin, account, tenantId))) {
+            await captureException(new Error('stripe webhook account mismatch'), {
+              where: 'webhook.account_guard',
+              type: event.type,
+              account,
+              tenantId,
+            })
+            break
+          }
+          const { data: ord } = await admin
+            .from('shop_orders')
+            .select('id')
+            .eq('id', orderId)
+            .eq('tenant_id', tenantId)
+            .maybeSingle()
+          if (!ord) {
+            await captureException(new Error('stripe webhook order/tenant mismatch'), {
+              where: 'webhook.account_guard',
+              type: event.type,
+              account,
+              tenantId,
+            })
+            break
+          }
+          await admin.rpc('release_shop_order', { p_order_id: orderId, p_status: 'expired' })
+          await admin
+            .from('payments')
+            .update({ status: 'failed' })
+            .eq('order_id', orderId)
+            .eq('tenant_id', tenantId)
+            .not('status', 'in', '("succeeded","refunded")')
+        }
+        break
+      }
+
+      case 'charge.dispute.created':
+      case 'charge.dispute.closed': {
+        // Tvister bär ingen tenant-metadata → lös tenant via PI-id → payment-rad,
+        // account-fence FÖRE write (samma mönster som charge.refunded). created =
+        // upsert dispute-rad; closed = uppdatera status. Idempotens-nyckel =
+        // stripe_dispute_id (unik). Gatad implicit av payments_enabled (inga
+        // payment-rader → ingen dispute-rad att koppla).
+        const dispute = event.data.object as Stripe.Dispute
+        const piId = typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id
+        if (piId) {
+          const { data: pay } = await admin
+            .from('payments')
+            .select('id, tenant_id, tenants(stripe_account_id)')
+            .eq('stripe_payment_intent_id', piId)
+            .maybeSingle()
+          const acctId = (pay as { tenants?: { stripe_account_id?: string | null } | null } | null)?.tenants
+            ?.stripe_account_id
+          if (!pay || !account || !acctId || acctId !== account) {
+            await captureException(new Error('stripe webhook account mismatch'), {
+              where: 'webhook.account_guard',
+              type: event.type,
+              account,
+              piId,
+            })
+            break
+          }
+          const chargeId = typeof dispute.charge === 'string' ? dispute.charge : dispute.charge?.id
+          await admin.from('payment_disputes').upsert(
+            {
+              tenant_id: pay.tenant_id,
+              payment_id: pay.id,
+              stripe_dispute_id: dispute.id,
+              stripe_charge_id: chargeId ?? null,
+              amount_cents: dispute.amount ?? null,
+              currency: dispute.currency ?? 'sek',
+              reason: dispute.reason ?? null,
+              dispute_status: dispute.status ?? null,
+            },
+            { onConflict: 'stripe_dispute_id' },
+          )
         }
         break
       }

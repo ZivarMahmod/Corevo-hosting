@@ -48,3 +48,47 @@ export async function refundBookingPayment(bookingId: string, tenantId: string):
     // refund (redan återbetald etc.) ska inte blockera avbokningen.
   }
 }
+
+/**
+ * Refund för en webshop-order (Fas 3). Speglar refundBookingPayment: DIRECT charge
+ * ⇒ refund PÅ salongens connected account. Körs bara på status='succeeded';
+ * idempotensKey order-scopad (Stripe 24h-dedupe). Sätter payments + shop_orders
+ * payment_status='refunded'. Anropas från merchant-admin (refund-knapp).
+ */
+export async function refundShopOrder(orderId: string, tenantId: string): Promise<void> {
+  if (!orderId || !tenantId) return
+  const stripe = getStripe()
+  const admin = createServiceClient()
+  if (!stripe || !admin) return
+
+  const { data: payment } = await admin
+    .from('payments')
+    .select('stripe_payment_intent_id, status')
+    .eq('order_id', orderId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!payment || payment.status !== 'succeeded' || !payment.stripe_payment_intent_id) return
+
+  const { data: tenant } = await admin
+    .from('tenants')
+    .select('stripe_account_id')
+    .eq('id', tenantId)
+    .maybeSingle()
+  if (!tenant?.stripe_account_id) return
+
+  try {
+    await stripe.refunds.create(
+      { payment_intent: payment.stripe_payment_intent_id },
+      { stripeAccount: tenant.stripe_account_id, idempotencyKey: `refund_order_${orderId}` },
+    )
+    await admin.from('payments').update({ status: 'refunded' }).eq('order_id', orderId).eq('tenant_id', tenantId)
+    // Full refund → ta ordern ur fulfilment-kön (status cancelled) + payment_status refunded.
+    await admin
+      .from('shop_orders')
+      .update({ payment_status: 'refunded', status: 'cancelled' })
+      .eq('id', orderId)
+      .eq('tenant_id', tenantId)
+  } catch {
+    // Tyst: charge.refunded-webhooken speglar lyckade refunds.
+  }
+}
