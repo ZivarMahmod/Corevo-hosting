@@ -65,4 +65,40 @@ Prioritera mallar med en LIVE Corevo-modul-vertikal (restaurang/salong/klinik) +
 _Mönster, harness och fällor: se `PILOT-UTFALL.md`. Keep-tröskel ≥0.5 (domar-varians ~±0.5). Allt bakom `SAJTBYGGARE_ENABLED`; deploy = separat Zivar-OK._
 
 ---
+
+## 🚀 RUN 2026-06-26 (ultracode) — Phase 0 KLAR, worklist låst
+
+**Plan:** `1-Planering/06-sajtbyggare/goal-36-BUILD-PLAN.md`. Bakom flaggan, main, EJ deployad.
+
+**Phase 0 (foundation) — KLAR + committad:**
+- R4 proof-floor (`_optimize/proof-floor.ts` + `.test.ts`): varje `templates/*.proof.test.ts` MÅSTE köra `proofFloor` (≥8 regioner + booking-marker + kanon-färg/font + 0 token-drift) → stub mekaniskt omöjlig. Commit `27e9cce`.
+- R1 codemod (`5-Kod/scripts/import-template.mjs` + test): vendor-mapp → `.ts`+`manifest`+`proof`-scaffold + public-assets, deterministisk. Acceptans mot carserv: tokens + 0 drift + 19 regioner reproducerade; bara booking-marker (agent-steg) kvar. Commit `da00631`.
+- R2 (try/catch) + R8 (validate_markers) = redan klara (goal-50). R6 mätt: 4 looks=123KB raw → ~20 looks ~600KB/~100KB gzip ≪ 10MiB → **DEFERRAD** (ponytail-tak i look-registry.ts).
+
+**M1 — KATALOG-MANIFEST:** `KATALOG: 110 hittade · ~21 byggbara (booking-fit, ej de 4 klara) · resten icke-booking (BLOCKERAD på modul-placering — endast booking är live-vävd; väntar fler mounts/goal-40) eller SKIPPAD (admin/köp/dubblett)`.
+
+**Buildable denna run = service-vertikal med native service/appointment/reservation-`<form>`** (booking = enda live-vävda mounten). Icke-service-mallar (tech/finans/edu/bygg/e-handel) har ingen plats att väva en modul idag → tas EJ (BLOCKERAD på modul-placering, ej skippad-för-alltid).
+
+### Worklist (booking-fit, front-loaded cross-familj) — status fylls per beröring
+| NN/namn | vertikal | familj | vendor-mapp | bokningssida | status |
+|---|---|---|---|---|---|
+| 75 dentcare | klinik | htmlcodex | `75 dentcare-1.0.0/dentcare-1.0.0` | appointment.html | TODO (referens-bygge) |
+| haircare | salong | colorlib | `haircare-master/...` | index (book+select) | TODO |
+| 64 feane | restaurang | themewagon | `64 feane-1.0.0 (3)/...` | book.html | TODO |
+| 47 keto | restaurang | themewagon | `47 keto-1.0.0/...` | index (book+time) | TODO |
+| hairsal | salong | colorlib | `hairsal-gh-pages/...` | booking.html | TODO |
+| 52 haircut | salong | htmlcodex | `52 haircut-1.0.0/...` | — (agent verifierar) | TODO |
+| BarberX | salong | htmlcodex | `BarberX-master/...` | — | TODO |
+| alotan | salong | colorlib | `alotan-master/...` | — | TODO |
+| barberz | salong | colorlib | `barberz-master/...` | — | TODO |
+| 32 orthoc | klinik | themewagon | `32 orthoc/...` | — | TODO |
+| 24 Restaurantly | restaurang | bootstrapmade | `24 Restaurantly/...` | — | TODO |
+| 60 foody2 | restaurang | htmlcodex | `60 foody2-1.0.0/...` | — | TODO |
+| 94 baker | restaurang | htmlcodex | `94 baker-1.0.0/...` | — | TODO |
+| 89 cakezone | restaurang | htmlcodex | `89 cakezone-1.0.0/...` | — | TODO |
+| 03 wooxtravel | resa/bokning | themewagon | `03 wooxtravel-1.0.0/...` | reservation.html | TODO |
+
+> Per-mall: codemod → placera `<corevo-module type="booking">` på native form → finslipa regioner verbatim → `<key>.proof.test.ts` 0 FAIL → oberoende verify → registrera i `look-registry.ts` → commit. Mall utan ren native form / kräver ny region-typ → `BLOCKERAD (schema)`, hoppa, fortsätt (M3). Klart = alla byggbara VERIFIERAD 0FAIL eller BLOCKERAD redovisad.
+
+---
 **2026-06-18:** Oförändrad — fortsatt PROVA-LÄGE (4 mallar VERIFIERAD 0FAIL). Full ~90-grind väntar fortfarande på Zivars "kör 116". Sajtbyggare-fokus denna session låg på **goal-37 (S2-editor)**: spar-vägen (`saveSiteContent`) + edge-saneraren + overlay-modellen byggda+verifierade (se `5-Kod/docs/sajtbyggare-editor.md`). När 116-grinden släpps: editorn (goal-37) kommer redigera regionerna dessa mallar producerar — håll region-markup till det delade kontraktet.

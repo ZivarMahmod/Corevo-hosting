@@ -70,6 +70,12 @@ function entry(
   }
 }
 
+// ponytail: HTML is inlined into the server bundle. Measured (goal-36 Task 4):
+// 4 looks = ~123 KB raw (~25 KB gzip); ~20 booking-fit looks project to ~600 KB
+// raw (~100 KB gzip) — far under the Worker 10 MiB gzip limit. So R6 (load HTML
+// from R2/KV instead of the bundle) stays DEFERRED. Upgrade path if the catalogue
+// grows past ~50 looks or the worker nears the limit: move PAGE_HTML to R2/KV and
+// fetch per-request (the "compile/store, render later" pattern in the de-risk doc).
 export const LOOKS: LookEntry[] = [
   entry('Restoran', ['varm', 'mat', 'elegant'], RESTORAN_PAGE_HTML, RESTORAN_CSS_HREFS, RESTORAN_REGION_MANIFEST),
   entry('Klinik', ['ren', 'vård', 'lugn'], KLINIK_PAGE_HTML, KLINIK_CSS_HREFS, KLINIK_REGION_MANIFEST),
