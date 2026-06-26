@@ -126,14 +126,13 @@ function StudioMachine({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        // A definite height so the studio columns (height:100%) don't collapse. Embedded
-        // adaptation of the design's full-screen height:100vh — it sits below the portal
-        // topbar inside portal-main's 30px padding. Exact px is cosmetic (Zivar render).
-        height: 'calc(100vh - 116px)',
-        minHeight: 520,
-        borderRadius: 14,
+        // FULL-BLEED (Zivar feedback): the studio is a full-screen app, not a boxed card.
+        // It fills `.onboarding-host` (flex column, portal-main padding cancelled) so it
+        // spans the whole content area below the topbar — no border, no rounded card.
+        // flex grows it to fill; the minHeight is a floor for browsers without :has().
+        flex: '1 1 auto',
+        minHeight: 'calc(100vh - 160px)',
         overflow: 'hidden',
-        border: '1px solid var(--c-line)',
         background: 'var(--c-paper-2)',
       }}
     >

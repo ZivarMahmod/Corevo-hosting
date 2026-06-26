@@ -23,8 +23,12 @@ export default async function NewTenantPage() {
   // CreateTenantForm (byte-identisk). Hämta kundlistan (SuperEntry, §8) bara när studion
   // är på, så OFF-vägen aldrig får en extra cross-tenant-query.
   const studioEnabled = onboardingStudioEnabled()
+  // The studio is a full-screen app (3 columns + live preview), so it runs FULL-BLEED:
+  // `onboarding-host` makes portal-main drop its 30px padding + become a flex column so
+  // the studio fills the content area edge-to-edge below the topbar (not a boxed card).
+  // The legacy form keeps the normal padded `portal-section`.
   return (
-    <section className="portal-section">
+    <section className={studioEnabled ? 'onboarding-host' : 'portal-section'}>
       {studioEnabled ? (
         <OnboardingStudio
           presets={presets}

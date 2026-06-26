@@ -316,6 +316,26 @@
   flex: 1;
 }
 
+/* Onboarding-studio (goal-48) runs FULL-BLEED — a full-screen app filling the content
+   area, not a boxed card. When portal-main hosts the studio it drops its 30px padding
+   and becomes a flex column so the studio fills the height below the sticky topbar via
+   flex (no magic px). `.onboarding-host` is the page <section> wrapping <OnboardingStudio>.
+   Fallback (no :has support): the studio keeps a min-height so it never collapses. */
+[data-world="backoffice"] .portal-main:has(> .onboarding-host) {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+[data-world="backoffice"] .onboarding-host {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ---- restyle the shared .portal-* content classes (Corevo look) ---- */
 [data-world="backoffice"] .portal-section h1 {
   font-family: var(--font-display);
