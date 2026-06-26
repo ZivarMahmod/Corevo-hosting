@@ -118,6 +118,20 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
   }
 }
 
+/**
+ * Per-tenant gate for the SITE EDITOR (sajtbyggaren) — the customer-facing edit
+ * surface. Reads the raw tenant_settings.settings jsonb flag `sajtbyggare_enabled`,
+ * DEFAULT OFF (absent / non-true / garbage → false). Mirrors the customer_accounts_enabled
+ * seam above. The deploy-wide env flag (lib/sajtbyggare/flag.ts sajtbyggareEnabled) stays
+ * a separate kill-switch; the editor is available to a tenant only when BOTH are on.
+ * This gates the EDITOR only — never the public render of already-authored content.
+ * Lives here (not in flag.ts) so the save-path test's `vi.mock('./flag')` can't blank it.
+ */
+export function tenantSiteEditorEnabled(settings: unknown): boolean {
+  if (!settings || typeof settings !== 'object') return false
+  return (settings as Record<string, unknown>).sajtbyggare_enabled === true
+}
+
 /** Swedish weekday labels indexed by working_hours.weekday (0 = Sunday … 6 = Saturday). */
 const WEEKDAYS_SV = ['Söndag', 'Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag'] as const
 

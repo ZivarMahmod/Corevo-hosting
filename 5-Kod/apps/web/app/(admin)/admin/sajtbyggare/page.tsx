@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
+import { getSettingsRow } from '@/lib/admin/data'
 import { listMediaAssets } from '@/lib/admin/media/data'
+import { tenantSiteEditorEnabled } from '@/lib/tenant-data'
 import { sajtbyggareEnabled } from '@/lib/sajtbyggare/flag'
 import { loadSiteContent } from '@/lib/sajtbyggare/load-site-content'
 import {
@@ -64,6 +66,13 @@ export default async function SajtbyggarePage() {
       </section>
     )
   }
+
+  // 2b) Per-tenant gate (default OFF): editorn aktiveras per kund av plattformen
+  //     (tenant_settings.settings.sajtbyggare_enabled). Av ⇒ rutten finns inte för
+  //     den här salongen — samma notFound() som den deploy-wide flaggan ovan, så
+  //     ingen kund ser editorn förrän Zivar slår på den i salong-detaljen.
+  const settingsRow = await getSettingsRow(tenant.id)
+  if (!tenantSiteEditorEnabled(settingsRow?.settings)) notFound()
 
   // 3) Resolvera tenantens redigerbara regioner genom Universal→Bransch→Kund-kaskaden.
   //    null ⇒ tenantens mall saknar manifest (S2 = salvia only).

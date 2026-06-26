@@ -45,7 +45,9 @@ beforeEach(() => {
   mTenant.mockResolvedValue({ id: 't1', slug: 'demo', name: 'Demo' } as never)
   mMatrix.mockResolvedValue({} as never)
   mCanWrite.mockReturnValue(true)
-  mClient.mockResolvedValue(makeSupabase({ settings: {}, branding: {} }).client)
+  // Per-tenant gate (Task 3): the editor is platform-enabled per salon — seed the
+  // flag ON for the default client so the save chain reaches the apply/upsert logic.
+  mClient.mockResolvedValue(makeSupabase({ settings: { sajtbyggare_enabled: true }, branding: {} }).client)
 })
 
 describe('saveSiteContent — fences (refuse before any write)', () => {
@@ -76,11 +78,19 @@ describe('saveSiteContent — fences (refuse before any write)', () => {
     expect(res.ok).toBe(false)
     expect(sb.upsert).not.toHaveBeenCalled()
   })
+
+  it('per-tenant flag OFF (default) → ok:false, no upsert (env flag on, but salon not enabled)', async () => {
+    const sb = makeSupabase({ settings: {}, branding: {} }) // no sajtbyggare_enabled → off
+    mClient.mockResolvedValue(sb.client)
+    const res = await saveSiteContent('salvia', [{ regionKey: 'hero.title', value: 'x' }])
+    expect(res.ok).toBe(false)
+    expect(sb.upsert).not.toHaveBeenCalled()
+  })
 })
 
 describe('saveSiteContent — fail-closed sanitize', () => {
   it('an unsafe value (bad colour) rejects the save, writes NOTHING', async () => {
-    const sb = makeSupabase({ settings: {}, branding: {} })
+    const sb = makeSupabase({ settings: { sajtbyggare_enabled: true }, branding: {} })
     mClient.mockResolvedValue(sb.client)
     const res = await saveSiteContent('salvia', [{ regionKey: 'color.primary', value: 'red;}body{}' }])
     expect(res.ok).toBe(false)
@@ -91,7 +101,7 @@ describe('saveSiteContent — fail-closed sanitize', () => {
 describe('saveSiteContent — happy path (the real save chain)', () => {
   it('upserts the apply-core output (sanitized + merged) and revalidates → live without deploy', async () => {
     const sb = makeSupabase({
-      settings: { copy: { heroLede: 'behåll' }, layout: 'wide' },
+      settings: { sajtbyggare_enabled: true, copy: { heroLede: 'behåll' }, layout: 'wide' },
       branding: { color_bg: '#F6F4EE' },
     })
     mClient.mockResolvedValue(sb.client)
@@ -123,7 +133,7 @@ describe('saveSiteContent — happy path (the real save chain)', () => {
   })
 
   it('strips XSS from a TEXT value before persisting', async () => {
-    const sb = makeSupabase({ settings: {}, branding: {} })
+    const sb = makeSupabase({ settings: { sajtbyggare_enabled: true }, branding: {} })
     mClient.mockResolvedValue(sb.client)
     await saveSiteContent('salvia', [{ regionKey: 'about.copy', value: 'Hej<script>alert(1)</script>' }])
     const payload = sb.upsert.mock.calls[0]![0] as { settings: { copy: Record<string, string> } }
@@ -132,7 +142,7 @@ describe('saveSiteContent — happy path (the real save chain)', () => {
   })
 
   it('a DB upsert error surfaces as ok:false (no false success)', async () => {
-    const sb = makeSupabase({ settings: {}, branding: {} }, { error: { message: 'boom' } })
+    const sb = makeSupabase({ settings: { sajtbyggare_enabled: true }, branding: {} }, { error: { message: 'boom' } })
     mClient.mockResolvedValue(sb.client)
     const res = await saveSiteContent('salvia', [{ regionKey: 'hero.title', value: 'x' }])
     expect(res.ok).toBe(false)

@@ -20,6 +20,7 @@ import { getAdminTenant, revalidateTenant } from '@/lib/admin/tenant'
 import { resolveRoleMatrix } from '@/lib/platform/roles-permissions'
 import { canWrite } from '@/lib/platform/catalog-shared'
 import type { Json } from '@corevo/db'
+import { tenantSiteEditorEnabled } from '@/lib/tenant-data'
 import { sajtbyggareEnabled } from './flag'
 import { applySiteContentEdits, type SiteContentEdit } from './site-content-edit'
 import type { RegionManifest } from './manifest/types'
@@ -64,6 +65,13 @@ export async function saveSiteContent(
     .select('settings, branding')
     .eq('tenant_id', tenant.id)
     .maybeSingle()
+
+  // Per-tenant gate (default OFF): editorn är aktiverad per kund av plattformen
+  // (tenant_settings.settings.sajtbyggare_enabled). Defense-in-depth — rutten gatar
+  // redan, men en server-action kan anropas direkt. Återbrukar `existing`-läsningen
+  // ovan (ingen extra query). Av → vägra spara.
+  if (!tenantSiteEditorEnabled(existing?.settings))
+    return { ok: false, error: 'Sajtbyggaren är inte aktiverad för den här salongen.' }
 
   const applied = applySiteContentEdits(
     manifest,

@@ -17,5 +17,6 @@ export {
   enterHelpMode,
 } from './actions/people'
 export { saveRolePermissionsAction } from './actions/roles'
+export { setSajtbyggareEnabled } from './actions/features'
 export { addCustomDomain, verifyCustomDomain, removeCustomDomain } from './actions/domains'
 export type { ActionState, DomainActionState } from './actions/shared'

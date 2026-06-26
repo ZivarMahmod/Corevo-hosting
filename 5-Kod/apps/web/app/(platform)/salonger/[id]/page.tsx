@@ -15,8 +15,9 @@ import { OperativeControls } from '@/components/platform/OperativeControls'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { TenantPreviewFrame } from '@/components/platform/TenantPreviewFrame'
+import { SajtbyggareControl } from '@/components/platform/SajtbyggareControl'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
-import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
+import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, tenantSiteEditorEnabled } from '@/lib/tenant-data'
 import {
   TenantDetailTabs,
   type TenantTabKey,
@@ -102,6 +103,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     typeof rawTheme === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
       ? rawTheme
       : DEFAULT_STOREFRONT_THEME
+  // Per-tenant edit-toggle (Task 3): is the site editor (sajtbyggaren) enabled for THIS
+  // salon? Default OFF — the platform turns it on per customer in the Drift-tab below.
+  const siteEditorEnabled = tenantSiteEditorEnabled(settings?.settings)
   const storefrontUrl = tenantStorefrontUrl(tenant.slug) ?? url
   const storefrontHost = tenantStorefrontHost(tenant.slug) ?? `${tenant.slug}.${ROOT}`
 
@@ -409,6 +413,21 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             super-admin-spärrad i DB. Live slår igenom på storefronten direkt (cache-bust).
           </p>
           <ModulesCard tenantId={tenant.id} modules={modules} />
+        </Card>
+
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Sajtbyggaren</h2>
+            <span className={styles.chip}>
+              {siteEditorEnabled ? 'på för kunden' : 'av (standard)'}
+            </span>
+          </div>
+          <p className={styles.noteText} style={{ marginBottom: 12 }}>
+            Per-kund-reglage: slår på/av den kund-egna sid-editorn (`/admin/sajtbyggare`) för
+            den här salongen. Standard är AV — slå på när kunden ska få redigera sin sida själv.
+            Påverkar bara editorn, aldrig den publika sidan (redan publicerat innehåll syns kvar).
+          </p>
+          <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />
         </Card>
 
         {/* Visuell hub (spår 4, v1) — live-preview av kundens skarpa sida + bild-swap
