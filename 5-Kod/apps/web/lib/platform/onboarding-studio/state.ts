@@ -8,6 +8,7 @@ import type { Dispatch } from 'react'
 import { type ModuleState } from '@/lib/tenant-modules'
 import { type BookingVariant } from '@/lib/platform/booking-variant'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
+import type { LookMeta } from '@/lib/sajtbyggare/look-registry'
 import {
   type StudioCfg,
   type StudioService,
@@ -61,11 +62,16 @@ export type StudioReducer = (cfg: StudioCfg, action: StudioAction) => StudioCfg
  * operator edits the subdomän by hand (`setSlug`) we set `slugTouched=true`, so later
  * name edits never clobber a hand-typed slug.
  */
-export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
+export function makeStudioReducer(presets: VerticalPresetData, galleryMode = false): StudioReducer {
   return function studioReducer(cfg: StudioCfg, action: StudioAction): StudioCfg {
     switch (action.type) {
-      case 'applyBranch':
-        return applyBranch(cfg, action.key, presets)
+      case 'applyBranch': {
+        const next = applyBranch(cfg, action.key, presets)
+        // goal-50 LÅST #1: in look-gallery mode the bransch is ONLY a module/content
+        // preset — it must never set the look. Keep the operator's chosen look (theme);
+        // still seed branch + module states from the preset.
+        return galleryMode ? { ...next, theme: cfg.theme } : next
+      }
       case 'setName':
         return cfg.slugTouched
           ? { ...cfg, name: action.value }
@@ -100,11 +106,15 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
   }
 }
 
-/** The prop contract every leaf panel receives (frozen — leaves import this type). */
+/** The prop contract every leaf panel receives (frozen — leaves import this type).
+ *  goal-50: `looks` is the box (client-safe meta, no html). Present only when
+ *  sajtbyggare is ON → PanelTema renders the flat look-gallery; empty/undefined →
+ *  the legacy theme/template list (flag-OFF byte-identical). */
 export type PanelProps = {
   cfg: StudioCfg
   dispatch: Dispatch<StudioAction>
   presets: VerticalPresetData
+  looks?: LookMeta[]
 }
 
 /**

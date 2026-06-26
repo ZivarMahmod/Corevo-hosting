@@ -22,6 +22,8 @@ type PreviewPaneProps = {
   device?: PreviewDevice
   /** Omit to hide the device toggle (matches design's `{onDevice && …}`). */
   onDevice?: (device: PreviewDevice) => void
+  /** goal-50: registered look keys → StorefrontPreview renders a picked look's real HTML. */
+  lookKeys?: string[]
 }
 
 // design maps phone→creditCard for the rectangular "device" glyph (preview.jsx:563–564)
@@ -30,7 +32,7 @@ const DEVICES: { id: PreviewDevice; icon: IconName }[] = [
   { id: 'mobile', icon: 'creditCard' },
 ]
 
-export function PreviewPane({ cfg, device = 'desktop', onDevice }: PreviewPaneProps) {
+export function PreviewPane({ cfg, device = 'desktop', onDevice, lookKeys }: PreviewPaneProps) {
   const url = `${cfg.slug || 'dinsalong'}.corevo.se`
   // W1: pre-launch — the tenant does not exist yet, so the preview is never live.
   // Kept as a typed flag so the conditional chrome stays faithful + W2-ready.
@@ -155,7 +157,7 @@ export function PreviewPane({ cfg, device = 'desktop', onDevice }: PreviewPanePr
             boxShadow: device === 'mobile' ? '0 0 40px rgba(0,0,0,.3)' : 'none',
           }}
         >
-          <StorefrontPreview cfg={cfg} />
+          <StorefrontPreview cfg={cfg} lookKeys={lookKeys} />
         </div>
       </div>
     </div>

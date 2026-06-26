@@ -4,6 +4,7 @@ import { OnboardingStudio } from '@/components/platform/onboarding-studio/Onboar
 import { loadVerticalPresets } from '@/lib/platform/verticals'
 import { listTenantsWithStats } from '@/lib/platform/tenants'
 import { sajtbyggareEnabled } from '@/lib/sajtbyggare/flag'
+import { lookMetaList } from '@/lib/sajtbyggare/look-registry'
 import { onboardingStudioEnabled } from '@/lib/platform/onboarding-studio/flag'
 
 export const dynamic = 'force-dynamic'
@@ -23,6 +24,11 @@ export default async function NewTenantPage() {
   // CreateTenantForm (byte-identisk). Hämta kundlistan (SuperEntry, §8) bara när studion
   // är på, så OFF-vägen aldrig får en extra cross-tenant-query.
   const studioEnabled = onboardingStudioEnabled()
+  // goal-50: the BOX of selectable looks. Passed to the studio ONLY when sajtbyggare is
+  // ON (the look-gallery + render-bron preview are flag-gated); OFF → [] → legacy theme
+  // list, byte-identical. lookMetaList() strips the html, so only key/name/thumbnail/
+  // vibe ever reaches the client.
+  const looks = editorEnabled ? lookMetaList() : []
   // The studio is a full-screen app (3 columns + live preview), so it runs FULL-BLEED:
   // `onboarding-host` makes portal-main drop its 30px padding + become a flex column so
   // the studio fills the content area edge-to-edge below the topbar (not a boxed card).
@@ -34,6 +40,7 @@ export default async function NewTenantPage() {
           presets={presets}
           tenants={await listTenantsWithStats()}
           editorEnabled={editorEnabled}
+          looks={looks}
         />
       ) : (
         <CreateTenantForm presets={presets} editorEnabled={editorEnabled} />

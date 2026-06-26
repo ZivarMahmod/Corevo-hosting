@@ -15,10 +15,10 @@
 
 import { firstModuleMarker } from './_optimize/proof-kit'
 import type { RegionManifest } from './manifest/types'
-import { RESTORAN_PAGE_HTML } from './templates/restoran'
-import { KLINIK_PAGE_HTML } from './templates/klinik'
-import { DRIVIN_PAGE_HTML } from './templates/drivin'
-import { CARSERV_PAGE_HTML } from './templates/carserv'
+import { RESTORAN_PAGE_HTML, RESTORAN_CSS_HREFS } from './templates/restoran'
+import { KLINIK_PAGE_HTML, KLINIK_CSS_HREFS } from './templates/klinik'
+import { DRIVIN_PAGE_HTML, DRIVIN_CSS_HREFS } from './templates/drivin'
+import { CARSERV_PAGE_HTML, CARSERV_CSS_HREFS } from './templates/carserv'
 import { RESTORAN_REGION_MANIFEST } from './manifest/restoran'
 import { KLINIK_REGION_MANIFEST } from './manifest/klinik'
 import { DRIVIN_REGION_MANIFEST } from './manifest/drivin'
@@ -35,6 +35,8 @@ export type LookEntry = {
   thumbnail: string
   /** the render-bron page HTML (väg A). Server-only — never send to the client. */
   html: string
+  /** the look's vendor stylesheet hrefs (served from public/sajtbyggare/<key>/css/). */
+  cssHrefs: readonly string[]
   /** the editable-region manifest (text/image/color/font/logo bindings). */
   manifest: RegionManifest
   /** the <corevo-module pos> the template mounts (derived from the HTML, not duped). */
@@ -53,6 +55,7 @@ function entry(
   name: string,
   vibeTags: string[],
   html: string,
+  cssHrefs: readonly string[],
   manifest: RegionManifest,
 ): LookEntry {
   return {
@@ -61,16 +64,17 @@ function entry(
     vibeTags,
     thumbnail: thumbOf(manifest),
     html,
+    cssHrefs,
     manifest,
     bookingPos: firstModuleMarker(html)?.pos ?? '',
   }
 }
 
 export const LOOKS: LookEntry[] = [
-  entry('Restoran', ['varm', 'mat', 'elegant'], RESTORAN_PAGE_HTML, RESTORAN_REGION_MANIFEST),
-  entry('Klinik', ['ren', 'vård', 'lugn'], KLINIK_PAGE_HTML, KLINIK_REGION_MANIFEST),
-  entry('Drivin', ['modern', 'snabb', 'service'], DRIVIN_PAGE_HTML, DRIVIN_REGION_MANIFEST),
-  entry('Carserv', ['bold', 'verkstad', 'teknik'], CARSERV_PAGE_HTML, CARSERV_REGION_MANIFEST),
+  entry('Restoran', ['varm', 'mat', 'elegant'], RESTORAN_PAGE_HTML, RESTORAN_CSS_HREFS, RESTORAN_REGION_MANIFEST),
+  entry('Klinik', ['ren', 'vård', 'lugn'], KLINIK_PAGE_HTML, KLINIK_CSS_HREFS, KLINIK_REGION_MANIFEST),
+  entry('Drivin', ['modern', 'snabb', 'service'], DRIVIN_PAGE_HTML, DRIVIN_CSS_HREFS, DRIVIN_REGION_MANIFEST),
+  entry('Carserv', ['bold', 'verkstad', 'teknik'], CARSERV_PAGE_HTML, CARSERV_CSS_HREFS, CARSERV_REGION_MANIFEST),
 ]
 
 const BY_KEY = new Map(LOOKS.map((l) => [l.key, l]))

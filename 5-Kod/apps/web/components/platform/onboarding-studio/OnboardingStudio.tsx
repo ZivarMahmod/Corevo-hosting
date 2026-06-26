@@ -26,6 +26,7 @@ import { Button, Icon } from '@/components/portal/ui'
 import { createTenant } from '@/lib/platform/actions'
 import type { TenantCardItem } from '@/lib/platform/tenants'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
+import type { LookMeta } from '@/lib/sajtbyggare/look-registry'
 import { initStudioCfg } from '@/lib/platform/onboarding-studio/model'
 import {
   buildCreateTenantFormData,
@@ -49,6 +50,10 @@ export type OnboardingStudioProps = {
    *  uses). Accepted for page-parity + forward wiring; W1's preview is a placeholder,
    *  so it is intentionally not consumed yet. */
   editorEnabled: boolean
+  /** goal-50: the BOX (client-safe meta, no html). Non-empty ONLY when sajtbyggare is
+   *  ON (the page passes [] otherwise) → look-gallery + render-bron preview; empty →
+   *  the legacy theme list (flag-OFF byte-identical). */
+  looks?: LookMeta[]
 }
 
 /**
@@ -58,13 +63,14 @@ export type OnboardingStudioProps = {
  * footgun of re-prefilling the previous customer's name/slug/modules and re-submitting
  * a duplicate slug. Keep this wrapper minimal — only the remount key lives here.
  */
-export function OnboardingStudio({ presets, tenants }: OnboardingStudioProps) {
+export function OnboardingStudio({ presets, tenants, looks }: OnboardingStudioProps) {
   const [runId, setRunId] = useState(0)
   return (
     <StudioMachine
       key={runId}
       presets={presets}
       tenants={tenants}
+      looks={looks}
       onRestart={() => setRunId((n) => n + 1)}
     />
   )
@@ -73,16 +79,27 @@ export function OnboardingStudio({ presets, tenants }: OnboardingStudioProps) {
 function StudioMachine({
   presets,
   tenants,
+  looks,
   onRestart,
 }: {
   presets: VerticalPresetData
   tenants: TenantCardItem[]
+  looks?: LookMeta[]
   onRestart: () => void
 }) {
+  // goal-50: gallery mode = the box is non-empty (sajtbyggare ON). It (a) binds the
+  // reducer so a bransch never sets the look (LÅST #1), and (b) seeds the initial look
+  // from the box so the preview is distinct from the first render (not the leander
+  // fallback). Empty box → unchanged legacy behaviour (default 'salvia').
+  const galleryMode = !!looks && looks.length > 0
+  const lookKeys = useMemo(() => (looks ?? []).map((l) => l.key), [looks])
+
   // PURE reducer bound to the loaded presets (applyBranch needs them). Memoised so the
-  // identity is stable across renders; the cfg itself defaults to the design's "Salvia".
-  const reducer = useMemo(() => makeStudioReducer(presets), [presets])
-  const [cfg, dispatch] = useReducer(reducer, undefined, () => initStudioCfg('salvia'))
+  // identity is stable across renders; the cfg defaults to the first look (gallery) or 'salvia'.
+  const reducer = useMemo(() => makeStudioReducer(presets, galleryMode), [presets, galleryMode])
+  const [cfg, dispatch] = useReducer(reducer, undefined, () =>
+    initStudioCfg(galleryMode ? (looks![0]!.key) : 'salvia'),
+  )
 
   const [stage, setStage] = useState<StudioStage>('super')
   const [step, setStep] = useState<StepId>('branch')
@@ -158,6 +175,7 @@ function StudioMachine({
             step={step}
             dispatch={dispatch}
             presets={presets}
+            looks={looks}
             onPrev={onPrev}
             onNext={onNext}
             onLaunch={onLaunch}
@@ -165,7 +183,7 @@ function StudioMachine({
           {/* right — live preview (W1 = honest placeholder skeleton; real render = W2) */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--c-paper-2)', minHeight: 0 }}>
             <div style={{ flex: 1, minHeight: 0, padding: '18px' }}>
-              <PreviewPane cfg={cfg} device={device} onDevice={setDevice} />
+              <PreviewPane cfg={cfg} device={device} onDevice={setDevice} lookKeys={lookKeys} />
             </div>
           </div>
 

@@ -30,12 +30,14 @@ describe('look-registry — the box of render-bron looks', () => {
     }
   })
 
-  it('every entry carries non-empty html + name + thumbnail', () => {
+  it('every entry carries non-empty html + name + thumbnail + cssHrefs', () => {
     for (const l of LOOKS) {
       expect(typeof l.html, l.key).toBe('string')
       expect(l.html.length, l.key).toBeGreaterThan(100)
       expect(l.name.length, l.key).toBeGreaterThan(0)
       expect(l.thumbnail.length, l.key).toBeGreaterThan(0)
+      expect(Array.isArray(l.cssHrefs), l.key).toBe(true)
+      expect(l.cssHrefs.length, l.key).toBeGreaterThan(0)
     }
   })
 

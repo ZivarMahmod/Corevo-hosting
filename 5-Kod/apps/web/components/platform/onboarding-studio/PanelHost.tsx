@@ -16,6 +16,7 @@ import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import type { StudioAction } from '@/lib/platform/onboarding-studio/state'
 import { type StepId, FLAT_STEP_ORDER } from '@/lib/platform/onboarding-studio/phases'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
+import type { LookMeta } from '@/lib/sajtbyggare/look-registry'
 import { PANEL_BY_STEP } from './StudioPanels'
 
 export type PanelHostProps = {
@@ -23,6 +24,8 @@ export type PanelHostProps = {
   step: StepId
   dispatch: Dispatch<StudioAction>
   presets: VerticalPresetData
+  /** goal-50: the box (client-safe meta) → PanelTema's look-gallery. */
+  looks?: LookMeta[]
   /** Go to the previous step (FooterNav «Föregående»). */
   onPrev: () => void
   /** Go to the next step (FooterNav «Nästa» + granska's "Gå till lansering"). */
@@ -68,7 +71,7 @@ function FooterNav({ isFirst, isLast, onPrev, onNext }: { isFirst: boolean; isLa
   )
 }
 
-export function PanelHost({ cfg, step, dispatch, presets, onPrev, onNext, onLaunch }: PanelHostProps) {
+export function PanelHost({ cfg, step, dispatch, presets, looks, onPrev, onNext, onLaunch }: PanelHostProps) {
   const ActivePanel = PANEL_BY_STEP[step]
   const idx = FLAT_STEP_ORDER.indexOf(step)
   const isFirst = idx === 0
@@ -86,7 +89,7 @@ export function PanelHost({ cfg, step, dispatch, presets, onPrev, onNext, onLaun
       }}
     >
       <div style={{ flex: 1, minHeight: 0 }}>
-        <ActivePanel cfg={cfg} dispatch={dispatch} presets={presets} onNext={onNext} onLaunch={onLaunch} />
+        <ActivePanel cfg={cfg} dispatch={dispatch} presets={presets} looks={looks} onNext={onNext} onLaunch={onLaunch} />
       </div>
       <FooterNav isFirst={isFirst} isLast={isLast} onPrev={onPrev} onNext={onNext} />
     </div>

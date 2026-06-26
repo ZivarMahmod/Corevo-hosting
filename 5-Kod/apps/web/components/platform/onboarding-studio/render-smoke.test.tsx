@@ -243,4 +243,38 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     )
     expect(html).toContain('Kunder')
   })
+
+  // ── goal-50: the look-gallery + render-bron preview (sajtbyggare ON) ──────────────
+  const looks = [
+    { key: 'restoran', name: 'Restoran', vibeTags: ['varm', 'mat'], thumbnail: '/sajtbyggare/restoran/img/hero.jpg' },
+    { key: 'carserv', name: 'Carserv', vibeTags: ['bold'], thumbnail: '/sajtbyggare/carserv/img/hero.jpg' },
+  ]
+
+  it('the tema panel becomes the flat look-GALLERY when the box is passed (no bransch filter)', () => {
+    // cfg.branch=frisor, but the gallery shows ALL looks regardless (live-bevis #2 fix).
+    const html = mounts(
+      <PanelHost
+        cfg={{ ...branched, theme: 'restoran' }}
+        step="tema"
+        dispatch={noopDispatch}
+        presets={presets}
+        looks={looks}
+        onPrev={noop}
+        onNext={noop}
+        onLaunch={noop}
+      />,
+    )
+    expect(html).toContain('Välj mall')
+    expect(html).toContain('Restoran')
+    expect(html).toContain('Carserv') // ALL looks, not just the bransch's
+    expect(html).not.toContain('Temamall') // the legacy theme-list title is gone in gallery mode
+  })
+
+  it('without a box (flag-OFF) the tema panel stays the legacy theme list, byte-identical', () => {
+    const html = mounts(
+      <PanelHost cfg={branched} step="tema" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+    )
+    expect(html).toContain('Temamall') // legacy title
+    expect(html).not.toContain('Välj mall')
+  })
 })

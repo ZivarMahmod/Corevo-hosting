@@ -28,7 +28,33 @@ import { ModuleSections, KontoPanel, PreviewNav, PreviewFooter } from './preview
 // so we never import the runtime guard from the server-poisoned tenant-data module.
 const DEFAULT_THEME: StorefrontTheme = 'leander'
 
-export function StorefrontPreview({ cfg }: { cfg: StudioCfg }) {
+export function StorefrontPreview({ cfg, lookKeys }: { cfg: StudioCfg; lookKeys?: string[] }) {
+  // goal-50: when the operator picked a render-bron LOOK from the box, render its REAL
+  // HTML — distinct per look (live-bevis #3). We do it through an <iframe> to the
+  // flag-gated, tenant-less look-preview route: the iframe boundary isolates the look's
+  // vendor CSS from the backoffice document (R5) and the HTML stays server-side (R6).
+  // A React THEME (the 5 layouts) renders inline below, unchanged (flag-OFF parity).
+  if (lookKeys && lookKeys.includes(cfg.theme)) {
+    const qs = cfg.accent ? `?accent=${encodeURIComponent(cfg.accent)}` : ''
+    return (
+      <iframe
+        // key on theme+accent so picking another look reloads the frame
+        key={`${cfg.theme}${qs}`}
+        title="Mall-förhandsvisning"
+        src={`/sajtbyggare-spike/look/${encodeURIComponent(cfg.theme)}${qs}`}
+        sandbox="allow-same-origin"
+        style={{
+          display: 'block',
+          width: '100%',
+          height: 1600,
+          border: 'none',
+          background: '#fff',
+          pointerEvents: 'none', // display-only preview
+        }}
+      />
+    )
+  }
+
   // CLIENT-SAFE theme guard: cfg.theme is typed `string`; an unknown key (e.g. the
   // design's "Bohem", which has no real layout) → fall back to the default, never crash.
   const theme: StorefrontTheme = (cfg.theme in STOREFRONT_LAYOUTS ? cfg.theme : DEFAULT_THEME) as StorefrontTheme

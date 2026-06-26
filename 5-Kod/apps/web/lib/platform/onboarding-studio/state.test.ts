@@ -51,6 +51,18 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
     expect(cfg.moduleStates.lojalitet).toBe('live')
   })
 
+  // goal-50 LÅST #1: in the look-gallery (sajtbyggare ON), the bransch is ONLY a
+  // module/content preset — it must NEVER set the look. The operator picks the look
+  // from the box. So gallery-mode applyBranch seeds modules but keeps cfg.theme.
+  it('gallery mode: applyBranch seeds modules but keeps the chosen look (theme)', () => {
+    const galleryReducer = makeStudioReducer(presets, true)
+    const start = initStudioCfg('restoran') // a render-bron look key, picked from the box
+    const cfg = galleryReducer(start, { type: 'applyBranch', key: 'frisor' })
+    expect(cfg.branch).toBe('frisor')
+    expect(cfg.theme).toBe('restoran') // look preserved — bransch is never the look
+    expect(cfg.moduleStates.lojalitet).toBe('live') // modules still seeded from the preset
+  })
+
   it('setModule records a module state on the cfg', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setModule', key: 'shop', state: 'live' })
     expect(cfg.moduleStates.shop).toBe('live')
