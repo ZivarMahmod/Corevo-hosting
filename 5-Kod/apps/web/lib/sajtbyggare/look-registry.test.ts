@@ -12,7 +12,11 @@ import { describe, expect, it } from 'vitest'
 import { LOOKS, getLook, type LookEntry } from './look-registry'
 import { moduleMarkerTypes } from './_optimize/proof-kit'
 
-const EXPECTED_KEYS = ['restoran', 'klinik', 'drivin', 'carserv'] as const
+const EXPECTED_KEYS = [
+  'haircare', 'hairsal', 'haircut', 'alotan', 'barberx', 'barberz',
+  'restoran', 'klinik', 'drivin', 'carserv',
+  'dentcare', 'keto', 'feane',
+] as const
 
 describe('look-registry — the box of render-bron looks', () => {
   it('registers exactly the built render-bron looks (identities, not just count)', () => {
@@ -53,6 +57,15 @@ describe('look-registry — the box of render-bron looks', () => {
       klinik: 'appointment',
       drivin: 'appointment',
       carserv: 'booking',
+      haircare: 'booking',
+      hairsal: 'booking',
+      haircut: 'booking',
+      alotan: 'booking',
+      barberx: 'contact',
+      barberz: 'booking',
+      dentcare: 'appointment',
+      keto: 'booking',
+      feane: 'book',
     }
     for (const l of LOOKS) {
       expect(l.bookingPos, l.key).toBe(expected[l.key])
