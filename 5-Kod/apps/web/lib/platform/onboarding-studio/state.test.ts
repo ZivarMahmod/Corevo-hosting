@@ -65,6 +65,13 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
     const cfg = reducer(initStudioCfg('salvia'), { type: 'setServices', services: [{ name: 'Klippning', price: '350' }] })
     expect(cfg.services).toEqual([{ name: 'Klippning', price: '350' }])
   })
+
+  it('setHeroTitle / setHeroLede record the hero copy (W5)', () => {
+    let cfg = reducer(initStudioCfg('salvia'), { type: 'setHeroTitle', value: 'Skarpt klippt' })
+    cfg = reducer(cfg, { type: 'setHeroLede', value: 'En lugn salong.' })
+    expect(cfg.heroTitle).toBe('Skarpt klippt')
+    expect(cfg.heroLede).toBe('En lugn salong.')
+  })
 })
 
 describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', () => {
@@ -100,6 +107,14 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
 
   it('emits an empty services array by default', () => {
     expect(buildCreateTenantFormData(initStudioCfg('salvia')).get('services')).toBe('[]')
+  })
+
+  it('emits hero_title + hero_lede from the cfg (W5)', () => {
+    let cfg = reducer(initStudioCfg('salvia'), { type: 'setHeroTitle', value: 'Min rubrik' })
+    cfg = reducer(cfg, { type: 'setHeroLede', value: 'Min ingress' })
+    const fd = buildCreateTenantFormData(cfg)
+    expect(fd.get('hero_title')).toBe('Min rubrik')
+    expect(fd.get('hero_lede')).toBe('Min ingress')
   })
 
   it('floors booking to live in the modules JSON even when stored off', () => {

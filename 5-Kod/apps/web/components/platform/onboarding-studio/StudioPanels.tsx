@@ -445,14 +445,18 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
   )
 }
 
-/** modplace — DEFERRED-STUB (§9.5). No tenant_site_pages / no placement in cfg →
- *  honest "kommer senare (W5)" empty state. NO drag, NO reorder list. */
+/** modplace — DEFERRED-STUB (honest). Modules render at their FIXED catalog
+ *  default_section_position (migr 0033–0036); there is NO per-tenant module-order read
+ *  path on the storefront (verified: tenant-modules.ts has no sort_order / order-by). A
+ *  drag-to-reorder UI here would write an order nothing reads (goal-47 theater trap), so
+ *  this stays an honest stub until the storefront learns to read a per-tenant order —
+ *  its own wave, not W5. */
 function PanelModplace(_props: PanelProps) {
   return (
     <Panel title="Placera & ordna" sub="Ordningen modulerna ligger i på sidan.">
       <DeferredStub icon="grid">
-        Att dra och ordna modulernas placering kommer i en senare våg (W5). Tills dess ligger modulerna i mallens
-        standardordning.
+        Modulerna visas i mallens standardordning. Att dra om ordningen kräver en separat ändring i hur
+        storefronten renderar — det blir en egen våg, inte den här.
       </DeferredStub>
     </Panel>
   )
@@ -616,37 +620,52 @@ function PanelBrand({ cfg, dispatch }: PanelProps) {
   )
 }
 
-/** text — PARTIAL-STUB (§9.8). ONLY the real Företagsnamn field is wired → setName;
- *  hero/ingress + click-edit-in-preview are deferred (W2/W5) — honest note, no fake
- *  hero/ingress inputs (W1 submits site_content_draft='{}'). */
+/** text — W5-REAL. Rubrik (hero headline → heroTitle) + Ingress (hero paragraph →
+ *  heroLede) + Företagsnamn (header). Writes settings.copy.{heroTitle,heroLede} via
+ *  createTenant → renders on the live page + the preview (resolveThemeContent, all
+ *  themes; empty = theme default). Ingress maps to heroLede, NOT the footer tagline (the
+ *  brand panel owns tagline). The design's "klicka-redigera i previewen" overlay (salvia-
+ *  only SiteEditor) is deferred — the design's own fields update the same data. */
 function PanelText({ cfg, dispatch }: PanelProps) {
   return (
-    <Panel title="Text & hjälte" sub="Företagsnamnet som syns i sidans header.">
+    <Panel title="Text & hjälte" sub="Rubriken och ingressen högst upp på sidan. Tomt = temats egen text. Ändringarna syns direkt i förhandsvisningen.">
       <div style={{ display: 'grid', gap: 16 }}>
+        <Field
+          label="Rubrik (hero)"
+          ph="Din rubrik"
+          value={cfg.heroTitle}
+          onChange={(v) => dispatch({ type: 'setHeroTitle', value: v })}
+          hint="Stora rubriken högst upp. Lämna tomt för temats förvalda rubrik."
+        />
+        <div>
+          <label style={labelStyle}>Ingress</label>
+          <textarea
+            value={cfg.heroLede}
+            onChange={(e) => dispatch({ type: 'setHeroLede', value: e.target.value })}
+            rows={3}
+            placeholder="Kort text under rubriken"
+            style={{
+              width: '100%',
+              marginTop: 6,
+              padding: '11px 13px',
+              borderRadius: 10,
+              border: '1px solid var(--c-line)',
+              background: 'var(--c-paper)',
+              fontFamily: 'var(--font-ui)',
+              fontSize: 14,
+              color: 'var(--c-ink)',
+              outline: 'none',
+              boxSizing: 'border-box',
+              resize: 'vertical',
+            }}
+          />
+        </div>
         <Field
           label="Företagsnamn (header)"
           ph="Ditt företag"
           value={cfg.name}
           onChange={(v) => dispatch({ type: 'setName', value: v })}
         />
-        <div
-          style={{
-            fontSize: 12.5,
-            color: 'var(--c-ink-2)',
-            lineHeight: 1.5,
-            padding: '12px 14px',
-            background: 'var(--c-paper-2)',
-            borderRadius: 10,
-            display: 'flex',
-            gap: 8,
-            alignItems: 'flex-start',
-          }}
-        >
-          <span style={{ color: 'var(--c-ink-3)', flex: 'none', marginTop: 1 }}>
-            <Icon name="edit" size={14} />
-          </span>
-          Rubrik &amp; ingress redigeras direkt i förhandsvisningen — det kommer i en senare våg (W2/W5).
-        </div>
       </div>
     </Panel>
   )

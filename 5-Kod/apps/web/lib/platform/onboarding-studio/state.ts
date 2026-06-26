@@ -45,6 +45,8 @@ export type StudioAction =
   | { type: 'setServices'; services: StudioService[] }
   | { type: 'setAccent'; hex: string }
   | { type: 'setTagline'; value: string }
+  | { type: 'setHeroTitle'; value: string }
+  | { type: 'setHeroLede'; value: string }
   | { type: 'setOwnerName'; value: string }
   | { type: 'setOwnerEmail'; value: string }
 
@@ -82,6 +84,10 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
         return { ...cfg, accent: action.hex }
       case 'setTagline':
         return { ...cfg, tagline: action.value }
+      case 'setHeroTitle':
+        return { ...cfg, heroTitle: action.value }
+      case 'setHeroLede':
+        return { ...cfg, heroLede: action.value }
       case 'setOwnerName':
         return { ...cfg, ownerName: action.value }
       case 'setOwnerEmail':
@@ -115,7 +121,10 @@ export type PanelProps = {
  * - `color_accent` ONLY when accent !== '' (omitted otherwise — theme owns palette).
  * - `services`     JSON [{name, price_cents}] (W4); kr→öre via krToOre, empty names
  *                  dropped. createTenant re-validates (parseServiceInputs) + inserts.
- * - `owner_role`   fixed 'salon_admin'; `site_content_draft` fixed '{}' (W1).
+ * - `hero_title` / `hero_lede` (W5) → settings.copy.{heroTitle,heroLede}; empty = theme
+ *                  default. Renders on the live page + preview via resolveThemeContent.
+ * - `owner_role`   fixed 'salon_admin'; `site_content_draft` fixed '{}' (W1 — hero copy
+ *                  rides settings.copy, NOT the salvia-only draft-fold path).
  * - logo / city are intentionally omitted (deferred / not in StudioCfg).
  */
 export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
@@ -138,6 +147,10 @@ export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
     .filter((s) => s.name !== '')
   fd.set('services', JSON.stringify(services))
   fd.set('tagline', cfg.tagline)
+  // Hero copy (W5) → settings.copy.{heroTitle,heroLede} (createTenant). Empty = the
+  // theme default wins; renders on the live page + the preview via resolveThemeContent.
+  fd.set('hero_title', cfg.heroTitle)
+  fd.set('hero_lede', cfg.heroLede)
   fd.set('owner_name', cfg.ownerName)
   fd.set('owner_email', cfg.ownerEmail)
   // The owner role seam: salon_admin is the only assignable role today (honest fixed

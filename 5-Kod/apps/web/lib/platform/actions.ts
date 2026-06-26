@@ -89,6 +89,12 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // CTA colour on top. Tagline → settings.copy.tagline; logo → R2 (below).
   const colorAccent = hexOrSkip(fd.get('color_accent'))
   const tagline = String(fd.get('tagline') ?? '').trim().slice(0, 160)
+  // Hero copy (onboarding-studio W5) → settings.copy.{heroTitle,heroLede}. heroTitle is
+  // the hero headline (may carry an inner \n the layout honours), heroLede the supporting
+  // paragraph (= the "ingress", NOT the footer tagline above). Empty → omitted, so the
+  // theme's own default copy wins per field in resolveThemeContent.
+  const heroTitle = String(fd.get('hero_title') ?? '').trim().slice(0, 200)
+  const heroLede = String(fd.get('hero_lede') ?? '').trim().slice(0, 500)
   // Multi-bransch (spår 5): the wizard's bransch (step 0) → tenants.vertical_id, and
   // the "Moduler" step's per-module states → tenant_modules rows. vertical_id is a
   // mjuk, mutabel FK (null = no bransch picked). `modules` is a JSON map
@@ -137,10 +143,17 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   //    settings.theme is read by the public layout → [data-theme], so the new salon
   //    ships the chosen named storefront, not the default. settings.copy.tagline is
   //    the owner-editable footer/utility tagline (M2/M6 copy contract).
+  // Owner copy overrides (settings.copy) — each field wins over the theme default in
+  // resolveThemeContent (public page + studio preview). Built as ONE object so adding
+  // hero copy never half-sets or clobbers the tagline.
+  const copy: Record<string, string> = {}
+  if (tagline) copy.tagline = tagline
+  if (heroTitle) copy.heroTitle = heroTitle
+  if (heroLede) copy.heroLede = heroLede
   const settings = {
     theme,
     booking: { variant: bookingVariant },
-    ...(tagline ? { copy: { tagline } } : {}),
+    ...(Object.keys(copy).length ? { copy } : {}),
   }
 
   // Sajtbyggare (goal-37/38): the onboarding editor posts a JSON draft (region.key →

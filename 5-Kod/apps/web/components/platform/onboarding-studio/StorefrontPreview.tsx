@@ -35,8 +35,15 @@ export function StorefrontPreview({ cfg }: { cfg: StudioCfg }) {
   const Layout = STOREFRONT_LAYOUTS[theme]
 
   // Pure, no-I/O content resolve. branding=null (accent never flows through content —
-  // it is injected as a CSS var at the wrapper); only the owner tagline overrides copy.
-  const content = resolveThemeContent(theme, null, cfg.tagline.trim() ? { tagline: cfg.tagline } : null)
+  // it is injected as a CSS var at the wrapper). Owner copy overrides per field (W5):
+  // hero rubrik/ingress + footer tagline; empty fields fall back to the theme default —
+  // EXACTLY the public page's resolveThemeContent(settings.theme, branding, settings.copy).
+  const copyOverride = {
+    ...(cfg.heroTitle.trim() ? { heroTitle: cfg.heroTitle } : {}),
+    ...(cfg.heroLede.trim() ? { heroLede: cfg.heroLede } : {}),
+    ...(cfg.tagline.trim() ? { tagline: cfg.tagline } : {}),
+  }
+  const content = resolveThemeContent(theme, null, Object.keys(copyOverride).length ? copyOverride : null)
 
   // W4: reflect the services the operator is typing (kr→öre) so the preview's booking
   // section is live, not an empty-state. Shaped as the real services row (Tables<'services'>);

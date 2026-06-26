@@ -185,6 +185,21 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(preview).toContain('Klippning')
   })
 
+  it('the text panel renders the real hero + ingress fields (W5, not a deferred note)', () => {
+    const html = mounts(
+      <PanelHost cfg={branched} step="text" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+    )
+    expect(html).toContain('Rubrik (hero)')
+    expect(html).toContain('Ingress')
+    expect(html).not.toContain('senare våg') // old deferred copy is gone
+  })
+
+  it('a custom hero title flows through to the live preview (W5)', () => {
+    const cfg = { ...branched, heroTitle: 'Min Unika Rubrik' }
+    const preview = mounts(<PreviewPane cfg={cfg} device="desktop" onDevice={noop} />)
+    expect(preview).toContain('Min Unika Rubrik') // resolveThemeContent override → layout hero
+  })
+
   it('the live panel renders the real Lansera button', () => {
     const html = mounts(
       <PanelHost

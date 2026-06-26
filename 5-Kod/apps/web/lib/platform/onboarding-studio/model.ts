@@ -28,6 +28,11 @@ export type StudioCfg = {
   /** accent hex ('' = none picked → theme's own primary wins). */
   accent: string
   tagline: string
+  /** Hero copy (W5) → settings.copy. heroTitle = the hero headline (rubrik), heroLede =
+   *  the hero supporting paragraph (ingress). Empty → the theme's own default copy wins
+   *  (resolveThemeContent per-field override). NOT the footer tagline (that's `tagline`). */
+  heroTitle: string
+  heroLede: string
   /** onboarding services (W4) → services rows on Lansera. Empty allowed (operator can
    *  add them later in admin); a booking-active tenant needs ≥1 to actually be bookable
    *  (bookings.service_id is NOT NULL). */
@@ -51,6 +56,8 @@ export function initStudioCfg(
     moduleStates: {},
     accent: '',
     tagline: '',
+    heroTitle: '',
+    heroLede: '',
     services: [],
     ownerName: '',
     ownerEmail: '',
