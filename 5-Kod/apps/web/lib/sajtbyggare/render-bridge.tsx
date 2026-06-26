@@ -30,5 +30,14 @@ export function renderTemplate(
       return undefined
     },
   }
-  return parse(html, options)
+  // de-risk R2: a broken/missing template (null/non-string html, or markup the
+  // parser chokes on) must DEGRADE — never bubble an SSR 500 on Workers. The 4
+  // built looks parse clean (proven author-time by their proofs + render-bridge.test);
+  // this catch is the forward guard for goal-36's growing catalogue.
+  try {
+    return parse(html, options)
+  } catch (err) {
+    console.error('[render-bridge] template parse failed, degrading to safe fallback', err)
+    return <div data-corevo-render-error />
+  }
 }
