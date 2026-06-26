@@ -7,7 +7,6 @@ import { describe, expect, it } from 'vitest'
 import { createElement, Fragment } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { renderTemplate } from './render-bridge'
-import { LOOKS } from './look-registry'
 
 const render = (node: ReturnType<typeof renderTemplate>) =>
   renderToStaticMarkup(createElement(Fragment, null, node))
@@ -40,14 +39,4 @@ describe('renderTemplate — R2 safe fallback (never a 500)', () => {
   it('non-string html → fallback node, does not throw', () => {
     expect(() => render(renderTemplate({} as unknown as string, {}))).not.toThrow()
   })
-})
-
-describe('renderTemplate — author-time parse: every registered look parses clean', () => {
-  for (const look of LOOKS) {
-    it(`${look.key} parses through the bridge without throwing`, () => {
-      expect(() =>
-        render(renderTemplate(look.html, { booking: createElement('div') })),
-      ).not.toThrow()
-    })
-  }
 })

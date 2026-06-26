@@ -6,7 +6,6 @@
 import { describe, expect, it } from 'vitest'
 import { findUnknownMarkers, markerTypes, KNOWN_MODULE_TYPES } from './validate_markers.mjs'
 import { KNOWN_MODULE_TYPES as PROOF_KNOWN } from './_optimize/proof-kit'
-import { LOOKS } from './look-registry'
 
 describe('validate_markers — author-time marker-type guard', () => {
   it('extracts every marker type in document order', () => {
@@ -24,11 +23,5 @@ describe('validate_markers — author-time marker-type guard', () => {
 
   it('the validator KNOWN set mirrors the render-bridge contract (no drift)', () => {
     expect([...KNOWN_MODULE_TYPES].sort()).toEqual([...PROOF_KNOWN].sort())
-  })
-
-  it('every registered look has ZERO unknown markers', () => {
-    for (const look of LOOKS) {
-      expect(findUnknownMarkers(look.html), look.key).toEqual([])
-    }
   })
 })

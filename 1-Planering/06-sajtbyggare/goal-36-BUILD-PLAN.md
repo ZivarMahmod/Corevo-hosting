@@ -1,5 +1,8 @@
 # goal-36 — Build Plan: vendor-katalog → sajtbyggare-looks (autonom loop, mekaniskt 0 FAIL)
 
+> ⛔ **SUPERSEDED av goal-51 (2026-06-26).** Vendor-import-idén är skrotad — de 13 looksen rivna ur
+> kod + DB (baseline-reset). Rätt modell = goal-52 (native kit + look-som-config). Denna plan = historik.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:subagent-driven-development` (or `executing-plans`) to implement task-by-task. Steps use checkbox (`- [ ]`) syntax. This plan is executed via **Workflow** orchestration (ultracode). Källspec = `2-Byggplan/goals/goal-36-sajtbyggare-100-templates-autorun.md` + de-risk `3-Bakgrund-Research/de-risk-goal36-2026-06-26.md`. Krock → de-risk + denna plan vinner på mekaniken; design-kanon (`4-Dokument-Underlag/01-acceptans/`) vinner på utseendet.
 
 **Goal:** Konvertera varje *booking-passande* vendor-mall i katalogen till en sajtbyggare-look (full vendor-HTML + RegionManifest + `<corevo-module type="booking">`-väv) som renderar troget och bevisas mekaniskt 0 FAIL, och registrera varje klar look i `look-registry.ts` (goal-50:s BOXEN).

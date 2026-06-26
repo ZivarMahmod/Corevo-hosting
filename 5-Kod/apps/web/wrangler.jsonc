@@ -127,7 +127,7 @@
       "name": "bokningsplatformen-staging",
       // Named envs do NOT inherit top-level bindings/vars → assets + vars are
       // repeated here. Without `assets` the staging worker serves no static files
-      // (Next chunks + /sajtbyggare/restoran/* 404); without the public Supabase
+      // (Next chunks + /sajtbyggare/* 404); without the public Supabase
       // vars the anon client throws → 500 on every DB read (goal-31 spike needs
       // real booking data). The anon key is browser-exposed by design (same as the
       // top-level block), so plaintext here is correct; server secrets still go via

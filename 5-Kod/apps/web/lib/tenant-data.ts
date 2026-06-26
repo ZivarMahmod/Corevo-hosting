@@ -44,7 +44,7 @@ export type TenantSettings = {
   layout: LayoutConfig
   /** Storefront theme preset (validated; default leander) → [data-theme] on root. */
   theme: StorefrontTheme
-  /** goal-50: a render-bron LOOK key chosen in onboarding (e.g. 'restoran'). When set
+  /** goal-50: a render-bron LOOK key chosen in onboarding (e.g. 'demolook'). When set
    *  AND it resolves in the look-registry, the storefront renders that look's real HTML
    *  instead of the theme layout. Raw string here (registry-validated at the dispatch
    *  site, so tenant-data stays free of the heavy look HTML). null = use the theme. */

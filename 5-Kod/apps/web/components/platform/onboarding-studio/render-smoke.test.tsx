@@ -245,16 +245,18 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
   })
 
   // ── goal-50: the look-gallery + render-bron preview (sajtbyggare ON) ──────────────
+  // goal-51 baseline: no real looks exist; these are neutral fixtures proving the gallery
+  // renders whatever look list it is GIVEN (the box is a prop here, not look-registry).
   const looks = [
-    { key: 'restoran', name: 'Restoran', vibeTags: ['varm', 'mat'], thumbnail: '/sajtbyggare/restoran/img/hero.jpg' },
-    { key: 'carserv', name: 'Carserv', vibeTags: ['bold'], thumbnail: '/sajtbyggare/carserv/img/hero.jpg' },
+    { key: 'demolook', name: 'Demolook', vibeTags: ['varm', 'mat'], thumbnail: '/sajtbyggare/demolook/img/hero.jpg' },
+    { key: 'demoklipp', name: 'Demoklipp', vibeTags: ['bold'], thumbnail: '/sajtbyggare/demoklipp/img/hero.jpg' },
   ]
 
   it('the tema panel becomes the flat look-GALLERY when the box is passed (no bransch filter)', () => {
     // cfg.branch=frisor, but the gallery shows ALL looks regardless (live-bevis #2 fix).
     const html = mounts(
       <PanelHost
-        cfg={{ ...branched, theme: 'restoran' }}
+        cfg={{ ...branched, theme: 'demolook' }}
         step="tema"
         dispatch={noopDispatch}
         presets={presets}
@@ -265,8 +267,8 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       />,
     )
     expect(html).toContain('Välj mall')
-    expect(html).toContain('Restoran')
-    expect(html).toContain('Carserv') // ALL looks, not just the bransch's
+    expect(html).toContain('Demolook')
+    expect(html).toContain('Demoklipp') // ALL looks, not just the bransch's
     expect(html).not.toContain('Temamall') // the legacy theme-list title is gone in gallery mode
   })
 

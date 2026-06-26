@@ -56,10 +56,10 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
   // from the box. So gallery-mode applyBranch seeds modules but keeps cfg.theme.
   it('gallery mode: applyBranch seeds modules but keeps the chosen look (theme)', () => {
     const galleryReducer = makeStudioReducer(presets, true)
-    const start = initStudioCfg('restoran') // a render-bron look key, picked from the box
+    const start = initStudioCfg('demolook') // a render-bron look key, picked from the box
     const cfg = galleryReducer(start, { type: 'applyBranch', key: 'frisor' })
     expect(cfg.branch).toBe('frisor')
-    expect(cfg.theme).toBe('restoran') // look preserved — bransch is never the look
+    expect(cfg.theme).toBe('demolook') // look preserved — bransch is never the look
     expect(cfg.moduleStates.lojalitet).toBe('live') // modules still seeded from the preset
   })
 

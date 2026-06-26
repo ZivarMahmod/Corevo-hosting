@@ -6,30 +6,17 @@
 // by the mounted module (no orphaned <corevo-module>).
 
 import { describe, expect, it } from 'vitest'
-import { createElement, Fragment } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
 import { getLook, LOOKS } from './look-registry'
-import { renderTemplate } from './render-bridge'
 
 // The page resolves the look the same way: settings.look → getLook(...) | undefined.
 const resolveLook = (settingsLook: string | null) => (settingsLook ? getLook(settingsLook) : undefined)
 
 describe('storefront render-bron dispatch (settings.look → real look HTML)', () => {
-  it('a registered look key resolves → the look renders with the booking module woven in', () => {
-    for (const entry of LOOKS) {
-      const look = resolveLook(entry.key)
-      expect(look, entry.key).toBeDefined()
-      const out = renderToStaticMarkup(
-        createElement(
-          Fragment,
-          null,
-          renderTemplate(look!.html, { booking: createElement('div', { 'data-testid': 'booking-mounted' }) }),
-        ),
-      )
-      expect(out, `${entry.key} booking not woven`).toContain('data-testid="booking-mounted"')
-      expect(out, `${entry.key} left an orphan marker`).not.toContain('<corevo-module')
-      expect(out.length, `${entry.key} rendered thin`).toBeGreaterThan(1000)
-    }
+  // goal-51 baseline: the box is empty until goal-52 re-adds native looks. The dispatch
+  // GATE is what matters here — no key resolves to a look, so the storefront always falls
+  // through to the themed layout (never a 500). goal-52 re-adds the per-look render asserts.
+  it('at baseline the box is empty → no look key resolves', () => {
+    expect(LOOKS).toHaveLength(0)
   })
 
   it('a React theme key (not a look) resolves to undefined → the themed layout path', () => {

@@ -1,5 +1,9 @@
 # 100-TEMPLATES-TRACKER — sajtbyggare
 
+> ⛔ **SUPERSEDED av goal-51 (2026-06-26).** Hela vendor-import-vägen är skrotad: de 13 importerade
+> looksen är borttagna ur kod + DB (baseline-reset). goal-36/goal-50:s import-modell ersätts av
+> goal-52 (native sektions-kit + look-som-config). Innehållet nedan = historik, kör INTE loopen.
+
 > Durabel checklista för goal-36 (bygg + optimera alla byggbara katalog-mallar). Loopen läser denna FÖRST,
 > tar nästa `TODO`/`KVAR`, kör per-mall-pipelinen (se `PILOT-UTFALL.md` → MÖNSTRET), uppdaterar raden. Idempotent.
 >

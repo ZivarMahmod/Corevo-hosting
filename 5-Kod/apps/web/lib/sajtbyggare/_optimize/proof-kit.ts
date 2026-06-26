@@ -1,6 +1,6 @@
 // Reusable per-template render-proof helpers (goal-36 structural spine).
 //
-// Pure functions extracted from the restoran pilot's metrics test so EVERY
+// Pure functions extracted from the render-bron pilot's metrics test so EVERY
 // template's `<name>.proof.test.ts` shares ONE structural implementation instead
 // of copy-pasting it (the M2 "copy-paste stub" trap). No vitest, no assertions
 // here — the per-template proof imports these and writes its own template-SPECIFIC

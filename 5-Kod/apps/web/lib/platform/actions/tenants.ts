@@ -77,7 +77,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
 
   // Storefront look (the five named themes) → settings.theme → [data-theme].
   const theme = pickTheme(fd.get('theme'))
-  // goal-50: a render-bron LOOK from the box (e.g. 'restoran') arrives in the same
+  // goal-50: a render-bron LOOK from the box (e.g. 'demolook') arrives in the same
   // `theme` field but is NOT one of the 5 named themes → pickTheme coerces it to the
   // default. Capture it separately into settings.look so the storefront renders the
   // look's real HTML. Flag-gated: only when sajtbyggare is ON (flag-OFF never writes

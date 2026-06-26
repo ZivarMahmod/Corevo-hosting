@@ -10,7 +10,7 @@ import type { ModuleState } from '@/lib/tenant-modules'
 import { activeModuleKeys, ModuleSections } from './preview-modules'
 
 function cfgWith(moduleStates: Record<string, ModuleState>, branch: string | null = 'frisor') {
-  return { ...initStudioCfg('haircare'), branch, moduleStates }
+  return { ...initStudioCfg('Demosalong'), branch, moduleStates }
 }
 
 describe('activeModuleKeys (what flows into the look preview)', () => {
