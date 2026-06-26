@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers'
 import { createPublicClient } from '@/lib/supabase/public'
+import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import { parseShopConfig } from '@/lib/storefront/shop/types'
 
@@ -117,10 +118,18 @@ export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> 
     return { ok: false, reason: 'error', message: 'Sessionen saknas. Börja om.' }
   }
 
-  const supabase = createPublicClient()
-  const { data, error } = await supabase.rpc('confirm_shop_order', {
+  // Session-medveten: en INLOGGAD kund bekräftar via den authenticated-klienten med
+  // p_customer = auth.uid() (RPC-fence kräver p_customer = auth.uid()), så ordern
+  // länkas till deras auth-customer_id och dyker upp i /konto. Utloggad gäst →
+  // anon-klient + gästfält (länkas via email-hash, resolve_customer_id).
+  const authed = await createClient()
+  const { data: auth } = await authed.auth.getUser()
+  const user = auth?.user ?? null
+  const client = user ? authed : createPublicClient()
+  const { data, error } = await client.rpc('confirm_shop_order', {
     p_order_id: input.orderId,
     p_token: input.token,
+    p_customer: user?.id ?? undefined,
     p_guest_name: name,
     p_guest_email: email,
     p_guest_phone: phone,

@@ -141,7 +141,10 @@ export default async function KontoPage() {
         displayName={displayName}
       />
 
-      <p style={{ textAlign: 'center', margin: 0 }}>
+      <p style={{ textAlign: 'center', margin: 0, display: 'flex', gap: 20, justifyContent: 'center' }}>
+        <Link href="/konto/bestallningar" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+          Mina beställningar →
+        </Link>
         <Link href="/konto/profil" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
           Min profil →
         </Link>
