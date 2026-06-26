@@ -35,7 +35,13 @@ const csp = [
   // Google Fonts files are served from fonts.gstatic.com.
   `font-src 'self' data: https://fonts.gstatic.com`,
   // Supabase REST/Realtime/Auth + Stripe API. ws: only in dev (HMR).
-  `connect-src 'self' https://api.stripe.com ${supabaseUrl} https://*.supabase.co wss://*.supabase.co${isProd ? '' : ' ws:'}`,
+  // goal-44 Spår A: `https://*.sentry.io` is a STATIC allowance. Today error reporting
+  // (lib/observability captureException) runs SERVER-SIDE in the Worker, where CSP
+  // connect-src — a browser policy — does not apply, so this is a no-op for the current
+  // path. It is kept harmless + future-proof so a browser-side Sentry SDK could POST
+  // without a CSP regression. NOT build-env-conditional on SENTRY_DSN: headers() is
+  // evaluated at build time but the DSN is a runtime Worker secret (would be empty here).
+  `connect-src 'self' https://api.stripe.com https://*.sentry.io ${supabaseUrl} https://*.supabase.co wss://*.supabase.co${isProd ? '' : ' ws:'}`,
   // Stripe Checkout/Elements iframes + the storefront's embedded OpenStreetMap map.
   `frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://www.openstreetmap.org`,
   `form-action 'self' https://checkout.stripe.com`,

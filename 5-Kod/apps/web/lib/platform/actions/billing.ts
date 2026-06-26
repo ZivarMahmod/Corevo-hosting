@@ -5,6 +5,7 @@ import { platformCtx } from '../guard'
 import { isBillingModel, kronorToCents } from '../billing'
 import { logPlatformAction } from '../audit'
 import { type ActionState, GENERIC } from './shared'
+import { reportActionError } from './observe'
 
 // ── FLÖDE 2: billing model + fees ───────────────────────────────────────────────
 export async function saveBilling(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -27,7 +28,10 @@ export async function saveBilling(_p: ActionState, fd: FormData): Promise<Action
     },
     { onConflict: 'tenant_id' },
   )
-  if (error) return { error: GENERIC }
+  if (error) {
+    await reportActionError('saveBilling.upsert', error, { tenantId })
+    return { error: GENERIC }
+  }
 
   revalidatePath(`/salonger/${tenantId}`)
   revalidatePath('/fakturering')

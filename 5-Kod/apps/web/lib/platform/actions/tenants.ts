@@ -15,6 +15,7 @@ import { attachWorkerSubdomain } from '@/lib/cloudflare/worker-domains'
 import { foldOnboardingDraft } from '@/lib/sajtbyggare/onboarding-fold'
 import type { Json } from '@corevo/db'
 import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
+import { reportActionError } from './observe'
 
 const DEFAULT_TZ = 'Europe/Stockholm'
 
@@ -123,6 +124,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     .single()
   if (tErr || !tenant) {
     if (tErr?.code === '23505') return { error: `Subdomänen "${slug}.corevo.se" är upptagen.` }
+    await reportActionError('createTenant.tenant_insert', tErr, { slug })
     return { error: GENERIC }
   }
   const tenantId = tenant.id
@@ -185,6 +187,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   })
   if (sErr) {
     await rollback()
+    await reportActionError('createTenant.settings_insert', sErr, { tenantId })
     return { error: GENERIC }
   }
 
@@ -196,6 +199,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     .insert({ tenant_id: tenantId, name, timezone: DEFAULT_TZ, is_primary: true })
   if (lErr) {
     await rollback()
+    await reportActionError('createTenant.location_insert', lErr, { tenantId })
     return { error: GENERIC }
   }
 
@@ -208,6 +212,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     .single()
   if (rErr || !role) {
     await rollback()
+    await reportActionError('createTenant.role_insert', rErr, { tenantId })
     return { error: GENERIC }
   }
 
@@ -220,6 +225,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   const modRes = await writeTenantVerticalAndModules(supabase, tenantId, verticalKey, moduleSelections)
   if (!modRes.ok) {
     await rollback()
+    await reportActionError('createTenant.modules_write', new Error('writeTenantVerticalAndModules failed'), { tenantId })
     return { error: GENERIC }
   }
 
@@ -244,6 +250,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     )
     if (svcErr) {
       await rollback()
+      await reportActionError('createTenant.services_insert', svcErr, { tenantId })
       return { error: GENERIC }
     }
   }

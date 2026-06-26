@@ -8,6 +8,7 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PORTAL_MIN_LEVEL, type Portal } from '@/lib/auth/roles'
+import { logAuthDenied } from '@/lib/observability'
 
 export type CurrentUser = {
   id: string
@@ -86,6 +87,11 @@ export async function requirePortal(portal: Portal): Promise<CurrentUser> {
 /** Require the global platform_admin flag (cross-tenant). */
 export async function requirePlatformAdmin(): Promise<CurrentUser> {
   const user = await requireUser()
-  if (!user.platformAdmin) redirect('/ingen-atkomst')
+  if (!user.platformAdmin) {
+    // goal-44 Spår A: log the cross-tenant denial BEFORE the redirect throws
+    // (never wrap NEXT_REDIRECT). uuid + level only — no email/name (PII).
+    logAuthDenied({ userId: user.id, roleLevel: user.roleLevel, need: 'platform_admin' })
+    redirect('/ingen-atkomst')
+  }
   return user
 }

@@ -5,6 +5,7 @@ import { platformCtx } from '../guard'
 import { logPlatformAction } from '../audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
+import { reportActionError } from './observe'
 
 // ── Step 6: launch / suspend ────────────────────────────────────────────────────
 export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -22,7 +23,10 @@ export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<Ac
     .eq('id', tenantId)
     .select('slug')
     .single()
-  if (error || !tenant) return { error: GENERIC }
+  if (error || !tenant) {
+    await reportActionError('setTenantStatus.update', error, { tenantId, status })
+    return { error: GENERIC }
+  }
 
   // CRITICAL: the public bundle is tag-cached (getTenantBySlug, revalidate:300).
   // Without busting the tag a suspend stays live up to 5 min — DoD would "fail".

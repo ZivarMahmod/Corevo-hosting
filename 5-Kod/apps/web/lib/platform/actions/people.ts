@@ -5,6 +5,7 @@ import { platformCtx } from '../guard'
 import { createServiceClient, hasServiceRole } from '../service'
 import { logPlatformAction } from '../audit'
 import { type ActionState, GENERIC, EMAIL_RE } from './shared'
+import { reportActionError } from './observe'
 
 /**
  * Trigger a password reset for the salon's admin. Generates a recovery link via
@@ -26,6 +27,7 @@ export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<
 
   const { data, error } = await svc.auth.admin.generateLink({ type: 'recovery', email })
   if (error || !data?.properties?.action_link) {
+    await reportActionError('sendPasswordReset.generateLink', error, { tenantId })
     return { error: `Kunde inte skapa återställningslänk: ${error?.message ?? 'okänt fel'}.` }
   }
 
@@ -69,7 +71,10 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
     title,
     active: true,
   })
-  if (error) return { error: GENERIC }
+  if (error) {
+    await reportActionError('createTenantStaff.insert', error, { tenantId })
+    return { error: GENERIC }
+  }
 
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
@@ -128,7 +133,10 @@ export async function createPlatformCustomer(_p: ActionState, fd: FormData): Pro
     })
     .select('id')
     .single()
-  if (error || !created) return { error: GENERIC }
+  if (error || !created) {
+    await reportActionError('createPlatformCustomer.insert', error, { tenantId })
+    return { error: GENERIC }
+  }
 
   revalidatePath('/kunder')
   await logPlatformAction(supabase, {

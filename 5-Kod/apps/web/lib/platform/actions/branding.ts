@@ -8,6 +8,7 @@ import { mergeBranding } from '@/lib/branding/merge'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import type { TenantBranding } from '@corevo/ui'
 import { type ActionState, GENERIC, HEX_RE } from './shared'
+import { reportActionError } from './observe'
 
 // ── Step 2: branding (platform edits a chosen tenant) ───────────────────────────
 function hexOrNull(raw: FormDataEntryValue | null): string | null | undefined {
@@ -65,7 +66,10 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
   const { error } = await supabase
     .from('tenant_settings')
     .upsert({ tenant_id: tenantId, branding }, { onConflict: 'tenant_id' })
-  if (error) return { error: GENERIC }
+  if (error) {
+    await reportActionError('savePlatformBranding.upsert', error, { tenantId })
+    return { error: GENERIC }
+  }
 
   // FX-14: drop the previous logo object when replaced/removed. Logo-only — a
   // platform branding-save must not touch owner storefront media, and now that the

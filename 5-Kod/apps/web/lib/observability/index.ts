@@ -26,6 +26,15 @@ export const logger = {
   error: (m: string, f?: LogFields) => log('error', m, f),
 }
 
+/**
+ * Named auth-denial event (goal-44 Spår A, log-contract event (b)). One structured
+ * warn line when an authorization fence rejects a request. Fält-form: pass the user
+ * uuid + roleLevel + what was required — NEVER email/name (PII). Cheap + best-effort.
+ */
+export function logAuthDenied(fields: LogFields = {}): void {
+  log('warn', 'auth.denied', fields)
+}
+
 // Never let obvious secrets ride a log line, even by accident.
 const SECRET_KEY = /(secret|token|password|api[_-]?key|authorization|service[_-]?role)/i
 function redact(fields: LogFields): LogFields {

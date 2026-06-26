@@ -6,6 +6,7 @@ import { logPlatformAction } from '../audit'
 import { isBookingVariant, DEFAULT_BOOKING_VARIANT, type BookingVariant } from '../booking-variant'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
+import { reportActionError } from './observe'
 
 // ── §2.1B Operativ data-kontroll ("Supabase med mitt UI", no-code) ──────────────
 
@@ -59,7 +60,10 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
   const tenantPatch: { name: string; city?: string | null } = { name }
   if (city !== undefined) tenantPatch.city = city
   const { error: nErr } = await supabase.from('tenants').update(tenantPatch).eq('id', tenantId)
-  if (nErr) return { error: GENERIC }
+  if (nErr) {
+    await reportActionError('saveTenantData.tenant_update', nErr, { tenantId })
+    return { error: GENERIC }
+  }
 
   // 2) settings jsonb — MERGE prev (never replace). google_review_url is co-owned
   //    with M6; booking.variant is M7's key (M3 reads tenant_settings.settings.booking).
@@ -78,7 +82,10 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
   const { error: sErr } = await supabase
     .from('tenant_settings')
     .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
-  if (sErr) return { error: GENERIC }
+  if (sErr) {
+    await reportActionError('saveTenantData.settings_upsert', sErr, { tenantId })
+    return { error: GENERIC }
+  }
 
   // Bust the cached public bundle so the new name/review link/variant show live.
   revalidateTenant(tenant.slug)

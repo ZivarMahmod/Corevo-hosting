@@ -10,6 +10,7 @@ import {
   deleteCustomHostname,
 } from '@/lib/cloudflare/custom-hostnames'
 import { type DomainActionState } from './shared'
+import { reportActionError } from './observe'
 
 // ── goal-23: custom-domain provisioning (Cloudflare for SaaS) ────────────────────
 // The READ half (resolve_tenant_by_domain, 0019) is already live; these are the WRITE
@@ -72,6 +73,7 @@ export async function addCustomDomain(_p: DomainActionState, fd: FormData): Prom
     // Insert failed after CF created the hostname — best-effort delete to avoid an
     // orphan CF hostname the panel could never surface (no row → no Ta bort-knapp).
     if (cf.data.id) await deleteCustomHostname(cf.data.id)
+    await reportActionError('addCustomDomain.insert', error, { tenantId, domain })
     return { error: 'Kunde inte spara domänen. Försök igen.' }
   }
 
@@ -121,7 +123,10 @@ export async function verifyCustomDomain(_p: DomainActionState, fd: FormData): P
     .update({ verified: true })
     .eq('tenant_id', tenantId)
     .eq('domain', domain)
-  if (error) return { error: 'Kunde inte uppdatera domänstatus.' }
+  if (error) {
+    await reportActionError('verifyCustomDomain.update', error, { tenantId, domain })
+    return { error: 'Kunde inte uppdatera domänstatus.' }
+  }
 
   revalidatePath(DOMAIN_PATH(tenantId))
   await logPlatformAction(supabase, {
@@ -163,7 +168,10 @@ export async function removeCustomDomain(_p: DomainActionState, fd: FormData): P
     .delete()
     .eq('tenant_id', tenantId)
     .eq('domain', domain)
-  if (error) return { error: 'Kunde inte ta bort domänen.' }
+  if (error) {
+    await reportActionError('removeCustomDomain.delete', error, { tenantId, domain })
+    return { error: 'Kunde inte ta bort domänen.' }
+  }
 
   revalidatePath(DOMAIN_PATH(tenantId))
   await logPlatformAction(supabase, {
