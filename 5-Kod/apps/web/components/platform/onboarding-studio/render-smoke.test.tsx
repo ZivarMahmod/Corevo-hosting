@@ -14,6 +14,10 @@ import { describe, it, expect, vi } from 'vitest'
 // imports cleanly in the node test env (we only smoke its RENDER, not the write).
 vi.mock('@/lib/platform/actions', () => ({ createTenant: async () => ({}) }))
 
+// W2: PreviewPane now mounts the REAL storefront layout; Bookable inside it calls
+// useRouter (next/navigation) — stub it so the node render env doesn't throw.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {} }) }))
+
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import type { TenantCardItem } from '@/lib/platform/tenants'
 import { initStudioCfg, applyBranch } from '@/lib/platform/onboarding-studio/model'
@@ -105,9 +109,9 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('Grunden')
   })
 
-  it('PreviewPane mounts as an honest placeholder (not a fake site)', () => {
+  it('PreviewPane mounts the real themed storefront render (W2)', () => {
     const html = mounts(<PreviewPane cfg={branched} device="desktop" onDevice={noop} />)
-    expect(html).toContain('rhandsvisning') // "Förhandsvisning kommer (W2)"
+    expect(html).toContain('data-world="storefront"') // real storefront render, not a skeleton
   })
 
   it('PanelHost mounts EVERY one of the 12 steps (branched cfg)', () => {
