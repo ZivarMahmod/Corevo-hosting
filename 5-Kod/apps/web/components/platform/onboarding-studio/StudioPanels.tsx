@@ -665,9 +665,14 @@ function PanelTjanster({ cfg, dispatch, presets }: PanelProps) {
   const set = (services: StudioService[]) => dispatch({ type: 'setServices', services })
   const add = () => set([...cfg.services, { name: '', price: '' }])
   const editName = (i: number, name: string) => set(cfg.services.map((s, j) => (j === i ? { ...s, name } : s)))
-  const editPrice = (i: number, price: string) =>
-    // keep only digits + one decimal separator (comma/dot) so the kr field can't hold junk
-    set(cfg.services.map((s, j) => (j === i ? { ...s, price: price.replace(/[^0-9.,]/g, '') } : s)))
+  const editPrice = (i: number, raw: string) => {
+    // keep digits + only the FIRST decimal separator (comma/dot); strip later ones so the
+    // kr field can't hold "10,50.5"-style junk that krToOre would parse surprisingly.
+    const c = raw.replace(/[^0-9.,]/g, '')
+    const sep = c.search(/[.,]/)
+    const price = sep === -1 ? c : c.slice(0, sep + 1) + c.slice(sep + 1).replace(/[.,]/g, '')
+    set(cfg.services.map((s, j) => (j === i ? { ...s, price } : s)))
+  }
   const del = (i: number) => set(cfg.services.filter((_, j) => j !== i))
 
   const rowInput: CSSProperties = {
@@ -822,7 +827,7 @@ function PanelGranska({ cfg, presets, onNext }: StudioPanelProps) {
     { label: 'Ägare inbjuden', detail: 'Får magic-link vid lansering.', done: !!cfg.ownerEmail.trim(), optional: true },
     {
       label: 'Tjänster & priser',
-      detail: 'Minst en tjänst — bokningen behöver något att boka.',
+      detail: 'Bokningen behöver minst en — kan läggas till senare i admin.',
       done: stepDone('tjanster', cfg, presets),
       optional: true,
     },
