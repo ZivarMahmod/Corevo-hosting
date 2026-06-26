@@ -10,7 +10,7 @@
 
 | Yta | Status | Funkar idag | Största gap |
 |---|---|---|---|
-| **Super-admin** (superbooking) | ✅ real | salongslista/detalj (6 flikar), onboarding-wizard, **modul-toggle per kund** (off→draft→live→paused, slår igenom på storefront direkt), branding/roller/billing/domän-skrivvägar | ingen fristående sajtbyggare-**studio** (super-admin redigerar kundsida bara via onboarding-steget + bild-slot på Drift-fliken); settings-reglage stubbade; telemetri saknas |
+| **Super-admin** (superbooking) | ✅ real | salongslista/detalj (6 flikar), **Onboarding-studio (goal-48, 12 steg + live-preview, live)**, **modul-toggle per kund** (off→draft→live→paused, slår igenom på storefront direkt), branding/roller/billing/domän-skrivvägar | fristående sajtbyggare-redigering AV en BEFINTLIG kundsida (utanför onboarding) kvar; settings-reglage stubbade; telemetri saknas |
 | **Kund-admin** (booking/admin) | ✅ real | dashboard live, alla modul-ytor (shop/blogg/offert/lojalitet/presentkort) modul-gatade, sajtbyggare-självservice (SiteEditor → `tenant_settings.copy/branding`, live **utan deploy**) | **sajtbyggare SALVIA-ONLY** (null för andra teman → Callout); textarea ej TipTap (v0); sektionsordning låst i layout-koden |
 | **Personal** (minbooking) | ✅ real | "Idag" dag-kalender + "nästa kund", walk-in, markera klar, arbetstider-veckogrid, frånvaro (time_off) | launch-redo; gapen = designval (ingen datum-nav, inget approval-flöde) |
 | **Kund** (/konto) | ✅ real | bokningar/historik, lojalitetssaldo + tier, favorit-personal, **bransch-terminologi-overlay** (portalen talar tenantens bransch), profil + GDPR-export | AccountPrivacy namn-läge är **read-only** (ingen kund-anropbar spar-action) |
@@ -57,6 +57,7 @@
 - **AccountPrivacy:** ge namn-läget en spar-action (kund-yta-gap).
 
 ### B · TEMPLATE-BRON — bryter storefront-loopen (det stora spåret)
+- ✅ **Slice 1 KLAR (goal-47, i main + live, byte-identisk):** storefront-läsvägen för DB `content_slots` finns bakom flagga (`should-render-db`); 0 authored slots i prod → gaten false = byte-identisk render. Kvar = resten av punkterna nedan + goal-36.
 - Koppla **publik storefront → DB-template-slots** (`templates`/`template_slots` → `content_slots` via skin-loader som redan finns men är inert: `lib/storefront/skin/load-skin.ts` — wire:a den).
 - Ta bort `parseTheme`-allowlisten (lib/tenant-data.ts, 5 nycklar) → DB-mallnycklar (restoran/foody/polish…) får renderas i st f silent-downgrade till leander.
 - Default-copy/media per **bransch** ur slots, ej frisör-hårdkodning i `theme-content.ts`/`images.ts`.
@@ -79,7 +80,7 @@
 ### E · Fakturering + drift
 - **Billing:** 399 kr/mån platt, super-admin→salong-faktura, Swish-QR manuell v1 ("jag har betalat" → Zivar Godkänner) → auto sen, moms 25 %, användningsräknare. *(Ej byggt; betalningar pausade.)*
 - **Kända buggar:** `savePlatformBranding`-clobber (seeda media→ta bort→spara) · personal-"Idag"-krasch · poäng-revoke completed→cancelled (FÖRE redeem) · **onboarding: orphan-salong vid invite-fail** · **onboarding: Auth-verifieringsmail funkar ej** (de två onboarding-buggarna FÖRST i onboarding-v2).
-- **Onboarding-v2 (UX):** bransch=start ej bur · fri tema-val · live-helsides-preview · modul av/på i wizard · färre steg.
+- ✅ **Onboarding-v2 → KLAR (goal-48 Onboarding-studio, live i prod 2026-06-26, flagga ON):** full 12-stegs studio på superbooking — bransch-start (ej bur) · fri tema-val · live-helsides-preview hela vägen · modul av/på + bokningsvariant i wizard · tjänster+priser (services.price_cents) · hero-text (settings.copy, alla teman) · ärlig resultat-vy · full-bleed-layout. Gates tsc0/vitest694, varje våg oberoende reviewad. **Kvar (egna småspår, EJ del av studio-scopet):** modul-ordning (dra) kräver per-tenant ordning-läsväg i storefronten · auto-koppla `<slug>.corevo.se` vid onboarding (idag separat `add-domain.mjs`) · klicka-redigera-i-preview-overlay (fälten gör samma sak idag).
 
 ---
 
