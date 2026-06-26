@@ -417,7 +417,7 @@ export function CreateTenantForm({
               {presets.verticals.length === 0 ? (
                 <Callout tone="warning">
                   Inga branscher i katalogen ännu. Du kan fortsätta utan bransch och välja moduler
-                  manuellt i steget "Moduler".
+                  manuellt i steget &quot;Moduler&quot;.
                 </Callout>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>

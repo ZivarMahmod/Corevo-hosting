@@ -250,10 +250,10 @@ export function SalongerClient({ tenants }: { tenants: SalongCardVM[] }) {
                 </span>
               </Link>,
               t.owner ?? '—',
-              <span style={{ fontSize: 12.5, color: 'var(--c-ink-2)' }}>{t.variantLabel}</span>,
-              <span className="num">{t.staff}</span>,
-              <span className="num">{t.bookings}</span>,
-              <Badge tone={STATUS_META[t.displayStatus].tone}>{STATUS_META[t.displayStatus].label}</Badge>,
+              <span key="v" style={{ fontSize: 12.5, color: 'var(--c-ink-2)' }}>{t.variantLabel}</span>,
+              <span key="p" className="num">{t.staff}</span>,
+              <span key="b" className="num">{t.bookings}</span>,
+              <Badge key="st" tone={STATUS_META[t.displayStatus].tone}>{STATUS_META[t.displayStatus].label}</Badge>,
               <Link key="a" href={`/salonger/${t.id}`} style={{ color: 'var(--c-ink-3)', display: 'inline-flex' }}>
                 <Icon name="arrowRight" size={17} />
               </Link>,

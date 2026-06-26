@@ -136,7 +136,6 @@ function detectSections(html: string): Record<string, boolean> {
 let restoranManifest: RegionManifest | null = null
 let manifestLoadError: string | null = null
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const mod: unknown = await import('../manifest/restoran').catch(() => null)
   if (mod && typeof mod === 'object') {
     const candidate = Object.values(mod as Record<string, unknown>).find(

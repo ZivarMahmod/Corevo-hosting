@@ -33,13 +33,20 @@ jobs:
           cache: pnpm
           cache-dependency-path: 5-Kod/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      # Each gate runs even if an earlier one failed (if: !cancelled()), so ONE red
+      # gate never hides the others — the job still fails if any gate fails. (Before:
+      # a lint crash aborted the job and typecheck/test/build never ran at all.)
       - run: pnpm lint
+        if: ${{ !cancelled() }}
       - run: pnpm typecheck
+        if: ${{ !cancelled() }}
       - run: pnpm test
+        if: ${{ !cancelled() }}
       # next build inlines NEXT_PUBLIC_* at BUILD time (live-blocker #1) — set the
       # production-shaped values so a wrong-host default ("salongen inte tillgänglig")
       # can never ship. Supabase publishable values are safe to expose to the client.
       - run: pnpm build
+        if: ${{ !cancelled() }}
         env:
           NEXT_PUBLIC_ROOT_DOMAIN: corevo.se
           NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
