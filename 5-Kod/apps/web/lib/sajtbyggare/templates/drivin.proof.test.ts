@@ -33,9 +33,13 @@ import {
   readVendorCssLc,
   tokenScanText,
 } from '../_optimize/proof-kit'
+import { proofFloor } from '../_optimize/proof-floor'
 
 const VALID_TYPES: RegionType[] = ['text', 'image', 'color', 'font', 'logo']
 const { regions } = DRIVIN_REGION_MANIFEST
+
+// goal-36 R4: the anti-stub floor (>= 8 regions + booking marker + canon color/font + no drift).
+proofFloor(DRIVIN_REGION_MANIFEST, DRIVIN_PAGE_HTML)
 const get = (key: string): Region => {
   const r = regions.find((x) => x.key === key)
   if (!r) throw new Error(`region not declared: ${key}`)
