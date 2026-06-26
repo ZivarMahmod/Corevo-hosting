@@ -22,7 +22,7 @@ import type { StorefrontTheme, Service } from '@/lib/tenant-data'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import { krToOre } from '@/lib/platform/onboarding-studio/services'
 import styles from '@/components/storefront/storefront.module.css'
-import { ModuleSections, KontoPanel, PreviewNav, PreviewFooter } from './preview-modules'
+import { ModuleSections, KontoPanel, PreviewNav, PreviewFooter, activeModuleKeys } from './preview-modules'
 
 // Platform default (DEFAULT_STOREFRONT_THEME, tenant-data.ts:28) — inlined as a literal
 // so we never import the runtime guard from the server-poisoned tenant-data module.
@@ -35,10 +35,19 @@ export function StorefrontPreview({ cfg, lookKeys }: { cfg: StudioCfg; lookKeys?
   // vendor CSS from the backoffice document (R5) and the HTML stays server-side (R6).
   // A React THEME (the 5 layouts) renders inline below, unchanged (flag-OFF parity).
   if (lookKeys && lookKeys.includes(cfg.theme)) {
-    const qs = cfg.accent ? `?accent=${encodeURIComponent(cfg.accent)}` : ''
+    // goal-36: thread the SELECTED modules + bransch to the look route so a chosen
+    // module actually weaves into the look's preview (not just below a React theme).
+    // The route rebuilds a cfg from these and renders the module sections in the
+    // look's own palette/typography (the look's manifest tokens) — "löst i förväg".
+    const params = new URLSearchParams()
+    if (cfg.accent) params.set('accent', cfg.accent)
+    if (cfg.branch) params.set('branch', cfg.branch)
+    const mods = activeModuleKeys(cfg)
+    if (mods.length) params.set('modules', mods.join(','))
+    const qs = params.toString() ? `?${params.toString()}` : ''
     return (
       <iframe
-        // key on theme+accent so picking another look reloads the frame
+        // key on the full query so picking another look OR toggling a module reloads the frame
         key={`${cfg.theme}${qs}`}
         title="Mall-förhandsvisning"
         src={`/sajtbyggare-spike/look/${encodeURIComponent(cfg.theme)}${qs}`}

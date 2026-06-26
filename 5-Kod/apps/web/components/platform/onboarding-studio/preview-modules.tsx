@@ -55,6 +55,17 @@ export const ROADMAP_MAIN = ['portfolio', 'meny', 'recurring', 'deposit', 'inlam
 // defaultPos:"konto" modules (cfg-data.js) → the separate inloggad-kundportal panel.
 export const KONTO_KEYS = ['husdjur', 'fordon', 'intag', 'orderstatus'] as const
 
+/** Every module key the preview can render (5 built mains + roadmap + konto), EXCLUDING
+ *  booking (woven into the look/layout itself, never a separate section). */
+export const ALL_PREVIEW_MODULES: string[] = [...BUILT_MAIN, ...ROADMAP_MAIN, ...KONTO_KEYS]
+
+/** The module keys ACTIVE for this cfg — what flows into the render-bron look preview
+ *  (goal-36: "välj modul → vävs in i den valda mallen, syns i previewen"). The studio
+ *  threads these to the look iframe; the route rebuilds a cfg from them. */
+export function activeModuleKeys(cfg: StudioCfg): string[] {
+  return ALL_PREVIEW_MODULES.filter((k) => isActive(moduleState(cfg, k)))
+}
+
 // Storefront section titles + the konto/roadmap ones (preview.jsx:421-426).
 const SECTION_TITLES: Record<string, string> = {
   shop: 'Webshop',
