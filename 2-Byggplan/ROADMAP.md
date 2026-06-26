@@ -67,7 +67,7 @@
 - ⚠️ Design-känsligt (18h-fällan) → render-verify **0 FAIL** + oberoende verify. (Behåll `sajtbyggare-spike/*` — det är LÅST-B draft-preview-render, ej skräp.)
 
 ### C · Moduler "på riktigt" (end-to-end per modul)
-- **Webshop** (HALV) → **goal-49** (NÄST, Task 5): kundvagn → checkout → betalning → `shop_orders`/`shop_order_items` → orderhistorik i /konto. Underlag: `gap-analys-webshop-2026-06-26.md`. *(Produkt-CRUD + render finns; bara köp-rälsen fattas — betal-rails pausade bakom `payments_enabled`, compliance-gate krävs.)*
+- ✅ **Webshop → goal-49 KÄRNAN KLAR + DEPLOYAD LIVE (tag `v1.1.0`, 2026-06-26):** kundvagn → kassa → `create`/`confirm_shop_order` (held-order + reserved_qty, variant-grain) → bekräftelse → /konto/bestallningar; merchant-admin (variant-sync/order-detalj/spårning/refund/analytics); hel Stripe-rail bakom `payments_enabled` (AV). Render-verifierat live (test-barber shop=live). **Kvar v1.1:** rabatt/frakt/moms-config + multi-variant-UI; live kort-betalning = compliance-gate. Underlag: `gap-analys-webshop-2026-06-26.md`.
 - **Blogg** (HALV): publik artikelsida `/blogg/[slug]` (+ arkiv) med full body + SEO. *(Idag bara teaser, ingen läs-mer-länk.)*
 - **Lojalitet** (HALV): inlösen (poäng→rabatt) + signup-räls + admin-justering. *(Intjäning-trigger + kund-vy finns.)*
 - **Presentkort** (HALV): publikt köp + inlösen. *(Admin utfärdar/spärrar redan.)*

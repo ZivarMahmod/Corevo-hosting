@@ -1,5 +1,10 @@
 # goal-49 — Webshop: komplett köp-räls + admin-paritet + Stripe Connect
 
+> **STATUS 2026-06-26 — KÄRNAN KLAR + DEPLOYAD LIVE (tag `v1.1.0`), render-verifierad 0 FAIL.**
+> Fas 0–3 byggda, 2 oberoende reviewer-rundor (10 fynd fixade), migr 0042/0043/0044 applicerade, empiriskt live-testat. Storefront cart→kassa→bekräftelse + /konto/bestallningar + merchant-admin (variant-sync, order-detalj, spårning, refund, analytics) + hel Stripe-rail bakom `payments_enabled` (AV). test-barber shop=live för Zivars test. POS + 3 fasta hostar uppe.
+> **KVAR (v1.1, EJ blockerande för en köp-räls):** rabattkoder (server-side total-justering i reserve-RPC + tabell + checkout) · frakt/moms-config-form (→ tenant_modules.config + RPC-total) · full multi-variant-admin-UI (idag 1 synkad Standard-variant/produkt). Live kort-betalning = `payments_enabled` tänds när compliance-gaten (SCA/3DS+dispute+refund-paritet) bevisad. Detaljer i memory `corevo-goal49-webshop-kop-rals`.
+
+
 Thinking: 🔴 (arkitektur, flera filer, nytt flöde, pengar + compliance → rollback OBLIGATORISK + Zivar-OK före varje live-migration. Bygg HELA modulen; live-betalning bakom flagga tills compliance-gaten är grön.)
 
 **Datum:** 2026-06-26 · **Typ:** Autonom goal-brief, körs av Code i FÄRSK context med alla verktyg (advisor/reviewer-linser, render-bevis). Grundad i `3-Bakgrund-Research/gap-analys-webshop-2026-06-26.md` (research-runda) + `1-Planering/05-multibransch-bygge/moduler/shop.md`.
