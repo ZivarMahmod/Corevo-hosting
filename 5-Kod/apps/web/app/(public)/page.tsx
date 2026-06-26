@@ -3,12 +3,7 @@ import { currentTenant, getServices } from '@/lib/tenant-data'
 import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
-import { ShopSection } from '@/components/storefront/ShopSection'
-import { OffertSection } from '@/components/storefront/OffertSection'
-import { BloggSection } from '@/components/storefront/BloggSection'
-import { LojalitetSection } from '@/components/storefront/LojalitetSection'
-import { PresentkortSection } from '@/components/storefront/PresentkortSection'
+import { StorefrontModuleSections } from '@/components/storefront/StorefrontModuleSections'
 import { loadTenantSkin } from '@/lib/storefront/skin/load-skin'
 import { applySkinOverlay } from '@/lib/storefront/skin/overlay'
 import { SALVIA_REGION_MANIFEST } from '@/lib/sajtbyggare/manifest/salvia'
@@ -47,6 +42,10 @@ export default async function HomePage() {
         ))}
         <div data-look={look.key} className="corevo-tpl-scope">
           {renderTemplate(look.html, { booking: <BookingMount tenantId={tenant.id} slug={tenant.slug} /> })}
+          {/* "lägg modul → vävs in i den valda mallen, live": booking weaves at its
+              inline marker above; the other enabled modules render below the look,
+              the SAME live sections the theme storefront uses. */}
+          <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} />
         </div>
       </>
     )
@@ -90,27 +89,10 @@ export default async function HomePage() {
   const content = resolveThemeContent(settings.theme, branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
-  // Multi-bransch (spår 5): per-module lifecycle, SAME gate shape as booking in
-  // app/(public)/layout.tsx. The shop + offert sections live at the module's
-  // default_section_position ('main', per 0031/0033), so they render INSIDE the
-  // home flow right after the theme layout's own sections. We render them ONLY for
-  // a LIVE module; draft/off stay invisible; 'paused' renders the section read-only
-  // (closed-state) via its `paused` prop. A tenant with no row for the module gets
-  // the per-module default ('off' for shop/offert) → section absent. Each <Section>
-  // self-resolves to null when the tenant has no module config, so this is safe to
-  // mount whenever the gate passes.
-  const moduleStates = await getTenantModuleStates(tenant.id, tenant.slug)
-  const shopLive = isModuleLive(moduleStates, 'shop')
-  const shopPaused = isModulePaused(moduleStates, 'shop')
-  const offertLive = isModuleLive(moduleStates, 'offert')
-  const offertPaused = isModulePaused(moduleStates, 'offert')
-  const bloggLive = isModuleLive(moduleStates, 'blogg')
-  const bloggPaused = isModulePaused(moduleStates, 'blogg')
-  const lojalitetLive = isModuleLive(moduleStates, 'lojalitet')
-  const lojalitetPaused = isModulePaused(moduleStates, 'lojalitet')
-  const presentkortLive = isModuleLive(moduleStates, 'presentkort')
-  const presentkortPaused = isModulePaused(moduleStates, 'presentkort')
-
+  // Multi-bransch (spår 5): the live module sections (shop/offert/blogg/lojalitet/
+  // presentkort) render right after the theme layout's own sections, gated by the
+  // tenant's per-module lifecycle. Extracted to StorefrontModuleSections so the
+  // render-bron LOOK path (above) renders the SAME live modules — one gating impl.
   return (
     <>
       <Layout
@@ -120,21 +102,7 @@ export default async function HomePage() {
         services={services}
         location={location}
       />
-      {shopLive || shopPaused ? (
-        <ShopSection tenantId={tenant.id} slug={tenant.slug} paused={shopPaused} />
-      ) : null}
-      {offertLive || offertPaused ? (
-        <OffertSection tenantId={tenant.id} slug={tenant.slug} paused={offertPaused} />
-      ) : null}
-      {bloggLive || bloggPaused ? (
-        <BloggSection tenantId={tenant.id} slug={tenant.slug} paused={bloggPaused} />
-      ) : null}
-      {lojalitetLive || lojalitetPaused ? (
-        <LojalitetSection tenantId={tenant.id} slug={tenant.slug} paused={lojalitetPaused} />
-      ) : null}
-      {presentkortLive || presentkortPaused ? (
-        <PresentkortSection tenantId={tenant.id} slug={tenant.slug} paused={presentkortPaused} />
-      ) : null}
+      <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} />
     </>
   )
 }

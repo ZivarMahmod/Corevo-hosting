@@ -67,7 +67,12 @@ export default async function PublicLayout({ children }: { children: React.React
         {overrideCssLook ? (
           <style dangerouslySetInnerHTML={{ __html: `[data-tenant="${tenant.id}"]{${overrideCssLook}}` }} />
         ) : null}
-        {children}
+        {/* CartProvider + flytande kundvagn so a look-tenant's shop module works
+            (CartButton self-hides when the cart is empty → inert for booking-only looks). */}
+        <CartProvider>
+          {children}
+          <CartButton />
+        </CartProvider>
         {settings.cookieBannerEnabled ? <CookieConsent /> : null}
       </div>
     )

@@ -24,6 +24,21 @@
 | RLS | Ingen migration/RLS-ändring (registret är KOD) | — |
 | Anti-stub | Per-mall-proofs (carserv/klinik/drivin) asserterar UNIKA region-id + canon-hex + booking-pos | befintliga proofs |
 
+## Oberoende verify (fristående agent, adversariell) — 2026-06-26
+Alla mekaniska gates **PASS** (763 grön, tsc 0, validate_markers CLI 0). Anti-stub bekräftad
+ÄKTA (klinik 22 regioner `#0463FA`/pos=appointment vs carserv 19 regioner `#D81324`/pos=booking
+— olika nycklar/canon/pos, ej copy-paste). RLS orörd, flagg-OFF korrekt gatad, CreateTenantForm orörd.
+Två konflikter flaggade mot LÅST/RIV-BORT (som går före briefens body):
+- **Konflikt A — för Zivar att avgöra:** RIV-BORT (rad 95-99) säger riv UT legacy-tema-KODEN
+  (`WIZARD_THEMES`/`THEME_KEYS`/`ThemeDef`/`theme==='salvia'`). Bygget BEHÅLLER den byte-identisk
+  (HÅRDA REGLER i /goal + checklist rad 52 KRÄVER flagg-OFF byte-identisk → rollback). Läsning:
+  "flagg-gatad, behållen för rollback, flagg-PÅ i prod = teman dör i praktiken". **Fråga Zivar:**
+  räcker det, eller ska legacy-tema-koden faktiskt raderas? (Krockar /goal-regeln mot RIV-BORT-raden.)
+- **Konflikt B — FIXAD:** "lägg modul → vävs in i den valda mallen, live" gällde bara booking
+  (look-tenant fick ingen shop/offert). FIX: `StorefrontModuleSections` (delad) renderas nu under
+  looken → alla aktiva moduler vävs in; slim shell bär CartProvider+CartButton. (`page.tsx`+`layout.tsx`,
+  763 grön/tsc0.)
+
 ## PARKERAT (ärligt — INTE byggt, beror på goal-37-overlay)
 - **Per-look innehållsredigering (hero/accent IN i den valda looken).** SiteEditor-komponenten
   är redan look-agnostisk (tar `templateKey`+`regions` som props, ingen salvia-hårdkodning).
