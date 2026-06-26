@@ -1,0 +1,802 @@
+'use client'
+
+// Onboarding-studio (goal-48) — the 12 step PANELS + the PANEL_BY_STEP registry.
+//
+// Ported from the design source (4-Dokument-Underlag/01-acceptans/super-admin/
+// studio.jsx PanelBranch…PanelLive) per W1 build-contract §5, but driven by the REAL
+// presets + the pure StudioAction dispatch (state.ts) and the shared Field/
+// ModuleStatePills (controls.tsx). DESIGN = LAG for the shell chrome (exact px/hex/
+// copy); the bodies reuse real controls and honor the §9 honesty markers:
+//   • REAL panels   : branch, namn, tema, modval, brand(accent+tagline), agare
+//   • PARTIAL panels : brand-logo (placeholder box), text (only Företagsnamn wired)
+//   • DEFERRED stubs : modplace (W5), modconf (display-only), tjanster (W3) — honest
+//                      empty states, NO fake drag/list/toggle, NO fake DB-task theatre
+//   • DISPLAY-only   : granska (derived checklist from REAL cfg), live (real Lansera
+//                      → onLaunch; the real ActionState is surfaced by the parent)
+//
+// The registry is keyed by StepId and internal to this file + PanelHost (nothing else
+// imports it), so it carries the two extra callbacks the special panels need.
+import type { FC, ReactNode, CSSProperties } from 'react'
+import { Button, Card, Icon, type IconName } from '@/components/portal/ui'
+import { Field, ModuleStatePills } from './controls'
+import type { PanelProps } from '@/lib/platform/onboarding-studio/state'
+import { type StepId, stepDone } from '@/lib/platform/onboarding-studio/phases'
+import { resolveModuleState } from '@/lib/platform/onboarding-studio/model'
+import { modulesForVertical, termPlural, type TemplateOption } from '@/lib/platform/verticals-shared'
+import { isReservedSlug } from '@/lib/platform/slug'
+import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
+
+const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
+
+/**
+ * The prop bag every panel in the registry receives. Extends the frozen PanelProps
+ * (cfg/dispatch/presets) with the two callbacks the special panels need:
+ *   • onNext   — granska's in-body "Gå till lansering" advances to the NEXT step,
+ *                which is `live` (granska→live are adjacent in FLAT_STEP_ORDER), so
+ *                this is exactly the design's setStep('live'). ⚠️ The equivalence
+ *                holds ONLY while those two steps stay adjacent in the W1 order — a
+ *                later wave that inserts a step between them must switch to a real
+ *                step-jump.
+ *   • onLaunch — the live panel's gold Lansera button → the single createTenant submit.
+ * Simple panels ignore both (they're typed `FC<PanelProps>` and slot in fine under
+ * parameter contravariance).
+ */
+export type StudioPanelProps = PanelProps & {
+  onNext: () => void
+  onLaunch: () => void
+}
+
+// ── Shared inline tokens (lifted verbatim from the design / controls.tsx) ─────────
+const labelStyle: CSSProperties = {
+  fontSize: 12.5,
+  fontWeight: 600,
+  color: 'var(--c-ink)',
+  fontFamily: 'var(--font-ui)',
+}
+const groupEyebrow: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: '.08em',
+  textTransform: 'uppercase',
+  fontFamily: 'var(--font-ui)',
+}
+
+/** Svenska hint per modul-läge (presentational; mirrors CreateTenantForm). */
+const MODULE_STATE_HINTS: Record<ModuleState, string> = {
+  off: 'Inte aktiverad.',
+  draft: 'Aktiverad men dold publikt — syns bara internt.',
+  live: 'Publik på storefronten.',
+  paused: 'Tillfälligt stängd — visar "stängt" publikt.',
+}
+
+/** The built-in storefront themes (the 5 real lowercase STOREFRONT_THEMES keys) —
+ *  fallback when the chosen bransch has no templates seeded in templatesByVertical.
+ *  Mirrors CreateTenantForm's BUILTIN_TEMPLATES (key + display name only — the rich
+ *  per-theme preview is the PreviewPane's job, W2). */
+const BUILTIN_TEMPLATES: TemplateOption[] = [
+  { key: 'salvia', name: 'Salvia' },
+  { key: 'leander', name: 'Leander' },
+  { key: 'zigge', name: 'Zigge' },
+  { key: 'linnea', name: 'Linnea' },
+  { key: 'edit', name: 'Edit' },
+]
+
+/** The brand-panel accent swatches (verbatim from studio.jsx:268 — 7 accents). */
+const BRAND_ACCENTS = ['#5E7361', '#7E6E92', '#C8743C', '#B0693F', '#3A3733', '#A8455B', '#3E6B8C']
+
+/* ════════════════════════════ panel scaffold ════════════════════════════ */
+
+/** Column scaffold (port studio.jsx:56–67) — header (display h2 fs21 forest + sub)
+ *  over a scrollable body. No `foot`: the global FooterNav lives in PanelHost. */
+function Panel({ title, sub, children }: { title: string; sub?: ReactNode; children: ReactNode }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ padding: '22px 24px 16px', borderBottom: '1px solid var(--c-line)', flex: 'none' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 21, color: 'var(--c-forest)', margin: 0 }}>
+          {title}
+        </h2>
+        {sub ? <p style={{ fontSize: 13, color: 'var(--c-ink-2)', margin: '6px 0 0', lineHeight: 1.5 }}>{sub}</p> : null}
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>{children}</div>
+    </div>
+  )
+}
+
+/** Honest deferred-state block (§9): a dashed card that READS as "not built yet" —
+ *  never a fake list/drag/toggle. Used by the W-later panels. */
+function DeferredStub({ icon, children }: { icon: IconName; children: ReactNode }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        gap: 12,
+        padding: '40px 24px',
+        border: '1px dashed var(--c-line-strong)',
+        borderRadius: 12,
+        background: 'var(--c-paper-2)',
+      }}
+    >
+      <span style={{ color: 'var(--c-ink-3)' }}>
+        <Icon name={icon} size={26} />
+      </span>
+      <div style={{ fontSize: 13, color: 'var(--c-ink-2)', lineHeight: 1.5, maxWidth: 290 }}>{children}</div>
+    </div>
+  )
+}
+
+/* ════════════════════════════ step panels ════════════════════════════ */
+
+/** branch — W1-REAL. 2-col card grid of the REAL presets.verticals → applyBranch.
+ *  Subline = honest preset-on module COUNT (derived from real presets, §10.7); no
+ *  cfg-data icon/Roadmap-pill/staffWord (those were mockup). */
+function PanelBranch({ cfg, dispatch, presets }: PanelProps) {
+  return (
+    <Panel
+      title="Välj startmall"
+      sub="Branschen är bara en förinställning — den förväljer moduler, ord och innehåll. Inget låses, du ändrar allt fritt efteråt."
+    >
+      {presets.verticals.length === 0 ? (
+        <DeferredStub icon="building">
+          Inga branscher i katalogen ännu. Du kan fortsätta utan bransch och välja moduler manuellt i steget «Välj moduler».
+        </DeferredStub>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
+          {presets.verticals.map((v) => {
+            const on = cfg.branch === v.key
+            const presetOn = modulesForVertical(presets, v.key).filter((m) => m.defaultState !== 'off').length
+            return (
+              <button
+                key={v.key}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => dispatch({ type: 'applyBranch', key: v.key })}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '13px 14px',
+                  borderRadius: 12,
+                  border: `2px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                  background: on ? 'var(--c-paper-2)' : 'var(--c-paper)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all var(--dur-fast)',
+                }}
+              >
+                <span
+                  style={{
+                    width: 38,
+                    height: 38,
+                    flex: 'none',
+                    borderRadius: 10,
+                    background: on ? 'var(--c-forest)' : 'var(--c-paper-2)',
+                    color: on ? '#fff' : 'var(--c-forest)',
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  <Icon name="building" size={19} />
+                </span>
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span style={{ display: 'block', fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)' }}>{v.name}</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)' }}>
+                    {presetOn} {presetOn === 1 ? 'modul' : 'moduler'} förvalda
+                  </span>
+                </span>
+                {on ? (
+                  <span style={{ color: 'var(--c-forest)', display: 'inline-flex' }}>
+                    <Icon name="check" size={16} />
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </Panel>
+  )
+}
+
+/** namn — W1-REAL. Företagsnamn → setName (auto-syncs slug until touched); subdomän
+ *  → setSlug (sets slugTouched, §10-risk-1); reserved-slug warning vs the REAL list. */
+function PanelNamn({ cfg, dispatch }: PanelProps) {
+  const reserved = cfg.slug ? isReservedSlug(cfg.slug) : false
+  return (
+    <Panel
+      title="Namn & subdomän"
+      sub="Kundens företagsnamn och adressen de får. Egen domän är ett parkerat spår — subdomän räcker tills du säger KÖR."
+    >
+      <div style={{ display: 'grid', gap: 18 }}>
+        <Field
+          label="Företagsnamn"
+          ph="t.ex. Klippoteket"
+          value={cfg.name}
+          onChange={(v) => dispatch({ type: 'setName', value: v })}
+          hint="Går att ändra när som helst. Syns i header, footer, mail."
+        />
+        <div>
+          <label style={labelStyle}>Subdomän</label>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginTop: 6,
+              border: '1px solid var(--c-line)',
+              borderRadius: 10,
+              overflow: 'hidden',
+              background: 'var(--c-paper)',
+            }}
+          >
+            <input
+              value={cfg.slug}
+              onChange={(e) =>
+                dispatch({ type: 'setSlug', value: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })
+              }
+              placeholder="klippoteket"
+              autoCapitalize="none"
+              spellCheck={false}
+              style={{
+                flex: 1,
+                padding: '11px 13px',
+                border: 'none',
+                outline: 'none',
+                fontFamily: 'var(--font-ui)',
+                fontSize: 14,
+                background: 'transparent',
+                color: 'var(--c-ink)',
+              }}
+            />
+            <span
+              style={{
+                padding: '0 14px',
+                color: 'var(--c-ink-3)',
+                fontSize: 14,
+                fontFamily: 'var(--font-ui)',
+                borderLeft: '1px solid var(--c-line)',
+                alignSelf: 'stretch',
+                display: 'grid',
+                placeItems: 'center',
+              }}
+            >
+              .{ROOT}
+            </span>
+          </div>
+          {reserved ? (
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: 12.5,
+                color: 'var(--c-danger)',
+                display: 'flex',
+                gap: 6,
+                alignItems: 'center',
+              }}
+            >
+              <Icon name="alert" size={14} /> &quot;{cfg.slug}&quot; är reserverad — kan inte bli en salongs-slug.
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </Panel>
+  )
+}
+
+/** tema — W1-REAL. Radio of the bransch's templates (templatesByVertical) else the 5
+ *  built-ins → setTheme(key). {key,name} list only; the rich live preview = W2. */
+function PanelTema({ cfg, dispatch, presets }: PanelProps) {
+  const branschTemplates = cfg.branch ? presets.templatesByVertical[cfg.branch] : undefined
+  const options = branschTemplates && branschTemplates.length > 0 ? branschTemplates : BUILTIN_TEMPLATES
+  return (
+    <Panel
+      title="Temamall"
+      sub="Ett av de byggda storefront-temana. Förhandsvisningen till höger visar kundens riktiga startsida."
+    >
+      <div style={{ display: 'grid', gap: 10 }}>
+        {options.map((opt) => {
+          const on = cfg.theme === opt.key
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => dispatch({ type: 'setTheme', key: opt.key })}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                padding: 14,
+                borderRadius: 14,
+                border: `2px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
+                background: 'var(--c-paper)',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <span style={{ flex: 1, fontWeight: 600, fontSize: 14.5, color: 'var(--c-ink)' }}>{opt.name}</span>
+              {on ? (
+                <span style={{ color: 'var(--c-forest)', display: 'inline-flex' }}>
+                  <Icon name="check" size={18} />
+                </span>
+              ) : null}
+            </button>
+          )
+        })}
+      </div>
+    </Panel>
+  )
+}
+
+/** modval — W1-REAL UI. Real catalog × preset state from modulesForVertical; rec/opt
+ *  grouping derived from defaultState!=='off' (§10.7); booking restricted to live/
+ *  paused; everything else off/draft/live/paused. setModule writes cfg.moduleStates. */
+function PanelModval({ cfg, dispatch, presets }: PanelProps) {
+  const options = modulesForVertical(presets, cfg.branch)
+  const rec = options.filter((m) => m.defaultState !== 'off')
+  const others = options.filter((m) => m.defaultState === 'off')
+
+  // A render function (not a nested component) so the rows don't churn identity.
+  const renderRow = (moduleKey: string, name: string) => {
+    const isBooking = moduleKey === 'booking'
+    const cur = resolveModuleState(cfg, moduleKey, presets)
+    const choices: ModuleState[] = isBooking ? ['live', 'paused'] : [...MODULE_STATES]
+    return (
+      <div
+        key={moduleKey}
+        style={{
+          padding: 14,
+          border: `1px solid ${cur !== 'off' ? 'var(--c-forest)' : 'var(--c-line)'}`,
+          borderRadius: 12,
+          background: 'var(--c-paper)',
+          marginBottom: 10,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>
+            {name}
+            {isBooking ? (
+              <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', fontWeight: 600, marginLeft: 8 }}>Kärnmodul</span>
+            ) : null}
+          </span>
+        </div>
+        <ModuleStatePills value={cur} choices={choices} onChange={(state) => dispatch({ type: 'setModule', key: moduleKey, state })} />
+        <p style={{ fontSize: 12, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '8px 0 0' }}>{MODULE_STATE_HINTS[cur]}</p>
+      </div>
+    )
+  }
+
+  return (
+    <Panel
+      title="Välj moduler"
+      sub="Inget är låst till branschen — du väljer fritt bland alla moduler. De rekommenderade är föraktiverade; resten slår du på lika enkelt. Bokning är alltid minst live."
+    >
+      <div style={{ ...groupEyebrow, color: 'var(--c-gold-600)', marginBottom: 10 }}>Rekommenderat</div>
+      {rec.length === 0 ? (
+        <p style={{ fontSize: 12.5, color: 'var(--c-ink-3)', margin: '0 0 10px' }}>Inga förvalda moduler för branschen.</p>
+      ) : (
+        rec.map((m) => renderRow(m.key, m.name))
+      )}
+      {others.length > 0 ? (
+        <>
+          <div style={{ ...groupEyebrow, color: 'var(--c-ink-3)', margin: '18px 0 10px' }}>Övriga moduler — välj fritt</div>
+          {others.map((m) => renderRow(m.key, m.name))}
+        </>
+      ) : null}
+    </Panel>
+  )
+}
+
+/** modplace — DEFERRED-STUB (§9.5). No tenant_site_pages / no placement in cfg →
+ *  honest "kommer senare (W5)" empty state. NO drag, NO reorder list. */
+function PanelModplace(_props: PanelProps) {
+  return (
+    <Panel title="Placera & ordna" sub="Ordningen modulerna ligger i på sidan.">
+      <DeferredStub icon="grid">
+        Att dra och ordna modulernas placering kommer i en senare våg (W5). Tills dess ligger modulerna i mallens
+        standardordning.
+      </DeferredStub>
+    </Panel>
+  )
+}
+
+/** modconf — DISPLAY-ONLY (§9.6). No inputs. Reads the REAL active modules (resolved
+ *  state ≠ off) as a read-only list; per-module bransch-inställningar = later wave. */
+function PanelModconf({ cfg, presets }: PanelProps) {
+  const active = modulesForVertical(presets, cfg.branch).filter((m) => resolveModuleState(cfg, m.key, presets) !== 'off')
+  return (
+    <Panel title="Modulinställningar" sub="Bransch-specifika regler per modul.">
+      {active.length === 0 ? (
+        <DeferredStub icon="settings">Inga aktiva moduler. Slå på moduler i steget «Välj moduler».</DeferredStub>
+      ) : (
+        <>
+          <div style={{ ...groupEyebrow, color: 'var(--c-ink-3)', marginBottom: 10 }}>Aktiva moduler</div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {active.map((m) => (
+              <div
+                key={m.key}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '12px 14px',
+                  border: '1px solid var(--c-line)',
+                  borderRadius: 11,
+                  background: 'var(--c-paper)',
+                }}
+              >
+                <span
+                  style={{
+                    width: 30,
+                    height: 30,
+                    flex: 'none',
+                    borderRadius: 8,
+                    background: 'var(--c-forest)',
+                    color: '#fff',
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  <Icon name="layers" size={15} />
+                </span>
+                <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>{m.name}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 12.5, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '14px 0 0' }}>
+            Bransch-specifika inställningar per modul läggs till i en senare våg.
+          </p>
+        </>
+      )}
+    </Panel>
+  )
+}
+
+/** brand — PARTIAL-REAL. Accent swatches → setAccent (or '' = temats standard);
+ *  Tagline Field → setTagline. Logo = honest placeholder box only (no file input,
+ *  upload = later wave, §9.9). */
+function PanelBrand({ cfg, dispatch }: PanelProps) {
+  return (
+    <Panel
+      title="Branding"
+      sub="Logga, accentfärg och tagline — token-lagret (no-code). Slår igenom på storefronten utan deploy."
+    >
+      <div style={{ display: 'grid', gap: 20 }}>
+        <div>
+          <div style={{ ...labelStyle, marginBottom: 8 }}>Logga</div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              padding: 14,
+              background: 'var(--c-paper-2)',
+              borderRadius: 12,
+            }}
+          >
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 11,
+                border: '2px dashed var(--c-line-strong)',
+                display: 'grid',
+                placeItems: 'center',
+                color: 'var(--c-ink-3)',
+                flex: 'none',
+              }}
+            >
+              <Icon name="upload" size={19} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)' }}>Logga</div>
+              <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 2 }}>Uppladdning (PNG/SVG → R2) kommer i en senare våg.</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style={{ ...labelStyle, marginBottom: 8 }}>
+            Accentfärg <span style={{ color: 'var(--c-ink-3)', fontWeight: 400 }}>— skriver över temats primärfärg live</span>
+          </div>
+          <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              title="Temats standard"
+              aria-pressed={cfg.accent === ''}
+              onClick={() => dispatch({ type: 'setAccent', hex: '' })}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 9,
+                background: 'var(--c-paper-2)',
+                cursor: 'pointer',
+                border: cfg.accent === '' ? '2px solid var(--c-forest)' : '2px solid var(--c-paper)',
+                boxShadow: '0 0 0 1px var(--c-line)',
+                display: 'grid',
+                placeItems: 'center',
+                color: 'var(--c-forest)',
+                fontSize: 10,
+                fontWeight: 700,
+                fontFamily: 'var(--font-ui)',
+              }}
+            >
+              Auto
+            </button>
+            {BRAND_ACCENTS.map((hex) => {
+              const on = cfg.accent === hex
+              return (
+                <button
+                  key={hex}
+                  type="button"
+                  aria-label={`Accentfärg ${hex}`}
+                  aria-pressed={on}
+                  onClick={() => dispatch({ type: 'setAccent', hex })}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 9,
+                    background: hex,
+                    cursor: 'pointer',
+                    border: on ? '2px solid var(--c-forest)' : '2px solid var(--c-paper)',
+                    boxShadow: '0 0 0 1px var(--c-line)',
+                  }}
+                />
+              )
+            })}
+          </div>
+        </div>
+
+        <Field
+          label="Tagline (footer/meta)"
+          ph="Kort slogan för footer & meta"
+          value={cfg.tagline}
+          onChange={(v) => dispatch({ type: 'setTagline', value: v })}
+        />
+      </div>
+    </Panel>
+  )
+}
+
+/** text — PARTIAL-STUB (§9.8). ONLY the real Företagsnamn field is wired → setName;
+ *  hero/ingress + click-edit-in-preview are deferred (W2/W5) — honest note, no fake
+ *  hero/ingress inputs (W1 submits site_content_draft='{}'). */
+function PanelText({ cfg, dispatch }: PanelProps) {
+  return (
+    <Panel title="Text & hjälte" sub="Företagsnamnet som syns i sidans header.">
+      <div style={{ display: 'grid', gap: 16 }}>
+        <Field
+          label="Företagsnamn (header)"
+          ph="Ditt företag"
+          value={cfg.name}
+          onChange={(v) => dispatch({ type: 'setName', value: v })}
+        />
+        <div
+          style={{
+            fontSize: 12.5,
+            color: 'var(--c-ink-2)',
+            lineHeight: 1.5,
+            padding: '12px 14px',
+            background: 'var(--c-paper-2)',
+            borderRadius: 10,
+            display: 'flex',
+            gap: 8,
+            alignItems: 'flex-start',
+          }}
+        >
+          <span style={{ color: 'var(--c-ink-3)', flex: 'none', marginTop: 1 }}>
+            <Icon name="edit" size={14} />
+          </span>
+          Rubrik &amp; ingress redigeras direkt i förhandsvisningen — det kommer i en senare våg (W2/W5).
+        </div>
+      </div>
+    </Panel>
+  )
+}
+
+/** tjanster — DEFERRED-STUB (§9.7). No services in W1 cfg → honest empty state, NO
+ *  fake list/add. Title uses the bransch's `service` plural term when declared. */
+function PanelTjanster({ cfg, presets }: PanelProps) {
+  const terminology = cfg.branch ? presets.verticals.find((v) => v.key === cfg.branch)?.terminology ?? {} : {}
+  const servicePlural = termPlural(terminology, 'service', 'Tjänster')
+  return (
+    <Panel title={`${servicePlural} & innehåll`} sub="Datat modulerna visar — bokningstjänster, produkter, meny.">
+      <DeferredStub icon="scissors">
+        {servicePlural} &amp; priser läggs till i en senare våg (W3). Då skrivs de till services + service_prices (öre).
+      </DeferredStub>
+    </Panel>
+  )
+}
+
+/** agare — W1-REAL. Ägarens namn → setOwnerName; Ägarens e-post (type=email) →
+ *  setOwnerEmail (magic-link invite path). */
+function PanelAgare({ cfg, dispatch }: PanelProps) {
+  return (
+    <Panel
+      title="Ägare & inbjudan"
+      sub="Ägaren får en magic-link, bekräftar och sätter eget lösenord — och är inne i sin egen admin med rätt roll."
+    >
+      <div style={{ display: 'grid', gap: 18 }}>
+        <Field
+          label="Ägarens namn"
+          ph="Förnamn Efternamn"
+          value={cfg.ownerName}
+          onChange={(v) => dispatch({ type: 'setOwnerName', value: v })}
+        />
+        <Field
+          label="Ägarens e-post"
+          type="email"
+          ph="agare@foretag.se"
+          value={cfg.ownerEmail}
+          onChange={(v) => dispatch({ type: 'setOwnerEmail', value: v })}
+          hint="Får en engångs magic-link-invite vid lansering."
+        />
+      </div>
+    </Panel>
+  )
+}
+
+/** granska — DISPLAY-ONLY (§9.11). Checklist DERIVED from REAL cfg (stepDone + cfg);
+ *  deferred items (tjänster) never read green. "Gå till lansering" → onNext (= live,
+ *  the adjacent next step). */
+function PanelGranska({ cfg, presets, onNext }: StudioPanelProps) {
+  type Item = { label: string; detail: string; done: boolean; optional: boolean; deferred?: boolean }
+  const items: Item[] = [
+    { label: 'Bransch vald', detail: 'Förinställning av moduler & terminologi.', done: !!cfg.branch, optional: false },
+    {
+      label: 'Namn & subdomän',
+      detail: 'Företagsnamn + <slug>.corevo.se.',
+      done: !!cfg.name.trim() && !!cfg.slug,
+      optional: false,
+    },
+    { label: 'Temamall', detail: 'Ett byggt storefront-tema.', done: !!cfg.theme, optional: false },
+    {
+      label: 'Minst en aktiv modul',
+      detail: 'Bokning är alltid minst live.',
+      done: stepDone('modval', cfg, presets),
+      optional: false,
+    },
+    { label: 'Ägare inbjuden', detail: 'Får magic-link vid lansering.', done: !!cfg.ownerEmail.trim(), optional: true },
+    { label: 'Tjänster & priser', detail: 'Läggs till i en senare våg (W3).', done: false, optional: true, deferred: true },
+  ]
+  return (
+    <Panel title="Granska checklista" sub="Onboarding-checklistan. Grönt = klart, gult = valfritt/väntar.">
+      <div style={{ display: 'grid', gap: 10 }}>
+        {items.map((c) => {
+          const tone = c.done
+            ? { bg: 'var(--c-success)', fg: '#fff', icon: 'check' as IconName }
+            : c.deferred
+              ? { bg: 'var(--c-paper-2)', fg: 'var(--c-ink-3)', icon: 'clock' as IconName }
+              : c.optional
+                ? { bg: 'var(--c-warning-bg)', fg: 'var(--c-warning)', icon: 'minus' as IconName }
+                : { bg: 'var(--c-paper-2)', fg: 'var(--c-ink-3)', icon: 'clock' as IconName }
+          return (
+            <div
+              key={c.label}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 12,
+                padding: 14,
+                border: '1px solid var(--c-line)',
+                borderRadius: 12,
+                background: 'var(--c-paper)',
+              }}
+            >
+              <span
+                style={{
+                  width: 26,
+                  height: 26,
+                  flex: 'none',
+                  borderRadius: 999,
+                  background: tone.bg,
+                  color: tone.fg,
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
+              >
+                <Icon name={tone.icon} size={14} />
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>
+                  {c.label}
+                  {c.optional ? <span style={{ color: 'var(--c-ink-3)', fontWeight: 400 }}> · valfritt</span> : null}
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--c-ink-3)', marginTop: 3, lineHeight: 1.45 }}>{c.detail}</div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div style={{ marginTop: 18 }}>
+        <Button variant="primary" icon="arrowRight" onClick={onNext}>
+          Gå till lansering
+        </Button>
+      </div>
+    </Panel>
+  )
+}
+
+/** live — W1-REAL. The single createTenant trigger. Slug card + active-module count;
+ *  readiness gate (theme set && a module resolves live — booking floors to live);
+ *  gold Lansera (disabled until ready) → onLaunch. The REAL ActionState.success/error
+ *  is surfaced by the parent (§9.2: NO fake DB-task theatre here). */
+function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
+  const activeCount = presets.modules.filter((m) => resolveModuleState(cfg, m.key, presets) !== 'off').length
+  // createTenant's only HARD blockers are name + a valid slug (actions.ts). Gate on those
+  // + a theme so the gold button never fires a guaranteed-fail submit. booking is force-
+  // floored to live in buildCreateTenantFormData, so we don't depend on the catalog read
+  // (which fail-softs to [] and would otherwise permanently disable Lansera).
+  const ready = !!cfg.name.trim() && !!cfg.slug && !isReservedSlug(cfg.slug) && !!cfg.theme
+  return (
+    <Panel title="Lansera" sub="Sista steget. Publicerar storefronten på subdomänen och bjuder in ägaren.">
+      <div style={{ display: 'grid', gap: 16 }}>
+        <Card pad={18} style={{ background: 'var(--c-forest)', color: '#fff', border: 'none' }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--c-gold)' }}>
+            Publiceras på
+          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, margin: '8px 0 4px' }}>
+            {cfg.slug || 'dinsalong'}.{ROOT}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--c-on-forest-2)' }}>
+            {activeCount} {activeCount === 1 ? 'modul' : 'moduler'} aktiva · tema {cfg.theme}
+          </div>
+        </Card>
+
+        {!ready ? (
+          <div
+            style={{
+              fontSize: 12.5,
+              color: 'var(--c-warning)',
+              display: 'flex',
+              gap: 8,
+              alignItems: 'flex-start',
+              padding: '12px 14px',
+              background: 'var(--c-warning-bg)',
+              borderRadius: 10,
+            }}
+          >
+            <span style={{ flex: 'none', marginTop: 1 }}>
+              <Icon name="alert" size={14} />
+            </span>
+            Kräver: salongsnamn, en giltig subdomän och ett tema. Komplettera i stegen ovan.
+          </div>
+        ) : null}
+
+        <div style={{ fontSize: 12.5, color: 'var(--c-ink-2)', lineHeight: 1.6 }}>
+          Vid lansering skapas allt i ett svep: tenant-rad (status active), inställningar, moduler, ägar-konto + magic-link
+          och subdomän-route. Egen domän är parkerat (spärrat tills KÖR).
+        </div>
+
+        <Button variant="gold" size="lg" icon="rocket" disabled={!ready} onClick={onLaunch} style={{ justifyContent: 'center', width: '100%' }}>
+          Lansera {cfg.name || 'kunden'}
+        </Button>
+      </div>
+    </Panel>
+  )
+}
+
+/* ════════════════════════════ registry ════════════════════════════ */
+
+/**
+ * step id → panel component. Internal to this file + PanelHost (nothing else imports
+ * it). Simple panels are typed `FC<PanelProps>` and slot in under parameter
+ * contravariance; granska/live take the extra onNext/onLaunch via StudioPanelProps.
+ */
+export const PANEL_BY_STEP: Record<StepId, FC<StudioPanelProps>> = {
+  branch: PanelBranch,
+  namn: PanelNamn,
+  tema: PanelTema,
+  modval: PanelModval,
+  modplace: PanelModplace,
+  modconf: PanelModconf,
+  brand: PanelBrand,
+  text: PanelText,
+  tjanster: PanelTjanster,
+  agare: PanelAgare,
+  granska: PanelGranska,
+  live: PanelLive,
+}

@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Icon, type IconName } from './Icon'
 
 export type ButtonVariant = 'primary' | 'gold' | 'ghost' | 'subtle'
-export type ButtonSize = 'sm' | 'md'
+export type ButtonSize = 'sm' | 'md' | 'lg'
 
 /**
  * Back-office button — forest primary, gold accent, ghost (outline) and subtle

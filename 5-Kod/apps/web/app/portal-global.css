@@ -406,6 +406,7 @@
   white-space: nowrap;
   transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);
 }
+[data-world="backoffice"] .pbtn--lg { font-size: 15.5px; padding: 14px 24px; }
 [data-world="backoffice"] .pbtn--md { font-size: 14px; padding: 11px 18px; }
 [data-world="backoffice"] .pbtn--sm { font-size: 13px; padding: 8px 14px; }
 [data-world="backoffice"] .pbtn--primary { background: var(--c-forest); color: #fff; }

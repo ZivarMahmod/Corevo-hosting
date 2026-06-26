@@ -51,7 +51,9 @@
     // ON only on the staging worker (env.staging.vars below). Read at call-time.
     // 2026-06-18: PROD go-live av sajtbyggaren (S1+S2+S3 byggda + staging-bevisade,
     // Zivar-auktoriserat "deploy så jag kan testa direkt" + CF-token tillhandahållen).
-    "SAJTBYGGARE_ENABLED": "true"
+    "SAJTBYGGARE_ENABLED": "true",
+    // goal-48: onboarding-studio. OFF i prod → /salonger/ny = oförändrad CreateTenantForm.
+    "ONBOARDING_STUDIO_ENABLED": "false"
   },
   "assets": {
     "directory": ".open-next/assets",
@@ -151,7 +153,9 @@
         "R2_PUBLIC_BASE_URL": "https://pub-8f440f10134347eeb2491f9712f5a6f5.r2.dev",
         "DOMAIN_PROVISIONING_ENABLED": "false",
         // goal-31 — spike ENABLED on staging only.
-        "SAJTBYGGARE_ENABLED": "true"
+        "SAJTBYGGARE_ENABLED": "true",
+        // goal-48 — onboarding-studio ENABLED on staging only.
+        "ONBOARDING_STUDIO_ENABLED": "true"
       }
     }
   }
