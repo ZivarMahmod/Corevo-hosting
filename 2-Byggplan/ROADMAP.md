@@ -85,6 +85,8 @@
 
 ## ❓ ÖPPNA BESLUT — beta av i ett pass (blockerar B+)
 
+> **✅ LÅST 2026-06-19 (Zivar):** scope = **maximalt** (alla moduler + flera branscher FÖRE kund #1) · betal-rail = **Stripe Connect** (⚫ compliance-gate: SCA/3DS + dispute-webhooks + refund-paritet före riktig charge) · licens = **behåll credit i footern** (CC-BY körbara nu, credit kvar tills köpt per mall — ej MIT-begränsad) · tempo = **allt bakom flagga, noll kund till slut** (bevisa varje våg på staging-testtenant, ej publik). Kvar att klubba: schema/booking 1–5 + infra/pengar + produkt nedan.
+
 **Schema/booking:** 1) booking `object:table`-kapacitet (restaurang-bord, `party_size`/`address`-kol, rör `no_double_booking`) · 2) intag rättslig grund (patientdatalag 2008:355 + DPA, klinik) · 3) namn `vehicles`/`pets` · 4) café-lojalitet earn-source (trigger på `shop_orders`) · 5) booking `variant_schema`/`rules`-bekräftelse.
 **Infra/pengar:** Workers Paid 48 kr/mån nu? · Supabase spend-cap? · PITR-backup (+950 kr) när? · domän-modell (kund äger + CNAME, reko A) · **betal-rails-ordning (ES-API vs Swish vs Stripe — störst, låser policy-motorn)** · **license-beslut** (köp bort credit / behåll credit / kör MIT-only).
 **Produkt:** per-location-pris vs platt · redeem-poäng när · deposit-toggle (parkerad OK) · reveal-on-scroll (canon: bort).
