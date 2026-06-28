@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EDGE by Tofi — Barbershop i Linköping</title>
+  <meta name="description" content="EDGE by Tofi — barbershop i Linköping med fokus på kvalitet, hantverk och personlig service. Boka tid online.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="EDGE by Tofi">
+  <meta property="og:description" content="Barbershop i Linköping med fokus på hantverk och personlig service. Boka tid online.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="sv_SE">
+  <meta property="og:image" content="assets/images/og-image.svg">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <!-- Fonts: Tenor Sans (display caps) + Cormorant Garamond (serif body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap">
+
+  <link rel="stylesheet" href="css/style.css?v=20260626-2">
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Hoppa till innehåll</a>
+
+  <!-- Topline -->
+  <div class="topline" role="region" aria-label="Information">
+    <p>Boka enkelt online</p>
+  </div>
+
+  <!-- Header / sticky nav -->
+  <header class="site-header" id="siteHeader">
+    <div class="wrap header-wrap">
+      <a class="wordmark" href="#top" aria-label="EDGE by Tofi — hem">
+        <span class="wordmark-name">EDGE by Tofi</span>
+        <span class="wordmark-tag">Barbershop · Linköping</span>
+      </a>
+
+      <nav class="primary-nav" aria-label="Huvudnavigation">
+        <ul>
+          <li><a href="#tjanster">Tjänster</a></li>
+          <li><a href="#om-oss">Om oss</a></li>
+          <li><a href="#plats">Plats</a></li>
+        </ul>
+      </nav>
+
+      <a class="btn btn-primary header-cta"
+         data-boka
+         href="https://www.bokadirekt.se/places/edge-by-tofi-136651"
+         target="_blank"
+         rel="noopener noreferrer">
+        Boka nu
+      </a>
+
+      <button class="menu-toggle" id="menuToggle"
+              aria-label="Öppna meny"
+              aria-expanded="false"
+              aria-controls="mobileMenu">
+        <span class="menu-toggle-bar"></span>
+        <span class="menu-toggle-bar"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile slide-in panel -->
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <div class="mobile-menu-inner">
+      <button class="menu-close" id="menuClose" aria-label="Stäng meny">&times;</button>
+      <nav aria-label="Mobilnavigation">
+        <ul>
+          <li><a href="#tjanster">Tjänster</a></li>
+          <li><a href="#om-oss">Om oss</a></li>
+          <li><a href="#plats">Plats</a></li>
+          <li><a href="#boka">Boka nu</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary mobile-cta"
+         data-boka
+         href="https://www.bokadirekt.se/places/edge-by-tofi-136651"
+         target="_blank"
+         rel="noopener noreferrer">
+        Boka nu
+      </a>
+      <p class="mobile-menu-foot">EDGE by Tofi</p>
+    </div>
+  </div>
+  <div class="mobile-menu-overlay" id="mobileMenuOverlay" hidden></div>
+
+  <main id="main">
+    <a id="top" tabindex="-1" aria-hidden="true"></a>
+
+    <!-- Hero -->
+    <section class="hero" aria-label="Välkommen">
+      <div class="hero-slides" id="heroSlides">
+        <div class="hero-slide is-active" data-headline="SKARPT KLIPPT. SKÖNT MOTTAGEN.">
+          <img src="assets/images/hero-1.svg" alt="" width="1600" height="1000" fetchpriority="high">
+        </div>
+        <div class="hero-slide" data-headline="DITT HÅR, VÅRT HANTVERK.">
+          <img src="assets/images/hero-2.svg" alt="" width="1600" height="1000" loading="lazy">
+        </div>
+        <div class="hero-slide" data-headline="EN STOL SOM VÄNTAR PÅ DIG.">
+          <img src="assets/images/hero-3.svg" alt="" width="1600" height="1000" loading="lazy">
+        </div>
+      </div>
+
+      <div class="hero-veil" aria-hidden="true"></div>
+
+      <div class="hero-content wrap">
+        <p class="hero-eyebrow">EDGE by Tofi · Barbershop · Linköping</p>
+        <h1 class="hero-headline" id="heroHeadline">SKARPT KLIPPT. SKÖNT MOTTAGEN.</h1>
+        <p class="hero-sub">Barbershop med fokus på kvalitet och hantverk — mitt i Linköping.</p>
+        <a class="btn btn-primary btn-lg"
+           data-boka
+           href="https://www.bokadirekt.se/places/edge-by-tofi-136651"
+           target="_blank"
+           rel="noopener noreferrer">
+          Boka nu
+        </a>
+      </div>
+
+      <div class="hero-controls" aria-label="Bildkontroller">
+        <button class="hero-arrow hero-prev" id="heroPrev" aria-label="Föregående bild">&larr;</button>
+        <div class="hero-dots" id="heroDots" role="tablist" aria-label="Välj bild"></div>
+        <button class="hero-arrow hero-next" id="heroNext" aria-label="Nästa bild">&rarr;</button>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section class="section section-services" id="tjanster" aria-labelledby="tjanster-heading">
+      <div class="wrap">
+        <header class="section-head">
+          <p class="section-eyebrow">— Tjänster</p>
+          <h2 class="section-heading" id="tjanster-heading">Hantverket, presenterat.</h2>
+          <p class="section-lede">
+            <em>Varje stol är en stund för sig själv.</em>
+            Varje behandling utförs med noggrannhet och anpassas efter din stil, hårtyp och ansiktsform.
+          </p>
+        </header>
+
+        <div class="menu">
+          <div class="menu-group">
+            <p class="menu-group-title">Klippning &amp; skägg</p>
+            <div class="menu-item">
+              <div class="menu-row">
+                <span class="menu-name">Make Me Look Expensive with EDGE</span>
+                <span class="menu-tag">signatur</span>
+                <span class="menu-leader"></span>
+                <span class="menu-price">549 kr</span>
+              </div>
+              <p class="menu-desc">Klippning, skägg, varmt &amp; kallt omslag, noggrann rakning.</p>
+            </div>
+            <div class="menu-item">
+              <div class="menu-row">
+                <span class="menu-name">Make Me Look Expensive</span>
+                <span class="menu-leader"></span>
+                <span class="menu-price">499 kr</span>
+              </div>
+              <p class="menu-desc">Herrklippning &amp; skäggtrimning, anpassad efter dig.</p>
+            </div>
+          </div>
+
+          <div class="menu-group">
+            <p class="menu-group-title">Klippning</p>
+            <div class="menu-item">
+              <div class="menu-row">
+                <span class="menu-name">As Usual</span>
+                <span class="menu-leader"></span>
+                <span class="menu-price">349 kr</span>
+              </div>
+              <p class="menu-desc">Herrklippning efter stil, hårtyp och huvudform.</p>
+            </div>
+            <div class="menu-item">
+              <div class="menu-row">
+                <span class="menu-name">No Clippers Today</span>
+                <span class="menu-leader"></span>
+                <span class="menu-price">399 kr</span>
+              </div>
+              <p class="menu-desc">Saxklippning, formad helt för hand.</p>
+            </div>
+            <div class="menu-item">
+              <div class="menu-row">
+                <span class="menu-name">Just Tighten It Up</span>
+                <span class="menu-leader"></span>
+                <span class="menu-price">199 kr</span>
+              </div>
+              <p class="menu-desc">Finjustering med rena linjer. Skinfade ingår ej.</p>
+            </div>
+          </div>
+
+          <div class="menu-group">
+            <p class="menu-group-title">Skägg</p>
+            <div class="menu-item">
+              <div class="menu-row">
+                <span class="menu-name">Handle The Beard with EDGE</span>
+                <span class="menu-tag">signatur</span>
+                <span class="menu-leader"></span>
+                <span class="menu-price">299 kr</span>
+              </div>
+              <p class="menu-desc">Skäggtrimning, varmt omslag och rakning.</p>
+            </div>
+            <div class="menu-item">
+              <div class="menu-row">
+                <span class="menu-name">Handle the Beard</span>
+                <span class="menu-leader"></span>
+                <span class="menu-price">249 kr</span>
+              </div>
+              <p class="menu-desc">Skäggtrimning efter din ansiktsform.</p>
+            </div>
+          </div>
+
+          <div class="menu-group">
+            <p class="menu-group-title">Barn &amp; ungdom</p>
+            <div class="menu-item">
+              <div class="menu-row">
+                <span class="menu-name">Cut It Like the Big Guys</span>
+                <span class="menu-leader"></span>
+                <span class="menu-price">299 kr</span>
+              </div>
+              <p class="menu-desc">Klippning för ungdom, 10–15 år.</p>
+            </div>
+            <div class="menu-item">
+              <div class="menu-row">
+                <span class="menu-name">Like Dad, Please</span>
+                <span class="menu-leader"></span>
+                <span class="menu-price">249 kr</span>
+              </div>
+              <p class="menu-desc">Klippning för barn, 0–9 år.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="services-foot">
+          <p>Hitta en tid som passar dig.</p>
+          <a class="btn btn-primary"
+             data-boka
+             href="https://www.bokadirekt.se/places/edge-by-tofi-136651"
+             target="_blank"
+             rel="noopener noreferrer">
+            Boka nu
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section class="section section-about" id="om-oss" aria-labelledby="om-heading">
+      <div class="wrap about-grid">
+        <figure class="about-media">
+          <img src="assets/images/about.svg" alt="Interiör från EDGE by Tofi — barberarstol och varm belysning." width="1100" height="1400" loading="lazy">
+        </figure>
+        <div class="about-text">
+          <p class="section-eyebrow">— Om salongen</p>
+          <h2 class="section-heading" id="om-heading">En barbershop<br><em>med hantverk.</em></h2>
+          <!-- OM-TEXT: fylls i av kund. Ersätt stycket nedan. -->
+          <p class="about-paragraph">[Här kommer en kort text om EDGE by Tofi — fylls i av salongen.]</p>
+          <div class="about-marks">
+            <div><span class="mark-num"><span data-rating-value>5,0</span>★</span><span class="mark-label">snittbetyg</span></div>
+            <div>
+              <a class="mark-link" href="https://www.bokadirekt.se/places/edge-by-tofi-136651" target="_blank" rel="noopener noreferrer" aria-label="Betyg på Bokadirekt">
+                <span class="mark-num" data-rating-count>12</span><span class="mark-label">betyg</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Plats -->
+    <section class="section section-plats" id="plats" aria-labelledby="plats-heading">
+      <div class="wrap plats-grid">
+        <div class="plats-info">
+          <p class="section-eyebrow">— Plats &amp; öppettider</p>
+          <h2 class="section-heading" id="plats-heading">Hittar du hit?</h2>
+
+          <div class="plats-block">
+            <p class="plats-label">Adress</p>
+            <p class="plats-value">Folkungaallén 1A<br>582 41 Linköping</p>
+          </div>
+
+          <div class="plats-block">
+            <p class="plats-label">Öppettider</p>
+            <dl class="hours">
+              <div><dt>Mån–Fre</dt><dd>10:00–18:00</dd></div>
+              <div><dt>Lördag</dt><dd>11:00–17:00</dd></div>
+              <div><dt>Söndag</dt><dd>Stängt</dd></div>
+            </dl>
+          </div>
+
+          <div class="plats-block">
+            <p class="plats-label">Kontakt</p>
+            <p class="plats-value">
+              <a href="https://instagram.com/edgebytofi" target="_blank" rel="noopener noreferrer">Instagram @edgebytofi</a>
+            </p>
+          </div>
+        </div>
+
+        <div class="plats-map">
+          <iframe
+            title="Karta — Folkungaallén 1A, Linköping"
+            src="https://www.openstreetmap.org/export/embed.html?bbox=15.6210%2C58.3987%2C15.6410%2C58.4087&amp;layer=mapnik&amp;marker=58.4037%2C15.6310"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="section section-cta" id="boka" aria-labelledby="cta-heading">
+      <div class="wrap cta-wrap">
+        <p class="section-eyebrow">— Boka tid</p>
+        <h2 class="cta-heading" id="cta-heading">Redo för<br><em>en ny stil?</em></h2>
+        <p class="cta-sub">Boka din tid online — snabbt och enkelt.</p>
+        <a class="btn btn-primary btn-lg"
+           data-boka
+           href="https://www.bokadirekt.se/places/edge-by-tofi-136651"
+           target="_blank"
+           rel="noopener noreferrer">
+          Boka nu
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div class="footer-brand">
+        <p class="wordmark-name footer-wordmark">EDGE by Tofi</p>
+        <p class="footer-tagline">Barbershop med fokus på hantverk.</p>
+      </div>
+      <div class="footer-col">
+        <p class="footer-label">Plats</p>
+        <p>Folkungaallén 1A<br>582 41 Linköping</p>
+      </div>
+      <div class="footer-col">
+        <p class="footer-label">Kontakt</p>
+        <p>
+          <a href="https://instagram.com/edgebytofi" target="_blank" rel="noopener noreferrer">Instagram @edgebytofi</a>
+        </p>
+      </div>
+      <div class="footer-col">
+        <p class="footer-label">Boka</p>
+        <p>
+          <a data-boka href="https://www.bokadirekt.se/places/edge-by-tofi-136651" target="_blank" rel="noopener noreferrer">
+            Boka nu &rarr;
+          </a>
+        </p>
+      </div>
+    </div>
+    <div class="footer-base wrap">
+      <p>&copy; 2026 EDGE by Tofi</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js?v=20260626-2" defer></script>
+</body>
+</html>
