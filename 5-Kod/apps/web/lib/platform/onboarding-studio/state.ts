@@ -12,7 +12,6 @@ import type { LookMeta } from '@/lib/sajtbyggare/look-registry'
 import {
   type StudioCfg,
   type StudioService,
-  applyBranch,
   studioSlugify,
 } from './model'
 import { krToOre } from './services'
@@ -24,7 +23,7 @@ export type StudioStage = 'super' | 'studio' | 'result'
  * Every cfg mutation a panel can dispatch (ports app.jsx's `A` action set, adapted to
  * the leaner W1 StudioCfg). Discriminated on `type`; the leaves match these literals
  * EXACTLY, so the payload field names are part of the frozen contract:
- *   applyBranch  { key }      — pick a bransch (delegates to model.applyBranch + presets)
+ *   applyBranch  { key }      — tag the customer's category ONLY (no theme/module seeding)
  *   setName      { value }    — set name; auto-syncs slug until slugTouched
  *   setSlug      { value }    — set slug by hand → locks slugTouched=true
  *   setTheme     { key }      — set template/theme key
@@ -62,16 +61,15 @@ export type StudioReducer = (cfg: StudioCfg, action: StudioAction) => StudioCfg
  * operator edits the subdomän by hand (`setSlug`) we set `slugTouched=true`, so later
  * name edits never clobber a hand-typed slug.
  */
-export function makeStudioReducer(presets: VerticalPresetData, galleryMode = false): StudioReducer {
+export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
   return function studioReducer(cfg: StudioCfg, action: StudioAction): StudioCfg {
     switch (action.type) {
-      case 'applyBranch': {
-        const next = applyBranch(cfg, action.key, presets)
-        // goal-50 LÅST #1: in look-gallery mode the bransch is ONLY a module/content
-        // preset — it must never set the look. Keep the operator's chosen look (theme);
-        // still seed branch + module states from the preset.
-        return galleryMode ? { ...next, theme: cfg.theme } : next
-      }
+      case 'applyBranch':
+        // Branch is PURE categorization (Zivar): step 1 ONLY tags the customer's TYPE for
+        // later sorting — it must NOT seed the theme/look or modules. Those are chosen in
+        // their own steps, fully independent of branch. (Was: delegated to model.applyBranch,
+        // which seeded theme + module states from the vertical preset.)
+        return { ...cfg, branch: action.key }
       case 'setName':
         return cfg.slugTouched
           ? { ...cfg, name: action.value }

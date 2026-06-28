@@ -44,23 +44,14 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
     expect(cfg.slug).toBe('min-salong')
   })
 
-  it('applyBranch delegates to the model (seeds theme + module states)', () => {
-    const cfg = reducer(initStudioCfg('salvia'), { type: 'applyBranch', key: 'frisor' })
+  // Branch is PURE categorization (Zivar): step 1 ONLY tags the customer's type. It must
+  // NOT seed the theme/look or any module state — those are picked in their own steps.
+  it('applyBranch sets ONLY the branch tag (no theme/module seeding)', () => {
+    const start = initStudioCfg('demolook') // a chosen look — must survive a branch pick
+    const cfg = reducer(start, { type: 'applyBranch', key: 'frisor' })
     expect(cfg.branch).toBe('frisor')
-    expect(cfg.theme).toBe('salvia')
-    expect(cfg.moduleStates.lojalitet).toBe('live')
-  })
-
-  // goal-50 LÅST #1: in the look-gallery (sajtbyggare ON), the bransch is ONLY a
-  // module/content preset — it must NEVER set the look. The operator picks the look
-  // from the box. So gallery-mode applyBranch seeds modules but keeps cfg.theme.
-  it('gallery mode: applyBranch seeds modules but keeps the chosen look (theme)', () => {
-    const galleryReducer = makeStudioReducer(presets, true)
-    const start = initStudioCfg('demolook') // a render-bron look key, picked from the box
-    const cfg = galleryReducer(start, { type: 'applyBranch', key: 'frisor' })
-    expect(cfg.branch).toBe('frisor')
-    expect(cfg.theme).toBe('demolook') // look preserved — bransch is never the look
-    expect(cfg.moduleStates.lojalitet).toBe('live') // modules still seeded from the preset
+    expect(cfg.theme).toBe('demolook') // theme/look untouched
+    expect(cfg.moduleStates).toEqual({}) // no modules seeded from the branch
   })
 
   it('setModule records a module state on the cfg', () => {

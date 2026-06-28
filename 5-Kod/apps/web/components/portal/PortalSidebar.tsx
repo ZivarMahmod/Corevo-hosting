@@ -110,11 +110,11 @@ export function PortalSidebar({
 }) {
   const pathname = usePathname()
   const cfg = NAV[role]
-  // Collapsible rail (Zivar: "sido­panelen ska kunna stängas" + de-layer the studio).
-  // A toggle, NOT a forced hide. Defaults collapsed ON the onboarding page so the
-  // full-screen studio reads as its own page; open everywhere else. usePathname is known
-  // on SSR + client alike, so the initial value can never hydrate-mismatch.
-  const [collapsed, setCollapsed] = useState(pathname === '/salonger/ny')
+  // Collapsible rail (Zivar: "jag vill kunna gömma den men den ska inte bara försvinna
+  // när jag klickar onboarda ny kund"). A manual toggle, NEVER an auto-hide — the sidebar
+  // stays open on every page (incl. onboarding) so the studio reads as the same connected
+  // surface, not a separate place; the operator hides it themselves via the chevron.
+  const [collapsed, setCollapsed] = useState(false)
 
   return (
     <aside className={`portal-aside${collapsed ? ' is-collapsed' : ''}`}>

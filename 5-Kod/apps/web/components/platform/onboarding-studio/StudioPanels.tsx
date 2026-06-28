@@ -170,14 +170,15 @@ const BRANSCH_REGISTRY: { key: string; name: string; icon: IconName; staffWord: 
   { key: 'restaurang', name: 'Restaurang', icon: 'coffee', staffWord: 'Personal', count: 3, live: true },
 ]
 
-/** branch — 2-col card grid of BRANSCH_REGISTRY → applyBranch. Canon icon + name + Roadmap
- *  pill (live:false) + "{count} moduler · {staffWord}" subline. presets is no longer read
- *  here (the list is the static canon registry; the preset still applies on dispatch). */
+/** branch — 2-col card grid of BRANSCH_REGISTRY. PURE categorization (Zivar): picking a
+ *  branch ONLY tags the customer's type (cfg.branch) for later sorting/filtering — it does
+ *  NOT pre-select any template or module. Canon icon + name + Roadmap pill (live:false) +
+ *  staffWord subline (the category descriptor, not a module count). */
 function PanelBranch({ cfg, dispatch }: PanelProps) {
   return (
     <Panel
-      title="Välj startmall"
-      sub="Branschen är bara en förinställning — den förväljer moduler, ord och innehåll. Inget låses, du ändrar allt fritt efteråt."
+      title="Vilken typ av kund?"
+      sub="Bara för att kategorisera kunden — så du senare kan sortera och filtrera dina kunder per bransch. Det väljer ingen mall och inga moduler; allt sånt bestämmer du i egna steg."
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
         {BRANSCH_REGISTRY.map((b) => {
@@ -239,7 +240,7 @@ function PanelBranch({ cfg, dispatch }: PanelProps) {
                   ) : null}
                 </span>
                 <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {b.count} {b.count === 1 ? 'modul' : 'moduler'} · {b.staffWord}
+                  {b.staffWord}
                 </span>
               </span>
               {on ? (
@@ -953,7 +954,7 @@ function PanelAgare({ cfg, dispatch }: PanelProps) {
 function PanelGranska({ cfg, presets, onNext }: StudioPanelProps) {
   type Item = { label: string; detail: string; done: boolean; optional: boolean; deferred?: boolean }
   const items: Item[] = [
-    { label: 'Bransch vald', detail: 'Förinställning av moduler & terminologi.', done: !!cfg.branch, optional: false },
+    { label: 'Kundkategori vald', detail: 'Branschtagg för sortering — påverkar inte mall/moduler.', done: !!cfg.branch, optional: false },
     {
       label: 'Namn & subdomän',
       detail: 'Företagsnamn + <slug>.corevo.se.',

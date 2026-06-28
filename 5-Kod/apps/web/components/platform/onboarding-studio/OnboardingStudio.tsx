@@ -94,9 +94,10 @@ function StudioMachine({
   const galleryMode = !!looks && looks.length > 0
   const lookKeys = useMemo(() => (looks ?? []).map((l) => l.key), [looks])
 
-  // PURE reducer bound to the loaded presets (applyBranch needs them). Memoised so the
-  // identity is stable across renders; the cfg defaults to the first look (gallery) or 'salvia'.
-  const reducer = useMemo(() => makeStudioReducer(presets, galleryMode), [presets, galleryMode])
+  // PURE reducer bound to the loaded presets. Memoised so the identity is stable across
+  // renders; the cfg defaults to the first look (gallery) or 'salvia'. Branch no longer
+  // seeds theme/modules, so the reducer is gallery-agnostic.
+  const reducer = useMemo(() => makeStudioReducer(presets), [presets])
   const [cfg, dispatch] = useReducer(reducer, undefined, () =>
     initStudioCfg(galleryMode ? (looks![0]!.key) : 'salvia'),
   )
