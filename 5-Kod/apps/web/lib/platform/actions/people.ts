@@ -6,6 +6,8 @@ import { createServiceClient, hasServiceRole } from '../service'
 import { logPlatformAction } from '../audit'
 import { type ActionState, GENERIC, EMAIL_RE } from './shared'
 import { reportActionError } from './observe'
+import { buildConfirmUrl } from '@/lib/auth/invite'
+import { getPlatformHost } from '@/lib/tenant'
 
 /**
  * Trigger a password reset for the salon's admin. Generates a recovery link via
@@ -26,10 +28,20 @@ export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<
   if (!svc) return { error: 'Lösenords-reset kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
 
   const { data, error } = await svc.auth.admin.generateLink({ type: 'recovery', email })
-  if (error || !data?.properties?.action_link) {
+  if (error || !data?.properties?.hashed_token) {
     await reportActionError('sendPasswordReset.generateLink', error, { tenantId })
     return { error: `Kunde inte skapa återställningslänk: ${error?.message ?? 'okänt fel'}.` }
   }
+  // Bygg länken till VÅR /auth/confirm (token_hash-flödet) istället för Supabase
+  // action_link — action_link går via Supabase /verify som lämnar tokens i URL-
+  // fragmentet (osynligt för SSR) → sessionen sattes aldrig. Confirm-routen kör
+  // verifyOtp server-side och landar på /uppdatera-losenord.
+  const resetUrl = buildConfirmUrl({
+    host: getPlatformHost(),
+    tokenHash: data.properties.hashed_token,
+    type: 'recovery',
+    next: '/uppdatera-losenord',
+  })
 
   await logPlatformAction(supabase, {
     action: 'tenant.password_reset',
@@ -38,7 +50,7 @@ export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<
     meta: { email },
   })
   return {
-    success: `Återställningslänk skapad för ${email}. Kopiera och dela den säkert:\n${data.properties.action_link}`,
+    success: `Återställningslänk skapad för ${email}. Kopiera och dela den säkert:${resetUrl}`,
   }
 }
 

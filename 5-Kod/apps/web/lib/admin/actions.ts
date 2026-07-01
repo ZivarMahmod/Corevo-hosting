@@ -14,6 +14,8 @@ import { refundBookingPayment } from '@/lib/stripe/refund'
 import { BOOKING_STATUSES, ALLOWED_FROM, type BookingStatus } from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
+import { sendAuthInvite } from '@/lib/auth/invite'
+import { getStaffHost } from '@/lib/tenant'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -467,12 +469,18 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   if (rErr || !role) return { error: GENERIC }
   const roleId = role.id
 
-  // 2) Invite the auth user (one-time magic link). Only this step needs svc.
-  const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email)
-  if (iErr || !invited?.user) {
-    return { error: `Inbjudan misslyckades: ${iErr?.message ?? 'kontot finns kanske redan'}.` }
+  // 2) Invite the auth user. App-ägd kedja (lib/auth/invite): generateLink + eget
+  //    mejl via bokningsrelayn, länken pekar på /auth/confirm på personal-dörren
+  //    (minbooking) — Supabase-mailern levererade aldrig. Only this step needs svc.
+  const invited = await sendAuthInvite(svc, {
+    email,
+    targetHost: getStaffHost(),
+    tenantName: ctx.tenant.name,
+  })
+  if (!invited.ok) {
+    return { error: `Inbjudan misslyckades: ${invited.error}.` }
   }
-  const authId = invited.user.id
+  const authId = invited.authId
 
   // 3) Bake tenant_id into app_metadata so the JWT carries it before the access
   //    token hook is enabled (same belt-and-suspenders as the platform invite).

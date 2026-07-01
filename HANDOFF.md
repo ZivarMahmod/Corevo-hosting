@@ -21,7 +21,8 @@ Corevo = EN multi-bransch-plattform: en motor, en databas, en kodbas. Super-admi
 - Övrigt: distansavtalslagens 14-dagars ångerrätt (deposit/no-show), GDPR Art.28 DPA per kund, SCA/3DS + dispute-webhooks vid betalning, review-gating olagligt (FTC).
 
 ## 🐞 KÄNDA BUGGAR (ROADMAP §E)
-`savePlatformBranding`-clobber · personal-"Idag"-krasch · lojalitet poäng-revoke (completed→cancelled FÖRE redeem) · onboarding orphan-salong vid invite-fail · onboarding Auth-verifieringsmail funkar ej. (De två onboarding-buggarna FÖRST i onboarding-v2.)
+`savePlatformBranding`-clobber · personal-"Idag"-krasch · lojalitet poäng-revoke (completed→cancelled FÖRE redeem).
+- ✅ **Onboarding-buggarna FIXADE i kod 2026-07-01** (live-verify kvar, se `5-Kod/docs/ops/auth-invite-kedjan.md`): orphan-salong = rollback-vakt fanns redan + invite-fel får nu telemetri · Auth-verifieringsmail = hela invite-kedjan app-ägd (generateLink + egen mejl-relay + ny `/auth/confirm` + `/uppdatera-losenord`) — rotorsaken var att appen saknade confirm-endpoint och att Supabase-mailern var okonfad.
 
 ## 🧾 VERIFY-SKULD — byggt men ej live-bevisat (ROADMAP §VERIFY-SKULD)
 mejl e2e (boka→bekräftelse + SPF/DKIM) · realtime 2-flikar · `/registrera` · **RLS-isolering salong A↔B** · cron-triggers (reminders + pending-expiry) · SMS-kedja (46elks) · onboarda salong från noll e2e.

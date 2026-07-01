@@ -56,10 +56,13 @@ const isPrefix = (path: string, prefixes: readonly string[]): boolean =>
   prefixes.some((p) => path === p || path.startsWith(p + '/'))
 
 // Served on EVERY back-office host: the shared auth pages and all route handlers.
-// Verified goal-27: every app/**/route.ts lives under /api (gdpr, cron, stripe),
-// so '/api' + '/api/*' covers them.
+// '/auth' = /auth/confirm (mejl-länkens token→session-växling) och
+// '/uppdatera-losenord' = välj-lösenord-sidan efter invite/recovery — båda måste
+// nås på varje dörr eftersom invite-mejlet pekar på mottagarens roll-host.
 const isAlwaysAllowed = (path: string): boolean =>
-  isPrefix(path, ['/login', '/ingen-atkomst']) || path === '/api' || path.startsWith('/api/')
+  isPrefix(path, ['/login', '/ingen-atkomst', '/auth', '/uppdatera-losenord']) ||
+  path === '/api' ||
+  path.startsWith('/api/')
 
 /**
  * Decide how a back-office host should route `path`. Pure: returns an intent the

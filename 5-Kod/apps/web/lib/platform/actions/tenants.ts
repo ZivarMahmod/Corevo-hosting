@@ -13,6 +13,8 @@ import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, type StorefrontTheme } fro
 import { sajtbyggareEnabled } from '@/lib/sajtbyggare/flag'
 import { uploadImage } from '@/lib/r2/upload'
 import { attachWorkerSubdomain } from '@/lib/cloudflare/worker-domains'
+import { sendAuthInvite } from '@/lib/auth/invite'
+import { getPlatformHost } from '@/lib/tenant'
 import { foldOnboardingDraft } from '@/lib/sajtbyggare/onboarding-fold'
 import type { Json } from '@corevo/db'
 import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
@@ -285,17 +287,24 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
       ownerFailed =
         'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops) — eller skapa salongen utan ägar-epost och bjud in ägaren senare'
     } else {
-      // Carry the salon name into invite user_metadata so the Supabase invite
-      // template can greet with the salon's name ({{ .Data.tenant_name }}) instead
-      // of the generic "Corevo" default (W0 #3). full_name stays optional.
-      const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(
-        ownerEmail,
-        { data: { ...(ownerName ? { full_name: ownerName } : {}), tenant_name: name } },
-      )
-      if (iErr || !invited?.user) {
-        ownerFailed = `inbjudan misslyckades (${iErr?.message ?? 'okänt fel'})`
+      // App-ägd invite (lib/auth/invite): generateLink + vårt eget mejl via
+      // bokningsrelayn → länken pekar på /auth/confirm på ägarens dörr (booking).
+      // Ersätter inviteUserByEmail, vars Supabase-skickade mejl aldrig levererades
+      // och saknade en confirm-endpoint i appen (rotorsak onboarding-bugg #2).
+      // Salongsnamnet följer med som user_metadata precis som förr (W0 #3).
+      const invited = await sendAuthInvite(svc, {
+        email: ownerEmail,
+        targetHost: getPlatformHost(),
+        tenantName: name,
+        fullName: ownerName || null,
+        data: { ...(ownerName ? { full_name: ownerName } : {}), tenant_name: name },
+      })
+      if (!invited.ok) {
+        // Telemetri saknades helt på den här grenen (audit-fynd) — logga utan PII.
+        await reportActionError('createTenant.invite', new Error(invited.error), { tenantId })
+        ownerFailed = `inbjudan misslyckades (${invited.error})`
       } else {
-        const authId = invited.user.id
+        const authId = invited.authId
         // Bake tenant_id into app_metadata so the JWT carries it even before the
         // Custom Access Token Hook is enabled (same belt-and-suspenders as seed).
         await svc.auth.admin.updateUserById(authId, {

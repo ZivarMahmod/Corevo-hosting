@@ -104,3 +104,48 @@ export async function signOut() {
   await supabase.auth.signOut()
   redirect('/login')
 }
+
+export type UpdatePasswordState = { error?: string }
+
+/**
+ * Set/byt lösenord för en redan autentiserad session — landningen efter
+ * /auth/confirm (invite + recovery). På succé skickas användaren till sitt
+ * roll-hem (samma portalHomeFor som login).
+ */
+export async function updatePassword(
+  _prev: UpdatePasswordState,
+  formData: FormData,
+): Promise<UpdatePasswordState> {
+  const password = String(formData.get('password') ?? '')
+  const confirm = String(formData.get('confirm') ?? '')
+  if (password.length < 8) return { error: 'Lösenordet måste vara minst 8 tecken.' }
+  if (password !== confirm) return { error: 'Lösenorden matchar inte.' }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Sessionen har gått ut — öppna länken i mejlet igen.' }
+
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) return { error: 'Lösenordet kunde inte sparas. Försök igen.' }
+
+  // Samma roll-uppslag som signIn (RLS: egen rad + roll) → rätt portal-hem.
+  const platformAdmin =
+    (user.app_metadata as { platform_admin?: boolean })?.platform_admin === true
+  let roleLevel = 0
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role_id')
+    .eq('id', user.id)
+    .maybeSingle()
+  if (profile?.role_id) {
+    const { data: role } = await supabase
+      .from('roles')
+      .select('level')
+      .eq('id', profile.role_id)
+      .maybeSingle()
+    roleLevel = role?.level ?? 0
+  }
+  redirect(portalHomeFor({ roleLevel, platformAdmin }))
+}

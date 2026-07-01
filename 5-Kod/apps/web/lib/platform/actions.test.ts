@@ -93,7 +93,10 @@ function fakeSvc(authId = 'auth-1') {
   return {
     auth: {
       admin: {
-        inviteUserByEmail: vi.fn(async () => ({ data: { user: { id: authId } }, error: null })),
+        generateLink: vi.fn(async () => ({
+          data: { user: { id: authId }, properties: { hashed_token: 'tok-1' } },
+          error: null,
+        })),
         updateUserById: vi.fn(async () => ({ data: {}, error: null })),
         deleteUser: vi.fn(async () => ({ data: {}, error: null })),
       },
@@ -106,7 +109,7 @@ function fakeSvcInviteFails() {
   return {
     auth: {
       admin: {
-        inviteUserByEmail: vi.fn(async () => ({ data: null, error: { message: 'boom' } })),
+        generateLink: vi.fn(async () => ({ data: null, error: { message: 'boom' } })),
         updateUserById: vi.fn(async () => ({ data: {}, error: null })),
         deleteUser: vi.fn(async () => ({ data: {}, error: null })),
       },

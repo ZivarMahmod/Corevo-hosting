@@ -26,7 +26,7 @@ function purgeLegacySharedAuthCookie() {
   }
 }
 
-export function LoginForm({ next }: { next: string }) {
+export function LoginForm({ next, notice }: { next: string; notice?: string }) {
   const [state, formAction, pending] = useActionState<SignInState, FormData>(signIn, {})
 
   // Break the stale-cookie churn loop on the surface the churn always lands on.
@@ -38,6 +38,12 @@ export function LoginForm({ next }: { next: string }) {
     <form action={formAction} className="auth-form">
       <h1>Logga in</h1>
       <input type="hidden" name="next" value={next} />
+
+      {notice ? (
+        <p className="auth-error" role="status">
+          {notice}
+        </p>
+      ) : null}
 
       <label className="auth-field">
         <span>E-post</span>
