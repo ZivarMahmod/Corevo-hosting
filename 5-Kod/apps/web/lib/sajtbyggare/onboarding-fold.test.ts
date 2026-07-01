@@ -30,13 +30,20 @@ describe('foldOnboardingDraft — folds the draft onto base (salvia)', () => {
     expect(v).toContain('Hej')
     expect(v.toLowerCase()).not.toContain('<script')
   })
+
+  it('non-salvia theme with a manifest (zigge) → draft folds via ITS manifest', () => {
+    const r = foldOnboardingDraft('zigge', json({ 'hero.title': 'Vår barbershop' }), { ...baseSettings(), theme: 'zigge' }, baseBranding())
+    const copy = r.settings.copy as Record<string, unknown>
+    expect(copy.heroTitle).toBe('Vår barbershop')
+    expect(copy.tagline).toBe('bas-tagline') // base copy preserved
+  })
 })
 
 describe('foldOnboardingDraft — fail-open (never blocks tenant creation)', () => {
-  it('non-salvia theme → draft ignored, base returned unchanged', () => {
+  it('unknown theme (no manifest) → draft ignored, base returned unchanged', () => {
     const s = baseSettings()
     const b = baseBranding()
-    const r = foldOnboardingDraft('zigge', json({ 'hero.title': 'x' }), s, b)
+    const r = foldOnboardingDraft('okant-tema', json({ 'hero.title': 'x' }), s, b)
     expect(r.settings).toBe(s)
     expect(r.branding).toBe(b)
   })

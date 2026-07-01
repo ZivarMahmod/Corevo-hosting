@@ -11,13 +11,21 @@
 
 import { createPublicClient } from '@/lib/supabase/public'
 import { SALVIA_REGION_MANIFEST } from './manifest/salvia'
+import { LEANDER_REGION_MANIFEST } from './manifest/leander'
+import { ZIGGE_REGION_MANIFEST } from './manifest/zigge'
+import { LINNEA_REGION_MANIFEST } from './manifest/linnea'
+import { EDIT_REGION_MANIFEST } from './manifest/edit'
 import type { RegionManifest } from './manifest/types'
 import { resolveSiteContent, type CascadeInput, type ResolvedRegion } from './resolve'
 
-/** Template-key → region manifest. S1 implements salvia only (F1); other themes
- *  have no manifest yet → loadSiteContent returns null for them. */
+/** Template-key → region manifest. All five storefront themes carry a manifest;
+ *  an unknown template key → loadSiteContent returns null. */
 const MANIFESTS: Record<string, RegionManifest> = {
   [SALVIA_REGION_MANIFEST.templateKey]: SALVIA_REGION_MANIFEST,
+  [LEANDER_REGION_MANIFEST.templateKey]: LEANDER_REGION_MANIFEST,
+  [ZIGGE_REGION_MANIFEST.templateKey]: ZIGGE_REGION_MANIFEST,
+  [LINNEA_REGION_MANIFEST.templateKey]: LINNEA_REGION_MANIFEST,
+  [EDIT_REGION_MANIFEST.templateKey]: EDIT_REGION_MANIFEST,
 }
 
 export type LoadedSiteContent = {
@@ -53,7 +61,7 @@ export async function loadSiteContent(slug: string): Promise<LoadedSiteContent |
   const settings = (settingsRow?.settings ?? {}) as Record<string, unknown>
   const templateKey = typeof settings.theme === 'string' ? settings.theme : ''
   const manifest = MANIFESTS[templateKey]
-  if (!manifest) return null // S1 supports the salvia manifest only
+  if (!manifest) return null // unknown/unset template → no editable regions
 
   const tenantCopy = (settings.copy ?? null) as Record<string, unknown> | null
   const tenantBranding = (settingsRow?.branding ?? null) as Record<string, unknown> | null

@@ -25,17 +25,25 @@ import { sajtbyggareEnabled } from './flag'
 import { applySiteContentEdits, type SiteContentEdit } from './site-content-edit'
 import type { RegionManifest } from './manifest/types'
 import { SALVIA_REGION_MANIFEST } from './manifest/salvia'
+import { LEANDER_REGION_MANIFEST } from './manifest/leander'
+import { ZIGGE_REGION_MANIFEST } from './manifest/zigge'
+import { LINNEA_REGION_MANIFEST } from './manifest/linnea'
+import { EDIT_REGION_MANIFEST } from './manifest/edit'
 
-/** Mallar editorn kan spara mot. S2 = salvia (övriga mallar = senare skivor, §9). */
+/** Mallar editorn kan spara mot — alla fem storefront-teman. Okänd mall → vägra. */
 const TEMPLATE_MANIFESTS: Record<string, RegionManifest> = {
   salvia: SALVIA_REGION_MANIFEST,
+  leander: LEANDER_REGION_MANIFEST,
+  zigge: ZIGGE_REGION_MANIFEST,
+  linnea: LINNEA_REGION_MANIFEST,
+  edit: EDIT_REGION_MANIFEST,
 }
 
 export type SaveSiteContentResult = { ok: true } | { ok: false; error: string }
 
 /**
  * Spara en uppsättning region-redigeringar för den inloggade salongens egen sida.
- * @param templateKey  vilken mall (måste matcha tenantens tema; S2 = 'salvia')
+ * @param templateKey  vilken mall (måste matcha tenantens tema; en av de fem)
  * @param edits        [{ regionKey, value }] från editorn (osanerat)
  */
 export async function saveSiteContent(
