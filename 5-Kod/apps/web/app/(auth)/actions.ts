@@ -92,7 +92,10 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   }
 
   // Honor the originally requested page (same host) only AFTER the door check.
-  if (next && next.startsWith('/')) redirect(next)
+  // Kräv exakt en ledande '/' — '//host' och '/\host' tolkas som protokoll-relativa
+  // URL:er av webbläsaren och blir öppna redirects.
+  if (next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\'))
+    redirect(next)
   redirect(portalHomeFor({ roleLevel, platformAdmin }))
 }
 

@@ -28,12 +28,12 @@ mejl e2e (boka→bekräftelse + SPF/DKIM) · realtime 2-flikar · `/registrera` 
 
 ## 🔧 GATES / CI
 `pnpm typecheck` (0) · `pnpm test` (vitest, grön) · `pnpm build` · CI = `.github/workflows/ci.yml` (PR-gate: `lint · typecheck · unit · build`; Playwright e2e gated på `E2E_ENABLED`).
-- ⚠️ **`pnpm lint` är trasig under ESLint 9** (eslint-config-next + `@rushstack/eslint-patch` ⊄ flat-config). Lint-steget körs FÖRST i `ci.yml` → faller → typecheck/test/build körs ALDRIG i CI. **PR-gaten är de facto nere.** Fix = nedgradera ESLint 8 / uppdatera eslint-config-next (egen åtgärd).
+- ✅ **`pnpm lint` LAGAD (verifierad 2026-07-01):** `packages/config/eslint.config.mjs` är omskriven till native flat config (ESLint 9, ingen FlatCompat/`@rushstack/eslint-patch`), regelparitet med `next/core-web-vitals` behållen. Lokal körning: **0 errors, 6 warnings** + typecheck 0 + vitest 681/681 gröna. PR-gaten bevisas fullt grön i nästa CI-körning.
 
 ## 📋 AUDIT 2026-06-19 (improve-skill, READ-ONLY — inga plan-filer skrivna)
 Oberoende kod-audit (4 read-only-svep, alla fynd vettade mot kod + ROADMAP). **Plan-filer EJ genererade** (denna körning var housekeeping). Re-run `/improve` för att skriva planerna till `2-Byggplan/advisor-plans/`. 8 vettade fynd (leverage-ordning):
-1. lint/CI-gate trasig (se GATES ovan) — högst leverage.
-2. Öppen redirect i login `next` — `app/(auth)/actions.ts:95` (`startsWith('/')` släpper `//host`).
+1. ✅ lint/CI-gate — LAGAD + verifierad lokalt 2026-07-01 (se GATES ovan).
+2. ✅ Öppen redirect i login `next` — FIXAD 2026-07-01: `app/(auth)/actions.ts` avvisar nu `//host` + `/\host` (protokoll-relativa), kräver exakt en ledande `/`.
 3. Stripe-webhook otestad (cross-account-fence + state) — `app/api/stripe/webhook/route.ts`, 0 test.
 4. N+1 på admin bokningslista — `app/(admin)/admin/bokningar/page.tsx:53-56,108-110`.
 5. Refund-fel sväljs tyst (ingen ops-signal) — `lib/stripe/refund.ts:46`.
