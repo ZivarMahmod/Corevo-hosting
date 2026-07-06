@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Inter } from 'next/font/google'
+import { Playfair_Display, Inter, Source_Sans_3 } from 'next/font/google'
 import '@corevo/ui/tokens.css'
 import './globals.css'
 import './booking-global.css'
@@ -19,6 +19,13 @@ const inter = Inter({
   variable: '--font-inter',
   display: 'swap',
 })
+// FreshCut theme body font (Source Sans Pro on freshcut.se → Source Sans 3 here);
+// exposed as --font-source-sans, consumed by [data-theme="freshcut"] --font-body.
+const sourceSans = Source_Sans_3({
+  subsets: ['latin'],
+  variable: '--font-source-sans',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Corevo',
@@ -29,7 +36,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="sv" className={`${playfair.variable} ${inter.variable}`}>
+    <html lang="sv" className={`${playfair.variable} ${inter.variable} ${sourceSans.variable}`}>
       <body>{children}</body>
     </html>
   )

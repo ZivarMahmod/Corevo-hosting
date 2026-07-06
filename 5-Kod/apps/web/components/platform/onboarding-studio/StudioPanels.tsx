@@ -86,6 +86,7 @@ const BUILTIN_TEMPLATES: TemplateOption[] = [
   { key: 'zigge', name: 'Zigge' },
   { key: 'linnea', name: 'Linnea' },
   { key: 'edit', name: 'Edit' },
+  { key: 'freshcut', name: 'FreshCut' },
 ]
 
 /** The brand-panel accent swatches (verbatim from studio.jsx:268 — 7 accents). */

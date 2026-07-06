@@ -124,9 +124,10 @@ export default async function PublicLayout({ children }: { children: React.React
   // so a non-frisör tenant's drawer reads e.g. "Barberare"/"Nagelteknolog".
   const staffNoun = await resolveStaffNoun(tenant.vertical_id)
 
-  // Salvia leads with the richer 3-column footer (real address/hours/contact);
-  // the other four themes (and boka/avboka) use the compact MiniFooter.
-  const isSalvia = settings.theme === 'salvia'
+  // Salvia + FreshCut lead with the richer 3-column footer (real address/hours/contact
+  // — freshcut.se's footer carries phone/address/Instagram); the other themes (and
+  // boka/avboka) use the compact MiniFooter.
+  const isFullFooter = settings.theme === 'salvia' || settings.theme === 'freshcut'
 
   return (
     <div
@@ -175,7 +176,7 @@ export default async function PublicLayout({ children }: { children: React.React
           <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
           <CartButton />
         </CartProvider>
-        {isSalvia ? (
+        {isFullFooter ? (
           <FooterFull
             tenant={{ name: tenant.name }}
             tagline={content.tagline}

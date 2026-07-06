@@ -261,6 +261,22 @@
   --sf-radius: 2px;
 }
 
+/* ---- TEMPLATE F — "FreshCut" : barbershop, exakt kopia av freshcut.se
+   (white + gold, Playfair headings, Source Sans body, sharp corners). */
+[data-world="storefront"][data-theme="freshcut"] {
+  --color-primary:   #B59775;  /* gold / tan — the "BOKA TID" accent */
+  --color-primary-d: #9A7E5E;  /* darker gold for hovers */
+  --color-bg:        #FFFFFF;  /* white */
+  --color-surface:   #FFFFFF;
+  --color-fg:        #252525;  /* heading ink */
+  --color-fg-2:      #555555;  /* body grey */
+  --color-line:      #E7E2DA;
+  --color-accent-soft:#F3EEE7;
+  --font-display: var(--font-playfair), 'Playfair Display', Georgia, serif;
+  --font-body:    var(--font-source-sans), 'Source Sans 3', var(--font-inter), 'Inter', sans-serif;
+  --sf-radius: 0px;  /* freshcut.se buttons are square */
+}
+
 /* storefront type roles (theme-agnostic — pull from the theme's families) */
 [data-world="storefront"] .sf-eyebrow { font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--color-primary); }
 [data-world="storefront"] .sf-hero    { font-family: var(--font-display); font-weight: 600; font-size: clamp(36px, 4.6vw, 62px); line-height: 1.08; letter-spacing: -0.01em; }

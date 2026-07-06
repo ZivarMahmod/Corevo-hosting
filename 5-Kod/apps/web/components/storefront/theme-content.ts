@@ -234,6 +234,34 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
       ['Genomtänkt', 'form'],
     ],
   },
+  // FreshCut — exakt kopia av freshcut.se (barbershop, Linköping). Copy defaults are
+  // this salon's own strings (its own named theme; the platform is going on ice with
+  // FreshCut as the one live tenant). SWAPPABLE things — hero/gallery photos, logo,
+  // colours, phone/address — stay in tenant_settings (seeded at provisioning, edited in
+  // /admin/varumarke); the image defaults below are generic barber stock for the un-
+  // seeded state. Section titles that don't fit the 6-field copy contract live as
+  // constants in FreshCutLayout.
+  freshcut: {
+    heroEyebrow: '— Barbershop',
+    heroTitle: 'FreshCut',
+    heroLede: 'Barbershop i centrala Linköping',
+    tagline: 'Barbershop i centrala Linköping',
+    utility: 'Boka tid online · Välkommen in',
+    italic: 'Mer än bara en frisörsalong.',
+    aboutCopy:
+      'I våra fräscha lokaler mitt i Linköping City känner du dig väl omhändertagen av våra barberare, som har mångårig erfarenhet inom herrklippningar. Oavsett om du vill snygga till ditt skägg, ögonbryn eller håret hjälper vi alltid till att göra dig helt nöjd med din klippning.',
+    servicesEyebrow: '— Prislista',
+    servicesTitle: 'Priser. Som tål att jämföras.',
+    aboutTitle: 'FreshCut gör dig nöjd.',
+    teamEyebrow: '— Våra barberare',
+    teamTitle: 'Våra barberare.',
+    heroImages: [IMG.barberCut, IMG.barberShop, IMG.barberTools],
+    galleryImages: [IMG.barberCut, IMG.beard, IMG.barberShop, IMG.barberTools],
+    aboutImage: IMG.barberTools,
+    closingImage: IMG.barberShop,
+    team: [],
+    stats: [],
+  },
 }
 
 /**
