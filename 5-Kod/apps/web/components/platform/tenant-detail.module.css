@@ -126,10 +126,23 @@
   display: grid;
   gap: 16px;
 }
+/* Full-width single column (tables/large forms use the whole screen — no 760px
+   pinned-left "blog" column, no dead right half). */
 .maxCol {
-  max-width: 760px;
   display: grid;
   gap: 16px;
+}
+/* Card grid — several stackable cards flow side-by-side into as many columns as the
+   viewport allows, so a tab reads across the screen instead of one tall scroll. */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+/* A card that must break out of the grid to full width (preview iframe, danger row). */
+.spanAll {
+  grid-column: 1 / -1;
 }
 
 /* ── KV grid (Ägare card, grunddata) ── */

@@ -21,17 +21,22 @@ import styles from './tenant-detail.module.css'
 
 export type TenantTabKey =
   | 'Översikt'
-  | 'Data'
+  | 'Tjänster'
+  | 'Kunder'
   | 'Personal'
-  | 'Branding'
+  | 'Sida'
   | 'Integrationer'
   | 'Drift'
 
+// Logiska flikar — en entitet/område per flik (den gamla luddiga "Data"-hinken är
+// uppdelad: Tjänster + Kunder egna flikar; storefront = "Sida"; grunddata/inställningar
+// → Drift).
 const TABS: { key: TenantTabKey; icon: IconName }[] = [
   { key: 'Översikt', icon: 'grid' },
-  { key: 'Data', icon: 'layers' },
+  { key: 'Tjänster', icon: 'star' },
+  { key: 'Kunder', icon: 'users' },
   { key: 'Personal', icon: 'scissors' },
-  { key: 'Branding', icon: 'palette' },
+  { key: 'Sida', icon: 'palette' },
   { key: 'Integrationer', icon: 'link' },
   { key: 'Drift', icon: 'shield' },
 ]
@@ -45,7 +50,7 @@ export function TenantDetailTabs({
 
   return (
     <div>
-      <div className={styles.subtabs} role="tablist" aria-label="Salong-detalj">
+      <div className={styles.subtabs} role="tablist" aria-label="Kund-detalj">
         {TABS.map((t) => {
           const isActive = active === t.key
           return (

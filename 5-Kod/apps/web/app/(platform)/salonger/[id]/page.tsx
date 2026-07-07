@@ -262,17 +262,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       </div>
     ),
 
-    Data: (
+    Tjänster: (
       <div className={styles.maxCol}>
-        {/* §2.1B — Operativ data-kontroll (existing wired forms, NOT dead inputs). */}
-        <OperativeControls
-          tenantId={tenant.id}
-          name={tenant.name}
-          googleReviewUrl={operative.googleReviewUrl}
-          bookingVariant={operative.bookingVariant}
-          salonAdminEmail={salonAdmin?.email ?? null}
-          serviceRoleAvailable={serviceRoleAvailable}
-        />
         <Card>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Tjänster · {services.length}</h2>
@@ -284,6 +275,11 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           </p>
           <ServicesCard tenantId={tenant.id} services={services} />
         </Card>
+      </div>
+    ),
+
+    Kunder: (
+      <div className={styles.maxCol}>
         <Card pad={0}>
           <div className={styles.sectionHead} style={{ padding: '16px 20px', marginBottom: 0 }}>
             <h2 className={styles.h2}>Kunder ({customers.length})</h2>
@@ -353,14 +349,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         </Card>
         <p className={styles.noteText} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon name="info" size={14} style={{ color: 'var(--c-info)', flex: 'none' }} />
-          Lägg till personal åt salongen i Data-fliken — magic-link-invite kräver
-          SERVICE_ROLE_KEY (sätts av ops).
+          Här redigerar du befintlig personal + veckoschema. Ny medarbetare med inlogg
+          bjuds in under Insyn → Personal (magic-link kräver SERVICE_ROLE_KEY).
         </p>
       </div>
     ),
 
-    Branding: (
-      <div className={styles.maxCol} style={{ maxWidth: 640 }}>
+    Sida: (
+      <div className={styles.cardGrid}>
         <Card>
           <div className="eyebrow" style={{ marginBottom: 4 }}>
             Leksakslådan · no-code
@@ -399,7 +395,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     ),
 
     Integrationer: (
-      <div className={styles.maxCol}>
+      <div className={styles.cardGrid}>
         {integrationRows(tenant.stripe_charges_enabled, operative.googleReviewUrl).map((it) => (
           <Card key={it.name}>
             <div className={styles.intRow}>
@@ -427,6 +423,16 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
     Drift: (
       <div className={styles.maxCol}>
+        {/* Grunddata/inställningar (§2.1B) — salongsnamn, bokningsvariant, Google-
+            recensionslänk. Flyttat hit från gamla "Data"-hinken (egna wired forms). */}
+        <OperativeControls
+          tenantId={tenant.id}
+          name={tenant.name}
+          googleReviewUrl={operative.googleReviewUrl}
+          bookingVariant={operative.bookingVariant}
+          salonAdminEmail={salonAdmin?.email ?? null}
+          serviceRoleAvailable={serviceRoleAvailable}
+        />
         <Card>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>
