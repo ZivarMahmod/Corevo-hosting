@@ -313,24 +313,48 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       </div>
     ),
 
+    // Sida = ALLT som rör salongens publika webbsida på ett ställe (Zivar: "samla allt
+    // som har med sidan att göra"): förhandsvisning + utseende + text/bilder + kund-
+    // editor-reglaget. Drift hålls fri från sido-grejer (ren drift).
     Sida: (
-      <div className={styles.cardGrid}>
+      <div className={styles.maxCol}>
         <Card>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>
-            Leksakslådan · no-code
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Förhandsvisning &amp; innehåll</h2>
+            <span className={styles.chip}>content_slots · live-preview</span>
+          </div>
+          <p className={styles.noteText} style={{ marginBottom: 12 }}>
+            Live-förhandsvisning av salongens skarpa storefront. Slå på redigeringsläget för att byta
+            bilder i sidans bild-slots direkt — ändringen slår igenom på den publika sidan (cache-bustas).
+          </p>
+          <TenantPreviewFrame
+            tenantId={tenant.id}
+            storefrontUrl={storefrontUrl}
+            storefrontHost={storefrontHost}
+            templateKey={activeTemplateKey}
+            isActive={isActive}
+          />
+        </Card>
+
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Utseende</h2>
+            <span className={styles.chip}>färg · font · logo</span>
           </div>
           <p className={styles.noteText} style={{ marginBottom: 16 }}>
-            Token-branding (färg/font/logo). Slår igenom på storefronten utan deploy.
+            Token-branding (färg/typsnitt/logotyp). Slår igenom på storefronten utan deploy.
           </p>
           <PlatformBrandingForm tenantId={tenant.id} branding={branding} />
         </Card>
+
         <Card>
-          <div className="eyebrow" style={{ marginBottom: 4 }}>
-            Innehåll · storefront
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Text &amp; bilder</h2>
+            <span className={styles.chip}>säljtext · hero/galleri</span>
           </div>
           <p className={styles.noteText} style={{ marginBottom: 16 }}>
-            Salongens säljtext + hero/galleri-foton. Redigeras här utan att logga in i
-            salongens egen admin. Tomma fält faller tillbaka på temats standard.
+            Salongens säljtext + hero/galleri-foton. Redigeras här utan att logga in i salongens egen
+            admin. Tomma fält faller tillbaka på temats standard.
           </p>
           <StorefrontContentCard
             tenantId={tenant.id}
@@ -339,6 +363,20 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             galleryImages={branding.gallery_images ?? []}
           />
         </Card>
+
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Låt kunden redigera själv</h2>
+            <span className={styles.chip}>{siteEditorEnabled ? 'på' : 'av (standard)'}</span>
+          </div>
+          <p className={styles.noteText} style={{ marginBottom: 12 }}>
+            Per-kund-reglage: slår på/av den kund-egna sid-editorn (/admin/sajtbyggare). Standard AV —
+            slå på när kunden ska få redigera sin sida själv. Påverkar bara editorn, aldrig den publika
+            sidan (redan publicerat innehåll syns kvar).
+          </p>
+          <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />
+        </Card>
+
         <Card style={{ background: 'var(--c-paper-2)' }}>
           <div className={styles.noteHead}>
             <Icon name="alert" size={15} style={{ color: 'var(--c-warning)' }} />
@@ -415,44 +453,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             super-admin-spärrad i DB. Live slår igenom på storefronten direkt (cache-bust).
           </p>
           <ModulesCard tenantId={tenant.id} modules={modules} />
-        </Card>
-
-        <Card>
-          <div className={styles.sectionHead}>
-            <h2 className={styles.h2}>Sajtbyggaren</h2>
-            <span className={styles.chip}>
-              {siteEditorEnabled ? 'på för kunden' : 'av (standard)'}
-            </span>
-          </div>
-          <p className={styles.noteText} style={{ marginBottom: 12 }}>
-            Per-kund-reglage: slår på/av den kund-egna sid-editorn (`/admin/sajtbyggare`) för
-            den här salongen. Standard är AV — slå på när kunden ska få redigera sin sida själv.
-            Påverkar bara editorn, aldrig den publika sidan (redan publicerat innehåll syns kvar).
-          </p>
-          <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />
-        </Card>
-
-        {/* Visuell hub (spår 4, v1) — live-preview av kundens skarpa sida + bild-swap
-            på storefrontens bild-slots. Iframe mot den RIKTIGA publika sidan; slot-
-            overlay-scaffold (postMessage) + redigera-läge med drawer. Full sidbyggare
-            är senare — v1 är bild-slot-byte (content_slots). */}
-        <Card>
-          <div className={styles.sectionHead}>
-            <h2 className={styles.h2}>Sida &amp; innehåll</h2>
-            <span className={styles.chip}>content_slots · live-preview</span>
-          </div>
-          <p className={styles.noteText} style={{ marginBottom: 12 }}>
-            Live-förhandsvisning av salongens skarpa storefront. Slå på redigeringsläget för
-            att byta bilder i sidans bild-slots direkt — ändringen slår igenom på den publika
-            sidan (cache-bustas). Texter och hela sektioner kommer i nästa steg.
-          </p>
-          <TenantPreviewFrame
-            tenantId={tenant.id}
-            storefrontUrl={storefrontUrl}
-            storefrontHost={storefrontHost}
-            templateKey={activeTemplateKey}
-            isActive={isActive}
-          />
         </Card>
 
         <Card pad={0}>
