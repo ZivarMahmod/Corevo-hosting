@@ -298,12 +298,12 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             och sätt varje medarbetares veckoschema. Öppettiderna på storefronten härleds från
             schemat. Ändringar slår igenom på bokningen direkt.
           </p>
-          <PersonalCard tenantId={tenant.id} staff={staffList} />
+          <PersonalCard tenantId={tenant.id} staff={staffList} serviceRoleAvailable={serviceRoleAvailable} />
         </Card>
         <p className={styles.noteText} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon name="info" size={14} style={{ color: 'var(--c-info)', flex: 'none' }} />
-          Här redigerar du befintlig personal + veckoschema. Ny medarbetare med inlogg
-          bjuds in under Insyn → Personal (magic-link kräver SERVICE_ROLE_KEY).
+          Lägg till, redigera, schemalägg och ge inlogg åt personalen — allt härifrån. Öppettiderna
+          på storefronten härleds ur veckoschemana.
         </p>
       </div>
     ),

@@ -87,6 +87,95 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
 }
 
 /**
+ * Invite a staff member WITH a login (magic-link) on a CHOSEN salon — the platform
+ * twin of admin inviteStaff, but via platformCtx (RLS bypass) so Zivar can onboard a
+ * salon's behandlare with their own account without logging into the salon's admin.
+ * Provisions: staff role (level 3) → auth user (inviteUserByEmail) → app_metadata
+ * tenant_id → public.users row → new or linked staff row (profile_id). Optional
+ * `staffId` links the login to an EXISTING staff row instead of creating one.
+ * Gated on hasServiceRole() (SUPABASE_SERVICE_ROLE_KEY, set in prod); degrades with a
+ * clear message, never throws. Role/users writes go BEFORE nothing can orphan them.
+ */
+export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  const tenantId = String(fd.get('tenantId') ?? '')
+  const email = String(fd.get('email') ?? '').trim().toLowerCase()
+  const title = String(fd.get('title') ?? '').trim()
+  const staffId = String(fd.get('staffId') ?? '').trim() // optional: link an existing staff row
+  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!email || !EMAIL_RE.test(email)) return { error: 'Ange en giltig e-postadress.' }
+
+  if (!hasServiceRole())
+    return { error: 'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops). Lägg till utan konto under tiden.' }
+  const svc = createServiceClient()
+  if (!svc) return { error: 'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
+
+  const { data: tenant } = await supabase.from('tenants').select('id').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Salongen finns inte.' }
+
+  // 1) Tenant-scoped `staff` role (level 3), idempotent. Platform bypass admits it.
+  await supabase
+    .from('roles')
+    .upsert({ tenant_id: tenantId, name: 'staff', level: 3 }, { onConflict: 'tenant_id,name', ignoreDuplicates: true })
+  const { data: role } = await supabase
+    .from('roles')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('name', 'staff')
+    .maybeSingle()
+  if (!role) return { error: GENERIC }
+
+  // 2) Invite the auth user (one-time magic link).
+  const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email)
+  if (iErr || !invited?.user) {
+    return { error: `Inbjudan misslyckades: ${iErr?.message ?? 'kontot finns kanske redan'}.` }
+  }
+  const authId = invited.user.id
+
+  // 3) Bake tenant_id into app_metadata (JWT belt-and-suspenders).
+  await svc.auth.admin.updateUserById(authId, { app_metadata: { tenant_id: tenantId, platform_admin: false } })
+
+  // 4) public.users row.
+  const { error: uErr } = await supabase
+    .from('users')
+    .insert({ id: authId, tenant_id: tenantId, email, role_id: role.id, status: 'active' })
+  if (uErr) return { error: 'Medarbetaren kunde inte kopplas (kontot finns kanske redan).' }
+
+  // 5) Create or link the staff row → profile_id points at the new account.
+  if (staffId) {
+    const { error: linkErr } = await supabase
+      .from('staff')
+      .update({ profile_id: authId })
+      .eq('id', staffId)
+      .eq('tenant_id', tenantId)
+    if (linkErr) return { error: GENERIC }
+  } else {
+    const { data: loc } = await supabase
+      .from('locations')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    const { error: insErr } = await supabase
+      .from('staff')
+      .insert({ tenant_id: tenantId, location_id: loc?.id ?? null, profile_id: authId, title: title || email, active: true })
+    if (insErr) return { error: GENERIC }
+  }
+
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.staff_invite',
+    tenantId,
+    actorId: user.id,
+    entityId: staffId || undefined,
+    meta: { email },
+  })
+  return { success: `Inbjudan skickad till ${email}. Medarbetaren skapar lösenord via länken.` }
+}
+
+/**
  * Edit a staff member's {title, active} by id, scoped to the tenant so a tampered
  * form can't touch another salon's staff. Mirrors updateTenantService: the
  * `.eq('id', staffId).eq('tenant_id', tenantId)` pair IS the security boundary.

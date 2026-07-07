@@ -13,6 +13,7 @@ export { saveTenantData } from './actions/data'
 export {
   sendPasswordReset,
   createTenantStaff,
+  inviteTenantStaff,
   updateTenantStaff,
   removeTenantStaff,
   setStaffSchedule,
