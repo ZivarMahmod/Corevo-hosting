@@ -13,6 +13,7 @@ import { StatusControl } from '@/components/platform/StatusControl'
 import { DomainPanel } from '@/components/platform/DomainPanel'
 import { OperativeControls } from '@/components/platform/OperativeControls'
 import { ServicesCard } from '@/components/platform/ServicesCard'
+import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { TenantPreviewFrame } from '@/components/platform/TenantPreviewFrame'
@@ -71,7 +72,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const { id } = await params
   const detail = await getTenantDetail(id)
   if (!detail) notFound()
-  const { tenant, settings, branding, counts, services, salonAdmin, onboarding, operative } = detail
+  const { tenant, settings, branding, counts, services, staffList, salonAdmin, onboarding, operative } = detail
   const customizationLevel = deriveCustomizationLevel(
     (settings?.settings ?? null) as Record<string, unknown> | null,
     branding as unknown as Record<string, unknown>,
@@ -275,70 +276,17 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
     Personal: (
       <div className={styles.maxCol}>
-        <Card pad={0}>
-          <div className={styles.sectionHead} style={{ padding: '16px 20px', marginBottom: 0 }}>
-            <h2 className={styles.h2}>Personal · {staff.length}</h2>
-            <span className={styles.chip}>staff</span>
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Personal · {staffList.length}</h2>
+            <span className={styles.chip}>staff · schema</span>
           </div>
-          {staff.length === 0 ? (
-            <p className={styles.empty}>
-              Ingen personal ännu — onboarda första frisören i Data-fliken (Lägg till personal), eller
-              låt salongen bjuda in själv.
-            </p>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ptable">
-                <thead>
-                  <tr>
-                    <th>Namn</th>
-                    <th>Roll</th>
-                    <th>E-post</th>
-                    <th>Tjänster</th>
-                    <th data-last="">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {staff.map((s) => (
-                    <tr key={s.id}>
-                      <td>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span
-                            style={{
-                              width: 30,
-                              height: 30,
-                              borderRadius: 999,
-                              background: 'var(--c-forest)',
-                              color: '#fff',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontSize: 12,
-                              fontWeight: 700,
-                              flex: 'none',
-                            }}
-                          >
-                            {s.name.charAt(0).toUpperCase() || '·'}
-                          </span>
-                          <b style={{ fontWeight: 600 }}>{s.name}</b>
-                        </span>
-                      </td>
-                      <td>{s.role}</td>
-                      <td>
-                        <span style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>{s.email ?? '—'}</span>
-                      </td>
-                      <td>
-                        <span className="num">{s.services} st</span>
-                      </td>
-                      <td data-last="">
-                        <Badge tone={staffStatusTone(s.status)} dot={false}>
-                          {s.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <p className={styles.noteText} style={{ marginBottom: 14 }}>
+            Hantera salongens personal direkt härifrån — redigera namn/titel, aktivera/inaktivera,
+            och sätt varje medarbetares veckoschema. Öppettiderna på storefronten härleds från
+            schemat. Ändringar slår igenom på bokningen direkt.
+          </p>
+          <PersonalCard tenantId={tenant.id} staff={staffList} />
         </Card>
         <p className={styles.noteText} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon name="info" size={14} style={{ color: 'var(--c-info)', flex: 'none' }} />
@@ -608,11 +556,6 @@ function customerStatusTone(status: string): BadgeTone {
   if (status === 'Aktiv') return 'success'
   if (status === 'Skyddat namn') return 'info'
   return 'neutral'
-}
-function staffStatusTone(status: string): BadgeTone {
-  if (status === 'Aktiv') return 'success'
-  if (status === 'Inbjuden') return 'info'
-  return 'warning'
 }
 
 const AUDIT_TONE_COLOR: Record<string, string> = {

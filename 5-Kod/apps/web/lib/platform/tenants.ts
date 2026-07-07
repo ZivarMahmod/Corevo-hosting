@@ -346,6 +346,16 @@ export type TenantDetail = {
   /** The tenant's service rows (editable list for the super-admin services surface).
    *  Ordered oldest-first so the list is stable across revalidate (no reshuffle). */
   services: { id: string; name: string; price_cents: number; duration_min: number; active: boolean }[]
+  /** The tenant's staff rows (editable list for the super-admin Personal surface) —
+   *  ALL staff (active + inactive), oldest-first for stable revalidate. Each carries
+   *  its weekly working_hours so the Personal tab renders an editable schedule per
+   *  medarbetare. weekday is DB semantics (0=Sunday..6=Saturday); times are "HH:MM". */
+  staffList: {
+    id: string
+    title: string | null
+    active: boolean
+    hours: { weekday: number; start: string; end: string }[]
+  }[]
   salonAdmin: { email: string | null; fullName: string | null; status: string } | null
   onboarding: OnboardingStep[]
   /** Operativ data-kontroll (§2.1B): current values for the edit surface. */
@@ -365,7 +375,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
   const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle()
   if (!tenant) return null
 
-  const [settingsRes, servicesRes, serviceRowsRes, staffRes, hoursRes, bookingsRes, completedRes, adminRes] = await Promise.all([
+  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes] = await Promise.all([
     supabase.from('tenant_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
     supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
     // Editable service rows for the super-admin services surface. All services (active
@@ -376,6 +386,20 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: true }),
     supabase.from('staff').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
+    // Editable staff rows for the super-admin Personal surface. ALL staff (active +
+    // inactive), oldest-first so soft-removed staff stay visible/reversible and the
+    // list is stable across revalidate.
+    supabase
+      .from('staff')
+      .select('id, title, active')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: true }),
+    // Every working_hours row for the tenant (one read, bucketed by staff_id in JS —
+    // no per-staff fan-out). Feeds each staff's weekly schedule editor.
+    supabase
+      .from('working_hours')
+      .select('staff_id, weekday, start_time, end_time')
+      .eq('tenant_id', tenantId),
     supabase.from('working_hours').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ACTIVE_BOOKING),
     supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('status', 'completed'),
@@ -412,6 +436,23 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     completed: completedRes.count ?? 0,
   }
 
+  // Bucket working_hours by staff_id (one pass), slicing "HH:MM:SS" → "HH:MM" for the
+  // <input type="time"> defaults. weekday stays DB semantics (0=Sunday..6=Saturday).
+  const hoursByStaff = new Map<string, { weekday: number; start: string; end: string }[]>()
+  for (const h of (hoursRowsRes.data ?? []) as {
+    staff_id: string
+    weekday: number
+    start_time: string
+    end_time: string
+  }[]) {
+    const list = hoursByStaff.get(h.staff_id) ?? []
+    list.push({ weekday: h.weekday, start: h.start_time.slice(0, 5), end: h.end_time.slice(0, 5) })
+    hoursByStaff.set(h.staff_id, list)
+  }
+  const staffList = ((staffRowsRes.data ?? []) as { id: string; title: string | null; active: boolean }[]).map(
+    (s) => ({ id: s.id, title: s.title, active: s.active, hours: hoursByStaff.get(s.id) ?? [] }),
+  )
+
   const onboarding = deriveOnboarding({
     hasSettings: !!settings,
     brandingSet: brandingIsSet(branding),
@@ -429,6 +470,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     branding,
     counts,
     services: serviceRowsRes.data ?? [],
+    staffList,
     salonAdmin: adminRow
       ? { email: adminRow.email, fullName: adminRow.full_name, status: adminRow.status }
       : null,

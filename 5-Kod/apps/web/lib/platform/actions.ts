@@ -13,6 +13,9 @@ export { saveTenantData } from './actions/data'
 export {
   sendPasswordReset,
   createTenantStaff,
+  updateTenantStaff,
+  removeTenantStaff,
+  setStaffSchedule,
   createPlatformCustomer,
   enterHelpMode,
 } from './actions/people'

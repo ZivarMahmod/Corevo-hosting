@@ -21,6 +21,9 @@ export type PlatformAuditAction =
   | 'tenant.update' // edit safe tenant fields (name, review url, booking variant)
   | 'tenant.password_reset' // generate a recovery link for the salon admin
   | 'tenant.staff_create' // Zivar-assisted staff onboarding on a chosen tenant
+  | 'tenant.staff_update' // super-admin edits a staff member (title/active) on a chosen tenant
+  | 'tenant.staff_remove' // super-admin soft-removes (active=false) a staff member on a chosen tenant
+  | 'tenant.staff_schedule' // super-admin sets a staff member's weekly working_hours on a chosen tenant
   | 'tenant.service_create' // super-admin adds a service to a chosen tenant (ongoing services management)
   | 'tenant.service_update' // super-admin edits a service (name/price/duration/active) on a chosen tenant
   | 'tenant.service_delete' // super-admin deletes a service on a chosen tenant

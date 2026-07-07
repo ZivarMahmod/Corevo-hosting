@@ -87,6 +87,179 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
 }
 
 /**
+ * Edit a staff member's {title, active} by id, scoped to the tenant so a tampered
+ * form can't touch another salon's staff. Mirrors updateTenantService: the
+ * `.eq('id', staffId).eq('tenant_id', tenantId)` pair IS the security boundary.
+ */
+export async function updateTenantStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+
+  const tenantId = String(fd.get('tenantId') ?? '')
+  const staffId = String(fd.get('staffId') ?? '')
+  const title = String(fd.get('title') ?? '').trim().slice(0, 120)
+  const active = fd.get('active') === 'on'
+
+  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!staffId) return { error: 'Saknar medarbetare.' }
+  if (!title) return { error: 'Ange ett namn/en titel.' }
+
+  const { error } = await supabase
+    .from('staff')
+    .update({ title, active })
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+  if (error) {
+    await reportActionError('updateTenantStaff.update', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.staff_update',
+    tenantId,
+    actorId: user.id,
+    entityId: staffId,
+    meta: { title, active },
+  })
+  return { success: `Medarbetare "${title}" sparad.` }
+}
+
+/**
+ * SOFT remove a staff member: set active=false, scoped to the tenant. NOT a hard
+ * delete — staff.id is FK'd by bookings/working_hours/staff_services (build-once-
+ * never-delete), so deactivating is the safe, reversible act (re-activate via the
+ * edit toggle). A deactivated staff drops out of the booking engine but their
+ * history stays intact.
+ */
+export async function removeTenantStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+
+  const tenantId = String(fd.get('tenantId') ?? '')
+  const staffId = String(fd.get('staffId') ?? '')
+
+  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!staffId) return { error: 'Saknar medarbetare.' }
+
+  const { error } = await supabase
+    .from('staff')
+    .update({ active: false })
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+  if (error) {
+    await reportActionError('removeTenantStaff.update', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.staff_remove',
+    tenantId,
+    actorId: user.id,
+    entityId: staffId,
+  })
+  return { success: 'Medarbetare inaktiverad (historik sparad).' }
+}
+
+/**
+ * Set a staff member's WEEKLY schedule (working_hours). "Replace the staff's
+ * schedule" model: DELETE the staff's existing rows (scoped tenant), then INSERT
+ * one row per enabled weekday — idempotent, so re-submitting is safe.
+ *
+ * Field encoding (per weekday d in 0..6, DB semantics 0=Sunday..6=Saturday):
+ *   open_${d}  checkbox · start_${d} / end_${d}  <input type="time"> ("HH:MM").
+ *
+ * SAFETY (the DELETE+INSERT is two round-trips, NOT one transaction): we parse and
+ * validate ALL 7 rows FIRST and bail on the first invalid open row BEFORE touching
+ * the DB — so a bad input never leaves the schedule half-wiped. location_id is
+ * lifted from the staff row: migration 0022's staff↔location fence means a staff
+ * member is only bookable where they have a working_hours row, so every inserted
+ * row must carry the staff's location_id or bookability silently breaks. The
+ * tenant-scoped staff read is ALSO the security check (rejects a tampered staffId
+ * from another salon).
+ */
+export async function setStaffSchedule(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+
+  const tenantId = String(fd.get('tenantId') ?? '')
+  const staffId = String(fd.get('staffId') ?? '')
+  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!staffId) return { error: 'Saknar medarbetare.' }
+
+  // Security + location source in one read: a staffId from another tenant fails the
+  // .eq('tenant_id') filter → maybeSingle returns null → we bail.
+  const { data: staffRow } = await supabase
+    .from('staff')
+    .select('id, location_id')
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!staffRow) return { error: 'Medarbetaren finns inte hos den här salongen.' }
+
+  const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
+  // Front-load ALL validation before any DB write (no half-wiped schedule).
+  const rows: {
+    tenant_id: string
+    staff_id: string
+    weekday: number
+    start_time: string
+    end_time: string
+    location_id: string | null
+  }[] = []
+  const SV = ['Söndag', 'Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag']
+  for (let d = 0; d <= 6; d++) {
+    if (fd.get(`open_${d}`) !== 'on') continue
+    const start = String(fd.get(`start_${d}`) ?? '').trim()
+    const end = String(fd.get(`end_${d}`) ?? '').trim()
+    if (!HHMM.test(start) || !HHMM.test(end))
+      return { error: `${SV[d]}: ange giltig start- och sluttid (HH:MM).` }
+    // Zero-padded 24h → lexical compare matches chronological order (schema CHECK end>start).
+    if (end <= start) return { error: `${SV[d]}: sluttid måste vara efter starttid.` }
+    rows.push({
+      tenant_id: tenantId,
+      staff_id: staffId,
+      weekday: d,
+      start_time: start,
+      end_time: end,
+      location_id: staffRow.location_id ?? null,
+    })
+  }
+
+  // Replace: clear the staff's existing week (scoped tenant), then insert the enabled
+  // rows. Skip the insert entirely when the staff is closed all week (a legit state).
+  const { error: delErr } = await supabase
+    .from('working_hours')
+    .delete()
+    .eq('staff_id', staffId)
+    .eq('tenant_id', tenantId)
+  if (delErr) {
+    await reportActionError('setStaffSchedule.delete', delErr, { tenantId })
+    return { error: GENERIC }
+  }
+  if (rows.length > 0) {
+    const { error: insErr } = await supabase.from('working_hours').insert(rows)
+    if (insErr) {
+      await reportActionError('setStaffSchedule.insert', insErr, { tenantId })
+      return { error: GENERIC }
+    }
+  }
+
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.staff_schedule',
+    tenantId,
+    actorId: user.id,
+    entityId: staffId,
+    meta: { days: rows.length },
+  })
+  return {
+    success:
+      rows.length > 0
+        ? `Schema sparat (${rows.length} dag${rows.length === 1 ? '' : 'ar'}).`
+        : 'Schema sparat — stängt alla dagar.',
+  }
+}
+
+/**
  * Manuellt skapa en kund-rad på en VALD salong (goal-22, audit nod #6). The
  * cross-tenant Kunder view is platform-only, so this is platform_admin-gated
  * (platformCtx) and validates the chosen tenant server-side — the client must NOT be
