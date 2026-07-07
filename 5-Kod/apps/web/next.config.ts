@@ -96,6 +96,9 @@ const nextConfig: NextConfig = {
     return [
       { source: '/:path*', headers: securityHeaders },
       { source: '/sajtbyggare-spike/look/:key*', headers: framableSecurityHeaders },
+      // Super-admin live storefront preview (Sida tab) — framed SAME-ORIGIN by
+      // /salonger/[id]; same 'self' carve-out as the look route.
+      { source: '/salong-preview/:slug*', headers: framableSecurityHeaders },
     ]
   },
 }

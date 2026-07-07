@@ -19,7 +19,7 @@ import { PersonalCard } from '@/components/platform/PersonalCard'
 import { StorefrontContentCard } from '@/components/platform/StorefrontContentCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
-import { TenantPreviewFrame } from '@/components/platform/TenantPreviewFrame'
+import { SidaPreview } from '@/components/platform/SidaPreview'
 import { SajtbyggareControl } from '@/components/platform/SajtbyggareControl'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, tenantSiteEditorEnabled } from '@/lib/tenant-data'
@@ -318,17 +318,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     // editor-reglaget. Drift hålls fri från sido-grejer (ren drift).
     Sida: (
       <div className={styles.maxCol}>
+        {/* Live-förhandsvisning av den SKARPA sidan (same-origin preview-rutt) överst —
+            allt nedanför redigerar den; "Ladda om" visar ändringen. */}
         <Card>
           <div className={styles.sectionHead}>
-            <h2 className={styles.h2}>Förhandsvisning &amp; innehåll</h2>
-            <span className={styles.chip}>content_slots · live-preview</span>
+            <h2 className={styles.h2}>Förhandsvisning</h2>
           </div>
-          <p className={styles.noteText} style={{ marginBottom: 12 }}>
-            Live-förhandsvisning av salongens skarpa storefront. Slå på redigeringsläget för att byta
-            bilder i sidans bild-slots direkt — ändringen slår igenom på den publika sidan (cache-bustas).
-          </p>
-          <TenantPreviewFrame
-            tenantId={tenant.id}
+          <SidaPreview
+            previewPath={`/salong-preview/${tenant.slug}`}
             storefrontUrl={storefrontUrl}
             storefrontHost={storefrontHost}
             templateKey={activeTemplateKey}
@@ -336,56 +333,36 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           />
         </Card>
 
-        <Card>
-          <div className={styles.sectionHead}>
-            <h2 className={styles.h2}>Utseende</h2>
-            <span className={styles.chip}>färg · font · logo</span>
-          </div>
-          <p className={styles.noteText} style={{ marginBottom: 16 }}>
-            Token-branding (färg/typsnitt/logotyp). Slår igenom på storefronten utan deploy.
-          </p>
-          <PlatformBrandingForm tenantId={tenant.id} branding={branding} />
-        </Card>
+        <div className={styles.twoCol}>
+          <Card>
+            <div className={styles.sectionHead}>
+              <h2 className={styles.h2}>Varumärke</h2>
+            </div>
+            <PlatformBrandingForm tenantId={tenant.id} branding={branding} />
+          </Card>
+
+          <Card>
+            <div className={styles.sectionHead}>
+              <h2 className={styles.h2}>Kunden redigerar själv</h2>
+            </div>
+            <p className={styles.noteText} style={{ marginBottom: 12 }}>
+              Slår på/av den kund-egna sid-editorn. Påverkar bara kundens editor, aldrig den publika
+              sidan.
+            </p>
+            <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />
+          </Card>
+        </div>
 
         <Card>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Text &amp; bilder</h2>
-            <span className={styles.chip}>säljtext · hero/galleri</span>
           </div>
-          <p className={styles.noteText} style={{ marginBottom: 16 }}>
-            Salongens säljtext + hero/galleri-foton. Redigeras här utan att logga in i salongens egen
-            admin. Tomma fält faller tillbaka på temats standard.
-          </p>
           <StorefrontContentCard
             tenantId={tenant.id}
             copy={copy}
             heroImages={branding.hero_images ?? []}
             galleryImages={branding.gallery_images ?? []}
           />
-        </Card>
-
-        <Card>
-          <div className={styles.sectionHead}>
-            <h2 className={styles.h2}>Låt kunden redigera själv</h2>
-            <span className={styles.chip}>{siteEditorEnabled ? 'på' : 'av (standard)'}</span>
-          </div>
-          <p className={styles.noteText} style={{ marginBottom: 12 }}>
-            Per-kund-reglage: slår på/av den kund-egna sid-editorn (/admin/sajtbyggare). Standard AV —
-            slå på när kunden ska få redigera sin sida själv. Påverkar bara editorn, aldrig den publika
-            sidan (redan publicerat innehåll syns kvar).
-          </p>
-          <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />
-        </Card>
-
-        <Card style={{ background: 'var(--c-paper-2)' }}>
-          <div className={styles.noteHead}>
-            <Icon name="alert" size={15} style={{ color: 'var(--c-warning)' }} />
-            <span>Nivå-3 = kod, inte här</span>
-          </div>
-          <p className={styles.noteText}>
-            Scoped CSS-overrides (premium-design) görs i säker miljö med kod — aldrig via no-code-UI.
-            Det här är token-lagret.
-          </p>
         </Card>
       </div>
     ),
