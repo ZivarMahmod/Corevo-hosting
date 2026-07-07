@@ -298,7 +298,12 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             och sätt varje medarbetares veckoschema. Öppettiderna på storefronten härleds från
             schemat. Ändringar slår igenom på bokningen direkt.
           </p>
-          <PersonalCard tenantId={tenant.id} staff={staffList} serviceRoleAvailable={serviceRoleAvailable} />
+          <PersonalCard
+            tenantId={tenant.id}
+            staff={staffList}
+            services={services.map((s) => ({ id: s.id, name: s.name }))}
+            serviceRoleAvailable={serviceRoleAvailable}
+          />
         </Card>
         <p className={styles.noteText} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Icon name="info" size={14} style={{ color: 'var(--c-info)', flex: 'none' }} />

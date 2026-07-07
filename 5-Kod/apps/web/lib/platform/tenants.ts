@@ -371,6 +371,9 @@ export type TenantDetail = {
     title: string | null
     active: boolean
     hours: { weekday: number; start: string; end: string }[]
+    /** Service ids this staff can perform (staff_services) — drives the booking's
+     *  "Hos vem?" step + the per-staff tjänst-picker in the Personal tab. */
+    serviceIds: string[]
   }[]
   salonAdmin: { email: string | null; fullName: string | null; status: string } | null
   onboarding: OnboardingStep[]
@@ -505,17 +508,28 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     list.push({ weekday: h.weekday, start: h.start_time.slice(0, 5), end: h.end_time.slice(0, 5) })
     hoursByStaff.set(h.staff_id, list)
   }
-  const staffList = ((staffRowsRes.data ?? []) as { id: string; title: string | null; active: boolean }[]).map(
-    (s) => ({ id: s.id, title: s.title, active: s.active, hours: hoursByStaff.get(s.id) ?? [] }),
-  )
-
-  // Per-service staff assignments (which behandlare can perform each service).
+  // staff_services buckets both ways: service→staff (Tjänster-fliken) and staff→service
+  // (Personal-fliken, so each medarbetare's tjänst-koppling kan sättas där också — det
+  // som gör dem valbara i bokningens "Hos vem?").
   const staffByService = new Map<string, string[]>()
+  const servicesByStaff = new Map<string, string[]>()
   for (const r of (staffServicesRes.data ?? []) as { service_id: string; staff_id: string }[]) {
-    const list = staffByService.get(r.service_id) ?? []
-    list.push(r.staff_id)
-    staffByService.set(r.service_id, list)
+    const sList = staffByService.get(r.service_id) ?? []
+    sList.push(r.staff_id)
+    staffByService.set(r.service_id, sList)
+    const vList = servicesByStaff.get(r.staff_id) ?? []
+    vList.push(r.service_id)
+    servicesByStaff.set(r.staff_id, vList)
   }
+  const staffList = ((staffRowsRes.data ?? []) as { id: string; title: string | null; active: boolean }[]).map(
+    (s) => ({
+      id: s.id,
+      title: s.title,
+      active: s.active,
+      hours: hoursByStaff.get(s.id) ?? [],
+      serviceIds: servicesByStaff.get(s.id) ?? [],
+    }),
+  )
   // Per-service booking count → the Services surface knows whether "Ta bort" is possible
   // (0 bookings) or must degrade to "stäng av" (FK RESTRICT protects booked services).
   const bookingsByService = new Map<string, number>()

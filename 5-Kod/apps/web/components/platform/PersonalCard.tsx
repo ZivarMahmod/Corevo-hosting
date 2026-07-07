@@ -7,6 +7,7 @@ import {
   updateTenantStaff,
   removeTenantStaff,
   setStaffSchedule,
+  setStaffServices,
   type ActionState,
 } from '@/lib/platform/actions'
 import { Icon } from '@/components/portal/ui'
@@ -20,7 +21,8 @@ import styles from './platform.module.css'
  * med inlogg (e-post → konto + magic-link). Allt platform_admin-gatat i server-lagret.
  */
 type StaffHour = { weekday: number; start: string; end: string }
-type Staff = { id: string; title: string | null; active: boolean; hours: StaffHour[] }
+type Staff = { id: string; title: string | null; active: boolean; hours: StaffHour[]; serviceIds: string[] }
+type ServiceOption = { id: string; name: string }
 
 const WEEK: { weekday: number; label: string }[] = [
   { weekday: 1, label: 'Måndag' },
@@ -35,10 +37,12 @@ const WEEK: { weekday: number; label: string }[] = [
 export function PersonalCard({
   tenantId,
   staff,
+  services,
   serviceRoleAvailable,
 }: {
   tenantId: string
   staff: Staff[]
+  services: ServiceOption[]
   serviceRoleAvailable: boolean
 }) {
   return (
@@ -47,12 +51,18 @@ export function PersonalCard({
       {staff.length === 0 ? (
         <p className={styles.hint} style={{ marginTop: 12 }}>
           Ingen personal ännu — lägg till första medarbetaren ovan. Bokningsmotorn kräver minst en
-          aktiv medarbetare med arbetstider.
+          aktiv medarbetare med arbetstider + kopplad tjänst.
         </p>
       ) : (
         <div className={styles.svcGroup}>
           {staff.map((s) => (
-            <StaffRow key={s.id} tenantId={tenantId} staff={s} serviceRoleAvailable={serviceRoleAvailable} />
+            <StaffRow
+              key={s.id}
+              tenantId={tenantId}
+              staff={s}
+              services={services}
+              serviceRoleAvailable={serviceRoleAvailable}
+            />
           ))}
         </div>
       )}
@@ -122,13 +132,16 @@ function AddStaff({ tenantId, serviceRoleAvailable }: { tenantId: string; servic
 function StaffRow({
   tenantId,
   staff,
+  services,
   serviceRoleAvailable,
 }: {
   tenantId: string
   staff: Staff
+  services: ServiceOption[]
   serviceRoleAvailable: boolean
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateTenantStaff, {})
+  const [svcState, svcAction, svcPending] = useActionState<ActionState, FormData>(setStaffServices, {})
   const [schedState, schedAction, schedPending] = useActionState<ActionState, FormData>(setStaffSchedule, {})
   const [invState, invAction, invPending] = useActionState<ActionState, FormData>(inviteTenantStaff, {})
   const [delState, delAction, delPending] = useActionState<ActionState, FormData>(removeTenantStaff, {})
@@ -136,6 +149,10 @@ function StaffRow({
   const byWeekday = new Map<number, StaffHour>()
   for (const h of staff.hours) byWeekday.set(h.weekday, h)
   const workDays = staff.hours.length
+  const svcCount = staff.serviceIds.length
+  // Bookable = active + ≥1 service linked + ≥1 work day. Surfaced so the operator sees
+  // WHY a staff can't be picked in "Hos vem?" (usually the missing tjänst-koppling).
+  const bookable = staff.active && svcCount > 0 && workDays > 0
 
   return (
     <details className={styles.svcRow}>
@@ -146,10 +163,18 @@ function StaffRow({
         <span className={styles.svcSumMain}>
           <span className={styles.svcSumName}>
             {staff.title || 'Medarbetare'}
-            {!staff.active ? <span className={styles.svcOff}>Inaktiv</span> : null}
+            {!staff.active ? (
+              <span className={styles.svcOff}>Inaktiv</span>
+            ) : bookable ? (
+              <span className={styles.svcBadge}>Bokningsbar</span>
+            ) : (
+              <span className={styles.svcOff}>Ej bokningsbar</span>
+            )}
           </span>
           <span className={styles.svcSumMeta}>
-            {workDays > 0 ? `${workDays} arbetsdag${workDays === 1 ? '' : 'ar'}/vecka` : 'inget schema satt'}
+            {svcCount > 0 ? `${svcCount} tjänst${svcCount === 1 ? '' : 'er'}` : 'ingen tjänst kopplad'}
+            {' · '}
+            {workDays > 0 ? `${workDays} arbetsdag${workDays === 1 ? '' : 'ar'}/vecka` : 'inget schema'}
           </span>
         </span>
         <Icon name="chevronDown" size={16} className={styles.svcChev} />
@@ -176,6 +201,43 @@ function StaffRow({
             </button>
             <Feedback state={state} />
           </div>
+        </form>
+
+        {/* Tjänster medarbetaren utför (staff_services) — gör dem valbara i bokningen */}
+        <form action={svcAction} className={styles.svcSub}>
+          <input type="hidden" name="tenantId" value={tenantId} />
+          <input type="hidden" name="staffId" value={staff.id} />
+          <p className={styles.svcSubTitle}>Tjänster medarbetaren utför</p>
+          {services.length === 0 ? (
+            <p className={styles.hint} style={{ margin: 0 }}>
+              Salongen har inga tjänster än — lägg till i Tjänster-fliken först.
+            </p>
+          ) : (
+            <>
+              <div className={styles.svcStaffGrid}>
+                {services.map((sv) => (
+                  <label key={sv.id} className={styles.svcCheck}>
+                    <input
+                      type="checkbox"
+                      name="serviceId"
+                      value={sv.id}
+                      defaultChecked={staff.serviceIds.includes(sv.id)}
+                    />
+                    <span>{sv.name}</span>
+                  </label>
+                ))}
+              </div>
+              <p className={styles.hint} style={{ margin: 0 }}>
+                Utan kopplad tjänst går medarbetaren inte att välja i bokningens "Hos vem?".
+              </p>
+              <div className={styles.actions}>
+                <button type="submit" className={styles.btn} disabled={svcPending}>
+                  {svcPending ? 'Sparar…' : 'Spara tjänster'}
+                </button>
+                <Feedback state={svcState} />
+              </div>
+            </>
+          )}
         </form>
 
         {/* Veckoschema */}

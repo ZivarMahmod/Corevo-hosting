@@ -214,6 +214,67 @@ export async function updateTenantStaff(_p: ActionState, fd: FormData): Promise<
 }
 
 /**
+ * Set which services a staff member can perform (staff_services, inverse of
+ * setServiceStaff). REPLACE semantics: the submitted `serviceId` set becomes the whole
+ * set for this staff. THIS is what makes a behandlare selectable in the public booking's
+ * "Hos vem?" step (boka/page.tsx builds the per-service staff list purely from
+ * staff_services). Scoped to the tenant; each service_id verified to belong to the tenant.
+ */
+export async function setStaffServices(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  const tenantId = String(fd.get('tenantId') ?? '')
+  const staffId = String(fd.get('staffId') ?? '')
+  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!staffId) return { error: 'Saknar medarbetare.' }
+
+  const { data: st } = await supabase
+    .from('staff')
+    .select('id')
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!st) return { error: 'Medarbetaren finns inte.' }
+
+  const submitted = fd.getAll('serviceId').map((v) => String(v)).filter(Boolean)
+  const { data: validSvc } = await supabase.from('services').select('id').eq('tenant_id', tenantId)
+  const allowed = new Set((validSvc ?? []).map((s) => s.id))
+  const serviceIds = [...new Set(submitted)].filter((id) => allowed.has(id))
+
+  const { error: delErr } = await supabase
+    .from('staff_services')
+    .delete()
+    .eq('tenant_id', tenantId)
+    .eq('staff_id', staffId)
+  if (delErr) {
+    await reportActionError('setStaffServices.delete', delErr, { tenantId })
+    return { error: GENERIC }
+  }
+  if (serviceIds.length > 0) {
+    const rows = serviceIds.map((service_id) => ({ tenant_id: tenantId, service_id, staff_id: staffId }))
+    const { error: insErr } = await supabase.from('staff_services').insert(rows)
+    if (insErr) {
+      await reportActionError('setStaffServices.insert', insErr, { tenantId })
+      return { error: GENERIC }
+    }
+  }
+
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.service_staff_set',
+    tenantId,
+    actorId: user.id,
+    entityId: staffId,
+    meta: { services: serviceIds.length },
+  })
+  return {
+    success:
+      serviceIds.length > 0
+        ? `${serviceIds.length} tjänst(er) kopplade — medarbetaren går nu att välja i bokningen.`
+        : 'Inga tjänster kopplade — medarbetaren kan inte bokas för någon tjänst än.',
+  }
+}
+
+/**
  * SOFT remove a staff member: set active=false, scoped to the tenant. NOT a hard
  * delete — staff.id is FK'd by bookings/working_hours/staff_services (build-once-
  * never-delete), so deactivating is the safe, reversible act (re-activate via the
