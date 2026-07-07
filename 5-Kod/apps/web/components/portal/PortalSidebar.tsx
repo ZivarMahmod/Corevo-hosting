@@ -29,16 +29,20 @@ const NAV: Record<PortalRole, NavConfig> = {
     //   "Inställningar" → /installningar, matching /admin/installningar — non-ASCII
     //   in build paths is documented-fragile here). All icons are in IconName.
     items: [
+      // Insyn = plattform-övergripande. IA-vision punkt 3: den gamla egna gruppen
+      // "Data & drift" är borta; per-kund-data bor i kundkortet (/salonger/[id] →
+      // flikar Data/Personal/Drift). De GLOBALA tvär-kund-verktygen (slutkund-sök
+      // över alla, all-personal, alla loggar) hör hemma här under Insyn, inte som
+      // egen konkurrerande grupp — de är insyn över hela plattformen.
       { group: 'Insyn' },
       { href: '/', label: 'Översikt', icon: 'grid' },
       { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
+      { href: '/kunder', label: 'Slutkunder', icon: 'users' },
+      { href: '/personal-plattform', label: 'Personal', icon: 'scissors' },
+      { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
       { group: 'Kunder' },
       { href: '/salonger', label: 'Kunder', icon: 'building' },
       { href: '/salonger/ny', label: 'Onboarda kund', icon: 'plus' },
-      // IA-vision punkt 3: "Data & drift"-gruppen (tvär-kund Slutkunder/Personal/
-      // Drift & logg) borttagen ur navet — allt om en kund bor i kundkortet
-      // (/salonger/[id] → flikarna Data/Personal/Drift). Rutterna finns kvar,
-      // bara avlänkade. Designpaketet (super-admin/app.jsx) har ingen sån grupp.
       { group: 'Plattform' },
       { href: '/integrationer', label: 'Integrationer', icon: 'layers' },
       { href: '/domaner', label: 'Domäner', icon: 'link' },

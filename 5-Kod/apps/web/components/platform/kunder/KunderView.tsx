@@ -96,9 +96,9 @@ export function KunderView({
   return (
     <div>
       <PageHead
-        eyebrow="Data & drift"
-        title="Kunder"
-        lede="Sök vem som helst tvärs alla salonger. Allt du brukade klicka i rå Supabase — här, no-code."
+        eyebrow="Insyn"
+        title="Slutkunder"
+        lede="Sök vem som helst tvärs alla kunder. Allt du brukade klicka i rå Supabase — här, no-code."
       >
         <Button
           variant="ghost"

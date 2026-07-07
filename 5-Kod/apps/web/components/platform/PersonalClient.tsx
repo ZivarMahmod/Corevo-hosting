@@ -110,7 +110,7 @@ export function PersonalClient({
   return (
     <>
       <PageHead
-        eyebrow="Data & drift"
+        eyebrow="Insyn"
         title="Personal"
         lede="Lägg till frisörer åt salonger som vill ha hjälp. Skapar en personalrad direkt på vald salong."
       >
