@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { requirePlatformAdmin } from '@/lib/auth/session'
 import { getTenantDetail, getTenantAudit, deriveCustomizationLevel } from '@/lib/platform/tenants'
-import { listCustomersAllTenants, listStaffAllTenants } from '@/lib/platform/people'
+import { listStaffAllTenants } from '@/lib/platform/people'
+import { getTenantCustomers } from '@/lib/platform/tenant-customers'
+import { TenantCustomers } from '@/components/platform/TenantCustomers'
 import { classifyAuditTone } from '@/lib/platform/audit'
 import type { AuditRow } from '@/lib/platform/audit'
 import { BILLING_MODEL_LABELS, formatPrice, type BillingModel } from '@/lib/platform/billing'
@@ -82,9 +84,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // Cross-tenant reads, scoped to THIS salon. listCustomersAllTenants takes a tenant
   // id filter; listStaffAllTenants has no tenant filter (foundation), so we filter
   // by the salon's slug in-page (volume is tiny).
-  const [audit, customers, allStaff, modules] = await Promise.all([
+  const [audit, customerData, allStaff, modules] = await Promise.all([
     getTenantAudit(id),
-    listCustomersAllTenants({ tenant: id }),
+    getTenantCustomers(id),
     listStaffAllTenants(),
     listTenantModules(id),
   ])
@@ -185,7 +187,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <div className="bo-stat-grid">
             <Stat label="Bokningar" value={counts.bookings} icon="calendar" />
             <Stat label="Completade" value={counts.completed} icon="checkCircle" />
-            <Stat label="Kunder" value={customers.length} icon="users" />
+            <Stat label="Kunder" value={customerData.summary.total} icon="users" />
             <Stat label="Personal" value={staff.length} icon="scissors" />
           </div>
           <Card>
@@ -280,56 +282,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
     Kunder: (
       <div className={styles.maxCol}>
-        <Card pad={0}>
-          <div className={styles.sectionHead} style={{ padding: '16px 20px', marginBottom: 0 }}>
-            <h2 className={styles.h2}>Kunder ({customers.length})</h2>
-            <span className={styles.chip}>customers · identitet/PII</span>
-          </div>
-          {customers.length === 0 ? (
-            <p className={styles.empty}>
-              Inga kunder ännu — en stabil kund-rad skapas när salongen tar emot sin första bokning.
-            </p>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ptable">
-                <thead>
-                  <tr>
-                    <th>Namn</th>
-                    <th>Roll</th>
-                    <th>Auth</th>
-                    <th>Besök</th>
-                    <th data-last="">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map((c) => (
-                    <tr key={c.id}>
-                      <td>
-                        <b style={{ fontWeight: 600 }}>{c.name}</b>
-                      </td>
-                      <td>
-                        <Badge tone={c.role === 'Kund' ? 'info' : 'neutral'} dot={false}>
-                          {c.role}
-                        </Badge>
-                      </td>
-                      <td>
-                        <span style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>{c.auth}</span>
-                      </td>
-                      <td>
-                        <span className="num">{c.visits}</span>
-                      </td>
-                      <td data-last="">
-                        <Badge tone={customerStatusTone(c.status)} dot={false}>
-                          {c.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+        <TenantCustomers data={customerData} />
       </div>
     ),
 
@@ -646,12 +599,6 @@ function ReadyVal({ ok, text }: { ok: boolean; text: string }) {
       {text}
     </span>
   )
-}
-
-function customerStatusTone(status: string): BadgeTone {
-  if (status === 'Aktiv') return 'success'
-  if (status === 'Skyddat namn') return 'info'
-  return 'neutral'
 }
 
 const AUDIT_TONE_COLOR: Record<string, string> = {
