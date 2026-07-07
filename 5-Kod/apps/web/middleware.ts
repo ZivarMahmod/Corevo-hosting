@@ -168,6 +168,18 @@ export async function middleware(request: NextRequest) {
     return persistOverride(response)
   }
 
+  // 3c. Super-admin live storefront preview (Sida-fliken på /salonger/[id]) — same-origin
+  //     iframe-mål. Renderar en tenants PUBLIKA storefront ur SLUG i URL:en (värd-
+  //     oberoende), så den måste serveras på admin-dörren (superbooking) utan att
+  //     back-office-routern nedan bouncar den till `/` (den är ingen /salonger-path).
+  //     EJ flagg-gatad (riktig admin-funktion, ej spike); rutten själv-gatar med
+  //     requirePlatformAdmin() → en oinloggad get 307:ar ändå till /login på sidnivå.
+  //     Före host-routningen så bouncen aldrig hinner före.
+  if (isPrefix(path, ['/salong-preview'])) {
+    response.headers.set('x-corevo-tenant-kind', tenant.kind)
+    return persistOverride(response)
+  }
+
   // 4. G12 host routing. Decide rewrite/redirect BEFORE the auth gate, and gate
   //    against the EFFECTIVE (post-rewrite) path.
   let effectivePath = path
