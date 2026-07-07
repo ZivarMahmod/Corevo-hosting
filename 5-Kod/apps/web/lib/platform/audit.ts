@@ -21,6 +21,9 @@ export type PlatformAuditAction =
   | 'tenant.update' // edit safe tenant fields (name, review url, booking variant)
   | 'tenant.password_reset' // generate a recovery link for the salon admin
   | 'tenant.staff_create' // Zivar-assisted staff onboarding on a chosen tenant
+  | 'tenant.service_create' // super-admin adds a service to a chosen tenant (ongoing services management)
+  | 'tenant.service_update' // super-admin edits a service (name/price/duration/active) on a chosen tenant
+  | 'tenant.service_delete' // super-admin deletes a service on a chosen tenant
   | 'tenant.customer_create' // goal-22: manual customer row on a chosen tenant (a Zivar/platform act — NOT a customer.* event, so the actor-classifier reads it as Zivar)
   | 'tenant.module_state' // multi-bransch spår 5: super-admin set a tenant module's lifecycle state (off/draft/live/paused) on /salonger/[id]
   | 'tenant.content_slot' // multi-bransch spår 4: super-admin swapped a storefront content slot's image (visual hub) on /salonger/[id]

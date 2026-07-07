@@ -16,6 +16,11 @@ export {
   createPlatformCustomer,
   enterHelpMode,
 } from './actions/people'
+export {
+  createTenantService,
+  updateTenantService,
+  deleteTenantService,
+} from './actions/services'
 export { saveRolePermissionsAction } from './actions/roles'
 export { setSajtbyggareEnabled } from './actions/features'
 export { addCustomDomain, verifyCustomDomain, removeCustomDomain } from './actions/domains'

@@ -12,6 +12,7 @@ import { BillingForm } from '@/components/platform/BillingForm'
 import { StatusControl } from '@/components/platform/StatusControl'
 import { DomainPanel } from '@/components/platform/DomainPanel'
 import { OperativeControls } from '@/components/platform/OperativeControls'
+import { ServicesCard } from '@/components/platform/ServicesCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { TenantPreviewFrame } from '@/components/platform/TenantPreviewFrame'
@@ -70,7 +71,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const { id } = await params
   const detail = await getTenantDetail(id)
   if (!detail) notFound()
-  const { tenant, settings, branding, counts, salonAdmin, onboarding, operative } = detail
+  const { tenant, settings, branding, counts, services, salonAdmin, onboarding, operative } = detail
   const customizationLevel = deriveCustomizationLevel(
     (settings?.settings ?? null) as Record<string, unknown> | null,
     branding as unknown as Record<string, unknown>,
@@ -208,6 +209,17 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           salonAdminEmail={salonAdmin?.email ?? null}
           serviceRoleAvailable={serviceRoleAvailable}
         />
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Tjänster · {services.length}</h2>
+            <span className={styles.chip}>services · pris/längd</span>
+          </div>
+          <p className={styles.noteText} style={{ marginBottom: 14 }}>
+            Hantera salongens tjänster direkt härifrån — lägg till, redigera pris/längd,
+            aktivera/inaktivera eller ta bort. Ändringen slår igenom på bokningen direkt.
+          </p>
+          <ServicesCard tenantId={tenant.id} services={services} />
+        </Card>
         <Card pad={0}>
           <div className={styles.sectionHead} style={{ padding: '16px 20px', marginBottom: 0 }}>
             <h2 className={styles.h2}>Kunder ({customers.length})</h2>

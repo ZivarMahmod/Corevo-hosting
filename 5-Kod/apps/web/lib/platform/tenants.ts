@@ -343,6 +343,9 @@ export type TenantDetail = {
   settings: TenantSettingsRow | null
   branding: TenantBranding
   counts: { activeServices: number; activeStaff: number; workingHours: number; bookings: number; completed: number }
+  /** The tenant's service rows (editable list for the super-admin services surface).
+   *  Ordered oldest-first so the list is stable across revalidate (no reshuffle). */
+  services: { id: string; name: string; price_cents: number; duration_min: number; active: boolean }[]
   salonAdmin: { email: string | null; fullName: string | null; status: string } | null
   onboarding: OnboardingStep[]
   /** Operativ data-kontroll (§2.1B): current values for the edit surface. */
@@ -362,9 +365,16 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
   const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle()
   if (!tenant) return null
 
-  const [settingsRes, servicesRes, staffRes, hoursRes, bookingsRes, completedRes, adminRes] = await Promise.all([
+  const [settingsRes, servicesRes, serviceRowsRes, staffRes, hoursRes, bookingsRes, completedRes, adminRes] = await Promise.all([
     supabase.from('tenant_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
     supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
+    // Editable service rows for the super-admin services surface. All services (active
+    // + inactive), oldest-first so the list stays stable across revalidate.
+    supabase
+      .from('services')
+      .select('id, name, price_cents, duration_min, active')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: true }),
     supabase.from('staff').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
     supabase.from('working_hours').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).in('status', ACTIVE_BOOKING),
@@ -418,6 +428,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     settings,
     branding,
     counts,
+    services: serviceRowsRes.data ?? [],
     salonAdmin: adminRow
       ? { email: adminRow.email, fullName: adminRow.full_name, status: adminRow.status }
       : null,
