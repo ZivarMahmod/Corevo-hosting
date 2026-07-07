@@ -1,21 +1,44 @@
 'use client'
 
 import { useActionState } from 'react'
-import type { TenantBranding } from '@corevo/ui'
+import { injectTenantTokens, type TenantBranding } from '@corevo/ui'
 import { savePlatformBranding, type ActionState } from '@/lib/platform/actions'
 import styles from './platform.module.css'
 
 export function PlatformBrandingForm({
   tenantId,
   branding,
+  onLiveTokens,
 }: {
   tenantId: string
   branding: TenantBranding
+  /** Live-preview hook: fired on every colour/font edit with the CSS-var patch, so a
+   *  parent can push it into the preview iframe BEFORE the form is saved. */
+  onLiveTokens?: (tokens: Record<string, string>) => void
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(savePlatformBranding, {})
 
+  // Read the live field values, shape them like a branding row, and reuse the exact
+  // token mapper the storefront uses — so the preview mirrors the saved result 1:1.
+  function emitLive(form: HTMLFormElement) {
+    if (!onLiveTokens) return
+    const g = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value || undefined
+    onLiveTokens(
+      injectTenantTokens({
+        color_primary: g('color_primary'),
+        color_bg: g('color_bg'),
+        color_fg: g('color_fg'),
+        font_body: g('font_body'),
+      } as TenantBranding),
+    )
+  }
+
   return (
-    <form action={formAction} className={styles.form}>
+    <form
+      action={formAction}
+      className={styles.form}
+      onInput={(e) => emitLive(e.currentTarget)}
+    >
       <input type="hidden" name="tenantId" value={tenantId} />
 
       <div className={styles.fieldRow}>

@@ -7,6 +7,7 @@ import { getTenantBySlug, getServices } from '@/lib/tenant-data'
 import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
+import { SidaPreviewBridge } from '@/components/platform/SidaPreviewBridge'
 import storefront from '@/components/storefront/storefront.module.css'
 
 // Super-admin LIVE STOREFRONT PREVIEW — the iframe target for the Sida tab on
@@ -49,6 +50,7 @@ export default async function SalongPreviewPage({
       data-tenant={tenant.id}
       style={injectTenantTokens(settings.branding) as CSSProperties}
     >
+      <SidaPreviewBridge />
       <Layout
         tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
         theme={settings.theme}

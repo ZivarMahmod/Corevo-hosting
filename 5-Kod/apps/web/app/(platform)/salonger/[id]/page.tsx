@@ -9,18 +9,15 @@ import { classifyAuditTone } from '@/lib/platform/audit'
 import type { AuditRow } from '@/lib/platform/audit'
 import { BILLING_MODEL_LABELS, formatPrice, type BillingModel } from '@/lib/platform/billing'
 import { OnboardingChecklist } from '@/components/platform/OnboardingChecklist'
-import { PlatformBrandingForm } from '@/components/platform/PlatformBrandingForm'
 import { BillingForm } from '@/components/platform/BillingForm'
 import { StatusControl } from '@/components/platform/StatusControl'
 import { DomainPanel } from '@/components/platform/DomainPanel'
 import { OperativeControls } from '@/components/platform/OperativeControls'
 import { ServicesCard } from '@/components/platform/ServicesCard'
 import { PersonalCard } from '@/components/platform/PersonalCard'
-import { StorefrontContentCard } from '@/components/platform/StorefrontContentCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
-import { SidaPreview } from '@/components/platform/SidaPreview'
-import { SajtbyggareControl } from '@/components/platform/SajtbyggareControl'
+import { SidaStudio } from '@/components/platform/SidaStudio'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, tenantSiteEditorEnabled } from '@/lib/tenant-data'
 import {
@@ -317,54 +314,19 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     // som har med sidan att göra"): förhandsvisning + utseende + text/bilder + kund-
     // editor-reglaget. Drift hålls fri från sido-grejer (ren drift).
     Sida: (
-      <div className={styles.maxCol}>
-        {/* Live-förhandsvisning av den SKARPA sidan (same-origin preview-rutt) överst —
-            allt nedanför redigerar den; "Ladda om" visar ändringen. */}
-        <Card>
-          <div className={styles.sectionHead}>
-            <h2 className={styles.h2}>Förhandsvisning</h2>
-          </div>
-          <SidaPreview
-            previewPath={`/salong-preview/${tenant.slug}`}
-            storefrontUrl={storefrontUrl}
-            storefrontHost={storefrontHost}
-            templateKey={activeTemplateKey}
-            isActive={isActive}
-          />
-        </Card>
-
-        <div className={styles.twoCol}>
-          <Card>
-            <div className={styles.sectionHead}>
-              <h2 className={styles.h2}>Varumärke</h2>
-            </div>
-            <PlatformBrandingForm tenantId={tenant.id} branding={branding} />
-          </Card>
-
-          <Card>
-            <div className={styles.sectionHead}>
-              <h2 className={styles.h2}>Kunden redigerar själv</h2>
-            </div>
-            <p className={styles.noteText} style={{ marginBottom: 12 }}>
-              Slår på/av den kund-egna sid-editorn. Påverkar bara kundens editor, aldrig den publika
-              sidan.
-            </p>
-            <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />
-          </Card>
-        </div>
-
-        <Card>
-          <div className={styles.sectionHead}>
-            <h2 className={styles.h2}>Text &amp; bilder</h2>
-          </div>
-          <StorefrontContentCard
-            tenantId={tenant.id}
-            copy={copy}
-            heroImages={branding.hero_images ?? []}
-            galleryImages={branding.gallery_images ?? []}
-          />
-        </Card>
-      </div>
+      <SidaStudio
+        tenantId={tenant.id}
+        previewPath={`/salong-preview/${tenant.slug}`}
+        storefrontUrl={storefrontUrl}
+        storefrontHost={storefrontHost}
+        templateKey={activeTemplateKey}
+        isActive={isActive}
+        branding={branding}
+        copy={copy}
+        heroImages={branding.hero_images ?? []}
+        galleryImages={branding.gallery_images ?? []}
+        siteEditorEnabled={siteEditorEnabled}
+      />
     ),
 
     Integrationer: (
