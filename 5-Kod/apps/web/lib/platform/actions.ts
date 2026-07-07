@@ -23,6 +23,9 @@ export {
   createTenantService,
   updateTenantService,
   deleteTenantService,
+  setServiceStaff,
+  uploadServiceImage,
+  removeServiceImage,
 } from './actions/services'
 export {
   saveTenantStorefrontCopy,

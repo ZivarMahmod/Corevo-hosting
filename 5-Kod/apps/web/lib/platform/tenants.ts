@@ -344,8 +344,24 @@ export type TenantDetail = {
   branding: TenantBranding
   counts: { activeServices: number; activeStaff: number; workingHours: number; bookings: number; completed: number }
   /** The tenant's service rows (editable list for the super-admin services surface).
-   *  Ordered oldest-first so the list is stable across revalidate (no reshuffle). */
-  services: { id: string; name: string; price_cents: number; duration_min: number; active: boolean }[]
+   *  Ordered oldest-first so the list is stable across revalidate (no reshuffle).
+   *  Includes 0046 merch fields + per-service staff assignment (staffIds) and booking
+   *  count (bookingCount → whether the row can be hard-deleted or only archived). */
+  services: {
+    id: string
+    name: string
+    price_cents: number
+    duration_min: number
+    active: boolean
+    description: string | null
+    category: string | null
+    sale_price_cents: number | null
+    badge: string | null
+    image_url: string | null
+    sort_order: number
+    staffIds: string[]
+    bookingCount: number
+  }[]
   /** The tenant's staff rows (editable list for the super-admin Personal surface) —
    *  ALL staff (active + inactive), oldest-first for stable revalidate. Each carries
    *  its weekly working_hours so the Personal tab renders an editable schedule per
@@ -374,20 +390,37 @@ function brandingIsSet(branding: TenantBranding): boolean {
   return Boolean(b.logo_url || b.color_primary || b.color_bg || b.color_fg)
 }
 
+/** Loose shape of a services row incl. the 0046 merch columns (not yet in the generated
+ *  Supabase types). Read-only cast target for getTenantDetail. */
+type ServiceMerchRow = {
+  id: string
+  name: string
+  price_cents: number
+  duration_min: number
+  active: boolean
+  description: string | null
+  category: string | null
+  sale_price_cents: number | null
+  badge: string | null
+  image_url: string | null
+  sort_order: number | null
+}
+
 export async function getTenantDetail(tenantId: string): Promise<TenantDetail | null> {
   const { supabase } = await platformCtx()
 
   const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle()
   if (!tenant) return null
 
-  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes] = await Promise.all([
+  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes] = await Promise.all([
     supabase.from('tenant_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
     supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
     // Editable service rows for the super-admin services surface. All services (active
-    // + inactive), oldest-first so the list stays stable across revalidate.
+    // + inactive), oldest-first so the list stays stable across revalidate. select('*')
+    // to pull the 0046 merch columns (sale_price_cents/badge/image_url/sort_order).
     supabase
       .from('services')
-      .select('id, name, price_cents, duration_min, active')
+      .select('*')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: true }),
     supabase.from('staff').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
@@ -419,6 +452,10 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
       .order('created_at')
       .limit(1)
       .maybeSingle(),
+    // Which staff can perform which service (0001 join) — bucketed per service below.
+    supabase.from('staff_services').select('service_id, staff_id').eq('tenant_id', tenantId),
+    // Every booking's service_id → per-service booking count (decides delete vs archive).
+    supabase.from('bookings').select('service_id').eq('tenant_id', tenantId),
   ])
 
   const settings = settingsRes.data ?? null
@@ -472,6 +509,37 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     (s) => ({ id: s.id, title: s.title, active: s.active, hours: hoursByStaff.get(s.id) ?? [] }),
   )
 
+  // Per-service staff assignments (which behandlare can perform each service).
+  const staffByService = new Map<string, string[]>()
+  for (const r of (staffServicesRes.data ?? []) as { service_id: string; staff_id: string }[]) {
+    const list = staffByService.get(r.service_id) ?? []
+    list.push(r.staff_id)
+    staffByService.set(r.service_id, list)
+  }
+  // Per-service booking count → the Services surface knows whether "Ta bort" is possible
+  // (0 bookings) or must degrade to "stäng av" (FK RESTRICT protects booked services).
+  const bookingsByService = new Map<string, number>()
+  for (const r of (serviceBookingsRes.data ?? []) as { service_id: string | null }[]) {
+    if (!r.service_id) continue
+    bookingsByService.set(r.service_id, (bookingsByService.get(r.service_id) ?? 0) + 1)
+  }
+  // Merch columns (0046) aren't in the generated row type yet — read via a loose cast.
+  const services = ((serviceRowsRes.data ?? []) as unknown as ServiceMerchRow[]).map((s) => ({
+    id: s.id,
+    name: s.name,
+    price_cents: s.price_cents,
+    duration_min: s.duration_min,
+    active: s.active,
+    description: s.description ?? null,
+    category: s.category ?? null,
+    sale_price_cents: s.sale_price_cents ?? null,
+    badge: s.badge ?? null,
+    image_url: s.image_url ?? null,
+    sort_order: s.sort_order ?? 0,
+    staffIds: staffByService.get(s.id) ?? [],
+    bookingCount: bookingsByService.get(s.id) ?? 0,
+  }))
+
   const onboarding = deriveOnboarding({
     hasSettings: !!settings,
     brandingSet: brandingIsSet(branding),
@@ -488,7 +556,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     settings,
     branding,
     counts,
-    services: serviceRowsRes.data ?? [],
+    services,
     staffList,
     salonAdmin: adminRow
       ? { email: adminRow.email, fullName: adminRow.full_name, status: adminRow.status }

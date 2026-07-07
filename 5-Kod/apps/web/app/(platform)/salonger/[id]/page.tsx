@@ -273,7 +273,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             Hantera salongens tjänster direkt härifrån — lägg till, redigera pris/längd,
             aktivera/inaktivera eller ta bort. Ändringen slår igenom på bokningen direkt.
           </p>
-          <ServicesCard tenantId={tenant.id} services={services} />
+          <ServicesCard tenantId={tenant.id} services={services} staff={staffList} storefrontUrl={storefrontUrl} />
         </Card>
       </div>
     ),

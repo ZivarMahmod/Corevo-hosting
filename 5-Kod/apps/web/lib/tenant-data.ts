@@ -13,7 +13,13 @@ import { createClient } from '@/lib/supabase/server'
 import { getTenantFromHost } from '@/lib/tenant'
 
 export type Tenant = Tables<'tenants'>
-export type Service = Tables<'services'>
+// Base row + the 0046 merch columns (optional — generated types don't know them yet).
+export type Service = Tables<'services'> & {
+  sale_price_cents?: number | null
+  badge?: string | null
+  image_url?: string | null
+  sort_order?: number | null
+}
 type TenantSettingsRow = Tables<'tenant_settings'>
 
 export type LayoutConfig = { nav_variant?: string; hero_variant?: string }
@@ -270,7 +276,11 @@ export async function getServices(tenantId: string, slug: string): Promise<Servi
         .eq('active', true)
         .order('price_cents', { ascending: true })
       if (error || !data) return []
-      return data
+      // Manual order (sort_order, 0046) wins; price is the tiebreak. Sorted in JS so a
+      // pre-migration schema (no sort_order column) never errors the query.
+      const rows = data as Service[]
+      rows.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.price_cents - b.price_cents)
+      return rows
     },
     ['services-by-tenant', tenantId],
     { tags: [`tenant:${norm}`], revalidate: 300 },

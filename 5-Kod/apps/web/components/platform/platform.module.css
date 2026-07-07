@@ -419,6 +419,162 @@
   letter-spacing: -0.01em;
 }
 
+/* ── Tjänster (super-admin) — kompakt lista, redigera på klick (native <details>) ── */
+.svcHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.svcPreviewLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--c-forest);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.svcPreviewLink:hover {
+  text-decoration: underline;
+}
+.svcGroup {
+  margin-top: 18px;
+}
+.svcGroupTitle {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--c-ink-3);
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+.svcRow {
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: var(--c-paper);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.svcRow[open] {
+  border-color: var(--c-forest);
+}
+.svcSummary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+.svcSummary::-webkit-details-marker {
+  display: none;
+}
+.svcThumb {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  object-fit: cover;
+  flex: none;
+  background: var(--c-paper-2);
+}
+.svcThumbEmpty {
+  display: grid;
+  place-items: center;
+  color: var(--c-ink-3);
+}
+.svcSumMain {
+  flex: 1;
+  min-width: 0;
+}
+.svcSumName {
+  font-weight: 600;
+  font-size: 14.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.svcSumMeta {
+  font-size: 12px;
+  color: var(--c-ink-3);
+  margin-top: 2px;
+}
+.svcBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--c-gold-100, #f6ecd9);
+  color: var(--c-gold-600, #9a7327);
+}
+.svcOff {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--c-ink) 8%, transparent);
+  color: var(--c-ink-3);
+}
+.svcPrice {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.svcOld {
+  text-decoration: line-through;
+  color: var(--c-ink-3);
+  font-weight: 400;
+  margin-right: 6px;
+}
+.svcSale {
+  color: var(--c-danger);
+}
+.svcChev {
+  flex: none;
+  color: var(--c-ink-3);
+  transition: transform 0.15s ease;
+}
+.svcRow[open] .svcChev {
+  transform: rotate(180deg);
+}
+.svcBody {
+  padding: 6px 14px 16px;
+  border-top: 1px solid var(--c-line);
+  display: grid;
+  gap: 16px;
+}
+.svcSub {
+  display: grid;
+  gap: 8px;
+}
+.svcSubTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+.svcStaffGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+.svcCheck {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+
 /* ── theme template picker ── */
 .templateGrid {
   display: grid;

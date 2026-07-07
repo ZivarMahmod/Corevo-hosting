@@ -49,14 +49,26 @@ export function ServiceMenu({
             {String(i + 1).padStart(2, '0')}
           </span>
           <span className={styles.menuMain}>
-            <span className={styles.menuName}>{s.name}</span>
+            <span className={styles.menuName}>
+              {s.name}
+              {s.badge ? <span className={styles.menuBadge}>{s.badge}</span> : null}
+            </span>
             <span className={styles.menuDesc}>
               {s.description || `${s.duration_min} min behandling`}
             </span>
           </span>
           <span className={styles.menuMeta}>
             <span className={styles.menuDuration}>{s.duration_min} min</span>
-            <span className={styles.menuPrice}>{kr.format(s.price_cents / 100)}</span>
+            <span className={styles.menuPrice}>
+              {s.sale_price_cents != null && s.sale_price_cents < s.price_cents ? (
+                <>
+                  <span className={styles.menuOldPrice}>{kr.format(s.price_cents / 100)}</span>
+                  {kr.format(s.sale_price_cents / 100)}
+                </>
+              ) : (
+                kr.format(s.price_cents / 100)
+              )}
+            </span>
           </span>
         </Reveal>
       ))}

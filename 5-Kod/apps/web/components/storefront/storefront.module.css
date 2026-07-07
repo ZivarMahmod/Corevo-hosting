@@ -453,6 +453,28 @@
   font-size: 1.25rem;
   color: var(--color-primary);
 }
+.menuOldPrice {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1rem;
+  opacity: 0.55;
+  text-decoration: line-through;
+  margin-right: 0.5rem;
+}
+.menuBadge {
+  display: inline-block;
+  margin-left: 0.6rem;
+  vertical-align: middle;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-bg, #fff);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
 @media (max-width: 600px) {
   .menuRow { grid-template-columns: auto 1fr; gap: 0.35rem 1rem; }
   .menuMeta {
