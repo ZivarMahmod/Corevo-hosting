@@ -121,13 +121,13 @@ export function SalongerClient({ tenants }: { tenants: SalongCardVM[] }) {
       <PageHead
         eyebrow="Plattform"
         title="Kunder"
-        lede="Dina kunder. Öppna en kund för full kontroll — data, personal, branding, drift."
+        lede="Dina kunder. Onboarda en ny — vilken bransch som helst — och följ hela bygget i en live preview tills sidan är deployad."
       >
         <Button variant="ghost" icon="upload" onClick={exportCsv}>
           Exportera
         </Button>
         <Button variant="primary" icon="plus" href="/salonger/ny">
-          Onboarda kund
+          Onboarda ny kund
         </Button>
       </PageHead>
 

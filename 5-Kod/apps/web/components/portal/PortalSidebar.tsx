@@ -35,10 +35,10 @@ const NAV: Record<PortalRole, NavConfig> = {
       { group: 'Kunder' },
       { href: '/salonger', label: 'Kunder', icon: 'building' },
       { href: '/salonger/ny', label: 'Onboarda kund', icon: 'plus' },
-      { group: 'Data & drift' },
-      { href: '/kunder', label: 'Slutkunder', icon: 'users' },
-      { href: '/personal-plattform', label: 'Personal', icon: 'scissors' },
-      { href: '/drift-och-logg', label: 'Drift & logg', icon: 'alert' },
+      // IA-vision punkt 3: "Data & drift"-gruppen (tvär-kund Slutkunder/Personal/
+      // Drift & logg) borttagen ur navet — allt om en kund bor i kundkortet
+      // (/salonger/[id] → flikarna Data/Personal/Drift). Rutterna finns kvar,
+      // bara avlänkade. Designpaketet (super-admin/app.jsx) har ingen sån grupp.
       { group: 'Plattform' },
       { href: '/integrationer', label: 'Integrationer', icon: 'layers' },
       { href: '/domaner', label: 'Domäner', icon: 'link' },
