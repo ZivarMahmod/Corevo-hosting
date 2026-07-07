@@ -35,7 +35,7 @@ import type { TenantBranding } from '@corevo/ui'
 import styles from '@/components/platform/tenant-detail.module.css'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Plattform · Salong' }
+export const metadata: Metadata = { title: 'Plattform · Kund' }
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 function publicUrl(slug: string): string {
@@ -112,14 +112,76 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const storefrontUrl = tenantStorefrontUrl(tenant.slug) ?? url
   const storefrontHost = tenantStorefrontHost(tenant.slug) ?? `${tenant.slug}.${ROOT}`
 
+  // Kund-överblick (Översikt): everything the operator needs to know at a glance,
+  // derived from already-loaded data (no extra query). Launch-readiness mirrors the
+  // list-view launchReady (staff + services + hours) so the badge here agrees with
+  // the Aktiv/Onboarding pill on the card grid. Bransch/kontakt read the raw settings
+  // jsonb (same seam as theme/booking above).
+  const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
+  const vertical =
+    typeof rawSettings.vertical === 'string' && rawSettings.vertical.trim() ? rawSettings.vertical.trim() : null
+  const contactObj = (rawSettings.contact ?? {}) as { email?: unknown; phone?: unknown }
+  const contactEmail =
+    typeof contactObj.email === 'string' && contactObj.email.trim() ? contactObj.email.trim() : null
+  const contactPhone =
+    typeof contactObj.phone === 'string' && contactObj.phone.trim() ? contactObj.phone.trim() : null
+  const modulesLive = modules.filter((m) => m.state === 'live').length
+  const launchBlockers = [
+    counts.activeServices > 0 ? null : 'Tjänster',
+    counts.activeStaff > 0 ? null : 'Personal',
+    counts.workingHours > 0 ? null : 'Öppettider',
+  ].filter(Boolean) as string[]
+  const launchReady = launchBlockers.length === 0
+  const ownerInvited = !!salonAdmin?.email
+
   const tabs: Record<TenantTabKey, React.ReactNode> = {
     Översikt: (
       <div className={styles.twoCol}>
         <div className={styles.col}>
-          {/* Mock Översikt-rutan (SuperTenant.jsx) = Bokningar/Completade/Kunder/Personal.
-              Alla fyra är riktiga: bokningar = aktiva (pending/confirmed/completed),
-              completade = status='completed' (egen count-query), kunder = customers.length,
-              personal = staff.length. Inget påhittat. */}
+          {/* Kund-överblick — status + nyckelfakta på en blick (allt operatören
+              behöver veta innan hen dyker in i flikarna). Härlett, inga nya reads. */}
+          <Card>
+            <div className={styles.sectionHead}>
+              <h2 className={styles.h2}>Kund-överblick</h2>
+              <span className={styles.chip}>allt du behöver veta</span>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              {launchReady && isActive ? (
+                <Badge tone="success">Aktiv &amp; publik — redo</Badge>
+              ) : launchReady ? (
+                <Badge tone="warning">Allt ifyllt — ej lanserad (aktivera i Drift)</Badge>
+              ) : (
+                <Badge tone="warning">Saknas för att gå live: {launchBlockers.join(', ')}</Badge>
+              )}
+            </div>
+            <div className={styles.kvList}>
+              <KV label="Tjänster" value={<ReadyVal ok={counts.activeServices > 0} text={`${counts.activeServices} aktiva`} />} />
+              <KV label="Personal" value={<ReadyVal ok={counts.activeStaff > 0} text={`${counts.activeStaff} aktiva`} />} />
+              <KV
+                label="Öppettider"
+                value={<ReadyVal ok={counts.workingHours > 0} text={counts.workingHours > 0 ? `${counts.workingHours} rader` : 'saknas'} />}
+              />
+              <KV
+                label="Ägar-konto"
+                value={<ReadyVal ok={ownerInvited} text={ownerInvited ? (salonAdmin?.status === 'active' ? 'aktivt' : 'inbjuden') : 'ej inbjuden'} />}
+              />
+              <KV label="Bransch" value={vertical ?? '—'} />
+              <KV label="Tema" value={activeTemplateKey} />
+              <KV label="Bokningsvariant" value={operative.bookingVariant} />
+              <KV label="Moduler live" value={`${modulesLive} av ${modules.length}`} />
+              <KV label="Kontakt" value={contactEmail || contactPhone ? [contactEmail, contactPhone].filter(Boolean).join(' · ') : '—'} />
+              <KV
+                label="Live-URL"
+                value={
+                  <a href={url} target="_blank" rel="noreferrer" style={{ color: 'var(--c-forest)' }}>
+                    {tenant.slug}.{ROOT}
+                  </a>
+                }
+              />
+            </div>
+          </Card>
+          {/* Bokningar/Completade/Kunder/Personal — alla riktiga (aktiva bokningar,
+              completade, customers.length, staff.length). Inget påhittat. */}
           <div className="bo-stat-grid">
             <Stat label="Bokningar" value={counts.bookings} icon="calendar" />
             <Stat label="Completade" value={counts.completed} icon="checkCircle" />
@@ -465,7 +527,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     <section className="portal-section">
       <div className={styles.crumb}>
         <Button href="/salonger" variant="ghost" icon="arrowLeft" size="sm">
-          Salonger
+          Kunder
         </Button>
         <span>/ {tenant.slug}.{ROOT}</span>
       </div>
@@ -565,6 +627,18 @@ function KV({ label, value, mono }: { label: string; value: React.ReactNode; mon
       <span className={styles.kvLabel}>{label}</span>
       <span className={mono ? styles.kvValueMono : styles.kvValue}>{value}</span>
     </div>
+  )
+}
+
+/** ✓/✗ readiness value for the Kund-överblick KV-list (green när klart, amber när kvar). */
+function ReadyVal({ ok, text }: { ok: boolean; text: string }) {
+  return (
+    <span
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: ok ? 'var(--c-success)' : 'var(--c-warning)' }}
+    >
+      <Icon name={ok ? 'checkCircle' : 'alert'} size={14} />
+      {text}
+    </span>
   )
 }
 
