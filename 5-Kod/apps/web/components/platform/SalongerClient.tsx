@@ -120,14 +120,14 @@ export function SalongerClient({ tenants }: { tenants: SalongCardVM[] }) {
     <section className="portal-section">
       <PageHead
         eyebrow="Plattform"
-        title="Salonger"
-        lede="Dina kunder. Öppna en salong för full kontroll — data, personal, branding, drift."
+        title="Kunder"
+        lede="Dina kunder. Öppna en kund för full kontroll — data, personal, branding, drift."
       >
         <Button variant="ghost" icon="upload" onClick={exportCsv}>
           Exportera
         </Button>
         <Button variant="primary" icon="plus" href="/salonger/ny">
-          Onboarda salong
+          Onboarda kund
         </Button>
       </PageHead>
 
@@ -157,9 +157,9 @@ export function SalongerClient({ tenants }: { tenants: SalongCardVM[] }) {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Sök salong, ägare, subdomän…"
+            placeholder="Sök kund, ägare, subdomän…"
             autoCapitalize="none"
-            aria-label="Sök salong"
+            aria-label="Sök kund"
             style={{
               width: '100%',
               padding: '10px 12px 10px 36px',
@@ -211,15 +211,15 @@ export function SalongerClient({ tenants }: { tenants: SalongCardVM[] }) {
 
       {list.length === 0 ? (
         <Card>
-          <p style={{ fontWeight: 600, margin: '0 0 4px' }}>Inga salonger matchar</p>
+          <p style={{ fontWeight: 600, margin: '0 0 4px' }}>Inga kunder matchar</p>
           <p style={{ color: 'var(--c-ink-3)', fontSize: 13.5, margin: 0 }}>
-            Prova en bredare sökning eller ett annat filter — eller onboarda en ny salong.
+            Prova en bredare sökning eller ett annat filter — eller onboarda en ny kund.
           </p>
         </Card>
       ) : view === 'lista' ? (
         <Card pad={0}>
           <Table
-            cols={['Salong', 'Ägare', 'Variant', 'Personal', 'Bokningar', 'Status', '']}
+            cols={['Kund', 'Ägare', 'Variant', 'Personal', 'Bokningar', 'Status', '']}
             rows={list.map((t) => [
               <Link
                 key="s"
@@ -293,7 +293,7 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
       const res = await setTenantStatus({}, fd)
       if (res.error) notify(res.error, 'warning')
       else {
-        notify(res.success ?? 'Salongen är borttagen.', 'success')
+        notify(res.success ?? 'Kunden är borttagen.', 'success')
         setConfirming(false)
         router.refresh()
       }
@@ -385,7 +385,7 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
               }}
             >
               <Icon name="trash" size={15} />
-              Ta bort salong
+              Ta bort kund
             </button>
           </div>
         </>

@@ -3,7 +3,7 @@ import { listTenantsWithStats } from '@/lib/platform/tenants'
 import { SalongerClient, type SalongCardVM } from '@/components/platform/SalongerClient'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Plattform · Salonger' }
+export const metadata: Metadata = { title: 'Plattform · Kunder' }
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 function publicUrl(slug: string): string {
