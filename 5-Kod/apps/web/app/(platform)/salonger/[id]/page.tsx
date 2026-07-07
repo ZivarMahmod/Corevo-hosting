@@ -14,6 +14,7 @@ import { DomainPanel } from '@/components/platform/DomainPanel'
 import { OperativeControls } from '@/components/platform/OperativeControls'
 import { ServicesCard } from '@/components/platform/ServicesCard'
 import { PersonalCard } from '@/components/platform/PersonalCard'
+import { StorefrontContentCard } from '@/components/platform/StorefrontContentCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { TenantPreviewFrame } from '@/components/platform/TenantPreviewFrame'
@@ -72,7 +73,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const { id } = await params
   const detail = await getTenantDetail(id)
   if (!detail) notFound()
-  const { tenant, settings, branding, counts, services, staffList, salonAdmin, onboarding, operative } = detail
+  const { tenant, settings, branding, counts, services, staffList, salonAdmin, onboarding, operative, copy } = detail
   const customizationLevel = deriveCustomizationLevel(
     (settings?.settings ?? null) as Record<string, unknown> | null,
     branding as unknown as Record<string, unknown>,
@@ -306,6 +307,21 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             Token-branding (färg/font/logo). Slår igenom på storefronten utan deploy.
           </p>
           <PlatformBrandingForm tenantId={tenant.id} branding={branding} />
+        </Card>
+        <Card>
+          <div className="eyebrow" style={{ marginBottom: 4 }}>
+            Innehåll · storefront
+          </div>
+          <p className={styles.noteText} style={{ marginBottom: 16 }}>
+            Salongens säljtext + hero/galleri-foton. Redigeras här utan att logga in i
+            salongens egen admin. Tomma fält faller tillbaka på temats standard.
+          </p>
+          <StorefrontContentCard
+            tenantId={tenant.id}
+            copy={copy}
+            heroImages={branding.hero_images ?? []}
+            galleryImages={branding.gallery_images ?? []}
+          />
         </Card>
         <Card style={{ background: 'var(--c-paper-2)' }}>
           <div className={styles.noteHead}>

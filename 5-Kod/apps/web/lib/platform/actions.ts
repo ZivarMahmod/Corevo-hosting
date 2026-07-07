@@ -24,6 +24,11 @@ export {
   updateTenantService,
   deleteTenantService,
 } from './actions/services'
+export {
+  saveTenantStorefrontCopy,
+  uploadTenantStorefrontImage,
+  removeTenantStorefrontImage,
+} from './actions/storefront-content'
 export { saveRolePermissionsAction } from './actions/roles'
 export { setSajtbyggareEnabled } from './actions/features'
 export { addCustomDomain, verifyCustomDomain, removeCustomDomain } from './actions/domains'

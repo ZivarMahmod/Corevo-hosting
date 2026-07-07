@@ -360,6 +360,11 @@ export type TenantDetail = {
   onboarding: OnboardingStep[]
   /** Operativ data-kontroll (§2.1B): current values for the edit surface. */
   operative: { googleReviewUrl: string | null; bookingVariant: BookingVariant }
+  /** Super-admin storefront-innehåll: the tenant's STORED copy override
+   *  (settings.copy). Each field is the raw stored string or '' when unset — the UI
+   *  prefills from THIS (never the resolved theme default), so a blank field keeps
+   *  "faller tillbaka på temats standard". hero/gallery images live in `branding`. */
+  copy: { heroEyebrow: string; heroTitle: string; heroLede: string; aboutCopy: string; tagline: string; italic: string }
 }
 
 const ACTIVE_BOOKING = ['pending', 'confirmed', 'completed']
@@ -428,6 +433,20 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     typeof reviewRaw === 'string' && reviewRaw.trim().length > 0 ? reviewRaw.trim() : null
   const bookingVariant = readBookingVariant(rawSettings)
 
+  // Stored storefront copy override (settings.copy). DEFENSIVE — raw jsonb: only a
+  // string is surfaced, everything else → '' (unset). The UI prefills from THIS, so
+  // a blank stays blank (= follow the theme), never the resolved default.
+  const copyRaw = (rawSettings.copy ?? {}) as Record<string, unknown>
+  const copyStr = (v: unknown): string => (typeof v === 'string' ? v : '')
+  const copy = {
+    heroEyebrow: copyStr(copyRaw.heroEyebrow),
+    heroTitle: copyStr(copyRaw.heroTitle),
+    heroLede: copyStr(copyRaw.heroLede),
+    aboutCopy: copyStr(copyRaw.aboutCopy),
+    tagline: copyStr(copyRaw.tagline),
+    italic: copyStr(copyRaw.italic),
+  }
+
   const counts = {
     activeServices: servicesRes.count ?? 0,
     activeStaff: staffRes.count ?? 0,
@@ -476,6 +495,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
       : null,
     onboarding,
     operative: { googleReviewUrl, bookingVariant },
+    copy,
   }
 }
 
