@@ -54,5 +54,18 @@ delete-bekräftelse på tjänster + media; dublett-vakt i bilduppladdningen.
   Kontakt). Läggs in en gång, statiskt tills ändrat.
 
 ## Status
-Slice A+B commit `4563467`. C/D/E byggs via workflow. Deploy-order given av
-Zivar för denna fas ("deploya och testa tills du kräks").
+**LIVE PROD som `v1.6.0`** (A+B commit `4563467`, C/D/E + säkerhetsfix i
+`v1.6.0`-committen). Render-verifierat 2026-07-08 med RIKTIG salon_admin-session
+(temporär verify-användare, raderad efteråt) mot BÅDE localhost och
+booking.corevo.se: 9/9 PASS — inkl. assertions att nav INTE läcker inaktiva
+moduler, att "Ny bokning"-lögnen är borta och att previewen renderar för
+salongens egen admin. Adversariell review fann 1 äkta hål
+(removeTenantStorefrontImage kunde R2-radera annan tenants bild via
+klient-URL) — fixat med slot-medlemskaps-fence före delete.
+
+KVAR (medvetet, rapporterat): admin kan inte SKAPA bokning i back-office
+(walk-in/telefon — surrogatlänk till storefronten); vecko-rastret i Bokningar
+aggregerar alla frisörer till en kolumn/dag (personal-filtret ger
+en-persons-vecka); SlotManagers medarbetar-chips tappar vald vecka;
+bokningsantal i schemagriden är inte plats-filtrerat; lojalitet-admin
+read-only. Zivars visuella genomgång återstår innan flytt till klart/.
