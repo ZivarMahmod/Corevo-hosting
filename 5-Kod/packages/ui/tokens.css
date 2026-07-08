@@ -327,6 +327,12 @@
   --c-on-forest:   #EFEAE0;  /* text on the dark sidebar */
   --c-on-forest-2: #9DB1A6;  /* muted text on sidebar */
 
+  /* sidebar chrome (reskin): djupare forest-green än --c-forest; aktiv/hover LJUSARE
+     än bakgrunden (mockup: #17271f bg, #1e3327 lyft) — annars försvinner aktiv-staten. */
+  --c-sidebar:      #17271F;  /* deep forest — aside background */
+  --c-sidebar-2:    #1E3327;  /* hover / active lift (ljusare än bg) */
+  --c-sidebar-line: #274031;  /* dividers on the sidebar */
+
   /* semantic status — muted & elegant */
   --c-success:     #4E7A5E;
   --c-success-bg:  #E8F0EA;

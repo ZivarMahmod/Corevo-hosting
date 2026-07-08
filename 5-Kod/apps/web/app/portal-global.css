@@ -74,7 +74,8 @@
 [data-world="backoffice"] .portal-aside {
   width: 244px; /* playbook §4.1 canon (was 248 — corrected per goal-17 delta) */
   flex: none;
-  background: var(--c-forest);
+  background: var(--c-sidebar);
+  border-right: 1px solid var(--c-sidebar-line);
   color: var(--c-on-forest);
   min-height: 100vh;
   display: flex;
@@ -155,18 +156,18 @@
   transition: background var(--dur-fast), color var(--dur-fast);
 }
 [data-world="backoffice"] .portal-aside-link:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--c-sidebar-2);
   color: var(--c-on-forest);
 }
 [data-world="backoffice"] .portal-aside-link.is-active,
 [data-world="backoffice"] .portal-aside-link.is-active:hover {
   font-weight: 600;
-  background: var(--c-forest-700);
+  background: var(--c-sidebar-2);
   color: #fff;
   border-left: 2px solid var(--c-gold);
 }
 [data-world="backoffice"] .portal-aside-user {
-  border-top: 1px solid var(--c-forest-300);
+  border-top: 1px solid var(--c-sidebar-line);
   padding-top: 14px;
   display: flex;
   align-items: center;

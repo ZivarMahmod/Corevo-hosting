@@ -66,53 +66,50 @@
   flex-wrap: wrap;
 }
 
-/* ── SubTabs pill rail (mock SubTabs primitive) ── */
+/* ── SubTabs — underline rail (reskin: gold-underline active, ej pill) ── */
 .subtabs {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  padding: 4px;
-  border-radius: 8px;
-  border: 1px solid var(--c-line);
-  background: var(--c-paper-2);
-  width: fit-content;
+  gap: 2px;
+  border-bottom: 1px solid var(--c-line);
   max-width: 100%;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
+  overflow-x: auto;
 }
 .subtab {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  border-radius: 6px;
+  gap: 8px;
+  padding: 11px 14px;
   border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   background: transparent;
   color: var(--c-ink-2);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition:
-    background var(--dur-fast, 0.15s) var(--ease-out, ease),
-    color var(--dur-fast, 0.15s) var(--ease-out, ease);
+  transition: color var(--dur-fast, 0.15s) var(--ease-out, ease);
 }
 .subtab svg {
   flex: none;
+  opacity: 0.7;
 }
 .subtab:hover {
-  background: var(--c-paper);
   color: var(--c-ink);
 }
 .subtab:focus-visible {
-  outline: 2px solid var(--c-gold, #f5a623);
+  outline: 2px solid var(--c-gold, #b8892f);
   outline-offset: 2px;
 }
 .subtabActive,
 .subtabActive:hover {
-  background: var(--c-forest);
-  color: #fff;
-  box-shadow: var(--shadow-sm);
+  color: var(--c-forest);
+  border-bottom-color: var(--c-gold);
+}
+.subtabActive svg {
+  opacity: 1;
 }
 
 /* ── two-column översikt + section grids ── */
