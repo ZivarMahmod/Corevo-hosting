@@ -25,7 +25,7 @@
 .card {
   background: var(--c-paper, #fff);
   border: 1px solid var(--c-line, #e5e2da);
-  border-radius: 14px;
+  border-radius: 9px;
   padding: 18px 20px;
 }
 .cardHead {
@@ -84,7 +84,7 @@
   font-size: 13px;
   font-weight: 600;
   padding: 7px 12px;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--c-line, #e5e2da);
   background: var(--c-paper, #fff);
   color: var(--c-ink, #1c1a16);
@@ -105,7 +105,7 @@
 /* ── preview stage ── */
 .stage {
   border: 1px solid var(--c-line, #e5e2da);
-  border-radius: 14px;
+  border-radius: 9px;
   overflow: hidden;
   background: var(--c-paper-2, #f7f5f0);
   height: calc(100vh - 150px);
