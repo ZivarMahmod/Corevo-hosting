@@ -180,6 +180,11 @@ export function PortalSidebar({
             <Link
               key={entry.href}
               href={entry.href}
+              // prefetch av: menyns alla länkar förhandsladdades annars samtidigt vid
+              // varje sidvisning → burst av parallella SSR-renderingar i SAMMA
+              // worker-instans → 128 MB-OOM (Cloudflare Error 1102, "exceededResources"
+              // med låg CPU). Navigering laddar sidan vid klick i stället.
+              prefetch={false}
               className={`portal-aside-link${on ? ' is-active' : ''}`}
               aria-current={on ? 'page' : undefined}
               title={entry.label}
