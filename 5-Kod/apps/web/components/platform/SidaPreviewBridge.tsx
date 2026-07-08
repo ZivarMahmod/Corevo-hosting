@@ -29,7 +29,25 @@ export function SidaPreviewBridge() {
       }
     }
     window.addEventListener('message', onMessage)
-    return () => window.removeEventListener('message', onMessage)
+
+    // Previewen är en TITTYTA, aldrig en surfyta. Storefrontens nav-länkar är
+    // relativa (/, /tjanster, /boka …) och previewen ligger på PLATTFORM-hosten —
+    // ett klick hade navigerat iframen rakt in i super-admin (Zivar: "varför leder
+    // knappar i previewen till super admin?"). Blockera all länk-navigering i
+    // capture-fasen; knappar (boknings-drawern m.m.) påverkas inte.
+    function onClick(e: MouseEvent) {
+      const a = (e.target as HTMLElement | null)?.closest?.('a[href]')
+      if (a) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+    document.addEventListener('click', onClick, true)
+
+    return () => {
+      window.removeEventListener('message', onMessage)
+      document.removeEventListener('click', onClick, true)
+    }
   }, [])
   return null
 }
