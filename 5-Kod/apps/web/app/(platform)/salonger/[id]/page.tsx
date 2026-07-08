@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { requirePlatformAdmin } from '@/lib/auth/session'
 import { getTenantDetail, getTenantAudit, deriveCustomizationLevel } from '@/lib/platform/tenants'
-import { listStaffAllTenants } from '@/lib/platform/people'
 import { getTenantCustomers } from '@/lib/platform/tenant-customers'
 import { TenantCustomers } from '@/components/platform/TenantCustomers'
 import { classifyAuditTone } from '@/lib/platform/audit'
@@ -81,21 +80,20 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // Cross-tenant reads, scoped to THIS salon. listCustomersAllTenants takes a tenant
   // id filter; listStaffAllTenants has no tenant filter (foundation), so we filter
   // by the salon's slug in-page (volume is tiny).
-  const [audit, customerData, allStaff, modules] = await Promise.all([
+  const [audit, customerData, modules] = await Promise.all([
     getTenantAudit(id),
     getTenantCustomers(id),
-    listStaffAllTenants(),
     listTenantModules(id),
   ])
-  const staff = allStaff.filter((s) => s.slug === tenant.slug)
 
   const url = publicUrl(tenant.slug)
   const serviceRoleAvailable = hasServiceRole()
   const b = branding as TenantBranding
   const markColor = b.color_primary || 'var(--c-forest)'
   const isActive = tenant.status === 'active'
-  const statusLabel = isActive ? 'Aktiv' : tenant.status === 'suspended' ? 'Pausad' : tenant.status
-  const statusTone: BadgeTone = isActive ? 'success' : 'warning'
+  const isDeleted = tenant.status === 'deleted'
+  const statusLabel = isActive ? 'Aktiv' : isDeleted ? 'Borttagen' : tenant.status === 'suspended' ? 'Pausad' : tenant.status
+  const statusTone: BadgeTone = isActive ? 'success' : isDeleted ? 'danger' : 'warning'
 
   // Visual hub (spår 4): the tenant's active template = settings.theme (the five named
   // layouts), fenced to the catalog keys that 1:1 match the `templates` table. The
@@ -106,7 +104,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       ? rawTheme
       : DEFAULT_STOREFRONT_THEME
   // Per-tenant edit-toggle (Task 3): is the site editor (sajtbyggaren) enabled for THIS
-  // salon? Default OFF — the platform turns it on per customer in the Drift-tab below.
+  // salon? Default OFF — the platform turns it on per customer in the Sida-tab (SidaStudio).
   const siteEditorEnabled = tenantSiteEditorEnabled(settings?.settings)
   const storefrontUrl = tenantStorefrontUrl(tenant.slug) ?? url
   const storefrontHost = tenantStorefrontHost(tenant.slug) ?? `${tenant.slug}.${ROOT}`
@@ -180,12 +178,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             </div>
           </Card>
           {/* Bokningar/Completade/Kunder/Personal — alla riktiga (aktiva bokningar,
-              completade, customers.length, staff.length). Inget påhittat. */}
+              completade, customers.length, staffList.length). Inget påhittat.
+              staffList = den tenant-scopeade listan (getTenantDetail), INTE en cross-
+              tenant-läsning (den gamla listStaffAllTenants drev en 1102-CPU-risk). */}
           <div className="bo-stat-grid">
             <Stat label="Bokningar" value={counts.bookings} icon="calendar" />
             <Stat label="Completade" value={counts.completed} icon="checkCircle" />
             <Stat label="Kunder" value={customerData.summary.total} icon="users" />
-            <Stat label="Personal" value={staff.length} icon="scissors" />
+            <Stat label="Personal" value={staffList.length} icon="scissors" />
           </div>
           <Card>
             <div className="eyebrow" style={{ marginBottom: 12 }}>
@@ -251,10 +251,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             </div>
             <p className={styles.noteText}>
               {customizationLevel === 1
-                ? 'Bas — färgtokens (no-code). Välj temamall + logo/font i Branding-fliken för nivå 2.'
-                : customizationLevel === 2
-                  ? 'Token-branding (no-code: temamall + färg/font/logo) aktiv och slår igenom utan deploy. Premium nivå-3 scoped CSS-overrides görs med kod i säker miljö — aldrig via no-code-UI.'
-                  : 'Nivå 3 — scoped CSS-overrides (premium-design) aktiva, görs med kod i säker miljö. No-code-token-lagret nedan ligger kvar.'}
+                ? 'Bas — färgtokens (no-code). Välj temamall + logo/font i Sida-fliken för nivå 2.'
+                : 'Token-branding (no-code: temamall + färg/font/logo) aktiv och slår igenom utan deploy. Premium nivå-3 scoped CSS-overrides görs med kod i säker miljö — aldrig via no-code-UI.'}
             </p>
           </Card>
         </div>
@@ -374,12 +372,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         <Card>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontWeight: 600, fontSize: 15 }}>
-              {isActive ? 'Salongen är aktiv' : 'Salongen är pausad'}
+              {isActive ? 'Salongen är aktiv' : isDeleted ? 'Salongen är borttagen' : 'Salongen är pausad'}
             </div>
             <div style={{ fontSize: 13, color: 'var(--c-ink-3)', marginTop: 3 }}>
               {isActive
                 ? 'Pausa → publik storefront blockeras direkt (RLS + cache-bust). Data rörs aldrig.'
-                : 'Publik storefront är blockerad. Data är orörd och går att återaktivera.'}
+                : isDeleted
+                  ? 'Mjukt borttagen (status=deleted). Data är orörd; går att återaktivera vid behov.'
+                  : 'Publik storefront är blockerad. Data är orörd och går att återaktivera.'}
             </div>
           </div>
           <StatusControl tenantId={tenant.id} status={tenant.status} />

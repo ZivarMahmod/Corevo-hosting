@@ -8,6 +8,11 @@ import { useEffect } from 'react'
 // the form is saved. Purely additive: on reload the server-rendered inline tokens win
 // again (these JS overrides live only for the current, unsaved edit).
 const MSG_SOURCE = 'corevo-sida'
+// The full set of tokens the brand form can drive. We reset ALL of them each message:
+// a key PRESENT in the patch → setProperty; a key ABSENT (e.g. font_body blanked, so
+// injectTenantTokens omits --font-body) → removeProperty, so the SSR value takes over
+// again instead of the old override lingering until reload.
+const TOKEN_KEYS = ['--color-primary', '--color-bg', '--color-fg', '--color-accent', '--color-accent-fg', '--font-body']
 
 export function SidaPreviewBridge() {
   useEffect(() => {
@@ -17,7 +22,11 @@ export function SidaPreviewBridge() {
       if (data?.source !== MSG_SOURCE || data.type !== 'brand-preview' || !data.tokens) return
       const root = document.querySelector<HTMLElement>('[data-tenant]')
       if (!root) return
-      for (const [k, v] of Object.entries(data.tokens)) root.style.setProperty(k, v)
+      for (const k of TOKEN_KEYS) {
+        const v = data.tokens[k]
+        if (v != null) root.style.setProperty(k, v)
+        else root.style.removeProperty(k)
+      }
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)

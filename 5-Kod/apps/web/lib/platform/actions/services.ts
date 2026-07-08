@@ -21,9 +21,11 @@ import { reportActionError } from './observe'
 // extended shape below. Runtime is safe: 0046 is applied before this ships.
 type ServiceMerchPatch = Record<string, unknown>
 
-/** kr form field → integer öre, never negative. Blank/invalid → 0. */
-function priceCentsFrom(fd: FormData, field = 'price'): number {
-  return kronorToCents(String(fd.get(field) ?? '')) ?? 0
+/** kr form field → integer öre (>= 0). Blank/invalid → null so callers REJECT it
+ *  (never silently store 0 kr — a blanked price field must not make a tjänst gratis). */
+function priceCentsFrom(fd: FormData, field = 'price'): number | null {
+  const cents = kronorToCents(String(fd.get(field) ?? ''))
+  return cents === null || cents < 0 ? null : cents
 }
 
 /** kr field → öre or null (blank = no value; used for the optional sale price). */
@@ -69,6 +71,7 @@ export async function createTenantService(_p: ActionState, fd: FormData): Promis
 
   if (!tenantId) return { error: 'Saknar salong.' }
   if (!name) return { error: 'Ange ett namn på tjänsten.' }
+  if (priceCents === null) return { error: 'Ange ett giltigt pris (kr).' }
 
   const { data: tenant } = await supabase.from('tenants').select('id').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Salongen finns inte.' }
@@ -117,6 +120,7 @@ export async function updateTenantService(_p: ActionState, fd: FormData): Promis
   if (!tenantId) return { error: 'Saknar salong.' }
   if (!serviceId) return { error: 'Saknar tjänst.' }
   if (!name) return { error: 'Ange ett namn på tjänsten.' }
+  if (priceCents === null) return { error: 'Ange ett giltigt pris (kr).' }
   if (durationMin === null) return { error: 'Längd måste vara ett positivt antal minuter.' }
   // A rabattpris must be lower than ordinarie pris to mean anything (else it reads as
   // a price hike badge). Reject rather than store a confusing "discount".

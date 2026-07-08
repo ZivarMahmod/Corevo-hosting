@@ -67,8 +67,6 @@ export function ServicesCard({
   for (const list of groups.values()) {
     list.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'sv'))
   }
-  const activeStaff = staff.filter((s) => s.active)
-
   return (
     <div>
       <div className={styles.svcHead}>
@@ -95,7 +93,7 @@ export function ServicesCard({
               {g} · {groups.get(g)!.length}
             </p>
             {groups.get(g)!.map((s) => (
-              <ServiceRow key={s.id} tenantId={tenantId} service={s} staff={activeStaff} />
+              <ServiceRow key={s.id} tenantId={tenantId} service={s} staff={staff} />
             ))}
           </div>
         ))
@@ -264,7 +262,10 @@ function ServiceRow({ tenantId, service, staff }: { tenantId: string; service: S
                       value={st.id}
                       defaultChecked={service.staffIds.includes(st.id)}
                     />
-                    <span>{st.title || 'Medarbetare'}</span>
+                    <span>
+                      {st.title || 'Medarbetare'}
+                      {!st.active ? ' (inaktiv)' : ''}
+                    </span>
                   </label>
                 ))}
               </div>
