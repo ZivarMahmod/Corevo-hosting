@@ -1,0 +1,74 @@
+# Worker-vakthund — upptäcker Cloudflare Error 1102 (exceededResources) INNAN
+# Zivar/kunden snubblar på den. Frågar CF:s GraphQL-analytik för senaste 24h;
+# hittas döda anrop öppnas/uppdateras en GitHub-issue (label: worker-watchdog).
+# Bakgrund: 2026-07-08 OOM:ade workern (128 MB/isolate) av sidomenyns
+# prefetch-burst — fixad i v1.6.1 (prefetch av). Vakten finns för att se att
+# fixen håller och fånga nya minnesätare tidigt.
+name: worker-watchdog
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # dagligen 05:00 UTC (~07:00 svensk tid)
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query Cloudflare analytics + rapportera
+        uses: actions/github-script@v7
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        with:
+          script: |
+            const acc = '0be2655be66efbfa5d9b36721ddae008'
+            const until = new Date()
+            const since = new Date(until.getTime() - 24 * 3600 * 1000)
+            const iso = (d) => d.toISOString().replace(/\.\d+Z/, 'Z')
+            const body = JSON.stringify({
+              query: `query($acc: String!) { viewer { accounts(filter: {accountTag: $acc}) {
+                workersInvocationsAdaptive(filter: {scriptName: "bokningsplatformen", datetime_geq: "${iso(since)}", datetime_leq: "${iso(until)}"}, limit: 50) {
+                  sum { requests } dimensions { status } } } } }`,
+              variables: { acc },
+            })
+            const res = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`, 'Content-Type': 'application/json' },
+              body,
+            })
+            const data = await res.json()
+            if (data.errors) throw new Error('CF GraphQL: ' + JSON.stringify(data.errors).slice(0, 300))
+            const rows = data.data.viewer.accounts[0].workersInvocationsAdaptive
+            const total = rows.reduce((n, r) => n + r.sum.requests, 0)
+            const dead = rows.filter((r) => r.dimensions.status === 'exceededResources')
+              .reduce((n, r) => n + r.sum.requests, 0)
+            core.info(`Senaste 24h: ${total} anrop, ${dead} exceededResources`)
+            if (dead === 0) return
+
+            const title = 'Worker-vakthund: Error 1102 (exceededResources) på bokningsplatformen'
+            const report = [
+              `**${dead} anrop** av ${total} dog med \`exceededResources\` (Cloudflare Error 1102) senaste 24h`,
+              `(${iso(since)} → ${iso(until)}).`,
+              '',
+              'Trolig orsak: minnestaket 128 MB/isolate — någon sida/burst äter för mycket.',
+              'Historik + felsökningsmönster: `2-Byggplan/goals/goal-53-kundadmin-paritet.md` + commit för v1.6.1.',
+            ].join('\n')
+
+            const { data: open } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'worker-watchdog',
+            })
+            if (open.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: open[0].number, body: report,
+              })
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body: report, labels: ['worker-watchdog'],
+              })
+            }
