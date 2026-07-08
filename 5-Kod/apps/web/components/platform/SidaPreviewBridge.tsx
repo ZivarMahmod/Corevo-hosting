@@ -23,15 +23,22 @@ export function SidaPreviewBridge() {
   useEffect(() => {
     function onMessage(e: MessageEvent) {
       if (e.origin !== window.location.origin) return
-      const data = e.data as { source?: string; type?: string; tokens?: Record<string, string> }
-      if (data?.source !== MSG_SOURCE || data.type !== 'brand-preview' || !data.tokens) return
-      const root = document.querySelector<HTMLElement>('[data-tenant]')
-      if (!root) return
-      for (const k of TOKEN_KEYS) {
-        const v = data.tokens[k]
-        if (v != null) root.style.setProperty(k, v)
-        else root.style.removeProperty(k)
+      const data = e.data as { source?: string; type?: string; tokens?: Record<string, string>; text?: string }
+      if (data?.source !== MSG_SOURCE) return
+      if (data.type === 'brand-preview' && data.tokens) {
+        const root = document.querySelector<HTMLElement>('[data-tenant]')
+        if (!root) return
+        for (const k of TOKEN_KEYS) {
+          const v = data.tokens[k]
+          if (v != null) root.style.setProperty(k, v)
+          else root.style.removeProperty(k)
+        }
+        return
       }
+      // "Visa var" för TEXT (Zivar: "sidfot… var är den? kan den markeras?"):
+      // hitta elementen som visar exakt den texten, scrolla dit och pulsa en ram —
+      // generiskt via text-matchning, så inga per-mall-DOM-taggar behövs.
+      if (data.type === 'copy-flash' && typeof data.text === 'string') flashText(data.text)
     }
     window.addEventListener('message', onMessage)
 
@@ -65,4 +72,42 @@ export function SidaPreviewBridge() {
     }
   }, [])
   return null
+}
+
+// Normalisera för matchning: kollapsa whitespace (heroTitle kan bära \n).
+const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase()
+
+/** Markera elementen som innehåller `target`-texten: scrolla till det första och
+ *  pulsa en tydlig ram/glow ~1.6 s. Matchar per ELEMENT vars egen text innehåller
+ *  målet (närmast-omslutande vinner via sist-i-dokumentordning-fördjupning). */
+function flashText(target: string) {
+  const wanted = norm(target)
+  if (!wanted) return
+  const short = wanted.length > 60 ? wanted.slice(0, 60) : wanted
+  const root = document.querySelector<HTMLElement>('[data-tenant]') ?? document.body
+  const all = root.querySelectorAll<HTMLElement>('h1,h2,h3,h4,p,span,em,i,a,li,div,blockquote,figcaption,small')
+  const hits: HTMLElement[] = []
+  for (const el of all) {
+    const t = norm(el.textContent ?? '')
+    if (!t || t.length > wanted.length * 3 + 80) continue // för stor container → inte "själva" texten
+    if (t.includes(short)) {
+      // föredra det INNERSTA träffande elementet: släng föräldrar som redan ligger i hits
+      while (hits.length && hits[hits.length - 1]!.contains(el)) hits.pop()
+      hits.push(el)
+    }
+  }
+  const marks = hits.slice(0, 4)
+  if (!marks.length) return
+  marks[0]!.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  for (const el of marks) {
+    const prev = el.style.cssText
+    el.style.outline = '3px solid #FF2FD6'
+    el.style.outlineOffset = '4px'
+    el.style.borderRadius = '4px'
+    el.style.boxShadow = '0 0 0 6px rgba(255,47,214,.18)'
+    el.style.transition = 'outline-color .2s'
+    window.setTimeout(() => {
+      el.style.cssText = prev
+    }, 1700)
+  }
 }

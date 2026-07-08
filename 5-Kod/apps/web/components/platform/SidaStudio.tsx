@@ -108,6 +108,13 @@ export function SidaStudio({
       window.location.origin,
     )
   }, [])
+  // "Visa var" för text: be previewen scrolla till + blinka elementet med texten.
+  const pushFlash = useCallback((text: string) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { source: MSG_SOURCE, type: 'copy-flash', text },
+      window.location.origin,
+    )
+  }, [])
 
   // Per-mall-fält (Zivar: "alla mallar har sina ändringsrutor för det de är uppbyggda
   // för"): FreshCut-hemmet har ingen liten eyebrow-rubrik — visa inte fältet då.
@@ -198,6 +205,7 @@ export function SidaStudio({
                 overrides={{ tagline: copy.tagline }}
                 defaults={{ tagline: copyDefaults.tagline }}
                 onSaved={reload}
+                onFlash={pushFlash}
               />
             </section>
 
@@ -239,6 +247,7 @@ export function SidaStudio({
                   heroLede: copyDefaults.heroLede,
                 }}
                 onSaved={reload}
+                onFlash={pushFlash}
               />
             </section>
 
@@ -286,6 +295,7 @@ export function SidaStudio({
                 overrides={{ aboutCopy: copy.aboutCopy, italic: copy.italic }}
                 defaults={{ aboutCopy: copyDefaults.aboutCopy, italic: copyDefaults.italic }}
                 onSaved={reload}
+                onFlash={pushFlash}
               />
             </section>
 
