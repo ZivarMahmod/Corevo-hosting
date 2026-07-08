@@ -1,25 +1,29 @@
 'use client'
 
-import { useActionState, useEffect, useRef, useState } from 'react'
+import { useActionState, useEffect, useMemo, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { injectTenantTokens, type TenantBranding } from '@corevo/ui'
 import { savePlatformBranding, type ActionState } from '@/lib/platform/actions'
 import styles from './platform.module.css'
 
-// The colour/font fields + their SAVED value (what the input shows on load). Used both
-// to seed the inputs and to detect what the operator changed vs. the live-saved state.
-const C_FALLBACK: Record<string, string> = {
-  color_primary: '#1f6feb',
-  color_bg: '#ffffff',
-  color_fg: '#111111',
-  color_accent: '#1f6feb',
-}
-const FIELDS: { name: string; label: string }[] = [
-  { name: 'color_primary', label: 'Primärfärg' },
-  { name: 'color_bg', label: 'Bakgrund' },
-  { name: 'color_fg', label: 'Text' },
-  { name: 'color_accent', label: 'Accent' },
-  { name: 'font_body', label: 'Typsnitt' },
+// Snygga, salong-neutrala standardfärger (visas när kunden inte satt en egen) — varm
+// charcoal/mässing istället för generisk blå/svart.
+const NICE = {
+  color_primary: '#33302B',
+  color_bg: '#FAF8F4',
+  color_fg: '#2A2622',
+  color_accent: '#B08D57',
+} as const
+
+// Varje färg + VAD den styr på den publika sidan, så operatören förstår innan hen ändrar.
+const COLORS: { name: keyof typeof NICE; label: string; what: string }[] = [
+  { name: 'color_primary', label: 'Primärfärg', what: 'Rubriker, länkar & accenter' },
+  { name: 'color_bg', label: 'Bakgrund', what: 'Sidans bakgrundsfärg' },
+  { name: 'color_fg', label: 'Text', what: 'Brödtext' },
+  { name: 'color_accent', label: 'Accent', what: 'Knappar & "Boka tid"' },
 ]
+
+type Vals = Record<string, string>
 
 export function PlatformBrandingForm({
   tenantId,
@@ -28,70 +32,94 @@ export function PlatformBrandingForm({
 }: {
   tenantId: string
   branding: TenantBranding
-  /** Live-preview hook: fired on every colour/font edit with the CSS-var patch, so a
-   *  parent can push it into the preview iframe BEFORE the form is saved. */
+  /** Live-preview: fired with the CSS-var patch on every edit so the parent can push it
+   *  into the preview iframe BEFORE save. */
   onLiveTokens?: (tokens: Record<string, string>) => void
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(savePlatformBranding, {})
-  const formRef = useRef<HTMLFormElement>(null)
-  // Which fields differ from the saved value (drives the "osparade ändringar"-rad).
-  const [changed, setChanged] = useState<string[]>([])
 
-  // The saved value each input holds on load (colour falls back to its default swatch).
-  const savedOf = (name: string): string => {
-    if (name === 'font_body') return branding.font_body ?? ''
-    return (branding as Record<string, string | null | undefined>)[name] || C_FALLBACK[name] || ''
-  }
+  // The SAVED baseline (falls back to the nice defaults when the tenant set nothing).
+  // Keyed on the actual values, NOT the branding object identity, so an unrelated parent
+  // re-render never wipes in-progress edits — only a real save (new saved values) resets.
+  const initial: Vals = useMemo(
+    () => ({
+      color_primary: branding.color_primary || NICE.color_primary,
+      color_bg: branding.color_bg || NICE.color_bg,
+      color_fg: branding.color_fg || NICE.color_fg,
+      color_accent: branding.color_accent || NICE.color_accent,
+      font_body: branding.font_body ?? '',
+    }),
+    [branding.color_primary, branding.color_bg, branding.color_fg, branding.color_accent, branding.font_body],
+  )
 
-  // Push the current field values into the preview (reuses the storefront's own token
-  // mapper → preview mirrors the saved result 1:1) AND recompute what changed.
-  function sync(form: HTMLFormElement) {
-    const g = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value ?? ''
+  const [vals, setVals] = useState<Vals>(initial)
+  useEffect(() => setVals(initial), [initial]) // save → new baseline → reset the form
+
+  const push = (v: Vals) =>
     onLiveTokens?.(
       injectTenantTokens({
-        color_primary: g('color_primary') || undefined,
-        color_bg: g('color_bg') || undefined,
-        color_fg: g('color_fg') || undefined,
-        color_accent: g('color_accent') || undefined,
-        font_body: g('font_body') || undefined,
+        color_primary: v.color_primary,
+        color_bg: v.color_bg,
+        color_fg: v.color_fg,
+        color_accent: v.color_accent,
+        font_body: v.font_body || undefined,
       } as TenantBranding),
     )
-    setChanged(FIELDS.filter((f) => g(f.name) !== savedOf(f.name)).map((f) => f.label))
+  const set = (name: string, value: string) => {
+    const next = { ...vals, [name]: value }
+    setVals(next)
+    push(next)
+  }
+  const revert = () => {
+    setVals(initial)
+    push(initial)
   }
 
-  // On a successful save the current values ARE the saved values → nothing pending.
-  useEffect(() => {
-    if (state.success) setChanged([])
-  }, [state])
-
-  // Revert to the saved state: reset the inputs to their defaults, re-push the saved
-  // tokens so the preview reverts too, and clear the changed-list.
-  function revert() {
-    const form = formRef.current
-    if (!form) return
-    form.reset()
-    sync(form)
-  }
-
+  const changed = [
+    ...COLORS.filter((c) => vals[c.name] !== initial[c.name]).map((c) => c.label),
+    ...(vals.font_body !== initial.font_body ? ['Typsnitt'] : []),
+  ]
   const dirty = changed.length > 0
 
   return (
-    <form ref={formRef} action={formAction} className={styles.form} onInput={(e) => sync(e.currentTarget)}>
+    <form action={formAction} className={styles.form}>
       <input type="hidden" name="tenantId" value={tenantId} />
 
-      <div className={styles.fieldRow}>
-        <ColorField name="color_primary" label="Primärfärg" value={branding.color_primary} fallback="#1f6feb" />
-        <ColorField name="color_bg" label="Bakgrund" value={branding.color_bg} fallback="#ffffff" />
-        <ColorField name="color_fg" label="Text" value={branding.color_fg} fallback="#111111" />
-        <ColorField name="color_accent" label="Accent (knappar)" value={branding.color_accent} fallback="#1f6feb" />
+      <div style={grid}>
+        {COLORS.map((c) => {
+          const ch = vals[c.name] !== initial[c.name]
+          return (
+            <div key={c.name} style={card}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <b style={{ fontSize: 13 }}>{c.label}</b>
+                {ch ? <span style={dot} title="Ändrat" aria-label="ändrat" /> : null}
+              </div>
+              <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', lineHeight: 1.3 }}>{c.what}</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 7, cursor: 'pointer' }}>
+                <input
+                  type="color"
+                  name={c.name}
+                  value={vals[c.name]}
+                  onChange={(e) => set(c.name, e.target.value)}
+                  style={swatch}
+                  aria-label={`${c.label} — ${c.what}`}
+                />
+                <span style={hex}>{(vals[c.name] || '').toUpperCase()}</span>
+              </label>
+            </div>
+          )
+        })}
       </div>
-      <p className={styles.hint} style={{ marginTop: -2 }}>
-        Ändringar syns direkt i previewen till höger — de går <strong>inte live</strong> förrän du sparar.
-      </p>
 
       <label className={styles.field}>
-        <span>Typsnitt (CSS font-family)</span>
-        <input name="font_body" defaultValue={branding.font_body ?? ''} placeholder="t.ex. Inter, system-ui, sans-serif" />
+        <span>Typsnitt</span>
+        <input
+          name="font_body"
+          value={vals.font_body}
+          onChange={(e) => set('font_body', e.target.value)}
+          placeholder="t.ex. Inter, system-ui, sans-serif"
+        />
+        <span className={styles.hint}>Teckensnitt för hela sidan (CSS font-family). Tomt = temats standard.</span>
       </label>
 
       <div className={styles.field}>
@@ -109,8 +137,12 @@ export function PlatformBrandingForm({
           <span className={styles.muted}>Ingen logotyp uppladdad.</span>
         )}
         <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" />
-        <span className={styles.hint}>PNG/JPG/WEBP/SVG/GIF, max 2 MB.</span>
+        <span className={styles.hint}>Visas i sidhuvudet. PNG/JPG/WEBP/SVG/GIF, max 2 MB.</span>
       </div>
+
+      <p className={styles.hint} style={{ margin: 0 }}>
+        Ändringar syns direkt i previewen till höger — de går <strong>inte live</strong> förrän du sparar.
+      </p>
 
       {dirty ? (
         <div className={styles.dirtyRow} role="status">
@@ -141,21 +173,40 @@ export function PlatformBrandingForm({
   )
 }
 
-function ColorField({
-  name,
-  label,
-  value,
-  fallback,
-}: {
-  name: string
-  label: string
-  value?: string | null
-  fallback: string
-}) {
-  return (
-    <label className={styles.field}>
-      <span>{label}</span>
-      <input type="color" name={name} defaultValue={value || fallback} />
-    </label>
-  )
+const grid: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+  gap: 10,
+}
+const card: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 2,
+  padding: 11,
+  borderRadius: 7,
+  border: '1px solid var(--c-line, #e2e7de)',
+  background: 'var(--c-paper, #fff)',
+}
+const swatch: CSSProperties = {
+  width: 42,
+  height: 30,
+  padding: 0,
+  border: '1px solid var(--c-line, #e2e7de)',
+  borderRadius: 5,
+  background: 'none',
+  cursor: 'pointer',
+  flex: 'none',
+}
+const hex: CSSProperties = {
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+  fontSize: 12,
+  color: 'var(--c-ink-2)',
+  letterSpacing: '0.02em',
+}
+const dot: CSSProperties = {
+  width: 7,
+  height: 7,
+  borderRadius: 999,
+  background: 'var(--c-warning, #a37d3c)',
+  flex: 'none',
 }

@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { requirePlatformAdmin } from '@/lib/auth/session'
 import { injectTenantTokens } from '@corevo/ui'
-import { getTenantBySlug, getServices } from '@/lib/tenant-data'
+import { getTenantBySlug, getServices, STOREFRONT_THEMES, type StorefrontTheme } from '@/lib/tenant-data'
 import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
@@ -28,32 +28,43 @@ export const metadata: Metadata = { title: 'Förhandsvisning', robots: { index: 
 
 export default async function SalongPreviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ theme?: string }>
 }) {
   await requirePlatformAdmin() // same-origin iframe → platform session cookie flows
   const { slug } = await params
+  const { theme: themeParam } = await searchParams
   const bundle = await getTenantBySlug(slug)
   if (!bundle) notFound() // unknown / suspended (public client sees active only)
   const { tenant, settings, location } = bundle
 
-  const Layout = STOREFRONT_LAYOUTS[settings.theme]
+  // Draft-mall: Sida-fliken förhandsvisar en ANNAN mall via ?theme= UTAN att spara —
+  // så operatören ser mallen innan hen publicerar. Valideras mot de kända mallarna;
+  // ogiltigt/utelämnat → tenantens sparade tema (den skarpa sidan är oförändrad).
+  const theme: StorefrontTheme =
+    typeof themeParam === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(themeParam)
+      ? (themeParam as StorefrontTheme)
+      : settings.theme
+
+  const Layout = STOREFRONT_LAYOUTS[theme]
   const copy = await getTenantCopy(tenant.id, tenant.slug)
-  const content = resolveThemeContent(settings.theme, settings.branding, copy)
+  const content = resolveThemeContent(theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
   return (
     <div
       className={`tenant-root ${storefront.tplRoot}`}
       data-world="storefront"
-      data-theme={settings.theme}
+      data-theme={theme}
       data-tenant={tenant.id}
       style={injectTenantTokens(settings.branding) as CSSProperties}
     >
       <SidaPreviewBridge />
       <Layout
         tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
-        theme={settings.theme}
+        theme={theme}
         content={content}
         services={services}
         location={location}

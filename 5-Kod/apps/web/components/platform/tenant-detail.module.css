@@ -349,6 +349,99 @@
   font-size: 13.5px;
 }
 
+/* ── Översikt: launch-banner (status-signal överst) ── */
+.launchBanner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 18px;
+  border-radius: 8px;
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+}
+.launchRing {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--c-success-bg);
+  color: var(--c-success);
+}
+.launchBanner[data-ready='false'] .launchRing {
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+}
+.launchTitle {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+.launchSub {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--c-ink-2);
+  line-height: 1.45;
+}
+.launchAction {
+  margin-left: auto;
+  flex: none;
+}
+
+/* ── Översikt: premium stat-kort (riktiga siffror, inga fejk-grafer) ── */
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.statCard {
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  padding: 15px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.statHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.statLabel {
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-ink-3);
+  font-weight: 600;
+}
+.statCard .statIcon {
+  color: var(--c-ink-3);
+  flex: none;
+}
+.statVal {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 8px;
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+.statVal small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-ink-3);
+  margin-left: 6px;
+}
+@media (max-width: 900px) {
+  .statRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 920px) {
   .twoCol {
     grid-template-columns: 1fr;

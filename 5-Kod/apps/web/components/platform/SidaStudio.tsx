@@ -62,10 +62,16 @@ export function SidaStudio({
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [reloadToken, setReloadToken] = useState(0)
-  const src = useMemo(
-    () => (reloadToken > 0 ? `${previewPath}?_p=${reloadToken}` : previewPath),
-    [previewPath, reloadToken],
-  )
+  // Draft-mall: previewen kan visa en ANNAN mall (via ?theme=) utan att den skarpa sidan
+  // ändras — publiceras separat. null = visa tenantens sparade mall.
+  const [previewTheme, setPreviewTheme] = useState<string | null>(null)
+  const src = useMemo(() => {
+    const q = new URLSearchParams()
+    if (previewTheme) q.set('theme', previewTheme)
+    if (reloadToken > 0) q.set('_p', String(reloadToken))
+    const qs = q.toString()
+    return qs ? `${previewPath}?${qs}` : previewPath
+  }, [previewPath, previewTheme, reloadToken])
 
   // Push a live brand-token patch into the preview iframe (same-origin).
   const pushTokens = useCallback((tokens: Record<string, string>) => {
@@ -82,13 +88,20 @@ export function SidaStudio({
         <section className={styles.card}>
           <h3 className={styles.cardHead}>Mall</h3>
           <p className={styles.note}>
-            Klicka ett mall-kort för att byta — kundens sida byter layout direkt och previewen
-            laddas om.
+            Klicka en mall för att <strong>förhandsvisa</strong> den till höger — den går
+            <strong> inte live</strong> förrän du klickar Publicera.
           </p>
           <ThemePicker
             tenantId={tenantId}
             current={templateKey}
-            onSaved={() => setReloadToken((t) => t + 1)}
+            onPreview={(theme) => {
+              setPreviewTheme(theme === templateKey ? null : theme)
+              setReloadToken((t) => t + 1)
+            }}
+            onPublished={() => {
+              setPreviewTheme(null)
+              setReloadToken((t) => t + 1)
+            }}
           />
         </section>
 
