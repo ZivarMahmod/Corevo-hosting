@@ -98,7 +98,9 @@ export async function saveTenantStats(_p: ActionState, fd: FormData): Promise<Ac
   for (let i = 0; i < STAT_ROWS; i++) {
     const label = String(fd.get(`stat_label_${i}`) ?? '').trim().slice(0, 60)
     const value = String(fd.get(`stat_value_${i}`) ?? '').trim().slice(0, 60)
-    if (label && value) stats.push([label, value])
+    // ORDNING = ThemeStat = [värde, etikett] — mallarna renderar ([n, l]) med n som
+    // stora talet. Tidigare sparades [etikett, värde] → omkastat på publika sidan.
+    if (label && value) stats.push([value, label])
   }
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()

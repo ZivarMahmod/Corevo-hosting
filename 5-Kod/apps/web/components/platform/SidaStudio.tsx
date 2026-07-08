@@ -56,6 +56,7 @@ export function SidaStudio({
   branding,
   copy,
   copyDefaults,
+  statsDefaults,
   heroImages,
   galleryImages,
   siteEditorEnabled,
@@ -75,6 +76,8 @@ export function SidaStudio({
   copy: Copy
   /** Mallens standardtext per fält (THEME_CONTENT för sparad mall). */
   copyDefaults: Copy
+  /** Mallens standardfakta ([värde, etikett][]) för Om oss-sektionen. */
+  statsDefaults: [string, string][]
   heroImages: string[]
   galleryImages: string[]
   siteEditorEnabled: boolean
@@ -112,6 +115,13 @@ export function SidaStudio({
   const pushFlash = useCallback((text: string) => {
     iframeRef.current?.contentWindow?.postMessage(
       { source: MSG_SOURCE, type: 'copy-flash', text },
+      window.location.origin,
+    )
+  }, [])
+  // "Visa var" för bilder: matcha på bild-URL i previewen.
+  const pushImgFlash = useCallback((url: string) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { source: MSG_SOURCE, type: 'img-flash', text: url },
       window.location.origin,
     )
   }, [])
@@ -260,6 +270,7 @@ export function SidaStudio({
                   label="Hero-bilder"
                   hint="Bilderna högst upp på startsidan. Tom slot faller tillbaka på mallens standardfoton."
                   images={heroImages}
+                  onFlashImage={pushImgFlash}
                 />
                 <ImageSlotManager
                   tenantId={tenantId}
@@ -267,6 +278,7 @@ export function SidaStudio({
                   label="Galleri-bilder"
                   hint="Bildgalleriet på startsidan. Tom slot faller tillbaka på mallens standardgalleri."
                   images={galleryImages}
+                  onFlashImage={pushImgFlash}
                 />
               </div>
             </section>
@@ -310,6 +322,10 @@ export function SidaStudio({
                 aboutImage={branding.about_image ?? null}
                 closingImage={branding.closing_image ?? null}
                 stats={branding.stats ?? []}
+                statsDefaults={statsDefaults}
+                onFlashText={pushFlash}
+                onFlashImage={pushImgFlash}
+                onSaved={reload}
               />
             </section>
           </>

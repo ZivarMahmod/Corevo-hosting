@@ -373,6 +373,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           tagline: themeCopyDefaults.tagline,
           italic: themeCopyDefaults.italic,
         }}
+        statsDefaults={themeCopyDefaults.stats}
         heroImages={branding.hero_images ?? []}
         galleryImages={branding.gallery_images ?? []}
         siteEditorEnabled={siteEditorEnabled}

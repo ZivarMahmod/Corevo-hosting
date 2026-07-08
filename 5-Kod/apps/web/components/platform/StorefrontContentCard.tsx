@@ -20,12 +20,15 @@ export function ImageSlotManager({
   label,
   hint,
   images,
+  onFlashImage,
 }: {
   tenantId: string
   slot: 'hero' | 'gallery'
   label: string
   hint: string
   images: string[]
+  /** "Visa var": markera bilden i previewen (scrollar dit och blinkar). */
+  onFlashImage?: (url: string) => void
 }) {
   const [upState, upAction, upPending] = useActionState<ActionState, FormData>(
     uploadTenantStorefrontImage,
@@ -44,7 +47,7 @@ export function ImageSlotManager({
       {images.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginBottom: '0.6rem' }}>
           {images.map((url) => (
-            <ImageThumb key={url} tenantId={tenantId} slot={slot} url={url} />
+            <ImageThumb key={url} tenantId={tenantId} slot={slot} url={url} onFlashImage={onFlashImage} />
           ))}
         </div>
       )}
@@ -72,10 +75,12 @@ function ImageThumb({
   tenantId,
   slot,
   url,
+  onFlashImage,
 }: {
   tenantId: string
   slot: 'hero' | 'gallery'
   url: string
+  onFlashImage?: (url: string) => void
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(
     removeTenantStorefrontImage,
@@ -96,6 +101,17 @@ function ImageThumb({
           border: '1px solid var(--c-line, #e5e2da)',
         }}
       />
+      {onFlashImage ? (
+        <button
+          type="button"
+          className={styles.btn}
+          style={{ width: '100%' }}
+          onClick={() => onFlashImage(url)}
+          title="Markerar var på sidan bilden syns"
+        >
+          Visa var
+        </button>
+      ) : null}
       <form action={action}>
         <input type="hidden" name="tenantId" value={tenantId} />
         <input type="hidden" name="slot" value={slot} />
