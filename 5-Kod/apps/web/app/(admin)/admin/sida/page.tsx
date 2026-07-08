@@ -1,0 +1,93 @@
+import type { Metadata } from 'next'
+import { requirePortal } from '@/lib/auth/session'
+import { getAdminTenant } from '@/lib/admin/tenant'
+import { createClient } from '@/lib/supabase/server'
+import { getTenantDetail } from '@/lib/platform/tenants'
+import { SidaStudio } from '@/components/platform/SidaStudio'
+import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
+import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
+import { PageHead } from '@/components/portal/ui'
+import type { TenantBranding } from '@corevo/ui'
+
+export const dynamic = 'force-dynamic'
+export const metadata: Metadata = { title: 'Redigera sidan · Salongsadmin' }
+
+const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
+
+/**
+ * Kundens EGEN Sida-studio — exakt samma redigeringsyta som super-adminens
+ * kundkort (Sida-fliken i /salonger/[id]), monterad på booking-hosten med
+ * tenant BUNDEN TILL SESSIONEN. Zivar: "det jag ändrar ändras hos honom med" —
+ * båda ytorna delar komponenter, actions (sidaCtx-dubbelguard) och preview-rutt,
+ * så de kan aldrig glida isär. Salongsägaren redigerar mall, färger, typsnitt,
+ * texter, bilder, team, kontakt och öppettider med live-preview bredvid.
+ */
+export default async function AdminSidaPage() {
+  const user = await requirePortal('admin')
+  const tenant = await getAdminTenant(user)
+  if (!tenant) {
+    return (
+      <section className="portal-section">
+        <h1>Redigera sidan</h1>
+        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+      </section>
+    )
+  }
+
+  // Samma detalj-läsning som kundkortet, men med ÄGARENS egen cookie-klient:
+  // RLS (private.tenant_id()) staketar varje query till den egna salongen.
+  const supabase = await createClient()
+  const detail = await getTenantDetail(tenant.id, supabase)
+  if (!detail) {
+    return (
+      <section className="portal-section">
+        <h1>Redigera sidan</h1>
+        <p className="prose">Kunde inte läsa salongens data. Försök igen.</p>
+      </section>
+    )
+  }
+
+  const { tenant: row, settings, branding, operative, copy } = detail
+  const b = branding as TenantBranding
+  const rawTheme = (settings?.settings as { theme?: unknown } | null)?.theme
+  const activeTemplateKey =
+    typeof rawTheme === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
+      ? rawTheme
+      : DEFAULT_STOREFRONT_THEME
+  const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
+  const contactObj = (rawSettings.contact ?? {}) as { email?: unknown; phone?: unknown }
+  const contactEmail =
+    typeof contactObj.email === 'string' && contactObj.email.trim() ? contactObj.email.trim() : null
+  const contactPhone =
+    typeof contactObj.phone === 'string' && contactObj.phone.trim() ? contactObj.phone.trim() : null
+  const storefrontUrl = tenantStorefrontUrl(row.slug) ?? `https://${row.slug}.${ROOT}`
+  const storefrontHost = tenantStorefrontHost(row.slug) ?? `${row.slug}.${ROOT}`
+
+  return (
+    <>
+      <PageHead
+        title="Redigera sidan"
+        lede="Allt som syns på din hemsida — mall, färger, texter, bilder och kontakt — med förhandsvisning bredvid."
+      />
+      <SidaStudio
+        tenantId={row.id}
+        previewPath={`/salong-preview/${row.slug}`}
+        storefrontUrl={storefrontUrl}
+        storefrontHost={storefrontHost}
+        templateKey={activeTemplateKey}
+        isActive={row.status === 'active'}
+        branding={b}
+        copy={copy}
+        heroImages={b.hero_images ?? []}
+        galleryImages={b.gallery_images ?? []}
+        name={row.name}
+        social={detail.social}
+        openingHours={detail.openingHours}
+        contactEmail={contactEmail}
+        contactPhone={contactPhone}
+        address={detail.primaryAddress}
+        bookingVariant={operative.bookingVariant}
+      />
+    </>
+  )
+}

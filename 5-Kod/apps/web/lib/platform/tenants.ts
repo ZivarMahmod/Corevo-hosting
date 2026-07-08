@@ -423,8 +423,13 @@ type ServiceMerchRow = {
   sort_order: number | null
 }
 
-export async function getTenantDetail(tenantId: string): Promise<TenantDetail | null> {
-  const { supabase } = await platformCtx()
+export async function getTenantDetail(
+  tenantId: string,
+  // Kund-admin (/admin/sida) reuses this read with the salon admin's OWN cookie
+  // client: RLS then fences every query to their tenant. No client → platform gate.
+  client?: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>,
+): Promise<TenantDetail | null> {
+  const supabase = client ?? (await platformCtx()).supabase
 
   const { data: tenant, error: tenantErr } = await supabase
     .from('tenants')

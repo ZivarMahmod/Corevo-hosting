@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { platformCtx } from '../guard'
+import { sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
 import { uploadImage, deleteByPublicUrl } from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
@@ -21,7 +21,7 @@ import { reportActionError } from './observe'
 // closing/team/stats — MUST survive untouched (the savePlatformBranding-clobber
 // bug). Each `.upsert({ tenant_id, <col> })` writes ONLY that column (ON CONFLICT
 // DO UPDATE SET <col>=…), so the sibling column is never even in the write set.
-// All actions are platform_admin-gated via platformCtx and validate the tenant
+// All actions are dual-guarded via sidaCtx (platform admin: any tenant via form; salon admin: OWN tenant forced from the session) and validate the tenant
 // server-side (the `select('slug')` read doubles as the existence check + the slug
 // needed to bust the cached public bundle so the change goes live immediately).
 
@@ -66,8 +66,7 @@ const COPY_MAX: Record<CopyField, number> = {
  * so theme/look/booking/contact/flags are all preserved.
  */
 export async function saveTenantStorefrontCopy(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   // Existence check + slug for the cache-bust (server-side tenant validation).
@@ -110,6 +109,7 @@ export async function saveTenantStorefrontCopy(_p: ActionState, fd: FormData): P
   // Bust the cached public bundle so the copy shows live, + refresh the admin view.
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.storefront_copy',
     tenantId,
@@ -147,8 +147,7 @@ function photoUploadError(reason: string): string {
  * other branding key (colours/font/logo/about/closing/team/stats) via mergeBranding.
  */
 export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const slotRaw = String(fd.get('slot') ?? '')
@@ -188,6 +187,7 @@ export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData)
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.storefront_image_add',
     tenantId,
@@ -204,8 +204,7 @@ export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData)
  * never throws / never blocks the save).
  */
 export async function removeTenantStorefrontImage(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const slotRaw = String(fd.get('slot') ?? '')
@@ -245,6 +244,7 @@ export async function removeTenantStorefrontImage(_p: ActionState, fd: FormData)
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.storefront_image_remove',
     tenantId,

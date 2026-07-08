@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { notFound } from 'next/navigation'
-import { requirePlatformAdmin } from '@/lib/auth/session'
+import { requirePortal } from '@/lib/auth/session'
+import { createClient } from '@/lib/supabase/server'
 import { injectTenantTokens } from '@corevo/ui'
 import { getTenantBySlug, STOREFRONT_THEMES, type StorefrontTheme, type TenantBundle } from '@/lib/tenant-data'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
@@ -39,7 +40,19 @@ export function resolvePreviewTheme(bundle: TenantBundle, themeParam: string | u
 }
 
 export async function loadPreviewBundle(slug: string): Promise<TenantBundle> {
-  await requirePlatformAdmin() // same-origin iframe → platform session cookie flows
+  // Same-origin iframe → the viewer's session cookie flows. Platform admin may
+  // preview ANY tenant; a salon admin (portal level) only their OWN slug — the
+  // kund-adminens /admin/sida uses exactly this route for its live preview.
+  const user = await requirePortal('admin')
+  if (!user.platformAdmin) {
+    const supabase = await createClient()
+    const { data: own } = await supabase
+      .from('tenants')
+      .select('slug')
+      .eq('id', user.tenantId ?? '')
+      .maybeSingle()
+    if (!own || own.slug !== slug) notFound()
+  }
   const bundle = await getTenantBySlug(slug)
   if (!bundle) notFound() // unknown / suspended (public client sees active only)
   return bundle

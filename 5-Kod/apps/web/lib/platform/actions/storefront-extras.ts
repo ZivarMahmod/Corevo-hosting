@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { platformCtx } from '../guard'
+import { sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
 import { uploadImage, uploadErrorMessage, deleteByPublicUrl } from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
@@ -28,8 +28,7 @@ function singleKey(s: SingleSlot): 'about_image' | 'closing_image' {
  * url:en sparas. Gamla objektet städas best-effort efter commit (FX-14).
  */
 export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const slotRaw = String(fd.get('slot') ?? '')
@@ -73,6 +72,7 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: remove ? 'tenant.storefront_image_remove' : 'tenant.storefront_image_add',
     tenantId,
@@ -90,8 +90,7 @@ const STAT_ROWS = 4 // enough for the richest theme's stat strip
  * tillbaka på temats standard-stats.
  */
 export async function saveTenantStats(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const stats: [string, string][] = []
@@ -123,6 +122,7 @@ export async function saveTenantStats(_p: ActionState, fd: FormData): Promise<Ac
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, { action: 'tenant.storefront_copy', tenantId, actorId: user.id, meta: { stats: stats.length } })
   return { success: 'Fakta sparad. Publika sajten uppdaterad.' }
 }
@@ -137,8 +137,7 @@ type TeamMember = { name: string; role: string; img: string }
  * Ersatta/borttagna foton städas best-effort ur R2 efter commit (FX-14).
  */
 export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const idxRaw = String(fd.get('index') ?? '')
@@ -200,6 +199,7 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.storefront_copy',
     tenantId,

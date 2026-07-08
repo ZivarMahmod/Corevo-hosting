@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { platformCtx } from '../guard'
+import { platformCtx, sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
 import { isBookingVariant, DEFAULT_BOOKING_VARIANT, type BookingVariant } from '../booking-variant'
 import { revalidateTenant } from '@/lib/admin/tenant'
@@ -109,8 +109,7 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
  * (saveTenantData nollar google_review_url när fältet saknas i formuläret).
  */
 export async function saveTenantName(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
   const name = String(fd.get('name') ?? '').trim().slice(0, 120)
   if (!name) return { error: 'Ange ett salongsnamn.' }
@@ -126,6 +125,7 @@ export async function saveTenantName(_p: ActionState, fd: FormData): Promise<Act
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.update',
     tenantId,
@@ -141,8 +141,7 @@ export async function saveTenantName(_p: ActionState, fd: FormData): Promise<Act
  * leva som eget kort utan att dra med sig namn/recensionslänk.
  */
 export async function saveTenantBookingView(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
   const variantRaw = String(fd.get('booking_variant') ?? '')
   const bookingVariant: BookingVariant = isBookingVariant(variantRaw)
@@ -171,6 +170,7 @@ export async function saveTenantBookingView(_p: ActionState, fd: FormData): Prom
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.update',
     tenantId,

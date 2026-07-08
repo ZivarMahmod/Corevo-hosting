@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { platformCtx } from '../guard'
+import { sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
 import { uploadImage, uploadErrorMessage, pruneRemovedImages } from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
@@ -18,8 +18,7 @@ function hexOrNull(raw: FormDataEntryValue | null): string | null | undefined {
 }
 
 export async function savePlatformBranding(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const colorPrimary = hexOrNull(fd.get('color_primary'))
@@ -88,6 +87,7 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
   // CRITICAL: bust the cached public bundle so branding shows immediately (M2/M3).
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, { action: 'tenant.branding', tenantId, actorId: user.id })
   return warning ? { error: warning } : { success: 'Varumärke sparat. Publika sajten uppdaterad.' }
 }

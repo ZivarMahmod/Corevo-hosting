@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { platformCtx } from '../guard'
+import { sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { STOREFRONT_THEMES, type StorefrontTheme } from '@/lib/tenant-data'
@@ -13,8 +13,7 @@ import { reportActionError } from './observe'
 // läser prev och spread:ar `...prev` innan vi skriver theme. Nolla även `look`: en satt
 // render-bron-look överrider temat i publika rendern, så ett mall-byte ska landa på temat.
 export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const theme = String(fd.get('theme') ?? '') as StorefrontTheme
@@ -41,6 +40,7 @@ export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<Act
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, { action: 'tenant.theme', tenantId, actorId: user.id, meta: { theme } })
   return { success: 'Mall bytt. Publika sajten uppdaterad.' }
 }

@@ -7,7 +7,14 @@ import { Icon, type IconName } from './ui/Icon'
 
 export type PortalRole = 'admin' | 'platform' | 'personal'
 
-type NavItem = { href: string; label: string; icon: IconName }
+type NavItem = {
+  href: string
+  label: string
+  icon: IconName
+  /** tenant_modules-nyckel — posten visas BARA när kundens modul är aktiverad
+   *  (Zivar: "de moduler som är aktiva är de som syns för kunden"). */
+  module?: string
+}
 /** A nav entry is either a group header (handoff Sidebar groups the rail by
  *  area: Insyn/Tenants… for super, Din dag/Hantera/Din sida for salon) or a
  *  link. We only group items whose routes actually exist — no 404 placeholders. */
@@ -63,14 +70,14 @@ const NAV: Record<PortalRole, NavConfig> = {
       { href: '/admin/platser', label: 'Platser', icon: 'building' },
       { href: '/admin/scheman', label: 'Scheman', icon: 'clock' },
       { group: 'Moduler' },
-      { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload' },
-      { href: '/admin/webshop', label: 'Webshop', icon: 'grid' },
-      { href: '/admin/blogg', label: 'Blogg', icon: 'edit' },
-      { href: '/admin/offerter', label: 'Offerter', icon: 'mail' },
-      { href: '/admin/lojalitet', label: 'Lojalitet', icon: 'star' },
-      { href: '/admin/presentkort', label: 'Presentkort', icon: 'gift' },
+      { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', module: 'media_library' },
+      { href: '/admin/webshop', label: 'Webshop', icon: 'grid', module: 'shop' },
+      { href: '/admin/blogg', label: 'Blogg', icon: 'edit', module: 'blogg' },
+      { href: '/admin/offerter', label: 'Offerter', icon: 'mail', module: 'offert' },
+      { href: '/admin/lojalitet', label: 'Lojalitet', icon: 'star', module: 'lojalitet' },
+      { href: '/admin/presentkort', label: 'Presentkort', icon: 'gift', module: 'presentkort' },
       { group: 'Din sida' },
-      { href: '/admin/varumarke', label: 'Varumärke', icon: 'palette' },
+      { href: '/admin/sida', label: 'Redigera sidan', icon: 'palette' },
       { href: '/admin/installningar', label: 'Inställningar', icon: 'settings' },
     ],
   },
@@ -104,6 +111,7 @@ export function PortalSidebar({
   userLabel,
   userSub,
   signOut,
+  activeModuleKeys,
 }: {
   role: PortalRole
   brand: string
@@ -111,9 +119,22 @@ export function PortalSidebar({
   userSub: string
   /** SignOutButton element — handoff puts logout in the sidebar footer cell. */
   signOut?: ReactNode
+  /** Aktiverade tenant_modules-nycklar (admin-portalen). undefined → ingen
+   *  gating (platform/personal); [] → alla modul-poster döljs. */
+  activeModuleKeys?: string[]
 }) {
   const pathname = usePathname()
   const cfg = NAV[role]
+  // Modulstyrd meny: dölj modul-poster vars modul inte är aktiverad för kunden,
+  // och dölj grupprubriker som blivit tomma (t.ex. hela "Moduler"-gruppen).
+  const filtered = cfg.items.filter(
+    (e) => isGroup(e) || !e.module || !activeModuleKeys || activeModuleKeys.includes(e.module),
+  )
+  const items = filtered.filter((e, i) => {
+    if (!isGroup(e)) return true
+    const next = filtered[i + 1]
+    return next !== undefined && !isGroup(next)
+  })
   // Collapsible rail (Zivar: "jag vill kunna gömma den men den ska inte bara försvinna
   // när jag klickar onboarda ny kund"). A manual toggle, NEVER an auto-hide — the sidebar
   // stays open on every page (incl. onboarding) so the studio reads as the same connected
@@ -143,7 +164,7 @@ export function PortalSidebar({
       </div>
 
       <nav className="portal-aside-nav">
-        {cfg.items.map((entry, i) => {
+        {items.map((entry, i) => {
           if (isGroup(entry)) {
             return (
               <div

@@ -850,7 +850,7 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
   await pruneRemovedImages([prev.logo_url], [branding.logo_url])
 
   revalidateTenant(ctx.tenant.slug)
-  revalidatePath('/admin/varumarke')
+  revalidatePath('/admin/sida')
   return warning ? { error: warning } : { success: 'Varumärke sparat. Publika webbplatsen uppdaterad.' }
 }
 
@@ -1025,7 +1025,7 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
       [...heroImages, ...galleryImages, aboutImage, closingImage, ...team.map((m) => m.img)],
     )
     revalidateTenant(ctx.tenant.slug)
-    revalidatePath('/admin/varumarke')
+    revalidatePath('/admin/sida')
   } catch {
     // best-effort cleanup — a prune/revalidate miss never fails an already-saved write.
   }
@@ -1070,7 +1070,7 @@ export async function saveStorefrontCopy(_p: ActionState, fd: FormData): Promise
   if (error) return { error: GENERIC }
 
   revalidateTenant(ctx.tenant.slug)
-  revalidatePath('/admin/varumarke')
+  revalidatePath('/admin/sida')
   return { success: 'Texter sparade. Publika webbplatsen uppdaterad.' }
 }
 

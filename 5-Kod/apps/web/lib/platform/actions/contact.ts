@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { platformCtx } from '../guard'
+import { sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
@@ -54,8 +54,7 @@ async function geocode(address: string): Promise<{ lat: number; lon: number } | 
 }
 
 export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const email = emailOrNull(fd.get('email'))
@@ -142,6 +141,7 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, { action: 'tenant.contact', tenantId, actorId: user.id })
   return {
     success: `Kontakt & adress sparad. Publika sajten uppdaterad.${address && !map ? ' (Kartan hittade inte adressen — kontrollera stavningen.)' : ''}`,
@@ -158,8 +158,7 @@ const OH_DAYS = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 
  * bort och storefronten härleder ur personalens veckoscheman som förut.
  */
 export async function saveTenantOpeningHours(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
-  const tenantId = String(fd.get('tenantId') ?? '')
+  const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
 
   const rows: { day: string; time: string }[] = []
@@ -191,6 +190,7 @@ export async function saveTenantOpeningHours(_p: ActionState, fd: FormData): Pro
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.contact',
     tenantId,

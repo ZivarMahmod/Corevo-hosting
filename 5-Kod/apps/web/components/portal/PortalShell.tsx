@@ -8,6 +8,7 @@ import { cleanTerminology, resolveTerm } from '@/lib/platform/verticals-shared'
 import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 import { PortalSidebar, type PortalRole } from './PortalSidebar'
+import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
 import { PortalTopbar } from './PortalTopbar'
 import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
@@ -37,7 +38,7 @@ const PALETTE: Record<PortalRole, CommandItem[]> = {
     { href: '/admin/personal', label: 'Personal', icon: 'users', kind: 'Gå till' },
     { href: '/admin/platser', label: 'Platser', icon: 'building', kind: 'Gå till' },
     { href: '/admin/scheman', label: 'Scheman', icon: 'clock', kind: 'Gå till' },
-    { href: '/admin/varumarke', label: 'Varumärke', icon: 'palette', kind: 'Gå till' },
+    { href: '/admin/sida', label: 'Redigera sidan', icon: 'palette', kind: 'Gå till' },
     { href: '/admin/installningar', label: 'Inställningar', icon: 'settings', kind: 'Gå till' },
   ],
   personal: [
@@ -98,6 +99,30 @@ export async function PortalShell({
     const brand = portal === 'platform' ? 'Corevo' : tenantName
     const email = user.email ?? ''
     const userLabel = email.split('@')[0] || email || 'Konto'
+
+    // Modulstyrd admin-yta: läs kundens tenant_modules EN gång här (RLS-scopad)
+    // och låt sidomeny + ⌘K-palett visa BARA aktiverade moduler. Platform/personal
+    // gatar inte (undefined → PortalSidebar visar allt).
+    const MODULE_PALETTE: (CommandItem & { module: string })[] = [
+      { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', kind: 'Gå till', module: 'media_library' },
+      { href: '/admin/webshop', label: 'Webshop', icon: 'grid', kind: 'Gå till', module: 'shop' },
+      { href: '/admin/blogg', label: 'Blogg', icon: 'edit', kind: 'Gå till', module: 'blogg' },
+      { href: '/admin/offerter', label: 'Offerter', icon: 'mail', kind: 'Gå till', module: 'offert' },
+      { href: '/admin/lojalitet', label: 'Lojalitet', icon: 'star', kind: 'Gå till', module: 'lojalitet' },
+      { href: '/admin/presentkort', label: 'Presentkort', icon: 'gift', kind: 'Gå till', module: 'presentkort' },
+    ]
+    let activeModuleKeys: string[] | undefined
+    let paletteItems: CommandItem[] = PALETTE[portal]
+    if (portal === 'admin' && bundle) {
+      const states = await getAdminModuleStates(bundle.tenant.id)
+      activeModuleKeys = MODULE_PALETTE.map((m) => m.module).filter((k) => isModuleActivated(states, k))
+      paletteItems = [
+        ...PALETTE.admin,
+        ...MODULE_PALETTE.filter((m) => activeModuleKeys!.includes(m.module)).map(
+          ({ module: _m, ...item }) => item,
+        ),
+      ]
+    }
     // Bransch terminology overlay for the sidebar identity cell. Resolve the
     // tenant's vertical terminology on the server (mirrors getAdminTenant's
     // separate-read seam: a verticals shape/RLS change can never null the
@@ -151,6 +176,7 @@ export async function PortalShell({
           userLabel={userLabel}
           userSub={userSub}
           signOut={<SignOutButton compact />}
+          activeModuleKeys={activeModuleKeys}
         />
         <div className="portal-col">
           <PortalTopbar
@@ -159,7 +185,7 @@ export async function PortalShell({
                 ? 'Sök salong, kund, personal, åtgärd…'
                 : 'Sök bokning, kund, tjänst…'
             }
-            paletteItems={PALETTE[portal]}
+            paletteItems={paletteItems}
             contextLink={contextLink}
           />
           <main className="portal-main">
