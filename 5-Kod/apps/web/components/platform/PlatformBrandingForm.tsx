@@ -22,6 +22,38 @@ const COLORS: { name: 'color_primary' | 'color_bg' | 'color_fg' | 'color_accent'
   { name: 'color_fg', label: 'Textfärg', what: 'Brödtext & rubriktext' },
 ]
 
+// Valbara typsnitt (dropdown, Zivar: "inte att jag ska skriva in det själv").
+// Bara stackar som FAKTISKT finns på sidan: de tre next/font-laddade familjerna
+// (via CSS-vars från root-layouten) + robusta systemstackar. Värdet sparas som
+// CSS font-family och injiceras som --font-body/--font-display.
+const BODY_FONTS: { label: string; value: string }[] = [
+  { label: 'Mallens standard', value: '' },
+  { label: 'Inter (modern sans)', value: "var(--font-inter), 'Inter', sans-serif" },
+  { label: 'Source Sans (mjuk sans)', value: "var(--font-source-sans), 'Source Sans 3', sans-serif" },
+  { label: 'Playfair Display (serif)', value: "var(--font-playfair), 'Playfair Display', Georgia, serif" },
+  { label: 'Georgia (klassisk serif)', value: "Georgia, 'Times New Roman', serif" },
+  { label: 'System (enhetens)', value: 'system-ui, -apple-system, sans-serif' },
+  { label: 'Arial / Helvetica', value: 'Arial, Helvetica, sans-serif' },
+  { label: 'Verdana', value: 'Verdana, Geneva, sans-serif' },
+]
+const DISPLAY_FONTS: { label: string; value: string }[] = [
+  { label: 'Mallens standard', value: '' },
+  { label: 'Playfair Display (elegant serif)', value: "var(--font-playfair), 'Playfair Display', Georgia, serif" },
+  { label: 'Georgia (klassisk serif)', value: "Georgia, 'Times New Roman', serif" },
+  { label: "Times New Roman", value: "'Times New Roman', Times, serif" },
+  { label: 'Inter (modern sans)', value: "var(--font-inter), 'Inter', sans-serif" },
+  { label: 'Source Sans (mjuk sans)', value: "var(--font-source-sans), 'Source Sans 3', sans-serif" },
+  { label: 'System (enhetens)', value: 'system-ui, -apple-system, sans-serif' },
+]
+
+// "Visa var"-pulsen: vilken CSS-var respektive färgkort styr i previewen.
+const FLASH_VAR: Record<string, string> = {
+  color_primary: '--color-primary',
+  color_bg: '--color-bg',
+  color_fg: '--color-fg',
+  color_accent: '--color-accent',
+}
+
 /** '' = ingen egen färg → mallens standard gäller. */
 type Vals = Record<string, string>
 
@@ -57,8 +89,9 @@ export function PlatformBrandingForm({
       color_fg: branding.color_fg ?? '',
       color_accent: branding.color_accent ?? '',
       font_body: branding.font_body ?? '',
+      font_display: branding.font_display ?? '',
     }),
-    [branding.color_primary, branding.color_bg, branding.color_fg, branding.color_accent, branding.font_body],
+    [branding.color_primary, branding.color_bg, branding.color_fg, branding.color_accent, branding.font_body, branding.font_display],
   )
 
   const [vals, setVals] = useState<Vals>(initial)
@@ -74,6 +107,7 @@ export function PlatformBrandingForm({
         color_fg: v.color_fg || undefined,
         color_accent: v.color_accent || undefined,
         font_body: v.font_body || undefined,
+        font_display: v.font_display || undefined,
       } as TenantBranding),
     )
   const set = (name: string, value: string) => {
@@ -90,12 +124,29 @@ export function PlatformBrandingForm({
     setVals(initial)
     push(initial)
   }
+  // "Visa var" — pulsa färgens yta i previewen med en skrikig markörfärg i ~1 s och
+  // återställ, så operatören SER exakt vad t.ex. "Primärfärg" styr utan att gissa.
+  const flash = (name: string) => {
+    const v = FLASH_VAR[name]
+    if (!v || !onLiveTokens) return
+    const base = injectTenantTokens({
+      color_primary: vals.color_primary || undefined,
+      color_bg: vals.color_bg || undefined,
+      color_fg: vals.color_fg || undefined,
+      color_accent: vals.color_accent || undefined,
+      font_body: vals.font_body || undefined,
+      font_display: vals.font_display || undefined,
+    } as TenantBranding)
+    onLiveTokens({ ...base, [v]: '#FF2FD6', ...(v === '--color-accent' ? { '--color-accent-fg': '#ffffff' } : {}) })
+    window.setTimeout(() => push(vals), 1100)
+  }
 
   const changed = [
     ...COLORS.filter((c) => vals[c.name] !== initial[c.name]).map((c) =>
       vals[c.name] ? c.label : `${c.label} → mallens standard`,
     ),
-    ...(vals.font_body !== initial.font_body ? ['Typsnitt'] : []),
+    ...(vals.font_body !== initial.font_body ? ['Brödtypsnitt'] : []),
+    ...(vals.font_display !== initial.font_display ? ['Rubriktypsnitt'] : []),
   ]
   const dirty = changed.length > 0
   const anyOverride = COLORS.some((c) => vals[c.name])
@@ -136,6 +187,17 @@ export function PlatformBrandingForm({
                   aria-label={`${c.label} — ${c.what}`}
                 />
                 <span style={hexCss}>{effective.toUpperCase()}</span>
+                <button
+                  type="button"
+                  style={{ ...miniBtn, marginTop: 0, marginLeft: 'auto' }}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    flash(c.name)
+                  }}
+                  title="Blinkar den här färgens yta i previewen så du ser exakt vad den styr"
+                >
+                  Visa var
+                </button>
               </label>
               {override ? (
                 <button type="button" style={miniBtn} onClick={() => set(c.name, '')}>
@@ -157,16 +219,36 @@ export function PlatformBrandingForm({
         </button>
       ) : null}
 
-      <label className={styles.field}>
-        <span>Typsnitt</span>
-        <input
-          name="font_body"
-          value={vals.font_body}
-          onChange={(e) => set('font_body', e.target.value)}
-          placeholder="t.ex. Inter, system-ui, sans-serif"
-        />
-        <span className={styles.hint}>Teckensnitt för sidans brödtext. Tomt = mallens standard.</span>
-      </label>
+      <div style={grid}>
+        <label className={styles.field}>
+          <span>Rubriktypsnitt</span>
+          <select name="font_display" value={vals.font_display} onChange={(e) => set('font_display', e.target.value)}>
+            {DISPLAY_FONTS.map((f) => (
+              <option key={f.label} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+            {vals.font_display && !DISPLAY_FONTS.some((f) => f.value === vals.font_display) ? (
+              <option value={vals.font_display}>Egen (sparad): {vals.font_display.slice(0, 40)}</option>
+            ) : null}
+          </select>
+          <span className={styles.hint}>Stora rubriker (hero, sektionstitlar).</span>
+        </label>
+        <label className={styles.field}>
+          <span>Brödtypsnitt</span>
+          <select name="font_body" value={vals.font_body} onChange={(e) => set('font_body', e.target.value)}>
+            {BODY_FONTS.map((f) => (
+              <option key={f.label} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+            {vals.font_body && !BODY_FONTS.some((f) => f.value === vals.font_body) ? (
+              <option value={vals.font_body}>Egen (sparad): {vals.font_body.slice(0, 40)}</option>
+            ) : null}
+          </select>
+          <span className={styles.hint}>All löpande text. Ändras direkt i previewen.</span>
+        </label>
+      </div>
 
       <div className={styles.field}>
         <span>Logotyp</span>

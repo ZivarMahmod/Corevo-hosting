@@ -125,6 +125,15 @@ export async function middleware(request: NextRequest) {
   if (tenant.kind === 'reserved') requestHeaders.set('x-corevo-reserved-subdomain', tenant.subdomain)
   else requestHeaders.delete('x-corevo-reserved-subdomain')
 
+  // 2b. Preview-rutterna (/salong-preview/<slug>/…) renderar en tenants storefront ur
+  //     SLUG i URL:en på admin-hosten. Sätt samma x-corevo-tenant-slug som en riktig
+  //     tenant-host hade fått, så själv-hämtande storefront-komponenter (LocationHours,
+  //     modulsektioner) resolvar RÄTT tenant via currentTenant() inne i previewen.
+  //     Ofarligt att sätta för oinloggade: rutten själv-gatar med requirePlatformAdmin
+  //     och headern gäller bara denna request (vars path ÄR preview-rutten).
+  const previewSlug = /^\/salong-preview\/([a-z0-9-]+)/.exec(path)?.[1]
+  if (previewSlug) requestHeaders.set('x-corevo-tenant-slug', previewSlug)
+
   // 3. Refresh the Supabase auth session (SSR). Returns a response carrying any
   //    rotated auth cookies + the resolved user. Those cookies MUST be carried
   //    onto whatever we return (pass-through, rewrite, or redirect) or the session

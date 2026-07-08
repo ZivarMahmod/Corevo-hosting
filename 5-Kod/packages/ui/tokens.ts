@@ -8,6 +8,7 @@ export type TenantBranding = {
   color_fg?: string | null
   color_accent?: string | null
   font_body?: string | null
+  font_display?: string | null
   logo_url?: string | null
   // Owner-uploaded storefront media (read-path only; no upload UI yet). Optional
   // so existing branding rows parse unchanged; injectTenantTokens reads none of
@@ -64,5 +65,6 @@ export function injectTenantTokens(
     if (fg) vars['--color-accent-fg'] = fg
   }
   if (branding?.font_body) vars['--font-body'] = branding.font_body
+  if (branding?.font_display) vars['--font-display'] = branding.font_display
   return vars
 }

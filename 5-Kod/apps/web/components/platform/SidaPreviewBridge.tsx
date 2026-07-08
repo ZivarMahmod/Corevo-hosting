@@ -12,7 +12,12 @@ const MSG_SOURCE = 'corevo-sida'
 // a key PRESENT in the patch → setProperty; a key ABSENT (e.g. font_body blanked, so
 // injectTenantTokens omits --font-body) → removeProperty, so the SSR value takes over
 // again instead of the old override lingering until reload.
-const TOKEN_KEYS = ['--color-primary', '--color-bg', '--color-fg', '--color-accent', '--color-accent-fg', '--font-body']
+const TOKEN_KEYS = ['--color-primary', '--color-bg', '--color-fg', '--color-accent', '--color-accent-fg', '--font-body', '--font-display']
+
+// Publika undersidor som HAR en preview-tvilling under /salong-preview/<slug>/…
+// (nav-länkarna Hem/Tjänster/Om oss/Kontakt). Allt annat (t.ex. /boka, externa
+// länkar) blockeras — previewen lämnar aldrig preview-världen.
+const PREVIEW_PATHS = new Set(['', 'tjanster', 'om', 'kontakt'])
 
 export function SidaPreviewBridge() {
   useEffect(() => {
@@ -30,17 +35,27 @@ export function SidaPreviewBridge() {
     }
     window.addEventListener('message', onMessage)
 
-    // Previewen är en TITTYTA, aldrig en surfyta. Storefrontens nav-länkar är
-    // relativa (/, /tjanster, /boka …) och previewen ligger på PLATTFORM-hosten —
-    // ett klick hade navigerat iframen rakt in i super-admin (Zivar: "varför leder
-    // knappar i previewen till super admin?"). Blockera all länk-navigering i
-    // capture-fasen; knappar (boknings-drawern m.m.) påverkas inte.
+    // Länk-styrning: storefrontens nav-länkar är relativa (/, /tjanster …) och
+    // previewen ligger på PLATTFORM-hosten — obehandlade hade ett klick laddat
+    // super-admin INUTI iframen. Sidor som har en preview-tvilling SKRIVS OM till
+    // /salong-preview/<slug>/<sida> (med ?theme= bevarad) så operatören kan klicka
+    // runt precis som på den skarpa sidan (Zivar: "flikarna ska kunna öppnas");
+    // allt annat (t.ex. /boka, externa länkar) blockeras. Capture-fasen, så inga
+    // andra handlers hinner före; knappar (boknings-drawern) påverkas inte.
     function onClick(e: MouseEvent) {
       const a = (e.target as HTMLElement | null)?.closest?.('a[href]')
-      if (a) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
+      if (!a) return
+      e.preventDefault()
+      e.stopPropagation()
+      const href = a.getAttribute('href') ?? ''
+      if (!href.startsWith('/')) return // extern/hash → blockerad
+      const m = /^\/salong-preview\/([a-z0-9-]+)/.exec(window.location.pathname)
+      const slug = m?.[1]
+      if (!slug) return
+      const target = href.split(/[?#]/)[0]?.replace(/^\/+|\/+$/g, '') ?? ''
+      if (!PREVIEW_PATHS.has(target)) return // ingen preview-tvilling → blockerad
+      const dest = `/salong-preview/${slug}${target ? `/${target}` : ''}${window.location.search}`
+      window.location.assign(dest)
     }
     document.addEventListener('click', onClick, true)
 

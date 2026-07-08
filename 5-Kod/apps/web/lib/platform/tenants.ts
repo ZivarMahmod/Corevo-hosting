@@ -414,7 +414,15 @@ type ServiceMerchRow = {
 export async function getTenantDetail(tenantId: string): Promise<TenantDetail | null> {
   const { supabase } = await platformCtx()
 
-  const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle()
+  const { data: tenant, error: tenantErr } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('id', tenantId)
+    .maybeSingle()
+  // Skilj FEL från SAKNAS: ett transient nätverks/DB-fel ska ge error-boundaryn
+  // ("Försök igen"), inte en falsk "Sidan kunde inte hittas"-404 (Zivar såg den
+  // efter en spar mitt i en deploy).
+  if (tenantErr) throw new Error(`getTenantDetail: ${tenantErr.message}`)
   if (!tenant) return null
 
   const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes, locationRes] = await Promise.all([

@@ -34,6 +34,7 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
   )
     return { error: 'Ogiltig färgkod. Använd hex, t.ex. #1f6feb.' }
   const fontBody = String(fd.get('font_body') ?? '').trim().slice(0, 120)
+  const fontDisplay = String(fd.get('font_display') ?? '').trim().slice(0, 120)
   const removeLogo = String(fd.get('remove_logo') ?? '') === 'true'
   const logo = fd.get('logo')
 
@@ -67,6 +68,7 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
     color_fg: colorFg,
     color_accent: colorAccent,
     font_body: fontBody || null,
+    font_display: fontDisplay || null,
     logo_url: logoUrl,
   })
 
