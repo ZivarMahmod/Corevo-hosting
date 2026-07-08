@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { saveTenantBookingView, type ActionState } from '@/lib/platform/actions'
 import {
+  BOOKING_VARIANTS,
   BOOKING_VARIANT_LABELS,
   BOOKING_VARIANT_DESCRIPTIONS,
   type BookingVariant,
@@ -10,13 +11,12 @@ import {
 import styles from './platform.module.css'
 
 /**
- * Boknings-vy — bor i SIDA-fliken. Visar ENDAST de vyer som faktiskt renderar olika
- * (Zivar: "de olika vyerna funkar inte" — drawer/inline var design-val utan egen
- * presentation; de renderade identiskt med wizard och gjorde kortet till fyra knappar
- * där bara en gjorde skillnad). En sparad drawer/inline visas som Steg-för-steg
- * (exakt så renderas den). Provkör: spara → klicka "Boka tid" i previewen.
+ * Boknings-vy — bor i SIDA-fliken. ALLA FYRA vyerna renderar numera distinkt
+ * (Zivar: "det ska finnas olika att välja mellan och de ska funka"):
+ * wizard = steg i centrerad modal · drawer = steg i slide-over · compact =
+ * snabbboka i slide-over · inline = inbyggd sektion längst ner på sidan.
+ * Provkör: spara → klicka "Boka tid" i previewen.
  */
-const REAL_VARIANTS: BookingVariant[] = ['wizard', 'compact']
 
 export function BookingViewCard({
   tenantId,
@@ -36,18 +36,15 @@ export function BookingViewCard({
     },
     {},
   )
-  // drawer/inline renderas som wizard → visa dem ärligt som det valet.
-  const effective: BookingVariant = bookingVariant === 'compact' ? 'compact' : 'wizard'
-
   return (
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="tenantId" value={tenantId} />
 
       <div className={styles.templateGrid} role="radiogroup" aria-label="Boknings-vy">
-        {REAL_VARIANTS.map((v) => (
+        {BOOKING_VARIANTS.map((v) => (
           <label key={v} className={styles.templateCard} style={{ cursor: 'pointer' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-              <input type="radio" name="booking_variant" value={v} defaultChecked={v === effective} />
+              <input type="radio" name="booking_variant" value={v} defaultChecked={v === bookingVariant} />
               <span className={styles.templateName}>{BOOKING_VARIANT_LABELS[v]}</span>
             </span>
             <span className={styles.templateDesc}>{BOOKING_VARIANT_DESCRIPTIONS[v]}</span>

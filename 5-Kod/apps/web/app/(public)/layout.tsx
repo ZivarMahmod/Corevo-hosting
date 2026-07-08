@@ -15,6 +15,7 @@ import { CookieConsent } from '@/components/storefront/CookieConsent'
 import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
+import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
@@ -158,7 +159,7 @@ export default async function PublicLayout({ children }: { children: React.React
       {/* In-page booking embed (Zivar's #1): the WHOLE shell — nav, main, footer
           — sits inside the provider, so every "Boka tid" CTA opens the same
           slide-over drawer without ever leaving the salon's page. */}
-      <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name} staffNoun={staffNoun} defaultMode={settings.bookingMode}>
+      <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name} staffNoun={staffNoun} variant={settings.bookingVariant}>
         {/* Paused booking → "stängt"-banner at the very top (draft/off render
             nothing public, so only 'paused' surfaces here). */}
         {bookingPaused ? <ModulePausedBanner /> : null}
@@ -176,6 +177,15 @@ export default async function PublicLayout({ children }: { children: React.React
           <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
           <CartButton />
         </CartProvider>
+        {/* Inline-boknings-vyn: sektionen ligger I sidan, ovanför footern. */}
+        {settings.bookingVariant === 'inline' && wizardServices.length > 0 ? (
+          <InlineBooking
+            services={wizardServices}
+            locations={wizardLocations}
+            tenantName={tenant.name}
+            staffNoun={staffNoun}
+          />
+        ) : null}
         {isFullFooter ? (
           <FooterFull
             tenant={{ name: tenant.name }}

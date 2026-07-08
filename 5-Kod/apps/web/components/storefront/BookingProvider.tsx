@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { WizardService, WizardLocation } from '@/components/booking/BookingWizard'
+import type { BookingVariant } from '@/lib/platform/booking-variant'
 import { BookingDrawer } from './BookingDrawer'
 
 /**
@@ -56,7 +57,7 @@ export function BookingProvider({
   locations = [],
   tenantName,
   staffNoun = 'Frisör',
-  defaultMode = 'wizard',
+  variant = 'wizard',
   children,
 }: {
   services: WizardService[]
@@ -66,16 +67,20 @@ export function BookingProvider({
    *  the server (layout) and threaded down as a plain string. OPTIONAL — defaults
    *  to 'Frisör' so any caller that omits it is byte-identical to today. */
   staffNoun?: string
-  /** Tenantens sparade boknings-vy (settings.booking.variant → readBookingMode):
-   *  vad primär-CTA:erna ("Boka tid") öppnar. Tidigare hårdkodad 'wizard', så
-   *  operatörens val i Sida-fliken syntes aldrig på sidan. */
-  defaultMode?: BookingMode
+  /** Tenantens boknings-vy (settings.booking.variant). Styr BÅDE innehåll (steg vs
+   *  enskärms) och presentation (modal / slide-over / inbyggd sektion):
+   *  wizard → steg i centrerad modal · drawer → steg i slide-over ·
+   *  compact → snabbboka i slide-over · inline → CTA scrollar till den inbyggda
+   *  sektionen (renderas av layouten, se InlineBooking). */
+  variant?: BookingVariant
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
-  // Which presentation the drawer shows. Starts at the tenant's saved variant;
-  // a "Snabbboka" CTA can still request the kompakt one-page variant explicitly.
-  const [mode, setMode] = useState<BookingMode>(defaultMode)
+  // Innehålls-läge i overlayen. Startar på variantens; en "Snabbboka"-CTA kan
+  // fortfarande öppna kompakt-läget explicit.
+  const variantMode: BookingMode = variant === 'compact' || variant === 'inline' ? 'compact' : 'wizard'
+  const presentation: 'modal' | 'drawer' = variant === 'wizard' ? 'modal' : 'drawer'
+  const [mode, setMode] = useState<BookingMode>(variantMode)
   // Render the (potentially heavy) wizard only after the drawer is first opened.
   const [mounted, setMounted] = useState(false)
   const available = services.length > 0
@@ -90,7 +95,18 @@ export function BookingProvider({
     [available],
   )
 
-  const openDrawer = useCallback(() => openWith(defaultMode), [openWith, defaultMode])
+  const openDrawer = useCallback(() => {
+    // Inline-varianten: bokningen ligger I sidan — CTA scrollar dit i stället för
+    // att öppna en overlay. Saknas sektionen (t.ex. bokning ej live) → overlay-fallback.
+    if (variant === 'inline') {
+      const el = document.getElementById('boka-inline')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        return
+      }
+    }
+    openWith(variantMode)
+  }, [openWith, variant, variantMode])
   const openQuickBook = useCallback(() => openWith('compact'), [openWith])
 
   const closeDrawer = useCallback(() => {
@@ -147,6 +163,7 @@ export function BookingProvider({
           tenantName={tenantName}
           staffNoun={staffNoun}
           mode={mode}
+          presentation={presentation}
         />
       ) : null}
     </BookingContext.Provider>

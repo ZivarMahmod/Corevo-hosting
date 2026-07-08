@@ -11,7 +11,7 @@ import type { TenantBranding } from '@corevo/ui'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantFromHost } from '@/lib/tenant'
-import { readBookingMode } from '@/lib/platform/booking-variant'
+import { readBookingVariant, type BookingVariant } from '@/lib/platform/booking-variant'
 
 export type Tenant = Tables<'tenants'>
 // Base row + the 0046 merch columns (optional — generated types don't know them yet).
@@ -65,10 +65,10 @@ export type TenantSettings = {
   contact: TenantContact
   /** EU cookie-consent banner on the storefront. Default ON (legal). */
   cookieBannerEnabled: boolean
-  /** Boknings-vy (settings.booking.variant → presentation): vad "Boka tid"-CTA:erna
-   *  öppnar. 'wizard' = guidad steg-för-steg, 'compact' = snabbboka. Tidigare läste
-   *  bara /boka-rutten varianten — drawern hårdkodade wizard, så valet syntes aldrig. */
-  bookingMode: 'wizard' | 'compact'
+  /** Boknings-vy (settings.booking.variant): hur "Boka tid" presenteras — wizard
+   *  (centrerad modal), drawer (slide-over, steg), compact (slide-over, snabbboka),
+   *  inline (inbyggd sektion på sidan). Resolvas här så layout/preview slipper rå-läsa. */
+  bookingVariant: BookingVariant
   /** Manuella öppettider (settings.opening_hours, Sida-fliken) — vinner över de
    *  scheman-härledda. null = härled ur personalens veckoscheman som förut. */
   openingHours: OpeningHour[] | null
@@ -143,7 +143,7 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     // EU cookie consent: default ON; owner can hide via settings.cookie_banner_enabled=false.
     cookieBannerEnabled: raw.cookie_banner_enabled !== false,
     // Boknings-vy-valet (Sida-fliken) — resolvas här så layout/preview slipper rå-läsa.
-    bookingMode: readBookingMode(raw),
+    bookingVariant: readBookingVariant(raw),
     openingHours: parseOpeningHours(raw.opening_hours),
     social: {
       instagram: cleanStr((raw.social as Record<string, unknown> | undefined)?.instagram),

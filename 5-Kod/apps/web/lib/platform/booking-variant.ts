@@ -17,13 +17,13 @@
 // Held DELIBERATELY apart from settings.theme, which is the storefront LAYOUT/look
 // (the five named themes), not the booking flow.
 //
-//   wizard (default) — guidad steg-för-steg (tjänst → personal → tid → uppgifter).
-//   compact          — snabbboka (kompakt "välj tid snabbt"-flöde).
-//   drawer / inline  — PRESENTATION-DEFERRED: design-faithful choices the operator
-//                      can pick today; M3 renders them as the guided wizard until the
-//                      booking engine implements the distinct slide-over / scroll-in
-//                      presentations (readBookingMode resolves both → 'wizard'), so a
-//                      pick is always honoured by a working flow.
+//   wizard (default) — guidad steg-för-steg i en CENTRERAD MODAL.
+//   compact          — snabbboka (allt på en skärm) i slide-over-panelen.
+//   drawer           — guidad steg-för-steg i SLIDE-OVER-panelen från sidan.
+//   inline           — bokningen ligger INBYGGD längst ner på sidan (ingen overlay);
+//                      "Boka tid"-CTA:erna scrollar dit. Alla fyra renderar numera
+//                      DISTINKT (Zivar: "det ska finnas olika att välja mellan och de
+//                      ska funka") — presentationen styrs i BookingProvider/layout.
 
 export const BOOKING_VARIANTS = ['wizard', 'compact', 'drawer', 'inline'] as const
 export type BookingVariant = (typeof BOOKING_VARIANTS)[number]
@@ -48,10 +48,10 @@ export const BOOKING_VARIANT_TAGS: Record<BookingVariant, string> = {
   inline: 'Native',
 }
 export const BOOKING_VARIANT_DESCRIPTIONS: Record<BookingVariant, string> = {
-  wizard: 'En sak per skärm, störst träffyta. Bäst på mobil (99% av bokningar).',
-  compact: 'Kompakt — för stamkunder som vet vad de vill.',
-  drawer: "Bokningen glider in 'inuti' sidan. Snyggast på desktop.",
-  inline: 'Scrollar in i sidan, allt staplat i ett svep.',
+  wizard: 'Guide i flera steg i en centrerad ruta mitt på skärmen.',
+  compact: 'Allt på en skärm i panel från sidan — för stamkunder.',
+  drawer: 'Guide i flera steg i panel som glider in från sidan.',
+  inline: 'Bokningen ligger inbyggd längst ner på sidan — ingen popup, knapparna scrollar dit.',
 }
 
 export function isBookingVariant(v: unknown): v is BookingVariant {
@@ -78,14 +78,13 @@ export function readBookingVariant(settings: unknown): BookingVariant {
 }
 
 /**
- * Storefront-facing presentation mode for `<BookingWizard mode={…} />`. The DB
- * persists one of the four design ids; the component takes 'wizard' | 'compact'.
- * This is the ONE place that bridges the two so the mapping never drifts:
- *   'compact'                  → 'compact' (snabbboka, allt på en skärm)
- *   'wizard' | 'drawer' | 'inline' → 'wizard' (guidad steg-för-steg)
- * Anything missing/unknown resolves to 'wizard', i.e. EXACTLY today's default flow
- * (no behaviour change for unset/legacy tenants — legacy '4' still → 'compact').
+ * INNEHÅLLS-läget för `<BookingWizard mode={…} />` (guide vs enskärms):
+ *   'compact' | 'inline'  → 'compact' (allt staplat i ett svep)
+ *   'wizard'  | 'drawer'  → 'wizard'  (guidad steg-för-steg)
+ * PRESENTATIONEN (modal/slide-over/inbyggd) styrs separat av varianten i
+ * BookingProvider + layout. Okänt/osatt → 'wizard'.
  */
 export function readBookingMode(settings: unknown): 'wizard' | 'compact' {
-  return readBookingVariant(settings) === 'compact' ? 'compact' : 'wizard'
+  const v = readBookingVariant(settings)
+  return v === 'compact' || v === 'inline' ? 'compact' : 'wizard'
 }

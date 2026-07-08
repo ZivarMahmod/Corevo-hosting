@@ -1090,6 +1090,51 @@
   .drawerOpen .drawerPanel { transform: translateY(0); }
 }
 
+/* Variant 'wizard' = CENTRERAD MODAL (desktop) — 'drawer'-varianten behåller
+   slide-over:n. På mobil (<=560px) gäller bottom-sheet-geometrin för båda. */
+@media (min-width: 561px) {
+  .modalMode .drawerPanel {
+    top: 50%;
+    right: auto;
+    left: 50%;
+    height: min(88vh, 800px);
+    width: min(620px, 94vw);
+    border-radius: 18px;
+    overflow: hidden;
+    transform: translate(-50%, -50%) scale(0.96);
+    opacity: 0;
+    transition: transform 0.32s var(--ease-out), opacity 0.32s var(--ease-out);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+  }
+  .modalMode.drawerOpen .drawerPanel {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Variant 'inline': bokningen INBYGGD längst ner på sidan (InlineBooking). */
+.inlineBooking {
+  padding: 4.5rem 0 5.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-bg));
+}
+.inlineTitle {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+  text-align: center;
+  color: var(--color-fg);
+}
+.inlinePanel {
+  max-width: 660px;
+  margin: 1.6rem auto 0;
+  background: var(--color-bg);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border-radius: 18px;
+  padding: 0.85rem;
+  box-shadow: var(--shadow-card);
+}
+
 .drawerHeader {
   display: flex;
   align-items: center;

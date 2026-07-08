@@ -11,6 +11,7 @@ import { FooterFull } from '@/components/brand/FooterFull'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
+import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import { SidaPreviewBridge } from '@/components/platform/SidaPreviewBridge'
@@ -87,7 +88,7 @@ export async function PreviewShell({
         locations={wizardLocations}
         tenantName={tenant.name}
         staffNoun={staffNoun}
-        defaultMode={settings.bookingMode}
+        variant={settings.bookingVariant}
       >
         <Nav
           tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
@@ -98,6 +99,14 @@ export async function PreviewShell({
         <CartProvider>
           <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
         </CartProvider>
+        {settings.bookingVariant === 'inline' && wizardServices.length > 0 ? (
+          <InlineBooking
+            services={wizardServices}
+            locations={wizardLocations}
+            tenantName={tenant.name}
+            staffNoun={staffNoun}
+          />
+        ) : null}
         {isFullFooter ? (
           <FooterFull
             tenant={{ name: tenant.name }}

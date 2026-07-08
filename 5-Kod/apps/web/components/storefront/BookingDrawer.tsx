@@ -29,6 +29,7 @@ export function BookingDrawer({
   tenantName,
   staffNoun = 'Frisör',
   mode = 'wizard',
+  presentation = 'drawer',
 }: {
   open: boolean
   onClose: () => void
@@ -40,6 +41,9 @@ export function BookingDrawer({
   staffNoun?: string
   /** Variant 3 wizard (default) or Variant 4 kompakt snabbboka. */
   mode?: BookingMode
+  /** 'drawer' = slide-over från sidan; 'modal' = centrerad ruta (wizard-varianten).
+   *  På mobil blir båda samma bottom-sheet (bäst där). */
+  presentation?: 'modal' | 'drawer'
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
@@ -98,7 +102,7 @@ export function BookingDrawer({
 
   return (
     <div
-      className={`${styles.drawerRoot} ${open ? styles.drawerOpen : ''}`}
+      className={`${styles.drawerRoot} ${presentation === 'modal' ? styles.modalMode : ''} ${open ? styles.drawerOpen : ''}`}
       aria-hidden={!open}
     >
       {/* Scrim — dims the storefront, which stays visible behind. */}
