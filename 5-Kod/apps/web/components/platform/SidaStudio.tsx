@@ -82,7 +82,8 @@ export function SidaStudio({
         <section className={styles.card}>
           <h3 className={styles.cardHead}>Mall</h3>
           <p className={styles.note}>
-            Byt vilken mall kundens sida använder. Previewen laddas om med den nya mallen.
+            Klicka ett mall-kort för att byta — kundens sida byter layout direkt och previewen
+            laddas om.
           </p>
           <ThemePicker
             tenantId={tenantId}
