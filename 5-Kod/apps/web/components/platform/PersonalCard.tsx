@@ -228,7 +228,7 @@ function StaffRow({
                 ))}
               </div>
               <p className={styles.hint} style={{ margin: 0 }}>
-                Utan kopplad tjänst går medarbetaren inte att välja i bokningens "Hos vem?".
+                Utan kopplad tjänst går medarbetaren inte att välja i bokningens &quot;Hos vem?&quot;.
               </p>
               <div className={styles.actions}>
                 <button type="submit" className={styles.btn} disabled={svcPending}>
