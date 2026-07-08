@@ -5,24 +5,29 @@ import { requirePlatformAdmin } from '@/lib/auth/session'
 import { injectTenantTokens } from '@corevo/ui'
 import { getTenantBySlug, getServices, STOREFRONT_THEMES, type StorefrontTheme } from '@/lib/tenant-data'
 import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
-import { resolveThemeContent } from '@/components/storefront/theme-content'
+import { resolveThemeContent, THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
+import { StorefrontModuleSections } from '@/components/storefront/StorefrontModuleSections'
+import { Nav } from '@/components/brand/Nav'
+import { Footer } from '@/components/brand/Footer'
+import { FooterFull } from '@/components/brand/FooterFull'
+import { BookingProvider } from '@/components/storefront/BookingProvider'
+import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { SidaPreviewBridge } from '@/components/platform/SidaPreviewBridge'
 import storefront from '@/components/storefront/storefront.module.css'
 
 // Super-admin LIVE STOREFRONT PREVIEW — the iframe target for the Sida tab on
-// /salonger/[id]. This renders the tenant's REAL storefront (same STOREFRONT_LAYOUTS
-// + resolveThemeContent the public page uses — NOT the parked content_slots store) but
-// SAME-ORIGIN on the platform host, so it can be framed by /salonger/[id] under the
-// existing `frame-ancestors 'self'` header variant (see next.config.ts) — the public
-// storefront on <slug>.corevo.se is cross-origin and blocked by X-Frame-Options DENY.
+// /salonger/[id]. Renders the tenant's REAL storefront **with the full chrome**
+// (Nav + hero/sections + module sections + footer — the same pieces
+// app/(public)/layout.tsx + page.tsx compose), but SAME-ORIGIN on the platform
+// host so it can be framed under `frame-ancestors 'self'` (the public
+// storefront on <slug>.corevo.se is cross-origin and blocked by X-Frame-Options).
 //
-// Deliberately slim vs app/(public): no Nav/Footer/BookingProvider chrome and no
-// StorefrontModuleSections — this previews what the Sida editor actually changes
-// (theme + branding tokens + copy + hero/gallery photos). The theme Layouts are pure
-// server components and useBooking() returns null without a provider (no throw), so the
-// "Boka tid" CTAs render inert — correct for a preview. Root layout supplies the fonts
-// + tokens.css. Platform-gated; force-dynamic (per-tenant, never prerendered).
+// Zivar: "jag behöver även se topp-bannern, alltså hela sidan i previewen" — so
+// this is deliberately NOT slim anymore. Only the side-effectful extras are
+// skipped: JSON-LD/SEO, cookie-banner, cart button. Booking CTAs render but are
+// inert (BookingProvider gets an empty service list) — correct for a preview.
+// Platform-gated; force-dynamic (per-tenant, never prerendered).
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Förhandsvisning', robots: { index: false } }
 
@@ -53,6 +58,11 @@ export default async function SalongPreviewPage({
   const content = resolveThemeContent(theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
+  // Chrome pieces — mirrors app/(public)/layout.tsx for the previewed theme.
+  const themeBase = THEME_CONTENT[theme]
+  const tagline = resolveTenantCopy(theme, copy).tagline
+  const isFullFooter = theme === 'salvia' || theme === 'freshcut'
+
   return (
     <div
       className={`tenant-root ${storefront.tplRoot}`}
@@ -62,13 +72,38 @@ export default async function SalongPreviewPage({
       style={injectTenantTokens(settings.branding) as CSSProperties}
     >
       <SidaPreviewBridge />
-      <Layout
-        tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
-        theme={theme}
-        content={content}
-        services={services}
-        location={location}
-      />
+      {/* Inert booking context: empty services → every "Boka tid" CTA renders but
+          does nothing, so the preview can't create bookings. */}
+      <BookingProvider services={[]} locations={[]} tenantName={tenant.name} staffNoun="Frisör">
+        <Nav
+          tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
+          branding={settings.branding}
+          customerAccountsEnabled={settings.customerAccountsEnabled}
+          utilityText={themeBase.utility}
+        />
+        <CartProvider>
+          <main className={`tenant-main ${storefront.shellMain}`}>
+            <Layout
+              tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
+              theme={theme}
+              content={content}
+              services={services}
+              location={location}
+            />
+            <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} />
+          </main>
+        </CartProvider>
+        {isFullFooter ? (
+          <FooterFull
+            tenant={{ name: tenant.name }}
+            tagline={tagline}
+            location={location}
+            contact={settings.contact}
+          />
+        ) : (
+          <Footer tenant={{ name: tenant.name }} />
+        )}
+      </BookingProvider>
     </div>
   )
 }

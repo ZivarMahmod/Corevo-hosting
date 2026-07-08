@@ -7,8 +7,10 @@ import { PlatformBrandingForm } from './PlatformBrandingForm'
 import { StorefrontContentCard } from './StorefrontContentCard'
 import { SajtbyggareControl } from './SajtbyggareControl'
 import { ThemePicker } from './ThemePicker'
+import { BookingViewCard } from './BookingViewCard'
 import { TenantContactForm } from './TenantContactForm'
 import { StorefrontExtrasCard } from './StorefrontExtrasCard'
+import type { BookingVariant } from '@/lib/platform/booking-variant'
 import styles from './SidaStudio.module.css'
 
 type Copy = {
@@ -44,6 +46,7 @@ export function SidaStudio({
   contactEmail,
   contactPhone,
   address,
+  bookingVariant,
 }: {
   tenantId: string
   previewPath: string
@@ -59,6 +62,7 @@ export function SidaStudio({
   contactEmail: string | null
   contactPhone: string | null
   address: string | null
+  bookingVariant: BookingVariant
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [reloadToken, setReloadToken] = useState(0)
@@ -111,7 +115,21 @@ export function SidaStudio({
             <span className={styles.liveDot} aria-hidden="true" />
             Färg &amp; typsnitt syns direkt i previewen medan du ändrar
           </p>
-          <PlatformBrandingForm tenantId={tenantId} branding={branding} onLiveTokens={pushTokens} />
+          <PlatformBrandingForm
+            tenantId={tenantId}
+            branding={branding}
+            themeKey={templateKey}
+            onLiveTokens={pushTokens}
+          />
+        </section>
+
+        <section className={styles.card}>
+          <h3 className={styles.cardHead}>Boknings-vy</h3>
+          <p className={styles.note}>
+            Hur bokningen presenteras på sidan (t.ex. guide i flera steg eller kompakt).
+            Gäller alla &quot;Boka tid&quot;-knappar.
+          </p>
+          <BookingViewCard tenantId={tenantId} bookingVariant={bookingVariant} />
         </section>
 
         <section className={styles.card}>

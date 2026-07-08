@@ -37,6 +37,17 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="sv" className={`${playfair.variable} ${inter.variable} ${sourceSans.variable}`}>
+      <head>
+        {/* No-flash för back-office-temat: sätt data-bo-theme FÖRE första paint så ett
+            sparat Mörk/Ljus-val aldrig blinkar. Bara [data-world="backoffice"]-tokens
+            lyssnar (tokens.css) — storefronts/konto påverkas inte av attributet. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('corevo-bo-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-bo-theme',t)}catch(e){}",
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   )

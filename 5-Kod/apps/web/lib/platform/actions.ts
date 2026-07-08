@@ -9,7 +9,7 @@ export { createTenant } from './actions/tenants'
 export { savePlatformBranding } from './actions/branding'
 export { setTenantStatus } from './actions/status'
 export { saveBilling } from './actions/billing'
-export { saveTenantData } from './actions/data'
+export { saveTenantData, saveTenantBookingView } from './actions/data'
 export {
   sendPasswordReset,
   createTenantStaff,

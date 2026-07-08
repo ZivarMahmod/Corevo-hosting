@@ -43,14 +43,16 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
   const cityRaw = fd.get('city')
   const city = cityRaw === null ? undefined : String(cityRaw).trim().slice(0, 120) || null
   const reviewUrl = httpsUrlOrNull(fd.get('google_review_url'))
+  // Boknings-vyn redigeras numera i Sida-fliken (saveTenantBookingView). Fältet kan
+  // ändå skickas av äldre formulär: giltigt värde skrivs, saknat/ogiltigt fält lämnar
+  // den sparade varianten ORÖRD (tidigare föll den tyst tillbaka till default — en
+  // namn-spar utan radios nollade salongens val).
   const variantRaw = String(fd.get('booking_variant') ?? '')
 
   if (!name) return { error: 'Ange ett salongsnamn.' }
   if (reviewUrl === undefined)
     return { error: 'Ogiltig recensionslänk. Använd en https-länk, t.ex. https://g.page/r/.../review.' }
-  const bookingVariant: BookingVariant = isBookingVariant(variantRaw)
-    ? variantRaw
-    : DEFAULT_BOOKING_VARIANT
+  const bookingVariant: BookingVariant | null = isBookingVariant(variantRaw) ? variantRaw : null
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd salong.' }
@@ -77,7 +79,8 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
   const settings = {
     ...prev,
     google_review_url: reviewUrl, // M6/M7 co-own (FAS0 §3) — null = nudge off
-    booking: { ...prevBooking, variant: bookingVariant }, // M7-ägd; M3 läser
+    // variant bara när formuläret faktiskt skickade en giltig — annars behåll prev.
+    booking: { ...prevBooking, variant: bookingVariant ?? (prevBooking.variant as string | undefined) },
   }
   const { error: sErr } = await supabase
     .from('tenant_settings')
@@ -97,4 +100,49 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
     meta: { name, booking_variant: bookingVariant, review_url: reviewUrl ? 'set' : 'cleared' },
   })
   return { success: 'Salongsdata sparad. Publika sajten uppdaterad.' }
+}
+
+/**
+ * Boknings-vy — flyttad till Sida-fliken (Zivar: "jag tror även den här delen ska vara
+ * i sida"). Sparar ENDAST settings.booking.variant (merge, aldrig clobber) så den kan
+ * leva som eget kort utan att dra med sig namn/recensionslänk.
+ */
+export async function saveTenantBookingView(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  const tenantId = String(fd.get('tenantId') ?? '')
+  if (!tenantId) return { error: 'Saknar salong.' }
+  const variantRaw = String(fd.get('booking_variant') ?? '')
+  const bookingVariant: BookingVariant = isBookingVariant(variantRaw)
+    ? variantRaw
+    : DEFAULT_BOOKING_VARIANT
+
+  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Okänd salong.' }
+
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  const prevBooking = (prev.booking ?? {}) as Record<string, unknown>
+  const settings = { ...prev, booking: { ...prevBooking, variant: bookingVariant } }
+
+  const { error } = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
+  if (error) {
+    await reportActionError('saveTenantBookingView.settings_upsert', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidateTenant(tenant.slug)
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.update',
+    tenantId,
+    actorId: user.id,
+    meta: { booking_variant: bookingVariant },
+  })
+  return { success: 'Boknings-vy sparad. Publika sajten uppdaterad.' }
 }

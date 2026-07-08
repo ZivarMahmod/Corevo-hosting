@@ -70,7 +70,7 @@
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
   color: #fff;
   display: grid;
   place-items: center;

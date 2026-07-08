@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Icon } from './ui/Icon'
+import { ThemeSwitch } from './ThemeSwitch'
 import { CommandPalette, type CommandItem } from './ui/CommandPalette'
 
 /**
@@ -64,6 +65,7 @@ export function PortalTopbar({
         <kbd className="bo-cmdk-trigger-kbd">{isMac ? '⌘' : 'Ctrl'} K</kbd>
       </button>
       <div className="portal-topbar-right">
+        <ThemeSwitch />
         {contextLink ? (
           <a
             className="portal-topbar-sitelink"

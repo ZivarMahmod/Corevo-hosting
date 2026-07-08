@@ -117,7 +117,7 @@
 }
 .pillOn,
 .pillOn:hover {
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
   color: #fff;
   border-color: transparent;
 }

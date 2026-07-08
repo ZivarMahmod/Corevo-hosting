@@ -65,6 +65,8 @@ export type IconName =
   | 'globe'
   | 'grip'
   | 'lock'
+  | 'moon'
+  | 'monitor'
 
 const PATHS: Record<IconName, ReactElement> = {
   calendar: (
@@ -231,6 +233,13 @@ const PATHS: Record<IconName, ReactElement> = {
       <path d="M17 8h1a4 4 0 0 1 0 8h-1" />
       <path d="M3 8h14v6a6 6 0 0 1-12 0Z" />
       <path d="M6 2v2M10 2v2M14 2v2" />
+    </>
+  ),
+  moon: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />,
+  monitor: (
+    <>
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8M12 17v4" />
     </>
   ),
   sun: (

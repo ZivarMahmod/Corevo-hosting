@@ -32,7 +32,7 @@
 }
 .navLinkActive,
 .navLinkActive:hover {
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
   border-color: var(--c-forest);
   color: #fff;
   font-weight: 600;
@@ -61,7 +61,7 @@
 /* Friendly empty / hint state — a soft tinted card with a clear next step. */
 .empty {
   border: 1px dashed color-mix(in srgb, var(--c-forest) 28%, transparent);
-  background: color-mix(in srgb, var(--c-forest) 4%, var(--c-paper));
+  background: color-mix(in srgb, var(--c-forest-fill, var(--c-forest)) 4%, var(--c-paper));
   border-radius: var(--radius-lg, 0.75rem);
   padding: 1.5rem 1.25rem;
   text-align: center;
@@ -232,7 +232,7 @@
   transition: background var(--dur-fast) var(--ease-out);
 }
 .table tbody tr:hover {
-  background: color-mix(in srgb, var(--c-forest) 4%, transparent);
+  background: color-mix(in srgb, var(--c-forest-fill, var(--c-forest)) 4%, transparent);
 }
 
 /* ── badges ── */
@@ -534,7 +534,7 @@
   transition: background var(--dur-fast) var(--ease-out);
 }
 .dropzone:hover {
-  background: color-mix(in srgb, var(--c-forest) 4%, var(--c-paper-2));
+  background: color-mix(in srgb, var(--c-forest-fill, var(--c-forest)) 4%, var(--c-paper-2));
 }
 .dropzoneGlyph {
   display: grid;
@@ -630,7 +630,7 @@
 }
 .fontTileSel {
   border-color: var(--c-forest);
-  background: color-mix(in srgb, var(--c-forest) 5%, var(--c-paper));
+  background: color-mix(in srgb, var(--c-forest-fill, var(--c-forest)) 5%, var(--c-paper));
 }
 
 /* ── Live-preview i browser-chrome (storefront-världen / salongens tema) ── */
@@ -790,7 +790,7 @@
   background: color-mix(in srgb, var(--c-ink) 2.5%, var(--c-paper));
 }
 .filters .btn {
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
   border-color: var(--c-forest);
   color: #fff;
 }
@@ -943,7 +943,7 @@
   font-weight: 700;
   padding: 0.1rem 0.4rem;
   border-radius: var(--radius-pill);
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
   color: #fff;
 }
 

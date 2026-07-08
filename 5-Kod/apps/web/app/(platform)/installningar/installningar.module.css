@@ -100,7 +100,7 @@
   padding: 0;
 }
 .trackOn {
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
 }
 .trackDisabled {
   cursor: not-allowed;

@@ -7,12 +7,6 @@ import {
   createTenantStaff,
   type ActionState,
 } from '@/lib/platform/actions'
-import {
-  BOOKING_VARIANTS,
-  BOOKING_VARIANT_LABELS,
-  BOOKING_VARIANT_DESCRIPTIONS,
-  type BookingVariant,
-} from '@/lib/platform/booking-variant'
 import styles from './platform.module.css'
 
 /**
@@ -28,25 +22,18 @@ export function OperativeControls({
   tenantId,
   name,
   googleReviewUrl,
-  bookingVariant,
   salonAdminEmail,
   serviceRoleAvailable,
 }: {
   tenantId: string
   name: string
   googleReviewUrl: string | null
-  bookingVariant: BookingVariant
   salonAdminEmail: string | null
   serviceRoleAvailable: boolean
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <TenantDataForm
-        tenantId={tenantId}
-        name={name}
-        googleReviewUrl={googleReviewUrl}
-        bookingVariant={bookingVariant}
-      />
+      <TenantDataForm tenantId={tenantId} name={name} googleReviewUrl={googleReviewUrl} />
       <PasswordResetForm
         tenantId={tenantId}
         salonAdminEmail={salonAdminEmail}
@@ -62,12 +49,10 @@ function TenantDataForm({
   tenantId,
   name,
   googleReviewUrl,
-  bookingVariant,
 }: {
   tenantId: string
   name: string
   googleReviewUrl: string | null
-  bookingVariant: BookingVariant
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(saveTenantData, {})
 
@@ -99,34 +84,9 @@ function TenantDataForm({
         </span>
       </label>
 
-      <fieldset className={styles.group} style={{ background: 'transparent' }}>
-        <legend className={styles.groupTitle}>Boknings-vy</legend>
-        <p className={styles.hint} style={{ marginTop: 0 }}>
-          Konfigurerar vilken bokningsvy salongen ska ha. Valet sparas på salongen och
-          aktiveras av bokningsmotorn när den läser inställningen. Skiljt från temamallen
-          (startsidans utseende).
-        </p>
-        <div className={styles.templateGrid} role="radiogroup" aria-label="Boknings-vy">
-          {BOOKING_VARIANTS.map((v) => (
-            <label
-              key={v}
-              className={styles.templateCard}
-              style={{ cursor: 'pointer' }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <input
-                  type="radio"
-                  name="booking_variant"
-                  value={v}
-                  defaultChecked={v === bookingVariant}
-                />
-                <span className={styles.templateName}>{BOOKING_VARIANT_LABELS[v]}</span>
-              </span>
-              <span className={styles.templateDesc}>{BOOKING_VARIANT_DESCRIPTIONS[v]}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <p className={styles.hint} style={{ marginTop: 0 }}>
+        Boknings-vyn (hur bokningen ser ut på sidan) redigeras i <strong>Sida</strong>-fliken.
+      </p>
 
       <div className={styles.actions}>
         <button type="submit" className="btn-primary" disabled={pending}>

@@ -28,7 +28,7 @@
 }
 .navLinkActive,
 .navLinkActive:hover {
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
   border-color: var(--c-forest);
   color: #fff;
   font-weight: 600;
@@ -175,7 +175,7 @@
   color: color-mix(in srgb, var(--c-ink) 80%, var(--c-gold));
 }
 .badgeConfirmed {
-  background: color-mix(in srgb, var(--c-forest) 16%, transparent);
+  background: color-mix(in srgb, var(--c-forest-fill, var(--c-forest)) 16%, transparent);
   color: var(--c-forest);
 }
 .badgeCompleted {

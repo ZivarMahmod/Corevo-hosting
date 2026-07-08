@@ -251,6 +251,37 @@
   z-index: 20;
 }
 [data-world="backoffice"] .portal-search { position: relative; width: 280px; max-width: 40vw; }
+
+/* tema-switch — Auto (enhetens) / Ljus / Mörk (artifact .theme) */
+[data-world="backoffice"] .bo-theme {
+  display: inline-flex;
+  border: 1px solid var(--c-line);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--c-paper-2);
+  flex: none;
+}
+[data-world="backoffice"] .bo-theme button {
+  border: 0;
+  background: none;
+  color: var(--c-ink-3);
+  height: 32px;
+  padding: 0 11px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+[data-world="backoffice"] .bo-theme button + button { border-left: 1px solid var(--c-line); }
+[data-world="backoffice"] .bo-theme button.is-on {
+  background: var(--c-paper);
+  color: var(--c-forest);
+  box-shadow: inset 0 -2px 0 var(--c-gold);
+}
+
 [data-world="backoffice"] .portal-search-icon {
   position: absolute;
   left: 12px;
@@ -469,7 +500,7 @@
 [data-world="backoffice"] .pbtn--lg { font-size: 15.5px; padding: 14px 24px; }
 [data-world="backoffice"] .pbtn--md { font-size: 14px; padding: 11px 18px; }
 [data-world="backoffice"] .pbtn--sm { font-size: 13px; padding: 8px 14px; }
-[data-world="backoffice"] .pbtn--primary { background: var(--c-forest); color: #fff; }
+[data-world="backoffice"] .pbtn--primary { background: var(--c-forest-fill, var(--c-forest)); color: #fff; }
 [data-world="backoffice"] .pbtn--primary:hover { background: var(--c-forest-700); }
 [data-world="backoffice"] .pbtn--gold { background: var(--c-gold); color: #3a2a06; }
 [data-world="backoffice"] .pbtn--gold:hover { background: var(--c-gold-600); }
@@ -508,8 +539,8 @@
    so back-office CTAs stay forest/gold for every salon. Scoped — storefront +
    /konto keep the globals.css defaults. */
 [data-world="backoffice"] .btn-primary {
-  background: var(--c-forest);
-  border-color: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
+  border-color: var(--c-forest-fill, var(--c-forest));
   color: #fff;
   border-radius: 7px;
   border-width: 1px;
@@ -629,7 +660,7 @@
 }
 [data-world="backoffice"] input.pswitch:checked,
 [data-world="backoffice"] .pswitch:checked {
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
 }
 [data-world="backoffice"] input.pswitch:checked::before,
 [data-world="backoffice"] .pswitch:checked::before {
@@ -767,7 +798,7 @@
   cursor: pointer;
   transition: background var(--dur-fast), color var(--dur-fast);
 }
-[data-world="backoffice"] .bo-drawer-close:hover { background: var(--c-paper-2); color: var(--c-forest); }
+[data-world="backoffice"] .bo-drawer-close:hover { background: var(--c-paper-2); color: var(--c-forest-fill, var(--c-forest)); }
 [data-world="backoffice"] .bo-drawer-body {
   flex: 1;
   min-height: 0;
@@ -808,7 +839,7 @@
   max-width: min(92vw, 460px);
   padding: 13px 20px 13px 13px;
   border-radius: 8px;
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
   color: #fff;
   font-family: var(--font-ui);
   font-size: 13.5px;
@@ -932,7 +963,7 @@
   cursor: pointer;
   transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
 }
-[data-world="backoffice"] .bo-bell:hover { background: var(--c-paper-2); color: var(--c-forest); }
+[data-world="backoffice"] .bo-bell:hover { background: var(--c-paper-2); color: var(--c-forest-fill, var(--c-forest)); }
 [data-world="backoffice"] .bo-bell:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
 [data-world="backoffice"] .bo-bell-dot {
   position: absolute;

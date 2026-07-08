@@ -3,21 +3,14 @@
 import { useActionState, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { setTenantTheme, type ActionState } from '@/lib/platform/actions'
+import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
 import styles from './platform.module.css'
 
 // De sex namngivna storefront-mallarna med riktig palett + en rad om känslan, så
 // operatören SER vad varje mall är. Klick på ett kort = FÖRHANDSVISAR i previewen (ingen
-// spar); en separat Publicera-knapp lägger mallen live (setTenantTheme). Färgerna speglar
-// [data-theme]-blocken i packages/ui/tokens.css.
-type Theme = { key: string; name: string; desc: string; primary: string; bg: string; fg: string }
-const THEMES: Theme[] = [
-  { key: 'freshcut', name: 'FreshCut', desc: 'Barbershop · vit & guld, skarp', primary: '#B59775', bg: '#FFFFFF', fg: '#252525' },
-  { key: 'salvia', name: 'Salvia', desc: 'Sage · luftig, minimal', primary: '#5E7361', bg: '#F6F4EE', fg: '#232520' },
-  { key: 'leander', name: 'Leander', desc: 'Lavendel · romantisk editorial', primary: '#7E6E92', bg: '#FBFAF8', fg: '#2A2630' },
-  { key: 'zigge', name: 'Zigge', desc: 'Mörk · djärv barber', primary: '#C8743C', bg: '#14120E', fg: '#F2ECE2' },
-  { key: 'linnea', name: 'Linnea', desc: 'Terrakotta · varm skandinavisk', primary: '#B0693F', bg: '#F4EDE1', fg: '#2E2820' },
-  { key: 'edit', name: 'Edit', desc: 'Charcoal på ivory · stram', primary: '#3A3733', bg: '#F8F6F1', fg: '#232220' },
-]
+// spar); en separat Publicera-knapp lägger mallen live (setTenantTheme). Paletterna delas
+// med Varumärke-formuläret via lib/platform/theme-palettes (speglar tokens.css).
+const THEMES = THEME_PALETTES
 
 export function ThemePicker({
   tenantId,

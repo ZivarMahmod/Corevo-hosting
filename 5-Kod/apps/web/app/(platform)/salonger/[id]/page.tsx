@@ -367,6 +367,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         contactEmail={contactEmail}
         contactPhone={contactPhone}
         address={detail.primaryAddress}
+        bookingVariant={operative.bookingVariant}
       />
     ),
 
@@ -405,7 +406,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           tenantId={tenant.id}
           name={tenant.name}
           googleReviewUrl={operative.googleReviewUrl}
-          bookingVariant={operative.bookingVariant}
           salonAdminEmail={salonAdmin?.email ?? null}
           serviceRoleAvailable={serviceRoleAvailable}
         />

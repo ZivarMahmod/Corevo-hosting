@@ -32,7 +32,7 @@
 }
 .navLinkActive,
 .navLinkActive:hover {
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
   color: #fff;
   border-color: transparent;
   font-weight: 600;
@@ -182,7 +182,7 @@
 }
 .btn:hover:not(:disabled) {
   border-color: var(--c-forest);
-  background: color-mix(in srgb, var(--c-forest) 6%, transparent);
+  background: color-mix(in srgb, var(--c-forest-fill, var(--c-forest)) 6%, transparent);
 }
 .btn:focus-visible {
   outline: 2px solid var(--c-gold, #f5a623);
@@ -249,7 +249,7 @@
   letter-spacing: 0.04em;
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--c-forest) 14%, transparent);
+  background: color-mix(in srgb, var(--c-forest-fill, var(--c-forest)) 14%, transparent);
   color: var(--c-forest);
 }
 .dcvPurpose {

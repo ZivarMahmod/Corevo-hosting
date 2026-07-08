@@ -163,7 +163,7 @@
 
 /* ── Inverted forest "Premium utan kod" card ──────────────────────────────── */
 .forestCard {
-  background: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
   color: var(--c-on-forest);
   border: none;
   border-radius: 16px;

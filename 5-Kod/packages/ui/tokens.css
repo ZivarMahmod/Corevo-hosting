@@ -358,6 +358,93 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* =====================================================================
+   BACK-OFFICE MÖRKT TEMA — artifact-paletten (kundkort-redesign.html).
+   Väljs i topbaren (Auto/Ljus/Mörk, ThemeSwitch): valet stämplas som
+   data-bo-theme på <html> (no-flash-script i app/layout.tsx). Auto = ingen
+   attribut → prefers-color-scheme styr. Bara TOKENS byts — varje komponent-
+   regel läser --c-* och följer med. --c-forest blir LJUS salvia i mörkt
+   (text/accent-läsbarhet); FILLS (knappar, avatarer) läser --c-forest-fill
+   som stannar djup forest (sweep: background: var(--c-forest-fill, var(--c-forest))).
+   Storefront ([data-world="storefront"]) och /konto berörs ALDRIG.
+   ===================================================================== */
+:root[data-bo-theme="dark"] [data-world="backoffice"] {
+  --c-forest:      #9DBFAC;
+  --c-forest-fill: #24523E;
+  --c-forest-700:  #1B3E2F;
+  --c-forest-300:  #4E7363;
+  --c-gold:        #D9AB52;
+  --c-gold-600:    #C79A45;
+  --c-gold-100:    #2A2416;
+
+  --c-cream:       #0E120F;
+  --c-paper:       #161B16;
+  --c-paper-2:     #1B211B;
+  --c-line:        #262E26;
+  --c-line-strong: #333D33;
+
+  --c-ink:         #EDEFE8;
+  --c-ink-2:       #A3ADA4;
+  --c-ink-3:       #6E786E;
+
+  --c-sidebar:      #0B120D;
+  --c-sidebar-2:    #131D16;
+  --c-sidebar-line: #1D2A20;
+
+  --c-success:     #6BB489;
+  --c-success-bg:  #17281D;
+  --c-warning:     #CC9B4E;
+  --c-warning-bg:  #2A2316;
+  --c-danger:      #D98079;
+  --c-danger-bg:   #2C1A19;
+  --c-info:        #8CA6C4;
+  --c-info-bg:     #1A222C;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3), 0 10px 28px -12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 24px 60px -16px rgba(0, 0, 0, 0.6);
+}
+@media (prefers-color-scheme: dark) {
+  /* Auto-läget: enhetens mörka läge — identiska värden som blocket ovan.
+     :not([data-bo-theme='light']) → ett explicit Ljus-val vinner alltid. */
+  :root:not([data-bo-theme="light"]) [data-world="backoffice"] {
+    --c-forest:      #9DBFAC;
+    --c-forest-fill: #24523E;
+    --c-forest-700:  #1B3E2F;
+    --c-forest-300:  #4E7363;
+    --c-gold:        #D9AB52;
+    --c-gold-600:    #C79A45;
+    --c-gold-100:    #2A2416;
+
+    --c-cream:       #0E120F;
+    --c-paper:       #161B16;
+    --c-paper-2:     #1B211B;
+    --c-line:        #262E26;
+    --c-line-strong: #333D33;
+
+    --c-ink:         #EDEFE8;
+    --c-ink-2:       #A3ADA4;
+    --c-ink-3:       #6E786E;
+
+    --c-sidebar:      #0B120D;
+    --c-sidebar-2:    #131D16;
+    --c-sidebar-line: #1D2A20;
+
+    --c-success:     #6BB489;
+    --c-success-bg:  #17281D;
+    --c-warning:     #CC9B4E;
+    --c-warning-bg:  #2A2316;
+    --c-danger:      #D98079;
+    --c-danger-bg:   #2C1A19;
+    --c-info:        #8CA6C4;
+    --c-info-bg:     #1A222C;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3), 0 10px 28px -12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 24px 60px -16px rgba(0, 0, 0, 0.6);
+  }
+}
+
 /* back-office type roles */
 [data-world="backoffice"] .h-display { font-family: var(--font-display); font-weight: 700; font-size: 40px; line-height: 1.08; letter-spacing: var(--tracking-tight); color: var(--c-forest); }
 [data-world="backoffice"] .h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.15; color: var(--c-forest); }
