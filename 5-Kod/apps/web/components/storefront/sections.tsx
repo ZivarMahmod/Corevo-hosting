@@ -68,11 +68,36 @@ export function StylistSpotlights({
           {content.team.map((s, i) => (
             <Reveal as="li" key={`${s.name}-${i}`} delay={i * 80} className={styles.stylist}>
               <div className={styles.stylistPhoto}>
-                {/* Foto valfritt — en medlem utan bild renderar ram utan trasig img. */}
+                {/* Foto valfritt — utan bild visas ett initial-monogram (aldrig en tom
+                    vit låda, aldrig en trasig img). */}
                 {s.img ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={s.img} alt={s.name} loading="lazy" />
-                ) : null}
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: 'flex',
+                      width: '100%',
+                      height: '100%',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '3.2rem',
+                      fontWeight: 700,
+                      color: 'var(--color-primary)',
+                      background:
+                        'color-mix(in srgb, var(--color-primary) 9%, var(--color-bg))',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    {s.name
+                      .split(/\s+/)
+                      .slice(0, 2)
+                      .map((w) => w[0]?.toUpperCase() ?? '')
+                      .join('')}
+                  </span>
+                )}
               </div>
               <h3 className={styles.stylistName}>{s.name}</h3>
               <p className={styles.stylistRole}>{s.role}</p>

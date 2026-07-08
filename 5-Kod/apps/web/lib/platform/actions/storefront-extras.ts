@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { platformCtx } from '../guard'
 import { logPlatformAction } from '../audit'
-import { uploadImage, deleteByPublicUrl } from '@/lib/r2/upload'
+import { uploadImage, uploadErrorMessage, deleteByPublicUrl } from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import type { TenantBranding } from '@corevo/ui'
@@ -55,7 +55,7 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
     const image = fd.get('image')
     if (!(image instanceof File) || image.size === 0) return { error: 'Välj en bild att ladda upp.' }
     const res = await uploadImage(image, `tenants/${tenantId}/storefront`)
-    if (!res.ok) return { error: 'Uppladdningen misslyckades. Försök igen (PNG/JPG/WEBP, max 8 MB).' }
+    if (!res.ok) return { error: uploadErrorMessage(res.reason) }
     nextUrl = res.url
   }
 
@@ -176,7 +176,7 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
     const image = fd.get('image')
     if (image instanceof File && image.size > 0) {
       const res = await uploadImage(image, `tenants/${tenantId}/team`)
-      if (!res.ok) return { error: 'Bilduppladdningen misslyckades. Försök igen (PNG/JPG/WEBP, max 8 MB).' }
+      if (!res.ok) return { error: uploadErrorMessage(res.reason) }
       img = res.url
       if (prevImg) removedImg = prevImg
     }

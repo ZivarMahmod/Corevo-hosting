@@ -536,7 +536,9 @@
   padding: 0;
   display: grid;
   gap: 2rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  /* auto-FILL + fast max: 1–2 medlemmar stretchar inte till jätteporträtt —
+     korten håller lagom porträttstorlek oavsett antal. */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 270px));
 }
 .stylist { text-align: left; }
 .stylistPhoto {

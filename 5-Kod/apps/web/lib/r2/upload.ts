@@ -162,12 +162,12 @@ export async function pruneRemovedImages(
 export function uploadErrorMessage(reason: Exclude<UploadResult, { ok: true }>['reason']): string {
   switch (reason) {
     case 'bad_type':
-      return 'Logotypen måste vara PNG, JPG, WEBP, SVG eller GIF.'
+      return 'Bilden måste vara PNG, JPG, WEBP, SVG eller GIF.'
     case 'too_large':
-      return 'Logotypen är för stor (max 8 MB).'
+      return 'Bilden är för stor (max 8 MB).'
     case 'no_public_base':
     case 'no_binding':
-      return 'Bilduppladdning är inte aktiverad i denna miljö (kräver R2 + R2_PUBLIC_BASE_URL). Färg/typsnitt sparades.'
+      return 'Bilduppladdning funkar inte i den här miljön (lokala dev-servern saknar R2) — gör bilduppladdningen på superbooking.corevo.se i stället. Övriga fält sparades.'
     default:
       return 'Uppladdningen misslyckades. Försök igen.'
   }
