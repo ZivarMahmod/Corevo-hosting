@@ -109,8 +109,6 @@
     { "pattern": "superbooking.corevo.se", "custom_domain": true },
     { "pattern": "minbooking.corevo.se", "custom_domain": true },
     { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" },
-    { "pattern": "test-barber.corevo.se", "custom_domain": true },
-    { "pattern": "test234rf.corevo.se", "custom_domain": true },
     { "pattern": "freshcut.corevo.se", "custom_domain": true }
   ],
   //
