@@ -28,6 +28,7 @@ export function PlatformBrandingForm({
         color_primary: g('color_primary'),
         color_bg: g('color_bg'),
         color_fg: g('color_fg'),
+        color_accent: g('color_accent'),
         font_body: g('font_body'),
       } as TenantBranding),
     )
@@ -45,6 +46,7 @@ export function PlatformBrandingForm({
         <ColorField name="color_primary" label="Primärfärg" value={branding.color_primary} fallback="#1f6feb" />
         <ColorField name="color_bg" label="Bakgrund" value={branding.color_bg} fallback="#ffffff" />
         <ColorField name="color_fg" label="Text" value={branding.color_fg} fallback="#111111" />
+        <ColorField name="color_accent" label="Accent (knappar)" value={branding.color_accent} fallback="#1f6feb" />
       </div>
 
       <label className={styles.field}>

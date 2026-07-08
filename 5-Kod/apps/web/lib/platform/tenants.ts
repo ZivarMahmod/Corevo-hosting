@@ -384,6 +384,8 @@ export type TenantDetail = {
    *  prefills from THIS (never the resolved theme default), so a blank field keeps
    *  "faller tillbaka på temats standard". hero/gallery images live in `branding`. */
   copy: { heroEyebrow: string; heroTitle: string; heroLede: string; aboutCopy: string; tagline: string; italic: string }
+  /** Primär location-adress (footern på storefronten) — super-admin kontakt-kort. */
+  primaryAddress: string | null
 }
 
 const ACTIVE_BOOKING = ['pending', 'confirmed', 'completed']
@@ -415,7 +417,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
   const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle()
   if (!tenant) return null
 
-  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes] = await Promise.all([
+  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes, locationRes] = await Promise.all([
     supabase.from('tenant_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
     supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
     // Editable service rows for the super-admin services surface. All services (active
@@ -459,7 +461,18 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     supabase.from('staff_services').select('service_id, staff_id').eq('tenant_id', tenantId),
     // Every booking's service_id → per-service booking count (decides delete vs archive).
     supabase.from('bookings').select('service_id').eq('tenant_id', tenantId),
+    // Primary location address (footern på storefronten) — super-admin kontakt-kort.
+    supabase
+      .from('locations')
+      .select('address')
+      .eq('tenant_id', tenantId)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
   ])
+  const locAddrRaw = (locationRes.data as { address?: unknown } | null)?.address
+  const primaryAddress = typeof locAddrRaw === 'string' && locAddrRaw.trim() ? locAddrRaw.trim() : null
 
   const settings = settingsRes.data ?? null
   const branding = (settings?.branding ?? {}) as TenantBranding
@@ -578,6 +591,7 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     onboarding,
     operative: { googleReviewUrl, bookingVariant },
     copy,
+    primaryAddress,
   }
 }
 

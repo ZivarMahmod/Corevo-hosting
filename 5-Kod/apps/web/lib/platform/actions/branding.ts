@@ -25,7 +25,13 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
   const colorPrimary = hexOrNull(fd.get('color_primary'))
   const colorBg = hexOrNull(fd.get('color_bg'))
   const colorFg = hexOrNull(fd.get('color_fg'))
-  if (colorPrimary === undefined || colorBg === undefined || colorFg === undefined)
+  const colorAccent = hexOrNull(fd.get('color_accent'))
+  if (
+    colorPrimary === undefined ||
+    colorBg === undefined ||
+    colorFg === undefined ||
+    colorAccent === undefined
+  )
     return { error: 'Ogiltig färgkod. Använd hex, t.ex. #1f6feb.' }
   const fontBody = String(fd.get('font_body') ?? '').trim().slice(0, 120)
   const removeLogo = String(fd.get('remove_logo') ?? '') === 'true'
@@ -52,13 +58,14 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
     else warning = uploadErrorMessage(res.reason)
   }
 
-  // M7 owns ONLY colours/font/logo. Merge them onto prev so the owner's
-  // hero/gallery/about/closing/team/stats AND color_accent are never clobbered
-  // (the old fresh-object upsert wiped them). Patch keys are exactly these five.
+  // M7 owns ONLY colours (primary/bg/fg/accent) + font + logo. Merge them onto prev so
+  // the owner's hero/gallery/about/closing/team/stats are never clobbered (the old
+  // fresh-object upsert wiped them). accent = CTA-färg; null = falla tillbaka på default.
   const branding = mergeBranding(prev, {
     color_primary: colorPrimary,
     color_bg: colorBg,
     color_fg: colorFg,
+    color_accent: colorAccent,
     font_body: fontBody || null,
     logo_url: logoUrl,
   })

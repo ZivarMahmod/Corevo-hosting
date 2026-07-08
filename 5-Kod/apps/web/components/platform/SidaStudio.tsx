@@ -6,6 +6,9 @@ import { Badge } from '@/components/portal/ui'
 import { PlatformBrandingForm } from './PlatformBrandingForm'
 import { StorefrontContentCard } from './StorefrontContentCard'
 import { SajtbyggareControl } from './SajtbyggareControl'
+import { ThemePicker } from './ThemePicker'
+import { TenantContactForm } from './TenantContactForm'
+import { StorefrontExtrasCard } from './StorefrontExtrasCard'
 import styles from './SidaStudio.module.css'
 
 type Copy = {
@@ -38,6 +41,9 @@ export function SidaStudio({
   heroImages,
   galleryImages,
   siteEditorEnabled,
+  contactEmail,
+  contactPhone,
+  address,
 }: {
   tenantId: string
   previewPath: string
@@ -50,6 +56,9 @@ export function SidaStudio({
   heroImages: string[]
   galleryImages: string[]
   siteEditorEnabled: boolean
+  contactEmail: string | null
+  contactPhone: string | null
+  address: string | null
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [reloadToken, setReloadToken] = useState(0)
@@ -71,12 +80,38 @@ export function SidaStudio({
       {/* ── vänster: redigering ── */}
       <div className={styles.left}>
         <section className={styles.card}>
+          <h3 className={styles.cardHead}>Mall</h3>
+          <p className={styles.note}>
+            Byt vilken mall kundens sida använder. Previewen laddas om med den nya mallen.
+          </p>
+          <ThemePicker
+            tenantId={tenantId}
+            current={templateKey}
+            onSaved={() => setReloadToken((t) => t + 1)}
+          />
+        </section>
+
+        <section className={styles.card}>
           <h3 className={styles.cardHead}>Varumärke</h3>
           <p className={styles.liveHint}>
             <span className={styles.liveDot} aria-hidden="true" />
             Färg &amp; typsnitt syns direkt i previewen medan du ändrar
           </p>
           <PlatformBrandingForm tenantId={tenantId} branding={branding} onLiveTokens={pushTokens} />
+        </section>
+
+        <section className={styles.card}>
+          <h3 className={styles.cardHead}>Kontakt &amp; adress</h3>
+          <p className={styles.note}>
+            Syns i storefrontens footer. Öppettider redigeras inte här — de härleds ur
+            personalens veckoscheman (Personal-fliken).
+          </p>
+          <TenantContactForm
+            tenantId={tenantId}
+            email={contactEmail}
+            phone={contactPhone}
+            address={address}
+          />
         </section>
 
         <section className={styles.card}>
@@ -92,6 +127,23 @@ export function SidaStudio({
             galleryImages={galleryImages}
           />
         </section>
+
+        <details className={styles.card}>
+          <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 17, color: 'var(--c-ink)' }}>
+            Fler bilder &amp; fakta{' '}
+            <span style={{ fontWeight: 400, fontSize: 13, color: 'var(--c-ink-3)' }}>
+              (används av vissa mallar, ej FreshCut)
+            </span>
+          </summary>
+          <div style={{ marginTop: 14 }}>
+            <StorefrontExtrasCard
+              tenantId={tenantId}
+              aboutImage={branding.about_image ?? null}
+              closingImage={branding.closing_image ?? null}
+              stats={branding.stats ?? []}
+            />
+          </div>
+        </details>
 
         <section className={styles.card}>
           <h3 className={styles.cardHead}>Kunden redigerar själv</h3>

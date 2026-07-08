@@ -326,6 +326,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         heroImages={branding.hero_images ?? []}
         galleryImages={branding.gallery_images ?? []}
         siteEditorEnabled={siteEditorEnabled}
+        contactEmail={contactEmail}
+        contactPhone={contactPhone}
+        address={detail.primaryAddress}
       />
     ),
 

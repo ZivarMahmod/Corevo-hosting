@@ -36,5 +36,8 @@ export {
 } from './actions/storefront-content'
 export { saveRolePermissionsAction } from './actions/roles'
 export { setSajtbyggareEnabled } from './actions/features'
+export { setTenantTheme } from './actions/theme'
+export { saveTenantContact } from './actions/contact'
+export { saveTenantSingleImage, saveTenantStats } from './actions/storefront-extras'
 export { addCustomDomain, verifyCustomDomain, removeCustomDomain } from './actions/domains'
 export type { ActionState, DomainActionState } from './actions/shared'
