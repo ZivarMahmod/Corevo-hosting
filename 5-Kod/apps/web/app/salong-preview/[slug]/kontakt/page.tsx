@@ -28,7 +28,7 @@ export default async function PreviewContactPage({
 
   return (
     <PreviewShell bundle={bundle} theme={theme}>
-      <LocationHours salonName={tenant.name} />
+      <LocationHours salonName={tenant.name} content={content} />
       <ClosingCta content={content} />
     </PreviewShell>
   )

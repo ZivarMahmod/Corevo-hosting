@@ -17,6 +17,7 @@ import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { SidaStudio } from '@/components/platform/SidaStudio'
+import { SajtbyggareControl } from '@/components/platform/SajtbyggareControl'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, tenantSiteEditorEnabled } from '@/lib/tenant-data'
 import {
@@ -363,7 +364,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         copy={copy}
         heroImages={branding.hero_images ?? []}
         galleryImages={branding.gallery_images ?? []}
-        siteEditorEnabled={siteEditorEnabled}
+        name={tenant.name}
+        social={detail.social}
+        openingHours={detail.openingHours}
         contactEmail={contactEmail}
         contactPhone={contactPhone}
         address={detail.primaryAddress}
@@ -435,6 +438,21 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             super-admin-spärrad i DB. Live slår igenom på storefronten direkt (cache-bust).
           </p>
           <ModulesCard tenantId={tenant.id} modules={modules} />
+        </Card>
+
+        {/* Kund-editor-reglaget (Zivar: "sajtbyggaren för kunden borde inte vara i
+            Sida — den ska ligga i Drift"): styr bara om KUNDEN får redigera själv,
+            aldrig den publika sidan. */}
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Kunden redigerar själv</h2>
+            <span className={styles.chip}>sajtbyggare</span>
+          </div>
+          <p className={styles.noteText} style={{ marginBottom: 8 }}>
+            Slår på/av den kund-egna sid-editorn i salongens admin. Påverkar bara kundens
+            editor — aldrig den publika sidan.
+          </p>
+          <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />
         </Card>
 
         <Card pad={0}>

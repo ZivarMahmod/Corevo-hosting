@@ -158,7 +158,7 @@ export default async function PublicLayout({ children }: { children: React.React
       {/* In-page booking embed (Zivar's #1): the WHOLE shell — nav, main, footer
           — sits inside the provider, so every "Boka tid" CTA opens the same
           slide-over drawer without ever leaving the salon's page. */}
-      <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name} staffNoun={staffNoun}>
+      <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name} staffNoun={staffNoun} defaultMode={settings.bookingMode}>
         {/* Paused booking → "stängt"-banner at the very top (draft/off render
             nothing public, so only 'paused' surfaces here). */}
         {bookingPaused ? <ModulePausedBanner /> : null}
@@ -182,6 +182,7 @@ export default async function PublicLayout({ children }: { children: React.React
             tagline={content.tagline}
             location={location}
             contact={settings.contact}
+            social={settings.social}
           />
         ) : (
           <Footer tenant={{ name: tenant.name }} />

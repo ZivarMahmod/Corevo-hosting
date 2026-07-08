@@ -137,6 +137,6 @@ export function parseInboundMessage(data: unknown): PreviewInboundMessage | null
  *  `accept` and a fast client-side guard before the upload round-trips. */
 export const PREVIEW_IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml,image/gif'
 
-/** Client-side size guard (matches the server's 2 MB cap) so an oversized file is
+/** Client-side size guard (matches the server's 8 MB cap) so an oversized file is
  *  rejected before upload. The server re-checks — this is just a fast fail. */
-export const PREVIEW_IMAGE_MAX_BYTES = 2 * 1024 * 1024
+export const PREVIEW_IMAGE_MAX_BYTES = 8 * 1024 * 1024

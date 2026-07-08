@@ -31,7 +31,7 @@ export type UploadResult =
 function publicBase(): string | undefined {
   return process.env.R2_PUBLIC_BASE_URL?.replace(/\/$/, '') || undefined
 }
-const MAX_BYTES = 2 * 1024 * 1024 // 2 MB — logos are small
+const MAX_BYTES = 8 * 1024 * 1024 // 8 MB — högupplösta hero/galleri-foton ska rymmas (Zivar)
 const EXT: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
@@ -164,7 +164,7 @@ export function uploadErrorMessage(reason: Exclude<UploadResult, { ok: true }>['
     case 'bad_type':
       return 'Logotypen måste vara PNG, JPG, WEBP, SVG eller GIF.'
     case 'too_large':
-      return 'Logotypen är för stor (max 2 MB).'
+      return 'Logotypen är för stor (max 8 MB).'
     case 'no_public_base':
     case 'no_binding':
       return 'Bilduppladdning är inte aktiverad i denna miljö (kräver R2 + R2_PUBLIC_BASE_URL). Färg/typsnitt sparades.'

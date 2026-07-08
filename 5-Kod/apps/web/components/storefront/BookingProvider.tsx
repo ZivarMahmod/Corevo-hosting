@@ -56,6 +56,7 @@ export function BookingProvider({
   locations = [],
   tenantName,
   staffNoun = 'Frisör',
+  defaultMode = 'wizard',
   children,
 }: {
   services: WizardService[]
@@ -65,12 +66,16 @@ export function BookingProvider({
    *  the server (layout) and threaded down as a plain string. OPTIONAL — defaults
    *  to 'Frisör' so any caller that omits it is byte-identical to today. */
   staffNoun?: string
+  /** Tenantens sparade boknings-vy (settings.booking.variant → readBookingMode):
+   *  vad primär-CTA:erna ("Boka tid") öppnar. Tidigare hårdkodad 'wizard', så
+   *  operatörens val i Sida-fliken syntes aldrig på sidan. */
+  defaultMode?: BookingMode
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
-  // Which presentation the drawer shows. Defaults to the steg-för-steg wizard;
-  // a "Snabbboka" CTA can request the kompakt one-page variant instead.
-  const [mode, setMode] = useState<BookingMode>('wizard')
+  // Which presentation the drawer shows. Starts at the tenant's saved variant;
+  // a "Snabbboka" CTA can still request the kompakt one-page variant explicitly.
+  const [mode, setMode] = useState<BookingMode>(defaultMode)
   // Render the (potentially heavy) wizard only after the drawer is first opened.
   const [mounted, setMounted] = useState(false)
   const available = services.length > 0
@@ -85,7 +90,7 @@ export function BookingProvider({
     [available],
   )
 
-  const openDrawer = useCallback(() => openWith('wizard'), [openWith])
+  const openDrawer = useCallback(() => openWith(defaultMode), [openWith, defaultMode])
   const openQuickBook = useCallback(() => openWith('compact'), [openWith])
 
   const closeDrawer = useCallback(() => {

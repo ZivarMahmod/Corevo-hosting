@@ -67,7 +67,7 @@ export function MediaLibrary({
       </PageHead>
 
       <Callout tone="info" icon="info">
-        Ditt bildbibliotek. Ladda upp egna bilder och återanvänd dem på din sida. Max 2 MB
+        Ditt bildbibliotek. Ladda upp egna bilder och återanvänd dem på din sida. Max 8 MB
         per bild.
       </Callout>
 
@@ -402,7 +402,7 @@ function UploadDrawer({ onClose }: { onClose: () => void }) {
   return (
     <Drawer
       title="Ladda upp bilder"
-      sub="PNG, JPG, WEBP, SVG eller GIF. Max 2 MB per bild."
+      sub="PNG, JPG, WEBP, SVG eller GIF. Max 8 MB per bild."
       onClose={onClose}
       ariaLabel="Ladda upp bilder"
       footer={

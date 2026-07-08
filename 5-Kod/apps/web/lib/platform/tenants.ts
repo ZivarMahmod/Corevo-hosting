@@ -383,7 +383,19 @@ export type TenantDetail = {
    *  (settings.copy). Each field is the raw stored string or '' when unset — the UI
    *  prefills from THIS (never the resolved theme default), so a blank field keeps
    *  "faller tillbaka på temats standard". hero/gallery images live in `branding`. */
-  copy: { heroEyebrow: string; heroTitle: string; heroLede: string; aboutCopy: string; aboutCopyHome: string; tagline: string; italic: string; aboutTitle: string; homeSecondTitle: string; whyTitle: string; whySub: string; whyBody: string }
+  copy: Record<
+    | 'heroEyebrow' | 'heroTitle' | 'heroLede' | 'aboutCopy' | 'aboutCopyHome' | 'tagline' | 'italic'
+    | 'aboutTitle' | 'homeSecondTitle' | 'whyTitle' | 'whySub' | 'whyBody'
+    | 'servicesEyebrow' | 'servicesTitle' | 'servicesIntro'
+    | 'teamEyebrow' | 'teamTitle' | 'teamLead'
+    | 'closingEyebrow' | 'closingTitle' | 'closingLede'
+    | 'contactEyebrow' | 'contactTitle',
+    string
+  >
+  /** Sociala medier-länkar (settings.social) — '' när osatta (formulär-prefill). */
+  social: { instagram: string; facebook: string; tiktok: string }
+  /** Manuella öppettider (settings.opening_hours) — null = härleds ur scheman. */
+  openingHours: { day: string; time: string }[] | null
   /** Primär location-adress (footern på storefronten) — super-admin kontakt-kort. */
   primaryAddress: string | null
 }
@@ -512,7 +524,32 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     whyBody: copyStr(copyRaw.whyBody),
     tagline: copyStr(copyRaw.tagline),
     italic: copyStr(copyRaw.italic),
+    servicesEyebrow: copyStr(copyRaw.servicesEyebrow),
+    servicesTitle: copyStr(copyRaw.servicesTitle),
+    servicesIntro: copyStr(copyRaw.servicesIntro),
+    teamEyebrow: copyStr(copyRaw.teamEyebrow),
+    teamTitle: copyStr(copyRaw.teamTitle),
+    teamLead: copyStr(copyRaw.teamLead),
+    closingEyebrow: copyStr(copyRaw.closingEyebrow),
+    closingTitle: copyStr(copyRaw.closingTitle),
+    closingLede: copyStr(copyRaw.closingLede),
+    contactEyebrow: copyStr(copyRaw.contactEyebrow),
+    contactTitle: copyStr(copyRaw.contactTitle),
   }
+  const socialRaw = (rawSettings.social ?? {}) as Record<string, unknown>
+  const socialStr = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
+  const social = {
+    instagram: socialStr(socialRaw.instagram),
+    facebook: socialStr(socialRaw.facebook),
+    tiktok: socialStr(socialRaw.tiktok),
+  }
+  const ohRaw = rawSettings.opening_hours
+  const openingHours = Array.isArray(ohRaw)
+    ? ohRaw.filter(
+        (r): r is { day: string; time: string } =>
+          !!r && typeof r === 'object' && typeof (r as Record<string, unknown>).day === 'string' && typeof (r as Record<string, unknown>).time === 'string',
+      )
+    : null
 
   const counts = {
     activeServices: servicesRes.count ?? 0,
@@ -605,6 +642,8 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     onboarding,
     operative: { googleReviewUrl, bookingVariant },
     copy,
+    social,
+    openingHours: openingHours && openingHours.length > 0 ? openingHours : null,
     primaryAddress,
   }
 }

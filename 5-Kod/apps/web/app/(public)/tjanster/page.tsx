@@ -30,7 +30,10 @@ export default async function ServicesPage() {
         <SectionHeader
           eyebrow={content.servicesEyebrow}
           title={content.servicesTitle}
-          lead={`Våra behandlingar hos ${tenant.name}. Alla priser är inkl. moms — välj en tjänst och boka en ledig tid online.`}
+          lead={
+            content.servicesIntro ??
+            `Våra behandlingar hos ${tenant.name}. Alla priser är inkl. moms — välj en tjänst och boka en ledig tid online.`
+          }
         />
         <ServiceMenu services={services} />
         {services.length > 0 ? (

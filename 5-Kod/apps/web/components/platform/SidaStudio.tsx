@@ -2,15 +2,17 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { TenantBranding } from '@corevo/ui'
+import { injectTenantTokens, type TenantBranding } from '@corevo/ui'
 import { Badge } from '@/components/portal/ui'
 import { PlatformBrandingForm } from './PlatformBrandingForm'
 import { ImageSlotManager } from './StorefrontContentCard'
 import { CopyFieldsCard, type CopyFieldDef } from './CopyFieldsCard'
-import { SajtbyggareControl } from './SajtbyggareControl'
+import { TenantNameCard } from './TenantNameCard'
 import { ThemePicker } from './ThemePicker'
 import { BookingViewCard } from './BookingViewCard'
 import { TenantContactForm } from './TenantContactForm'
+import { OpeningHoursCard } from './OpeningHoursCard'
+import { TeamCard } from './TeamCard'
 import { SingleImageSlot, StatsCard } from './StorefrontExtrasCard'
 import type { BookingVariant } from '@/lib/platform/booking-variant'
 import { themeCaps, THEME_EXTRA_HOME } from '@/lib/platform/theme-capabilities'
@@ -30,6 +32,17 @@ type Copy = {
   whyTitle: string
   whySub: string
   whyBody: string
+  servicesEyebrow: string
+  servicesTitle: string
+  servicesIntro: string
+  teamEyebrow: string
+  teamTitle: string
+  teamLead: string
+  closingEyebrow: string
+  closingTitle: string
+  closingLede: string
+  contactEyebrow: string
+  contactTitle: string
 }
 
 /**
@@ -65,10 +78,12 @@ export function SidaStudio({
   copy,
   heroImages,
   galleryImages,
-  siteEditorEnabled,
+  name,
   contactEmail,
   contactPhone,
   address,
+  social,
+  openingHours,
   bookingVariant,
 }: {
   tenantId: string
@@ -82,10 +97,15 @@ export function SidaStudio({
   copy: Copy
   heroImages: string[]
   galleryImages: string[]
-  siteEditorEnabled: boolean
+  /** Salongens namn (tenants.name) — sidans identitet i sidhuvud/sidfot/bokning. */
+  name: string
   contactEmail: string | null
   contactPhone: string | null
   address: string | null
+  /** Sociala medier-länkar (settings.social) — '' när osatta. */
+  social: { instagram: string; facebook: string; tiktok: string }
+  /** Manuella öppettider (settings.opening_hours) — null = härleds ur scheman. */
+  openingHours: { day: string; time: string }[] | null
   bookingVariant: BookingVariant
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -117,8 +137,29 @@ export function SidaStudio({
     whyTitle: '',
     whySub: '',
     whyBody: '',
+    servicesEyebrow: themeBase.servicesEyebrow,
+    servicesTitle: themeBase.servicesTitle,
+    servicesIntro: '',
+    teamEyebrow: themeBase.teamEyebrow,
+    teamTitle: themeBase.teamTitle,
+    teamLead: '',
+    closingEyebrow: '',
+    closingTitle: '',
+    closingLede: '',
+    contactEyebrow: '',
+    contactTitle: '',
   }
   const statsDefaults = themeBase.stats
+  // Sid-texternas inbyggda standarder (render-fallbacks utan temadefault) — samma
+  // strängar som sidorna/sektionerna faller tillbaka på, så fälten förifylls ärligt.
+  const servicesIntroDefault = `Våra behandlingar hos ${name}. Alla priser är inkl. moms — välj en tjänst och boka en ledig tid online.`
+  const teamLeadDefault = `Teamet på ${name} brinner för hantverket och för att du ska känna dig hemma.`
+  const closingDefaults = {
+    closingEyebrow: 'Redo när du är',
+    closingTitle: 'Redo för en ny stil?',
+    closingLede: 'Hitta en tid som passar dig och boka online på under en minut — bekräftelse direkt.',
+  }
+  const contactHeadDefaults = { contactEyebrow: '— Hitta hit', contactTitle: 'Plats & öppettider' }
 
   const activePage = PAGES.find((p) => p.key === page) ?? PAGES[0]!
   const src = useMemo(() => {
@@ -152,6 +193,16 @@ export function SidaStudio({
       window.location.origin,
     )
   }, [])
+  // "Visa var" för en CSS-var-yta (t.ex. FreshCuts mörka "Varför oss"-bakgrund =
+  // Primärfärgen): pulsa markörfärgen ~1 s och återställ till sparade tokens.
+  const flashVar = useCallback(
+    (cssVar: string) => {
+      const base = injectTenantTokens(branding)
+      pushTokens({ ...base, [cssVar]: '#FF2FD6' })
+      window.setTimeout(() => pushTokens(base), 1100)
+    },
+    [branding, pushTokens],
+  )
 
   // Per-mall-fält (Zivar: "alla mallar har sina ändringsrutor för det de är uppbyggda
   // för"): fältuppsättningen styrs av theme-capabilities för mallen du tittar på.
@@ -242,6 +293,11 @@ export function SidaStudio({
             </section>
 
             <section className={styles.card}>
+              <h3 className={styles.cardHead}>Salongsnamn</h3>
+              <TenantNameCard tenantId={tenantId} name={name} onSaved={reload} onFlash={pushFlash} />
+            </section>
+
+            <section className={styles.card}>
               <h3 className={styles.cardHead}>Varumärke</h3>
               <p className={styles.liveHint}>
                 <span className={styles.liveDot} aria-hidden="true" />
@@ -273,16 +329,7 @@ export function SidaStudio({
                 Hur bokningen presenteras på sidan (t.ex. guide i flera steg eller kompakt).
                 Gäller alla &quot;Boka tid&quot;-knappar.
               </p>
-              <BookingViewCard tenantId={tenantId} bookingVariant={bookingVariant} />
-            </section>
-
-            <section className={styles.card}>
-              <h3 className={styles.cardHead}>Kunden redigerar själv</h3>
-              <p className={styles.note}>
-                Slår på/av den kund-egna sid-editorn. Påverkar bara kundens editor, aldrig den
-                publika sidan.
-              </p>
-              <SajtbyggareControl tenantId={tenantId} enabled={siteEditorEnabled} />
+              <BookingViewCard tenantId={tenantId} bookingVariant={bookingVariant} onSaved={reload} />
             </section>
           </>
         ) : null}
@@ -324,8 +371,9 @@ export function SidaStudio({
                   tenantId={tenantId}
                   slot="hero"
                   label="Hero-bilder"
-                  hint="Bilderna högst upp på startsidan. Tom slot faller tillbaka på mallens standardfoton."
+                  hint="Bilderna högst upp på startsidan — de som visas här är exakt de som syns på sidan just nu. Ladda upp egna för att ersätta mallens."
                   images={heroImages}
+                  defaults={themeBase.heroImages}
                   onFlashImage={pushImgFlash}
                 />
                 {caps.homeGallery ? (
@@ -333,13 +381,33 @@ export function SidaStudio({
                     tenantId={tenantId}
                     slot="gallery"
                     label="Galleri-bilder"
-                    hint="Bildgalleriet på startsidan. Tom slot faller tillbaka på mallens standardgalleri."
+                    hint="Bildgalleriet mitt på startsidan — det som visas här är exakt det som syns på sidan just nu."
                     images={galleryImages}
+                    defaults={themeBase.galleryImages}
                     onFlashImage={pushImgFlash}
                   />
                 ) : null}
               </div>
             </section>
+
+            {activeTheme === 'freshcut' ? (
+              <section className={styles.card}>
+                <h3 className={styles.cardHead}>&quot;Varför oss&quot;-sektionens bakgrund</h3>
+                <p className={styles.note}>
+                  Den mörka bakgrunden är ingen bild — den är{' '}
+                  <strong>Primärfärgen</strong>. Ändra den under Allmänt → Varumärke → Primärfärg.
+                </p>
+                <button
+                  type="button"
+                  className={styles.btn}
+                  style={{ alignSelf: 'flex-start' }}
+                  onClick={() => flashVar('--color-primary')}
+                  title="Blinkar primärfärgens ytor i previewen — inklusive den här bakgrunden"
+                >
+                  Visa var
+                </button>
+              </section>
+            ) : null}
 
             {caps.homeStats ? (
               <section className={styles.card}>
@@ -360,15 +428,44 @@ export function SidaStudio({
         ) : null}
 
         {page === 'tjanster' ? (
-          <section className={styles.card}>
-            <h3 className={styles.cardHead}>Tjänster-sidan</h3>
-            <p className={styles.note}>
-              Sidan listar salongens tjänster automatiskt — namn, priser, kategorier,
-              rea-badges och bilder. Allt det redigeras i kundkortets{' '}
-              <strong>Tjänster</strong>-flik (högst upp), och slår igenom här direkt.
-              Previewen till höger visar exakt hur sidan ser ut för besökaren.
-            </p>
-          </section>
+          <>
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Sidans texter</h3>
+              <p className={styles.note}>
+                Rubriken och intro-raden ovanför prislistan — dagens gällande text står
+                redan i rutorna.
+              </p>
+              <CopyFieldsCard
+                tenantId={tenantId}
+                fields={[
+                  { name: 'servicesEyebrow', label: 'Liten rubrik (eyebrow)', hint: 'Den lilla raden ovanför sidrubriken.' },
+                  { name: 'servicesTitle', label: 'Sidrubrik', hint: 'Tjänster-sidans stora rubrik.' },
+                  { name: 'servicesIntro', label: 'Intro-rad', rows: 2, hint: 'Raden under rubriken, ovanför prislistan.' },
+                ]}
+                overrides={{
+                  servicesEyebrow: copy.servicesEyebrow,
+                  servicesTitle: copy.servicesTitle,
+                  servicesIntro: copy.servicesIntro,
+                }}
+                defaults={{
+                  servicesEyebrow: copyDefaults.servicesEyebrow,
+                  servicesTitle: copyDefaults.servicesTitle,
+                  servicesIntro: servicesIntroDefault,
+                }}
+                onSaved={reload}
+                onFlash={pushFlash}
+              />
+            </section>
+
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Själva tjänsterna &amp; priserna</h3>
+              <p className={styles.note}>
+                Listan hämtas automatiskt från kundkortets <strong>Tjänster</strong>-flik
+                (högst upp) — namn, priser, kategorier, rea-badges och bilder redigeras där
+                och slår igenom här direkt.
+              </p>
+            </section>
+          </>
         ) : null}
 
         {page === 'om' ? (
@@ -396,7 +493,9 @@ export function SidaStudio({
                   tenantId={tenantId}
                   slot="about"
                   label="Om-bild"
+                  hint="Bilden BREDVID om-texten (högre upp på Om oss-sidan)."
                   url={branding.about_image ?? null}
+                  defaultUrl={themeBase.aboutImage}
                   onFlashImage={pushImgFlash}
                   onSaved={reload}
                 />
@@ -404,24 +503,112 @@ export function SidaStudio({
                   tenantId={tenantId}
                   slot="closing"
                   label="Avslutningsbild"
+                  hint="Den stora bakgrundslika bilden LÄNGST NER (bakom 'Redo…'-texten, syns även på Kontakt-sidan)."
                   url={branding.closing_image ?? null}
+                  defaultUrl={themeBase.closingImage}
                   onFlashImage={pushImgFlash}
                   onSaved={reload}
                 />
               </div>
             </section>
+
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Teamet</h3>
+              <p className={styles.note}>
+                Porträtt, namn och kort presentation på Om oss-sidan. Det{' '}
+                <strong>tekniska</strong> (vilka tjänster medlemmen utför, schema,
+                bokningsbarhet, inlogg) sköts i kundkortets <strong>Personal</strong>-flik —
+                här styr du bara hur teamet <strong>presenteras</strong> på sidan.
+              </p>
+              <CopyFieldsCard
+                tenantId={tenantId}
+                fields={[
+                  { name: 'teamEyebrow', label: 'Liten rubrik (eyebrow)' },
+                  { name: 'teamTitle', label: 'Team-rubrik' },
+                  { name: 'teamLead', label: 'Team-ingress', rows: 2, hint: 'Raden under team-rubriken.' },
+                ]}
+                overrides={{ teamEyebrow: copy.teamEyebrow, teamTitle: copy.teamTitle, teamLead: copy.teamLead }}
+                defaults={{ teamEyebrow: copyDefaults.teamEyebrow, teamTitle: copyDefaults.teamTitle, teamLead: teamLeadDefault }}
+                onSaved={reload}
+                onFlash={pushFlash}
+              />
+              <div style={{ marginTop: 12 }}>
+                <TeamCard
+                  tenantId={tenantId}
+                  team={(branding.team ?? []).map((m) => ({ name: m.name ?? '', role: m.role ?? '', img: m.img ?? '' }))}
+                  onSaved={reload}
+                  onFlash={pushFlash}
+                  onFlashImage={pushImgFlash}
+                />
+              </div>
+            </section>
+
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Avslutningssektionen</h3>
+              <p className={styles.note}>
+                Texten ovanpå den stora avslutningsbilden längst ner (syns på både Om oss-
+                och Kontakt-sidan).
+              </p>
+              <CopyFieldsCard
+                tenantId={tenantId}
+                fields={[
+                  { name: 'closingEyebrow', label: 'Liten rad överst' },
+                  { name: 'closingTitle', label: 'Rubrik' },
+                  { name: 'closingLede', label: 'Underrad', rows: 2 },
+                ]}
+                overrides={{ closingEyebrow: copy.closingEyebrow, closingTitle: copy.closingTitle, closingLede: copy.closingLede }}
+                defaults={closingDefaults}
+                onSaved={reload}
+                onFlash={pushFlash}
+              />
+            </section>
           </>
         ) : null}
 
         {page === 'kontakt' ? (
-          <section className={styles.card}>
-            <h3 className={styles.cardHead}>Kontakt &amp; adress</h3>
-            <p className={styles.note}>
-              Syns på Kontakt-sidan och i sidfoten. Öppettiderna härleds ur personalens
-              veckoscheman (Personal-fliken) — de redigeras inte här.
-            </p>
-            <TenantContactForm tenantId={tenantId} email={contactEmail} phone={contactPhone} address={address} />
-          </section>
+          <>
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Sidans rubriker</h3>
+              <CopyFieldsCard
+                tenantId={tenantId}
+                fields={[
+                  { name: 'contactEyebrow', label: 'Liten rubrik (eyebrow)' },
+                  { name: 'contactTitle', label: 'Sidrubrik' },
+                ]}
+                overrides={{ contactEyebrow: copy.contactEyebrow, contactTitle: copy.contactTitle }}
+                defaults={contactHeadDefaults}
+                onSaved={reload}
+                onFlash={pushFlash}
+              />
+            </section>
+
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Kontakt, adress &amp; sociala medier</h3>
+              <p className={styles.note}>
+                Syns på Kontakt-sidan och i sidfoten. Adressen driver även kartan på
+                Kontakt-sidan (slås upp automatiskt när du sparar).
+              </p>
+              <TenantContactForm
+                tenantId={tenantId}
+                email={contactEmail}
+                phone={contactPhone}
+                address={address}
+                social={social}
+                onSaved={reload}
+                onFlash={pushFlash}
+              />
+            </section>
+
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Öppettider</h3>
+              <OpeningHoursCard
+                tenantId={tenantId}
+                openingHours={openingHours}
+                onSaved={reload}
+                onFlash={pushFlash}
+              />
+            </section>
+          </>
         ) : null}
       </div>
 

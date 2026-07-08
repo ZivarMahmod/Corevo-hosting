@@ -306,7 +306,7 @@ export function BrandingForm({
                 Ta bort logotyp
               </label>
             ) : null}
-            <span className={styles.muted}>PNG/JPG/WEBP/SVG/GIF, max 2 MB.</span>
+            <span className={styles.muted}>PNG/JPG/WEBP/SVG/GIF, max 8 MB.</span>
           </div>
         </div>
 

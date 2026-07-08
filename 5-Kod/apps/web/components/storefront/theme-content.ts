@@ -305,10 +305,25 @@ export type CopyOverride = {
   whyTitle?: string
   whySub?: string
   whyBody?: string
+  /** Tjänster-sidan: eyebrow + rubrik (temadefault finns) + intro-rad (sid-default). */
+  servicesEyebrow?: string
+  servicesTitle?: string
+  servicesIntro?: string
+  /** Team-sektionen på Om oss: eyebrow + rubrik (temadefault) + lead-rad (sid-default). */
+  teamEyebrow?: string
+  teamTitle?: string
+  teamLead?: string
+  /** Avslutningssektionen (stora bilden längst ner på Om/Kontakt). */
+  closingEyebrow?: string
+  closingTitle?: string
+  closingLede?: string
+  /** Kontakt-sidan: eyebrow + rubrik för "Plats & öppettider". */
+  contactEyebrow?: string
+  contactTitle?: string
 }
 
 /** The six theme-content fields the owner may override via `settings.copy`. */
-const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic', 'aboutTitle'] as const
+const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic', 'aboutTitle', 'servicesEyebrow', 'servicesTitle', 'teamEyebrow', 'teamTitle'] as const
 
 /**
  * Resolve the six editorial copy fields: owner override wins per field, otherwise
@@ -336,6 +351,10 @@ export function resolveTenantCopy(
     tagline: pick('tagline'),
     italic: pick('italic'),
     aboutTitle: pick('aboutTitle'),
+    servicesEyebrow: pick('servicesEyebrow'),
+    servicesTitle: pick('servicesTitle'),
+    teamEyebrow: pick('teamEyebrow'),
+    teamTitle: pick('teamTitle'),
   }
 }
 
@@ -358,6 +377,15 @@ export type ResolvedThemeContent = ThemeContent & {
   whyTitle?: string
   whySub?: string
   whyBody?: string
+  /** Sid-texter utan temadefault: satta bara när ägaren skrivit egna — render-
+   *  stället faller annars tillbaka på sin inbyggda text. */
+  servicesIntro?: string
+  teamLead?: string
+  closingEyebrow?: string
+  closingTitle?: string
+  closingLede?: string
+  contactEyebrow?: string
+  contactTitle?: string
 }
 
 export function resolveThemeContent(
@@ -398,6 +426,13 @@ export function resolveThemeContent(
     whyTitle: extra('whyTitle'),
     whySub: extra('whySub'),
     whyBody: extra('whyBody'),
+    servicesIntro: extra('servicesIntro'),
+    teamLead: extra('teamLead'),
+    closingEyebrow: extra('closingEyebrow'),
+    closingTitle: extra('closingTitle'),
+    closingLede: extra('closingLede'),
+    contactEyebrow: extra('contactEyebrow'),
+    contactTitle: extra('contactTitle'),
     heroImages,
     galleryImages,
     aboutImage: typeof b.about_image === 'string' && b.about_image ? b.about_image : base.aboutImage,

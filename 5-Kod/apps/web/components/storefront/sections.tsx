@@ -62,14 +62,17 @@ export function StylistSpotlights({
         <SectionHeader
           eyebrow={content.teamEyebrow}
           title={content.teamTitle}
-          lead={`Teamet på ${salonName} brinner för hantverket och för att du ska känna dig hemma.`}
+          lead={content.teamLead ?? `Teamet på ${salonName} brinner för hantverket och för att du ska känna dig hemma.`}
         />
         <ul className={styles.stylists}>
           {content.team.map((s, i) => (
             <Reveal as="li" key={`${s.name}-${i}`} delay={i * 80} className={styles.stylist}>
               <div className={styles.stylistPhoto}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={s.img} alt={s.name} loading="lazy" />
+                {/* Foto valfritt — en medlem utan bild renderar ram utan trasig img. */}
+                {s.img ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={s.img} alt={s.name} loading="lazy" />
+                ) : null}
               </div>
               <h3 className={styles.stylistName}>{s.name}</h3>
               <p className={styles.stylistRole}>{s.role}</p>
@@ -116,26 +119,41 @@ export function AboutSplit({
  *  omitted gracefully (or shown as an honest "Visas snart") until it exists — we
  *  never invent an address or opening hours. The map only loads once we have a
  *  real address to search for; otherwise it is omitted (no misleading default). */
-export async function LocationHours({ salonName }: { salonName: string }) {
+export async function LocationHours({
+  salonName,
+  content,
+}: {
+  salonName: string
+  /** Resolvat tema-innehåll — bär ägarens rubrik-overrides för sektionen. */
+  content?: ResolvedThemeContent
+}) {
   const bundle = await currentTenant()
   const location = bundle?.location ?? null
   const contact = bundle?.settings.contact ?? { email: null, phone: null }
+  const social = bundle?.settings.social ?? { instagram: null, facebook: null, tiktok: null }
+  const map = bundle?.settings.map ?? null
   const address = location?.address ?? null
   const hours = location?.hours ?? null
   const hasContact = !!contact.email || !!contact.phone
+  const hasSocial = !!social.instagram || !!social.facebook || !!social.tiktok
 
-  // Link to a real map search for the saved address. We don't embed an OSM iframe
-  // here: the embed needs a bounding box we can't derive without geocoding, so a
-  // fabricated default-bbox map would be misleading. A search link is honest and
-  // always points at the real address.
+  // Map: when saveTenantContact managed to geocode the address (settings.map) we
+  // embed a real OSM map centred on it; otherwise fall back to the honest search
+  // link (no fabricated default-bbox map).
   const mapHref = address
     ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`
+    : null
+  const mapEmbed = map
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${(map.lon - 0.004).toFixed(5)}%2C${(map.lat - 0.0025).toFixed(5)}%2C${(map.lon + 0.004).toFixed(5)}%2C${(map.lat + 0.0025).toFixed(5)}&layer=mapnik&marker=${map.lat.toFixed(6)}%2C${map.lon.toFixed(6)}`
     : null
 
   return (
     <section className={`section ${styles.locSection}`}>
       <div className="section-inner">
-        <SectionHeader eyebrow="— Hitta hit" title="Plats & öppettider" />
+        <SectionHeader
+          eyebrow={content?.contactEyebrow ?? '— Hitta hit'}
+          title={content?.contactTitle ?? 'Plats & öppettider'}
+        />
         <div className={styles.locGrid}>
           <Reveal className={styles.locInfo}>
             <div className={styles.locBlock}>
@@ -187,6 +205,29 @@ export async function LocationHours({ salonName }: { salonName: string }) {
               </p>
             </div>
 
+            {hasSocial ? (
+              <div className={styles.locBlock}>
+                <p className={styles.locLabel}>Följ oss</p>
+                <p className={styles.locContactValue} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  {social.instagram ? (
+                    <a href={social.instagram} className={styles.locContactLink} target="_blank" rel="noreferrer noopener">
+                      Instagram
+                    </a>
+                  ) : null}
+                  {social.facebook ? (
+                    <a href={social.facebook} className={styles.locContactLink} target="_blank" rel="noreferrer noopener">
+                      Facebook
+                    </a>
+                  ) : null}
+                  {social.tiktok ? (
+                    <a href={social.tiktok} className={styles.locContactLink} target="_blank" rel="noreferrer noopener">
+                      TikTok
+                    </a>
+                  ) : null}
+                </p>
+              </div>
+            ) : null}
+
             {hasContact ? (
               <div className={styles.locBlock}>
                 <p className={styles.locLabel}>Kontakt</p>
@@ -210,6 +251,18 @@ export async function LocationHours({ salonName }: { salonName: string }) {
               </div>
             ) : null}
           </Reveal>
+
+          {mapEmbed ? (
+            <Reveal delay={80}>
+              {/* OSM-embed på den geokodade adressen — frame-src tillåter openstreetmap.org. */}
+              <iframe
+                src={mapEmbed}
+                title={`Karta till ${salonName}`}
+                style={{ width: '100%', height: 320, border: '1px solid rgba(0,0,0,.12)', borderRadius: 12 }}
+                loading="lazy"
+              />
+            </Reveal>
+          ) : null}
         </div>
       </div>
     </section>
@@ -223,10 +276,11 @@ export function ClosingCta({ content }: { content: ResolvedThemeContent }) {
   return (
     <section className={styles.closing} aria-label="Boka tid">
       <Parallax src={content.closingImage} alt="Inbjudande salongsmiljö redo att ta emot dig">
-        <p className={styles.closingEyebrow}>Redo när du är</p>
-        <h2 className={styles.closingTitle}>Redo för en ny stil?</h2>
+        <p className={styles.closingEyebrow}>{content.closingEyebrow ?? 'Redo när du är'}</p>
+        <h2 className={styles.closingTitle}>{content.closingTitle ?? 'Redo för en ny stil?'}</h2>
         <p className={styles.closingLead}>
-          Hitta en tid som passar dig och boka online på under en minut — bekräftelse direkt.
+          {content.closingLede ??
+            'Hitta en tid som passar dig och boka online på under en minut — bekräftelse direkt.'}
         </p>
         <div className={styles.closingActions}>
           <BookCta />

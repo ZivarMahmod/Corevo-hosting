@@ -55,7 +55,7 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
     const image = fd.get('image')
     if (!(image instanceof File) || image.size === 0) return { error: 'Välj en bild att ladda upp.' }
     const res = await uploadImage(image, `tenants/${tenantId}/storefront`)
-    if (!res.ok) return { error: 'Uppladdningen misslyckades. Försök igen (PNG/JPG/WEBP, max 2 MB).' }
+    if (!res.ok) return { error: 'Uppladdningen misslyckades. Försök igen (PNG/JPG/WEBP, max 8 MB).' }
     nextUrl = res.url
   }
 
@@ -125,4 +125,86 @@ export async function saveTenantStats(_p: ActionState, fd: FormData): Promise<Ac
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, { action: 'tenant.storefront_copy', tenantId, actorId: user.id, meta: { stats: stats.length } })
   return { success: 'Fakta sparad. Publika sajten uppdaterad.' }
+}
+
+type TeamMember = { name: string; role: string; img: string }
+
+/**
+ * Team på Om oss-sidan (branding.team) — Zivar: "det finns en barberare men inget
+ * står om den i storefront; Om oss-sidan är för bild och lite text på barberaren,
+ * Personal-fliken sköter det tekniska". En medlem per submit: index='' = lägg till,
+ * index=N = uppdatera (bild valfri — behåller den gamla), remove=true = ta bort.
+ * Ersatta/borttagna foton städas best-effort ur R2 efter commit (FX-14).
+ */
+export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  const tenantId = String(fd.get('tenantId') ?? '')
+  if (!tenantId) return { error: 'Saknar salong.' }
+
+  const idxRaw = String(fd.get('index') ?? '')
+  const index = idxRaw === '' ? null : Number(idxRaw)
+  if (index !== null && (!Number.isInteger(index) || index < 0)) return { error: 'Ogiltig medlem.' }
+  const remove = String(fd.get('remove') ?? '') === 'true'
+
+  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Okänd salong.' }
+
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('branding')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  const prev = (existing?.branding ?? {}) as TenantBranding
+  const team: TeamMember[] = (Array.isArray(prev.team) ? prev.team : []).map((m) => ({
+    name: typeof m?.name === 'string' ? m.name : '',
+    role: typeof m?.role === 'string' ? m.role : '',
+    img: typeof m?.img === 'string' ? m.img : '',
+  }))
+
+  let removedImg: string | null = null
+  if (remove) {
+    if (index === null || index >= team.length) return { error: 'Okänd medlem.' }
+    removedImg = team[index]!.img || null
+    team.splice(index, 1)
+  } else {
+    const name = String(fd.get('name') ?? '').trim().slice(0, 80)
+    const role = String(fd.get('role') ?? '').trim().slice(0, 300)
+    if (!name) return { error: 'Ange ett namn.' }
+
+    const prevImg = index !== null ? (team[index]?.img ?? '') : ''
+    let img = prevImg
+    const image = fd.get('image')
+    if (image instanceof File && image.size > 0) {
+      const res = await uploadImage(image, `tenants/${tenantId}/team`)
+      if (!res.ok) return { error: 'Bilduppladdningen misslyckades. Försök igen (PNG/JPG/WEBP, max 8 MB).' }
+      img = res.url
+      if (prevImg) removedImg = prevImg
+    }
+
+    const member: TeamMember = { name, role, img }
+    if (index === null) team.push(member)
+    else if (index < team.length) team[index] = member
+    else return { error: 'Okänd medlem.' }
+  }
+
+  const branding = mergeBranding(prev, { team } as Partial<TenantBranding>)
+  const { error } = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: tenantId, branding }, { onConflict: 'tenant_id' })
+  if (error) {
+    await reportActionError('saveTenantTeamMember.upsert', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  if (removedImg) await deleteByPublicUrl(removedImg)
+
+  revalidateTenant(tenant.slug)
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.storefront_copy',
+    tenantId,
+    actorId: user.id,
+    meta: { team: team.length, removed: remove },
+  })
+  return { success: remove ? 'Medlem borttagen. Publika sajten uppdaterad.' : 'Medlem sparad. Publika sajten uppdaterad.' }
 }

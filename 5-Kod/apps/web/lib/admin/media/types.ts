@@ -30,8 +30,8 @@ export type StorageUsage = {
 /** Accept filter for the upload <input> — matches the image types R2 allows. */
 export const MEDIA_ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml,image/gif'
 
-/** Per-file ceiling (2 MB) — mirrors uploadImage's MAX_BYTES in lib/r2/upload.ts. */
-export const MEDIA_MAX_BYTES = 2 * 1024 * 1024
+/** Per-file ceiling (8 MB) — mirrors uploadImage's MAX_BYTES in lib/r2/upload.ts. */
+export const MEDIA_MAX_BYTES = 8 * 1024 * 1024
 
 /**
  * Human-readable byte size, sv-SE. 1024-step units (B / kB / MB / GB). Whole

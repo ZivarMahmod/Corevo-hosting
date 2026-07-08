@@ -11,6 +11,7 @@ import type { TenantBranding } from '@corevo/ui'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantFromHost } from '@/lib/tenant'
+import { readBookingMode } from '@/lib/platform/booking-variant'
 
 export type Tenant = Tables<'tenants'>
 // Base row + the 0046 merch columns (optional — generated types don't know them yet).
@@ -64,6 +65,18 @@ export type TenantSettings = {
   contact: TenantContact
   /** EU cookie-consent banner on the storefront. Default ON (legal). */
   cookieBannerEnabled: boolean
+  /** Boknings-vy (settings.booking.variant → presentation): vad "Boka tid"-CTA:erna
+   *  öppnar. 'wizard' = guidad steg-för-steg, 'compact' = snabbboka. Tidigare läste
+   *  bara /boka-rutten varianten — drawern hårdkodade wizard, så valet syntes aldrig. */
+  bookingMode: 'wizard' | 'compact'
+  /** Manuella öppettider (settings.opening_hours, Sida-fliken) — vinner över de
+   *  scheman-härledda. null = härled ur personalens veckoscheman som förut. */
+  openingHours: OpeningHour[] | null
+  /** Sociala medier-länkar (settings.social) — null per fält tills ägaren fyllt i. */
+  social: { instagram: string | null; facebook: string | null; tiktok: string | null }
+  /** Geokodad position för primäradressen (settings.map, skrivs best-effort av
+   *  saveTenantContact via Nominatim) — driver kart-embedden på Kontakt-sidan. */
+  map: { lat: number; lon: number } | null
 }
 
 /** One opening-hours row derived from real `working_hours`, weekday-ordered. */
@@ -129,6 +142,15 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     contact: { email: cleanStr(contactRaw.email), phone: cleanStr(contactRaw.phone) },
     // EU cookie consent: default ON; owner can hide via settings.cookie_banner_enabled=false.
     cookieBannerEnabled: raw.cookie_banner_enabled !== false,
+    // Boknings-vy-valet (Sida-fliken) — resolvas här så layout/preview slipper rå-läsa.
+    bookingMode: readBookingMode(raw),
+    openingHours: parseOpeningHours(raw.opening_hours),
+    social: {
+      instagram: cleanStr((raw.social as Record<string, unknown> | undefined)?.instagram),
+      facebook: cleanStr((raw.social as Record<string, unknown> | undefined)?.facebook),
+      tiktok: cleanStr((raw.social as Record<string, unknown> | undefined)?.tiktok),
+    },
+    map: parseMap(raw.map),
   }
 }
 
@@ -144,6 +166,31 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
 export function tenantSiteEditorEnabled(settings: unknown): boolean {
   if (!settings || typeof settings !== 'object') return false
   return (settings as Record<string, unknown>).sajtbyggare_enabled === true
+}
+
+/** settings.opening_hours → validerade rader; null när inget giltigt finns. */
+function parseOpeningHours(rawVal: unknown): OpeningHour[] | null {
+  if (!Array.isArray(rawVal)) return null
+  const rows = rawVal
+    .filter(
+      (r): r is { day: string; time: string } =>
+        !!r &&
+        typeof r === 'object' &&
+        typeof (r as Record<string, unknown>).day === 'string' &&
+        typeof (r as Record<string, unknown>).time === 'string' &&
+        ((r as Record<string, unknown>).time as string).trim().length > 0,
+    )
+    .map((r) => ({ day: r.day.slice(0, 30), time: r.time.trim().slice(0, 60) }))
+  return rows.length > 0 ? rows : null
+}
+
+/** settings.map → {lat, lon} eller null (defensivt: rå jsonb). */
+function parseMap(rawVal: unknown): { lat: number; lon: number } | null {
+  if (!rawVal || typeof rawVal !== 'object') return null
+  const m = rawVal as Record<string, unknown>
+  const lat = typeof m.lat === 'number' ? m.lat : Number(m.lat)
+  const lon = typeof m.lon === 'number' ? m.lon : Number(m.lon)
+  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null
 }
 
 /** Swedish weekday labels indexed by working_hours.weekday (0 = Sunday … 6 = Saturday). */
@@ -254,8 +301,14 @@ export async function getTenantBySlug(slug: string): Promise<TenantBundle | null
         .select('*')
         .eq('tenant_id', tenant.id) // app-layer scope
         .maybeSingle()
-      const location = await loadLocation(supabase, tenant.id)
-      return { tenant, settings: parseSettings(settingsRow ?? null), location }
+      const settings = parseSettings(settingsRow ?? null)
+      // Manuella öppettider (Sida-fliken) vinner över scheman-härledda — även när
+      // tenanten saknar location-rad (då syntetiseras en ren hours-bärare).
+      const loaded = await loadLocation(supabase, tenant.id)
+      const location = settings.openingHours
+        ? { name: loaded?.name ?? null, address: loaded?.address ?? null, hours: settings.openingHours }
+        : loaded
+      return { tenant, settings, location }
     },
     ['tenant-by-slug', norm],
     { tags: [`tenant:${norm}`], revalidate: 300 },

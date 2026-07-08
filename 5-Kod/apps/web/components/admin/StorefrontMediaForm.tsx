@@ -191,7 +191,7 @@ function GallerySection({
         }}
       />
       <span className={styles.muted}>
-        PNG/JPG/WEBP/SVG/GIF, max 2 MB per bild. Max {max} bilder ({remaining} platser kvar utöver
+        PNG/JPG/WEBP/SVG/GIF, max 8 MB per bild. Max {max} bilder ({remaining} platser kvar utöver
         nya). Väljer du flera ersätter de tidigare valda (osparade) bilderna.
       </span>
     </div>
@@ -264,7 +264,7 @@ function SingleImageSection({
           if (f) setRemoved(false)
         }}
       />
-      <span className={styles.muted}>PNG/JPG/WEBP/SVG/GIF, max 2 MB.</span>
+      <span className={styles.muted}>PNG/JPG/WEBP/SVG/GIF, max 8 MB.</span>
     </div>
   )
 }

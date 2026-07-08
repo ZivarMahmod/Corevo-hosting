@@ -16,11 +16,15 @@ export function FooterFull({
   tagline,
   location,
   contact,
+  social,
 }: {
   tenant: { name: string }
   tagline: string
   location: TenantLocation | null
   contact: TenantContact
+  /** Sociala medier-länkar (settings.social) — ikonerna blir riktiga länkar när
+   *  de finns, annars kvar som dekorativa (som förut). */
+  social?: { instagram: string | null; facebook: string | null; tiktok: string | null }
 }) {
   const hours = location?.hours ?? null
   return (
@@ -30,12 +34,24 @@ export function FooterFull({
           <div className={styles.fullWordmark}>{tenant.name}</div>
           <p className={styles.fullTagline}>{tagline}.</p>
           <div className={styles.fullSocials}>
-            <span className={styles.fullSocial} aria-hidden="true">
-              <StorefrontIcon name="instagram" size={20} />
-            </span>
-            <span className={styles.fullSocial} aria-hidden="true">
-              <StorefrontIcon name="facebook" size={20} />
-            </span>
+            {social?.instagram ? (
+              <a className={styles.fullSocial} href={social.instagram} target="_blank" rel="noreferrer noopener" aria-label="Instagram">
+                <StorefrontIcon name="instagram" size={20} />
+              </a>
+            ) : (
+              <span className={styles.fullSocial} aria-hidden="true">
+                <StorefrontIcon name="instagram" size={20} />
+              </span>
+            )}
+            {social?.facebook ? (
+              <a className={styles.fullSocial} href={social.facebook} target="_blank" rel="noreferrer noopener" aria-label="Facebook">
+                <StorefrontIcon name="facebook" size={20} />
+              </a>
+            ) : (
+              <span className={styles.fullSocial} aria-hidden="true">
+                <StorefrontIcon name="facebook" size={20} />
+              </span>
+            )}
           </div>
         </div>
 

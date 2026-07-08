@@ -19,6 +19,40 @@ function emailOrNull(raw: FormDataEntryValue | null): string | null | undefined 
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? v.slice(0, 200) : undefined
 }
 
+// Social-länk: tom → null; "instagram.com/…" utan schema får https:// påsatt.
+function socialUrlOrNull(raw: FormDataEntryValue | null): string | null {
+  let v = String(raw ?? '').trim().slice(0, 300)
+  if (!v) return null
+  if (!/^https?:\/\//i.test(v)) v = `https://${v}`
+  try {
+    return new URL(v).protocol.startsWith('http') ? v : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Best-effort geokodning av adressen via OSM Nominatim → {lat, lon} för kart-
+ * embedden på Kontakt-sidan. Får ALDRIG blocka spar: timeout 4 s, fel → null.
+ * `q` sparas bredvid koordinaterna så en oförändrad adress inte geokodas om.
+ */
+async function geocode(address: string): Promise<{ lat: number; lon: number } | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=se&q=${encodeURIComponent(address)}`,
+      { headers: { 'User-Agent': 'corevo-hosting (booking@corevo.se)' }, signal: AbortSignal.timeout(4000) },
+    )
+    if (!res.ok) return null
+    const rows = (await res.json()) as { lat?: string; lon?: string }[]
+    const hit = rows?.[0]
+    const lat = Number(hit?.lat)
+    const lon = Number(hit?.lon)
+    return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null
+  } catch {
+    return null
+  }
+}
+
 export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
@@ -28,6 +62,11 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
   if (email === undefined) return { error: 'Ogiltig e-postadress.' }
   const phone = String(fd.get('phone') ?? '').trim().slice(0, 40) || null
   const address = String(fd.get('address') ?? '').trim().slice(0, 300) || null
+  const social = {
+    instagram: socialUrlOrNull(fd.get('instagram')),
+    facebook: socialUrlOrNull(fd.get('facebook')),
+    tiktok: socialUrlOrNull(fd.get('tiktok')),
+  }
 
   const { data: tenant } = await supabase
     .from('tenants')
@@ -43,7 +82,21 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
     .eq('tenant_id', tenantId)
     .maybeSingle()
   const prev = (existing?.settings ?? {}) as Record<string, unknown>
-  const settings = { ...prev, contact: { email, phone } }
+
+  // Karta (settings.map): geokoda bara när adressen ÄNDRATS (Nominatim är rate-
+  // begränsad); oförändrad adress behåller sina koordinater. Ingen adress → ingen karta.
+  const prevMap = (prev.map ?? null) as { lat?: number; lon?: number; q?: string } | null
+  let map: { lat: number; lon: number; q: string } | null =
+    prevMap && typeof prevMap.lat === 'number' && typeof prevMap.lon === 'number' && prevMap.q === address
+      ? { lat: prevMap.lat, lon: prevMap.lon, q: address ?? '' }
+      : null
+  if (address && !map) {
+    const hit = await geocode(address)
+    if (hit) map = { ...hit, q: address }
+  }
+  if (!address) map = null
+
+  const settings = { ...prev, contact: { email, phone }, social, map }
   const { error: sErr } = await supabase
     .from('tenant_settings')
     .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
@@ -90,5 +143,64 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, { action: 'tenant.contact', tenantId, actorId: user.id })
-  return { success: 'Kontakt & adress sparad. Publika sajten uppdaterad.' }
+  return {
+    success: `Kontakt & adress sparad. Publika sajten uppdaterad.${address && !map ? ' (Kartan hittade inte adressen — kontrollera stavningen.)' : ''}`,
+  }
+}
+
+// Fasta dag-etiketter (mån→sön) för de manuella öppettiderna.
+const OH_DAYS = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'] as const
+
+/**
+ * Manuella öppettider (settings.opening_hours) — Zivar: "öppettiderna borde kunna
+ * ändras under Kontakt; sidan är ju alltid live". Sju rader mån→sön; text per dag
+ * (t.ex. "10–19" eller "Stängt"), tomma rader hoppas över. ALLA tomma → nyckeln tas
+ * bort och storefronten härleder ur personalens veckoscheman som förut.
+ */
+export async function saveTenantOpeningHours(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  const tenantId = String(fd.get('tenantId') ?? '')
+  if (!tenantId) return { error: 'Saknar salong.' }
+
+  const rows: { day: string; time: string }[] = []
+  OH_DAYS.forEach((day, i) => {
+    const time = String(fd.get(`hours_${i}`) ?? '').trim().slice(0, 60)
+    if (time) rows.push({ day, time })
+  })
+
+  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Okänd salong.' }
+
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  const settings = { ...prev } as { [key: string]: import('@corevo/db').Json }
+  if (rows.length > 0) settings.opening_hours = rows
+  else delete settings.opening_hours
+
+  const { error } = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
+  if (error) {
+    await reportActionError('saveTenantOpeningHours.upsert', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidateTenant(tenant.slug)
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.contact',
+    tenantId,
+    actorId: user.id,
+    meta: { opening_hours: rows.length },
+  })
+  return {
+    success:
+      rows.length > 0
+        ? 'Öppettider sparade. Publika sajten uppdaterad.'
+        : 'Egna öppettider rensade — tiderna härleds ur personalens scheman igen.',
+  }
 }

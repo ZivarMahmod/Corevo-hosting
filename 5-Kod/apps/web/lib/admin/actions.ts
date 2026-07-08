@@ -869,7 +869,7 @@ function mediaUploadMessage(reason: Exclude<UploadResult, { ok: true }>['reason'
     case 'bad_type':
       return 'Bilderna måste vara PNG, JPG, WEBP, SVG eller GIF.'
     case 'too_large':
-      return 'Någon bild är för stor (max 2 MB per bild).'
+      return 'Någon bild är för stor (max 8 MB per bild).'
     case 'no_public_base':
     case 'no_binding':
       return 'Bilduppladdning är inte aktiverad i denna miljö (kräver R2 + R2_PUBLIC_BASE_URL). Övriga ändringar sparades.'

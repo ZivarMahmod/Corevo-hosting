@@ -19,14 +19,22 @@ export function SingleImageSlot({
   tenantId,
   slot,
   label,
+  hint,
   url,
+  defaultUrl,
   onFlashImage,
   onSaved,
 }: {
   tenantId: string
   slot: 'about' | 'closing'
   label: string
+  /** Var på sidan bilden syns — så operatören vet VILKEN bild det är. */
+  hint?: string
   url: string | null
+  /** Mallens standardbild — visas som thumbnail när ingen egen finns, så den
+   *  effektiva bilden alltid är synlig i panelen (Zivar: "jag ser inte vilken
+   *  bild som är vilken"). */
+  defaultUrl?: string | null
   onFlashImage?: (url: string) => void
   onSaved?: () => void
 }) {
@@ -35,38 +43,54 @@ export function SingleImageSlot({
     if (res.success) onSaved?.()
     return res
   }, {})
+  const effective = url ?? defaultUrl ?? null
 
   return (
     <div className={styles.form}>
-      <p className={styles.groupTitle} style={{ padding: 0 }}>
+      <p className={styles.groupTitle} style={{ padding: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
         {label}
+        <span style={url ? chipOwn : chipDefault}>{url ? 'Egen bild' : 'Mallens standard'}</span>
       </p>
-      {url ? (
+      {hint ? (
+        <p className={styles.hint} style={{ marginTop: 0 }}>
+          {hint}
+        </p>
+      ) : null}
+      {effective ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           {/* Plain <img> — remote-image config is frozen (never next/image). */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={url}
+            src={effective}
             alt=""
-            style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--c-line, #e5e2da)' }}
+            style={{
+              width: 120,
+              height: 80,
+              objectFit: 'cover',
+              borderRadius: 6,
+              border: url ? '1px solid var(--c-line, #e5e2da)' : '1px dashed var(--c-line-strong, #d3dacd)',
+            }}
           />
           {onFlashImage ? (
             <button
               type="button"
               className={styles.btn}
-              onClick={() => onFlashImage(url)}
+              onClick={() => onFlashImage(effective)}
               title="Markerar var på sidan bilden syns (scrollar dit och blinkar)"
             >
               Visa var
             </button>
           ) : null}
-          <form action={action}>
-            <input type="hidden" name="tenantId" value={tenantId} />
-            <input type="hidden" name="slot" value={slot} />
-            <input type="hidden" name="remove" value="true" />
-            <button type="submit" className={styles.btnDanger} disabled={pending}>
-              {pending ? 'Tar bort…' : 'Ta bort'}
-            </button>
-          </form>
+          {url ? (
+            <form action={action}>
+              <input type="hidden" name="tenantId" value={tenantId} />
+              <input type="hidden" name="slot" value={slot} />
+              <input type="hidden" name="remove" value="true" />
+              <button type="submit" className={styles.btnDanger} disabled={pending}>
+                {pending ? 'Tar bort…' : 'Ta bort'}
+              </button>
+            </form>
+          ) : null}
         </div>
       ) : (
         <span className={styles.muted}>Ingen bild — mallens standard visas.</span>
@@ -76,7 +100,7 @@ export function SingleImageSlot({
         <input type="hidden" name="tenantId" value={tenantId} />
         <input type="hidden" name="slot" value={slot} />
         <label className={styles.field}>
-          <span>Ladda upp bild (PNG/JPG/WEBP, max 2 MB)</span>
+          <span>Ladda upp bild (PNG/JPG/WEBP, max 8 MB)</span>
           <input type="file" name="image" accept="image/*" required />
         </label>
         <div className={styles.actions}>

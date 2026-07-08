@@ -413,7 +413,7 @@ function SlotEditor({
 
   async function doUpload(file: File) {
     if (file.size > PREVIEW_IMAGE_MAX_BYTES) {
-      setMsg({ kind: 'err', text: 'Bilden är för stor (max 2 MB).' })
+      setMsg({ kind: 'err', text: 'Bilden är för stor (max 8 MB).' })
       return
     }
     setSaving(true)
@@ -543,7 +543,7 @@ function SlotEditor({
       ) : null}
 
       <p className={styles.editorFootnote}>
-        Bilden sparas på salongens skarpa sida direkt (cache-bustas). PNG/JPG/WEBP/SVG/GIF, max 2 MB.
+        Bilden sparas på salongens skarpa sida direkt (cache-bustas). PNG/JPG/WEBP/SVG/GIF, max 8 MB.
       </p>
     </div>
   )

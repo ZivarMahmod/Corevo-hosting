@@ -87,6 +87,7 @@ export async function PreviewShell({
         locations={wizardLocations}
         tenantName={tenant.name}
         staffNoun={staffNoun}
+        defaultMode={settings.bookingMode}
       >
         <Nav
           tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
@@ -103,6 +104,7 @@ export async function PreviewShell({
             tagline={tagline}
             location={location}
             contact={settings.contact}
+            social={settings.social}
           />
         ) : (
           <Footer tenant={{ name: tenant.name }} />

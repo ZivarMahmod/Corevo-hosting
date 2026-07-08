@@ -25,7 +25,7 @@ export default async function ContactPage() {
           (email/phone) from its saved settings/location, plus a map link to the
           real address. Each field degrades gracefully — an honest "Visas snart"
           placeholder (and the map is omitted) until that field is filled in. */}
-      <LocationHours salonName={tenant.name} />
+      <LocationHours salonName={tenant.name} content={content} />
       <ClosingCta content={content} />
     </>
   )

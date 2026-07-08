@@ -14,7 +14,7 @@
 // Reads reuse the PURE skin resolver (lib/storefront/skin) so "current value" here
 // matches exactly what the storefront renders. Writes reuse lib/r2/upload.ts (the
 // existing G07 logo-upload helper — NO new infra, NO new cost): same BUCKET binding,
-// same R2_PUBLIC_BASE_URL, same 2 MB / mime guard.
+// same R2_PUBLIC_BASE_URL, same 8 MB / mime guard.
 
 import { revalidatePath } from 'next/cache'
 import { platformCtx } from './guard'

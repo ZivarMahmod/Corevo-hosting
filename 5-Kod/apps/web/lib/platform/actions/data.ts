@@ -103,6 +103,39 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
 }
 
 /**
+ * Salongsnamn — eget thin-kort i Sida-flikens Allmänt (Zivar: "salongsnamnet från
+ * Drift ska komma in här — det är högst upp på sidan om ingen logga finns").
+ * Sparar ENDAST tenants.name så det inte drar med sig recensionslänk/variant
+ * (saveTenantData nollar google_review_url när fältet saknas i formuläret).
+ */
+export async function saveTenantName(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  const tenantId = String(fd.get('tenantId') ?? '')
+  if (!tenantId) return { error: 'Saknar salong.' }
+  const name = String(fd.get('name') ?? '').trim().slice(0, 120)
+  if (!name) return { error: 'Ange ett salongsnamn.' }
+
+  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Okänd salong.' }
+
+  const { error } = await supabase.from('tenants').update({ name }).eq('id', tenantId)
+  if (error) {
+    await reportActionError('saveTenantName.tenant_update', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidateTenant(tenant.slug)
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.update',
+    tenantId,
+    actorId: user.id,
+    meta: { name },
+  })
+  return { success: 'Namn sparat. Publika sajten uppdaterad.' }
+}
+
+/**
  * Boknings-vy — flyttad till Sida-fliken (Zivar: "jag tror även den här delen ska vara
  * i sida"). Sparar ENDAST settings.booking.variant (merge, aldrig clobber) så den kan
  * leva som eget kort utan att dra med sig namn/recensionslänk.

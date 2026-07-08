@@ -8,24 +8,22 @@ import { themePalette } from '@/lib/platform/theme-palettes'
 import styles from './platform.module.css'
 
 /**
- * Varumärke — v3-modellen (Zivar: "jag får inte ordning på vilken som är till vad").
- * Mental modell: MALLEN äger färgerna. Varje färg visar mallens standard; operatören
- * ändrar BARA det hen vill avvika från — en ändring blir en tydligt markerad "egen
- * färg" med en egen "Använd mallens"-ångra-knapp. En tom override sparas som null →
- * publika sidan faller tillbaka på mallens CSS (tokens.css). Så här kan aldrig fyra
- * lösa testfärger bli "kaos" utan att det SYNS att alla fyra är overrides.
+ * Varumärke — v4-UI (Zivar: "jag gillar inte UI:t — gör snyggare och mer lättvalt").
+ * Mental modell oförändrad från v3: MALLEN äger färgerna; operatören avviker bara
+ * där hen vill, en avvikelse är tydligt markerad och har en egen återställ-knapp,
+ * tom override sparas som null → mallens CSS gäller. Nytt: sektioner (Färger /
+ * Typsnitt / Logotyp) som RADER i stället för trånga kort — swatch, namn, vad den
+ * styr, hex och knappar på EN linje per färg.
  */
 const COLORS: { name: 'color_primary' | 'color_bg' | 'color_fg' | 'color_accent'; label: string; what: string }[] = [
-  { name: 'color_primary', label: 'Primärfärg', what: 'Rubriker, länkar & små detaljer' },
+  { name: 'color_primary', label: 'Primärfärg', what: 'Rubriker, länkar, mörka sektioner' },
   { name: 'color_accent', label: 'Knappfärg', what: 'Alla knappar, t.ex. "Boka tid"' },
   { name: 'color_bg', label: 'Bakgrund', what: 'Hela sidans bakgrund' },
   { name: 'color_fg', label: 'Textfärg', what: 'Brödtext & rubriktext' },
 ]
 
-// Valbara typsnitt (dropdown, Zivar: "inte att jag ska skriva in det själv").
-// Bara stackar som FAKTISKT finns på sidan: de tre next/font-laddade familjerna
-// (via CSS-vars från root-layouten) + robusta systemstackar. Värdet sparas som
-// CSS font-family och injiceras som --font-body/--font-display.
+// Valbara typsnitt (dropdown). Bara stackar som FAKTISKT finns på sidan: de tre
+// next/font-laddade familjerna + robusta systemstackar.
 const BODY_FONTS: { label: string; value: string }[] = [
   { label: 'Mallens standard', value: '' },
   { label: 'Inter (modern sans)', value: "var(--font-inter), 'Inter', sans-serif" },
@@ -46,7 +44,7 @@ const DISPLAY_FONTS: { label: string; value: string }[] = [
   { label: 'System (enhetens)', value: 'system-ui, -apple-system, sans-serif' },
 ]
 
-// "Visa var"-pulsen: vilken CSS-var respektive färgkort styr i previewen.
+// "Visa var"-pulsen: vilken CSS-var respektive färgrad styr i previewen.
 const FLASH_VAR: Record<string, string> = {
   color_primary: '--color-primary',
   color_bg: '--color-bg',
@@ -160,25 +158,22 @@ export function PlatformBrandingForm({
         <input key={c.name} type="hidden" name={c.name} value={vals[c.name]} />
       ))}
 
-      <p className={styles.hint} style={{ margin: 0 }}>
-        Färgerna kommer från mallen <strong>{pal.name}</strong>. Ändra bara det du vill
-        avvika från — allt annat följer mallen automatiskt.
-      </p>
-
-      <div style={grid}>
-        {COLORS.map((c) => {
+      {/* ── Färger ── */}
+      <div style={secHead}>
+        <span style={secTitle}>Färger</span>
+        <span style={secSub}>
+          Mallen <strong>{pal.name}</strong> sätter standarden — ändra bara det du vill avvika från
+        </span>
+      </div>
+      <div style={rows}>
+        {COLORS.map((c, i) => {
           const override = vals[c.name] ?? ''
           const def = defaults[c.name] ?? '#000000'
           const effective = override || def
-          const ch = vals[c.name] !== initial[c.name]
+          const unsaved = vals[c.name] !== initial[c.name]
           return (
-            <div key={c.name} style={card} data-own={override ? 'true' : undefined}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <b style={{ fontSize: 13 }}>{c.label}</b>
-                {ch ? <span style={dot} title="Osparad ändring" aria-label="osparad ändring" /> : null}
-              </div>
-              <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', lineHeight: 1.3 }}>{c.what}</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 7, cursor: 'pointer' }}>
+            <div key={c.name} style={{ ...row, borderTop: i === 0 ? 'none' : '1px solid var(--c-line, #e2e7de)' }}>
+              <label style={{ cursor: 'pointer', flex: 'none', display: 'flex' }}>
                 <input
                   type="color"
                   value={effective}
@@ -186,42 +181,45 @@ export function PlatformBrandingForm({
                   style={swatch}
                   aria-label={`${c.label} — ${c.what}`}
                 />
-                <span style={hexCss}>{effective.toUpperCase()}</span>
-                <button
-                  type="button"
-                  style={{ ...miniBtn, marginTop: 0, marginLeft: 'auto' }}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    flash(c.name)
-                  }}
-                  title="Blinkar den här färgens yta i previewen så du ser exakt vad den styr"
-                >
-                  Visa var
-                </button>
               </label>
-              {override ? (
-                <button type="button" style={miniBtn} onClick={() => set(c.name, '')}>
-                  ↩ Använd mallens ({def.toUpperCase()})
-                </button>
-              ) : (
-                <span style={{ fontSize: 11, color: 'var(--c-ink-3)', marginTop: 5 }}>
-                  Mallens standard
-                </span>
-              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                  <b style={{ fontSize: 13 }}>{c.label}</b>
+                  {override ? <span style={chipOwn}>Egen färg</span> : <span style={chipDef}>Mallens</span>}
+                  {unsaved ? <span style={dot} title="Osparad ändring" aria-label="osparad ändring" /> : null}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--c-ink-3)', marginTop: 1 }}>{c.what}</div>
+              </div>
+              <span style={hexCss}>{effective.toUpperCase()}</span>
+              <button type="button" style={miniBtn} onClick={() => flash(c.name)} title="Blinkar den här färgens yta i previewen så du ser exakt vad den styr">
+                Visa var
+              </button>
+              <button
+                type="button"
+                style={{ ...miniBtn, visibility: override ? 'visible' : 'hidden' }}
+                onClick={() => set(c.name, '')}
+                title={`Släpp den egna färgen — mallens ${def.toUpperCase()} gäller igen`}
+              >
+                ↩ Mallens
+              </button>
             </div>
           )
         })}
       </div>
-
       {anyOverride ? (
-        <button type="button" className={styles.btn} style={{ alignSelf: 'flex-start' }} onClick={clearAllColors}>
+        <button type="button" className={styles.btn} style={{ alignSelf: 'flex-start', marginTop: -4 }} onClick={clearAllColors}>
           Använd mallens färger för allt
         </button>
       ) : null}
 
-      <div style={grid}>
+      {/* ── Typsnitt ── */}
+      <div style={secHead}>
+        <span style={secTitle}>Typsnitt</span>
+        <span style={secSub}>Byts direkt i previewen medan du väljer</span>
+      </div>
+      <div style={fontGrid}>
         <label className={styles.field}>
-          <span>Rubriktypsnitt</span>
+          <span>Rubriker</span>
           <select name="font_display" value={vals.font_display} onChange={(e) => set('font_display', e.target.value)}>
             {DISPLAY_FONTS.map((f) => (
               <option key={f.label} value={f.value}>
@@ -232,10 +230,10 @@ export function PlatformBrandingForm({
               <option value={vals.font_display}>Egen (sparad): {vals.font_display.slice(0, 40)}</option>
             ) : null}
           </select>
-          <span className={styles.hint}>Stora rubriker (hero, sektionstitlar).</span>
+          <span className={styles.hint}>Hero &amp; sektionsrubriker.</span>
         </label>
         <label className={styles.field}>
-          <span>Brödtypsnitt</span>
+          <span>Brödtext</span>
           <select name="font_body" value={vals.font_body} onChange={(e) => set('font_body', e.target.value)}>
             {BODY_FONTS.map((f) => (
               <option key={f.label} value={f.value}>
@@ -246,12 +244,16 @@ export function PlatformBrandingForm({
               <option value={vals.font_body}>Egen (sparad): {vals.font_body.slice(0, 40)}</option>
             ) : null}
           </select>
-          <span className={styles.hint}>All löpande text. Ändras direkt i previewen.</span>
+          <span className={styles.hint}>All löpande text.</span>
         </label>
       </div>
 
+      {/* ── Logotyp ── */}
+      <div style={secHead}>
+        <span style={secTitle}>Logotyp</span>
+        <span style={secSub}>Visas i sidhuvudet — utan logotyp visas salongsnamnet</span>
+      </div>
       <div className={styles.field}>
-        <span>Logotyp</span>
         {branding.logo_url ? (
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -262,15 +264,11 @@ export function PlatformBrandingForm({
             </label>
           </span>
         ) : (
-          <span className={styles.muted}>Ingen logotyp uppladdad.</span>
+          <span className={styles.muted}>Ingen logotyp uppladdad — salongsnamnet visas i sidhuvudet.</span>
         )}
         <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" />
-        <span className={styles.hint}>Visas i sidhuvudet. PNG/JPG/WEBP/SVG/GIF, max 2 MB.</span>
+        <span className={styles.hint}>PNG/JPG/WEBP/SVG/GIF.</span>
       </div>
-
-      <p className={styles.hint} style={{ margin: 0 }}>
-        Ändringar syns direkt i previewen till höger — de går <strong>inte live</strong> förrän du sparar.
-      </p>
 
       {dirty ? (
         <div className={styles.dirtyRow} role="status">
@@ -301,35 +299,73 @@ export function PlatformBrandingForm({
   )
 }
 
-const grid: CSSProperties = {
+const secHead: CSSProperties = {
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: 10,
+  flexWrap: 'wrap',
+  marginTop: 2,
+}
+const secTitle: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 750,
+  letterSpacing: '0.09em',
+  textTransform: 'uppercase',
+  color: 'var(--c-ink-2)',
+}
+const secSub: CSSProperties = { fontSize: 11.5, color: 'var(--c-ink-3)' }
+const rows: CSSProperties = {
+  border: '1px solid var(--c-line, #e2e7de)',
+  borderRadius: 9,
+  background: 'var(--c-paper, #fff)',
+  overflow: 'hidden',
+}
+const row: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  padding: '9px 12px',
+}
+const fontGrid: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
   gap: 10,
 }
-const card: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 2,
-  padding: 11,
-  borderRadius: 7,
-  border: '1px solid var(--c-line, #e2e7de)',
-  background: 'var(--c-paper, #fff)',
-}
 const swatch: CSSProperties = {
-  width: 42,
-  height: 30,
+  width: 40,
+  height: 40,
   padding: 0,
-  border: '1px solid var(--c-line, #e2e7de)',
-  borderRadius: 5,
+  border: '2px solid var(--c-line-strong, #d3dacd)',
+  borderRadius: 999,
   background: 'none',
   cursor: 'pointer',
   flex: 'none',
 }
 const hexCss: CSSProperties = {
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-  fontSize: 12,
+  fontSize: 11.5,
   color: 'var(--c-ink-2)',
   letterSpacing: '0.02em',
+  flex: 'none',
+}
+const chipOwn: CSSProperties = {
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: '0.04em',
+  padding: '1.5px 7px',
+  borderRadius: 999,
+  background: 'color-mix(in srgb, var(--c-gold-600, #a37d3c) 14%, transparent)',
+  color: 'var(--c-gold-600, #a37d3c)',
+}
+const chipDef: CSSProperties = {
+  fontSize: 10,
+  fontWeight: 650,
+  letterSpacing: '0.04em',
+  padding: '1.5px 7px',
+  borderRadius: 999,
+  background: 'var(--c-paper-2, #f4f6f2)',
+  color: 'var(--c-ink-3)',
+  border: '1px solid var(--c-line, #e2e7de)',
 }
 const dot: CSSProperties = {
   width: 7,
@@ -339,14 +375,14 @@ const dot: CSSProperties = {
   flex: 'none',
 }
 const miniBtn: CSSProperties = {
-  marginTop: 6,
-  alignSelf: 'flex-start',
   border: '1px solid var(--c-line-strong, #d3dacd)',
   background: 'var(--c-paper-2, #f4f6f2)',
   color: 'var(--c-ink-2)',
-  borderRadius: 5,
-  padding: '3px 8px',
+  borderRadius: 6,
+  padding: '4px 9px',
   fontSize: 11,
   fontWeight: 600,
   cursor: 'pointer',
+  flex: 'none',
+  whiteSpace: 'nowrap',
 }
