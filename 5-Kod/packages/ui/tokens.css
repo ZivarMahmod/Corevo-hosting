@@ -305,25 +305,25 @@
    only namespaces the back-office for a later reskin.
    ===================================================================== */
 [data-world="backoffice"] {
-  /* brand */
-  --c-forest:      #1F4636;  /* primary — sidebar, headings, buttons */
-  --c-forest-700:  #173529;  /* darker hover / sidebar depth */
+  /* brand — reskin pass 2: djupare, mindre "leksaks"-guld (premium ur flat cream) */
+  --c-forest:      #1F4636;  /* primary — sidebar, headings, buttons (identitet, orörd) */
+  --c-forest-700:  #163127;  /* darker hover / sidebar depth */
   --c-forest-300:  #4E7363;  /* muted forest, borders on dark */
-  --c-gold:        #F5A623;  /* accent — highlights, active, KPI deltas */
-  --c-gold-600:    #D98E12;  /* gold hover */
-  --c-gold-100:    #FBEBCB;  /* gold tint fills */
+  --c-gold:        #B8892F;  /* accent — highlights, active, KPI deltas (deep ochre) */
+  --c-gold-600:    #9C6F1F;  /* gold hover / eyebrows */
+  --c-gold-100:    #F0E6CE;  /* gold tint fills */
 
-  /* surfaces */
-  --c-cream:       #FAF8F4;  /* app background */
-  --c-paper:       #FFFFFF;  /* cards / panels */
-  --c-paper-2:     #F3EFE8;  /* subtle alt fill, table stripes */
-  --c-line:        #E7E1D6;  /* hairline borders on cream */
-  --c-line-strong: #D8D0C2;
+  /* surfaces — reskin pass 2: svalare/skarpare (ur "flat cream" → intentional green-grey) */
+  --c-cream:       #EEF1EC;  /* app background (cool green-grey, ej varm soppa) */
+  --c-paper:       #FFFFFF;  /* cards / panels (crisp white) */
+  --c-paper-2:     #F4F6F2;  /* subtle alt fill, table stripes */
+  --c-line:        #E2E7DE;  /* hairline borders */
+  --c-line-strong: #D3DACD;
 
-  /* text */
-  --c-ink:         #21261F;  /* primary text */
-  --c-ink-2:       #555C50;  /* secondary text */
-  --c-ink-3:       #8A8F82;  /* muted / captions */
+  /* text — reskin pass 2: något djupare/grönare ink för kontrast */
+  --c-ink:         #182019;  /* primary text */
+  --c-ink-2:       #55605A;  /* secondary text */
+  --c-ink-3:       #8B968D;  /* muted / captions */
   --c-on-forest:   #EFEAE0;  /* text on the dark sidebar */
   --c-on-forest-2: #9DB1A6;  /* muted text on sidebar */
 
@@ -337,10 +337,10 @@
   --c-info:        #5E748C;
   --c-info-bg:     #E6EAF0;
 
-  /* elevation */
-  --shadow-sm: 0 1px 2px rgba(31,70,54,.06), 0 1px 3px rgba(31,70,54,.08);
-  --shadow-md: 0 4px 14px rgba(31,70,54,.08), 0 2px 6px rgba(31,70,54,.06);
-  --shadow-lg: 0 18px 48px rgba(23,53,41,.16);
+  /* elevation — reskin pass 2: subtilare, layered lift (mindre "kartong") */
+  --shadow-sm: 0 1px 2px rgba(22,40,30,.04), 0 1px 3px rgba(22,40,30,.05);
+  --shadow-md: 0 2px 6px rgba(22,40,30,.05), 0 10px 26px -12px rgba(22,40,30,.13);
+  --shadow-lg: 0 20px 50px -14px rgba(22,40,30,.20);
 
   /* type families */
   --font-display: 'Playfair Display', Georgia, serif;
