@@ -57,19 +57,27 @@ export async function saveTenantStorefrontCopy(_p: ActionState, fd: FormData): P
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd salong.' }
 
-  // Build the override: only NON-BLANK fields are stored (blank = fall back to theme).
-  const copy: Record<string, string> = {}
-  for (const field of COPY_FIELDS) {
-    const raw = String(fd.get(field) ?? '').trim()
-    if (raw.length > 0) copy[field] = raw.slice(0, COPY_MAX[field])
-  }
-
   const { data: existing } = await supabase
     .from('tenant_settings')
     .select('settings')
     .eq('tenant_id', tenantId)
     .maybeSingle()
   const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  const prevCopy = (prev.copy && typeof prev.copy === 'object' ? prev.copy : {}) as Record<string, string>
+
+  // Build the override — PER FÄLT (Sida v4 delar texten över flera formulär, ett per
+  // publik sida): ett fält som INTE skickades (fd.get === null) behåller sitt sparade
+  // värde, ett skickat BLANKT fält rensas (= temats standard), ett skickat värde
+  // skrivs. Så kan Hem-formuläret aldrig nolla Om-sidans text.
+  const copy: Record<string, string> = { ...prevCopy }
+  for (const field of COPY_FIELDS) {
+    const posted = fd.get(field)
+    if (posted === null) continue // fältet fanns inte i formuläret → rör ej
+    const raw = String(posted).trim()
+    if (raw.length > 0) copy[field] = raw.slice(0, COPY_MAX[field])
+    else delete copy[field]
+  }
+
   // MERGE: preserve every existing settings key; overwrite ONLY `copy`. An empty
   // `copy` object is a legit "all fields follow the theme" state.
   const settings = { ...prev, copy }

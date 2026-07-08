@@ -1,10 +1,12 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import type { TenantBranding } from '@corevo/ui'
 import { Badge } from '@/components/portal/ui'
 import { PlatformBrandingForm } from './PlatformBrandingForm'
-import { StorefrontContentCard } from './StorefrontContentCard'
+import { ImageSlotManager } from './StorefrontContentCard'
+import { CopyFieldsCard, type CopyFieldDef } from './CopyFieldsCard'
 import { SajtbyggareControl } from './SajtbyggareControl'
 import { ThemePicker } from './ThemePicker'
 import { BookingViewCard } from './BookingViewCard'
@@ -23,13 +25,26 @@ type Copy = {
 }
 
 /**
- * Sida-fliken (super-admin) som en split-view: ALLA redigeringskontroller till vänster,
- * en sticky LIVE-preview av kundens skarpa storefront till höger. Färg/typsnitt speglas
- * i previewen DIREKT medan du ändrar (postMessage → iframen sätter CSS-vars, innan spara).
- * Text/bilder syns när du sparat och klickar "Ladda om" (server-render). Redigeringen
- * skriver tenant_settings = det lagret sidan faktiskt renderar.
+ * Sida-fliken (super-admin) — v4: redigeringen är organiserad SOM SIDAN (Zivar:
+ * "en flik som ändrar hemsidan, en optimerad för tjänster-sidan, nästa om oss …").
+ * En flik per publik sida (Hem/Tjänster/Om oss/Kontakt) + Allmänt (mall, färger,
+ * typsnitt, boknings-vy — sådant som gäller HELA sidan). Väljer du en sida-flik
+ * hoppar previewen till höger till just den sidan, så du redigerar och ser samma
+ * sak. Färg/typsnitt speglas i previewen DIREKT medan du ändrar (postMessage →
+ * iframen sätter CSS-vars); text/bilder syns när du sparat (previewen laddar om
+ * automatiskt efter spar). Redigeringen skriver tenant_settings = det lagret sidan
+ * faktiskt renderar.
  */
 const MSG_SOURCE = 'corevo-sida'
+
+type PageKey = 'allmant' | 'hem' | 'tjanster' | 'om' | 'kontakt'
+const PAGES: { key: PageKey; label: string; sub: string; path: string }[] = [
+  { key: 'allmant', label: 'Allmänt', sub: 'Mall · färger · typsnitt', path: '' },
+  { key: 'hem', label: 'Hem', sub: 'Hero · bilder', path: '' },
+  { key: 'tjanster', label: 'Tjänster', sub: 'Utbud & priser', path: '/tjanster' },
+  { key: 'om', label: 'Om oss', sub: 'Berättelse · team', path: '/om' },
+  { key: 'kontakt', label: 'Kontakt', sub: 'Adress · öppettider', path: '/kontakt' },
+]
 
 export function SidaStudio({
   tenantId,
@@ -40,6 +55,7 @@ export function SidaStudio({
   isActive,
   branding,
   copy,
+  copyDefaults,
   heroImages,
   galleryImages,
   siteEditorEnabled,
@@ -55,7 +71,10 @@ export function SidaStudio({
   templateKey: string
   isActive: boolean
   branding: TenantBranding
+  /** Sparade text-OVERRIDES ('' = ingen — mallens standard gäller). */
   copy: Copy
+  /** Mallens standardtext per fält (THEME_CONTENT för sparad mall). */
+  copyDefaults: Copy
   heroImages: string[]
   galleryImages: string[]
   siteEditorEnabled: boolean
@@ -65,17 +84,22 @@ export function SidaStudio({
   bookingVariant: BookingVariant
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [page, setPage] = useState<PageKey>('allmant')
   const [reloadToken, setReloadToken] = useState(0)
-  // Draft-mall: previewen kan visa en ANNAN mall (via ?theme=) utan att den skarpa sidan
-  // ändras — publiceras separat. null = visa tenantens sparade mall.
+  // Draft-mall: previewen kan visa en ANNAN mall (via ?theme=) utan att den skarpa
+  // sidan ändras — publiceras separat. null = tenantens sparade mall.
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
+
+  const activePage = PAGES.find((p) => p.key === page) ?? PAGES[0]!
   const src = useMemo(() => {
     const q = new URLSearchParams()
     if (previewTheme) q.set('theme', previewTheme)
     if (reloadToken > 0) q.set('_p', String(reloadToken))
     const qs = q.toString()
-    return qs ? `${previewPath}?${qs}` : previewPath
-  }, [previewPath, previewTheme, reloadToken])
+    return `${previewPath}${activePage.path}${qs ? `?${qs}` : ''}`
+  }, [previewPath, activePage.path, previewTheme, reloadToken])
+
+  const reload = useCallback(() => setReloadToken((t) => t + 1), [])
 
   // Push a live brand-token patch into the preview iframe (same-origin).
   const pushTokens = useCallback((tokens: Record<string, string>) => {
@@ -85,122 +109,226 @@ export function SidaStudio({
     )
   }, [])
 
+  // Per-mall-fält (Zivar: "alla mallar har sina ändringsrutor för det de är uppbyggda
+  // för"): FreshCut-hemmet har ingen liten eyebrow-rubrik — visa inte fältet då.
+  const homeFields: CopyFieldDef[] = [
+    ...(templateKey === 'freshcut'
+      ? []
+      : [
+          {
+            name: 'heroEyebrow',
+            label: 'Liten rubrik ovanför hero-rubriken',
+            hint: 'Den lilla versala raden överst i heron.',
+          },
+        ]),
+    { name: 'heroTitle', label: 'Hero-rubrik', rows: 2, hint: 'Sidans stora rubrik. Radbrytning tillåten.' },
+    { name: 'heroLede', label: 'Hero-ingress', rows: 2, hint: 'Texten direkt under hero-rubriken.' },
+  ]
+  const omFields: CopyFieldDef[] = [
+    {
+      name: 'aboutCopy',
+      label: 'Om salongen',
+      rows: 5,
+      hint: 'Berättelsen på Om oss-sidan (och "om"-sektionen på startsidan i vissa mallar).',
+    },
+    { name: 'italic', label: 'Kursiv fras (citat/värme)', hint: 'Den korta kursiva frasen mellan sektionerna.' },
+  ]
+  const allmantFields: CopyFieldDef[] = [
+    { name: 'tagline', label: 'Footer-tagline', hint: 'Den korta raden i sidfoten — syns på alla sidor.' },
+  ]
+
   return (
     <div className={styles.grid}>
-      {/* ── vänster: redigering ── */}
+      {/* ── vänster: redigering, organiserad som sidan ── */}
       <div className={styles.left}>
-        <section className={styles.card}>
-          <h3 className={styles.cardHead}>Mall</h3>
-          <p className={styles.note}>
-            Klicka en mall för att <strong>förhandsvisa</strong> den till höger — den går
-            <strong> inte live</strong> förrän du klickar Publicera.
-          </p>
-          <ThemePicker
-            tenantId={tenantId}
-            current={templateKey}
-            onPreview={(theme) => {
-              setPreviewTheme(theme === templateKey ? null : theme)
-              setReloadToken((t) => t + 1)
-            }}
-            onPublished={() => {
-              setPreviewTheme(null)
-              setReloadToken((t) => t + 1)
-            }}
-          />
-        </section>
+        {/* Sid-flikar: samma struktur som kundens publika sida. */}
+        <nav style={pageRail} aria-label="Sidans delar">
+          {PAGES.map((p) => {
+            const on = p.key === page
+            return (
+              <button key={p.key} type="button" onClick={() => setPage(p.key)} aria-pressed={on} style={pageTab(on)}>
+                <span style={{ fontWeight: 650, fontSize: 13.5 }}>{p.label}</span>
+                <span style={{ fontSize: 10.5, color: on ? 'var(--c-gold-600)' : 'var(--c-ink-3)' }}>{p.sub}</span>
+              </button>
+            )
+          })}
+        </nav>
 
-        <section className={styles.card}>
-          <h3 className={styles.cardHead}>Varumärke</h3>
-          <p className={styles.liveHint}>
-            <span className={styles.liveDot} aria-hidden="true" />
-            Färg &amp; typsnitt syns direkt i previewen medan du ändrar
-          </p>
-          <PlatformBrandingForm
-            tenantId={tenantId}
-            branding={branding}
-            themeKey={templateKey}
-            onLiveTokens={pushTokens}
-          />
-        </section>
+        {page === 'allmant' ? (
+          <>
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Mall</h3>
+              <p className={styles.note}>
+                Klicka en mall för att <strong>förhandsvisa</strong> den till höger — den går
+                <strong> inte live</strong> förrän du klickar Publicera.
+              </p>
+              <ThemePicker
+                tenantId={tenantId}
+                current={templateKey}
+                onPreview={(theme) => {
+                  setPreviewTheme(theme === templateKey ? null : theme)
+                  reload()
+                }}
+                onPublished={() => {
+                  setPreviewTheme(null)
+                  reload()
+                }}
+              />
+            </section>
 
-        <section className={styles.card}>
-          <h3 className={styles.cardHead}>Boknings-vy</h3>
-          <p className={styles.note}>
-            Hur bokningen presenteras på sidan (t.ex. guide i flera steg eller kompakt).
-            Gäller alla &quot;Boka tid&quot;-knappar.
-          </p>
-          <BookingViewCard tenantId={tenantId} bookingVariant={bookingVariant} />
-        </section>
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Varumärke</h3>
+              <p className={styles.liveHint}>
+                <span className={styles.liveDot} aria-hidden="true" />
+                Färg &amp; typsnitt syns direkt i previewen medan du ändrar — live först när du sparar
+              </p>
+              <PlatformBrandingForm
+                tenantId={tenantId}
+                branding={branding}
+                themeKey={templateKey}
+                onLiveTokens={pushTokens}
+              />
+            </section>
 
-        <section className={styles.card}>
-          <h3 className={styles.cardHead}>Kontakt &amp; adress</h3>
-          <p className={styles.note}>
-            Syns i storefrontens footer. Öppettider redigeras inte här — de härleds ur
-            personalens veckoscheman (Personal-fliken).
-          </p>
-          <TenantContactForm
-            tenantId={tenantId}
-            email={contactEmail}
-            phone={contactPhone}
-            address={address}
-          />
-        </section>
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Sidfot</h3>
+              <CopyFieldsCard
+                tenantId={tenantId}
+                fields={allmantFields}
+                overrides={{ tagline: copy.tagline }}
+                defaults={{ tagline: copyDefaults.tagline }}
+                onSaved={reload}
+              />
+            </section>
 
-        <section className={styles.card}>
-          <h3 className={styles.cardHead}>Text &amp; bilder</h3>
-          <p className={styles.note}>
-            Spara och klicka <strong>Ladda om</strong> i previewen för att se text- och
-            bildändringar.
-          </p>
-          <StorefrontContentCard
-            tenantId={tenantId}
-            copy={copy}
-            heroImages={heroImages}
-            galleryImages={galleryImages}
-          />
-        </section>
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Boknings-vy</h3>
+              <p className={styles.note}>
+                Hur bokningen presenteras på sidan (t.ex. guide i flera steg eller kompakt).
+                Gäller alla &quot;Boka tid&quot;-knappar.
+              </p>
+              <BookingViewCard tenantId={tenantId} bookingVariant={bookingVariant} />
+            </section>
 
-        <details className={styles.card}>
-          <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: 17, color: 'var(--c-ink)' }}>
-            Fler bilder &amp; fakta{' '}
-            <span style={{ fontWeight: 400, fontSize: 13, color: 'var(--c-ink-3)' }}>
-              (används av vissa mallar, ej FreshCut)
-            </span>
-          </summary>
-          <div style={{ marginTop: 14 }}>
-            <StorefrontExtrasCard
-              tenantId={tenantId}
-              aboutImage={branding.about_image ?? null}
-              closingImage={branding.closing_image ?? null}
-              stats={branding.stats ?? []}
-            />
-          </div>
-        </details>
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Kunden redigerar själv</h3>
+              <p className={styles.note}>
+                Slår på/av den kund-egna sid-editorn. Påverkar bara kundens editor, aldrig den
+                publika sidan.
+              </p>
+              <SajtbyggareControl tenantId={tenantId} enabled={siteEditorEnabled} />
+            </section>
+          </>
+        ) : null}
 
-        <section className={styles.card}>
-          <h3 className={styles.cardHead}>Kunden redigerar själv</h3>
-          <p className={styles.note}>
-            Slår på/av den kund-egna sid-editorn. Påverkar bara kundens editor, aldrig den
-            publika sidan.
-          </p>
-          <SajtbyggareControl tenantId={tenantId} enabled={siteEditorEnabled} />
-        </section>
+        {page === 'hem' ? (
+          <>
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Hero-text</h3>
+              <p className={styles.note}>
+                Texten som möter besökaren överst på startsidan. Dagens gällande text står
+                redan i rutorna — ändra och spara, previewen uppdateras.
+              </p>
+              <CopyFieldsCard
+                tenantId={tenantId}
+                fields={homeFields}
+                overrides={{ heroEyebrow: copy.heroEyebrow, heroTitle: copy.heroTitle, heroLede: copy.heroLede }}
+                defaults={{
+                  heroEyebrow: copyDefaults.heroEyebrow,
+                  heroTitle: copyDefaults.heroTitle,
+                  heroLede: copyDefaults.heroLede,
+                }}
+                onSaved={reload}
+              />
+            </section>
+
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Bilder på startsidan</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <ImageSlotManager
+                  tenantId={tenantId}
+                  slot="hero"
+                  label="Hero-bilder"
+                  hint="Bilderna högst upp på startsidan. Tom slot faller tillbaka på mallens standardfoton."
+                  images={heroImages}
+                />
+                <ImageSlotManager
+                  tenantId={tenantId}
+                  slot="gallery"
+                  label="Galleri-bilder"
+                  hint="Bildgalleriet på startsidan. Tom slot faller tillbaka på mallens standardgalleri."
+                  images={galleryImages}
+                />
+              </div>
+            </section>
+          </>
+        ) : null}
+
+        {page === 'tjanster' ? (
+          <section className={styles.card}>
+            <h3 className={styles.cardHead}>Tjänster-sidan</h3>
+            <p className={styles.note}>
+              Sidan listar salongens tjänster automatiskt — namn, priser, kategorier,
+              rea-badges och bilder. Allt det redigeras i kundkortets{' '}
+              <strong>Tjänster</strong>-flik (högst upp), och slår igenom här direkt.
+              Previewen till höger visar exakt hur sidan ser ut för besökaren.
+            </p>
+          </section>
+        ) : null}
+
+        {page === 'om' ? (
+          <>
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Om oss-text</h3>
+              <CopyFieldsCard
+                tenantId={tenantId}
+                fields={omFields}
+                overrides={{ aboutCopy: copy.aboutCopy, italic: copy.italic }}
+                defaults={{ aboutCopy: copyDefaults.aboutCopy, italic: copyDefaults.italic }}
+                onSaved={reload}
+              />
+            </section>
+
+            <section className={styles.card}>
+              <h3 className={styles.cardHead}>Bilder &amp; fakta på Om oss</h3>
+              <p className={styles.note}>
+                Används av mallar med rikare om-sektioner (ej FreshCut): bild vid texten,
+                avslutningsbild och siffer-fakta.
+              </p>
+              <StorefrontExtrasCard
+                tenantId={tenantId}
+                aboutImage={branding.about_image ?? null}
+                closingImage={branding.closing_image ?? null}
+                stats={branding.stats ?? []}
+              />
+            </section>
+          </>
+        ) : null}
+
+        {page === 'kontakt' ? (
+          <section className={styles.card}>
+            <h3 className={styles.cardHead}>Kontakt &amp; adress</h3>
+            <p className={styles.note}>
+              Syns på Kontakt-sidan och i sidfoten. Öppettiderna härleds ur personalens
+              veckoscheman (Personal-fliken) — de redigeras inte här.
+            </p>
+            <TenantContactForm tenantId={tenantId} email={contactEmail} phone={contactPhone} address={address} />
+          </section>
+        ) : null}
       </div>
 
-      {/* ── höger: sticky live-preview ── */}
+      {/* ── höger: sticky live-preview av den valda sidan ── */}
       <div className={styles.right}>
         <div className={styles.bar}>
           <div className={styles.barSide}>
-            <span className={styles.host}>{storefrontHost}</span>
-            <Badge tone="neutral">mall: {templateKey}</Badge>
+            <span className={styles.host}>
+              {storefrontHost}
+              <span style={{ color: 'var(--c-ink-3)' }}>{activePage.path || '/'}</span>
+            </span>
+            <Badge tone="neutral">mall: {previewTheme ?? templateKey}</Badge>
           </div>
           <div className={styles.barSide}>
-            <button
-              type="button"
-              className={styles.btn}
-              onClick={() => setReloadToken((t) => t + 1)}
-              title="Ladda om previewen (efter du sparat text/bild)"
-            >
+            <button type="button" className={styles.btn} onClick={reload} title="Ladda om previewen">
               Ladda om
             </button>
             <a
@@ -221,7 +349,7 @@ export function SidaStudio({
               ref={iframeRef}
               src={src}
               className={styles.frame}
-              title={`Förhandsvisning av ${storefrontHost}`}
+              title={`Förhandsvisning av ${storefrontHost}${activePage.path}`}
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
               loading="lazy"
             />
@@ -238,4 +366,26 @@ export function SidaStudio({
       </div>
     </div>
   )
+}
+
+const pageRail: CSSProperties = {
+  display: 'flex',
+  gap: 6,
+  flexWrap: 'wrap',
+}
+function pageTab(on: boolean): CSSProperties {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 1,
+    padding: '8px 13px',
+    borderRadius: 7,
+    border: `1.5px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
+    background: on ? 'color-mix(in srgb, var(--c-forest) 8%, var(--c-paper))' : 'var(--c-paper)',
+    color: on ? 'var(--c-forest)' : 'var(--c-ink-2)',
+    font: 'inherit',
+    cursor: 'pointer',
+    textAlign: 'left',
+  }
 }
