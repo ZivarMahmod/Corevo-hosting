@@ -97,15 +97,15 @@ describe('BOOKING_VARIANT_LABELS (#17 — the platform "Variant" column label)',
 })
 
 describe('readBookingMode (M3 storefront seam: variant → BookingWizard mode)', () => {
-  it("maps 'compact' → 'compact'", () => {
+  it("maps compact/inline → 'compact' (single-screen content)", () => {
     expect(readBookingMode({ booking: { variant: 'compact' } })).toBe('compact')
+    expect(readBookingMode({ booking: { variant: 'inline' } })).toBe('compact')
     // legacy '4' is forward-mapped to compact, so the mode is unchanged for old rows.
     expect(readBookingMode({ booking: { variant: '4' } })).toBe('compact')
   })
-  it("maps wizard/drawer/inline → 'wizard' (drawer/inline presentation deferred)", () => {
+  it("maps wizard/drawer → 'wizard' (guided steps; presentation handled by BookingProvider)", () => {
     expect(readBookingMode({ booking: { variant: 'wizard' } })).toBe('wizard')
     expect(readBookingMode({ booking: { variant: 'drawer' } })).toBe('wizard')
-    expect(readBookingMode({ booking: { variant: 'inline' } })).toBe('wizard')
     expect(readBookingMode({ booking: { variant: '3' } })).toBe('wizard') // legacy guided
   })
   it("unset/unknown → 'wizard' (today's default flow)", () => {
