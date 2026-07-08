@@ -253,6 +253,10 @@ function DeleteButton({ asset }: { asset: MediaAssetRow }) {
   const { notify } = useToast()
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(deleteAction, {})
+  // Tvåstegsbekräftelse i stället för window.confirm (samma mönster som tjänsternas
+  // EditDrawer): klick 1 armerar — papperskorgen blir en "Säker? Ta bort"-knapp i
+  // varningston + Avbryt — klick 2 raderar.
+  const [armed, setArmed] = useState(false)
 
   useEffect(() => {
     if (state.success) {
@@ -265,36 +269,61 @@ function DeleteButton({ asset }: { asset: MediaAssetRow }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.success, state.error])
 
+  const baseBtn: CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '1px solid var(--c-line)',
+    background: 'transparent',
+    color: 'var(--c-ink-2)',
+    cursor: 'pointer',
+    borderRadius: 7,
+    padding: 5,
+  }
+
+  if (!armed) {
+    return (
+      <button
+        type="button"
+        aria-label="Ta bort bild"
+        title="Ta bort bild"
+        onClick={() => setArmed(true)}
+        style={baseBtn}
+      >
+        <Icon name="trash" size={14} />
+      </button>
+    )
+  }
+
   return (
-    <form
-      action={formAction}
-      onSubmit={(e) => {
-        if (!window.confirm('Ta bort bilden? Det kan inte ångras.')) {
-          e.preventDefault()
-        }
-      }}
-      style={{ display: 'inline-flex' }}
-    >
+    <form action={formAction} style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
       <input type="hidden" name="id" value={asset.id} />
       <button
         type="submit"
         disabled={pending}
-        aria-label="Ta bort bild"
-        title="Ta bort bild"
+        aria-label="Säker? Ta bort bilden permanent"
         style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '1px solid var(--c-line)',
-          background: 'transparent',
-          color: 'var(--c-ink-2)',
+          ...baseBtn,
+          borderColor: 'var(--c-danger)',
+          color: 'var(--c-danger)',
+          fontSize: 11,
+          fontWeight: 600,
+          padding: '4px 7px',
+          whiteSpace: 'nowrap',
           cursor: pending ? 'default' : 'pointer',
-          borderRadius: 7,
-          padding: 5,
           opacity: pending ? 0.6 : 1,
         }}
       >
-        <Icon name="trash" size={14} />
+        {pending ? '…' : 'Säker? Ta bort'}
+      </button>
+      <button
+        type="button"
+        aria-label="Avbryt borttagning"
+        title="Avbryt"
+        onClick={() => setArmed(false)}
+        style={baseBtn}
+      >
+        <Icon name="x" size={14} />
       </button>
     </form>
   )
@@ -388,7 +417,6 @@ function UploadDrawer({ onClose }: { onClose: () => void }) {
     return () => {
       previews.forEach((u) => URL.revokeObjectURL(u))
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previews])
 
   function onPick(e: React.ChangeEvent<HTMLInputElement>) {

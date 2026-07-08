@@ -38,6 +38,11 @@ export type StaffDayRow = {
  *  inside the Drawer (setStaffServices). Mirrors ServiceRow's used fields. */
 export type ServiceOption = { id: string; name: string }
 
+/** ACTIVE locations, for the Drawer's plats-select (updateStaff → staff.location_id).
+ *  The select only renders when the tenant has >1 plats — with a single plats there
+ *  is nothing to choose and the section stays hidden. */
+export type LocationOption = { id: string; name: string }
+
 /** Per-staff display bundle the server page hands down. `locationName` is resolved
  *  from the locations table (location_id → name); null when the staff row has no
  *  pinned location. `hasAccount` = staff.profile_id != null (eget konto). `today`
@@ -55,6 +60,9 @@ export type StaffCard = {
   serviceNames: string[]
   hasAccount: boolean
   locationName: string | null
+  /** Raw staff.location_id — backs the Drawer's plats-select default. Optional so
+   *  callers without multi-plats wiring keep compiling; null = ingen plats satt. */
+  locationId?: string | null
   today: StaffDayRow[]
 }
 
@@ -103,6 +111,7 @@ export function StaffRoster({
   services,
   tz,
   staffNoun = 'Medarbetare',
+  locations = [],
 }: {
   staff: StaffCard[]
   services: ServiceOption[]
@@ -111,6 +120,9 @@ export function StaffRoster({
    *  for barbershop). Resolved server-side from the tenant's vertical terminology;
    *  defaults to 'Medarbetare' so any caller without it keeps today's wording. */
   staffNoun?: string
+  /** ACTIVE locations — feeds the Drawer's plats-select. Defaults to [] so the
+   *  section (and the multi-plats Callout) simply doesn't render when unwired. */
+  locations?: LocationOption[]
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const selected = staff.find((s) => s.id === selectedId) ?? null
@@ -138,6 +150,7 @@ export function StaffRoster({
         <StaffDrawer
           member={selected}
           services={services}
+          locations={locations}
           tz={tz}
           staffNoun={staffNoun}
           onClose={() => setSelectedId(null)}
@@ -234,11 +247,9 @@ function StaffGridCard({
           </Badge>
         </div>
 
-        {/* Bio paragraph — staff has no bio column (verified: title/active/
-            location_id/profile_id only). Honest written empty-state, never faked. */}
-        <p style={{ fontSize: 13, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '14px 0 0' }}>
-          Ingen presentation sparad ännu.
-        </p>
+        {/* NO bio paragraph: staff has no bio column (verified: title/active/
+            location_id/profile_id only). A repeated "Ingen presentation sparad
+            ännu."-line on every card was pure noise — render nothing instead. */}
 
         {/* Specialty chips = the member's coupled services (real staff_services
             data). Absent → a calm one-liner instead of an empty row. */}
@@ -332,12 +343,14 @@ function StaffGridCard({
 function StaffDrawer({
   member,
   services,
+  locations,
   tz,
   staffNoun,
   onClose,
 }: {
   member: StaffCard
   services: ServiceOption[]
+  locations: LocationOption[]
   tz: string
   staffNoun: string
   onClose: () => void
@@ -384,20 +397,28 @@ function StaffDrawer({
         <EgetKontoSection member={member} onInvited={onClose} />
 
         {/* Multi-location — KEEP: location_id is a real FK, the name is resolved
-            server-side. The mock's cross-salon split is a future capability. */}
-        <Callout tone="info" icon="mapPin">
-          {member.locationName ? (
-            <>
-              Den här veckan på <b>{member.locationName}</b>. Att dela en medarbetare mellan två
-              salonger per vecka kommer — bokningarna får aldrig krocka.
-            </>
-          ) : (
-            <>
-              Ingen plats är satt för den här medarbetaren. Sätt en plats i panelen nedan så landar
-              bokningarna rätt.
-            </>
-          )}
-        </Callout>
+            server-side. Callout + plats-select render ONLY when the tenant has >1
+            aktiv plats: with a single plats there is nothing to choose, and the old
+            "Sätt en plats i panelen nedan"-line pointed at a panel that didn't
+            exist (the lie is gone — now the panel is real, or the text is absent). */}
+        {locations.length > 1 && (
+          <>
+            <Callout tone="info" icon="mapPin">
+              {member.locationName ? (
+                <>
+                  Den här veckan på <b>{member.locationName}</b>. Att dela en medarbetare mellan två
+                  salonger per vecka kommer — bokningarna får aldrig krocka.
+                </>
+              ) : (
+                <>
+                  Ingen plats är satt för den här medarbetaren. Välj en plats nedan så landar
+                  bokningarna rätt.
+                </>
+              )}
+            </Callout>
+            <LocationSection member={member} locations={locations} onSaved={onClose} />
+          </>
+        )}
 
         {/* Verklig dag · idag — that staff member's REAL bookings today
             (getStaffScheduleWithNotes, cancelled excluded server-side). */}
@@ -604,6 +625,66 @@ function ServicesSection({
             </p>
           )}
         </form>
+      )}
+    </section>
+  )
+}
+
+/** Plats-select (updateStaff → staff.location_id) — renders only when the tenant
+ *  has >1 aktiv plats (see the Drawer's multi-location block). Posts ONLY id +
+ *  location_id: updateStaff patches per-field, so the namn-form's title is never
+ *  blanked. '' = ingen plats (location_id → null). Server-side the plats is
+ *  verified to belong to the tenant before the pin is written. */
+function LocationSection({
+  member,
+  locations,
+  onSaved,
+}: {
+  member: StaffCard
+  locations: LocationOption[]
+  onSaved: () => void
+}) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateStaff, {})
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Plats sparad — bokningarna landar rätt', 'success')
+      router.refresh()
+      onSaved()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  return (
+    <section>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>
+        Plats
+      </div>
+      <form action={formAction} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input type="hidden" name="id" value={member.id} />
+        <select
+          name="location_id"
+          defaultValue={member.locationId ?? ''}
+          aria-label="Plats"
+          style={{ ...fieldStyle, flex: '1 1 12rem' }}
+        >
+          <option value="">Ingen plats</option>
+          {locations.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
+        <Button variant="subtle" type="submit" icon="check" size="sm" disabled={pending}>
+          {pending ? 'Sparar…' : 'Spara plats'}
+        </Button>
+      </form>
+      {state.error && (
+        <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+          {state.error}
+        </p>
       )}
     </section>
   )

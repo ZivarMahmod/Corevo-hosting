@@ -23,6 +23,14 @@ async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | 
   return { user, tenant }
 }
 
+/** Hex sha-256 of a file's bytes — the dubblett-nyckel (content-addressed, the
+ *  media_assets.content_hash column's documented purpose). Web Crypto: finns både
+ *  på Workers och i node ≥18, inga beroenden. */
+async function sha256Hex(buf: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', buf)
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 /**
  * Upload one or more images into the tenant's library.
  *
@@ -32,6 +40,14 @@ async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | 
  * (nullable columns — we do NOT decode image dimensions here). Per-file failures are
  * collected and the loop continues, so one bad file never blocks the rest. NEVER
  * touches any payment/billing table. Never throws.
+ *
+ * DUBBLETT-VAKT (Zivar: "att det inte blir dubbelt när jag laddar upp"): a file
+ * whose sha-256 matches an existing library row's content_hash is SKIPPED (also
+ * within the same batch — pick the same file twice, it uploads once). The original
+ * filename is not persisted anywhere in media_assets, so the spec's "namn+storlek"
+ * degrades to the stronger content check; for LEGACY rows (uploaded before hashing,
+ * content_hash IS NULL) an exact size_bytes match is treated as a duplicate — the
+ * best available signal until those rows age out. New rows always store their hash.
  */
 export async function uploadMediaAssets(formData: FormData): Promise<ActionState> {
   const ctx = await adminCtx()
@@ -47,10 +63,30 @@ export async function uploadMediaAssets(formData: FormData): Promise<ActionState
 
   const supabase = await createClient()
 
+  // The library's dubblett-index: known content hashes + the byte sizes of legacy
+  // rows without a hash. One tenant-scoped read; small tables (personal library).
+  const { data: existing } = await supabase
+    .from('media_assets')
+    .select('size_bytes, content_hash')
+    .eq('tenant_id', ctx.tenant.id)
+  const knownHashes = new Set(
+    (existing ?? []).map((r) => r.content_hash).filter((h): h is string => Boolean(h)),
+  )
+  const legacySizes = new Set(
+    (existing ?? []).filter((r) => !r.content_hash).map((r) => r.size_bytes),
+  )
+
   let succeeded = 0
+  let skipped = 0
   let firstFailure: string | null = null
 
   for (const file of files) {
+    const hash = await sha256Hex(await file.arrayBuffer())
+    if (knownHashes.has(hash) || legacySizes.has(file.size)) {
+      skipped += 1
+      continue
+    }
+
     const res = await uploadImage(file, `media/${ctx.tenant.id}`)
     if (!res.ok) {
       if (!firstFailure) firstFailure = uploadErrorMessage(res.reason)
@@ -64,6 +100,7 @@ export async function uploadMediaAssets(formData: FormData): Promise<ActionState
       type: 'image',
       size_bytes: file.size,
       source: 'upload',
+      content_hash: hash,
     })
 
     if (error) {
@@ -74,17 +111,27 @@ export async function uploadMediaAssets(formData: FormData): Promise<ActionState
       continue
     }
 
+    // In-batch dedupe: the second copy of the same picked file skips too.
+    knownHashes.add(hash)
     succeeded += 1
   }
 
   revalidatePath('/admin/media')
 
+  const skippedMsg = `Hoppade över ${skipped} dubblett(er).`
   if (succeeded === 0) {
+    // Everything was a duplicate and nothing failed → that's a calm success, not
+    // an error: the library already holds the images.
+    if (skipped > 0 && !firstFailure) {
+      return { success: `${skippedMsg} Bilderna finns redan i biblioteket.` }
+    }
     return { error: firstFailure ?? GENERIC }
   }
 
-  const base = `${succeeded} bild(er) uppladdade.`
-  return { success: firstFailure ? `${base} ${firstFailure}` : base }
+  const parts = [`${succeeded} bild(er) uppladdade.`]
+  if (skipped > 0) parts.push(skippedMsg)
+  if (firstFailure) parts.push(firstFailure)
+  return { success: parts.join(' ') }
 }
 
 /**

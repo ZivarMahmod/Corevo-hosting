@@ -82,6 +82,7 @@ export default async function StaffPage() {
     // aldrig fejkat — magic-link-inbjudan sätter profile_id (se inviteStaff).
     hasAccount: Boolean(s.profile_id),
     locationName: (s.location_id && locationName.get(s.location_id)) || null,
+    locationId: s.location_id,
     today: (
       dayByStaff.get(s.id) ?? []
     ).sort((a, b) => (a.startTs < b.startTs ? -1 : 1)),
@@ -117,6 +118,7 @@ export default async function StaffPage() {
         <StaffRoster
           staff={cards}
           services={serviceOptions}
+          locations={locations.filter((l) => l.active).map((l) => ({ id: l.id, name: l.name }))}
           tz={tenant.timeZone}
           staffNoun={resolveTerm(tenant.terminology, 'staff', 'Medarbetare')}
         />

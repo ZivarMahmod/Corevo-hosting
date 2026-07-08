@@ -226,6 +226,10 @@ export async function removeTenantStorefrontImage(_p: ActionState, fd: FormData)
   const key = slotKey(slot)
   const prevArr = prev[key]
   const arr = Array.isArray(prevArr) ? prevArr : []
+  // Tenant-scope fence: url är klient-input — bara en bild som faktiskt LIGGER i
+  // den här tenantens slot får röras. Utan kollen kunde en salon_admin R2-radera
+  // en annan salongs (publikt läsbara) bild-URL via sin egen action.
+  if (!arr.includes(url)) return { error: 'Bilden finns inte i denna slot.' }
   const next = arr.filter((u) => u !== url)
   // MERGE: write ONLY this slot's array; every other branding key falls through prev.
   const patch: Partial<TenantBranding> = slot === 'hero' ? { hero_images: next } : { gallery_images: next }

@@ -15,17 +15,12 @@ export default async function LocationsPage() {
 
   const locations = await listLocations(tenant.id)
 
+  // Headern (PageHead + "Ny plats"-CTA) bor inne i klient-managern — CTA:n öppnar
+  // skapa-Drawern (kräver onClick) och kan inte korsa server→klient-gränsen härifrån.
+  // Samma mönster som tjanster/page.tsx.
   return (
     <section className="portal-section">
-      <PageHead eyebrow={tenant.name} title="Platser" />
-      <p className="prose">
-        Salongens platser (filialer). Den <strong>primära</strong> platsen är den bokningar och den
-        publika sajten utgår från — varje salong har exakt en. Lägg till fler platser, byt vilken som
-        är primär, och inaktivera dem du inte längre använder. En plats tas aldrig bort helt (den har
-        bokningshistorik och scheman) — inaktivera den i stället. Personalens scheman kopplas till en
-        plats under Scheman.
-      </p>
-      <LocationsManager locations={locations} />
+      <LocationsManager locations={locations} tenantName={tenant.name} />
     </section>
   )
 }

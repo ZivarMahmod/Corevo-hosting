@@ -311,14 +311,43 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
-  const title = String(fd.get('title') ?? '').trim()
   if (!id) return { error: 'Saknar medarbetare.' }
-  if (!title) return { error: 'Ange ett namn/en titel.' }
+
+  // Partiell patch: Drawerns namn-formulär postar `title`, plats-formuläret postar
+  // `location_id` — varje formulär uppdaterar bara sitt eget fält, så en frånvarande
+  // nyckel lämnas orörd (det ena formuläret kan aldrig blanka det andras fält).
+  const patch: { title?: string; location_id?: string | null } = {}
+  if (fd.has('title')) {
+    const title = String(fd.get('title') ?? '').trim()
+    if (!title) return { error: 'Ange ett namn/en titel.' }
+    patch.title = title
+  }
 
   const supabase = await createClient()
+  if (fd.has('location_id')) {
+    const locId = String(fd.get('location_id') ?? '').trim()
+    if (locId) {
+      // location_id är klient-input och FK:n accepterar vilken tenants plats som
+      // helst — bekräfta att platsen är VÅR (och aktiv) innan personalen pinnas
+      // dit. Samma lucka som resolveScheduleLocation/setStaffServices vaktar.
+      const { data: loc } = await supabase
+        .from('locations')
+        .select('id')
+        .eq('id', locId)
+        .eq('tenant_id', ctx.tenant.id)
+        .eq('active', true)
+        .maybeSingle()
+      if (!loc) return { error: 'Okänd plats.' }
+      patch.location_id = locId
+    } else {
+      patch.location_id = null
+    }
+  }
+  if (Object.keys(patch).length === 0) return { error: 'Inget att spara.' }
+
   const { error } = await supabase
     .from('staff')
-    .update({ title })
+    .update(patch)
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
   if (error) return { error: GENERIC }

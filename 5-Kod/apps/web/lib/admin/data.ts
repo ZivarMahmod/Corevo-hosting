@@ -31,6 +31,16 @@ export type AdminBooking = {
   staffTitle: string
   /** When the booking was made (created_at) — "bokad den" column (M6 §3.2). */
   createdAt: string
+  /** Bokningens plats (bookings.location_id är NOT NULL). Namnet joinas för
+   *  fler-plats-tenants; null bara om locations-raden inte är läsbar. */
+  locationId: string
+  locationName: string | null
+  /** Kopplad kundprofil — null för gäst-/legacy-bokningar utan kundkoppling. */
+  customerId: string | null
+  /** Maskerat visningsnamn med SAMMA privacy-regel som Kunder-listan
+   *  (shownNameOf: display_name → initial vid name_hidden → full_name).
+   *  null = ingen kundkoppling; ett dolt fullnamn läcker aldrig hit. */
+  customerName: string | null
 }
 
 export type BookingFilters = {
@@ -38,6 +48,7 @@ export type BookingFilters = {
   toUtc?: string
   staffId?: string
   status?: string
+  locationId?: string
   /** Free-text search across service name, staff title and the (legacy) note. */
   query?: string
 }
@@ -180,14 +191,21 @@ export async function listBookings(
   filters: BookingFilters = {},
 ): Promise<AdminBooking[]> {
   const supabase = await createClient()
+  // customers joinas för visningsnamnet på raden. RLS (customers_rls, 0011:503)
+  // fencar läsningen till role_level>=3 i tenanten — kan raden inte läsas blir
+  // embedden null och UI:t faller ärligt tillbaka till 'Gäst', aldrig ett läckt
+  // fullnamn (maskningen sker i shownNameOf, samma regel som Kunder-sidan).
   let q = supabase
     .from('bookings')
-    .select('id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, services(name), staff(title)')
+    .select(
+      'id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, location_id, customer_id, services(name), staff(title), locations(name), customers(display_name, full_name, name_hidden)',
+    )
     .eq('tenant_id', tenantId)
   if (filters.fromUtc) q = q.gte('start_ts', filters.fromUtc)
   if (filters.toUtc) q = q.lt('start_ts', filters.toUtc)
   if (filters.staffId) q = q.eq('staff_id', filters.staffId)
   if (filters.status) q = q.eq('status', filters.status)
+  if (filters.locationId) q = q.eq('location_id', filters.locationId)
   const { data } = await q.order('start_ts', { ascending: true })
 
   type Row = {
@@ -199,8 +217,12 @@ export async function listBookings(
     note: string | null
     created_at: string
     staff_id: string
+    location_id: string
+    customer_id: string | null
     services: { name: string } | null
     staff: { title: string | null } | null
+    locations: { name: string } | null
+    customers: Pick<CustomerRow, 'display_name' | 'full_name' | 'name_hidden'> | null
   }
   const mapped: AdminBooking[] = ((data ?? []) as Row[]).map((b) => ({
     id: b.id,
@@ -211,19 +233,25 @@ export async function listBookings(
     note: b.note,
     createdAt: b.created_at,
     staffId: b.staff_id,
+    locationId: b.location_id,
+    locationName: b.locations?.name ?? null,
+    customerId: b.customer_id,
+    customerName: b.customers ? shownNameOf(b.customers) : null,
     serviceName: b.services?.name ?? 'Okänd tjänst',
     staffTitle: b.staff?.title?.trim() || 'Medarbetare',
   }))
 
-  // Free-text search is applied app-side: the joined service/staff names live on
-  // related tables, so a single SQL ilike can't span them; the result set is
-  // already date/staff/status-narrowed, so this stays cheap.
+  // Free-text search is applied app-side: the joined service/staff/customer names
+  // live on related tables, so a single SQL ilike can't span them; the result set
+  // is already date/staff/status-narrowed, so this stays cheap. Customer match is
+  // on the SHOWN (masked) name only — never the hidden full name.
   const term = filters.query?.trim().toLowerCase()
   if (!term) return mapped
   return mapped.filter(
     (b) =>
       b.serviceName.toLowerCase().includes(term) ||
       b.staffTitle.toLowerCase().includes(term) ||
+      (b.customerName?.toLowerCase().includes(term) ?? false) ||
       (b.note?.toLowerCase().includes(term) ?? false),
   )
 }
@@ -388,7 +416,7 @@ export async function getCustomerDetail(
   // History via the new stable band (bookings.customer_id). Newest first.
   const { data: bd } = await supabase
     .from('bookings')
-    .select('id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, services(name), staff(title)')
+    .select('id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, location_id, services(name), staff(title), locations(name)')
     .eq('tenant_id', tenantId)
     .eq('customer_id', customerId)
     .order('start_ts', { ascending: false })
@@ -402,8 +430,10 @@ export async function getCustomerDetail(
     note: string | null
     created_at: string
     staff_id: string
+    location_id: string
     services: { name: string } | null
     staff: { title: string | null } | null
+    locations: { name: string } | null
   }
   const history: AdminBooking[] = ((bd ?? []) as BRow[]).map((b) => ({
     id: b.id,
@@ -414,6 +444,11 @@ export async function getCustomerDetail(
     note: b.note,
     createdAt: b.created_at,
     staffId: b.staff_id,
+    locationId: b.location_id,
+    locationName: b.locations?.name ?? null,
+    // Raden ÄR kundens egen historik — identiteten är redan känd + maskad ovan.
+    customerId,
+    customerName: shownNameOf(c),
     serviceName: b.services?.name ?? 'Okänd tjänst',
     staffTitle: b.staff?.title?.trim() || 'Medarbetare',
   }))
@@ -584,6 +619,33 @@ export type BookingPayment = {
 export function normalisePaymentStatus(raw: string | null | undefined): BookingPaymentStatus | null {
   if (raw === 'pending' || raw === 'succeeded' || raw === 'failed') return raw
   return null
+}
+
+/**
+ * Batch-variant för list-ytor: EN läsning för alla bokningars payment-rader i
+ * stället för en per bokning (N+1:an på /admin/bokningar). Bokningar utan rad
+ * saknas i mappen → samma ärliga "ingen betalning"-null som singel-läsningen.
+ */
+export async function listBookingPayments(
+  tenantId: string,
+  bookingIds: string[],
+): Promise<Map<string, BookingPayment>> {
+  const out = new Map<string, BookingPayment>()
+  if (bookingIds.length === 0) return out
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('payments')
+    .select('booking_id, status, amount_cents')
+    .eq('tenant_id', tenantId)
+    .in('booking_id', bookingIds)
+  for (const p of (data ?? []) as { booking_id: string | null; status: string | null; amount_cents: number | null }[]) {
+    if (!p.booking_id) continue
+    out.set(p.booking_id, {
+      status: normalisePaymentStatus(p.status),
+      amountCents: p.amount_cents ?? null,
+    })
+  }
+  return out
 }
 
 /**

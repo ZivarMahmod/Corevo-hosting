@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { setBookingStatus, type ActionState } from '@/lib/admin/actions'
 import { statusLabel, ALLOWED_FROM, type BookingStatus } from '@/lib/admin/format'
@@ -32,6 +33,12 @@ export type BookingRow = {
   createdAt: string
   /** The single shared bookings.note (no kund/staff channel exists in the schema). */
   note: string | null
+  /** Kopplad kundprofil — null för gäst-/legacy-bokningar utan kundkoppling. */
+  customerId: string | null
+  /** Maskerat visningsnamn (samma privacy-regel som Kunder-sidan), null = gäst. */
+  customerName: string | null
+  /** Platsens namn — visas bara när tenanten har >1 aktiv plats. */
+  locationName: string | null
   /** Derived server-side: the slot's start instant is already in the past. */
   isPast: boolean
   /** REAL Stripe-mirrored payment state, or null when no payment row exists. */
@@ -111,50 +118,101 @@ function paymentLabel(row: BookingRow): string {
  */
 export function BookingsClient({
   bookings,
+  weekBookings,
+  weekAnchor,
   tz,
   weekTemplate,
   staffNoun = 'Frisör',
+  staffOptions = [],
+  staffFilter = '',
+  locationOptions = [],
+  locationFilter = '',
+  showLocation = false,
 }: {
+  /** Lista-vyns rader: kommande från idag (open-ended). */
   bookings: BookingRow[]
+  /** Vecka-vyns rader: HELA den valda veckan (även bakåt = historik). */
+  weekBookings: BookingRow[]
+  /** Validerad 'YYYY-MM-DD' som ankrar Vecka-vyn (vilken dag i veckan som helst). */
+  weekAnchor: string
   tz: string
   weekTemplate: WeekTemplate
   /** Bransch-noun for the staff column/label (resolved server-side). Default
    *  'Frisör' so an unwired mount renders exactly today's text (DIFF-0). */
   staffNoun?: string
+  staffOptions?: { id: string; name: string }[]
+  /** Aktivt serverfilter ('' = Alla) — URL:en är sanningen, selecten speglar den. */
+  staffFilter?: string
+  locationOptions?: { id: string; name: string }[]
+  locationFilter?: string
+  /** true bara när tenanten har >1 aktiv plats — annars är plats-ytan osynlig. */
+  showLocation?: boolean
 }) {
+  const router = useRouter()
   const [view, setView] = usePersistentView<View>('corevo.bookings.view', VIEWS, 'vecka')
   const [filter, setFilter] = useState<StatusFilter>('Alla')
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<BookingRow | null>(null)
 
+  // Server-filtren (vecka/personal/plats) bor i URL:en → en select-ändring är en
+  // navigation, inte lokal state. Patch-semantik: undefined = behåll, '' = rensa.
+  const buildHref = (patch: { week?: string; personal?: string; plats?: string }) => {
+    const p = new URLSearchParams()
+    p.set('week', patch.week ?? weekAnchor)
+    const personal = patch.personal ?? staffFilter
+    if (personal) p.set('personal', personal)
+    const plats = patch.plats ?? locationFilter
+    if (plats) p.set('plats', plats)
+    return `/admin/bokningar?${p.toString()}`
+  }
+
+  // Pillren + sökningen ska räkna/filtrera det man faktiskt TITTAR på — Lista och
+  // Vecka har olika tidsfönster, så aktiv vy väljer dataset.
+  const active = view === 'vecka' ? weekBookings : bookings
+
   const counts: Record<StatusFilter, number> = useMemo(
     () => ({
-      Alla: bookings.length,
-      Bokade: bookings.filter((b) => isBokad(b.status)).length,
-      Klara: bookings.filter((b) => isKlar(b.status)).length,
-      Avbokade: bookings.filter((b) => isAvbokad(b.status)).length,
+      Alla: active.length,
+      Bokade: active.filter((b) => isBokad(b.status)).length,
+      Klara: active.filter((b) => isKlar(b.status)).length,
+      Avbokade: active.filter((b) => isAvbokad(b.status)).length,
     }),
-    [bookings],
+    [active],
   )
 
   const term = q.trim().toLowerCase()
   const list = useMemo(
     () =>
-      bookings
+      active
         .filter((b) => matchesFilter(b.status, filter))
         .filter(
           (b) =>
             term === '' ||
             b.serviceName.toLowerCase().includes(term) ||
-            b.staffTitle.toLowerCase().includes(term),
+            b.staffTitle.toLowerCase().includes(term) ||
+            (b.customerName?.toLowerCase().includes(term) ?? false),
         )
         .slice()
         .sort((a, b) => (a.startTs < b.startTs ? -1 : 1)),
-    [bookings, filter, term],
+    [active, filter, term],
   )
 
   // Keep the open drawer's row in sync with refreshed server data (status change).
-  const selectedLive = selected ? bookings.find((b) => b.id === selected.id) ?? null : null
+  // Drawern kan ha öppnats från endera vyn → leta i båda dataseten.
+  const selectedLive = selected
+    ? [...bookings, ...weekBookings].find((b) => b.id === selected.id) ?? null
+    : null
+
+  // ── Vecko-navigering (bara meningsfull i Vecka-vyn) ──────────────────────────
+  const todayKey = dayKey(new Date().toISOString(), tz)
+  const monday = mondayOf(weekAnchor)
+  const sunday = addDaysKey(monday, 6)
+  const isCurrentWeek = monday === mondayOf(todayKey)
+  // Nyckeln är ett rent datum — formatera på UTC-noon så etiketten aldrig driver.
+  const weekDayLabel = (key: string) =>
+    new Intl.DateTimeFormat('sv-SE', { timeZone: 'UTC', day: 'numeric', month: 'short' }).format(
+      new Date(`${key}T12:00:00Z`),
+    )
 
   return (
     <>
@@ -206,15 +264,14 @@ export function BookingsClient({
             }}
           />
         </div>
-        {view === 'lista' &&
-          STATUS_FILTERS.map((f) => {
-            const active = filter === f
-            return (
+        {STATUS_FILTERS.map((f) => {
+          const isActive = filter === f
+          return (
             <button
               key={f}
               type="button"
               onClick={() => setFilter(f)}
-              aria-pressed={active}
+              aria-pressed={isActive}
               style={{
                 padding: '9px 15px',
                 borderRadius: 10,
@@ -223,8 +280,8 @@ export function BookingsClient({
                 fontFamily: 'var(--font-ui)',
                 fontSize: 13,
                 fontWeight: 600,
-                background: active ? 'var(--c-forest)' : 'var(--c-paper)',
-                color: active ? '#fff' : 'var(--c-ink-2)',
+                background: isActive ? 'var(--c-forest)' : 'var(--c-paper)',
+                color: isActive ? '#fff' : 'var(--c-ink-2)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 7,
@@ -235,17 +292,81 @@ export function BookingsClient({
                 {counts[f]}
               </span>
             </button>
-            )
-          })}
+          )
+        })}
+        {/* Serverfilter: personal + (vid flera platser) plats. En ändring är en
+            URL-navigation — servern hämtar om BÅDA vyernas fönster med filtret. */}
+        <FilterSelect
+          ariaLabel={`Filtrera på ${staffNoun.toLowerCase()}`}
+          value={staffFilter}
+          allLabel={`${staffNoun}: alla`}
+          options={staffOptions}
+          onChange={(v) => router.push(buildHref({ personal: v }))}
+        />
+        {showLocation && (
+          <FilterSelect
+            ariaLabel="Filtrera på plats"
+            value={locationFilter}
+            allLabel="Plats: alla"
+            options={locationOptions}
+            onChange={(v) => router.push(buildHref({ plats: v }))}
+          />
+        )}
         <div style={{ marginLeft: 'auto' }}>
           <ViewSwitcher options={VIEW_OPTIONS} value={view} onChange={setView} ariaLabel="Vy" />
         </div>
       </div>
 
+      {view === 'vecka' && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            margin: '0 0 12px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <Link href={buildHref({ week: addDaysKey(monday, -7) })} className="pbtn pbtn--ghost pbtn--sm">
+            <Icon name="chevronLeft" size={15} />
+            Föregående
+          </Link>
+          <Link
+            href={buildHref({ week: todayKey })}
+            className="pbtn pbtn--ghost pbtn--sm"
+            aria-current={isCurrentWeek ? 'true' : undefined}
+            style={isCurrentWeek ? { color: 'var(--c-forest)', fontWeight: 700 } : undefined}
+          >
+            Idag
+          </Link>
+          <Link href={buildHref({ week: addDaysKey(monday, 7) })} className="pbtn pbtn--ghost pbtn--sm">
+            Nästa
+            <Icon name="chevronRight" size={15} />
+          </Link>
+          <span className="num" style={{ fontSize: 13, color: 'var(--c-ink-2)', fontWeight: 600 }}>
+            {weekDayLabel(monday)} – {weekDayLabel(sunday)}
+            {isCurrentWeek ? ' · denna vecka' : ''}
+          </span>
+        </div>
+      )}
+
       {view === 'lista' ? (
-        <ListaView bookings={list} tz={tz} onSelect={setSelected} staffNoun={staffNoun} />
+        <ListaView
+          bookings={list}
+          tz={tz}
+          onSelect={setSelected}
+          staffNoun={staffNoun}
+          showLocation={showLocation}
+        />
       ) : (
-        <VeckaView bookings={list} tz={tz} weekTemplate={weekTemplate} onSelect={setSelected} />
+        <VeckaView
+          bookings={list}
+          tz={tz}
+          monday={monday}
+          todayKey={todayKey}
+          weekTemplate={weekTemplate}
+          onSelect={setSelected}
+        />
       )}
 
       {selectedLive && (
@@ -260,17 +381,61 @@ export function BookingsClient({
   )
 }
 
-/* ── Lista view (mock BkList): Tid · Kund · Tjänst · Frisör · Pris · Status ── */
+/** Styrd server-filter-select i kontrollradens grammatik (samma yta som sökfältet). */
+function FilterSelect({
+  ariaLabel,
+  value,
+  allLabel,
+  options,
+  onChange,
+}: {
+  ariaLabel: string
+  value: string
+  allLabel: string
+  options: { id: string; name: string }[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={ariaLabel}
+      style={{
+        padding: '9px 12px',
+        borderRadius: 10,
+        border: '1px solid var(--c-line)',
+        background: 'var(--c-paper)',
+        fontFamily: 'var(--font-ui)',
+        fontSize: 13,
+        fontWeight: 600,
+        color: value ? 'var(--c-ink)' : 'var(--c-ink-2)',
+        cursor: 'pointer',
+        maxWidth: 200,
+      }}
+    >
+      <option value="">{allLabel}</option>
+      {options.map((o) => (
+        <option key={o.id} value={o.id}>
+          {o.name}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+/* ── Lista view (mock BkList): Tid · Kund · Tjänst · Frisör · [Plats ·] Pris · Status ── */
 function ListaView({
   bookings,
   tz,
   onSelect,
   staffNoun,
+  showLocation,
 }: {
   bookings: BookingRow[]
   tz: string
   onSelect: (b: BookingRow) => void
   staffNoun: string
+  showLocation: boolean
 }) {
   if (bookings.length === 0) return <EmptyMatch />
   return (
@@ -282,6 +447,7 @@ function ListaView({
             <th>Kund</th>
             <th>Tjänst</th>
             <th>{staffNoun}</th>
+            {showLocation && <th>Plats</th>}
             <th data-last="">Pris</th>
             <th>Status</th>
           </tr>
@@ -316,10 +482,15 @@ function ListaView({
                   {dayLabel(b.startTs, tz)} {timeLabel(b.startTs, tz)}
                 </td>
                 <td>
-                  <KundCell note={b.note} dim={dim} />
+                  <KundCell name={b.customerName} note={b.note} dim={dim} />
                 </td>
                 <td style={{ opacity: dim ? 0.6 : 1, fontWeight: 600 }}>{b.serviceName}</td>
                 <td style={{ opacity: dim ? 0.6 : 1, color: 'var(--c-ink-2)' }}>{b.staffTitle}</td>
+                {showLocation && (
+                  <td style={{ opacity: dim ? 0.6 : 1, color: 'var(--c-ink-2)' }}>
+                    {b.locationName ?? '—'}
+                  </td>
+                )}
                 <td data-last="" className="num" style={{ opacity: dim ? 0.6 : 1 }}>
                   {priceLabel(b.priceCents)}
                 </td>
@@ -336,14 +507,14 @@ function ListaView({
 }
 
 /**
- * Kund cell (mock: avatar initial + name + customer-note glyph). The customer
- * IDENTITY is data-gated absent here: listBookings/AdminBooking does NOT expose
- * bookings.customer_id, so this row cannot resolve the customer name/tier without
- * a frozen-lib change (FLAGGED — see manifest). We render the recognition SHAPE
- * with an honest "Gäst" placeholder + a note glyph when the booking carries a
- * note, never a fabricated name.
+ * Kund cell (mock: avatar initial + name + customer-note glyph). `name` är det
+ * MASKERADE visningsnamnet från datalagret (samma privacy-regel som Kunder-sidan:
+ * display_name → initial vid name_hidden → full_name) — ett dolt fullnamn kan
+ * aldrig nå den här cellen. null = bokning utan kundkoppling → ärligt "Gäst".
  */
-function KundCell({ note, dim }: { note: string | null; dim: boolean }) {
+function KundCell({ name, note, dim }: { name: string | null; note: string | null; dim: boolean }) {
+  const shown = name?.trim() || 'Gäst'
+  const initial = name?.trim() ? shown[0]!.toUpperCase() : '·'
   return (
     <span style={{ display: 'flex', alignItems: 'center', gap: 9, opacity: dim ? 0.6 : 1 }}>
       <span
@@ -361,9 +532,9 @@ function KundCell({ note, dim }: { note: string | null; dim: boolean }) {
           color: 'var(--c-forest)',
         }}
       >
-        ·
+        {initial}
       </span>
-      <b style={{ fontWeight: 600, color: 'var(--c-ink-2)' }}>Gäst</b>
+      <b style={{ fontWeight: 600, color: name ? 'var(--c-ink)' : 'var(--c-ink-2)' }}>{shown}</b>
       {note && note.trim() !== '' && (
         <Icon name="message" size={14} style={{ color: 'var(--c-gold-600)', flex: 'none' }} />
       )}
@@ -371,27 +542,28 @@ function KundCell({ note, dim }: { note: string | null; dim: boolean }) {
   )
 }
 
-/* ── Vecka view (mock BkWeek): fixed Mon–Sun grid of THIS week; today tinted gold.
-      Every day column renders the salon's slot raster (weekTemplate) as dashed
-      "Ledig" cells; real bookings are placed into their matching time cell (else
-      appended). A weekday with no published slots shows "Stängt". The raster IS
-      the empty-state — it's what the salon sees live at zero bookings. ── */
+/* ── Vecka view (mock BkWeek): fixed Mon–Sun grid of the NAVIGATED week; today
+      tinted gold when it faller i fönstret. Every day column renders the salon's
+      slot raster (weekTemplate) as dashed "Ledig" cells; real bookings are placed
+      into their matching time cell (else appended). A weekday with no published
+      slots shows "Stängt". The raster IS the empty-state — it's what the salon
+      sees live at zero bookings. ── */
 function VeckaView({
   bookings,
   tz,
+  monday,
+  todayKey,
   weekTemplate,
   onSelect,
 }: {
   bookings: BookingRow[]
   tz: string
+  /** Måndagen ('YYYY-MM-DD') i den URL-valda veckan (?week=) — historik funkar. */
+  monday: string
+  todayKey: string
   weekTemplate: WeekTemplate
   onSelect: (b: BookingRow) => void
 }) {
-  // Fixed 7-day grid anchored on the Monday of THIS week (tz-anchored), so "today"
-  // is always the gold-tinted column. Bookings further out still list in Lista;
-  // here we place whatever falls inside the current Mon–Sun window.
-  const todayKey = dayKey(new Date().toISOString(), tz)
-  const monday = mondayOf(todayKey)
   const weekKeys = Array.from({ length: 7 }, (_, i) => addDaysKey(monday, i))
 
   const byDay = new Map<string, BookingRow[]>()
@@ -786,27 +958,70 @@ function BookingDrawer({
           </Callout>
         )}
 
-        {/* Kund — identity + PII (data-gated absent: see KundCell / manifest flag) */}
+        {/* Kund — maskerat visningsnamn (samma privacy-regel som Kunder-sidan) +
+            länk till kundkortet. Tidsbunden PII (mejl/telefon) visas ALDRIG här —
+            den bor bakom operations-fönstret på kundens egen sida. */}
         <section>
           <div className="eyebrow" style={{ marginBottom: 10 }}>
             Kund
           </div>
-          <div
-            style={{
-              display: 'flex',
-              gap: 11,
-              padding: '12px 14px',
-              background: 'var(--c-paper-2)',
-              borderRadius: 12,
-            }}
-          >
-            <Icon name="info" size={16} style={{ color: 'var(--c-ink-3)', flex: 'none', marginTop: 1 }} />
-            <span style={{ fontSize: 12.5, color: 'var(--c-ink-2)', lineHeight: 1.45 }}>
-              Kundens igenkänning (namn, nivå, besök) och tidsbundna kontaktuppgifter visas här när
-              bokningen är kopplad till en kundprofil. Datalagret exponerar ännu inte kund-kopplingen
-              på bokningsraden — se historiken på kundens egen sida under <b>Kunder</b>.
-            </span>
-          </div>
+          {booking.customerId ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 11,
+                padding: '12px 14px',
+                background: 'var(--c-paper-2)',
+                borderRadius: 12,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 32,
+                  height: 32,
+                  flex: 'none',
+                  borderRadius: 999,
+                  background: 'var(--c-paper)',
+                  border: '1px solid var(--c-line)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: 'var(--c-forest)',
+                }}
+              >
+                {(booking.customerName?.trim() || 'G')[0]!.toUpperCase()}
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-ink)', flex: 1 }}>
+                {booking.customerName?.trim() || 'Gäst'}
+              </span>
+              <Link
+                href={`/admin/kunder/${booking.customerId}`}
+                className="pbtn pbtn--ghost pbtn--sm"
+              >
+                <Icon name="user" size={15} />
+                Öppna kundkort
+              </Link>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'flex',
+                gap: 11,
+                padding: '12px 14px',
+                background: 'var(--c-paper-2)',
+                borderRadius: 12,
+              }}
+            >
+              <Icon name="info" size={16} style={{ color: 'var(--c-ink-3)', flex: 'none', marginTop: 1 }} />
+              <span style={{ fontSize: 12.5, color: 'var(--c-ink-2)', lineHeight: 1.45 }}>
+                Bokningen saknar kopplad kundprofil (gäst- eller äldre bokning) — det finns inget
+                kundkort att visa. Nya bokningar via storefronten kopplas automatiskt.
+              </span>
+            </div>
+          )}
         </section>
 
         {/* service detail (mock "Tjänst & bokning") */}

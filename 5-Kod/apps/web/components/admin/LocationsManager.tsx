@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import type { LocationRow } from '@/lib/admin/data'
 import {
   createLocation,
@@ -9,203 +10,444 @@ import {
   toggleLocationActive,
   type ActionState,
 } from '@/lib/admin/actions'
-import styles from './admin.module.css'
+import {
+  Badge,
+  Button,
+  Callout,
+  Card,
+  Drawer,
+  Icon,
+  PageHead,
+  Table,
+  useToast,
+} from '@/components/portal/ui'
 
-export function LocationsManager({ locations }: { locations: LocationRow[] }) {
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(createLocation, {})
+// Samma IANA-lista som SettingsForm — fritext-tidszon var den gamla ytans största
+// felkälla (en stavfelad zon avvisas först server-side). En select kan inte stavas fel.
+const TIMEZONES = [
+  'Europe/Stockholm',
+  'Europe/Oslo',
+  'Europe/Copenhagen',
+  'Europe/Helsinki',
+  'Europe/London',
+  'UTC',
+]
+
+const inputStyle: CSSProperties = {
+  padding: '9px 12px',
+  borderRadius: 10,
+  border: '1px solid var(--c-line)',
+  background: 'var(--c-paper)',
+  color: 'var(--c-ink)',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 14,
+  width: '100%',
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span className="eyebrow">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+/**
+ * Platser — samma Card/Drawer/toast-grammatik som ServicesManager (tidigare den
+ * äldsta ytan i admin: råa inline-formulär per rad + hover-only-förklaringar).
+ * Lista som tabell, penna → redigerings-Drawer, skapa-Drawer bakom header-CTA:n.
+ *
+ * Reglerna är OFÖRÄNDRADE (samma server actions):
+ *   • primär plats kan inte inaktiveras (bokningar kräver den)
+ *   • en inaktiv plats kan inte bli primär (aktivera först)
+ *   • ingen delete — en plats bär bokningshistorik/scheman, inaktivering är enda vägen
+ * Skillnaden är att skälen nu står som SYNLIG text i Drawern i stället för att
+ * gömmas i title-attribut.
+ */
+export function LocationsManager({
+  locations,
+  tenantName,
+}: {
+  locations: LocationRow[]
+  tenantName: string
+}) {
+  const [editing, setEditing] = useState<LocationRow | null>(null)
+  const [creating, setCreating] = useState(false)
 
   return (
     <div>
-      <form action={formAction} className={styles.form}>
-        <label className={styles.field} style={{ flex: '2 1 10rem' }}>
-          <span>Namn</span>
-          <input name="name" placeholder="t.ex. Salongen Söder" required />
-        </label>
-        <label className={styles.field} style={{ flex: '2 1 12rem' }}>
-          <span>Adress</span>
-          <input name="address" placeholder="Gata 1, 111 22 Stad" />
-        </label>
-        <label className={styles.field} style={{ flex: '1 1 9rem' }}>
-          <span>Tidszon</span>
-          <input name="timezone" placeholder="Europe/Stockholm" />
-        </label>
-        <button type="submit" className="btn-primary" disabled={pending}>
-          {pending ? 'Sparar…' : 'Lägg till plats'}
-        </button>
-        <Feedback state={state} />
-      </form>
+      <PageHead
+        eyebrow={tenantName}
+        title="Platser"
+        lede="Salongens platser (filialer). Den primära platsen är den bokningar och den publika sajten utgår från — varje salong har exakt en."
+      >
+        <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
+          Ny plats
+        </Button>
+      </PageHead>
 
-      {locations.length === 0 ? (
-        <div className={styles.empty}>
-          <strong>Inga platser ännu.</strong>
-          Lägg till din första plats i formuläret ovan. Den första du gör till primär blir den som
-          bokningar och den publika sajten utgår från.
-        </div>
-      ) : (
-        <ul className={styles.list}>
-          {locations.map((l) => (
-            <LocationItem key={l.id} location={l} />
-          ))}
-        </ul>
+      <Callout tone="info" icon="mapPin">
+        En plats tas aldrig bort helt — den bär bokningshistorik och scheman. Inaktivera den i
+        stället, så döljs den för nya scheman. Personalens scheman kopplas till en plats under
+        Scheman.
+      </Callout>
+
+      <div style={{ marginTop: 16 }}>
+        <Card pad={0}>
+          {locations.length === 0 ? (
+            <div style={{ padding: 22 }}>
+              <p className="eyebrow" style={{ marginBottom: 6 }}>
+                Inga platser ännu
+              </p>
+              <p className="body" style={{ margin: 0, maxWidth: 460, color: 'var(--c-ink-2)' }}>
+                Lägg till din första plats med <strong>Ny plats</strong>. Den första du gör till
+                primär blir den som bokningar och den publika sajten utgår från.
+              </p>
+            </div>
+          ) : (
+            <Table
+              cols={['Plats', 'Tidszon', 'Status', '']}
+              rows={locations.map((l) => [
+                <div key="plats">
+                  <b style={{ fontWeight: 600 }}>{l.name}</b>
+                  <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 2 }}>
+                    {l.address?.trim() || 'Ingen adress angiven'}
+                  </div>
+                </div>,
+                <span key="tz" style={{ fontSize: 12.5, color: 'var(--c-ink-2)' }}>
+                  {l.timezone}
+                </span>,
+                <span key="status" style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+                  {l.is_primary ? (
+                    <Badge tone="gold">Primär plats</Badge>
+                  ) : (
+                    <Badge tone={l.active ? 'success' : 'neutral'}>
+                      {l.active ? 'Aktiv' : 'Inaktiv'}
+                    </Badge>
+                  )}
+                </span>,
+                <button
+                  key="edit"
+                  type="button"
+                  onClick={() => setEditing(l)}
+                  aria-label={`Redigera ${l.name}`}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--c-ink-3)',
+                    cursor: 'pointer',
+                    padding: 4,
+                    display: 'inline-grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  <Icon name="edit" size={17} />
+                </button>,
+              ])}
+            />
+          )}
+        </Card>
+      </div>
+
+      {creating && <CreateLocationDrawer onClose={() => setCreating(false)} />}
+      {editing && (
+        <EditLocationDrawer key={editing.id} location={editing} onClose={() => setEditing(null)} />
       )}
     </div>
   )
 }
 
-function LocationItem({ location }: { location: LocationRow }) {
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(updateLocation, {})
-
+/** Tidszon-select — visar den sparade zonen även om den inte finns i standardlistan
+ *  (samma fallback som SettingsForm), så en ovanlig zon aldrig tyst byts vid spar. */
+function TimezoneSelect({
+  formId,
+  defaultValue,
+}: {
+  formId?: string
+  defaultValue: string
+}) {
+  const options = TIMEZONES.includes(defaultValue) ? TIMEZONES : [defaultValue, ...TIMEZONES]
   return (
-    <li className={`${styles.row} ${location.active ? '' : styles.rowInactive}`}>
-      <form action={formAction} className={styles.fieldRow} style={{ flex: 1 }}>
-        <input type="hidden" name="id" value={location.id} />
-        <label className={styles.field} style={{ flex: '2 1 8rem' }}>
-          <span>Namn</span>
-          <input name="name" defaultValue={location.name} required />
-        </label>
-        <label className={styles.field} style={{ flex: '2 1 10rem' }}>
-          <span>Adress</span>
-          <input name="address" defaultValue={location.address ?? ''} />
-        </label>
-        <label className={styles.field} style={{ flex: '1 1 8rem' }}>
-          <span>Tidszon</span>
-          <input name="timezone" defaultValue={location.timezone} />
-        </label>
-        <button type="submit" className={styles.btn} disabled={pending}>
-          {pending ? '…' : 'Spara'}
-        </button>
-      </form>
-
-      <div className={styles.actions}>
-        <PrimaryBadge isPrimary={location.is_primary} active={location.active} />
-        <SetPrimaryButton
-          id={location.id}
-          isPrimary={location.is_primary}
-          active={location.active}
-        />
-        <ToggleButton id={location.id} active={location.active} isPrimary={location.is_primary} />
-      </div>
-      <Feedback state={state} />
-    </li>
+    <select form={formId} name="timezone" defaultValue={defaultValue} style={inputStyle}>
+      {options.map((tz) => (
+        <option key={tz} value={tz}>
+          {tz}
+        </option>
+      ))}
+    </select>
   )
 }
 
-/** The primary location is the one bookings + the public site resolve from. Active
- *  state mirrors the services placement badge. */
-function PrimaryBadge({ isPrimary, active }: { isPrimary: boolean; active: boolean }) {
-  if (isPrimary)
-    return (
-      <span
-        className={styles.badge}
-        title="Bokningar och den publika sajten utgår från denna plats. Kan inte inaktiveras."
-      >
-        Primär plats
-      </span>
-    )
+function CreateLocationDrawer({ onClose }: { onClose: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(createLocation, {})
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Plats skapad — gör den till primär när den ska ta över', 'success')
+      router.refresh()
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  const formId = 'create-location'
+
   return (
-    <span
-      className={styles.badge}
-      title={active ? 'Aktiv filial. Kan kopplas till scheman.' : 'Inaktiv. Dold för nya scheman.'}
+    <Drawer
+      title="Ny plats"
+      sub="En ny plats blir aktiv direkt men tar aldrig över som primär av sig själv."
+      onClose={onClose}
+      ariaLabel="Ny plats"
+      footer={
+        <form
+          action={formAction}
+          id={formId}
+          style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
+        >
+          <Button variant="ghost" type="button" onClick={onClose}>
+            Avbryt
+          </Button>
+          <Button variant="primary" type="submit" icon="check" disabled={pending}>
+            {pending ? 'Sparar…' : 'Lägg till plats'}
+          </Button>
+        </form>
+      }
     >
-      {active ? 'Aktiv' : 'Inaktiv'}
-    </span>
+      {/* Footer-formuläret äger fälten via form={formId} — samma mönster som
+          ServicesManagers CreateDrawer, så sticky-footerns knapp skickar in dem. */}
+      <div style={{ display: 'grid', gap: 14 }}>
+        <Field label="Namn">
+          <input
+            form={formId}
+            name="name"
+            required
+            placeholder="t.ex. Salongen Söder"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Adress">
+          <input
+            form={formId}
+            name="address"
+            placeholder="Gata 1, 111 22 Stad"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Tidszon">
+          <TimezoneSelect formId={formId} defaultValue="Europe/Stockholm" />
+        </Field>
+        {state.error && (
+          <p className="auth-error" role="alert" style={{ margin: 0 }}>
+            {state.error}
+          </p>
+        )}
+      </div>
+    </Drawer>
   )
 }
 
-function SetPrimaryButton({
-  id,
-  isPrimary,
-  active,
+function EditLocationDrawer({
+  location,
+  onClose,
 }: {
-  id: string
-  isPrimary: boolean
-  active: boolean
+  location: LocationRow
+  onClose: () => void
 }) {
-  const [state, formAction, pending] = useActionState<ActionState, FormData>(setPrimaryLocation, {})
-  // Disabled on the current primary (no-op) and on inactive locations (you'd create
-  // an inactive primary that can't then be deactivated-away). Activate it first.
-  const disabled = pending || isPrimary || !active
+  const { notify } = useToast()
+  const router = useRouter()
+  const [save, saveAction, saving] = useActionState<ActionState, FormData>(updateLocation, {})
+
+  useEffect(() => {
+    if (save.success) {
+      notify('Plats uppdaterad — speglas i bokning och scheman', 'success')
+      router.refresh()
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [save.success])
+
+  const formId = `edit-location-${location.id}`
+
   return (
-    <form action={formAction}>
-      <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
-        className={styles.btn}
-        disabled={disabled}
-        title={
-          isPrimary
-            ? 'Detta är redan den primära platsen.'
-            : !active
-              ? 'Aktivera platsen innan du gör den till primär.'
-              : 'Gör denna plats till salongens primära plats.'
-        }
-      >
-        {pending ? '…' : 'Gör till primär'}
-      </button>
-      {state.error ? (
-        <span className={`${styles.feedback} auth-error`} role="alert">
-          {state.error}
-        </span>
-      ) : null}
-    </form>
+    <Drawer
+      title={location.name}
+      sub={location.address?.trim() || 'Ingen adress angiven'}
+      accent={
+        location.is_primary ? (
+          <Badge tone="gold">Primär plats</Badge>
+        ) : (
+          <Badge tone={location.active ? 'success' : 'neutral'}>
+            {location.active ? 'Aktiv' : 'Inaktiv'}
+          </Badge>
+        )
+      }
+      onClose={onClose}
+      ariaLabel={`Redigera ${location.name}`}
+      footer={
+        <div style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}>
+          <Button variant="ghost" type="button" onClick={onClose}>
+            Avbryt
+          </Button>
+          {/* Nativ <button> så form=-associationen kan skicka body-formuläret från
+              sticky-footern (Button-primitiven vidarebefordrar ingen form-attr). */}
+          <button
+            type="submit"
+            form={formId}
+            disabled={saving}
+            className="pbtn pbtn--primary pbtn--md"
+          >
+            <Icon name="check" size={17} />
+            {saving ? 'Sparar…' : 'Spara'}
+          </button>
+        </div>
+      }
+    >
+      <div style={{ display: 'grid', gap: 20 }}>
+        <form action={saveAction} id={formId} style={{ display: 'grid', gap: 14 }}>
+          <input type="hidden" name="id" value={location.id} />
+          <Field label="Namn">
+            <input name="name" defaultValue={location.name} required style={inputStyle} />
+          </Field>
+          <Field label="Adress">
+            <input
+              name="address"
+              defaultValue={location.address ?? ''}
+              placeholder="Gata 1, 111 22 Stad"
+              style={inputStyle}
+            />
+          </Field>
+          <Field label="Tidszon">
+            <TimezoneSelect defaultValue={location.timezone} />
+          </Field>
+        </form>
+        {save.error && (
+          <p className="auth-error" role="alert" style={{ margin: 0 }}>
+            {save.error}
+          </p>
+        )}
+
+        <PrimarySection location={location} onDone={onClose} />
+        <ActiveSection location={location} onDone={onClose} />
+      </div>
+    </Drawer>
   )
 }
 
-function ToggleButton({
-  id,
-  active,
-  isPrimary,
-}: {
-  id: string
-  active: boolean
-  isPrimary: boolean
-}) {
+/** Gör till primär — samma regler som förr, men skälet till en inaktiverad knapp
+ *  står nu som synlig text (inte bara i ett hover-title). */
+function PrimarySection({ location, onDone }: { location: LocationRow; onDone: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(setPrimaryLocation, {})
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Primär plats uppdaterad — bokningar och sajten utgår nu härifrån', 'success')
+      router.refresh()
+      onDone()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  return (
+    <section style={{ borderTop: '1px solid var(--c-line)', paddingTop: 16 }}>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>
+        Primär plats
+      </div>
+      {location.is_primary ? (
+        <p style={{ fontSize: 13, color: 'var(--c-ink-2)', margin: 0, lineHeight: 1.55 }}>
+          Detta är salongens primära plats — bokningar och den publika sajten utgår härifrån. Vill
+          du byta: gör en annan plats till primär, så flyttas rollen dit.
+        </p>
+      ) : (
+        <>
+          <form action={formAction}>
+            <input type="hidden" name="id" value={location.id} />
+            <Button
+              variant="subtle"
+              type="submit"
+              icon="star"
+              size="sm"
+              disabled={pending || !location.active}
+            >
+              {pending ? '…' : 'Gör till primär'}
+            </Button>
+          </form>
+          <p style={{ fontSize: 12, color: 'var(--c-ink-3)', margin: '8px 0 0', lineHeight: 1.5 }}>
+            {location.active
+              ? 'Bokningar och den publika sajten utgår från den primära platsen.'
+              : 'Platsen är inaktiv och kan inte bli primär — aktivera den nedan först.'}
+          </p>
+        </>
+      )}
+      {state.error && (
+        <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+          {state.error}
+        </p>
+      )}
+    </section>
+  )
+}
+
+/** Aktivera/inaktivera — primär plats får aldrig inaktiveras (bärande för
+ *  bokningar); skälet visas som text i stället för hover-title. Ingen delete. */
+function ActiveSection({ location, onDone }: { location: LocationRow; onDone: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     toggleLocationActive,
     {},
   )
-  // The primary location can't be deactivated (load-bearing for bookings). Disable
-  // the button there so the refusal is also clear in the UI.
-  const disabled = pending || (active && isPrimary)
-  return (
-    <form action={formAction}>
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="active" value={String(!active)} />
-      <button
-        type="submit"
-        className={styles.btn}
-        disabled={disabled}
-        title={
-          active && isPrimary
-            ? 'Den primära platsen kan inte inaktiveras. Gör en annan plats till primär först.'
-            : active
-              ? 'Inaktivera platsen.'
-              : 'Aktivera platsen.'
-        }
-      >
-        {pending ? '…' : active ? 'Inaktivera' : 'Aktivera'}
-      </button>
-      {state.error ? (
-        <span className={`${styles.feedback} auth-error`} role="alert">
-          {state.error}
-        </span>
-      ) : null}
-    </form>
-  )
-}
 
-function Feedback({ state }: { state: ActionState }) {
-  if (state.error)
-    return (
-      <p className={`${styles.feedback} auth-error`} role="alert">
-        {state.error}
+  useEffect(() => {
+    if (state.success) {
+      notify(
+        location.active
+          ? 'Plats inaktiverad — dold för nya scheman, historiken finns kvar'
+          : 'Plats aktiverad — kan kopplas till scheman igen',
+        'info',
+      )
+      router.refresh()
+      onDone()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  const blocked = location.active && location.is_primary
+
+  return (
+    <section style={{ borderTop: '1px solid var(--c-line)', paddingTop: 16 }}>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>
+        Status
+      </div>
+      <form action={formAction}>
+        <input type="hidden" name="id" value={location.id} />
+        <input type="hidden" name="active" value={String(!location.active)} />
+        <Button
+          variant="ghost"
+          type="submit"
+          icon={location.active ? 'pause' : 'check'}
+          size="sm"
+          disabled={pending || blocked}
+        >
+          {pending ? '…' : location.active ? 'Inaktivera plats' : 'Aktivera plats'}
+        </Button>
+      </form>
+      <p style={{ fontSize: 12, color: 'var(--c-ink-3)', margin: '8px 0 0', lineHeight: 1.5 }}>
+        {blocked
+          ? 'Den primära platsen kan inte inaktiveras — bokningar kräver den. Gör en annan plats till primär först.'
+          : location.active
+            ? 'Inaktivering döljer platsen för nya scheman. Bokningshistoriken finns kvar — en plats tas aldrig bort helt.'
+            : 'Platsen är inaktiv och dold för nya scheman. Aktivera för att använda den igen.'}
       </p>
-    )
-  if (state.success)
-    return (
-      <p className={`${styles.feedback} ${styles.feedbackOk}`} role="status">
-        {state.success}
-      </p>
-    )
-  return null
+      {state.error && (
+        <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+          {state.error}
+        </p>
+      )}
+    </section>
+  )
 }
