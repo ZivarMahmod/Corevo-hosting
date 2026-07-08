@@ -17,7 +17,6 @@ import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { SidaStudio } from '@/components/platform/SidaStudio'
-import { THEME_CONTENT } from '@/components/storefront/theme-content'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, tenantSiteEditorEnabled } from '@/lib/tenant-data'
 import {
@@ -107,9 +106,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // Per-tenant edit-toggle (Task 3): is the site editor (sajtbyggaren) enabled for THIS
   // salon? Default OFF — the platform turns it on per customer in the Sida-tab (SidaStudio).
   const siteEditorEnabled = tenantSiteEditorEnabled(settings?.settings)
-  // Mallens standardtext (Sida v4): fälten förifylls med den EFFEKTIVA texten, så
-  // operatören ser exakt vad hen ändrar — kräver temats defaults bredvid overrides.
-  const themeCopyDefaults = THEME_CONTENT[activeTemplateKey as keyof typeof THEME_CONTENT]
   const storefrontUrl = tenantStorefrontUrl(tenant.slug) ?? url
   const storefrontHost = tenantStorefrontHost(tenant.slug) ?? `${tenant.slug}.${ROOT}`
 
@@ -365,15 +361,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         isActive={isActive}
         branding={branding}
         copy={copy}
-        copyDefaults={{
-          heroEyebrow: themeCopyDefaults.heroEyebrow,
-          heroTitle: themeCopyDefaults.heroTitle,
-          heroLede: themeCopyDefaults.heroLede,
-          aboutCopy: themeCopyDefaults.aboutCopy,
-          tagline: themeCopyDefaults.tagline,
-          italic: themeCopyDefaults.italic,
-        }}
-        statsDefaults={themeCopyDefaults.stats}
         heroImages={branding.hero_images ?? []}
         galleryImages={branding.gallery_images ?? []}
         siteEditorEnabled={siteEditorEnabled}

@@ -292,12 +292,23 @@ export type CopyOverride = {
   heroTitle?: string
   heroLede?: string
   aboutCopy?: string
+  /** Egen om-text för STARTSIDANS om-sektion (Zivar: hem och Om oss ska kunna säga
+   *  olika saker). Fallback-kedja: aboutCopyHome → aboutCopy → temats default. */
+  aboutCopyHome?: string
   tagline?: string
   italic?: string
+  /** Liten rubrik/eyebrow vid om-sektionen (AboutSplit + FreshCut-hemmet). */
+  aboutTitle?: string
+  /** Mall-egna hem-sektioner (t.ex. FreshCut): rubrik för andra sektionen. */
+  homeSecondTitle?: string
+  /** Mall-egna "Varför oss"-sektionen (FreshCut): rubrik, underrad, brödtext. */
+  whyTitle?: string
+  whySub?: string
+  whyBody?: string
 }
 
 /** The six theme-content fields the owner may override via `settings.copy`. */
-const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic'] as const
+const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic', 'aboutTitle'] as const
 
 /**
  * Resolve the six editorial copy fields: owner override wins per field, otherwise
@@ -324,6 +335,7 @@ export function resolveTenantCopy(
     aboutCopy: pick('aboutCopy'),
     tagline: pick('tagline'),
     italic: pick('italic'),
+    aboutTitle: pick('aboutTitle'),
   }
 }
 
@@ -337,7 +349,16 @@ export function resolveTenantCopy(
  * compile and behave exactly as before. M2 threads `settings.copy` through as the
  * third arg to surface owner-edited copy (see CopyOverride above).
  */
-export type ResolvedThemeContent = ThemeContent
+export type ResolvedThemeContent = ThemeContent & {
+  /** Startsidans om-sektion: aboutCopyHome-override → aboutCopy → temats default. */
+  aboutCopyHome: string
+  /** Mall-egna sektioner (bara satta när ägaren skrivit egna — layouten faller
+   *  annars tillbaka på sina inbyggda texter, t.ex. FreshCuts "Varför Oss?"). */
+  homeSecondTitle?: string
+  whyTitle?: string
+  whySub?: string
+  whyBody?: string
+}
 
 export function resolveThemeContent(
   theme: StorefrontTheme,
@@ -356,10 +377,27 @@ export function resolveThemeContent(
     (m) => m && typeof m.name === 'string' && m.name.trim().length > 0,
   )
   const stats = Array.isArray(b.stats) && b.stats.length ? b.stats : base.stats
+  // Startsidans om-sektion: egen hem-text vinner, annars samma som Om oss-sidan.
+  const cRaw = (copy ?? {}) as Record<string, unknown>
+  const homeAboutOverride =
+    typeof cRaw.aboutCopyHome === 'string' && cRaw.aboutCopyHome.trim().length > 0
+      ? cRaw.aboutCopyHome
+      : null
+  const resolvedCopy = resolveTenantCopy(theme, copy)
+  // Mall-egna extrafält: bara med när ägaren skrivit något (layouten har egna defaults).
+  const extra = (key: string): string | undefined => {
+    const v = cRaw[key]
+    return typeof v === 'string' && v.trim().length > 0 ? v : undefined
+  }
   return {
     ...base,
     // Owner copy overrides (per-field; empty/missing → theme default).
-    ...resolveTenantCopy(theme, copy),
+    ...resolvedCopy,
+    aboutCopyHome: homeAboutOverride ?? resolvedCopy.aboutCopy,
+    homeSecondTitle: extra('homeSecondTitle'),
+    whyTitle: extra('whyTitle'),
+    whySub: extra('whySub'),
+    whyBody: extra('whyBody'),
     heroImages,
     galleryImages,
     aboutImage: typeof b.about_image === 'string' && b.about_image ? b.about_image : base.aboutImage,

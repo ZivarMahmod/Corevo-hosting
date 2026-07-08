@@ -14,8 +14,9 @@ import styles from '../storefront.module.css'
  * "Mer än bara en frisörsalong" text + 4-photo gallery → "Varför Oss?" text + closing
  * CTA. The chrome (nav + the 3-col footer with real contact/address) is the public
  * layout's FooterFull. Swappable content — hero/gallery photos, colours, phone/address —
- * comes from tenant_settings (content fields + location); the two section titles below are the
- * source's fixed marketing prose, so they live here as theme constants (not owner-edited).
+ * comes from tenant_settings (content fields + location); sektionstexterna nedan är källsajtens
+ * fasta prosa som DEFAULT — ägaren kan skriva över dem via settings.copy
+ * (homeSecondTitle/whyTitle/whySub/whyBody, redigeras i Sida-flikens Hem).
  */
 const SEC1_TITLE = 'Mer än bara en frisörsalong.'
 const SEC2_TITLE = 'Varför Oss?'
@@ -39,12 +40,12 @@ export function FreshCutLayout({ content }: StorefrontLayoutProps) {
       <section className={styles.sfServices}>
         <div className={styles.sfNarrow} style={{ textAlign: 'center' }}>
           <Reveal>
-            <h2 className="sf-h1">{SEC1_TITLE}</h2>
+            <h2 className="sf-h1">{content.homeSecondTitle ?? SEC1_TITLE}</h2>
             <p className="sf-eyebrow" style={{ marginTop: 16 }}>
               {content.aboutTitle}
             </p>
             <p className="sf-body" style={{ marginTop: 20, maxWidth: '46rem', marginInline: 'auto' }}>
-              {content.aboutCopy}
+              {content.aboutCopyHome}
             </p>
           </Reveal>
         </div>
@@ -59,16 +60,16 @@ export function FreshCutLayout({ content }: StorefrontLayoutProps) {
       <section className={styles.sfClosing}>
         <Reveal>
           <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto' }}>
-            {SEC2_TITLE}
+            {content.whyTitle ?? SEC2_TITLE}
           </h2>
           <p className={styles.sfClosingLead} style={{ fontWeight: 600 }}>
-            {SEC2_SUB}
+            {content.whySub ?? SEC2_SUB}
           </p>
           <p
             className={styles.sfClosingLead}
             style={{ maxWidth: '48rem', margin: '18px auto 0' }}
           >
-            {SEC2_BODY}
+            {content.whyBody ?? SEC2_BODY}
           </p>
           <div style={{ marginTop: 30 }}>
             <BookCta className={styles.sfClosingCta} />

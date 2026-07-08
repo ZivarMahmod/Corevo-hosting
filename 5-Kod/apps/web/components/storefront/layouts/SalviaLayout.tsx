@@ -98,7 +98,7 @@ export function SalviaLayout({ tenant, content, services, location }: Storefront
             <p className="sf-eyebrow">— Om {tenant.name}</p>
             <p className={`sf-italic ${styles.sfAboutItalic}`}>{content.italic}</p>
             <p className="sf-body" style={{ fontSize: 17 }}>
-              {content.aboutCopy}
+              {content.aboutCopyHome}
             </p>
             <ul className={styles.sfStatTrio}>
               {content.stats.map(([n, l]) => (

@@ -11,8 +11,10 @@ import { SajtbyggareControl } from './SajtbyggareControl'
 import { ThemePicker } from './ThemePicker'
 import { BookingViewCard } from './BookingViewCard'
 import { TenantContactForm } from './TenantContactForm'
-import { StorefrontExtrasCard } from './StorefrontExtrasCard'
+import { SingleImageSlot, StatsCard } from './StorefrontExtrasCard'
 import type { BookingVariant } from '@/lib/platform/booking-variant'
+import { themeCaps, THEME_EXTRA_HOME } from '@/lib/platform/theme-capabilities'
+import { THEME_CONTENT } from '@/components/storefront/theme-content'
 import styles from './SidaStudio.module.css'
 
 type Copy = {
@@ -20,8 +22,14 @@ type Copy = {
   heroTitle: string
   heroLede: string
   aboutCopy: string
+  aboutCopyHome: string
   tagline: string
   italic: string
+  aboutTitle: string
+  homeSecondTitle: string
+  whyTitle: string
+  whySub: string
+  whyBody: string
 }
 
 /**
@@ -55,8 +63,6 @@ export function SidaStudio({
   isActive,
   branding,
   copy,
-  copyDefaults,
-  statsDefaults,
   heroImages,
   galleryImages,
   siteEditorEnabled,
@@ -74,10 +80,6 @@ export function SidaStudio({
   branding: TenantBranding
   /** Sparade text-OVERRIDES ('' = ingen — mallens standard gäller). */
   copy: Copy
-  /** Mallens standardtext per fält (THEME_CONTENT för sparad mall). */
-  copyDefaults: Copy
-  /** Mallens standardfakta ([värde, etikett][]) för Om oss-sektionen. */
-  statsDefaults: [string, string][]
   heroImages: string[]
   galleryImages: string[]
   siteEditorEnabled: boolean
@@ -92,6 +94,31 @@ export function SidaStudio({
   // Draft-mall: previewen kan visa en ANNAN mall (via ?theme=) utan att den skarpa
   // sidan ändras — publiceras separat. null = tenantens sparade mall.
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
+
+  // Kontrollerna följer mallen du TITTAR på (förhandsvisad mall om en är vald, annars
+  // den sparade): varje mall visar bara sina egna ändringsalternativ (theme-capabilities).
+  // Sparade värden för dolda kontroller ligger kvar i DB och dyker upp igen när en mall
+  // som använder dem väljs.
+  const activeTheme = previewTheme ?? templateKey
+  const caps = themeCaps(activeTheme)
+  // Mallens standardtext/fakta för mallen du TITTAR på (THEME_CONTENT är ren data,
+  // klient-säker) — förhandsvisar du en annan mall visar fälten DEN mallens standard.
+  const themeBase = THEME_CONTENT[(activeTheme in THEME_CONTENT ? activeTheme : templateKey) as keyof typeof THEME_CONTENT] ?? Object.values(THEME_CONTENT)[0]!
+  const copyDefaults: Copy = {
+    heroEyebrow: themeBase.heroEyebrow,
+    heroTitle: themeBase.heroTitle,
+    heroLede: themeBase.heroLede,
+    aboutCopy: themeBase.aboutCopy,
+    aboutCopyHome: themeBase.aboutCopy,
+    tagline: themeBase.tagline,
+    italic: themeBase.italic,
+    aboutTitle: themeBase.aboutTitle,
+    homeSecondTitle: '',
+    whyTitle: '',
+    whySub: '',
+    whyBody: '',
+  }
+  const statsDefaults = themeBase.stats
 
   const activePage = PAGES.find((p) => p.key === page) ?? PAGES[0]!
   const src = useMemo(() => {
@@ -127,26 +154,47 @@ export function SidaStudio({
   }, [])
 
   // Per-mall-fält (Zivar: "alla mallar har sina ändringsrutor för det de är uppbyggda
-  // för"): FreshCut-hemmet har ingen liten eyebrow-rubrik — visa inte fältet då.
+  // för"): fältuppsättningen styrs av theme-capabilities för mallen du tittar på.
   const homeFields: CopyFieldDef[] = [
-    ...(templateKey === 'freshcut'
-      ? []
-      : [
+    ...(caps.heroEyebrow
+      ? [
           {
             name: 'heroEyebrow',
             label: 'Liten rubrik ovanför hero-rubriken',
             hint: 'Den lilla versala raden överst i heron.',
           },
-        ]),
+        ]
+      : []),
     { name: 'heroTitle', label: 'Hero-rubrik', rows: 2, hint: 'Sidans stora rubrik. Radbrytning tillåten.' },
     { name: 'heroLede', label: 'Hero-ingress', rows: 2, hint: 'Texten direkt under hero-rubriken.' },
+    ...(caps.homeAbout
+      ? [
+          {
+            name: 'aboutCopyHome',
+            label: 'Om-text på startsidan',
+            rows: 4,
+            hint: 'Startsidans om-sektion. Standard = samma text som Om oss-sidan — skriv en egen här om hem och Om oss ska säga olika saker.',
+          },
+        ]
+      : []),
   ]
+  // Mall-EGNA hem-sektioner (t.ex. FreshCuts "Varför Oss?") — fält + mallens inbyggda
+  // text som standard, så ALLT som står på sidan går att skriva om.
+  const extraHome = THEME_EXTRA_HOME[activeTheme] ?? []
+  const extraHomeFields: CopyFieldDef[] = extraHome.map(({ name, label, hint, rows }) => ({ name, label, hint, rows }))
+  const extraHomeOverrides = Object.fromEntries(extraHome.map((f) => [f.name, (copy as unknown as Record<string, string>)[f.name] ?? '']))
+  const extraHomeDefaults = Object.fromEntries(extraHome.map((f) => [f.name, f.default]))
   const omFields: CopyFieldDef[] = [
+    {
+      name: 'aboutTitle',
+      label: 'Om-rubrik (liten)',
+      hint: 'Den lilla rubriken vid om-sektionen (syns på Om oss-sidan och i mallar med om-sektion på startsidan).',
+    },
     {
       name: 'aboutCopy',
       label: 'Om salongen',
       rows: 5,
-      hint: 'Berättelsen på Om oss-sidan (och "om"-sektionen på startsidan i vissa mallar).',
+      hint: 'Berättelsen på Om oss-sidan. Startsidans om-sektion följer den här texten tills du sätter en egen under Hem-fliken.',
     },
     { name: 'italic', label: 'Kursiv fras (citat/värme)', hint: 'Den korta kursiva frasen mellan sektionerna.' },
   ]
@@ -249,12 +297,20 @@ export function SidaStudio({
               </p>
               <CopyFieldsCard
                 tenantId={tenantId}
-                fields={homeFields}
-                overrides={{ heroEyebrow: copy.heroEyebrow, heroTitle: copy.heroTitle, heroLede: copy.heroLede }}
+                fields={[...homeFields, ...extraHomeFields]}
+                overrides={{
+                  heroEyebrow: copy.heroEyebrow,
+                  heroTitle: copy.heroTitle,
+                  heroLede: copy.heroLede,
+                  aboutCopyHome: copy.aboutCopyHome,
+                  ...extraHomeOverrides,
+                }}
                 defaults={{
                   heroEyebrow: copyDefaults.heroEyebrow,
                   heroTitle: copyDefaults.heroTitle,
                   heroLede: copyDefaults.heroLede,
+                  aboutCopyHome: copy.aboutCopy || copyDefaults.aboutCopy,
+                  ...extraHomeDefaults,
                 }}
                 onSaved={reload}
                 onFlash={pushFlash}
@@ -272,16 +328,34 @@ export function SidaStudio({
                   images={heroImages}
                   onFlashImage={pushImgFlash}
                 />
-                <ImageSlotManager
-                  tenantId={tenantId}
-                  slot="gallery"
-                  label="Galleri-bilder"
-                  hint="Bildgalleriet på startsidan. Tom slot faller tillbaka på mallens standardgalleri."
-                  images={galleryImages}
-                  onFlashImage={pushImgFlash}
-                />
+                {caps.homeGallery ? (
+                  <ImageSlotManager
+                    tenantId={tenantId}
+                    slot="gallery"
+                    label="Galleri-bilder"
+                    hint="Bildgalleriet på startsidan. Tom slot faller tillbaka på mallens standardgalleri."
+                    images={galleryImages}
+                    onFlashImage={pushImgFlash}
+                  />
+                ) : null}
               </div>
             </section>
+
+            {caps.homeStats ? (
+              <section className={styles.card}>
+                <h3 className={styles.cardHead}>Fakta / statistik</h3>
+                <p className={styles.note}>
+                  Siffer-fakta-raden på startsidan (den här mallen visar den; FreshCut har ingen).
+                </p>
+                <StatsCard
+                  tenantId={tenantId}
+                  stats={branding.stats ?? []}
+                  statsDefaults={statsDefaults}
+                  onFlashText={pushFlash}
+                  onSaved={reload}
+                />
+              </section>
+            ) : null}
           </>
         ) : null}
 
@@ -304,29 +378,37 @@ export function SidaStudio({
               <CopyFieldsCard
                 tenantId={tenantId}
                 fields={omFields}
-                overrides={{ aboutCopy: copy.aboutCopy, italic: copy.italic }}
-                defaults={{ aboutCopy: copyDefaults.aboutCopy, italic: copyDefaults.italic }}
+                overrides={{ aboutTitle: copy.aboutTitle, aboutCopy: copy.aboutCopy, italic: copy.italic }}
+                defaults={{ aboutTitle: copyDefaults.aboutTitle, aboutCopy: copyDefaults.aboutCopy, italic: copyDefaults.italic }}
                 onSaved={reload}
                 onFlash={pushFlash}
               />
             </section>
 
             <section className={styles.card}>
-              <h3 className={styles.cardHead}>Bilder &amp; fakta på Om oss</h3>
+              <h3 className={styles.cardHead}>Bilder på Om oss</h3>
               <p className={styles.note}>
-                Används av mallar med rikare om-sektioner (ej FreshCut): bild vid texten,
-                avslutningsbild och siffer-fakta.
+                Bilden vid om-texten och avslutningsbilden längst ner. Tomma = mallens
+                standardbilder visas.
               </p>
-              <StorefrontExtrasCard
-                tenantId={tenantId}
-                aboutImage={branding.about_image ?? null}
-                closingImage={branding.closing_image ?? null}
-                stats={branding.stats ?? []}
-                statsDefaults={statsDefaults}
-                onFlashText={pushFlash}
-                onFlashImage={pushImgFlash}
-                onSaved={reload}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <SingleImageSlot
+                  tenantId={tenantId}
+                  slot="about"
+                  label="Om-bild"
+                  url={branding.about_image ?? null}
+                  onFlashImage={pushImgFlash}
+                  onSaved={reload}
+                />
+                <SingleImageSlot
+                  tenantId={tenantId}
+                  slot="closing"
+                  label="Avslutningsbild"
+                  url={branding.closing_image ?? null}
+                  onFlashImage={pushImgFlash}
+                  onSaved={reload}
+                />
+              </div>
             </section>
           </>
         ) : null}

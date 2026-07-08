@@ -15,57 +15,7 @@ import styles from './platform.module.css'
  * OBS ordning: branding.stats = [värde, etikett] (ThemeStat) — mallarna renderar
  * värdet stort och etiketten under.
  */
-export function StorefrontExtrasCard({
-  tenantId,
-  aboutImage,
-  closingImage,
-  stats,
-  statsDefaults,
-  onFlashText,
-  onFlashImage,
-  onSaved,
-}: {
-  tenantId: string
-  aboutImage: string | null
-  closingImage: string | null
-  /** Sparade egna fakta ([värde, etikett][]) — tom lista = mallens standard gäller. */
-  stats: [string, string][]
-  /** Mallens standardfakta ([värde, etikett][]). */
-  statsDefaults: [string, string][]
-  onFlashText?: (text: string) => void
-  onFlashImage?: (url: string) => void
-  onSaved?: () => void
-}) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <SingleImageSlot
-        tenantId={tenantId}
-        slot="about"
-        label="Om-bild"
-        url={aboutImage}
-        onFlashImage={onFlashImage}
-        onSaved={onSaved}
-      />
-      <SingleImageSlot
-        tenantId={tenantId}
-        slot="closing"
-        label="Closing-bild"
-        url={closingImage}
-        onFlashImage={onFlashImage}
-        onSaved={onSaved}
-      />
-      <StatsForm
-        tenantId={tenantId}
-        stats={stats}
-        statsDefaults={statsDefaults}
-        onFlashText={onFlashText}
-        onSaved={onSaved}
-      />
-    </div>
-  )
-}
-
-function SingleImageSlot({
+export function SingleImageSlot({
   tenantId,
   slot,
   label,
@@ -151,7 +101,7 @@ function SingleImageSlot({
 
 type StatRow = { value: string; label: string }
 
-function StatsForm({
+export function StatsCard({
   tenantId,
   stats,
   statsDefaults,

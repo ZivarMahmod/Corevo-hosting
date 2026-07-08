@@ -25,7 +25,7 @@ import { reportActionError } from './observe'
 // server-side (the `select('slug')` read doubles as the existence check + the slug
 // needed to bust the cached public bundle so the change goes live immediately).
 
-const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic'] as const
+const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'aboutCopyHome', 'tagline', 'italic', 'aboutTitle', 'homeSecondTitle', 'whyTitle', 'whySub', 'whyBody'] as const
 type CopyField = (typeof COPY_FIELDS)[number]
 
 // Per-field length caps (generous; the theme defaults are well under these). Guards
@@ -35,8 +35,14 @@ const COPY_MAX: Record<CopyField, number> = {
   heroTitle: 200,
   heroLede: 600,
   aboutCopy: 4000,
+  aboutCopyHome: 4000,
   tagline: 200,
   italic: 300,
+  aboutTitle: 120,
+  homeSecondTitle: 200,
+  whyTitle: 200,
+  whySub: 200,
+  whyBody: 4000,
 }
 
 /**

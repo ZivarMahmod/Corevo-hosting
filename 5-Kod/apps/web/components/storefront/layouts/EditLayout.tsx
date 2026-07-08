@@ -80,7 +80,7 @@ export function EditLayout({ tenant, content, services }: StorefrontLayoutProps)
             <p className="sf-eyebrow">— Om {tenant.name}</p>
             <p className={`sf-italic ${styles.sfEditQuote}`}>&ldquo;{content.italic}&rdquo;</p>
             <p className="sf-body" style={{ fontSize: 16 }}>
-              {content.aboutCopy}
+              {content.aboutCopyHome}
             </p>
             <ul className={styles.sfStatInline}>
               {content.stats.map(([n, l]) => (

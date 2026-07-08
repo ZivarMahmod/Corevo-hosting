@@ -383,7 +383,7 @@ export type TenantDetail = {
    *  (settings.copy). Each field is the raw stored string or '' when unset — the UI
    *  prefills from THIS (never the resolved theme default), so a blank field keeps
    *  "faller tillbaka på temats standard". hero/gallery images live in `branding`. */
-  copy: { heroEyebrow: string; heroTitle: string; heroLede: string; aboutCopy: string; tagline: string; italic: string }
+  copy: { heroEyebrow: string; heroTitle: string; heroLede: string; aboutCopy: string; aboutCopyHome: string; tagline: string; italic: string; aboutTitle: string; homeSecondTitle: string; whyTitle: string; whySub: string; whyBody: string }
   /** Primär location-adress (footern på storefronten) — super-admin kontakt-kort. */
   primaryAddress: string | null
 }
@@ -504,6 +504,12 @@ export async function getTenantDetail(tenantId: string): Promise<TenantDetail | 
     heroTitle: copyStr(copyRaw.heroTitle),
     heroLede: copyStr(copyRaw.heroLede),
     aboutCopy: copyStr(copyRaw.aboutCopy),
+    aboutCopyHome: copyStr(copyRaw.aboutCopyHome),
+    aboutTitle: copyStr(copyRaw.aboutTitle),
+    homeSecondTitle: copyStr(copyRaw.homeSecondTitle),
+    whyTitle: copyStr(copyRaw.whyTitle),
+    whySub: copyStr(copyRaw.whySub),
+    whyBody: copyStr(copyRaw.whyBody),
     tagline: copyStr(copyRaw.tagline),
     italic: copyStr(copyRaw.italic),
   }
