@@ -69,3 +69,22 @@ aggregerar alla frisörer till en kolumn/dag (personal-filtret ger
 en-persons-vecka); SlotManagers medarbetar-chips tappar vald vecka;
 bokningsantal i schemagriden är inte plats-filtrerat; lojalitet-admin
 read-only. Zivars visuella genomgång återstår innan flytt till klart/.
+
+## UX-audit-pass 2 (2026-07-09, Zivars order — LIVE som v1.6.2)
+Full UX-audit (Explore-agent, 13 fynd) + fixar, prod-verifierat 6/6 med riktig
+salon_admin-session:
+- **Schema-lås:** grundtiderna låsta varje sidbesök; "Lås upp" → Ja/Nej +
+  automatisk kopia i `settings.schedule_backup`; "Återställ till innan
+  upplåsningen" tar tillbaka allt exakt (unlockScheduleWithBackup/
+  restoreScheduleBackup i schedule-actions.ts, ScheduleLock.tsx, inert-gating).
+- **Mall-val plattforms-only:** kundens /admin/sida saknar Mall-sektionen
+  (canChangeTemplate=false) och setTenantTheme nekar salon_admin server-side.
+- **Tjänst-tidsbuggen:** duration step=5+min=1 gjorde 30/45/60 ogiltiga → step=1;
+  pris required.
+- **Ärlighet:** fejk-"Spara schema" borta (seed omdöpt "Fyll tider från
+  arbetstiderna"); dashboardens fantom-CTA:er ("Ny bokning"/"Lägg till kund")
+  ersatta med ärliga; ta-bort-medarbetare kräver två-stegs-arm; frånvaro
+  till≥från klient-side; tjänster-2col kollapsar på mobil; pausad-preview-copy
+  hänvisar kund till Corevo.
+KVAR från auditen (P2, medvetet): SettingsForm/CustomerPrivacyForm ger inline-
+feedback i stället för toast (funkar, bara inkonsekvent).
