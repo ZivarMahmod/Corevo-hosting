@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Icon, type IconName } from './ui/Icon'
@@ -142,9 +142,31 @@ export function PortalSidebar({
   // stays open on every page (incl. onboarding) so the studio reads as the same connected
   // surface, not a separate place; the operator hides it themselves via the chevron.
   const [collapsed, setCollapsed] = useState(false)
+  // Mobil (≤820px): sidomenyn är off-canvas bakom en hamburgare i .portal-mobilebar
+  // (Zivar 2026-07-10: "allt krampar ihop sig i toppen"). Stängs på scrim-klick
+  // och automatiskt vid navigering (pathname-byte).
+  const [mobileOpen, setMobileOpen] = useState(false)
+  useEffect(() => setMobileOpen(false), [pathname])
 
   return (
-    <aside className={`portal-aside${collapsed ? ' is-collapsed' : ''}`}>
+    <>
+      <div className="portal-mobilebar">
+        <button
+          type="button"
+          className="portal-mobilebar-burger"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Öppna menyn"
+          aria-expanded={mobileOpen}
+        >
+          <Icon name="menu" size={20} />
+        </button>
+        <span className="portal-mobilebar-brand">{brand}</span>
+        <span className="portal-mobilebar-sub">{cfg.sub}</span>
+      </div>
+      {mobileOpen ? (
+        <div className="portal-scrim" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+      ) : null}
+      <aside className={`portal-aside${collapsed ? ' is-collapsed' : ''}${mobileOpen ? ' is-open' : ''}`}>
       <div className="portal-aside-brand">
         <span className="portal-aside-mark" aria-hidden="true">
           C
@@ -208,6 +230,7 @@ export function PortalSidebar({
         </span>
         {signOut ? <span className="portal-aside-logout">{signOut}</span> : null}
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

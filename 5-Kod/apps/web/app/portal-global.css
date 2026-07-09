@@ -1112,3 +1112,148 @@
     animation-duration: 1ms;
   }
 }
+
+/* ===========================================================================
+   MOBIL (≤820px) — back-office-skalet (Zivar 2026-07-10: "allt krampar ihop
+   sig i toppen"). Sidomenyn blir off-canvas bakom en hamburgare i en smal
+   mobilbar; topbaren och innehållet får telefon-mått. Desktop orörd.
+   =========================================================================== */
+[data-world="backoffice"] .portal-mobilebar { display: none; }
+[data-world="backoffice"] .portal-scrim { display: none; }
+
+@media (max-width: 820px) {
+  [data-world="backoffice"].portal-shell { flex-direction: column; }
+
+  /* mobilbar: hamburgare + varumärke, samma forest som sidomenyn */
+  [data-world="backoffice"] .portal-mobilebar {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: var(--c-sidebar);
+    color: var(--c-on-forest);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--c-sidebar-line);
+  }
+  [data-world="backoffice"] .portal-mobilebar-burger {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--c-sidebar-line);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--c-on-forest);
+    cursor: pointer;
+    flex: none;
+  }
+  [data-world="backoffice"] .portal-mobilebar-brand {
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  [data-world="backoffice"] .portal-mobilebar-sub {
+    font-size: 11px;
+    color: var(--c-on-forest-2);
+    white-space: nowrap;
+  }
+
+  /* scrim bakom öppen meny */
+  [data-world="backoffice"] .portal-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    background: rgba(23, 17, 11, 0.45);
+  }
+
+  /* sidomenyn: fixed off-canvas låda som glider in från vänster */
+  [data-world="backoffice"] .portal-aside {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(290px, 84vw);
+    height: 100dvh;
+    min-height: 0;
+    z-index: 80;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    overflow-y: auto;
+    box-shadow: none;
+  }
+  [data-world="backoffice"] .portal-aside.is-open {
+    transform: translateX(0);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
+  }
+  /* desktop-kollapsning är irrelevant här — neutralisera så menyn alltid är full */
+  [data-world="backoffice"] .portal-aside-toggle { display: none; }
+  [data-world="backoffice"] .portal-aside.is-collapsed { width: min(290px, 84vw); padding: 22px 16px; }
+  [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-mark,
+  [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-brand-text,
+  [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-group,
+  [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-link-label,
+  [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-user-text,
+  [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-logout { display: revert; }
+  [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-brand { justify-content: flex-start; padding: 4px 8px 22px; }
+  [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-link { justify-content: flex-start; padding: 11px 13px; gap: 12px; }
+  [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-user { justify-content: flex-start; }
+
+  /* topbar: telefon-mått — sökrutan krymper, kbd-hint + "Se din sida"-text bort */
+  [data-world="backoffice"] .portal-topbar {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  [data-world="backoffice"] .bo-cmdk-trigger-kbd { display: none; }
+  [data-world="backoffice"] .portal-topbar-right { gap: 8px; }
+  [data-world="backoffice"] .portal-topbar-sitelink { font-size: 0; gap: 0; padding: 8px; }
+  [data-world="backoffice"] .portal-topbar-sitelink svg { margin: 0; }
+  [data-world="backoffice"] .bo-theme button { padding: 0 8px; }
+
+  /* innehållet: full bredd, mindre luft */
+  [data-world="backoffice"] .portal-main { padding: 16px 14px; }
+}
+
+/* ===========================================================================
+   SCHEMAVY — iPad-kiosken (/admin/scheman/vy): bara brädan + bläddring.
+   Chromet göms med samma :has()-mönster som onboarding-studion.
+   =========================================================================== */
+[data-world="backoffice"].portal-shell:has(.schedule-kiosk) .portal-topbar,
+[data-world="backoffice"].portal-shell:has(.schedule-kiosk) .portal-aside,
+[data-world="backoffice"].portal-shell:has(.schedule-kiosk) .portal-mobilebar {
+  display: none;
+}
+[data-world="backoffice"] .portal-main:has(> .schedule-kiosk) {
+  padding: 18px 20px;
+}
+[data-world="backoffice"] .schedule-kiosk-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+[data-world="backoffice"] .schedule-kiosk-brand {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--c-forest);
+}
+[data-world="backoffice"] .schedule-kiosk-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--c-ink-3);
+  text-decoration: none;
+}
+[data-world="backoffice"] .schedule-kiosk-back:hover { color: var(--c-forest); }

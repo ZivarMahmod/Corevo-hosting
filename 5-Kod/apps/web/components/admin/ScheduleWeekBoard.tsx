@@ -64,6 +64,8 @@ export function ScheduleWeekBoard({
   plats,
   locations,
   staffNoun,
+  basePath = '/admin/scheman',
+  readOnly = false,
 }: {
   weekLabel: string
   isCurrentWeek: boolean
@@ -78,6 +80,10 @@ export function ScheduleWeekBoard({
   /** >1 aktiv plats → själva filtret; annars tom lista → ingen plats-UI alls. */
   locations: BoardLocation[]
   staffNoun: string
+  /** Rutt bläddringen länkar inom — kiosken (Schemavy) skickar sin egen. */
+  basePath?: string
+  /** Kiosk-läget: personalraderna är inte länkar till mall-redigeraren. */
+  readOnly?: boolean
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -90,7 +96,7 @@ export function ScheduleWeekBoard({
     if (s) q.set('staff', s)
     const p = params.plats ?? plats
     if (p) q.set('plats', p)
-    return `/admin/scheman?${q.toString()}${hash}`
+    return `${basePath}?${q.toString()}${hash}`
   }
 
   return (
@@ -237,7 +243,7 @@ export function ScheduleWeekBoard({
                 key={row.staffId}
                 row={row}
                 days={days}
-                href={href({ staff: row.staffId }, '#mallar')}
+                href={readOnly ? null : href({ staff: row.staffId }, '#mallar')}
               />
             ))}
           </div>
@@ -294,56 +300,63 @@ function WeekNavLink({
 
 // En rad = klickbar medarbetare (öppnar/scrollar till mall-redigeraren nedanför)
 // + 7 dagsceller. Vald rad markeras med forest-kant så kopplingen rad ↔ mall syns.
-function StaffBoardRow({ row, days, href }: { row: BoardRow; days: BoardDay[]; href: string }) {
+// href=null (kiosk/Schemavy) → namncellen är ren text, ingen mall-koppling.
+function StaffBoardRow({ row, days, href }: { row: BoardRow; days: BoardDay[]; href: string | null }) {
   const initial = row.name.trim().charAt(0).toUpperCase() || '?'
-  return (
+  const nameCellStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 9,
+    padding: '12px 10px 12px 16px',
+    borderBottom: '1px solid var(--c-line)',
+    borderLeft: row.isSelected ? '3px solid var(--c-forest)' : '3px solid transparent',
+    textDecoration: 'none',
+    background: row.isSelected ? 'var(--c-paper-2)' : 'transparent',
+  } as const
+  const nameCellInner = (
     <>
-      <Link
-        href={href}
-        title={`Öppna veckoschemat (mall) för ${row.name}`}
+      <span
+        aria-hidden="true"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 9,
-          padding: '12px 10px 12px 16px',
-          borderBottom: '1px solid var(--c-line)',
-          borderLeft: row.isSelected ? '3px solid var(--c-forest)' : '3px solid transparent',
-          textDecoration: 'none',
-          background: row.isSelected ? 'var(--c-paper-2)' : 'transparent',
+          width: 24,
+          height: 24,
+          borderRadius: 999,
+          background: 'var(--c-forest)',
+          color: '#fff',
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: 11,
+          fontWeight: 700,
+          flex: 'none',
+          fontFamily: 'var(--font-ui)',
         }}
       >
-        <span
-          aria-hidden="true"
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 999,
-            background: 'var(--c-forest)',
-            color: '#fff',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 11,
-            fontWeight: 700,
-            flex: 'none',
-            fontFamily: 'var(--font-ui)',
-          }}
-        >
-          {initial}
-        </span>
-        <span
-          style={{
-            fontFamily: 'var(--font-ui)',
-            fontSize: 13,
-            fontWeight: 600,
-            color: 'var(--c-ink)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {row.name}
-        </span>
-      </Link>
+        {initial}
+      </span>
+      <span
+        style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'var(--c-ink)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {row.name}
+      </span>
+    </>
+  )
+  return (
+    <>
+      {href ? (
+        <Link href={href} title={`Öppna veckoschemat (mall) för ${row.name}`} style={nameCellStyle}>
+          {nameCellInner}
+        </Link>
+      ) : (
+        <div style={nameCellStyle}>{nameCellInner}</div>
+      )}
 
       {row.cells.map((cell, i) => {
         const day = days[i]!
