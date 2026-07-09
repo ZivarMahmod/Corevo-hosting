@@ -20,6 +20,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         <div className="auth-card">
           <p className="auth-brand">{tenantName}</p>
           {children}
+          <p className="auth-foot">Drivs av Corevo</p>
         </div>
       </main>
     </div>

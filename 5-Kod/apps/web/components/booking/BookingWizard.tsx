@@ -224,6 +224,18 @@ export function BookingWizard({
     fetchSlots(service.id, staffChoice, d, locationId)
   }
 
+  // Tid-steget öppnar med DAGENS datum förvalt (Zivar: kunden ska direkt se
+  // dagens tider — aldrig "välj en dag ovan" som första möte) och kan byta
+  // fritt. Körs varje gång steget nås med nollställt datum (tjänst/frisör-byte
+  // nollar datumet → återbesök på steget väljer om dagens dag).
+  useEffect(() => {
+    if (compact || step !== 3 || !service || date) return
+    pickDate(ymd(days[0]!))
+    // pickDate/days medvetet utanför dep-listan (stabila per render-cykel) —
+    // samma mönster som compact-effekterna nedan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compact, step, service, date])
+
   // ── Variant 4 (compact) ────────────────────────────────────────────────────
   // Everything is on one screen, so the slot grid must refetch whenever the
   // service, staff, OR day changes — not only on an explicit day click. We seed
@@ -243,7 +255,6 @@ export function BookingWizard({
     if (!compact || !service || !date) return
     // Refetcha även när platsen byts (location-aware availability i compact-läget).
     fetchSlots(service.id, staffChoice, date, locationId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compact, service, staffChoice, date, locationId])
 
   function submit() {

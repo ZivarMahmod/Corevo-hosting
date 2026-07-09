@@ -36,12 +36,13 @@ export function LoginForm({ next }: { next: string }) {
 
   return (
     <form action={formAction} className="auth-form">
-      <h1>Logga in</h1>
+      <h1>Välkommen tillbaka</h1>
+      <p className="auth-sub">Logga in med din e-post så tar vi dig till din översikt.</p>
       <input type="hidden" name="next" value={next} />
 
       <label className="auth-field">
         <span>E-post</span>
-        <input name="email" type="email" autoComplete="email" required />
+        <input name="email" type="email" autoComplete="email" spellCheck={false} required />
       </label>
 
       <label className="auth-field">
