@@ -257,29 +257,59 @@ export function BookingWizard({
     fetchSlots(service.id, staffChoice, date, locationId)
   }, [compact, service, staffChoice, date, locationId])
 
+  // Idempotens-nyckel (0048): ETT id per boknings-intent — genereras lazy vid
+  // första submit och överlever retries, men nollas så fort tiden byts (nytt
+  // intent). Ett förlorat SVAR + retry ger då samma bokning tillbaka i stället
+  // för en dold dubblett.
+  const requestIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    requestIdRef.current = null
+  }, [slot])
+
   function submit() {
     if (!service || !slot) return
     setError(null)
+    if (!requestIdRef.current) requestIdRef.current = crypto.randomUUID()
     startTransition(async () => {
-      const res = await createBooking({
-        serviceId: service.id,
-        staffId: slot.staffId,
-        startISO: slot.start,
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        note: form.note,
-        // Vald plats (VÅG 4b); null → servern faller tillbaka på primär plats.
-        locationId,
-      })
+      // Transport-fel (nät dör mitt i anropet) får ALDRIG bubbla till error-
+      // boundaryn — den unmountar drawern, slänger allt kunden skrivit och
+      // lockar till en OM-bokning fast den första kan ha gått igenom (audit
+      // P0-2/P1-4). Fånga, behåll allt state, säg sanningen.
+      let res: Awaited<ReturnType<typeof createBooking>>
+      try {
+        res = await createBooking({
+          serviceId: service.id,
+          staffId: slot.staffId,
+          startISO: slot.start,
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          note: form.note,
+          // Vald plats (VÅG 4b); null → servern faller tillbaka på primär plats.
+          locationId,
+          requestId: requestIdRef.current ?? undefined,
+        })
+      } catch {
+        setError(
+          'Något gick fel med uppkopplingen. Din bokning KAN ha gått igenom — kolla din e-post efter en bekräftelse innan du försöker igen.',
+        )
+        return
+      }
       if (res.ok) {
         // Online-betalning på (payments_enabled && charges_enabled) → Stripe Checkout.
-        // Allt fel/degrade landar tyst på bekräftelsen (betala på plats).
+        // Allt fel/degrade landar tyst på bekräftelsen (betala på plats) — sant
+        // efter P0-1-fixen: en misslyckad checkout lämnar ingen payment-rad, så
+        // bokningen överlever som vanlig betala-på-plats. Ett KAST här får inte
+        // unwinda — bokningen är redan durabel, visa bekräftelsen.
         if (res.requiresPayment) {
-          const pay = await startBookingCheckout(res.bookingId)
-          if (pay.ok) {
-            window.location.href = pay.url
-            return
+          try {
+            const pay = await startBookingCheckout(res.bookingId)
+            if (pay.ok) {
+              window.location.href = pay.url
+              return
+            }
+          } catch {
+            // degradera till betala-på-plats-bekräftelsen
           }
         }
         if (onClose) {

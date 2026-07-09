@@ -1,0 +1,30 @@
+# Boknings-cron (vattentät-audit P1-6): pending-expiry + påminnelser.
+# Endpointsen har funnits (secret-gatade) men INGEN scheduler anropade dem —
+# övergivna online-checkout-pending låg kvar och blockerade sin tid för evigt,
+# och påminnelse-mailen gick aldrig ut. GitHub Actions är schemaläggaren
+# (samma mönster som worker-watchdog); CRON_SECRET måste finnas både som
+# Worker-secret och GH-repo-secret.
+name: Booking cron
+on:
+  schedule:
+    - cron: '*/15 * * * *' # var 15:e minut (pending-TTL är 30 min)
+  workflow_dispatch: {}
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Expire abandoned pending bookings
+        run: |
+          code=$(curl -s -o /tmp/out -w '%{http_code}' \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://booking.corevo.se/api/cron/pending-expiry)
+          cat /tmp/out
+          [ "$code" = "200" ] || { echo "pending-expiry HTTP $code"; exit 1; }
+      - name: Send due reminders
+        run: |
+          code=$(curl -s -o /tmp/out -w '%{http_code}' \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://booking.corevo.se/api/cron/reminders)
+          cat /tmp/out
+          [ "$code" = "200" ] || { echo "reminders HTTP $code"; exit 1; }

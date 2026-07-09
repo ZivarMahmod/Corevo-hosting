@@ -173,6 +173,7 @@ export type Database = {
           note: string | null
           price_cents: number | null
           reminded_at: string | null
+          request_id: string | null
           service_id: string
           staff_id: string
           start_ts: string
@@ -190,6 +191,7 @@ export type Database = {
           note?: string | null
           price_cents?: number | null
           reminded_at?: string | null
+          request_id?: string | null
           service_id: string
           staff_id: string
           start_ts: string
@@ -207,6 +209,7 @@ export type Database = {
           note?: string | null
           price_cents?: number | null
           reminded_at?: string | null
+          request_id?: string | null
           service_id?: string
           staff_id?: string
           start_ts?: string
@@ -2114,6 +2117,7 @@ export type Database = {
           p_guest_phone?: string
           p_location?: string
           p_note?: string
+          p_request_id?: string
           p_service: string
           p_staff: string
           p_start: string

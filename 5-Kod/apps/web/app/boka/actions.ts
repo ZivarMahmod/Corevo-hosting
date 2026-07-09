@@ -34,6 +34,10 @@ export type CreateBookingInput = {
   /** Vald plats (VÅG 4b). Utelämnad → create_public_booking faller tillbaka på
    *  tenantens primära aktiva plats (oförändrat för en-plats-salonger). */
   locationId?: string | null
+  /** Idempotens-nyckel (0048): klient-genererad per boknings-INTENT och stabil
+   *  över retries. Samma id igen ⇒ RPC:n returnerar den befintliga bokningen i
+   *  stället för dubblett/23P01. Utelämnad → exakt gamla beteendet. */
+  requestId?: string
 }
 export type CreateResult =
   | { ok: true; bookingId: string; requiresPayment: boolean }
@@ -287,6 +291,7 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
     // DEFAULT NULL → primär plats (back-compat). p_location är `string | undefined`
     // i de genererade typerna, så vi coalescear bort null.
     p_location: input.locationId ?? ctx.locationId ?? undefined,
+    p_request_id: input.requestId ?? undefined,
   })
 
   if (error) {
@@ -344,9 +349,18 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
 
   // requiresPayment (G09): the SINGLE gate — payments_enabled AND charges_enabled.
   // True ⇒ the wizard starts Stripe Checkout; false ⇒ "betala på plats".
-  const gate = await getPaymentGate(supabase, ctx.tenantId)
+  // Bokningen är REDAN durabel här — ett kast i gate-läsningen får aldrig unwinda
+  // svaret till ett fel (kunden skulle boka om → dold dubbelbokning, audit P1-3).
+  // Fel ⇒ betala-på-plats-vägen, som alltid är giltig.
+  let requiresPayment = false
+  try {
+    const gate = await getPaymentGate(supabase, ctx.tenantId)
+    requiresPayment = gate.canTakeOnline
+  } catch {
+    requiresPayment = false
+  }
 
-  return { ok: true, bookingId, requiresPayment: gate.canTakeOnline }
+  return { ok: true, bookingId, requiresPayment }
 }
 
 export type CheckoutResult =
@@ -394,12 +408,6 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
   if (amount <= 0) return { ok: false, reason: 'unavailable', message: 'Inget pris att betala.' }
   const serviceName = (booking.services as { name?: string } | null)?.name ?? 'Behandling'
 
-  // En payment-rad per bokning (UNIQUE(booking_id) → idempotensgrund för webhooken).
-  await admin.from('payments').upsert(
-    { tenant_id: ctx.tenantId, booking_id: bookingId, amount_cents: amount, currency: 'sek', status: 'pending' },
-    { onConflict: 'booking_id' },
-  )
-
   const origin = await requestOrigin()
   let session
   try {
@@ -425,6 +433,22 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
   }
 
   if (!session.url) return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
-  await admin.from('payments').update({ stripe_checkout_session_id: session.id }).eq('booking_id', bookingId)
+
+  // Payment-raden skrivs FÖRST när Stripe-sessionen finns (vattentät-audit P0-1):
+  // en misslyckad checkout får ALDRIG lämna en föräldralös pending-rad — expire-
+  // svepet (0018) matchar booking.pending + payments.pending och skulle annars
+  // avboka en bokning kunden fått bekräftad som betala-på-plats. En payment-rad
+  // per bokning (UNIQUE(booking_id) → idempotensgrund för webhooken).
+  const { error: payErr } = await admin.from('payments').upsert(
+    {
+      tenant_id: ctx.tenantId, booking_id: bookingId, amount_cents: amount, currency: 'sek',
+      status: 'pending', stripe_checkout_session_id: session.id,
+    },
+    { onConflict: 'booking_id' },
+  )
+  // Utan payment-rad ska kunden inte skickas till Stripe (webhooken skulle sakna
+  // sin rad) — degradera till betala-på-plats; sessionen självdör hos Stripe.
+  if (payErr) return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+
   return { ok: true, url: session.url }
 }
