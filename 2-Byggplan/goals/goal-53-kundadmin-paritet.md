@@ -88,3 +88,36 @@ salon_admin-session:
   hänvisar kund till Corevo.
 KVAR från auditen (P2, medvetet): SettingsForm/CustomerPrivacyForm ger inline-
 feedback i stället för toast (funkar, bara inkonsekvent).
+
+## Bokningsflödes-redesign (2026-07-09, Zivars order — LIVE som v1.7.0)
+Designpaketet `4-Dokument-Underlag/01-acceptans/Frisörbokningsformulär redesign/
+design_handoff_bokningsflode/` implementerat rakt av (paketet = LAG), uttryckt
+på kontrakts-tokens så VARJE salongs tema styr färgerna (--fc-*/--tkt-* ur
+--color-accent/-fg/-bg; forest #2E5A46 fast success; radius 0; Caslon/Franklin/
+Plex Mono via next/font):
+- **Wizard-rendern ombyggd** (BookingWizard.tsx) — editorial look, kalender- ELLER
+  dag-remse-picker, grupperade tider (Morgon/Dagtid/Kväll), biljett-steg 5;
+  state-maskin/idempotens (request_id) orörda. Bokningsfönster 90 dagar
+  (BOOKING_WINDOW_DAYS — fixar "kalendern slutar 22 juli").
+- **Biljettsidorna** — bekräftelsen = stub med BEKRÄFTAD-stämpel (+ alla
+  betalgrenar/.ics kvar), avboka = stub + utfallstexter (app/ticket.css).
+  Avboka kräver HMAC-token ?t= — utan token "Ogiltig länk" by design.
+- **Mail-mallarna** i samma biljettspråk (alla 5, inline-hex).
+- **NY kund-yta /admin/bokning "Bokningsflöde"** — kunden väljer bokningssätt
+  (4 presentationer m. mini-schema), picker (kalender/dag-remsa), avatarläge
+  (foto/initialer/namn), färger + live-preview; spegel i super-adminens
+  kundkort. Prefs: readPickerMode/readStaffAvatarMode (booking-variant.ts),
+  merge-aldrig-clobber i tenant_settings.settings.booking.
+- **Personal-på-sidan** (Zivars mid-order): staff.avatar_url + show_on_site
+  (migration 0049, applicerad), loadStaffTeam-chokepoint i getTenantBySlug —
+  aktiv+synlig personal ersätter legacy-teamlistan; utan foto = silhuett-SVG;
+  foto + "Visa/Dölj på sidan" i /admin/personal och Sida-studions Om oss-flik.
+Prod-verifierat (riktig salon_admin-session + äkta bokning via publika RPC:n):
+/, /om (4 barberare), /boka (fc-scope), bekräftelse (BEKRÄFTAD-stub), avboka
+(token + stub), idempotens (samma request_id → samma bokning), /admin/bokning,
+nav, /admin/sida, /admin/personal — ALLA GRÖNA. Test-bokningen avbokad
+(hard-delete blockeras av trigger, korrekt).
+KVAR (medvetet, rapporterat): POPULÄR-taggen saknar datakälla (services.badge?);
+pre-save-previewn färgar bara om (bokningssätt syns efter Spara); compact
+behåller e-postfältet (servern kräver det); plan-styrd låsning av val per kund
+ej byggd; CRON_SECRET väntar på Zivars OK (påminnelse-cron verkningslös tills dess).
