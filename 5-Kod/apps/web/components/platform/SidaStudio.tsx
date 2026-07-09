@@ -13,6 +13,7 @@ import { BookingViewCard } from './BookingViewCard'
 import { TenantContactForm } from './TenantContactForm'
 import { OpeningHoursCard } from './OpeningHoursCard'
 import { TeamCard } from './TeamCard'
+import { StaffTeamCard, type StaffTeamMember } from './StaffTeamCard'
 import { SingleImageSlot, StatsCard } from './StorefrontExtrasCard'
 import type { BookingVariant } from '@/lib/platform/booking-variant'
 import { themeCaps, THEME_EXTRA_HOME } from '@/lib/platform/theme-capabilities'
@@ -85,6 +86,7 @@ export function SidaStudio({
   social,
   openingHours,
   bookingVariant,
+  staffTeam = [],
   canChangeTemplate = true,
 }: {
   tenantId: string
@@ -108,6 +110,10 @@ export function SidaStudio({
   /** Manuella öppettider (settings.opening_hours) — null = härleds ur scheman. */
   openingHours: { day: string; time: string }[] | null
   bookingVariant: BookingVariant
+  /** RIKTIGA medarbetare (staff-tabellen) — publika team-sektionens datakälla när
+   *  minst en synlig medlem finns (annars gäller den gamla settings-listan, se
+   *  lib/tenant-data loadStaffTeam). Default [] så äldre mounts kompilerar. */
+  staffTeam?: StaffTeamMember[]
   /** false för salon_admin: mall-byte är plattformens beslut — sektionen döljs
    *  (och setTenantTheme nekar server-side). */
   canChangeTemplate?: boolean
@@ -522,10 +528,11 @@ export function SidaStudio({
             <section className={styles.card}>
               <h3 className={styles.cardHead}>Teamet</h3>
               <p className={styles.note}>
-                Porträtt, namn och kort presentation på Om oss-sidan. Det{' '}
-                <strong>tekniska</strong> (vilka tjänster medlemmen utför, schema,
-                bokningsbarhet, inlogg) sköts i kundkortets <strong>Personal</strong>-flik —
-                här styr du bara hur teamet <strong>presenteras</strong> på sidan.
+                Team-sektionen på sidan hämtas från salongens <strong>riktiga personal</strong> —
+                lägger du in en bokningsbar medarbetare i <strong>Personal</strong>-fliken dyker
+                hen upp här och på sidan. Här styr du bara <strong>foto</strong> och om en
+                medarbetare <strong>syns</strong>; det tekniska (tjänster, schema,
+                bokningsbarhet, inlogg) sköts i Personal-fliken.
               </p>
               <CopyFieldsCard
                 tenantId={tenantId}
@@ -539,15 +546,36 @@ export function SidaStudio({
                 onSaved={reload}
                 onFlash={pushFlash}
               />
-              <div style={{ marginTop: 12 }}>
-                <TeamCard
-                  tenantId={tenantId}
-                  team={(branding.team ?? []).map((m) => ({ name: m.name ?? '', role: m.role ?? '', img: m.img ?? '' }))}
-                  onSaved={reload}
-                  onFlash={pushFlash}
-                  onFlashImage={pushImgFlash}
-                />
-              </div>
+              {/* Riktiga medarbetare (staff) = sidans datakälla så fort minst en synlig
+                  finns; den gamla manuella settings-listan (TeamCard) visas bara för
+                  legacy-tenanter helt utan personal — samma regel som rendern
+                  (lib/tenant-data loadStaffTeam). */}
+              {staffTeam.length > 0 ? (
+                <div style={{ marginTop: 12 }}>
+                  <StaffTeamCard
+                    tenantId={tenantId}
+                    staff={staffTeam}
+                    onSaved={reload}
+                    onFlash={pushFlash}
+                  />
+                  {(branding.team ?? []).length > 0 ? (
+                    <p className={styles.note} style={{ marginTop: 10 }}>
+                      Den äldre manuella team-listan finns kvar i inställningarna men visas
+                      inte på sidan så länge minst en medarbetare ovan är synlig.
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div style={{ marginTop: 12 }}>
+                  <TeamCard
+                    tenantId={tenantId}
+                    team={(branding.team ?? []).map((m) => ({ name: m.name ?? '', role: m.role ?? '', img: m.img ?? '' }))}
+                    onSaved={reload}
+                    onFlash={pushFlash}
+                    onFlashImage={pushImgFlash}
+                  />
+                </div>
+              )}
             </section>
 
             <section className={styles.card}>

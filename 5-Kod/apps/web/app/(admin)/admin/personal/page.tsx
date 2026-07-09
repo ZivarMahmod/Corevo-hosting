@@ -83,6 +83,10 @@ export default async function StaffPage() {
     hasAccount: Boolean(s.profile_id),
     locationName: (s.location_id && locationName.get(s.location_id)) || null,
     locationId: s.location_id,
+    // Foto + synlighet på publika team-sektionen (0049) — redigeras i drawerns
+    // "Foto & synlighet på sidan" (updateStaff-partialpatch).
+    avatarUrl: s.avatar_url,
+    showOnSite: s.show_on_site,
     today: (
       dayByStaff.get(s.id) ?? []
     ).sort((a, b) => (a.startTs < b.startTs ? -1 : 1)),

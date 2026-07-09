@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { WizardService, WizardLocation } from '@/components/booking/BookingWizard'
-import type { BookingVariant } from '@/lib/platform/booking-variant'
+import type { BookingVariant, PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
 import { BookingDrawer } from './BookingDrawer'
 
 /**
@@ -58,6 +58,8 @@ export function BookingProvider({
   tenantName,
   staffNoun = 'Frisör',
   variant = 'wizard',
+  pickerMode = 'calendar',
+  staffAvatarMode = 'initialer',
   children,
 }: {
   services: WizardService[]
@@ -73,6 +75,12 @@ export function BookingProvider({
    *  compact → snabbboka i slide-over · inline → CTA scrollar till den inbyggda
    *  sektionen (renderas av layouten, se InlineBooking). */
   variant?: BookingVariant
+  /** Tid-väljaren (settings.booking.pickerMode) — rå-läses på servern via
+   *  readPickerMode och skickas ner som plain string. Default 'calendar'. */
+  pickerMode?: PickerMode
+  /** Barberarbild-läget (settings.booking.staffAvatars) — rå-läses på servern via
+   *  readStaffAvatarMode. Default 'initialer'. */
+  staffAvatarMode?: StaffAvatarMode
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -164,6 +172,8 @@ export function BookingProvider({
           staffNoun={staffNoun}
           mode={mode}
           presentation={presentation}
+          pickerMode={pickerMode}
+          staffAvatarMode={staffAvatarMode}
         />
       ) : null}
     </BookingContext.Provider>

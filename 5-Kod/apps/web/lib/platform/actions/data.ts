@@ -3,7 +3,15 @@
 import { revalidatePath } from 'next/cache'
 import { platformCtx, sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
-import { isBookingVariant, DEFAULT_BOOKING_VARIANT, type BookingVariant } from '../booking-variant'
+import {
+  isBookingVariant,
+  DEFAULT_BOOKING_VARIANT,
+  PICKER_MODES,
+  STAFF_AVATAR_MODES,
+  type BookingVariant,
+  type PickerMode,
+  type StaffAvatarMode,
+} from '../booking-variant'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
@@ -178,4 +186,66 @@ export async function saveTenantBookingView(_p: ActionState, fd: FormData): Prom
     meta: { booking_variant: bookingVariant },
   })
   return { success: 'Boknings-vy sparad. Publika sajten uppdaterad.' }
+}
+
+/**
+ * Bokningsinställningar — designpaketet "Frisörbokningsformulär redesign" ⭐-kravet:
+ * ALLT i bokningsflödet valbart per salong från admin (/admin/bokning + kundkortets
+ * Sida-flik), utan kodändring per kund. Skriver de TRE booking-prefs-axlarna i ETT
+ * svep till tenant_settings.settings.booking (samma seam som saveTenantBookingView):
+ *   variant      — 'wizard' | 'compact' | 'drawer' | 'inline'  (bokningssätt)
+ *   pickerMode   — 'calendar' | 'strip'                        (tid-väljare)
+ *   staffAvatars — 'foto' | 'initialer' | 'namn'               (barberarbilder)
+ * MERGE, aldrig clobber: settings är co-owned jsonb — prev spread:as, och prev
+ * booking-nycklar utanför de tre behålls. Färgerna går INTE här — de bor i
+ * branding (savePlatformBranding), som injectTenantTokens redan konsumerar.
+ */
+export async function updateBookingSettings(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase, tenantId } = await sidaCtx(fd)
+  if (!tenantId) return { error: 'Saknar salong.' }
+
+  const variantRaw = String(fd.get('booking_variant') ?? '')
+  const pickerRaw = String(fd.get('picker_mode') ?? '')
+  const avatarsRaw = String(fd.get('staff_avatars') ?? '')
+  // Okänt/saknat värde → samma defaults som läs-seamen (readPickerMode/
+  // readStaffAvatarMode) så spar aldrig kan landa på ett odefinierat läge.
+  const variant: BookingVariant = isBookingVariant(variantRaw) ? variantRaw : DEFAULT_BOOKING_VARIANT
+  const pickerMode: PickerMode = (PICKER_MODES as readonly string[]).includes(pickerRaw)
+    ? (pickerRaw as PickerMode)
+    : 'calendar'
+  const staffAvatars: StaffAvatarMode = (STAFF_AVATAR_MODES as readonly string[]).includes(avatarsRaw)
+    ? (avatarsRaw as StaffAvatarMode)
+    : 'initialer'
+
+  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Okänd salong.' }
+
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  const prevBooking = (prev.booking ?? {}) as Record<string, unknown>
+  const settings = { ...prev, booking: { ...prevBooking, variant, pickerMode, staffAvatars } }
+
+  const { error } = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
+  if (error) {
+    await reportActionError('updateBookingSettings.settings_upsert', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidateTenant(tenant.slug)
+  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
+  revalidatePath('/admin/bokning')
+  await logPlatformAction(supabase, {
+    action: 'tenant.update',
+    tenantId,
+    actorId: user.id,
+    meta: { booking_variant: variant, picker_mode: pickerMode, staff_avatars: staffAvatars },
+  })
+  return { success: 'Bokningsinställningar sparade. Publika sajten uppdaterad.' }
 }

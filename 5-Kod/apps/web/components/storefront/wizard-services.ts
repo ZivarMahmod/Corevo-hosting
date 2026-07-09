@@ -8,9 +8,15 @@
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { getServices } from '@/lib/tenant-data'
+import {
+  readPickerMode,
+  readStaffAvatarMode,
+  type PickerMode,
+  type StaffAvatarMode,
+} from '@/lib/platform/booking-variant'
 import type { WizardService, WizardLocation } from '@/components/booking/BookingWizard'
 
-type StaffMember = { id: string; title: string | null; locationIds: string[] }
+type StaffMember = { id: string; title: string | null; locationIds: string[]; avatarUrl: string | null }
 
 const loadStaffByService = (tenantId: string, slug: string) =>
   unstable_cache(
@@ -23,7 +29,8 @@ const loadStaffByService = (tenantId: string, slug: string) =>
       const [{ data: staff }, { data: links }, { data: hours }] = await Promise.all([
         supabase
           .from('staff')
-          .select('id, title')
+          // avatar_url (0049): barberarkortets foto-läge; null → initialer-fallback.
+          .select('id, title, avatar_url')
           .eq('tenant_id', tenantId)
           .eq('active', true),
         supabase
@@ -52,6 +59,7 @@ const loadStaffByService = (tenantId: string, slug: string) =>
                 id: s.id,
                 title: s.title,
                 locationIds: [...(locationsByStaff.get(s.id) ?? [])],
+                avatarUrl: s.avatar_url ?? null,
               } as StaffMember,
             ] as const,
         ),
@@ -107,6 +115,31 @@ export async function getWizardLocations(
       return (data ?? []).map((l) => ({ id: l.id, name: l.name, isPrimary: l.is_primary }))
     },
     ['wizard-locations', tenantId],
+    { tags: [`tenant:${slug.trim().toLowerCase()}`], revalidate: 300 },
+  )()
+}
+
+/** Redesign-prefs för bokningsytan (design-paketet): tid-väljare + barberarbild-
+ *  läge. Rå-läses ur tenant_settings.settings via SAMMA seam som readBookingVariant
+ *  (readPickerMode/readStaffAvatarMode äger parse + default + tolerans), cachat per
+ *  tenant precis som services/locations ovan. Osatt/okänt → calendar / initialer. */
+export type BookingPrefs = { pickerMode: PickerMode; staffAvatarMode: StaffAvatarMode }
+
+export async function getBookingPrefs(tenantId: string, slug: string): Promise<BookingPrefs> {
+  return unstable_cache(
+    async (): Promise<BookingPrefs> => {
+      const supabase = createPublicClient()
+      const { data } = await supabase
+        .from('tenant_settings')
+        .select('settings')
+        .eq('tenant_id', tenantId)
+        .maybeSingle()
+      return {
+        pickerMode: readPickerMode(data?.settings),
+        staffAvatarMode: readStaffAvatarMode(data?.settings),
+      }
+    },
+    ['booking-prefs', tenantId],
     { tags: [`tenant:${slug.trim().toLowerCase()}`], revalidate: 300 },
   )()
 }

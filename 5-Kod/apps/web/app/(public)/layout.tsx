@@ -14,7 +14,7 @@ import { CartButton } from '@/components/storefront/shop/CartButton'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
 import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
-import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
+import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
 import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
@@ -115,9 +115,12 @@ export default async function PublicLayout({ children }: { children: React.React
   // Booking gating: only a LIVE booking module gets real services; draft/off/paused
   // pass an EMPTY list so every "Boka tid" CTA is inert (BookingProvider.available
   // is false), without removing the storefront's content/pages.
-  const [allWizardServices, wizardLocations] = await Promise.all([
+  const [allWizardServices, wizardLocations, bookingPrefs] = await Promise.all([
     getWizardServices(tenant.id, tenant.slug),
     getWizardLocations(tenant.id, tenant.slug),
+    // Redesign-prefs (tid-väljare + barberarbild-läge) — rå-läses ur settings via
+    // samma seam som readBookingVariant, cachat per tenant.
+    getBookingPrefs(tenant.id, tenant.slug),
   ])
   const wizardServices = bookingLive ? allWizardServices : []
 
@@ -159,7 +162,15 @@ export default async function PublicLayout({ children }: { children: React.React
       {/* In-page booking embed (Zivar's #1): the WHOLE shell — nav, main, footer
           — sits inside the provider, so every "Boka tid" CTA opens the same
           slide-over drawer without ever leaving the salon's page. */}
-      <BookingProvider services={wizardServices} locations={wizardLocations} tenantName={tenant.name} staffNoun={staffNoun} variant={settings.bookingVariant}>
+      <BookingProvider
+        services={wizardServices}
+        locations={wizardLocations}
+        tenantName={tenant.name}
+        staffNoun={staffNoun}
+        variant={settings.bookingVariant}
+        pickerMode={bookingPrefs.pickerMode}
+        staffAvatarMode={bookingPrefs.staffAvatarMode}
+      >
         {/* Paused booking → "stängt"-banner at the very top (draft/off render
             nothing public, so only 'paused' surfaces here). */}
         {bookingPaused ? <ModulePausedBanner /> : null}
@@ -184,6 +195,8 @@ export default async function PublicLayout({ children }: { children: React.React
             locations={wizardLocations}
             tenantName={tenant.name}
             staffNoun={staffNoun}
+            pickerMode={bookingPrefs.pickerMode}
+            staffAvatarMode={bookingPrefs.staffAvatarMode}
           />
         ) : null}
         {isFullFooter ? (

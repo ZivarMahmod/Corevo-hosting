@@ -370,6 +370,10 @@ export type TenantDetail = {
     id: string
     title: string | null
     active: boolean
+    /** Foto på publika sajten (staff.avatar_url, 0049) — null = standard-silhuett. */
+    avatar_url: string | null
+    /** Syns i publika team-sektionen (staff.show_on_site, 0049) — rör ej bokningsbarhet. */
+    show_on_site: boolean
     hours: { weekday: number; start: string; end: string }[]
     /** Service ids this staff can perform (staff_services) — drives the booking's
      *  "Hos vem?" step + the per-staff tjänst-picker in the Personal tab. */
@@ -459,7 +463,7 @@ export async function getTenantDetail(
     // list is stable across revalidate.
     supabase
       .from('staff')
-      .select('id, title, active')
+      .select('id, title, active, avatar_url, show_on_site')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: true }),
     // Every working_hours row for the tenant (one read, bucketed by staff_id in JS —
@@ -590,15 +594,24 @@ export async function getTenantDetail(
     vList.push(r.service_id)
     servicesByStaff.set(r.staff_id, vList)
   }
-  const staffList = ((staffRowsRes.data ?? []) as { id: string; title: string | null; active: boolean }[]).map(
-    (s) => ({
-      id: s.id,
-      title: s.title,
-      active: s.active,
-      hours: hoursByStaff.get(s.id) ?? [],
-      serviceIds: servicesByStaff.get(s.id) ?? [],
-    }),
-  )
+  const staffList = (
+    (staffRowsRes.data ?? []) as {
+      id: string
+      title: string | null
+      active: boolean
+      avatar_url: string | null
+      show_on_site: boolean
+    }[]
+  ).map((s) => ({
+    id: s.id,
+    title: s.title,
+    active: s.active,
+    avatar_url: s.avatar_url ?? null,
+    // Defensiv default (pre-0049-rad skulle sakna kolumnen): true = dagens beteende.
+    show_on_site: s.show_on_site !== false,
+    hours: hoursByStaff.get(s.id) ?? [],
+    serviceIds: servicesByStaff.get(s.id) ?? [],
+  }))
   // Per-service booking count → the Services surface knows whether "Ta bort" is possible
   // (0 bookings) or must degrade to "stäng av" (FK RESTRICT protects booked services).
   const bookingsByService = new Map<string, number>()

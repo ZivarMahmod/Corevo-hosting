@@ -127,7 +127,25 @@ export function SalviaLayout({ tenant, content, services, location }: Storefront
             <ul className={styles.sfTeamGrid}>
               {content.team.map((m, i) => (
                 <Reveal as="li" key={m.name + i} delay={i * 90} className={styles.sfTeamCard}>
-                  <div className={styles.sfTeamPhoto} style={{ backgroundImage: `url(${m.img})` }} />
+                  {/* Foto valfritt (staff.avatar_url kan vara tomt) — utan bild visas en
+                      standard-silhuett som inline-SVG i temats ton (accent-soft-ytan är
+                      .sfTeamPhoto:s befintliga bakgrund; aldrig en tom/trasig url()). */}
+                  {m.img ? (
+                    <div className={styles.sfTeamPhoto} style={{ backgroundImage: `url(${m.img})` }} />
+                  ) : (
+                    <div
+                      className={styles.sfTeamPhoto}
+                      aria-hidden="true"
+                      style={{ display: 'grid', placeItems: 'center' }}
+                    >
+                      <svg viewBox="0 0 96 96" width="46%" role="presentation" focusable="false">
+                        <g fill="var(--color-primary)" opacity="0.32">
+                          <circle cx="48" cy="34" r="16" />
+                          <path d="M16 86c2.5-18 15.5-28 32-28s29.5 10 32 28z" />
+                        </g>
+                      </svg>
+                    </div>
+                  )}
                   <h3 className={styles.sfTeamName}>{m.name}</h3>
                   <p className="sf-body" style={{ fontSize: 14 }}>
                     {m.role}

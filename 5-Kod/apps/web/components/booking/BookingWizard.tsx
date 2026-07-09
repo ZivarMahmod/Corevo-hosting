@@ -9,9 +9,16 @@ import {
   startBookingCheckout,
   type SlotOption,
 } from '@/app/boka/actions'
+import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
 import styles from './booking.module.css'
 
-type WizardStaff = { id: string; title: string | null; locationIds: string[] }
+type WizardStaff = {
+  id: string
+  title: string | null
+  locationIds: string[]
+  /** staff.avatar_url (R2). null → foto-läget faller tillbaka till initialer-disc. */
+  avatarUrl: string | null
+}
 export type WizardService = {
   id: string
   name: string
@@ -19,6 +26,8 @@ export type WizardService = {
   durationMin: number
   priceCents: number
   staff: WizardStaff[]
+  /** POPULÄR-taggen (designpaketet steg 1). Osatt → ingen tagg (ingen datakälla än). */
+  popular?: boolean
 }
 /** En bokningsbar plats (VÅG 4b). Tom lista / en post → ingen picker (auto-väljs). */
 export type WizardLocation = {
@@ -33,20 +42,51 @@ const kr = new Intl.NumberFormat('sv-SE', {
   maximumFractionDigits: 0,
 })
 
-// Accent "selected" fill via the product accent token. Applied inline because the
-// frozen global selectors (.wizard-day.selected etc.) out-specify a module class.
-// On the storefront --color-accent is re-pointed to the theme primary (never Corevo
-// gold), so the text must use --color-accent-fg (white on the storefront, tenant-
-// recomputed on override) — NOT --color-fg, which would be dark-on-dark on the
-// darker themes (e.g. "edit").
-const goldSelected = {
-  background: 'var(--color-accent, var(--color-primary))',
-  color: 'var(--color-accent-fg, #fff)',
-  borderColor: 'var(--color-accent, var(--color-primary))',
-} as const
+// Initialer-discfärger (designpaketet): round-robin per medarbetare i listan.
+const DISC_COLORS = ['#BC4A1C', '#2E5A46', '#B07A1E', '#7A4A2E'] as const
 
-// Card "selected" border-only highlight (gold ring, no fill).
-const goldBorder = { borderColor: 'var(--color-accent, var(--color-primary))' } as const
+/** Avatar-disc för barberarkortet (steg 2), 46px. Tre lägen (tenant-valbart):
+ *  foto → cirkulärt foto (faller tillbaka till initialer utan avatarUrl);
+ *  initialer → per-staff-färgad disc + vit display-initial;
+ *  namn → paper-2-disc + ink-2-initial (namnet leder). */
+function StaffAvatar({
+  name,
+  avatarUrl,
+  mode,
+  index,
+}: {
+  name: string
+  avatarUrl: string | null
+  mode: StaffAvatarMode
+  index: number
+}) {
+  if (mode === 'foto' && avatarUrl) {
+    return (
+      <span className="fc-avatar fc-avatar--foto" aria-hidden>
+        {/* Plain <img> — storefrontens remote-image-config är fryst (aldrig next/image). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={avatarUrl} alt="" width={46} height={46} loading="lazy" />
+      </span>
+    )
+  }
+  const initial = (name.trim().charAt(0) || '?').toUpperCase()
+  if (mode === 'namn') {
+    return (
+      <span className="fc-avatar fc-avatar--namn" aria-hidden>
+        {initial}
+      </span>
+    )
+  }
+  return (
+    <span
+      className="fc-avatar"
+      style={{ background: DISC_COLORS[index % DISC_COLORS.length] }}
+      aria-hidden
+    >
+      {initial}
+    </span>
+  )
+}
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -66,6 +106,9 @@ export function BookingWizard({
   onClose,
   mode = 'wizard',
   staffNoun = 'Frisör',
+  pickerMode = 'calendar',
+  staffAvatarMode = 'initialer',
+  brandName,
 }: {
   services: WizardService[]
   /** Bokningsbara platser (VÅG 4b). OPTIONAL — utelämnad/tom/en post → ingen
@@ -78,8 +121,8 @@ export function BookingWizard({
    *  rather than on a stale confirmation. Mid-flow closes (step 1–4) are NOT
    *  reset, so an accidental close still resumes where the customer left off. */
   open?: boolean
-  /** Set when the wizard is embedded in the storefront drawer. Lets step 5's
-   *  primary action close the drawer (instead of linking to "/"). */
+  /** Set when the wizard is embedded in the storefront drawer. Lets step 5
+   *  confirm IN-PAGE (biljetten) instead of navigating to the receipt route. */
   onClose?: () => void
   /** Variant 3 wizard (default) or Variant 4 kompakt snabbboka. */
   mode?: BookingMode
@@ -90,6 +133,13 @@ export function BookingWizard({
    *  'Nagelteknolog', 'Stylist'. Resolve via resolveTerm(terminology,'staff',
    *  'Frisör') — NEVER pass the raw terminology object to this client component. */
   staffNoun?: string
+  /** Tid-väljaren (settings.booking.pickerMode): månadskalender eller dag-remsa. */
+  pickerMode?: PickerMode
+  /** Barberarbild-läget (settings.booking.staffAvatars): foto/initialer/namn. */
+  staffAvatarMode?: StaffAvatarMode
+  /** Salongens wordmark på biljettens huvudrad (steg 5). OPTIONAL — mounts som
+   *  inte skickar den får den neutrala fallbacken 'Bokning'. */
+  brandName?: string
 }) {
   const compact = mode === 'compact'
   const router = useRouter()
@@ -132,6 +182,8 @@ export function BookingWizard({
   // "Tiden togs precis"-notis: visas överst i steg 3 efter en krock; överlever
   // slot-uppdateringen så användaren förstår varför hen är tillbaka här.
   const [slotTakenNotice, setSlotTakenNotice] = useState<string | null>(null)
+  // Kalender-vyns månadsmarkör: index i calMonths (månader som 14-dagarsfönstret rör).
+  const [calCursor, setCalCursor] = useState(0)
 
   const days = useMemo(() => {
     const out: Date[] = []
@@ -144,17 +196,33 @@ export function BookingWizard({
     return out
   }, [])
 
+  // Månader som bokningsfönstret (days) täcker — kalenderbläddringen begränsas hit.
+  const calMonths = useMemo(() => {
+    const list: { y: number; m: number }[] = []
+    for (const d of days) {
+      const y = d.getFullYear()
+      const m = d.getMonth()
+      if (!list.some((x) => x.y === y && x.m === m)) list.push({ y, m })
+    }
+    return list
+  }, [days])
+
   const fmtTime = (iso: string) =>
     new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone }).format(
       new Date(iso),
     )
-  const fmtDay = (d: Date) =>
-    new Intl.DateTimeFormat('sv-SE', { weekday: 'short', day: 'numeric', month: 'short' }).format(d)
-  // Full datum + tid till bekräftelsesteget — speglar /boka/bekraftelse-rutten.
-  const fmtDateTime = (iso: string) =>
-    new Intl.DateTimeFormat('sv-SE', { dateStyle: 'full', timeStyle: 'short', timeZone }).format(
-      new Date(iso),
-    )
+  const fmtDow = (d: Date) =>
+    new Intl.DateTimeFormat('sv-SE', { weekday: 'short' }).format(d).replace('.', '')
+  const fmtMon = (d: Date) =>
+    new Intl.DateTimeFormat('sv-SE', { month: 'short' }).format(d).replace('.', '')
+  // Lång datum-rad till biljetten (steg 5) — speglar /boka/bekraftelse-rutten.
+  const fmtLongDate = (iso: string) =>
+    new Intl.DateTimeFormat('sv-SE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      timeZone,
+    }).format(new Date(iso))
 
   // Core slot-fetch — the ONE place that calls getAvailableSlots. Used by both
   // variants: the wizard's day handler (per service+staff+day) and compact's
@@ -193,9 +261,9 @@ export function BookingWizard({
   }
 
   // ── Variant 3 (wizard) navigation ─────────────────────────────────────────
-  // Selection NO LONGER auto-advances (handoff VWizard = one decision per screen
-  // + an explicit "Fortsätt"). Each picker only sets state; the bottom action
-  // bar advances. Selecting a service/staff still RESETS downstream choices.
+  // Selection NO LONGER auto-advances (handoff = one decision per screen + an
+  // explicit "Fortsätt"). Each picker only sets state; the bottom action bar
+  // advances. Selecting a service/staff still RESETS downstream choices.
   function pickService(s: WizardService) {
     setService(s)
     setStaffChoice('any')
@@ -338,8 +406,7 @@ export function BookingWizard({
   }
 
   // Nollställ hela wizarden till steg 1. Körs på en stängd→öppen flank EFTER en
-  // klar bokning (se effekten nedan), så en återöppnad drawer börjar om från
-  // början istället för att visa en gammal bekräftelse.
+  // klar bokning (se effekten nedan) och av biljettens "Boka en till tid".
   function resetWizard() {
     setStep(1)
     // Compact reopens straight back into the one-page form, so re-seed its
@@ -355,6 +422,7 @@ export function BookingWizard({
     setSlotsError(null)
     setSlotTakenNotice(null)
     setBookingId(null)
+    setCalCursor(0)
     // Platsval nollställs till sitt utgångsläge (≤1 plats → auto; >1 wizard → grind;
     // >1 compact → default förvald).
     setLocationId(multiLocation && !compact ? null : defaultLocationId)
@@ -371,13 +439,8 @@ export function BookingWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  // "Klar" på bekräftelsesteget: stäng drawern (reseten sker vid nästa öppning).
-  function finish() {
-    onClose?.()
-  }
-
   // ── Variant 3 (wizard) bottom-action-bar wiring ────────────────────────────
-  // The handoff VWizard puts ALL forward/back navigation in a single bottom bar.
+  // The handoff puts ALL forward/back navigation in a single bottom bar.
   // Per-step gate: can the customer advance? Step 4's "Bekräfta" submits the
   // step-4 <form> (so its required-field validation still runs) rather than
   // calling submit() blindly.
@@ -406,9 +469,9 @@ export function BookingWizard({
   }
 
   // ── Variant 4 (compact) submit ─────────────────────────────────────────────
-  // One CTA at the bottom. Validates name + phone (the only two fields compact
-  // shows) before delegating to the shared submit() — same engine, same Stripe /
-  // in-page-confirmation / slot-collision behaviour.
+  // One CTA at the bottom. Validates name + phone (the only two required fields
+  // compact shows) before delegating to the shared submit() — same engine, same
+  // Stripe / in-page-confirmation / slot-collision behaviour.
   const compactReady = !!(service && slot && form.name && form.phone)
   function submitCompact() {
     if (!compactReady) {
@@ -418,8 +481,10 @@ export function BookingWizard({
     submit()
   }
 
-  const stepLabels = ['Tjänst', 'Personal', 'Tid', 'Uppgifter']
-  const stepTitles = ['Vad vill du boka?', 'Hos vem?', 'När passar det?', 'Dina uppgifter']
+  // Spec-copy: mono steglabel + display-frågor. Steglabel 2 = bransch-nounet
+  // (FreshCut → 'Barberare') — aldrig hårdkodad bransch (goal-46-guardrail).
+  const stepLabels = ['Tjänst', staffNoun, 'Tid', 'Uppgifter']
+  const stepTitles = ['Vad vill du ha?', 'Hos vem?', 'När passar det?', 'Dina uppgifter']
 
   // Platsfiltrerad personal (VÅG 4b): en frisör erbjuds BARA på en plats hen
   // faktiskt jobbar på (≥1 working_hours-rad med location_id = vald plats). Speglar
@@ -433,230 +498,267 @@ export function BookingWizard({
     (m) => !locationId || m.locationIds.includes(locationId),
   )
 
+  // ── Recap-rad (mono, rust): delarna som valts hittills ──────────────────────
+  const recapBits: string[] = []
+  if (step > 1 && service) recapBits.push(service.name)
+  if (step > 2)
+    recapBits.push(
+      staffChoice === 'any'
+        ? 'Första lediga'
+        : (staffHere.find((m) => m.id === staffChoice)?.title ?? staffNoun),
+    )
+  if (step > 3 && slot && date) {
+    const dObj = days.find((d) => ymd(d) === date)
+    recapBits.push(`${dObj ? `${fmtDow(dObj)} ` : ''}${fmtTime(slot.start)}`)
+  }
+  const recapText = recapBits.join('  ·  ')
+
+  // ── Slots grupperade Morgon (<12) / Dagtid (<16) / Kväll (tenant-tidszon) ────
+  const slotGroupsAll = [
+    { label: 'Morgon', items: [] as SlotOption[] },
+    { label: 'Dagtid', items: [] as SlotOption[] },
+    { label: 'Kväll', items: [] as SlotOption[] },
+  ]
+  for (const sl of slots) {
+    const h = Number(fmtTime(sl.start).slice(0, 2))
+    ;(h < 12 ? slotGroupsAll[0] : h < 16 ? slotGroupsAll[1] : slotGroupsAll[2])!.items.push(sl)
+  }
+  const slotGroups = slotGroupsAll.filter((g) => g.items.length > 0)
+
+  // ── Delade render-bitar ──────────────────────────────────────────────────────
+  const slotButton = (sl: SlotOption) => {
+    const isSel = slot?.start === sl.start && slot?.staffId === sl.staffId
+    return (
+      <button
+        key={sl.start + sl.staffId}
+        type="button"
+        className={`wizard-time${isSel ? ' selected' : ''}`}
+        aria-pressed={isSel}
+        onClick={() => {
+          // Select only — advancing is the bottom bar's "Fortsätt" (steps mode).
+          setSlot(sl)
+          setSlotTakenNotice(null)
+        }}
+      >
+        <span className="fc-slot-time">{fmtTime(sl.start)}</span>
+        {staffChoice === 'any' && sl.staffTitle ? (
+          <span className="wizard-time-staff">{sl.staffTitle}</span>
+        ) : null}
+      </button>
+    )
+  }
+
+  const slotSkeleton = (
+    <div className="fc-slot-grid" aria-hidden>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <span key={i} className="fc-skel-chip" />
+      ))}
+    </div>
+  )
+
+  const slotError = (retry: () => void) => (
+    <div>
+      <p className="fc-alert" role="alert">
+        {slotsError}
+      </p>
+      <button type="button" className="fc-retry" onClick={retry}>
+        ↻ Försök igen
+      </button>
+    </div>
+  )
+
   // ── Variant 4 (compact) — kompakt snabbboka, allt på en skärm ───────────────
-  // The whole booking on one scroll: chip rows for tjänst/frisör/dag, a 4-col
+  // The whole booking on one scroll: chip rows for tjänst/personal/dag, a 4-col
   // slot grid (disabled until getAvailableSlots resolves), name+phone side by
-  // side, and a single bottom "Boka tid" CTA with a summary sub-line. After a
-  // successful booking the shared step-5 confirmation takes over (below).
+  // side, and a single bottom "Boka tid" CTA with a mono summary sub-line. After
+  // a successful booking the shared step-5 ticket takes over (below).
   if (compact && step !== 5) {
     return (
-      <div className="wizard wizard--compact">
-        {services.length === 0 ? (
-          <div className={styles.empty}>
-            <div className={styles.emptyIcon} aria-hidden>
-              ✂️
-            </div>
-            <p className={styles.emptyTitle}>Inga tjänster att boka just nu</p>
-            <p className={styles.emptyText}>
-              Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare eller
-              kontakta salongen direkt.
-            </p>
-          </div>
-        ) : (
-          <div className="ckompakt">
-            <p className="ckompakt-lede">Allt på en skärm — för dig som vet vad du vill.</p>
+      <div className="wizard wizard--compact fc-scope">
+        <div className="wizard-head">
+          <h2 className="ckompakt-title">Snabbboka</h2>
+          <p className="ckompakt-lede">Allt på en skärm — för dig som vet vad du vill.</p>
+        </div>
 
-            {/* Plats — chip row (VÅG 4b). Visas BARA vid >1 aktiv plats; en-plats-
-                salonger ser ingenting (UX byte-identisk). Byte av plats nollställer
-                tjänst/frisör/tid via pickLocation. */}
-            {multiLocation && (
-              <>
-                <div className="ckompakt-label">Plats</div>
-                <div className="ckompakt-chiprow" role="group" aria-label="Välj plats">
-                  {locations.map((l) => {
-                    const on = locationId === l.id
-                    return (
-                      <button
-                        key={l.id}
-                        type="button"
-                        className={`ckompakt-chip${on ? ' selected' : ''}`}
-                        aria-pressed={on}
-                        style={on ? goldSelected : undefined}
-                        onClick={() => pickLocation(l.id)}
-                      >
-                        {l.name}
-                      </button>
-                    )
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* Tjänst — chip row */}
-            <div className="ckompakt-label">Tjänst</div>
-            <div className="ckompakt-chiprow" role="group" aria-label="Välj tjänst">
-              {services.map((s) => {
-                const on = service?.id === s.id
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    className={`ckompakt-chip${on ? ' selected' : ''}`}
-                    aria-pressed={on}
-                    style={on ? goldSelected : undefined}
-                    onClick={() => {
-                      setService(s)
-                      setStaffChoice('any')
-                      setSlot(null)
-                      setError(null)
-                    }}
-                  >
-                    {s.name}
-                    <span className="ckompakt-chip-meta">{kr.format(s.priceCents / 100)}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Personal-chip-row (Alla + each staff of the chosen service). Label
-                is the bransch-resolved staff noun (default 'Frisör'). */}
-            <div className="ckompakt-label">{staffNoun}</div>
-            <div className="ckompakt-chiprow" role="group" aria-label={`Välj ${staffNoun.toLowerCase()}`}>
-              <button
-                type="button"
-                className={`ckompakt-chip${staffChoice === 'any' ? ' selected' : ''}`}
-                aria-pressed={staffChoice === 'any'}
-                style={staffChoice === 'any' ? goldSelected : undefined}
-                onClick={() => setStaffChoice('any')}
-              >
-                Alla
-              </button>
-              {staffHere.map((m) => {
-                const on = staffChoice === m.id
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className={`ckompakt-chip${on ? ' selected' : ''}`}
-                    aria-pressed={on}
-                    style={on ? goldSelected : undefined}
-                    onClick={() => setStaffChoice(m.id)}
-                  >
-                    {m.title ?? staffNoun}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Dag — chip row (reuses the wizard-day visual) */}
-            <div className="ckompakt-label">Dag</div>
-            <div className="wizard-days" role="group" aria-label="Välj dag">
-              {days.map((d) => {
-                const key = ymd(d)
-                const isSel = date === key
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`wizard-day${isSel ? ' selected' : ''}`}
-                    aria-pressed={isSel}
-                    style={isSel ? goldSelected : undefined}
-                    onClick={() => {
-                      setSlotTakenNotice(null)
-                      setDate(key)
-                    }}
-                  >
-                    {fmtDay(d)}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Tid — 4-col grid. Async: disabled/empty until slots resolve. */}
-            <div className="ckompakt-label">Tid</div>
-            {pending ? (
-              <div className="ckompakt-slots" aria-hidden>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <span key={i} className={styles.skeletonChip} />
-                ))}
+        <div className="wizard-stepbody">
+          {services.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyIcon} aria-hidden>
+                ✂️
               </div>
-            ) : slotsError ? (
-              <div style={{ marginTop: '0.25rem' }}>
-                <p className="auth-error" role="alert">
-                  {slotsError}
-                </p>
-                <button
-                  type="button"
-                  className={styles.retry}
-                  onClick={() => service && date && fetchSlots(service.id, staffChoice, date, locationId)}
-                >
-                  ↻ Försök igen
-                </button>
-              </div>
-            ) : slots.length === 0 ? (
-              <p className="wizard-muted" style={{ marginTop: '0.25rem' }}>
-                Inga lediga tider denna dag — välj en annan dag.
+              <p className={styles.emptyTitle}>Inga tjänster att boka just nu</p>
+              <p className={styles.emptyText}>
+                Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare
+                eller kontakta salongen direkt.
               </p>
-            ) : (
-              <div className="ckompakt-slots" role="group" aria-label="Välj tid">
-                {slots.map((sl) => {
-                  const isSel = slot?.start === sl.start && slot?.staffId === sl.staffId
+            </div>
+          ) : (
+            <div className="ckompakt">
+              {/* Plats — chip row (VÅG 4b). Visas BARA vid >1 aktiv plats; en-plats-
+                  salonger ser ingenting (UX byte-identisk). Byte av plats nollställer
+                  tjänst/frisör/tid via pickLocation. */}
+              {multiLocation && (
+                <>
+                  <div className="ckompakt-label">Plats</div>
+                  <div className="ckompakt-chiprow" role="group" aria-label="Välj plats">
+                    {locations.map((l) => {
+                      const on = locationId === l.id
+                      return (
+                        <button
+                          key={l.id}
+                          type="button"
+                          className={`ckompakt-chip${on ? ' selected' : ''}`}
+                          aria-pressed={on}
+                          onClick={() => pickLocation(l.id)}
+                        >
+                          {l.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* Tjänst — chip row (namn + mono-pris) */}
+              <div className="ckompakt-label">Tjänst</div>
+              <div className="ckompakt-chiprow" role="group" aria-label="Välj tjänst">
+                {services.map((s) => {
+                  const on = service?.id === s.id
                   return (
                     <button
-                      key={sl.start + sl.staffId}
+                      key={s.id}
                       type="button"
-                      className={`wizard-time${isSel ? ' selected' : ''}`}
-                      aria-pressed={isSel}
-                      style={isSel ? goldSelected : undefined}
+                      className={`ckompakt-chip${on ? ' selected' : ''}`}
+                      aria-pressed={on}
                       onClick={() => {
-                        setSlot(sl)
-                        setSlotTakenNotice(null)
+                        setService(s)
+                        setStaffChoice('any')
+                        setSlot(null)
+                        setError(null)
                       }}
                     >
-                      {fmtTime(sl.start)}
-                      {staffChoice === 'any' && sl.staffTitle ? (
-                        <span className="wizard-time-staff">{sl.staffTitle}</span>
-                      ) : null}
+                      <span>{s.name.length > 18 ? `${s.name.slice(0, 17)}…` : s.name}</span>
+                      <span className="ckompakt-chip-meta">{kr.format(s.priceCents / 100)}</span>
                     </button>
                   )
                 })}
               </div>
-            )}
 
-            {/* Namn + Telefon side by side */}
-            <div className="ckompakt-fields">
-              <label className="auth-field">
-                <span>Namn</span>
+              {/* Personal-chip-row (Alla + each staff of the chosen service). Label
+                  is the bransch-resolved staff noun (default 'Frisör'). */}
+              <div className="ckompakt-label">{staffNoun}</div>
+              <div
+                className="ckompakt-chiprow"
+                role="group"
+                aria-label={`Välj ${staffNoun.toLowerCase()}`}
+              >
+                <button
+                  type="button"
+                  className={`ckompakt-chip${staffChoice === 'any' ? ' selected' : ''}`}
+                  aria-pressed={staffChoice === 'any'}
+                  onClick={() => setStaffChoice('any')}
+                >
+                  Alla
+                </button>
+                {staffHere.map((m) => {
+                  const on = staffChoice === m.id
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      className={`ckompakt-chip${on ? ' selected' : ''}`}
+                      aria-pressed={on}
+                      onClick={() => setStaffChoice(m.id)}
+                    >
+                      {m.title ?? staffNoun}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Dag — 60px-chips (dow + display-datum) */}
+              <div className="ckompakt-label">Dag</div>
+              <div className="wizard-days" role="group" aria-label="Välj dag">
+                {days.map((d) => {
+                  const key = ymd(d)
+                  const isSel = date === key
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`wizard-day${isSel ? ' selected' : ''}`}
+                      aria-pressed={isSel}
+                      onClick={() => {
+                        setSlotTakenNotice(null)
+                        setDate(key)
+                      }}
+                    >
+                      <span className="fc-day-dow">{fmtDow(d)}</span>
+                      <span className="fc-day-dom">{d.getDate()}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Tid — 4-col grid. Async: skeleton/error/empty tills slots resolvar. */}
+              <div className="ckompakt-label">Tid</div>
+              {pending ? (
+                slotSkeleton
+              ) : slotsError ? (
+                slotError(() => service && date && fetchSlots(service.id, staffChoice, date, locationId))
+              ) : slots.length === 0 ? (
+                <p className="fc-noslots-inline">Inga lediga tider den dagen — välj en annan.</p>
+              ) : (
+                <div className="ckompakt-slots" role="group" aria-label="Välj tid">
+                  {slots.map(slotButton)}
+                </div>
+              )}
+
+              {/* Namn + Telefon sida vid sida; e-post under (krävs av createBooking). */}
+              <div className="ckompakt-fields">
+                <label className="fc-field">
+                  <span>Namn</span>
+                  <input
+                    autoComplete="name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  />
+                </label>
+                <label className="fc-field">
+                  <span>Telefon</span>
+                  <input
+                    type="tel"
+                    autoComplete="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
+                </label>
+              </div>
+              <label className="fc-field" style={{ marginTop: 11 }}>
+                <span>E-post</span>
                 <input
-                  autoComplete="name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
               </label>
-              <label className="auth-field">
-                <span>Telefon</span>
-                <input
-                  type="tel"
-                  autoComplete="tel"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-              </label>
+
+              {slotTakenNotice ? (
+                <p className="fc-alert" role="alert" style={{ marginTop: 14 }}>
+                  {slotTakenNotice}
+                </p>
+              ) : null}
+              {error ? (
+                <p className="fc-alert" role="alert" style={{ marginTop: 14 }}>
+                  {error}
+                </p>
+              ) : null}
             </div>
-            <label className="auth-field">
-              <span>E-post</span>
-              <input
-                type="email"
-                autoComplete="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </label>
+          )}
+        </div>
 
-            {slotTakenNotice ? (
-              <p className="auth-error" role="alert">
-                {slotTakenNotice}
-              </p>
-            ) : null}
-            {error ? (
-              <p className="auth-error" role="alert">
-                {error}
-              </p>
-            ) : null}
-          </div>
-        )}
-
-        {/* Single bottom CTA — thumb reach, with a live summary sub-line. */}
+        {/* Single bottom CTA — thumb reach, with a live mono summary sub-line. */}
         {services.length > 0 && (
           <div className="wizard-actionbar">
             <button
@@ -664,15 +766,14 @@ export function BookingWizard({
               className="wizard-cta"
               disabled={!compactReady || pending}
               onClick={submitCompact}
-              style={compactReady && !pending ? goldSelected : undefined}
             >
               <span className="wizard-cta-label">{pending ? 'Bokar…' : 'Boka tid'}</span>
-              {compactReady && slot ? (
+              {compactReady && slot && service ? (
                 <span className="wizard-cta-sub">
-                  {service!.name} · {fmtTime(slot.start)}
+                  {service.name} · {fmtTime(slot.start)}
                 </span>
               ) : (
-                <span className="wizard-cta-sub">Välj tjänst, tid och fyll i dina uppgifter</span>
+                <span className="wizard-cta-sub">Välj tjänst, tid &amp; fyll i namn + telefon</span>
               )}
             </button>
           </div>
@@ -688,8 +789,10 @@ export function BookingWizard({
   // identiskt. När en plats valts faller komponenten igenom till steg 1 (tjänst).
   if (needsLocationPick) {
     return (
-      <div className="wizard wizard--steps">
-        <h2 className="wizard-q">Var vill du boka?</h2>
+      <div className="wizard wizard--steps fc-scope">
+        <div className="wizard-head">
+          <h2 className="wizard-q">Var vill du boka?</h2>
+        </div>
         <div className="wizard-stepbody">
           <p className="wizard-muted" style={{ marginTop: 0 }}>
             Välj salong — vi visar lediga tider för just den platsen.
@@ -700,13 +803,14 @@ export function BookingWizard({
                 <button
                   type="button"
                   className="wizard-card"
+                  aria-pressed={locationId === l.id}
                   onClick={() => pickLocation(l.id)}
-                  style={locationId === l.id ? goldBorder : undefined}
                 >
                   <span className="wizard-card-main">
-                    <strong>{l.name}</strong>
+                    <span className="fc-card-title">{l.name}</span>
                   </span>
-                  {l.isPrimary ? <span className="wizard-card-meta">Huvudsalong</span> : null}
+                  {l.isPrimary ? <span className="fc-role">Huvudsalong</span> : null}
+                  {locationId === l.id ? <span className="fc-ring" aria-hidden /> : null}
                 </button>
               </li>
             ))}
@@ -716,325 +820,455 @@ export function BookingWizard({
     )
   }
 
-  // ── Variant 3 (wizard) — steg-för-steg, en beslut per skärm ─────────────────
+  // ── Kalender-vyn (steg 3, pickerMode='calendar') ────────────────────────────
+  // Månadskalender över bokningsfönstret (days, 14 dagar): förflutna dagar och
+  // dagar bortom fönstret är disabled/faded; availability-dot sätts på ALLA
+  // bokningsbara fönster-dagar (pragmatiskt beslut — getAvailableSlots är per dag,
+  // N anrop för en månad vore oärligt dyrt; tomma dagar visar ärligt tom-state
+  // efter klick). Idag = ink-2-ring; vald = rust-fill; bläddring begränsad till
+  // månader som fönstret rör.
+  const cal = calMonths[Math.min(calCursor, calMonths.length - 1)]!
+  const todayKey = ymd(days[0]!)
+  const lastKey = ymd(days[days.length - 1]!)
+  const firstOfMonth = new Date(cal.y, cal.m, 1)
+  const startCol = (firstOfMonth.getDay() + 6) % 7 // Mån-först
+  const daysInMonth = new Date(cal.y, cal.m + 1, 0).getDate()
+  const monthName = new Intl.DateTimeFormat('sv-SE', { month: 'long' }).format(firstOfMonth)
+  const calTitle = `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} ${cal.y}`
+  const ariaDay = new Intl.DateTimeFormat('sv-SE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+  type CalCell = { key: string; day: number; disabled: boolean; isToday: boolean; aria: string } | null
+  const calCells: CalCell[] = []
+  for (let i = 0; i < startCol; i++) calCells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dObj = new Date(cal.y, cal.m, d)
+    const key = ymd(dObj)
+    calCells.push({
+      key,
+      day: d,
+      disabled: key < todayKey || key > lastKey,
+      isToday: key === todayKey,
+      aria: ariaDay.format(dObj),
+    })
+  }
+  while (calCells.length % 7 !== 0) calCells.push(null)
+
+  // ── Variant 3 (wizard) — steg-för-steg, ett beslut per skärm ─────────────────
   return (
-    <div className="wizard wizard--steps">
-      {/* TOP PROGRESS BAR (handoff VWizard): 5 segments + "n / 5". Sticky so it
-          stays visible while the step body scrolls. Hidden on the confirmation
-          step (step 5) so the kvitto-vy reads clean. */}
+    <div className="wizard wizard--steps fc-scope">
+      {/* HEAD (handoff): mono steglabel + "n / 5" + 5 segment, display-frågan och
+          recap-raden. Döljs på bekräftelsen (steg 5) så biljetten läser rent. */}
       {step < 5 && (
-        <div className="wizard-progress">
-          <div className="wizard-progress-head">
+        <div className="wizard-head">
+          <div className="wizard-progress">
             <span className="wizard-progress-label">{stepLabels[step - 1]}</span>
             <span className="wizard-progress-count">{Math.min(step, 5)} / 5</span>
           </div>
           <div className="wizard-progress-track" aria-hidden>
             {[0, 1, 2, 3, 4].map((i) => (
-              <span
-                key={i}
-                className={`wizard-progress-seg${i < step ? ' on' : ''}`}
-                style={i < step ? { background: 'var(--color-accent, var(--color-primary))' } : undefined}
-              />
+              <span key={i} className={`wizard-progress-seg${i < step ? ' on' : ''}`} />
             ))}
           </div>
+          <h2 className="wizard-q">{stepTitles[step - 1]}</h2>
+          {recapText ? <div className="fc-recap">{recapText}</div> : null}
         </div>
       )}
 
-      {/* Per-step heading (handoff: one big question per screen). */}
-      {step < 5 && <h2 className="wizard-q">{stepTitles[step - 1]}</h2>}
-
-      <div className="wizard-stepbody">
-
-      {/* Step 1 — service */}
-      {step === 1 &&
-        (services.length === 0 ? (
-          <div className={styles.empty}>
-            <div className={styles.emptyIcon} aria-hidden>
-              ✂️
+      <div className={`wizard-stepbody${step === 5 ? ' fc-stepbody--ticket' : ''}`}>
+        {/* Step 1 — service */}
+        {step === 1 &&
+          (services.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyIcon} aria-hidden>
+                ✂️
+              </div>
+              <p className={styles.emptyTitle}>Inga tjänster att boka just nu</p>
+              <p className={styles.emptyText}>
+                Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare
+                eller kontakta salongen direkt.
+              </p>
             </div>
-            <p className={styles.emptyTitle}>Inga tjänster att boka just nu</p>
-            <p className={styles.emptyText}>
-              Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare eller
-              kontakta salongen direkt.
-            </p>
-          </div>
-        ) : (
-          <ul className="wizard-list">
-            {services.map((s) => (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  className="wizard-card"
-                  onClick={() => pickService(s)}
-                  style={service?.id === s.id ? goldBorder : undefined}
-                >
-                  <span className="wizard-card-main">
-                    <strong>{s.name}</strong>
-                    {s.description ? <span className="wizard-card-sub">{s.description}</span> : null}
-                  </span>
-                  <span className="wizard-card-meta">
-                    {s.durationMin} min · {kr.format(s.priceCents / 100)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ))}
+          ) : (
+            <div className="fc-step">
+              <ul className="wizard-list">
+                {services.map((s) => (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      className="wizard-card"
+                      aria-pressed={service?.id === s.id}
+                      onClick={() => pickService(s)}
+                    >
+                      <span className="wizard-card-main">
+                        <span className="fc-card-titlerow">
+                          <span className="fc-card-title">{s.name}</span>
+                          {s.popular ? <span className="fc-tag">POPULÄR</span> : null}
+                        </span>
+                        {s.description ? (
+                          <span className="wizard-card-sub">{s.description}</span>
+                        ) : null}
+                      </span>
+                      <span className="wizard-card-meta">
+                        <span className="fc-price">{kr.format(s.priceCents / 100)}</span>
+                        <span className="fc-dur">{s.durationMin} min</span>
+                      </span>
+                      {service?.id === s.id ? <span className="fc-ring" aria-hidden /> : null}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
-      {/* Step 2 — staff (or anyone). Back/forward now live in the bottom bar. */}
-      {step === 2 && service && (
-        <div>
-          <ul className="wizard-list">
-            <li>
-              <button
-                type="button"
-                className="wizard-card"
-                onClick={() => pickStaff('any')}
-                style={staffChoice === 'any' ? goldBorder : undefined}
-              >
-                <span className="wizard-card-main">
-                  <strong>Alla</strong>
-                  <span className="wizard-card-sub">Tidigast möjliga tid hos vem som helst</span>
-                </span>
-                {staffChoice === 'any' ? (
-                  <span className={styles.pickedChip} aria-hidden>
-                    ✓
-                  </span>
-                ) : (
-                  <span className="wizard-card-meta">Första lediga tid</span>
-                )}
-              </button>
-            </li>
-            {staffHere.map((m) => (
-              <li key={m.id}>
+        {/* Step 2 — staff ("Alla" först, sedan barberarkort med avatar-läge). */}
+        {step === 2 && service && (
+          <div className="fc-step">
+            <ul className="wizard-list">
+              <li>
                 <button
                   type="button"
-                  className="wizard-card"
-                  onClick={() => pickStaff(m.id)}
-                  style={staffChoice === m.id ? goldBorder : undefined}
+                  className="wizard-card wizard-card--staff"
+                  aria-pressed={staffChoice === 'any'}
+                  onClick={() => pickStaff('any')}
                 >
-                  <span className="wizard-card-main">
-                    <strong>{m.title ?? staffNoun}</strong>
+                  <span className="fc-avatar fc-avatar--any" aria-hidden>
+                    ✦
                   </span>
-                  {staffChoice === m.id ? (
-                    <span className={styles.pickedChip} aria-hidden>
-                      ✓
-                    </span>
+                  <span className="wizard-card-main">
+                    <span className="fc-card-title">Alla</span>
+                    <span className="fc-role">Vem som helst</span>
+                  </span>
+                  <span className="fc-meta-any">FÖRSTA LEDIGA</span>
+                  {staffChoice === 'any' ? (
+                    <>
+                      <span className="fc-ring" aria-hidden />
+                      <span className="fc-check" aria-hidden>
+                        ✓
+                      </span>
+                    </>
                   ) : null}
                 </button>
               </li>
-            ))}
-            {staffHere.length === 0 && (
-              <li>
-                <p className={styles.emptyText} style={{ padding: '0.5rem 0.25rem' }}>
-                  Ingen specifik personal är kopplad — välj “Alla” för tidigast lediga tid.
-                </p>
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
-
-      {/* Step 3 — date + time. Back/forward now live in the bottom bar. */}
-      {step === 3 && service && (
-        <div>
-          {/* Krock-notis: tiden togs precis. Vänligt, ej blockerande. */}
-          {slotTakenNotice ? (
-            <p className="auth-error" role="alert">
-              {slotTakenNotice}
-            </p>
-          ) : (
-            <p className="wizard-muted" style={{ marginTop: 0 }}>
-              Välj en dag och en ledig tid.
-            </p>
-          )}
-
-          <div className="wizard-days" role="group" aria-label="Välj dag">
-            {days.map((d) => {
-              const key = ymd(d)
-              const isSel = date === key
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={`wizard-day${isSel ? ' selected' : ''}`}
-                  aria-pressed={isSel}
-                  onClick={() => {
-                    setSlotTakenNotice(null)
-                    pickDate(key)
-                  }}
-                  style={isSel ? goldSelected : undefined}
-                >
-                  {fmtDay(d)}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* loading: shimmer chips while slots resolve */}
-          {pending && (
-            <>
-              <div className={styles.loadingRow}>
-                <span className={styles.spinner} aria-hidden />
-                <span>Hämtar lediga tider…</span>
-              </div>
-              <div className={styles.skeletonTimes} aria-hidden>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <span key={i} className={styles.skeletonChip} />
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* error: ink-red box + retry */}
-          {!pending && slotsError && (
-            <div style={{ marginTop: '1rem' }}>
-              <p className="auth-error" role="alert">
-                {slotsError}
-              </p>
-              <button
-                type="button"
-                className={styles.retry}
-                onClick={() => date && pickDate(date)}
-              >
-                ↻ Försök igen
-              </button>
-            </div>
-          )}
-
-          {/* empty: only when we genuinely have a day, no error, not loading */}
-          {!pending && !slotsError && date && slots.length === 0 && (
-            <div className={styles.slotsEmpty}>
-              <div className={styles.emptyIcon} aria-hidden>
-                📅
-              </div>
-              <p className={styles.emptyTitle}>Inga lediga tider denna dag</p>
-              <p className={styles.emptyText}>Välj en annan dag ovan så visar vi lediga tider.</p>
-            </div>
-          )}
-
-          {/* prompt before any day is chosen */}
-          {!pending && !slotsError && !date && (
-            <p className="wizard-muted">Välj en dag ovan för att se lediga tider.</p>
-          )}
-
-          {/* success: the slot grid */}
-          {!pending && !slotsError && slots.length > 0 && (
-            <div className="wizard-times" role="group" aria-label="Välj tid">
-              {slots.map((sl) => {
-                const isSel = slot?.start === sl.start && slot?.staffId === sl.staffId
-                return (
+              {staffHere.map((m, i) => (
+                <li key={m.id}>
                   <button
-                    key={sl.start + sl.staffId}
                     type="button"
-                    className={`wizard-time${isSel ? ' selected' : ''}`}
-                    aria-pressed={isSel}
-                    style={isSel ? goldSelected : undefined}
-                    onClick={() => {
-                      // Select only — advancing is the bottom bar's "Fortsätt".
-                      setSlot(sl)
-                      setSlotTakenNotice(null)
-                    }}
+                    className="wizard-card wizard-card--staff"
+                    aria-pressed={staffChoice === m.id}
+                    onClick={() => pickStaff(m.id)}
                   >
-                    {fmtTime(sl.start)}
-                    {staffChoice === 'any' && sl.staffTitle ? (
-                      <span className="wizard-time-staff">{sl.staffTitle}</span>
+                    <StaffAvatar
+                      name={m.title ?? staffNoun}
+                      avatarUrl={m.avatarUrl}
+                      mode={staffAvatarMode}
+                      index={i}
+                    />
+                    <span className="wizard-card-main">
+                      <span className="fc-card-title">{m.title ?? staffNoun}</span>
+                      <span className="fc-role">{staffNoun}</span>
+                    </span>
+                    {staffChoice === m.id ? (
+                      <>
+                        <span className="fc-ring" aria-hidden />
+                        <span className="fc-check" aria-hidden>
+                          ✓
+                        </span>
+                      </>
                     ) : null}
                   </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Step 4 — details. The submit BUTTON moved to the bottom action bar;
-          the <form> stays (with a ref) so required-field + type validation still
-          runs when the bar's "Bekräfta bokning" calls requestSubmit(). */}
-      {step === 4 && service && slot && (
-        <div>
-          <div className="wizard-summary">
-            <div className={styles.summaryRow}>
-              <strong>{service.name}</strong>
-              <span style={{ opacity: 0.75 }}>
-                {fmtTime(slot.start)}
-                {slot.staffTitle ? ` · ${slot.staffTitle}` : ''} · {service.durationMin} min
-              </span>
-              <span className={styles.summaryPrice}>{kr.format(service.priceCents / 100)}</span>
-            </div>
+                </li>
+              ))}
+              {staffHere.length === 0 && (
+                <li>
+                  <p className={styles.emptyText} style={{ padding: '0.5rem 0.25rem' }}>
+                    Ingen specifik personal är kopplad — välj “Alla” för tidigast lediga tid.
+                  </p>
+                </li>
+              )}
+            </ul>
           </div>
-          <form
-            ref={formRef}
-            className="wizard-form"
-            onSubmit={(e) => {
-              e.preventDefault()
-              submit()
-            }}
-          >
-            <label className="auth-field">
-              <span>Namn</span>
-              <input
-                required
-                autoComplete="name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </label>
-            <label className="auth-field">
-              <span>E-post</span>
-              <input
-                required
-                type="email"
-                autoComplete="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-            </label>
-            <label className="auth-field">
-              <span>Telefon</span>
-              <input
-                required
-                type="tel"
-                autoComplete="tel"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              />
-            </label>
-            <label className="auth-field">
-              <span>Meddelande (valfritt)</span>
-              <input
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-              />
-            </label>
-            {error ? (
-              <p className="auth-error" role="alert">
-                {error}
+        )}
+
+        {/* Step 3 — datum (kalender ELLER dag-remsa, tenant-valbart) + slots. */}
+        {step === 3 && service && (
+          <div className="fc-step">
+            {/* Krock-notis: tiden togs precis. Vänligt, ej blockerande. */}
+            {slotTakenNotice ? (
+              <p className="fc-alert" role="alert">
+                {slotTakenNotice}
               </p>
             ) : null}
-            {/* Hidden submit keeps requestSubmit() + Enter-to-submit working;
-                the visible CTA is the sticky bottom action bar. */}
-            <button type="submit" className="wizard-form-submit" tabIndex={-1} aria-hidden>
-              Bekräfta bokning
-            </button>
-          </form>
-        </div>
-      )}
 
-      </div>{/* /.wizard-stepbody */}
+            {pickerMode === 'strip' ? (
+              <div className="wizard-days" role="group" aria-label="Välj dag">
+                {days.map((d) => {
+                  const key = ymd(d)
+                  const isSel = date === key
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`wizard-day${isSel ? ' selected' : ''}`}
+                      aria-pressed={isSel}
+                      onClick={() => {
+                        setSlotTakenNotice(null)
+                        pickDate(key)
+                      }}
+                    >
+                      <span className="fc-day-dow">{fmtDow(d)}</span>
+                      <span className="fc-day-dom">{d.getDate()}</span>
+                      <span className="fc-day-mon">{fmtMon(d)}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="fc-cal">
+                <div className="fc-cal-head">
+                  <button
+                    type="button"
+                    className="fc-cal-nav"
+                    onClick={() => setCalCursor((c) => Math.max(0, c - 1))}
+                    disabled={calCursor <= 0}
+                    aria-label="Föregående månad"
+                  >
+                    ‹
+                  </button>
+                  <span className="fc-cal-title">{calTitle}</span>
+                  <button
+                    type="button"
+                    className="fc-cal-nav"
+                    onClick={() => setCalCursor((c) => Math.min(calMonths.length - 1, c + 1))}
+                    disabled={calCursor >= calMonths.length - 1}
+                    aria-label="Nästa månad"
+                  >
+                    ›
+                  </button>
+                </div>
+                <div className="fc-cal-dows" aria-hidden>
+                  <span>Mån</span>
+                  <span>Tis</span>
+                  <span>Ons</span>
+                  <span>Tors</span>
+                  <span>Fre</span>
+                  <span>Lör</span>
+                  <span>Sön</span>
+                </div>
+                <div className="fc-cal-grid" role="group" aria-label="Välj dag">
+                  {calCells.map((c, i) =>
+                    c === null ? (
+                      <span key={`e${i}`} aria-hidden />
+                    ) : (
+                      <button
+                        key={c.key}
+                        type="button"
+                        className={`fc-cal-cell${date === c.key ? ' selected' : ''}${c.isToday ? ' is-today' : ''}`}
+                        disabled={c.disabled}
+                        aria-pressed={date === c.key}
+                        aria-label={c.aria}
+                        onClick={() => {
+                          setSlotTakenNotice(null)
+                          pickDate(c.key)
+                        }}
+                      >
+                        {c.day}
+                        {!c.disabled ? <span className="fc-cal-dot" aria-hidden /> : null}
+                      </button>
+                    ),
+                  )}
+                </div>
+              </div>
+            )}
 
-      {/* BOTTOM ACTION BAR (handoff VWizard): Back arrow + full-width
-          Fortsätt/Bekräfta. Sticky to the bottom so the primary action stays in
-          thumb reach while the step body scrolls. Hidden on the confirmation. */}
+            {/* loading: skeleton-chips medan slots resolvar */}
+            {pending && slotSkeleton}
+
+            {/* error: notis + retry */}
+            {!pending && slotsError && slotError(() => date && pickDate(date))}
+
+            {/* empty: only when we genuinely have a day, no error, not loading */}
+            {!pending && !slotsError && date && slots.length === 0 && (
+              <div className="fc-noslots">
+                <div className="fc-noslots-glyph" aria-hidden>
+                  —
+                </div>
+                <p>
+                  Inga lediga tider den dagen.
+                  <br />
+                  Prova en annan dag.
+                </p>
+              </div>
+            )}
+
+            {/* success: slots grupperade Morgon / Dagtid / Kväll */}
+            {!pending && !slotsError && slots.length > 0 && (
+              <div className="fc-slotgroups">
+                {slotGroups.map((g) => (
+                  <div key={g.label}>
+                    <div className="fc-label">{g.label}</div>
+                    <div className="fc-slot-grid" role="group" aria-label={`Välj tid — ${g.label}`}>
+                      {g.items.map(slotButton)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 4 — details. The submit BUTTON lives in the bottom action bar;
+            the <form> stays (with a ref) so required-field + type validation still
+            runs when the bar's "Bekräfta bokning" calls requestSubmit(). */}
+        {step === 4 && service && slot && (
+          <div className="fc-step">
+            <div className="fc-summary">
+              <span className="fc-summary-main">
+                <span className="fc-summary-name">{service.name}</span>
+                <span className="fc-summary-meta">
+                  {fmtTime(slot.start)}
+                  {slot.staffTitle ? ` · ${slot.staffTitle}` : ''} · {service.durationMin} min
+                </span>
+              </span>
+              <span className="fc-summary-price">{kr.format(service.priceCents / 100)}</span>
+            </div>
+            <form
+              ref={formRef}
+              className="wizard-form"
+              onSubmit={(e) => {
+                e.preventDefault()
+                submit()
+              }}
+            >
+              <label className="fc-field">
+                <span>Namn</span>
+                <input
+                  required
+                  autoComplete="name"
+                  placeholder="För- och efternamn"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+              </label>
+              <label className="fc-field">
+                <span>E-post</span>
+                <input
+                  required
+                  type="email"
+                  autoComplete="email"
+                  placeholder="du@exempel.se"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </label>
+              <label className="fc-field">
+                <span>Telefon</span>
+                <input
+                  required
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="070-000 00 00"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
+              </label>
+              <label className="fc-field">
+                <span>
+                  Meddelande <span className="fc-optional">(valfritt)</span>
+                </span>
+                <input
+                  placeholder={`Önskemål till din ${staffNoun.toLowerCase()}`}
+                  value={form.note}
+                  onChange={(e) => setForm({ ...form, note: e.target.value })}
+                />
+              </label>
+              {error ? (
+                <p className="fc-alert" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              {/* Hidden submit keeps requestSubmit() + Enter-to-submit working;
+                  the visible CTA is the sticky bottom action bar. */}
+              <button type="submit" className="wizard-form-submit" tabIndex={-1} aria-hidden>
+                Bekräfta bokning
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Step 5 — BILJETTEN (in-page bekräftelse, ⭐ kärnkrav): ✓ BOKAT,
+            "Vi ses, {firstName}!", stub med BEKRÄFTAD-stämpel och dashed dividers.
+            Datan finns redan i wizarden (tjänst, tid, personal, pris, boknings-id). */}
+        {step === 5 && service && slot && (
+          <div className="fc-ticket-wrap">
+            <div className="fc-ticket-booked">✓ BOKAT</div>
+            <h2 className="fc-ticket-title">
+              Vi ses{form.name.trim() ? `, ${form.name.trim().split(/\s+/)[0]}` : ''}!
+            </h2>
+            <p className="fc-ticket-sub">
+              Din tid är bokad.
+              {form.email.trim() ? ` En bekräftelse är på väg till ${form.email.trim()}.` : ''}
+            </p>
+
+            <div className="fc-ticket">
+              <div className="fc-stamp" aria-hidden>
+                BEKRÄFTAD
+              </div>
+              <div className="fc-ticket-head">
+                <span className="fc-ticket-brand">{brandName || 'Bokning'}</span>
+                <span className="fc-ticket-ref">
+                  {bookingId ? bookingId.slice(0, 8).toUpperCase() : ''}
+                </span>
+              </div>
+              <div className="fc-ticket-rows">
+                <span className="fc-ticket-rowlabel">Tjänst</span>
+                <span className="fc-ticket-rowvalue">{service.name}</span>
+                {slot.staffTitle ? (
+                  <>
+                    <span className="fc-ticket-rowlabel">{staffNoun}</span>
+                    <span className="fc-ticket-rowvalue">{slot.staffTitle}</span>
+                  </>
+                ) : null}
+                <span className="fc-ticket-rowlabel">Tid</span>
+                <span className="fc-ticket-rowvalue">
+                  {fmtLongDate(slot.start)}
+                  <br />
+                  <span className="fc-ticket-time">kl. {fmtTime(slot.start)}</span>
+                </span>
+              </div>
+              <div className="fc-ticket-foot">
+                <span className="fc-ticket-footlabel">Att betala på plats</span>
+                <span className="fc-ticket-price">{kr.format(service.priceCents / 100)}</span>
+              </div>
+            </div>
+
+            <div className="fc-ticket-actions">
+              {bookingId ? (
+                // Befintlig .ics-väg: kvittosidan bygger kalenderfilen server-side.
+                <Link href={`/boka/bekraftelse/${bookingId}`} className="fc-btn-ink">
+                  Lägg till i kalender
+                </Link>
+              ) : null}
+              <button type="button" className="fc-btn-outline" onClick={resetWizard}>
+                Boka en till tid
+              </button>
+              {/* "Avboka eller boka om"-länken kräver den token-signerade avboka-URL:en
+                  (cancel-token, finns bara i mejlet) — ingen giltig länk kan byggas här,
+                  och en död länk är förbjuden. Mejlet bär avboka-vägen. */}
+            </div>
+          </div>
+        )}
+      </div>
+      {/* /.wizard-stepbody */}
+
+      {/* BOTTOM ACTION BAR: ← back (52px, från steg 2) + full-bredd
+          Fortsätt/Bekräfta bokning. Sticky i botten. Döljs på bekräftelsen. */}
       {step < 5 && (
         <div className="wizard-actionbar">
           {step > 1 ? (
-            <button
-              type="button"
-              className="wizard-back-btn"
-              onClick={goBack}
-              aria-label="Tillbaka"
-            >
+            <button type="button" className="wizard-back-btn" onClick={goBack} aria-label="Tillbaka">
               <span aria-hidden>←</span>
             </button>
           ) : null}
@@ -1043,75 +1277,11 @@ export function BookingWizard({
             className="wizard-cta"
             disabled={!canAdvance || pending}
             onClick={goNext}
-            style={canAdvance && !pending ? goldSelected : undefined}
           >
             <span className="wizard-cta-label">
               {step === 4 ? (pending ? 'Bokar…' : 'Bekräfta bokning') : 'Fortsätt'}
             </span>
           </button>
-        </div>
-      )}
-
-      {/* Step 5 — in-page bekräftelse (⭐ kärnkrav). Kvitto-känsla utan att lämna
-          storefronten: vi återanvänder de globala .confirm-*-klasserna så att
-          steget ser identiskt ut med /boka/bekraftelse-rutten. Datan finns redan
-          i wizarden (tjänst, tid, personal, pris, bokningsid). */}
-      {step === 5 && service && slot && (
-        <div className="booking-confirm">
-          <div
-            className="confirm-badge"
-            aria-hidden
-            style={{
-              background: 'var(--color-accent, var(--color-primary))',
-              color: 'var(--color-accent-fg, #fff)',
-            }}
-          >
-            ✓
-          </div>
-          <h2>Tack, din tid är bokad!</h2>
-          <ul className="confirm-summary">
-            <li>
-              <span>Tjänst</span>
-              <strong>{service.name}</strong>
-            </li>
-            <li>
-              <span>Tid</span>
-              <strong>{fmtDateTime(slot.start)}</strong>
-            </li>
-            {slot.staffTitle ? (
-              <li>
-                <span>Hos</span>
-                <strong>{slot.staffTitle}</strong>
-              </li>
-            ) : null}
-            <li>
-              <span>Pris</span>
-              <strong>{kr.format(service.priceCents / 100)}</strong>
-            </li>
-          </ul>
-
-          <p className="confirm-note">Du betalar på plats vid besöket.</p>
-
-          <div className={styles.confirmActions}>
-            {bookingId ? (
-              <Link
-                href={`/boka/bekraftelse/${bookingId}`}
-                className={styles.calendarBtn}
-                aria-label="Visa kvitto och lägg till i kalender"
-              >
-                Visa kvitto
-              </Link>
-            ) : null}
-            {onClose ? (
-              <button type="button" className="btn-primary" onClick={finish}>
-                Klar
-              </button>
-            ) : (
-              <Link href="/" className="btn-primary">
-                Till startsidan
-              </Link>
-            )}
-          </div>
         </div>
       )}
     </div>

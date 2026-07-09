@@ -78,6 +78,10 @@ const NAV: Record<PortalRole, NavConfig> = {
       { href: '/admin/presentkort', label: 'Presentkort', icon: 'gift', module: 'presentkort' },
       { group: 'Din sida' },
       { href: '/admin/sida', label: 'Redigera sidan', icon: 'palette' },
+      // Bokningsflöde = salongs-valbara bokningsinställningar (design-paketets
+      // ⭐-krav). Bokning är kärnfunktion (ingen tenant_modules-nyckel) — samma
+      // ogated mönster som /admin/sida.
+      { href: '/admin/bokning', label: 'Bokningsflöde', icon: 'calendar' },
       { href: '/admin/installningar', label: 'Inställningar', icon: 'settings' },
     ],
   },

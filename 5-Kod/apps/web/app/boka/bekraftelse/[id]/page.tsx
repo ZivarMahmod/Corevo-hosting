@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createPublicClient } from '@/lib/supabase/public'
+import { buildCancelToken } from '@/lib/booking/cancel-token'
 import { GoogleReviewNudge } from '@/components/kund/GoogleReviewNudge'
-import styles from '@/components/booking/booking.module.css'
+import '../../../ticket.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Bokning bekräftad' }
@@ -53,6 +54,21 @@ function buildIcs(opts: {
   return lines.join('\r\n')
 }
 
+// Kort biljett-referens à la designens "FC-4827": salongens initialer + 4 siffror
+// deterministiskt härledda ur boknings-id:t (ingen ny data, bara presentation).
+function ticketRef(tenantName: string, id: string): string {
+  const initials =
+    (tenantName || 'BK')
+      .split(/\s+/)
+      .map((w) => w[0] ?? '')
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'BK'
+  const hex = id.replace(/-/g, '').slice(0, 6)
+  const num = (Number.parseInt(hex || '0', 16) % 9000) + 1000
+  return `${initials}-${num}`
+}
+
 export default async function ConfirmationPage({
   params,
   searchParams,
@@ -69,11 +85,13 @@ export default async function ConfirmationPage({
   if (!booking) notFound()
 
   const tz = booking.location_timezone ?? 'Europe/Stockholm'
-  const when = new Intl.DateTimeFormat('sv-SE', {
-    dateStyle: 'full',
-    timeStyle: 'short',
+  const start = new Date(booking.start_ts)
+  const longDate = new Intl.DateTimeFormat('sv-SE', { dateStyle: 'full', timeZone: tz }).format(start)
+  const time = new Intl.DateTimeFormat('sv-SE', {
+    hour: '2-digit',
+    minute: '2-digit',
     timeZone: tz,
-  }).format(new Date(booking.start_ts))
+  }).format(start)
 
   // Effektiv gate (samma som boka-flödet): online bara om BÅDA flaggorna är på.
   const canTakeOnline = booking.payments_enabled && booking.stripe_charges_enabled
@@ -101,78 +119,101 @@ export default async function ConfirmationPage({
     }),
   )}`
 
+  // Avboka-länk: samma HMAC-capability som mejlets manage-länk. buildCancelToken
+  // failar SAFE till '' utan nyckel → länken utelämnas då (ingen död länk).
+  const cancelToken = await buildCancelToken(booking.id ?? id)
+  const cancelHref = cancelToken ? `/avboka/${booking.id ?? id}?t=${encodeURIComponent(cancelToken)}` : null
+
+  // Biljett-fotens etikett: designens "Att betala på plats" gäller obetald bokning;
+  // en online-betald/återbetald bokning får inte påstå att pris återstår på plats.
+  const footLabel = paid ? 'Betald online' : refunded ? 'Återbetald' : 'Att betala på plats'
+
   return (
-    <section className="section">
-      <div className="section-inner booking-confirm">
-        <div
-          className="confirm-badge"
-          aria-hidden
-          style={{
-            background: 'var(--color-accent, var(--color-primary))',
-            color: 'var(--color-fg, #15281f)',
-          }}
-        >
-          ✓
+    <section className="tkt-scope tkt-section">
+      <div className="tkt-ok" aria-hidden>
+        ✓ BOKAT
+      </div>
+      <h1 className="tkt-confirm-h">Tack, din tid är bokad!</h1>
+      <p className="tkt-lede">En bekräftelse är på väg till din e-post.</p>
+
+      {/* Biljetten/stubben — BEKRÄFTAD-stämpel, dashed dividers, rader, pris-fot */}
+      <div className="tkt-stub tkt-stub--ticket">
+        <div className="tkt-stamp" aria-hidden>
+          BEKRÄFTAD
         </div>
-        <h1>Tack, din tid är bokad!</h1>
-        <ul className="confirm-summary">
-          <li>
-            <span>Tjänst</span>
-            <strong>{booking.service_name}</strong>
-          </li>
-          <li>
-            <span>Tid</span>
-            <strong>{when}</strong>
-          </li>
+        <div className="tkt-stub-head">
+          <span className="tkt-stub-brand">{tenantName || 'Bokning'}</span>
+          <span className="tkt-stub-ref">{ticketRef(tenantName, booking.id ?? id)}</span>
+        </div>
+        <div className="tkt-stub-grid">
+          <span className="tkt-label">Tjänst</span>
+          <span className="tkt-value">{booking.service_name}</span>
           {booking.staff_title ? (
-            <li>
-              <span>Hos</span>
-              <strong>{booking.staff_title}</strong>
-            </li>
+            <>
+              <span className="tkt-label">Hos</span>
+              <span className="tkt-value">{booking.staff_title}</span>
+            </>
           ) : null}
-          <li>
-            <span>Pris</span>
-            <strong>{kr.format((booking.price_cents ?? 0) / 100)}</strong>
-          </li>
-        </ul>
-
-        {/* Betalning (G09): kvitto/status. paid > refunded > avbruten > väntar > på plats. */}
-        {paid ? (
-          <p className="confirm-note confirm-paid">
-            ✓ Betald online — {kr.format((booking.price_cents ?? 0) / 100)}. Kvitto skickas via Stripe.
-          </p>
-        ) : refunded ? (
-          <p className="confirm-note">Betalningen är återbetald.</p>
-        ) : checkoutCancelled ? (
-          <p className="confirm-note">Betalningen avbröts. Du kan betala i salongen vid besöket.</p>
-        ) : canTakeOnline ? (
-          <p className="confirm-note">Betalningen behandlas — du får en bekräftelse strax.</p>
-        ) : (
-          <p className="confirm-note">Du betalar på plats vid besöket.</p>
-        )}
-
-        {/* Recension-nudge (Google review) POPUP (M4 §2.3): ignorerbar, frikopplad
-            från betalning, visas oavsett betalstatus. Renderar inget om salongen
-            saknar google_review_url. Skild från e-post-nudgen (status=completed). */}
-        <GoogleReviewNudge
-          tenantSlug={booking.tenant_slug}
-          tenantName={tenantName}
-          bookingId={booking.id ?? id}
-        />
-
-        <div className={styles.confirmActions}>
-          <a
-            href={icsHref}
-            download="bokning.ics"
-            className={styles.calendarBtn}
-            aria-label="Lägg till bokningen i din kalender"
-          >
-            📅 Lägg till i kalender
-          </a>
-          <Link href="/" className="btn-primary">
-            Till startsidan
-          </Link>
+          <span className="tkt-label">Tid</span>
+          <span className="tkt-value">
+            {longDate}
+            <br />
+            <span className="tkt-value-time">kl. {time}</span>
+          </span>
         </div>
+        <div className="tkt-stub-foot">
+          <span className="tkt-foot-label">{footLabel}</span>
+          <span className="tkt-price">{kr.format((booking.price_cents ?? 0) / 100)}</span>
+        </div>
+      </div>
+
+      {/* Betalning (G09): kvitto/status. paid > refunded > avbruten > väntar > på plats. */}
+      {paid ? (
+        <p className="tkt-note tkt-note--paid">
+          ✓ Betald online — {kr.format((booking.price_cents ?? 0) / 100)}. Kvitto skickas via Stripe.
+        </p>
+      ) : refunded ? (
+        <p className="tkt-note">Betalningen är återbetald.</p>
+      ) : checkoutCancelled ? (
+        <p className="tkt-note">Betalningen avbröts. Du kan betala i salongen vid besöket.</p>
+      ) : canTakeOnline ? (
+        <p className="tkt-note">Betalningen behandlas — du får en bekräftelse strax.</p>
+      ) : (
+        <p className="tkt-note">Du betalar på plats vid besöket.</p>
+      )}
+
+      {/* Recension-nudge (Google review) POPUP (M4 §2.3): ignorerbar, frikopplad
+          från betalning, visas oavsett betalstatus. Renderar inget om salongen
+          saknar google_review_url. Skild från e-post-nudgen (status=completed). */}
+      <GoogleReviewNudge
+        tenantSlug={booking.tenant_slug}
+        tenantName={tenantName}
+        bookingId={booking.id ?? id}
+      />
+
+      <div className="tkt-actions">
+        <a
+          href={icsHref}
+          download="bokning.ics"
+          className="tkt-btn-ink"
+          aria-label="Lägg till bokningen i din kalender"
+        >
+          Lägg till i kalender
+        </a>
+        <Link href="/boka" className="tkt-btn-outline">
+          Boka en till tid
+        </Link>
+        {cancelHref ? (
+          <Link href={cancelHref} className="tkt-textlink">
+            Behöver du ändra? Avboka eller boka om
+          </Link>
+        ) : null}
+      </div>
+
+      <div className="tkt-home">
+        <Link href="/" className="tkt-homelink">
+          Till startsidan
+        </Link>
       </div>
     </section>
   )

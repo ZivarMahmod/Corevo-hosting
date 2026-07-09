@@ -208,3 +208,139 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
   })
   return { success: remove ? 'Medlem borttagen. Publika sajten uppdaterad.' : 'Medlem sparad. Publika sajten uppdaterad.' }
 }
+
+// ── Personal-teamet på publika sidan (staff.avatar_url + staff.show_on_site, 0049) ──
+// "Våra barberare" härleds numera ur RIKTIGA staff-rader (lib/tenant-data →
+// loadStaffTeam): aktiva medarbetare med show_on_site=true VINNER över den gamla
+// settings-listan (branding.team) så fort minst en synlig medlem finns. De två
+// actions nedan redigerar den källan från Sida-ytan — delad mellan super-adminens
+// kundkort (/salonger/[id]) och kundens /admin/sida via sidaCtx-dubbelguarden,
+// precis som övriga SIDA-actions i den här filen.
+
+/**
+ * Byt eller ta bort en medarbetares foto (staff.avatar_url) från Sida-ytan.
+ * remove=true → null (standard-silhuett visas på sidan); annars laddas den
+ * bifogade filen upp till R2 under tenants/<id>/staff. Gamla objektet städas
+ * best-effort EFTER commit och BARA när det är medarbetarens EGNA lagrade
+ * avatar_url (läst ur DB ovan — aldrig en klient-skickad URL; samma fence-princip
+ * som removeTenantStorefrontImage). deleteByPublicUrl vägrar dessutom främmande
+ * origins (keyFromPublicUrl base-check), så en förgiftad rad kan inte radera annat.
+ */
+export async function saveTenantStaffPhoto(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase, tenantId } = await sidaCtx(fd)
+  if (!tenantId) return { error: 'Saknar salong.' }
+
+  const staffId = String(fd.get('staffId') ?? '')
+  if (!staffId) return { error: 'Saknar medarbetare.' }
+  const remove = String(fd.get('remove') ?? '') === 'true'
+
+  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Okänd salong.' }
+
+  // Medlemskontroll: staffId är klient-input — bekräfta att raden är TENANTENS
+  // innan write/städning (samma lucka som setStaffServices vaktar; RLS isolerar
+  // inte roller inom tenanten och platform_admin läser allt).
+  const { data: member } = await supabase
+    .from('staff')
+    .select('id, avatar_url')
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!member) return { error: 'Okänd medarbetare.' }
+  const prevUrl = member.avatar_url
+
+  let nextUrl: string | null = null
+  if (!remove) {
+    const image = fd.get('image')
+    if (!(image instanceof File) || image.size === 0) return { error: 'Välj en bild att ladda upp.' }
+    const res = await uploadImage(image, `tenants/${tenantId}/staff`)
+    if (!res.ok) return { error: uploadErrorMessage(res.reason) }
+    nextUrl = res.url
+  }
+
+  const { error } = await supabase
+    .from('staff')
+    .update({ avatar_url: nextUrl })
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+  if (error) {
+    // Nyss uppladdat objekt utan DB-rad → städa direkt så inget orphan blir kvar.
+    if (nextUrl) await deleteByPublicUrl(nextUrl)
+    await reportActionError('saveTenantStaffPhoto.update', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  // Städa gamla objektet när det byttes/togs bort (aldrig blockerande, FX-14).
+  if (prevUrl && prevUrl !== nextUrl) await deleteByPublicUrl(prevUrl)
+
+  revalidateTenant(tenant.slug)
+  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
+  revalidatePath('/admin/personal')
+  await logPlatformAction(supabase, {
+    action: 'tenant.staff_update',
+    tenantId,
+    actorId: user.id,
+    entityId: staffId,
+    meta: { field: 'avatar_url', removed: remove },
+  })
+  return {
+    success: remove
+      ? 'Foto borttaget — standard-silhuett visas. Publika sajten uppdaterad.'
+      : 'Foto sparat. Publika sajten uppdaterad.',
+  }
+}
+
+/**
+ * Visa/dölj en medarbetare i publika team-sektionen (staff.show_on_site, 0049).
+ * Rör ALDRIG bokningsbarheten — den styrs som förut av staff.active. En dold
+ * medarbetare går alltså fortfarande att boka; hen syns bara inte under
+ * "Våra barberare".
+ */
+export async function setTenantStaffOnSite(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase, tenantId } = await sidaCtx(fd)
+  if (!tenantId) return { error: 'Saknar salong.' }
+
+  const staffId = String(fd.get('staffId') ?? '')
+  if (!staffId) return { error: 'Saknar medarbetare.' }
+  const show = String(fd.get('show') ?? '') === 'true'
+
+  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Okänd salong.' }
+
+  // Samma medlemsfence som saveTenantStaffPhoto (staffId är klient-input).
+  const { data: member } = await supabase
+    .from('staff')
+    .select('id')
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!member) return { error: 'Okänd medarbetare.' }
+
+  const { error } = await supabase
+    .from('staff')
+    .update({ show_on_site: show })
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+  if (error) {
+    await reportActionError('setTenantStaffOnSite.update', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidateTenant(tenant.slug)
+  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
+  revalidatePath('/admin/personal')
+  await logPlatformAction(supabase, {
+    action: 'tenant.staff_update',
+    tenantId,
+    actorId: user.id,
+    entityId: staffId,
+    meta: { field: 'show_on_site', show },
+  })
+  return {
+    success: show
+      ? 'Medarbetaren visas på sidan. Publika sajten uppdaterad.'
+      : 'Medarbetaren döljs från sidan (fortfarande bokningsbar). Publika sajten uppdaterad.',
+  }
+}

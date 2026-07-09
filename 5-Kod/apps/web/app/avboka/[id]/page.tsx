@@ -11,6 +11,7 @@ import { verifyCancelToken } from '@/lib/booking/cancel-token'
 import { getCancellationCutoffHours, withinCancellationWindow } from '@/lib/kund/settings'
 import { cancelByToken } from '../actions'
 import storefront from '@/components/storefront/storefront.module.css'
+import '../../ticket.css'
 
 // Public guest self-service cancel page (NOTIF-GUEST). Authorisation = the HMAC
 // capability token in `?t=` (no login). We verify it FIRST; only then do we read
@@ -21,11 +22,15 @@ import storefront from '@/components/storefront/storefront.module.css'
 // Chrome: app/avboka/ has no layout (one isn't in revir to create), so this page
 // renders the full salon shell itself — mirroring app/boka/layout.tsx (currentTenant
 // + injectTenantTokens + Nav/Footer) so a shared/refreshed link is never stripped.
+//
+// Look: biljett/stub-systemet ur design-paketet (README §Avboka) — mono-eyebrow,
+// display-H1, stub med dashed rader, utfallstexter. Stilar i app/ticket.css.
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Avboka tid' }
 
 type DoneCode = 'ok' | 'already' | 'too_late' | 'error'
+type Outcome = 'ready' | 'done' | 'already' | 'too_late' | 'error'
 
 function Shell({
   children,
@@ -68,15 +73,14 @@ function Shell({
 async function Message({ title, body }: { title: string; body: string }) {
   const bundle = await currentTenant()
   const inner = (
-    <section className="section">
-      <div className="section-inner booking-confirm">
-        <h1>{title}</h1>
-        <p className="confirm-note">{body}</p>
-        <div style={{ marginTop: '1rem' }}>
-          <Link href="/" className="btn-primary">
-            Till startsidan
-          </Link>
-        </div>
+    <section className="tkt-scope tkt-section">
+      <div className="tkt-eyebrow">Din bokning</div>
+      <h1 className="tkt-h1">{title}</h1>
+      <p className="tkt-state">{body}</p>
+      <div className="tkt-home">
+        <Link href="/" className="tkt-homelink">
+          Till startsidan
+        </Link>
       </div>
     </section>
   )
@@ -107,27 +111,9 @@ export default async function AvbokaPage({
     return <Message title="Ogiltig länk" body="Ogiltig eller utgången länk." />
   }
 
-  // Post-action outcomes (the inline cancel action redirects back here with ?done=).
-  if (done) {
-    const code = done as DoneCode
-    if (code === 'ok') {
-      return <Message title="Din tid är avbokad" body="Tiden har avbokats. Varmt välkommen åter när det passar dig!" />
-    }
-    if (code === 'already') {
-      return <Message title="Redan avbokad" body="Den här tiden är redan avbokad." />
-    }
-    if (code === 'too_late') {
-      return (
-        <Message
-          title="För sent att avboka"
-          body="Det är för sent att avboka online — kontakta salongen så hjälper vi dig."
-        />
-      )
-    }
-    return <Message title="Något gick fel" body="Vi kunde inte avboka just nu. Försök igen eller kontakta salongen." />
-  }
-
   // 2. Token valid → read the booking via service-role (token is the capability).
+  //    Läses även för post-action-utfallen (?done=) så stubben (Salong/Tjänst/Tid/Hos)
+  //    kan visas i ALLA utfall per designen — samma token-gatade läsning som ready.
   const admin = createServiceClient()
   if (!admin) {
     return <Message title="Avbokning otillgänglig" body="Avbokning är inte tillgänglig just nu. Kontakta salongen." />
@@ -147,13 +133,26 @@ export default async function AvbokaPage({
   const tenantName = (booking.tenants as { name?: string } | null)?.name ?? 'Salongen'
   const loc = booking.locations as { name?: string; timezone?: string } | null
   const tz = loc?.timezone ?? 'Europe/Stockholm'
-  const when = new Intl.DateTimeFormat('sv-SE', { dateStyle: 'full', timeStyle: 'short', timeZone: tz }).format(
-    new Date(booking.start_ts),
-  )
+  const start = new Date(booking.start_ts)
+  const longDate = new Intl.DateTimeFormat('sv-SE', { dateStyle: 'full', timeZone: tz }).format(start)
+  const time = new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone: tz }).format(start)
 
+  // Utfall (samma serverbeteenden som innan — bara mappade till designens states):
+  //   ?done=ok → done · ?done=already → already · ?done=too_late → too-late ·
+  //   ?done=<annat> → error · annars: redan avbokad → already · inom fönstret →
+  //   ready · utanför fönstret → too-late.
   const alreadyCancelled = booking.status === 'cancelled'
-  const cutoff = await getCancellationCutoffHours(admin, booking.tenant_id)
-  const canCancel = !alreadyCancelled && withinCancellationWindow(booking.start_ts, cutoff)
+  let outcome: Outcome
+  let cutoff = 0
+  if (done) {
+    const code = done as DoneCode
+    outcome = code === 'ok' ? 'done' : code === 'already' ? 'already' : code === 'too_late' ? 'too_late' : 'error'
+  } else if (alreadyCancelled) {
+    outcome = 'already'
+  } else {
+    cutoff = await getCancellationCutoffHours(admin, booking.tenant_id)
+    outcome = withinCancellationWindow(booking.start_ts, cutoff) ? 'ready' : 'too_late'
+  }
 
   // Inline server action: re-verifies + re-checks window inside cancelByToken, then
   // redirects back here with the outcome (PRG — refresh-safe, no double-submit).
@@ -174,52 +173,64 @@ export default async function AvbokaPage({
 
   const bundle = await currentTenant()
   const body = (
-    <section className="section">
-      <div className="section-inner booking-confirm">
-        <h1>Avboka din tid</h1>
-        <ul className="confirm-summary">
-          <li>
-            <span>Salong</span>
-            <strong>{tenantName}</strong>
-          </li>
-          <li>
-            <span>Tjänst</span>
-            <strong>{serviceName}</strong>
-          </li>
-          <li>
-            <span>Tid</span>
-            <strong>{when}</strong>
-          </li>
-          {staffTitle ? (
-            <li>
-              <span>Hos</span>
-              <strong>{staffTitle}</strong>
-            </li>
-          ) : null}
-        </ul>
+    <section className="tkt-scope tkt-section">
+      <div className="tkt-eyebrow">Din bokning</div>
+      <h1 className="tkt-h1">Avboka din tid</h1>
 
-        {alreadyCancelled ? (
-          <p className="confirm-note">Den här tiden är redan avbokad.</p>
-        ) : canCancel ? (
-          <>
-            <p className="confirm-note">
-              Vill du avboka? {cutoff > 0 ? `Du kan avboka senast ${cutoff} timmar innan besöket.` : null}
-            </p>
-            <form action={submitCancel} style={{ marginTop: '1rem' }}>
-              <button type="submit" className="btn-primary">
-                Avboka tid
-              </button>
-            </form>
-          </>
-        ) : (
-          <p className="confirm-note">Det är för sent att avboka online — kontakta salongen så hjälper vi dig.</p>
-        )}
-
-        <div style={{ marginTop: '1.25rem' }}>
-          <Link href="/" style={{ textDecoration: 'underline' }}>
-            Till startsidan
-          </Link>
+      {/* Stubben: Salong / Tjänst / Tid / Hos med 1px dashed dividers */}
+      <div className="tkt-stub">
+        <div className="tkt-row">
+          <span className="tkt-row-label">Salong</span>
+          <span className="tkt-row-value">{tenantName}</span>
         </div>
+        <div className="tkt-row">
+          <span className="tkt-row-label">Tjänst</span>
+          <span className="tkt-row-value">{serviceName}</span>
+        </div>
+        <div className="tkt-row">
+          <span className="tkt-row-label">Tid</span>
+          <span className="tkt-row-value">
+            {longDate} · kl. {time}
+          </span>
+        </div>
+        {staffTitle ? (
+          <div className="tkt-row">
+            <span className="tkt-row-label">Hos</span>
+            <span className="tkt-row-value">{staffTitle}</span>
+          </div>
+        ) : null}
+      </div>
+
+      {outcome === 'ready' ? (
+        <>
+          <p className="tkt-note">
+            Vill du avboka?{cutoff > 0 ? ` Du kan avboka senast ${cutoff} timmar innan besöket.` : null}
+          </p>
+          <form action={submitCancel}>
+            <button type="submit" className="tkt-btn-accent">
+              Avboka tid
+            </button>
+          </form>
+        </>
+      ) : outcome === 'done' ? (
+        <div className="tkt-done" role="status">
+          <div className="tkt-done-mark">✓ AVBOKAD</div>
+          <p className="tkt-state">Din tid är avbokad. Varmt välkommen åter när det passar dig!</p>
+        </div>
+      ) : outcome === 'already' ? (
+        <p className="tkt-state">Den här tiden är redan avbokad.</p>
+      ) : outcome === 'too_late' ? (
+        <p className="tkt-state">Det är för sent att avboka online — ring oss så hjälper vi dig.</p>
+      ) : (
+        <p className="tkt-state" role="alert">
+          Vi kunde inte avboka just nu. Försök igen eller kontakta salongen.
+        </p>
+      )}
+
+      <div className="tkt-home">
+        <Link href="/" className="tkt-homelink">
+          Till startsidan
+        </Link>
       </div>
     </section>
   )

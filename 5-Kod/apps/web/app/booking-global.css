@@ -1,46 +1,465 @@
 /* ===========================================================================
    Booking world — global classes. Split out of globals.css (FAS 0) so the
    booking + back-office agents can work in parallel without colliding. These
-   stay GLOBAL (plain className strings, no CSS modules, no renames); the only
-   change vs. before is the file they live in. Imported in app/layout.tsx
-   (the root layout — the only place Next App Router allows extra global CSS),
-   right after globals.css, so cascade + scope are unchanged.
+   stay GLOBAL (plain className strings, no CSS modules, no renames); imported
+   in app/layout.tsx (the root layout — the only place Next App Router allows
+   extra global CSS), right after globals.css.
 
-   Every rule references the tenant design tokens, so each salon's theme
-   (nivå 1) carries through automatically.
+   REDESIGN (design-paketet "Frisörbokningsformulär redesign", kanon:
+   4-Dokument-Underlag/01-acceptans/…/design_handoff_bokningsflode/):
+   "FreshCut / Barbershop-editorial" — varm paper-canvas, espresso-ink, en
+   burnt-rust-accent, Caslon-serif för frågorna, Franklin för UI och Plex Mono
+   för prislist-meta. ALLA färger re-uttrycks ovanpå kontrakts-tokens
+   (--color-accent/-fg/-bg/-surface) så varje salongs tema styr paletten;
+   FreshCut-hexen ur README-tabellen ligger kvar som sista fallback.
+   Radius = 0 överallt (undantag: avatar-discs 50%, bottom-sheet-toppkanter
+   20px, stämpeln 2px). Borders: 1.5px line-2 interaktivt / 1px line strukturellt.
    =========================================================================== */
 
-/* ---- booking ---- */
+/* ---- boka route chrome (unchanged) ---- */
 .boka-header { border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent); }
 .boka-header-inner { max-width: 1080px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
 .boka-back { font-size: 0.9rem; opacity: 0.7; }
 .boka-back:hover { color: var(--color-primary); opacity: 1; }
 
-.wizard { margin-top: 1.5rem; }
-.wizard-steps { list-style: none; display: flex; gap: 0.5rem; padding: 0; margin: 0 0 1.5rem; flex-wrap: wrap; font-size: 0.85rem; }
-.wizard-steps li { display: flex; align-items: center; gap: 0.4rem; opacity: 0.5; }
-.wizard-steps li.active, .wizard-steps li.done { opacity: 1; }
-.wizard-step-num { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: color-mix(in srgb, var(--color-fg) 10%, transparent); font-weight: 700; font-size: 0.8rem; }
-.wizard-steps li.active .wizard-step-num, .wizard-steps li.done .wizard-step-num { background: var(--color-primary); color: #fff; }
-.wizard-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
-.wizard-card { width: 100%; text-align: left; background: var(--color-bg); color: inherit; border: 1px solid color-mix(in srgb, var(--color-fg) 16%, transparent); border-radius: 0.75rem; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; cursor: pointer; font: inherit; transition: border-color 0.12s ease; }
-.wizard-card:hover { border-color: var(--color-primary); }
-.wizard-card-main { display: flex; flex-direction: column; gap: 0.2rem; }
-.wizard-card-sub { font-size: 0.88rem; opacity: 0.7; }
-.wizard-card-meta { font-size: 0.88rem; color: var(--color-primary); font-weight: 600; white-space: nowrap; }
-.wizard-back { background: none; border: none; color: var(--color-primary); font: inherit; font-weight: 600; cursor: pointer; padding: 0; margin-bottom: 1rem; }
-.wizard-days { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; }
-.wizard-day { flex: 0 0 auto; padding: 0.6rem 0.9rem; border-radius: 0.5rem; border: 1px solid color-mix(in srgb, var(--color-fg) 18%, transparent); background: var(--color-bg); color: inherit; cursor: pointer; font: inherit; font-size: 0.85rem; white-space: nowrap; }
-.wizard-day.selected { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
-.wizard-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 0.5rem; margin-top: 1rem; }
-.wizard-time { padding: 0.6rem 0.4rem; border-radius: 0.5rem; border: 1px solid color-mix(in srgb, var(--color-fg) 18%, transparent); background: var(--color-bg); color: inherit; cursor: pointer; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
-.wizard-time:hover { border-color: var(--color-primary); }
-.wizard-time.selected { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
-.wizard-time-staff { font-size: 0.7rem; opacity: 0.75; }
-.wizard-muted { opacity: 0.7; margin-top: 1rem; }
-.wizard-summary { margin: 0 0 1rem; padding: 0.85rem 1rem; border-radius: 0.6rem; background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg)); }
-.wizard-form { display: flex; flex-direction: column; gap: 0.85rem; max-width: 26rem; }
+/* ===========================================================================
+   FC TOKEN LAYER — scoped till bokningsytan (.fc-scope sätts på wizard-roten,
+   overlay-panelen och inline-sektionen). Re-uttrycker redesign-tokens ovanpå
+   kontrakts-tokens (README §Theming "What to do") så tenantens färger styr:
+   rust = accent, ink = fg, paper = bg. --fc-forest (success) är FAST semantik.
+   Prefixet fc- håller dem borta från back-office --c-*/--font-display (Playfair).
+   =========================================================================== */
+.fc-scope {
+  --fc-rust: var(--color-accent, var(--color-primary, #BC4A1C));
+  --fc-rust-fg: var(--color-accent-fg, #fff);
+  --fc-rust-deep: color-mix(in srgb, var(--fc-rust) 82%, black);
+  --fc-rust-soft: color-mix(in srgb, var(--fc-rust) 14%, var(--color-bg, #F3EDDF));
+  --fc-ink: var(--color-fg, #211C17);
+  --fc-ink-2: color-mix(in srgb, var(--fc-ink) 62%, transparent);
+  --fc-ink-3: color-mix(in srgb, var(--fc-ink) 38%, transparent);
+  --fc-paper: var(--color-bg, #F3EDDF);
+  --fc-paper-2: color-mix(in srgb, var(--fc-ink) 6%, var(--fc-paper));
+  --fc-surface: var(--color-surface, #FDFBF5);
+  --fc-line: color-mix(in srgb, var(--fc-ink) 12%, transparent);
+  --fc-line-2: color-mix(in srgb, var(--fc-ink) 22%, transparent);
+  --fc-forest: #2E5A46;
+  --fc-font-display: var(--font-caslon, 'Libre Caslon Display'), Georgia, serif;
+  --fc-font-body: var(--font-franklin, 'Libre Franklin'), system-ui, sans-serif;
+  --fc-font-mono: var(--font-plexmono, 'IBM Plex Mono'), ui-monospace, monospace;
+  font-family: var(--fc-font-body);
+  color: var(--fc-ink);
+}
+.fc-scope button, .fc-scope input, .fc-scope textarea { font-family: inherit; }
 
+/* ---- keyframes (spec §Motion) ---- */
+@keyframes fcFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes fcStamp {
+  0%   { opacity: 0; transform: rotate(-9deg) scale(1.5); }
+  55%  { opacity: 1; transform: rotate(-9deg) scale(0.9); }
+  100% { opacity: 1; transform: rotate(-9deg) scale(1); }
+}
+@keyframes fcShimmer { to { background-position: -200% 0; } }
+
+/* ===========================================================================
+   WIZARD SHELL — head (progress + fråga + recap) / scrollbar stepbody / action bar
+   =========================================================================== */
+.wizard { margin-top: 0; display: flex; flex-direction: column; min-height: 100%; }
+.wizard--steps, .wizard--compact { display: flex; flex-direction: column; min-height: 100%; margin-top: 0; }
+
+.wizard-head { flex: 0 0 auto; padding: 20px 22px 8px; }
+.wizard-stepbody { flex: 1 1 auto; padding: 4px 22px 22px; min-width: 0; }
+/* Biljetten (steg 5) äger sin egen padding (26px 22px 30px). */
+.fc-stepbody--ticket { padding: 0; }
+
+/* Step-kroppens fade-up körs om per steg (key={step} i JSX). */
+.fc-step { animation: fcFadeUp 0.3s ease; }
+
+/* ---- progress: mono steglabel + "n / 5" + 5 segment (5px) ---- */
+.wizard-progress { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 9px; }
+.wizard-progress-label { font-family: var(--fc-font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fc-ink-3); }
+.wizard-progress-count { font-family: var(--fc-font-mono); font-size: 11px; font-weight: 600; color: var(--fc-ink-3); }
+.wizard-progress-track { display: flex; gap: 5px; margin-bottom: 18px; }
+.wizard-progress-seg { flex: 1; height: 5px; background: var(--fc-line); transition: background 0.3s ease; }
+.wizard-progress-seg.on { background: var(--fc-rust); }
+
+/* ---- display-frågan + recap-rad ---- */
+.wizard-q { margin: 0 0 4px; font-family: var(--fc-font-display); font-weight: 400; font-size: clamp(26px, 6vw, 34px); line-height: 1.02; letter-spacing: -0.01em; color: var(--fc-ink); }
+.fc-recap { font-family: var(--fc-font-mono); font-size: 11px; color: var(--fc-rust); margin-top: 6px; letter-spacing: 0.02em; }
+
+/* ---- mono sektions-label (Hår & skägg / Morgon / Tjänst / …) ---- */
+.fc-label { font-family: var(--fc-font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fc-ink-3); margin: 0 0 8px 2px; }
+
+.wizard-muted { opacity: 0.7; margin-top: 1rem; }
+
+/* ===========================================================================
+   KORT (tjänst + barberare) — surface, 1.5px line-2, radius 0, hover ink-border,
+   selected = 2px rust-ring som inset-overlay (inset:-1.5px), ALDRIG fyllning.
+   =========================================================================== */
+.wizard-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+.wizard-card {
+  position: relative; width: 100%; text-align: left;
+  background: var(--fc-surface); color: inherit;
+  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  padding: 15px 17px;
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  cursor: pointer; font: inherit; font-family: inherit;
+  transition: border-color 0.12s ease;
+}
+.wizard-card:hover { border-color: var(--fc-ink); }
+.wizard-card:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+.wizard-card--staff { padding: 13px 15px; gap: 13px; min-height: 64px; }
+
+.wizard-card-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.fc-card-titlerow { display: flex; align-items: center; gap: 8px; }
+.fc-card-title { font-weight: 600; font-size: 15px; }
+.wizard-card-sub { font-size: 12.5px; color: var(--fc-ink-2); line-height: 1.4; }
+/* POPULÄR-taggen */
+.fc-tag { font-family: var(--fc-font-mono); font-size: 9px; letter-spacing: 0.1em; color: var(--fc-rust); border: 1px solid var(--fc-rust); padding: 2px 5px; text-transform: uppercase; flex: 0 0 auto; }
+/* höger meta: mono-pris över längd */
+.wizard-card-meta { text-align: right; flex: 0 0 auto; font-family: var(--fc-font-mono); }
+.fc-price { display: block; font-size: 15px; font-weight: 600; color: var(--fc-rust); }
+.fc-dur { display: block; font-size: 10.5px; color: var(--fc-ink-3); margin-top: 2px; }
+/* mono-metan på "Alla"-kortet */
+.fc-meta-any { flex: 0 0 auto; font-family: var(--fc-font-mono); font-size: 10.5px; color: var(--fc-rust); letter-spacing: 0.04em; }
+/* barberar-rollraden */
+.fc-role { font-family: var(--fc-font-mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fc-ink-3); }
+
+/* selected: rust-ring + ✓-badge top-right (staff) */
+.fc-ring { position: absolute; inset: -1.5px; border: 2px solid var(--fc-rust); pointer-events: none; }
+.fc-check { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--fc-rust); color: var(--fc-rust-fg); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+
+/* ---- avatar-discs (46px). foto = cirkulärt foto; initialer = per-staff-färg +
+   vit display-initial; namn = paper-2-disc + ink-2-initial; Alla = rust-soft ✦. */
+.fc-avatar { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--fc-font-display); font-size: 19px; color: #fff; overflow: hidden; }
+.fc-avatar--foto { display: block; }
+.fc-avatar--foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fc-avatar--namn { background: var(--fc-paper-2); color: var(--fc-ink-2); font-size: 15px; }
+.fc-avatar--any { background: var(--fc-rust-soft); color: var(--fc-rust); font-size: 18px; font-family: var(--fc-font-body); }
+
+/* ===========================================================================
+   STEG 3 — dag-remsa + månadskalender + slots grupperade Morgon/Dagtid/Kväll
+   =========================================================================== */
+/* dag-remsa: 60px-chips dow/dom/mon */
+.wizard-days { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 12px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.wizard-day {
+  flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 1px;
+  width: 60px; padding: 0.5rem 0; min-height: 48px;
+  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  background: var(--fc-surface); color: var(--fc-ink);
+  cursor: pointer; font: inherit; font-family: inherit;
+  transition: all 0.12s ease; scroll-snap-align: start;
+}
+.wizard-day:hover:not(.selected) { border-color: var(--fc-ink); }
+.wizard-day:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+.wizard-day.selected { background: var(--fc-rust); color: var(--fc-rust-fg); border-color: var(--fc-rust); }
+.fc-day-dow { font-family: var(--fc-font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; }
+.fc-day-dom { font-size: 19px; font-weight: 600; font-family: var(--fc-font-display); }
+.ckompakt .fc-day-dom { font-size: 18px; }
+.fc-day-mon { font-family: var(--fc-font-mono); font-size: 9px; opacity: 0.6; }
+
+/* månadskalender */
+.fc-cal { border: 1.5px solid var(--fc-line-2); background: var(--fc-surface); padding: 14px; margin-bottom: 14px; }
+.fc-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.fc-cal-title { font-family: var(--fc-font-display); font-size: 17px; }
+.fc-cal-nav { width: 30px; height: 30px; border: 1.5px solid var(--fc-line-2); border-radius: 0; background: transparent; color: var(--fc-ink); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+.fc-cal-nav:disabled { color: var(--fc-ink-3); cursor: not-allowed; opacity: 0.4; }
+.fc-cal-nav:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+.fc-cal-dows { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; font-family: var(--fc-font-mono); font-size: 9.5px; color: var(--fc-ink-3); text-align: center; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.fc-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.fc-cal-cell {
+  position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid transparent; border-radius: 0; background: transparent; color: var(--fc-ink);
+  font-family: var(--fc-font-mono); font-size: 13px; font-weight: 500; cursor: pointer; padding: 0;
+  transition: all 0.12s ease;
+}
+.fc-cal-cell:disabled { color: var(--fc-ink-3); cursor: not-allowed; opacity: 0.4; }
+.fc-cal-cell.is-today { border-color: var(--fc-ink-2); }
+.fc-cal-cell.selected { background: var(--fc-rust); color: var(--fc-rust-fg); border-color: var(--fc-rust); }
+.fc-cal-cell:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 1px; }
+.fc-cal-dot { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.7; }
+
+/* slots: grupper med mono-label + 4-kol grid */
+.fc-slotgroups { display: flex; flex-direction: column; gap: 14px; }
+.fc-slot-grid, .ckompakt-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.wizard-time {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  padding: 0.5rem 0.2rem; min-height: 50px;
+  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  background: var(--fc-surface); color: var(--fc-ink);
+  font-family: var(--fc-font-mono); cursor: pointer;
+  transition: all 0.12s ease;
+}
+.wizard-time:hover:not(.selected) { border-color: var(--fc-ink); }
+.wizard-time:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+.wizard-time.selected { background: var(--fc-rust); color: var(--fc-rust-fg); border-color: var(--fc-rust); }
+.fc-slot-time { font-size: 14px; font-weight: 600; }
+.ckompakt .fc-slot-time { font-size: 13px; }
+.wizard-time-staff { font-size: 9px; opacity: 0.7; font-family: var(--fc-font-body); font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* tom-state: — + "Inga lediga tider den dagen." */
+.fc-noslots { text-align: center; padding: 34px 16px; color: var(--fc-ink-2); }
+.fc-noslots-glyph { font-family: var(--fc-font-mono); font-size: 34px; color: var(--fc-line-2); }
+.fc-noslots p { margin: 8px 0 0; font-size: 14px; }
+
+/* skeleton-chips medan slots hämtas (radius 0 — modulens rundade används ej här) */
+.fc-skel-chip {
+  min-height: 50px; border-radius: 0;
+  background: linear-gradient(100deg,
+    color-mix(in srgb, var(--fc-ink) 5%, transparent) 30%,
+    color-mix(in srgb, var(--fc-ink) 11%, transparent) 50%,
+    color-mix(in srgb, var(--fc-ink) 5%, transparent) 70%);
+  background-size: 200% 100%;
+  animation: fcShimmer 1.3s ease infinite;
+}
+
+/* fel + retry */
+.fc-alert { margin: 0 0 10px; padding: 10px 12px; font-size: 13.5px; color: #B00020; background: color-mix(in srgb, #B00020 8%, var(--fc-surface)); border-left: 3px solid #B00020; }
+.fc-retry { margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1.5px solid var(--fc-line-2); border-radius: 0; color: var(--fc-ink); padding: 9px 15px; font: inherit; font-family: var(--fc-font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: border-color 0.12s ease; }
+.fc-retry:hover { border-color: var(--fc-ink); }
+.fc-retry:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+
+/* ===========================================================================
+   STEG 4 — summary-band (paper-2, 3px rust vänsterkant) + fält med mono-labels
+   =========================================================================== */
+.fc-summary { background: var(--fc-paper-2); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; border-left: 3px solid var(--fc-rust); }
+.fc-summary-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fc-summary-name { font-weight: 600; font-size: 14px; }
+.fc-summary-meta { font-family: var(--fc-font-mono); font-size: 11px; color: var(--fc-ink-2); }
+.fc-summary-price { font-family: var(--fc-font-mono); font-size: 15px; font-weight: 600; color: var(--fc-rust); flex: 0 0 auto; }
+
+.wizard-form { display: flex; flex-direction: column; gap: 14px; }
+.fc-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fc-field > span { font-family: var(--fc-font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fc-ink-2); }
+.fc-field .fc-optional { text-transform: none; letter-spacing: 0; color: var(--fc-ink-3); }
+.fc-field input {
+  padding: 12px 14px; border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  background: var(--fc-surface); font-size: 15px; font-family: inherit; color: var(--fc-ink); outline: none;
+  width: 100%; min-width: 0;
+  transition: border-color 0.12s ease;
+}
+.fc-field input:focus { border-color: var(--fc-rust); }
+.ckompakt .fc-field input { padding: 11px 13px; font-size: 14px; }
+
+/* Hidden submit inside the step-4 form (the visible CTA is the action bar). */
+.wizard-form-submit { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+
+/* ===========================================================================
+   ACTION BAR — sticky botten: ← back (52px, från steg 2) + full-bredd CTA
+   =========================================================================== */
+.wizard-actionbar {
+  position: sticky; bottom: 0; z-index: 6; flex: 0 0 auto;
+  display: flex; align-items: stretch; gap: 9px;
+  padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px)) 20px;
+  background: var(--fc-surface);
+  border-top: 1px solid var(--fc-line);
+}
+.wizard-back-btn {
+  flex: 0 0 auto; width: 52px;
+  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  background: transparent; color: var(--fc-ink);
+  font-size: 18px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color 0.12s ease;
+}
+.wizard-back-btn:hover { border-color: var(--fc-ink); }
+.wizard-back-btn:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+.wizard-cta {
+  flex: 1 1 auto; min-height: 50px;
+  padding: 15px; border: none; border-radius: 0;
+  background: var(--fc-rust); color: var(--fc-rust-fg);
+  font: inherit; font-family: inherit; font-weight: 600; font-size: 15px; letter-spacing: 0.02em;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  line-height: 1.2;
+  transition: background 0.15s ease;
+}
+.wizard-cta:hover:not(:disabled) { background: var(--fc-rust-deep); }
+.wizard-cta:disabled { background: var(--fc-paper-2); color: var(--fc-ink-3); cursor: not-allowed; }
+.wizard-cta:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+.wizard-cta-label { font-size: 15px; }
+.wizard-cta-sub { font-family: var(--fc-font-mono); font-size: 10px; font-weight: 500; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ===========================================================================
+   STEG 5 — BILJETTEN: ✓ BOKAT, "Vi ses, {firstName}!", stub m. BEKRÄFTAD-stämpel
+   =========================================================================== */
+.fc-ticket-wrap { padding: 26px 22px 30px; display: flex; flex-direction: column; align-items: center; text-align: center; animation: fcFadeUp 0.3s ease; }
+.fc-ticket-booked { font-family: var(--fc-font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.16em; color: var(--fc-forest); margin-bottom: 20px; }
+.fc-ticket-title { margin: 0 0 4px; font-family: var(--fc-font-display); font-weight: 400; font-size: 30px; line-height: 1.02; }
+.fc-ticket-sub { margin: 0 0 22px; font-size: 14px; color: var(--fc-ink-2); max-width: 34ch; }
+
+.fc-ticket { position: relative; width: 100%; max-width: 330px; background: var(--fc-surface); border: 1.5px solid var(--fc-ink); text-align: left; }
+.fc-stamp {
+  position: absolute; top: 14px; right: -11px;
+  transform: rotate(-9deg);
+  animation: fcStamp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.15s both;
+  border: 2px solid var(--fc-rust); color: var(--fc-rust);
+  font-family: var(--fc-font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+  padding: 5px 8px; border-radius: 2px; background: var(--fc-surface);
+}
+.fc-ticket-head { padding: 16px 18px; border-bottom: 2px dashed var(--fc-line-2); display: flex; align-items: center; justify-content: space-between; }
+.fc-ticket-brand { font-family: var(--fc-font-display); font-size: 20px; }
+.fc-ticket-ref { font-family: var(--fc-font-mono); font-size: 11px; color: var(--fc-ink-3); }
+.fc-ticket-rows { padding: 16px 18px; display: grid; grid-template-columns: auto 1fr; gap: 11px 16px; }
+.fc-ticket-rowlabel { font-family: var(--fc-font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fc-ink-3); padding-top: 2px; }
+.fc-ticket-rowvalue { font-weight: 600; font-size: 14px; }
+.fc-ticket-time { font-family: var(--fc-font-mono); font-size: 13px; font-weight: 400; }
+.fc-ticket-foot { padding: 13px 18px; border-top: 2px dashed var(--fc-line-2); display: flex; align-items: center; justify-content: space-between; }
+.fc-ticket-footlabel { font-family: var(--fc-font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fc-ink-3); }
+.fc-ticket-price { font-family: var(--fc-font-mono); font-size: 16px; font-weight: 600; color: var(--fc-rust); }
+
+.fc-ticket-actions { display: flex; flex-direction: column; gap: 9px; width: 100%; max-width: 330px; margin-top: 22px; }
+.fc-btn-ink { width: 100%; padding: 13px; background: var(--fc-ink); color: var(--fc-paper); border: none; border-radius: 0; font: inherit; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; letter-spacing: 0.02em; text-align: center; text-decoration: none; display: block; transition: filter 0.15s ease; }
+.fc-btn-ink:hover { filter: brightness(0.85); }
+.fc-btn-ink:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+.fc-btn-outline { width: 100%; padding: 13px; background: transparent; color: var(--fc-ink-2); border: 1.5px solid var(--fc-line-2); border-radius: 0; font: inherit; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; transition: border-color 0.12s ease; }
+.fc-btn-outline:hover { border-color: var(--fc-ink); }
+.fc-btn-outline:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+.fc-linkbtn { width: 100%; padding: 6px; background: none; border: none; color: var(--fc-ink-2); font: inherit; font-family: inherit; font-size: 12.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; margin-top: 2px; }
+.fc-linkbtn:hover { color: var(--fc-ink); }
+
+/* ===========================================================================
+   COMPACT (Snabbboka) — chips-rader Tjänst/Barberare/Dag/Tid, namn+telefon
+   sida-vid-sida, sticky CTA med mono-summering
+   =========================================================================== */
+.ckompakt { display: flex; flex-direction: column; }
+.ckompakt-title { margin: 0 0 3px; font-family: var(--fc-font-display); font-weight: 400; font-size: clamp(24px, 5.5vw, 32px); line-height: 1.02; }
+.ckompakt-lede { margin: 0; font-size: 13px; color: var(--fc-ink-2); }
+.ckompakt-label { font-family: var(--fc-font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fc-ink-3); margin: 14px 0 8px 2px; }
+.ckompakt-label:first-of-type { margin-top: 0; }
+.ckompakt-chiprow { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 10px; -webkit-overflow-scrolling: touch; }
+.ckompakt-chip {
+  flex: 0 0 auto;
+  display: inline-flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
+  padding: 0.55rem 0.9rem; min-height: 46px;
+  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  background: var(--fc-surface); color: var(--fc-ink);
+  font: inherit; font-family: inherit; font-weight: 600; font-size: 13px; white-space: nowrap; cursor: pointer;
+  transition: all 0.12s ease;
+}
+.ckompakt-chip:hover:not(.selected) { border-color: var(--fc-ink); }
+.ckompakt-chip:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+.ckompakt-chip.selected { background: var(--fc-rust); color: var(--fc-rust-fg); border-color: var(--fc-rust); }
+.ckompakt-chip-meta { font-family: var(--fc-font-mono); font-size: 11px; font-weight: 400; opacity: 0.8; }
+.ckompakt .wizard-days { padding: 2px 2px 10px; }
+.fc-noslots-inline { margin: 2px 0 0; font-size: 13px; color: var(--fc-ink-2); }
+.ckompakt-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 18px; }
+@media (max-width: 360px) { .ckompakt-fields { grid-template-columns: 1fr; } }
+
+/* ===========================================================================
+   PANEL-HEADER (overlay-varianterna): brand (display 19px) + mono BOKA TID + ✕
+   =========================================================================== */
+.fc-panel-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--fc-line); }
+.fc-panel-brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.fc-panel-brand-name { font-family: var(--fc-font-display); font-size: 19px; color: var(--fc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fc-panel-brand-label { font-family: var(--fc-font-mono); font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fc-ink-3); flex: 0 0 auto; }
+.fc-panel-close { width: 32px; height: 32px; flex: 0 0 auto; padding: 0; border: 1.5px solid var(--fc-line-2); border-radius: 0; background: transparent; color: var(--fc-ink-2); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.12s ease; }
+.fc-panel-close:hover { border-color: var(--fc-ink); color: var(--fc-ink); }
+.fc-panel-close:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
+
+/* ===========================================================================
+   PLACERING (README §The four presentations) — lagras OVANPÅ storefront-modulens
+   .drawerRoot/.drawerPanel/.scrim (hashade klasser äger open/close-mekaniken).
+   Booking-ägda globala klasser övertrumfar geometri/skugga/animation med
+   !important (etablerad teknik — modul-injektionsordning är opålitlig).
+   .bk-open sätts av BookingDrawer när open=true (global spegel av .drawerOpen).
+   =========================================================================== */
+.bk-scrim { background: rgba(23, 17, 11, 0.5) !important; }
+
+.bk-panel { background: var(--fc-surface) !important; color: var(--fc-ink); }
+.bk-body { padding: 0 !important; min-height: 0; display: flex; flex-direction: column; overflow: hidden !important; }
+.bk-body > .wizard { flex: 1 1 auto; min-height: 0; }
+.bk-body .wizard-stepbody { overflow-y: auto; overflow-x: hidden; min-height: 0; -webkit-overflow-scrolling: touch; }
+.bk-body .wizard-actionbar { position: static; }
+
+/* wizard-varianten: centrerad modal 470px (desktop) / near-fullscreen 14px-inset (mobil) */
+@media (min-width: 561px) {
+  .bk-panel--center {
+    top: 50% !important; left: 50% !important; right: auto !important; bottom: auto !important;
+    height: auto !important; max-height: 86% !important;
+    width: min(470px, 94vw) !important;
+    border: 1.5px solid var(--fc-ink);
+    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5) !important;
+    transform: translate(-50%, -46%) scale(0.97) !important;
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
+  }
+  .bk-open .bk-panel--center { transform: translate(-50%, -50%) scale(1) !important; opacity: 1; }
+
+  /* drawer/compact: höger slide-over 440px, full höjd */
+  .bk-panel--right {
+    width: 440px !important;
+    box-shadow: -30px 0 60px -30px rgba(0, 0, 0, 0.45) !important;
+    transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
+  }
+}
+@media (max-width: 560px) {
+  .bk-panel--center {
+    top: 14px !important; left: 14px !important; right: 14px !important; bottom: 14px !important;
+    width: auto !important; height: auto !important;
+    border: 1.5px solid var(--fc-ink);
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.5) !important;
+    transform: translateY(14px) scale(0.98) !important;
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
+  }
+  .bk-open .bk-panel--center { transform: none !important; opacity: 1; }
+}
+
+/* drawer/compact på mobil: bottom-sheet ≤92%, rundade toppkanter 20px, grabber */
+.bk-grabber { display: none; }
+@media (max-width: 560px) {
+  .bk-panel--right.bk-sheet {
+    top: auto !important;
+    bottom: 0 !important;
+    height: auto !important;
+    max-height: 92% !important;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -20px 50px -20px rgba(0, 0, 0, 0.4) !important;
+    transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1) !important;
+    overflow: hidden;
+  }
+  .bk-panel--right .bk-grabber {
+    display: grid; place-items: center;
+    width: 100%; flex: 0 0 auto;
+    padding: 0.6rem 0 0.2rem;
+    background: transparent; border: 0; cursor: pointer;
+  }
+  .bk-grabber-bar { width: 2.5rem; height: 4px; border-radius: 999px; background: var(--fc-line-2); }
+}
+
+/* ===========================================================================
+   INLINE-varianten — paper-2-band ("Boka online / Hitta din tid") + in-flow-kort
+   med 1.5px ink-ram; "Boka tid"-CTA scrollar hit (BookingProvider).
+   =========================================================================== */
+.fc-inline { background: var(--fc-paper); }
+.fc-inline-band { padding: 30px 22px 6px; text-align: center; background: var(--fc-paper-2); }
+.fc-inline-eyebrow { font-family: var(--fc-font-mono); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fc-rust); margin-bottom: 8px; }
+.fc-inline-title { margin: 0; font-family: var(--fc-font-display); font-weight: 400; font-size: clamp(26px, 4.5vw, 36px); line-height: 1; color: var(--fc-ink); }
+.fc-inline-panel {
+  position: relative;
+  margin: 22px auto 40px;
+  width: calc(100% - 44px);
+  max-width: 640px;
+  background: var(--fc-surface);
+  border: 1.5px solid var(--fc-ink);
+  box-shadow: 0 24px 50px -28px rgba(33, 28, 23, 0.35);
+  animation: fcFadeUp 0.4s ease;
+  display: flex; flex-direction: column;
+}
+
+/* ---- reduced motion: stäng av animationer/transitioner ---- */
+@media (prefers-reduced-motion: reduce) {
+  .fc-step, .fc-ticket-wrap, .fc-inline-panel { animation: none; }
+  .fc-stamp { animation: none; opacity: 1; }
+  .fc-skel-chip { animation: none; }
+  .bk-panel--center, .bk-panel--right, .bk-panel--right.bk-sheet { transition: none !important; }
+  .wizard-progress-seg, .wizard-cta, .wizard-card, .wizard-day, .wizard-time, .ckompakt-chip, .fc-cal-cell { transition: none; }
+}
+
+/* ===========================================================================
+   Bekräftelse-RUTTENS klasser (/boka/bekraftelse/[id]) — ägs av annan agent,
+   lämnade orörda. Wizardens steg 5 använder .fc-ticket-* ovan.
+   =========================================================================== */
 .booking-confirm { max-width: 32rem; text-align: center; }
 .confirm-badge { width: 3.5rem; height: 3.5rem; border-radius: 50%; background: var(--color-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1rem; }
 .confirm-summary { list-style: none; padding: 0; margin: 1.5rem 0; text-align: left; border: 1px solid color-mix(in srgb, var(--color-fg) 14%, transparent); border-radius: 0.75rem; overflow: hidden; }
@@ -49,165 +468,3 @@
 .confirm-summary span { opacity: 0.7; }
 .confirm-note { opacity: 0.8; margin: 0 0 1.5rem; }
 .confirm-paid { opacity: 1; font-weight: 600; color: #15803d; }
-
-/* ===========================================================================
-   BOOKING VARIANTS (SF-B) — Variant 3 (steg-för-steg wizard, DEFAULT) and
-   Variant 4 (kompakt snabbboka). Mobile-first, big touch targets, primary CTA
-   pinned in thumb reach. All classes are global (plain className strings), same
-   convention as the .wizard-* set above. Selected fills are applied INLINE via
-   var(--color-accent) on the element (the frozen .selected rules out-specify a
-   single class), so these rules only style the unselected/idle state + layout.
-   =========================================================================== */
-
-/* ---- shared: the wizard becomes a column so the action bar can pin ---- */
-.wizard--steps, .wizard--compact { display: flex; flex-direction: column; min-height: 100%; margin-top: 0; }
-
-/* ---- V3: TOP PROGRESS BAR (5 segments + "n / 5"), sticky ---- */
-.wizard-progress {
-  position: sticky; top: 0; z-index: 5;
-  background: var(--color-bg);
-  padding: 0.25rem 0 0.9rem;
-  margin: 0 0 0.5rem;
-}
-.wizard-progress-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
-.wizard-progress-label { font-family: var(--font-display, inherit); font-size: 1.05rem; font-weight: 600; color: var(--color-fg); }
-.wizard-progress-count { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; opacity: 0.65; white-space: nowrap; }
-.wizard-progress-track { display: flex; gap: 5px; margin-top: 0.7rem; }
-.wizard-progress-seg {
-  flex: 1; height: 5px; border-radius: 999px;
-  background: color-mix(in srgb, var(--color-fg) 14%, transparent);
-  transition: background var(--dur-slow, 0.3s) var(--ease-out, ease);
-}
-/* `.on` is a fallback; the active fill is set inline to var(--color-accent). */
-.wizard-progress-seg.on { background: var(--color-primary); }
-
-/* ---- V3: one big question per screen ---- */
-.wizard-q {
-  font-family: var(--font-display, inherit);
-  font-weight: 600;
-  font-size: clamp(1.5rem, 5vw, 2rem);
-  line-height: 1.12;
-  color: var(--color-fg);
-  margin: 0.25rem 0 1.1rem;
-}
-
-/* ---- V3: the scrollable step body (between progress + action bar) ---- */
-.wizard-stepbody { flex: 1 1 auto; }
-
-/* Bigger, more tappable service/staff cards in the wizard (≥56px already in the
-   base; bump min-height to a comfortable 60px and tighten gap on mobile). */
-.wizard--steps .wizard-card { min-height: 60px; }
-
-/* ---- V3 + V4: BOTTOM ACTION BAR (sticky, thumb reach) ---- */
-.wizard-actionbar {
-  position: sticky; bottom: 0; z-index: 6;
-  display: flex; align-items: stretch; gap: 0.6rem;
-  margin-top: 1.25rem;
-  padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  background: var(--color-bg);
-  border-top: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
-}
-.wizard-back-btn {
-  flex: 0 0 auto; width: 3.25rem; min-height: 54px;
-  border-radius: 0.85rem;
-  border: 1.5px solid color-mix(in srgb, var(--color-fg) 18%, transparent);
-  background: transparent; color: var(--color-fg);
-  font-size: 1.25rem; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  transition: border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
-}
-.wizard-back-btn:hover { border-color: var(--color-primary); }
-.wizard-back-btn:focus-visible { outline: 2px solid var(--color-accent, var(--color-primary)); outline-offset: 2px; }
-.wizard-cta {
-  flex: 1 1 auto; min-height: 54px;
-  border-radius: 0.85rem; border: none;
-  background: var(--color-primary); color: #fff;
-  font: inherit; font-weight: 600; font-size: 1rem;
-  cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
-  line-height: 1.2;
-  transition: filter var(--dur-fast, 0.15s) var(--ease-out, ease), transform var(--dur-fast, 0.15s) var(--ease-out, ease);
-}
-.wizard-cta:hover:not(:disabled) { filter: brightness(0.97); }
-.wizard-cta:active:not(:disabled) { transform: translateY(1px); }
-.wizard-cta:disabled {
-  background: color-mix(in srgb, var(--color-fg) 12%, transparent);
-  color: color-mix(in srgb, var(--color-fg) 45%, transparent);
-  cursor: not-allowed;
-}
-.wizard-cta:focus-visible { outline: 2px solid var(--color-accent, var(--color-primary)); outline-offset: 2px; }
-.wizard-cta-label { font-size: 1rem; }
-.wizard-cta-sub { font-size: 0.72rem; font-weight: 500; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* Hidden submit inside the step-4 form (the visible CTA is the action bar). */
-.wizard-form-submit { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
-
-/* ---- V4: kompakt en-sida ---- */
-.ckompakt { display: flex; flex-direction: column; flex: 1 1 auto; }
-.ckompakt-lede { margin: 0 0 1.1rem; font-size: 0.9rem; opacity: 0.7; }
-.ckompakt-label {
-  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
-  opacity: 0.6; margin: 0.9rem 0 0.5rem;
-}
-.ckompakt-label:first-of-type { margin-top: 0; }
-.ckompakt-chiprow { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.35rem; -webkit-overflow-scrolling: touch; }
-.ckompakt-chip {
-  flex: 0 0 auto;
-  display: inline-flex; align-items: center; gap: 0.45rem;
-  padding: 0.7rem 1rem; min-height: 44px;
-  border-radius: var(--radius-pill, 999px);
-  border: 1.5px solid color-mix(in srgb, var(--color-fg) 16%, transparent);
-  background: var(--color-bg); color: var(--color-fg);
-  font: inherit; font-weight: 600; font-size: 0.88rem; white-space: nowrap; cursor: pointer;
-  transition: border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
-}
-.ckompakt-chip:hover:not(.selected) { border-color: var(--color-primary); }
-.ckompakt-chip:focus-visible { outline: 2px solid var(--color-accent, var(--color-primary)); outline-offset: 2px; }
-.ckompakt-chip-meta { font-size: 0.78rem; font-weight: 500; opacity: 0.75; }
-.ckompakt-chip.selected .ckompakt-chip-meta { opacity: 0.9; }
-/* V4 slot grid — 4 columns, ≥48px tap targets */
-.ckompakt-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.1rem; }
-.ckompakt-slots .wizard-time { min-height: 48px; }
-/* name + phone side by side; stack on very narrow screens */
-.ckompakt-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.1rem; }
-@media (max-width: 360px) { .ckompakt-fields { grid-template-columns: 1fr; } }
-
-/* ---- Big tap-friendly time chips everywhere (≥48px) ---- */
-.wizard-time, .wizard-day { min-height: 48px; }
-
-/* ===========================================================================
-   MOBILE BOTTOM-SHEET (SF-B) — layered ON TOP of SF-A's .drawerPanel (which
-   owns the desktop right slide-over + the open/close transform). We only add
-   the booking-specific sheet affordances and override mobile GEOMETRY so the
-   panel reads as a rounded bottom-sheet with a top gap, not a full-screen
-   takeover. Equal-specificity vs. the hashed module class + unreliable CSS
-   injection order → !important on just the mobile geometry props. SF-A's panel
-   styling is otherwise untouched. The drag grabber is hidden on desktop.
-   =========================================================================== */
-.bk-grabber { display: none; }
-
-@media (max-width: 560px) {
-  /* Bottom-sheet: anchored to the bottom edge, grows upward to at most 92vh, so
-     a top gap always shows the dimmed storefront. Rounded top + grabber make it
-     read as a sheet rather than SF-A's full-screen (top:0;height:100%) overlay.
-     We DON'T touch `transform` → the translateY open/close stays SF-A's. */
-  .bk-sheet {
-    top: auto !important;
-    bottom: 0 !important;
-    height: auto !important;
-    max-height: 92vh !important;
-    border-radius: 1.25rem 1.25rem 0 0 !important;
-    overflow: hidden;
-  }
-  /* Drag grabber — tap to close; visual affordance for "swipe down". */
-  .bk-grabber {
-    display: grid; place-items: center;
-    width: 100%; flex: 0 0 auto;
-    padding: 0.6rem 0 0.2rem;
-    background: transparent; border: 0; cursor: pointer;
-  }
-  .bk-grabber-bar {
-    width: 2.5rem; height: 4px; border-radius: 999px;
-    background: color-mix(in srgb, var(--color-fg) 28%, transparent);
-  }
-}

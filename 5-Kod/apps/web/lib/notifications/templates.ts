@@ -1,20 +1,23 @@
 import 'server-only'
 import { accentForeground } from '@corevo/ui'
 
-// Swedish transactional email templates (G10 step 3; per-salon branded in goal-14).
+// Swedish transactional email templates — "biljett"-look (barbershop-editorial
+// redesign, kanon: 4-Dokument-Underlag/01-acceptans/Frisörbokningsformulär redesign/
+// design_handoff_bokningsflode — §"Confirmation e-mail" + EMAIL PREVIEW-blocket).
 //
 // Email is NOT the app: clients strip <link>, ignore CSS variables and won't load
 // web fonts. So globals.css classes / var(--color-*) tokens DO NOT reach inboxes.
 // Brand is carried by INLINE styles only, using the design-system HEX MIRROR
-// (forest #1F4636, gold #F5A623, cream #F4F1EA, ink #0E1411, paper #FEFCF7) and a
-// serif heading stack (Playfair named first for the rare client that has it, with
-// Georgia as the real fallback — Playfair will usually NOT render in email).
-// Table layout + 520px container for max email-client compatibility.
+// (ink #211C17, paper #F3EDDF, surface #FDFBF5, line2 #D2C4A9 — README token table)
+// and graceful stacks: serif via Georgia (Caslon named first for the rare client
+// that has it), mono via 'Courier New'/ui-monospace. Table layout + 520px container
+// for max email-client compatibility.
 //
-// Per-salon brand (goal-14): the shell paints the salon's accent colour on the
-// top-bar, eyebrow and CTA, shows the salon logo (or a monogram fallback) at the
-// top and its slogan in the footer. "Drivs av Corevo" stays small in the foot.
-// accentColor falls back to Corevo gold; accentForeground() keeps CTA text legible.
+// Per-salon brand (goal-14, mechanism reused verbatim): accentColor paints the
+// eyebrow, ticket price and CTA (accentForeground() keeps the CTA label legible);
+// logoUrl replaces the serif wordmark at the top; slogan renders as the address/
+// tagline line in the footer. "Drivs av Corevo" stays small under the card.
+// accentColor falls back to Corevo gold.
 //
 // Times are rendered in the salong's timezone with Intl (Workers-safe), so the
 // customer sees the local time of their booking.
@@ -29,42 +32,56 @@ export type BookingEmailData = {
   manageUrl?: string | null
   /** Hours-before-start the guest may still cancel; null/absent = no cutoff line. */
   cancelCutoffHours?: number | null
-  /** Per-salon brand (goal-14). Absent → Corevo gold + monogram + no slogan. */
+  /** Per-salon brand (goal-14). Absent → Corevo gold + wordmark + no slogan. */
   accentColor?: string | null
   logoUrl?: string | null
   slogan?: string | null
+  /** Additive (redesign): guest first name → "Vi ses, {firstName}!"; absent → neutral heading. */
+  firstName?: string | null
+  /** Additive (redesign): pre-formatted price ("369 kr") → "Pris (på plats)"-rad i biljetten; absent → no row. */
+  priceLabel?: string | null
+  /** Additive (redesign): bransch-noun for the staff row ("Barberare"/"Frisör"…); absent → "Hos". */
+  staffNoun?: string | null
 }
 
-// ── Corevo brand palette (inline-only HEX mirror of design-system.md §2) ──────
+// ── Ticket palette (inline-only HEX mirror of the redesign token table) ───────
 const C = {
-  forest: '#1F4636',
-  forestDeep: '#163127',
-  forestSoft: '#4A8170',
-  gold: '#F5A623',
-  goldDeep: '#D4AF37',
-  goldMuted: '#EBD9B8',
-  ink: '#0E1411',
-  cream: '#F4F1EA',
-  paper: '#FEFCF7',
-  pageBg: '#F4F1EA',
-  meta: '#677E73',
-  hairline: '#DCE5DF',
-  success: '#36A165',
+  ink: '#211C17', // primary text + dark top-bar + ticket frame
+  ink2: '#6A5F52', // secondary text / lede
+  ink3: '#9E9284', // muted meta / mono labels
+  paper: '#F3EDDF', // email card (warm cream)
+  surface: '#FDFBF5', // ticket stub (near-white warm)
+  line: '#E4DAC6', // hairline dividers
+  line2: '#D2C4A9', // card border + dashed ticket dividers
+  forest: '#2E5A46', // success only (✓ Betald)
+  gold: '#F5A623', // platform fallback accent (per-salon accentColor wins)
+  pageBg: '#E8E1D2', // page behind the card
 } as const
 
-const SERIF = `'Playfair Display', Georgia, 'Times New Roman', serif`
+const SERIF = `'Libre Caslon Display', Georgia, 'Times New Roman', serif`
 const SANS = `-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`
+const MONO = `'Courier New', ui-monospace, monospace`
 
+// Mono uppercase label (ticket rows, footer rows) — the redesign's signature detail.
+const LABEL = `font-family:${MONO};font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:${C.ink3}`
+const VALUE = `font-family:${SANS};font-size:14px;font-weight:600;color:${C.ink}`
+
+/** "{longDate} · kl. {time}" i salongens tidszon (biljettens Tid-rad). */
 function fmt(startISO: string, timeZone: string): string {
   try {
-    return new Intl.DateTimeFormat('sv-SE', {
+    const d = new Date(startISO)
+    const date = new Intl.DateTimeFormat('sv-SE', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
+      timeZone,
+    }).format(d)
+    const time = new Intl.DateTimeFormat('sv-SE', {
       hour: '2-digit',
       minute: '2-digit',
       timeZone,
-    }).format(new Date(startISO))
+    }).format(d)
+    return `${date} · kl. ${time}`
   } catch {
     return startISO
   }
@@ -83,37 +100,40 @@ export type EmailBrandFields = {
 /**
  * Resolve a salon's accent into a {bg, legible-fg} pair. A valid #rgb/#rrggbb wins;
  * anything missing/malformed falls back to Corevo gold. accentForeground() picks
- * dark-forest vs white text so CTA labels stay readable on any accent.
+ * dark vs white text so CTA labels stay readable on any accent.
  */
 function resolveAccent(accentColor?: string | null): { accent: string; accentFg: string } {
   const raw = accentColor?.trim()
   const accent = raw && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw) ? raw : C.gold
-  return { accent, accentFg: accentForeground(accent) ?? '#15281f' }
+  return { accent, accentFg: accentForeground(accent) ?? C.ink }
 }
 
-/** Brand mark at the top: the salon logo (plain <img>) or a monogram in an accent
- *  circle. The <img> renders ONLY for an absolute http(s):// logo URL — a blank,
- *  relative or otherwise non-absolute value falls back to the monogram so the
- *  email never shows a broken-image icon (e.g. logo_url set but R2_PUBLIC_BASE_URL
- *  missing → a bare key would render broken). */
-function brandHeader(tenantName: string, accent: string, accentFg: string, logoUrl?: string | null): string {
+/** Brand mark at the top: the salon logo (plain <img>) or the salon's WORDMARK in
+ *  serif (24px, per the ticket design). The <img> renders ONLY for an absolute
+ *  http(s):// logo URL — a blank, relative or otherwise non-absolute value falls
+ *  back to the wordmark so the email never shows a broken-image icon (e.g. logo_url
+ *  set but R2_PUBLIC_BASE_URL missing → a bare key would render broken). */
+function brandHeader(tenantName: string, logoUrl?: string | null): string {
   const logo = logoUrl?.trim()
   if (logo && /^https?:\/\//i.test(logo)) {
     return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px"><tr><td>
       <img src="${esc(logo)}" alt="${esc(tenantName)}" style="display:block;max-height:46px;max-width:220px;border:0;outline:none;text-decoration:none" />
     </td></tr></table>`
   }
-  const initial = esc((tenantName.trim()[0] ?? 'C').toUpperCase())
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 22px"><tr>
-      <td style="width:46px;height:46px;border-radius:9999px;background:${accent};text-align:center;vertical-align:middle;font-family:${SERIF};font-size:21px;font-weight:700;color:${accentFg};line-height:46px">${initial}</td>
+      <td style="font-family:${SERIF};font-size:24px;line-height:1.1;color:${C.ink}">${esc(tenantName)}</td>
     </tr></table>`
 }
 
 /**
- * Corevo-branded email chrome. Exported (additive) so other notification senders
+ * Ticket-look email chrome. Exported (additive) so other notification senders
  * (e.g. google-review.ts) reuse the exact same shell instead of diverging.
  *
- * - `eyebrow`: small uppercase label above the heading, in the salon accent.
+ * Card max 520px on the warm page bg: 6px ink top-bar → wordmark/logo → mono accent
+ * eyebrow → serif heading → body → footer (salon name + slogan/address) — and
+ * "Drivs av Corevo" in mono under the card.
+ *
+ * - `eyebrow`: small mono uppercase label above the heading, in the salon accent.
  * - `bodyHtml`: pre-rendered inner HTML (already escaped where needed).
  * - `brand`: per-salon accent / logo / slogan (goal-14); omit for Corevo defaults.
  */
@@ -124,35 +144,35 @@ export function shell(
   eyebrow?: string,
   brand?: EmailBrandFields,
 ): string {
-  const { accent, accentFg } = resolveAccent(brand?.accentColor)
-  const header = brandHeader(tenantName, accent, accentFg, brand?.logoUrl)
+  const { accent } = resolveAccent(brand?.accentColor)
+  const header = brandHeader(tenantName, brand?.logoUrl)
   const eyebrowHtml = eyebrow
-    ? `<p style="margin:0 0 10px;font-family:${SANS};font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${accent}">${esc(eyebrow)}</p>`
+    ? `<p style="margin:0 0 11px;font-family:${MONO};font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:${accent}">${esc(eyebrow)}</p>`
     : ''
   const slogan = brand?.slogan?.trim()
   const sloganHtml = slogan
-    ? `<tr><td style="padding-top:3px;font-family:${SANS};font-size:12px;color:${C.meta}">${esc(slogan)}</td></tr>`
+    ? `<tr><td style="padding-top:2px;font-family:${SANS};font-size:12px;color:${C.ink2}">${esc(slogan)}</td></tr>`
     : ''
   return `<!doctype html><html lang="sv"><body style="margin:0;padding:0;background:${C.pageBg};font-family:${SANS};color:${C.ink};-webkit-font-smoothing:antialiased">
-  <div style="max-width:520px;margin:0 auto;padding:32px 20px">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.paper};border-radius:16px;border:1px solid ${C.hairline};box-shadow:0 4px 24px -6px rgba(31,70,54,.12)">
+  <div style="max-width:520px;margin:0 auto;padding:28px 16px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.paper};border:1px solid ${C.line2}">
       <tr>
-        <td style="height:5px;background:${accent};border-radius:16px 16px 0 0;line-height:5px;font-size:5px">&nbsp;</td>
+        <td style="height:6px;background:${C.ink};line-height:6px;font-size:6px">&nbsp;</td>
       </tr>
       <tr>
-        <td style="padding:32px 30px 30px">
+        <td style="padding:30px 30px 26px">
           ${header}
           ${eyebrowHtml}
-          <h1 style="margin:0 0 18px;font-family:${SERIF};font-size:24px;line-height:1.25;font-weight:700;color:${C.forest}">${esc(title)}</h1>
+          <h1 style="margin:0 0 14px;font-family:${SERIF};font-size:27px;line-height:1.06;font-weight:400;color:${C.ink}">${esc(title)}</h1>
           ${bodyHtml}
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;border-top:1px solid ${C.hairline}">
-            <tr><td style="padding-top:16px;font-family:${SANS};font-size:13px;font-weight:600;color:${C.forest}">${esc(tenantName)}</td></tr>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;border-top:1px solid ${C.line}">
+            <tr><td style="padding-top:16px;font-family:${SANS};font-size:13px;font-weight:600;color:${C.ink}">${esc(tenantName)}</td></tr>
             ${sloganHtml}
           </table>
         </td>
       </tr>
     </table>
-    <p style="text-align:center;font-family:${SANS};font-size:11px;color:${C.forestSoft};margin:18px 0 0;letter-spacing:.04em">Drivs av <span style="color:${C.forest};font-weight:600">Corevo</span></p>
+    <p style="text-align:center;font-family:${MONO};font-size:10px;letter-spacing:.08em;color:${C.ink3};margin:16px 0 0">Drivs av Corevo</p>
   </div></body></html>`
 }
 
@@ -161,32 +181,65 @@ function brandOf(d: BookingEmailData): EmailBrandFields {
   return { accentColor: d.accentColor, logoUrl: d.logoUrl, slogan: d.slogan }
 }
 
-function details(d: BookingEmailData): string {
+/** One label/value ticket row (mono uppercase label + 600-weight value). */
+function ticketRow(label: string, valueHtml: string): string {
+  return `<tr><td style="${LABEL};padding:6px 16px 6px 0;vertical-align:top;white-space:nowrap">${esc(label)}</td><td style="${VALUE};padding:6px 0">${valueHtml}</td></tr>`
+}
+
+/** A footer band inside the ticket (2px dashed top divider): mono label left, value right. */
+function ticketFooter(label: string, valueHtml: string): string {
+  return `<tr><td style="padding:12px 18px;border-top:2px dashed ${C.line2}">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="${LABEL}">${esc(label)}</td>
+        <td style="text-align:right">${valueHtml}</td>
+      </tr></table>
+    </td></tr>`
+}
+
+/** "Pris (på plats)"-footer i accentfärg — renders only when a priceLabel is present. */
+function priceFooter(d: BookingEmailData, accent: string): string {
+  const price = d.priceLabel?.trim()
+  if (!price) return ''
+  return ticketFooter(
+    'Pris (på plats)',
+    `<span style="font-family:${MONO};font-size:15px;font-weight:600;color:${accent}">${esc(price)}</span>`,
+  )
+}
+
+/**
+ * The ticket/stub: 1.5px ink frame on the warm surface, serif salon wordmark header
+ * over a 2px dashed divider, then Behandling / {staffNoun} / Tid rows, plus an
+ * optional footer band (price / paid amount) behind another dashed divider.
+ */
+function ticket(d: BookingEmailData, footerHtml = ''): string {
   const when = fmt(d.startISO, d.timeZone)
-  const label = `font-family:${SANS};font-size:13px;color:${C.meta};padding:7px 0;vertical-align:top`
-  const value = `font-family:${SANS};font-size:15px;color:${C.ink};padding:7px 0;font-weight:500`
-  const staff = d.staffTitle
-    ? `<tr><td style="${label};width:96px">Hos</td><td style="${value}">${esc(d.staffTitle)}</td></tr>`
-    : ''
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.cream};border-radius:12px;padding:6px 16px;margin:4px 0 0">
-    <tr><td style="${label};width:96px">Behandling</td><td style="${value}">${esc(d.serviceName)}</td></tr>
-    <tr><td style="${label}">Tid</td><td style="${value}">${esc(when)}</td></tr>
-    ${staff}
+  const staffLabel = d.staffNoun?.trim() || 'Hos'
+  const staff = d.staffTitle ? ticketRow(staffLabel, esc(d.staffTitle)) : ''
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1.5px solid ${C.ink};background:${C.surface}">
+    <tr><td style="padding:14px 18px;border-bottom:2px dashed ${C.line2};font-family:${SERIF};font-size:18px;color:${C.ink}">${esc(d.tenantName)}</td></tr>
+    <tr><td style="padding:9px 18px">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${ticketRow('Behandling', esc(d.serviceName))}
+        ${staff}
+        ${ticketRow('Tid', esc(when))}
+      </table>
+    </td></tr>
+    ${footerHtml}
   </table>`
 }
 
 function lead(text: string): string {
-  return `<p style="margin:0 0 16px;font-family:${SANS};font-size:15px;line-height:1.6;color:${C.ink}">${text}</p>`
+  return `<p style="margin:0 0 20px;font-family:${SANS};font-size:15px;line-height:1.6;color:${C.ink2}">${text}</p>`
 }
 
 function note(text: string): string {
-  return `<p style="margin:22px 0 0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.meta}">${text}</p>`
+  return `<p style="margin:22px 0 0;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.ink2}">${text}</p>`
 }
 
-// Self-service manage block (NOTIF-GUEST): an accent pill linking to the public
-// avboka page, plus an optional "senast X timmar innan"-line. Rendered only when a
-// manageUrl is present; stays graceful (empty string) when absent. CTA uses the
-// salon accent + a legible foreground (goal-14).
+// Self-service manage block (NOTIF-GUEST): a square accent CTA linking to the public
+// avboka page, plus an optional mono "senast X timmar innan"-line. Rendered only when
+// a manageUrl is present; stays graceful (empty string) when absent. CTA uses the
+// salon accent + a legible foreground via accentForeground() (goal-14).
 function manageBlock(
   manageUrl: string | null | undefined,
   cancelCutoffHours: number | null | undefined,
@@ -197,11 +250,11 @@ function manageBlock(
   if (!url) return ''
   const cutoff =
     typeof cancelCutoffHours === 'number' && Number.isFinite(cancelCutoffHours) && cancelCutoffHours > 0
-      ? `<p style="margin:12px 0 0;font-family:${SANS};font-size:13px;line-height:1.6;color:${C.meta}">Du kan avboka senast ${cancelCutoffHours} timmar innan besöket.</p>`
+      ? `<p style="margin:12px 0 0;font-family:${MONO};font-size:11px;color:${C.ink3}">Du kan avboka senast ${cancelCutoffHours} timmar innan besöket.</p>`
       : ''
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 0">
-      <tr><td style="border-radius:9999px;background:${accent}">
-        <a href="${esc(url)}" style="display:inline-block;padding:12px 26px;font-family:${SANS};font-size:14px;font-weight:700;color:${accentFg};text-decoration:none;border-radius:9999px">Avboka eller ändra din tid</a>
+      <tr><td style="background:${accent}">
+        <a href="${esc(url)}" style="display:inline-block;padding:13px 24px;font-family:${SANS};font-size:14px;font-weight:600;color:${accentFg};text-decoration:none">Avboka eller ändra din tid</a>
       </td></tr>
     </table>${cutoff}`
 }
@@ -214,11 +267,12 @@ export function confirmationEmail(d: BookingEmailData): { subject: string; html:
   const tail = manage
     ? manage
     : note('Behöver du ändra eller avboka? Logga in på ditt konto så fixar du det på några sekunder.')
+  const first = d.firstName?.trim()
   return {
     subject: `Bokningsbekräftelse — ${d.tenantName}`,
     html: shell(
-      'Vi ser fram emot ditt besök',
-      `${lead('Tack för din bokning! Här är dina uppgifter:')}${details(d)}
+      first ? `Vi ses, ${first}!` : 'Vi ses snart!',
+      `${lead('Tack för din bokning. Här är din tid — visa gärna den här biljetten när du kommer.')}${ticket(d, priceFooter(d, accent))}
        ${tail}`,
       d.tenantName,
       'Bokning bekräftad',
@@ -232,7 +286,7 @@ export function cancellationEmail(d: BookingEmailData): { subject: string; html:
     subject: `Avbokning bekräftad — ${d.tenantName}`,
     html: shell(
       'Din bokning är avbokad',
-      `${lead('Följande tid har avbokats:')}${details(d)}
+      `${lead('Följande tid har avbokats:')}${ticket(d)}
        ${note('Varmt välkommen åter när det passar dig — vi finns här.')}`,
       d.tenantName,
       'Avbokning',
@@ -242,11 +296,12 @@ export function cancellationEmail(d: BookingEmailData): { subject: string; html:
 }
 
 export function reminderEmail(d: BookingEmailData): { subject: string; html: string } {
+  const { accent } = resolveAccent(d.accentColor)
   return {
     subject: `Påminnelse: din tid imorgon — ${d.tenantName}`,
     html: shell(
       'En vänlig påminnelse',
-      `${lead('Vi ses snart! Här är en påminnelse om din bokade tid:')}${details(d)}
+      `${lead('Vi ses snart! Här är en påminnelse om din bokade tid:')}${ticket(d, priceFooter(d, accent))}
        ${note('Är du förhindrad? Logga in och omboka eller avboka i god tid.')}`,
       d.tenantName,
       'Påminnelse',
@@ -260,19 +315,17 @@ export function receiptEmail(
 ): { subject: string; html: string } {
   const amount = (d.amountCents / 100).toLocaleString('sv-SE', { minimumFractionDigits: 2 })
   const cur = d.currency.toUpperCase()
-  const label = `font-family:${SANS};font-size:14px;color:${C.meta};padding:12px 0`
+  const { accent } = resolveAccent(d.accentColor)
+  const paid = ticketFooter(
+    'Betalt',
+    `<span style="font-family:${MONO};font-size:15px;font-weight:600;color:${accent}">${amount} ${esc(cur)}</span>`,
+  )
   return {
     subject: `Kvitto — ${d.tenantName}`,
     html: shell(
       'Tack för din betalning',
-      `${details(d)}
-       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-top:1px solid ${C.hairline}">
-         <tr>
-           <td style="${label}">Betalt</td>
-           <td style="${label};text-align:right;font-size:18px;font-weight:700;color:${C.forest}">${amount} ${esc(cur)}</td>
-         </tr>
-       </table>
-       <p style="margin:6px 0 0;display:inline-block;font-family:${SANS};font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${C.success}">&#10003; Betald</p>`,
+      `${ticket(d, paid)}
+       <p style="margin:14px 0 0;font-family:${MONO};font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:${C.forest}">&#10003; Betald</p>`,
       d.tenantName,
       'Kvitto',
       brandOf(d),
@@ -285,11 +338,12 @@ export function receiptEmail(
 // the customer-driven rebook flow (lib/kund/actions.rebookBooking). Exported and
 // branded; the call site is wired by the orchestrator (see crossModuleGaps).
 export function rebookEmail(d: BookingEmailData): { subject: string; html: string } {
+  const { accent } = resolveAccent(d.accentColor)
   return {
     subject: `Ny tid bekräftad — ${d.tenantName}`,
     html: shell(
       'Din nya tid är bokad',
-      `${lead('Vi har flyttat din tid. Här är din uppdaterade bokning:')}${details(d)}
+      `${lead('Vi har flyttat din tid. Här är din uppdaterade bokning:')}${ticket(d, priceFooter(d, accent))}
        ${note('Den tidigare tiden är avbokad. Behöver du ändra igen? Logga in på ditt konto.')}`,
       d.tenantName,
       'Ombokning',

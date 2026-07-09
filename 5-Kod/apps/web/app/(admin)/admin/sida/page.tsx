@@ -89,6 +89,13 @@ export default async function AdminSidaPage() {
         contactPhone={contactPhone}
         address={detail.primaryAddress}
         bookingVariant={operative.bookingVariant}
+        staffTeam={detail.staffList.map((s) => ({
+          id: s.id,
+          title: s.title,
+          active: s.active,
+          avatarUrl: s.avatar_url,
+          showOnSite: s.show_on_site,
+        }))}
         canChangeTemplate={false}
       />
     </>

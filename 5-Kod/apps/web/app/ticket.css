@@ -1,0 +1,381 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ticket.css — biljett/stub-systemet för bekräftelse-rutten + avboka-sidan.
+   Kanon: 4-Dokument-Underlag/01-acceptans/Frisörbokningsformulär redesign/
+          design_handoff_bokningsflode/README.md (§Design tokens, §Screens/views
+          → Confirmation + Avboka, §Theming) + FreshCut bokning.dc.html.
+
+   Ägs av bekräftelse/avboka-sidorna — rör INTE booking-global.css härifrån.
+   Färgerna uttrycks på kontrakts-tokens (--color-accent/-fg/-bg/-surface) så
+   salongens tema styr; FreshCut-defaultvärdena ur README-tabellen som fallback.
+   Radius 0 (skarp, editorial). Forest #2E5A46 = fast semantisk success.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tkt-scope {
+  /* Kontrakts-mappning per README §Theming → "What to do" */
+  --tkt-accent: var(--color-accent, var(--color-primary, #bc4a1c)); /* --rust */
+  --tkt-ink: var(--color-fg, #211c17); /* --ink */
+  --tkt-paper: var(--color-bg, #f3eddf); /* --paper */
+  --tkt-surface: var(--color-surface, #fff); /* --surface */
+  --tkt-ink-2: color-mix(in srgb, var(--tkt-ink) 62%, transparent); /* --ink-2 */
+  --tkt-ink-3: color-mix(in srgb, var(--tkt-ink) 38%, transparent); /* --ink-3 */
+  --tkt-paper-2: color-mix(in srgb, var(--tkt-ink) 6%, var(--tkt-paper)); /* --paper-2 */
+  --tkt-line: color-mix(in srgb, var(--tkt-ink) 12%, var(--tkt-paper)); /* --line */
+  --tkt-line-2: color-mix(in srgb, var(--tkt-ink) 22%, var(--tkt-paper)); /* --line-2 */
+  --tkt-accent-deep: color-mix(in srgb, var(--tkt-accent) 82%, black); /* --rust-deep */
+  --tkt-forest: #2e5a46; /* fast — success only */
+
+  /* Typografi-trion. next/font-varsen (--font-caslon/-franklin/-plexmono) sätts på
+     <html> i app/layout.tsx — --fc-font-* finns BARA i .fc-scope (bokningspanelen)
+     och biljett-sidorna ligger utanför den, så vi läser rot-varsen direkt (samma
+     mönster som booking-global.css). Literal-familjenamnen finns inte utan
+     next/font-registrering → utan varsen gäller Georgia/system-stackarna. */
+  --tkt-font-display: var(--font-caslon, Georgia), Georgia, serif;
+  --tkt-font-body: var(--font-franklin, system-ui), system-ui, sans-serif;
+  --tkt-font-mono: var(--font-plexmono, ui-monospace), ui-monospace, monospace;
+
+  font-family: var(--tkt-font-body);
+  color: var(--tkt-ink);
+}
+
+/* ── Sida/sektion (avboka: max 520px centrerad; bekräftelsen delar skalet) ── */
+.tkt-section {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 46px 24px 44px;
+  text-align: center;
+}
+
+/* Mono-eyebrow i accent — "Din bokning" */
+.tkt-eyebrow {
+  font-family: var(--tkt-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tkt-accent);
+  margin-bottom: 12px;
+}
+
+/* Display-H1 — "Avboka din tid" */
+.tkt-h1 {
+  margin: 0 0 26px;
+  font-family: var(--tkt-font-display);
+  font-weight: 400;
+  font-size: clamp(34px, 6vw, 48px);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--tkt-ink);
+}
+
+/* ── Bekräftelse-huvud: ✓ BOKAT + display-rubrik + lede ── */
+.tkt-ok {
+  font-family: var(--tkt-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--tkt-forest);
+  margin-bottom: 20px;
+}
+
+.tkt-confirm-h {
+  margin: 0 0 4px;
+  font-family: var(--tkt-font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.02;
+  color: var(--tkt-ink);
+}
+
+.tkt-lede {
+  margin: 0 auto 22px;
+  font-size: 14px;
+  color: var(--tkt-ink-2);
+  max-width: 34ch;
+}
+
+/* ── Stub/biljett: 1.5px solid ink-ram, surface-bakgrund ── */
+.tkt-stub {
+  position: relative;
+  background: var(--tkt-surface);
+  border: 1.5px solid var(--tkt-ink);
+  border-radius: 0;
+  text-align: left;
+}
+
+/* Biljett-varianten (bekräftelsen): max 330px, centrerad */
+.tkt-stub--ticket {
+  width: 100%;
+  max-width: 330px;
+  margin: 0 auto;
+}
+
+/* BEKRÄFTAD-stämpel — roterad -9deg, 2px accent-ram, stamp-in-animation */
+.tkt-stamp {
+  position: absolute;
+  top: 14px;
+  right: -11px;
+  transform: rotate(-9deg);
+  animation: tktStamp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.15s both;
+  border: 2px solid var(--tkt-accent);
+  color: var(--tkt-accent);
+  font-family: var(--tkt-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  padding: 5px 8px;
+  border-radius: 2px;
+  background: var(--tkt-surface);
+}
+
+@keyframes tktStamp {
+  0% {
+    opacity: 0;
+    transform: rotate(-9deg) scale(1.5);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-9deg) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-9deg) scale(1);
+  }
+}
+
+/* Biljett-huvud: brand + ref, 2px dashed under */
+.tkt-stub-head {
+  padding: 16px 18px;
+  border-bottom: 2px dashed var(--tkt-line-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tkt-stub-brand {
+  font-family: var(--tkt-font-display);
+  font-size: 20px;
+  color: var(--tkt-ink);
+}
+
+.tkt-stub-ref {
+  font-family: var(--tkt-font-mono);
+  font-size: 11px;
+  color: var(--tkt-ink-3);
+}
+
+/* Biljett-rader: mono-label + värde i grid */
+.tkt-stub-grid {
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 11px 16px;
+}
+
+.tkt-label {
+  font-family: var(--tkt-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tkt-ink-3);
+  padding-top: 2px;
+}
+
+.tkt-value {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--tkt-ink);
+}
+
+.tkt-value-time {
+  font-family: var(--tkt-font-mono);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* Biljett-fot: "Att betala på plats" + accent-pris, 2px dashed över */
+.tkt-stub-foot {
+  padding: 13px 18px;
+  border-top: 2px dashed var(--tkt-line-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tkt-foot-label {
+  font-family: var(--tkt-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tkt-ink-3);
+}
+
+.tkt-price {
+  font-family: var(--tkt-font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tkt-accent);
+}
+
+/* ── Avboka-stubens rader: Salong/Tjänst/Tid/Hos, 1px dashed dividers ── */
+.tkt-row {
+  padding: 13px 18px;
+  border-bottom: 1px dashed var(--tkt-line-2);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tkt-row:last-child {
+  border-bottom: none;
+}
+
+.tkt-row-label {
+  font-family: var(--tkt-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tkt-ink-3);
+  flex: 0 0 auto;
+  padding-top: 2px;
+}
+
+.tkt-row-value {
+  font-weight: 600;
+  font-size: 14px;
+  text-align: right;
+  color: var(--tkt-ink);
+}
+
+/* ── Knappar/åtgärder under biljetten ── */
+.tkt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+  max-width: 330px;
+  margin: 22px auto 0;
+}
+
+.tkt-btn-ink {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  background: var(--tkt-ink);
+  color: var(--tkt-paper);
+  border: none;
+  border-radius: 0;
+  font-family: var(--tkt-font-body);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tkt-btn-ink:hover {
+  background: #000;
+}
+
+.tkt-btn-outline {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  background: transparent;
+  color: var(--tkt-ink-2);
+  border: 1.5px solid var(--tkt-line-2);
+  border-radius: 0;
+  font-family: var(--tkt-font-body);
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+}
+
+.tkt-btn-outline:hover {
+  border-color: var(--tkt-ink);
+}
+
+/* Accent-CTA — "Avboka tid" */
+.tkt-btn-accent {
+  width: 100%;
+  padding: 15px;
+  background: var(--tkt-accent);
+  color: #fff;
+  border: none;
+  border-radius: 0;
+  font-family: var(--tkt-font-body);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.tkt-btn-accent:hover {
+  background: var(--tkt-accent-deep);
+}
+
+/* Textlänk — "Behöver du ändra? Avboka eller boka om" */
+.tkt-textlink {
+  display: block;
+  padding: 6px;
+  margin-top: 2px;
+  background: none;
+  border: none;
+  color: var(--tkt-ink-2);
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* ── Utfall/status-texter ── */
+/* Bekräftelsens betalstatus-not + avbokans ready-fråga (14px) */
+.tkt-note {
+  margin: 22px 0 16px;
+  font-size: 14px;
+  color: var(--tkt-ink-2);
+}
+
+.tkt-note--paid {
+  color: var(--tkt-forest);
+}
+
+/* Avboka-utfall done/already/too-late (15px) */
+.tkt-state {
+  margin: 22px 0 0;
+  font-size: 15px;
+  color: var(--tkt-ink-2);
+}
+
+/* done-blocket: ✓ AVBOKAD i forest-grön mono + budskap */
+.tkt-done {
+  margin: 24px 0 6px;
+  text-align: center;
+}
+
+.tkt-done-mark {
+  font-family: var(--tkt-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--tkt-forest);
+  margin-bottom: 8px;
+}
+
+.tkt-done .tkt-state {
+  margin: 0;
+}
+
+/* ── "Till startsidan" — accent-underline ── */
+.tkt-home {
+  margin-top: 26px;
+}
+
+.tkt-homelink {
+  font-size: 14px;
+  color: var(--tkt-ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--tkt-accent);
+  padding-bottom: 1px;
+}

@@ -17,6 +17,9 @@ import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { SidaStudio } from '@/components/platform/SidaStudio'
+import { BookingSettings } from '@/components/platform/BookingSettings'
+import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
+import { createClient } from '@/lib/supabase/server'
 import { SajtbyggareControl } from '@/components/platform/SajtbyggareControl'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, tenantSiteEditorEnabled } from '@/lib/tenant-data'
@@ -86,6 +89,19 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     getTenantCustomers(id),
     listTenantModules(id),
   ])
+
+  // Foto-läget i Bokningsflöde-ytan (Sida-fliken) kräver minst en AKTIV medarbetare
+  // med profilbild (staff.avatar_url, migr 0049) — annars visas valet avstängt med
+  // hint. Platform-adminens cookie-klient läser cross-tenant via platform_admin-claimet.
+  const supabaseForStaffPhoto = await createClient()
+  const { data: staffPhotoRows } = await supabaseForStaffPhoto
+    .from('staff')
+    .select('id')
+    .eq('tenant_id', id)
+    .eq('active', true)
+    .not('avatar_url', 'is', null)
+    .limit(1)
+  const hasStaffPhoto = (staffPhotoRows?.length ?? 0) > 0
 
   const url = publicUrl(tenant.slug)
   const serviceRoleAvailable = hasServiceRole()
@@ -353,25 +369,62 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     // som har med sidan att göra"): förhandsvisning + utseende + text/bilder + kund-
     // editor-reglaget. Drift hålls fri från sido-grejer (ren drift).
     Sida: (
-      <SidaStudio
-        tenantId={tenant.id}
-        previewPath={`/salong-preview/${tenant.slug}`}
-        storefrontUrl={storefrontUrl}
-        storefrontHost={storefrontHost}
-        templateKey={activeTemplateKey}
-        isActive={isActive}
-        branding={branding}
-        copy={copy}
-        heroImages={branding.hero_images ?? []}
-        galleryImages={branding.gallery_images ?? []}
-        name={tenant.name}
-        social={detail.social}
-        openingHours={detail.openingHours}
-        contactEmail={contactEmail}
-        contactPhone={contactPhone}
-        address={detail.primaryAddress}
-        bookingVariant={operative.bookingVariant}
-      />
+      <>
+        <SidaStudio
+          tenantId={tenant.id}
+          previewPath={`/salong-preview/${tenant.slug}`}
+          storefrontUrl={storefrontUrl}
+          storefrontHost={storefrontHost}
+          templateKey={activeTemplateKey}
+          isActive={isActive}
+          branding={branding}
+          copy={copy}
+          heroImages={branding.hero_images ?? []}
+          galleryImages={branding.gallery_images ?? []}
+          name={tenant.name}
+          social={detail.social}
+          openingHours={detail.openingHours}
+          contactEmail={contactEmail}
+          contactPhone={contactPhone}
+          address={detail.primaryAddress}
+          bookingVariant={operative.bookingVariant}
+          staffTeam={staffList.map((s) => ({
+            id: s.id,
+            title: s.title,
+            active: s.active,
+            avatarUrl: s.avatar_url,
+            showOnSite: s.show_on_site,
+          }))}
+        />
+        {/* Bokningsflöde — plattforms-spegeln av kundens /admin/bokning (design-
+            paketet ⭐: allt salongs-valbart). SAMMA klientkomponent + action
+            (updateBookingSettings, sidaCtx-dubbelguard) som kundens yta — de kan
+            aldrig glida isär. Kompakt <details>-mönstret som kundkortets listor. */}
+        <div style={{ marginTop: 16 }}>
+          <Card>
+            <details>
+              <summary style={{ cursor: 'pointer', fontWeight: 650, fontSize: 15, color: 'var(--c-ink)' }}>
+                Bokningsflöde — bokningssätt, tid-väljare, barberarbilder &amp; färger
+              </summary>
+              <div style={{ marginTop: 14 }}>
+                <BookingSettings
+                  tenantId={tenant.id}
+                  previewPath={`/salong-preview/${tenant.slug}`}
+                  storefrontUrl={storefrontUrl}
+                  storefrontHost={storefrontHost}
+                  isActive={isActive}
+                  templateKey={activeTemplateKey}
+                  branding={b}
+                  variant={operative.bookingVariant}
+                  pickerMode={readPickerMode(rawSettings)}
+                  staffAvatars={readStaffAvatarMode(rawSettings)}
+                  hasStaffPhoto={hasStaffPhoto}
+                />
+              </div>
+            </details>
+          </Card>
+        </div>
+      </>
     ),
 
     Integrationer: (

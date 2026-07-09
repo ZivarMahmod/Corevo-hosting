@@ -9,7 +9,7 @@ export { createTenant } from './actions/tenants'
 export { savePlatformBranding } from './actions/branding'
 export { setTenantStatus } from './actions/status'
 export { saveBilling } from './actions/billing'
-export { saveTenantData, saveTenantBookingView, saveTenantName } from './actions/data'
+export { saveTenantData, saveTenantBookingView, saveTenantName, updateBookingSettings } from './actions/data'
 export {
   sendPasswordReset,
   createTenantStaff,
@@ -38,6 +38,12 @@ export { saveRolePermissionsAction } from './actions/roles'
 export { setSajtbyggareEnabled } from './actions/features'
 export { setTenantTheme } from './actions/theme'
 export { saveTenantContact, saveTenantOpeningHours } from './actions/contact'
-export { saveTenantSingleImage, saveTenantStats, saveTenantTeamMember } from './actions/storefront-extras'
+export {
+  saveTenantSingleImage,
+  saveTenantStats,
+  saveTenantTeamMember,
+  saveTenantStaffPhoto,
+  setTenantStaffOnSite,
+} from './actions/storefront-extras'
 export { addCustomDomain, verifyCustomDomain, removeCustomDomain } from './actions/domains'
 export type { ActionState, DomainActionState } from './actions/shared'

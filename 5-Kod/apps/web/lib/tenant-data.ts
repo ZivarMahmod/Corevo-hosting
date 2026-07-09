@@ -12,6 +12,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantFromHost } from '@/lib/tenant'
 import { readBookingVariant, type BookingVariant } from '@/lib/platform/booking-variant'
+import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 
 export type Tenant = Tables<'tenants'>
 // Base row + the 0046 merch columns (optional — generated types don't know them yet).
@@ -281,6 +282,47 @@ async function loadLocation(
 }
 
 /**
+ * "Våra barberare"-sektionens datakälla — RIKTIGA personal-rader (Zivar 2026-07-09:
+ * "när man lägger in en barberare som ska kunna bokas ska den komma in på sidan").
+ * Synlig = active=true (bokningsbar som förut) OCH show_on_site=true (0049 — styr
+ * ENDAST team-sektionen). Stabil ordning: created_at, id.
+ *
+ * REGEL (bakåtkompatibilitet, dokumenterad här = kanon): staff-listan VINNER över
+ * den gamla manuellt ihopklickade settings-listan (branding.team) så fort den har
+ * minst en SYNLIG medlem. Är den tom (ingen personal, alla dolda, eller läs-miss
+ * mot ett pre-0049-schema) renderas settings-listan precis som förut — inget
+ * försvinner för legacy-tenanter. img='' när foto saknas → layouterna visar en
+ * standard-silhuett/monogram-disc (aldrig en trasig bild).
+ *
+ * Anon-läsbart via staff_public_read (0005: active + aktiv tenant); vi filtrerar
+ * ändå app-side på tenant_id (RLS isolerar INTE anon — se filhuvudet).
+ */
+async function loadStaffTeam(
+  supabase: ReturnType<typeof createPublicClient>,
+  tenantId: string,
+  verticalId: string | null,
+): Promise<{ name: string; role: string; img: string }[]> {
+  const { data } = await supabase
+    .from('staff')
+    .select('id, title, avatar_url, show_on_site, created_at')
+    .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+    .eq('active', true)
+    .eq('show_on_site', true)
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
+  const rows = (data ?? []).filter((r) => typeof r.title === 'string' && r.title.trim().length > 0)
+  if (rows.length === 0) return []
+  // Roll-raden under namnet = branschens personal-ord (Barberare/Frisör/…), samma
+  // terminologi-wiring som bokningsguiden. Cachad per vertical i staff-noun.ts.
+  const noun = await resolveStaffNoun(verticalId)
+  return rows.map((r) => ({
+    name: (r.title ?? '').trim(),
+    role: noun,
+    img: typeof r.avatar_url === 'string' ? r.avatar_url : '',
+  }))
+}
+
+/**
  * Resolve an active tenant + its settings by slug. Cached per-slug
  * (slug is in keyParts → no cross-tenant cache bleed) and tagged for revalidation.
  */
@@ -302,6 +344,11 @@ export async function getTenantBySlug(slug: string): Promise<TenantBundle | null
         .eq('tenant_id', tenant.id) // app-layer scope
         .maybeSingle()
       const settings = parseSettings(settingsRow ?? null)
+      // Team-sektionen härleds ur RIKTIGA staff-rader: listan vinner över den gamla
+      // settings-listan (branding.team) när minst en synlig medlem finns — annars
+      // lämnas settings-listan orörd (full regel i loadStaffTeam-docblocket).
+      const staffTeam = await loadStaffTeam(supabase, tenant.id, tenant.vertical_id ?? null)
+      if (staffTeam.length > 0) settings.branding.team = staffTeam
       // Manuella öppettider (Sida-fliken) vinner över scheman-härledda — även när
       // tenanten saknar location-rad (då syntetiseras en ren hours-bärare).
       const loaded = await loadLocation(supabase, tenant.id)

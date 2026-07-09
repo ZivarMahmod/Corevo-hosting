@@ -63,6 +63,12 @@ export type StaffCard = {
   /** Raw staff.location_id — backs the Drawer's plats-select default. Optional so
    *  callers without multi-plats wiring keep compiling; null = ingen plats satt. */
   locationId?: string | null
+  /** Foto på publika sajten (staff.avatar_url, 0049) — null = initial-avatar här
+   *  och standard-silhuett på sidan. Optional så äldre callers kompilerar. */
+  avatarUrl?: string | null
+  /** Syns i publika team-sektionen (staff.show_on_site, 0049) — styr ENDAST
+   *  "Våra barberare" på sidan; bokningsbarheten är `active` som förut. */
+  showOnSite?: boolean
   today: StaffDayRow[]
 }
 
@@ -205,25 +211,42 @@ function StaffGridCard({
           boxSizing: 'border-box',
         }}
       >
-        {/* Header — avatar + name + role line + eget-konto pill (mock L27-31). */}
+        {/* Header — avatar (riktigt foto när staff.avatar_url finns, annars initial) +
+            name + role line + eget-konto pill (mock L27-31). */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
-          <span
-            aria-hidden="true"
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 999,
-              background: 'var(--c-forest)',
-              color: 'var(--c-on-forest)',
-              display: 'grid',
-              placeItems: 'center',
-              fontWeight: 600,
-              fontSize: 18,
-              flex: 'none',
-            }}
-          >
-            {initialOf(member.displayName)}
-          </span>
+          {member.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={member.avatarUrl}
+              alt=""
+              aria-hidden="true"
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 999,
+                objectFit: 'cover',
+                flex: 'none',
+              }}
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 999,
+                background: 'var(--c-forest)',
+                color: 'var(--c-on-forest)',
+                display: 'grid',
+                placeItems: 'center',
+                fontWeight: 600,
+                fontSize: 18,
+                flex: 'none',
+              }}
+            >
+              {initialOf(member.displayName)}
+            </span>
+          )}
           <div style={{ minWidth: 0, flex: 1 }}>
             <div
               style={{
@@ -390,6 +413,11 @@ function StaffDrawer({
             list, now folded into the Drawer; same server action). */}
         <RenameSection member={member} onSaved={onClose} />
 
+        {/* Foto + synlighet på publika sidan (staff.avatar_url/show_on_site, 0049) —
+            samma updateStaff-partialpatch; speglar Sida-ytans StaffTeamCard så det
+            går att sköta från båda ytorna. */}
+        <PhotoSection member={member} onSaved={onClose} />
+
         {/* Tjänster (specialiteter) — the real setStaffServices coupling. These ARE
             the card chips; couple/uncouple drives bookability on the public sajt. */}
         <ServicesSection member={member} services={services} onSaved={onClose} />
@@ -545,6 +573,140 @@ function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => 
       </form>
       <p style={{ fontSize: 12, color: 'var(--c-ink-3)', margin: '8px 0 0', lineHeight: 1.5 }}>
         Inaktiv personal döljs på den publika sajten och går inte att boka.
+      </p>
+    </section>
+  )
+}
+
+/** Foto + synlighet på publika sidan (0049). Tre små formulär mot samma
+ *  updateStaff-partialpatch: `avatar` (fil → R2 → staff.avatar_url),
+ *  `remove_avatar` (→ null = standard-silhuett på sidan) och `show_on_site`
+ *  (visa/dölj i "Våra barberare" — rör ALDRIG bokningsbarheten/`active`). */
+function PhotoSection({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const showOnSite = member.showOnSite ?? true
+  const [photoState, photoAction, photoPending] = useActionState<ActionState, FormData>(
+    updateStaff,
+    {},
+  )
+  const [visState, visAction, visPending] = useActionState<ActionState, FormData>(updateStaff, {})
+
+  useEffect(() => {
+    if (photoState.success) {
+      notify('Foto sparat — syns på publika sidan', 'success')
+      router.refresh()
+      onSaved()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoState.success])
+
+  useEffect(() => {
+    if (visState.success) {
+      notify(
+        showOnSite
+          ? 'Medarbetaren döljs från sidan (fortfarande bokningsbar)'
+          : 'Medarbetaren visas på sidan',
+        'info',
+      )
+      router.refresh()
+      onSaved()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visState.success])
+
+  return (
+    <section>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>
+        Foto &amp; synlighet på sidan
+      </div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        {member.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={member.avatarUrl}
+            alt={member.displayName}
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 12,
+              objectFit: 'cover',
+              border: '1px solid var(--c-line)',
+              flex: 'none',
+            }}
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 12,
+              border: '1px solid var(--c-line)',
+              background: 'var(--c-paper-2)',
+              color: 'var(--c-forest)',
+              display: 'grid',
+              placeItems: 'center',
+              fontWeight: 700,
+              fontSize: 22,
+              flex: 'none',
+            }}
+          >
+            {initialOf(member.displayName)}
+          </span>
+        )}
+        <div style={{ flex: '1 1 14rem', display: 'grid', gap: 8 }}>
+          <form action={photoAction} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <input type="hidden" name="id" value={member.id} />
+            <input
+              type="file"
+              name="avatar"
+              accept="image/*"
+              required
+              aria-label="Foto för publika sidan"
+              style={{ ...fieldStyle, flex: '1 1 12rem' }}
+            />
+            <Button variant="subtle" type="submit" icon="check" size="sm" disabled={photoPending}>
+              {photoPending ? 'Sparar…' : member.avatarUrl ? 'Byt foto' : 'Spara foto'}
+            </Button>
+          </form>
+          {member.avatarUrl ? (
+            <form action={photoAction}>
+              <input type="hidden" name="id" value={member.id} />
+              <input type="hidden" name="remove_avatar" value="true" />
+              <Button variant="ghost" type="submit" icon="trash" size="sm" disabled={photoPending}>
+                Ta bort foto
+              </Button>
+            </form>
+          ) : null}
+          <form action={visAction}>
+            <input type="hidden" name="id" value={member.id} />
+            <input type="hidden" name="show_on_site" value={String(!showOnSite)} />
+            <Button
+              variant="ghost"
+              type="submit"
+              icon={showOnSite ? 'pause' : 'check'}
+              size="sm"
+              disabled={visPending}
+            >
+              {visPending ? '…' : showOnSite ? 'Dölj från sidan' : 'Visa på sidan'}
+            </Button>
+          </form>
+        </div>
+      </div>
+      {photoState.error && (
+        <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+          {photoState.error}
+        </p>
+      )}
+      {visState.error && (
+        <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+          {visState.error}
+        </p>
+      )}
+      <p style={{ fontSize: 12, color: 'var(--c-ink-3)', margin: '8px 0 0', lineHeight: 1.5 }}>
+        Fotot visas i team-sektionen på den publika sidan — utan foto visas en standard-silhuett.
+        {' '}{showOnSite ? 'Medarbetaren syns på sidan.' : 'Medarbetaren är dold på sidan men går fortfarande att boka.'}
       </p>
     </section>
   )

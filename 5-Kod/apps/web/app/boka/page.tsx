@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
 import { createPublicClient } from '@/lib/supabase/public'
-import { readBookingMode } from '@/lib/platform/booking-variant'
+import { readBookingMode, readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
 import {
   BookingWizard,
   type WizardService,
@@ -28,7 +28,8 @@ export default async function BokaPage() {
     { data: settingsRow },
     { data: locationRows },
   ] = await Promise.all([
-      supabase.from('staff').select('id, title').eq('tenant_id', tenant.id).eq('active', true),
+      // avatar_url (0049): barberarkortets foto-läge; null → initialer-fallback.
+      supabase.from('staff').select('id, title, avatar_url').eq('tenant_id', tenant.id).eq('active', true),
       supabase.from('staff_services').select('staff_id, service_id').eq('tenant_id', tenant.id),
       // working_hours.location_id (VÅG 4b): en frisör är bokningsbar på plats L iff
       // hen har ≥1 rad med location_id = L. Speglar wizard-services.ts så den
@@ -50,6 +51,10 @@ export default async function BokaPage() {
         .order('name', { ascending: true }),
     ])
   const mode = readBookingMode(settingsRow?.settings)
+  // Redesign-prefs (design-paketet): tid-väljare + barberarbild-läge, samma
+  // raw-read-seam som variant-valet. Osatt → calendar / initialer.
+  const pickerMode = readPickerMode(settingsRow?.settings)
+  const staffAvatarMode = readStaffAvatarMode(settingsRow?.settings)
   // Bransch-resolved staff noun (default 'Frisör') for the customer-facing wizard.
   const staffNoun = await resolveStaffNoun(tenant.vertical_id)
   const locations: WizardLocation[] = (locationRows ?? []).map((l) => ({
@@ -70,12 +75,17 @@ export default async function BokaPage() {
   const staffById = new Map(
     (staff ?? []).map((s) => [
       s.id,
-      { id: s.id, title: s.title, locationIds: [...(locationsByStaff.get(s.id) ?? [])] },
+      {
+        id: s.id,
+        title: s.title,
+        locationIds: [...(locationsByStaff.get(s.id) ?? [])],
+        avatarUrl: s.avatar_url ?? null,
+      },
     ]),
   )
   const staffByService: Record<
     string,
-    { id: string; title: string | null; locationIds: string[] }[]
+    { id: string; title: string | null; locationIds: string[]; avatarUrl: string | null }[]
   > = {}
   for (const row of links ?? []) {
     const member = staffById.get(row.staff_id)
@@ -97,7 +107,15 @@ export default async function BokaPage() {
       <div className="section-inner">
         <h1>Boka tid hos {tenant.name}</h1>
         <p className="prose">Välj tjänst, personal och tid — klart på under en minut.</p>
-        <BookingWizard services={wizardServices} locations={locations} mode={mode} staffNoun={staffNoun} />
+        <BookingWizard
+          services={wizardServices}
+          locations={locations}
+          mode={mode}
+          staffNoun={staffNoun}
+          pickerMode={pickerMode}
+          staffAvatarMode={staffAvatarMode}
+          brandName={tenant.name}
+        />
       </div>
     </section>
   )

@@ -2,11 +2,21 @@
 
 import { useEffect, useRef } from 'react'
 import { BookingWizard, type WizardService, type WizardLocation } from '@/components/booking/BookingWizard'
+import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
 import type { BookingMode } from './BookingProvider'
 import styles from './storefront.module.css'
 
 /**
- * Slide-over booking drawer (desktop/tablet) → full-screen overlay (mobile).
+ * Overlay-panelen för bokningsflödet (design-paketet "Frisörbokningsformulär
+ * redesign", README §The four presentations):
+ *  - presentation='modal'  → centrerad modal ~470px (desktop) / near-fullscreen
+ *    kort med 14px-inset (mobil) — variant `wizard`.
+ *  - presentation='drawer' → höger slide-over 440px (desktop) / bottom-sheet
+ *    ≤92% med rundade toppkanter 20px (mobil) — varianterna `drawer`/`compact`.
+ * Scrim: rgba(23,17,11,.5) + blur(2px). Geometri/animation ägs av de booking-
+ * globala .bk-*-klasserna (booking-global.css) lagrade ovanpå modulens
+ * .drawerRoot/.drawerPanel (som behåller open/close-mekaniken).
+ *
  * Rendered inside the storefront's own React tree (same providers, same tenant
  * theme tokens), NOT an iframe or a route. The dimmed storefront sits behind it
  * so the page always feels like the salon's own.
@@ -16,10 +26,10 @@ import styles from './storefront.module.css'
  * locked while open. Honors prefers-reduced-motion via the stylesheet.
  *
  * In-page confirmation (⭐ Zivar's core requirement): the whole flow — steps 1–4
- * AND the confirmation (step 5) — happens inside this drawer; the customer never
- * leaves the storefront. The shareable `/boka/bekraftelse/[id]` route still exists
- * as a deep-link/receipt. Online payment (OFF by default) is the only case that
- * leaves: it redirects to Stripe Checkout, which returns to that same route.
+ * AND the confirmation ticket (step 5) — happens inside this panel; the customer
+ * never leaves the storefront. The shareable `/boka/bekraftelse/[id]` route still
+ * exists as a deep-link/receipt. Online payment (OFF by default) is the only case
+ * that leaves: it redirects to Stripe Checkout, which returns to that same route.
  */
 export function BookingDrawer({
   open,
@@ -30,6 +40,8 @@ export function BookingDrawer({
   staffNoun = 'Frisör',
   mode = 'wizard',
   presentation = 'drawer',
+  pickerMode = 'calendar',
+  staffAvatarMode = 'initialer',
 }: {
   open: boolean
   onClose: () => void
@@ -41,9 +53,13 @@ export function BookingDrawer({
   staffNoun?: string
   /** Variant 3 wizard (default) or Variant 4 kompakt snabbboka. */
   mode?: BookingMode
-  /** 'drawer' = slide-over från sidan; 'modal' = centrerad ruta (wizard-varianten).
-   *  På mobil blir båda samma bottom-sheet (bäst där). */
+  /** 'drawer' = slide-over från sidan (bottom-sheet på mobil); 'modal' =
+   *  centrerad ruta (wizard-varianten; near-fullscreen-kort på mobil). */
   presentation?: 'modal' | 'drawer'
+  /** Tid-väljaren (settings.booking.pickerMode) — vidarebefordras till wizarden. */
+  pickerMode?: PickerMode
+  /** Barberarbild-läget (settings.booking.staffAvatars) — vidarebefordras. */
+  staffAvatarMode?: StaffAvatarMode
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
@@ -100,52 +116,52 @@ export function BookingDrawer({
     return () => document.removeEventListener('keydown', onKey, true)
   }, [open, onClose])
 
+  const isModal = presentation === 'modal'
+
   return (
     <div
-      className={`${styles.drawerRoot} ${presentation === 'modal' ? styles.modalMode : ''} ${open ? styles.drawerOpen : ''}`}
+      className={`${styles.drawerRoot} ${open ? `${styles.drawerOpen} bk-open` : ''}`}
       aria-hidden={!open}
     >
-      {/* Scrim — dims the storefront, which stays visible behind. */}
+      {/* Scrim — dims the storefront (rgba(23,17,11,.5) + blur), which stays
+          visible behind. */}
       <button
         type="button"
-        className={styles.scrim}
+        className={`${styles.scrim} bk-scrim`}
         aria-label="Stäng bokning"
         tabIndex={open ? 0 : -1}
         onClick={onClose}
       />
 
-      {/* The extra booking-owned class (global, from booking-global.css) layers
-          mobile bottom-sheet geometry — rounded top + a top gap so it reads as a
-          sheet, not a full-screen takeover — ON TOP of SF-A's `.drawerPanel`
-          (which owns the desktop right-slide-over + the open/close transform).
-          We only override the few mobile geometry props; everything else stays
-          SF-A's. See booking-global.css `.bk-sheet`. */}
+      {/* Panelen: modulens .drawerPanel äger open/close-transformen; de booking-
+          ägda globala klasserna (booking-global.css) lägger redesignens geometri,
+          ram, skugga och animationskurva ovanpå — .bk-panel--center (modal /
+          near-fullscreen-kort) eller .bk-panel--right (slide-over / bottom-sheet
+          via .bk-sheet). fc-scope aktiverar redesign-tokens i hela panelen. */}
       <div
         ref={panelRef}
-        className={`${styles.drawerPanel} bk-sheet`}
+        className={`${styles.drawerPanel} fc-scope bk-panel ${isModal ? 'bk-panel--center' : 'bk-panel--right bk-sheet'}`}
         role="dialog"
         aria-modal="true"
         aria-label={`Boka tid hos ${tenantName}`}
       >
-        {/* Mobile-only drag grabber: signals "swipe down / tap scrim to close".
-            Hidden on desktop via the media query in booking-global.css. */}
-        <button
-          type="button"
-          className="bk-grabber"
-          aria-label="Stäng bokning"
-          onClick={onClose}
-        >
+        {/* Mobile-only drag grabber (bara bottom-sheeten): signals "swipe down /
+            tap scrim to close". Hidden on desktop + modal via booking-global.css. */}
+        <button type="button" className="bk-grabber" aria-label="Stäng bokning" onClick={onClose}>
           <span className="bk-grabber-bar" aria-hidden="true" />
         </button>
 
-        {/* Thin branded step-header: salon wordmark stays present the whole flow. */}
-        <header className={styles.drawerHeader}>
-          <span className={styles.drawerBrand}>{tenantName}</span>
-          <span className={styles.drawerTitle}>Boka tid</span>
+        {/* Panel-toppen (spec §Booking panel — header): wordmark (display 19px) +
+            mono BOKA TID + ✕ (32px, 1.5px line-2). */}
+        <header className="fc-panel-head">
+          <span className="fc-panel-brand">
+            <span className="fc-panel-brand-name">{tenantName}</span>
+            <span className="fc-panel-brand-label">BOKA TID</span>
+          </span>
           <button
             ref={closeBtnRef}
             type="button"
-            className={styles.drawerClose}
+            className="fc-panel-close"
             onClick={onClose}
             aria-label="Stäng"
           >
@@ -153,12 +169,22 @@ export function BookingDrawer({
           </button>
         </header>
 
-        <div className={styles.drawerBody}>
-          {/* onClose → wizardens steg 5 (in-page bekräftelse) kan stänga drawern.
+        <div className={`${styles.drawerBody} bk-body`}>
+          {/* onClose → wizardens steg 5 (in-page biljett) kan stänga panelen.
               open → wizarden nollställer sig vid en återöppning EFTER en klar
-              bokning, oavsett hur drawern stängdes (Klar/X/Esc/scrim).
+              bokning, oavsett hur panelen stängdes (X/Esc/scrim).
               mode → Variant 3 (wizard, default) eller Variant 4 (compact). */}
-          <BookingWizard services={services} locations={locations} open={open} onClose={onClose} mode={mode} staffNoun={staffNoun} />
+          <BookingWizard
+            services={services}
+            locations={locations}
+            open={open}
+            onClose={onClose}
+            mode={mode}
+            staffNoun={staffNoun}
+            pickerMode={pickerMode}
+            staffAvatarMode={staffAvatarMode}
+            brandName={tenantName}
+          />
         </div>
       </div>
     </div>

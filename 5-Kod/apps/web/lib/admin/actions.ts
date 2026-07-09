@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requirePortal, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
-import { uploadImage, uploadErrorMessage, pruneRemovedImages, type UploadResult } from '@/lib/r2/upload'
+import { uploadImage, uploadErrorMessage, deleteByPublicUrl, pruneRemovedImages, type UploadResult } from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
 import { resolveRoleMatrix } from '@/lib/platform/roles-permissions'
 import { canWrite } from '@/lib/platform/catalog-shared'
@@ -314,9 +314,15 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
   if (!id) return { error: 'Saknar medarbetare.' }
 
   // Partiell patch: Drawerns namn-formulär postar `title`, plats-formuläret postar
-  // `location_id` — varje formulär uppdaterar bara sitt eget fält, så en frånvarande
+  // `location_id`, foto-formuläret `avatar`/`remove_avatar` och synlighets-formuläret
+  // `show_on_site` — varje formulär uppdaterar bara sitt eget fält, så en frånvarande
   // nyckel lämnas orörd (det ena formuläret kan aldrig blanka det andras fält).
-  const patch: { title?: string; location_id?: string | null } = {}
+  const patch: {
+    title?: string
+    location_id?: string | null
+    show_on_site?: boolean
+    avatar_url?: string | null
+  } = {}
   if (fd.has('title')) {
     const title = String(fd.get('title') ?? '').trim()
     if (!title) return { error: 'Ange ett namn/en titel.' }
@@ -343,6 +349,40 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
       patch.location_id = null
     }
   }
+
+  // Synlighet i publika team-sektionen (staff.show_on_site, 0049) — styr ENDAST
+  // "Våra barberare" på sidan; bokningsbarheten är staff.active som förut.
+  if (fd.has('show_on_site')) {
+    patch.show_on_site = String(fd.get('show_on_site') ?? '') === 'true'
+  }
+
+  // Foto (staff.avatar_url, 0049): remove_avatar=true → null (standard-silhuett
+  // visas); annars laddas bifogad fil upp till R2 (samma pipeline som Sida-ytans
+  // saveTenantStaffPhoto). Gamla objektet städas best-effort EFTER commit och BARA
+  // när det är medarbetarens EGNA lagrade avatar_url (DB-läst — aldrig en klient-
+  // skickad URL; deleteByPublicUrl vägrar dessutom främmande origins).
+  let removedAvatar: string | null = null
+  const removeAvatar = String(fd.get('remove_avatar') ?? '') === 'true'
+  const avatar = fd.get('avatar')
+  const hasAvatarFile = avatar instanceof File && avatar.size > 0
+  if (removeAvatar || hasAvatarFile) {
+    const { data: row } = await supabase
+      .from('staff')
+      .select('avatar_url')
+      .eq('id', id)
+      .eq('tenant_id', ctx.tenant.id)
+      .maybeSingle()
+    if (!row) return { error: 'Okänd medarbetare.' }
+    if (removeAvatar) {
+      patch.avatar_url = null
+    } else {
+      const res = await uploadImage(avatar as File, `tenants/${ctx.tenant.id}/staff`)
+      if (!res.ok) return { error: uploadErrorMessage(res.reason) }
+      patch.avatar_url = res.url
+    }
+    removedAvatar = row.avatar_url
+  }
+
   if (Object.keys(patch).length === 0) return { error: 'Inget att spara.' }
 
   const { error } = await supabase
@@ -350,7 +390,14 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
     .update(patch)
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
-  if (error) return { error: GENERIC }
+  if (error) {
+    // Nyss uppladdat foto utan sparad rad → städa direkt (inget orphan i R2).
+    if (typeof patch.avatar_url === 'string') await deleteByPublicUrl(patch.avatar_url)
+    return { error: GENERIC }
+  }
+
+  // Ersatt/borttaget foto: städa gamla objektet efter commit (aldrig blockerande).
+  if (removedAvatar && removedAvatar !== patch.avatar_url) await deleteByPublicUrl(removedAvatar)
 
   revalidateStaff(ctx.tenant.slug)
   return { success: 'Sparad.' }
