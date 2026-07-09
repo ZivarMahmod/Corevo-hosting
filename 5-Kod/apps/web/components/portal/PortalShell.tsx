@@ -39,7 +39,6 @@ const PALETTE: Record<PortalRole, CommandItem[]> = {
     { href: '/admin/platser', label: 'Platser', icon: 'building', kind: 'Gå till' },
     { href: '/admin/scheman', label: 'Scheman', icon: 'clock', kind: 'Gå till' },
     { href: '/admin/sida', label: 'Redigera sidan', icon: 'palette', kind: 'Gå till' },
-    { href: '/admin/bokning', label: 'Bokningsflöde', icon: 'calendar', kind: 'Gå till' },
     { href: '/admin/installningar', label: 'Inställningar', icon: 'settings', kind: 'Gå till' },
   ],
   personal: [

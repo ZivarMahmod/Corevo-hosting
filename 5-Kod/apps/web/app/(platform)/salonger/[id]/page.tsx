@@ -17,7 +17,6 @@ import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { SidaStudio } from '@/components/platform/SidaStudio'
-import { BookingSettings } from '@/components/platform/BookingSettings'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
 import { createClient } from '@/lib/supabase/server'
 import { SajtbyggareControl } from '@/components/platform/SajtbyggareControl'
@@ -388,6 +387,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           contactPhone={contactPhone}
           address={detail.primaryAddress}
           bookingVariant={operative.bookingVariant}
+          pickerMode={readPickerMode(rawSettings)}
+          staffAvatars={readStaffAvatarMode(rawSettings)}
+          hasStaffPhoto={hasStaffPhoto}
           staffTeam={staffList.map((s) => ({
             id: s.id,
             title: s.title,
@@ -396,34 +398,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             showOnSite: s.show_on_site,
           }))}
         />
-        {/* Bokningsflöde — plattforms-spegeln av kundens /admin/bokning (design-
-            paketet ⭐: allt salongs-valbart). SAMMA klientkomponent + action
-            (updateBookingSettings, sidaCtx-dubbelguard) som kundens yta — de kan
-            aldrig glida isär. Kompakt <details>-mönstret som kundkortets listor. */}
-        <div style={{ marginTop: 16 }}>
-          <Card>
-            <details>
-              <summary style={{ cursor: 'pointer', fontWeight: 650, fontSize: 15, color: 'var(--c-ink)' }}>
-                Bokningsflöde — bokningssätt, tid-väljare, barberarbilder &amp; färger
-              </summary>
-              <div style={{ marginTop: 14 }}>
-                <BookingSettings
-                  tenantId={tenant.id}
-                  previewPath={`/salong-preview/${tenant.slug}`}
-                  storefrontUrl={storefrontUrl}
-                  storefrontHost={storefrontHost}
-                  isActive={isActive}
-                  templateKey={activeTemplateKey}
-                  branding={b}
-                  variant={operative.bookingVariant}
-                  pickerMode={readPickerMode(rawSettings)}
-                  staffAvatars={readStaffAvatarMode(rawSettings)}
-                  hasStaffPhoto={hasStaffPhoto}
-                />
-              </div>
-            </details>
-          </Card>
-        </div>
       </>
     ),
 

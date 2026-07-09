@@ -534,13 +534,19 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
+  /* EN rad (Zivar 2026-07-10: "inte under varandra utan i rad") — korten delar
+     bredden och krymper lagom; max-width hindrar 1–2 medlemmar från att bli
+     jätteporträtt. ponytail: vid ~7+ medlemmar bryter min-width raden ändå. */
+  display: flex;
+  flex-wrap: wrap;
   gap: 2rem;
-  /* auto-FILL + fast max: 1–2 medlemmar stretchar inte till jätteporträtt —
-     korten håller lagom porträttstorlek oavsett antal. */
-  grid-template-columns: repeat(auto-fill, minmax(200px, 270px));
 }
-.stylist { text-align: left; }
+.stylist {
+  text-align: left;
+  flex: 1 1 0;
+  min-width: 150px;
+  max-width: 270px;
+}
 .stylistPhoto {
   border-radius: var(--tpl-radius-lg);
   overflow: hidden;

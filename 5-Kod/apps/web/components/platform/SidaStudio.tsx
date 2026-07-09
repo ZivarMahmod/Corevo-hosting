@@ -9,13 +9,13 @@ import { ImageSlotManager } from './StorefrontContentCard'
 import { CopyFieldsCard, type CopyFieldDef } from './CopyFieldsCard'
 import { TenantNameCard } from './TenantNameCard'
 import { ThemePicker } from './ThemePicker'
-import { BookingViewCard } from './BookingViewCard'
+import { BookingPanel } from './BookingSettings'
 import { TenantContactForm } from './TenantContactForm'
 import { OpeningHoursCard } from './OpeningHoursCard'
 import { TeamCard } from './TeamCard'
 import { StaffTeamCard, type StaffTeamMember } from './StaffTeamCard'
 import { SingleImageSlot, StatsCard } from './StorefrontExtrasCard'
-import type { BookingVariant } from '@/lib/platform/booking-variant'
+import type { BookingVariant, PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
 import { themeCaps, THEME_EXTRA_HOME } from '@/lib/platform/theme-capabilities'
 import { THEME_CONTENT } from '@/components/storefront/theme-content'
 import styles from './SidaStudio.module.css'
@@ -59,13 +59,16 @@ type Copy = {
  */
 const MSG_SOURCE = 'corevo-sida'
 
-type PageKey = 'allmant' | 'hem' | 'tjanster' | 'om' | 'kontakt'
+type PageKey = 'allmant' | 'hem' | 'tjanster' | 'om' | 'kontakt' | 'bokning'
 const PAGES: { key: PageKey; label: string; sub: string; path: string }[] = [
   { key: 'allmant', label: 'Allmänt', sub: 'Mall · färger · typsnitt', path: '' },
   { key: 'hem', label: 'Hem', sub: 'Hero · bilder', path: '' },
   { key: 'tjanster', label: 'Tjänster', sub: 'Utbud & priser', path: '/tjanster' },
   { key: 'om', label: 'Om oss', sub: 'Berättelse · team', path: '/om' },
   { key: 'kontakt', label: 'Kontakt', sub: 'Adress · öppettider', path: '/kontakt' },
+  // Bokning = f.d. "Boknings-vy"-kortet + separata Bokningsflöde-ytan, ihopslagna
+  // (Zivar 2026-07-10: "de går hand i hand — gör dem samma, en preview").
+  { key: 'bokning', label: 'Bokning', sub: 'Bokningssätt · tider · bilder', path: '' },
 ]
 
 export function SidaStudio({
@@ -86,6 +89,9 @@ export function SidaStudio({
   social,
   openingHours,
   bookingVariant,
+  pickerMode = 'calendar',
+  staffAvatars = 'initialer',
+  hasStaffPhoto = false,
   staffTeam = [],
   canChangeTemplate = true,
 }: {
@@ -110,6 +116,12 @@ export function SidaStudio({
   /** Manuella öppettider (settings.opening_hours) — null = härleds ur scheman. */
   openingHours: { day: string; time: string }[] | null
   bookingVariant: BookingVariant
+  /** Bokning-flikens val (tenant_settings.settings.booking) — defaults så äldre
+   *  mounts kompilerar; panelen sparar via updateBookingSettings (sidaCtx-guard). */
+  pickerMode?: PickerMode
+  staffAvatars?: StaffAvatarMode
+  /** true när minst en AKTIV medarbetare har profilbild — låser upp Foto-läget. */
+  hasStaffPhoto?: boolean
   /** RIKTIGA medarbetare (staff-tabellen) — publika team-sektionens datakälla när
    *  minst en synlig medlem finns (annars gäller den gamla settings-listan, se
    *  lib/tenant-data loadStaffTeam). Default [] så äldre mounts kompilerar. */
@@ -336,15 +348,20 @@ export function SidaStudio({
               />
             </section>
 
-            <section className={styles.card}>
-              <h3 className={styles.cardHead}>Boknings-vy</h3>
-              <p className={styles.note}>
-                Hur bokningen presenteras på sidan (t.ex. guide i flera steg eller kompakt).
-                Gäller alla &quot;Boka tid&quot;-knappar.
-              </p>
-              <BookingViewCard tenantId={tenantId} bookingVariant={bookingVariant} onSaved={reload} />
-            </section>
           </>
+        ) : null}
+
+        {page === 'bokning' ? (
+          <BookingPanel
+            tenantId={tenantId}
+            templateKey={templateKey}
+            branding={branding}
+            variant={bookingVariant}
+            pickerMode={pickerMode}
+            staffAvatars={staffAvatars}
+            hasStaffPhoto={hasStaffPhoto}
+            onSaved={reload}
+          />
         ) : null}
 
         {page === 'hem' ? (

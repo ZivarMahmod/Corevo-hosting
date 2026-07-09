@@ -6,6 +6,7 @@ import { getTenantDetail } from '@/lib/platform/tenants'
 import { SidaStudio } from '@/components/platform/SidaStudio'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
+import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
 import { PageHead } from '@/components/portal/ui'
 import type { TenantBranding } from '@corevo/ui'
 
@@ -89,6 +90,9 @@ export default async function AdminSidaPage() {
         contactPhone={contactPhone}
         address={detail.primaryAddress}
         bookingVariant={operative.bookingVariant}
+        pickerMode={readPickerMode(rawSettings)}
+        staffAvatars={readStaffAvatarMode(rawSettings)}
+        hasStaffPhoto={detail.staffList.some((s) => s.active && s.avatar_url)}
         staffTeam={detail.staffList.map((s) => ({
           id: s.id,
           title: s.title,

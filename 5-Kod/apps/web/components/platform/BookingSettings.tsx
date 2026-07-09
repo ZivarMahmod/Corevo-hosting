@@ -1,28 +1,28 @@
 'use client'
 
-import { useActionState, useCallback, useMemo, useRef, useState } from 'react'
+import { useActionState, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { accentForeground, type TenantBranding } from '@corevo/ui'
 import { updateBookingSettings } from '@/lib/platform/actions'
 import type { ActionState } from '@/lib/platform/actions'
 import type { BookingVariant, PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
 import { themePalette } from '@/lib/platform/theme-palettes'
-import { PlatformBrandingForm } from './PlatformBrandingForm'
 import studio from './SidaStudio.module.css'
 import pform from './platform.module.css'
 
 /**
- * Bokningsflöde-studion — designpaketet "Frisörbokningsformulär redesign" ⭐-kravet:
+ * Bokningspanelen — designpaketet "Frisörbokningsformulär redesign" ⭐-kravet:
  * ALLT i bokningsflödet valbart per salong från admin, utan kodändring per kund.
- * EN delad komponent för BÅDA ytorna (kundens /admin/bokning + super-adminens
- * kundkort /salonger/[id] → Sida-fliken) — samma mönster som SidaStudio: actions
- * bakom sidaCtx-dubbelguarden, live-preview i iframe mot /salong-preview/<slug>
- * som laddas om vid spar. Kontrollerna = prototypens kontrollrad (Bokningssätt /
- * Tid-väljare / Barberarbilder / Färger); de fyra bokningssätts-korten bär exakt
- * label + tag + beskrivning + mini-schematic från "Jämför alla"-vyn (compareCards
- * i "FreshCut bokning.dc.html").
+ * Zivar 2026-07-10: "boknings-vyn och bokningsflödet går hand i hand — gör dem
+ * samma, och inte 2 previewn" → panelen är numera EN flik (Bokning) i SidaStudio
+ * och delar studions preview + reload; den äger ingen egen iframe. EN komponent
+ * för BÅDA ytorna (kundens /admin/sida + super-adminens kundkort) via SidaStudio —
+ * action bakom sidaCtx-dubbelguarden. Kontrollerna = prototypens kontrollrad
+ * (Bokningssätt / Tid-väljare / Barberarbilder); de fyra bokningssätts-korten bär
+ * exakt label + tag + beskrivning + mini-schematic från "Jämför alla"-vyn
+ * (compareCards i "FreshCut bokning.dc.html"). Färgerna redigeras i Allmänt →
+ * Varumärke (samma tokens) — här visas bara CTA-chippen + kontrast-varningen.
  */
-const MSG_SOURCE = 'corevo-sida'
 
 // Compare-kortens exakta texter + panel-geometri (compareCards, design-kanon).
 // booking-variant.ts är läs-KONTRAKTET (labels där speglar SU_VARIANTS) — de här
@@ -96,25 +96,18 @@ function contrastRatio(a: string, b: string): number | null {
   return (hi + 0.05) / (lo + 0.05)
 }
 
-export function BookingSettings({
+export function BookingPanel({
   tenantId,
-  previewPath,
-  storefrontUrl,
-  storefrontHost,
-  isActive,
   templateKey,
   branding,
   variant,
   pickerMode,
   staffAvatars,
   hasStaffPhoto,
+  onSaved,
 }: {
   tenantId: string
-  previewPath: string
-  storefrontUrl: string
-  storefrontHost: string
-  isActive: boolean
-  /** Tenantens sparade mall — dess palett är standardfärgerna färg-formuläret utgår från. */
+  /** Tenantens sparade mall — dess palett är standardfärgerna CTA-chippen utgår från. */
   templateKey: string
   branding: TenantBranding
   variant: BookingVariant
@@ -123,15 +116,9 @@ export function BookingSettings({
   /** true när minst en AKTIV medarbetare har avatar_url — annars är Foto-läget
    *  avstängt med hint (design-kanon: "disable Foto with a hint"). */
   hasStaffPhoto: boolean
+  /** SidaStudions reload — previewen laddas om efter spar. */
+  onSaved?: () => void
 }) {
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-  const [reloadToken, setReloadToken] = useState(0)
-  const reload = useCallback(() => setReloadToken((t) => t + 1), [])
-  const src = useMemo(
-    () => `${previewPath}${reloadToken > 0 ? `?_p=${reloadToken}` : ''}`,
-    [previewPath, reloadToken],
-  )
-
   // Valen hålls kontrollerat så mini-schematics + segmenten markerar direkt.
   // 'foto' utan foton speglar render-fallbacken (initialer) redan i formuläret.
   const [sel, setSel] = useState<{ variant: BookingVariant; picker: PickerMode; avatars: StaffAvatarMode }>({
@@ -143,233 +130,159 @@ export function BookingSettings({
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     async (p, fd) => {
       const r = await updateBookingSettings(p, fd)
-      if (r.success) reload()
+      if (r.success) onSaved?.()
       return r
     },
     {},
   )
 
-  // ── Färger: live-tokens in i previewen (samma bridge som SidaStudio) + lokal
-  //    spegel för CTA-chip, schematics och kontrast-varningen.
-  const [liveTokens, setLiveTokens] = useState<Record<string, string> | null>(null)
-  const pushTokens = useCallback((tokens: Record<string, string>) => {
-    setLiveTokens(tokens)
-    iframeRef.current?.contentWindow?.postMessage(
-      { source: MSG_SOURCE, type: 'brand-preview', tokens },
-      window.location.origin,
-    )
-  }, [])
-
-  const pal = themePalette(templateKey)
-  const effective = useMemo(() => {
-    const pick = (cssVar: string, saved: string | null | undefined, fallback: string) =>
-      liveTokens ? (liveTokens[cssVar] ?? fallback) : (saved || fallback)
-    return {
-      primary: pick('--color-primary', branding.color_primary, pal.primary),
-      bg: pick('--color-bg', branding.color_bg, pal.bg),
-      fg: pick('--color-fg', branding.color_fg, pal.fg),
-      accent: pick('--color-accent', branding.color_accent, pal.accent),
-    }
-  }, [liveTokens, branding.color_primary, branding.color_bg, branding.color_fg, branding.color_accent, pal])
   // CTA/markering = accent med primär som fallback (samma resolution som
-  // booking-ytan: var(--color-accent, var(--color-primary))).
-  const cta = effective.accent || effective.primary
+  // booking-ytan: var(--color-accent, var(--color-primary))) — SPARADE färger;
+  // live-mixern bor i Allmänt → Varumärke.
+  const pal = themePalette(templateKey)
+  const bg = branding.color_bg || pal.bg
+  const fg = branding.color_fg || pal.fg
+  const cta = branding.color_accent || branding.color_primary || pal.accent || pal.primary
   const ctaFg = accentForeground(cta) ?? '#ffffff'
-  const fgBgRatio = contrastRatio(effective.fg, effective.bg)
+  const fgBgRatio = contrastRatio(fg, bg)
   const lowContrast = fgBgRatio != null && fgBgRatio < 4.5
 
   return (
-    <div className={studio.grid}>
-      {/* ── vänster: kontrollerna (prototypens kontrollrad som inställningskort) ── */}
-      <div className={studio.left}>
-        <form action={formAction} style={{ display: 'grid', gap: 16, minWidth: 0 }}>
-          <input type="hidden" name="tenantId" value={tenantId} />
+    <form action={formAction} style={{ display: 'grid', gap: 16, minWidth: 0 }}>
+      <input type="hidden" name="tenantId" value={tenantId} />
 
-          <section className={studio.card}>
-            <h3 className={studio.cardHead}>Bokningssätt</h3>
-            <p className={studio.note}>
-              Hur bokningen öppnar sig på salongens sida. Alla fyra ger samma steg och
-              bekräftelse — bara presentationen skiljer.
-            </p>
-            <div className={pform.templateGrid} role="radiogroup" aria-label="Bokningssätt">
-              {VARIANT_CARDS.map((c) => {
-                const on = sel.variant === c.id
-                return (
-                  <label
-                    key={c.id}
-                    className={pform.templateCard}
-                    style={on ? variantCardOn : undefined}
-                  >
-                    <input
-                      type="radio"
-                      name="booking_variant"
-                      value={c.id}
-                      checked={on}
-                      onChange={() => setSel((s) => ({ ...s, variant: c.id }))}
-                      style={srOnly}
-                    />
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                      <span className={pform.templateName}>{c.label}</span>
-                      <span style={tagChip(on)}>{c.tag}</span>
-                    </span>
-                    <span className={pform.templateDesc}>{c.desc}</span>
-                    <VariantSchematic v={c.id} accent={cta} />
-                  </label>
-                )
-              })}
-            </div>
-          </section>
-
-          <section className={studio.card}>
-            <h3 className={studio.cardHead}>Tid-väljare</h3>
-            <p className={studio.note}>Hur kunden väljer dag i steget &quot;När passar det?&quot;.</p>
-            <div style={segRail} role="radiogroup" aria-label="Tid-väljare">
-              {PICKER_OPTIONS.map((o) => {
-                const on = sel.picker === o.id
-                return (
-                  <label key={o.id} style={segPill(on, false)}>
-                    <input
-                      type="radio"
-                      name="picker_mode"
-                      value={o.id}
-                      checked={on}
-                      onChange={() => setSel((s) => ({ ...s, picker: o.id }))}
-                      style={srOnly}
-                    />
-                    <span style={{ fontWeight: 650 }}>{o.label}</span>
-                    <span style={segHint(on)}>{o.hint}</span>
-                  </label>
-                )
-              })}
-            </div>
-          </section>
-
-          <section className={studio.card}>
-            <h3 className={studio.cardHead}>Barberarbilder</h3>
-            <p className={studio.note}>Hur medarbetarna visas i steget &quot;Hos vem?&quot;.</p>
-            <div style={segRail} role="radiogroup" aria-label="Barberarbilder">
-              {AVATAR_OPTIONS.map((o) => {
-                const disabled = o.id === 'foto' && !hasStaffPhoto
-                const on = sel.avatars === o.id
-                return (
-                  <label key={o.id} style={segPill(on, disabled)}>
-                    <input
-                      type="radio"
-                      name="staff_avatars"
-                      value={o.id}
-                      checked={on}
-                      disabled={disabled}
-                      onChange={() => setSel((s) => ({ ...s, avatars: o.id }))}
-                      style={srOnly}
-                    />
-                    <span style={{ fontWeight: 650 }}>{o.label}</span>
-                    <span style={segHint(on)}>{o.hint}</span>
-                  </label>
-                )
-              })}
-            </div>
-            {!hasStaffPhoto ? (
-              <p className={pform.hint} style={{ marginTop: 10, marginBottom: 0 }}>
-                Foto är avstängt: ingen aktiv medarbetare har en profilbild ännu. Ladda upp
-                bilder under <strong>Personal</strong> så låses valet upp. Medarbetare utan
-                bild visas alltid som initialer.
-              </p>
-            ) : null}
-          </section>
-
-          <div className={pform.actions}>
-            <button type="submit" className="btn-primary" disabled={pending}>
-              {pending ? 'Sparar…' : 'Spara bokningsinställningar'}
-            </button>
-            {state.error ? (
-              <span className={`${pform.feedback} auth-error`} role="alert">
-                {state.error}
-              </span>
-            ) : null}
-            {state.success ? (
-              <span className={`${pform.feedback} ${pform.feedbackOk}`} role="status">
-                {state.success}
-              </span>
-            ) : null}
-          </div>
-          <p className={pform.hint} style={{ margin: '-6px 0 0' }}>
-            Testa direkt: spara, klicka sedan <strong>Boka tid</strong> i previewen till höger —
-            bokningen följer valen.
-          </p>
-        </form>
-
-        {/* Färger = BEFINTLIGA färgredigeringen (savePlatformBranding via
-            PlatformBrandingForm) — samma fyra fält som injectTenantTokens läser.
-            Eget <form> internt, därför utanför boknings-formuläret ovan. */}
-        <section className={studio.card}>
-          <h3 className={studio.cardHead}>Färger</h3>
-          <p className={studio.liveHint}>
-            <span className={studio.liveDot} aria-hidden="true" />
-            Speglas direkt i previewen medan du ändrar — bokningen använder samma färger.
-          </p>
-          <div style={ctaRow}>
-            <span style={{ ...ctaChip, background: cta, color: ctaFg }}>Boka tid</span>
-            <span className={pform.hint}>
-              Så här ser boknings-knappen ut — textfärgen väljs automatiskt för läsbarhet.
-            </span>
-          </div>
-          {lowContrast ? (
-            <p role="alert" style={contrastWarn}>
-              Låg kontrast: textfärgen och bakgrunden ligger för nära varandra
-              (kontrast {fgBgRatio!.toFixed(1)}:1, rekommenderat minst 4.5:1). Texten kan bli
-              svårläst — välj en mörkare text eller ljusare bakgrund.
-            </p>
-          ) : null}
-          <PlatformBrandingForm
-            tenantId={tenantId}
-            branding={branding}
-            themeKey={templateKey}
-            onLiveTokens={pushTokens}
-          />
-        </section>
-      </div>
-
-      {/* ── höger: sticky live-preview (samma mönster som SidaStudio) ── */}
-      <div className={studio.right}>
-        <div className={studio.bar}>
-          <div className={studio.barSide}>
-            <span className={studio.host}>{storefrontHost}</span>
-          </div>
-          <div className={studio.barSide}>
-            <button type="button" className={studio.btn} onClick={reload} title="Ladda om previewen">
-              Ladda om
-            </button>
-            <a
-              className={studio.btnPrimary}
-              href={storefrontUrl}
-              target="_blank"
-              rel="noreferrer"
-              title="Öppna den skarpa sidan i ny flik"
-            >
-              Öppna live ↗
-            </a>
-          </div>
+      <section className={studio.card}>
+        <h3 className={studio.cardHead}>Bokningssätt</h3>
+        <p className={studio.note}>
+          Hur bokningen öppnar sig på salongens sida. Alla fyra ger samma steg och
+          bekräftelse — bara presentationen skiljer. Gäller alla &quot;Boka tid&quot;-knappar.
+        </p>
+        <div className={pform.templateGrid} role="radiogroup" aria-label="Bokningssätt">
+          {VARIANT_CARDS.map((c) => {
+            const on = sel.variant === c.id
+            return (
+              <label
+                key={c.id}
+                className={pform.templateCard}
+                style={on ? variantCardOn : undefined}
+              >
+                <input
+                  type="radio"
+                  name="booking_variant"
+                  value={c.id}
+                  checked={on}
+                  onChange={() => setSel((s) => ({ ...s, variant: c.id }))}
+                  style={srOnly}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                  <span className={pform.templateName}>{c.label}</span>
+                  <span style={tagChip(on)}>{c.tag}</span>
+                </span>
+                <span className={pform.templateDesc}>{c.desc}</span>
+                <VariantSchematic v={c.id} accent={cta} />
+              </label>
+            )
+          })}
         </div>
+      </section>
 
-        <div className={studio.stage}>
-          {isActive ? (
-            <iframe
-              ref={iframeRef}
-              src={src}
-              className={studio.frame}
-              title={`Förhandsvisning av ${storefrontHost}`}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              loading="lazy"
-            />
-          ) : (
-            <div className={studio.blocked}>
-              <strong>Storefronten är pausad</strong>
-              <p>Salongen är inte aktiv just nu, så förhandsvisningen är blockerad.</p>
-            </div>
-          )}
+      <section className={studio.card}>
+        <h3 className={studio.cardHead}>Tid-väljare</h3>
+        <p className={studio.note}>Hur kunden väljer dag i steget &quot;När passar det?&quot;.</p>
+        <div style={segRail} role="radiogroup" aria-label="Tid-väljare">
+          {PICKER_OPTIONS.map((o) => {
+            const on = sel.picker === o.id
+            return (
+              <label key={o.id} style={segPill(on, false)}>
+                <input
+                  type="radio"
+                  name="picker_mode"
+                  value={o.id}
+                  checked={on}
+                  onChange={() => setSel((s) => ({ ...s, picker: o.id }))}
+                  style={srOnly}
+                />
+                <span style={{ fontWeight: 650 }}>{o.label}</span>
+                <span style={segHint(on)}>{o.hint}</span>
+              </label>
+            )
+          })}
         </div>
+      </section>
+
+      <section className={studio.card}>
+        <h3 className={studio.cardHead}>Barberarbilder</h3>
+        <p className={studio.note}>Hur medarbetarna visas i steget &quot;Hos vem?&quot;.</p>
+        <div style={segRail} role="radiogroup" aria-label="Barberarbilder">
+          {AVATAR_OPTIONS.map((o) => {
+            const disabled = o.id === 'foto' && !hasStaffPhoto
+            const on = sel.avatars === o.id
+            return (
+              <label key={o.id} style={segPill(on, disabled)}>
+                <input
+                  type="radio"
+                  name="staff_avatars"
+                  value={o.id}
+                  checked={on}
+                  disabled={disabled}
+                  onChange={() => setSel((s) => ({ ...s, avatars: o.id }))}
+                  style={srOnly}
+                />
+                <span style={{ fontWeight: 650 }}>{o.label}</span>
+                <span style={segHint(on)}>{o.hint}</span>
+              </label>
+            )
+          })}
+        </div>
+        {!hasStaffPhoto ? (
+          <p className={pform.hint} style={{ marginTop: 10, marginBottom: 0 }}>
+            Foto är avstängt: ingen aktiv medarbetare har en profilbild ännu. Ladda upp
+            bilder under <strong>Personal</strong> så låses valet upp. Medarbetare utan
+            bild visas alltid som initialer.
+          </p>
+        ) : null}
+      </section>
+
+      <section className={studio.card}>
+        <h3 className={studio.cardHead}>Färger</h3>
+        <div style={ctaRow}>
+          <span style={{ ...ctaChip, background: cta, color: ctaFg }}>Boka tid</span>
+          <span className={pform.hint}>
+            Så här ser boknings-knappen ut — textfärgen väljs automatiskt för läsbarhet.
+          </span>
+        </div>
+        {lowContrast ? (
+          <p role="alert" style={contrastWarn}>
+            Låg kontrast: textfärgen och bakgrunden ligger för nära varandra
+            (kontrast {fgBgRatio!.toFixed(1)}:1, rekommenderat minst 4.5:1). Texten kan bli
+            svårläst — välj en mörkare text eller ljusare bakgrund.
+          </p>
+        ) : null}
+        <p className={pform.hint} style={{ margin: 0 }}>
+          Bokningen använder sidans färger — de ändras under <strong>Allmänt → Varumärke</strong>.
+        </p>
+      </section>
+
+      <div className={pform.actions}>
+        <button type="submit" className="btn-primary" disabled={pending}>
+          {pending ? 'Sparar…' : 'Spara bokningsinställningar'}
+        </button>
+        {state.error ? (
+          <span className={`${pform.feedback} auth-error`} role="alert">
+            {state.error}
+          </span>
+        ) : null}
+        {state.success ? (
+          <span className={`${pform.feedback} ${pform.feedbackOk}`} role="status">
+            {state.success}
+          </span>
+        ) : null}
       </div>
-    </div>
+      <p className={pform.hint} style={{ margin: '-6px 0 0' }}>
+        Testa direkt: spara, klicka sedan <strong>Boka tid</strong> i previewen till höger —
+        bokningen följer valen.
+      </p>
+    </form>
   )
 }
 
@@ -378,7 +291,7 @@ export function BookingSettings({
  * design-kanon ("FreshCut bokning.dc.html"): mörk enhetsram → surface med ink-topbar,
  * header (namn + accent-block), hero-gradient, dim-overlay (utom Inbäddad) och en
  * panelBox positionerad per variant (centrerad / dockad i kanten / i flödet) med
- * steg-rader eller chips + accent-CTA. Accent = salongens riktiga CTA-färg (live).
+ * steg-rader eller chips + accent-CTA. Accent = salongens sparade CTA-färg.
  */
 function VariantSchematic({ v, accent }: { v: BookingVariant; accent: string }) {
   const isSteps = v === 'wizard' || v === 'drawer'
