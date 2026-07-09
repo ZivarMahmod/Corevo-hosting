@@ -72,10 +72,13 @@ export function ServicesManager({
         Ändringar slår igenom utan kod eller deploy.
       </Callout>
 
-      <div
-        className="bo-2col"
-        style={{ gridTemplateColumns: '1.7fr 1fr', alignItems: 'start', marginTop: 16 }}
-      >
+      {/* Kolumn-ratio i CSS (inte inline) så .bo-2col:s ≤920px-kollaps till 1fr vinner
+          på mobil — inline-style skulle annars slå media-queryn (RolesMatrix-fällan). */}
+      <style>{`
+        .services-2col { grid-template-columns: 1.7fr 1fr; }
+        @media (max-width: 920px) { .services-2col { grid-template-columns: 1fr; } }
+      `}</style>
+      <div className="bo-2col services-2col" style={{ alignItems: 'start', marginTop: 16 }}>
         <Card pad={0}>
           {services.length === 0 ? (
             <div style={{ padding: 22 }}>
@@ -464,7 +467,7 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
             name="duration_min"
             type="number"
             min="1"
-            step="5"
+            step="1"
             defaultValue="30"
             required
             className="num"
@@ -477,7 +480,8 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
             name="price"
             type="text"
             inputMode="decimal"
-            placeholder="0"
+            required
+            placeholder="t.ex. 450"
             className="num"
             style={inputStyle}
           />
@@ -597,7 +601,7 @@ function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => 
             name="duration_min"
             type="number"
             min="1"
-            step="5"
+            step="1"
             defaultValue={service.duration_min}
             required
             className="num"

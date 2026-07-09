@@ -692,10 +692,12 @@ function LocationSection({
 
 /** Delete a staff member (deleteStaff). FK-guarded server-side — a member with
  *  bookings can't be hard-deleted; the action returns a clear "inaktivera"
- *  message, surfaced here. One consequence toast + refresh on success. */
+ *  message, surfaced here. Två-stegs-arm som tjänste-borttagningen (klick 1
+ *  armar "Säker? Ta bort permanent" + Ångra) — ett enda klick ska aldrig radera. */
 function DangerSection({ member, onDeleted }: { member: StaffCard; onDeleted: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
+  const [armed, setArmed] = useState(false)
   const [state, formAction, pending] = useActionState<ActionState, FormData>(deleteStaff, {})
 
   useEffect(() => {
@@ -709,11 +711,29 @@ function DangerSection({ member, onDeleted }: { member: StaffCard; onDeleted: ()
 
   return (
     <section style={{ borderTop: '1px solid var(--c-line)', paddingTop: 16 }}>
-      <form action={formAction}>
+      <form action={formAction} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input type="hidden" name="id" value={member.id} />
-        <Button variant="ghost" type="submit" icon="trash" size="sm" disabled={pending}>
-          {pending ? '…' : 'Ta bort medarbetare'}
-        </Button>
+        {armed ? (
+          <>
+            <Button
+              variant="ghost"
+              type="submit"
+              icon="trash"
+              size="sm"
+              disabled={pending}
+              style={{ color: 'var(--c-danger, #b3261e)', borderColor: 'var(--c-danger, #b3261e)' }}
+            >
+              {pending ? '…' : 'Säker? Ta bort permanent'}
+            </Button>
+            <Button variant="ghost" size="sm" type="button" onClick={() => setArmed(false)}>
+              Ångra
+            </Button>
+          </>
+        ) : (
+          <Button variant="ghost" type="button" icon="trash" size="sm" onClick={() => setArmed(true)}>
+            Ta bort medarbetare
+          </Button>
+        )}
       </form>
       {state.error && (
         <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>

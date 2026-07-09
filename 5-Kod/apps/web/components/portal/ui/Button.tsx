@@ -24,6 +24,8 @@ export function Button({
   style = {},
   className = '',
   onClick,
+  target,
+  rel,
 }: {
   children: ReactNode
   variant?: ButtonVariant
@@ -38,6 +40,9 @@ export function Button({
    *  use a Link there). Optional so server components can keep using Button
    *  without a handler. */
   onClick?: () => void
+  /** Anchor-attribut för href-formen (t.ex. öppna storefronten i ny flik). */
+  target?: string
+  rel?: string
 }) {
   const cls = `pbtn pbtn--${variant} pbtn--${size}${className ? ` ${className}` : ''}`
   const inner = (
@@ -49,7 +54,7 @@ export function Button({
 
   if (href) {
     return (
-      <Link href={href} className={cls} style={style}>
+      <Link href={href} className={cls} style={style} target={target} rel={rel}>
         {inner}
       </Link>
     )

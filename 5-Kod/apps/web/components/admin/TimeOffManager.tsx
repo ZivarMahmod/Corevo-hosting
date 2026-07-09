@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useRef } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   addStaffTimeOff,
@@ -83,6 +83,9 @@ function AddTimeOffForm({
 }) {
   const { notify } = useToast()
   const formRef = useRef<HTMLFormElement>(null)
+  // Från-datumet styr till-fältets min så ett bakvänt intervall stoppas redan i
+  // webbläsaren (servern validerar ändå).
+  const [fromDate, setFromDate] = useState('')
   const [state, formAction, pending] = useActionState<ActionState, FormData>(addStaffTimeOff, {})
 
   // Vakta på resultat-OBJEKTET (inte strängen): två identiska succéer i rad ger
@@ -94,6 +97,7 @@ function AddTimeOffForm({
     if (state.success) {
       notify(state.success, 'success')
       formRef.current?.reset()
+      setFromDate('')
       onDone()
     } else if (state.error) {
       notify(state.error, 'warning')
@@ -127,11 +131,17 @@ function AddTimeOffForm({
       </label>
       <label style={fieldStyle}>
         <span>Från (dag)</span>
-        <input name="from" type="date" required style={inputStyle} />
+        <input
+          name="from"
+          type="date"
+          required
+          style={inputStyle}
+          onChange={(e) => setFromDate(e.target.value)}
+        />
       </label>
       <label style={fieldStyle}>
         <span>Till (dag, inkl.)</span>
-        <input name="to" type="date" required style={inputStyle} />
+        <input name="to" type="date" required min={fromDate || undefined} style={inputStyle} />
       </label>
       <label style={{ ...fieldStyle, flex: '1 1 160px' }}>
         <span>Orsak (valfritt)</span>

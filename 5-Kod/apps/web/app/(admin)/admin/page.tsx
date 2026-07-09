@@ -159,8 +159,10 @@ export default async function AdminPage() {
         lede="Ditt kontrollcenter — följ dagen utan att behöva pyssla. Allt speglar verkligheten live."
       >
         <OpenSiteLink href={siteUrl}>Se din sida</OpenSiteLink>
-        <Button href="/admin/bokningar" variant="primary" icon="plus">
-          Ny bokning
+        {/* "Ny bokning" pekade på /admin/bokningar som INTE kan skapa bokningar —
+            tills admin-bokning är byggd är den ärliga vägen boka-flödet på sajten. */}
+        <Button href={siteUrl} variant="primary" icon="plus" target="_blank" rel="noreferrer">
+          Boka åt kund på din sida
         </Button>
       </PageHead>
 
@@ -173,8 +175,8 @@ export default async function AdminPage() {
           href="/admin/bokningar"
           tone="gold"
         />
-        <QuickAction icon="plus" title="Ny bokning" sub="Lägg in en tid manuellt" href="/admin/bokningar" />
-        <QuickAction icon="users" title="Lägg till kund" sub="Stabil kund-rad" href="/admin/kunder" />
+        <QuickAction icon="clock" title="Schema" sub="Veckan & frånvaro" href="/admin/scheman" />
+        <QuickAction icon="users" title="Dina kunder" sub="Återkommande & nya" href="/admin/kunder" />
         <QuickAction icon="external" title="Se din sida" sub={siteHost} href={siteUrl} external />
       </QuickActions>
 

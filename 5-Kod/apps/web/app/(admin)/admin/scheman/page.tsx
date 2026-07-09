@@ -26,6 +26,7 @@ import {
   type BoardCell,
 } from '@/components/admin/ScheduleWeekBoard'
 import { TimeOffManager, type TimeOffItem } from '@/components/admin/TimeOffManager'
+import { ScheduleLock } from '@/components/admin/ScheduleLock'
 import { PageHead, Card } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
@@ -291,48 +292,44 @@ export default async function SchedulesPage({
       {/* 3 ▸ MALLAR (grundtiderna): befintlig redigering per medarbetare.
           scrollMarginTop så #mallar-hoppet från en grid-rad inte hamnar under topbaren. */}
       <section id="mallar" style={{ marginTop: '2.5rem', scrollMarginTop: 90 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            gap: 16,
-            flexWrap: 'wrap',
-            marginBottom: 14,
-          }}
-        >
-          <div>
-            <span className="eyebrow" style={{ color: 'var(--c-gold-600)' }}>
-              Grundtider
-            </span>
-            <h2 className="h2" style={{ margin: '6px 0 0' }}>
-              Veckoschema (mall)
-            </h2>
-            <p className="small" style={{ margin: '4px 0 0', maxWidth: 560, color: 'var(--c-ink-3)' }}>
-              Mallen gäller ALLA veckor — bokbara starttider per veckodag, inte fasta arbetspass.
-              Avvikelser (semester, sjukdom) läggs som frånvaro ovan.
-            </p>
-          </div>
-          <ScheduleActions staffId={selected.id} />
+        <div style={{ marginBottom: 14 }}>
+          <span className="eyebrow" style={{ color: 'var(--c-gold-600)' }}>
+            Grundtider
+          </span>
+          <h2 className="h2" style={{ margin: '6px 0 0' }}>
+            Veckoschema (mall)
+          </h2>
+          <p className="small" style={{ margin: '4px 0 0', maxWidth: 560, color: 'var(--c-ink-3)' }}>
+            Mallen gäller ALLA veckor — bokbara starttider per veckodag, inte fasta arbetspass.
+            Avvikelser (semester, sjukdom) läggs som frånvaro ovan.
+          </p>
         </div>
 
-        <SlotManager
-          staffId={selected.id}
-          staff={staffChips}
-          rows={slots}
-          weekCols={weekCols}
-          locations={locations}
-          defaultLocationId={defaultLocationId}
-        />
+        {/* Grundtiderna läggs en gång — låset kräver ett uttryckligt "Lås upp"
+            (med bekräftelse + automatisk kopia) innan något går att ändra. */}
+        <ScheduleLock>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+            <ScheduleActions staffId={selected.id} />
+          </div>
 
-        {/* Arbetstider (öppet–stängt) — rastret de bokbara tiderna genereras ur. */}
-        <WorkingHoursEditor
-          staffId={selected.id}
-          staffName={selected.displayName}
-          rows={rows}
-          locations={locations}
-          defaultLocationId={defaultLocationId}
-        />
+          <SlotManager
+            staffId={selected.id}
+            staff={staffChips}
+            rows={slots}
+            weekCols={weekCols}
+            locations={locations}
+            defaultLocationId={defaultLocationId}
+          />
+
+          {/* Arbetstider (öppet–stängt) — rastret de bokbara tiderna genereras ur. */}
+          <WorkingHoursEditor
+            staffId={selected.id}
+            staffName={selected.displayName}
+            rows={rows}
+            locations={locations}
+            defaultLocationId={defaultLocationId}
+          />
+        </ScheduleLock>
       </section>
     </section>
   )

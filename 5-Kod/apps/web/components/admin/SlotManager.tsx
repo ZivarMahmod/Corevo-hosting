@@ -545,10 +545,11 @@ function AddSlot({
   )
 }
 
-// ── Header-actions: "Återställ mönster" (seed) + "Spara schema" (sync) ─────────
-// Ägs av page.tsx PageHead; SANNINGSLAGER: "Återställ mönster" regenererar tiderna
-// ur arbetstiderna (det riktiga "mönstret", seedStaffSlots), "Spara schema" är en
-// ärlig synk (varje ändring sparas redan direkt) — ingen fejkad batch-spara.
+// ── Header-action: fyll bokbara tider ur arbetstiderna (seedStaffSlots). ───────
+// Fd "Återställ mönster" + en fejkande "Spara schema"-knapp: spara-knappen är
+// BORTA (varje ×/+ sparas redan direkt — knappen toastade "sparat" utan att göra
+// något), och seeden heter det den GÖR så den inte krockar med schemalåsets
+// "Återställ till innan upplåsningen".
 export function ScheduleActions({ staffId }: { staffId: string }) {
   const router = useRouter()
   const { notify } = useToast()
@@ -556,9 +557,8 @@ export function ScheduleActions({ staffId }: { staffId: string }) {
     seedStaffSlots,
     {},
   )
-  const [syncing, startSync] = useTransition()
 
-  // Vakta på resultat-OBJEKTET (inte strängen) så två likadana "Återställ" alltid
+  // Vakta på resultat-OBJEKTET (inte strängen) så två likadana körningar alltid
   // ger en toast — samma identitets-vakt som AddSlot.
   const lastSeed = useRef(seedState)
   useEffect(() => {
@@ -573,28 +573,18 @@ export function ScheduleActions({ staffId }: { staffId: string }) {
   }, [seedState, notify, router])
 
   return (
-    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      <span className="small" style={{ color: 'var(--c-ink-3)' }}>
+        Varje ändring sparas direkt.
+      </span>
       <form action={seedAction} style={{ margin: 0 }}>
         <input type="hidden" name="staff_id" value={staffId} />
         {/* Standardsteg 15 min — samma som arbetstids-rastrets generering. */}
         <input type="hidden" name="step" value="15" />
         <Button variant="ghost" icon="undo" type="submit" disabled={seedPending}>
-          {seedPending ? 'Återställer…' : 'Återställ mönster'}
+          {seedPending ? 'Fyller…' : 'Fyll tider från arbetstiderna'}
         </Button>
       </form>
-      <Button
-        variant="primary"
-        icon="check"
-        disabled={syncing}
-        onClick={() =>
-          startSync(() => {
-            notify('Schemat är sparat — varje ändring sparas direkt.', 'success')
-            router.refresh()
-          })
-        }
-      >
-        {syncing ? 'Sparar…' : 'Spara schema'}
-      </Button>
     </div>
   )
 }

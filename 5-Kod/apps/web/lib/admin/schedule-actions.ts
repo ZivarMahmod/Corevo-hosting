@@ -99,3 +99,105 @@ export async function removeStaffTimeOff(_p: ActionState, fd: FormData): Promise
   revalidateTenant(ctx.tenant.slug)
   return { success: 'Frånvaro borttagen — tiderna öppnas igen i boka-flödet.' }
 }
+
+// ── Schema-lås med ångra (Zivar: tiderna läggs en gång och ska inte ändras av
+// misstag — "Lås upp" kräver bekräftelse, och allt kan återställas till exakt
+// som det var innan upplåsningen). Kopian tas VID upplåsningen och ligger i
+// tenant_settings.settings.schedule_backup (merge, aldrig clobber — settings är
+// co-owned jsonb). En kopia per tenant: nästa upplåsning skriver över förra.
+
+type BackupHourRow = {
+  staff_id: string
+  location_id: string | null
+  weekday: number
+  start_time: string
+  end_time: string
+}
+type BackupSlotRow = {
+  staff_id: string
+  location_id: string | null
+  weekday: number
+  start_time: string
+  active: boolean
+}
+type ScheduleBackup = { taken_at: string; working_hours: BackupHourRow[]; slots: BackupSlotRow[] }
+
+/** Ta en kopia av ALLA grundtider (arbetstider + bokbara starttider) för salongen.
+ *  Anropas när ägaren låser upp schemaredigeringen. */
+export async function unlockScheduleWithBackup(): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+  const supabase = await createClient()
+
+  const [{ data: hours, error: e1 }, { data: slots, error: e2 }] = await Promise.all([
+    supabase
+      .from('working_hours')
+      .select('staff_id, location_id, weekday, start_time, end_time')
+      .eq('tenant_id', ctx.tenant.id),
+    supabase
+      .from('working_hour_slots')
+      .select('staff_id, location_id, weekday, start_time, active')
+      .eq('tenant_id', ctx.tenant.id),
+  ])
+  if (e1 || e2) return { error: GENERIC }
+
+  const backup: ScheduleBackup = {
+    taken_at: new Date().toISOString(),
+    working_hours: (hours ?? []) as BackupHourRow[],
+    slots: (slots ?? []) as BackupSlotRow[],
+  }
+
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  const { error } = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: ctx.tenant.id, settings: { ...prev, schedule_backup: backup } }, { onConflict: 'tenant_id' })
+  if (error) return { error: GENERIC }
+
+  return { success: 'Upplåst. En kopia av tiderna är sparad — du kan alltid återställa.' }
+}
+
+/** Återställ grundtiderna till kopian som togs vid senaste upplåsningen. */
+export async function restoreScheduleBackup(): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+  const supabase = await createClient()
+
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  const backup = ((existing?.settings ?? {}) as { schedule_backup?: ScheduleBackup }).schedule_backup
+  if (!backup || !Array.isArray(backup.working_hours) || !Array.isArray(backup.slots)) {
+    return { error: 'Ingen sparad kopia finns att återställa till.' }
+  }
+
+  // Släng-och-återinsätt (raderna refereras inte av bokningar — bokade tider
+  // ligger som timestamps på bookings). Inte transaktionellt över PostgREST:
+  // om insert:en fallerar finns kopian kvar i settings och kan köras igen.
+  const del1 = await supabase.from('working_hour_slots').delete().eq('tenant_id', ctx.tenant.id)
+  const del2 = await supabase.from('working_hours').delete().eq('tenant_id', ctx.tenant.id)
+  if (del1.error || del2.error) return { error: GENERIC }
+
+  if (backup.working_hours.length > 0) {
+    const { error } = await supabase
+      .from('working_hours')
+      .insert(backup.working_hours.map((r) => ({ ...r, tenant_id: ctx.tenant.id })))
+    if (error) return { error: 'Återställningen misslyckades halvvägs — försök igen.' }
+  }
+  if (backup.slots.length > 0) {
+    const { error } = await supabase
+      .from('working_hour_slots')
+      .insert(backup.slots.map((r) => ({ ...r, tenant_id: ctx.tenant.id })))
+    if (error) return { error: 'Återställningen misslyckades halvvägs — försök igen.' }
+  }
+
+  revalidatePath('/admin/scheman')
+  revalidateTenant(ctx.tenant.slug)
+  return { success: 'Tiderna är återställda till som de var när du låste upp.' }
+}

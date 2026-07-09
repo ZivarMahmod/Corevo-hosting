@@ -85,6 +85,7 @@ export function SidaStudio({
   social,
   openingHours,
   bookingVariant,
+  canChangeTemplate = true,
 }: {
   tenantId: string
   previewPath: string
@@ -107,6 +108,9 @@ export function SidaStudio({
   /** Manuella öppettider (settings.opening_hours) — null = härleds ur scheman. */
   openingHours: { day: string; time: string }[] | null
   bookingVariant: BookingVariant
+  /** false för salon_admin: mall-byte är plattformens beslut — sektionen döljs
+   *  (och setTenantTheme nekar server-side). */
+  canChangeTemplate?: boolean
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [page, setPage] = useState<PageKey>('allmant')
@@ -261,10 +265,11 @@ export function SidaStudio({
         <nav style={pageRail} aria-label="Sidans delar">
           {PAGES.map((p) => {
             const on = p.key === page
+            const sub = p.key === 'allmant' && !canChangeTemplate ? 'Färger · typsnitt' : p.sub
             return (
               <button key={p.key} type="button" onClick={() => setPage(p.key)} aria-pressed={on} style={pageTab(on)}>
                 <span style={{ fontWeight: 650, fontSize: 13.5 }}>{p.label}</span>
-                <span style={{ fontSize: 10.5, color: on ? 'var(--c-gold-600)' : 'var(--c-ink-3)' }}>{p.sub}</span>
+                <span style={{ fontSize: 10.5, color: on ? 'var(--c-gold-600)' : 'var(--c-ink-3)' }}>{sub}</span>
               </button>
             )
           })}
@@ -272,25 +277,27 @@ export function SidaStudio({
 
         {page === 'allmant' ? (
           <>
-            <section className={styles.card}>
-              <h3 className={styles.cardHead}>Mall</h3>
-              <p className={styles.note}>
-                Klicka en mall för att <strong>förhandsvisa</strong> den till höger — den går
-                <strong> inte live</strong> förrän du klickar Publicera.
-              </p>
-              <ThemePicker
-                tenantId={tenantId}
-                current={templateKey}
-                onPreview={(theme) => {
-                  setPreviewTheme(theme === templateKey ? null : theme)
-                  reload()
-                }}
-                onPublished={() => {
-                  setPreviewTheme(null)
-                  reload()
-                }}
-              />
-            </section>
+            {canChangeTemplate ? (
+              <section className={styles.card}>
+                <h3 className={styles.cardHead}>Mall</h3>
+                <p className={styles.note}>
+                  Klicka en mall för att <strong>förhandsvisa</strong> den till höger — den går
+                  <strong> inte live</strong> förrän du klickar Publicera.
+                </p>
+                <ThemePicker
+                  tenantId={tenantId}
+                  current={templateKey}
+                  onPreview={(theme) => {
+                    setPreviewTheme(theme === templateKey ? null : theme)
+                    reload()
+                  }}
+                  onPublished={() => {
+                    setPreviewTheme(null)
+                    reload()
+                  }}
+                />
+              </section>
+            ) : null}
 
             <section className={styles.card}>
               <h3 className={styles.cardHead}>Salongsnamn</h3>
@@ -620,7 +627,7 @@ export function SidaStudio({
               {storefrontHost}
               <span style={{ color: 'var(--c-ink-3)' }}>{activePage.path || '/'}</span>
             </span>
-            <Badge tone="neutral">mall: {previewTheme ?? templateKey}</Badge>
+            {canChangeTemplate ? <Badge tone="neutral">mall: {previewTheme ?? templateKey}</Badge> : null}
           </div>
           <div className={styles.barSide}>
             <button type="button" className={styles.btn} onClick={reload} title="Ladda om previewen">
@@ -652,8 +659,11 @@ export function SidaStudio({
             <div className={styles.blocked}>
               <strong>Storefronten är pausad</strong>
               <p>
-                Salongen är inte aktiv, så den publika sidan är blockerad. Återaktivera salongen
-                i Drift för att förhandsvisa den.
+                {/* Drift-fliken finns bara i plattformens kundkort — kundens egen
+                    studio (canChangeTemplate=false) hänvisas till Corevo i stället. */}
+                {canChangeTemplate
+                  ? 'Salongen är inte aktiv, så den publika sidan är blockerad. Återaktivera salongen i Drift för att förhandsvisa den.'
+                  : 'Din sida är inte aktiv just nu, så förhandsvisningen är blockerad. Kontakta Corevo så aktiverar vi den igen.'}
               </p>
             </div>
           )}

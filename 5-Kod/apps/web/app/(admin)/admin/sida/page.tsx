@@ -19,8 +19,10 @@ const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
  * kundkort (Sida-fliken i /salonger/[id]), monterad på booking-hosten med
  * tenant BUNDEN TILL SESSIONEN. Zivar: "det jag ändrar ändras hos honom med" —
  * båda ytorna delar komponenter, actions (sidaCtx-dubbelguard) och preview-rutt,
- * så de kan aldrig glida isär. Salongsägaren redigerar mall, färger, typsnitt,
+ * så de kan aldrig glida isär. Salongsägaren redigerar färger, typsnitt,
  * texter, bilder, team, kontakt och öppettider med live-preview bredvid.
+ * Mall-byte är dock plattformens beslut: canChangeTemplate=false döljer
+ * sektionen här, och setTenantTheme nekar salon_admin server-side.
  */
 export default async function AdminSidaPage() {
   const user = await requirePortal('admin')
@@ -67,7 +69,7 @@ export default async function AdminSidaPage() {
     <>
       <PageHead
         title="Redigera sidan"
-        lede="Allt som syns på din hemsida — mall, färger, texter, bilder och kontakt — med förhandsvisning bredvid."
+        lede="Allt som syns på din hemsida — färger, texter, bilder och kontakt — med förhandsvisning bredvid."
       />
       <SidaStudio
         tenantId={row.id}
@@ -87,6 +89,7 @@ export default async function AdminSidaPage() {
         contactPhone={contactPhone}
         address={detail.primaryAddress}
         bookingVariant={operative.bookingVariant}
+        canChangeTemplate={false}
       />
     </>
   )

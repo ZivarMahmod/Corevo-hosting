@@ -15,6 +15,9 @@ import { reportActionError } from './observe'
 export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar salong.' }
+  // Mall-byte är ett plattformsbeslut (Zivar hjälper kunden) — salon_admin har inte
+  // ens kontrollen i sin studio, men staketet ska sitta server-side också.
+  if (!user.platformAdmin) return { error: 'Mallen byts av Corevo — hör av dig så hjälper vi dig.' }
 
   const theme = String(fd.get('theme') ?? '') as StorefrontTheme
   if (!STOREFRONT_THEMES.includes(theme)) return { error: 'Okänd mall.' }
