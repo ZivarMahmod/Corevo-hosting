@@ -27,7 +27,9 @@
    overlay-panelen och inline-sektionen). Re-uttrycker redesign-tokens ovanpå
    kontrakts-tokens (README §Theming "What to do") så tenantens färger styr:
    rust = accent, ink = fg, paper = bg. --fc-forest (success) är FAST semantik.
-   Prefixet fc- håller dem borta från back-office --c-*/--font-display (Playfair).
+   Prefixet fc- håller dem borta från back-office-tokens (--c-… och
+   --font-display/Playfair). OBS: skriv aldrig asterisk+snedstreck i denna
+   kommentar — det avslutar den i förtid och prod-minifiern kraschar.
    =========================================================================== */
 .fc-scope {
   --fc-rust: var(--color-accent, var(--color-primary, #BC4A1C));

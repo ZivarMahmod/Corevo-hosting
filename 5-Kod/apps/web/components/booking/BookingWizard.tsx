@@ -182,13 +182,18 @@ export function BookingWizard({
   // "Tiden togs precis"-notis: visas överst i steg 3 efter en krock; överlever
   // slot-uppdateringen så användaren förstår varför hen är tillbaka här.
   const [slotTakenNotice, setSlotTakenNotice] = useState<string | null>(null)
-  // Kalender-vyns månadsmarkör: index i calMonths (månader som 14-dagarsfönstret rör).
+  // Kalender-vyns månadsmarkör: index i calMonths (månader som bokningsfönstret rör).
   const [calCursor, setCalCursor] = useState(0)
 
+  // Bokningsfönstret (Zivar 2026-07-09: "borde kunna väljas månadsvis …
+  // åtminstone några månader fram"): 90 dagar ≈ 3 månader. Tiderna hämtas
+  // per vald dag (getAvailableSlots), så fönstret kostar inget förrän en dag
+  // klickas — motorn räknar godtyckligt långt fram ur veckoschema-mallen.
+  const BOOKING_WINDOW_DAYS = 90
   const days = useMemo(() => {
     const out: Date[] = []
     const base = new Date()
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < BOOKING_WINDOW_DAYS; i++) {
       const d = new Date(base)
       d.setDate(base.getDate() + i)
       out.push(d)
@@ -821,7 +826,7 @@ export function BookingWizard({
   }
 
   // ── Kalender-vyn (steg 3, pickerMode='calendar') ────────────────────────────
-  // Månadskalender över bokningsfönstret (days, 14 dagar): förflutna dagar och
+  // Månadskalender över bokningsfönstret (days, BOOKING_WINDOW_DAYS): förflutna dagar och
   // dagar bortom fönstret är disabled/faded; availability-dot sätts på ALLA
   // bokningsbara fönster-dagar (pragmatiskt beslut — getAvailableSlots är per dag,
   // N anrop för en månad vore oärligt dyrt; tomma dagar visar ärligt tom-state
