@@ -88,3 +88,39 @@ export function readBookingMode(settings: unknown): 'wizard' | 'compact' {
   const v = readBookingVariant(settings)
   return v === 'compact' || v === 'inline' ? 'compact' : 'wizard'
 }
+
+// ── Redesign-prefs (design-paketet "Frisörbokningsformulär redesign") ─────────
+// Två nya salongs-valbara axlar bredvid booking.variant, samma råläs-seam:
+//   settings.booking.pickerMode   — 'calendar' (månadskalender) | 'strip' (dag-remsa)
+//   settings.booking.staffAvatars — 'foto' | 'initialer' | 'namn'
+// Okänt/osatt → default (calendar / initialer). 'foto' faller tillbaka till
+// initialer i UI:t för medarbetare utan avatar_url — det är render-logik, inte
+// läs-logik.
+
+export const PICKER_MODES = ['calendar', 'strip'] as const
+export type PickerMode = (typeof PICKER_MODES)[number]
+
+export const STAFF_AVATAR_MODES = ['foto', 'initialer', 'namn'] as const
+export type StaffAvatarMode = (typeof STAFF_AVATAR_MODES)[number]
+
+function readBookingPref(settings: unknown, key: string): unknown {
+  if (settings && typeof settings === 'object') {
+    const booking = (settings as Record<string, unknown>).booking
+    if (booking && typeof booking === 'object') return (booking as Record<string, unknown>)[key]
+  }
+  return undefined
+}
+
+export function readPickerMode(settings: unknown): PickerMode {
+  const v = readBookingPref(settings, 'pickerMode')
+  return typeof v === 'string' && (PICKER_MODES as readonly string[]).includes(v)
+    ? (v as PickerMode)
+    : 'calendar'
+}
+
+export function readStaffAvatarMode(settings: unknown): StaffAvatarMode {
+  const v = readBookingPref(settings, 'staffAvatars')
+  return typeof v === 'string' && (STAFF_AVATAR_MODES as readonly string[]).includes(v)
+    ? (v as StaffAvatarMode)
+    : 'initialer'
+}

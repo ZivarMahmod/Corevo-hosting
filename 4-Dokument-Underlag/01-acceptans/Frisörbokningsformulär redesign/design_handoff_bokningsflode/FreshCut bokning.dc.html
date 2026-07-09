@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Franklin:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  a{color:var(--rust);text-decoration:none}
+  a:hover{color:var(--rust-deep)}
+  input,button,textarea{font-family:inherit}
+  @keyframes fcFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes fcCenter{from{opacity:0;transform:translate(-50%,-46%) scale(.97)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  @keyframes fcCenterM{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+  @keyframes fcRight{from{transform:translateX(100%)}to{transform:none}}
+  @keyframes fcSheet{from{transform:translateY(100%)}to{transform:none}}
+  @keyframes fcScrim{from{opacity:0}to{opacity:1}}
+  @keyframes fcStamp{0%{opacity:0;transform:rotate(-9deg) scale(1.5)}55%{opacity:1;transform:rotate(-9deg) scale(.9)}100%{opacity:1;transform:rotate(-9deg) scale(1)}}
+  @keyframes fcPerf{from{opacity:0}to{opacity:1}}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(33,28,23,.2)}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<div style="--ink:#211C17;--ink2:#6A5F52;--ink3:#9E9284;--paper:#F3EDDF;--paper2:#EAE1CF;--surface:#FDFBF5;--line:#E4DAC6;--line2:#D2C4A9;--rust:#BC4A1C;--rust-deep:#9C3D15;--rust-soft:#F2E0D0;--forest:#2E5A46;--forest-soft:#E1EBE3;--font-display:'Libre Caslon Display',Georgia,serif;--font-body:'Libre Franklin',system-ui,sans-serif;--font-mono:'IBM Plex Mono',ui-monospace,monospace;min-height:100vh;background:var(--paper);background-image:radial-gradient(120% 80% at 50% -10%,rgba(255,255,255,.5),transparent 60%);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;padding-bottom:56px">
+
+  <!-- ══ SHOWROOM HEADER ══ -->
+  <header style="max-width:1280px;margin:0 auto;padding:26px 28px 14px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px">
+    <div>
+      <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;color:var(--rust);margin-bottom:8px">Showroom · Bokningsflöde</div>
+      <h1 style="margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(30px,4.2vw,50px);line-height:.98;letter-spacing:-.01em;color:var(--ink)">FreshCut&nbsp;— boka tid</h1>
+      <p style="margin:8px 0 0;max-width:52ch;font-size:14.5px;line-height:1.55;color:var(--ink2)">Fyra sätt att boka, ny design. Växla sätt, vy och alternativ nedan — eller ställ dem sida vid sida.</p>
+    </div>
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink3);letter-spacing:.04em;text-align:right;line-height:1.7">
+      <div>LINKÖPING · EST. 2019</div>
+      <div>4 SÄTT · SKÄRM + MEJL · AVBOKNING</div>
+    </div>
+  </header>
+
+  <!-- ══ CONTROL BAR ══ -->
+  <div style="position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:8px">
+    <div style="max-width:1280px;margin:0 auto;padding:14px 28px;display:flex;flex-wrap:wrap;gap:22px 30px;align-items:flex-start">
+
+      <div style="min-width:250px">
+        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px">Bokningssätt</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ methodOptions }}" as="m" hint-placeholder-count="4">
+            <button type="button" onClick="{{ m.onClick }}" style="{{ m.style }}" title="{{ m.desc }}">{{ m.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px">Vy</div>
+        <div style="display:flex;gap:6px">
+          <sc-for list="{{ viewportOptions }}" as="v" hint-placeholder-count="2">
+            <button type="button" onClick="{{ v.onClick }}" style="{{ v.style }}">{{ v.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px">Tid-väljare</div>
+        <div style="display:flex;gap:6px">
+          <sc-for list="{{ pickerOptions }}" as="p" hint-placeholder-count="2">
+            <button type="button" onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px">Barberare</div>
+        <div style="display:flex;gap:6px">
+          <sc-for list="{{ staffOptions }}" as="s" hint-placeholder-count="3">
+            <button type="button" onClick="{{ s.onClick }}" style="{{ s.style }}">{{ s.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="margin-left:auto">
+        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px">Visa</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <sc-for list="{{ jumpOptions }}" as="j" hint-placeholder-count="5">
+            <button type="button" onClick="{{ j.onClick }}" style="{{ j.style }}">{{ j.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ STAGE ══ -->
+  <main style="max-width:1280px;margin:0 auto;padding:34px 20px 0;display:flex;justify-content:center">
+
+    <!-- ── FLOW / CONFIRM (device) ── -->
+    <sc-if value="{{ isDevice }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ frameStyle }}">
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:0 0 auto;height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--ink)">
+          <span>9:41</span>
+          <span style="position:absolute;left:50%;top:9px;transform:translateX(-50%);width:96px;height:20px;background:#17130E;border-radius:0 0 14px 14px"></span>
+          <span style="letter-spacing:.05em">FreshCut</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:0 0 auto;height:42px;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--paper2)">
+          <span style="width:11px;height:11px;border-radius:50%;background:#E0685A"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#E7B14C"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#7FB37A"></span>
+          <span style="flex:1;margin:0 10px;max-width:340px;height:24px;border:1px solid var(--line2);background:var(--surface);border-radius:0;display:flex;align-items:center;padding:0 12px;font-family:var(--font-mono);font-size:11px;color:var(--ink2)">freshcut.se/boka</span>
+        </div>
+      </sc-if>
+
+      <!-- SCREEN -->
+      <div style="{{ screenStyle }}">
+        <!-- storefront backdrop (scrolls for inline; static for overlay) -->
+        <div style="{{ sfStyle }}">
+          <!-- utility bar -->
+          <div style="background:var(--ink);color:var(--paper);text-align:center;padding:9px 12px;font-family:var(--font-mono);font-size:10.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase">Drop in eller boka online</div>
+          <!-- nav -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--surface)">
+            <span style="font-family:var(--font-display);font-size:24px;letter-spacing:.01em">FreshCut</span>
+            <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+              <nav style="display:flex;gap:22px;align-items:center;font-size:13.5px;font-weight:500;color:var(--ink2)">
+                <span>Hem</span><span>Tjänster</span><span>Om oss</span><span>Kontakt</span>
+                <span style="background:var(--rust);color:#fff;padding:9px 18px;font-weight:600;font-size:13px">Boka tid</span>
+              </nav>
+            </sc-if>
+            <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+              <span style="width:26px;height:16px;display:flex;flex-direction:column;justify-content:space-between"><span style="height:2px;background:var(--ink)"></span><span style="height:2px;background:var(--ink)"></span><span style="height:2px;background:var(--ink)"></span></span>
+            </sc-if>
+          </div>
+          <!-- hero -->
+          <div style="{{ heroStyle }}">
+            <div style="position:absolute;inset:0">
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="fc-hero" src="https://picsum.photos/seed/freshcut-barbershop/1100/680" shape="rect" fit="cover" placeholder="Släpp en salongsbild" hint-size="100%,100%"></x-import>
+            </div>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,19,14,.28),rgba(23,19,14,.72));pointer-events:none"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:26px 24px;color:var(--paper);pointer-events:none">
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;opacity:.85;margin-bottom:8px">Barbershop · Linköping</div>
+              <div style="font-family:var(--font-display);font-size:clamp(30px,6vw,46px);line-height:.98">Skarpa klipp,<br>varm handduk.</div>
+            </div>
+          </div>
+          <!-- embed intro (inline only) -->
+          <sc-if value="{{ isEmbed }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:30px 22px 6px;text-align:center;background:var(--paper2)">
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--rust);margin-bottom:8px">Boka online</div>
+              <div style="font-family:var(--font-display);font-size:clamp(26px,4.5vw,36px);line-height:1">Hitta din tid</div>
+            </div>
+          </sc-if>
+
+          <!-- scrim (overlay only) -->
+          <sc-if value="{{ isOverlay }}" hint-placeholder-val="{{ true }}">
+            <div style="position:absolute;inset:0;background:rgba(23,17,11,.5);backdrop-filter:blur(2px);animation:fcScrim .3s ease;z-index:5"></div>
+          </sc-if>
+
+          <!-- ══ BOOKING PANEL (shared: steps / compact / ticket) ══ -->
+          <div style="{{ panelStyle }}">
+
+            <!-- panel top: brand + close (overlay) -->
+            <sc-if value="{{ isOverlay }}" hint-placeholder-val="{{ true }}">
+              <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)">
+                <span style="display:flex;align-items:baseline;gap:10px"><span style="font-family:var(--font-display);font-size:19px">FreshCut</span><span style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:.2em;color:var(--ink3)">BOKA TID</span></span>
+                <span style="width:32px;height:32px;border:1.5px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink2);cursor:pointer">✕</span>
+              </div>
+            </sc-if>
+
+            <!-- BODY (scroll) -->
+            <div style="{{ panelBodyStyle }}">
+
+              <!-- ─ CONFIRMATION TICKET ─ -->
+              <sc-if value="{{ submitted }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:26px 22px 30px;display:flex;flex-direction:column;align-items:center;text-align:center">
+                  <div style="position:relative;margin-bottom:20px">
+                    <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.16em;color:var(--forest)">✓ BOKAT</div>
+                  </div>
+                  <div style="font-family:var(--font-display);font-size:30px;line-height:1.02;margin-bottom:4px">Vi ses, {{ booking.firstName }}!</div>
+                  <p style="margin:0 0 22px;font-size:14px;color:var(--ink2);max-width:34ch">Din tid är bokad. En bekräftelse är på väg till {{ booking.email }}.</p>
+
+                  <!-- the stub -->
+                  <div style="position:relative;width:100%;max-width:330px;background:var(--surface);border:1.5px solid var(--ink);text-align:left">
+                    <div style="position:absolute;top:14px;right:-11px;transform:rotate(-9deg);animation:fcStamp .5s cubic-bezier(.2,.9,.3,1.2) .15s both;border:2px solid var(--rust);color:var(--rust);font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.12em;padding:5px 8px;border-radius:2px;background:var(--surface)">BEKRÄFTAD</div>
+                    <div style="padding:16px 18px;border-bottom:2px dashed var(--line2);display:flex;align-items:center;justify-content:space-between">
+                      <span style="font-family:var(--font-display);font-size:20px">FreshCut</span>
+                      <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink3)">{{ booking.ref }}</span>
+                    </div>
+                    <div style="padding:16px 18px;display:grid;grid-template-columns:auto 1fr;gap:11px 16px">
+                      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);padding-top:2px">Tjänst</span>
+                      <span style="font-weight:600;font-size:14px">{{ booking.service }}</span>
+                      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);padding-top:2px">Barberare</span>
+                      <span style="font-weight:600;font-size:14px">{{ booking.staff }}</span>
+                      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);padding-top:2px">Tid</span>
+                      <span style="font-weight:600;font-size:14px">{{ booking.longDate }}<br><span style="font-family:var(--font-mono);font-size:13px">kl. {{ booking.time }}</span></span>
+                    </div>
+                    <div style="padding:13px 18px;border-top:2px dashed var(--line2);display:flex;align-items:center;justify-content:space-between">
+                      <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)">Att betala på plats</span>
+                      <span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--rust)">{{ booking.priceLabel }}</span>
+                    </div>
+                  </div>
+
+                  <div style="display:flex;flex-direction:column;gap:9px;width:100%;max-width:330px;margin-top:22px">
+                    <button type="button" style="width:100%;padding:13px;background:var(--ink);color:var(--paper);border:none;font-weight:600;font-size:14px;cursor:pointer;letter-spacing:.02em" style-hover="background:#000">Lägg till i kalender</button>
+                    <button type="button" onClick="{{ resetFlow }}" style="width:100%;padding:13px;background:transparent;color:var(--ink2);border:1.5px solid var(--line2);font-weight:600;font-size:14px;cursor:pointer" style-hover="border-color:var(--ink)">Boka en till tid</button>
+                    <button type="button" onClick="{{ jumpAvboka }}" style="width:100%;padding:6px;background:none;border:none;color:var(--ink2);font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;margin-top:2px">Behöver du ändra? Avboka eller boka om</button>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- ─ WIZARD STEPS ─ -->
+              <sc-if value="{{ showSteps }}" hint-placeholder-val="{{ true }}">
+                <div style="padding:20px 22px 8px">
+                  <!-- progress -->
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px">
+                    <span style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3)">{{ stepLabel }}</span>
+                    <span style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink3)">{{ step }} / 5</span>
+                  </div>
+                  <div style="display:flex;gap:5px;margin-bottom:18px">
+                    <sc-for list="{{ progressSegs }}" as="seg" hint-placeholder-count="5">
+                      <span style="{{ seg.style }}"></span>
+                    </sc-for>
+                  </div>
+                  <h2 style="margin:0 0 4px;font-family:var(--font-display);font-weight:400;font-size:clamp(26px,6vw,34px);line-height:1.02;letter-spacing:-.01em">{{ stepTitle }}</h2>
+                  <sc-if value="{{ recapText }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:var(--font-mono);font-size:11px;color:var(--rust);margin-top:6px;letter-spacing:.02em">{{ recapText }}</div>
+                  </sc-if>
+                </div>
+
+                <div style="{{ stepScrollStyle }}">
+                  <!-- STEP 1: service -->
+                  <sc-if value="{{ atStep1 }}" hint-placeholder-val="{{ true }}">
+                    <div style="animation:fcFadeUp .3s ease">
+                      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);margin:0 0 10px 2px">Hår &amp; skägg</div>
+                      <div style="display:flex;flex-direction:column;gap:9px">
+                        <sc-for list="{{ services }}" as="sv" hint-placeholder-count="5">
+                          <button type="button" onClick="{{ sv.onClick }}" style="position:relative;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--line2);padding:15px 17px;display:flex;justify-content:space-between;align-items:center;gap:14px;cursor:pointer;transition:border-color .12s ease" style-hover="border-color:var(--ink)">
+                            <span style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                              <span style="display:flex;align-items:center;gap:8px"><span style="font-weight:600;font-size:15px">{{ sv.name }}</span><sc-if value="{{ sv.popular }}" hint-placeholder-val="{{ false }}"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.1em;color:var(--rust);border:1px solid var(--rust);padding:2px 5px">POPULÄR</span></sc-if></span>
+                              <sc-if value="{{ sv.desc }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--ink2);line-height:1.4">{{ sv.desc }}</span></sc-if>
+                            </span>
+                            <span style="text-align:right;flex:0 0 auto;font-family:var(--font-mono)"><span style="display:block;font-size:15px;font-weight:600;color:var(--rust)">{{ sv.priceLabel }}</span><span style="display:block;font-size:10.5px;color:var(--ink3);margin-top:2px">{{ sv.durLabel }}</span></span>
+                            <sc-if value="{{ sv.selected }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:2px solid var(--rust);pointer-events:none"></span></sc-if>
+                          </button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <!-- STEP 2: staff -->
+                  <sc-if value="{{ atStep2 }}" hint-placeholder-val="{{ false }}">
+                    <div style="animation:fcFadeUp .3s ease;display:flex;flex-direction:column;gap:9px">
+                      <sc-for list="{{ staff }}" as="st" hint-placeholder-count="5">
+                        <button type="button" onClick="{{ st.onClick }}" style="position:relative;width:100%;text-align:left;background:var(--surface);border:1.5px solid var(--line2);padding:13px 15px;display:flex;align-items:center;gap:13px;cursor:pointer;transition:border-color .12s ease;min-height:64px" style-hover="border-color:var(--ink)">
+                          <!-- avatar: foto -->
+                          <sc-if value="{{ st.showFoto }}" hint-placeholder-val="{{ false }}">
+                            <sc-if value="{{ st.isAny }}" hint-placeholder-val="{{ false }}"><span style="flex:0 0 auto;width:46px;height:46px;border-radius:50%;background:var(--rust-soft);color:var(--rust);display:flex;align-items:center;justify-content:center;font-size:18px">✦</span></sc-if>
+                            <sc-if value="{{ st.notAny }}" hint-placeholder-val="{{ true }}"><span style="flex:0 0 auto;width:46px;height:46px;border-radius:50%;overflow:hidden;display:block"><x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ st.slotId }}" src="{{ st.photo }}" shape="circle" fit="cover" placeholder="Foto" hint-size="46px,46px"></x-import></span></sc-if>
+                          </sc-if>
+                          <!-- avatar: initial -->
+                          <sc-if value="{{ st.showInitial }}" hint-placeholder-val="{{ true }}">
+                            <span style="{{ st.discStyle }}">{{ st.initial }}</span>
+                          </sc-if>
+                          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                            <span style="font-weight:600;font-size:15px">{{ st.name }}</span>
+                            <span style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">{{ st.role }}</span>
+                          </span>
+                          <sc-if value="{{ st.isAny }}" hint-placeholder-val="{{ false }}"><span style="flex:0 0 auto;font-family:var(--font-mono);font-size:10.5px;color:var(--rust);letter-spacing:.04em">FÖRSTA LEDIGA</span></sc-if>
+                          <sc-if value="{{ st.selected }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;inset:-1.5px;border:2px solid var(--rust);pointer-events:none"></span><span style="position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:var(--rust);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px">✓</span></sc-if>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <!-- STEP 3: time -->
+                  <sc-if value="{{ atStep3 }}" hint-placeholder-val="{{ false }}">
+                    <div style="animation:fcFadeUp .3s ease">
+                      <!-- day strip -->
+                      <sc-if value="{{ pickerStrip }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;scroll-snap-type:x mandatory">
+                          <sc-for list="{{ days }}" as="d" hint-placeholder-count="7">
+                            <button type="button" onClick="{{ d.onClick }}" style="{{ d.style }}" style-hover="border-color:var(--ink)"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.75">{{ d.dow }}</span><span style="font-size:19px;font-weight:600;font-family:var(--font-display)">{{ d.dom }}</span><span style="font-family:var(--font-mono);font-size:9px;opacity:.6">{{ d.mon }}</span></button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                      <!-- calendar -->
+                      <sc-if value="{{ pickerCalendar }}" hint-placeholder-val="{{ true }}">
+                        <div style="border:1.5px solid var(--line2);background:var(--surface);padding:14px;margin-bottom:14px">
+                          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                            <button type="button" onClick="{{ calPrev }}" style="{{ calPrevStyle }}">‹</button>
+                            <span style="font-family:var(--font-display);font-size:17px">{{ calTitle }}</span>
+                            <button type="button" onClick="{{ calNext }}" style="{{ calNextStyle }}">›</button>
+                          </div>
+                          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;font-family:var(--font-mono);font-size:9.5px;color:var(--ink3);text-align:center;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em"><span>Mån</span><span>Tis</span><span>Ons</span><span>Tors</span><span>Fre</span><span>Lör</span><span>Sön</span></div>
+                          <sc-for list="{{ calWeeks }}" as="w" hint-placeholder-count="5">
+                            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px">
+                              <sc-for list="{{ w.cells }}" as="c" hint-placeholder-count="7">
+                                <sc-if value="{{ c.empty }}" hint-placeholder-val="{{ false }}"><span></span></sc-if>
+                                <sc-if value="{{ c.day }}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.day }}<sc-if value="{{ c.dot }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.7"></span></sc-if></button></sc-if>
+                              </sc-for>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+
+                      <!-- slots -->
+                      <sc-if value="{{ hasSlots }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:flex;flex-direction:column;gap:14px">
+                          <sc-for list="{{ slotGroups }}" as="g" hint-placeholder-count="3">
+                            <sc-if value="{{ g.has }}" hint-placeholder-val="{{ true }}">
+                              <div>
+                                <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:0 0 8px 2px">{{ g.label }}</div>
+                                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px">
+                                  <sc-for list="{{ g.items }}" as="sl" hint-placeholder-count="6">
+                                    <button type="button" onClick="{{ sl.onClick }}" style="{{ sl.style }}" style-hover="border-color:var(--ink)"><span style="font-size:14px;font-weight:600">{{ sl.time }}</span><sc-if value="{{ sl.showStaff }}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;opacity:.7;font-family:var(--font-body);font-weight:500">{{ sl.staffName }}</span></sc-if></button>
+                                  </sc-for>
+                                </div>
+                              </div>
+                            </sc-if>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ noSlots }}" hint-placeholder-val="{{ false }}">
+                        <div style="text-align:center;padding:34px 16px;color:var(--ink2)"><div style="font-family:var(--font-mono);font-size:34px;color:var(--line2)">—</div><p style="margin:8px 0 0;font-size:14px">Inga lediga tider den dagen.<br>Prova en annan dag.</p></div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+
+                  <!-- STEP 4: details -->
+                  <sc-if value="{{ atStep4 }}" hint-placeholder-val="{{ false }}">
+                    <div style="animation:fcFadeUp .3s ease">
+                      <div style="background:var(--paper2);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;border-left:3px solid var(--rust)">
+                        <span style="display:flex;flex-direction:column;gap:3px"><span style="font-weight:600;font-size:14px">{{ booking.service }}</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--ink2)">{{ booking.time }} · {{ booking.staff }} · {{ booking.durLabel }}</span></span>
+                        <span style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--rust)">{{ booking.priceLabel }}</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:14px">
+                        <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)">Namn</span><input value="{{ form.name }}" onInput="{{ onName }}" placeholder="För- och efternamn" style="padding:12px 14px;border:1.5px solid var(--line2);background:var(--surface);font-size:15px;color:var(--ink);outline:none" style-focus="border-color:var(--rust)"></label>
+                        <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)">E-post</span><input value="{{ form.email }}" onInput="{{ onEmail }}" type="email" placeholder="du@exempel.se" style="padding:12px 14px;border:1.5px solid var(--line2);background:var(--surface);font-size:15px;color:var(--ink);outline:none" style-focus="border-color:var(--rust)"></label>
+                        <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)">Telefon</span><input value="{{ form.phone }}" onInput="{{ onPhone }}" type="tel" placeholder="070-000 00 00" style="padding:12px 14px;border:1.5px solid var(--line2);background:var(--surface);font-size:15px;color:var(--ink);outline:none" style-focus="border-color:var(--rust)"></label>
+                        <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)">Meddelande <span style="text-transform:none;letter-spacing:0;color:var(--ink3)">(valfritt)</span></span><input value="{{ form.note }}" onInput="{{ onNote }}" placeholder="Önskemål till din barberare" style="padding:12px 14px;border:1.5px solid var(--line2);background:var(--surface);font-size:15px;color:var(--ink);outline:none" style-focus="border-color:var(--rust)"></label>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+
+                <!-- action bar -->
+                <div style="flex:0 0 auto;display:flex;gap:9px;padding:14px 20px;border-top:1px solid var(--line);background:var(--surface)">
+                  <sc-if value="{{ canBack }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ back }}" style="flex:0 0 auto;width:52px;border:1.5px solid var(--line2);background:transparent;color:var(--ink);font-size:18px;cursor:pointer" style-hover="border-color:var(--ink)">←</button>
+                  </sc-if>
+                  <sc-if value="{{ canContinue }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ next }}" style="flex:1;padding:15px;background:var(--rust);color:#fff;border:none;font-weight:600;font-size:15px;cursor:pointer;letter-spacing:.02em;transition:background .15s ease" style-hover="background:var(--rust-deep)">{{ ctaLabel }}</button>
+                  </sc-if>
+                  <sc-if value="{{ cantContinue }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" disabled style="flex:1;padding:15px;background:var(--paper2);color:var(--ink3);border:none;font-weight:600;font-size:15px;cursor:not-allowed">{{ ctaLabel }}</button>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <!-- ─ COMPACT (snabbboka / inline) ─ -->
+              <sc-if value="{{ showCompact }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:20px 22px 8px">
+                  <h2 style="margin:0 0 3px;font-family:var(--font-display);font-weight:400;font-size:clamp(24px,5.5vw,32px);line-height:1.02">Snabbboka</h2>
+                  <p style="margin:0;font-size:13px;color:var(--ink2)">Allt på en skärm — för dig som vet vad du vill.</p>
+                </div>
+                <div style="{{ stepScrollStyle }}">
+                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:0 0 8px 2px">Tjänst</div>
+                  <div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:10px">
+                    <sc-for list="{{ serviceChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ c.onClick }}" style="{{ c.style }}"><span>{{ c.name }}</span><span style="font-family:var(--font-mono);font-size:11px;opacity:.8">{{ c.priceLabel }}</span></button></sc-for>
+                  </div>
+                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:14px 0 8px 2px">Barberare</div>
+                  <div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:10px">
+                    <sc-for list="{{ staffChips }}" as="c" hint-placeholder-count="5"><button type="button" onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.name }}</button></sc-for>
+                  </div>
+                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:14px 0 8px 2px">Dag</div>
+                  <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px">
+                    <sc-for list="{{ days }}" as="d" hint-placeholder-count="7"><button type="button" onClick="{{ d.onClick }}" style="{{ d.style }}"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.75">{{ d.dow }}</span><span style="font-size:18px;font-weight:600;font-family:var(--font-display)">{{ d.dom }}</span></button></sc-for>
+                  </div>
+                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:14px 0 8px 2px">Tid</div>
+                  <sc-if value="{{ hasSlots }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px">
+                      <sc-for list="{{ slotsFlat }}" as="sl" hint-placeholder-count="8"><button type="button" onClick="{{ sl.onClick }}" style="{{ sl.style }}"><span style="font-size:13px;font-weight:600">{{ sl.time }}</span><sc-if value="{{ sl.showStaff }}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;opacity:.7;font-family:var(--font-body);font-weight:500">{{ sl.staffName }}</span></sc-if></button></sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ noSlots }}" hint-placeholder-val="{{ false }}"><p style="margin:2px 0 0;font-size:13px;color:var(--ink2)">Inga lediga tider den dagen — välj en annan.</p></sc-if>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:18px">
+                    <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)">Namn</span><input value="{{ form.name }}" onInput="{{ onName }}" style="padding:11px 13px;border:1.5px solid var(--line2);background:var(--surface);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--rust)"></label>
+                    <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)">Telefon</span><input value="{{ form.phone }}" onInput="{{ onPhone }}" type="tel" style="padding:11px 13px;border:1.5px solid var(--line2);background:var(--surface);font-size:14px;color:var(--ink);outline:none" style-focus="border-color:var(--rust)"></label>
+                  </div>
+                </div>
+                <div style="flex:0 0 auto;padding:14px 20px;border-top:1px solid var(--line);background:var(--surface)">
+                  <sc-if value="{{ compactReady }}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ next }}" style="width:100%;padding:15px;background:var(--rust);color:#fff;border:none;font-weight:600;font-size:15px;cursor:pointer;display:flex;flex-direction:column;gap:2px;align-items:center" style-hover="background:var(--rust-deep)"><span>Boka tid</span><span style="font-family:var(--font-mono);font-size:10px;font-weight:500;opacity:.85">{{ compactSummary }}</span></button></sc-if>
+                  <sc-if value="{{ compactNotReady }}" hint-placeholder-val="{{ true }}"><button type="button" disabled style="width:100%;padding:15px;background:var(--paper2);color:var(--ink3);border:none;font-weight:600;font-size:15px;cursor:not-allowed;display:flex;flex-direction:column;gap:2px;align-items:center"><span>Boka tid</span><span style="font-family:var(--font-mono);font-size:10px;font-weight:500">Välj tjänst, tid & fyll i namn + telefon</span></button></sc-if>
+                </div>
+              </sc-if>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ══ EMAIL PREVIEW ══ -->
+    <sc-if value="{{ isEmail }}" hint-placeholder-val="{{ false }}">
+      <div style="width:min(720px,100%);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line2);box-shadow:0 40px 90px -50px rgba(33,28,23,.45);max-height:calc(100vh - 190px);overflow:hidden">
+        <div style="flex:0 0 auto;display:flex;align-items:center;gap:9px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--paper2)">
+          <span style="width:11px;height:11px;border-radius:50%;background:#E0685A"></span><span style="width:11px;height:11px;border-radius:50%;background:#E7B14C"></span><span style="width:11px;height:11px;border-radius:50%;background:#7FB37A"></span>
+          <span style="margin-left:8px;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">Inkorg · 1 nytt</span>
+        </div>
+        <div style="flex:0 0 auto;padding:16px 22px;border-bottom:1px solid var(--line)">
+          <div style="font-family:var(--font-display);font-size:19px;margin-bottom:9px">Bokningsbekräftelse — FreshCut</div>
+          <div style="display:flex;gap:9px;align-items:center;font-family:var(--font-mono);font-size:11px;color:var(--ink2)"><span style="width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:13px">F</span><span>FreshCut &lt;bokning@freshcut.se&gt;</span></div>
+        </div>
+        <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;background:#E8E1D2;padding:28px 16px">
+          <div style="max-width:520px;margin:0 auto;background:var(--paper);border:1px solid var(--line2)">
+            <div style="height:6px;background:var(--ink)"></div>
+            <div style="padding:30px 30px 26px">
+              <div style="font-family:var(--font-display);font-size:24px;margin-bottom:22px">FreshCut</div>
+              <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);margin-bottom:11px">Bokning bekräftad</div>
+              <div style="font-family:var(--font-display);font-size:27px;line-height:1.06;margin-bottom:14px">Vi ses, {{ booking.firstName }}!</div>
+              <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:var(--ink2)">Tack för din bokning. Här är din tid — visa gärna den här biljetten när du kommer.</p>
+              <div style="border:1.5px solid var(--ink);background:var(--surface)">
+                <div style="padding:14px 18px;border-bottom:2px dashed var(--line2);display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--font-display);font-size:18px">FreshCut</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--ink3)">{{ booking.ref }}</span></div>
+                <div style="padding:15px 18px;display:grid;grid-template-columns:auto 1fr;gap:11px 16px">
+                  <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">Behandling</span><span style="font-weight:600;font-size:14px">{{ booking.service }}</span>
+                  <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">Barberare</span><span style="font-weight:600;font-size:14px">{{ booking.staff }}</span>
+                  <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">Tid</span><span style="font-weight:600;font-size:14px">{{ booking.longDate }} · kl. {{ booking.time }}</span>
+                </div>
+                <div style="padding:12px 18px;border-top:2px dashed var(--line2);display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">Pris (på plats)</span><span style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--rust)">{{ booking.priceLabel }}</span></div>
+              </div>
+              <div style="margin:22px 0 0"><span style="display:inline-block;background:var(--rust);color:#fff;padding:13px 24px;font-weight:600;font-size:14px">Avboka eller ändra din tid</span></div>
+              <p style="margin:12px 0 0;font-family:var(--font-mono);font-size:11px;color:var(--ink3)">Du kan avboka senast 24 timmar innan besöket.</p>
+              <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line)"><div style="font-weight:600;font-size:13px">FreshCut</div><div style="font-size:12px;color:var(--ink2)">Barbershop · Storgatan 12, Linköping</div></div>
+            </div>
+          </div>
+          <p style="text-align:center;font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--ink3);margin:16px 0 0">Drivs av Corevo</p>
+        </div>
+        <div style="flex:0 0 auto;display:flex;gap:9px;padding:12px 18px;border-top:1px solid var(--line)">
+          <span style="border:1.5px solid var(--line2);padding:9px 16px;font-weight:600;font-size:13px;color:var(--ink2)">↩ Svara</span>
+          <span style="border:1.5px solid var(--line2);padding:9px 16px;font-weight:600;font-size:13px;color:var(--ink2)">↪ Vidarebefordra</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ══ AVBOKA PAGE ══ -->
+    <sc-if value="{{ isAvboka }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ frameStyle }}">
+        <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:0 0 auto;height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--ink)"><span>9:41</span><span style="position:absolute;left:50%;top:9px;transform:translateX(-50%);width:96px;height:20px;background:#17130E;border-radius:0 0 14px 14px"></span><span style="letter-spacing:.05em">FreshCut</span></div>
+        </sc-if>
+        <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:0 0 auto;height:42px;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid var(--line);background:var(--paper2)"><span style="width:11px;height:11px;border-radius:50%;background:#E0685A"></span><span style="width:11px;height:11px;border-radius:50%;background:#E7B14C"></span><span style="width:11px;height:11px;border-radius:50%;background:#7FB37A"></span><span style="flex:1;margin:0 10px;max-width:340px;height:24px;border:1px solid var(--line2);background:var(--surface);display:flex;align-items:center;padding:0 12px;font-family:var(--font-mono);font-size:11px;color:var(--ink2)">freshcut.se/avboka</span></div>
+        </sc-if>
+        <div style="{{ screenStyle }}">
+          <div style="{{ avScrollStyle }}">
+            <div style="background:var(--ink);color:var(--paper);text-align:center;padding:9px 12px;font-family:var(--font-mono);font-size:10.5px;font-weight:500;letter-spacing:.2em;text-transform:uppercase">Drop in eller boka online</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--line)">
+              <span style="font-family:var(--font-display);font-size:24px">FreshCut</span>
+              <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}"><nav style="display:flex;gap:22px;align-items:center;font-size:13.5px;font-weight:500;color:var(--ink2)"><span>Hem</span><span>Tjänster</span><span>Om oss</span><span>Kontakt</span><span style="background:var(--rust);color:#fff;padding:9px 18px;font-weight:600;font-size:13px">Boka tid</span></nav></sc-if>
+              <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ true }}"><span style="width:26px;height:16px;display:flex;flex-direction:column;justify-content:space-between"><span style="height:2px;background:var(--ink)"></span><span style="height:2px;background:var(--ink)"></span><span style="height:2px;background:var(--ink)"></span></span></sc-if>
+            </div>
+            <section style="max-width:520px;margin:0 auto;padding:46px 24px 44px;text-align:center">
+              <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--rust);margin-bottom:12px">Din bokning</div>
+              <h1 style="margin:0 0 26px;font-family:var(--font-display);font-weight:400;font-size:clamp(34px,6vw,48px);line-height:1">Avboka din tid</h1>
+              <div style="border:1.5px solid var(--ink);background:var(--surface);text-align:left">
+                <div style="padding:13px 18px;border-bottom:1px dashed var(--line2);display:flex;justify-content:space-between;gap:12px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">Salong</span><span style="font-weight:600;font-size:14px">FreshCut</span></div>
+                <div style="padding:13px 18px;border-bottom:1px dashed var(--line2);display:flex;justify-content:space-between;gap:12px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">Tjänst</span><span style="font-weight:600;font-size:14px;text-align:right">{{ booking.service }}</span></div>
+                <div style="padding:13px 18px;border-bottom:1px dashed var(--line2);display:flex;justify-content:space-between;gap:12px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">Tid</span><span style="font-weight:600;font-size:14px;text-align:right">{{ booking.longDate }} · kl. {{ booking.time }}</span></div>
+                <div style="padding:13px 18px;display:flex;justify-content:space-between;gap:12px"><span style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)">Hos</span><span style="font-weight:600;font-size:14px">{{ booking.staff }}</span></div>
+              </div>
+              <sc-if value="{{ avReady }}" hint-placeholder-val="{{ true }}">
+                <p style="margin:22px 0 16px;font-size:14px;color:var(--ink2)">Vill du avboka? Du kan avboka senast 24 timmar innan besöket.</p>
+                <button type="button" onClick="{{ doCancel }}" style="width:100%;padding:15px;background:var(--rust);color:#fff;border:none;font-weight:600;font-size:15px;cursor:pointer" style-hover="background:var(--rust-deep)">Avboka tid</button>
+              </sc-if>
+              <sc-if value="{{ avDone }}" hint-placeholder-val="{{ false }}">
+                <div style="margin:24px 0 6px;text-align:center"><div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.16em;color:var(--forest);margin-bottom:8px">✓ AVBOKAD</div><p style="margin:0;font-size:15px;color:var(--ink2)">Din tid är avbokad. Varmt välkommen åter när det passar dig!</p></div>
+              </sc-if>
+              <sc-if value="{{ avAlready }}" hint-placeholder-val="{{ false }}"><p style="margin:22px 0 0;font-size:15px;color:var(--ink2)">Den här tiden är redan avbokad.</p></sc-if>
+              <sc-if value="{{ avLate }}" hint-placeholder-val="{{ false }}"><p style="margin:22px 0 0;font-size:15px;color:var(--ink2)">Det är för sent att avboka online — ring oss så hjälper vi dig.</p></sc-if>
+              <div style="margin-top:26px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding-top:20px;border-top:1px solid var(--line)">
+                <span style="width:100%;font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Testa läge</span>
+                <sc-for list="{{ avOptions }}" as="a" hint-placeholder-count="4"><button type="button" onClick="{{ a.onClick }}" style="{{ a.style }}">{{ a.label }}</button></sc-for>
+              </div>
+              <div style="margin-top:20px"><a href="#" style="font-size:14px;border-bottom:1px solid var(--rust);padding-bottom:1px">Till startsidan</a></div>
+            </section>
+            <div style="border-top:1px solid var(--line);padding:26px 24px;text-align:center;background:var(--paper2)"><div style="font-family:var(--font-display);font-size:20px;margin-bottom:4px">FreshCut</div><div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--ink3)">Boka tid online · FreshCut</div></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ══ COMPARE ALL 4 ══ -->
+    <sc-if value="{{ isCompare }}" hint-placeholder-val="{{ false }}">
+      <div style="width:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px;padding-bottom:20px">
+        <sc-for list="{{ compareCards }}" as="c" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-family:var(--font-display);font-size:21px">{{ c.label }}</span><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--rust);border:1px solid var(--rust);padding:2px 6px">{{ c.tag }}</span></div>
+              <p style="margin:0;font-size:12.5px;line-height:1.45;color:var(--ink2)">{{ c.desc }}</p>
+            </div>
+            <div onClick="{{ c.on }}" style="position:relative;height:320px;background:#17130E;border-radius:26px;padding:8px;cursor:pointer;box-shadow:0 24px 50px -28px rgba(33,28,23,.5)">
+              <div style="position:relative;height:100%;border-radius:20px;overflow:hidden;background:var(--surface)">
+                <div style="background:var(--ink);height:14px"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 11px;border-bottom:1px solid var(--line)"><span style="font-family:var(--font-display);font-size:12px">FreshCut</span><span style="background:var(--rust);width:34px;height:11px"></span></div>
+                <div style="height:70px;background:linear-gradient(180deg,#5c5045,#2a231c)"></div>
+                <sc-if value="{{ c.dim }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;inset:0;background:rgba(23,17,11,.5);z-index:1"></div></sc-if>
+                <div style="{{ c.panelBox }}">
+                  <div style="font-family:var(--font-mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust)">FreshCut · Boka</div>
+                  <sc-if value="{{ c.isSteps }}" hint-placeholder-val="{{ true }}">
+                    <div style="font-family:var(--font-display);font-size:15px;margin:3px 0 8px">Hos vem?</div>
+                    <div style="height:20px;border:1px solid var(--line2);margin-bottom:5px"></div>
+                    <div style="height:20px;border:1px solid var(--line2)"></div>
+                  </sc-if>
+                  <sc-if value="{{ c.isCompact }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:var(--font-display);font-size:15px;margin:3px 0 8px">Snabbboka</div>
+                    <div style="display:flex;gap:4px;margin-bottom:6px"><span style="height:13px;flex:1;background:var(--rust)"></span><span style="height:13px;flex:1;border:1px solid var(--line2)"></span><span style="height:13px;flex:1;border:1px solid var(--line2)"></span></div>
+                    <div style="display:flex;gap:4px"><span style="height:13px;flex:1;border:1px solid var(--line2)"></span><span style="height:13px;flex:1;border:1px solid var(--line2)"></span><span style="height:13px;flex:1;border:1px solid var(--line2)"></span></div>
+                  </sc-if>
+                  <div style="height:11px;background:var(--rust);margin-top:9px"></div>
+                </div>
+              </div>
+            </div>
+            <button type="button" onClick="{{ c.on }}" style="align-self:flex-start;font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);background:transparent;border:1.5px solid var(--ink);padding:9px 15px;cursor:pointer" style-hover="background:var(--ink);color:var(--paper)">Testa live →</button>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    view: 'flow',        // flow | email | avboka | compare
+    method: 'wizard',    // wizard | drawer | compact | inline
+    viewport: 'mobile',  // mobile | desktop
+    picker: 'calendar',  // calendar | strip
+    staffStyle: 'initial',  // foto | initial | namn
+    step: 1,
+    serviceId: null,
+    staffId: 'any',
+    date: '2026-07-09',
+    calMonth: 6,         // 0-indexed month, year fixed 2026
+    slotKey: null,
+    form: { name: '', email: '', phone: '', note: '' },
+    submitted: false,
+    avboka: 'ready',
+  }
+
+  BASE = '2026-07-09'
+  YEAR = 2026
+
+  SERVICES = [
+    { id: 'herr', name: 'Herrklippning', min: 30, price: 369, popular: true, desc: 'Klippning, tvätt & styling.' },
+    { id: 'student', name: 'Herrklippning student', min: 30, price: 329, desc: 'Mot giltigt studentkort.' },
+    { id: 'langt', name: 'Klipp + skägg + varm handduk', min: 45, price: 459, desc: 'Långt skägg. Klippning & skäggformning.' },
+    { id: 'kort', name: 'Klipp + skägg + varm handduk', min: 45, price: 419, desc: 'Kort skägg. Klippning & skäggformning.' },
+    { id: 'pension', name: 'Pensionärsklippning', min: 30, price: 329, desc: '' },
+    { id: 'barn', name: 'Barnklippning', min: 25, price: 299, desc: 'Upp till 8 år.' },
+    { id: 'skagg', name: 'Skäggtrim', min: 15, price: 229, desc: 'Formning & konturering.' },
+  ]
+  STAFF = [
+    { id: 'hilal', name: 'Hilal', role: 'Barberare · 8 år', disc: '#BC4A1C', photo: 'https://i.pravatar.cc/160?img=12' },
+    { id: 'john', name: 'John', role: 'Barberare · 6 år', disc: '#2E5A46', photo: 'https://i.pravatar.cc/160?img=13' },
+    { id: 'ali', name: 'Ali', role: 'Barberare · 4 år', disc: '#B07A1E', photo: 'https://i.pravatar.cc/160?img=33' },
+    { id: 'aziz', name: 'Aziz', role: 'Barberare · 10 år', disc: '#7A4A2E', photo: 'https://i.pravatar.cc/160?img=59' },
+  ]
+  TIMES = (() => { const a = []; for (let h = 9; h <= 18; h++) for (const m of [0, 30]) a.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`); return a })()
+  MONTHS = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december']
+
+  // ── helpers ──
+  hash(s){ let x = 2166136261; for (let i=0;i<s.length;i++){ x ^= s.charCodeAt(i); x = Math.imul(x,16777619) } return (x>>>0) }
+  dateObj(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d) }
+  iso(y,m,d){ return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}` }
+  fmtPrice(n){ return n + ' kr' }
+  dow(iso){ return new Intl.DateTimeFormat('sv-SE',{weekday:'short'}).format(this.dateObj(iso)).replace('.','') }
+  mon(iso){ return new Intl.DateTimeFormat('sv-SE',{month:'short'}).format(this.dateObj(iso)).replace('.','') }
+  longDate(iso){ return new Intl.DateTimeFormat('sv-SE',{weekday:'long',day:'numeric',month:'long'}).format(this.dateObj(iso)) }
+  avail(iso, staff, time){ return this.hash(iso+'|'+staff+'|'+time) % 10 >= 4 }
+  anyStaffFor(iso, time){ for (const s of this.STAFF) if (this.avail(iso, s.id, time)) return s; return null }
+  slotAvail(iso, time){ if (this.state.staffId === 'any') return !!this.anyStaffFor(iso, time); return this.avail(iso, this.state.staffId, time) }
+  slotStaffName(iso, time){ if (this.state.staffId === 'any'){ const s = this.anyStaffFor(iso, time); return s ? s.name : '' } const s = this.STAFF.find(x=>x.id===this.state.staffId); return s ? s.name : '' }
+  firstSlot(iso){ for (const t of this.TIMES) if (this.slotAvail(iso, t)) return t; return null }
+  daysList(){ const out=[]; const b=this.dateObj(this.BASE); for(let i=0;i<14;i++){ const d=new Date(b); d.setDate(b.getDate()+i); out.push(this.iso(d.getFullYear(), d.getMonth()+1, d.getDate())) } return out }
+
+  // ── content mode / presentation ──
+  contentMode(){ return (this.state.method==='compact'||this.state.method==='inline') ? 'compact' : 'steps' }
+  placement(){ if (this.state.method==='inline') return 'embed'; if (this.state.method==='wizard') return 'center'; return 'right' }
+  isOverlay(){ return this.state.method!=='inline' }
+
+  // ── booking summary object ──
+  bookingObj(){
+    const sv = this.SERVICES.find(s=>s.id===this.state.serviceId) || this.SERVICES[0]
+    const time = this.state.slotKey || this.firstSlot(this.state.date) || '10:00'
+    let staffName
+    if (this.state.staffId==='any'){ const s = this.anyStaffFor(this.state.date, time); staffName = s ? s.name : 'John' }
+    else { const s = this.STAFF.find(x=>x.id===this.state.staffId); staffName = s ? s.name : 'John' }
+    const name = this.state.form.name || 'Erik Lund'
+    const email = this.state.form.email || 'erik@exempel.se'
+    const ref = 'FC-' + (1000 + this.hash(sv.id + this.state.date + time) % 9000)
+    return {
+      service: sv.name, priceLabel: this.fmtPrice(sv.price), durLabel: sv.min + ' min',
+      staff: staffName, time, longDate: this.longDate(this.state.date),
+      longDateYear: this.longDate(this.state.date) + ' ' + this.YEAR, dateISO: this.state.date,
+      name, firstName: name.split(' ')[0], email, phone: this.state.form.phone || '070-123 45 67',
+      ref, cancelHours: 24,
+    }
+  }
+
+  // ── setters ──
+  set(patch){ this.setState(patch) }
+  setMethod(m){ this.setState({ method:m, view:'flow', submitted:false, step:1 }) }
+  setViewport(v){ this.setState({ viewport:v }) }
+  setPicker(p){ this.setState({ picker:p }) }
+  setStaffStyle(s){ this.setState({ staffStyle:s }) }
+  jump(view){ this.setState({ view }) }
+  resetFlow(){ this.setState({ view:'flow', submitted:false, step:1, serviceId:null, staffId:'any', slotKey:null, date:this.BASE, form:{name:'',email:'',phone:'',note:''} }) }
+  showConfirm(){ const first = this.firstSlot(this.BASE); this.setState({ view:'flow', submitted:true, method: this.state.method==='inline'?'wizard':this.state.method, serviceId:this.state.serviceId||'herr', staffId:this.state.staffId==='any'?'hilal':this.state.staffId, date:this.BASE, slotKey:this.state.slotKey||first, form:{ name:this.state.form.name||'Erik Lund', email:this.state.form.email||'erik@exempel.se', phone:this.state.form.phone||'070-123 45 67', note:'' } }) }
+
+  pickService(id){ this.setState({ serviceId:id, slotKey:null }) }
+  pickStaff(id){ this.setState({ staffId:id, slotKey:null }) }
+  pickDate(iso){ this.setState({ date:iso, slotKey:null }) }
+  pickSlot(t){ this.setState({ slotKey:t }) }
+  calShift(dir){ this.setState(s=>({ calMonth: Math.min(7, Math.max(6, s.calMonth+dir)) })) }
+
+  onName = e => this.setState(s=>({ form:{...s.form, name:e.target.value} }))
+  onEmail = e => this.setState(s=>({ form:{...s.form, email:e.target.value} }))
+  onPhone = e => this.setState(s=>({ form:{...s.form, phone:e.target.value} }))
+  onNote = e => this.setState(s=>({ form:{...s.form, note:e.target.value} }))
+
+  emailValid(){ return /.+@.+\..+/.test(this.state.form.email) }
+  phoneValid(){ return this.state.form.phone.replace(/\D/g,'').length >= 7 }
+
+  canContinueNow(){
+    const st = this.state
+    if (this.contentMode()==='compact') return false
+    if (st.step===1) return !!st.serviceId
+    if (st.step===2) return !!st.staffId
+    if (st.step===3) return !!st.slotKey
+    if (st.step===4) return !!(st.form.name && this.emailValid() && this.phoneValid())
+    return false
+  }
+  compactReadyNow(){ return !!(this.state.serviceId && this.state.slotKey && this.state.form.name && this.phoneValid()) }
+
+  next(){
+    const st = this.state
+    if (this.contentMode()==='compact'){ if (this.compactReadyNow()) this.setState({ submitted:true }); return }
+    if (st.step < 4){ this.setState({ step: st.step+1 }); return }
+    if (this.canContinueNow()) this.setState({ submitted:true })
+  }
+  back(){ if (this.state.step>1) this.setState({ step:this.state.step-1 }) }
+
+  // ── style helpers ──
+  segBtn(sel){ return `padding:8px 13px;border:1.5px solid ${sel?'var(--ink)':'var(--line2)'};background:${sel?'var(--ink)':'transparent'};color:${sel?'var(--paper)':'var(--ink2)'};font-family:var(--font-body);font-weight:600;font-size:12.5px;letter-spacing:.01em;cursor:pointer;transition:all .12s ease;white-space:nowrap` }
+  jumpBtn(sel){ return `padding:8px 13px;border:1.5px solid ${sel?'var(--rust)':'var(--line2)'};background:${sel?'var(--rust)':'transparent'};color:${sel?'#fff':'var(--ink2)'};font-family:var(--font-mono);font-weight:500;font-size:11px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:all .12s ease;white-space:nowrap` }
+  chip(sel){ return `flex:0 0 auto;display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;padding:.55rem .9rem;min-height:46px;justify-content:center;border:1.5px solid ${sel?'var(--rust)':'var(--line2)'};background:${sel?'var(--rust)':'var(--surface)'};color:${sel?'#fff':'var(--ink)'};font-weight:600;font-size:13px;white-space:nowrap;cursor:pointer;transition:all .12s ease` }
+  dayChip(sel, disabled){ return `flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:1px;width:60px;padding:.5rem 0;border:1.5px solid ${sel?'var(--rust)':'var(--line2)'};background:${sel?'var(--rust)':'var(--surface)'};color:${sel?'#fff':'var(--ink)'};cursor:${disabled?'not-allowed':'pointer'};opacity:${disabled?'.35':'1'};transition:all .12s ease` }
+  slotBtn(sel){ return `position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:.5rem .2rem;min-height:50px;border:1.5px solid ${sel?'var(--rust)':'var(--line2)'};background:${sel?'var(--rust)':'var(--surface)'};color:${sel?'#fff':'var(--ink)'};font-family:var(--font-mono);cursor:pointer;transition:all .12s ease` }
+  calCell(sel, disabled, today){ const border = sel?'var(--rust)':(today?'var(--ink2)':'transparent'); return `position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border:1.5px solid ${border};background:${sel?'var(--rust)':'transparent'};color:${sel?'#fff':(disabled?'var(--ink3)':'var(--ink)')};font-family:var(--font-mono);font-size:13px;font-weight:500;cursor:${disabled?'not-allowed':'pointer'};opacity:${disabled?'.4':'1'};transition:all .12s ease` }
+
+  renderVals(){
+    const st = this.state
+    const cm = this.contentMode()
+    const isDevice = st.view==='flow'
+    const overlay = this.isOverlay()
+    const placement = this.placement()
+    const mobile = st.viewport==='mobile'
+
+    // ── frame / screen / storefront / panel styles ──
+    const frameStyle = mobile
+      ? `width:392px;max-width:94vw;height:812px;max-height:calc(100vh - 210px);min-height:620px;background:#17130E;border-radius:46px;padding:12px;box-shadow:0 50px 90px -40px rgba(33,28,23,.6),0 0 0 1px rgba(0,0,0,.2) inset;display:flex;flex-direction:column;overflow:hidden`
+      : `width:1160px;max-width:100%;height:720px;max-height:calc(100vh - 190px);min-height:560px;background:var(--surface);border:1px solid var(--line2);border-radius:12px;box-shadow:0 50px 100px -50px rgba(33,28,23,.45);display:flex;flex-direction:column;overflow:hidden`
+    const screenStyle = `position:relative;flex:1;min-height:0;overflow:hidden;background:var(--paper);${mobile?'border-radius:34px':'border-radius:0'}`
+    const sfStyle = `position:absolute;inset:0;overflow-x:hidden;overflow-y:${overlay?'hidden':'auto'};background:var(--surface)`
+    const heroStyle = 'position:relative;' + (mobile ? 'height:210px' : 'height:340px')
+
+    // panel geometry
+    let panelStyle
+    const panelBase = 'display:flex;flex-direction:column;background:var(--surface);z-index:10'
+    if (placement==='embed'){
+      panelStyle = `${panelBase};position:relative;margin:22px auto 40px;width:calc(100% - 44px);max-width:${mobile?'none':'640px'};border:1.5px solid var(--ink);box-shadow:0 24px 50px -28px rgba(33,28,23,.35);animation:fcFadeUp .4s ease;max-height:none`
+    } else if (placement==='center'){
+      panelStyle = mobile
+        ? `${panelBase};position:absolute;top:14px;left:14px;right:14px;bottom:14px;border:1.5px solid var(--ink);box-shadow:0 30px 60px -20px rgba(0,0,0,.5);animation:fcCenterM .4s cubic-bezier(.2,.9,.3,1)`
+        : `${panelBase};position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:470px;max-height:86%;border:1.5px solid var(--ink);box-shadow:0 40px 80px -20px rgba(0,0,0,.5);animation:fcCenter .4s cubic-bezier(.2,.9,.3,1)`
+    } else { // right
+      panelStyle = mobile
+        ? `${panelBase};position:absolute;left:0;right:0;bottom:0;max-height:92%;box-shadow:0 -20px 50px -20px rgba(0,0,0,.4);animation:fcSheet .4s cubic-bezier(.2,.9,.3,1)`
+        : `${panelBase};position:absolute;top:0;right:0;bottom:0;width:440px;box-shadow:-30px 0 60px -30px rgba(0,0,0,.45);animation:fcRight .4s cubic-bezier(.2,.9,.3,1)`
+    }
+    const panelBodyStyle = 'flex:1;min-height:0;display:flex;flex-direction:column;' + (placement==='embed' ? 'overflow:visible' : 'overflow:hidden')
+    const stepScrollStyle = (placement==='embed')
+      ? 'padding:4px 22px 22px;overflow:visible'
+      : 'flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:4px 22px 22px'
+
+    // ── controls ──
+    const METHODS = [
+      { id:'wizard', label:'Steg-för-steg', desc:'Guide i flera steg, centrerad ruta.' },
+      { id:'drawer', label:'Sidopanel', desc:'Samma guide i panel från sidan.' },
+      { id:'compact', label:'Snabbboka', desc:'Allt på en skärm.' },
+      { id:'inline', label:'Inbäddad', desc:'Ligger i sidan, ingen popup.' },
+    ]
+    const methodOptions = METHODS.map(m=>({ ...m, style:this.segBtn(st.method===m.id && st.view==='flow'), onClick:()=>this.setMethod(m.id) }))
+    const viewportOptions = [ {id:'mobile',label:'Mobil'},{id:'desktop',label:'Desktop'} ].map(v=>({ label:v.label, style:this.segBtn(st.viewport===v.id), onClick:()=>this.setViewport(v.id) }))
+    const pickerOptions = [ {id:'calendar',label:'Kalender'},{id:'strip',label:'Dag-remsa'} ].map(p=>({ label:p.label, style:this.segBtn(st.picker===p.id), onClick:()=>this.setPicker(p.id) }))
+    const staffOptions = [ {id:'foto',label:'Foto'},{id:'initial',label:'Initialer'},{id:'namn',label:'Namn'} ].map(s=>({ label:s.label, style:this.segBtn(st.staffStyle===s.id), onClick:()=>this.setStaffStyle(s.id) }))
+    const jumpOptions = [
+      { id:'flow', label:'Bokning', on:st.view==='flow'&&!st.submitted, onClick:()=>this.resetFlow() },
+      { id:'confirm', label:'Bekräftelse', on:st.view==='flow'&&st.submitted, onClick:()=>this.showConfirm() },
+      { id:'email', label:'Mejl', on:st.view==='email', onClick:()=>this.jump('email') },
+      { id:'avboka', label:'Avboka', on:st.view==='avboka', onClick:()=>this.jump('avboka') },
+      { id:'compare', label:'Jämför alla', on:st.view==='compare', onClick:()=>this.jump('compare') },
+    ].map(j=>({ label:j.label, style:this.jumpBtn(j.on), onClick:j.onClick }))
+
+    // ── step meta ──
+    const stepLabels = ['Tjänst','Barberare','Tid','Uppgifter']
+    const stepTitles = ['Vad vill du ha?','Hos vem?','När passar det?','Dina uppgifter']
+    const progressSegs = [0,1,2,3,4].map(i=>({ style:`flex:1;height:5px;background:${i<st.step?'var(--rust)':'var(--line)'};transition:background .3s ease` }))
+
+    // recap
+    const sv0 = this.SERVICES.find(s=>s.id===st.serviceId)
+    const recapBits = []
+    if (sv0 && st.step>1) recapBits.push(sv0.name)
+    if (st.step>2){ recapBits.push(st.staffId==='any'?'Första lediga':(this.STAFF.find(s=>s.id===st.staffId)||{}).name) }
+    if (st.step>3 && st.slotKey) recapBits.push(this.dow(st.date)+' '+st.slotKey)
+    const recapText = recapBits.filter(Boolean).join('  ·  ')
+
+    // ── services ──
+    const services = this.SERVICES.map(s=>({ ...s, priceLabel:this.fmtPrice(s.price), durLabel:s.min+' min', selected:st.serviceId===s.id, onClick:()=>this.pickService(s.id) }))
+    const serviceChips = this.SERVICES.map(s=>({ name:s.name.length>18?s.name.slice(0,17)+'…':s.name, priceLabel:this.fmtPrice(s.price), style:this.chip(st.serviceId===s.id), onClick:()=>this.pickService(s.id) }))
+
+    // ── staff ──
+    const staffRows = [{ id:'any', name:'Alla', role:'Vem som helst', isAny:true, disc:'#BC4A1C' }, ...this.STAFF]
+    const staff = staffRows.map(s=>({
+      id:s.id, name:s.name, role:s.role, isAny:!!s.isAny, notAny:!s.isAny, photo:s.photo||'',
+      initial:s.name[0], slotId:'staff-'+s.id, selected:st.staffId===s.id,
+      showFoto: st.staffStyle==='foto', showInitial: st.staffStyle!=='foto',
+      discStyle:`flex:0 0 auto;width:46px;height:46px;border-radius:50%;background:${st.staffStyle==='namn'?'var(--paper2)':s.disc};color:${st.staffStyle==='namn'?'var(--ink2)':'#fff'};display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:${st.staffStyle==='namn'?'15px':'19px'}`,
+      onClick:()=>this.pickStaff(s.id),
+    }))
+    const staffChips = staffRows.map(s=>({ name:s.isAny?'Alla':s.name, style:this.chip(st.staffId===s.id), onClick:()=>this.pickStaff(s.id) }))
+
+    // ── days ──
+    const days = this.daysList().map(iso=>({ iso, dow:this.dow(iso), dom:this.dateObj(iso).getDate(), mon:this.mon(iso), style:this.dayChip(st.date===iso, false), onClick:()=>this.pickDate(iso) }))
+
+    // ── calendar ──
+    const month = st.calMonth
+    const first = new Date(this.YEAR, month, 1)
+    const startCol = (first.getDay()+6)%7  // Mon=0
+    const dim = new Date(this.YEAR, month+1, 0).getDate()
+    const baseObj = this.dateObj(this.BASE)
+    const calWeeks = []
+    let week = { cells: [] }
+    for (let i=0;i<startCol;i++) week.cells.push({ empty:true })
+    for (let d=1; d<=dim; d++){
+      const iso = this.iso(this.YEAR, month+1, d)
+      const dObj = this.dateObj(iso)
+      const past = dObj < baseObj
+      const dot = !past && !!this.firstSlot(iso)
+      const cell = { day:d, empty:false, dot, style:this.calCell(st.date===iso, past, iso===this.BASE), onClick: past?()=>{}:()=>this.pickDate(iso) }
+      week.cells.push(cell)
+      if (week.cells.length===7){ calWeeks.push(week); week={cells:[]} }
+    }
+    if (week.cells.length){ while(week.cells.length<7) week.cells.push({empty:true}); calWeeks.push(week) }
+    const calTitle = this.MONTHS[month][0].toUpperCase()+this.MONTHS[month].slice(1)+' '+this.YEAR
+    const calPrevStyle = `width:30px;height:30px;border:1.5px solid var(--line2);background:transparent;color:${month<=6?'var(--ink3)':'var(--ink)'};font-size:16px;cursor:${month<=6?'not-allowed':'pointer'};opacity:${month<=6?'.4':'1'}`
+    const calNextStyle = `width:30px;height:30px;border:1.5px solid var(--line2);background:transparent;color:${month>=7?'var(--ink3)':'var(--ink)'};font-size:16px;cursor:${month>=7?'not-allowed':'pointer'};opacity:${month>=7?'.4':'1'}`
+
+    // ── slots ──
+    const showStaff = st.staffId==='any'
+    const buildSlot = (t)=>({ key:t, time:t, staffName:this.slotStaffName(st.date,t), showStaff, selected:st.slotKey===t, style:this.slotBtn(st.slotKey===t), onClick:()=>this.pickSlot(t) })
+    const avails = this.TIMES.filter(t=>this.slotAvail(st.date,t))
+    const groupOf = (t)=>{ const h=parseInt(t.slice(0,2),10); return h<12?'morgon':(h<16?'dag':'kvall') }
+    const groupsMap = { morgon:[], dag:[], kvall:[] }
+    avails.forEach(t=>groupsMap[groupOf(t)].push(buildSlot(t)))
+    const slotGroups = [ {label:'Morgon',k:'morgon'},{label:'Dagtid',k:'dag'},{label:'Kväll',k:'kvall'} ].map(g=>({ label:g.label, items:groupsMap[g.k], has:groupsMap[g.k].length>0 }))
+    const slotsFlat = avails.map(buildSlot)
+    const hasSlots = avails.length>0
+    const noSlots = !hasSlots
+
+    // ── booking + cta ──
+    const booking = this.bookingObj()
+    const canContinue = this.canContinueNow()
+    const compactReady = this.compactReadyNow()
+    const ctaLabel = st.step===4 ? 'Bekräfta bokning' : 'Fortsätt'
+    const compactSummary = (st.serviceId && st.slotKey) ? (booking.service + ' · ' + st.slotKey) : ''
+
+    // ── email / avboka / compare ──
+    const isEmail = st.view==='email', isAvboka = st.view==='avboka', isCompare = st.view==='compare'
+    const avScrollStyle = 'position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--surface)'
+    const avOptions = [['ready','Aktiv'],['done','Avbokad'],['already','Redan'],['late','För sent']].map(([k,l])=>({ label:l, style:this.jumpBtn(st.avboka===k), onClick:()=>this.setState({avboka:k}) }))
+    const compareCards = [
+      { id:'wizard', label:'Steg-för-steg', tag:'Rekommenderad', desc:'Guide i flera steg i en centrerad ruta. Ett beslut per skärm — tryggast för nya kunder.', on:()=>this.setMethod('wizard'), dim:true, isSteps:true, isCompact:false, panelBox:'position:absolute;left:16px;right:16px;top:52%;transform:translateY(-50%);background:var(--surface);border:1.5px solid var(--ink);padding:11px;z-index:2' },
+      { id:'drawer', label:'Sidopanel', tag:'Desktop', desc:'Samma guide men i en panel som glider in från kanten. Sidan syns kvar bakom.', on:()=>this.setMethod('drawer'), dim:true, isSteps:true, isCompact:false, panelBox:'position:absolute;left:10px;right:10px;bottom:10px;background:var(--surface);border:1.5px solid var(--ink);padding:11px;z-index:2' },
+      { id:'compact', label:'Snabbboka', tag:'Genväg', desc:'Allt på en skärm med chips. Snabbast för stamkunder som vet vad de vill.', on:()=>this.setMethod('compact'), dim:true, isSteps:false, isCompact:true, panelBox:'position:absolute;left:10px;right:10px;bottom:10px;background:var(--surface);border:1.5px solid var(--ink);padding:11px;z-index:2' },
+      { id:'inline', label:'Inbäddad', tag:'Native', desc:'Bokningen ligger i sidan utan popup. Knappen scrollar ner till formuläret.', on:()=>this.setMethod('inline'), dim:false, isSteps:false, isCompact:true, panelBox:'position:relative;margin:9px 12px 12px;background:var(--surface);border:1.5px solid var(--ink);padding:11px' },
+    ]
+
+    return {
+      isDevice, isMobile:mobile, isDesktop:!mobile,
+      isOverlay:overlay, isEmbed:placement==='embed',
+      frameStyle, screenStyle, sfStyle, heroStyle, panelStyle, panelBodyStyle, stepScrollStyle,
+      methodOptions, viewportOptions, pickerOptions, staffOptions, jumpOptions,
+      submitted: st.submitted,
+      showSteps: !st.submitted && cm==='steps',
+      showCompact: !st.submitted && cm==='compact',
+      step: st.step, stepLabel: stepLabels[st.step-1]||'', stepTitle: stepTitles[st.step-1]||'',
+      progressSegs, recapText,
+      atStep1: st.step===1, atStep2: st.step===2, atStep3: st.step===3, atStep4: st.step===4,
+      services, serviceChips, staff, staffChips, days,
+      pickerCalendar: st.picker==='calendar', pickerStrip: st.picker==='strip',
+      calWeeks, calTitle, calPrev:()=>this.calShift(-1), calNext:()=>this.calShift(1), calPrevStyle, calNextStyle,
+      slotGroups, slotsFlat, hasSlots, noSlots,
+      form: st.form, onName:this.onName, onEmail:this.onEmail, onPhone:this.onPhone, onNote:this.onNote,
+      booking,
+      canContinue, cantContinue:!canContinue, canBack: st.step>1,
+      ctaLabel, next:()=>this.next(), back:()=>this.back(),
+      compactReady, compactNotReady:!compactReady, compactSummary,
+      resetFlow:()=>this.resetFlow(), jumpAvboka:()=>this.jump('avboka'),
+      isEmail, isAvboka, isCompare, avScrollStyle, avOptions, compareCards,
+      avReady: st.avboka==='ready', avDone: st.avboka==='done', avAlready: st.avboka==='already', avLate: st.avboka==='late',
+      doCancel:()=>this.setState({avboka:'done'}),
+    }
+  }
+}
+</script>
+</body>
+</html>

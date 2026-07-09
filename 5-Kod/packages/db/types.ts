@@ -1438,6 +1438,8 @@ export type Database = {
       }
       staff: {
         Row: {
+          avatar_url: string | null
+          show_on_site: boolean
           active: boolean
           buffer_min: number | null
           created_at: string
@@ -1450,6 +1452,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          avatar_url?: string | null
+          show_on_site?: boolean
           active?: boolean
           buffer_min?: number | null
           created_at?: string
@@ -1462,6 +1466,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          avatar_url?: string | null
+          show_on_site?: boolean
           active?: boolean
           buffer_min?: number | null
           created_at?: string
