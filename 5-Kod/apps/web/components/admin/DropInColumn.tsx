@@ -21,6 +21,7 @@ export type KioskFreeSlot = {
   startMs: number
   label: string
   locationId: string | null
+  past: boolean
 }
 
 export type KioskService = { id: string; name: string; durationMin: number }
@@ -101,6 +102,11 @@ export function DropInColumn({
                   <Icon name="mapPin" size={10} /> {it.b.locationName}
                 </span>
               ) : null}
+            </div>
+          ) : it.f.past ? (
+            <div key={it.f.startIso} className="admin-kiosk-free is-past" aria-disabled="true">
+              <span className="num">{it.f.label}</span>
+              <span className="admin-kiosk-free-tag">Passerad</span>
             </div>
           ) : open?.startIso === it.f.startIso ? (
             /* Bekräftelse-panelen ersätter chipen på plats — tjänst + Boka. */

@@ -140,7 +140,6 @@ export default async function BookingsKioskPage({
     if (!staffById.has(r.staff_id)) continue
     const startUtc = zonedTimeToUtc(day, r.start_time, tz)
     const ms = startUtc.getTime()
-    if (ms <= now) continue
     const covered = bookings.some((b) => {
       if (b.staffId !== r.staff_id) return false
       return new Date(b.startTs).getTime() <= ms && ms < new Date(b.endTs).getTime()
@@ -158,6 +157,9 @@ export default async function BookingsKioskPage({
       startMs: ms,
       label: timeFmt.format(startUtc),
       locationId: r.location_id ?? null,
+      // Passerade tider visas dimmade (bokas ej) — dagens raster ska inte
+      // krympa allteftersom klockan går (Zivar 2026-07-10).
+      past: ms <= now,
     })
     freeByStaff.set(r.staff_id, arr)
   }
@@ -198,19 +200,17 @@ export default async function BookingsKioskPage({
       {/* Dag-bläddring: stora touch-mål för surfplattan */}
       <div className="admin-kiosk-nav">
         <Link href={href(addDaysDate(day, -1))} className="admin-kiosk-navbtn" aria-label="Föregående dag">
-          <Icon name="chevronLeft" size={18} /> Föregående
-        </Link>
-        <Link
-          href={href(today)}
-          className={`admin-kiosk-navbtn${day !== today ? ' is-emph' : ''}`}
-          aria-label="Hoppa till idag"
-        >
-          Idag
-        </Link>
-        <Link href={href(addDaysDate(day, 1))} className="admin-kiosk-navbtn" aria-label="Nästa dag">
-          Nästa <Icon name="chevronRight" size={18} />
+          <Icon name="chevronLeft" size={22} />
         </Link>
         <span className="admin-kiosk-day">{dayLabel}</span>
+        <Link href={href(addDaysDate(day, 1))} className="admin-kiosk-navbtn" aria-label="Nästa dag">
+          <Icon name="chevronRight" size={22} />
+        </Link>
+        {day !== today ? (
+          <Link href={href(today)} className="admin-kiosk-navbtn is-emph" aria-label="Hoppa till idag">
+            Idag
+          </Link>
+        ) : null}
         {showLocation ? (
           <span className="admin-kiosk-plats">
             <Link href={platsHref('')} className={`admin-kiosk-chip${plats === '' ? ' is-on' : ''}`}>
