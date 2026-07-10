@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant, getTenantById } from '@/lib/tenant-data'
 import { tenantStorefrontUrl } from '@/lib/storefront-url'
@@ -9,7 +10,10 @@ import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 import { PortalSidebar, type PortalRole } from './PortalSidebar'
 import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
+import { listLocations } from '@/lib/admin/data'
+import { PLATS_COOKIE } from '@/lib/admin/plats'
 import { PortalTopbar } from './PortalTopbar'
+import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
 
@@ -163,6 +167,25 @@ export async function PortalShell({
       ? { label: 'Se din sida', href: storefrontUrl }
       : undefined
 
+    // Global butik-väljare (Zivar 2026-07-10): vid >1 AKTIV plats får salongs-
+    // admin en switcher i topbaren; valet bor i corevo-plats-cookien och styr
+    // Bokningar/Scheman/Bokningsvyns default (lib/admin/plats.ts).
+    let locationSwitcher: ReactNode = null
+    if (portal === 'admin' && bundle) {
+      const activeLocations = (await listLocations(bundle.tenant.id)).filter((l) => l.active)
+      if (activeLocations.length > 1) {
+        const jar = await cookies()
+        const saved = jar.get(PLATS_COOKIE)?.value ?? ''
+        const value = activeLocations.some((l) => l.id === saved) ? saved : ''
+        locationSwitcher = (
+          <LocationSwitcher
+            locations={activeLocations.map((l) => ({ id: l.id, name: l.name }))}
+            value={value}
+          />
+        )
+      }
+    }
+
     return (
       <div
         className="tenant-root portal-shell"
@@ -187,6 +210,7 @@ export async function PortalShell({
             }
             paletteItems={paletteItems}
             contextLink={contextLink}
+            extra={locationSwitcher}
           />
           <main className="portal-main">
             <ToastProvider>{children}</ToastProvider>

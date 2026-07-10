@@ -95,7 +95,10 @@ export function ScheduleWeekBoard({
     const s = params.staff ?? selectedStaffId
     if (s) q.set('staff', s)
     const p = params.plats ?? plats
+    // Vid flera platser skrivs plats ALLTID explicit ('alla' = sentinel) så
+    // topbarens butik-cookie inte återtar valet vid nästa klick (lib/admin/plats.ts).
     if (p) q.set('plats', p)
+    else if (locations.length > 1) q.set('plats', 'alla')
     return `${basePath}?${q.toString()}${hash}`
   }
 

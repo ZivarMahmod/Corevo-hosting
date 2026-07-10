@@ -162,7 +162,11 @@ export function BookingsClient({
     const personal = patch.personal ?? staffFilter
     if (personal) p.set('personal', personal)
     const plats = patch.plats ?? locationFilter
+    // Vid flera platser skrivs plats ALLTID explicit ('alla' = sentinel för Alla)
+    // — annars skulle topbarens butik-cookie återta valet vid nästa navigation
+    // (lib/admin/plats.ts); cookien gäller bara färsk entré utan params.
     if (plats) p.set('plats', plats)
+    else if (showLocation) p.set('plats', 'alla')
     return `/admin/bokningar?${p.toString()}`
   }
 

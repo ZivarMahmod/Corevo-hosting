@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm, termPlural } from '@/lib/platform/verticals-shared'
 import { listStaff, listWorkingHours, listWorkingHourSlots, listLocations } from '@/lib/admin/data'
 import { listCurrentAndUpcomingTimeOff } from '@/lib/admin/schedule-data'
 import { buildWeekBoard } from '@/lib/admin/schedule-board'
+import { resolvePlats } from '@/lib/admin/plats'
 import { addDays } from '@/lib/personal/format'
 import { weekdayOf } from '@/lib/booking/tz'
 import {
@@ -18,7 +18,7 @@ import {
 import { ScheduleWeekBoard } from '@/components/admin/ScheduleWeekBoard'
 import { TimeOffManager, type TimeOffItem } from '@/components/admin/TimeOffManager'
 import { ScheduleLock } from '@/components/admin/ScheduleLock'
-import { PageHead, Card, Icon } from '@/components/portal/ui'
+import { PageHead, Card } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Schema · Salongsadmin' }
@@ -99,7 +99,11 @@ export default async function SchedulesPage({
     staff,
     locations: locations.map((l) => ({ id: l.id, name: l.name })),
     week: sp.week,
-    plats: sp.plats,
+    // ?plats= vinner; utan param gäller topbarens valda butik (corevo-plats-cookien).
+    plats: await resolvePlats(
+      sp.plats,
+      locations.map((l) => l.id),
+    ),
     selectedStaffId: selected.id,
   })
 
@@ -140,31 +144,6 @@ export default async function SchedulesPage({
         title="Schema"
         lede="Hela teamets vecka i ett svep — bläddra framåt och bakåt, se frånvaro och bokningstryck, och justera grundtiderna längre ner."
       />
-
-      {/* Schemavy = ren helskärms-kiosk (bara brädan + bläddring, auto-uppdatering)
-          — tänkt att stå öppen på en iPad i salongen hela dagen. */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '-4px 0 12px' }}>
-        <Link
-          href="/admin/scheman/vy"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 7,
-            padding: '8px 14px',
-            borderRadius: 999,
-            border: '1px solid var(--c-forest)',
-            color: 'var(--c-forest)',
-            background: 'var(--c-paper)',
-            textDecoration: 'none',
-            fontFamily: 'var(--font-ui)',
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          <Icon name="calendar" size={15} />
-          Schemavy — helskärm för surfplattan
-        </Link>
-      </div>
 
       {/* 1 ▸ ÖVERSIKT (läget): veckogrid med nav, frånvaro-overlay + bokningsantal */}
       <ScheduleWeekBoard

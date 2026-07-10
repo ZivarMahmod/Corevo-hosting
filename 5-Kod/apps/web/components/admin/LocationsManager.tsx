@@ -150,7 +150,12 @@ export function LocationsManager({
         </Card>
       </div>
 
-      {creating && <CreateLocationDrawer onClose={() => setCreating(false)} />}
+      {creating && (
+        <CreateLocationDrawer
+          onClose={() => setCreating(false)}
+          primaryName={locations.find((l) => l.is_primary)?.name ?? null}
+        />
+      )}
       {editing && (
         <EditLocationDrawer key={editing.id} location={editing} onClose={() => setEditing(null)} />
       )}
@@ -179,7 +184,14 @@ function TimezoneSelect({
   )
 }
 
-function CreateLocationDrawer({ onClose }: { onClose: () => void }) {
+function CreateLocationDrawer({
+  onClose,
+  primaryName,
+}: {
+  onClose: () => void
+  /** Primära platsens namn — null när ingen primär finns (då göms kopiera-valet). */
+  primaryName: string | null
+}) {
   const { notify } = useToast()
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(createLocation, {})
@@ -239,6 +251,35 @@ function CreateLocationDrawer({ onClose }: { onClose: () => void }) {
         <Field label="Tidszon">
           <TimezoneSelect formId={formId} defaultValue="Europe/Stockholm" />
         </Field>
+        {primaryName ? (
+          <Field label="Schema för nya platsen">
+            {/* Zivars två vägar: exakt kopia av primären (tweaka sen) eller från noll.
+                Kopian klonar grundtider + bokningsbara starttider till nya platsen —
+                dubbelbokning över platser är alltid spärrad i databasen. */}
+            <div style={{ display: 'grid', gap: 8 }}>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', cursor: 'pointer' }}>
+                <input form={formId} type="radio" name="schema_mode" value="blank" defaultChecked />
+                <span>
+                  <b style={{ fontWeight: 600 }}>Börja från noll</b>
+                  <span style={{ display: 'block', fontSize: 12, color: 'var(--c-ink-3)' }}>
+                    Platsen har inga bokningsbara tider förrän du lägger dem under Scheman.
+                  </span>
+                </span>
+              </label>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', cursor: 'pointer' }}>
+                <input form={formId} type="radio" name="schema_mode" value="copy" />
+                <span>
+                  <b style={{ fontWeight: 600 }}>Kopiera schemat från {primaryName}</b>
+                  <span style={{ display: 'block', fontSize: 12, color: 'var(--c-ink-3)' }}>
+                    Personalens grundtider och bokningsbara starttider kopieras hit — justera
+                    sedan det som ska skilja. Samma medarbetare blir bokningsbar på båda
+                    platserna tills du ändrar; dubbelbokning är alltid spärrad.
+                  </span>
+                </span>
+              </label>
+            </div>
+          </Field>
+        ) : null}
         {state.error && (
           <p className="auth-error" role="alert" style={{ margin: 0 }}>
             {state.error}

@@ -160,15 +160,65 @@ export async function createLocation(_p: ActionState, fd: FormData): Promise<Act
   if (timezone && !isValidTz(timezone)) return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('locations').insert({
-    tenant_id: ctx.tenant.id,
-    name,
-    address: address || null,
-    timezone: timezone || DEFAULT_TZ,
-    is_primary: false, // a new location never steals primary — use "Gör till primär"
-    active: true,
-  })
-  if (error) return { error: GENERIC }
+  const { data: created, error } = await supabase
+    .from('locations')
+    .insert({
+      tenant_id: ctx.tenant.id,
+      name,
+      address: address || null,
+      timezone: timezone || DEFAULT_TZ,
+      is_primary: false, // a new location never steals primary — use "Gör till primär"
+      active: true,
+    })
+    .select('id')
+    .single()
+  if (error || !created) return { error: GENERIC }
+
+  // Ny plats kan starta som EXAKT KOPIA av primära platsens schema (Zivar
+  // 2026-07-10: "kopia av den primära och sen tweaka — eller allt från nytt").
+  // Kopian = personalens grundtider (working_hours) + explicita bokningsbara
+  // starttider (working_hour_slots) ompekade till nya platsen. Tjänster är
+  // tenant-globala och öppettider härleds ur grundtiderna — inget mer att klona.
+  // Dubbelbokning över platser är alltid spärrad av no_double_booking-constrainten.
+  if (String(fd.get('schema_mode') ?? '') === 'copy') {
+    const { data: primary } = await supabase
+      .from('locations')
+      .select('id')
+      .eq('tenant_id', ctx.tenant.id)
+      .eq('is_primary', true)
+      .maybeSingle()
+    if (primary) {
+      const [{ data: hours }, { data: slots }] = await Promise.all([
+        supabase
+          .from('working_hours')
+          .select('staff_id, weekday, start_time, end_time')
+          .eq('tenant_id', ctx.tenant.id)
+          .eq('location_id', primary.id),
+        supabase
+          .from('working_hour_slots')
+          .select('staff_id, weekday, start_time, active')
+          .eq('tenant_id', ctx.tenant.id)
+          .eq('location_id', primary.id),
+      ])
+      const remap = <T extends object>(rows: T[] | null) =>
+        (rows ?? []).map((r) => ({ ...r, tenant_id: ctx.tenant.id, location_id: created.id }))
+      const [hRes, sRes] = await Promise.all([
+        remap(hours).length ? supabase.from('working_hours').insert(remap(hours)) : { error: null },
+        remap(slots).length
+          ? supabase.from('working_hour_slots').insert(remap(slots))
+          : { error: null },
+      ])
+      if (hRes.error || sRes.error) {
+        revalidateLocations(ctx.tenant.slug)
+        return {
+          success:
+            'Plats skapad, men schemakopian gick inte igenom helt — kontrollera tiderna under Scheman.',
+        }
+      }
+      revalidateLocations(ctx.tenant.slug)
+      return { success: 'Plats skapad med en kopia av primära platsens schema.' }
+    }
+  }
 
   revalidateLocations(ctx.tenant.slug)
   return { success: 'Plats skapad.' }

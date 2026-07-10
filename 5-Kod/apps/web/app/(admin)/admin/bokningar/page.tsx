@@ -13,6 +13,7 @@ import {
   type BookingPayment,
 } from '@/lib/admin/data'
 import { dayRangeUtc, isValidDate, todayInTz, weekRangeUtc } from '@/lib/admin/dates'
+import { resolvePlats } from '@/lib/admin/plats'
 import { PageHead, Button, Icon } from '@/components/portal/ui'
 import { BookingsClient, type BookingRow, type WeekTemplate } from '@/components/admin/BookingsClient'
 
@@ -54,8 +55,13 @@ export default async function BookingsPage({
   // 1 → helt osynligt). Inaktiva platser erbjuds inte som val.
   const locations = allLocations.filter((l) => l.active)
   const showLocation = locations.length > 1
-  const locationFilter =
-    showLocation && locations.some((l) => l.id === sp.plats) ? sp.plats! : ''
+  // ?plats= vinner; utan param gäller topbarens valda butik (corevo-plats-cookien).
+  const locationFilter = showLocation
+    ? await resolvePlats(
+        sp.plats,
+        locations.map((l) => l.id),
+      )
+    : ''
 
   const serverFilters = {
     staffId: staffFilter || undefined,
@@ -189,6 +195,11 @@ export default async function BookingsPage({
       >
         <Button href={`/admin/bokningar?${todayParams.toString()}`} variant="ghost" icon="calendar" size="sm">
           {todayLabel}
+        </Button>
+        {/* Bokningsvy = helskärms-kiosken (dagens bokningar per medarbetare +
+            dag-bläddring) — tänkt att stå öppen på en surfplatta hela dagen. */}
+        <Button href="/admin/bokningar/vy" variant="ghost" icon="grid" size="sm">
+          Bokningsvy — helskärm
         </Button>
         {/* Admin kan inte skapa bokningar härifrån ännu — ärlig UI: länka till
             tenantens PUBLIKA bokningsflöde (ny flik) i stället för en död knapp. */}

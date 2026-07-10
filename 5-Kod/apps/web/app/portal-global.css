@@ -1222,31 +1222,31 @@
 }
 
 /* ===========================================================================
-   SCHEMAVY — iPad-kiosken (/admin/scheman/vy): bara brädan + bläddring.
+   KIOSK (Bokningsvy /admin/bokningar/vy): helskärm för surfplattan.
    Chromet göms med samma :has()-mönster som onboarding-studion.
    =========================================================================== */
-[data-world="backoffice"].portal-shell:has(.schedule-kiosk) .portal-topbar,
-[data-world="backoffice"].portal-shell:has(.schedule-kiosk) .portal-aside,
-[data-world="backoffice"].portal-shell:has(.schedule-kiosk) .portal-mobilebar {
+[data-world="backoffice"].portal-shell:has(.admin-kiosk) .portal-topbar,
+[data-world="backoffice"].portal-shell:has(.admin-kiosk) .portal-aside,
+[data-world="backoffice"].portal-shell:has(.admin-kiosk) .portal-mobilebar {
   display: none;
 }
-[data-world="backoffice"] .portal-main:has(> .schedule-kiosk) {
+[data-world="backoffice"] .portal-main:has(> .admin-kiosk) {
   padding: 18px 20px;
 }
-[data-world="backoffice"] .schedule-kiosk-head {
+[data-world="backoffice"] .admin-kiosk-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
 }
-[data-world="backoffice"] .schedule-kiosk-brand {
+[data-world="backoffice"] .admin-kiosk-brand {
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 700;
   color: var(--c-forest);
 }
-[data-world="backoffice"] .schedule-kiosk-back {
+[data-world="backoffice"] .admin-kiosk-back {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1256,4 +1256,137 @@
   color: var(--c-ink-3);
   text-decoration: none;
 }
-[data-world="backoffice"] .schedule-kiosk-back:hover { color: var(--c-forest); }
+[data-world="backoffice"] .admin-kiosk-back:hover { color: var(--c-forest); }
+
+/* Bokningsvyns dag-bläddring + kolumner (stora touch-mål för surfplatta) */
+[data-world="backoffice"] .admin-kiosk-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+[data-world="backoffice"] .admin-kiosk-navbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  text-decoration: none;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+}
+[data-world="backoffice"] .admin-kiosk-navbtn.is-emph {
+  border-color: var(--c-forest);
+  color: var(--c-forest);
+}
+[data-world="backoffice"] .admin-kiosk-day {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--c-forest);
+  margin-left: 4px;
+  text-transform: capitalize;
+}
+[data-world="backoffice"] .admin-kiosk-plats { display: inline-flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+[data-world="backoffice"] .admin-kiosk-chip {
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  text-decoration: none;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+[data-world="backoffice"] .admin-kiosk-chip.is-on {
+  border-color: var(--c-forest);
+  background: color-mix(in srgb, var(--c-forest) 8%, var(--c-paper));
+  color: var(--c-forest);
+}
+[data-world="backoffice"] .admin-kiosk-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+[data-world="backoffice"] .admin-kiosk-col {
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+[data-world="backoffice"] .admin-kiosk-colhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-ink);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--c-line);
+}
+[data-world="backoffice"] .admin-kiosk-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--c-forest);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex: none;
+}
+[data-world="backoffice"] .admin-kiosk-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--c-ink-3);
+  font-weight: 600;
+}
+[data-world="backoffice"] .admin-kiosk-empty {
+  margin: 4px 2px;
+  font-size: 13px;
+  color: var(--c-ink-3);
+  font-family: var(--font-ui);
+}
+[data-world="backoffice"] .admin-kiosk-slot {
+  border: 1px solid var(--c-line);
+  border-left: 3px solid var(--c-success, #2e7d5b);
+  border-radius: 10px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-ui);
+}
+[data-world="backoffice"] .admin-kiosk-slot.is-pending { border-left-color: var(--c-gold-600); }
+[data-world="backoffice"] .admin-kiosk-time { font-size: 13.5px; font-weight: 700; color: var(--c-forest); }
+[data-world="backoffice"] .admin-kiosk-cust { font-size: 14px; font-weight: 600; color: var(--c-ink); }
+[data-world="backoffice"] .admin-kiosk-svc { font-size: 12.5px; color: var(--c-ink-2); }
+[data-world="backoffice"] .admin-kiosk-badge {
+  align-self: flex-start;
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-gold-600);
+}
+[data-world="backoffice"] .admin-kiosk-loc {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--c-ink-3);
+  margin-top: 2px;
+}

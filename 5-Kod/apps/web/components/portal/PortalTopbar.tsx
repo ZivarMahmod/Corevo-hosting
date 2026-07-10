@@ -23,6 +23,7 @@ export function PortalTopbar({
   placeholder,
   paletteItems,
   contextLink,
+  extra,
 }: {
   /** Context-aware search placeholder (super vs salon copy). */
   placeholder: string
@@ -31,6 +32,8 @@ export function PortalTopbar({
   /** Topbar context link — mock shows "Se din sida" (salon) → public storefront.
    *  User identity + sign-out live in the sidebar footer (handoff Shell.jsx). */
   contextLink?: { label: string; href: string }
+  /** Extra chrome-kontroll (t.ex. butik-väljaren) — renderas först i höger-gruppen. */
+  extra?: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const [isMac, setIsMac] = useState(false)
@@ -65,6 +68,7 @@ export function PortalTopbar({
         <kbd className="bo-cmdk-trigger-kbd">{isMac ? '⌘' : 'Ctrl'} K</kbd>
       </button>
       <div className="portal-topbar-right">
+        {extra}
         <ThemeSwitch />
         {contextLink ? (
           <a
