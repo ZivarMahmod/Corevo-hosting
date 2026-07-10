@@ -17,10 +17,10 @@ export function GET(): Response {
       background_color: '#faf8f4',
       theme_color: '#1F4636',
       icons: [
-        // ponytail: SVG-ikon (Chromium ≥93 inkl. Samsung Internet). Byt till
-        // renderade PNG 192/512 om iOS-hemskärm behövs.
+        { src: '/pwa/personal-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/pwa/personal-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: '/pwa/personal-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         { src: '/pwa/personal-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-        { src: '/pwa/personal-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
       ],
     },
     { headers: { 'content-type': 'application/manifest+json' } },

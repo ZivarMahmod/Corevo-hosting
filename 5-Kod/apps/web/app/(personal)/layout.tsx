@@ -11,6 +11,8 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   manifest: '/api/pwa/personal-manifest',
   appleWebApp: { capable: true, title: 'Min bokning', statusBarStyle: 'default' },
+  // iPhone läser inte manifest-ikoner — hemskärmen kräver apple-touch-icon (PNG).
+  icons: { apple: '/pwa/personal-icon-180.png' },
 }
 export const viewport: Viewport = { themeColor: '#1F4636' }
 
