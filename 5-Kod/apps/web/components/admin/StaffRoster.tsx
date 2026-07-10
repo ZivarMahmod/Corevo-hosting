@@ -422,6 +422,24 @@ function StaffDrawer({
             the card chips; couple/uncouple drives bookability on the public sajt. */}
         <ServicesSection member={member} services={services} onSaved={onClose} />
 
+        {/* Tider — bor på Schema-sidan (en sanning). Djuplänken öppnar den
+            direkt på DEN HÄR medarbetaren så hoppandet försvinner. */}
+        <section>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
+            Tider &amp; schema
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: '0 0 10px', lineHeight: 1.55 }}>
+            Vilka tider {member.displayName} kan bokas ställs i schemat — veckoschema, arbetstider
+            och frånvaro på ett ställe.
+          </p>
+          <Link
+            href={`/admin/scheman?staff=${member.id}#mallar`}
+            style={{ color: 'var(--c-forest)', fontWeight: 600, fontSize: 13.5 }}
+          >
+            Öppna {member.displayName}s tider →
+          </Link>
+        </section>
+
         <EgetKontoSection member={member} onInvited={onClose} />
 
         {/* Multi-location — KEEP: location_id is a real FK, the name is resolved

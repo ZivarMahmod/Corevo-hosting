@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm, termPlural } from '@/lib/platform/verticals-shared'
-import { listStaff, listWorkingHours, listWorkingHourSlots, listLocations } from '@/lib/admin/data'
+import { listStaff, listWorkingHours, listWorkingHourSlots, listLocations, listServices } from '@/lib/admin/data'
 import { listCurrentAndUpcomingTimeOff } from '@/lib/admin/schedule-data'
 import { buildWeekBoard } from '@/lib/admin/schedule-board'
 import { resolvePlats } from '@/lib/admin/plats'
@@ -18,6 +18,7 @@ import {
 import { ScheduleWeekBoard } from '@/components/admin/ScheduleWeekBoard'
 import { TimeOffManager, type TimeOffItem } from '@/components/admin/TimeOffManager'
 import { ScheduleLock } from '@/components/admin/ScheduleLock'
+import { StaffBookability } from '@/components/admin/StaffBookability'
 import { PageHead, Card } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
@@ -81,11 +82,12 @@ export default async function SchedulesPage({
   const selected = staff.find((s) => s.id === sp.staff) ?? staff[0]!
   const nowIso = new Date().toISOString()
 
-  const [rows, slots, allLocations, upcomingTimeOff] = await Promise.all([
+  const [rows, slots, allLocations, upcomingTimeOff, allServices] = await Promise.all([
     listWorkingHours(tenant.id, selected.id),
     listWorkingHourSlots(tenant.id, selected.id),
     listLocations(tenant.id),
     listCurrentAndUpcomingTimeOff(tenant.id, nowIso),
+    listServices(tenant.id),
   ])
 
   // Bara AKTIVA platser erbjuds (en inaktiv ska inte ta nya schemalagda timmar).
@@ -191,9 +193,23 @@ export default async function SchedulesPage({
           </h2>
           <p className="small" style={{ margin: '4px 0 0', maxWidth: 560, color: 'var(--c-ink-3)' }}>
             Mallen gäller ALLA veckor — bokbara starttider per veckodag, inte fasta arbetspass.
-            Avvikelser (semester, sjukdom) läggs som frånvaro ovan.
+            Avvikelser (semester, sjukdom) läggs som frånvaro ovan. Publika sidans öppettider är
+            bara visning och styr aldrig vad som går att boka — det gör tiderna här.
           </p>
         </div>
+
+        {/* Bokningsbarheten (aktiv + tjänster) på SAMMA yta som tiderna — hela
+            "vem kan bokas när"-regeln syns och ändras här (Zivar 2026-07-11).
+            Ligger UTANFÖR schemalåset: att inaktivera någon akut ska inte kräva
+            "Lås upp". */}
+        <StaffBookability
+          key={selected.id}
+          staffId={selected.id}
+          staffName={selected.displayName}
+          active={selected.active}
+          serviceIds={selected.serviceIds}
+          services={allServices.filter((s) => s.active).map((s) => ({ id: s.id, name: s.name }))}
+        />
 
         {/* Grundtiderna läggs en gång — låset kräver ett uttryckligt "Lås upp"
             (med bekräftelse + automatisk kopia) innan något går att ändra. */}
