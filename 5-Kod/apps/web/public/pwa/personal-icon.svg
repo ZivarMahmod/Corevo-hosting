@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Min bokning — hemskärms-ikon (forest + guld, kalenderglyf). maskable-safe:
+       allt viktigt inom mitt-cirkeln (radie ~205). -->
+  <rect width="512" height="512" rx="96" fill="#1F4636"/>
+  <rect x="126" y="150" width="260" height="230" rx="26" fill="none" stroke="#F6F4EE" stroke-width="22"/>
+  <line x1="126" y1="222" x2="386" y2="222" stroke="#F6F4EE" stroke-width="22"/>
+  <line x1="186" y1="118" x2="186" y2="182" stroke="#F6F4EE" stroke-width="22" stroke-linecap="round"/>
+  <line x1="326" y1="118" x2="326" y2="182" stroke="#F6F4EE" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="256" cy="300" r="36" fill="#C9A96A"/>
+</svg>

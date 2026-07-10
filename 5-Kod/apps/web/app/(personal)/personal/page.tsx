@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { requirePortal } from '@/lib/auth/session'
 import { getMyStaff, getMyServices } from '@/lib/personal/staff'
 import { getStaffScheduleWithNotes, dayRangeUtc } from '@/lib/personal/calendar'
-import { todayInTz, fmtTime, fmtDateHeading } from '@/lib/personal/format'
+import { todayInTz, fmtTime, fmtDateHeading, addDays } from '@/lib/personal/format'
+import { Icon } from '@/components/portal/ui'
 import { Calendar } from '@/components/personal/Calendar'
 import { WalkInForm } from '@/components/personal/WalkInForm'
 import { MarkDoneButton } from '@/components/personal/MarkDoneButton'
@@ -12,7 +14,12 @@ import styles from '@/components/personal/personal.module.css'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Personal — idag' }
 
-export default async function PersonalPage() {
+export default async function PersonalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ dag?: string }>
+}) {
+  const sp = await searchParams
   const user = await requirePortal('personal')
   const staff = await getMyStaff(user.id)
 
@@ -35,13 +42,16 @@ export default async function PersonalPage() {
   const staffIds = staff.map((s) => s.id)
   const services = await getMyServices(staffIds)
   const today = todayInTz(primaryTz)
+  // Dag-bläddring (Zivar 2026-07-11: "bokningsvy där de ser bara sina bokningar",
+  // öppnas som hemskärms-app) — ?dag= bläddrar; default = idag, hero/walk-in
+  // visas bara på dagens datum.
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(sp.dag ?? '') ? sp.dag! : today
+  const isToday = day === today
 
-  // Frisörens "Idag" är EN levande dag-lista (mock §M5: hero → kort) — ingen
-  // datum-/veckonavigering (det reviret bor på salongens Bokningar / Mitt schema).
   // En enda dagsläsning matar både badge-räknaren och listan, så siffran alltid
   // = synliga rader. Den recognition-berikade läsningen ger preferens-chips +
   // kund-noteringen per rad utan extra query (batchat i lib).
-  const { fromUtc, toUtc } = dayRangeUtc(today, primaryTz)
+  const { fromUtc, toUtc } = dayRangeUtc(day, primaryTz)
   const todays = await getStaffScheduleWithNotes(staffIds, fromUtc, toUtc)
 
   // Avbokade rader hör inte till dagslistan (mock: mine = status !== "avbokad").
@@ -77,8 +87,8 @@ export default async function PersonalPage() {
           Badgen renderas i PageHeads högerslot — på titelraden, exakt som mocken
           ({n} bokningar, utan "idag"-suffix så texten ryms och inte radbryter). */}
       <PageHead
-        eyebrow={fmtDateHeading(today)}
-        title="Idag"
+        eyebrow={fmtDateHeading(day)}
+        title={isToday ? 'Idag' : 'Mina bokningar'}
         lede="Din dag, live. Tryck på en kund för att snabbt minnas vad ni gjort sist — så du har koll utan att leta."
       >
         <Badge tone="gold">
@@ -86,11 +96,29 @@ export default async function PersonalPage() {
         </Badge>
       </PageHead>
 
+      {/* Dag-bläddring — stora touch-mål (hemskärms-appen är telefon-först). */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+        <Link href={`/personal?dag=${addDays(day, -1)}`} className="admin-kiosk-navbtn" aria-label="Föregående dag">
+          <Icon name="chevronLeft" size={20} />
+        </Link>
+        <Link href={`/personal?dag=${addDays(day, 1)}`} className="admin-kiosk-navbtn" aria-label="Nästa dag">
+          <Icon name="chevronRight" size={20} />
+        </Link>
+        {!isToday ? (
+          <Link href="/personal" className="admin-kiosk-navbtn is-emph">
+            Idag
+          </Link>
+        ) : null}
+      </div>
+
       {/* "Nästa kund"-hero — inverted forest surface, gold eyebrow, big Playfair
           time, gold "Markera klar" (Staff.jsx 23–32). Text colours are set
           explicitly (the .h1/.body roles bake in dark ink, invisible on forest);
           all tokens resolve under the back-office [data-world] shell. The day list
-          + per-row actions follow below — additive, not reduced. */}
+          + per-row actions follow below — additive, not reduced.
+          Hero + walk-in bara på DAGENS datum — på bläddrade dagar är listan allt. */}
+      {isToday ? (
+      <>
       <Card
         pad={26}
         style={{
@@ -171,6 +199,8 @@ export default async function PersonalPage() {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
         <WalkInForm services={services} timeZone={primaryTz} />
       </div>
+      </>
+      ) : null}
 
       {/* EN levande dag-lista (mock §M5) — inga datum-rubriker, ingen vecko-vy. */}
       <Calendar bookings={dayBookings} />
