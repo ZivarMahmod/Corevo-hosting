@@ -19,6 +19,19 @@ import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
 import { reportActionError } from './observe'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
 
+/**
+ * Onboarding-studions inline slug-koll (Dunder-fix 2026-07-11): tidigare
+ * upptäcktes en upptagen slug först vid Lansera, som felstrip efter hela
+ * flödet. Platform-gated; svarar bara taget/ledigt — läcker inget om tenanten.
+ */
+export async function isSlugTaken(slug: string): Promise<boolean> {
+  const { supabase } = await platformCtx()
+  const clean = slug.toLowerCase().replace(/[^a-z0-9]/g, '')
+  if (!clean) return false
+  const { data } = await supabase.from('tenants').select('id').eq('slug', clean).maybeSingle()
+  return !!data
+}
+
 const DEFAULT_TZ = 'Europe/Stockholm'
 
 // Storefront theme (the five named layouts). Picking a theme writes settings.theme,

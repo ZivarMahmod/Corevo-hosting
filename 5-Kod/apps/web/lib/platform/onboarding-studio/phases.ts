@@ -13,13 +13,13 @@ import { resolveModuleState } from './model'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 
 /** The 12 step ids, in flow order (the StepId string-union the leaves narrow on). */
+// modplace/modconf borttagna 2026-07-11 (Dunder-fix): båda var stubbar utan
+// skrivväg mitt i flödet — två döda steg i rad läste som "pajad wizard".
 export type StepId =
   | 'branch'
   | 'namn'
   | 'tema'
   | 'modval'
-  | 'modplace'
-  | 'modconf'
   | 'brand'
   | 'text'
   | 'tjanster'
@@ -69,8 +69,6 @@ export const PHASES: StudioPhase[] = [
     sub: 'Det som gör sidan till deras',
     steps: [
       { id: 'modval', label: 'Välj moduler', icon: 'layers', req: false, hint: 'Föraktiverade per bransch' },
-      { id: 'modplace', label: 'Placera & ordna', icon: 'grid', req: false, hint: 'Dra till sektion, ordna' },
-      { id: 'modconf', label: 'Modulinställningar', icon: 'settings', req: false, hint: 'Bransch-specifika fält' },
     ],
   },
   {
@@ -78,8 +76,8 @@ export const PHASES: StudioPhase[] = [
     name: 'Innehåll & utseende',
     sub: 'Texten, färgen, känslan',
     steps: [
-      { id: 'brand', label: 'Branding', icon: 'sun', req: false, hint: 'Logga, accentfärg, font' },
-      { id: 'text', label: 'Text & hjälte', icon: 'edit', req: false, hint: 'Klicka & skriv direkt i previewen' },
+      { id: 'brand', label: 'Branding', icon: 'sun', req: false, hint: 'Accentfärg & tagline' },
+      { id: 'text', label: 'Text & hjälte', icon: 'edit', req: false, hint: 'Rubrik, ingress & texterna' },
       { id: 'tjanster', label: 'Tjänster & innehåll', icon: 'scissors', req: false, hint: 'Datat modulerna visar' },
     ],
   },
@@ -133,8 +131,6 @@ export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPreset
       return !!cfg.ownerEmail
     case 'tjanster':
       return cfg.services.some((s) => s.name.trim() !== '')
-    case 'modplace':
-    case 'modconf':
     case 'brand':
     case 'text':
     case 'granska':

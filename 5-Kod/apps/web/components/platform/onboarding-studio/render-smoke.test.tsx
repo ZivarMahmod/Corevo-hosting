@@ -24,7 +24,6 @@ import { initStudioCfg, applyBranch } from '@/lib/platform/onboarding-studio/mod
 import type { StudioAction, StudioStage } from '@/lib/platform/onboarding-studio/state'
 import { FLAT_STEP_ORDER } from '@/lib/platform/onboarding-studio/phases'
 import { JourneyBar } from './JourneyBar'
-import { SuperEntry } from './SuperEntry'
 import { StepRail } from './StepRail'
 import { PanelHost } from './PanelHost'
 import { PreviewPane } from './PreviewPane'
@@ -87,23 +86,11 @@ function mounts(node: React.ReactElement): string {
 }
 
 describe('W1 studio — render smoke (mounts without throwing)', () => {
-  it('JourneyBar mounts (all three journey pills)', () => {
-    const reachable: Record<StudioStage, boolean> = { super: true, studio: true, result: false }
+  it('JourneyBar mounts (studio + result pills; super-entrén är borttagen)', () => {
+    const reachable: Record<StudioStage, boolean> = { super: false, studio: true, result: false }
     const html = mounts(<JourneyBar stage="studio" reachable={reachable} onNav={noop} />)
-    expect(html).toContain('Kunder')
-  })
-
-  it('SuperEntry mounts with a real tenant card', () => {
-    const html = mounts(<SuperEntry tenants={tenants} onStart={noop} />)
-    expect(html).toContain('Kunder')
-    expect(html).toContain('Klippoteket')
-  })
-
-  it('SuperEntry mounts with the empty-state (0 tenants)', () => {
-    const html = mounts(<SuperEntry tenants={[]} onStart={noop} />)
-    // honest empty state must still show the entry CTA, never fake numbers
-    expect(html).toContain('Onboarda')
-    expect(html).not.toContain('24 960')
+    expect(html).toContain('Onboarding-studio')
+    expect(html).not.toContain('>Kunder<') // gamla entré-pillen ska inte återuppstå
   })
 
   it('StepRail mounts (5 phases / 12 steps)', () => {
@@ -237,11 +224,11 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('href="/salonger"')
   })
 
-  it('OnboardingStudio (root machine) mounts the super stage', () => {
+  it('OnboardingStudio (root machine) mounts DIRECTLY in the studio stage', () => {
     const html = mounts(
       <OnboardingStudio presets={presets} tenants={tenants} editorEnabled={false} />,
     )
-    expect(html).toContain('Kunder')
+    expect(html).toContain('Grunden') // step-rail phase 1 → wizarden är startskärmen
   })
 
   // ── goal-50: the look-gallery + render-bron preview (sajtbyggare ON) ──────────────

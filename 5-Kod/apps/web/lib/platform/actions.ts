@@ -5,7 +5,7 @@
 // byte-identical for all 12 consumers — no importer changed. Shared types live in
 // ./actions/shared. PURE re-export: no 'use server' here; each action keeps its
 // server-action identity from its definition module.
-export { createTenant } from './actions/tenants'
+export { createTenant, isSlugTaken } from './actions/tenants'
 export { savePlatformBranding } from './actions/branding'
 export { setTenantStatus } from './actions/status'
 export { saveBilling } from './actions/billing'

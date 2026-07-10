@@ -35,7 +35,6 @@ import {
 } from '@/lib/platform/onboarding-studio/state'
 import { FLAT_STEP_ORDER, type StepId } from '@/lib/platform/onboarding-studio/phases'
 import { JourneyBar } from './JourneyBar'
-import { SuperEntry } from './SuperEntry'
 import { StepRail } from './StepRail'
 import { PanelHost } from './PanelHost'
 import { PreviewPane, type PreviewDevice } from './PreviewPane'
@@ -63,13 +62,12 @@ export type OnboardingStudioProps = {
  * footgun of re-prefilling the previous customer's name/slug/modules and re-submitting
  * a duplicate slug. Keep this wrapper minimal — only the remount key lives here.
  */
-export function OnboardingStudio({ presets, tenants, looks }: OnboardingStudioProps) {
+export function OnboardingStudio({ presets, looks }: OnboardingStudioProps) {
   const [runId, setRunId] = useState(0)
   return (
     <StudioMachine
       key={runId}
       presets={presets}
-      tenants={tenants}
       looks={looks}
       onRestart={() => setRunId((n) => n + 1)}
     />
@@ -78,12 +76,10 @@ export function OnboardingStudio({ presets, tenants, looks }: OnboardingStudioPr
 
 function StudioMachine({
   presets,
-  tenants,
   looks,
   onRestart,
 }: {
   presets: VerticalPresetData
-  tenants: TenantCardItem[]
   looks?: LookMeta[]
   onRestart: () => void
 }) {
@@ -102,7 +98,10 @@ function StudioMachine({
     initStudioCfg(galleryMode ? (looks![0]!.key) : 'salvia'),
   )
 
-  const [stage, setStage] = useState<StudioStage>('super')
+  // Dunder-fix 2026-07-11: starta DIREKT i studion. Gamla 'super'-entrén var en
+  // dubblett av /salonger-kundlistan (med två döda stat-kort) som man tvingades
+  // klicka sig förbi — "Onboarda kund" i menyn ska öppna wizarden, punkt.
+  const [stage, setStage] = useState<StudioStage>('studio')
   const [step, setStep] = useState<StepId>('branch')
   const [device, setDevice] = useState<PreviewDevice>('desktop')
 
@@ -118,8 +117,8 @@ function StudioMachine({
   // Which journey pills the operator may jump to (port app.jsx:77 verbatim):
   // super always; studio once a bransch is picked; result once launched.
   const reachable: Record<StudioStage, boolean> = {
-    super: true,
-    studio: !!cfg.branch,
+    super: false, // entré-stadiet borttaget — studion ÄR startskärmen
+    studio: true,
     result: stage === 'result',
   }
 
@@ -156,18 +155,6 @@ function StudioMachine({
     >
       <JourneyBar stage={stage} reachable={reachable} onNav={setStage} />
 
-      {stage === 'super' && (
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <SuperEntry
-            tenants={tenants}
-            onStart={() => {
-              setStep('branch')
-              setStage('studio')
-            }}
-          />
-        </div>
-      )}
-
       {stage === 'studio' && (
         <div style={{ flex: 1, minHeight: 0, display: 'flex', position: 'relative' }}>
           <StepRail cfg={cfg} step={step} onStep={setStep} presets={presets} />
@@ -181,7 +168,7 @@ function StudioMachine({
             onNext={onNext}
             onLaunch={onLaunch}
           />
-          {/* right — live preview (W1 = honest placeholder skeleton; real render = W2) */}
+          {/* right — live preview (riktig StorefrontPreview-render) */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--c-paper-2)', minHeight: 0 }}>
             <div style={{ flex: 1, minHeight: 0, padding: '18px' }}>
               <PreviewPane cfg={cfg} device={device} onDevice={setDevice} lookKeys={lookKeys} />

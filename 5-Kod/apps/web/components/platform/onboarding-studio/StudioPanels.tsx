@@ -24,6 +24,8 @@ import { type StepId, stepDone } from '@/lib/platform/onboarding-studio/phases'
 import { resolveModuleState, type StudioService } from '@/lib/platform/onboarding-studio/model'
 import { modulesForVertical, termPlural, type TemplateOption } from '@/lib/platform/verticals-shared'
 import { isReservedSlug } from '@/lib/platform/slug'
+import { isSlugTaken } from '@/lib/platform/actions'
+import { useEffect, useState } from 'react'
 import {
   BOOKING_VARIANTS,
   BOOKING_VARIANT_LABELS,
@@ -261,6 +263,18 @@ function PanelBranch({ cfg, dispatch }: PanelProps) {
  *  → setSlug (sets slugTouched, §10-risk-1); reserved-slug warning vs the REAL list. */
 function PanelNamn({ cfg, dispatch }: PanelProps) {
   const reserved = cfg.slug ? isReservedSlug(cfg.slug) : false
+  // Inline upptagen-koll (Dunder-fix): debounce → isSlugTaken-servern. Tidigare
+  // small en dubblettslug först vid Lansera. Kollen är rådgivande — createTenant
+  // äger fortfarande den auktoritativa unikhets-spärren.
+  const [taken, setTaken] = useState(false)
+  useEffect(() => {
+    setTaken(false)
+    if (!cfg.slug || reserved) return
+    const t = setTimeout(() => {
+      isSlugTaken(cfg.slug).then(setTaken).catch(() => {})
+    }, 450)
+    return () => clearTimeout(t)
+  }, [cfg.slug, reserved])
   return (
     <Panel
       title="Namn & subdomän"
@@ -333,6 +347,19 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
               }}
             >
               <Icon name="alert" size={14} /> &quot;{cfg.slug}&quot; är reserverad — kan inte bli en salongs-slug.
+            </div>
+          ) : taken ? (
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: 12.5,
+                color: 'var(--c-danger)',
+                display: 'flex',
+                gap: 6,
+                alignItems: 'center',
+              }}
+            >
+              <Icon name="alert" size={14} /> &quot;{cfg.slug}&quot; är redan tagen av en annan kund — välj en annan.
             </div>
           ) : null}
         </div>
@@ -571,118 +598,19 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
   )
 }
 
-/** modplace — DEFERRED-STUB (honest). Modules render at their FIXED catalog
- *  default_section_position (migr 0033–0036); there is NO per-tenant module-order read
- *  path on the storefront (verified: tenant-modules.ts has no sort_order / order-by). A
- *  drag-to-reorder UI here would write an order nothing reads (goal-47 theater trap), so
- *  this stays an honest stub until the storefront learns to read a per-tenant order —
- *  its own wave, not W5. */
-function PanelModplace(_props: PanelProps) {
-  return (
-    <Panel title="Placera & ordna" sub="Ordningen modulerna ligger i på sidan.">
-      <DeferredStub icon="grid">
-        Modulerna visas i mallens standardordning. Att dra om ordningen kräver en separat ändring i hur
-        storefronten renderar — det blir en egen våg, inte den här.
-      </DeferredStub>
-    </Panel>
-  )
-}
+/* modplace + modconf borttagna 2026-07-11 (Dunder-fix): stubbar utan skrivväg
+   mitt i flödet — logga-uppladdning och modulinställningar bor i kundkortet. */
 
-/** modconf — DISPLAY-ONLY (§9.6). No inputs. Reads the REAL active modules (resolved
- *  state ≠ off) as a read-only list; per-module bransch-inställningar = later wave. */
-function PanelModconf({ cfg, presets }: PanelProps) {
-  const active = modulesForVertical(presets, cfg.branch).filter((m) => resolveModuleState(cfg, m.key, presets) !== 'off')
-  return (
-    <Panel title="Modulinställningar" sub="Bransch-specifika regler per modul.">
-      {active.length === 0 ? (
-        <DeferredStub icon="settings">Inga aktiva moduler. Slå på moduler i steget «Välj moduler».</DeferredStub>
-      ) : (
-        <>
-          <div style={{ ...groupEyebrow, color: 'var(--c-ink-3)', marginBottom: 10 }}>Aktiva moduler</div>
-          <div style={{ display: 'grid', gap: 8 }}>
-            {active.map((m) => (
-              <div
-                key={m.key}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '12px 14px',
-                  border: '1px solid var(--c-line)',
-                  borderRadius: 11,
-                  background: 'var(--c-paper)',
-                }}
-              >
-                <span
-                  style={{
-                    width: 30,
-                    height: 30,
-                    flex: 'none',
-                    borderRadius: 8,
-                    background: 'var(--c-forest)',
-                    color: '#fff',
-                    display: 'grid',
-                    placeItems: 'center',
-                  }}
-                >
-                  <Icon name="layers" size={15} />
-                </span>
-                <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>{m.name}</span>
-              </div>
-            ))}
-          </div>
-          <p style={{ fontSize: 12.5, color: 'var(--c-ink-3)', lineHeight: 1.5, margin: '14px 0 0' }}>
-            Bransch-specifika inställningar per modul läggs till i en senare våg.
-          </p>
-        </>
-      )}
-    </Panel>
-  )
-}
-
-/** brand — PARTIAL-REAL. Accent swatches → setAccent (or '' = temats standard);
- *  Tagline Field → setTagline. Logo = honest placeholder box only (no file input,
- *  upload = later wave, §9.9). */
+/** brand — Accent swatches → setAccent (or '' = temats standard);
+ *  Tagline Field → setTagline. Logga laddas upp i kundkortets Sida-flik efter
+ *  lansering (ingen placeholder-ruta här — den lovade mer än steget gjorde). */
 function PanelBrand({ cfg, dispatch }: PanelProps) {
   return (
     <Panel
       title="Branding"
-      sub="Logga, accentfärg och tagline — token-lagret (no-code). Slår igenom på storefronten utan deploy."
+      sub="Accentfärg och tagline — token-lagret (no-code). Slår igenom på storefronten utan deploy. Logga laddas upp i kundkortet efter lansering."
     >
       <div style={{ display: 'grid', gap: 20 }}>
-        <div>
-          <div style={{ ...labelStyle, marginBottom: 8 }}>Logga</div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              padding: 14,
-              background: 'var(--c-paper-2)',
-              borderRadius: 12,
-            }}
-          >
-            <div
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: 11,
-                border: '2px dashed var(--c-line-strong)',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'var(--c-ink-3)',
-                flex: 'none',
-              }}
-            >
-              <Icon name="upload" size={19} />
-            </div>
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)' }}>Logga</div>
-              <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 2 }}>Uppladdning (PNG/SVG → R2) kommer i en senare våg.</div>
-            </div>
-          </div>
-        </div>
-
         <div>
           <div style={{ ...labelStyle, marginBottom: 8 }}>
             Accentfärg <span style={{ color: 'var(--c-ink-3)', fontWeight: 400 }}>— skriver över temats primärfärg live</span>
@@ -972,9 +900,9 @@ function PanelGranska({ cfg, presets, onNext }: StudioPanelProps) {
     { label: 'Ägare inbjuden', detail: 'Får magic-link vid lansering.', done: !!cfg.ownerEmail.trim(), optional: true },
     {
       label: 'Tjänster & priser',
-      detail: 'Bokningen behöver minst en — kan läggas till senare i admin.',
+      detail: 'Bokningen behöver minst en tjänst för att kunna ta emot bokningar — krav för lansering.',
       done: stepDone('tjanster', cfg, presets),
-      optional: true,
+      optional: false,
     },
   ]
   return (
@@ -1045,7 +973,12 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
   // + a theme so the gold button never fires a guaranteed-fail submit. booking is force-
   // floored to live in buildCreateTenantFormData, so we don't depend on the catalog read
   // (which fail-softs to [] and would otherwise permanently disable Lansera).
-  const ready = !!cfg.name.trim() && !!cfg.slug && !isReservedSlug(cfg.slug) && !!cfg.theme
+  // + minst en namngiven tjänst (Dunder-fix): bokningsmodulen golvas till live,
+  // så en salong utan tjänster lanserades tidigare med en bokning som inte har
+  // något att boka. Tjänsterna läggs i steget «Tjänster & innehåll».
+  const hasService = cfg.services.some((s) => s.name.trim() !== '')
+  const ready =
+    !!cfg.name.trim() && !!cfg.slug && !isReservedSlug(cfg.slug) && !!cfg.theme && hasService
   return (
     <Panel title="Lansera" sub="Sista steget. Publicerar storefronten på subdomänen och bjuder in ägaren.">
       <div style={{ display: 'grid', gap: 16 }}>
@@ -1077,7 +1010,8 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
             <span style={{ flex: 'none', marginTop: 1 }}>
               <Icon name="alert" size={14} />
             </span>
-            Kräver: salongsnamn, en giltig subdomän och ett tema. Komplettera i stegen ovan.
+            Kräver: salongsnamn, en giltig subdomän, ett tema och minst en tjänst. Komplettera i
+            stegen ovan.
           </div>
         ) : null}
 
@@ -1106,8 +1040,6 @@ export const PANEL_BY_STEP: Record<StepId, FC<StudioPanelProps>> = {
   namn: PanelNamn,
   tema: PanelTema,
   modval: PanelModval,
-  modplace: PanelModplace,
-  modconf: PanelModconf,
   brand: PanelBrand,
   text: PanelText,
   tjanster: PanelTjanster,

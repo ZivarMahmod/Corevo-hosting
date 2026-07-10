@@ -16,8 +16,8 @@ import { Icon } from '@/components/portal/ui'
 import type { StudioStage } from '@/lib/platform/onboarding-studio/state'
 
 /** The journey arc, in order. Labels are design-verbatim (app.jsx:63). */
+// 'super'-entrén borttagen (Dunder-fix 2026-07-11) — kundlistan bor på /salonger.
 const STAGES: ReadonlyArray<{ id: StudioStage; label: string }> = [
-  { id: 'super', label: 'Kunder' },
   { id: 'studio', label: 'Onboarding-studio' },
   { id: 'result', label: 'Live' },
 ]

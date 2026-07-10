@@ -20,44 +20,19 @@ export async function DomainPanel({ slug, tenantId }: { slug: string; tenantId: 
     return <DomainManager slug={slug} tenantId={tenantId} initialDomains={domains} />
   }
 
+  // Dunder-fix 2026-07-11: det gamla disabled-formuläret (input + död status-
+  // knapp) såg ut som trasig UI — spärrad funktion visas som text, inte som
+  // kontroller man inte kan röra.
   return (
-    <div>
-      <div className={styles.banner}>
-        <p className={styles.bannerTitle}>⛔ DO NOT RUN YET — egen domän är spärrad</p>
-        <p className={styles.muted} style={{ margin: 0 }}>
-          Salongen körs live på <code className={styles.code}>{slug}.corevo.se</code>. Kundens egna
-          domän (CNAME / custom hostname) provisioneras <strong>inte</strong> automatiskt. Inget
-          Cloudflare-anrop går iväg och ingen domänrad skapas. Flagga{' '}
-          <code className={styles.code}>DOMAIN_PROVISIONING_ENABLED</code> ={' '}
-          <strong>{String(ENABLED)}</strong> (kräver manuell drift av Zivar även när den är på).
-        </p>
-      </div>
-
-      <fieldset className={`${styles.form} ${styles.lockedField}`} disabled aria-disabled="true">
-        <label className={styles.field}>
-          <span>Kundens domän</span>
-          <input name="custom_domain" placeholder="boka.salongnamn.se" disabled />
-        </label>
-        <label className={styles.field}>
-          <span>Planerad CNAME (sätts hos kundens DNS-leverantör)</span>
-          <input
-            readOnly
-            disabled
-            value={`${slug}.corevo.se`}
-            aria-label="CNAME-mål"
-          />
-          <span className={styles.hint}>
-            CNAME <code className={styles.code}>boka</code> →{' '}
-            <code className={styles.code}>{slug}.corevo.se</code>. Verifiering + custom hostname körs
-            manuellt först när spärren hävs.
-          </span>
-        </label>
-        <div className={styles.actions}>
-          <button type="button" className={styles.btn} disabled>
-            Status: blocked / pending_manual
-          </button>
-        </div>
-      </fieldset>
+    <div className={styles.banner}>
+      <p className={styles.bannerTitle}>Egen domän — inte påkopplat ännu</p>
+      <p className={styles.muted} style={{ margin: 0 }}>
+        Kunden körs live på <code className={styles.code}>{slug}.corevo.se</code>. Egen domän
+        (t.ex. <code className={styles.code}>boka.salongnamn.se</code> via CNAME) är ett parkerat
+        spår och slås på av drift (flagga{' '}
+        <code className={styles.code}>DOMAIN_PROVISIONING_ENABLED</code>) — då dyker
+        domänhanteraren upp här.
+      </p>
     </div>
   )
 }
