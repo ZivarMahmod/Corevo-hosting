@@ -59,7 +59,9 @@ const isPrefix = (path: string, prefixes: readonly string[]): boolean =>
 // Verified goal-27: every app/**/route.ts lives under /api (gdpr, cron, stripe),
 // so '/api' + '/api/*' covers them.
 const isAlwaysAllowed = (path: string): boolean =>
-  isPrefix(path, ['/login', '/ingen-atkomst']) || path === '/api' || path.startsWith('/api/')
+  isPrefix(path, ['/login', '/ingen-atkomst', '/valkommen']) ||
+  path === '/api' ||
+  path.startsWith('/api/')
 
 /**
  * Decide how a back-office host should route `path`. Pure: returns an intent the

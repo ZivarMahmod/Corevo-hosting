@@ -17,6 +17,7 @@ import { foldOnboardingDraft } from '@/lib/sajtbyggare/onboarding-fold'
 import type { Json } from '@corevo/db'
 import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
 import { reportActionError } from './observe'
+import { inviteRedirectUrl } from '@/lib/auth/invite'
 
 const DEFAULT_TZ = 'Europe/Stockholm'
 
@@ -290,7 +291,11 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
       // of the generic "Corevo" default (W0 #3). full_name stays optional.
       const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(
         ownerEmail,
-        { data: { ...(ownerName ? { full_name: ownerName } : {}), tenant_name: name } },
+        {
+          data: { ...(ownerName ? { full_name: ownerName } : {}), tenant_name: name },
+          // Ägare = salon_admin → /valkommen på booking-dörren (annars Site URL).
+          redirectTo: inviteRedirectUrl('admin'),
+        },
       )
       if (iErr || !invited?.user) {
         ownerFailed = `inbjudan misslyckades (${iErr?.message ?? 'okänt fel'})`

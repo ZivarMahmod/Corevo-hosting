@@ -14,6 +14,7 @@ import { refundBookingPayment } from '@/lib/stripe/refund'
 import { BOOKING_STATUSES, ALLOWED_FROM, type BookingStatus } from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
+import { inviteRedirectUrl } from '@/lib/auth/invite'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -594,7 +595,10 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   const roleId = role.id
 
   // 2) Invite the auth user (one-time magic link). Only this step needs svc.
-  const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email)
+  //    redirectTo → /valkommen på personal-dörren (annars Site URL = fel host).
+  const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email, {
+    redirectTo: inviteRedirectUrl('staff'),
+  })
   if (iErr || !invited?.user) {
     return { error: `Inbjudan misslyckades: ${iErr?.message ?? 'kontot finns kanske redan'}.` }
   }

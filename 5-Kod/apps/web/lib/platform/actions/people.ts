@@ -6,6 +6,7 @@ import { createServiceClient, hasServiceRole } from '../service'
 import { logPlatformAction } from '../audit'
 import { type ActionState, GENERIC, EMAIL_RE } from './shared'
 import { reportActionError } from './observe'
+import { inviteRedirectUrl } from '@/lib/auth/invite'
 
 /**
  * Trigger a password reset for the salon's admin. Generates a recovery link via
@@ -125,8 +126,11 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
     .maybeSingle()
   if (!role) return { error: GENERIC }
 
-  // 2) Invite the auth user (one-time magic link).
-  const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email)
+  // 2) Invite the auth user (one-time magic link). redirectTo → /valkommen på
+  //    personal-dörren (annars Site URL = fel host).
+  const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email, {
+    redirectTo: inviteRedirectUrl('staff'),
+  })
   if (iErr || !invited?.user) {
     return { error: `Inbjudan misslyckades: ${iErr?.message ?? 'kontot finns kanske redan'}.` }
   }
