@@ -217,8 +217,10 @@ export async function getAvailableSlots(
   }
 
   const now = new Date()
-  // start ISO → the (first) staff free at that time
-  const byStart = new Map<string, string>()
+  // start ISO → alla lediga frisörer den tiden. Vid "Alla" väljs sedan den med
+  // minst bokad tid den dagen (Zivar 2026-07-10: systemet fördelar jobbet jämnt,
+  // kunden ska inte se vem). RPC:ns dubbelboknings-skydd gäller oavsett.
+  const byStart = new Map<string, string[]>()
   for (const id of staffIds) {
     // Fallback-ordning (3a): service-värde ?? staff-värde ?? konstant. NULL i DB
     // (default för befintliga rader) → exakt dagens beteende (15 / 0).
@@ -239,13 +241,43 @@ export async function getAvailableSlots(
     })
     for (const d of slots) {
       const iso = d.toISOString()
-      if (!byStart.has(iso)) byStart.set(iso, id)
+      const list = byStart.get(iso)
+      if (list) list.push(id)
+      else byStart.set(iso, [id])
     }
+  }
+
+  // Bokade minuter per frisör idag — fördelningsnyckeln vid "Alla".
+  const bookedMin = new Map<string, number>()
+  for (const [id, list] of busyByStaff) {
+    bookedMin.set(
+      id,
+      list.reduce((sum, b) => sum + (b.end.getTime() - b.start.getTime()) / 60000, 0),
+    )
+  }
+  // ponytail: greedy per slot-lista (minst bokad + minst tilldelad hittills) —
+  // ingen global optimering, räcker för jämn fördelning över en dag.
+  const assignedHere = new Map<string, number>()
+  const pickLeastBusy = (ids: string[]): string => {
+    let best = ids[0]!
+    let bestScore = Infinity
+    for (const id of ids) {
+      const score = (bookedMin.get(id) ?? 0) + (assignedHere.get(id) ?? 0) * 0.001
+      if (score < bestScore) {
+        bestScore = score
+        best = id
+      }
+    }
+    assignedHere.set(best, (assignedHere.get(best) ?? 0) + 1)
+    return best
   }
 
   const slots: SlotOption[] = [...byStart.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([start, sId]) => ({ start, staffId: sId, staffTitle: titleById.get(sId) ?? null }))
+    .map(([start, ids]) => {
+      const sId = staffId ? ids[0]! : pickLeastBusy(ids)
+      return { start, staffId: sId, staffTitle: titleById.get(sId) ?? null }
+    })
 
   return { ok: true, timeZone: ctx.timeZone, slots }
 }

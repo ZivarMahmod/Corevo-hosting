@@ -1270,9 +1270,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 52px;
-  padding: 13px 26px;
-  font-size: 16px;
+  min-height: 60px;
+  padding: 15px 34px;
+  font-size: 17px;
   border-radius: 999px;
   border: 1px solid var(--c-line);
   background: var(--c-paper);

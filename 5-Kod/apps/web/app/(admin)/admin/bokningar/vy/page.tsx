@@ -199,12 +199,22 @@ export default async function BookingsKioskPage({
 
       {/* Dag-bläddring: stora touch-mål för surfplattan */}
       <div className="admin-kiosk-nav">
-        <Link href={href(addDaysDate(day, -1))} className="admin-kiosk-navbtn" aria-label="Föregående dag">
-          <Icon name="chevronLeft" size={22} />
+        <Link
+          href={href(addDaysDate(day, -1))}
+          prefetch
+          className="admin-kiosk-navbtn"
+          aria-label="Föregående dag"
+        >
+          <Icon name="chevronLeft" size={26} />
         </Link>
         <span className="admin-kiosk-day">{dayLabel}</span>
-        <Link href={href(addDaysDate(day, 1))} className="admin-kiosk-navbtn" aria-label="Nästa dag">
-          <Icon name="chevronRight" size={22} />
+        <Link
+          href={href(addDaysDate(day, 1))}
+          prefetch
+          className="admin-kiosk-navbtn"
+          aria-label="Nästa dag"
+        >
+          <Icon name="chevronRight" size={26} />
         </Link>
         {day !== today ? (
           <Link href={href(today)} className="admin-kiosk-navbtn is-emph" aria-label="Hoppa till idag">

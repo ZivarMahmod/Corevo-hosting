@@ -8,7 +8,7 @@ import { logger } from '@/lib/observability'
 // Reminder pipeline (G10 step 3). Sends a "din tid imorgon"-mail for LIVE bookings
 // (pending OR confirmed — on-site "betala på plats" bookings stay `pending` until
 // staff confirm them, so a confirmed-only filter would silently skip them) starting
-// within the next ~24h, then stamps bookings.reminded_at so the next run can't
+// within the next ~30h, then stamps bookings.reminded_at so the next run can't
 // double-send (idempotent).
 //
 // Driven by an EXTERNAL scheduler (Cloudflare Cron Trigger → app/api/cron/reminders,
@@ -56,7 +56,10 @@ export async function sendDueReminders(): Promise<ReminderRun> {
   }
 
   const now = new Date()
-  const horizon = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+  // 30h-horisont (Zivar 2026-07-10): påminnelsen ska gå ut ~30 timmar innan
+  // tiden. Cron går var 15:e min → mailet landar när bokningen passerar 30h-
+  // gränsen (bokningar närmare än så vid bokningstillfället påminns direkt).
+  const horizon = new Date(now.getTime() + 30 * 60 * 60 * 1000)
 
   const { data, error } = await admin
     .from('bookings')

@@ -545,10 +545,9 @@ export function BookingWizard({
           setSlotTakenNotice(null)
         }}
       >
+        {/* Vid "Alla" visas INGEN frisör på tiden — systemet fördelar själv till
+            den med minst bokat (Zivar 2026-07-10). */}
         <span className="fc-slot-time">{fmtTime(sl.start)}</span>
-        {staffChoice === 'any' && sl.staffTitle ? (
-          <span className="wizard-time-staff">{sl.staffTitle}</span>
-        ) : null}
       </button>
     )
   }
@@ -1134,7 +1133,8 @@ export function BookingWizard({
                 <span className="fc-summary-name">{service.name}</span>
                 <span className="fc-summary-meta">
                   {fmtTime(slot.start)}
-                  {slot.staffTitle ? ` · ${slot.staffTitle}` : ''} · {service.durationMin} min
+                  {staffChoice !== 'any' && slot.staffTitle ? ` · ${slot.staffTitle}` : ''} ·{' '}
+                  {service.durationMin} min
                 </span>
               </span>
               <span className="fc-summary-price">{kr.format(service.priceCents / 100)}</span>

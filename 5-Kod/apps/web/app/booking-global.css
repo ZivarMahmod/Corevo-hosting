@@ -311,6 +311,9 @@
 
 .fc-ticket-actions { display: flex; flex-direction: column; gap: 9px; width: 100%; max-width: 330px; margin-top: 22px; }
 .fc-btn-ink { width: 100%; padding: 13px; background: var(--fc-ink); color: var(--fc-paper); border: none; border-radius: 0; font: inherit; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; letter-spacing: 0.02em; text-align: center; text-decoration: none; display: block; transition: filter 0.15s ease; }
+/* .tenant-root a { color: inherit } (globals.css) vinner annars över klassen på
+   storefront-sidor → svart text på svart knapp ("svarta rutan"-buggen). */
+.fc-scope a.fc-btn-ink { color: var(--fc-paper); }
 .fc-btn-ink:hover { filter: brightness(0.85); }
 .fc-btn-ink:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
 .fc-btn-outline { width: 100%; padding: 13px; background: transparent; color: var(--fc-ink-2); border: 1.5px solid var(--fc-line-2); border-radius: 0; font: inherit; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; transition: border-color 0.12s ease; }
