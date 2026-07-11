@@ -29,6 +29,7 @@ import { MediaLibrary } from '@/components/admin/MediaLibrary'
 import { OffertInbox } from '@/components/admin/OffertInbox'
 import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
 import { SidaStudio } from '@/components/platform/SidaStudio'
+import { getVerticalCopy } from '@/components/storefront/vertical-copy'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
 import { createClient } from '@/lib/supabase/server'
 import { SajtbyggareControl } from '@/components/platform/SajtbyggareControl'
@@ -549,6 +550,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             avatarUrl: s.avatar_url,
             showOnSite: s.show_on_site,
           }))}
+          verticalCopy={await getVerticalCopy(verticalId)}
         />
       </>
     ),

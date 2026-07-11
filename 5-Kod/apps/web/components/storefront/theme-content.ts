@@ -369,6 +369,46 @@ export type CopyOverride = {
 /** The six theme-content fields the owner may override via `settings.copy`. */
 const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic', 'aboutTitle', 'servicesEyebrow', 'servicesTitle', 'teamEyebrow', 'teamTitle'] as const
 
+/** ALLA nycklar i CopyOverride — whitelisten för bransch-mall-texten (goal-57
+ *  körning 12: verticals.default_copy bär samma fältkontrakt som settings.copy). */
+export const COPY_OVERRIDE_KEYS = [
+  'heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'aboutCopyHome', 'tagline',
+  'italic', 'aboutTitle', 'homeSecondTitle', 'whyTitle', 'whySub', 'whyBody',
+  'servicesEyebrow', 'servicesTitle', 'servicesIntro', 'teamEyebrow', 'teamTitle',
+  'teamLead', 'closingEyebrow', 'closingTitle', 'closingLede', 'contactEyebrow',
+  'contactTitle',
+] as const
+
+/** Sanera en rå jsonb till en ren CopyOverride: bara kända nycklar, bara icke-tomma
+ *  strängar (trimmade för "satt?"-testet, värdet behålls verbatim), tak 4000 tecken.
+ *  Delas av bransch-mall-läsaren (vertical-copy.ts) och spar-actionen. PURE. */
+export function cleanCopyOverride(raw: unknown): CopyOverride {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out: Record<string, string> = {}
+  const r = raw as Record<string, unknown>
+  for (const k of COPY_OVERRIDE_KEYS) {
+    const v = r[k]
+    if (typeof v === 'string' && v.trim().length > 0 && v.length <= 4000) out[k] = v
+  }
+  return out as CopyOverride
+}
+
+/** Lager-merge (goal-57 körning 12): branschens mall-text i botten, kundens egna
+ *  ICKE-TOMMA fält ovanpå. Resultatet matas in som `copy` i resolve-funktionerna,
+ *  så kedjan blir kund → bransch → tema utan att resolverna ändras. PURE. */
+export function layerCopy(
+  verticalCopy: CopyOverride,
+  tenantCopy: CopyOverride | null | undefined,
+): CopyOverride | null {
+  const t = (tenantCopy ?? {}) as Record<string, unknown>
+  const merged: Record<string, string> = { ...(verticalCopy as Record<string, string>) }
+  for (const k of COPY_OVERRIDE_KEYS) {
+    const v = t[k]
+    if (typeof v === 'string' && v.trim().length > 0) merged[k] = v
+  }
+  return Object.keys(merged).length > 0 ? (merged as CopyOverride) : null
+}
+
 /**
  * Resolve the six editorial copy fields: owner override wins per field, otherwise
  * the per-theme default. DEFENSIVE — `copy` arrives from frozen `parseSettings`

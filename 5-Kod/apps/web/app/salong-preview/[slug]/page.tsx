@@ -29,7 +29,7 @@ export default async function SalongPreviewPage({
   const { tenant, settings, location } = bundle
 
   const Layout = STOREFRONT_LAYOUTS[theme]
-  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const content = resolveThemeContent(theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 

@@ -23,7 +23,7 @@ export default async function PreviewContactPage({
   const theme = resolvePreviewTheme(bundle, themeParam)
   const { tenant, settings } = bundle
 
-  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const content = resolveThemeContent(theme, settings.branding, copy)
 
   return (

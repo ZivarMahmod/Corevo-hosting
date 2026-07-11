@@ -1,7 +1,8 @@
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import type { CopyOverride } from './theme-content'
+import { layerCopy, type CopyOverride } from './theme-content'
+import { getVerticalCopy } from './vertical-copy'
 
 /**
  * Owner-editable storefront COPY reader (M2 side of the M2↔M6 copy contract).
@@ -25,6 +26,9 @@ import type { CopyOverride } from './theme-content'
 export async function getTenantCopy(
   tenantId: string,
   slug: string,
+  /** tenants.vertical_id — lagrar branschens mall-text UNDER kundens egna fält
+   *  (goal-57 körning 12): kund → bransch → tema. null/utelämnad = ingen bransch-nivå. */
+  verticalId: string | null = null,
 ): Promise<CopyOverride | null> {
   const norm = slug.trim().toLowerCase()
   const load = unstable_cache(
@@ -44,5 +48,6 @@ export async function getTenantCopy(
     ['tenant-copy-by-tenant', tenantId],
     { tags: [`tenant:${norm}`], revalidate: 300 },
   )
-  return load()
+  const [tenantCopy, verticalCopy] = await Promise.all([load(), getVerticalCopy(verticalId)])
+  return layerCopy(verticalCopy, tenantCopy)
 }

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { saveVerticalTerminology, saveVerticalDefaults } from '@/lib/platform/actions/verticals'
+import { saveVerticalTerminology, saveVerticalDefaults, saveVerticalCopy } from '@/lib/platform/actions/verticals'
 import type { ActionState } from '@/lib/platform/actions/shared'
 import { MODULE_STATES } from '@/lib/tenant-modules'
 import { Button, Card, useToast } from '@/components/portal/ui'
@@ -30,18 +30,44 @@ const TERM_FIELDS: { key: string; label: string; ph: string }[] = [
  * gäller bara nya kunder). Detta är ytan där modul-mot-bransch-genomgången bor:
  * "hur ska bokningen/webshoppen/bloggen bete sig för DENNA bransch".
  */
+// goal-57 körning 12: bransch-mall-textens redigerbara fält (subset av
+// COPY_OVERRIDE_KEYS — mall-egna FreshCut-fält hör inte hemma på bransch-nivå).
+const COPY_FIELDS: { key: string; label: string; rows?: number }[] = [
+  { key: 'heroEyebrow', label: 'Hero: liten rubrik (eyebrow)' },
+  { key: 'heroTitle', label: 'Hero: rubrik', rows: 2 },
+  { key: 'heroLede', label: 'Hero: ingress', rows: 2 },
+  { key: 'tagline', label: 'Sidfotens tagline' },
+  { key: 'aboutTitle', label: 'Om: rubrik' },
+  { key: 'aboutCopy', label: 'Om: brödtext', rows: 4 },
+  { key: 'italic', label: 'Kursiv accentrad' },
+  { key: 'servicesEyebrow', label: 'Tjänster: eyebrow' },
+  { key: 'servicesTitle', label: 'Tjänster: rubrik' },
+  { key: 'servicesIntro', label: 'Tjänster: intro-rad', rows: 2 },
+  { key: 'teamEyebrow', label: 'Team: eyebrow' },
+  { key: 'teamTitle', label: 'Team: rubrik' },
+  { key: 'teamLead', label: 'Team: lead-rad', rows: 2 },
+  { key: 'closingEyebrow', label: 'Avslutning: eyebrow' },
+  { key: 'closingTitle', label: 'Avslutning: rubrik' },
+  { key: 'closingLede', label: 'Avslutning: ingress', rows: 2 },
+  { key: 'contactEyebrow', label: 'Kontakt: eyebrow' },
+  { key: 'contactTitle', label: 'Kontakt: rubrik' },
+]
+
 export function VerticalEditor({
   verticalKey,
   kundAntal,
   terminology,
   modules,
   defaultTemplate,
+  defaultCopy = {},
 }: {
   verticalKey: string
   kundAntal: number
   terminology: Record<string, string>
   modules: VerticalModuleRow[]
   defaultTemplate: string | null
+  /** verticals.default_copy — branschens editorial mall-text (goal-57 körning 12). */
+  defaultCopy?: Record<string, string>
 }) {
   const { notify } = useToast()
   const router = useRouter()
@@ -53,6 +79,17 @@ export function VerticalEditor({
     saveVerticalDefaults,
     {},
   )
+  const [copyState, copyAction, copyPending] = useActionState<ActionState, FormData>(
+    saveVerticalCopy,
+    {},
+  )
+  useEffect(() => {
+    if (copyState.success) {
+      notify(copyState.success, 'success')
+      router.refresh()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [copyState.success])
 
   useEffect(() => {
     if (termState.success) {
@@ -102,6 +139,48 @@ export function VerticalEditor({
             {termState.error ? (
               <p className="auth-error" role="alert" style={{ margin: '10px 0 0', fontSize: 12.5 }}>
                 {termState.error}
+              </p>
+            ) : null}
+          </form>
+        </Card>
+      </div>
+
+      {/* Bransch-mall-text — live-arv, fallback under kundens egna texter */}
+      <div style={{ marginTop: '1.75rem' }}>
+        <h2 style={{ margin: '0 0 10px', fontSize: 15.5, fontWeight: 700 }}>Sidtext-mall</h2>
+        <Card>
+          <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--c-ink-3)' }}>
+            Branschens grundtexter — kunder som inte skrivit egen text ärver dessa (live, inom
+            ~5 min). En kund som skrivit eget behåller alltid sitt. Tomt fält = mallens
+            inbyggda standardtext.
+          </p>
+          <form action={copyAction}>
+            <input type="hidden" name="vertical" value={verticalKey} />
+            <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+              {COPY_FIELDS.map((f) => (
+                <label key={f.key} style={{ display: 'grid', gap: 5, fontSize: 12.5, color: 'var(--c-ink-2)', fontWeight: 600 }}>
+                  {f.label}
+                  {f.rows ? (
+                    <textarea
+                      name={`copy_${f.key}`}
+                      defaultValue={defaultCopy[f.key] ?? ''}
+                      rows={f.rows}
+                      style={{ ...fieldStyle, resize: 'vertical' }}
+                    />
+                  ) : (
+                    <input name={`copy_${f.key}`} defaultValue={defaultCopy[f.key] ?? ''} style={fieldStyle} />
+                  )}
+                </label>
+              ))}
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <Button variant="primary" type="submit" icon="check" size="sm" disabled={copyPending}>
+                {copyPending ? 'Sparar…' : 'Spara sidtext-mall'}
+              </Button>
+            </div>
+            {copyState.error ? (
+              <p className="auth-error" role="alert" style={{ margin: '10px 0 0', fontSize: 12.5 }}>
+                {copyState.error}
               </p>
             ) : null}
           </form>

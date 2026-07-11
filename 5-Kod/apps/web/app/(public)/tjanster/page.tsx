@@ -20,7 +20,7 @@ export default async function ServicesPage() {
   if (!bundle) notFound()
   const { tenant, settings } = bundle
   // Section header varies per theme (data-driven, no longer hardcoded).
-  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const content = resolveThemeContent(settings.theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 

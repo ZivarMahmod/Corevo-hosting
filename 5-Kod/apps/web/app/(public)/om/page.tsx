@@ -16,7 +16,7 @@ export default async function AboutPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings } = bundle
-  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const content = resolveThemeContent(settings.theme, settings.branding, copy)
 
   return (

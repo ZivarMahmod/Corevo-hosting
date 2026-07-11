@@ -62,7 +62,7 @@ export default async function HomePage() {
   // marriage slice lands a RICH renderer over the DB layer, it gets wired here.
   const Layout = STOREFRONT_LAYOUTS[settings.theme]
   // Owner copy (settings.copy) wins per-field; theme default fills the rest.
-  const baseCopy = await getTenantCopy(tenant.id, tenant.slug)
+  const baseCopy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
 
   // Template-bron option 1: a salvia tenant with authored content_slots (written by
   // the super-admin visual hub at /salonger/[id]) renders those values THROUGH this

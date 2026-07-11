@@ -57,7 +57,7 @@ export default async function SajtbyggarePreviewPage({
   if (settings.theme !== 'salvia') notFound()
 
   // Sparad ägar-copy (M2-sidan av copy-kontraktet — settings.copy).
-  const savedCopy = await getTenantCopy(tenant.id, tenant.slug)
+  const savedCopy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
 
   // Avkoda utkastet ur query-strängen (malformat/oversize → tomt utkast → sparade
   // värden visas, kastar aldrig).

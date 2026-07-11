@@ -84,7 +84,7 @@ export async function PreviewShell({
 
   // Footer-taglinen ärar ägarens copy-override (temats standard annars) — samma
   // kontrakt som (public)/layout.
-  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const tagline = resolveTenantCopy(theme, copy).tagline
 
   return (

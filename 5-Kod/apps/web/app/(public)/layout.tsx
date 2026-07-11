@@ -99,7 +99,7 @@ export default async function PublicLayout({ children }: { children: React.React
   // Footer tagline honours the owner's settings.copy override (theme default
   // otherwise); utility micro-copy is theme-default by contract. The thin
   // utility strip stays theme-fixed — only `tagline` is owner-editable here.
-  const copy = await getTenantCopy(tenant.id, tenant.slug)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const themeBase = THEME_CONTENT[settings.theme]
   const tagline = resolveTenantCopy(settings.theme, copy).tagline
   const content = { utility: themeBase.utility, tagline }

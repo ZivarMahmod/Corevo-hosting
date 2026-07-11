@@ -94,6 +94,7 @@ export function SidaStudio({
   hasStaffPhoto = false,
   staffTeam = [],
   canChangeTemplate = true,
+  verticalCopy,
 }: {
   tenantId: string
   previewPath: string
@@ -129,6 +130,10 @@ export function SidaStudio({
   /** false för salon_admin: mall-byte är plattformens beslut — sektionen döljs
    *  (och setTenantTheme nekar server-side). */
   canChangeTemplate?: boolean
+  /** Branschens mall-text (verticals.default_copy, goal-57 körning 12) — visas som
+   *  fältens "Mallens text"-standard så editorn speglar vad publika sidan faktiskt
+   *  faller tillbaka på (kund → bransch → tema). */
+  verticalCopy?: Record<string, string>
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [page, setPage] = useState<PageKey>('allmant')
@@ -172,16 +177,34 @@ export function SidaStudio({
     contactTitle: '',
   }
   const statsDefaults = themeBase.stats
+  // Bransch-mall-texten (goal-57 körning 12) läggs OVANPÅ temats standard så
+  // "Mallens text" i editorn = det publika sidan faktiskt faller tillbaka på.
+  const vc = verticalCopy ?? {}
+  for (const [k, v] of Object.entries(vc)) {
+    if (typeof v === 'string' && v.trim().length > 0 && k in copyDefaults) {
+      ;(copyDefaults as Record<string, string>)[k] = v
+    }
+  }
+  if (vc.aboutCopy?.trim() && !vc.aboutCopyHome?.trim()) copyDefaults.aboutCopyHome = vc.aboutCopy
   // Sid-texternas inbyggda standarder (render-fallbacks utan temadefault) — samma
   // strängar som sidorna/sektionerna faller tillbaka på, så fälten förifylls ärligt.
-  const servicesIntroDefault = `Våra behandlingar hos ${name}. Alla priser är inkl. moms — välj en tjänst och boka en ledig tid online.`
-  const teamLeadDefault = `Teamet på ${name} brinner för hantverket och för att du ska känna dig hemma.`
+  const servicesIntroDefault = vc.servicesIntro?.trim()
+    ? vc.servicesIntro
+    : `Våra behandlingar hos ${name}. Alla priser är inkl. moms — välj en tjänst och boka en ledig tid online.`
+  const teamLeadDefault = vc.teamLead?.trim()
+    ? vc.teamLead
+    : `Teamet på ${name} brinner för hantverket och för att du ska känna dig hemma.`
   const closingDefaults = {
-    closingEyebrow: 'Redo när du är',
-    closingTitle: 'Redo för en ny stil?',
-    closingLede: 'Hitta en tid som passar dig och boka online på under en minut — bekräftelse direkt.',
+    closingEyebrow: vc.closingEyebrow?.trim() ? vc.closingEyebrow : 'Redo när du är',
+    closingTitle: vc.closingTitle?.trim() ? vc.closingTitle : 'Redo för en ny stil?',
+    closingLede: vc.closingLede?.trim()
+      ? vc.closingLede
+      : 'Hitta en tid som passar dig och boka online på under en minut — bekräftelse direkt.',
   }
-  const contactHeadDefaults = { contactEyebrow: '— Hitta hit', contactTitle: 'Plats & öppettider' }
+  const contactHeadDefaults = {
+    contactEyebrow: vc.contactEyebrow?.trim() ? vc.contactEyebrow : '— Hitta hit',
+    contactTitle: vc.contactTitle?.trim() ? vc.contactTitle : 'Plats & öppettider',
+  }
 
   const activePage = PAGES.find((p) => p.key === page) ?? PAGES[0]!
   const src = useMemo(() => {

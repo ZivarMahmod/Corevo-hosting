@@ -4,6 +4,7 @@ import { getAdminTenant } from '@/lib/admin/tenant'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantDetail } from '@/lib/platform/tenants'
 import { SidaStudio } from '@/components/platform/SidaStudio'
+import { getVerticalCopy } from '@/components/storefront/vertical-copy'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
@@ -101,6 +102,9 @@ export default async function AdminSidaPage() {
           showOnSite: s.show_on_site,
         }))}
         canChangeTemplate={false}
+        verticalCopy={await getVerticalCopy(
+          (row as { vertical_id?: string | null }).vertical_id ?? null,
+        )}
       />
     </>
   )

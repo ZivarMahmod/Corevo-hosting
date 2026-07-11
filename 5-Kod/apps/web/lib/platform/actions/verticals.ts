@@ -12,6 +12,7 @@
 import { revalidatePath } from 'next/cache'
 import { platformCtx } from '../guard'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
+import { COPY_OVERRIDE_KEYS } from '@/components/storefront/theme-content'
 import { type ActionState, GENERIC } from './shared'
 
 // Nycklarna kundbilden redigerar. business = rapport 06:s förslag ("Salongsadmin"
@@ -48,6 +49,30 @@ export async function saveVerticalTerminology(_p: ActionState, fd: FormData): Pr
   revalidatePath('/branscher')
   revalidatePath(`/branscher/${key}`)
   return { success: 'Terminologin sparad — gäller direkt för alla kunder i branschen.' }
+}
+
+/** Bransch-mall-text (goal-57 körning 12) — LIVE-ARV som terminologin: fälten är
+ *  fallback under varje kunds egna settings.copy, så en kund med egen text ser
+ *  ingen skillnad. Skriver om HELA default_copy-jsonben (samma mönster som
+ *  terminologin — nycklar utanför formuläret skulle raderas, därför itererar vi
+ *  ALLA COPY_OVERRIDE_KEYS). Tomt fält = nyckeln droppas = temats standard. */
+export async function saveVerticalCopy(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { supabase } = await platformCtx()
+  const key = String(fd.get('vertical') ?? '').trim()
+  if (!key) return { error: GENERIC }
+
+  const copy: Record<string, string> = {}
+  for (const k of COPY_OVERRIDE_KEYS) {
+    const v = String(fd.get(`copy_${k}`) ?? '').trim()
+    if (v && v.length <= 4000) copy[k] = v
+  }
+
+  const { error } = await supabase.from('verticals').update({ default_copy: copy }).eq('key', key)
+  if (error) return { error: GENERIC }
+
+  revalidatePath('/branscher')
+  revalidatePath(`/branscher/${key}`)
+  return { success: 'Bransch-mallens texter sparade — gäller kunder utan egen text (inom ~5 min).' }
 }
 
 /** Modul-förval + default-mall — kopieras vid onboarding, rör aldrig befintliga. */

@@ -25,7 +25,7 @@ export default async function BranschPage({ params }: { params: Promise<{ key: s
     await Promise.all([
       supabase
         .from('verticals')
-        .select('key, name, default_modules, default_template, terminology, rules')
+        .select('key, name, default_modules, default_template, terminology, rules, default_copy')
         .eq('key', key)
         .maybeSingle(),
       supabase.from('tenants').select('id, name, slug, status, vertical_id'),
@@ -75,6 +75,7 @@ export default async function BranschPage({ params }: { params: Promise<{ key: s
           state: mods[m.key] ?? 'off',
         }))}
         defaultTemplate={vertical.default_template ?? null}
+        defaultCopy={(vertical.default_copy ?? {}) as Record<string, string>}
       />
 
       {/* Mallar taggade för branschen */}
