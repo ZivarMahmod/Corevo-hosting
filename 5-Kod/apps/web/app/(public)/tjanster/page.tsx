@@ -8,6 +8,7 @@ import { Reveal } from '@/components/storefront/Reveal'
 import { pageMetadata } from '@/components/storefront/seo'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
+import { themePages } from '@/components/storefront/layouts/florist/layouts'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,11 +19,25 @@ export function generateMetadata(): Promise<Metadata> {
 export default async function ServicesPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
-  const { tenant, settings } = bundle
+  const { tenant, settings, location } = bundle
   // Section header varies per theme (data-driven, no longer hardcoded).
   const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const content = resolveThemeContent(settings.theme, settings.branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
+
+  // goal-59 TEMA-PAKET: mallens egen prislista när den äger sidan (se om/page.tsx).
+  const Page = themePages(settings.theme).tjanster
+  if (Page) {
+    return (
+      <Page
+        tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
+        content={content}
+        services={services}
+        location={location}
+        contact={settings.contact}
+      />
+    )
+  }
 
   return (
     <section className="section">

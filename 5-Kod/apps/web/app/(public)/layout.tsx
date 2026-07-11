@@ -6,8 +6,10 @@ import { currentTenant } from '@/lib/tenant-data'
 import { getLook } from '@/lib/sajtbyggare/look-registry'
 import { requestOrigin } from '@/lib/url'
 import { Nav } from '@/components/brand/Nav'
+import { NavShell } from '@/components/brand/NavShell'
 import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
+import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { CartButton } from '@/components/storefront/shop/CartButton'
@@ -162,6 +164,34 @@ export default async function PublicLayout({ children }: { children: React.React
   // boka/avboka) use the compact MiniFooter.
   const isFullFooter = settings.theme === 'salvia' || settings.theme === 'freshcut'
 
+  // goal-59 TEMA-PAKET: mallen får äga sitt SIDHUVUD och sin SIDFOT. Ett delat ansikte
+  // gjorde alla 20 mallar till samma sida i olika färg (Zivars "det snurrar i cirklar").
+  // FUNKTIONEN stannar här: länklistan nedan är modul-gatad, och mallens nav-markup
+  // renderas som children i NavShell → mobilmeny, fokusfälla, korg och kundkonto följer
+  // med varje mall utan att mallen kan tappa dem. Utan chrome → dagens Nav/Footer exakt.
+  const chrome = themeChrome(settings.theme)
+  const navLinks = [
+    { href: '/', label: 'Hem' },
+    ...(cartEnabled ? [{ href: '/shop', label: 'Butik' }] : []),
+    ...(allWizardServices.length > 0 ? [{ href: '/tjanster', label: 'Tjänster' }] : []),
+    ...(moduleState(moduleStates, 'kurser') === 'live' &&
+    (await loadUpcomingEvents(tenant.id, tenant.slug)).length > 0
+      ? [{ href: '/kurser', label: 'Kurser' }]
+      : []),
+    ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'
+      ? [{ href: '/blogg', label: 'Blogg' }]
+      : []),
+    ...(moduleState(moduleStates, 'offert') === 'live' || moduleState(moduleStates, 'offert') === 'paused'
+      ? [{ href: '/offert', label: 'Offert' }]
+      : []),
+    ...(moduleState(moduleStates, 'presentkort') === 'live' ||
+    moduleState(moduleStates, 'presentkort') === 'paused'
+      ? [{ href: '/presentkort', label: 'Presentkort' }]
+      : []),
+    { href: '/om', label: 'Om oss' },
+    { href: '/kontakt', label: 'Kontakt' },
+  ]
+
   return (
     <div
       className={`tenant-root ${storefront.tplRoot}`}
@@ -211,37 +241,36 @@ export default async function PublicLayout({ children }: { children: React.React
         {/* Modulstyrd meny: Butik/Blogg får en riktig plats i navigationen när
             modulerna är live/paused — modulens egen sida är dess hem, startsidan
             visar bara teasers ("mosas in"-fixen). */}
-        <Nav
-          {...brandProps}
-          customerAccountsEnabled={settings.customerAccountsEnabled}
-          cartEnabled={cartEnabled}
-          utilityText={content.utility}
-          primaryCta={primaryCta}
-          links={[
-            { href: '/', label: 'Hem' },
-            ...(cartEnabled ? [{ href: '/shop', label: 'Butik' }] : []),
-            // Tjänster bara när det finns minst en aktiv tjänst (listan är tom
-            // när booking inte är live — då ska länken inte visas).
-            ...(allWizardServices.length > 0 ? [{ href: '/tjanster', label: 'Tjänster' }] : []),
-            // Kurser & event: EGEN modul sedan 0056 (inte booking) — bara när
-            // kurser är live OCH minst ett kommande open-tillfälle finns.
-            ...(moduleState(moduleStates, 'kurser') === 'live' &&
-            (await loadUpcomingEvents(tenant.id, tenant.slug)).length > 0
-              ? [{ href: '/kurser', label: 'Kurser' }]
-              : []),
-            ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'
-              ? [{ href: '/blogg', label: 'Blogg' }]
-              : []),
-            ...(moduleState(moduleStates, 'offert') === 'live' || moduleState(moduleStates, 'offert') === 'paused'
-              ? [{ href: '/offert', label: 'Offert' }]
-              : []),
-            ...(moduleState(moduleStates, 'presentkort') === 'live' || moduleState(moduleStates, 'presentkort') === 'paused'
-              ? [{ href: '/presentkort', label: 'Presentkort' }]
-              : []),
-            { href: '/om', label: 'Om oss' },
-            { href: '/kontakt', label: 'Kontakt' },
-          ]}
-        />
+        {chrome.Nav ? (
+          // Mallens EGET sidhuvud som markup i plattformens NavShell — formen är
+          // mallens, funktionen (mobilmeny/korg/konto/scroll) är alltid vår.
+          <NavShell
+            customerAccountsEnabled={settings.customerAccountsEnabled}
+            cartEnabled={cartEnabled}
+            utilityText={content.utility}
+            links={navLinks}
+            primaryCta={primaryCta}
+          >
+            <chrome.Nav
+              tenant={{ name: tenant.name }}
+              branding={settings.branding}
+              links={navLinks}
+              primaryCta={primaryCta}
+              cartEnabled={cartEnabled}
+              customerAccountsEnabled={settings.customerAccountsEnabled}
+              utilityText={content.utility}
+            />
+          </NavShell>
+        ) : (
+          <Nav
+            {...brandProps}
+            customerAccountsEnabled={settings.customerAccountsEnabled}
+            cartEnabled={cartEnabled}
+            utilityText={content.utility}
+            primaryCta={primaryCta}
+            links={navLinks}
+          />
+        )}
         {/* `.shellMain` reserves space for the fixed top cluster (--nav-h). The
             Salvia home hero cancels it exactly with a negative margin, so the hero
             photo still meets the viewport top under the nav. */}
@@ -257,7 +286,16 @@ export default async function PublicLayout({ children }: { children: React.React
             staffAvatarMode={bookingPrefs.staffAvatarMode}
           />
         ) : null}
-        {isFullFooter ? (
+        {chrome.Footer ? (
+          <chrome.Footer
+            tenant={{ name: tenant.name }}
+            tagline={content.tagline}
+            location={location}
+            contact={settings.contact}
+            social={settings.social}
+            links={navLinks}
+          />
+        ) : isFullFooter ? (
           <FooterFull
             tenant={{ name: tenant.name }}
             tagline={content.tagline}

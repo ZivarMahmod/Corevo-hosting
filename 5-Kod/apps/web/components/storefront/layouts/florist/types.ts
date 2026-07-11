@@ -1,5 +1,8 @@
-import type { ThemeContentDefaults } from '../../theme-content'
+import type { ComponentType } from 'react'
+import type { ThemeContentDefaults, ResolvedThemeContent } from '../../theme-content'
 import type { ThemeCaps } from '@/lib/platform/theme-capabilities'
+import type { Service, TenantLocation, TenantContact } from '@/lib/tenant-data'
+import type { TenantBranding } from '@corevo/ui'
 
 /**
  * FLORIST-SVITEN — 13 mall-syskon (goal-58). Varje mall bor i EN egen fil-trio
@@ -41,6 +44,70 @@ export type FloristPalette = {
  */
 export type FloristFonts = { display: string; body: string }
 
+/**
+ * TEMA-PAKET (goal-59). Zivar: "de känns som samma sida om och om igen — bara färgen
+ * ändras". Han hade rätt, och det gick att mäta: 11 av 13 mallar återanvände de delade
+ * .sf*-sektionerna i hemmets nedre halva, ALLA delade samma nav + footer, och /om,
+ * /tjanster, /kontakt var identiska för varenda mall. Variationen satt i heron; sedan
+ * föll alla ner i samma skelett.
+ *
+ * En mall är därför inte längre "en hem-layout" utan ett HELT PAKET som får äga:
+ *   • sitt SIDHUVUD  (Nav)     — sidans ansikte; delat ansikte = samma sida
+ *   • sin SIDFOT     (Footer)
+ *   • sina UNDERSIDOR (om/tjanster/kontakt)
+ * Allt är VALFRITT: utelämnas något faller mallen tillbaka på de delade komponenterna,
+ * så de sju äldre temana är oförändrade.
+ *
+ * FUNKTIONEN är fortfarande plattformens: mallens nav-markup renderas som children i
+ * NavShell (mobilmeny, fokusfälla, korg, kundkonto, scroll-beteende), och länklistan +
+ * huvud-CTA:n är modul-gatade av layouten. Mallen bestämmer FORMEN, aldrig funktionen —
+ * annars tappar en ny mall korgen eller mobilmenyn utan att någon märker det.
+ */
+export type ThemeNavProps = {
+  tenant: { name: string }
+  branding: TenantBranding
+  /** Modulstyrda menylänkar (växer med kundens live-moduler). Rendera ALLA. */
+  links: readonly { href: string; label: string }[]
+  /** Bransch-styrd huvud-CTA (modul-gatad). null = boknings-drawern (BookCta). */
+  primaryCta: { label: string; href: string } | null
+  /** Shop live → korg-ikonen MÅSTE renderas (CartNavButton). */
+  cartEnabled: boolean
+  /** Kundkonton på → login-ikonen renderas. */
+  customerAccountsEnabled: boolean
+  /** Mallens tunna toppremsa (content.utility). */
+  utilityText: string
+}
+
+export type ThemeFooterProps = {
+  tenant: { name: string }
+  tagline: string
+  location: TenantLocation | null
+  contact: TenantContact
+  social: { instagram: string | null; facebook: string | null; tiktok: string | null }
+  links: readonly { href: string; label: string }[]
+}
+
+/** Undersidorna (/om, /tjanster, /kontakt) — mallens egna, med samma data som de
+ *  delade sektionerna får. Utelämnad sida → dagens delade sektioner. */
+export type ThemePageProps = {
+  tenant: { id: string; name: string; slug: string }
+  content: ResolvedThemeContent
+  services: Service[]
+  location: TenantLocation | null
+  contact: TenantContact
+}
+
+export type ThemeChrome = {
+  Nav?: ComponentType<ThemeNavProps>
+  Footer?: ComponentType<ThemeFooterProps>
+}
+
+export type ThemePages = {
+  om?: ComponentType<ThemePageProps>
+  tjanster?: ComponentType<ThemePageProps>
+  kontakt?: ComponentType<ThemePageProps>
+}
+
 export type FloristTheme = {
   /** Temanyckel = settings.theme-värdet. Måste finnas i STOREFRONT_THEMES. */
   key: string
@@ -58,6 +125,10 @@ export type FloristTheme = {
   content: ThemeContentDefaults
   /** Vilka Sida-fält som är meningsfulla för mallen (super-admins redigering). */
   caps: ThemeCaps
+  /** Mallens EGET sidhuvud/sidfot. Utelämnat → plattformens delade Nav/Footer. */
+  chrome?: ThemeChrome
+  /** Mallens EGNA undersidor. Utelämnad sida → de delade sektionerna. */
+  pages?: ThemePages
 }
 
 /**

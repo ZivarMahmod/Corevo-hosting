@@ -1,5 +1,7 @@
 import type { ComponentType } from 'react'
 import type { StorefrontLayoutProps } from '../types'
+import type { ThemeChrome, ThemePages } from './types'
+import { FLORIST_THEMES } from './registry'
 import { CalytrixLayout } from './CalytrixLayout'
 import { AuroraLayout } from './AuroraLayout'
 import { SageLayout } from './SageLayout'
@@ -30,4 +32,18 @@ export const FLORIST_LAYOUTS: Record<string, ComponentType<StorefrontLayoutProps
   mina: MinaLayout,
   lunaria: LunariaLayout,
   eloria: EloriaLayout,
+}
+
+/**
+ * Mallens EGNA sidhuvud/sidfot (goal-59). Tomt objekt = mallen kör plattformens delade
+ * Nav/Footer. app/(public)/layout.tsx frågar hit — ett tema utanför florist-sviten får
+ * `undefined` och renderar exakt som förr.
+ */
+export function themeChrome(key: string): ThemeChrome {
+  return FLORIST_THEMES.find((t) => t.key === key)?.chrome ?? {}
+}
+
+/** Mallens EGNA undersidor (/om, /tjanster, /kontakt). Saknas → delade sektioner. */
+export function themePages(key: string): ThemePages {
+  return FLORIST_THEMES.find((t) => t.key === key)?.pages ?? {}
 }
