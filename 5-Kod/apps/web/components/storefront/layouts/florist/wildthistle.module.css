@@ -3,17 +3,23 @@
    ("svärd, inte morot"). Mallens IDENTITET är orörd — samma färgfamilj, samma
    sektionsordning, samma bruten-grid-hero. Det som ändrats är UTFÖRANDET:
 
-   1. TYPSKALA i sex steg med ×1.8–1.9 mellan nivåerna (84 → 46 → 25 → 18 → 16
-      → 12 px), deklarerad som --wt-fs-*. Förut låg allt i ×1.1–1.3 (56/51/38/
-      37/34/25/20/18/17/16/15/14/13/12) = gröt. Mallen äger nu HELA sin
-      typografi: de globala .sf-h1/.sf-h2/.sf-eyebrow/.sf-body-rollerna (tokens
-      .css, max 34px på h2) kan inte bära en 46px-sektionsrubrik, så mallen har
-      egna wt-nivåer. Delade .sf*-primitiver rörs inte — de används bara inte
-      längre här.
+   1. TYPSKALA i sex steg: 84 → 46 → 30 → 22 → 16 → 12 px, deklarerad som
+      --wt-fs-*. Uppmätta grannkvoter: ×1.83 · ×1.53 · ×1.36 · ×1.38 · ×1.33 —
+      ALLA över 1.3×. Förut låg allt i ×1.1–1.3 (56/51/38/37/34/25/20/18/17/16/
+      15/14/13/12) = gröt. (Oberoende mätning 2026-07-11 fångade en rest av den
+      gröten: lede 18 / body 16 = ×1.125, alltså två nivåer som inte gick att
+      skilja åt. name 25→30 och lede 18→22 öppnade båda hålen.) Mallen äger
+      HELA sin typografi: de globala .sf-h1/.sf-h2/.sf-eyebrow/.sf-body-rollerna
+      (tokens.css, max 34px på h2) kan inte bära en 46px-sektionsrubrik, så
+      mallen har egna wt-nivåer. Delade .sf*-primitiver rörs inte — de används
+      bara inte längre här.
    2. VIKT: display 600 rakt igenom (var 700/800). Playfair laddas i 600/700/800
       (app/layout.tsx) — 600 är den LÄTTASTE vikt som faktiskt levereras, så vi
       landar så nära regelns 400–500 som fonten tillåter utan att förlita oss på
-      en fallback. Mikrotext/knappar: 600.
+      en fallback. (Att deklarera 500 vore en lögn: CSS font-matching väljer ändå
+      600-facet, så renderingen blir identisk. En ÄKTA 500 kräver att '500'
+      läggs till i Playfair-viktlistan i app/layout.tsx — utanför den här filen.)
+      Mikrotext/knappar: 600.
    3. LINE-HEIGHT: rubrik 1.06–1.12, brödtext 1.58. Registerbytet = skärpan.
    4. LETTER-SPACING omvänt mot storleken: -0.015em på hero, -0.01em på h2, 0 på
       kortnamn, +0.083em (≈1px) på 12px-mikrotext.
@@ -44,11 +50,16 @@
   --wt-scrim-top: rgba(75, 46, 82, 0.66); /* closing-scrim, tistel-lila */
   --wt-scrim-bot: rgba(46, 26, 52, 0.92);
 
-  /* ── TYPSKALA — 6 nivåer, steg ×1.8–1.9 (84 → 46 → 25 → 18 → 16 → 12) ── */
+  /* ── TYPSKALA — 6 nivåer: 84 → 46 → 30 → 22 → 16 → 12 ──
+     Uppmätta grannkvoter (max i clamp): ×1.83 · ×1.53 · ×1.36 · ×1.38 · ×1.33.
+     VARJE granne ligger över 1.3× — ingen nivå kan förväxlas med sin granne.
+     Förut: 84/46/25/18/16/12, där lede→body låg på ×1.125 (18/16). Det steget
+     var osynligt: en lede såg ut som brödtext i annan vikt, och mellanhierarkin
+     grötade ihop sig. name 25→30 och lede 18→22 öppnar båda hålen. */
   --wt-fs-hero: clamp(2.9rem, 5.6vw, 5.25rem); /* 46 → 84px */
   --wt-fs-h2: clamp(2rem, 3.4vw, 2.875rem); /* 32 → 46px */
-  --wt-fs-name: clamp(1.375rem, 1.7vw, 1.5625rem); /* 22 → 25px */
-  --wt-fs-lede: 1.125rem; /* 18px */
+  --wt-fs-name: clamp(1.5rem, 2.1vw, 1.875rem); /* 24 → 30px */
+  --wt-fs-lede: clamp(1.125rem, 1.5vw, 1.375rem); /* 18 → 22px */
   --wt-fs-body: 1rem; /* 16px */
   --wt-fs-micro: 0.75rem; /* 12px */
   --wt-ls-micro: 0.083em; /* ≈ +1px vid 12px */

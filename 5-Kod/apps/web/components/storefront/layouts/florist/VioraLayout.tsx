@@ -25,11 +25,14 @@ import styles from './viora.module.css'
  * SKÄRPE-PASS (design-skarpa-zentum.md) — TYPOGRAFIN ÄR MALLENS EGEN. De globala
  * rollerna .sf-h1/.sf-h2/.sf-eyebrow/.sf-body (tokens.css) är en ×1.2–1.5-skala:
  * hero 83 → h1 56 → h2 34 → kort 24 → 16px. Allt blir mellanstort, ögat hittar
- * ingen ingång — moroten. Viora kör sin egen ×2-skala ur viora.module.css i
- * stället: 108 → 52 → 26 → 18 → 16 | 11–12px mikro. Sektionsstrukturen
- * (shared.sfServices/sfAboutGrid/sfLocBand/sfGalleryBand/sfClosing) är kvar —
- * bara typografin, radien, bildratiot (allt 4:5) och rytmen (12/20/32/48/144)
- * är våra. Noll typografiska inline-styles: skalan bor i CSS:en, inte i markupen.
+ * ingen ingång — moroten. Viora kör sin egen skala ur viora.module.css i stället:
+ * 108 → 52 → 26 → 16 → 12px, alltså steg ×2.08 / ×2.00 / ×1.63 / ×1.33 — ingen
+ * granne inom 1.3× av nästa (mätt). Även de DELADE klasser mallen lånar snappas
+ * till skalan (sfRowNums 25.6px → kort-graden 26px via styles.vioRowNum).
+ * Sektionsstrukturen (shared.sfServices/sfAboutGrid/sfLocBand/sfGalleryBand/
+ * sfClosing) är kvar — bara typografin, radien, bildratiot (allt 4:5) och rytmen
+ * (12/20/32/48/144) är våra. Noll typografiska inline-styles: skalan bor i CSS:en,
+ * inte i markupen.
  */
 export function VioraLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)

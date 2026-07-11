@@ -18,10 +18,14 @@ export const seraphina: FloristTheme = {
   /**
    * PALETT — EN hue-familj (30–41°, champagne/guld/varm ask). Skärpe-passet
    * (design-skarpa-zentum.md §2) mörkade guldet utan att byta kulör: samma hue
-   * 40°, lägre ljushet. Uppmätt WCAG-kontrast (node, inte ögonmått):
+   * 40°, lägre ljushet. ÅTTA hex — och de åtta nedan är HELA mallens palett:
+   * ren vit finns inte, för den hade varit en nionde färg OCH en kall kulör i en
+   * champagne-palett. Papper (#FDFBF6 = bg) bär texten på guldbandet i stället.
+   * Uppmätt WCAG-kontrast (node, inte ögonmått):
    *   rubrik-ink  #241F1A på #FDFBF6 …… 15.79:1  (krav ≥7, sikte 11)
    *   brödtext    #6B6259 på #FDFBF6 ……  5.77:1  (krav ≥4.5 — backar medvetet)
-   *   knapptext   #FFFFFF på #6B5320 ……  7.28:1  (krav ≥4.5)
+   *   knapptext   #FDFBF6 på #6B5320 ……  7.04:1  (krav ≥4.5; = closing-rubriken,
+   *                                        som därmed också klarar rubrik-kravet ≥7)
    *   guld-mikro  #6B5320 på #FDFBF6 ……  7.04:1  ·  på #F3E7D2 … 5.96:1
    * FÖRE: primary #8A6B2A gav 4.98:1 mot vitt och 4.07:1 på accentSoft — under
    * kravet, dvs den disiga "mjuka moroten". Guldet är accent: knapp, eyebrow,

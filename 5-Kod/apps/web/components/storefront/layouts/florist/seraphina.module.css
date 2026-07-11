@@ -645,10 +645,10 @@
   max-width: var(--sera-measure);
   margin: var(--sera-sp-text) auto 0;
   font-family: var(--font-body);
-  font-size: var(--sera-fs-lede);
-  line-height: var(--sera-lh-lede);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
   color: var(--sera-cta-fg);
-  opacity: 0.9; /* 6.3:1 mot guldbandet — backar, men aldrig disigt */
+  opacity: 0.9; /* 6.1:1 mot guldbandet — backar, men aldrig disigt */
 }
 .seraClosingActions {
   margin-top: var(--sera-sp-cta);

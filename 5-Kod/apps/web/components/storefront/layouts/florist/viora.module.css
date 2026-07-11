@@ -9,17 +9,22 @@
    istället. Sektionsstrukturen (storefront.module.css: .sfServices/.sfAboutGrid/.sfLocBand/
    .sfClosing/.sfGalleryBand) behålls — bara typografin, radien, bildratiot och rytmen är våra.
 
-   REGLERNA, kodade:
-   1. TYPSKALA ×~2.0 i toppen: 108 → 52 → 26 → 18 → 16 | 11–12 (mikro).
+   REGLERNA, kodade (SIFFRORNA ÄR MÄTTA, inte gissade — oberoende mätning 2026-07-11):
+   1. TYPSKALA — FEM nivåer: 108 → 52 → 26 → 16 → 12 px, steg ×2.08 / ×2.00 / ×1.63 /
+      ×1.33. INGEN granne ligger inom 1.3× av nästa. (Tidigare fanns 18px lede ×1.13
+      från body och 11px micro ×1.09 från btn — två tvillingpar som gjorde skalan
+      mellanstor. Borttagna: lede kör body-graden, all mikrotext kör 12px.)
    2. VIKT: display = 600 (Playfair laddas i 600/700/800 i app/layout.tsx — 500 finns
       INTE att välja; 600 är den lättaste laddade skäran och den enda ärliga "medium"
       här. Deklarera aldrig 500: det renderas ändå som 600 och ljuger i koden).
       Mikrotext = 600 + VERSALER.
    3. LINE-HEIGHT: rubrik 1.06–1.15, brödtext 1.55–1.60. Registerbytet ÄR skärpan.
-   4. LETTER-SPACING omvänt mot storleken: negativt på display, 0 på 26px, +1px på 11–12px.
+   4. LETTER-SPACING omvänt mot storleken: negativt på display, 0 på 26px, +1px på mikro (12px).
    5. KONTRAST (uträknad): rubrik 15.93:1, brödtext 5.40:1, knapp 12.72:1 — se viora.theme.ts.
-   6. RADIE: binär. --sf-radius = 0 (theme.radius '0px') på ALL struktur; enda undantaget
-      är knappen, som är en full pill (.btn-accent → --radius-pill). Inget däremellan.
+   6. RADIE: binär — 0 eller full pill, inget däremellan. --sf-radius = 0 (theme.radius
+      '0px') täcker mallens egna ytor, OCH --tpl-radius/-lg nollas nedan (de delade
+      .galleryItem/.lightboxImg läser dem och skulle annars ärva .tplRoots 12px).
+      Enda runda formen är knappen: full pill (.btn-accent → --radius-pill).
    7. BILDRATIO: ETT format i hela mallen — 4:5 (porträtt). Butikskort, bloggkort,
       om-fotot (delad .sfAboutPhoto är redan 4/5) och galleriet. Hero-fotot är den
       enda undantagna ytan (full-bleed split-panel, som zentums panorama-hero).

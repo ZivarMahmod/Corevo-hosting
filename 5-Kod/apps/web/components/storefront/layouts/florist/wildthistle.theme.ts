@@ -42,9 +42,11 @@ const IMG = {
  *
  * SKÄRPE-PASS 2026-07-11 (4-Dokument-Underlag/design-skarpa-zentum.md): radie 0
  * rakt igenom (oförändrat), men skärpan kommer nu från SKALAN och KONTRASTEN,
- * inte från fetma: typskala i sex steg med ×1.8–1.9 emellan (84 → 46 → 25 → 18
- * → 16 → 12 px) och display i vikt 600 istället för 700/800. Se
- * wildthistle.module.css för hela mätprotokollet.
+ * inte från fetma: typskala i sex steg (84 → 46 → 30 → 22 → 16 → 12 px, varje
+ * grannkvot > 1.3×) och display i vikt 600 istället för 700/800. Skalan
+ * justerad efter OBEROENDE mätning samma dag: lede/body låg på ×1.125 (18/16)
+ * — två nivåer som inte gick att skilja åt. Se wildthistle.module.css för hela
+ * mätprotokollet.
  */
 export const wildthistle: FloristTheme = {
   key: 'wildthistle',

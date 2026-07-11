@@ -32,10 +32,12 @@ const IMG = {
  * SKÄRPE-PASS (design-skarpa-zentum.md):
  *
  * RADIE — binär. `radius: '0px'` (var 4px) driver --sf-radius, alltså ALL struktur:
- * butikskort, bloggkort, galleribrickor, om-fotot, kartan. Knappen är det enda
- * undantaget och är en FULL pill (.btn-accent → --radius-pill). 0 eller pill,
- * inget däremellan — 4px på allt var precis den mjuka moroten (inga raka linjer
- * kvar att linjera mot, men inte heller en medveten kapsel).
+ * butikskort, bloggkort, om-fotot, kartan. Knappen är det enda undantaget och är en
+ * FULL pill (.btn-accent → --radius-pill). 0 eller pill, inget däremellan — 4px på
+ * allt var precis den mjuka moroten (inga raka linjer kvar att linjera mot, men inte
+ * heller en medveten kapsel). OBS: galleribrickorna + lightbox-bilden läser INTE
+ * --sf-radius utan --tpl-radius (.tplRoot = 12px); den nollas i viora.module.css —
+ * temats radie ensam räcker alltså inte för att göra mallen binär.
  *
  * FÄRG — exakt 8 hex, EN hue-familj (violett 267–280°) + krämvit + en neutral.
  * Ingen andrafärg, ingen konkurrerande accent: skalan och kontrasten gör
