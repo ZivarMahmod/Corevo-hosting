@@ -37,13 +37,23 @@ export const lunaria: FloristTheme = {
   key: 'lunaria',
   name: 'Lunaria',
   desc: 'Nattblå & torkat vete · stillsam',
+  // SKÄRPE-PASS 2026-07-11 (design-skarpa-zentum.md, regel 6): kulören är orörd
+  // (nattblå 220° + torkat vete 40°) — bara ljusheten justerad tills WCAG håller.
+  // Uträknat, inte gissat:
+  //   fg   #1C1B18 → 14.85:1 mot bg · 16.49:1 mot surface   (rubrik, krav ≥7)
+  //   fg2  #5F5B52 →  5.83:1 mot bg ·  6.48:1 mot surface ·  5.09:1 mot
+  //        accent-soft (= .sfRow:hover-ytan). Var #6E6A60: 4.06:1 mot accent-soft
+  //        → UNDER 4.5-kravet så fort en tjänsterad hovrades. Nu klarar brödtexten
+  //        varje yta den kan hamna på.
+  //   primary #1E2A42 → 13.72:1 mot surface (eyebrow/länkar) · vit knapptext på
+  //        primary = 14.33:1 · på primary-d = 17.38:1 (hover).
   palette: {
     primary: '#1E2A42',
     primaryD: '#121A2B',
     bg: '#F1EEE6',
     surface: '#FBFAF6',
     fg: '#1C1B18',
-    fg2: '#6E6A60',
+    fg2: '#5F5B52',
     line: '#DAD4C5',
     accentSoft: '#E8DFC7',
   },
@@ -51,7 +61,10 @@ export const lunaria: FloristTheme = {
     display: 'var(--font-italiana), Georgia, serif',
     body: 'var(--font-source-sans), system-ui, sans-serif',
   },
-  radius: '8px',
+  // BINÄR RADIE (regel 6): 0 på ALL struktur (kort, bilder, hero-platta, karta).
+  // Full pill finns bara på knappen (radie = halva höjden) och eyebrow-chippet —
+  // medvetna undantag. Det gamla 8px-hörnet på allt var själva "moroten".
+  radius: '0px',
   content: {
     heroEyebrow: '— Blommor i stillhet',
     heroTitle: 'Blommor för\nstilla stunder',

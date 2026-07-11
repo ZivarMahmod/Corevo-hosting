@@ -63,11 +63,11 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
       {/* 4 — MEST SÅLDA: webshop-modulen invävd som horisontell scroll-rad med
           flytande "Populär"-pill. Bara ett smakprov; hela sortimentet på /shop. */}
       {shopTeasers.length > 0 ? (
-        <section style={{ paddingBottom: 'clamp(40px, 6vw, 76px)' }}>
+        <section className={styles.calSection}>
           <Reveal className={styles.calSecHead} as="div">
             <div>
               <p className="sf-eyebrow">{content.shopEyebrow ?? '— Mest sålda'}</p>
-              <h2 className="sf-h2" style={{ marginTop: 8 }}>
+              <h2 className="sf-h2" style={{ marginTop: 12 }}>
                 {content.shopTitle ?? 'Beställ det alla vill ha'}
               </h2>
             </div>
@@ -137,7 +137,7 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
       ) : null}
 
       {/* 6 — OM */}
-      <section style={{ paddingBottom: 'clamp(48px, 7vw, 90px)', paddingTop: 'clamp(48px, 7vw, 90px)' }}>
+      <section className={styles.calSection}>
         <div className={`${shared.sfWide} ${shared.sfAboutGrid}`}>
           <Reveal>
             <div className={shared.sfAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
@@ -147,7 +147,7 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
             <h2 className="sf-h2" style={{ marginTop: 12 }}>
               {content.aboutTitle}
             </h2>
-            <p className="sf-body" style={{ fontSize: 17, marginTop: 16 }}>
+            <p className="sf-body" style={{ marginTop: 20 }}>
               {content.aboutCopyHome}
             </p>
             <ul className={shared.sfStatTrio}>
@@ -164,11 +164,11 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
 
       {/* 7 — FRÅN BLOGGEN — blogg-modulen invävd (samma kort-formspråk som butiken). */}
       {bloggTeasers.length > 0 ? (
-        <section style={{ paddingBottom: 'clamp(40px, 6vw, 76px)' }}>
+        <section className={styles.calSection}>
           <Reveal className={styles.calSecHead} as="div">
             <div>
               <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
-              <h2 className="sf-h2" style={{ marginTop: 8 }}>
+              <h2 className="sf-h2" style={{ marginTop: 12 }}>
                 {content.blogTitle ?? 'Nytt från floristen'}
               </h2>
             </div>
@@ -212,13 +212,15 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
         </div>
       ) : null}
 
-      {/* 8 — GALLERI */}
+      {/* 8 — GALLERI. Wrappern (.calGallery) drar in galleriet i mallens ENDA
+          bildratio (4:5) och raka hörn — Gallery.tsx stylas av den delade
+          storefront.module.css (1:1 + hover-scale) som mallen inte äger. */}
       <section className={shared.sfGalleryBand}>
         <div className={shared.sfWide}>
           <Reveal>
             <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
           </Reveal>
-          <Reveal>
+          <Reveal className={styles.calGallery} as="div">
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
           </Reveal>
         </div>
@@ -233,11 +235,11 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
+              <p className="sf-body" style={{ marginTop: 20 }}>
                 {location.address}
               </p>
             ) : (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
+              <p className="sf-body" style={{ marginTop: 20 }}>
                 Adress visas snart.
               </p>
             )}
@@ -280,7 +282,7 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
           <p className={shared.sfClosingLead}>
             {content.closingLede ?? 'Handla i butiken, boka en tjänst eller hör av dig — vi finns här.'}
           </p>
-          <div style={{ marginTop: 30 }}>
+          <div style={{ marginTop: 32 }}>
             <BookCta className={shared.sfClosingCta} />
           </div>
         </Reveal>

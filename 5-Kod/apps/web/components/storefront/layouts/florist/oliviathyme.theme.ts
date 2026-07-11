@@ -13,13 +13,20 @@ export const oliviathyme: FloristTheme = {
   key: 'oliviathyme',
   name: 'Olivia & Thyme',
   desc: 'Puderrosa · varm brun · butikscharm',
+  /* SKÄRPE-PASS: samma kulörer (varm brun 20–25°, puderrosa), MÖRKARE ljushet —
+     hela paletten mätt med WCAG, inte ögonmått:
+       fg   #1C1109  17.01:1 mot bg  (rubrik skär mot bakgrunden)
+       fg2  #64513F   6.91:1 mot bg  ·  6.30:1 mot surface (var 4.42 = FAIL)
+       primary #6B3E24 med vit text 8.98:1 (knapp/closing)
+     Före låg brödtexten på 4.42:1 mot surface och 4.07:1 mot accentSoft — under
+     AA. Det var den disiga "moroten": kanterna suddades ut. */
   palette: {
-    primary: '#7C4A2D',
-    primaryD: '#5A331C',
+    primary: '#6B3E24',
+    primaryD: '#4A2716',
     bg: '#FBF4EE',
     surface: '#F5E9DC',
-    fg: '#241811',
-    fg2: '#7C6857',
+    fg: '#1C1109',
+    fg2: '#64513F',
     line: '#E4D3C0',
     accentSoft: '#F4DCE1',
   },
@@ -27,7 +34,10 @@ export const oliviathyme: FloristTheme = {
     display: 'var(--font-dmserif), Georgia, serif',
     body: 'var(--font-source-sans), system-ui, sans-serif',
   },
-  radius: '3px',
+  /* Binär radie: 0 på ALLT strukturellt (bilder, kort, kartan, knappar). Den enda
+     runda formen i mallen är stjärn-badgen (999px) — ett medvetet undantag, inte
+     ett 3px-kompromiss-hörn på varenda yta. */
+  radius: '0px',
   content: {
     heroEyebrow: '— Blomsterhandel',
     heroTitle: 'Din blomsterbutik\nom hörnet',

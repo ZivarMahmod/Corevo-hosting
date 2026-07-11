@@ -35,6 +35,13 @@ export const calytrix: FloristTheme = {
   key: 'calytrix',
   name: 'Calytrix',
   desc: 'Plommon & vinrött · butiken som hjälte',
+  // Paletten är MÄTT, inte gissad (WCAG 2.x relativ luminans). Alla krav hålls
+  // redan — därför är ingen hex ändrad i skärpe-passet; kulören är mallens identitet:
+  //   fg      #241019 på bg  16.84:1 · på surface 18.05:1   (krav ≥ 7:1)
+  //   fg2     #6e4f5c på bg   6.67:1 · på surface  7.15:1   (krav ≥ 4.5:1)
+  //   primary #7d1f46 → #fff på knapp 9.74:1 · som länk på bg 9.08:1 (krav ≥ 4.5:1)
+  //   #fff på primaryD (annonsrad + band) 15.07:1
+  // Det ENDA kontrastfelet satt i hero-scrimen, inte i paletten — se calytrix.module.css.
   palette: {
     primary: '#7d1f46',
     primaryD: '#4a0e2e',
@@ -46,10 +53,15 @@ export const calytrix: FloristTheme = {
     accentSoft: '#f4e6ea',
   },
   fonts: {
+    // DM Serif Display levereras BARA i vikt 400 (app/layout.tsx). Mallen sätter
+    // därför display-vikt 400 rakt igenom — 500/600/700 hade gett syntetisk fetstil.
     display: 'var(--font-dmserif), Georgia, serif',
     body: 'var(--font-inter), system-ui, sans-serif',
   },
-  radius: '14px',
+  // BINÄR radie: 0 på all struktur (kort, bilder, karta, om-foto) — knapparna är
+  // full pill via den globala .btn-accent (--radius-pill), badgen är pill (999px).
+  // Inget däremellan. 14px på allt var precis den "mjuka moroten" passet tog bort.
+  radius: '0px',
   content: {
     heroEyebrow: '— Blomsterbutik',
     heroTitle: 'Blommor alla\nfaller för',

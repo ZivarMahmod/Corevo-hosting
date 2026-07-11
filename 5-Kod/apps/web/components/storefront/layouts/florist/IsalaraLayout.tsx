@@ -17,6 +17,13 @@ import styles from './isalara.module.css'
  * känsla), (5) shop-teasers, (6) tjänster, (7) om, (8) blogg, (9) presentkort
  * (smal rad), (10) plats, (11) closing. Webshop/blogg/presentkort/offert vävs
  * in via `modules`-propen (S10) — samma modulkontrakt som övriga florist-mallar.
+ *
+ * SKÄRPE-PASS (design-skarpa-zentum.md): identitet och sektionsordning är orörda —
+ * det är utförandet som skärpts. All typografi/rytm/radie/hover ligger nu i mallens
+ * tokens i isalara.module.css (.islRoot): typskala ×2.0 (108/52/26/18/16/12), rytm
+ * 12/20/24/32/48/96, EN bildratio (4:5), binär radie (0 + pill), 5px-lyft på 400ms.
+ * Därför bär layouten inga egna px-värden i inline-styles längre (bara bakgrunds-
+ * bilder och centrering) — hittar du ett hårdkodat mått här är det en regression.
  */
 
 /** Minimal linje-ikon för ikon-genvägarna — ren dekor, inga externa assets. */
@@ -114,7 +121,7 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
   const duoImages = [content.galleryImages[0] ?? '', content.galleryImages[1] ?? content.galleryImages[0] ?? '']
 
   return (
-    <>
+    <div className={styles.islRoot}>
       {/* 1 — HERO: HANDSKRIVEN skript-rubrik centrerad över bild + liten CTA */}
       <section className={styles.islHero} style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}>
         <div className={styles.islHeroScrim} aria-hidden="true" />
@@ -124,7 +131,7 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
             <h1 className={styles.islHeroTitle}>{content.heroTitle}</h1>
             <p className={styles.islHeroLede}>{content.heroLede}</p>
             <div className={styles.islHeroCtaRow}>
-              <BookCta className={styles.islHeroCta} />
+              <BookCta className={styles.islBtn} />
             </div>
           </Reveal>
         </div>
@@ -184,11 +191,11 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
       {/* 5 — UR BUTIKEN — webshop-modulen invävd. Bara ett smakprov; hela
           sortimentet bor på /shop. Tom modul → ingen sektion. */}
       {shopTeasers.length > 0 ? (
-        <section style={{ paddingTop: 'clamp(48px, 8vw, 84px)', paddingBottom: 'clamp(48px, 8vw, 84px)' }}>
+        <section className={styles.islSection}>
           <Reveal as="div" className={styles.islSecHead}>
             <div>
               <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-              <h2 className="sf-h2" style={{ marginTop: 8 }}>{content.shopTitle ?? 'Beställ något vackert'}</h2>
+              <h2 className={`sf-h2 ${styles.islStepEyebrow}`}>{content.shopTitle ?? 'Beställ något vackert'}</h2>
             </div>
             {shopReachable ? (
               <Link href="/shop" className={styles.islSecCta}>{content.shopCta ?? 'Visa hela butiken'}</Link>
@@ -216,11 +223,11 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
       {/* 6 — TJÄNSTER & PRISER — numrerade rader, bara när det finns aktiva
           tjänster (ingen tom-text på hemmet, goal-55 8B). */}
       {rows.length > 0 ? (
-        <section className={shared.sfServices}>
+        <section className={`${shared.sfServices} ${styles.islServices}`}>
           <div className={shared.sfNarrow}>
             <Reveal style={{ textAlign: 'center' }}>
               <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className="sf-h1" style={{ marginTop: 12 }}>{content.servicesTitle}</h2>
+              <h2 className={`sf-h1 ${styles.islStepEyebrow}`}>{content.servicesTitle}</h2>
             </Reveal>
             <div className={shared.sfRowList}>
               {rows.map((s, i) => (
@@ -250,15 +257,15 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
       ) : null}
 
       {/* 7 — OM */}
-      <section style={{ paddingTop: 'clamp(48px, 7vw, 90px)', paddingBottom: 'clamp(48px, 7vw, 90px)' }}>
-        <div className={`${shared.sfWide} ${shared.sfAboutGrid}`}>
+      <section>
+        <div className={`${shared.sfWide} ${shared.sfAboutGrid} ${styles.islAboutGrid}`}>
           <Reveal>
             <div className={shared.sfAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
           <Reveal delay={120}>
             <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>{content.aboutTitle}</h2>
-            <p className="sf-body" style={{ fontSize: 17, marginTop: 16 }}>{content.aboutCopyHome}</p>
+            <h2 className={`sf-h2 ${styles.islStepEyebrow}`}>{content.aboutTitle}</h2>
+            <p className={`sf-body ${styles.islStepHead}`}>{content.aboutCopyHome}</p>
             <ul className={shared.sfStatTrio}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
@@ -274,11 +281,11 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
       {/* 8 — FRÅN FLORISTEN — blogg-modulen invävd (3 senaste → /blogg). Tom
           modul → ingen sektion. */}
       {bloggTeasers.length > 0 ? (
-        <section style={{ paddingTop: 'clamp(48px, 8vw, 84px)', paddingBottom: 'clamp(48px, 8vw, 84px)', background: 'var(--color-accent-soft)' }}>
+        <section className={`${styles.islSection} ${styles.islSectionSoft}`}>
           <Reveal as="div" className={styles.islSecHead}>
             <div>
               <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från floristen'}</p>
-              <h2 className="sf-h2" style={{ marginTop: 8 }}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
+              <h2 className={`sf-h2 ${styles.islStepEyebrow}`}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
             </div>
             <Link href="/blogg" className={styles.islSecCta}>{content.blogCta ?? 'Läs hela bloggen'}</Link>
           </Reveal>
@@ -314,16 +321,16 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
 
       {/* 10 — PLATS & ÖPPETTIDER — ankarmål för "Leveransorter"-genvägen */}
       <section id="isl-plats" className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+        <div className={`${shared.sfWide} ${shared.sfLocGrid} ${styles.islLocGrid}`}>
           <Reveal>
             <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
+            <h2 className={`sf-h2 ${styles.islStepEyebrow}`}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>{location.address}</p>
+              <p className={`sf-body ${styles.islStepHead}`}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>Adress visas snart.</p>
+              <p className={`sf-body ${styles.islStepHead}`}>Adress visas snart.</p>
             )}
             {location?.hours ? (
               <div className={shared.sfHours}>
@@ -358,17 +365,17 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
       {/* 11 — CLOSING */}
       <section className={shared.sfClosing}>
         <Reveal>
-          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto' }}>
+          <h2 className="sf-h1" style={{ maxWidth: '40rem', margin: '0 auto' }}>
             {content.closingTitle ?? 'Redo att beställa något vackert?'}
           </h2>
           <p className={shared.sfClosingLead}>
             {content.closingLede ?? 'Handla i butiken, boka en tid eller hör av dig — vi hjälper dig gärna.'}
           </p>
-          <div style={{ marginTop: 30 }}>
-            <BookCta className={shared.sfClosingCta} />
+          <div className={styles.islStepCta}>
+            <BookCta className={`${shared.sfClosingCta} ${styles.islBtn}`} />
           </div>
         </Reveal>
       </section>
-    </>
+    </div>
   )
 }

@@ -6,18 +6,37 @@ import type { FloristTheme } from './types'
  * ovanpå bilden → korall-band med en fet mening + liten CTA → rosa panel med
  * ett förskjutet, asymmetriskt valv-collage → invävda butik/blogg/presentkort
  * → tjänster → om → plats → closing. Foton verifierade 200 OK (curl -sI) 2026-07-11.
+ *
+ * SKÄRPE-PASS (zentum-reglerna, 4-Dokument-Underlag/design-skarpa-zentum.md):
+ * identiteten (korall-familjen, sektionsordningen, cirkel-CTA:n, valv-collaget)
+ * är orörd — utförandet är skärpt. Paletten är MÄTT, inte gissad (WCAG):
+ *
+ *   fg  #2A1F18 på bg #FFF7F1 ....... 15.16:1  (rubrik-ink; krav ≥7 — AAA)
+ *   fg2 #6E5B4E på bg #FFF7F1 ........ 6.06:1  (brödtext; krav ≥4.5 — backar medvetet)
+ *   #fff på primary #C8412A .......... 4.95:1  (knapptext/annonsrad/cirkel-CTA — krav ≥4.5)
+ *   #fff på primaryD #9E3018 ......... 7.27:1  (BÅDA de mörka banden + hover)
+ *   primaryD på surface #fff ......... 7.27:1  (eyebrows, priser, band-CTA)
+ *   primaryD på accentSoft #FFE1D3 ... 5.87:1  (rosa panelens eyebrows)
+ *
+ * RUBRIKER ligger ALDRIG på 4.95: både korall-bandet och closing-bandet körs på
+ * primaryD (7.27:1). Den ljusa korallen #C8412A bär bara mikrotext och knappar,
+ * där kravet är 4.5. Mallens 8 hex = paletten; scrimmen återanvänder fg (ingen 9:e).
+ *
+ * Före: primary #F2603F gav bara 3.22:1 mot vit knapptext (FAIL) och fg2 #8C7A6E
+ * 3.87:1 (FAIL). Kulören är kvar (samma korall-hue ~12°), ljusheten är justerad.
+ * radius 20px → 0: binärt system (0 på struktur, full pill/cirkel på knappar).
  */
 export const aurora: FloristTheme = {
   key: 'aurora',
   name: 'Aurora',
   desc: 'Korall & laxrosa · lekfull',
   palette: {
-    primary: '#F2603F',
-    primaryD: '#C8412A',
+    primary: '#C8412A',
+    primaryD: '#9E3018',
     bg: '#FFF7F1',
     surface: '#FFFFFF',
     fg: '#2A1F18',
-    fg2: '#8C7A6E',
+    fg2: '#6E5B4E',
     line: '#F0DFD2',
     accentSoft: '#FFE1D3',
   },
@@ -25,7 +44,7 @@ export const aurora: FloristTheme = {
     display: 'var(--font-fraunces), Georgia, serif',
     body: 'var(--font-jost), system-ui, sans-serif',
   },
-  radius: '20px',
+  radius: '0px',
   content: {
     heroEyebrow: '— Blomsterbutik',
     heroTitle: 'Blommor som\ngör dagen bättre.',

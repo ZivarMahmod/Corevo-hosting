@@ -1,25 +1,156 @@
-/* ═══════════════ AURORA — korall/laxrosa, lekfull men skarp (goal-58) ═══════════════
-   Signatur: annonsrad → landskaps-hero m. cirkel-CTA → korall-band + liten CTA →
-   rosa valv-collage → butik/blogg/presentkort → tjänster → om → plats → closing.
-   Endast denna mall använder klasserna nedan (prefix au*). */
+/* ═══════════════ AURORA — korall/laxrosa, lekfull men SKARP (goal-58) ═══════════════
+   Signatur (oförändrad): annonsrad → landskaps-hero m. cirkel-CTA → korall-band + liten
+   CTA → rosa valv-collage → butik/blogg/presentkort → tjänster → om → plats → closing.
 
-/* 1. Tunn korall-annonsrad */
+   SKÄRPE-PASS enligt 4-Dokument-Underlag/design-skarpa-zentum.md (MÄTT, ej ögonmått):
+   · Typskala 96 / 48 / 30 / 22 / 16 / 12 px — minsta granne-steg ×1.33, största ×2.0.
+     Ingen nivå ligger inom 1.3× av sin granne (den gamla 18/16 = ×1.13 och
+     12/11 = ×1.09 var två par som läste som samma nivå → mellanstort = grötigt).
+   · Display i vikt 500 (aldrig 300/700), mikrotext 12px / 600 / VERSALER / LS 1px.
+   · Line-height 1.06–1.15 på rubrik, 1.55–1.60 på brödtext.
+   · Letter-spacing omvänt mot storleken: −0.01em på display, +1px på mikro.
+   · Binär radie: 0 på ALL struktur (hero, kort, bilder, collage-fötter), full pill
+     (999px) / cirkel (50%) bara på knappar, eyebrow-pill och sifferbadge.
+   · EN bildratio: 9:10 på ALLA innehållsbilder (collage, kort, om-foto). Heron är
+     mallens enda panorama (2:1 desktop / 4:5 mobil) — precis som källans hero-lager.
+   · Hover: 5px lyft / 400ms ease. Ingen scale, ingen skugg-bloom, inga skuggor alls.
+   · Rytm ur EN skala: 12 / 20 / 32 / 48 / 96 px — samma steg i alla sektioner.
+
+   Endast denna mall använder klasserna nedan (prefix au*). Dubblade selektorer
+   (.auRowName.auRowName) = medveten specificitets-höjning: de vinner över den DELADE
+   storefront.module.css-klassen på samma element utan att den filen rörs. */
+
+.auRoot {
+  /* Mallens EGNA dekor-tokens. --au-on-dark = samma vita som paletten (surface),
+     --au-ink-rgb = SAMMA färg som --color-fg (#2A1F18) i kanaler, så scrimmen kan
+     köras i rgba() utan att införa en NIONDE färg. Hela mallen = paletten, 8 hex. */
+  --au-on-dark: #ffffff;
+  --au-ink-rgb: 42, 31, 24; /* = --color-fg #2A1F18 */
+  --au-scrim: linear-gradient(
+    0deg,
+    rgba(var(--au-ink-rgb), 0.88) 0%,
+    rgba(var(--au-ink-rgb), 0.5) 44%,
+    rgba(var(--au-ink-rgb), 0.06) 78%
+  );
+
+  /* TYPSKALA — 96 → 48 → 30 → 22 → 16 → 12. Varje granne ≥×1.33 isär
+     (×2.00, ×1.60, ×1.36, ×1.38, ×1.33) — inget par ligger inom 1.3× av
+     varandra, så ingen nivå kan förväxlas med sin granne. */
+  --au-fs-hero: clamp(56px, 7vw, 96px);
+  --au-fs-h2: clamp(32px, 3.5vw, 48px);
+  --au-fs-card: clamp(24px, 2.2vw, 30px);
+  --au-fs-lede: clamp(18px, 1.7vw, 22px);
+  --au-fs-body: 16px;
+  --au-fs-micro: 12px; /* EN mikronivå (knapp = eyebrow = badge): 12/600/VERSALER/LS 1px */
+
+  /* LINE-HEIGHT — spänt block vs luftig yta */
+  --au-lh-hero: 1.06;
+  --au-lh-h2: 1.08;
+  --au-lh-card: 1.15;
+  --au-lh-lede: 1.55;
+  --au-lh-body: 1.6;
+
+  /* VIKT — stort = medium, litet = semibold */
+  --au-fw-display: 500;
+  --au-fw-card: 600;
+  --au-fw-micro: 600;
+
+  /* LETTER-SPACING — omvänt mot storleken */
+  --au-ls-display: -0.01em;
+  --au-ls-micro: 1px;
+
+  /* RYTM — 12 / 20 / 32 / 48 / 96 */
+  --au-sp-eyebrow: 12px;
+  --au-sp-text: 20px;
+  --au-sp-cta: 32px;
+  --au-sp-block: 48px;
+  --au-sec: clamp(48px, 8vw, 96px);
+  --au-gutter: 24px;
+
+  /* BILD — en enda ratio */
+  --au-ratio: 9 / 10;
+
+  /* MOTION — återhållsam */
+  --au-dur: 400ms;
+  --au-lift: -5px;
+}
+
+/* ── Delade typroller (ersätter globala .sf-h1/.sf-h2/.sf-eyebrow/.sf-body, som
+      ligger på en slappare skala: 34px h2, 12px eyebrow utan LS-disciplin) ─── */
+.auEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--au-fs-micro);
+  line-height: 2;
+  font-weight: var(--au-fw-micro);
+  letter-spacing: var(--au-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary-d);
+}
+.auH2 {
+  margin: var(--au-sp-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-size: var(--au-fs-h2);
+  line-height: var(--au-lh-h2);
+  font-weight: var(--au-fw-display);
+  letter-spacing: var(--au-ls-display);
+  color: var(--color-fg);
+}
+.auBody {
+  margin: var(--au-sp-text) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+  font-weight: 400;
+  color: var(--color-fg-2);
+  max-width: 44rem;
+}
+.auSection { padding: var(--au-sec) 0; }
+.auSecHead { text-align: center; padding: 0 var(--au-gutter); }
+
+/* ── Knapp: exakt pill, 12px/600/VERSALER/LS 1px, ingen skugga, ingen studs ──
+      Vinner över den globala .btn-accent (0,1,0) med 0,2,0. */
+:global(.btn-accent).auBtn {
+  padding: 0 28px;
+  line-height: 46px;
+  border: 2px solid var(--color-primary);
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--au-on-dark);
+  font-family: var(--font-body);
+  font-size: var(--au-fs-micro);
+  font-weight: var(--au-fw-micro);
+  letter-spacing: var(--au-ls-micro);
+  text-transform: uppercase;
+  box-shadow: none;
+  transition: background var(--au-dur) ease, border-color var(--au-dur) ease;
+}
+:global(.btn-accent).auBtn:hover {
+  transform: none;
+  box-shadow: none;
+  background: var(--color-primary-d);
+  border-color: var(--color-primary-d);
+}
+
+/* 1. Tunn korall-annonsrad — mikrotext */
 .auAnnounce {
   background: var(--color-primary);
   text-align: center;
-  padding: 9px 20px;
+  padding: 9px var(--au-gutter);
 }
 .auAnnounceText {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  color: #fff;
+  font-size: var(--au-fs-micro);
+  line-height: 1.8;
+  font-weight: var(--au-fw-micro);
+  letter-spacing: var(--au-ls-micro);
+  text-transform: uppercase;
+  color: var(--au-on-dark);
 }
 
-/* 2. Bred landskaps-hero med rund "Handla nu"-knapp ovanpå bilden */
-.auHero { padding: clamp(18px, 3vw, 32px) clamp(16px, 3vw, 32px) 0; }
+/* 2. Bred landskaps-hero (panorama 2:1) med rund "Handla nu"-knapp ovanpå bilden */
+.auHero { padding: var(--au-gutter) var(--au-gutter) 0; }
 .auHeroFrame {
   position: relative;
   max-width: 1400px;
@@ -27,7 +158,7 @@
 }
 .auHeroImg {
   position: relative;
-  height: clamp(360px, 58vw, 620px);
+  aspect-ratio: 2 / 1;
   border-radius: var(--sf-radius);
   background-size: cover;
   background-position: center;
@@ -36,113 +167,134 @@
 .auHeroScrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, rgba(20, 10, 5, 0.74) 0%, rgba(20, 10, 5, 0.28) 48%, rgba(20, 10, 5, 0) 74%);
+  background: var(--au-scrim);
 }
 .auHeroContent {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  padding: clamp(24px, 4.5vw, 58px);
+  padding: clamp(var(--au-sp-text), 4vw, var(--au-sp-block));
+}
+.auHeroEyebrow {
+  display: inline-block;
+  margin: 0;
+  padding: 2px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: var(--au-fs-micro);
+  line-height: 2;
+  font-weight: var(--au-fw-micro);
+  letter-spacing: var(--au-ls-micro);
+  text-transform: uppercase;
+  color: var(--au-on-dark);
 }
 .auHeroTitle {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(34px, 5.4vw, 68px);
-  line-height: 1.04;
-  color: #fff;
-  margin: 14px 0 0;
+  font-weight: var(--au-fw-display);
+  font-size: var(--au-fs-hero);
+  line-height: var(--au-lh-hero);
+  letter-spacing: var(--au-ls-display);
+  color: var(--au-on-dark);
+  margin: var(--au-sp-eyebrow) 0 0;
   white-space: pre-line;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
 }
 .auHeroLede {
   font-family: var(--font-body);
-  font-size: clamp(15px, 1.3vw, 18px);
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.92);
+  font-size: var(--au-fs-lede);
+  line-height: var(--au-lh-lede);
+  color: var(--au-on-dark);
   max-width: 34rem;
-  margin: 14px 0 0;
+  margin: var(--au-sp-text) 0 0;
 }
-.auHeroActions { margin-top: 22px; }
+.auHeroActions { margin-top: var(--au-sp-cta); }
 .auShopCircle {
   position: absolute;
-  top: clamp(14px, 3vw, 28px);
-  right: clamp(14px, 3vw, 28px);
+  top: var(--au-gutter);
+  right: var(--au-gutter);
   width: clamp(84px, 10vw, 130px);
   height: clamp(84px, 10vw, 130px);
   border-radius: 50%;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--au-on-dark);
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   text-decoration: none;
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: clamp(12px, 1.05vw, 14.5px);
+  font-weight: var(--au-fw-micro);
+  font-size: var(--au-fs-micro);
+  line-height: 1.4;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  border: 3px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 16px 32px -12px rgba(20, 10, 5, 0.55);
-  transition: transform 0.35s ease, background 0.25s ease;
+  letter-spacing: var(--au-ls-micro);
+  border: 2px solid var(--au-on-dark);
+  transition: transform var(--au-dur) ease, background var(--au-dur) ease;
 }
-.auShopCircle:hover { transform: scale(1.06) rotate(-4deg); background: var(--color-primary-d); }
+.auShopCircle:hover { transform: translateY(var(--au-lift)); background: var(--color-primary-d); }
 .auShopCircle span { display: block; padding: 0 10px; }
 
-/* 3+4. Korall-band med fet mening + liten centrerad CTA */
+/* 3+4. Korall-band: EN mening på sektionsrubrik-nivå + liten inverterad CTA */
 .auStatement {
   background: var(--color-primary-d);
   text-align: center;
-  padding: clamp(42px, 7vw, 76px) 24px;
+  padding: var(--au-sec) var(--au-gutter);
 }
 .auStatementText {
   margin: 0 auto;
   max-width: 46rem;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(22px, 3.4vw, 40px);
-  line-height: 1.2;
-  color: #fff;
+  font-weight: var(--au-fw-display);
+  font-size: var(--au-fs-h2);
+  line-height: var(--au-lh-h2);
+  letter-spacing: var(--au-ls-display);
+  color: var(--au-on-dark);
 }
 .auStatement :global(.btn-accent).auStatementCta {
-  margin-top: 24px;
-  background: #fff;
+  margin-top: var(--au-sp-cta);
+  background: var(--au-on-dark);
+  border-color: var(--au-on-dark);
   color: var(--color-primary-d);
 }
-.auStatement :global(.btn-accent).auStatementCta:hover { background: rgba(255, 255, 255, 0.9); }
+.auStatement :global(.btn-accent).auStatementCta:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent-soft);
+  color: var(--color-primary-d);
+}
 
-/* 5. Rosa panel — förskjutet, asymmetriskt valv-collage */
-.auCollageBand { background: var(--color-accent-soft); padding: clamp(56px, 8vw, 96px) 24px; }
-.auCollageHead { text-align: center; margin-bottom: clamp(30px, 4.5vw, 46px); }
+/* 5. Rosa panel — förskjutet valv-collage. EN ratio (9:10), binär radie:
+      valvsidan är full båge (999px), foten är rak (0). Förskjutningen ligger i
+      marginalen, inte i höjden — så kanterna linjerar. */
+.auCollageBand { background: var(--color-accent-soft); padding: var(--au-sec) var(--au-gutter); }
+.auCollageHead { text-align: center; margin-bottom: var(--au-sp-block); }
 .auCollageGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(14px, 2.5vw, 26px);
+  gap: var(--au-gutter);
   max-width: 68rem;
   margin: 0 auto;
 }
 .auCollageItem {
+  aspect-ratio: var(--au-ratio);
   background-size: cover;
   background-position: center;
-  box-shadow: 0 20px 42px -24px rgba(60, 30, 20, 0.4);
+  background-color: var(--color-line);
+  border-radius: 999px 999px 0 0;
 }
-.auCollageItem:nth-child(1) { height: clamp(200px, 22vw, 280px); border-radius: 999px 999px 18px 18px; margin-top: 0; }
-.auCollageItem:nth-child(2) { height: clamp(240px, 26vw, 340px); border-radius: 18px 18px 999px 999px; margin-top: clamp(28px, 4vw, 52px); }
-.auCollageItem:nth-child(3) { height: clamp(180px, 20vw, 240px); border-radius: 999px 999px 18px 18px; margin-top: clamp(-16px, -1.6vw, 0px); }
-.auCollageItem:nth-child(4) { height: clamp(170px, 18vw, 220px); border-radius: 18px 18px 999px 999px; margin-top: clamp(20px, 3vw, 36px); }
-.auCollageItem:nth-child(5) { height: clamp(220px, 24vw, 300px); border-radius: 999px 999px 18px 18px; margin-top: 0; }
-.auCollageItem:nth-child(6) { height: clamp(190px, 20vw, 250px); border-radius: 18px 18px 999px 999px; margin-top: clamp(32px, 4.5vw, 58px); }
+.auCollageItem:nth-child(2n) {
+  border-radius: 0 0 999px 999px;
+  margin-top: var(--au-sp-block);
+}
 
-/* 6+10. Invävda modul-kort (butik + blogg) — delas mellan sektionerna */
-.auSecHead { text-align: center; padding: 0 24px; }
+/* 6+10. Invävda modul-kort (butik + blogg) — raka hörn, en bildratio */
 .auCardGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(16px, 2.5vw, 28px);
+  gap: var(--au-gutter);
   max-width: 70rem;
-  margin: clamp(30px, 4vw, 46px) auto 0;
-  padding: 0 24px;
+  margin: var(--au-sp-block) auto 0;
+  padding: 0 var(--au-gutter);
 }
 .auCard {
   display: block;
@@ -152,26 +304,48 @@
   border: 1px solid var(--color-line);
   border-radius: var(--sf-radius);
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform var(--au-dur) ease, border-color var(--au-dur) ease;
 }
-.auCard:hover { transform: translateY(-5px); box-shadow: 0 20px 36px -22px rgba(60, 30, 20, 0.4); }
+.auCard:hover { transform: translateY(var(--au-lift)); border-color: var(--color-primary); }
 .auCardImg {
-  height: clamp(160px, 18vw, 210px);
+  aspect-ratio: var(--au-ratio);
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
 }
-.auCardBody { padding: 16px 18px 20px; }
-.auCardName { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; color: var(--color-fg); margin: 0 0 6px; }
-.auCardMeta { font-family: var(--font-body); font-size: 0.85rem; color: var(--color-fg-2); margin: 0; }
-.auCardPrice { display: inline-block; margin-top: 10px; font-family: var(--font-body); font-weight: 700; color: var(--color-primary-d); }
+.auCardBody { padding: var(--au-sp-text); }
+.auCardName {
+  font-family: var(--font-display);
+  font-weight: var(--au-fw-card);
+  font-size: var(--au-fs-card);
+  line-height: var(--au-lh-card);
+  letter-spacing: 0;
+  color: var(--color-fg);
+  margin: 0;
+}
+.auCardMeta {
+  font-family: var(--font-body);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+  color: var(--color-fg-2);
+  margin: var(--au-sp-eyebrow) 0 0;
+}
+.auCardPrice {
+  display: block;
+  margin: var(--au-sp-eyebrow) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+  font-weight: var(--au-fw-micro);
+  color: var(--color-primary-d);
+}
 .auBandCta {
   display: inline-block;
-  margin-top: 22px;
+  margin-top: var(--au-sp-cta);
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
+  font-weight: var(--au-fw-micro);
+  font-size: var(--au-fs-micro);
+  letter-spacing: var(--au-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary-d);
   border-bottom: 2px solid var(--color-primary-d);
@@ -179,7 +353,8 @@
   text-decoration: none;
 }
 
-/* 7. Tjänster — numrerade rader med rund badge istället för platt siffra */
+/* 7. Tjänster — rund sifferbadge (medvetet cirkel-undantag, som eyebrow-pillen).
+      Dubblade klasser = vinner över de delade .sfRow*-reglerna, utan att röra dem. */
 .auRowNum {
   display: inline-flex;
   align-items: center;
@@ -189,42 +364,139 @@
   border-radius: 50%;
   background: var(--color-accent-soft);
   color: var(--color-primary-d);
+  font-family: var(--font-body);
+  font-weight: var(--au-fw-micro);
+  font-size: var(--au-fs-micro);
+  letter-spacing: var(--au-ls-micro);
+}
+.auRowName.auRowName {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-size: var(--au-fs-card);
+  line-height: var(--au-lh-card);
+  font-weight: var(--au-fw-card);
+  letter-spacing: 0;
+  color: var(--color-fg);
+}
+.auRowDesc.auRowDesc {
+  font-family: var(--font-body);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+  color: var(--color-fg-2);
+}
+.auRowPrice.auRowPrice {
+  font-family: var(--font-body);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+  font-weight: var(--au-fw-micro);
+  color: var(--color-fg);
+}
+.auMoreLink.auMoreLink {
+  margin-top: var(--au-sp-cta);
+  font-family: var(--font-body);
+  font-size: var(--au-fs-micro);
+  font-weight: var(--au-fw-micro);
+  letter-spacing: var(--au-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary-d);
 }
 
-/* 8. Om — rundad bild + liten kursiv värmefras */
+/* 8. Om — foto i samma 9:10, raka hörn, kursiv värmefras på kort-nivå */
 .auAboutPhoto {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: var(--au-ratio);
   background-size: cover;
   background-position: center;
+  background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
-  box-shadow: 0 22px 46px -26px rgba(60, 30, 20, 0.4);
 }
 .auItalicLine {
   font-family: var(--font-display);
   font-style: italic;
-  font-weight: 500;
+  font-weight: var(--au-fw-display);
+  font-size: var(--au-fs-card);
+  line-height: var(--au-lh-card);
   color: var(--color-primary-d);
-  font-size: clamp(17px, 1.6vw, 20px);
-  margin: 14px 0 0;
+  margin: var(--au-sp-text) 0 0;
+}
+.auStatValue.auStatValue {
+  font-family: var(--font-display);
+  font-size: var(--au-fs-card);
+  line-height: var(--au-lh-card);
+  font-weight: var(--au-fw-card);
+  color: var(--color-primary-d);
+}
+.auStatLabel.auStatLabel {
+  display: block;
+  margin-top: var(--au-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--au-fs-micro);
+  font-weight: var(--au-fw-micro);
+  letter-spacing: var(--au-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
 }
 
 /* 9. Presentkort — smal rad, aldrig en hel sektion */
-.auGiftBand { background: var(--color-accent-soft); padding: clamp(22px, 3vw, 36px) 24px; text-align: center; }
+.auGiftBand {
+  background: var(--color-accent-soft);
+  padding: var(--au-sp-cta) var(--au-gutter);
+  text-align: center;
+}
 .auGiftLede {
   margin: 0;
   font-family: var(--font-display);
   font-style: italic;
-  font-weight: 600;
-  font-size: clamp(17px, 1.8vw, 21px);
+  font-weight: var(--au-fw-display);
+  font-size: var(--au-fs-lede);
+  line-height: var(--au-lh-lede);
   color: var(--color-primary-d);
 }
 
+/* 11. Plats — brödtext/rader på samma skala som resten */
+.auHoursRow.auHoursRow {
+  font-family: var(--font-body);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+}
+.auMapLink.auMapLink {
+  font-family: var(--font-body);
+  font-size: var(--au-fs-micro);
+  font-weight: var(--au-fw-micro);
+  letter-spacing: var(--au-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary-d);
+}
+
+/* 12. Closing — RUBRIK-KONTRAST: den delade .sfClosing lägger bandet på
+      --color-primary (#C8412A) → vit rubrik landar på 4.95:1. En rubrik ska skära
+      (krav ≥7:1), så bandet flyttas till den mörka korallen --color-primary-d
+      (#9E3018) → 7.27:1. Dubblad klass (0,2,0) vinner över .sfClosing (0,1,0)
+      oavsett vilken CSS-modul som råkar laddas sist. Knappen är oförändrad: den
+      delade .sfClosing .btn-accent.sfClosingCta (0,3,0) ger vit knapp med
+      korall-text (4.95:1 ≥ 4.5). Samma korall-familj, bara rätt ljushet. */
+.auClosing.auClosing { background: var(--color-primary-d); }
+.auClosingTitle {
+  margin: 0 auto;
+  max-width: 40rem;
+  font-family: var(--font-display);
+  font-size: var(--au-fs-h2);
+  line-height: var(--au-lh-h2);
+  font-weight: var(--au-fw-display);
+  letter-spacing: var(--au-ls-display);
+  color: var(--au-on-dark);
+}
+.auClosingLede.auClosingLede {
+  margin: var(--au-sp-text) auto 0;
+  max-width: 34rem;
+  font-family: var(--font-body);
+  font-size: var(--au-fs-lede);
+  line-height: var(--au-lh-lede);
+  color: var(--au-on-dark);
+}
+.auClosingActions { margin-top: var(--au-sp-cta); }
+
 @media (max-width: 760px) {
+  .auHeroImg { aspect-ratio: 4 / 5; }
   .auCollageGrid { grid-template-columns: repeat(2, 1fr); }
-  .auCollageItem { margin-top: 0 !important; height: 200px !important; }
   .auCardGrid { grid-template-columns: 1fr; max-width: 22rem; }
-  .auShopCircle { width: 78px; height: 78px; font-size: 11px; }
+  .auShopCircle { width: 78px; height: 78px; }
 }

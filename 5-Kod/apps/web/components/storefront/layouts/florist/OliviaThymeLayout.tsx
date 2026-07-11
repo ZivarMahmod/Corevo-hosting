@@ -18,6 +18,14 @@ import styles from './oliviathyme.module.css'
  * blogg, galleri, plats och closing. Kvarterbutikens skyltfönster, inte en mood
  * board. Webshop/blogg/presentkort vävs in via `modules`-propen (S10) precis som
  * övriga mallar i sviten.
+ *
+ * SKÄRPE-PASS: typografin går genom mallens EGNA roller (.otDisplay/.otSectionTitle/
+ * .otCardTitle/.otLede/.otBody/.otEyebrow) i stället för de globala .sf-*-rollerna.
+ * Skälet är mätbart: .sf-h1 är 56px — större än mallens egen hero-rubrik var — och
+ * .sf-h2 34px, vilket gav en platt skala (56/54/44/34/22/17/16) där allt vägde lika.
+ * Rollerna i oliviathyme.module.css ger 96 → 48 → 26 → 18 → 16 → 12/11 och all
+ * spacing ur EN skala (12/20/24/32/48/96), så rytmen är identisk i varje sektion.
+ * Inga inline font-size/margin kvar — allt bor i CSS:en och går att mäta där.
  */
 export function OliviaThymeLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -45,16 +53,14 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
 
       {/* BEIGE REMSA — den riktiga rubriken, ledet och CTA:n. */}
       <section className={styles.otWelcome}>
-        <Reveal className={styles.otWelcomeInner}>
-          <span className={shared.sfPillEyebrow}>{content.heroEyebrow}</span>
-          <h1 className={styles.otWelcomeTitle}>{content.heroTitle}</h1>
-          <p className="sf-lede" style={{ marginTop: 14 }}>
-            {content.heroLede}
-          </p>
+        <Reveal className={`${styles.otWelcomeInner} ${styles.otCenter}`}>
+          <span className={styles.otEyebrow}>{content.heroEyebrow}</span>
+          <h1 className={`${styles.otDisplay} ${styles.otWelcomeTitle}`}>{content.heroTitle}</h1>
+          <p className={styles.otLede}>{content.heroLede}</p>
           <div className={styles.otWelcomeActions}>
-            <BookCta />
+            <BookCta className={styles.otBtn} />
             {offertReachable ? (
-              <a href="/offert" className={styles.otSecondaryLink}>
+              <a href="/offert" className={`${styles.otMoreLink} ${styles.otFlush}`}>
                 Blommor till bröllop eller fest? <span aria-hidden="true">→</span>
               </a>
             ) : null}
@@ -68,17 +74,15 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
       {showcase.length > 0 ? (
         <>
           <section className={styles.otShopIntro}>
-            <Reveal className={styles.otShopIntroInner}>
-              <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-              <h2 className="sf-h1" style={{ marginTop: 10 }}>
-                {content.shopTitle ?? 'Butikens favoriter'}
-              </h2>
-              <p className={`sf-body ${styles.otShopIntroBody}`}>
+            <Reveal className={`${styles.otShopIntroInner} ${styles.otCenter}`}>
+              <p className={styles.otEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
+              <h2 className={styles.otSectionTitle}>{content.shopTitle ?? 'Butikens favoriter'}</h2>
+              <p className={styles.otBody}>
                 Från vardagsbuketter till stora högtidsarrangemang — det här är blommorna vi är mest stolta över just nu.
               </p>
               <div className={styles.otShopActions}>
                 {shopReachable ? (
-                  <Link href="/shop" className={styles.otSquareCta}>
+                  <Link href="/shop" className={styles.otBtn}>
                     {content.shopCta ?? 'Se hela sortimentet'}
                   </Link>
                 ) : null}
@@ -101,7 +105,7 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
                       style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                     />
                     <div className={styles.otShowcaseInfo}>
-                      <span className={styles.otShowcaseName}>{p.name}</span>
+                      <span className={styles.otCardTitle}>{p.name}</span>
                       <span className={styles.otShowcasePrice}>{formatShopPrice(p.priceCents, p.currency)}</span>
                     </div>
                   </Link>
@@ -116,11 +120,9 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
       {rows.length > 0 ? (
         <section className={styles.otServices}>
           <div className={shared.sfNarrow}>
-            <Reveal style={{ textAlign: 'center' }}>
-              <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className="sf-h1" style={{ marginTop: 12 }}>
-                {content.servicesTitle}
-              </h2>
+            <Reveal className={styles.otCenter}>
+              <p className={styles.otEyebrow}>{content.servicesEyebrow}</p>
+              <h2 className={styles.otSectionTitle}>{content.servicesTitle}</h2>
             </Reveal>
             <div className={styles.otServiceList}>
               {rows.map((s, i) => (
@@ -130,7 +132,7 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
                       {serviceNum(i)}
                     </span>
                     <span className={styles.otServiceMain}>
-                      <span className={styles.otServiceName}>{s.name}</span>
+                      <span className={styles.otCardTitle}>{s.name}</span>
                       <span className={styles.otServiceDesc}>{serviceDesc(s)}</span>
                     </span>
                     <span className={styles.otServiceMeta}>
@@ -141,8 +143,8 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
               ))}
             </div>
             {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={shared.sfMoreLink}>
+              <Reveal className={styles.otCenter}>
+                <a href="/tjanster" className={styles.otMoreLink}>
                   Se allt vi gör <span aria-hidden="true">→</span>
                 </a>
               </Reveal>
@@ -151,7 +153,7 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
         </section>
       ) : null}
 
-      {/* OM — foto i kraftpapper-ram + berättelsen + stat-trion. */}
+      {/* OM — foto i rak vit ram + berättelsen + stat-trion. */}
       <section className={styles.otAbout}>
         <div className={`${shared.sfWide} ${styles.otAboutGrid}`}>
           <Reveal>
@@ -160,18 +162,14 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
             </div>
           </Reveal>
           <Reveal delay={120}>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
-              {content.aboutTitle}
-            </h2>
-            <p className="sf-body" style={{ fontSize: 17, marginTop: 16 }}>
-              {content.aboutCopyHome}
-            </p>
-            <ul className={shared.sfStatTrio}>
+            <p className={styles.otEyebrow}>— Om {tenant.name}</p>
+            <h2 className={styles.otSectionTitle}>{content.aboutTitle}</h2>
+            <p className={styles.otBody}>{content.aboutCopyHome}</p>
+            <ul className={styles.otStats}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
+                  <span className={styles.otStatValue}>{n}</span>
+                  <span className={styles.otStatLabel}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -183,13 +181,11 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
       {presentkortLive ? (
         <section className={styles.otGiftBand}>
           <Reveal className={styles.otGiftInner}>
-            <p className="sf-eyebrow" style={{ margin: 0 }}>
-              {content.giftEyebrow ?? '— Presentkort'}
-            </p>
-            <p className="sf-italic" style={{ fontSize: 'clamp(17px, 1.8vw, 20px)', margin: 0, color: 'var(--color-primary)' }}>
+            <p className={styles.otEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
+            <p className={styles.otGiftLede}>
               {content.giftLede ?? 'Ge bort en blomstrande stund, när som helst på året.'}
             </p>
-            <a href="/presentkort" className={shared.sfMoreLink} style={{ marginTop: 0 }}>
+            <a href="/presentkort" className={`${styles.otMoreLink} ${styles.otFlush}`}>
               {content.giftCta ?? 'Till presentkorten'} <span aria-hidden="true">→</span>
             </a>
           </Reveal>
@@ -199,11 +195,9 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
       {/* FRÅN BLOGGEN — blogg-modulen invävd (3 senaste). */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.otBlog}>
-          <Reveal className={styles.otBlogHead}>
-            <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 10 }}>
-              {content.blogTitle ?? 'Tips, säsong & inspiration'}
-            </h2>
+          <Reveal className={`${styles.otBlogHead} ${styles.otCenter}`}>
+            <p className={styles.otEyebrow}>{content.blogEyebrow ?? '— Från bloggen'}</p>
+            <h2 className={styles.otSectionTitle}>{content.blogTitle ?? 'Tips, säsong & inspiration'}</h2>
           </Reveal>
           <div className={styles.otBlogGrid}>
             {bloggTeasers.map((p, i) => (
@@ -213,25 +207,25 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
                     className={styles.otBlogImg}
                     style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
                   />
-                  <h3 className={styles.otBlogName}>{p.title}</h3>
-                  {p.excerpt ? <p className={styles.otBlogMeta}>{p.excerpt}</p> : null}
+                  <h3 className={`${styles.otCardTitle} ${styles.otBlogName}`}>{p.title}</h3>
+                  {p.excerpt ? <p className={`${styles.otBody} ${styles.otBlogMeta}`}>{p.excerpt}</p> : null}
                 </Link>
               </Reveal>
             ))}
           </div>
           <Reveal className={styles.otBlogCtaWrap}>
-            <Link href="/blogg" className={shared.sfMoreLink}>
+            <Link href="/blogg" className={`${styles.otMoreLink} ${styles.otFlush}`}>
               {content.blogCta ?? 'Läs hela bloggen'} <span aria-hidden="true">→</span>
             </Link>
           </Reveal>
         </section>
       ) : null}
 
-      {/* GALLERI */}
-      <section className={shared.sfGalleryBand}>
+      {/* GALLERI — brickorna tvingas in i mallens ratio (4:5) via .otGallery. */}
+      <section className={`${shared.sfGalleryBand} ${styles.otGallery}`}>
         <div className={shared.sfWide}>
           <Reveal>
-            <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Från butiken'}</p>
+            <p className={styles.otEyebrow}>{content.galleryEyebrow ?? '— Från butiken'}</p>
           </Reveal>
           <Reveal>
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Bild från butiken' }))} />
@@ -243,23 +237,19 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
       <section className={shared.sfLocBand}>
         <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta hit'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
+            <p className={styles.otEyebrow}>{content.findEyebrow ?? '— Hitta hit'}</p>
+            <h2 className={styles.otSectionTitle}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                {location.address}
-              </p>
+              <p className={styles.otBody}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                Adress visas snart.
-              </p>
+              <p className={styles.otBody}>Adress visas snart.</p>
             )}
             {location?.hours ? (
               <div className={shared.sfHours}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
+                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.otHoursRow}`}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
@@ -274,7 +264,7 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={shared.sfMapLink}
+                  className={`${styles.otMoreLink} ${styles.otFlush}`}
                 >
                   Visa på karta <span aria-hidden="true">→</span>
                 </a>
@@ -288,14 +278,14 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
 
       <section className={shared.sfClosing}>
         <Reveal>
-          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto' }}>
+          <h2 className={`${styles.otSectionTitle} ${styles.otClosingTitle}`}>
             {content.closingTitle ?? 'Redo för din nästa bukett?'}
           </h2>
-          <p className={shared.sfClosingLead}>
+          <p className={styles.otClosingLede}>
             {content.closingLede ?? 'Boka, beställ eller kom förbi butiken — vi hjälper dig gärna hitta rätt.'}
           </p>
-          <div style={{ marginTop: 30 }}>
-            <BookCta className={shared.sfClosingCta} />
+          <div className={styles.otClosingActions}>
+            <BookCta className={`${shared.sfClosingCta} ${styles.otBtn}`} />
           </div>
         </Reveal>
       </section>

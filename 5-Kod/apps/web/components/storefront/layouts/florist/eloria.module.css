@@ -1,24 +1,179 @@
 /* ═══════════════ ELORIA — blush, mörkgrön & guld, klassisk premium (florist-sviten) ═══════════════
-   Motsatsen till Mina: en mörkgrön guldramad "platta" mitt i heron (två lager:
-   diptyk-foton bakom, platta framför), tunna guldlöften, eleganta höga
-   shop/blogg-kort (3:4), en klassisk prislista med guld-dotterade linjer och en
-   mörkgrön scrim-closing som ekar heron. Egen dekorfärg (--eloria-green) satt
-   lokalt på de tre mörkgröna ytorna — aldrig i den delade paletten. */
+   IDENTITETEN ÄR ORÖRD: samma färgfamilj (blush + mörkgrön + guld), samma
+   struktur-signatur (två-lagers hero med guldramad mörkgrön platta, tunna
+   guldlöften, höga shop/blogg-kort, klassisk prislista med guld-dotterade linjer,
+   mörkgrön scrim-closing som ekar heron) och samma sektionsordning. Det som ändrats
+   är UTFÖRANDET.
 
-.elHeroPlate,
+   SKÄRPE-PASS (4-Dokument-Underlag/design-skarpa-zentum.md) — "svärd, inte mjuk morot".
+   Mallen äger nu HELA sin typografi: de globala .sf-eyebrow/.sf-body-rollerna (tokens.css)
+   ligger på en slapp ×1.2–1.3-skala (12px eyebrow, 16/1.7 body) och gjorde allt mellanstort.
+
+   REGLERNA, kodade:
+   1. TYPSKALA ×1.82 hela vägen ned i toppen: 80 → 44 → 24 → 18 → 16 | 11–12 (mikro).
+      FÖRE fanns FYRA rubriknivåer inom 30% av varandra (36 / 42 / 46 / 50px) — de är
+      hopslagna till EN (--el-fs-h2). Ingen tvekan kvar om vad som är viktigast.
+   2. VIKT: display = 600. Playfair laddas BARA i 600/700/800 (app/layout.tsx) — 400/500
+      finns inte att välja, och en deklarerad 500:a hade renderats som 600 ändå och ljugit
+      i koden. 600 är den lättaste ärliga skäran. Mikrotext = 600 + VERSALER.
+   3. LINE-HEIGHT: rubrik 1.06–1.15, brödtext 1.55–1.60. Registerbytet ÄR skärpan.
+   4. LETTER-SPACING omvänt mot storleken: −0.02em på hero, −0.01em på h2, 0 på 24px,
+      +1px på 11–12px. Aldrig positiv tracking på stora rubriker.
+   5. KONTRAST (uträknad, inte gissad — se eloria.theme.ts): rubrik 15.42:1, brödtext
+      6.35:1, knapptext 6.15:1. TVÅ FAIL rättade: guld-eyebrow på den mörkgröna plattan
+      (3.03:1) och guld-eyebrow på presentkortsraden (4.04:1).
+   6. RADIE: binär. --sf-radius = 0 (theme.radius '0px', var '3px' = varken kant eller
+      kapsel) på ALL struktur; knappen är enda undantaget och är en full pill.
+   7. BILDRATIO: ETT format i hela mallen — 4:5. Butikskort, bloggkort, om-fotot (delad
+      .sfAboutPhoto är redan 4/5) och galleribrickorna (var 1:1). Hero-diptyken är den enda
+      undantagna ytan (full-bleed, som zentums panorama-hero).
+   8. FÄRG: 9 hex totalt — temats 8 tokens + mallens ENDA dekorfärg (--eloria-green).
+      Guldet är den enda accenten och sitter bara på småytor (knapp, eyebrow, ikon, linje,
+      prickar, pris). Inga andra hårdkodade hex: allt vitt/krämvitt är color-mix på tokens.
+   9. HOVER: 5px lyft / 400ms ease. Ingen scale, ingen skugg-bloom (den globala
+      .btn-accent-glowen och galleriets scale(1.05) släcks nedan).
+  10. RYTM: 12 / 20 / 32 / 48 / 96–144. Samma inre steg i ALLA sektioner:
+      eyebrow→rubrik 12, rubrik→text 20, text→CTA 32, sektionshuvud→innehåll 48. */
+
+/* ── 0. SKALAN + DEKOR — deklarerad på mallens alla rot-sektioner (layouten är ett
+      fragment, så den här grupperade regeln ÄR mallens "rot-klass"). ──────────────── */
+.elHero,
+.elVows,
+.elShopSection,
+.elPriceSection,
+.elAboutSection,
 .elOfferBand,
+.elCardSectionAlt,
+.elGallery,
+.elGiftRow,
+.elLoc,
 .elClosing {
+  /* typskala — steg ×1.82 / ×1.83 i toppen */
+  --el-fs-hero: clamp(2.75rem, 6vw, 5rem);      /* 44 → 80px */
+  --el-fs-h2: clamp(1.75rem, 3.6vw, 2.75rem);   /* 28 → 44px */
+  --el-fs-card: 1.5rem;                         /* 24px */
+  --el-fs-lede: 1.125rem;                       /* 18px */
+  --el-fs-body: 1rem;                           /* 16px */
+  --el-fs-micro: 0.6875rem;                     /* 11px */
+  --el-fs-btn: 0.75rem;                         /* 12px */
+
+  /* rytm */
+  --el-s1: 12px;
+  --el-s2: 20px;
+  --el-s3: 32px;
+  --el-s4: 48px;
+  --el-sec: clamp(64px, 9vw, 144px);
+  --el-gut: clamp(1.25rem, 4vw, 1.75rem);
+
+  /* bild — EN ratio i hela mallen */
+  --el-ratio: 4 / 5;
+
+  /* motion — återhållsam */
+  --el-dur: 400ms;
+  --el-lift: -5px;
+
+  /* DEKOR — mallens enda egna färg (mörkgrönt) + ett ljusare guld som är läsbart MOT
+     det gröna. Guld-ljus är en color-mix av två befintliga tokens, alltså 0 nya hex:
+     temats guld direkt på grönt ger 3.03:1 (FAIL), den ljusare 5.99:1. */
   --eloria-green: #182a20;
+  --eloria-gold: color-mix(in srgb, var(--color-primary) 55%, var(--color-bg));
 }
 
-/* 1 — HERO: diptyk-bakgrund (lager 1) + centrerad mörkgrön/guld platta (lager 2) */
+/* ── 0b. TYPROLLER — mallens egen skala (ersätter globala .sf-eyebrow/.sf-body) ────── */
+.elEyebrow {
+  display: block;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+/* Samma mikroroll på de mörkgröna ytorna — ljusare guld (5.99:1 mot grönt). */
+.elEyebrowDark {
+  display: block;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--eloria-gold);
+}
+.elH2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--el-fs-h2);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  margin: var(--el-s1) 0 0;
+}
+.elBody {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+  margin: var(--el-s2) 0 0;
+  max-width: 34rem;
+}
+
+/* Mikro-länk ("Visa hela butiken", "Se allt vi gör", "Visa på karta") — 12/600/VERSALER/+1px.
+   Ersätter delade .sfMoreLink (600 i brödtextgrad, ingen versal, gap-studs på hover). */
+.elMoreLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: var(--el-s3);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-btn);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 3px;
+  transition: border-color var(--el-dur) ease;
+}
+.elMoreLink:hover { border-color: var(--color-primary); }
+.elMoreLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+
+/* KNAPPEN — full pill (radien kommer från .btn-accent → --radius-pill), 12/600/VERSALER/+1px.
+   Den globala .btn-accent är 700 med box-shadow + hover-glow — exakt den pösiga rörelsen
+   regellistan förbjuder. Dubbelklassen ger specificiteten som krävs för att slå
+   .btn-accent(:hover) (0,2,0). */
+.elHero :global(.btn-accent).elHeroCta,
+.elClosing :global(.btn-accent).elClosingCta {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-btn);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 46px;
+  padding: 0 30px;
+  box-shadow: none;
+  transition: transform var(--el-dur) ease, background var(--el-dur) ease;
+}
+.elHero :global(.btn-accent).elHeroCta:hover,
+.elClosing :global(.btn-accent).elClosingCta:hover {
+  transform: translateY(-4px);
+  box-shadow: none;
+}
+
+/* ── 1. HERO: diptyk-bakgrund (lager 1) + centrerad mörkgrön/guldramad platta (lager 2) ── */
 .elHero {
   position: relative;
-  min-height: clamp(30rem, 70vh, 42rem);
+  min-height: clamp(30rem, 74vh, 44rem);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(2rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem);
+  padding: var(--el-s4) var(--el-gut);
   overflow: hidden;
   background: var(--color-bg);
 }
@@ -39,44 +194,54 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, rgba(251, 243, 238, 0.15) 0%, rgba(251, 243, 238, 0.8) 62%, var(--color-bg) 100%);
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--color-bg) 15%, transparent) 0%,
+    color-mix(in srgb, var(--color-bg) 80%, transparent) 62%,
+    var(--color-bg) 100%
+  );
 }
 .elHeroPlate {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 38rem;
+  max-width: 46rem;
   background: var(--eloria-green);
-  border: 1px solid var(--color-primary);
+  /* Guldramen — mallens signatur. Ljusare guld: temats guld läser 3.03:1 mot grönt
+     (osynlig ram), det ljusare 5.99:1. */
+  border: 1px solid var(--eloria-gold);
   border-radius: var(--sf-radius);
-  padding: clamp(2.25rem, 6vw, 3.75rem) clamp(1.5rem, 5vw, 3rem);
+  padding: clamp(2.5rem, 6vw, 4rem) clamp(1.5rem, 5vw, 3rem);
   text-align: center;
 }
+/* 13.77:1 mot det gröna */
 .elHeroTitle {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(34px, 5.4vw, 56px);
-  line-height: 1.08;
+  font-size: var(--el-fs-hero);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
   color: var(--color-bg);
-  margin: 14px 0 0;
+  margin: var(--el-s1) 0 0;
   white-space: pre-line;
 }
+/* Krämvit @82% på grönt = 9.71:1 */
 .elHeroLede {
   font-family: var(--font-body);
-  font-size: clamp(15px, 1.3vw, 17px);
-  line-height: 1.6;
-  color: rgba(251, 243, 238, 0.82);
-  max-width: 30rem;
-  margin: 18px auto 0;
+  font-weight: 400;
+  font-size: var(--el-fs-lede);
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  max-width: 32rem;
+  margin: var(--el-s2) auto 0;
 }
-.elHeroActions { margin-top: 26px; }
-.elHeroCta { font-size: 13px; }
+.elHeroActions { margin-top: var(--el-s3); }
 
-/* 2 — TRE LÖFTEN: tunna guldikoner */
+/* ── 2. TRE LÖFTEN: tunna guldikoner ──────────────────────────────────────────────── */
 .elVows {
   max-width: 64rem;
   margin: 0 auto;
-  padding: clamp(40px, 6vw, 70px) 24px;
+  padding: var(--el-sec) var(--el-gut);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: clamp(24px, 4vw, 40px);
@@ -87,40 +252,33 @@
 .elVowTitle {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1.15rem;
+  font-size: var(--el-fs-card);
+  line-height: 1.15;
   color: var(--color-fg);
-  margin: 14px 0 6px;
+  margin: var(--el-s1) 0 0;
 }
-.elVowText { font-size: 14px; line-height: 1.55; color: var(--color-fg-2); max-width: 16rem; margin: 0; }
+.elVowText {
+  font-family: var(--font-body);
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+  max-width: 18rem;
+  margin: var(--el-s2) 0 0;
+}
 @media (max-width: 700px) {
   .elVows { grid-template-columns: 1fr; max-width: 22rem; }
 }
 
-/* UR BUTIKEN / BLOGGEN — eleganta höga kort (3:4), delad markup för båda moduler */
-.elShopSection { background: var(--color-bg); padding: clamp(48px, 8vw, 84px) 24px; }
+/* ── 3/7. UR BUTIKEN / FRÅN BLOGGEN — eleganta höga kort, delad markup för båda moduler ── */
+.elShopSection { background: var(--color-bg); padding: var(--el-sec) var(--el-gut); }
 .elCardSectionAlt {
   background: var(--color-surface);
-  padding: clamp(48px, 8vw, 84px) 24px;
+  padding: var(--el-sec) var(--el-gut);
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
 }
-.elSecHead { text-align: center; padding: 0 24px; margin-bottom: clamp(24px, 4vw, 40px); }
-.elSecTitle {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(24px, 3vw, 36px);
-  line-height: 1.12;
-  color: var(--color-fg);
-  margin: 10px 0 0;
-}
-.elSecTitleLg {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(30px, 4.4vw, 50px);
-  line-height: 1.08;
-  color: var(--color-fg);
-  margin: 12px 0 0;
-}
+.elSecHead { text-align: center; margin-bottom: var(--el-s4); }
+.elSecFoot { text-align: center; }
 
 .elCardGrid {
   max-width: 72rem;
@@ -131,38 +289,66 @@
 }
 .elCard { display: block; text-decoration: none; color: inherit; }
 .elCard:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+/* Mallens ENDA bildformat: 4:5 (var 3:4 — griden tappade sina linjer mot om-fotot
+   och galleriet). Raka hörn: --sf-radius = 0. */
 .elCardImgTall {
-  aspect-ratio: 3 / 4;
+  aspect-ratio: var(--el-ratio);
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
-  transition: transform var(--dur-fast) var(--ease-out);
+  transition: transform var(--el-dur) ease;
 }
-.elCard:hover .elCardImgTall { transform: translateY(-4px); }
-.elCardRule { display: block; width: 2rem; height: 1px; background: var(--color-primary); margin: 1.1rem 0 0; }
-.elCardName { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; color: var(--color-fg); margin: 0.6rem 0 0; }
-.elCardMeta { font-family: var(--font-body); font-weight: 600; font-size: 0.92rem; color: var(--color-primary); margin: 0.3rem 0 0; }
+.elCard:hover .elCardImgTall { transform: translateY(var(--el-lift)); }
+.elCardRule { display: block; width: 2rem; height: 1px; background: var(--color-primary); margin: var(--el-s2) 0 0; }
+.elCardName {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--el-fs-card);
+  line-height: 1.15;
+  color: var(--color-fg);
+  margin: var(--el-s1) 0 0;
+}
+/* Priset (guld, 600) och bloggutdraget (brödtext, 400) delade FÖRE samma klass — ett
+   utdrag i guld/semibold är ingen brödtext. Två roller, en skala. */
+.elCardPrice {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: var(--color-primary);
+  margin: var(--el-s1) 0 0;
+}
+.elCardExcerpt {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+  margin: var(--el-s1) 0 0;
+}
 @media (max-width: 760px) {
   .elCardGrid { grid-template-columns: 1fr; max-width: 22rem; }
 }
 
-/* TJÄNSTER — klassisk prislista med guld-dotterade linjer */
+/* ── 4. TJÄNSTER — klassisk prislista med guld-dotterade linjer ────────────────────── */
 .elPriceSection {
-  padding: clamp(4.5rem, 9vw, 7rem) 0;
+  padding: var(--el-sec) 0;
   background: var(--color-surface);
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
 }
-.elPriceList { margin-top: 3rem; }
+/* Sektionshuvudet äger gapet (.elSecHead margin-bottom = 48) — en margin-top här
+   hade dubblat det till 96 och brutit rytmen mot butiks-/bloggsektionerna. */
+.elPriceList { margin-top: 0; }
 .elPriceRow {
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
-  padding: 1.35rem 0;
+  padding: var(--el-s2) 0;
   border-bottom: 1px solid var(--color-line);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-out);
+  transition: background var(--el-dur) ease;
 }
 .elPriceRow:hover { background: var(--color-accent-soft); }
 .elPriceRow:hover .elPriceName { color: var(--color-primary); }
@@ -171,93 +357,231 @@
 .elPriceName {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  font-size: var(--el-fs-card);
+  line-height: 1.15;
   color: var(--color-fg);
-  transition: color var(--dur-fast) var(--ease-out);
+  transition: color var(--el-dur) ease;
 }
-.elPriceDesc { font-family: var(--font-body); font-size: 0.88rem; color: var(--color-fg-2); }
-.elPriceDots { flex: 1; min-width: 1.5rem; border-bottom: 2px dotted var(--color-primary); opacity: 0.55; transform: translateY(-6px); margin: 0 4px; }
-.elPriceVal { font-family: var(--font-body); font-weight: 600; font-size: 1.02rem; color: var(--color-primary); white-space: nowrap; }
+.elPriceDesc {
+  font-family: var(--font-body);
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+/* Prickarna är mallens signatur — men opaciteten är borta: en halvt genomskinlig linje
+   är precis den suddiga kanten regellistan varnar för. Guldet håller 5.61:1 självt. */
+.elPriceDots {
+  flex: 1;
+  min-width: 1.5rem;
+  border-bottom: 2px dotted var(--color-primary);
+  transform: translateY(-6px);
+  margin: 0 4px;
+}
+.elPriceVal {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-body);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
 @media (max-width: 560px) {
   .elPriceRow { flex-wrap: wrap; }
   .elPriceDots { order: 3; flex-basis: 100%; }
 }
 
-/* OM — surface-panel runt den delade sfAboutGrid */
-.elAboutSection { padding: clamp(4.5rem, 9vw, 7rem) 0; background: var(--color-bg); }
+/* ── 5. OM — delad .sfAboutGrid (fotot är redan 4:5 = mallens ratio), eloria-rytm ───── */
+.elAboutSection { padding: var(--el-sec) 0; background: var(--color-bg); }
+/* Dubbelklass = specificitet nog att slå .sfStatValue/.sfStatLabel oavsett bundlarens
+   fil-ordning (två CSS-moduler, samma (0,1,0) → källordningen skulle annars avgöra). */
+.elStatValue.elStatValue {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--el-fs-card);
+  line-height: 1.15;
+  color: var(--color-primary);
+}
+.elStatLabel.elStatLabel {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  margin-top: var(--el-s1);
+}
 
-/* OFFERT/BRÖLLOP — gatad, mörkgrön guldramad banner som ekar heroplattan */
+/* ── 6. OFFERT/BRÖLLOP — gatad, mörkgrön guldramad banner som ekar heroplattan ─────── */
 .elOfferBand {
   background: var(--eloria-green);
-  padding: clamp(48px, 8vw, 84px) 24px;
-  border-top: 1px solid var(--color-primary);
-  border-bottom: 1px solid var(--color-primary);
+  padding: var(--el-sec) var(--el-gut);
+  border-top: 1px solid var(--eloria-gold);
+  border-bottom: 1px solid var(--eloria-gold);
 }
-.elOfferInner { max-width: 40rem; margin: 0 auto; text-align: center; }
+.elOfferInner { max-width: 42rem; margin: 0 auto; text-align: center; }
+/* Samma h2-grad som alla andra sektionsrubriker (var 42px = en egen nivå inom 30% av
+   grannarna). 13.77:1 mot det gröna. */
 .elOfferTitle {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(26px, 3.6vw, 42px);
+  font-size: var(--el-fs-h2);
   line-height: 1.1;
+  letter-spacing: -0.01em;
   color: var(--color-bg);
-  margin: 12px 0 0;
+  margin: var(--el-s1) 0 0;
 }
+/* 9.71:1 mot det gröna */
 .elOfferBody {
   font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.65;
-  color: rgba(251, 243, 238, 0.82);
-  margin: 16px auto 0;
-  max-width: 32rem;
+  font-weight: 400;
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  margin: var(--el-s2) auto 0;
+  max-width: 34rem;
 }
+/* Full pill (--radius-pill), vit text på guld = 6.15:1. Ingen skugga, 4px lyft. */
 .elOfferCta {
   display: inline-block;
-  margin-top: 26px;
+  margin-top: var(--el-s3);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-surface);
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.04em;
+  font-size: var(--el-fs-btn);
+  letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 0.85rem 2rem;
+  line-height: 46px;
+  padding: 0 30px;
   border-radius: var(--radius-pill);
   text-decoration: none;
-  transition: background var(--dur-fast) var(--ease-out);
+  transition: background var(--el-dur) ease, transform var(--el-dur) ease;
 }
-.elOfferCta:hover { background: var(--color-primary-d); }
+.elOfferCta:hover { background: var(--color-primary-d); transform: translateY(-4px); }
 .elOfferCta:focus-visible { outline: 2px solid var(--color-bg); outline-offset: 2px; }
 
-/* PRESENTKORT — smal rad, aldrig en hel sektion */
-.elGiftRow { background: var(--color-accent-soft); padding: clamp(20px, 3vw, 32px) 24px; }
-.elGiftInner { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 0.5rem 1rem; text-align: center; }
-.elGiftLede { margin: 0; font-family: var(--font-display); font-size: clamp(16px, 1.6vw, 19px); color: var(--color-fg); }
+/* ── 8. GALLERI — delad Gallery-komponent, tvingad till mallens ENDA ratio ─────────── */
+.elGallery { padding: var(--el-sec) 0; }
+.elGallery .elEyebrow { margin-bottom: var(--el-s3); }
+/* Brickorna är 1:1 i storefront.module.css — här 4:5 som allt annat. (0,1,1) slår
+   .galleryItem (0,1,0). */
+.elGallery li {
+  aspect-ratio: var(--el-ratio);
+  transition: transform var(--el-dur) ease;
+}
+.elGallery li:hover { transform: translateY(var(--el-lift)); }
+/* Delade .galleryBtn:hover .galleryImg gör scale(1.05) — exakt den pösiga hovern
+   regellistan förbjuder. Dubbelklassen slår den: (0,2,3) > (0,2,1). Lyftet bor på
+   brickan istället: 5px / 400ms. */
+.elGallery.elGallery li button:hover img { transform: none; }
 
-/* CLOSING — foto + mörkgrön scrim, ekar heron (bokstavlig bracket kring sidan) */
+/* ── 9. PRESENTKORT — smal rad, aldrig en hel sektion ──────────────────────────────── */
+.elGiftRow { background: var(--color-accent-soft); padding: var(--el-s3) var(--el-gut); }
+.elGiftInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--el-s1) var(--el-s2);
+  text-align: center;
+}
+.elGiftLede {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--el-fs-lede);
+  line-height: 1.55;
+  color: var(--color-fg);
+}
+.elGiftCta {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-btn);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 3px;
+  transition: border-color var(--el-dur) ease;
+}
+.elGiftCta:hover { border-color: var(--color-primary); }
+.elGiftCta:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+
+/* ── 10. PLATS & ÖPPETTIDER — delad .sfLocBand-struktur, eloria-typografi/rytm ─────── */
+.elLoc { padding: 0; }
+.elHoursRow.elHoursRow {
+  font-family: var(--font-body);
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+}
+/* Samma mikro-länk som .elMoreLink men utan margin-top: .sfMap är place-items:center,
+   där skulle en toppmarginal knuffa länken ur mitten. */
+.elMapLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-btn);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 3px;
+  transition: border-color var(--el-dur) ease;
+}
+.elMapLink:hover { border-color: var(--color-primary); }
+.elMapLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.elMapHint {
+  font-family: var(--font-body);
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+
+/* ── 11. CLOSING — foto + mörkgrön scrim, ekar heron (bokstavlig bracket kring sidan) ── */
 .elClosing {
   position: relative;
   background-size: cover;
   background-position: center;
   background-color: var(--eloria-green);
-  padding: clamp(4.5rem, 9vw, 6.5rem) 1.5rem;
+  padding: var(--el-sec) var(--el-gut);
   text-align: center;
 }
+/* Scrimmen är mallens gröna dekorfärg, inte en egen hårdkodad rgba. Botten är 88% opak
+   → rubriken läser aldrig sämre än 13.77:1 mot fotot. */
 .elClosingScrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(15, 24, 18, 0.72) 0%, rgba(15, 24, 18, 0.88) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--eloria-green) 74%, transparent) 0%,
+    color-mix(in srgb, var(--eloria-green) 88%, transparent) 100%
+  );
 }
 .elClosingInner { position: relative; z-index: 1; }
 .elClosingTitle {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(28px, 4.4vw, 46px);
+  font-size: var(--el-fs-h2);
   line-height: 1.1;
+  letter-spacing: -0.01em;
   color: var(--color-bg);
   max-width: 40rem;
   margin: 0 auto;
 }
-.elClosingLede { font-family: var(--font-body); font-size: 1.02rem; color: rgba(251, 243, 238, 0.86); margin-top: 0.9rem; }
-/* Ingen bakgrunds-override behövs här: default .btn-accent (guld/vit text) läser
-   redan tydligt mot den mörkgröna scrimmen — bara en storleksjustering. */
-.elClosingCta { font-size: 13px; }
+.elClosingLede {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--el-fs-lede);
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  max-width: 34rem;
+  margin: var(--el-s2) auto 0;
+}
+.elClosingActions { margin-top: var(--el-s3); }

@@ -1,10 +1,35 @@
 /* ═══════════════════════════════════════════════════════════════════════
    SAGE — varmgrå/greige + mjuk salvia, luftig studio (florist-sviten,
-   goal-58). Signaturen: transparent nav över en full-bleed hero i spärrade
-   versaler, en centrerad välkomstrad, en inramad kategori-trio och crisp
-   galleri-kant genomgående (--sf-radius från temat, satt via floristThemeBlock).
-   Alla färger/typsnitt kommer från temats CSS-variabler — inget hårdkodat
-   hex här förutom hero-scrimmet (mörk overlay, samma på alla foto-teman).
+   goal-58). Signaturen är orörd: transparent nav över en full-bleed hero i
+   versaler, en centrerad välkomstrad, en inramad kategori-trio, samma
+   sektionsordning. Det som ändrats är UTFÖRANDET (skärpe-pass mot
+   4-Dokument-Underlag/design-skarpa-zentum.md) — mallen ska läsa som ett
+   svärd, inte som en mjuk morot.
+
+   ── TYPSKALA (steg ×1.8–2.0 i toppen — förut ×1.2–1.3 hela vägen) ────────
+     display  clamp(44px, 8vw, 96px)    lh 1.06   400   ls 0        hero-h1
+     h2       clamp(30px, 4.2vw, 52px)  lh 1.10   400   ls 0        sektionsrubrik / citat / closing
+     kort     clamp(22px, 2.2vw, 26px)  lh 1.15   500   ls 0        kortnamn / tjänstenamn / statvärde
+     lede     18px                      lh 1.58   400
+     brödtext 16px                      lh 1.60   400
+     mikro    12px                      lh 1.5    600   ls 1px + VERSALER
+       96 → 52 → 26 = ×1.85, ×2.0.  EN mikronivå (12px) — inga 13–15px-mellanting.
+       Letter-spacing omvänt mot storleken: 0 på allt ≥22px, 1px på mikro.
+       Rubrik-lh 1.06–1.15 mot text-lh 1.58–1.60 = registerbytet som gör skärpan.
+
+   ── RYTM (en skala, samma steg i ALLA sektioner) ─────────────────────────
+     12 (eyebrow→rubrik) · 20 (rubrik→text) · 24 (grid-gap / kant) ·
+     32 (text→CTA) · 48 (huvud→innehåll) · 96–144 (sektionsavstånd)
+
+   ── FÄRG / RADIE / RÖRELSE ───────────────────────────────────────────────
+     Färg: bara temats 8 palett-hex (sage.theme.ts) + #fff på fotot. EN accent
+     (--color-primary) — etikett, knapp, pris, citat, closing. Inget eget hex
+     här utom hero-scrimmet (rgba, samma dekor-mönster som övriga foto-teman).
+     Radie: BINÄRT — 0 på all struktur (--sf-radius, temat), full pill BARA på
+     knappar (.sgPillCta / .sgHeroBtnOutline).
+     Bild: EN ratio (4/5) på ALLA innehållsbilder — kategori-trio, kort, om-foto
+     OCH galleriet (som annars är 1/1 → hackande kanter i griden).
+     Hover: 5px lyft, 400ms ease. Ingen scale, ingen skugg-bloom.
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── HERO — full-bleed foto, transparent nav ovanpå (.hero-sentinelen läses
@@ -30,19 +55,23 @@
   background-color: var(--color-accent-soft);
   z-index: 0;
 }
+/* Scrimmet BÄR kontrasten (förut 0.32→0.58 + text-shadow-bloom på rubriken:
+   vit text landade på 2.1:1 mot ett ljust foto och suddades ut). Nu 0.62→0.78:
+   vit text ≥ 12.6:1 mot ett normalt (mid-grått) foto och ≥ 7:1 även mot ett
+   helvitt. Skuggan bakom typen är borta — scrim, inte bloom. */
 .sgHeroOverlay {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(20, 18, 12, 0.32) 0%, rgba(20, 18, 12, 0.58) 100%);
+    linear-gradient(180deg, rgba(20, 18, 12, 0.62) 0%, rgba(20, 18, 12, 0.78) 100%);
   z-index: 1;
 }
 .sgHeroInner {
   position: relative;
   z-index: 2;
-  max-width: 46rem;
+  max-width: 60rem;
   margin: 0 auto;
-  padding: clamp(6rem, 12vw, 9rem) clamp(1.5rem, 5vw, 2.5rem) clamp(3rem, 6vw, 4rem);
+  padding: clamp(96px, 12vw, 144px) 24px;
   text-align: center;
   color: #fff;
 }
@@ -51,122 +80,152 @@
   margin: 0;
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.78rem;
-  letter-spacing: 0.28em;
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: #fff;
-  opacity: 0.92;
 }
 .sgHeroTitle {
-  margin: 0.9rem 0 0;
+  margin: 12px 0 0;
   font-family: var(--font-display);
-  font-weight: 700;
+  /* 400 = Marcellus enda laddade vikt. 700 gav syntetisk fetstil = klump. */
+  font-weight: 400;
   color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  /* Aldrig positiv tracking på en 96px-rubrik — den tappar ordform och blir loj. */
+  letter-spacing: 0;
   line-height: 1.06;
-  font-size: clamp(2.6rem, 7.2vw, 5.4rem);
-  text-shadow: 0 2px 26px rgba(0, 0, 0, 0.32);
+  font-size: clamp(44px, 8vw, 96px);
   white-space: pre-line;
 }
 .sgHeroLede {
-  margin: 1.4rem auto 0;
-  max-width: 32rem;
+  margin: 20px auto 0;
+  max-width: 36rem;
   font-family: var(--font-body);
-  font-size: clamp(1rem, 1.6vw, 1.15rem);
-  line-height: 1.65;
+  font-size: 18px;
+  line-height: 1.58;
   color: #fff;
-  opacity: 0.94;
 }
 .sgHeroActions {
-  margin-top: 2rem;
+  margin-top: 32px;
   display: flex;
-  gap: 1rem;
+  gap: 24px;
   justify-content: center;
   flex-wrap: wrap;
 }
-.sgHeroBtnFilled {
-  font-size: 0.92rem;
+
+/* ── KNAPPAR — det enda runda i mallen. Exakt pill: höjd 50px, radie = halva
+   höjden (--radius-pill), 12px/600/VERSALER/1px. Hover = hård färgväxling,
+   inget lyft, ingen skugga (globala .btn-accent lyfter 1px + glow → nollas). */
+.sgPillCta:global(.btn-accent) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  padding: 0 30px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 0.9rem 2.1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: none;
+  transition: background 400ms ease, border-color 400ms ease, color 400ms ease;
+}
+.sgPillCta:global(.btn-accent):hover {
+  transform: none;
+  box-shadow: none;
+  background: var(--color-primary-d);
+  border-color: var(--color-primary-d);
 }
 .sgHeroBtnOutline {
   display: inline-flex;
   align-items: center;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.92rem;
-  letter-spacing: 0.04em;
-  color: #fff;
+  justify-content: center;
+  height: 50px;
+  padding: 0 30px;
+  border: 2px solid #fff;
+  border-radius: var(--radius-pill);
   background: transparent;
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
-  border-radius: var(--sf-radius);
-  padding: 0.9rem 2.1rem;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   text-decoration: none;
-  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  transition: background 400ms ease, color 400ms ease;
 }
+/* Hård invertering (fylld ↔ inverterad text), aldrig en halvtransparent yta. */
 .sgHeroBtnOutline:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: #fff;
+  background: #fff;
+  color: var(--color-primary);
 }
 
-/* ── Delad rubrik-grammatik: uppercase + tracking, används av alla
-   sektionshuvuden nedanför hero (welcome/kategori/tjänster/om/galleri…) ─── */
+/* ── Delad rubrik-grammatik för alla sektionshuvuden nedanför hero ───────── */
 .sgEyebrow {
   display: block;
   margin: 0;
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.75rem;
-  letter-spacing: 0.24em;
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-primary);
 }
 .sgSectionTitle {
-  margin: 0.7rem 0 0;
+  margin: 12px 0 0;
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  line-height: 1.14;
+  letter-spacing: 0;
+  line-height: 1.1;
   color: var(--color-fg);
-  font-size: clamp(1.7rem, 3.2vw, 2.6rem);
+  font-size: clamp(30px, 4.2vw, 52px);
 }
 .sgSectionHead {
   text-align: center;
-  max-width: 40rem;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 0 1.25rem;
+  padding: 0 24px;
 }
 .sgLede {
-  margin: 1rem auto 0;
-  max-width: 34rem;
+  margin: 20px auto 0;
+  max-width: 800px; /* radlängd-spärr */
   font-family: var(--font-body);
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 18px;
+  line-height: 1.58;
   color: var(--color-fg-2);
 }
+/* ── Sektionsrytm — en skala, inga egna undantag per sektion ─────────────
+   Dubblade klassnamn = specificitet 2, så de slår de delade .sf*-sektionerna
+   (padding) utan att röra storefront.module.css. */
+.sgSection.sgSection { padding: clamp(96px, 10vw, 144px) 0; }
+.sgSectionTight.sgSectionTight { padding: clamp(48px, 6vw, 96px) 0; }
+.sgBand.sgBand { padding: clamp(96px, 10vw, 144px) 24px; }
+.sgGridPad.sgGridPad { padding: clamp(96px, 10vw, 144px) 24px; }
 
 /* ── WELCOME — centrerad välkomstrad, en knapp ───────────────────────────── */
 .sgWelcome {
   background: var(--color-surface);
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
-  padding: clamp(4rem, 8vw, 6.5rem) 1.5rem;
+  padding: clamp(96px, 10vw, 144px) 24px;
   text-align: center;
 }
-.sgWelcomeInner { max-width: 36rem; margin: 0 auto; }
-.sgWelcomeCta { margin-top: 1.9rem; display: inline-block; }
+.sgWelcomeInner { max-width: 800px; margin: 0 auto; }
+.sgWelcomeCta { margin-top: 32px; } /* text → CTA */
 
 /* ── KATEGORI-TRIO — inramade foton, versal-etikett under, → /shop ──────── */
 .sgCategoryGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(1.25rem, 3vw, 2.25rem);
-  max-width: 66rem;
-  margin: clamp(2.5rem, 5vw, 3.5rem) auto 0;
-  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  gap: 24px;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 .sgCategoryCard {
   display: block;
@@ -175,45 +234,42 @@
   color: inherit;
 }
 .sgCategoryFrame {
-  padding: 0.6rem;
+  padding: 12px;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
   border-radius: var(--sf-radius);
-  transition: box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  transition: transform 400ms ease, border-color 400ms ease;
 }
 .sgCategoryCard:hover .sgCategoryFrame {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 34px -22px rgba(43, 40, 32, 0.35);
+  transform: translateY(-5px);
+  border-color: var(--color-primary);
 }
 .sgCategoryImg {
   aspect-ratio: 4 / 5;
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
-  border-radius: calc(var(--sf-radius) - 2px);
+  border-radius: var(--sf-radius);
 }
 .sgCategoryLabel {
   display: block;
-  margin-top: 0.9rem;
+  margin-top: 20px;
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.78rem;
-  letter-spacing: 0.18em;
+  font-size: 12px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-fg);
 }
 
-/* ── Generisk sektions-padding (shop-teasers/tjänster/om/galleri/blogg) ──── */
-.sgSection { padding: clamp(4rem, 8vw, 6.5rem) 0; }
-.sgSectionTight { padding: clamp(3rem, 6vw, 4.5rem) 0; }
-
-/* ── Kort-grid — butik/blogg-teasers (samma bildratio som kategori-trion) ─ */
+/* ── Kort-grid — butik/blogg-teasers (samma bildratio som allt annat: 4/5) ─ */
 .sgCardGrid {
-  max-width: 1100px;
-  margin: clamp(2.5rem, 5vw, 3.5rem) auto 0;
+  max-width: 1140px;
+  margin: 48px auto 0; /* huvud → innehåll */
+  padding: 0 24px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(1.1rem, 2.5vw, 1.6rem);
+  gap: 24px;
 }
 .sgCard {
   display: block;
@@ -223,11 +279,11 @@
   border: 1px solid var(--color-line);
   border-radius: var(--sf-radius);
   overflow: hidden;
-  transition: box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  transition: transform 400ms ease, border-color 400ms ease;
 }
 .sgCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 34px -22px rgba(43, 40, 32, 0.35);
+  transform: translateY(-5px);
+  border-color: var(--color-primary);
 }
 .sgCardImg {
   aspect-ratio: 4 / 5;
@@ -235,37 +291,39 @@
   background-position: center;
   background-color: var(--color-accent-soft);
 }
-.sgCardBody { padding: 1.1rem 1.2rem 1.3rem; }
+.sgCardBody { padding: 24px; }
 .sgCardName {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.08rem;
+  font-weight: 500;
+  font-size: clamp(22px, 2.2vw, 26px);
+  line-height: 1.15;
+  letter-spacing: 0;
   color: var(--color-fg);
 }
 .sgCardMeta {
-  margin: 0.5rem 0 0;
+  margin: 20px 0 0;
   font-family: var(--font-body);
-  font-size: 0.86rem;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--color-fg-2);
-  line-height: 1.5;
 }
 .sgCardPrice {
   display: block;
-  margin-top: 0.6rem;
+  margin-top: 20px;
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 16px;
   color: var(--color-primary);
 }
 .sgBandCta {
   display: block;
   width: fit-content;
-  margin: clamp(2rem, 4vw, 2.75rem) auto 0;
+  margin: 32px auto 0; /* text → CTA */
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.82rem;
-  letter-spacing: 0.1em;
+  font-size: 12px;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-primary);
   border-bottom: 1px solid var(--color-primary);
@@ -273,28 +331,79 @@
   text-decoration: none;
 }
 
-/* ── Citat-band — upprätt (ej kursiv, till skillnad från Floras formspråk) ─ */
+/* ── TJÄNSTER — sage-skalan på de delade .sfRow*-primitiverna (dubblad klass
+   = specificitet 2 > storefront.module.css:1, utan att röra den filen) ──── */
+.sgRowNum.sgRowNum {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--color-primary);
+  opacity: 1;
+}
+.sgRowName.sgRowName {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(22px, 2.2vw, 26px);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-fg);
+}
+.sgRowDesc.sgRowDesc {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+.sgRowPrice.sgRowPrice {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--color-fg);
+}
+.sgRowTime.sgRowTime {
+  margin-top: 12px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.sgMoreLink.sgMoreLink {
+  margin-top: 32px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+/* ── Citat-band — display-nivån (samma steg som sektionsrubriken, ingen ny
+   mellannivå), upprätt (ej kursiv, till skillnad från Floras formspråk) ─── */
 .sgQuoteBand {
   background: var(--color-accent-soft);
-  padding: clamp(3.5rem, 7vw, 5.5rem) 1.5rem;
+  padding: clamp(96px, 10vw, 144px) 24px;
   text-align: center;
 }
 .sgQuote {
   margin: 0 auto;
-  max-width: 40rem;
+  max-width: 800px;
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(1.35rem, 2.6vw, 2.1rem);
-  line-height: 1.35;
-  color: var(--color-primary);
+  font-weight: 400;
+  font-size: clamp(30px, 4.2vw, 52px);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-primary); /* 7.15:1 mot accentSoft */
 }
 
 /* ── OM — foto + text, statistik-trio ────────────────────────────────────── */
-.sgAboutGrid {
-  padding: clamp(4.5rem, 9vw, 7rem) clamp(1.25rem, 4vw, 1.75rem);
+.sgAboutGrid.sgAboutGrid {
+  padding: clamp(96px, 10vw, 144px) 24px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(2.5rem, 5vw, 4.5rem);
+  gap: 48px;
   align-items: center;
 }
 .sgAboutPhoto {
@@ -304,27 +413,115 @@
   background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
 }
+.sgAboutLede {
+  margin: 20px 0 0;
+  max-width: none;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+.sgStatTrio.sgStatTrio { margin: 32px 0 0; gap: 48px; }
+.sgStatValue.sgStatValue {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(22px, 2.2vw, 26px);
+  line-height: 1.15;
+  color: var(--color-primary);
+}
+.sgStatLabel.sgStatLabel {
+  display: block;
+  margin-top: 12px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+/* ── GALLERI — de delade tiles är 1/1 + scale(1.05) på hover. Sage tvingar in
+   dem i mallens ENDA bildratio (4/5), raka hörn och en återhållsam hover.
+   Elementselektorer inuti den scopade klassen = ingen ändring i den delade
+   filen; dubblad klass för att slå .galleryBtn:hover .galleryImg. ───────── */
+.sgGalleryEyebrow { text-align: center; margin-bottom: 48px; }
+.sgGallery.sgGallery ul { gap: 24px; }
+.sgGallery.sgGallery li {
+  aspect-ratio: 4 / 5;
+  border-radius: var(--sf-radius);
+}
+.sgGallery.sgGallery img { transition: opacity 400ms ease; }
+.sgGallery.sgGallery button:hover img { transform: none; opacity: 0.88; }
 
 /* ── Presentkort — smal rad, aldrig en hel sektion ───────────────────────── */
 .sgGiftRow {
-  padding: clamp(1.25rem, 3vw, 2rem) 1.5rem;
+  padding: 24px;
   text-align: center;
   background: var(--color-accent-soft);
+}
+.sgGiftInner {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
-  gap: 0.5rem 1rem;
+  gap: 12px 24px;
 }
 .sgGiftLede {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 1rem;
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--color-fg);
 }
+
+/* ── PLATS — sage-skalan på de delade hours-/map-primitiverna ───────────── */
+.sgLocAddr {
+  margin: 20px 0 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+.sgHours.sgHours { margin-top: 32px; }
+.sgHoursRow.sgHoursRow { padding: 12px 0; font-size: 16px; }
+.sgMapLink.sgMapLink {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.sgMapHint.sgMapHint { font-size: 16px; }
+
+/* ── CLOSING ─────────────────────────────────────────────────────────────── */
+.sgClosingTitle {
+  margin: 0 auto;
+  max-width: 800px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(30px, 4.2vw, 52px);
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #fff; /* 9.25:1 mot --color-primary-bandet */
+}
+.sgClosingLede.sgClosingLede {
+  margin: 20px auto 0;
+  max-width: 800px;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.58;
+  color: #fff;
+}
+.sgClosingActions { margin-top: 32px; }
 
 @media (max-width: 760px) {
   .sgCategoryGrid { grid-template-columns: 1fr; max-width: 22rem; }
   .sgCardGrid { grid-template-columns: 1fr; max-width: 22rem; }
-  .sgAboutGrid { grid-template-columns: 1fr; }
+  .sgAboutGrid.sgAboutGrid { grid-template-columns: 1fr; }
+}
+/* Under 600px lägger den delade .sfRow pris + tid på EN rad (baseline-flex) —
+   då ska tiden inte bära sitt 12px-steg. Samma brytpunkt som storefront.module.css. */
+@media (max-width: 600px) {
+  .sgRowTime.sgRowTime { margin-top: 0; }
 }

@@ -1,21 +1,190 @@
 /* ═══════════════ OLIVIA & THYME — puderrosa + varm brun butikscharm ═══════════════
-   Signaturen: fullbredds butiksfasad-hero (ingen rubrik-overlay, bara ett hängande
-   namnskylt-"wordmark"), en beige välkomst-remsa med den riktiga rubriken, en
+   Signaturen (OFÖRÄNDRAD): fullbredds butiksfasad-hero utan rubrik-overlay, bara ett
+   hängande namnskylt-"wordmark" → beige välkomst-remsa som bär den riktiga rubriken →
    "Ur butiken"-remsa som mynnar ut i två stora produktbilder där den ena bär en
-   stjärn-badge ("Bäst säljare"). Alla klasser prefixade "ot" — unika för mallen.
-   Temats variabler (--color-*, --font-*, --sf-radius) styr paletten; 2 egna
-   dekorfärger (--ot-rose, --ot-cream) sätts i roten nedan. */
+   stjärn-badge. Alla klasser prefixade "ot".
+
+   SKÄRPE-PASS (mot design-skarpa-zentum.md). Vad som ändrades och varför:
+   · TYPSKALA: låg förut på 44/54/56/22/17/16 — allt "mellanstort", ×1.2–1.3 steg.
+     Nu 96 → 48 → 26 → 18 → 16 → 12/11 (×2.0 / ×1.85 / ×1.44 / ×1.13). Mellanlagren
+     (14px-desc, 14px-excerpt, 13.6px-label, 21.6px-num) är BORTA — de var moroten.
+   · VIKT: display-rubrikerna bad om font-weight 600, men DM Serif Display laddas
+     BARA i vikt 400 (app/layout.tsx: weight: '400') → webbläsaren syntetiserade fet
+     stil = suddiga stammar. Nu 400 rakt igenom på display, 600 på mikrotext.
+   · LINE-HEIGHT: allt låg på 1.04–1.7 huller om buller. Nu rubrik 1.06–1.15,
+     brödtext 1.55–1.58 — registerbytet i sig gör skärpan.
+   · LETTER-SPACING: omvänt mot storlek — negativt på display, 0 på kort, +1px på 11–12px.
+   · RADIE: --sf-radius = 0 (temat). Enda runda formen = stjärn-badgen (999px).
+   · BILD: EN ratio (--ot-ratio: 4/5) på ALLA innehållsbilder — showcase, om-foto,
+     bloggkort OCH galleriets brickor (som låg på 1/1). Griden får raka linjer.
+   · MOTION: 5px lyft / 400ms ease. Galleriets scale(1.05) är avstängd.
+   Egna dekorfärger deklareras i rot-klassen (--ot-rose). --ot-cream är BORTTAGEN
+   (en hex mindre; plaque/ram är rent vita). */
 
 .otRoot {
-  --ot-rose: #d98ca0;
-  --ot-cream: #fffdf8;
+  /* ── FÄRG — mallens ENDA egna dekorfärg. Puderrosan är accenten och sitter BARA
+     på stjärn-badgen. Var #d98ca0 = 2.56:1 mot vit text (oläsbart); #A8425C är
+     samma kulör (~345°), mörkare ljushet → 5.84:1. */
+  --ot-rose: #A8425C;
+
+  /* ── TYPSKALA — steg ×2.0 / ×1.85 / ×1.44 / ×1.13 ── */
+  --ot-fs-display: clamp(44px, 7.2vw, 96px); /* hero-rubriken (välkomst-remsan) */
+  --ot-fs-section: clamp(30px, 3.8vw, 48px); /* ALLA sektionsrubriker + wordmark */
+  --ot-fs-card: clamp(22px, 2.2vw, 26px); /* kortnamn, tjänstnamn, stat-siffra */
+  --ot-fs-lede: 18px;
+  --ot-fs-body: 16px;
+  --ot-fs-micro: 12px; /* eyebrows, knappar, länkar, nummer */
+  --ot-fs-nano: 11px; /* badge, stat-etikett */
+
+  /* ── RYTM — en skala, samma steg i alla sektioner ── */
+  --ot-s-xs: 12px; /* eyebrow → rubrik */
+  --ot-s-sm: 20px; /* rubrik → text */
+  --ot-s-md: 24px; /* grid-gap, sido-padding */
+  --ot-s-lg: 32px; /* text → CTA */
+  --ot-s-xl: 48px; /* rubrikblock → innehåll */
+  --ot-sec: clamp(48px, 8vw, 96px); /* sektionsavstånd */
+
+  /* ── BILD — EN ratio i hela mallen ── */
+  --ot-ratio: 4 / 5;
+
+  /* ── MOTION — återhållsam ── */
+  --ot-dur: 400ms;
+  --ot-ease: ease;
+  --ot-lift: -5px;
 }
 
-/* ── HERO — fullbredds butiksfasad, ingen rubrik-overlay ────────────────────── */
+/* ═══════════════ TYPROLLER — mallens egen grammatik ═══════════════
+   Mallen använder INTE de globala .sf-*-rollerna längre: de ger 56px sektions-
+   rubriker (större än mallens egen hero-rubrik) i syntetiskt fet DM Serif. Rollerna
+   nedan äger hela skalan lokalt, så stegen går att mäta i EN fil. */
+
+.otDisplay {
+  font-family: var(--font-display);
+  font-weight: 400; /* DM Serif Display finns bara i 400 — 600 gav faux bold */
+  font-size: var(--ot-fs-display);
+  line-height: 1.06;
+  letter-spacing: -0.02em; /* stor text: negativ tracking, aldrig positiv */
+  color: var(--color-fg); /* 17.01:1 */
+  margin: 0;
+}
+.otSectionTitle {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--ot-fs-section);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  margin: 0;
+}
+.otCardTitle {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.15;
+  letter-spacing: 0; /* 0 på ≥26px */
+  color: var(--color-fg);
+  margin: 0;
+}
+.otEyebrow {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px; /* +1px på 12px */
+  text-transform: uppercase;
+  color: var(--color-primary); /* 8.24:1 mot bg */
+  margin: 0 0 var(--ot-s-xs); /* eyebrow → rubrik = 12px, överallt */
+}
+.otLede {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--ot-fs-lede);
+  line-height: 1.55;
+  letter-spacing: 0;
+  color: var(--color-fg-2); /* 6.91:1 */
+  margin: var(--ot-s-sm) 0 0; /* rubrik → text = 20px */
+  max-width: 62ch;
+}
+.otBody {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--ot-fs-body);
+  line-height: 1.58;
+  letter-spacing: 0;
+  color: var(--color-fg-2);
+  margin: var(--ot-s-sm) 0 0;
+  max-width: 68ch;
+}
+/* Centrerade sektioner: håll textblocken centrerade trots max-width. */
+.otCenter { text-align: center; }
+.otCenter .otLede,
+.otCenter .otBody { margin-left: auto; margin-right: auto; }
+
+/* ── KNAPP — 50px hög, radie 0 (binärt), 12px/600/VERSALER/1px ──────────────────
+   Skriver över den globala .btn-accent (pillrad, vikt 700, guld-skugga) för BookCta.
+   Selektorn .otRoot .otBtn (0,2,0) slår .btn-accent (0,1,0) deterministiskt. */
+.otRoot .otBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 50px;
+  padding: 0 30px;
+  background: var(--color-primary);
+  color: #fff; /* 8.98:1 */
+  border: 0;
+  border-radius: 0;
+  box-shadow: none; /* guld-halon bort */
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-micro);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--ot-dur) var(--ot-ease);
+}
+.otRoot .otBtn:hover {
+  background: var(--color-primary-d); /* hård växling, ingen studs/skugga */
+  transform: none;
+  box-shadow: none;
+}
+.otRoot .otBtn:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
+
+/* ── MIKRO-LÄNK — "Se allt", "Läs hela bloggen", "Visa på karta" ── */
+.otRoot .otMoreLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: var(--ot-s-lg); /* text → CTA = 32px */
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-micro);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 4px;
+  text-decoration: none;
+  transition: border-color var(--ot-dur) var(--ot-ease);
+}
+.otRoot .otMoreLink:hover {
+  border-color: var(--color-primary);
+  gap: 8px; /* ingen gap-glidning */
+}
+.otRoot .otFlush { margin-top: 0; }
+
+/* ═══════════════ HERO — fullbredds butiksfasad ═══════════════
+   Enda bilden som inte går i --ot-ratio: den är ett fullbredds-band utan grannar
+   att linjera mot (som zentums panorama-hero), inte en bricka i en grid. */
 .otHero {
   position: relative;
   margin-top: calc(-1 * var(--nav-h));
-  padding-bottom: clamp(3rem, 6vw, 5.5rem);
+  padding-bottom: var(--ot-s-xl);
 }
 .otHeroImg {
   height: clamp(24rem, 62vw, 40rem);
@@ -23,224 +192,322 @@
   background-position: center;
   background-color: var(--color-surface);
 }
-/* Namnskylt — hänger halvvägs över fotots nedre kant. Bara wordmarket, ingen
-   ytterligare rubrik eller lede här. */
+/* Namnskylt — hänger över fotots nedre kant. Raka hörn, ingen skugga: skuggan
+   suddade ut den enda kant som skylten har. */
 .otPlaque {
   position: relative;
   width: fit-content;
-  max-width: min(90vw, 26rem);
-  margin: -2.75rem auto 0;
-  background: var(--ot-cream);
-  padding: 1.1rem 2.75rem;
-  box-shadow: var(--sf-shadow-card);
-  border-radius: var(--sf-radius);
+  max-width: min(92vw, 34rem);
+  margin: -3rem auto 0;
+  background: #fff;
+  padding: var(--ot-s-md) var(--ot-s-xl);
+  border-radius: 0;
+  box-shadow: none;
   text-align: center;
 }
 .otWordmark {
   font-family: var(--font-display);
   font-style: italic;
-  font-weight: 500;
-  color: var(--color-primary);
-  font-size: clamp(1.6rem, 4vw, 2.75rem);
+  font-weight: 400;
+  font-size: var(--ot-fs-section); /* skylten konkurrerar inte med hero-rubriken */
   line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--color-primary); /* 8.98:1 mot vitt */
   margin: 0;
 }
 
-/* ── BEIGE REMSA — den riktiga rubriken + CTA ────────────────────────────────── */
+/* ═══════════════ BEIGE REMSA — den riktiga rubriken + CTA ═══════════════ */
 .otWelcome {
   background: var(--color-surface);
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
-  padding: clamp(3rem, 6vw, 5rem) 1.5rem;
-  text-align: center;
+  padding: var(--ot-sec) var(--ot-s-md);
 }
-.otWelcomeInner { max-width: 40rem; margin: 0 auto; }
-.otWelcomeTitle {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(2rem, 4.4vw, 3.4rem);
-  line-height: 1.08;
-  color: var(--color-fg);
-  margin: 0.85rem 0 0;
-  white-space: pre-line;
-}
+.otWelcomeInner { max-width: 46rem; margin: 0 auto; }
+.otWelcomeTitle { white-space: pre-line; } /* används ihop med .otDisplay */
 .otWelcomeActions {
-  margin-top: 1.75rem;
+  margin-top: var(--ot-s-lg); /* text → CTA = 32px */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem 1.5rem;
+  gap: 16px var(--ot-s-lg);
 }
-.otSecondaryLink {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: var(--color-primary);
-  border-bottom: 1px solid var(--color-line);
-  padding-bottom: 2px;
-  transition: border-color var(--dur-fast) var(--ease-out);
-}
-.otSecondaryLink:hover { border-color: var(--color-primary); }
 
-/* ── "SHOP SHOWCASED FLORALS" — intro + fyrkantig brun CTA ───────────────────── */
-.otShopIntro {
-  padding: clamp(4rem, 7vw, 6rem) 1.5rem 0;
-  text-align: center;
-}
-.otShopIntroInner { max-width: 34rem; margin: 0 auto; }
-.otShopIntroBody { margin-top: 0.9rem; }
+/* ═══════════════ UR BUTIKEN — intro + fyrkantig brun CTA ═══════════════ */
+.otShopIntro { padding: var(--ot-sec) var(--ot-s-md) 0; }
+.otShopIntroInner { max-width: 46rem; margin: 0 auto; }
 .otShopActions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem 1.75rem;
-  margin-top: 0.4rem;
+  gap: 16px var(--ot-s-lg);
+  margin-top: var(--ot-s-lg);
 }
-.otSquareCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1.6rem;
-  background: var(--color-primary);
-  color: #fff;
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 0.95rem 2rem;
-  border-radius: var(--sf-radius);
-  text-decoration: none;
-  transition: background var(--dur-fast) var(--ease-out);
-}
-.otSquareCta:hover { background: var(--color-primary-d); }
 
-/* ── TVÅ-KOLUMNS produktvisning — en bär en stjärn-badge ─────────────────────── */
-.otShowcase { padding: clamp(2.5rem, 5vw, 4rem) 1.5rem clamp(4.5rem, 7vw, 6.5rem); }
+/* ── TVÅ STORA PRODUKTBILDER — en bär stjärn-badgen ── */
+.otShowcase { padding: var(--ot-s-xl) var(--ot-s-md) var(--ot-sec); }
 .otShowcaseGrid {
   max-width: 62rem;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(1.25rem, 3vw, 2.25rem);
+  gap: var(--ot-s-md);
 }
 .otShowcaseCard {
   position: relative;
   display: block;
   text-decoration: none;
   color: inherit;
+  transition: transform var(--ot-dur) var(--ot-ease);
 }
+.otShowcaseCard:hover { transform: translateY(var(--ot-lift)); } /* 5px, inget mer */
 .otShowcaseImg {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: var(--ot-ratio);
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
-  border-radius: var(--sf-radius);
-  transition: transform var(--dur-fast) var(--ease-out);
+  border-radius: 0;
 }
-.otShowcaseCard:hover .otShowcaseImg { transform: translateY(-5px); }
+/* Badgen ligger INNANFÖR bildkanten nu — den hängde utanför och bröt den raka
+   linje griden bygger på. Enda runda formen i mallen: medvetet undantag. */
 .otShowcaseBadge {
   position: absolute;
-  top: -0.85rem;
-  right: -0.85rem;
+  top: 16px;
+  right: 16px;
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 6px;
   background: var(--ot-rose);
-  color: #fff;
+  color: #fff; /* 5.84:1 */
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  font-size: var(--ot-fs-nano);
+  line-height: 1;
+  letter-spacing: 1px; /* +1px på 11px */
   text-transform: uppercase;
-  padding: 0.55rem 0.85rem;
+  padding: 9px 14px;
   border-radius: 999px;
-  box-shadow: var(--sf-shadow-soft);
-  transform: rotate(6deg);
+  box-shadow: none;
 }
 .otShowcaseInfo {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  gap: 16px;
+  margin-top: var(--ot-s-sm);
 }
-.otShowcaseName { font-family: var(--font-display); font-size: clamp(1.15rem, 1.8vw, 1.4rem); color: var(--color-fg); }
-.otShowcasePrice { font-family: var(--font-body); font-weight: 700; color: var(--color-primary); white-space: nowrap; }
+.otShowcasePrice {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-body);
+  letter-spacing: 0;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
 
 @media (max-width: 640px) {
   .otShowcaseGrid { grid-template-columns: 1fr; max-width: 26rem; }
 }
 
-/* ── TJÄNSTER ─────────────────────────────────────────────────────────────── */
-.otServices { padding: clamp(4rem, 8vw, 6.5rem) 0; background: var(--color-bg); }
-.otServiceList { margin-top: 2.75rem; border-top: 1px solid var(--color-line); }
+/* ═══════════════ TJÄNSTER ═══════════════ */
+.otServices { padding: var(--ot-sec) 0; background: var(--color-bg); }
+.otServiceList {
+  margin-top: var(--ot-s-xl); /* rubrikblock → innehåll = 48px */
+  border-top: 1px solid var(--color-line);
+}
 .otServiceRow {
   display: grid;
-  grid-template-columns: 2.25rem 1fr auto;
+  grid-template-columns: 3rem 1fr auto;
   align-items: center;
-  gap: 1.1rem;
-  padding: 1.35rem 0;
+  gap: var(--ot-s-md);
+  padding: var(--ot-s-md) 0;
   border-bottom: 1px solid var(--color-line);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-out), padding-left var(--dur-fast) var(--ease-out);
+  transition: background var(--ot-dur) var(--ot-ease), padding-left var(--ot-dur) var(--ot-ease);
 }
-.otServiceRow:hover { background: var(--color-accent-soft); padding-left: 0.9rem; }
+.otServiceRow:hover { background: var(--color-accent-soft); padding-left: var(--ot-s-xs); }
 .otServiceRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
-.otServiceNum { font-family: var(--font-display); font-size: 1.35rem; color: var(--color-primary); }
+/* Radnumret var 21.6px display — ett mellanlager mellan kort (26) och brödtext (16).
+   Nu mikro: samma roll som eyebrow/knapp. */
+.otServiceNum {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  color: var(--color-primary);
+}
 .otServiceMain { min-width: 0; }
-.otServiceName { display: block; font-family: var(--font-display); font-size: clamp(1.1rem, 2vw, 1.35rem); color: var(--color-fg); }
-.otServiceDesc { display: block; font-family: var(--font-body); font-size: 0.9rem; color: var(--color-fg-2); margin-top: 0.2rem; }
+.otServiceDesc {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--ot-fs-body); /* var 14.4px — smält ihop med brödtexten */
+  line-height: 1.58;
+  color: var(--color-fg-2);
+  margin-top: var(--ot-s-xs);
+}
 .otServiceMeta { text-align: right; white-space: nowrap; }
-.otServicePrice { font-family: var(--font-body); font-weight: 700; color: var(--color-fg); }
+.otServicePrice {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-body);
+  color: var(--color-fg);
+}
 
-/* ── OM ───────────────────────────────────────────────────────────────────── */
-.otAbout { padding: clamp(4.5rem, 8vw, 7rem) 0; background: var(--color-surface); }
+/* ═══════════════ OM ═══════════════ */
+.otAbout { padding: var(--ot-sec) 0; background: var(--color-surface); }
 .otAboutGrid {
   display: grid;
   grid-template-columns: 0.85fr 1fr;
-  gap: clamp(2rem, 5vw, 4rem);
+  gap: clamp(var(--ot-s-md), 5vw, var(--ot-s-xl));
   align-items: center;
 }
-.otAboutPhotoWrap { padding: 0.6rem; background: var(--ot-cream); box-shadow: var(--sf-shadow-soft); border-radius: var(--sf-radius); }
-.otAboutPhoto { aspect-ratio: 4 / 5; background-size: cover; background-position: center; background-color: var(--color-accent-soft); border-radius: calc(var(--sf-radius) - 1px); }
+/* Ram: rak vit passepartout, ingen skugga och inget 3px-hörn. */
+.otAboutPhotoWrap {
+  padding: var(--ot-s-xs);
+  background: #fff;
+  border-radius: 0;
+  box-shadow: none;
+}
+.otAboutPhoto {
+  aspect-ratio: var(--ot-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: 0;
+}
+/* Stat-trion (skriver över de delade sf-stat-klasserna via .otRoot-specificitet).
+   Siffran låg på 32–38px = ett mellanlager mellan sektion (48) och kort (26). */
+.otRoot .otStats {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(var(--ot-s-md), 4vw, var(--ot-s-xl));
+  margin: var(--ot-s-lg) 0 0;
+  padding: 0;
+}
+.otRoot .otStatValue {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-primary);
+}
+.otRoot .otStatLabel {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-nano);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2); /* 6.30:1 mot surface */
+  margin-top: 8px;
+}
 
 @media (max-width: 760px) {
   .otAboutGrid { grid-template-columns: 1fr; }
   .otAboutPhotoWrap { max-width: 20rem; margin: 0 auto; }
 }
 
-/* ── PRESENTKORT — smal rad ──────────────────────────────────────────────────── */
-.otGiftBand { padding: clamp(1.5rem, 3vw, 2.25rem) 1.5rem; text-align: center; background: var(--color-accent-soft); }
-.otGiftInner { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 0.5rem 1rem; }
+/* ═══════════════ PRESENTKORT — smal rad, aldrig en hel sektion ═══════════════ */
+.otGiftBand {
+  padding: var(--ot-s-md);
+  text-align: center;
+  background: var(--color-accent-soft);
+}
+.otGiftInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ot-s-xs) var(--ot-s-md);
+}
+.otGiftInner .otEyebrow { margin: 0; }
+.otGiftLede {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-lede);
+  line-height: 1.4;
+  color: var(--color-fg); /* 14.27:1 mot accentSoft */
+  margin: 0;
+}
 
-/* ── BLOGG ────────────────────────────────────────────────────────────────── */
-.otBlog { padding: clamp(4rem, 7vw, 6rem) 1.5rem; }
-.otBlogHead { max-width: 40rem; margin: 0 auto; text-align: center; }
+/* ═══════════════ BLOGG ═══════════════ */
+.otBlog { padding: var(--ot-sec) var(--ot-s-md); }
+.otBlogHead { max-width: 46rem; margin: 0 auto; }
 .otBlogGrid {
   max-width: 62rem;
-  margin: clamp(2rem, 4vw, 3rem) auto 0;
+  margin: var(--ot-s-xl) auto 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(1.1rem, 2.5vw, 1.75rem);
+  gap: var(--ot-s-md);
 }
-.otBlogCard { display: block; text-decoration: none; color: inherit; }
+.otBlogCard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--ot-dur) var(--ot-ease);
+}
+.otBlogCard:hover { transform: translateY(var(--ot-lift)); }
 .otBlogImg {
-  aspect-ratio: 5 / 4;
+  aspect-ratio: var(--ot-ratio); /* var 5/4 — enda kortet som låg i liggande format */
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
-  border-radius: var(--sf-radius);
-  transition: transform var(--dur-fast) var(--ease-out);
+  border-radius: 0;
 }
-.otBlogCard:hover .otBlogImg { transform: translateY(-4px); }
-.otBlogName { font-family: var(--font-display); font-size: 1.15rem; color: var(--color-fg); margin: 0.85rem 0 0.3rem; }
-.otBlogMeta { font-family: var(--font-body); font-size: 0.88rem; color: var(--color-fg-2); margin: 0; }
-.otBlogCtaWrap { text-align: center; margin-top: clamp(1.75rem, 3vw, 2.5rem); }
+.otBlogName { margin-top: var(--ot-s-sm); } /* används ihop med .otCardTitle */
+.otBlogMeta { margin-top: var(--ot-s-xs); } /* används ihop med .otBody */
+.otBlogCtaWrap { text-align: center; margin-top: var(--ot-s-xl); }
 
 @media (max-width: 700px) {
   .otBlogGrid { grid-template-columns: 1fr; max-width: 24rem; }
 }
+
+/* ═══════════════ GALLERI — delad Gallery-komponent, skärpt lokalt ═══════════════
+   Brickorna låg i 1/1 med scale(1.05) på hover — två regelbrott i en komponent jag
+   inte får röra. Här tvingas de in i mallens ratio och lyft. Specificiteten (0,3,x)
+   slår komponentens egen .galleryBtn:hover .galleryImg (0,3,0). */
+.otGallery .otEyebrow { margin-bottom: var(--ot-s-lg); }
+.otRoot .otGallery ul { gap: var(--ot-s-md); }
+.otRoot .otGallery li {
+  aspect-ratio: var(--ot-ratio);
+  border-radius: 0;
+  transition: transform var(--ot-dur) var(--ot-ease);
+}
+.otRoot .otGallery li:hover { transform: translateY(var(--ot-lift)); }
+.otRoot .otGallery li button:hover img { transform: none; } /* scale(1.05) av */
+
+/* ═══════════════ PLATS & ÖPPETTIDER (delade band, skärpt typografi) ═══════════════ */
+.otRoot .otHoursRow {
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg);
+  padding: var(--ot-s-xs) 0;
+}
+
+/* ═══════════════ CLOSING ═══════════════ */
+.otRoot .otClosingTitle {
+  color: #fff; /* 8.98:1 mot --color-primary */
+  max-width: 40rem;
+  margin: 0 auto;
+}
+.otRoot .otClosingLede {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--ot-fs-lede);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 46rem;
+  margin: var(--ot-s-sm) auto 0;
+}
+.otClosingActions { margin-top: var(--ot-s-lg); }

@@ -28,17 +28,42 @@ const IMG = {
 /**
  * SAGE — varmgrå/greige + mjuk salvia, luftig studio (goal-58). EGET
  * formspråk bland florist-sviten: transparent nav över en full-bleed hero med
- * spärrade versaler, en centrerad välkomstrad, en inramad kategori-trio som
- * länkar till butiken, och genomgående crisp galleri-kant (--sf-radius 6px)
- * — se SageLayout.tsx för sektionsordningen.
+ * versaler, en centrerad välkomstrad, en inramad kategori-trio som länkar till
+ * butiken, och genomgående RAKA kanter (--sf-radius 0) — se SageLayout.tsx för
+ * sektionsordningen.
+ *
+ * SKÄRPE-PASS (design-skarpa-zentum.md): identiteten (greige/olivfamiljen, EN
+ * accent, sektionsordningen) är orörd — utförandet är skärpt:
+ *
+ *  · KONTRAST (räknad WCAG, ej ögonmått). primary/primaryD låg i den mjuka
+ *    3–4:1-zonen och suddade ut varenda etikett/knapp. Samma kulör (HSL 45°,
+ *    22% mättnad — oförändrad), bara ljusheten ned: 40% → 25% (primary) och
+ *    29% → 18% (primaryD).
+ *      primary #4E4732 på bg #F4F0E8 ....... 8.13:1  (var 4.26:1 ✗)
+ *      primary på accentSoft #E9E2CF ....... 7.15:1  (var 3.75:1 ✗ — citatet)
+ *      vit knapptext på primary ............ 9.25:1  (var 4.84:1, nätt och jämnt)
+ *      vit text på closing-bandet .......... 9.25:1
+ *    fg #2B2820 (12.95:1) och fg2 #6E6656 (5.0:1) uppfyllde redan kraven
+ *    (rubrik ≥7, brödtext ≥4.5) och lämnas — fg2 ska backa för rubriken.
+ *
+ *  · RADIE binärt. 6px = "morot"-zonen (mjuka kuddar, inga raka linjer kvar att
+ *    linjera mot). --sf-radius är nu 0 för ALL struktur (kort, bilder, ramar,
+ *    galleri, karta). Knapparna är det enda medvetna undantaget: full pill
+ *    (--radius-pill), se sage.module.css .sgPillCta.
+ *
+ *  · TYPSNITT. Marcellus laddas som ENDA vikt 400 (app/layout.tsx) — mallens
+ *    gamla font-weight 700 på hero/rubriker var alltså syntetisk fetstil
+ *    (faux bold), precis den klumpiga stora texten regelboken varnar för.
+ *    Display kör nu 400/500 rakt igenom; Source Sans 3 (variabel) bär 600 på
+ *    all mikrotext på riktigt.
  */
 export const sage: FloristTheme = {
   key: 'sage',
   name: 'Sage',
   desc: 'Greige & salvia · luftig studio',
   palette: {
-    primary: '#7C7150',
-    primaryD: '#5A5239',
+    primary: '#4E4732',
+    primaryD: '#383324',
     bg: '#F4F0E8',
     surface: '#FBF9F4',
     fg: '#2B2820',
@@ -50,7 +75,7 @@ export const sage: FloristTheme = {
     display: 'var(--font-marcellus), Georgia, serif',
     body: 'var(--font-source-sans), system-ui, sans-serif',
   },
-  radius: '6px',
+  radius: '0px',
   content: {
     heroEyebrow: 'Skön stämning',
     heroTitle: 'Blommor med\nomsorg',

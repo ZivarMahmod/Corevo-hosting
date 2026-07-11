@@ -1,74 +1,167 @@
-/* CALYTRIX — plommon/vinröd e-handelsflorist. Egna klasser prefixade "cal".
-   Delade sf*-klasser (services/about/gallery/plats/closing-scaffolding) lånas
-   från ../../storefront.module.css via `shared` i CalytrixLayout.tsx. */
+/* ═══════════ CALYTRIX — plommon/vinröd e-handelsflorist (florist-sviten) ═══════════
+   SKÄRPE-PASS (design-skarpa-zentum.md): identiteten är oförändrad (plommon/vinrött,
+   butiken som hjälte, samma sektionsordning) — det är UTFÖRANDET som skärpts:
+
+   · TYPSKALA  steg ×1.9 i toppen (96 → 50 → 26 → 18 → 16 | 12) istället för ×1.3.
+   · VIKT      display ALLTID 400. DM Serif Display levereras BARA i vikt 400
+               (app/layout.tsx) — de gamla `font-weight: 600/700` gav SYNTETISK
+               fetstil (browsern smetar ut stammarna). 400 = vad fonten faktiskt är.
+   · RADIE     binärt: 0 på all struktur (--sf-radius = '0px' i calytrix.theme.ts,
+               --tpl-radius nollas nedan), full pill BARA på knapp/badge.
+   · BILD      EN ratio (4:5) på ALLA innehållsbilder — kort, galleri, om-foto.
+   · HOVER     5px lyft / 400ms. Inget scale(1.05), ingen skugg-bloom.
+   · RYTM      eyebrow→rubrik 12px · rubrik→text 20px · text→CTA 32px, i ALLA sektioner.
+
+   Delade sf*-klasser (services/about/gallery/plats/closing) lånas från
+   ../../storefront.module.css. De filerna ägs inte av mallen — där mallen måste
+   skärpa dem görs det med scopade selektorer under .calRoot/.calGallery. */
 
 .calRoot {
-  /* Enda egna dekorfärgen (kravet tillåter 1-2): dämpat antikguld, bara på
-     hero-CTA:n och "Populär"-badgen — aldrig hela sidan igenom. */
+  /* ── Enda egna dekorfärgen: dämpat antikguld. EN accent, och den sitter bara på
+     hero-CTA:n och "Populär"-badgen — aldrig på en stor yta. (7.00:1 mot guld-ink.) */
   --cal-gold: #cf9d3f;
   --cal-gold-ink: #2b1608;
+
+  /* ── TYPSKALA — steg ×1.92 mellan display → sektion → underrubrik.
+     96 → 50 → 26 → 18 → 16 | 12 (mikro). */
+  --cal-fs-hero: clamp(3.25rem, 8.4vw, 6rem); /* 52 → 96px */
+  --cal-fs-h2: clamp(2rem, 4.4vw, 3.125rem); /* 32 → 50px */
+  --cal-fs-sub: clamp(1.375rem, 2.1vw, 1.625rem); /* 22 → 26px */
+  --cal-fs-lede: 1.125rem; /* 18px */
+  --cal-fs-body: 1rem; /* 16px */
+  --cal-fs-micro: 0.75rem; /* 12px */
+
+  /* ── LINE-HEIGHT — rubriken blir en FORM (spänd), brödtexten en YTA (luftig). */
+  --cal-lh-display: 1.06;
+  --cal-lh-head: 1.1;
+  --cal-lh-sub: 1.15;
+  --cal-lh-body: 1.58;
+
+  /* ── LETTER-SPACING — omvänt mot storleken. Aldrig positiv spärr på stor text. */
+  --cal-ls-display: -0.015em;
+  --cal-ls-head: -0.01em;
+  --cal-ls-micro: 0.083em; /* ≈ +1px vid 12px */
+
+  /* ── RYTM — en skala: 12 / 20 / 24 / 32 / 48 / 96. */
+  --cal-sec: clamp(3rem, 7vw, 6rem); /* 48 → 96px sektionsavstånd */
+  --cal-band: clamp(1.5rem, 3.5vw, 3rem); /* 24 → 48px smala band */
+  --cal-gutter: clamp(1.5rem, 4vw, 1.75rem);
+  --cal-step-eyebrow: 12px; /* eyebrow → rubrik */
+  --cal-step-head: 20px; /* rubrik → text */
+  --cal-step-cta: 32px; /* text → CTA */
+
+  /* ── MOTION — återhållsam. */
+  --cal-dur: 400ms;
+  --cal-lift: -5px;
+
+  /* Galleriets delade .galleryItem läser --tpl-radius, som ärvs från .tplRoot
+     (12px). Nollas här — annars smyger mjuka hörn in i en mall som är radie-0. */
+  --tpl-radius: 0px;
+  --tpl-radius-lg: 0px;
+}
+
+/* ── TYPROLLER (.sf-*) — globala i tokens.css ([data-world] .sf-h1 = 0,2,0).
+   Mallens skala vinner via dubblad rotklass (0,3,0) — scopat till .calRoot, så
+   ingen annan mall påverkas. font-weight: 400 är inte en smaksak: DM Serif
+   Display har ingen 600-skärning, så 600 = syntetisk fetstil = suddiga stammar. */
+.calRoot.calRoot :global(.sf-eyebrow) {
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: var(--cal-ls-micro);
+}
+.calRoot.calRoot :global(.sf-h1),
+.calRoot.calRoot :global(.sf-h2) {
+  font-size: var(--cal-fs-h2);
+  font-weight: 400;
+  line-height: var(--cal-lh-head);
+  letter-spacing: var(--cal-ls-head);
+}
+.calRoot.calRoot :global(.sf-lede) {
+  font-size: var(--cal-fs-lede);
+  line-height: var(--cal-lh-body);
+}
+.calRoot.calRoot :global(.sf-body) {
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+}
+
+/* Sektionsavstånd — samma steg i ALLA egna sektioner (butik, om, blogg). */
+.calSection {
+  padding-top: var(--cal-sec);
+  padding-bottom: var(--cal-sec);
 }
 
 /* ---------- 1. Annonsrad ---------- */
 .calAnnounce {
   background: var(--color-primary-d);
-  color: #fff;
+  color: #fff; /* 15.07:1 mot --color-primary-d */
   text-align: center;
-  padding: 0.6rem 1.25rem;
+  padding: 12px 24px;
 }
 .calAnnounceText {
   font-family: var(--font-body);
-  font-size: 0.82rem;
+  font-size: var(--cal-fs-micro);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
 }
 
 /* ---------- 2. Fullbredds foto-hero ---------- */
 .calHero {
   position: relative;
-  min-height: clamp(28rem, 76vh, 42rem);
+  min-height: clamp(30rem, 80vh, 44rem);
   background-size: cover;
   background-position: center;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+/* Scrimen är en KONTRAST-komponent, inte dekor. Den gamla mittzonen låg på
+   rgba(0,0,0,0.24) — exakt där H1:an sitter — vilket i värsta fall (en utbränd,
+   nästan vit fotopixel) ger vit text 1.78:1. Uträknat golv: alfa ≥ 0.56 håller
+   #fff ≥ 4.94:1 även mot en helvit pixel. Ingen punkt i gradienten går under det. */
 .calHeroScrim {
   position: absolute;
   inset: 0;
-  /* Rent svart skrim (universell foto-kontrast-teknik, ingen temafärg) — håller
-     dekorfärg-budgeten (1-2 egna) intakt för guldet. */
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.24) 45%, rgba(0, 0, 0, 0.56) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.62) 0%,
+    rgba(0, 0, 0, 0.56) 45%,
+    rgba(0, 0, 0, 0.74) 100%
+  );
 }
 .calHeroInner {
   position: relative;
   z-index: 1;
-  max-width: 46rem;
+  max-width: 52rem;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 var(--cal-gutter);
   text-align: center;
 }
 .calHeroTitle {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(2.75rem, 7.5vw, 5.5rem);
-  line-height: 0.98;
+  font-size: var(--cal-fs-hero);
+  line-height: var(--cal-lh-display);
+  letter-spacing: var(--cal-ls-display);
   color: #fff;
   margin: 0;
   white-space: pre-line;
 }
+/* Hierarkin görs av SKALAN (96 → 18), inte av uttonad text: leden är ren #fff. */
 .calHeroLede {
   font-family: var(--font-body);
-  font-size: clamp(1rem, 1.7vw, 1.2rem);
-  color: rgba(255, 255, 255, 0.92);
-  max-width: 32rem;
-  margin: 1.1rem auto 0;
-  line-height: 1.55;
+  font-size: var(--cal-fs-lede);
+  line-height: var(--cal-lh-body);
+  color: #fff;
+  max-width: 34rem;
+  margin: var(--cal-step-head) auto 0;
 }
-.calHeroCtaRow { margin-top: 1.9rem; }
+.calHeroCtaRow { margin-top: var(--cal-step-cta); }
 .calHeroCta {
   /* Sätter om --color-accent/-fg lokalt på knappen (samma element som .btn-accent
-     läser variablerna från) — enda stället guldet syns. */
+     läser variablerna från) — enda stället guldet syns förutom badgen. */
   --color-accent: var(--cal-gold);
   --color-accent-fg: var(--cal-gold-ink);
 }
@@ -76,7 +169,7 @@
 /* ---------- 3. Mörkt marknadsförings-band ---------- */
 .calBand {
   background: var(--color-primary-d);
-  padding: clamp(2rem, 4.5vw, 3rem) 1.5rem;
+  padding: var(--cal-band) 24px;
   text-align: center;
 }
 .calBandText {
@@ -84,109 +177,135 @@
   margin: 0 auto;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
-  line-height: 1.4;
-  color: #fff;
+  font-size: var(--cal-fs-sub);
+  line-height: var(--cal-lh-sub);
+  color: #fff; /* 15.07:1 */
 }
 
 /* ---------- Sektionsrubrik (delas av "Mest sålda" + "Från bloggen") ---------- */
 .calSecHead {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  padding: 0 var(--cal-gutter);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--cal-step-head);
   flex-wrap: wrap;
 }
+/* Mikrotext-regeln: 12px / 600 / VERSALER / +1px spärr. Understruken permanent —
+   en kant som redan finns är skarpare än en som tonar fram vid hover. */
 .calSecCta {
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.92rem;
-  color: var(--color-primary);
-  border-bottom: 2px solid transparent;
+  font-weight: 600;
+  font-size: var(--cal-fs-micro);
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary); /* 9.08:1 mot --color-bg */
+  border-bottom: 2px solid var(--color-primary);
   padding-bottom: 2px;
   white-space: nowrap;
-  transition: border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
+  transition: opacity var(--cal-dur) ease;
 }
-.calSecCta:hover { border-color: var(--color-primary); }
+.calSecCta:hover { opacity: 0.7; }
 
 /* ---------- 4. Horisontell kort-rad ("Mest sålda" + blogg) ---------- */
 .calScrollRow {
   display: flex;
-  gap: 1.1rem;
+  gap: 24px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  padding: 1.75rem clamp(1.25rem, 4vw, 1.75rem) 0.5rem;
+  padding: 48px var(--cal-gutter) 8px;
   -webkit-overflow-scrolling: touch;
 }
 .calCardSlot {
   flex: 0 0 auto;
-  width: clamp(11.5rem, 23vw, 15.5rem);
+  width: clamp(15rem, 26vw, 19rem);
   scroll-snap-align: start;
 }
+/* Hover: hela kortet lyfts 5px. Bilden skalar INTE (scale(1.05) = pösigt). */
 .calCard {
   display: block;
   text-decoration: none;
+  transition: transform var(--cal-dur) ease;
 }
+.calCard:hover { transform: translateY(var(--cal-lift)); }
 .calCardImgWrap {
   position: relative;
-  border-radius: var(--sf-radius);
+  border-radius: var(--sf-radius); /* = 0 */
   overflow: hidden;
   background: var(--color-accent-soft);
 }
 .calCardImg {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 5; /* mallens ENDA bildratio */
   background-size: cover;
   background-position: center;
-  transition: transform var(--dur-fast, 0.2s) var(--ease-out, ease);
 }
-.calCard:hover .calCardImg { transform: scale(1.05); }
+/* Badgen är mallens medvetna pill-undantag mot de raka kanterna. */
 .calBadge {
   position: absolute;
-  top: 0.6rem;
-  left: 0.6rem;
+  top: 12px;
+  left: 12px;
   z-index: 1;
   background: var(--cal-gold);
-  color: var(--cal-gold-ink);
+  color: var(--cal-gold-ink); /* 7.00:1 */
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.66rem;
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  font-size: var(--cal-fs-micro);
+  line-height: 1.4;
+  letter-spacing: var(--cal-ls-micro);
   text-transform: uppercase;
-  padding: 0.3rem 0.6rem;
+  padding: 5px 12px;
   border-radius: 999px;
 }
 .calCardName {
-  margin: 0.85rem 0 0;
+  margin: var(--cal-step-head) 0 0;
   font-family: var(--font-display);
-  font-size: 1.05rem;
-  color: var(--color-fg);
+  font-weight: 400;
+  font-size: var(--cal-fs-sub);
+  line-height: var(--cal-lh-sub);
+  letter-spacing: var(--cal-ls-head);
+  color: var(--color-fg); /* 16.84:1 */
 }
 .calCardMeta {
-  margin: 0.3rem 0 0;
+  margin: 12px 0 0;
   font-family: var(--font-body);
-  font-size: 0.88rem;
-  line-height: 1.5;
-  color: var(--color-fg-2);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2); /* 6.67:1 */
 }
 .calCardPrice {
-  margin: 0.3rem 0 0;
+  margin: 12px 0 0;
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--color-primary);
+  font-weight: 600;
+  font-size: var(--cal-fs-body);
+  color: var(--color-primary); /* 9.08:1 */
 }
 
 @media (max-width: 640px) {
-  .calScrollRow { gap: 0.85rem; }
-  .calCardSlot { width: 9.5rem; }
+  .calScrollRow { gap: 12px; padding-top: 24px; }
+  .calCardSlot { width: 13.5rem; }
 }
+
+/* ---------- Galleri — samma bildratio och raka hörn som resten av mallen ----------
+   Gallery.tsx stylas av storefront.module.css (delad, ägs inte av mallen). Markupen
+   ägs däremot av mallen, så en egen wrapper-klass + struktur-selektorer räcker:
+   .galleryItem = 1/1 (0,1,0) → vår (0,2,1) vinner. Hover-scale ligger på
+   `.galleryBtn:hover .galleryImg` (0,3,0) → dubblad wrapper-klass (0,3,2) vinner. */
+.calGallery li {
+  aspect-ratio: 4 / 5;
+  border-radius: 0;
+  transition: transform var(--cal-dur) ease;
+}
+.calGallery li:hover { transform: translateY(var(--cal-lift)); }
+.calGallery.calGallery button:hover img { transform: none; }
+
+/* Om-fotot ligger redan i 4/5 (delad .sfAboutPhoto) och blir radie-0 av
+   --sf-radius: '0px'. Ingen override behövs — hela mallen är därmed 4:5 rakt av. */
 
 /* ---------- Presentkort-rad (smal, aldrig egen sektion) ---------- */
 .calGiftRow {
-  padding: clamp(1.1rem, 2.5vw, 1.6rem) 1.5rem;
+  padding: var(--cal-band) 24px;
   text-align: center;
   background: var(--color-accent-soft);
 }
@@ -195,13 +314,24 @@
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
-  gap: 0.5rem 1rem;
+  gap: 12px 24px;
 }
 .calGiftCta {
   font-family: var(--font-body);
-  font-weight: 700;
-  color: var(--color-primary);
-  border-bottom: 2px solid transparent;
+  font-weight: 600;
+  font-size: var(--cal-fs-micro);
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary); /* 8.05:1 mot --color-accent-soft */
+  border-bottom: 2px solid var(--color-primary);
   padding-bottom: 2px;
+  transition: opacity var(--cal-dur) ease;
 }
-.calGiftCta:hover { border-color: var(--color-primary); }
+.calGiftCta:hover { opacity: 0.7; }
+
+@media (prefers-reduced-motion: reduce) {
+  .calCard,
+  .calGallery li { transition: none; }
+  .calCard:hover,
+  .calGallery li:hover { transform: none; }
+}

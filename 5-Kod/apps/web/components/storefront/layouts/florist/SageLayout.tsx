@@ -14,13 +14,22 @@ import styles from './sage.module.css'
  * EGEN struktur-signatur bland de 13 syskonen: (1) transparent nav ÖVER en
  * full-bleed hero (literal `.hero`-sentinel + negativ margin cancellerar
  * --nav-h, samma knep som Salvia använder på ett annat tema), (2) hero med
- * liten spärrad versal-eyebrow + STOR spärrad versal-rubrik + två knappar sida
- * vid sida (fylld + outline), (3) en centrerad välkomstrad med en enda knapp,
- * (4) en inramad kategori-trio (Mest sålda/Födelsedag/Bröllop) som länkar in i
- * butiken, (5) butiks-teasers, (6) tjänster, (7) citat, (8) om, (9) galleri,
- * (10) blogg, (11) presentkort, (12) plats, (13) closing. Genomgående crisp
- * galleri-kant (temats --sf-radius) och EN accentfärg — inga ornament, ingen
- * kursiv (till skillnad från Flora).
+ * liten versal-eyebrow + STOR versal-rubrik + två knappar sida vid sida (fylld
+ * + outline), (3) en centrerad välkomstrad med en enda knapp, (4) en inramad
+ * kategori-trio (Mest sålda/Födelsedag/Bröllop) som länkar in i butiken,
+ * (5) butiks-teasers, (6) tjänster, (7) citat, (8) om, (9) galleri, (10) blogg,
+ * (11) presentkort, (12) plats, (13) closing. Genomgående raka kanter (temats
+ * --sf-radius = 0) och EN accentfärg — inga ornament, ingen kursiv (till
+ * skillnad från Flora).
+ *
+ * SKÄRPE-PASS (design-skarpa-zentum.md): identiteten är orörd (färgfamilj,
+ * struktur-signatur, sektionsordning) — utförandet är skärpt. Typskalan går i
+ * ×1.85–2.0-steg (96 → 52 → 26 px), all mikrotext är EN nivå (12px/600/VERSALER
+ * /1px), rubrikerna kör Marcellus riktiga vikt (400, inte syntetisk 700) utan
+ * positiv tracking, alla bilder ligger i EN ratio (4/5 — även galleriet, som
+ * annars är 1/1), radien är binär (0 på struktur, pill på knapp) och hovern är
+ * 5px/400ms utan skugg-bloom. Se sage.module.css för skalan, sage.theme.ts för
+ * de räknade kontrastvärdena.
  */
 export function SageLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -61,7 +70,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
           <h1 className={styles.sgHeroTitle}>{content.heroTitle}</h1>
           <p className={styles.sgHeroLede}>{content.heroLede}</p>
           <div className={styles.sgHeroActions}>
-            <BookCta className={styles.sgHeroBtnFilled} />
+            <BookCta className={styles.sgPillCta} />
             {shopReachable ? (
               <Link href="/shop" className={styles.sgHeroBtnOutline}>
                 Till butiken
@@ -80,7 +89,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
         <Reveal className={styles.sgWelcomeInner}>
           <h2 className={styles.sgSectionTitle}>Välkommen till {tenant.name}</h2>
           <p className={styles.sgLede}>{content.aboutCopy}</p>
-          <Link href="/om" className={`btn-accent ${styles.sgWelcomeCta}`}>
+          <Link href="/om" className={`btn-accent ${styles.sgPillCta} ${styles.sgWelcomeCta}`}>
             Läs mer om oss
           </Link>
         </Reveal>
@@ -148,7 +157,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
 
       {/* TJÄNSTER — numrerade rader, tom sektion visas aldrig (goal-55 8B) */}
       {rows.length > 0 ? (
-        <section className={shared.sfServices}>
+        <section className={`${shared.sfServices} ${styles.sgSection}`}>
           <div className={shared.sfNarrow}>
             <Reveal className={styles.sgSectionHead}>
               <p className={styles.sgEyebrow}>{content.servicesEyebrow}</p>
@@ -158,16 +167,16 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
               {rows.map((s, i) => (
                 <Reveal key={s.id} delay={i * 60}>
                   <Bookable className={shared.sfRow} label={`Beställ — ${s.name}`}>
-                    <span className={shared.sfRowNum} aria-hidden="true">
+                    <span className={`${shared.sfRowNum} ${styles.sgRowNum}`} aria-hidden="true">
                       {serviceNum(i)}
                     </span>
                     <span className={shared.sfRowMain}>
-                      <span className={shared.sfRowName}>{s.name}</span>
-                      <span className={shared.sfRowDesc}>{serviceDesc(s)}</span>
+                      <span className={`${shared.sfRowName} ${styles.sgRowName}`}>{s.name}</span>
+                      <span className={`${shared.sfRowDesc} ${styles.sgRowDesc}`}>{serviceDesc(s)}</span>
                     </span>
                     <span className={shared.sfRowMeta}>
-                      <span className={shared.sfRowPrice}>{formatPrice(s)}</span>
-                      <span className={shared.sfRowTime}>{formatDuration(s)}</span>
+                      <span className={`${shared.sfRowPrice} ${styles.sgRowPrice}`}>{formatPrice(s)}</span>
+                      <span className={`${shared.sfRowTime} ${styles.sgRowTime}`}>{formatDuration(s)}</span>
                     </span>
                   </Bookable>
                 </Reveal>
@@ -175,7 +184,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
             </div>
             {hasMore ? (
               <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={shared.sfMoreLink}>
+                <a href="/tjanster" className={`${shared.sfMoreLink} ${styles.sgMoreLink}`}>
                   Se allt vi gör <span aria-hidden="true">→</span>
                 </a>
               </Reveal>
@@ -200,14 +209,12 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
           <Reveal delay={120}>
             <p className={styles.sgEyebrow}>— Om {tenant.name}</p>
             <h2 className={styles.sgSectionTitle}>{content.aboutTitle}</h2>
-            <p className={styles.sgLede} style={{ margin: '1rem 0 0', maxWidth: 'none' }}>
-              {content.aboutCopyHome}
-            </p>
-            <ul className={shared.sfStatTrio}>
+            <p className={styles.sgAboutLede}>{content.aboutCopyHome}</p>
+            <ul className={`${shared.sfStatTrio} ${styles.sgStatTrio}`}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
+                  <span className={`${shared.sfStatValue} ${styles.sgStatValue}`}>{n}</span>
+                  <span className={`${shared.sfStatLabel} ${styles.sgStatLabel}`}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -215,15 +222,15 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
         </div>
       </section>
 
-      {/* GALLERI — masonry + lightbox */}
-      <section className={shared.sfGalleryBand}>
+      {/* GALLERI — masonry + lightbox, tvingad in i mallens enda bildratio (4/5) */}
+      <section className={`${shared.sfGalleryBand} ${styles.sgSection}`}>
         <div className={shared.sfWide}>
           <Reveal>
-            <p className={styles.sgEyebrow} style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <p className={`${styles.sgEyebrow} ${styles.sgGalleryEyebrow}`}>
               {content.galleryEyebrow ?? '— Galleri'}
             </p>
           </Reveal>
-          <Reveal>
+          <Reveal className={styles.sgGallery}>
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
           </Reveal>
         </div>
@@ -260,8 +267,8 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
       {/* PRESENTKORT — en smal rad, aldrig en hel sektion */}
       {presentkortLive ? (
         <section className={styles.sgGiftRow}>
-          <Reveal style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'center', gap: '8px 16px' }}>
-            <p className={styles.sgEyebrow} style={{ margin: 0 }}>{content.giftEyebrow ?? '— Presentkort'}</p>
+          <Reveal className={styles.sgGiftInner}>
+            <p className={styles.sgEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.sgGiftLede}>{content.giftLede ?? 'Ge bort blommor, när som helst.'}</p>
             <a href="/presentkort" className={styles.sgBandCta} style={{ margin: 0 }}>
               {content.giftCta ?? 'Till presentkorten'}
@@ -272,25 +279,21 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
 
       {/* PLATS & ÖPPETTIDER */}
       <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+        <div className={`${shared.sfWide} ${shared.sfLocGrid} ${styles.sgGridPad}`}>
           <Reveal>
             <p className={styles.sgEyebrow}>{content.findEyebrow ?? '— Hitta hit'}</p>
-            <h2 className={styles.sgSectionTitle} style={{ marginTop: '0.6rem' }}>
+            <h2 className={styles.sgSectionTitle}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 10 }}>
-                {location.address}
-              </p>
+              <p className={styles.sgLocAddr}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 10 }}>
-                Adress visas snart.
-              </p>
+              <p className={styles.sgLocAddr}>Adress visas snart.</p>
             )}
             {location?.hours ? (
-              <div className={shared.sfHours}>
+              <div className={`${shared.sfHours} ${styles.sgHours}`}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
+                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.sgHoursRow}`}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
@@ -305,12 +308,14 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={shared.sfMapLink}
+                  className={`${shared.sfMapLink} ${styles.sgMapLink}`}
                 >
                   Visa på karta <span aria-hidden="true">→</span>
                 </a>
               ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
+                <span className={`${shared.sfMapHint} ${styles.sgMapHint}`}>
+                  Karta visas när adressen är ifylld.
+                </span>
               )}
             </div>
           </Reveal>
@@ -318,16 +323,16 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
       </section>
 
       {/* CLOSING */}
-      <section className={shared.sfClosing}>
+      <section className={`${shared.sfClosing} ${styles.sgBand}`}>
         <Reveal>
-          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '38rem', margin: '0 auto', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+          <h2 className={styles.sgClosingTitle}>
             {content.closingTitle ?? 'Redo att beställa?'}
           </h2>
-          <p className={shared.sfClosingLead}>
+          <p className={`${shared.sfClosingLead} ${styles.sgClosingLede}`}>
             {content.closingLede ?? 'Handla i butiken, boka en kurs eller hör av dig — vi hjälper dig gärna.'}
           </p>
-          <div style={{ marginTop: 30 }}>
-            <BookCta className={shared.sfClosingCta} />
+          <div className={styles.sgClosingActions}>
+            <BookCta className={`${shared.sfClosingCta} ${styles.sgPillCta}`} />
           </div>
         </Reveal>
       </section>

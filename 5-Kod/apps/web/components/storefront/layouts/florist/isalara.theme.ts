@@ -44,6 +44,15 @@ export const isalara: FloristTheme = {
   key: 'isalara',
   name: 'Isalara',
   desc: 'Djupblå & varm sand · elegant',
+  // SKÄRPE-PASS (design-skarpa-zentum.md): paletten är ORÖRD — den klarade redan
+  // kraven med marginal (uträknat, inte gissat). 8 hex, EN kall + EN varm familj
+  // (marin 210° + sand 40°), accenten = primary och sitter bara på knapp/detalj:
+  //   fg      #1C2733 på bg 13.71:1 · på surface 14.88:1   (krav ≥ 7, sikte 11)
+  //   fg2     #675E4F på bg  5.78:1 · på surface  6.27:1   (krav ≥ 4.5 — backar medvetet)
+  //   primary #1B3B5B → #fff på knapp 11.52:1 · som länk på bg 10.44:1 (krav ≥ 4.5)
+  //   #FFFDF7 på primaryD (bandet) 16.39:1 · på primary (closing) 11.32:1
+  // Det ENDA kontrastfelet satt i hero-scrimen (ljus text kunde landa på 2.00:1 mot
+  // en utbränd fotopixel) — fixat i isalara.module.css, inte i paletten.
   palette: {
     primary: '#1B3B5B',
     primaryD: '#0C1F33',
@@ -55,10 +64,15 @@ export const isalara: FloristTheme = {
     accentSoft: '#EFE4CC',
   },
   fonts: {
+    // Cormorant Garamond levereras i 400/500/600/700 (app/layout.tsx) → mallens
+    // display-vikt 500 är en ÄKTA skärning, ingen syntetisk fetstil.
     display: 'var(--font-cormorant), Georgia, serif',
     body: 'var(--font-inter), system-ui, sans-serif',
   },
-  radius: '5px',
+  // BINÄR radie: 0 på all struktur (kort, bilder, karta, om-foto, genvägar) — knappen
+  // är full pill via globala .btn-accent (--radius-pill) och ikoncirkeln är 999px.
+  // Inget däremellan. 5px på allt var precis den mjuka moroten passet tog bort.
+  radius: '0px',
   content: {
     heroEyebrow: '— Blomsterhandel',
     heroTitle: 'Blommor för\nvarje stund',

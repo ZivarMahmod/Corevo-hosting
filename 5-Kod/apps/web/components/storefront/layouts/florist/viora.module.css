@@ -1,8 +1,146 @@
 /* ═══════════════ VIORA — djup violett, modern boutique (bara viora-layouten) ═══════════════
    Signaturen är kompositionen: en 50/50 split-hero (färgad platta + bild, aldrig text
    ovanpå bilden), fyra funktionella ikonlänkar, ett citat-band och ett STORT 2-kolumners
-   butikskort-grid med markant större bilder än resten av florist-sviten. Skarp, konsekvent
-   radie (temats --sf-radius) — aldrig mjuka arch-former. */
+   butikskort-grid med markant större bilder än resten av florist-sviten.
+
+   SKÄRPE-PASS (design-skarpa-zentum.md) — "svärd, inte mjuk morot". Mallen äger nu HELA
+   sin typografi: de globala .sf-h1/.sf-h2/.sf-eyebrow/.sf-body-rollerna (tokens.css) är
+   en ×1.2–1.5-skala som gör allt mellanstort, så VioraLayout använder klasserna nedan
+   istället. Sektionsstrukturen (storefront.module.css: .sfServices/.sfAboutGrid/.sfLocBand/
+   .sfClosing/.sfGalleryBand) behålls — bara typografin, radien, bildratiot och rytmen är våra.
+
+   REGLERNA, kodade:
+   1. TYPSKALA ×~2.0 i toppen: 108 → 52 → 26 → 18 → 16 | 11–12 (mikro).
+   2. VIKT: display = 600 (Playfair laddas i 600/700/800 i app/layout.tsx — 500 finns
+      INTE att välja; 600 är den lättaste laddade skäran och den enda ärliga "medium"
+      här. Deklarera aldrig 500: det renderas ändå som 600 och ljuger i koden).
+      Mikrotext = 600 + VERSALER.
+   3. LINE-HEIGHT: rubrik 1.06–1.15, brödtext 1.55–1.60. Registerbytet ÄR skärpan.
+   4. LETTER-SPACING omvänt mot storleken: negativt på display, 0 på 26px, +1px på 11–12px.
+   5. KONTRAST (uträknad): rubrik 15.93:1, brödtext 5.40:1, knapp 12.72:1 — se viora.theme.ts.
+   6. RADIE: binär. --sf-radius = 0 (theme.radius '0px') på ALL struktur; enda undantaget
+      är knappen, som är en full pill (.btn-accent → --radius-pill). Inget däremellan.
+   7. BILDRATIO: ETT format i hela mallen — 4:5 (porträtt). Butikskort, bloggkort,
+      om-fotot (delad .sfAboutPhoto är redan 4/5) och galleriet. Hero-fotot är den
+      enda undantagna ytan (full-bleed split-panel, som zentums panorama-hero).
+   8. FÄRG: 0 hex i den här filen — allt via temats 8 tokens. EN accent (violetten).
+   9. HOVER: 5px lyft / 400ms ease. Ingen scale, ingen skugg-bloom.
+  10. RYTM: 12 / 20 / 32 / 48 / 96 / 144. Samma inre steg i ALLA sektioner:
+      eyebrow→rubrik 12, rubrik→text 20, text→CTA 32, sektionshuvud→innehåll 48. */
+
+/* ── 0. SKALAN — deklarerad på mallens alla rot-sektioner (layouten är ett fragment,
+      så den här grupperade regeln ÄR mallens "rot-klass"). ─────────────────────────── */
+.vioHero,
+.vioLinks,
+.vioQuoteBand,
+.vioShopSection,
+.vioServices,
+.vioAboutGrid,
+.vioGiftRow,
+.vioTeaserSection,
+.vioGallery,
+.vioLocGrid,
+.vioClosing {
+  /* typskala — steg ×2.08 / ×2.0 i toppen */
+  --vio-fs-hero: clamp(3.25rem, 7vw, 6.75rem);   /* 52 → 108px */
+  --vio-fs-h2: clamp(2rem, 4.2vw, 3.25rem);      /* 32 → 52px  */
+  --vio-fs-card: 1.625rem;                       /* 26px       */
+  --vio-fs-lede: 1.125rem;                       /* 18px       */
+  --vio-fs-body: 1rem;                           /* 16px       */
+  --vio-fs-micro: 0.6875rem;                     /* 11px       */
+  --vio-fs-btn: 0.75rem;                         /* 12px       */
+
+  /* rytm */
+  --vio-s1: 12px;
+  --vio-s2: 20px;
+  --vio-s3: 32px;
+  --vio-s4: 48px;
+  --vio-sec: clamp(64px, 9vw, 144px);
+  --vio-gut: clamp(1.25rem, 4vw, 1.75rem);
+
+  /* motion — återhållsam */
+  --vio-lift: -5px;
+  --vio-dur: 400ms;
+}
+
+/* ── 0b. TYPROLLER — mallens egen skala (ersätter .sf-h1/.sf-h2/.sf-eyebrow/.sf-body) ── */
+.vioEyebrow {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--vio-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0 0 var(--vio-s1);
+}
+.vioH2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--vio-fs-h2);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  margin: 0;
+}
+.vioBody {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--vio-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+  margin: var(--vio-s2) 0 0;
+  max-width: 34rem;
+}
+
+/* Mikro-länk (”Visa hela butiken”, ”Se allt vi gör”, ”Visa på karta”) — 12/600/VERSALER/+1px */
+.vioMoreLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: var(--vio-s3);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--vio-fs-btn);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 3px;
+  transition: border-color var(--vio-dur) ease;
+}
+.vioMoreLink:hover { border-color: var(--color-primary); }
+.vioMoreLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+
+/* KNAPPEN — full pill (radien kommer från .btn-accent/--radius-pill), 12/600/VERSALER/+1px.
+   Skugg-bloomen i den globala .btn-accent (box-shadow + hover-glow) släcks: återhållsam
+   rörelse (4px lyft) läser som kompetens, en pösande skugga som leksak. Dubbelklassen ger
+   den specificitet som krävs för att slå .btn-accent:hover (0,2,0). */
+.vioHero :global(.btn-accent).vioHeroCta,
+.vioClosing :global(.btn-accent).vioClosingCta {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--vio-fs-btn);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 46px;
+  padding: 0 30px;
+  box-shadow: none;
+  transition: transform var(--vio-dur) ease, background var(--vio-dur) ease;
+}
+.vioHero :global(.btn-accent).vioHeroCta:hover,
+.vioClosing :global(.btn-accent).vioClosingCta:hover {
+  transform: translateY(-4px);
+  box-shadow: none;
+}
+/* Hero-CTA:n inverteras mot den violetta plattan (krämvit fyllning, violett text). */
+.vioHero :global(.btn-accent).vioHeroCta {
+  background: var(--color-bg);
+  color: var(--color-primary);
+  border-color: var(--color-bg);
+}
 
 /* ── 1. HERO — split, ingen text i bilden ─────────────────────────────────────────── */
 .vioHero {
@@ -17,40 +155,56 @@
   justify-content: center;
   padding: clamp(2.75rem, 5vw, 4.75rem) clamp(1.75rem, 5vw, 4.75rem);
 }
+/* Krämvit @82% på violett = 8.51:1 */
+.vioHeroEyebrow {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--vio-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  margin: 0 0 var(--vio-s1);
+}
 .vioHeroTitle {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(2.75rem, 6vw, 5.2rem);
-  line-height: 1.03;
-  letter-spacing: -0.01em;
+  font-size: var(--vio-fs-hero);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
   color: var(--color-bg);
-  margin: 18px 0 0;
+  margin: 0;
   white-space: pre-line;
 }
 .vioHeroLede {
   font-family: var(--font-body);
-  font-size: clamp(1rem, 1.3vw, 1.15rem);
-  line-height: 1.6;
+  font-weight: 400;
+  font-size: var(--vio-fs-lede);
+  line-height: 1.55;
   color: color-mix(in srgb, var(--color-bg) 82%, transparent);
-  margin: 20px 0 0;
+  margin: var(--vio-s2) 0 0;
   max-width: 27rem;
 }
-.vioHeroActions { display: flex; align-items: center; gap: 1.6rem; margin-top: 2.1rem; flex-wrap: wrap; }
-/* Bara .vioHero + :global(.btn-accent) räcker inte att slå .btn-accent (samma specificitet,
-   källordning avgör) — dubbla klassen ger den extra specificitet som garanterar segern,
-   samma knep som .sfClosing :global(.btn-accent).sfClosingCta i storefront.module.css. */
-.vioHero :global(.btn-accent).vioHeroCta { background: var(--color-bg); color: var(--color-primary); }
+.vioHeroActions {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  margin-top: var(--vio-s3);
+  flex-wrap: wrap;
+}
 .vioHeroSecondary {
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
+  font-size: var(--vio-fs-btn);
+  letter-spacing: 1px;
+  text-transform: uppercase;
   color: var(--color-bg);
   border-bottom: 1px solid color-mix(in srgb, var(--color-bg) 55%, transparent);
-  padding-bottom: 3px;
-  transition: border-color 0.2s ease, opacity 0.2s ease;
+  padding-bottom: 4px;
+  transition: border-color var(--vio-dur) ease;
 }
-.vioHeroSecondary:hover { border-color: var(--color-bg); opacity: 0.86; }
+.vioHeroSecondary:hover { border-color: var(--color-bg); }
 .vioHeroPhoto {
   background-color: var(--color-accent-soft);
   background-size: cover;
@@ -67,7 +221,7 @@
 .vioLinks {
   max-width: 72rem;
   margin: 0 auto;
-  padding: clamp(2.5rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 1.75rem);
+  padding: clamp(48px, 6vw, 96px) var(--vio-gut);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
 }
@@ -76,7 +230,7 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 0.6rem;
+  gap: var(--vio-s1);
   padding: 0.5rem 1.25rem;
   border-left: 1px solid var(--color-line);
   text-decoration: none;
@@ -92,78 +246,154 @@
   width: 30px;
   height: 30px;
   color: var(--color-primary);
-  transition: transform 0.25s ease;
+  transition: transform var(--vio-dur) ease;
 }
-.vioLinkItem:hover .vioLinkIcon { transform: translateY(-3px); }
+.vioLinkItem:hover .vioLinkIcon { transform: translateY(var(--vio-lift)); }
 .vioLinkLabel {
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
+  font-size: var(--vio-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-fg);
 }
-.vioLinkDesc { font-family: var(--font-body); font-size: 0.82rem; color: var(--color-fg-2); line-height: 1.4; max-width: 12rem; }
+.vioLinkDesc {
+  font-family: var(--font-body);
+  font-size: var(--vio-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+  max-width: 12rem;
+}
 @media (max-width: 720px) {
-  .vioLinks { grid-template-columns: repeat(2, 1fr); gap: 1.75rem 0; }
+  .vioLinks { grid-template-columns: repeat(2, 1fr); gap: var(--vio-s3) 0; }
   .vioLinkItem:nth-child(2) { border-left: 1px solid var(--color-line); }
   .vioLinkItem:nth-child(3) { border-left: none; }
 }
 
 /* ── 3. CITAT-BAND ─────────────────────────────────────────────────────────────────── */
-.vioQuoteBand { position: relative; background: var(--color-accent-soft); padding: clamp(3.75rem, 8vw, 6rem) 1.5rem; text-align: center; }
+.vioQuoteBand {
+  position: relative;
+  background: var(--color-accent-soft);
+  padding: var(--vio-sec) 1.5rem;
+  text-align: center;
+}
 .vioQuoteMark {
   font-family: var(--font-display);
-  font-size: clamp(4rem, 9vw, 7rem);
+  font-weight: 600;
+  font-size: var(--vio-fs-hero);
   line-height: 1;
   color: var(--color-primary);
   opacity: 0.16;
   display: block;
-  margin-bottom: -1.2rem;
+  margin-bottom: -0.35em;
 }
-.vioQuote { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: clamp(1.5rem, 3vw, 2.35rem); color: var(--color-fg); max-width: 40rem; margin: 0 auto; line-height: 1.3; }
+/* Kursiveringen är BORTA med flit: Playfair laddas bara i style 'normal' (app/layout.tsx),
+   så `font-style: italic` gav en syntetisk lutning — precis den font-fallback-fällan
+   regellistan varnar för. Rak display i H2-graden, spänd line-height. 14.08:1 mot bandet. */
+.vioQuote {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--vio-fs-h2);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  max-width: 40rem;
+  margin: 0 auto;
+}
 
 /* ── 4. UR BUTIKEN — STORT 2-kolumners kort-grid (medvetet större bilder) ────────────── */
-.vioShopSection { padding: clamp(4rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 1.75rem); }
+.vioShopSection { padding: var(--vio-sec) var(--vio-gut); }
 .vioSecHead { max-width: 44rem; margin: 0 auto; text-align: center; }
 .vioShopGrid {
   max-width: 68rem;
-  margin: clamp(2.5rem, 5vw, 3.5rem) auto 0;
+  margin: var(--vio-s4) auto 0;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: clamp(1.75rem, 3vw, 3rem);
 }
 .vioShopCard { display: block; text-decoration: none; color: inherit; }
+/* ETT bildformat i hela mallen: 4:5 */
 .vioShopImg {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 4 / 5;
   background-color: var(--color-accent-soft);
   background-size: cover;
   background-position: center;
   border-radius: var(--sf-radius);
-  transition: transform 0.4s ease;
+  transition: transform var(--vio-dur) ease;
 }
-.vioShopCard:hover .vioShopImg { transform: translateY(-5px); }
-.vioShopBody { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-top: 1.1rem; }
-.vioShopName { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.2rem, 1.8vw, 1.5rem); color: var(--color-fg); }
-.vioShopPrice { font-family: var(--font-body); font-weight: 600; font-size: 1rem; color: var(--color-primary); white-space: nowrap; }
-.vioMoreLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 2rem;
+.vioShopCard:hover .vioShopImg { transform: translateY(var(--vio-lift)); }
+.vioShopBody {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-top: var(--vio-s2);
+}
+.vioShopName {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--vio-fs-card);
+  line-height: 1.15;
+  color: var(--color-fg);
+}
+.vioShopPrice {
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.03em;
+  font-size: var(--vio-fs-body);
   color: var(--color-primary);
-  border-bottom: 2px solid transparent;
-  transition: border-color 0.2s ease;
+  white-space: nowrap;
 }
-.vioMoreLink:hover { border-color: var(--color-primary); }
 @media (max-width: 700px) { .vioShopGrid { grid-template-columns: 1fr; } }
 
-/* ── 7. PRESENTKORT — smal rad ────────────────────────────────────────────────────── */
-.vioGiftRow { background: var(--color-primary); padding: clamp(1.4rem, 3vw, 2rem) 1.5rem; }
+/* ── 5. TJÄNSTER — delad .sfServices-struktur, viora-typografi ──────────────────────── */
+/* Dubbelklass = specificitet nog att slå .sfServices/.sfRow* oavsett bundlarens
+   fil-ordning (två CSS-moduler, samma (0,1,0) → källordningen skulle annars avgöra). */
+.vioServices.vioServices { padding: var(--vio-sec) 0; }
+.vioRowName.vioRowName {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--vio-fs-card);
+  line-height: 1.15;
+  color: var(--color-fg);
+}
+.vioRowDesc.vioRowDesc {
+  font-family: var(--font-body);
+  font-size: var(--vio-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+.vioRowPrice.vioRowPrice {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--vio-fs-body);
+  color: var(--color-fg);
+}
+
+/* ── 6. OM — delad .sfAboutGrid-struktur (fotot är redan 4:5), viora-rytm ───────────── */
+.vioAboutGrid.vioAboutGrid { padding-top: var(--vio-sec); padding-bottom: var(--vio-sec); }
+.vioStatValue.vioStatValue {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--vio-fs-card);
+  line-height: 1.15;
+  color: var(--color-primary);
+}
+.vioStatLabel.vioStatLabel {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--vio-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  margin-top: var(--vio-s1);
+}
+
+/* ── 7. PRESENTKORT — smal rad (aldrig en hel sektion) ─────────────────────────────── */
+.vioGiftRow { background: var(--color-primary); padding: clamp(20px, 3vw, 32px) 1.5rem; }
 .vioGiftInner {
   max-width: 60rem;
   margin: 0 auto;
@@ -171,32 +401,142 @@
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
-  gap: 0.5rem 1.25rem;
+  gap: var(--vio-s1) var(--vio-s2);
   text-align: center;
 }
-.vioGiftLede { font-family: var(--font-body); font-size: clamp(0.95rem, 1.4vw, 1.05rem); color: var(--color-bg); margin: 0; }
-.vioGiftCta { font-family: var(--font-body); font-weight: 600; font-size: 0.85rem; color: var(--color-bg); border-bottom: 1px solid color-mix(in srgb, var(--color-bg) 55%, transparent); padding-bottom: 2px; }
+/* Krämvit @75% på violett = 7.38:1 */
+.vioGiftEyebrow {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--vio-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-bg) 75%, transparent);
+  margin: 0;
+}
+.vioGiftLede {
+  font-family: var(--font-body);
+  font-size: var(--vio-fs-lede);
+  line-height: 1.55;
+  color: var(--color-bg);
+  margin: 0;
+}
+.vioGiftCta {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--vio-fs-btn);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-bg) 55%, transparent);
+  padding-bottom: 3px;
+  transition: border-color var(--vio-dur) ease;
+}
 .vioGiftCta:hover { border-color: var(--color-bg); }
 
 /* ── 8. FRÅN BLOGGEN — mindre 3-kolumners teaser-grid (kontrast mot butikens stora) ──── */
-.vioTeaserSection { padding: clamp(4rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 1.75rem); background: var(--color-surface); }
+.vioTeaserSection { padding: var(--vio-sec) var(--vio-gut); background: var(--color-surface); }
 .vioTeaserGrid {
   max-width: 68rem;
-  margin: clamp(2.5rem, 5vw, 3.5rem) auto 0;
+  margin: var(--vio-s4) auto 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: clamp(1.5rem, 3vw, 2.25rem);
 }
 .vioTeaserCard { display: block; text-decoration: none; color: inherit; }
+/* Samma 4:5 som butiken — korten är MINDRE, men formatet är identiskt: griden behåller
+   sina linjer. Blandade ratios (4:3 + 3:2 + 1:1) var den gamla moroten. */
 .vioTeaserImg {
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 4 / 5;
   background-color: var(--color-accent-soft);
   background-size: cover;
   background-position: center;
   border-radius: var(--sf-radius);
-  transition: transform 0.4s ease;
+  transition: transform var(--vio-dur) ease;
 }
-.vioTeaserCard:hover .vioTeaserImg { transform: translateY(-5px); }
-.vioTeaserTitle { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; color: var(--color-fg); margin: 0.9rem 0 0.3rem; }
-.vioTeaserExcerpt { font-family: var(--font-body); font-size: 0.88rem; color: var(--color-fg-2); line-height: 1.5; margin: 0; }
+.vioTeaserCard:hover .vioTeaserImg { transform: translateY(var(--vio-lift)); }
+.vioTeaserTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--vio-fs-card);
+  line-height: 1.15;
+  color: var(--color-fg);
+  margin: var(--vio-s2) 0 var(--vio-s1);
+}
+.vioTeaserExcerpt {
+  font-family: var(--font-body);
+  font-size: var(--vio-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+  margin: 0;
+}
 @media (max-width: 760px) { .vioTeaserGrid { grid-template-columns: 1fr; max-width: 26rem; } }
+
+/* ── 9. GALLERI — delad Gallery-komponent, tvingad till mallens ENDA ratio ──────────── */
+.vioGallery.vioGallery { padding: var(--vio-sec) 0; }
+.vioGallery .vioEyebrow { margin-bottom: var(--vio-s3); }
+/* Gallery-brickorna är 1:1 i storefront.module.css — här 4:5 som allt annat.
+   (0,1,1) slår .galleryItem (0,1,0). */
+.vioGallery li {
+  aspect-ratio: 4 / 5;
+  transition: transform var(--vio-dur) ease;
+}
+.vioGallery li:hover { transform: translateY(var(--vio-lift)); }
+/* Delade .galleryBtn:hover .galleryImg gör scale(1.05) — exakt den pösiga hovern
+   regellistan förbjuder. Dubbelklassen slår den: (0,2,3) > (0,2,1). Lyftet bor på
+   brickan istället: 5px / 400ms. */
+.vioGallery.vioGallery li button:hover img { transform: none; }
+
+/* ── 10. PLATS & ÖPPETTIDER — delad .sfLocBand-struktur, viora-rytm/typografi ───────── */
+.vioLocGrid.vioLocGrid { padding-top: var(--vio-sec); padding-bottom: var(--vio-sec); }
+.vioHoursRow.vioHoursRow { font-size: var(--vio-fs-body); line-height: 1.6; }
+/* Samma mikro-länk som .vioMoreLink men utan margin-top: .sfMap är place-items:center,
+   där skulle en toppmarginal knuffa länken ur mitten. */
+.vioMapLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--vio-fs-btn);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 3px;
+  transition: border-color var(--vio-dur) ease;
+}
+.vioMapLink:hover { border-color: var(--color-primary); }
+.vioMapLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.vioMapHint {
+  font-family: var(--font-body);
+  font-size: var(--vio-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+
+/* ── 11. CLOSING ───────────────────────────────────────────────────────────────────── */
+.vioClosing.vioClosing { padding: var(--vio-sec) 1.5rem; }
+/* Ärver sektionens vita text (.sfClosing color:#fff) — ingen hårdkodad hex här. 12.72:1 */
+.vioClosingTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--vio-fs-h2);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+/* Ärver samma vita som rubriken och backar med opacity — ingen hårdkodad hex. 10.58:1 */
+.vioClosingLede {
+  font-family: var(--font-body);
+  font-size: var(--vio-fs-lede);
+  line-height: 1.55;
+  color: inherit;
+  opacity: 0.9;
+  max-width: 34rem;
+  margin: var(--vio-s2) auto 0;
+}
+.vioClosingActions { margin-top: var(--vio-s3); }

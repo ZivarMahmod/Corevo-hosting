@@ -24,6 +24,15 @@ import styles from './lunaria.module.css'
  * Modulerna (shop/blogg/presentkort/offert) vävs in via `modules`-propen
  * (S10) — se MODUL-INVÄVNING nedan. SYNKRON komponent (ingen async/await):
  * onboarding-studions klienta preview renderar samma komponent.
+ *
+ * SKÄRPE-PASS 2026-07-11 (design-skarpa-zentum.md): allt innehåll ligger i en
+ * .lnRoot-rot som bär mallens typskala/rytm-tokens. Mallen använder INTE längre
+ * de generiska type-rollerna (.sf-h1/.sf-h2/.sf-eyebrow/.sf-body) — den bär
+ * egna (.lnSecTitle/.lnEyebrow/.lnBody) så skalan blir ×1.9-stegad i stället
+ * för den generiska ×1.2-trappan. Delade .sf*-primitiv (sfRow*, sfStat*,
+ * sfMap*, sfHours …) behålls för STRUKTUR men får en sam-applicerad ln*-klass
+ * som bär typografin (specificitet .lnRoot .lnX = 0,2,0 slår delade 0,1,0).
+ * Sektionsordning, modul-gating och signaturformerna är oförändrade.
  */
 
 /** Tunn måne — sektionsdelaren som ersätter Floras stjälk-ornament. */
@@ -59,7 +68,7 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
 
   return (
-    <>
+    <div className={styles.lnRoot}>
       {/* HERO — inset foto + offset textplatta som bryter dess nedre kant */}
       <section className={styles.lnHero}>
         <div className={styles.lnHeroFrame}>
@@ -71,7 +80,7 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
             <h1 className={styles.lnHeroTitle}>{content.heroTitle}</h1>
             <p className={styles.lnHeroLede}>{content.heroLede}</p>
             <div className={styles.lnHeroActions}>
-              <BookCta className={styles.lnHeroCta} />
+              <BookCta className={styles.lnCta} />
             </div>
           </Reveal>
         </div>
@@ -154,27 +163,25 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
 
       {/* TJÄNSTER — bara när det finns aktiva tjänster (goal-55 8B: ingen tom-text) */}
       {rows.length > 0 ? (
-        <section className={shared.sfServices}>
+        <section className={`${shared.sfServices} ${styles.lnBand}`}>
           <div className={shared.sfNarrow}>
-            <Reveal style={{ textAlign: 'center' }}>
-              <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className="sf-h1" style={{ marginTop: 12 }}>
-                {content.servicesTitle}
-              </h2>
+            <Reveal className={styles.lnSecHead}>
+              <p className={styles.lnEyebrow}>{content.servicesEyebrow}</p>
+              <h2 className={styles.lnSecTitle}>{content.servicesTitle}</h2>
             </Reveal>
-            <div className={shared.sfRowList}>
+            <div className={`${shared.sfRowList} ${styles.lnRowList}`}>
               {rows.map((s, i) => (
                 <Reveal key={s.id} delay={i * 60}>
                   <Bookable className={shared.sfRow} label={`Beställ — ${s.name}`}>
-                    <span className={shared.sfRowNum} aria-hidden="true">
+                    <span className={`${shared.sfRowNum} ${styles.lnRowNum}`} aria-hidden="true">
                       {serviceNum(i)}
                     </span>
                     <span className={shared.sfRowMain}>
-                      <span className={shared.sfRowName}>{s.name}</span>
-                      <span className={shared.sfRowDesc}>{serviceDesc(s)}</span>
+                      <span className={`${shared.sfRowName} ${styles.lnRowName}`}>{s.name}</span>
+                      <span className={`${shared.sfRowDesc} ${styles.lnRowDesc}`}>{serviceDesc(s)}</span>
                     </span>
                     <span className={shared.sfRowMeta}>
-                      <span className={shared.sfRowPrice}>{formatPrice(s)}</span>
+                      <span className={`${shared.sfRowPrice} ${styles.lnRowPrice}`}>{formatPrice(s)}</span>
                     </span>
                   </Bookable>
                 </Reveal>
@@ -182,7 +189,7 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
             </div>
             {hasMore ? (
               <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={shared.sfMoreLink}>
+                <a href="/tjanster" className={`${shared.sfMoreLink} ${styles.lnMoreLink}`}>
                   Se allt vi gör <span aria-hidden="true">→</span>
                 </a>
               </Reveal>
@@ -196,7 +203,7 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
         <section className={styles.lnCardSection}>
           <div className={shared.sfWide}>
             <Reveal className={styles.lnSecHead}>
-              <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
+              <p className={styles.lnEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
               <h2 className={styles.lnSecTitle}>{content.shopTitle ?? 'Nytt i butiken'}</h2>
             </Reveal>
             <div className={styles.lnCardGrid}>
@@ -231,18 +238,14 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
             <div className={styles.lnPortrait} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
           <Reveal delay={120}>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
-              {content.aboutTitle}
-            </h2>
-            <p className="sf-body" style={{ fontSize: 17, marginTop: 16 }}>
-              {content.aboutCopyHome}
-            </p>
-            <ul className={shared.sfStatTrio}>
+            <p className={styles.lnEyebrow}>— Om {tenant.name}</p>
+            <h2 className={styles.lnSecTitle}>{content.aboutTitle}</h2>
+            <p className={styles.lnBody}>{content.aboutCopyHome}</p>
+            <ul className={`${shared.sfStatTrio} ${styles.lnStatTrio}`}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
+                  <span className={`${shared.sfStatValue} ${styles.lnStatValue}`}>{n}</span>
+                  <span className={`${shared.sfStatLabel} ${styles.lnStatLabel}`}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -251,10 +254,10 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
       </section>
 
       {/* GALLERI — masonry + lightbox */}
-      <section className={shared.sfGalleryBand}>
+      <section className={`${shared.sfGalleryBand} ${styles.lnBand}`}>
         <div className={shared.sfWide}>
-          <Reveal>
-            <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
+          <Reveal className={styles.lnGalleryHead}>
+            <p className={styles.lnEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
           </Reveal>
           <Reveal>
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
@@ -269,7 +272,7 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
         <section className={styles.lnCardSection}>
           <div className={shared.sfWide}>
             <Reveal className={styles.lnSecHead}>
-              <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
+              <p className={styles.lnEyebrow}>{content.blogEyebrow ?? '— Från bloggen'}</p>
               <h2 className={styles.lnSecTitle}>{content.blogTitle ?? 'Tankar & säsong'}</h2>
             </Reveal>
             <div className={styles.lnCardGrid}>
@@ -301,9 +304,7 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
       {presentkortLive ? (
         <section className={styles.lnGiftRow}>
           <Reveal className={styles.lnGiftInner}>
-            <p className="sf-eyebrow" style={{ margin: 0 }}>
-              {content.giftEyebrow ?? '— Presentkort'}
-            </p>
+            <p className={styles.lnEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.lnGiftLede}>{content.giftLede ?? 'Ge bort en stilla, blommande stund.'}</p>
             <Link href="/presentkort" className={styles.lnBandCta} style={{ margin: 0 }}>
               {content.giftCta ?? 'Till presentkorten'}
@@ -314,25 +315,21 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
 
       {/* PLATS & ÖPPETTIDER */}
       <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+        <div className={`${shared.sfWide} ${shared.sfLocGrid} ${styles.lnLocGrid}`}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
+            <p className={styles.lnEyebrow}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
+            <h2 className={styles.lnSecTitle}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                {location.address}
-              </p>
+              <p className={styles.lnBody}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                Adress visas snart.
-              </p>
+              <p className={styles.lnBody}>Adress visas snart.</p>
             )}
             {location?.hours ? (
-              <div className={shared.sfHours}>
+              <div className={`${shared.sfHours} ${styles.lnHours}`}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
+                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.lnHoursRow}`}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
@@ -347,12 +344,14 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={shared.sfMapLink}
+                  className={`${shared.sfMapLink} ${styles.lnMapLink}`}
                 >
                   Visa på karta <span aria-hidden="true">→</span>
                 </a>
               ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
+                <span className={`${shared.sfMapHint} ${styles.lnMapHint}`}>
+                  Karta visas när adressen är ifylld.
+                </span>
               )}
             </div>
           </Reveal>
@@ -367,11 +366,11 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
           <p className={styles.lnClosingLede}>
             {content.closingLede ?? 'Beställ, boka en kurs eller hör av dig — vi finns här för dig.'}
           </p>
-          <div style={{ marginTop: 30 }}>
-            <BookCta className={styles.lnClosingCta} />
+          <div className={styles.lnClosingActions}>
+            <BookCta className={`${styles.lnCta} ${styles.lnClosingCta}`} />
           </div>
         </Reveal>
       </section>
-    </>
+    </div>
   )
 }

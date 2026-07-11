@@ -1,164 +1,385 @@
 /* ═══════════════════════════════════════════════════════════════════════
    MINA — klarrosa & vitt, minimal DTC-e-handel (florist-sviten, goal-58).
-   Signaturen: hero UTAN bild (en klarrosa färgplatta bär den enorma
-   typografin, texten är hjälten), en fullbredds bild-banner direkt under,
-   ett tätt fyr-kolumners butiksgrid (minsta korten i sviten), onumrerade
-   täta tjänsterader och en smal centrerad om-spalt utan sidobild — ingen
-   annan mall i sviten har den kombinationen. Alla färger/typsnitt kommer
-   från temats CSS-variabler (satta via floristThemeBlock i mina.theme.ts)
-   — inget hårdkodat hex här förutom den vita hero/closing-texten (samma
-   mönster som .sfClosing i storefront.module.css).
+   Signaturen: hero UTAN bild (en färgplatta bär den enorma typografin,
+   texten är hjälten), en fullbredds bild-banner direkt under, ett tätt
+   fyr-kolumners butiksgrid (minsta korten i sviten), onumrerade täta
+   tjänsterader och en smal centrerad om-spalt utan sidobild — ingen annan
+   mall i sviten har den kombinationen.
+
+   SKÄRPE-PASS 2026-07-11 — mätt mot 4-Dokument-Underlag/design-skarpa-zentum.md.
+   IDENTITETEN är orörd (rosa färgfamilj, sektionsordning, tät grid-signatur,
+   sans-only Jost+Inter). Det är UTFÖRANDET som skärpts:
+
+   1. TYPSKALA i ×1.9–2.0-steg (100 → 52 → 26 → 18 → 16 → 12/11) istället för
+      den gamla grötiga trappan (88 / 56 / 34 / 24 / 16.8 / 15.2 / 13.6 / 12.2).
+      sf-h1 och sf-h2 pekade på TVÅ snarlika rubriknivåer (56/34) — de är nu EN.
+   2. VIKT: display i 500 (Jost laddas som variabel font → 500 är ÄKTA, ingen
+      syntetisk fetstil). 600/700 på stora rubriker var klumpen; mikrotexten
+      bär tyngden istället (600 + versaler + spärr).
+   3. LINE-HEIGHT: rubrik 1.05–1.15 (en FORM), brödtext 1.57 (en YTA).
+   4. LETTER-SPACING omvänt mot storleken: 0/−0.01em på display, +1px på 11–12px.
+      Globala .sf-eyebrow körde 0.18em (= 2.2px på 12px) — för brett.
+   5. KONTRAST: primary #C2185B gav vit-på-platta 5.87:1 → föll under rubrik-
+      kravet (≥7) på BÅDA färgplattorna (hero + closing), och hero-ingressen på
+      86% opacitet landade på 3.43:1 (under brödtext-kravet 4.5). primary är nu
+      #A31449 — SAMMA kulör (hue 338°, sat 78%), bara mörkare (L 43%→36%) →
+      7.63:1. Se kontrast-tabellen i mina.theme.ts.
+   6. RADIE binärt: --sf-radius = 0px (theme) på ALL struktur (kort, bilder,
+      karta, sektioner) + full pill BARA på knappar/eyebrow-pillret. 7px på allt
+      var moroten.
+   7. BILD: EN ratio (4/5) på alla innehållsbilder — shop-korten var 1/1 och
+      blogg-korten 4/5, så griden tappade sina linjer. Bannern är ett fullbredds
+      BAND (panorama), inte en grid-bild — samma undantag som zentums hero-lager
+      (2.02) mot dess innehållsbilder (9:10).
+   8. RÖRELSE: 4px lyft / 400ms / ingen skugga, ingen scale. Globala .btn-accent
+      bär box-shadow: var(--shadow-gold) + hover-glow — en GULDdimma på en rosa
+      mall. Släckt inne i .miRoot.
+
+   Delade .sf*-primitiv (sfMoreLink, sfHours, sfClosing …) ägs av ALLA mallar och
+   får inte ändras — där sam-applicerar layouten en mi*-klass som vinner på
+   specificitet (.miRoot .miX = 0,2,0 mot delade 0,1,0). Samma trick mot type-
+   rollerna i tokens.css ([data-world] .sf-h2 = 0,2,0 → vi prefixar
+   :global([data-world]) så minas roll blir 0,3,0 och vinner deterministiskt,
+   oavsett CSS-ordning).
+
+   Alla färger kommer från temats CSS-variabler (floristThemeBlock i
+   mina.theme.ts). Mallens egna dekor-värden (vit text/linjer PÅ färgplattan)
+   deklareras som --mi-*-vars i rot-klassen — inga lösa hexar i sektionerna.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── 1 — HERO: klarrosa färgplatta, ingen bild ──────────────────────────── */
+.miRoot {
+  /* ── TYPSKALA — 7 nivåer, steg ×1.92 / ×2.00 / ×1.44 / ×1.13 / ×1.33 ────────
+     hero 100 → sek 52 → kort 26 → lede 18 → brödtext 16 → ui 12 → mikro 11 */
+  --mi-fs-hero: clamp(48px, 8.6vw, 100px); /* display — texten ÄR heron */
+  --mi-fs-sec: clamp(32px, 4.8vw, 52px); /* sektionsrubrik (sf-h1 = sf-h2) */
+  --mi-fs-card: clamp(22px, 2.2vw, 26px); /* bloggnamn, statsiffra */
+  --mi-fs-lede: 18px; /* ingress */
+  --mi-fs-body: 16px; /* brödtext, tjänstnamn, tjänstpris */
+  --mi-fs-ui: 12px; /* interaktiv mikro: knappar, mer-länkar, kortnamn/pris */
+  --mi-fs-micro: 11px; /* etiketter: eyebrows, statlabels */
+
+  /* ── LINE-HEIGHT — rubriken är en FORM (spänd), brödtexten en YTA (luftig) ── */
+  --mi-lh-hero: 1.05;
+  --mi-lh-sec: 1.08;
+  --mi-lh-card: 1.15;
+  --mi-lh-body: 1.57;
+  --mi-lh-micro: 1.5;
+
+  /* ── LETTER-SPACING — omvänt mot storleken. Aldrig positiv på stora rubriker ─ */
+  --mi-ls-display: -0.01em; /* svagt negativt på ≥26px */
+  --mi-ls-caps: 0.06em; /* 16px versalt (tjänstnamn) → ~1.0px */
+  --mi-ls-ui: 0.083em; /* 12px → 1.0px */
+  --mi-ls-micro: 0.09em; /* 11px → 1.0px */
+
+  /* ── VIKT — stort = 500 (Jost variabel = äkta medium), litet = 600 ─────────── */
+  --mi-fw-display: 500;
+  --mi-fw-micro: 600;
+
+  /* ── RYTM — EN skala: 4 / 12 / 20 / 24 / 32 / 48 / 96 / 144 ────────────────── */
+  --mi-sp-hair: 4px; /* hårfin inre delning (tjänstnamn → beskrivning) */
+  --mi-sp-eyebrow: 12px; /* eyebrow → rubrik */
+  --mi-sp-text: 20px; /* rubrik → text (och bild → kortnamn) */
+  --mi-sp-cta: 32px; /* text → CTA */
+  --mi-sp-block: 48px; /* rubrikblock → innehåll */
+  --mi-sp-gutter: 24px; /* grid-gutter (blogg) */
+  --mi-sp-gutter-tight: 12px; /* grid-gutter (butiken — mallens täta signatur) */
+  --mi-sp-section: clamp(48px, 8vw, 96px);
+  --mi-sp-hero: clamp(64px, 10vw, 144px);
+  /* Sido-padding = EXAKT sfWide/sfNarrow (annars linjerar inte heron med
+     sektionerna under). clamp(1.25rem, 4vw, 1.75rem) i px. */
+  --mi-gutter-x: clamp(20px, 4vw, 28px);
+
+  /* ── BILD — EN ratio i HELA mallen (kanterna linjerar i griden) ────────────── */
+  --mi-ratio: 4 / 5;
+
+  /* ── RADIE — binärt: 0 på struktur (via --sf-radius), pill på knappar/taggar ─ */
+  --mi-r-pill: 999px;
+
+  /* ── MOTION — återhållsam ──────────────────────────────────────────────────── */
+  --mi-lift: -4px;
+  --mi-dur: 400ms;
+  --mi-ease: ease;
+
+  /* ── DEKOR-VÄRDEN (mallens egna — text/linjer PÅ färgplattan) ────────────────
+     Vit på --color-primary = 7.63:1 (AAA). Ingressen backar medvetet till 90%
+     opacitet = 6.42:1 — fortfarande långt över brödtextkravet 4.5. */
+  --mi-on-plate: #fff;
+  --mi-on-plate-2: rgba(255, 255, 255, 0.9);
+  --mi-rule-on-plate: rgba(255, 255, 255, 0.6);
+  --mi-fill-on-plate: rgba(255, 255, 255, 0.92); /* hover på inverterad CTA */
+
+  background: var(--color-bg);
+}
+
+/* ── TYPE-ROLLER — minas nivåer slår tokens.css generiska sf-roller ────────────
+   EN sektionsnivå (52px): sf-h1 och sf-h2 pekar medvetet på samma storlek. Två
+   snarlika rubriknivåer (56/34 = ×1.65) var själva grötigheten. */
+:global([data-world='storefront']) .miRoot :global(.sf-h1),
+:global([data-world='storefront']) .miRoot :global(.sf-h2) {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--mi-fw-display);
+  font-size: var(--mi-fs-sec);
+  line-height: var(--mi-lh-sec);
+  letter-spacing: var(--mi-ls-display);
+  color: var(--color-fg); /* 18.42:1 mot --color-bg */
+}
+/* Eyebrow = INK, inte accent (zentum-regel 8: en accent som syns i varje sektion
+   slutar vara en accent). Rosan bor på plattorna, knapparna, priserna och
+   statsiffrorna istället. 18.42:1 mot bg, 15.25:1 mot presentkortsradens fyll. */
+:global([data-world='storefront']) .miRoot :global(.sf-eyebrow) {
+  display: block;
+  margin: 0 0 var(--mi-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+:global([data-world='storefront']) .miRoot :global(.sf-body) {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2); /* 5.82:1 — backar medvetet för rubriken */
+}
+
+/* ── KNAPP — exakt pill: höjd 50px, radie = full pill, versal mikro ────────────
+   Globala .btn-accent (globals.css) är vikt 700 med guldskugga + hover-glow.
+   Här: 12px/600/VERSALER/1px spärr, ingen skugga, ingen studs. */
+/* line-height (inte height) sätter höjden — annars slåss border-box + 2px ram om
+   de 50 pixlarna. BookCta renderar en <button> när drawern är monterad: knappar
+   ärver INTE font-family, därför sätts den explicit. */
+.miRoot :global(.btn-accent) {
+  padding: 0 30px;
+  line-height: 50px;
+  border-radius: var(--mi-r-pill);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-ui);
+  font-weight: var(--mi-fw-micro);
+  letter-spacing: var(--mi-ls-ui);
+  text-transform: uppercase;
+  box-shadow: none;
+  transition: background var(--mi-dur) var(--mi-ease), color var(--mi-dur) var(--mi-ease);
+}
+.miRoot :global(.btn-accent):hover {
+  box-shadow: none;
+  transform: none;
+}
+/* Mer-länkar ("Visa hela sortimentet", "Läs mer", "Se allt vi gör") — samma
+   mikro-register som knapparna. Delade .sfMoreLink är 0,1,0; .miRoot .miMore
+   är 0,2,0 och vinner. */
+.miRoot .miMore {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-ui);
+  font-weight: var(--mi-fw-micro);
+  letter-spacing: var(--mi-ls-ui);
+  text-transform: uppercase;
+  color: var(--color-primary); /* 7.63:1 */
+}
+
+/* ── 1 — HERO: färgplatta, ingen bild. Inre rytm 12 → 20 → 32 ───────────────── */
 .miHero {
   background: var(--color-primary);
-  padding: clamp(4.5rem, 10vw, 8rem) 0 clamp(3.5rem, 7vw, 6rem);
+  padding: var(--mi-sp-hero) 0 var(--mi-sp-section);
 }
 .miHeroInner {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  padding: 0 var(--mi-gutter-x);
 }
 .miHeroEyebrow {
   display: inline-block;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.14em;
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 999px;
-  padding: 0.4rem 1rem;
+  color: var(--mi-on-plate); /* 7.63:1 mot plattan */
+  border: 1px solid var(--mi-rule-on-plate);
+  border-radius: var(--mi-r-pill); /* medvetet undantag: taggen är en pill */
+  padding: 2px 20px; /* zentums eyebrow-pill exakt */
 }
 .miHeroTitle {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(2.75rem, 7vw, 5.5rem);
-  line-height: 0.98;
-  letter-spacing: -0.01em;
-  color: #fff;
-  margin: 1.15rem 0 0;
-  max-width: 16ch;
+  font-weight: var(--mi-fw-display);
+  font-size: var(--mi-fs-hero);
+  line-height: var(--mi-lh-hero);
+  letter-spacing: var(--mi-ls-display);
+  color: var(--mi-on-plate);
+  margin: var(--mi-sp-eyebrow) 0 0;
+  max-width: 14ch;
   white-space: pre-line;
 }
 .miHeroLede {
   font-family: var(--font-body);
-  font-size: clamp(1rem, 1.4vw, 1.2rem);
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.86);
+  font-size: var(--mi-fs-lede);
+  line-height: var(--mi-lh-body);
+  color: var(--mi-on-plate-2); /* 6.42:1 mot plattan */
   max-width: 34rem;
-  margin: 1.4rem 0 0;
+  margin: var(--mi-sp-text) 0 0;
 }
-.miHeroActions { margin-top: 2.1rem; }
-/* Samma knep som .sfClosing :global(.btn-accent).sfClosingCta — dubblad
-   specificitet krävs för att slå .btn-accent på samma element. */
-.miHero :global(.btn-accent).miHeroCta { background: #fff; color: var(--color-primary); border-color: #fff; }
-.miHero :global(.btn-accent).miHeroCta:hover { background: rgba(255, 255, 255, 0.92); }
+.miHeroActions { margin-top: var(--mi-sp-cta); }
+/* Inverterad CTA på plattan: vit pill, rosa text (7.63:1). Dubblad specificitet
+   krävs för att slå .btn-accent på samma element. */
+.miHero :global(.btn-accent).miHeroCta {
+  background: var(--mi-on-plate);
+  color: var(--color-primary);
+  border-color: var(--mi-on-plate);
+}
+.miHero :global(.btn-accent).miHeroCta:hover { background: var(--mi-fill-on-plate); }
 
-/* ── 2 — BILD-BANNER: fullbredd, ingen text ovanpå (andrummet efter heron) ── */
+/* ── 2 — BILD-BANNER: fullbredds BAND (panorama), ingen text ovanpå ───────────
+   Inte en grid-bild → bär inte --mi-ratio (samma undantag som zentums hero-
+   lager). Höjden ur rytmskalan. */
 .miBanner {
   width: 100%;
-  height: clamp(260px, 40vw, 520px);
+  height: clamp(240px, 40vw, 480px);
   background-color: var(--color-accent-soft);
   background-size: cover;
   background-position: center;
 }
 
-/* ── delad sektionsrubrik-rad (shop + blogg): eyebrow/rubrik vänster,
-   "visa alla"-länk höger ─────────────────────────────────────────────── */
+/* ── delad sektionsrubrik-rad (shop + blogg) ──────────────────────────────────
+   eyebrow/rubrik vänster, "visa alla"-länk höger. Rubrikblock → innehåll = 48px. */
 .miSecHead {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 1rem;
+  gap: var(--mi-sp-text);
   flex-wrap: wrap;
-  margin-bottom: clamp(1.5rem, 3vw, 2.1rem);
+  margin-bottom: var(--mi-sp-block);
 }
 
-/* ── 3 — SHOP: tätt fyr-kolumners grid, minsta korten i sviten ──────────── */
-.miShopSection { padding: clamp(3.5rem, 7vw, 5.5rem) 0; }
+/* ── 3 — SHOP: tätt fyr-kolumners grid, minsta korten i sviten ────────────────
+   Kortnamn/pris är mallens versala MIKRO-register (12px/600/1px) — det är
+   signaturen, inte en hopklämd mellannivå. */
+.miShopSection { padding: var(--mi-sp-section) 0; }
 .miShopGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.65rem;
+  gap: var(--mi-sp-gutter-tight);
 }
-.miCard { display: block; }
+.miCard {
+  display: block;
+  transition: transform var(--mi-dur) var(--mi-ease);
+}
+.miCard:hover { transform: translateY(var(--mi-lift)); }
 .miCardImg {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: var(--mi-ratio);
   background-color: var(--color-accent-soft);
   background-size: cover;
   background-position: center;
-  border-radius: var(--sf-radius);
+  border-radius: var(--sf-radius); /* = 0 (mina.theme.ts) */
 }
 .miCardName {
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.76rem;
-  letter-spacing: 0.03em;
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-ui);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-ui);
   text-transform: uppercase;
-  color: var(--color-fg);
-  margin: 0.65rem 0 0.2rem;
+  color: var(--color-fg); /* 18.42:1 */
+  margin: var(--mi-sp-text) 0 0;
 }
 .miCardPrice {
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--color-primary);
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-ui);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-ui);
+  color: var(--color-primary); /* 7.63:1 — accenten på en liten yta */
+  margin: var(--mi-sp-eyebrow) 0 0;
 }
 @media (max-width: 860px) { .miShopGrid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 480px) { .miShopGrid { grid-template-columns: 1fr; max-width: 20rem; margin: 0 auto; } }
 
-/* ── 4 — TJÄNSTER: täta onumrerade rader (versal namn, hårfin linje) ────── */
-.miServices { padding: clamp(3.5rem, 7vw, 5.5rem) 0; border-top: 1px solid var(--color-line); }
-.miSvcHead { text-align: center; margin-bottom: clamp(1.75rem, 4vw, 2.5rem); }
+/* ── 4 — TJÄNSTER: täta onumrerade rader (versalt namn, hårfin linje) ──────────
+   Namn/beskrivning/pris ligger MEDVETET på samma nivå (16px) — case, vikt och
+   färg skiljer dem åt. Två storlekar inom 30% av varandra i samma rad var grötet. */
+.miServices { padding: var(--mi-sp-section) 0; border-top: 1px solid var(--color-line); }
+.miSvcHead { text-align: center; margin-bottom: var(--mi-sp-block); }
 .miSvcList { border-top: 1px solid var(--color-line); }
 .miSvcRow {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1.25rem;
-  padding: 1.1rem 0.25rem;
+  gap: var(--mi-sp-gutter);
+  padding: var(--mi-sp-text) 0;
   border-bottom: 1px solid var(--color-line);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-out), padding-left var(--dur-fast) var(--ease-out);
+  transition: background var(--mi-dur) var(--mi-ease);
 }
-.miSvcRow:hover { background: var(--color-accent-soft); padding-left: 0.65rem; }
+.miSvcRow:hover { background: var(--color-accent-soft); }
 .miSvcRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
-.miSvcMain { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.miSvcMain { display: flex; flex-direction: column; gap: var(--mi-sp-hair); min-width: 0; }
 .miSvcName {
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-card);
+  letter-spacing: var(--mi-ls-caps);
   text-transform: uppercase;
-  color: var(--color-fg);
+  color: var(--color-fg); /* 18.42:1 */
 }
-.miSvcDesc { font-family: var(--font-body); font-size: 0.86rem; color: var(--color-fg-2); line-height: 1.5; }
-.miSvcPrice { font-family: var(--font-body); font-weight: 700; font-size: 1rem; color: var(--color-primary); white-space: nowrap; }
+.miSvcDesc {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2); /* 5.82:1 */
+}
+.miSvcPrice {
+  font-family: var(--font-body);
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-card);
+  color: var(--color-primary); /* 7.63:1 */
+  white-space: nowrap;
+}
+.miSvcMore { margin-top: var(--mi-sp-cta); text-align: center; }
 
-/* ── 5 — OM: smal centrerad spalt, ingen sidobild (unikt mot resten av
-   sviten som kör två-kolumners om+foto) ────────────────────────────────── */
-.miAbout { padding: clamp(4rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 1.75rem); text-align: center; }
+/* ── 5 — OM: smal centrerad spalt, ingen sidobild ─────────────────────────────
+   (unikt mot resten av sviten som kör två-kolumners om+foto) */
+.miAbout { padding: var(--mi-sp-section) var(--mi-gutter-x); text-align: center; }
 .miAboutInner { max-width: 38rem; margin: 0 auto; }
-.miAboutCopy { margin-top: 1.1rem; }
+.miAboutCopy { margin-top: var(--mi-sp-text); }
 .miStatRow {
   list-style: none;
   display: flex;
   justify-content: center;
-  margin: clamp(1.75rem, 4vw, 2.5rem) auto 0;
+  margin: var(--mi-sp-block) auto 0;
   padding: 0;
   max-width: 30rem;
 }
-.miStatItem { flex: 1; padding: 0 1.25rem; border-left: 1px solid var(--color-line); }
+.miStatItem { flex: 1; padding: 0 var(--mi-sp-text); border-left: 1px solid var(--color-line); }
 .miStatItem:first-child { border-left: none; }
-.miStatValue { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; color: var(--color-primary); }
-.miStatLabel { display: block; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-fg-2); margin-top: 0.3rem; }
-@media (max-width: 560px) { .miStatItem { padding: 0 0.75rem; } .miStatLabel { font-size: 0.62rem; } }
+.miStatValue {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--mi-fw-display);
+  font-size: var(--mi-fs-card);
+  line-height: var(--mi-lh-card);
+  letter-spacing: var(--mi-ls-display);
+  color: var(--color-primary); /* 7.63:1 */
+}
+.miStatLabel {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2); /* 5.82:1 */
+  margin-top: var(--mi-sp-eyebrow);
+}
+@media (max-width: 560px) { .miStatItem { padding: 0 var(--mi-sp-eyebrow); } }
 
-/* ── 6 — PRESENTKORT: smal rad, aldrig en egen sektion ──────────────────── */
-.miGift { background: var(--color-accent-soft); padding: 1.4rem clamp(1.25rem, 4vw, 1.75rem); }
+/* ── 6 — PRESENTKORT: smal rad, aldrig en egen sektion ────────────────────────
+   Gatas av presentkortLive i MinaLayout.tsx. */
+.miGift { background: var(--color-accent-soft); padding: var(--mi-sp-text) var(--mi-gutter-x); }
 .miGiftInner {
   max-width: 1180px;
   margin: 0 auto;
@@ -166,21 +387,73 @@
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
-  gap: 0.5rem 1.35rem;
+  gap: var(--mi-sp-eyebrow) var(--mi-sp-gutter);
   text-align: center;
 }
-.miGiftText { font-family: var(--font-body); font-weight: 500; font-size: 0.95rem; color: var(--color-fg); margin: 0; }
+/* Eyebrow-marginalen (12px) hör till en rubrik under — här är raden vågrät.
+   Måste slå .miRoots egen sf-eyebrow-roll (0,3,0) → 0,4,0. */
+:global([data-world='storefront']) .miRoot .miGiftInner :global(.sf-eyebrow) {
+  margin-bottom: 0;
+}
+.miGiftText {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg); /* 15.25:1 mot radens fyll */
+  margin: 0;
+}
 
-/* ── 7 — BLOGG: samma täta grid-språk som butiken, portrait-ratio ───────── */
-.miBlogSection { padding: clamp(3.5rem, 7vw, 5.5rem) 0; }
-.miBlogGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+/* ── 7 — BLOGG: samma täta grid-språk som butiken, SAMMA bildratio ───────────── */
+.miBlogSection { padding: var(--mi-sp-section) 0; }
+.miBlogGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--mi-sp-gutter); }
 .miBlogImg {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: var(--mi-ratio);
   background-color: var(--color-accent-soft);
   background-size: cover;
   background-position: center;
-  border-radius: var(--sf-radius);
+  border-radius: var(--sf-radius); /* = 0 */
 }
-.miBlogName { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; color: var(--color-fg); margin: 0.85rem 0 0.3rem; }
-.miBlogExcerpt { font-family: var(--font-body); font-size: 0.86rem; color: var(--color-fg-2); line-height: 1.5; }
+.miBlogName {
+  font-family: var(--font-display);
+  font-weight: var(--mi-fw-display);
+  font-size: var(--mi-fs-card);
+  line-height: var(--mi-lh-card);
+  letter-spacing: var(--mi-ls-display);
+  color: var(--color-fg); /* 18.42:1 */
+  margin: var(--mi-sp-text) 0 0;
+}
+.miBlogExcerpt {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2); /* 5.82:1 */
+  margin: var(--mi-sp-eyebrow) 0 0;
+}
 @media (max-width: 760px) { .miBlogGrid { grid-template-columns: 1fr; max-width: 26rem; margin: 0 auto; } }
+
+/* ── 8 — PLATS & ÖPPETTIDER: delade .sfLocBand/.sfHours + minas nivåer ───────── */
+.miLocAddress { margin-top: var(--mi-sp-text); }
+.miRoot .miHours { margin-top: var(--mi-sp-cta); }
+.miRoot .miHours div {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+}
+
+/* ── 9 — CLOSING: färgplatta som speglar heron (bookend) ───────────────────────
+   Rubriken bär .sf-h1 + .miClosingTitle: sf-h1-rollen ovan (0,3,0) sätter
+   color: var(--color-fg) — mörk ink på den rosa plattan (2.4:1) om vi inte
+   vinner. 0,4,0 → vit (7.63:1), deterministiskt oavsett CSS-ordning. */
+:global([data-world='storefront']) .miRoot :global(.sf-h1).miClosingTitle {
+  color: var(--mi-on-plate);
+  max-width: 20ch;
+  margin: 0 auto;
+}
+.miRoot .miClosingLede {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-lede);
+  line-height: var(--mi-lh-body);
+  color: var(--mi-on-plate-2); /* 6.42:1 */
+  margin-top: var(--mi-sp-text);
+}
+.miClosingActions { margin-top: var(--mi-sp-cta); }

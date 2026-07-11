@@ -41,8 +41,25 @@ export const mina: FloristTheme = {
   key: 'mina',
   name: 'Mina',
   desc: 'Klarrosa & vitt · minimal DTC-e-handel',
+  // PALETT — 8 hex, EN kulörfamilj (rosa/magenta 330–340°) + neutral ink.
+  // SKÄRPE-PASS 2026-07-11 (design-skarpa-zentum.md): `primary` var #C2185B
+  // (hsl 338, 78%, 43%) → vit text på färgplattan gav bara 5.87:1, under
+  // rubrik-kravet ≥7:1, och heron/closing ÄR färgplattor med vit rubrik. Samma
+  // kulör behållen (hue 338°, sat 78%), bara mörkare (L 43% → 36%) → 7.63:1.
+  // Klarrosan lever kvar i accentSoft/surface (de STORA ljusa ytorna); accenten
+  // sitter på små ytor: plattor, knappar, priser, statsiffror — aldrig eyebrows
+  // (regel 8: en accent i varje sektion slutar vara en accent).
+  // Uträknat (node, WCAG 2.x relativ luminans):
+  //   fg      #18121A på bg #FFFFFF ......... 18.42:1  AAA (rubrik-ink, mål 11)
+  //   fg      #18121A på accentSoft ......... 15.25:1  AAA (presentkortsraden)
+  //   vit     #FFFFFF på primary ............  7.63:1  AAA (hero-/closing-rubrik)
+  //   fg-2    #6B6270 på bg .................  5.82:1  AA  (brödtext — backar medvetet)
+  //   vit 90% på primary (ingress) .........   6.42:1  AA  (var 3.43:1 → FAIL)
+  //   vit     #FFFFFF på primary (knapptext)   7.63:1  AAA (krav ≥4.5)
+  //   primary #A31449 på vit (inverterad CTA)  7.63:1  AAA
+  //   primary #A31449 på bg (pris/statsiffra)  7.63:1  AAA
   palette: {
-    primary: '#C2185B',
+    primary: '#A31449',
     primaryD: '#8C0F40',
     bg: '#FFFFFF',
     surface: '#FFF6F9',
@@ -60,7 +77,11 @@ export const mina: FloristTheme = {
     display: 'var(--font-jost), system-ui, sans-serif',
     body: 'var(--font-inter), system-ui, sans-serif',
   },
-  radius: '7px',
+  // RADIE — binärt (skärpe-pass): 0 på ALL struktur (kort, bilder, karta,
+  // sektioner) via --sf-radius. Full pill lever kvar där den är ett MEDVETET
+  // undantag: knapparna (.btn-accent, --radius-pill) och hero-eyebrowns tagg.
+  // 7px på allt var "moroten" — inga raka linjer kvar att linjera mot.
+  radius: '0px',
   content: {
     heroEyebrow: '— Ny bukett, varje vecka',
     heroTitle: 'Blommor\nutan krångel.',

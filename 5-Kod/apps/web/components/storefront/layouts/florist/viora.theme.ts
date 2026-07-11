@@ -27,9 +27,31 @@ const IMG = {
  * en 50/50 SPLIT-hero (färgad platta + bild, aldrig text ovanpå bilden), en rad
  * med fyra funktionella ikonlänkar, ett citat-band, och ett STORT 2-kolumners
  * butikskort-grid med markant större bilder än resten av sviten (se
- * VioraLayout/viora.module.css). Skarp binär radie (4px) hela vägen — aldrig
- * mjuka arch-former. EN driven accentfärg (den djupa violetten); krämvit gör
- * allt tunga lyftarbete i kontrast, inte flera kulörer.
+ * VioraLayout/viora.module.css).
+ *
+ * SKÄRPE-PASS (design-skarpa-zentum.md):
+ *
+ * RADIE — binär. `radius: '0px'` (var 4px) driver --sf-radius, alltså ALL struktur:
+ * butikskort, bloggkort, galleribrickor, om-fotot, kartan. Knappen är det enda
+ * undantaget och är en FULL pill (.btn-accent → --radius-pill). 0 eller pill,
+ * inget däremellan — 4px på allt var precis den mjuka moroten (inga raka linjer
+ * kvar att linjera mot, men inte heller en medveten kapsel).
+ *
+ * FÄRG — exakt 8 hex, EN hue-familj (violett 267–280°) + krämvit + en neutral.
+ * Ingen andrafärg, ingen konkurrerande accent: skalan och kontrasten gör
+ * hierarki-jobbet, inte kulören. Kontrasten är RÄKNAD (WCAG), inte gissad:
+ *
+ *   fg #241536 på bg #FBF7F1 (rubrik) ............ 15.93:1  (krav ≥7, mål 11)
+ *   fg #241536 på surface #FFFFFF ................ 17.00:1
+ *   fg #241536 på accentSoft #EFE7F3 (citat) ..... 14.08:1
+ *   fg2 #6E6178 på bg (brödtext) .................. 5.40:1  (krav ≥4.5)
+ *   fg2 #6E6178 på surface ........................ 5.76:1
+ *   bg #FBF7F1 på primary #402463 (hero-rubrik) .. 11.92:1
+ *   #FFFFFF på primary (knapptext, .btn-accent) .. 12.72:1  (krav ≥4.5)
+ *   primary #402463 på bg (hero-CTA, länkar) ..... 11.92:1
+ *
+ * Ingenting ligger i den mjuka 3–4:1-zonen. Brödtexten är den enda som "bara" är
+ * AA — medvetet: den ska backa för rubriken.
  */
 export const viora: FloristTheme = {
   key: 'viora',
@@ -49,7 +71,7 @@ export const viora: FloristTheme = {
     display: 'var(--font-playfair), Georgia, serif',
     body: 'var(--font-inter), system-ui, sans-serif',
   },
-  radius: '4px',
+  radius: '0px',
   content: {
     heroEyebrow: '— Blomsterbutik',
     heroTitle: 'Blommor.\nRakt på sak.',

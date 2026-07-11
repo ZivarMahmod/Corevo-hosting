@@ -15,9 +15,21 @@ export const seraphina: FloristTheme = {
   key: 'seraphina',
   name: 'Seraphina',
   desc: 'Champagne · guld · bröllopslyx',
+  /**
+   * PALETT — EN hue-familj (30–41°, champagne/guld/varm ask). Skärpe-passet
+   * (design-skarpa-zentum.md §2) mörkade guldet utan att byta kulör: samma hue
+   * 40°, lägre ljushet. Uppmätt WCAG-kontrast (node, inte ögonmått):
+   *   rubrik-ink  #241F1A på #FDFBF6 …… 15.79:1  (krav ≥7, sikte 11)
+   *   brödtext    #6B6259 på #FDFBF6 ……  5.77:1  (krav ≥4.5 — backar medvetet)
+   *   knapptext   #FFFFFF på #6B5320 ……  7.28:1  (krav ≥4.5)
+   *   guld-mikro  #6B5320 på #FDFBF6 ……  7.04:1  ·  på #F3E7D2 … 5.96:1
+   * FÖRE: primary #8A6B2A gav 4.98:1 mot vitt och 4.07:1 på accentSoft — under
+   * kravet, dvs den disiga "mjuka moroten". Guldet är accent: knapp, eyebrow,
+   * siffra, pris — aldrig stora ytor (undantag: closing-bandet, mallens ankare).
+   */
   palette: {
-    primary: '#8A6B2A',
-    primaryD: '#6B5320',
+    primary: '#6B5320',
+    primaryD: '#4A3813',
     bg: '#FDFBF6',
     surface: '#F6EFE0',
     fg: '#241F1A',
@@ -29,7 +41,9 @@ export const seraphina: FloristTheme = {
     display: 'var(--font-cormorant), Georgia, serif',
     body: 'var(--font-inter), system-ui, sans-serif',
   },
-  radius: '1px',
+  /** BINÄR radie: 0 på ALL struktur (bild/kort/sektion/ram/karta). Knappar är
+   *  full pill i mallens CSS. 1px var "nästan skarp" = ingendera. */
+  radius: '0px',
   content: {
     heroEyebrow: '— Bröllop & finaste tillfällena',
     heroTitle: 'Blommor värdiga\ndin finaste dag',

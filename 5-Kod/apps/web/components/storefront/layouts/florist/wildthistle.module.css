@@ -1,43 +1,220 @@
 /* ═══════════════ WILD THISTLE — tistel-lila & mossgrönt, rustikt/vilt (florist-sviten, goal-58) ═══════════════
-   "Svärd, inte morot": radie 0 rakt igenom (--sf-radius är '0px' i
-   wildthistle.theme.ts), tunga display-vikter (700/800), en enda accent
-   (tistel-lila) + två egna dekorfärger (mossgrönt, satta som CSS-vars på
-   .wtRoot — mallens tillåtna 1-2 egna dekorfärger). Alla klasser wt-prefixade
-   utom de genuint delade .sf*-primitiven (sfPriceBand/-Grid/-Row/-Dots,
-   sfStatTrio, sfGalleryBand, sfLocBand, sfClosing …) som redan är
-   temaneutrala (bygger på --sf-radius/--color-*, inga hårdkodade former). */
+   SKÄRPE-PASS 2026-07-11 mot `4-Dokument-Underlag/design-skarpa-zentum.md`
+   ("svärd, inte morot"). Mallens IDENTITET är orörd — samma färgfamilj, samma
+   sektionsordning, samma bruten-grid-hero. Det som ändrats är UTFÖRANDET:
+
+   1. TYPSKALA i sex steg med ×1.8–1.9 mellan nivåerna (84 → 46 → 25 → 18 → 16
+      → 12 px), deklarerad som --wt-fs-*. Förut låg allt i ×1.1–1.3 (56/51/38/
+      37/34/25/20/18/17/16/15/14/13/12) = gröt. Mallen äger nu HELA sin
+      typografi: de globala .sf-h1/.sf-h2/.sf-eyebrow/.sf-body-rollerna (tokens
+      .css, max 34px på h2) kan inte bära en 46px-sektionsrubrik, så mallen har
+      egna wt-nivåer. Delade .sf*-primitiver rörs inte — de används bara inte
+      längre här.
+   2. VIKT: display 600 rakt igenom (var 700/800). Playfair laddas i 600/700/800
+      (app/layout.tsx) — 600 är den LÄTTASTE vikt som faktiskt levereras, så vi
+      landar så nära regelns 400–500 som fonten tillåter utan att förlita oss på
+      en fallback. Mikrotext/knappar: 600.
+   3. LINE-HEIGHT: rubrik 1.06–1.12, brödtext 1.58. Registerbytet = skärpan.
+   4. LETTER-SPACING omvänt mot storleken: -0.015em på hero, -0.01em på h2, 0 på
+      kortnamn, +0.083em (≈1px) på 12px-mikrotext.
+   5. KONTRAST (uträknad, WCAG): rubrik-ink 14.34:1, brödtext 5.86:1, knapptext
+      15.99:1. Se wildthistle.theme.ts för palettens siffror.
+   6. RADIE: binärt 0 (--sf-radius = '0px'). Inga knapp-piller, inga 8–16px-kort.
+   7. BILDRATIO: ALLA innehållsbilder 4:5 (shop-kort, blogg-kort, om-porträtt +
+      hero i mobil). Hero-mosaiken på desktop är cell-fylld i ett rationellt
+      2-radersnät (lika höga rader) — kanterna linjerar, vilket är hela poängen
+      med regeln. Förut: 16/9 + 4/5 + 21/8 i samma hero.
+   8. FÄRG: EN accent (mossgrönt) i EN hue-familj tillsammans med --color-accent
+      -soft (blek moss). Mallens enda egna hex: --wt-moss + --wt-paper.
+      --wt-moss-d är borttagen (kurs-CTA:n är en vit outline-knapp istället).
+   9. HOVER: 5px lyft / 500ms på kort. Ingen scale, ingen skugg-bloom, ingen
+      opacitets-fade.
+  10. RYTM ur EN skala: 12 / 20 / 32 / 48 / 96 / 144 (--wt-s1…--wt-s6). Inre steg
+      i ALLA sektioner: eyebrow→rubrik 12, rubrik→text 20, text→CTA 32.
+
+   Alla klasser är wt-prefixade. Hårdkodade värden finns BARA som dekor-vars i
+   rot-klassen nedan (mallens tillåtna egna färger + dess skala). */
 
 .wtRoot {
-  --wt-moss: #5c6b3f;
-  --wt-moss-d: #3e4a29;
+  /* ── FÄRG — mallens egna dekorfärger (enda hårdkodade värdena i filen) ── */
+  --wt-moss: #4a5732; /* accent. Vit text på moss = 7.78:1 (var 5.79:1) */
+  --wt-paper: #ffffff; /* knappyta + rubrik på mörka fält */
+  --wt-on-dark: rgba(255, 255, 255, 0.88); /* 9.37:1 på primary, 6.48:1 på moss */
+  --wt-fiber: rgba(32, 26, 22, 0.02); /* råpapper-korn */
+  --wt-scrim-top: rgba(75, 46, 82, 0.66); /* closing-scrim, tistel-lila */
+  --wt-scrim-bot: rgba(46, 26, 52, 0.92);
+
+  /* ── TYPSKALA — 6 nivåer, steg ×1.8–1.9 (84 → 46 → 25 → 18 → 16 → 12) ── */
+  --wt-fs-hero: clamp(2.9rem, 5.6vw, 5.25rem); /* 46 → 84px */
+  --wt-fs-h2: clamp(2rem, 3.4vw, 2.875rem); /* 32 → 46px */
+  --wt-fs-name: clamp(1.375rem, 1.7vw, 1.5625rem); /* 22 → 25px */
+  --wt-fs-lede: 1.125rem; /* 18px */
+  --wt-fs-body: 1rem; /* 16px */
+  --wt-fs-micro: 0.75rem; /* 12px */
+  --wt-ls-micro: 0.083em; /* ≈ +1px vid 12px */
+
+  /* ── RYTM — en skala, inga andra tal ── */
+  --wt-s1: 12px;
+  --wt-s2: 20px;
+  --wt-s3: 32px;
+  --wt-s4: 48px;
+  --wt-s5: 96px;
+  --wt-s6: 144px;
+  --wt-sec: clamp(48px, 8vw, 96px); /* standard sektionshöjd */
+  --wt-gut: clamp(1.25rem, 3vw, 2rem); /* container-luft */
+
+  /* ── MOTION — återhållsam ── */
+  --wt-dur: 500ms;
+  --wt-dur-fast: 300ms;
+  --wt-lift: -5px;
+
   background-color: var(--color-bg);
   /* Råpapper-korn: en ultratunn diagonal fiber-textur, ren dekor. */
   background-image: repeating-linear-gradient(
     135deg,
-    rgba(32, 26, 22, 0.02) 0px,
-    rgba(32, 26, 22, 0.02) 1px,
+    var(--wt-fiber) 0px,
+    var(--wt-fiber) 1px,
     transparent 1px,
     transparent 3px
   );
 }
 
-.wtContain {
+.wtContain,
+.wtWide {
   max-width: 1360px;
   margin: 0 auto;
-  padding-left: clamp(1.1rem, 3vw, 2rem);
-  padding-right: clamp(1.1rem, 3vw, 2rem);
+  padding-left: var(--wt-gut);
+  padding-right: var(--wt-gut);
 }
 
-/* ── 1. HERO — bild + text i ETT asymmetriskt block nere till vänster (bruten grid) ── */
-.wtHero { padding: clamp(28px, 4vw, 48px) 0 0; }
+/* ═══ TYPNIVÅER — mallens egna roller (ersätter de globala .sf-*-rollerna) ═══ */
+.wtEyebrow {
+  display: block;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.wtH2 {
+  margin: var(--wt-s1) 0 0; /* eyebrow → rubrik = 12px */
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-h2);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+/* Lede-nivån (18px) bärs av sektionernas egna lede-klasser: .wtHeroLede,
+   .wtCourseLede, .wtClosingLede — alla på var(--wt-fs-lede). */
+.wtBody {
+  margin: var(--wt-s2) 0 0;
+  max-width: 44rem; /* radlängd-spärr */
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+
+/* ═══ KNAPPAR — binär radie (0), mikrotyp, hård växling (ingen opacitet) ═══ */
+
+/* Text-CTA (understruken mikroetikett) */
+.wtLinkCta {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 4px;
+  transition: color var(--wt-dur-fast) ease, border-color var(--wt-dur-fast) ease;
+}
+.wtLinkCta:hover {
+  color: var(--color-primary-d);
+  border-color: var(--color-primary-d);
+}
+.wtLinkCta:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+
+/* Outline-knapp på färgat band (vit ram, hård fyllning vid hover) */
+.wtBandCta {
+  display: inline-block;
+  padding: 0 30px;
+  line-height: 46px; /* 46 + 2×2px ram = 50px knapphöjd */
+  border: 2px solid var(--wt-paper);
+  border-radius: var(--sf-radius);
+  background: transparent;
+  color: var(--wt-paper);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background-color var(--wt-dur-fast) ease, color var(--wt-dur-fast) ease;
+}
+.wtBandCta:hover {
+  background: var(--wt-paper);
+  color: var(--wt-moss); /* 7.78:1 */
+}
+.wtBandCta:focus-visible {
+  outline: 2px solid var(--wt-paper);
+  outline-offset: 4px;
+}
+
+/* BookCta-modifierare. .btn-accent är globalt ett pill med guld-glow och
+   --color-accent-fyllning — och --color-accent == --color-primary på storefronten,
+   dvs. exakt samma lila som hero-kortet och closing-scrimet KNAPPEN LIGGER PÅ
+   (knappen försvann alltså in i bakgrunden). Här: vit fyrkantig knapp med mörk
+   text = 15.99:1, samma knapp i hero som i closing. */
+.wtSquareCta:global(.btn-accent) {
+  display: inline-block;
+  padding: 0 30px;
+  line-height: 46px;
+  border: 2px solid var(--wt-paper);
+  border-radius: var(--sf-radius);
+  background: var(--wt-paper);
+  color: var(--color-primary-d);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color var(--wt-dur-fast) ease, border-color var(--wt-dur-fast) ease;
+}
+.wtSquareCta:global(.btn-accent):hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent-soft);
+  color: var(--color-primary-d);
+  transform: none; /* globalt .btn-accent:hover lyfter 1px + glow — bort */
+  box-shadow: none;
+}
+
+/* ── 1. HERO — bild + text i ETT asymmetriskt block nere till vänster (bruten grid) ──
+   Rader med LIKA höjd + cell-fyllda bilder: kanterna linjerar (regel 7). Förut bar
+   varje bild sin egen ratio (16/9, 4/5, 21/8) och griden hackade. */
+.wtHero { padding: var(--wt-s4) 0 0; }
 .wtHeroGrid {
   max-width: 1360px;
   margin: 0 auto;
-  padding: 0 clamp(1.1rem, 3vw, 2rem);
+  padding: 0 var(--wt-gut);
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  grid-template-rows: repeat(2, minmax(180px, auto));
-  gap: clamp(10px, 1.4vw, 18px);
+  grid-template-rows: clamp(200px, 24vw, 320px) auto;
+  gap: var(--wt-s2);
 }
 .wtHeroImg {
   background-size: cover;
@@ -45,9 +222,9 @@
   background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
 }
-.wtHeroImgWide { grid-column: 5 / 13; grid-row: 1 / 2; aspect-ratio: 16 / 9; }
-.wtHeroImgSmall { grid-column: 1 / 5; grid-row: 1 / 2; align-self: end; aspect-ratio: 4 / 5; }
-.wtHeroImgTall { grid-column: 7 / 13; grid-row: 2 / 3; aspect-ratio: 21 / 8; }
+.wtHeroImgWide { grid-column: 5 / 13; grid-row: 1 / 2; }
+.wtHeroImgSmall { grid-column: 1 / 5; grid-row: 1 / 2; }
+.wtHeroImgTall { grid-column: 7 / 13; grid-row: 2 / 3; min-height: clamp(200px, 22vw, 300px); }
 
 /* Textkortet BRYTER griden: det ligger i samma cell-rad som bilderna nedanför
    men äger bara halva bredden, förankrat nere till vänster — asymmetrin är
@@ -55,86 +232,101 @@
 .wtHeroTextCard {
   grid-column: 1 / 7;
   grid-row: 2 / 3;
-  align-self: end;
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* innehållet förblir förankrat i botten */
   background: var(--color-primary);
-  color: #fff;
-  padding: clamp(1.75rem, 4vw, 3rem);
+  color: var(--wt-paper);
+  padding: clamp(var(--wt-s3), 3.2vw, var(--wt-s4));
 }
 .wtHeroEyebrow {
-  display: inline-block;
+  display: block;
+  margin: 0;
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--wt-on-dark);
 }
 .wtHeroTitle {
-  margin: 14px 0 0;
+  margin: var(--wt-s1) 0 0;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(2.1rem, 4.6vw, 3.5rem);
-  line-height: 1.03;
-  color: #fff;
+  font-weight: 600;
+  font-size: var(--wt-fs-hero);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  color: var(--wt-paper);
   white-space: pre-line;
 }
 .wtHeroLede {
-  margin: 16px 0 0;
-  max-width: 26rem;
-  color: rgba(255, 255, 255, 0.88);
+  margin: var(--wt-s2) 0 0;
+  max-width: 30rem;
   font-family: var(--font-body);
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: var(--wt-fs-lede);
+  line-height: 1.58;
+  color: var(--wt-on-dark);
 }
-.wtHeroActions { margin-top: 26px; }
+.wtHeroActions { margin-top: var(--wt-s3); }
 
 @media (max-width: 820px) {
   .wtHeroGrid { grid-template-columns: 1fr; grid-template-rows: auto; }
-  .wtHeroImgWide, .wtHeroImgSmall, .wtHeroImgTall, .wtHeroTextCard {
+  .wtHeroImgWide,
+  .wtHeroImgSmall,
+  .wtHeroImgTall,
+  .wtHeroTextCard {
     grid-column: 1;
     grid-row: auto;
-    align-self: auto;
   }
+  /* mobil: samma 4:5 som alla andra innehållsbilder */
+  .wtHeroImg { aspect-ratio: 4 / 5; min-height: 0; }
   .wtHeroTextCard { order: -1; }
-  .wtHeroImgWide { aspect-ratio: 16 / 10; }
-  .wtHeroImgTall { aspect-ratio: 16 / 9; }
 }
 
 /* ── 2. SÅ JOBBAR VI — numrerad trio (01/02/03), rå typografi, inga bilder ── */
-.wtSteps { border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); }
+.wtSteps {
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
 .wtStepsGrid {
   max-width: 1360px;
   margin: 0 auto;
-  padding: 0 clamp(1.1rem, 3vw, 2rem);
+  padding: 0 var(--wt-gut);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
 }
-.wtStep { padding: clamp(2.5rem, 5vw, 4rem) clamp(1.25rem, 3vw, 2.25rem); border-left: 1px solid var(--color-line); }
+.wtStep {
+  padding: var(--wt-sec) var(--wt-s3);
+  border-left: 1px solid var(--color-line);
+}
 .wtStep:first-child { border-left: none; }
 .wtStepNum {
   display: block;
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(2.75rem, 6vw, 4rem);
+  font-weight: 600;
+  font-size: var(--wt-fs-h2); /* återanvänder h2-nivån — ingen ny nivå */
   line-height: 1;
-  color: var(--wt-moss);
+  letter-spacing: -0.01em;
+  color: var(--wt-moss); /* 6.48:1 mot bg (var 4.82:1) */
 }
 .wtStepTitle {
-  margin: 0.75rem 0 0;
+  margin: var(--wt-s1) 0 0;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(1.25rem, 2.2vw, 1.55rem);
+  font-weight: 600;
+  font-size: var(--wt-fs-name);
+  line-height: 1.12;
   color: var(--color-fg);
 }
 .wtStepText {
-  margin: 0.6rem 0 0;
+  margin: var(--wt-s2) 0 0;
+  max-width: 24rem;
   font-family: var(--font-body);
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
   color: var(--color-fg-2);
-  max-width: 22rem;
 }
 @media (max-width: 760px) {
   .wtStepsGrid { grid-template-columns: 1fr; }
@@ -143,181 +335,320 @@
 }
 
 /* ── 3 & 7. UR BUTIKEN / BLOGG — delad rå kort-grid, rakt avskurna bilder (radius 0) ── */
-.wtCardSection { padding: clamp(3.5rem, 7vw, 6rem) 0; }
+.wtCardSection { padding: var(--wt-sec) 0; }
 .wtSecHead {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--wt-s2);
   flex-wrap: wrap;
 }
-.wtSecCta {
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 2px;
-  white-space: nowrap;
-}
 .wtCardGrid {
-  margin-top: clamp(1.75rem, 4vw, 2.75rem);
+  margin-top: var(--wt-s4); /* rubrikblock → innehåll = 48px, samma i alla sektioner */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(1.25rem, 2.5vw, 2rem);
+  gap: var(--wt-s3);
 }
-.wtCard { display: block; text-decoration: none; color: inherit; }
+.wtCard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--wt-dur) ease; /* 5px lyft, inget mer */
+}
+.wtCard:hover { transform: translateY(var(--wt-lift)); }
+.wtCard:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 .wtCardImg {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 4 / 5; /* EN ratio för alla innehållsbilder */
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
 }
 .wtCardName {
-  margin: 0.9rem 0 0;
+  margin: var(--wt-s2) 0 0;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.1rem;
-  line-height: 1.25;
+  font-weight: 600;
+  font-size: var(--wt-fs-name);
+  line-height: 1.12;
   color: var(--color-fg);
 }
 .wtCardMeta {
-  margin: 0.25rem 0 0;
+  margin: var(--wt-s1) 0 0;
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.92rem;
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
   color: var(--color-primary);
 }
 .wtCardExcerpt {
-  margin: 0.3rem 0 0;
+  margin: var(--wt-s1) 0 0;
   font-family: var(--font-body);
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
   color: var(--color-fg-2);
 }
 @media (max-width: 760px) { .wtCardGrid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 520px) { .wtCardGrid { grid-template-columns: 1fr; } }
 
+/* ── 4. TJÄNSTER — rå prislista, punkterad linje mellan namn och pris ── */
+.wtPriceBand {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--wt-sec) var(--wt-gut);
+  text-align: center;
+}
+.wtPriceHead { margin-bottom: var(--wt-s4); }
+.wtPriceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 var(--wt-s3);
+  text-align: left;
+}
+.wtPriceRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--wt-s1);
+  padding: var(--wt-s2) 0;
+  border-bottom: 1px solid var(--color-line);
+  cursor: pointer;
+}
+.wtPriceRow:hover .wtPriceName { color: var(--color-primary); }
+.wtPriceRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.wtPriceName {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-name);
+  line-height: 1.12;
+  color: var(--color-fg);
+  transition: color var(--wt-dur-fast) ease;
+}
+.wtPriceDots {
+  flex: 1;
+  border-bottom: 1px dotted var(--color-line);
+  transform: translateY(-4px);
+}
+.wtPriceVal {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-body);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+.wtMoreWrap { margin-top: var(--wt-s3); }
+@media (max-width: 640px) { .wtPriceGrid { grid-template-columns: 1fr; } }
+
 /* ── 5. OM — porträtt + stort citat ── */
-.wtAbout { padding: clamp(4.5rem, 9vw, 7.5rem) 0; }
+.wtAbout { padding: clamp(var(--wt-s4), 9vw, var(--wt-s6)) 0; }
 .wtAboutGrid {
   display: grid;
   grid-template-columns: 0.9fr 1.1fr;
-  gap: clamp(2.5rem, 5vw, 4.5rem);
+  gap: clamp(var(--wt-s3), 5vw, var(--wt-s5));
   align-items: center;
 }
 .wtAboutPhoto {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 4 / 5; /* samma ratio som korten */
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
 }
+.wtQuote {
+  margin: var(--wt-s1) 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--wt-fs-h2); /* citatet ligger på h2-nivån — ingen ny nivå */
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--color-primary); /* 9.67:1 */
+}
+.wtStats {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wt-s2) var(--wt-s4);
+  margin: var(--wt-s3) 0 0;
+  padding: 0;
+}
+.wtStatValue {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-name);
+  line-height: 1.12;
+  color: var(--color-primary);
+}
+.wtStatLabel {
+  display: block;
+  margin-top: var(--wt-s1);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2); /* 5.86:1 */
+}
 @media (max-width: 760px) { .wtAboutGrid { grid-template-columns: 1fr; } }
 
-/* ── 6. KURSER-CTA — mossgrön remsa ── */
-.wtCourseBand { background: var(--wt-moss); padding: clamp(3rem, 6vw, 4.5rem) 24px; text-align: center; }
+/* ── 6. KURSER-CTA — mossgrön remsa (mallens ENDA accent-yta) ── */
+.wtCourseBand {
+  background: var(--wt-moss);
+  padding: var(--wt-sec) var(--wt-gut);
+  text-align: center;
+}
 .wtCourseEyebrow {
+  display: block;
   margin: 0;
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--wt-on-dark); /* 6.48:1 (var 3.90:1 — FAIL) */
 }
 .wtCourseTitle {
-  margin: 10px 0 0;
+  margin: var(--wt-s1) 0 0;
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(1.6rem, 3vw, 2.3rem);
-  color: #fff;
+  font-weight: 600;
+  font-size: var(--wt-fs-h2);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--wt-paper); /* 7.78:1 */
 }
 .wtCourseLede {
-  margin: 0.75rem auto 0;
-  max-width: 32rem;
-  color: rgba(255, 255, 255, 0.88);
+  margin: var(--wt-s2) auto 0;
+  max-width: 34rem;
   font-family: var(--font-body);
-  font-size: 1rem;
-  line-height: 1.55;
+  font-size: var(--wt-fs-lede);
+  line-height: 1.58;
+  color: var(--wt-on-dark);
 }
-.wtCourseActions { margin-top: 1.75rem; }
-.wtCourseCta {
-  display: inline-block;
-  background: #fff;
-  color: var(--wt-moss-d);
-  padding: 0.85rem 1.9rem;
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-decoration: none;
-  border-radius: var(--sf-radius);
-  transition: opacity var(--dur-fast) var(--ease-out);
-}
-.wtCourseCta:hover { opacity: 0.85; }
+.wtCourseActions { margin-top: var(--wt-s3); }
 
 /* ── Presentkort — smal rad mellan blogg och galleri, aldrig en egen sektion ── */
-.wtGift { background: var(--color-accent-soft); padding: clamp(18px, 2.6vw, 30px) 24px; }
+.wtGift {
+  background: var(--color-accent-soft);
+  padding: var(--wt-s3) var(--wt-gut);
+}
 .wtGiftInner {
   max-width: 1360px;
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  gap: 8px 18px;
+  gap: var(--wt-s1) var(--wt-s3);
   text-align: center;
 }
-.wtGiftCta {
+.wtGiftText {
+  margin: 0;
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 2px;
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2); /* 5.50:1 mot accent-soft */
 }
+
+/* ── 8. GALLERI ── */
+.wtGalleryBand { padding: 0 0 var(--wt-sec); }
+.wtGalleryHead { margin-bottom: var(--wt-s3); }
+
+/* ── 9. PLATS & ÖPPETTIDER ── */
+.wtLoc {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-line);
+}
+.wtLocGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(var(--wt-s3), 5vw, var(--wt-s5));
+  padding-top: var(--wt-sec);
+  padding-bottom: var(--wt-sec);
+}
+.wtHours {
+  margin-top: var(--wt-s3);
+  max-width: 22rem;
+}
+.wtHoursRow {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--wt-s1) 0;
+  border-bottom: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg);
+}
+.wtHoursRow span:first-child { color: var(--color-fg-2); }
+.wtMap {
+  height: 320px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  background: var(--color-accent-soft);
+  display: grid;
+  place-items: center;
+  padding: var(--wt-s3);
+  text-align: center;
+}
+.wtMapHint {
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+@media (max-width: 760px) { .wtLocGrid { grid-template-columns: 1fr; } }
 
 /* ── 10. CLOSING — eget mörkt fullbredds-foto, fyrkantig CTA ── */
 .wtClosing {
   position: relative;
   background-size: cover;
   background-position: center;
-  padding: clamp(84px, 12vw, 130px) 24px;
+  padding: clamp(var(--wt-s5), 12vw, var(--wt-s6)) var(--wt-gut);
   text-align: center;
 }
 .wtClosingOverlay {
   position: absolute;
   inset: 0;
-  /* Tistel-lila scrim (samma toner som --color-primary/-primary-d) — literal
-     rgba som gradient-lager, samma mönster som Paisleys/Onyx closing-scrim. */
-  background: linear-gradient(180deg, rgba(75, 46, 82, 0.55) 0%, rgba(46, 26, 52, 0.9) 100%);
+  /* Tistel-lila scrim (samma toner som --color-primary/-primary-d) — mörkare än
+     förut så att vit mikrotext håller ≥4.5:1 även över fotots ljusare partier. */
+  background: linear-gradient(180deg, var(--wt-scrim-top) 0%, var(--wt-scrim-bot) 100%);
 }
-.wtClosingInner { position: relative; z-index: 1; max-width: 40rem; margin: 0 auto; }
+.wtClosingInner {
+  position: relative;
+  z-index: 1;
+  max-width: 40rem;
+  margin: 0 auto;
+}
 .wtClosingEyebrow {
+  display: block;
   margin: 0;
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--wt-on-dark);
 }
 .wtClosingTitle {
-  margin: 14px 0 0;
+  margin: var(--wt-s1) 0 0;
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-style: italic;
-  font-size: clamp(2rem, 4.4vw, 3.2rem);
-  color: #fff;
+  font-size: var(--wt-fs-h2);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--wt-paper);
 }
-.wtClosingLede { margin-top: 14px; color: rgba(255, 255, 255, 0.9); font-family: var(--font-body); font-size: 1rem; }
-.wtClosingActions { margin-top: 28px; }
-/* Fyrkantig CTA-modifierare — .btn-accent är annars var(--radius-pill) globalt. */
-.wtSquareCta:global(.btn-accent) { border-radius: var(--sf-radius); letter-spacing: 0.04em; }
+.wtClosingLede {
+  margin: var(--wt-s2) auto 0;
+  max-width: 34rem;
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-lede);
+  line-height: 1.58;
+  color: var(--wt-on-dark);
+}
+.wtClosingActions { margin-top: var(--wt-s3); }

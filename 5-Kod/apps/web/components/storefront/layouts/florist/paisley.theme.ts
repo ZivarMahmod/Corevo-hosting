@@ -43,6 +43,20 @@ export const paisley: FloristTheme = {
   key: 'paisley',
   name: 'Paisley',
   desc: 'Tegelrött & benvitt · redaktionell tidningskänsla',
+  // ÅTTA hexar, EN hue-familj (tegel/rost 10–30°) + de neutrala. EN accent:
+  // `primary` — den sitter på små ytor (eyebrow, pris, knapp, annonsrad), aldrig
+  // som stor bakgrundsyta. Hierarkin görs av SKALAN och KONTRASTEN, inte av kulör.
+  //
+  // WCAG-kontrast, räknad (skärpe-pass 2026-07-11) — inga gissningar:
+  //   fg      #231b15 på bg #f6f0e2 ....... 14.92:1  AAA (krav ≥7, mål 11)
+  //   fg      #231b15 på surface #fffcf5 .. 16.54:1  AAA
+  //   fg-2    #6c5d4e på bg ............... 5.58:1   AA  (krav ≥4.5 — backar medvetet)
+  //   primary #a43f2a på bg ............... 5.56:1   AA  (eyebrow/pris, 11–12px)
+  //   vit     #ffffff på primary .......... 6.32:1   AA  (knapptext, krav ≥4.5)
+  //   surface #fffcf5 på primary-d ........ 11.99:1  AAA (text + inverterad knapp
+  //                                                  på det mörka tegelbandet)
+  // Paletten höll redan kraven — det var opaciteten (0.62–0.92) och de tunna
+  // foto-scrimsen som läckte kontrast. De är borta; hexarna är orörda.
   palette: {
     primary: '#a43f2a',
     primaryD: '#5c2318',
@@ -54,13 +68,19 @@ export const paisley: FloristTheme = {
     accentSoft: '#f0dcc7',
   },
   fonts: {
-    // DM Serif Display: tung didone-liknande tabloid-serif (bara vikt 400 laddad
-    // — tyngden kommer av storlek/versaler, inte font-weight). Jost: geometrisk
-    // grotesk, bär versaler med spärrad tracking utan att bli tung.
+    // DM Serif Display: tung didone-liknande tabloid-serif. VIKTIGT: next/font
+    // laddar den med `weight: '400'` och ENBART style normal (app/layout.tsx) —
+    // så varje font-weight 600/700 eller font-style: italic på display-text ger
+    // SYNTETISK fetstil/kursiv (browsern smetar ut 400-konturerna). Tyngden ska
+    // komma av storlek och versaler, aldrig av font-weight. Jost (variabel, äkta
+    // 600) bär mikrotexten. Se paisley.module.css --pa-fw-display / --pa-fw-micro.
     display: 'var(--font-dmserif), Georgia, serif',
     body: 'var(--font-jost), system-ui, sans-serif',
   },
-  radius: '2px',
+  // BINÄR radie: 0 på ALLT strukturellt (bilder, kort, knappar, karta). Var 2px —
+  // en "nästan rak" kant är det värsta av två världar: den läser som slarv, inte
+  // som ett val. Raka kanter linjerar mot varandra; det är själva skärpan.
+  radius: '0px',
   content: {
     heroEyebrow: '— Handbundet varje dag',
     heroTitle: 'Blommor med\nkaraktär',

@@ -22,25 +22,38 @@ const IMG = {
 } as const
 
 /**
- * ONYX — nästan svart + mint + korall, dramatisk. Zivar: "ska kännas som ett
- * svärd, inte en mjuk morot". EN driven accentfärg (korall) i CTA:er, priser
- * och länkar; mint förekommer bara i två fullstora band (se OnyxLayout/
- * onyx.module.css) som håller sina egna lokala dekorfärger. Skarpa hörn
- * (radius 0) hela vägen — konsekvent, bestämt, aldrig mjukt.
+ * ONYX — nästan svart + EN korall, dramatisk. Zivar: "ska kännas som ett svärd,
+ * inte en mjuk morot". Skärpe-passet (design-skarpa-zentum.md, regel 5–8):
+ *
+ * • 8 hex, EN hue-familj. Mint (#3fe7b0) och det gröna accentSoft (#1E3630) är
+ *   BORTA — de var en andra och tredje kulör som slogs med koralen om
+ *   hierarkin (= moroten). accentSoft är nu en korall-tonad ink.
+ * • Korallen är LYFT i ljushet (#E8442D → #FF6A4A, samma kulör) så att alla tre
+ *   kraven håller samtidigt — de gick inte ihop förut:
+ *      korall som text på svart  6.67:1  (var 4.76:1)
+ *      korall som text på surface 6.14:1 (var 4.39:1 = UNDER 4.5 → underkänt)
+ *      ink på korall (knapptext)  6.67:1 (vit på korall var 3.97:1 = underkänt)
+ *   Knapptexten är därför INK på korall, aldrig vit — vit text på en mättad
+ *   korall kan aldrig nå 4.5:1.
+ * • primaryD (#E0563B) är hover-fyllningen: ink på den ger 5.01:1.
+ * • Rubrik-ink (#F5F1E8) på svart = 16.76:1, brödtext (#A19C90) = 6.90:1.
+ *
+ * Skarpa hörn (radius 0) hela vägen — konsekvent, bestämt, aldrig mjukt; pill
+ * BARA på knappar (se onyx.module.css).
  */
 export const onyx: FloristTheme = {
   key: 'onyx',
   name: 'Onyx',
   desc: 'Svart · korall · dramatisk',
   palette: {
-    primary: '#E8442D',
-    primaryD: '#B3301C',
+    primary: '#FF6A4A',
+    primaryD: '#E0563B',
     bg: '#111110',
     surface: '#1B1A18',
     fg: '#F5F1E8',
     fg2: '#A19C90',
     line: '#2E2C27',
-    accentSoft: '#1E3630',
+    accentSoft: '#231512',
   },
   fonts: {
     display: 'var(--font-dmserif), Georgia, serif',

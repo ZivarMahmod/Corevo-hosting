@@ -1,29 +1,195 @@
 /* ═══════════════ ONYX — mörk, dramatisk lyxflorist (florist-sviten) ═══════════════
-   "Ett svärd, inte en mjuk morot": hög kontrast, EN driven accentfärg (korall),
-   skarpa hörn (temats --sf-radius: 0px) och konsekvent bildratio. Mint förekommer
-   BARA som två fullstora band (annonsrad + leverans-band) — aldrig som en tunt
-   tonad yta — och håller sina EGNA dekorfärger lokalt (--onyx-mint/--onyx-ink),
-   satta här i sina egna rot-klasser, inte i den delade paletten. */
+   "Ett svärd, inte en mjuk morot" — skärpe-passet (design-skarpa-zentum.md):
+
+   1. TYPSKALA med ×1.9–2.0-steg: 100 → 50 → 26 → 18 → 16 → 12/11 px. Inga
+      mellannivåer som konkurrerar (den gamla 60/40-dubbletten är hopslagen till
+      EN sektionsrubrik).
+   2. VIKT: display i 400 (DM Serif Display har bara 400 — stort + precist, aldrig
+      syntetisk fetstil). Mikrotext/eyebrow/knapp i 600.
+   3. LINE-HEIGHT: rubrik 1.06–1.15, brödtext 1.58. Registerbytet = skärpan.
+   4. LETTER-SPACING omvänt mot storleken: negativt på rubrik, 0 på 26px,
+      +1px på 11–12px versaler.
+   5. KONTRAST: rubrik 16.8:1, brödtext 6.9:1, knapptext (ink på korall) 6.7:1.
+   6. RADIE: binärt — 0 på ALLT strukturellt (temats --sf-radius: 0px), full pill
+      BARA på knappar/taggar (--radius-pill).
+   7. BILDRATIO: EN ratio i hela mallen — 4/5 (trio, kort, om-foto, galleritiles).
+   8. FÄRG: EN accent (korall) i EN hue-familj. Mint är BORTA (den var en andra
+      accent på stora ytor → moroten). Bandens plats i rytmen är kvar: annonsraden
+      är nu en smal korall-remsa, leverans-bandet en hård ljus (bone) invertering
+      mot den svarta sidan.
+   9. HOVER: 5px lyft / 400ms ease. Ingen scale, ingen skugg-bloom.
+  10. RYTM: eyebrow→rubrik 12px, rubrik→text 20px, text→CTA 32px — samma i ALLA
+      sektioner. Sektionsavstånd ur en skala (24/48/96/144).
+
+   Inga hårdkodade hex: färgerna kommer ur temats palett (onyx.theme.ts). Mallens
+   EGNA dekor-värden (scrim-gradienten) deklareras som vars i rot-klasserna nedan. */
 
 .onxAnnounce,
-.onxDeliveryBand {
-  --onyx-mint: #3fe7b0;
-  --onyx-ink: #101210;
+.onxWordmark,
+.onxHero,
+.onxDeliveryBand,
+.onxTrioSection,
+.onxCardSection,
+.onxServices,
+.onxAboutSection,
+.onxGiftRow,
+.onxGallery,
+.onxLocBand,
+.onxClosing {
+  /* dekor (mallens egna) — scrim-inken är samma svarta som paletten */
+  --onx-scrim: 6 6 5;
+
+  /* typskala — steg ×2.0 / ×1.92 / ×1.44 / ×1.13 */
+  --onx-fs-hero: clamp(54px, 8.2vw, 100px);
+  --onx-fs-title: clamp(34px, 5vw, 50px);
+  --onx-fs-sub: clamp(22px, 2.2vw, 26px);
+  --onx-fs-lede: 18px;
+  --onx-fs-body: 16px;
+  --onx-fs-btn: 12px;
+  --onx-fs-micro: 11px;
+
+  /* rytm — 12 / 20 / 32 inne i blocket, 24/48/96/144 mellan sektioner */
+  --onx-gap-eyebrow: 12px;
+  --onx-gap-title: 20px;
+  --onx-gap-cta: 32px;
+  --onx-head-gap: 48px;
+  --onx-section: clamp(48px, 9vw, 96px);
+  --onx-section-lg: clamp(96px, 12vw, 144px);
+  --onx-band: clamp(24px, 3.5vw, 48px);
+  --onx-gutter: 24px;
+
+  /* motion — återhållsam */
+  --onx-dur: 400ms;
+  --onx-ease: ease;
+  --onx-lift: -5px;
+
+  /* EN bildratio i hela mallen */
+  --onx-ratio: 4 / 5;
 }
 
-/* 1 — MINT ANNONSRAD */
+/* ── TYPROLLER (mallens egna — ersätter de delade sf-rollerna där skalan spelar roll) ── */
+.onxEyebrow {
+  display: block;
+  margin: 0 0 var(--onx-gap-eyebrow);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--onx-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.onxTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--onx-fs-title);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+.onxBody {
+  margin: var(--onx-gap-title) 0 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--onx-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+  max-width: 62ch;
+}
+
+/* KNAPP — exakt pill (radie = halva höjden via --radius-pill), 12px/600/VERSALER/1px.
+   Dubbel klass (.onxBtn.onxBtn) = specificitet 0-2-0, så den vinner över den globala
+   .btn-accent (0-1-0) när BookCta renderar knappen — utan :global-beroende. */
+.onxBtn.onxBtn,
+.onxBtnInk.onxBtnInk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 50px;
+  padding: 0 30px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--onx-fs-btn);
+  line-height: 1;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background var(--onx-dur) var(--onx-ease), color var(--onx-dur) var(--onx-ease);
+}
+/* korall fyllning + ink text = 6.67:1 */
+.onxBtn.onxBtn {
+  background: var(--color-primary);
+  color: var(--color-bg);
+  border: 1px solid var(--color-primary);
+}
+.onxBtn.onxBtn:hover {
+  background: var(--color-primary-d);
+  border-color: var(--color-primary-d);
+  color: var(--color-bg);
+  transform: none;
+  box-shadow: none;
+}
+/* ink fyllning + bone text = 16.76:1 (används på det ljusa leverans-bandet) */
+.onxBtnInk.onxBtnInk {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  border: 1px solid var(--color-bg);
+}
+.onxBtnInk.onxBtnInk:hover {
+  background: transparent;
+  color: var(--color-bg);
+  transform: none;
+  box-shadow: none;
+}
+.onxBtn.onxBtn:focus-visible,
+.onxBtnInk.onxBtnInk:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+/* Läs-mer-länk — mikrotext, inte brödtext (en signal, ingen viskning) */
+.onxMoreLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: var(--onx-gap-cta);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--onx-fs-btn);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid transparent;
+  padding-bottom: 4px;
+  transition: border-color var(--onx-dur) var(--onx-ease), gap var(--onx-dur) var(--onx-ease);
+}
+.onxMoreLink:hover { border-color: var(--color-primary); gap: 0.75rem; }
+
+/* Eyebrow-ENDA sektionshuvuden (trio, galleri): eyebrown har ingen rubrik att
+   ge sina 12px till — avståndet ner till innehållet ska vara head-gapet (48px),
+   inte 48+12. */
+.onxTrioHead .onxEyebrow,
+.onxGalleryHead .onxEyebrow { margin-bottom: 0; }
+
+/* 1 — KORALL ANNONSRAD (smal remsa: accenten på en LITEN yta, aldrig en stor) */
 .onxAnnounce {
-  background: var(--onyx-mint);
-  color: var(--onyx-ink);
+  background: var(--color-primary);
+  color: var(--color-bg);
   text-align: center;
-  padding: 0.6rem 1.25rem;
+  padding: 10px var(--onx-gutter);
 }
 .onxAnnounce p {
   margin: 0;
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 12.5px;
-  letter-spacing: 0.08em;
+  font-size: var(--onx-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
@@ -31,30 +197,31 @@
 .onxWordmark {
   background: var(--color-bg);
   text-align: center;
-  padding: clamp(28px, 4.5vw, 44px) 24px clamp(20px, 3vw, 30px);
+  padding: var(--onx-band) var(--onx-gutter) var(--onx-gap-cta);
 }
 .onxWordmarkName {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(22px, 2.6vw, 32px);
-  letter-spacing: 0.06em;
+  font-size: clamp(20px, 2.4vw, 26px);
+  line-height: 1.1;
+  letter-spacing: 0.04em; /* ≈1px vid 26px — versaler under 28px får spärr */
   text-transform: uppercase;
   color: var(--color-fg);
 }
 .onxEstBadge {
   display: inline-grid;
   place-items: center;
-  margin: 12px auto 0;
-  width: 2.4rem;
-  height: 2.4rem;
-  border-radius: 999px;
+  margin: var(--onx-gap-eyebrow) auto 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-pill); /* cirkel = medvetet undantag från radie 0 */
   border: 1px solid var(--color-primary);
   color: var(--color-primary);
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 10px;
-  letter-spacing: 0.06em;
+  font-size: var(--onx-fs-micro);
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
@@ -72,60 +239,42 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(6, 6, 5, 0.82) 0%, rgba(6, 6, 5, 0.38) 48%, rgba(6, 6, 5, 0.08) 78%),
-    linear-gradient(0deg, rgba(6, 6, 5, 0.65) 0%, rgba(6, 6, 5, 0) 42%);
+    linear-gradient(90deg, rgb(var(--onx-scrim) / 0.86) 0%, rgb(var(--onx-scrim) / 0.4) 48%, rgb(var(--onx-scrim) / 0.08) 78%),
+    linear-gradient(0deg, rgb(var(--onx-scrim) / 0.7) 0%, rgb(var(--onx-scrim) / 0) 42%);
 }
 .onxHeroInner {
   position: relative;
   z-index: 1;
-  max-width: 36rem;
-  padding: clamp(40px, 7vw, 76px) clamp(1.25rem, 5vw, 4.5rem);
+  max-width: 38rem;
+  padding: var(--onx-section) clamp(var(--onx-gutter), 5vw, 4.5rem);
 }
 .onxHeroTitle {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(46px, 6.8vw, 92px);
-  line-height: 1.02;
-  letter-spacing: -0.01em;
-  color: #fdfbf6;
-  margin: 16px 0 0;
+  font-size: var(--onx-fs-hero);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  color: var(--color-fg);
+  margin: 0;
   white-space: pre-line;
 }
-/* Delad rubrikskala för sektionerna jag skriver själv (services/closing = onxTitleLg,
-   kort-sektioner/om/plats = onxSecTitle) — egen vikt 400 (DM Serif Display finns bara
-   i 400; en 600-deklaration hade tvingat fram en syntetisk fetstil). Tydligt STEG
-   ner mot brödtexten (16-19px) = skärpan, inte tyngden. */
-.onxTitleLg {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(32px, 4.6vw, 60px);
-  line-height: 1.05;
-  color: var(--color-fg);
-  margin: 12px 0 0;
-}
-.onxSecTitle {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(26px, 3.2vw, 40px);
-  line-height: 1.1;
-  color: var(--color-fg);
-  margin: 10px 0 0;
-}
 .onxHeroLede {
+  /* Full bone över fotot (16.8:1 mot inken i scrimen) — brödtext får backa på
+     platta ytor, aldrig ovanpå en bild. */
+  margin: var(--onx-gap-title) 0 0;
   font-family: var(--font-body);
-  font-size: clamp(16px, 1.4vw, 19px);
-  line-height: 1.6;
-  color: rgba(253, 251, 246, 0.82);
-  max-width: 28rem;
-  margin: 20px 0 0;
+  font-weight: 400;
+  font-size: var(--onx-fs-lede);
+  line-height: 1.55;
+  color: var(--color-fg);
+  max-width: 30rem;
 }
-.onxHeroActions { margin-top: 28px; }
-.onxHeroCta { font-size: 14px; }
+.onxHeroActions { margin-top: var(--onx-gap-cta); }
 
-/* 4 — MINTGRÖNT LEVERANS-BAND */
+/* 4 — LJUST LEVERANS-BAND (bone) — hård invertering mot den svarta sidan */
 .onxDeliveryBand {
-  background: var(--onyx-mint);
-  padding: clamp(22px, 3.5vw, 34px) 24px;
+  background: var(--color-fg);
+  padding: var(--onx-band) var(--onx-gutter);
 }
 .onxDeliveryInner {
   max-width: 60rem;
@@ -134,58 +283,38 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.9rem 1.75rem;
+  gap: var(--onx-gap-title) var(--onx-gap-cta);
   text-align: center;
 }
 .onxDeliveryText {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(18px, 2vw, 24px);
-  color: var(--onyx-ink);
-}
-.onxDeliveryCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--onyx-ink);
-  color: var(--onyx-mint);
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 0.85rem 1.6rem;
-  /* Radie = alltid full pill på knappar, ALDRIG --sf-radius (som är 0 här) —
-     binärt hörnradie-system: 0 på struktur, pill på knappar/taggar. */
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--onyx-ink);
-  text-decoration: none;
-  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
-}
-.onxDeliveryCta:hover {
-  background: transparent;
-  color: var(--onyx-ink);
+  font-size: var(--onx-fs-sub);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-bg);
 }
 
 /* 5 — MÖRK PRODUKTTRIO MOT SVART */
 .onxTrioSection {
   background: var(--color-bg);
-  padding: clamp(48px, 8vw, 84px) 24px;
+  padding: var(--onx-section) var(--onx-gutter);
 }
-.onxTrioHead { text-align: center; margin-bottom: clamp(24px, 4vw, 40px); }
+.onxTrioHead { text-align: center; margin-bottom: var(--onx-head-gap); }
 .onxTrio {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(10px, 2vw, 20px);
+  gap: var(--onx-gutter);
   max-width: 72rem;
   margin: 0 auto;
 }
 .onxTrioImg {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: var(--onx-ratio);
   background-size: cover;
   background-position: center;
   background-color: var(--color-surface);
+  border-radius: var(--sf-radius); /* 0 — struktur är alltid rak */
 }
 @media (max-width: 700px) {
   .onxTrio { grid-template-columns: 1fr; max-width: 24rem; }
@@ -194,13 +323,14 @@
 /* UR BUTIKEN / BLOGGEN — invävda modulsektioner i mörka, bildledda kort */
 .onxCardSection {
   background: var(--color-surface);
-  padding: clamp(48px, 8vw, 84px) 24px;
+  padding: var(--onx-section) var(--onx-gutter);
 }
-.onxSecHead { text-align: center; margin-bottom: clamp(24px, 4vw, 40px); }
+.onxSecHead { text-align: center; margin-bottom: var(--onx-head-gap); }
+.onxSecFoot { text-align: center; }
 .onxCardGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(16px, 2.5vw, 28px);
+  gap: var(--onx-gutter);
   max-width: 72rem;
   margin: 0 auto;
 }
@@ -212,56 +342,176 @@
   border: 1px solid var(--color-line);
   border-radius: var(--sf-radius);
   overflow: hidden;
-  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  transition: transform var(--onx-dur) var(--onx-ease), border-color var(--onx-dur) var(--onx-ease);
 }
-.onxCard:hover { transform: translateY(-4px); border-color: var(--color-primary); }
+.onxCard:hover { transform: translateY(var(--onx-lift)); border-color: var(--color-primary); }
 .onxCardImg {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: var(--onx-ratio); /* samma ratio som trio/om/galleri */
   background-size: cover;
   background-position: center;
   background-color: var(--color-surface);
 }
 .onxCardName {
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-weight: 400;
+  font-size: var(--onx-fs-sub);
+  line-height: 1.15;
+  letter-spacing: 0;
   color: var(--color-fg);
-  margin: 1rem 1.1rem 0.3rem;
+  margin: var(--onx-gutter) var(--onx-gutter) 0;
 }
 .onxCardMeta {
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--onx-fs-body);
+  line-height: 1.4;
   color: var(--color-primary);
-  margin: 0 1.1rem 1.1rem;
+  margin: var(--onx-gap-eyebrow) var(--onx-gutter) var(--onx-gutter);
 }
 @media (max-width: 760px) {
   .onxCardGrid { grid-template-columns: 1fr; max-width: 24rem; }
 }
 
+/* TJÄNSTER — rader i ljus text på mörk botten (delad rad-grid, onyx-egen typskala) */
+.onxServices { padding: var(--onx-section-lg) 0; }
+.onxServicesHead { text-align: center; margin-bottom: var(--onx-head-gap); }
+.onxRowNum {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--onx-fs-btn);
+  letter-spacing: 1px;
+  color: var(--color-primary);
+}
+.onxRowName {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--onx-fs-sub);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-fg);
+}
+.onxRowDesc {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--onx-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+.onxRowMeta { text-align: right; white-space: nowrap; }
+.onxRowPrice {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--onx-fs-body);
+  letter-spacing: 0;
+  color: var(--color-primary);
+}
+@media (max-width: 600px) {
+  .onxRowMeta { grid-column: 2; text-align: left; }
+}
+
 /* OM — surface-panel (bryter rytmen mot svart) runt den delade sfAboutGrid */
 .onxAboutSection {
   background: var(--color-surface);
-  padding: clamp(4.5rem, 9vw, 7rem) 0;
+  padding: var(--onx-section-lg) 0;
+}
+.onxAboutPhoto {
+  aspect-ratio: var(--onx-ratio); /* samma ratio som allt annat */
+  background-color: var(--color-accent-soft);
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--sf-radius);
+}
+.onxStats {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--onx-head-gap);
+  margin: var(--onx-gap-cta) 0 0;
+  padding: 0;
+}
+.onxStatValue {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--onx-fs-sub);
+  line-height: 1.1;
+  color: var(--color-primary);
+}
+.onxStatLabel {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--onx-fs-micro);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
 }
 
 /* PRESENTKORT — smal rad, aldrig en hel sektion */
 .onxGiftRow {
   background: var(--color-bg);
-  padding: clamp(20px, 3vw, 32px) 24px;
+  padding: var(--onx-band) var(--onx-gutter);
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
 }
 .onxGiftInner {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  gap: 0.5rem 1rem;
+  gap: var(--onx-gap-eyebrow) var(--onx-gap-cta);
   text-align: center;
 }
+.onxGiftEyebrow { margin: 0; }
 .onxGiftLede {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(16px, 1.6vw, 19px);
+  font-weight: 400;
+  font-size: var(--onx-fs-lede);
+  line-height: 1.3;
   color: var(--color-fg);
 }
+.onxGiftLink { margin-top: 0; }
+
+/* GALLERI — samma 4/5-ratio som resten av mallen, raka hörn, inget scale-hover.
+   Gallery-komponentens egna klasser är hashade i en annan modul → vi når dem via
+   element-selektorer INUTI vår egen rot (li/img), inte via deras klassnamn. */
+.onxGallery { padding: var(--onx-section) 0 var(--onx-section-lg); }
+.onxGalleryHead { margin-bottom: var(--onx-head-gap); }
+.onxGallery li {
+  aspect-ratio: var(--onx-ratio);
+  border-radius: var(--sf-radius);
+}
+.onxGallery.onxGallery li img {
+  transition: opacity var(--onx-dur) var(--onx-ease);
+}
+/* Dubblad rot-klass = specificitet över Gallery-modulens egen
+   `.galleryBtn:hover .galleryImg { transform: scale(1.05) }`. */
+.onxGallery.onxGallery li button:hover img {
+  transform: none; /* ingen scale(1.05) — återhållsam rörelse */
+  opacity: 0.82;
+}
+
+/* PLATS & ÖPPETTIDER — delad grid, onyx-egen typskala */
+.onxLocBand { background: var(--color-surface); border-top: 1px solid var(--color-line); }
+
+/* CLOSING — mörk yta + EN korall-pill. Accenten stannar på små ytor. */
+.onxClosing {
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-line);
+  text-align: center;
+  padding: var(--onx-section-lg) var(--onx-gutter);
+}
+.onxClosingInner { max-width: 40rem; margin: 0 auto; }
+.onxClosingLede {
+  margin: var(--onx-gap-title) auto 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--onx-fs-lede);
+  line-height: 1.55;
+  color: var(--color-fg-2);
+  max-width: 44ch;
+}
+.onxClosingActions { margin-top: var(--onx-gap-cta); }

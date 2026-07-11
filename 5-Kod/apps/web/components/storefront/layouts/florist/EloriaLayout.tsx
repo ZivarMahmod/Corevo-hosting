@@ -16,7 +16,7 @@ import styles from './eloria.module.css'
  *      med centrerad display-serif ovanpå.
  *   2. "Tre löften"-rad med tunna guldikoner (Färska blommor / Egen leverans /
  *      Handbundet).
- *   3. Shop-teasers som eleganta höga kort (3:4).
+ *   3. Shop-teasers som eleganta höga kort (4:5).
  *   4. Tjänster i en klassisk prislista med guld-dotterade linjer.
  *   5. Om — två-kolumns porträtt + text (delad sfAboutGrid).
  *   6. Offert/bröllop-CTA — gatad mörkgrön guldramad banner, ekar heroplattan.
@@ -27,6 +27,12 @@ import styles from './eloria.module.css'
  *  11. Closing — foto + mörkgrön scrim, bokstavligen en bracket kring sidan
  *      tillsammans med hero-plattan.
  * Webshop/blogg/presentkort/offert vävs in via `modules`-propen (S10).
+ *
+ * SKÄRPE-PASS (design-skarpa-zentum.md): identiteten (färgfamilj, struktur-signatur,
+ * sektionsordning) är orörd — utförandet är skärpt. Mallen använder sina EGNA typroller
+ * (styles.elEyebrow/elH2/elBody/elMoreLink) istället för de globala .sf-*-rollerna, som
+ * ligger på en slapp ×1.2–1.3-skala. Skalan, radien, bildratiot (4:5 överallt), rytmen
+ * och kontrasten bor i eloria.module.css / eloria.theme.ts.
  */
 
 /** Fyrkronblomma — löftesikon 1: Färska blommor. */
@@ -100,7 +106,7 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
           <div className={styles.elHeroPhoto} style={{ backgroundImage: `url(${heroR})` }} />
         </div>
         <Reveal className={styles.elHeroPlate}>
-          <span className="sf-eyebrow">{content.heroEyebrow}</span>
+          <span className={styles.elEyebrowDark}>{content.heroEyebrow}</span>
           <h1 className={styles.elHeroTitle}>{content.heroTitle}</h1>
           <p className={styles.elHeroLede}>{content.heroLede}</p>
           <div className={styles.elHeroActions}>
@@ -128,14 +134,14 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
         </Reveal>
       </section>
 
-      {/* 3 — UR BUTIKEN — webshop-modulen invävd som eleganta höga kort (3:4).
+      {/* 3 — UR BUTIKEN — webshop-modulen invävd som eleganta höga kort (4:5).
           Bara ett smakprov; hela sortimentet bor på /shop. Tom modul → ingen
           sektion. */}
       {shopTeasers.length > 0 ? (
         <section className={styles.elShopSection}>
           <Reveal className={styles.elSecHead}>
-            <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-            <h2 className={styles.elSecTitle}>{content.shopTitle ?? 'Beställ något klassiskt'}</h2>
+            <p className={styles.elEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
+            <h2 className={styles.elH2}>{content.shopTitle ?? 'Beställ något klassiskt'}</h2>
           </Reveal>
           <div className={styles.elCardGrid}>
             {shopTeasers.map((p, i) => (
@@ -147,14 +153,14 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
                   />
                   <span className={styles.elCardRule} aria-hidden="true" />
                   <h3 className={styles.elCardName}>{p.name}</h3>
-                  <p className={styles.elCardMeta}>{formatShopPrice(p.priceCents, p.currency)}</p>
+                  <p className={styles.elCardPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
                 </Link>
               </Reveal>
             ))}
           </div>
           {shopReachable ? (
-            <Reveal className={styles.elSecHead}>
-              <Link href="/shop" className={shared.sfMoreLink}>
+            <Reveal className={styles.elSecFoot}>
+              <Link href="/shop" className={styles.elMoreLink}>
                 {content.shopCta ?? 'Visa hela butiken'} <span aria-hidden="true">→</span>
               </Link>
             </Reveal>
@@ -167,9 +173,9 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
       {rows.length > 0 ? (
         <section className={styles.elPriceSection}>
           <div className={shared.sfNarrow}>
-            <Reveal style={{ textAlign: 'center' }}>
-              <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className={styles.elSecTitleLg}>{content.servicesTitle}</h2>
+            <Reveal className={styles.elSecHead}>
+              <p className={styles.elEyebrow}>{content.servicesEyebrow}</p>
+              <h2 className={styles.elH2}>{content.servicesTitle}</h2>
             </Reveal>
             <div className={styles.elPriceList}>
               {rows.map((s, i) => (
@@ -186,8 +192,8 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
               ))}
             </div>
             {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <Link href="/tjanster" className={shared.sfMoreLink}>
+              <Reveal className={styles.elSecFoot}>
+                <Link href="/tjanster" className={styles.elMoreLink}>
                   Se allt vi gör <span aria-hidden="true">→</span>
                 </Link>
               </Reveal>
@@ -203,16 +209,14 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
             <div className={shared.sfAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
           <Reveal delay={120}>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className={styles.elSecTitle}>{content.aboutTitle}</h2>
-            <p className="sf-body" style={{ marginTop: 16 }}>
-              {content.aboutCopyHome}
-            </p>
+            <p className={styles.elEyebrow}>— Om {tenant.name}</p>
+            <h2 className={styles.elH2}>{content.aboutTitle}</h2>
+            <p className={styles.elBody}>{content.aboutCopyHome}</p>
             <ul className={shared.sfStatTrio}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
+                  <span className={`${shared.sfStatValue} ${styles.elStatValue}`}>{n}</span>
+                  <span className={`${shared.sfStatLabel} ${styles.elStatLabel}`}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -225,7 +229,7 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
       {offertReachable ? (
         <section className={styles.elOfferBand}>
           <Reveal className={styles.elOfferInner}>
-            <p className="sf-eyebrow">— Bröllop & tillställningar</p>
+            <p className={styles.elEyebrowDark}>— Bröllop &amp; tillställningar</p>
             <h2 className={styles.elOfferTitle}>Blommor för er stora dag</h2>
             <p className={styles.elOfferBody}>
               Handbundna brudbuketter, dekor och installationer i klassisk stil — vi tar fram ett
@@ -243,8 +247,8 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
       {bloggTeasers.length > 0 ? (
         <section className={styles.elCardSectionAlt}>
           <Reveal className={styles.elSecHead}>
-            <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
-            <h2 className={styles.elSecTitle}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
+            <p className={styles.elEyebrow}>{content.blogEyebrow ?? '— Från bloggen'}</p>
+            <h2 className={styles.elH2}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
           </Reveal>
           <div className={styles.elCardGrid}>
             {bloggTeasers.map((p, i) => (
@@ -256,24 +260,24 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
                   />
                   <span className={styles.elCardRule} aria-hidden="true" />
                   <h3 className={styles.elCardName}>{p.title}</h3>
-                  {p.excerpt ? <p className={styles.elCardMeta}>{p.excerpt}</p> : null}
+                  {p.excerpt ? <p className={styles.elCardExcerpt}>{p.excerpt}</p> : null}
                 </Link>
               </Reveal>
             ))}
           </div>
-          <Reveal className={styles.elSecHead}>
-            <Link href="/blogg" className={shared.sfMoreLink}>
+          <Reveal className={styles.elSecFoot}>
+            <Link href="/blogg" className={styles.elMoreLink}>
               {content.blogCta ?? 'Läs hela bloggen'} <span aria-hidden="true">→</span>
             </Link>
           </Reveal>
         </section>
       ) : null}
 
-      {/* 8 — GALLERI — masonry + lightbox */}
-      <section className={shared.sfGalleryBand}>
+      {/* 8 — GALLERI — masonry + lightbox, tvingat till mallens ENDA ratio (4:5) */}
+      <section className={`${shared.sfGalleryBand} ${styles.elGallery}`}>
         <div className={shared.sfWide}>
           <Reveal>
-            <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
+            <p className={styles.elEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
           </Reveal>
           <Reveal>
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
@@ -285,11 +289,9 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
       {presentkortLive ? (
         <div className={styles.elGiftRow}>
           <Reveal className={styles.elGiftInner}>
-            <p className="sf-eyebrow" style={{ margin: 0 }}>
-              {content.giftEyebrow ?? '— Presentkort'}
-            </p>
+            <p className={styles.elEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.elGiftLede}>{content.giftLede ?? 'Ge bort något tidlöst.'}</p>
-            <Link href="/presentkort" className={shared.sfMoreLink} style={{ marginTop: 0 }}>
+            <Link href="/presentkort" className={styles.elGiftCta}>
               {content.giftCta ?? 'Till presentkorten'}
             </Link>
           </Reveal>
@@ -297,26 +299,22 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
       ) : null}
 
       {/* 10 — PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
+      <section className={`${shared.sfLocBand} ${styles.elLoc}`}>
         <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className={styles.elSecTitle}>
+            <p className={styles.elEyebrow}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
+            <h2 className={styles.elH2}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ marginTop: 6 }}>
-                {location.address}
-              </p>
+              <p className={styles.elBody}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ marginTop: 6 }}>
-                Adress visas snart.
-              </p>
+              <p className={styles.elBody}>Adress visas snart.</p>
             )}
             {location?.hours ? (
               <div className={shared.sfHours}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
+                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.elHoursRow}`}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
@@ -331,12 +329,12 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={shared.sfMapLink}
+                  className={styles.elMapLink}
                 >
                   Visa på karta <span aria-hidden="true">→</span>
                 </a>
               ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
+                <span className={styles.elMapHint}>Karta visas när adressen är ifylld.</span>
               )}
             </div>
           </Reveal>
@@ -351,7 +349,7 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
           <p className={styles.elClosingLede}>
             {content.closingLede ?? 'Beställ, begär en offert eller hör av dig — vi hjälper dig gärna.'}
           </p>
-          <div style={{ marginTop: 30 }}>
+          <div className={styles.elClosingActions}>
             <BookCta className={styles.elClosingCta} />
           </div>
         </Reveal>

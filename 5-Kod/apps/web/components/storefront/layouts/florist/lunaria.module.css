@@ -4,14 +4,151 @@
    bildens nedre/vänstra kant (offset-kort, .lnHeroCard), en måne-ornament
    som sektionsdelare, tre "stämningskort" i fast trio-grid, cirkulärt
    porträtt i om-sektionen och en helbilds-closing med mörk gradient.
-   Allt hämtar färg/typsnitt/radie från temats CSS-variabler (satta via
-   floristThemeBlock) — inget hårdkodat hex nedan förutom scrim-overlays
-   (samma undantag som övriga foto-teman i sviten).
+
+   SKÄRPE-PASS 2026-07-11 — mätt mot 4-Dokument-Underlag/design-skarpa-zentum.md.
+   Identiteten är orörd (nattblå/vete-palett, sektionsordning, offset-hero,
+   måne-delare, cirkelporträtt). Det är UTFÖRANDET som skärpts:
+
+   1. TYPSKALA i ×1.9-steg (88 → 46 → 26 → 18 → 16 → 12) istället för den gamla
+      grötiga trappan (49.6 / 35.2 / 20.5 / 16.8 / 16.3 / 15.7 / 14.4 / 12.2 /
+      11.5) där nio nivåer trängdes inom ×1.2–1.3 av varandra.
+   2. VIKT: Italiana laddas med BARA weight 400 (app/layout.tsx). Varje
+      `font-weight: 500/600` på display-text renderades alltså som SYNTETISK
+      fetstil — browsern smetar ut 400-konturerna. Det är precis den "klump"
+      regel 2 förbjuder. Allt display kör nu äkta 400; mikrotexten bär tyngden
+      istället (Source Sans 3 600, äkta vikt).
+   3. LINE-HEIGHT: rubriken är en FORM (1.05–1.15), brödtexten en YTA (1.58).
+      Tidigare låg allt på 1.5–1.65 → inget register-byte.
+   4. RADIE binärt: --sf-radius = 0px (lunaria.theme.ts) på ALL struktur, full
+      pill BARA på knapp + eyebrow-chip. Det gamla 8px-hörnet på kort/bilder/
+      hero-platta var själva moroten.
+   5. EN bildratio (4:5) på varenda innehållsbild → griden får raka linjer.
+      Heron är enda undantaget (16:10 panorama, ett ensamt foto utan grid att
+      linjera mot — samma undantag som zentums egen hero).
+   6. RÖRELSE: 4px lyft / 400ms / INGEN skugga. Alla box-shadow-bloom är borta;
+      separationen görs av 1px --color-line mot solid --color-surface.
+
+   Delade .sf*-primitiv (sfRow*, sfStat*, sfMoreLink, sfMap*, sfHours …) ägs av
+   ALLA mallar och får inte ändras — layouten sam-applicerar därför en ln*-klass
+   som vinner deterministiskt på specificitet (.lnRoot .lnX = 0,2,0 mot delade
+   0,1,0). Type-rollerna (.sf-h1/.sf-eyebrow/.sf-body i tokens.css) används inte
+   längre alls: mallen bär sina egna roller (.lnEyebrow/.lnSecTitle/.lnBody) så
+   skalan blir mallens, inte den generiska.
+
+   Inga hårdkodade hex utanför dekor-varsen i .lnRoot (--ln-white/--ln-scrim-*).
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── HERO — inset foto + offset textplatta som bryter dess nedre kant ───── */
+.lnRoot {
+  /* ── TYPSKALA — 6 nivåer, steg ×1.91 / ×1.77 / ×1.44 / ×1.13 / ×1.33 ─────── */
+  --ln-fs-hero: clamp(46px, 6.8vw, 88px); /* display (Italiana 400) */
+  --ln-fs-sec: clamp(32px, 4.4vw, 46px); /* sektionsrubrik */
+  --ln-fs-card: clamp(22px, 2.2vw, 26px); /* kortnamn, tjänstnamn, stat-tal */
+  --ln-fs-lede: 18px; /* ingress */
+  --ln-fs-body: 16px; /* brödtext */
+  --ln-fs-micro: 12px; /* EN mikronivå: eyebrow, etikett, knapp, länk */
+
+  /* ── LINE-HEIGHT — rubrik = FORM (spänd), brödtext = YTA (luftig) ────────── */
+  --ln-lh-hero: 1.05;
+  --ln-lh-sec: 1.1;
+  --ln-lh-card: 1.15;
+  --ln-lh-body: 1.58;
+  --ln-lh-micro: 1.5;
+
+  /* ── LETTER-SPACING — omvänt mot storleken, aldrig positiv på stora rubriker */
+  --ln-ls-display: 0;
+  --ln-ls-micro: 0.083em; /* 12px → 1.0px */
+
+  /* ── VIKT — stort = 400 (äkta Italiana), litet = 600 (äkta Source Sans 3) ── */
+  --ln-fw-display: 400;
+  --ln-fw-micro: 600;
+
+  /* ── RYTM — EN skala: 12 / 20 / 24 / 32 / 48 / 96 (+144 på closing) ──────── */
+  --ln-sp-eyebrow: 12px; /* eyebrow → rubrik */
+  --ln-sp-text: 20px; /* rubrik → text */
+  --ln-sp-cta: 32px; /* text → CTA */
+  --ln-sp-block: 48px; /* rubrikblock → innehåll, grid-gap */
+  --ln-sp-gutter: 24px; /* inre kortpadding, kolumn-gap */
+  --ln-sp-section: clamp(56px, 9vw, 96px); /* sektionsavstånd */
+  --ln-sp-closing: clamp(96px, 12vw, 144px);
+  --ln-measure: 44rem; /* radlängd-spärr på brödtext */
+
+  /* ── MOTION — återhållsam: 4px lyft, 400ms, ingen skugga, ingen scale ────── */
+  --ln-dur: 400ms;
+  --ln-ease: ease;
+  --ln-lift: -4px;
+
+  /* ── BILD — EN ratio på varenda innehållsbild ───────────────────────────── */
+  --ln-ratio: 4 / 5;
+
+  /* ── DEKOR (mallens enda råa färgvärden; scrim = --color-primary-d i alfa) ─ */
+  --ln-white: #ffffff;
+  --ln-scrim-top: rgba(18, 26, 43, 0.75); /* vit text ≥7:1 även mot ett HELVITT foto */
+  --ln-scrim-bottom: rgba(18, 26, 43, 0.9);
+}
+
+/* ══ TYPROLLER — mallens egna (ersätter de globala .sf-*) ═══════════════════ */
+.lnEyebrow {
+  display: inline-block;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  line-height: var(--ln-lh-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary); /* 13.72:1 mot --color-surface */
+}
+.lnSecTitle {
+  margin: var(--ln-sp-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-sec);
+  line-height: var(--ln-lh-sec);
+  letter-spacing: var(--ln-ls-display);
+  color: var(--color-fg); /* 14.85:1 mot --color-bg */
+}
+.lnBody {
+  margin: var(--ln-sp-text) 0 0;
+  max-width: var(--ln-measure);
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-body);
+  color: var(--color-fg-2); /* 5.83:1 mot --color-bg — backar medvetet */
+}
+
+/* ══ KNAPP — exakt pill (radie = halva höjden), mikroversaler, hård växling ══
+   Slår .btn-accent (0,1,0) med 0,2,0. Den globala .btn-accent kör vikt 700 och
+   en skugg-bloom på hover — båda är morots-tells. */
+.lnCta:global(.btn-accent) {
+  box-sizing: border-box;
+  display: inline-block;
+  height: 50px;
+  padding: 0 30px;
+  border: 2px solid var(--color-primary);
+  border-radius: 999px; /* 25px = exakt halva höjden → ren kapsel */
+  background: var(--color-primary);
+  color: var(--ln-white); /* 14.33:1 */
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  line-height: 46px; /* 50px − 2×2px kant = exakt knapphöjd */
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform var(--ln-dur) var(--ln-ease), background var(--ln-dur) var(--ln-ease),
+    border-color var(--ln-dur) var(--ln-ease);
+}
+.lnCta:global(.btn-accent):hover {
+  transform: translateY(var(--ln-lift));
+  background: var(--color-primary-d);
+  border-color: var(--color-primary-d); /* vit text = 17.38:1 */
+  box-shadow: none;
+}
+
+/* ── HERO — inset foto (enda panoramat) + offset textplatta på dess kant ──── */
 .lnHero {
-  padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 1.75rem) clamp(7.5rem, 14vw, 10rem);
+  padding: var(--ln-sp-block) var(--ln-sp-gutter) var(--ln-sp-section);
 }
 .lnHeroFrame {
   position: relative;
@@ -20,62 +157,76 @@
 }
 .lnHeroPhoto {
   aspect-ratio: 16 / 10;
-  width: min(82%, 54rem);
+  width: min(74%, 48rem);
   margin-left: auto;
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
-  border-radius: var(--sf-radius);
+  border-radius: var(--sf-radius); /* 0 */
 }
 .lnHeroCard {
   position: absolute;
   left: 0;
-  bottom: clamp(-5rem, -9vw, -3.25rem);
-  width: min(94%, 28rem);
+  bottom: calc(-1 * var(--ln-sp-block));
+  width: min(94%, 38rem);
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
-  padding: clamp(1.9rem, 4vw, 2.75rem);
-  box-shadow: 0 34px 70px -32px rgba(20, 24, 34, 0.4);
+  border-radius: var(--sf-radius); /* 0 */
+  padding: var(--ln-sp-block);
+  box-shadow: none;
   z-index: 2;
 }
+/* Eyebrow-chip: den enda pillen utanför knappen (medvetet undantag, samma
+   grammatik som zentums eyebrow-pill). */
 .lnHeroEyebrow {
   display: inline-block;
   margin: 0;
+  padding: 0 16px;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  line-height: 26px;
+  letter-spacing: var(--ln-ls-micro);
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-primary); /* 10.79:1 mot --color-accent-soft */
   background: var(--color-accent-soft);
-  padding: 0.4rem 0.9rem;
   border-radius: 999px;
 }
 .lnHeroTitle {
-  margin: 1.1rem 0 0;
+  margin: var(--ln-sp-eyebrow) 0 0;
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(2rem, 4.2vw, 3.1rem);
-  line-height: 1.08;
-  letter-spacing: 0;
-  color: var(--color-fg);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-hero);
+  line-height: var(--ln-lh-hero);
+  letter-spacing: var(--ln-ls-display);
+  color: var(--color-fg); /* 16.49:1 mot --color-surface */
   white-space: pre-line;
 }
 .lnHeroLede {
-  margin: 1rem 0 0;
+  margin: var(--ln-sp-text) 0 0;
   font-family: var(--font-body);
-  font-size: 0.98rem;
-  line-height: 1.65;
-  color: var(--color-fg-2);
+  font-size: var(--ln-fs-lede);
+  line-height: var(--ln-lh-body);
+  color: var(--color-fg-2); /* 6.48:1 mot --color-surface */
 }
-.lnHeroActions { margin-top: 1.7rem; }
-.lnHeroCta { font-size: 0.9rem; }
+.lnHeroActions {
+  margin-top: var(--ln-sp-cta);
+}
 
 @media (max-width: 800px) {
-  .lnHeroPhoto { width: 100%; aspect-ratio: 4 / 3; }
-  .lnHeroCard { position: static; width: 100%; max-width: 26rem; margin: -3.5rem auto 0; }
-  .lnHero { padding-bottom: clamp(2.5rem, 6vw, 3.5rem); }
+  .lnHeroPhoto {
+    width: 100%;
+  } /* samma 16:10 — ingen ratio-växling vid breakpoint */
+  .lnHeroCard {
+    position: static;
+    width: 100%;
+    max-width: 30rem;
+    margin: calc(-1 * var(--ln-sp-block)) auto 0;
+    padding: var(--ln-sp-cta);
+  }
+  .lnHero {
+    padding-bottom: var(--ln-sp-block);
+  }
 }
 
 /* ── Måne-ornament — sektionsdelaren (ersätter Floras stjälk-ornament) ──── */
@@ -83,20 +234,21 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: clamp(1.5rem, 4vw, 2.5rem) 0;
+  padding: var(--ln-sp-block) 0;
   color: var(--color-primary);
-  opacity: 0.6;
 }
 
 /* ── STÄMNINGSKORT — Säsong / Prenumeration / Kurser, fast trio ─────────── */
-.lnMoodSection { padding: 0 0 clamp(4rem, 8vw, 6.5rem); }
+.lnMoodSection {
+  padding: 0 0 var(--ln-sp-section);
+}
 .lnMoodGrid {
   max-width: 74rem;
   margin: 0 auto;
-  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  padding: 0 var(--ln-sp-gutter);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(1.5rem, 3vw, 2.25rem);
+  gap: var(--ln-sp-gutter);
 }
 .lnMoodCard {
   display: block;
@@ -104,66 +256,75 @@
   color: inherit;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
+  border-radius: var(--sf-radius); /* 0 */
   overflow: hidden;
-  transition: transform 500ms ease, box-shadow 500ms ease;
+  box-shadow: none;
+  transition: transform var(--ln-dur) var(--ln-ease), border-color var(--ln-dur) var(--ln-ease);
 }
 a.lnMoodCard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px -26px rgba(20, 24, 34, 0.32);
+  transform: translateY(var(--ln-lift)); /* 4px lyft. Ingen scale, ingen skugga. */
+  border-color: var(--color-primary);
+  box-shadow: none;
 }
 .lnMoodImg {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: var(--ln-ratio);
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
 }
-.lnMoodBody { padding: 1.4rem 1.5rem 1.7rem; }
+.lnMoodBody {
+  padding: var(--ln-sp-gutter);
+}
 .lnMoodTitle {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.28rem;
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-card);
+  line-height: var(--ln-lh-card);
+  letter-spacing: var(--ln-ls-display);
   color: var(--color-fg);
 }
 .lnMoodText {
-  margin: 0.6rem 0 0;
+  margin: var(--ln-sp-text) 0 0;
   font-family: var(--font-body);
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--color-fg-2);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-body);
+  color: var(--color-fg-2); /* 6.48:1 mot --color-surface */
 }
 .lnMoodLink {
   display: inline-block;
-  margin-top: 0.9rem;
+  margin-top: var(--ln-sp-cta);
+  padding-bottom: 2px;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.76rem;
-  letter-spacing: 0.08em;
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  line-height: var(--ln-lh-micro);
+  letter-spacing: var(--ln-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary);
   border-bottom: 1px solid var(--color-primary);
-  padding-bottom: 2px;
 }
 
 /* ── Delad kort-sektion — Ur butiken / Från bloggen ──────────────────────── */
-.lnCardSection { padding: clamp(4rem, 8vw, 6.5rem) 0; }
-.lnSecHead { text-align: center; padding: 0 1.25rem; }
-.lnSecTitle {
-  margin: 0.7rem 0 0;
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
-  line-height: 1.15;
-  color: var(--color-fg);
+.lnCardSection {
+  padding: var(--ln-sp-section) 0;
+}
+.lnSecHead {
+  text-align: center;
+  padding: 0 var(--ln-sp-gutter);
+}
+/* Galleriets eyebrow (den delade .sfGalleryBand .sf-eyebrow-regeln gäller inte
+   längre — mallen bär egna typroller). */
+.lnGalleryHead {
+  margin-bottom: var(--ln-sp-block);
 }
 .lnCardGrid {
   max-width: 1100px;
-  margin: 2.75rem auto 0;
+  margin: var(--ln-sp-block) auto 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(1.1rem, 2.5vw, 1.6rem);
-  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  gap: var(--ln-sp-gutter);
+  padding: 0 var(--ln-sp-gutter);
 }
 .lnCard {
   display: block;
@@ -171,66 +332,81 @@ a.lnMoodCard:hover {
   color: inherit;
   background: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
+  border-radius: var(--sf-radius); /* 0 */
   overflow: hidden;
-  transition: transform 500ms ease, box-shadow 500ms ease;
+  box-shadow: none;
+  transition: transform var(--ln-dur) var(--ln-ease), border-color var(--ln-dur) var(--ln-ease);
 }
 .lnCard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px -26px rgba(20, 24, 34, 0.32);
+  transform: translateY(var(--ln-lift));
+  border-color: var(--color-primary);
+  box-shadow: none;
 }
 .lnCardImg {
-  aspect-ratio: 4 / 5;
+  aspect-ratio: var(--ln-ratio); /* samma 4:5 som stämningskorten */
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
 }
-.lnCardBody { padding: 1.1rem 1.2rem 1.35rem; }
+.lnCardBody {
+  padding: var(--ln-sp-gutter);
+}
 .lnCardName {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.05rem;
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-card);
+  line-height: var(--ln-lh-card);
+  letter-spacing: var(--ln-ls-display);
   color: var(--color-fg);
 }
 .lnCardMeta {
-  margin: 0.5rem 0 0;
+  margin: var(--ln-sp-text) 0 0;
   font-family: var(--font-body);
-  font-size: 0.85rem;
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-body);
   color: var(--color-fg-2);
-  line-height: 1.5;
 }
 .lnCardPrice {
-  margin: 0.6rem 0 0;
+  margin: var(--ln-sp-text) 0 0;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: var(--color-primary);
+  font-weight: var(--ln-fw-micro);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-micro);
+  color: var(--color-fg); /* 16.49:1 — priset är data, det ska skära */
 }
 .lnBandCta {
   display: block;
   width: fit-content;
-  margin: 2.25rem auto 0;
+  margin: var(--ln-sp-block) auto 0;
+  padding-bottom: 2px;
   font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.8rem;
-  letter-spacing: 0.1em;
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  line-height: var(--ln-lh-micro);
+  letter-spacing: var(--ln-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary);
   border-bottom: 1px solid var(--color-primary);
-  padding-bottom: 3px;
   text-decoration: none;
 }
 
 /* ── OM — cirkulärt porträtt + text + statistik-trio ─────────────────────── */
-.lnAboutBand { padding: clamp(4.5rem, 9vw, 7rem) 0; }
+.lnAboutBand {
+  padding: var(--ln-sp-section) 0;
+}
 .lnAboutGrid {
   display: grid;
   grid-template-columns: 0.8fr 1fr;
-  gap: clamp(2.5rem, 5vw, 4.5rem);
+  gap: clamp(var(--ln-sp-block), 5vw, 96px);
   align-items: center;
 }
-.lnAboutMedia { display: flex; justify-content: center; }
+.lnAboutMedia {
+  display: flex;
+  justify-content: center;
+}
+/* Cirkeln = mallens signatur och binärt korrekt (full rundning, inte 8–16px
+   mush). Skuggan är borta; 1px --color-line gör kanten. */
 .lnPortrait {
   width: clamp(14rem, 22vw, 19rem);
   aspect-ratio: 1 / 1;
@@ -239,32 +415,38 @@ a.lnMoodCard:hover {
   background-position: center;
   background-color: var(--color-accent-soft);
   border: 1px solid var(--color-line);
-  box-shadow: 0 26px 50px -30px rgba(20, 24, 34, 0.35);
+  box-shadow: none;
 }
 
 @media (max-width: 760px) {
-  .lnAboutGrid { grid-template-columns: 1fr; text-align: center; }
-  .lnAboutMedia { order: -1; }
+  .lnAboutGrid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .lnAboutMedia {
+    order: -1;
+  }
 }
 
 /* ── Presentkort — smal rad, aldrig en hel sektion ───────────────────────── */
 .lnGiftRow {
-  padding: clamp(1.25rem, 3vw, 2rem) 1.5rem;
+  padding: var(--ln-sp-gutter);
   text-align: center;
   background: var(--color-accent-soft);
 }
 .lnGiftInner {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  gap: 0.5rem 1rem;
+  gap: var(--ln-sp-eyebrow) var(--ln-sp-cta);
 }
 .lnGiftLede {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 1rem;
-  color: var(--color-fg);
+  font-size: var(--ln-fs-lede);
+  line-height: var(--ln-lh-body);
+  color: var(--color-fg); /* 12.97:1 mot --color-accent-soft */
 }
 
 /* ── CLOSING — helbild med mörk gradient, ljus text ovanpå ──────────────── */
@@ -273,14 +455,16 @@ a.lnMoodCard:hover {
   background-size: cover;
   background-position: center;
   background-color: var(--color-primary);
-  padding: clamp(5rem, 10vw, 7.5rem) 1.5rem;
+  padding: var(--ln-sp-closing) var(--ln-sp-gutter);
   text-align: center;
   overflow: hidden;
 }
+/* Scrim-platån håller ≥7:1 för vit text även om kunden laddar upp ett HELVITT
+   foto (7.72:1 i toppen, 9.2:1+ i botten) — läsbarheten får inte bero på tur. */
 .lnClosingOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(14, 18, 28, 0.6) 0%, rgba(14, 18, 28, 0.84) 100%);
+  background: linear-gradient(180deg, var(--ln-scrim-top) 0%, var(--ln-scrim-bottom) 100%);
 }
 .lnClosingInner {
   position: relative;
@@ -291,21 +475,138 @@ a.lnMoodCard:hover {
 .lnClosingTitle {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(1.9rem, 3.6vw, 2.9rem);
-  line-height: 1.12;
-  color: #fff;
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-sec);
+  line-height: var(--ln-lh-sec);
+  letter-spacing: var(--ln-ls-display);
+  color: var(--ln-white);
 }
 .lnClosingLede {
-  margin: 1rem 0 0;
+  margin: var(--ln-sp-text) auto 0;
+  max-width: var(--ln-measure);
   font-family: var(--font-body);
-  font-size: 1.02rem;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.88);
+  font-size: var(--ln-fs-lede);
+  line-height: var(--ln-lh-body);
+  color: var(--ln-white); /* full opacitet — dimmad vit var 5.9:1, nu 7.72:1 */
 }
-.lnClosingCta { font-size: 0.95rem; }
+.lnClosingActions {
+  margin-top: var(--ln-sp-cta);
+}
+/* CTA på mörk scrim = INVERTERAD (vit fyllning, nattblå text). En nattblå knapp
+   på en nattblå scrim tappar sin kant. */
+.lnClosingCta:global(.btn-accent) {
+  background: var(--ln-white);
+  border-color: var(--ln-white);
+  color: var(--color-primary-d); /* 17.38:1 */
+}
+.lnClosingCta:global(.btn-accent):hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent-soft);
+  color: var(--color-primary-d); /* 13.08:1 */
+}
+
+/* ══ DELADE .sf*-PRIMITIV — sam-applicerade ln*-klasser (0,2,0 slår 0,1,0) ══
+   De delade klasserna ägs av alla mallar och rörs inte; här sätts BARA
+   lunarias typskala/rytm på dem. */
+.lnRoot .lnBand {
+  padding-top: var(--ln-sp-section);
+  padding-bottom: var(--ln-sp-section);
+}
+.lnRoot .lnLocGrid {
+  padding-top: var(--ln-sp-section);
+  padding-bottom: var(--ln-sp-section);
+  gap: clamp(var(--ln-sp-block), 5vw, 96px);
+}
+.lnRoot .lnRowList {
+  margin-top: var(--ln-sp-block);
+}
+/* Tjänstnumret: mikroetikett, inte en halvstor display-siffra (1.6rem låg mitt
+   emellan kort- och brödtextnivån = grötigt). */
+.lnRoot .lnRowNum {
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  letter-spacing: var(--ln-ls-micro);
+  color: var(--color-primary);
+  opacity: 1;
+}
+.lnRoot .lnRowName {
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-card);
+  line-height: var(--ln-lh-card);
+  letter-spacing: var(--ln-ls-display);
+  color: var(--color-fg);
+}
+.lnRoot .lnRowDesc {
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-body);
+  color: var(--color-fg-2); /* 5.09:1 även mot hover-ytan --color-accent-soft */
+}
+.lnRoot .lnRowPrice {
+  font-family: var(--font-body);
+  font-weight: var(--ln-fw-micro);
+  font-size: var(--ln-fs-body);
+  color: var(--color-fg);
+}
+.lnRoot .lnMoreLink {
+  margin-top: var(--ln-sp-cta);
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.lnRoot .lnStatTrio {
+  margin-top: var(--ln-sp-block);
+  gap: var(--ln-sp-block);
+}
+.lnRoot .lnStatValue {
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-card);
+  line-height: var(--ln-lh-card);
+  color: var(--color-primary);
+}
+.lnRoot .lnStatLabel {
+  margin-top: var(--ln-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.lnRoot .lnHours {
+  margin-top: var(--ln-sp-cta);
+}
+.lnRoot .lnHoursRow {
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-micro);
+  color: var(--color-fg);
+}
+.lnRoot .lnMapLink {
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.lnRoot .lnMapHint {
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-body);
+  color: var(--color-fg-2);
+}
 
 @media (max-width: 760px) {
   .lnMoodGrid,
-  .lnCardGrid { grid-template-columns: 1fr; max-width: 24rem; }
+  .lnCardGrid {
+    grid-template-columns: 1fr;
+    max-width: 24rem;
+  }
 }

@@ -21,6 +21,15 @@ import styles from './viora.module.css'
  * (6) om, (7) presentkort, (8) blogg i ett mindre 3-kolumners grid (kontrasten
  * mot butikens stora kort är avsiktlig), (9) galleri, (10) plats, (11) closing.
  * Webshop/blogg/presentkort vävs in via `modules`-propen (S10).
+ *
+ * SKÄRPE-PASS (design-skarpa-zentum.md) — TYPOGRAFIN ÄR MALLENS EGEN. De globala
+ * rollerna .sf-h1/.sf-h2/.sf-eyebrow/.sf-body (tokens.css) är en ×1.2–1.5-skala:
+ * hero 83 → h1 56 → h2 34 → kort 24 → 16px. Allt blir mellanstort, ögat hittar
+ * ingen ingång — moroten. Viora kör sin egen ×2-skala ur viora.module.css i
+ * stället: 108 → 52 → 26 → 18 → 16 | 11–12px mikro. Sektionsstrukturen
+ * (shared.sfServices/sfAboutGrid/sfLocBand/sfGalleryBand/sfClosing) är kvar —
+ * bara typografin, radien, bildratiot (allt 4:5) och rytmen (12/20/32/48/144)
+ * är våra. Noll typografiska inline-styles: skalan bor i CSS:en, inte i markupen.
  */
 export function VioraLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -50,9 +59,7 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
       <section className={styles.vioHero}>
         <div className={styles.vioHeroPanel}>
           <Reveal>
-            <p className="sf-eyebrow" style={{ color: 'var(--color-bg)', opacity: 0.82 }}>
-              {content.heroEyebrow}
-            </p>
+            <p className={styles.vioHeroEyebrow}>{content.heroEyebrow}</p>
             <h1 className={styles.vioHeroTitle}>{content.heroTitle}</h1>
             <p className={styles.vioHeroLede}>{content.heroLede}</p>
             <div className={styles.vioHeroActions}>
@@ -120,8 +127,8 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
       {shopTeasers.length > 0 ? (
         <section className={styles.vioShopSection}>
           <Reveal className={styles.vioSecHead}>
-            <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 10 }}>{content.shopTitle ?? 'Handplockat till dig'}</h2>
+            <p className={styles.vioEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
+            <h2 className={styles.vioH2}>{content.shopTitle ?? 'Handplockat till dig'}</h2>
           </Reveal>
           <div className={styles.vioShopGrid}>
             {shopTeasers.map((p, i) => (
@@ -148,15 +155,13 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
       ) : null}
 
       {/* 5 — TJÄNSTER — bara när det finns aktiva tjänster, ingen tom-text på
-          hemmet (goal-55 8B). */}
+          hemmet (goal-55 8B). Delad rad-struktur, viora-typografi. */}
       {rows.length > 0 ? (
-        <section className={shared.sfServices}>
+        <section className={`${shared.sfServices} ${styles.vioServices}`}>
           <div className={shared.sfNarrow}>
-            <Reveal style={{ textAlign: 'center' }}>
-              <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className="sf-h1" style={{ marginTop: 12 }}>
-                {content.servicesTitle}
-              </h2>
+            <Reveal className={styles.vioSecHead}>
+              <p className={styles.vioEyebrow}>{content.servicesEyebrow}</p>
+              <h2 className={styles.vioH2}>{content.servicesTitle}</h2>
             </Reveal>
             <div className={shared.sfRowList}>
               {rows.map((s, i) => (
@@ -166,19 +171,19 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
                       {serviceNum(i)}
                     </span>
                     <span className={shared.sfRowMain}>
-                      <span className={shared.sfRowName}>{s.name}</span>
-                      <span className={shared.sfRowDesc}>{serviceDesc(s)}</span>
+                      <span className={styles.vioRowName}>{s.name}</span>
+                      <span className={styles.vioRowDesc}>{serviceDesc(s)}</span>
                     </span>
                     <span className={shared.sfRowMeta}>
-                      <span className={shared.sfRowPrice}>{formatPrice(s)}</span>
+                      <span className={styles.vioRowPrice}>{formatPrice(s)}</span>
                     </span>
                   </Bookable>
                 </Reveal>
               ))}
             </div>
             {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={shared.sfMoreLink}>
+              <Reveal className={styles.vioSecHead}>
+                <a href="/tjanster" className={styles.vioMoreLink}>
                   Se allt vi gör <span aria-hidden="true">→</span>
                 </a>
               </Reveal>
@@ -187,23 +192,21 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
         </section>
       ) : null}
 
-      {/* 6 — OM */}
-      <section style={{ paddingBottom: 'clamp(48px, 7vw, 90px)' }}>
-        <div className={`${shared.sfWide} ${shared.sfAboutGrid}`}>
+      {/* 6 — OM — delad grid-struktur (fotot är redan 4:5 = mallens enda ratio) */}
+      <section>
+        <div className={`${shared.sfWide} ${shared.sfAboutGrid} ${styles.vioAboutGrid}`}>
           <Reveal>
             <div className={shared.sfAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
           <Reveal delay={120}>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>{content.aboutTitle}</h2>
-            <p className="sf-body" style={{ marginTop: 16 }}>
-              {content.aboutCopyHome}
-            </p>
+            <p className={styles.vioEyebrow}>— Om {tenant.name}</p>
+            <h2 className={styles.vioH2}>{content.aboutTitle}</h2>
+            <p className={styles.vioBody}>{content.aboutCopyHome}</p>
             <ul className={shared.sfStatTrio}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
+                  <span className={styles.vioStatValue}>{n}</span>
+                  <span className={styles.vioStatLabel}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -215,9 +218,7 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
       {presentkortLive ? (
         <div className={styles.vioGiftRow}>
           <Reveal className={styles.vioGiftInner}>
-            <p className="sf-eyebrow" style={{ color: 'var(--color-bg)', opacity: 0.75, margin: 0 }}>
-              {content.giftEyebrow ?? '— Presentkort'}
-            </p>
+            <p className={styles.vioGiftEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.vioGiftLede}>{content.giftLede ?? 'Ge bort en blomstrande stund.'}</p>
             <Link href="/presentkort" className={styles.vioGiftCta}>
               {content.giftCta ?? 'Till presentkorten'}
@@ -227,12 +228,12 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
       ) : null}
 
       {/* 8 — FRÅN BLOGGEN — mindre 3-kolumners teaser-grid (kontrast mot butikens
-          stora kort är avsiktlig). Tom modul → ingen sektion. */}
+          stora kort är avsiktlig — men SAMMA 4:5-format). Tom modul → ingen sektion. */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.vioTeaserSection}>
           <Reveal className={styles.vioSecHead}>
-            <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 10 }}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
+            <p className={styles.vioEyebrow}>{content.blogEyebrow ?? '— Från bloggen'}</p>
+            <h2 className={styles.vioH2}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
           </Reveal>
           <div className={styles.vioTeaserGrid}>
             {bloggTeasers.map((p, i) => (
@@ -256,11 +257,11 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
         </section>
       ) : null}
 
-      {/* 9 — GALLERI — masonry + lightbox */}
-      <section className={shared.sfGalleryBand}>
+      {/* 9 — GALLERI — masonry + lightbox, tvingat till mallens 4:5 (viora.module.css) */}
+      <section className={`${shared.sfGalleryBand} ${styles.vioGallery}`}>
         <div className={shared.sfWide}>
           <Reveal>
-            <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
+            <p className={styles.vioEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
           </Reveal>
           <Reveal>
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
@@ -271,25 +272,21 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
       {/* 10 — PLATS & ÖPPETTIDER — id="hitta" är målet för ikonlänken "Leveransorter"
           ovan (samma-sida-ankare, aldrig en 404-fälla). */}
       <section id="hitta" className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+        <div className={`${shared.sfWide} ${shared.sfLocGrid} ${styles.vioLocGrid}`}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
+            <p className={styles.vioEyebrow}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
+            <h2 className={styles.vioH2}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ marginTop: 6 }}>
-                {location.address}
-              </p>
+              <p className={styles.vioBody}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ marginTop: 6 }}>
-                Adress visas snart.
-              </p>
+              <p className={styles.vioBody}>Adress visas snart.</p>
             )}
             {location?.hours ? (
               <div className={shared.sfHours}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
+                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.vioHoursRow}`}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
@@ -304,12 +301,12 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={shared.sfMapLink}
+                  className={styles.vioMapLink}
                 >
                   Visa på karta <span aria-hidden="true">→</span>
                 </a>
               ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
+                <span className={styles.vioMapHint}>Karta visas när adressen är ifylld.</span>
               )}
             </div>
           </Reveal>
@@ -317,16 +314,16 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
       </section>
 
       {/* 11 — CLOSING */}
-      <section className={shared.sfClosing}>
+      <section className={`${shared.sfClosing} ${styles.vioClosing}`}>
         <Reveal>
-          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto' }}>
+          <h2 className={styles.vioClosingTitle}>
             {content.closingTitle ?? 'Blommor för din dag?'}
           </h2>
-          <p className={shared.sfClosingLead}>
+          <p className={styles.vioClosingLede}>
             {content.closingLede ?? 'Beställ, boka en tid eller hör av dig — vi hjälper dig gärna.'}
           </p>
-          <div style={{ marginTop: 30 }}>
-            <BookCta className={shared.sfClosingCta} />
+          <div className={styles.vioClosingActions}>
+            <BookCta className={`${shared.sfClosingCta} ${styles.vioClosingCta}`} />
           </div>
         </Reveal>
       </section>

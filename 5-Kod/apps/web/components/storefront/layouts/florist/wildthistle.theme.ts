@@ -38,30 +38,52 @@ const IMG = {
  * mossgrön kurser-CTA-remsa, (7) blogg (samma raka kort som butiken), (8)
  * galleri, (9) plats, (10) closing i eget mörka fullbredds-foto. Presentkort
  * vävs in som en smal rad mellan blogg och galleri — aldrig en egen sektion.
- * Se WildThistleLayout.tsx för sektionerna i sin helhet. Radie 0 rakt igenom,
- * tunga vikter (700/800) på all display-typografi — skarpt, aldrig mjukt.
+ * Se WildThistleLayout.tsx för sektionerna i sin helhet.
+ *
+ * SKÄRPE-PASS 2026-07-11 (4-Dokument-Underlag/design-skarpa-zentum.md): radie 0
+ * rakt igenom (oförändrat), men skärpan kommer nu från SKALAN och KONTRASTEN,
+ * inte från fetma: typskala i sex steg med ×1.8–1.9 emellan (84 → 46 → 25 → 18
+ * → 16 → 12 px) och display i vikt 600 istället för 700/800. Se
+ * wildthistle.module.css för hela mätprotokollet.
  */
 export const wildthistle: FloristTheme = {
   key: 'wildthistle',
   name: 'Wild Thistle',
   desc: 'Tistel-lila & mossgrönt · rustikt & vilt',
+  // KONTRAST — uträknad (WCAG 2.1, relativ luminans), inte gissad. Kraven:
+  // rubrik-ink ≥ 7:1 (sikte 11:1), brödtext ≥ 4.5:1, knapptext ≥ 4.5:1.
+  //   fg      #201a16 mot bg #f1ead9 ....... 14.34:1  (rubrik-ink, AAA)
+  //   fg2     #635749 mot bg #f1ead9 ........ 5.86:1  (brödtext — backar medvetet)
+  //           fg2 mot surface #f8f3e7 ....... 6.34:1
+  //           fg2 mot accentSoft #e2e6cd .... 5.50:1  (presentkortsraden)
+  //   primary #4b2e52 mot bg .............. 9.67:1  (eyebrows, länkar, citat)
+  //   #fff    mot primary ................. 11.59:1  (hero-kortets text)
+  //   primaryD #2e1a34 mot #fff ........... 15.99:1  (knapptext på vit CTA)
+  // fg2 var #6b5f52 (5.17:1) — samma kulör, en aning mörkare nu så brödtexten
+  // biter (zentum-referensen ligger på 5.74:1). fg/primary höll redan kravet.
   palette: {
     primary: '#4b2e52',
     primaryD: '#2e1a34',
     bg: '#f1ead9',
     surface: '#f8f3e7',
     fg: '#201a16',
-    fg2: '#6b5f52',
+    fg2: '#635749',
     line: '#ddd2ba',
     accentSoft: '#e2e6cd',
   },
   fonts: {
-    // Playfair Display: klassisk hög-kontrast-serif som bär tunga vikter (700)
-    // utan att bli klumpig — passar "svärd, inte morot". Inter: neutral
-    // grotesk för mikrotext/brödtext, håller sig undan rubrikernas dramatik.
+    // Playfair Display: klassisk hög-kontrast-serif. Display-rubrikerna körs i
+    // vikt 600 (var 700/800) — stor text i medium får tunna, precisa stammar;
+    // fet stor text blir en klump. 600 är den LÄTTASTE Playfair-vikt som
+    // faktiskt laddas (app/layout.tsx: 600/700/800), så vi går så nära regelns
+    // 400–500 som fonten tillåter utan att falla tillbaka på en syntetisk vikt.
+    // Inter: neutral grotesk för mikrotext/brödtext (variabel → 400 + 600).
     display: 'var(--font-playfair), Georgia, serif',
     body: 'var(--font-inter), system-ui, sans-serif',
   },
+  // Binär hörnradie: 0 på ALLT strukturellt (bilder, kort, sektioner, karta) och
+  // 0 på knapparna också — mallens signatur är den fyrkantiga CTA:n. Inga
+  // 8–16px-hörn någonstans; det är morot-tellet.
   radius: '0px',
   content: {
     heroEyebrow: '— Vildvuxet & handbundet',

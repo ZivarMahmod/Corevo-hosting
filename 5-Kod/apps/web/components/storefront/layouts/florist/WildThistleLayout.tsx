@@ -6,7 +6,6 @@ import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceNum } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './wildthistle.module.css'
 
 /**
@@ -23,6 +22,15 @@ import styles from './wildthistle.module.css'
  * som en smal rad mellan blogg och galleri — aldrig en egen sektion.
  * Webshop/blogg/presentkort/offert vävs in via `modules`-propen (S10) —
  * samma modulkontrakt som övriga florist-mallar.
+ *
+ * SKÄRPE-PASS 2026-07-11 (design-skarpa-zentum.md): sektionsordningen och
+ * modul-gatingen är ORÖRDA. Det som ändrats är typografin — mallen bär nu sin
+ * EGEN typskala (wt-nivåer i wildthistle.module.css, steg ×1.8–1.9) istället
+ * för de globala .sf-h1/.sf-h2/.sf-eyebrow/.sf-body-rollerna, vars tak (h2 =
+ * 34px) inte rymmer en 46px sektionsrubrik. De delade .sf*-primitiverna är
+ * oförändrade — de konsumeras bara inte längre härifrån, så prislistan,
+ * stat-trion, galleri-bandet och plats-bandet ligger nu i wt-klasser med
+ * mallens skala. Inga inline font-size/margin-styles kvar (rytmen bor i CSS).
  */
 export function WildThistleLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -100,13 +108,11 @@ export function WildThistleLayout({ tenant, content, services, location, modules
           <div className={styles.wtContain}>
             <Reveal className={styles.wtSecHead} as="div">
               <div>
-                <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-                <h2 className="sf-h2" style={{ marginTop: 8 }}>
-                  {content.shopTitle ?? 'Rakt från fältet'}
-                </h2>
+                <p className={styles.wtEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
+                <h2 className={styles.wtH2}>{content.shopTitle ?? 'Rakt från fältet'}</h2>
               </div>
               {shopReachable ? (
-                <Link href="/shop" className={styles.wtSecCta}>
+                <Link href="/shop" className={styles.wtLinkCta}>
                   {content.shopCta ?? 'Handla i butiken'}
                 </Link>
               ) : null}
@@ -132,25 +138,23 @@ export function WildThistleLayout({ tenant, content, services, location, modules
       {/* 4 — TJÄNSTER: rå prislista, punkterad linje mellan namn och pris. Hela
           sektionen visas bara när det finns aktiva tjänster. */}
       {rows.length > 0 ? (
-        <section className={shared.sfPriceBand}>
-          <Reveal style={{ textAlign: 'center' }}>
-            <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-            <h2 className="sf-h1" style={{ margin: '12px 0 44px' }}>
-              {content.servicesTitle}
-            </h2>
+        <section className={styles.wtPriceBand}>
+          <Reveal className={styles.wtPriceHead} as="div">
+            <p className={styles.wtEyebrow}>{content.servicesEyebrow}</p>
+            <h2 className={styles.wtH2}>{content.servicesTitle}</h2>
           </Reveal>
-          <div className={shared.sfPriceGrid}>
+          <div className={styles.wtPriceGrid}>
             {rows.map((s) => (
-              <Bookable key={s.id} className={shared.sfPriceRow} label={`Boka — ${s.name}`}>
-                <span className={shared.sfPriceName}>{s.name}</span>
-                <span className={shared.sfPriceDots} aria-hidden="true" />
-                <span className={shared.sfPriceVal}>{formatPrice(s)}</span>
+              <Bookable key={s.id} className={styles.wtPriceRow} label={`Boka — ${s.name}`}>
+                <span className={styles.wtPriceName}>{s.name}</span>
+                <span className={styles.wtPriceDots} aria-hidden="true" />
+                <span className={styles.wtPriceVal}>{formatPrice(s)}</span>
               </Bookable>
             ))}
           </div>
           {hasMore ? (
-            <Reveal style={{ textAlign: 'center' }}>
-              <a href="/tjanster" className={shared.sfMoreLink}>
+            <Reveal className={styles.wtMoreWrap} as="div">
+              <a href="/tjanster" className={styles.wtLinkCta}>
                 Se allt vi gör <span aria-hidden="true">→</span>
               </a>
             </Reveal>
@@ -165,26 +169,14 @@ export function WildThistleLayout({ tenant, content, services, location, modules
             <div className={styles.wtAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
           <Reveal delay={120}>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <p
-              className="sf-italic"
-              style={{
-                fontSize: 'clamp(1.6rem, 3.2vw, 2.4rem)',
-                lineHeight: 1.25,
-                color: 'var(--color-primary)',
-                margin: '14px 0 20px',
-              }}
-            >
-              ”{content.italic}”
-            </p>
-            <p className="sf-body" style={{ fontSize: 17 }}>
-              {content.aboutCopyHome}
-            </p>
-            <ul className={shared.sfStatTrio}>
+            <p className={styles.wtEyebrow}>— Om {tenant.name}</p>
+            <p className={styles.wtQuote}>”{content.italic}”</p>
+            <p className={styles.wtBody}>{content.aboutCopyHome}</p>
+            <ul className={styles.wtStats}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
+                  <span className={styles.wtStatValue}>{n}</span>
+                  <span className={styles.wtStatLabel}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -196,13 +188,13 @@ export function WildThistleLayout({ tenant, content, services, location, modules
           övriga florist-mallar), aldrig gatad av modules-flaggor. */}
       <section className={styles.wtCourseBand}>
         <Reveal>
-          <p className={styles.wtCourseEyebrow}>— Kurser & kvällar</p>
+          <p className={styles.wtCourseEyebrow}>— Kurser &amp; kvällar</p>
           <h2 className={styles.wtCourseTitle}>En kväll med blommor och bubbel</h2>
           <p className={styles.wtCourseLede}>
             Bind din egen vildvuxna bukett tillsammans med oss — inga förkunskaper krävs.
           </p>
           <div className={styles.wtCourseActions}>
-            <Link href="/kurser" className={styles.wtCourseCta}>
+            <Link href="/kurser" className={styles.wtBandCta}>
               Boka en kurskväll
             </Link>
           </div>
@@ -215,12 +207,10 @@ export function WildThistleLayout({ tenant, content, services, location, modules
           <div className={styles.wtContain}>
             <Reveal className={styles.wtSecHead} as="div">
               <div>
-                <p className="sf-eyebrow">{content.blogEyebrow ?? '— Fältanteckningar'}</p>
-                <h2 className="sf-h2" style={{ marginTop: 8 }}>
-                  {content.blogTitle ?? 'Säsong, växtlighet & vildvuxet'}
-                </h2>
+                <p className={styles.wtEyebrow}>{content.blogEyebrow ?? '— Fältanteckningar'}</p>
+                <h2 className={styles.wtH2}>{content.blogTitle ?? 'Säsong, växtlighet & vildvuxet'}</h2>
               </div>
-              <Link href="/blogg" className={styles.wtSecCta}>
+              <Link href="/blogg" className={styles.wtLinkCta}>
                 {content.blogCta ?? 'Läs mer'}
               </Link>
             </Reveal>
@@ -246,13 +236,9 @@ export function WildThistleLayout({ tenant, content, services, location, modules
       {presentkortLive ? (
         <div className={styles.wtGift}>
           <Reveal className={styles.wtGiftInner} as="div">
-            <p className="sf-eyebrow" style={{ margin: 0 }}>
-              {content.giftEyebrow ?? '— Presentkort'}
-            </p>
-            <p className="sf-body" style={{ margin: 0 }}>
-              {content.giftLede ?? 'Ge bort något som fått växa vilt.'}
-            </p>
-            <Link href="/presentkort" className={styles.wtGiftCta}>
+            <p className={styles.wtEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
+            <p className={styles.wtGiftText}>{content.giftLede ?? 'Ge bort något som fått växa vilt.'}</p>
+            <Link href="/presentkort" className={styles.wtLinkCta}>
               {content.giftCta ?? 'Till presentkorten'}
             </Link>
           </Reveal>
@@ -260,10 +246,10 @@ export function WildThistleLayout({ tenant, content, services, location, modules
       ) : null}
 
       {/* 8 — GALLERI */}
-      <section className={shared.sfGalleryBand}>
-        <div className={shared.sfWide}>
-          <Reveal>
-            <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
+      <section className={styles.wtGalleryBand}>
+        <div className={styles.wtWide}>
+          <Reveal className={styles.wtGalleryHead} as="div">
+            <p className={styles.wtEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
           </Reveal>
           <Reveal>
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
@@ -272,26 +258,16 @@ export function WildThistleLayout({ tenant, content, services, location, modules
       </section>
 
       {/* 9 — PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+      <section className={styles.wtLoc}>
+        <div className={`${styles.wtWide} ${styles.wtLocGrid}`}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
-              {location?.address ? location.address.split(',')[0] : tenant.name}
-            </h2>
-            {location?.address ? (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                {location.address}
-              </p>
-            ) : (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                Adress visas snart.
-              </p>
-            )}
+            <p className={styles.wtEyebrow}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
+            <h2 className={styles.wtH2}>{location?.address ? location.address.split(',')[0] : tenant.name}</h2>
+            <p className={styles.wtBody}>{location?.address ?? 'Adress visas snart.'}</p>
             {location?.hours ? (
-              <div className={shared.sfHours}>
+              <div className={styles.wtHours}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
+                  <div key={h.day} className={styles.wtHoursRow}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
@@ -300,18 +276,18 @@ export function WildThistleLayout({ tenant, content, services, location, modules
             ) : null}
           </Reveal>
           <Reveal delay={120}>
-            <div className={shared.sfMap}>
+            <div className={styles.wtMap}>
               {location?.address ? (
                 <a
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={shared.sfMapLink}
+                  className={styles.wtLinkCta}
                 >
                   Visa på karta <span aria-hidden="true">→</span>
                 </a>
               ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
+                <span className={styles.wtMapHint}>Karta visas när adressen är ifylld.</span>
               )}
             </div>
           </Reveal>

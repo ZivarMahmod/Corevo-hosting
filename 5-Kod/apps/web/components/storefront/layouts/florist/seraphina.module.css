@@ -1,22 +1,210 @@
 /* ═══════════════ SERAPHINA — champagne/guld bröllopslyx ═══════════════
-   Signaturen: (1) fullskärms-hero med en centrerad kort-ram (tunn guldram runt
-   rubriken, inget nav-läckage), (2) BRÖLLOP FÖRST — stor bild + text + "Begär
-   offert" direkt efter heron (offerten är hjälten, inte butiken), (3) tjänste-
-   priser i en elegant TVÅSPALT, (4) shop-teasers, (5) om med guld-statistik-
-   trio, (6) galleri (delad Gallery-komponent, redan tre kolumner), (7) blogg,
-   (8) presentkort, (9) plats, (10) closing. Alla klasser prefixade "sera" —
-   unika för mallen. Temats variabler (--color-*, --font-*, --sf-radius) styr
-   paletten; två egna dekorvariabler sätts i roten nedan. */
+   Signaturen (OFÖRÄNDRAD): (1) fullskärms-hero med en centrerad kort-ram (tunn
+   guldram runt rubriken, inget nav-läckage), (2) BRÖLLOP FÖRST — stor bild +
+   text + "Begär offert" direkt efter heron (offerten är hjälten, inte butiken),
+   (3) tjänste-priser i en elegant TVÅSPALT, (4) shop-teasers, (5) om med guld-
+   statistik-trio, (6) galleri, (7) blogg, (8) presentkort (smal rad), (9) plats,
+   (10) closing. Alla klasser prefixade "sera" — unika för mallen. Temats
+   variabler (--color-*) styr paletten.
+
+   ── SKÄRPE-PASS (4-Dokument-Underlag/design-skarpa-zentum.md) ──────────────
+   Mallen ska kännas som ett SVÄRD, inte som en mjuk morot. Sju mätbara val,
+   alla som tokens i .seraRoot nedan — INGEN sektion får hitta på egna värden:
+     1. TYPSKALA  steg ×2.0: 104 → 52 → 26 px  (+ lede 18 / brödtext 16 / mikro 11)
+     2. VIKT      display i 500 (aldrig 300/700), mikrotext i 600 + VERSALER
+     3. LINE-H    rubrik 1.06–1.15  ×  brödtext 1.55–1.58 (register-bytet = skärpan)
+     4. TRACKING  omvänt mot storleken: -0.01em på display, 0 på ≥26px, ~1px på 11–12px
+     5. KONTRAST  rubrik-ink 15.8:1, brödtext 5.8:1, knapptext 7.3:1 (se theme.ts)
+     6. RADIE     binärt: 0 på ALL struktur (bild/kort/sektion/ram), pill på knapp
+     7. BILDRATIO EN enda ratio i hela mallen: --sera-ratio = 4/5 (aspect-ratio + cover)
+     8. FÄRG      en hue-familj (30–41°), accenten (guld) bara på detaljer
+     9. HOVER     5px lyft / 500ms ease — ingen scale, ingen skugg-bloom
+    10. RYTM      12 / 20 / 24 / 32 / 48 / 96 — samma steg i ALLA sektioner       */
 
 .seraRoot {
+  /* ── 1. TYPSKALA — ×2.0 mellan nivåerna (desktopläget = det mätta målet) ── */
+  --sera-fs-display: clamp(2.75rem, 7.4vw, 6.5rem); /* 44 → 104px */
+  --sera-fs-h2: clamp(1.875rem, 3.9vw, 3.25rem); /*  30 →  52px */
+  --sera-fs-card: clamp(1.375rem, 2vw, 1.625rem); /*  22 →  26px */
+  --sera-fs-lede: 1.125rem; /*        18px */
+  --sera-fs-body: 1rem; /*        16px */
+  --sera-fs-btn: 0.75rem; /*        12px */
+  --sera-fs-micro: 0.6875rem; /*        11px */
+
+  /* ── 2. VIKT — stort = medium (precisa stammar), litet = semibold ───────── */
+  --sera-fw-display: 500;
+  --sera-fw-micro: 600;
+
+  /* ── 3. LINE-HEIGHT — spänd rubrik mot luftig brödtext ──────────────────── */
+  --sera-lh-display: 1.06;
+  --sera-lh-h2: 1.08;
+  --sera-lh-card: 1.15;
+  --sera-lh-lede: 1.55;
+  --sera-lh-body: 1.58;
+
+  /* ── 4. LETTER-SPACING — omvänt mot storleken ───────────────────────────── */
+  --sera-ls-display: -0.01em; /* ~-1px @ 104px */
+  --sera-ls-h2: 0;
+  --sera-ls-btn: 0.083em; /*  1px @ 12px */
+  --sera-ls-micro: 0.09em; /*  1px @ 11px */
+
+  /* ── 6. RADIE — binärt: 0 på struktur, exakt pill på knapp ──────────────── */
+  --sera-radius: 0;
+  --sera-pill: 999px;
+  --sera-btn-line: 46px; /* 46 + 2×2px ram = 50px knapphöjd */
+  --sera-btn-pad: 30px;
+
+  /* ── 7. BILDRATIO — EN ratio i hela mallen ──────────────────────────────── */
+  --sera-ratio: 4 / 5;
+
+  /* ── 9. MOTION — återhållsam ────────────────────────────────────────────── */
+  --sera-lift: -5px;
+  --sera-dur: 500ms;
+  --sera-dur-ui: 300ms;
+
+  /* ── 10. RYTM — en skala, samma steg i alla sektioner ───────────────────── */
+  --sera-sp-eyebrow: 12px; /* eyebrow  → rubrik */
+  --sera-sp-text: 20px; /* rubrik   → text   */
+  --sera-sp-gap: 24px; /* grid-gap          */
+  --sera-sp-cta: 32px; /* text     → CTA    */
+  --sera-sp-head: 48px; /* rubrikblock → innehåll */
+  --sera-section: clamp(64px, 9vw, 96px);
+  --sera-split: clamp(48px, 7vw, 96px);
+  --sera-container: 1140px;
+  --sera-gutter: 24px;
+  --sera-measure: 34rem;
+
+  /* ── DEKOR — mallens egna hex/rgba (enda hårdkodade färgerna i filen; båda
+        är alpha-varianter av paletten: ink #241F1A och papper #FDFBF6) ────── */
   --sera-scrim: linear-gradient(
     180deg,
-    rgba(36, 31, 26, 0.12) 0%,
-    rgba(36, 31, 26, 0.38) 55%,
-    rgba(36, 31, 26, 0.62) 100%
+    rgba(36, 31, 26, 0.22) 0%,
+    rgba(36, 31, 26, 0.5) 55%,
+    rgba(36, 31, 26, 0.72) 100%
   );
-  --sera-frame-bg: rgba(253, 251, 246, 0.92);
+  --sera-frame-bg: rgba(253, 251, 246, 0.95);
   --sera-cta-fg: #fff;
+}
+
+/* ── TYPOGRAFISKA PRIMITIVER — mallens SEX nivåer, inget däremellan ───────── */
+.seraEyebrow {
+  display: inline-block;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  line-height: 2;
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.seraH2 {
+  margin: var(--sera-sp-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-size: var(--sera-fs-h2);
+  line-height: var(--sera-lh-h2);
+  letter-spacing: var(--sera-ls-h2);
+  color: var(--color-fg);
+}
+.seraBody {
+  margin: var(--sera-sp-text) 0 0;
+  max-width: var(--sera-measure);
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg-2);
+}
+.seraHead {
+  max-width: 40rem;
+  margin: 0 auto;
+  text-align: center;
+}
+.seraContainer {
+  max-width: var(--sera-container);
+  margin: 0 auto;
+  padding: 0 var(--sera-gutter);
+}
+
+/* Struktur-ram: den matterade fotoramen (guldlinje, aldrig mjuk skugga). */
+.seraMat {
+  padding: var(--sera-sp-eyebrow);
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sera-radius);
+}
+/* EN bildratio, hårda kanter — gäller varje bild i mallen. */
+.seraImg {
+  aspect-ratio: var(--sera-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sera-radius);
+}
+
+/* ── KNAPPAR — exakt pill (50px hög, radie = halva höjden), 12/600/VERSALER ─
+      .btn-accent är den globala CTA-klassen som <BookCta> renderar; den
+      omdefinieras HÄR (scopad till mallen) så hero + closing får samma pill. */
+.seraRoot :global(.btn-accent),
+.seraCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 var(--sera-btn-pad);
+  line-height: var(--sera-btn-line);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--sera-pill);
+  background: var(--color-primary);
+  color: var(--sera-cta-fg);
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-btn);
+  font-weight: var(--sera-fw-micro);
+  letter-spacing: var(--sera-ls-btn);
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background var(--sera-dur-ui) ease, border-color var(--sera-dur-ui) ease,
+    color var(--sera-dur-ui) ease;
+}
+.seraRoot :global(.btn-accent):hover,
+.seraCta:hover {
+  background: var(--color-primary-d);
+  border-color: var(--color-primary-d);
+  transform: none; /* ingen studs */
+  box-shadow: none; /* ingen skugg-bloom */
+}
+/* text → CTA = 32px. Samma steg som .seraHeroActions / .seraClosingActions, som
+   bär avståndet åt <BookCta> (den renderar bara .btn-accent, ingen egen klass). */
+.seraCta {
+  margin-top: var(--sera-sp-cta);
+}
+
+/* Textlänk i knapp-register (12/600/VERSALER + 1px) — aldrig en 16px-viskning. */
+.seraMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: var(--sera-sp-cta);
+  padding-bottom: 4px;
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-btn);
+  font-weight: var(--sera-fw-micro);
+  letter-spacing: var(--sera-ls-btn);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--sera-dur-ui) ease, gap var(--sera-dur-ui) ease;
+}
+.seraMore:hover {
+  border-color: var(--color-primary);
+  gap: 0.75rem;
+}
+.seraMore:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
 }
 
 /* ── 1. HERO — fullskärmsbild + centrerad guldram-kort ───────────────────── */
@@ -43,249 +231,427 @@
 .seraHeroFrame {
   position: relative;
   z-index: 1;
-  max-width: 36rem;
-  margin: 0 1.5rem;
-  padding: clamp(2.5rem, 5vw, 3.75rem) clamp(2rem, 5vw, 3.25rem);
+  max-width: 52rem;
+  margin: 0 var(--sera-gutter);
+  padding: clamp(24px, 4vw, 48px);
   text-align: center;
   background: var(--sera-frame-bg);
   border: 1px solid var(--color-primary);
-  border-radius: var(--sf-radius);
-  box-shadow:
-    inset 0 0 0 6px rgba(253, 251, 246, 0.92),
-    inset 0 0 0 7px var(--color-primary),
-    var(--sf-shadow-card);
-}
-.seraHeroEyebrow {
-  display: inline-block;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.76rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-primary);
+  border-radius: var(--sera-radius);
+  /* dubbel guldlinje — mallens signatur. Inga mjuka skuggor. */
+  box-shadow: inset 0 0 0 6px var(--sera-frame-bg), inset 0 0 0 7px var(--color-primary);
 }
 .seraHeroTitle {
+  margin: var(--sera-sp-eyebrow) 0 0;
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: var(--sera-fw-display);
   font-style: italic;
-  font-size: clamp(2.5rem, 6vw, 4.25rem);
-  line-height: 1.08;
+  font-size: var(--sera-fs-display);
+  line-height: var(--sera-lh-display);
+  letter-spacing: var(--sera-ls-display);
   color: var(--color-fg);
-  margin: 0.9rem 0 0;
   white-space: pre-line;
 }
 .seraHeroLede {
-  margin: 1.1rem auto 0;
-  max-width: 26rem;
+  margin: var(--sera-sp-text) auto 0;
+  max-width: 30rem;
   font-family: var(--font-body);
-  font-size: 1rem;
-  line-height: 1.6;
+  font-size: var(--sera-fs-lede);
+  line-height: var(--sera-lh-lede);
   color: var(--color-fg-2);
 }
-.seraHeroActions { margin-top: 1.9rem; }
-.seraHeroCta { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.8rem; }
+.seraHeroActions {
+  margin-top: var(--sera-sp-cta);
+}
 
 /* ── 2. BRÖLLOP FÖRST — offerten är hjälten ──────────────────────────────── */
-.seraWedding { padding: clamp(4.5rem, 9vw, 7rem) 0; background: var(--color-surface); }
+.seraWedding {
+  padding: var(--sera-section) 0;
+  background: var(--color-surface);
+}
 .seraWeddingGrid {
-  max-width: 1180px;
+  max-width: var(--sera-container);
   margin: 0 auto;
-  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  padding: 0 var(--sera-gutter);
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
-  gap: clamp(2.5rem, 6vw, 4.5rem);
+  gap: var(--sera-split);
   align-items: center;
 }
-.seraWeddingImgWrap {
-  padding: 0.55rem;
-  background: var(--color-bg);
-  box-shadow: var(--sf-shadow-soft);
-  border-radius: var(--sf-radius);
-}
-.seraWeddingImg {
-  aspect-ratio: 4 / 5;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-accent-soft);
-  border-radius: calc(var(--sf-radius) - 1px);
-}
-.seraWeddingEyebrow {
-  display: inline-block;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.76rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-.seraWeddingTitle {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(1.9rem, 3.6vw, 2.75rem);
-  line-height: 1.14;
-  color: var(--color-fg);
-  margin: 0.75rem 0 0;
-}
-.seraWeddingBody {
-  font-family: var(--font-body);
-  font-size: 1.02rem;
-  line-height: 1.65;
-  color: var(--color-fg-2);
-  margin: 1.1rem 0 0;
-  max-width: 30rem;
-}
-.seraWeddingCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  margin-top: 1.75rem;
-  background: var(--color-primary);
-  color: var(--sera-cta-fg);
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.95rem 2.1rem;
-  border-radius: 999px;
-  text-decoration: none;
-  transition: background var(--dur-fast) var(--ease-out);
-}
-.seraWeddingCta:hover { background: var(--color-primary-d); }
 
 @media (max-width: 780px) {
-  .seraWeddingGrid { grid-template-columns: 1fr; }
-  .seraWeddingImgWrap { max-width: 22rem; margin: 0 auto; }
+  .seraWeddingGrid {
+    grid-template-columns: 1fr;
+  }
+  .seraWeddingGrid .seraMat {
+    max-width: 22rem;
+    margin: 0 auto;
+  }
 }
 
 /* ── 3. TJÄNSTE-PRISER — elegant tvåspalt ────────────────────────────────── */
-.seraServices { padding: clamp(4.5rem, 9vw, 7rem) 0; }
+.seraServices {
+  padding: var(--sera-section) 0;
+}
 .seraPriceCols {
-  margin-top: 2.75rem;
+  margin-top: var(--sera-sp-head);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 clamp(2.5rem, 5vw, 4rem);
+  gap: 0 var(--sera-sp-head);
 }
-.seraPriceCol { border-top: 1px solid var(--color-line); }
+.seraPriceCol {
+  border-top: 1px solid var(--color-line);
+}
 .seraPriceRow {
   display: grid;
   grid-template-columns: 2rem 1fr auto;
   align-items: baseline;
-  gap: 0.9rem;
-  padding: 1.15rem 0;
+  gap: var(--sera-sp-text);
+  padding: var(--sera-sp-text) 0;
   border-bottom: 1px solid var(--color-line);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease-out), padding-left var(--dur-fast) var(--ease-out);
+  transition: background var(--sera-dur-ui) ease, padding-left var(--sera-dur-ui) ease;
 }
-.seraPriceRow:hover { background: var(--color-accent-soft); padding-left: 0.6rem; }
-.seraPriceRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.seraPriceRow:hover {
+  background: var(--color-accent-soft);
+  padding-left: var(--sera-sp-eyebrow);
+}
+.seraPriceRow:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
 .seraPriceNum {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 1.05rem;
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
   color: var(--color-primary);
-  align-self: start;
-  margin-top: 0.15rem;
 }
-.seraPriceMain { min-width: 0; }
+.seraPriceMain {
+  min-width: 0;
+}
 .seraPriceName {
   display: block;
   font-family: var(--font-display);
-  font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+  font-weight: var(--sera-fw-display);
+  font-size: var(--sera-fs-card);
+  line-height: var(--sera-lh-card);
+  letter-spacing: var(--sera-ls-h2);
   color: var(--color-fg);
 }
 .seraPriceDesc {
   display: block;
+  margin-top: var(--sera-sp-eyebrow);
   font-family: var(--font-body);
-  font-size: 0.85rem;
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
   color: var(--color-fg-2);
-  margin-top: 0.2rem;
-  line-height: 1.45;
 }
-.seraPriceMeta { text-align: right; white-space: nowrap; }
-.seraPricePrice { font-family: var(--font-body); font-weight: 600; font-size: 0.95rem; color: var(--color-fg); }
+.seraPriceMeta {
+  text-align: right;
+  white-space: nowrap;
+}
+.seraPricePrice {
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-body);
+  color: var(--color-fg);
+}
 
 @media (max-width: 700px) {
-  .seraPriceCols { grid-template-columns: 1fr; }
-  .seraPriceCol + .seraPriceCol { border-top: none; }
+  .seraPriceCols {
+    grid-template-columns: 1fr;
+  }
+  .seraPriceCol + .seraPriceCol {
+    border-top: none;
+  }
 }
 
 /* ── 4. SHOP-TEASERS ──────────────────────────────────────────────────────── */
-.seraShop { padding: 0 1.5rem clamp(4.5rem, 8vw, 7rem); }
-.seraShopHead { max-width: 38rem; margin: 0 auto; text-align: center; }
-.seraShopGrid {
-  max-width: 1100px;
-  margin: clamp(2.25rem, 4vw, 3rem) auto 0;
+.seraShop {
+  padding: var(--sera-section) var(--sera-gutter);
+}
+.seraGrid {
+  max-width: var(--sera-container);
+  margin: var(--sera-sp-head) auto 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(1.1rem, 2.5vw, 1.75rem);
+  gap: var(--sera-sp-gap);
 }
-.seraShopCard { display: block; text-decoration: none; color: inherit; }
-.seraShopImg {
-  aspect-ratio: 4 / 5;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-accent-soft);
-  border-radius: var(--sf-radius);
-  transition: transform var(--dur-fast) var(--ease-out);
+.seraCard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--sera-dur) ease;
 }
-.seraShopCard:hover .seraShopImg { transform: translateY(-5px); }
-.seraShopInfo { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; margin-top: 0.9rem; }
-.seraShopName { font-family: var(--font-display); font-size: 1.1rem; color: var(--color-fg); }
-.seraShopPrice { font-family: var(--font-body); font-weight: 600; color: var(--color-primary); white-space: nowrap; }
-.seraShopFoot { text-align: center; margin-top: clamp(2rem, 4vw, 2.75rem); }
+.seraCard:hover {
+  transform: translateY(var(--sera-lift));
+}
+.seraCard:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+.seraShopInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-top: var(--sera-sp-text);
+}
+.seraShopName {
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-size: var(--sera-fs-card);
+  line-height: var(--sera-lh-card);
+  color: var(--color-fg);
+}
+.seraShopPrice {
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-body);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+.seraFoot {
+  text-align: center;
+}
 
 @media (max-width: 700px) {
-  .seraShopGrid { grid-template-columns: 1fr; max-width: 24rem; }
+  .seraGrid {
+    grid-template-columns: 1fr;
+    max-width: 24rem;
+  }
 }
 
 /* ── 5. OM — guld-statistik-trio ─────────────────────────────────────────── */
-.seraAbout { padding: clamp(4.5rem, 9vw, 7rem) 0; background: var(--color-surface); }
+.seraAbout {
+  padding: var(--sera-section) 0;
+  background: var(--color-surface);
+}
 .seraAboutGrid {
-  max-width: 1180px;
+  max-width: var(--sera-container);
   margin: 0 auto;
-  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  padding: 0 var(--sera-gutter);
   display: grid;
   grid-template-columns: 0.85fr 1fr;
-  gap: clamp(2.5rem, 5vw, 4.5rem);
+  gap: var(--sera-split);
   align-items: center;
 }
-.seraAboutPhotoWrap { padding: 0.55rem; background: var(--color-bg); box-shadow: var(--sf-shadow-soft); border-radius: var(--sf-radius); }
-.seraAboutPhoto { aspect-ratio: 4 / 5; background-size: cover; background-position: center; background-color: var(--color-accent-soft); border-radius: calc(var(--sf-radius) - 1px); }
+.seraStats {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sera-sp-head);
+  margin: var(--sera-sp-head) 0 0;
+  padding: 0;
+}
+.seraStatValue {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-size: var(--sera-fs-card);
+  line-height: var(--sera-lh-card);
+  color: var(--color-primary);
+}
+.seraStatLabel {
+  display: block;
+  margin-top: var(--sera-sp-eyebrow);
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
 
 @media (max-width: 780px) {
-  .seraAboutGrid { grid-template-columns: 1fr; }
-  .seraAboutPhotoWrap { max-width: 20rem; margin: 0 auto; }
+  .seraAboutGrid {
+    grid-template-columns: 1fr;
+  }
+  .seraAboutGrid .seraMat {
+    max-width: 20rem;
+    margin: 0 auto;
+  }
+}
+
+/* ── 6. GALLERI — samma ratio, samma hover som korten ─────────────────────
+      <Gallery> är en delad klient-komponent (lightbox). Dess egna klasser är
+      hashade och kan inte adresseras härifrån — men strukturen ul > li > button
+      > img kan. Vi skriver över 1:1-rutan (→ 4:5) och scale(1.05)-hovern
+      (→ 5px lyft). `> ul` gör att lightboxen (fixed, syskon) aldrig träffas. */
+.seraGalleryBand {
+  padding: var(--sera-section) 0;
+}
+.seraGallery > ul {
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sera-sp-gap);
+  margin-top: var(--sera-sp-head);
+}
+.seraGallery > ul li {
+  aspect-ratio: var(--sera-ratio);
+  border-radius: var(--sera-radius);
+  transition: transform var(--sera-dur) ease;
+}
+.seraGallery > ul li:hover {
+  transform: translateY(var(--sera-lift));
+}
+.seraGallery > ul img {
+  transition: none;
+}
+.seraGallery > ul button:hover img {
+  transform: none; /* ingen scale — 5px lyft på rutan istället */
+}
+
+@media (max-width: 720px) {
+  .seraGallery > ul {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* ── 7. BLOGG ─────────────────────────────────────────────────────────────── */
-.seraBlog { padding: clamp(4rem, 7vw, 6rem) 1.5rem; }
-.seraBlogHead { max-width: 40rem; margin: 0 auto; text-align: center; }
-.seraBlogGrid {
-  max-width: 1100px;
-  margin: clamp(2.25rem, 4vw, 3rem) auto 0;
+.seraBlog {
+  padding: var(--sera-section) var(--sera-gutter);
+}
+/* Blogg-korten ligger i --sera-container via .seraGrid; rubrikblocket i .seraHead. */
+.seraBlogName {
+  margin: var(--sera-sp-text) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-size: var(--sera-fs-card);
+  line-height: var(--sera-lh-card);
+  letter-spacing: var(--sera-ls-h2);
+  color: var(--color-fg);
+}
+.seraBlogMeta {
+  margin: var(--sera-sp-eyebrow) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg-2);
+}
+
+/* ── 8. PRESENTKORT — en smal rad, aldrig en hel sektion ─────────────────── */
+.seraGift {
+  padding: var(--sera-sp-cta) var(--sera-gutter);
+  text-align: center;
+  background: var(--color-accent-soft);
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+.seraGiftInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sera-sp-text) var(--sera-sp-cta);
+}
+.seraGiftLede {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-style: italic;
+  font-size: var(--sera-fs-card);
+  line-height: var(--sera-lh-card);
+  color: var(--color-fg);
+}
+.seraGiftInner .seraMore {
+  margin-top: 0;
+}
+
+/* ── 9. PLATS & ÖPPETTIDER ────────────────────────────────────────────────── */
+.seraLoc {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-line);
+}
+.seraLocGrid {
+  max-width: var(--sera-container);
+  margin: 0 auto;
+  padding: var(--sera-section) var(--sera-gutter);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: clamp(1.1rem, 2.5vw, 1.75rem);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sera-split);
 }
-.seraBlogCard { display: block; text-decoration: none; color: inherit; }
-.seraBlogImg {
-  aspect-ratio: 4 / 5;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-accent-soft);
-  border-radius: var(--sf-radius);
-  transition: transform var(--dur-fast) var(--ease-out);
+.seraHours {
+  margin-top: var(--sera-sp-head);
+  max-width: 20rem;
 }
-.seraBlogCard:hover .seraBlogImg { transform: translateY(-4px); }
-.seraBlogName { font-family: var(--font-display); font-size: 1.1rem; color: var(--color-fg); margin: 0.85rem 0 0.3rem; }
-.seraBlogMeta { font-family: var(--font-body); font-size: 0.85rem; color: var(--color-fg-2); margin: 0; }
-.seraBlogFoot { text-align: center; margin-top: clamp(1.75rem, 3vw, 2.5rem); }
+.seraHoursRow {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--sera-sp-eyebrow) 0;
+  border-bottom: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg);
+}
+.seraHoursRow span:first-child {
+  color: var(--color-fg-2);
+}
+.seraMap {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  padding: var(--sera-sp-cta);
+  text-align: center;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sera-radius);
+}
+.seraMap .seraMore {
+  margin-top: 0;
+}
+.seraMapHint {
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg-2);
+}
 
-@media (max-width: 700px) {
-  .seraBlogGrid { grid-template-columns: 1fr; max-width: 24rem; }
+@media (max-width: 760px) {
+  .seraLocGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* ── 8. PRESENTKORT — smal rad ───────────────────────────────────────────── */
-.seraGift { padding: clamp(1.5rem, 3vw, 2.25rem) 1.5rem; text-align: center; background: var(--color-accent-soft); }
-.seraGiftInner { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 0.5rem 1rem; }
+/* ── 10. CLOSING ──────────────────────────────────────────────────────────── */
+.seraClosing {
+  padding: var(--sera-section) var(--sera-gutter);
+  text-align: center;
+  background: var(--color-primary);
+}
+.seraClosingTitle {
+  max-width: 40rem;
+  margin: 0 auto;
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-style: italic;
+  font-size: var(--sera-fs-h2);
+  line-height: var(--sera-lh-h2);
+  letter-spacing: var(--sera-ls-h2);
+  color: var(--sera-cta-fg);
+}
+.seraClosingLede {
+  max-width: var(--sera-measure);
+  margin: var(--sera-sp-text) auto 0;
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-lede);
+  line-height: var(--sera-lh-lede);
+  color: var(--sera-cta-fg);
+  opacity: 0.9; /* 6.3:1 mot guldbandet — backar, men aldrig disigt */
+}
+.seraClosingActions {
+  margin-top: var(--sera-sp-cta);
+}
+/* Inverterad pill på guldbandet: papper med guldtext (7.0:1). Specificiteten
+   (0,4,0) tar över .seraRoot :global(.btn-accent) ovan. */
+.seraRoot .seraClosing :global(.btn-accent).seraClosingCta {
+  background: var(--color-bg);
+  border-color: var(--color-bg);
+  color: var(--color-primary);
+}
+.seraRoot .seraClosing :global(.btn-accent).seraClosingCta:hover {
+  background: var(--color-surface);
+  border-color: var(--color-surface);
+  color: var(--color-primary-d);
+}

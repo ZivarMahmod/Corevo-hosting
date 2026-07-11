@@ -21,6 +21,15 @@ import styles from './paisley.module.css'
  * fullbredds-foto. Presentkort vävs in som en smal rad mellan plats och closing
  * (aldrig en egen sektion). Webshop/blogg/presentkort/offert vävs in via
  * `modules`-propen (S10) — samma modulkontrakt som övriga florist-mallar.
+ *
+ * SKÄRPE-PASS 2026-07-11 (design-skarpa-zentum.md). Två regler att inte trampa på
+ * när mallen rörs igen:
+ *  • INGA storlekar/marginaler i inline-style. Hela typskalan och rytmen bor i
+ *    paisley.module.css (--pa-fs-… och --pa-sp-…). En `style={{ fontSize: 17 }}` här
+ *    är exakt så den grötiga trappan (56/34/21/17/13.5) uppstod.
+ *  • De delade .sf*-primitiven ägs av ALLA mallar och får inte ändras. Paisley
+ *    skärper dem genom att SAM-APPLICERA en pa*-klass (styles.paRowName intill
+ *    shared.sfRowName) som vinner på specificitet. Tappa inte bort de paren.
  */
 export function PaisleyLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -54,7 +63,7 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
               />
               <circle cx="12" cy="9.4" r="2.4" stroke="currentColor" strokeWidth="1.8" />
             </svg>
-            Lokal leverans & hämtning i butik
+            Lokal leverans &amp; hämtning i butik
           </p>
           <ul className={styles.paTopLinks}>
             <li>
@@ -118,7 +127,10 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
         </ul>
       </div>
 
-      {/* 4 — HERO: fullbredds foto, enorm versal-serif-rubrik i bilden, fyrkantig CTA */}
+      {/* 4 — HERO: fullbredds foto, enorm versal-serif-rubrik i bilden, fyrkantig CTA.
+          Scrimen (--pa-scrim-hero) är medvetet tung i platån där texten sitter: kunden
+          laddar upp sitt EGET foto, och rubrikens 7:1 får inte bero på vilken bild det
+          blev. Därför behövs heller ingen text-shadow — kanterna får vara raka. */}
       <section className={styles.paHero} style={{ backgroundImage: `url(${heroImg})` }}>
         <div className={styles.paHeroOverlay} aria-hidden="true" />
         <div className={styles.paHeroInner}>
@@ -169,8 +181,9 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
       </section>
 
       {/* 6 — FIRA MED BLOMMOR: brett två-kolumns text+bildkollage (stor bild +
-          mindre inset-bild). offertReachable ger en diskret rad för bröllop/
-          event — utelämnas helt när offert inte är nåbar. */}
+          mindre inset-bild, SAMMA 4:5-ratio som alla andra bilder i mallen).
+          offertReachable ger en diskret rad för bröllop/event — utelämnas helt
+          när offert inte är nåbar. */}
       <section className={styles.paCelebrate}>
         <div className={`${shared.sfWide} ${styles.paCelebrateGrid}`}>
           <Reveal className={styles.paCelebrateMedia}>
@@ -179,10 +192,8 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
           </Reveal>
           <Reveal delay={120} className={styles.paCelebrateText}>
             <p className="sf-eyebrow">— Fira med blommor</p>
-            <h2 className="sf-h1" style={{ marginTop: 10 }}>
-              En bukett för varje anledning
-            </h2>
-            <p className={`sf-body ${styles.paCelebrateBody}`}>
+            <h2 className="sf-h2">En bukett för varje anledning</h2>
+            <p className={styles.paLede}>
               Födelsedagar, jubileum eller bara en vanlig tisdag som förtjänar något extra — vi väljer
               säsongens finaste snitt och binder det för hand, oavsett anledning.
             </p>
@@ -210,12 +221,10 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
             <Reveal className={styles.paTeaserHead}>
               <div>
                 <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-                <h2 className="sf-h2" style={{ marginTop: 8 }}>
-                  {content.shopTitle ?? 'Beställ något vackert'}
-                </h2>
+                <h2 className="sf-h2">{content.shopTitle ?? 'Beställ något vackert'}</h2>
               </div>
               {shopReachable ? (
-                <Link href="/shop" className={shared.sfMoreLink}>
+                <Link href="/shop" className={`${shared.sfMoreLink} ${styles.paMoreLink}`}>
                   {content.shopCta ?? 'Handla i butiken'} <span aria-hidden="true">→</span>
                 </Link>
               ) : null}
@@ -242,29 +251,28 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
       ) : null}
 
       {/* 8 — TJÄNSTER: numrerade rader. Hela sektionen visas bara när det finns
-          aktiva tjänster (ingen tom-text på hemmet). */}
+          aktiva tjänster (ingen tom-text på hemmet). De delade sfRow*-primitiven
+          bär strukturen; pa*-klasserna intill bär paisleys typskala. */}
       {rows.length > 0 ? (
-        <section className={shared.sfServices}>
+        <section className={`${shared.sfServices} ${styles.paSection}`}>
           <div className={shared.sfNarrow}>
             <Reveal style={{ textAlign: 'center' }}>
               <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className="sf-h1" style={{ marginTop: 12 }}>
-                {content.servicesTitle}
-              </h2>
+              <h2 className="sf-h2">{content.servicesTitle}</h2>
             </Reveal>
             <div className={shared.sfRowList}>
               {rows.map((s, i) => (
                 <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={shared.sfRow} label={`Boka — ${s.name}`}>
-                    <span className={shared.sfRowNum} aria-hidden="true">
+                  <Bookable className={`${shared.sfRow} ${styles.paRow}`} label={`Boka — ${s.name}`}>
+                    <span className={`${shared.sfRowNum} ${styles.paRowNum}`} aria-hidden="true">
                       {serviceNum(i)}
                     </span>
                     <span className={shared.sfRowMain}>
-                      <span className={shared.sfRowName}>{s.name}</span>
-                      <span className={shared.sfRowDesc}>{serviceDesc(s)}</span>
+                      <span className={`${shared.sfRowName} ${styles.paRowName}`}>{s.name}</span>
+                      <span className={`${shared.sfRowDesc} ${styles.paRowDesc}`}>{serviceDesc(s)}</span>
                     </span>
                     <span className={shared.sfRowMeta}>
-                      <span className={shared.sfRowPrice}>{formatPrice(s)}</span>
+                      <span className={`${shared.sfRowPrice} ${styles.paRowPrice}`}>{formatPrice(s)}</span>
                     </span>
                   </Bookable>
                 </Reveal>
@@ -272,7 +280,7 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
             </div>
             {hasMore ? (
               <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={shared.sfMoreLink}>
+                <a href="/tjanster" className={`${shared.sfMoreLink} ${styles.paMoreLink}`}>
                   Se allt vi gör <span aria-hidden="true">→</span>
                 </a>
               </Reveal>
@@ -281,9 +289,9 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
         </section>
       ) : null}
 
-      {/* 9 — OM: inramat foto + berättelsen + stats-trio */}
-      <section style={{ paddingBottom: 'clamp(48px, 7vw, 90px)' }}>
-        <div className={`${shared.sfWide} ${shared.sfAboutGrid}`}>
+      {/* 9 — OM: inramat foto (4:5, hård dubbelkontur) + berättelsen + stats-trio */}
+      <section>
+        <div className={`${shared.sfWide} ${shared.sfAboutGrid} ${styles.paAboutGrid}`}>
           <Reveal>
             <div
               className={`${shared.sfAboutPhoto} ${styles.paFrame}`}
@@ -292,17 +300,13 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
           </Reveal>
           <Reveal delay={120}>
             <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
-              {content.aboutTitle}
-            </h2>
-            <p className="sf-body" style={{ fontSize: 17, marginTop: 16 }}>
-              {content.aboutCopyHome}
-            </p>
+            <h2 className="sf-h2">{content.aboutTitle}</h2>
+            <p className={styles.paLede}>{content.aboutCopyHome}</p>
             <ul className={shared.sfStatTrio}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
+                  <span className={`${shared.sfStatValue} ${styles.paStatValue}`}>{n}</span>
+                  <span className={`${shared.sfStatLabel} ${styles.paStatLabel}`}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -317,11 +321,9 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
             <Reveal className={styles.paTeaserHead}>
               <div>
                 <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från redaktionen'}</p>
-                <h2 className="sf-h2" style={{ marginTop: 8 }}>
-                  {content.blogTitle ?? 'Säsong, tips & inspiration'}
-                </h2>
+                <h2 className="sf-h2">{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
               </div>
-              <Link href="/blogg" className={shared.sfMoreLink}>
+              <Link href="/blogg" className={`${shared.sfMoreLink} ${styles.paMoreLink}`}>
                 {content.blogCta ?? 'Läs hela bloggen'} <span aria-hidden="true">→</span>
               </Link>
             </Reveal>
@@ -350,11 +352,9 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
       {presentkortLive ? (
         <div className={styles.paGift}>
           <div className={`${shared.sfWide} ${styles.paGiftInner}`}>
-            <p className="sf-eyebrow" style={{ margin: 0 }}>
-              {content.giftEyebrow ?? '— Presentkort'}
-            </p>
+            <p className="sf-eyebrow">{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.paGiftText}>{content.giftLede ?? 'Ge bort en bukett, när som helst.'}</p>
-            <Link href="/presentkort" className={shared.sfMoreLink}>
+            <Link href="/presentkort" className={`${shared.sfMoreLink} ${styles.paMoreLink}`}>
               {content.giftCta ?? 'Till presentkorten'} <span aria-hidden="true">→</span>
             </Link>
           </div>
@@ -363,20 +363,14 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
 
       {/* 11 — PLATS & ÖPPETTIDER */}
       <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+        <div className={`${shared.sfWide} ${shared.sfLocGrid} ${styles.paLocGrid}`}>
           <Reveal>
             <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
-              {location?.address ? location.address.split(',')[0] : tenant.name}
-            </h2>
+            <h2 className="sf-h2">{location?.address ? location.address.split(',')[0] : tenant.name}</h2>
             {location?.address ? (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                {location.address}
-              </p>
+              <p className={`sf-body ${styles.paLocLine}`}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                Adress visas snart.
-              </p>
+              <p className={`sf-body ${styles.paLocLine}`}>Adress visas snart.</p>
             )}
             {location?.hours ? (
               <div className={shared.sfHours}>
@@ -396,7 +390,7 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={shared.sfMapLink}
+                  className={`${shared.sfMapLink} ${styles.paMoreLink} ${styles.paMapLink}`}
                 >
                   Visa på karta <span aria-hidden="true">→</span>
                 </a>

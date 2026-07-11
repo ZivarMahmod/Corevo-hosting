@@ -24,21 +24,48 @@ const IMG = {
 /**
  * ELORIA — blush, mörkgrön och guld i klassisk premium-stil (florist-sviten,
  * goal-58). Motsatsen till Mina: en mörkgrön guldramad "platta" mitt i heron,
- * tunna guld-löftesikoner, eleganta höga shop/blogg-kort (3:4), en klassisk
+ * tunna guld-löftesikoner, eleganta höga shop/blogg-kort (4:5), en klassisk
  * prislista med guld-dotterade linjer och en mörkgrön scrim-closing som ekar
  * heron. Se EloriaLayout.tsx för den fullständiga sektionssignaturen.
  *
- * primary (#8A6B27) är valfärgen: white-on-gold ≈ 4.98:1 (btn-accent-texten)
- * och gold-on-bg ≈ 4.55:1 (eyebrows/priser direkt mot blush) — båda ≥ AA,
- * kontrollerat mot design-skärpa-kravet (aldrig under 4.5:1).
+ * SKÄRPE-PASS (design-skarpa-zentum.md) — färgfamiljen är ORÖRD (samma blush,
+ * samma mörkgröna, samma guld-kulör ~41°); bara LJUSHETEN i guldet är justerad.
+ *
+ * RADIE — binär. `radius: '0px'` (var '3px') driver --sf-radius, alltså ALL
+ * struktur: heroplattan, butikskort, bloggkort, galleribrickor, om-fotot, kartan.
+ * Knappen är enda undantaget och är en FULL pill (--radius-pill). 0 eller pill,
+ * inget däremellan — 3px var varken en kant att linjera mot eller en medveten
+ * kapsel, alltså precis den mjuka moroten.
+ *
+ * FÄRG — 9 hex: de 8 tokens nedan + mallens ENDA dekorfärg (--eloria-green
+ * #182a20, deklarerad i eloria.module.css rot-klassen). Guldet är den enda
+ * accenten och sitter bara på småytor. Kontrasten är RÄKNAD (WCAG), inte gissad:
+ *
+ *   fg #241B15 på bg #FBF3EE (rubrik) ................ 15.42:1  (krav ≥7, mål 11)
+ *   fg #241B15 på surface #FFFFFF .................... 16.90:1
+ *   fg #241B15 på accentSoft #F5E4DC ................. 13.69:1
+ *   fg2 #6B5548 på bg (brödtext) ...................... 6.35:1  (krav ≥4.5)
+ *   fg2 #6B5548 på surface ............................ 6.96:1
+ *   #FFFFFF på primary #7A5D1E (knapptext) ............ 6.15:1  (krav ≥4.5; var 4.98)
+ *   #FFFFFF på primaryD (knapp-hover) ................. 8.79:1
+ *   primary på bg (eyebrow/pris/linjer) ............... 5.61:1  (var 4.55)
+ *   primary på accentSoft (presentkortsraden) ......... 4.99:1  (VAR 4.04 = FAIL)
+ *   bg på --eloria-green (heroplattans rubrik) ....... 13.77:1
+ *   bg @82% på --eloria-green (lede/brödtext) ......... 9.71:1
+ *   guld-ljus på --eloria-green (eyebrow + guldram) ... 5.99:1  (VAR 3.03 = FAIL)
+ *
+ * Guldet mörkades ett steg (#8A6B27 → #7A5D1E) för att lyfta knapptexten och
+ * presentkortsradens eyebrow över 4.5:1. På de mörkgröna ytorna gick det åt andra
+ * hållet: temats guld läser bara 3.03:1 mot grönt, så där används ett LJUSARE guld
+ * (--eloria-gold) som är en color-mix av två BEFINTLIGA tokens — noll nya hex.
  */
 export const eloria: FloristTheme = {
   key: 'eloria',
   name: 'Eloria',
   desc: 'Blush · mörkgrön · guld — klassisk premium',
   palette: {
-    primary: '#8A6B27',
-    primaryD: '#6E551E',
+    primary: '#7A5D1E',
+    primaryD: '#5E4715',
     bg: '#FBF3EE',
     surface: '#FFFFFF',
     fg: '#241B15',
@@ -50,7 +77,7 @@ export const eloria: FloristTheme = {
     display: 'var(--font-playfair), Georgia, serif',
     body: 'var(--font-source-sans), system-ui, sans-serif',
   },
-  radius: '3px',
+  radius: '0px',
   content: {
     heroEyebrow: '— Klassisk blomsterhandel',
     heroTitle: 'Blommor för\nlivets stora stunder.',

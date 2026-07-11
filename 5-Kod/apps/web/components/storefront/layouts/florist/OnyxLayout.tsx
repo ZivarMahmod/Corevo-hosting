@@ -11,13 +11,20 @@ import styles from './onyx.module.css'
 
 /**
  * ONYX — mörk, dramatisk lyxflorist (Zivar: "ska kännas som ett svärd, inte en
- * mjuk morot"). EGET formspråk, ensamt i sviten om det: en mint-annonsrad, ett
+ * mjuk morot"). EGET formspråk, ensamt i sviten om det: en smal annonsremsa, ett
  * mörkt wordmark-band med ett stiliserat EST-emblem (rent dekorativt — inget
  * påhittat årtal), en VÄNSTERSTÄLLD hero-text ovanpå en mörk bild (resten av
- * sviten centrerar sin hero — det är kontrasten), ett mintgrönt leverans-band,
- * en mörk trio av produktbilder mot svart, mörka modul-kort, tjänster i ljus
- * text på mörk botten, om-sektion, galleri, plats och en korall closing.
+ * sviten centrerar sin hero — det är kontrasten), ett ljust leverans-band, en
+ * mörk trio av produktbilder mot svart, mörka modul-kort, tjänster i ljus text
+ * på mörk botten, om-sektion, galleri, plats och en mörk closing.
  * Webshop/blogg/presentkort vävs in via `modules`-propen (S10).
+ *
+ * SKÄRPE-PASSET (design-skarpa-zentum.md): mallen använder sina EGNA typroller
+ * (onxEyebrow/onxTitle/onxLede/onxBody + onxBtn) i stället för de delade
+ * sf-rollerna där skalan spelar roll — de delade rollerna sitter på en flack
+ * ×1.2–1.3-skala som gjorde alla nivåer lika viktiga. Strukturen (grid, rader,
+ * about-grid, karta) kommer fortfarande från storefront.module.css. Se CSS:en för
+ * mätvärdena. Sektionsordningen är oförändrad.
  */
 export function OnyxLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -45,7 +52,7 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
 
   return (
     <>
-      {/* 1 — MINT ANNONSRAD */}
+      {/* 1 — ANNONSREMSA (korall, smal: accenten på en LITEN yta) */}
       <div className={styles.onxAnnounce}>
         <p>{content.utility}</p>
       </div>
@@ -66,28 +73,28 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
         <div className={styles.onxHeroScrim} aria-hidden="true" />
         <div className={styles.onxHeroInner}>
           <Reveal>
-            <span className="sf-eyebrow">{content.heroEyebrow}</span>
+            <span className={styles.onxEyebrow}>{content.heroEyebrow}</span>
             <h1 className={styles.onxHeroTitle}>{content.heroTitle}</h1>
             <p className={styles.onxHeroLede}>{content.heroLede}</p>
             <div className={styles.onxHeroActions}>
-              <BookCta className={styles.onxHeroCta} />
+              <BookCta className={styles.onxBtn} />
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* 4 — MINTGRÖNT LEVERANS-BAND */}
+      {/* 4 — LJUST LEVERANS-BAND (bone) — hård invertering mot den svarta sidan */}
       <div className={styles.onxDeliveryBand}>
         <Reveal className={styles.onxDeliveryInner}>
           <p className={styles.onxDeliveryText}>
             Fräscha snitt, bundna för hand — och ute på väg samma dag.
           </p>
           {shopReachable ? (
-            <Link href="/shop" className={styles.onxDeliveryCta}>
+            <Link href="/shop" className={styles.onxBtnInk}>
               Beställ blommor
             </Link>
           ) : (
-            <BookCta className={styles.onxDeliveryCta} label="Boka tid" />
+            <BookCta className={styles.onxBtnInk} label="Boka tid" />
           )}
         </Reveal>
       </div>
@@ -95,7 +102,7 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
       {/* 5 — MÖRK PRODUKTTRIO MOT SVART */}
       <section className={styles.onxTrioSection}>
         <Reveal className={styles.onxTrioHead}>
-          <p className="sf-eyebrow">{content.galleryEyebrow ?? '— I säsong'}</p>
+          <p className={styles.onxEyebrow}>{content.galleryEyebrow ?? '— I säsong'}</p>
         </Reveal>
         <div className={styles.onxTrio}>
           <Reveal>
@@ -115,8 +122,8 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
       {shopTeasers.length > 0 ? (
         <section className={styles.onxCardSection}>
           <Reveal className={styles.onxSecHead}>
-            <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-            <h2 className={styles.onxSecTitle}>{content.shopTitle ?? 'Beställ något dramatiskt'}</h2>
+            <p className={styles.onxEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
+            <h2 className={styles.onxTitle}>{content.shopTitle ?? 'Beställ något dramatiskt'}</h2>
           </Reveal>
           <div className={styles.onxCardGrid}>
             {shopTeasers.map((p, i) => (
@@ -132,8 +139,8 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
               </Reveal>
             ))}
           </div>
-          <Reveal className={styles.onxSecHead}>
-            <Link href="/shop" className={shared.sfMoreLink}>
+          <Reveal className={styles.onxSecFoot}>
+            <Link href="/shop" className={styles.onxMoreLink}>
               {content.shopCta ?? 'Visa hela butiken'} <span aria-hidden="true">→</span>
             </Link>
           </Reveal>
@@ -143,33 +150,33 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
       {/* TJÄNSTER — ljus text på mörk botten. Bara när det finns aktiva
           tjänster — ingen tom-text på hemmet (goal-55 8B). */}
       {rows.length > 0 ? (
-        <section className={shared.sfServices}>
+        <section className={styles.onxServices}>
           <div className={shared.sfNarrow}>
-            <Reveal style={{ textAlign: 'center' }}>
-              <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className={styles.onxTitleLg}>{content.servicesTitle}</h2>
+            <Reveal className={styles.onxServicesHead}>
+              <p className={styles.onxEyebrow}>{content.servicesEyebrow}</p>
+              <h2 className={styles.onxTitle}>{content.servicesTitle}</h2>
             </Reveal>
             <div className={shared.sfRowList}>
               {rows.map((s, i) => (
                 <Reveal key={s.id} delay={i * 60}>
                   <Bookable className={shared.sfRow} label={`Boka — ${s.name}`}>
-                    <span className={shared.sfRowNum} aria-hidden="true">
+                    <span className={styles.onxRowNum} aria-hidden="true">
                       {serviceNum(i)}
                     </span>
                     <span className={shared.sfRowMain}>
-                      <span className={shared.sfRowName}>{s.name}</span>
-                      <span className={shared.sfRowDesc}>{serviceDesc(s)}</span>
+                      <span className={styles.onxRowName}>{s.name}</span>
+                      <span className={styles.onxRowDesc}>{serviceDesc(s)}</span>
                     </span>
-                    <span className={shared.sfRowMeta}>
-                      <span className={shared.sfRowPrice}>{formatPrice(s)}</span>
+                    <span className={styles.onxRowMeta}>
+                      <span className={styles.onxRowPrice}>{formatPrice(s)}</span>
                     </span>
                   </Bookable>
                 </Reveal>
               ))}
             </div>
             {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={shared.sfMoreLink}>
+              <Reveal className={styles.onxSecFoot}>
+                <a href="/tjanster" className={styles.onxMoreLink}>
                   Se allt vi gör <span aria-hidden="true">→</span>
                 </a>
               </Reveal>
@@ -182,19 +189,17 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
       <section className={styles.onxAboutSection}>
         <div className={`${shared.sfWide} ${shared.sfAboutGrid}`}>
           <Reveal>
-            <div className={shared.sfAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
+            <div className={styles.onxAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
           <Reveal delay={120}>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className={styles.onxSecTitle}>{content.aboutTitle}</h2>
-            <p className="sf-body" style={{ marginTop: 16 }}>
-              {content.aboutCopyHome}
-            </p>
-            <ul className={shared.sfStatTrio}>
+            <p className={styles.onxEyebrow}>— Om {tenant.name}</p>
+            <h2 className={styles.onxTitle}>{content.aboutTitle}</h2>
+            <p className={styles.onxBody}>{content.aboutCopyHome}</p>
+            <ul className={styles.onxStats}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
+                  <span className={styles.onxStatValue}>{n}</span>
+                  <span className={styles.onxStatLabel}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -207,8 +212,8 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
       {bloggTeasers.length > 0 ? (
         <section className={styles.onxCardSection}>
           <Reveal className={styles.onxSecHead}>
-            <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
-            <h2 className={styles.onxSecTitle}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
+            <p className={styles.onxEyebrow}>{content.blogEyebrow ?? '— Från bloggen'}</p>
+            <h2 className={styles.onxTitle}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
           </Reveal>
           <div className={styles.onxCardGrid}>
             {bloggTeasers.map((p, i) => (
@@ -224,8 +229,8 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
               </Reveal>
             ))}
           </div>
-          <Reveal className={styles.onxSecHead}>
-            <Link href="/blogg" className={shared.sfMoreLink}>
+          <Reveal className={styles.onxSecFoot}>
+            <Link href="/blogg" className={styles.onxMoreLink}>
               {content.blogCta ?? 'Läs hela bloggen'} <span aria-hidden="true">→</span>
             </Link>
           </Reveal>
@@ -236,22 +241,22 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
       {presentkortLive ? (
         <div className={styles.onxGiftRow}>
           <Reveal className={styles.onxGiftInner}>
-            <p className="sf-eyebrow" style={{ margin: 0 }}>
+            <p className={`${styles.onxEyebrow} ${styles.onxGiftEyebrow}`}>
               {content.giftEyebrow ?? '— Presentkort'}
             </p>
             <p className={styles.onxGiftLede}>{content.giftLede ?? 'Ge bort något som sticker ut.'}</p>
-            <Link href="/presentkort" className={shared.sfMoreLink} style={{ marginTop: 0 }}>
+            <Link href="/presentkort" className={`${styles.onxMoreLink} ${styles.onxGiftLink}`}>
               {content.giftCta ?? 'Till presentkorten'}
             </Link>
           </Reveal>
         </div>
       ) : null}
 
-      {/* GALLERI — masonry + lightbox */}
-      <section className={shared.sfGalleryBand}>
+      {/* GALLERI — masonry + lightbox (samma 4/5-ratio som resten av mallen) */}
+      <section className={styles.onxGallery}>
         <div className={shared.sfWide}>
-          <Reveal>
-            <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
+          <Reveal className={styles.onxGalleryHead}>
+            <p className={styles.onxEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
           </Reveal>
           <Reveal>
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
@@ -260,21 +265,17 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
       </section>
 
       {/* PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
+      <section className={styles.onxLocBand}>
         <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className={styles.onxSecTitle}>
+            <p className={styles.onxEyebrow}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
+            <h2 className={styles.onxTitle}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ marginTop: 6 }}>
-                {location.address}
-              </p>
+              <p className={styles.onxBody}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ marginTop: 6 }}>
-                Adress visas snart.
-              </p>
+              <p className={styles.onxBody}>Adress visas snart.</p>
             )}
             {location?.hours ? (
               <div className={shared.sfHours}>
@@ -306,16 +307,17 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
         </div>
       </section>
 
-      <section className={shared.sfClosing}>
-        <Reveal>
-          <h2 className={styles.onxTitleLg} style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto' }}>
+      {/* CLOSING — mörk yta, EN korall-pill (accenten stannar på små ytor) */}
+      <section className={styles.onxClosing}>
+        <Reveal className={styles.onxClosingInner}>
+          <h2 className={styles.onxTitle}>
             {content.closingTitle ?? 'Redo för något som sticker ut?'}
           </h2>
-          <p className={shared.sfClosingLead}>
+          <p className={styles.onxClosingLede}>
             {content.closingLede ?? 'Beställ, boka en tid eller hör av dig — vi hjälper dig gärna.'}
           </p>
-          <div style={{ marginTop: 30 }}>
-            <BookCta className={shared.sfClosingCta} />
+          <div className={styles.onxClosingActions}>
+            <BookCta className={styles.onxBtn} />
           </div>
         </Reveal>
       </section>
