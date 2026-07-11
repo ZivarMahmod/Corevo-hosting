@@ -108,6 +108,11 @@
   --sf-btn-dur: 160ms;
   --sf-btn-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --sf-focus: var(--color-fg);
+  /* Navets korg-/kontoknappar: rakskurna som resten av mallen. Plattformen ritade dem
+     som cirklar (hårdkodat 999px i nav-shell) — en cirkel i en radie-0-mall är dekor
+     utan mening. Guldpillret på köp-CTA:n är däremot ett MEDVETET undantag: den enda
+     runda formen på sidan, och därför den som ögat söker sig till. */
+  --sf-navicon-radius: 0px;
 
   /* Galleriets delade .galleryItem läser --tpl-radius, som ärvs från .tplRoot
      (12px). Nollas här — annars smyger mjuka hörn in i en mall som är radie-0. */

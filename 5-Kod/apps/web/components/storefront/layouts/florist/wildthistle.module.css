@@ -97,6 +97,9 @@
   --sf-btn-h: 52px;
   --sf-btn-pad: 16px 28px;
   --sf-btn-radius: 0; /* mallens signatur: inget rundat, någonstans */
+  /* …vilket plattformen ändå bröt: nav-shell ritade korg/konto som 999px-cirklar.
+     Radien är temadata nu — mallen håller sitt löfte hela vägen ut. */
+  --sf-navicon-radius: 0;
   --sf-btn-bg: var(--wt-moss);
   --sf-btn-ink: var(--wt-paper); /* 7.78:1 */
   --sf-btn-border: var(--wt-moss);

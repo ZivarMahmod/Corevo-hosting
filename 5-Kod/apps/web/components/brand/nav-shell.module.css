@@ -79,19 +79,37 @@
   align-items: center;
   gap: 1rem;
 }
+/* goal-60: ikonknapparnas radie är TEMADATA, inte plattformens beslut.
+   Den var hårdkodad till 999px — alltså tvingades varje mall ha runda ikoncirklar i
+   navet, även de som medvetet är radie-0 (Calytrix, WildThistle). En rund cirkel i en
+   rakskuren mall är en främmande kropp: formen ska betyda något, inte bara finnas.
+   Mallen sätter --sf-navicon-radius i sitt vars-block; utan den är pill kvar (de sju
+   äldre temana renderar byte-identiskt).
+   Storleken höjd 2.4rem → 2.75rem (38.4px låg under touch-golvet 44px). */
 .navAccount {
   display: grid;
   place-items: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  border-radius: 999px;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--sf-navicon-radius, 999px);
   border: 1px solid var(--color-line);
   background: transparent;
   color: var(--color-fg);
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease;
 }
 .navAccount:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+.navAccount:active {
+  transform: scale(0.94);
+}
+.navAccount:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-primary));
+  outline-offset: 3px;
 }
 .navBook {
   font-size: 0.9rem;
