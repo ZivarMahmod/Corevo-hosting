@@ -11,12 +11,12 @@ import { OnboardingChecklist } from '@/components/platform/OnboardingChecklist'
 import { BillingForm } from '@/components/platform/BillingForm'
 import { StatusControl } from '@/components/platform/StatusControl'
 import { DomainPanel } from '@/components/platform/DomainPanel'
-import { OperativeControls } from '@/components/platform/OperativeControls'
+import { GoogleReviewCard } from '@/components/platform/GoogleReviewCard'
 import { ServicesCard } from '@/components/platform/ServicesCard'
 import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
-import { getAdminModuleStates, isModuleActivated, isBookingActivated, moduleAdminConfig } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listShopProducts, listShopOrders } from '@/lib/admin/shop/data'
 import { listBlogPosts } from '@/lib/admin/blogg/data'
 import { listTenantEvents, listEventRegistrations } from '@/lib/admin/events/data'
@@ -114,9 +114,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const bloggOn = isModuleActivated(moduleStates, 'blogg')
   const offertOn = isModuleActivated(moduleStates, 'offert')
   const mediaOn = isModuleActivated(moduleStates, 'media_library')
-  // booking är default-live utan tenant_modules-rad — Kurser-fliken visas för i
-  // princip alla kunder och göms bara vid en EXPLICIT off-rad.
-  const kurserOn = isBookingActivated(moduleStates)
+  // Kurser = egen opt-in-modul sedan 0056 — fliken visas bara när modulen är på.
+  const kurserOn = isModuleActivated(moduleStates, 'kurser')
   const needAssets = shopOn || bloggOn || mediaOn
   const mediaQuotaCfg = moduleAdminConfig(moduleStates, 'media_library')
   const mediaQuota =
@@ -569,7 +568,20 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           paymentsEnabled={paymentsRow?.payments_enabled ?? false}
           justReturned={false}
         />
-        {integrationRows(operative.googleReviewUrl).map((it) => (
+        {/* Google-recensionslänken bor HÄR (det är en integration) — flyttad från
+            Drifts gamla OperativeControls (goal-59: Drift-städningen). */}
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Google-recensioner</h2>
+            <span className={styles.chip}>review-nudge</span>
+          </div>
+          <GoogleReviewCard
+            tenantId={tenant.id}
+            tenantName={tenant.name}
+            googleReviewUrl={operative.googleReviewUrl}
+          />
+        </Card>
+        {integrationRows().map((it) => (
           <Card key={it.name}>
             <div className={styles.intRow}>
               <div className={styles.intAvatar} style={{ background: it.color }} aria-hidden="true">
@@ -594,33 +606,12 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       </div>
     ),
 
+    // DRIFT (goal-59-städningen): BARA det drift-unika. Bort härifrån (fanns
+    // redan på annat håll): namn-redigering (Sida-fliken), lösenords-reset
+    // (header-knappen), lägg-till-personal (Personal-fliken), Google-länk
+    // (Integrationer). Ordning: Moduler → kund-editor → status/riskzon → logg.
     Drift: (
       <div className={styles.maxCol}>
-        {/* Grunddata/inställningar (§2.1B) — salongsnamn, bokningsvariant, Google-
-            recensionslänk. Flyttat hit från gamla "Data"-hinken (egna wired forms). */}
-        <OperativeControls
-          tenantId={tenant.id}
-          name={tenant.name}
-          googleReviewUrl={operative.googleReviewUrl}
-          salonAdminEmail={salonAdmin?.email ?? null}
-          serviceRoleAvailable={serviceRoleAvailable}
-        />
-        <Card>
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontWeight: 600, fontSize: 15 }}>
-              {isActive ? 'Salongen är aktiv' : isDeleted ? 'Salongen är borttagen' : 'Salongen är pausad'}
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--c-ink-3)', marginTop: 3 }}>
-              {isActive
-                ? 'Pausa → publik storefront blockeras direkt (RLS + cache-bust). Data rörs aldrig.'
-                : isDeleted
-                  ? 'Mjukt borttagen (status=deleted). Data är orörd; går att återaktivera vid behov.'
-                  : 'Publik storefront är blockerad. Data är orörd och går att återaktivera.'}
-            </div>
-          </div>
-          <StatusControl tenantId={tenant.id} status={tenant.status} />
-        </Card>
-
         <Card>
           <div className={styles.sectionHead}>
             <h2 className={styles.h2}>Moduler</h2>
@@ -633,8 +624,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <ModulesCard tenantId={tenant.id} modules={modules} />
         </Card>
 
-        {/* Kund-editor-reglaget (Zivar: "sajtbyggaren för kunden borde inte vara i
-            Sida — den ska ligga i Drift"): styr bara om KUNDEN får redigera själv,
+        {/* Kund-editor-reglaget: styr bara om KUNDEN får redigera själv,
             aldrig den publika sidan. */}
         <Card>
           <div className={styles.sectionHead}>
@@ -648,13 +638,41 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />
         </Card>
 
+        {/* Status + riskzon i ETT kort — båda skriver tenants.status, två kort
+            var ren duplicering. */}
+        <Card className={isActive ? undefined : styles.danger}>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Status &amp; riskzon</h2>
+            <span className={styles.chip}>tenants.status</span>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontWeight: 600, fontSize: 15 }}>
+              {isActive ? 'Kunden är aktiv' : isDeleted ? 'Kunden är borttagen' : 'Kunden är pausad'}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--c-ink-3)', marginTop: 3 }}>
+              {isActive
+                ? 'Pausa → publik storefront blockeras direkt (RLS + cache-bust). Data rörs aldrig.'
+                : isDeleted
+                  ? 'Mjukt borttagen (status=deleted). Data är orörd; går att återaktivera vid behov.'
+                  : 'Publik storefront är blockerad. Data är orörd och går att återaktivera.'}
+            </div>
+          </div>
+          <StatusControl tenantId={tenant.id} status={tenant.status} />
+          <p className={styles.dangerText} style={{ marginTop: 16 }}>
+            Ta bort = mjuk borttagning: publik sajt + admin blockeras, men alla rader &amp; historik
+            sparas (build-once-never-delete — hård radering är permanent spärrad). Vill du bara dölja
+            tillfälligt? Pausa ovan i stället.
+          </p>
+          <TenantDangerCard tenantId={tenant.id} tenantName={tenant.name} />
+        </Card>
+
         <Card pad={0}>
           <div className={styles.sectionHead} style={{ padding: '16px 20px', marginBottom: 0 }}>
             <h2 className={styles.h2}>Audit-logg</h2>
             <span className={styles.chip}>audit_log</span>
           </div>
           {audit.length === 0 ? (
-            <p className={styles.empty}>Inga loggade händelser ännu för den här salongen.</p>
+            <p className={styles.empty}>Inga loggade händelser ännu för den här kunden.</p>
           ) : (
             <div className={styles.auditList}>
               {audit.map((a) => (
@@ -662,19 +680,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
               ))}
             </div>
           )}
-        </Card>
-
-        <Card className={styles.danger}>
-          <div className={styles.dangerHead}>
-            <Icon name="shield" size={16} />
-            <span>Riskzon · skyddad av audit-guard</span>
-          </div>
-          <p className={styles.dangerText}>
-            Ta bort = mjuk borttagning: publik sajt + admin blockeras, men alla rader &amp; historik
-            sparas (build-once-never-delete — hård radering är permanent spärrad). Vill du bara dölja
-            tillfälligt? Suspendera ovan i stället.
-          </p>
-          <TenantDangerCard tenantId={tenant.id} tenantName={tenant.name} />
         </Card>
       </div>
     ),
@@ -745,8 +750,9 @@ type IntRow = {
   letter: string
 }
 // Stripe har sedan körning 5 ett RIKTIGT kort (StripeConnectCard ovan) — raden här
-// skulle bara duplicera det. Zettle = ärlig "planerad" (ingen fejk-integration).
-function integrationRows(googleReviewUrl: string | null): IntRow[] {
+// skulle bara duplicera det. Google-recensioner har numera ett eget redigerbart
+// kort ovan. Zettle = ärlig "planerad" (ingen fejk-integration).
+function integrationRows(): IntRow[] {
   return [
     {
       name: 'Zettle',
@@ -755,14 +761,6 @@ function integrationRows(googleReviewUrl: string | null): IntRow[] {
       tone: 'neutral',
       color: '#3D3D3D',
       letter: 'Z',
-    },
-    {
-      name: 'Google-recensioner',
-      desc: googleReviewUrl ?? 'Ingen recensionslänk satt',
-      status: googleReviewUrl ? 'Satt' : 'Ej satt',
-      tone: googleReviewUrl ? 'success' : 'warning',
-      color: '#EA4335',
-      letter: 'G',
     },
     {
       // No per-tenant SMS-status column exists (catalog.ts marks it countSource:null) —

@@ -147,7 +147,7 @@ export default async function PublicLayout({ children }: { children: React.React
     '/offert': 'offert',
     '/presentkort': 'presentkort',
     '/boka': 'booking',
-    '/kurser': 'booking',
+    '/kurser': 'kurser',
   }
   const ctaModule = rawPrimaryCta
     ? CTA_HREF_MODULE[`/${rawPrimaryCta.href.split('/')[1] ?? ''}`]
@@ -223,9 +223,10 @@ export default async function PublicLayout({ children }: { children: React.React
             // Tjänster bara när det finns minst en aktiv tjänst (listan är tom
             // när booking inte är live — då ska länken inte visas).
             ...(allWizardServices.length > 0 ? [{ href: '/tjanster', label: 'Tjänster' }] : []),
-            // Kurser & event: bara när booking är live OCH minst ett kommande
-            // open-tillfälle finns (loadern är cachad → billig extra läsning).
-            ...(bookingLive && (await loadUpcomingEvents(tenant.id, tenant.slug)).length > 0
+            // Kurser & event: EGEN modul sedan 0056 (inte booking) — bara när
+            // kurser är live OCH minst ett kommande open-tillfälle finns.
+            ...(moduleState(moduleStates, 'kurser') === 'live' &&
+            (await loadUpcomingEvents(tenant.id, tenant.slug)).length > 0
               ? [{ href: '/kurser', label: 'Kurser' }]
               : []),
             ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'

@@ -73,9 +73,8 @@ export const NAV: Record<PortalRole, NavConfig> = {
       { href: '/admin/scheman', label: 'Scheman', icon: 'clock' },
       // Kundens språk, inte plattformens: "Moduler" är en intern term (Zivar).
       { group: 'Din verksamhet' },
-      // 'booking' är default-live utan tenant_modules-rad — PortalShell lägger då
-      // med 'booking' i activeModuleKeys (isBookingActivated) så posten syns.
-      { href: '/admin/kurser', label: 'Kurser', icon: 'calendar', module: 'booking' },
+      // Kurser = egen opt-in-modul sedan 0056 (rad krävs, isModuleActivated).
+      { href: '/admin/kurser', label: 'Kurser', icon: 'calendar', module: 'kurser' },
       { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', module: 'media_library' },
       { href: '/admin/webshop', label: 'Webshop', icon: 'grid', module: 'shop' },
       { href: '/admin/blogg', label: 'Blogg', icon: 'edit', module: 'blogg' },

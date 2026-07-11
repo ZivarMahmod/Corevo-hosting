@@ -16,16 +16,17 @@ export function generateMetadata(): Promise<Metadata> {
 
 /**
  * Kurser & event — kommande tillfällen (tenant_events) med anmälan per
- * tillfälle (goal-54 körning 4). Gate: booking-modulen live/paused (samma form
- * som /blogg-gaten); paused → listan utan formulär + "stängt"-notis.
+ * tillfälle (goal-54 körning 4). Gate: EGEN kurser-modul (migration 0056) —
+ * tidigare hängde den på booking, vilket gav alla booking-kunder kurser
+ * automatiskt. paused → listan utan formulär + "stängt"-notis.
  */
 export default async function KurserPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
-  const paused = isModulePaused(states, 'booking')
-  if (!isModuleLive(states, 'booking') && !paused) notFound()
+  const paused = isModulePaused(states, 'kurser')
+  if (!isModuleLive(states, 'kurser') && !paused) notFound()
 
   const events = await loadUpcomingEvents(tenant.id, tenant.slug)
 

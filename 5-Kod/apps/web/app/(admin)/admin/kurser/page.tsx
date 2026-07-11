@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isBookingActivated } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
 import { listTenantEvents, listEventRegistrations } from '@/lib/admin/events/data'
 import { KursAdmin } from '@/components/admin/KursAdmin'
 import { Callout, PageHead } from '@/components/portal/ui'
@@ -14,15 +14,14 @@ export default async function KurserPage() {
   const tenant = await getAdminTenant(user)
   if (!tenant) return <NoTenant />
 
-  // Kurser & event hänger på booking-modulen. Booking är default-live utan rad
-  // (isBookingActivated) — sidan gömmer sig bara vid en EXPLICIT off-rad.
+  // Kurser & event är en EGEN modul (0056) — opt-in per kund, rad krävs.
   const states = await getAdminModuleStates(tenant.id)
-  if (!isBookingActivated(states)) {
+  if (!isModuleActivated(states, 'kurser')) {
     return (
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Kurser & event" />
         <Callout tone="info" icon="info">
-          Bokning är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
+          Kurser &amp; event är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
         </Callout>
       </section>
     )
