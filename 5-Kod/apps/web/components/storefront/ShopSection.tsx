@@ -60,6 +60,10 @@ export async function ShopSection({
   const { config, products: allProducts } = data
   const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
+  // Startsidans teaser (limit satt) för en LIVE men TOM butik → rendera inget alls
+  // (S12: inga "visas snart"-löften till besökare); modulens egen sida behåller
+  // sin vänliga tom-text.
+  if (typeof limit === 'number' && allProducts.length === 0 && !paused) return null
 
   return (
     <section className="section" data-module="shop" data-fulfilment={config.fulfilment}>
@@ -124,8 +128,13 @@ export async function ShopSection({
                     overflow: 'hidden',
                   }}
                 >
-                  <div
+                  {/* Länka bild + namn till produktdetaljsidan — INTE hela kortet,
+                      så AddToCart-knappen nedanför förblir klickbar (goal-54 S4). */}
+                  <a
+                    href={`/shop/${p.id}`}
+                    aria-label={`${p.name} — visa produkt`}
                     style={{
+                      display: 'block',
                       aspectRatio: '4 / 3',
                       background: 'color-mix(in srgb, var(--color-fg, #232520) 6%, transparent)',
                     }}
@@ -139,7 +148,7 @@ export async function ShopSection({
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                       />
                     ) : null}
-                  </div>
+                  </a>
                   <div style={{ padding: 16, display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <h3
                       style={{
@@ -149,7 +158,12 @@ export async function ShopSection({
                         color: 'var(--color-fg, #232520)',
                       }}
                     >
-                      {p.name}
+                      <a
+                        href={`/shop/${p.id}`}
+                        style={{ color: 'inherit', textDecoration: 'none' }}
+                      >
+                        {p.name}
+                      </a>
                     </h3>
                     {p.description ? (
                       <p

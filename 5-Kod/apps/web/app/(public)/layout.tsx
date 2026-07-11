@@ -27,9 +27,11 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
   const bundle = await currentTenant()
-  if (!bundle) return { title: 'Salong' }
+  if (!bundle) return { title: 'Corevo' }
   const { tenant } = bundle
-  const description = `Boka tid hos ${tenant.name} online.`
+  // Bransch-neutral (goal-54 körning 2, S11): "Boka tid hos X" antog att bokning är
+  // kärnan — för t.ex. en butiks-tung florist är det missvisande som huvudbeskrivning.
+  const description = `${tenant.name} — hitta öppettider, utbud och kontakt, och boka eller handla online.`
   // metadataBase = this tenant's own origin so child-page openGraph/canonical
   // URLs resolve absolutely against the right subdomain (no Next warning).
   const origin = await requestOrigin()
@@ -189,6 +191,12 @@ export default async function PublicLayout({ children }: { children: React.React
             { href: '/tjanster', label: 'Tjänster' },
             ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'
               ? [{ href: '/blogg', label: 'Blogg' }]
+              : []),
+            ...(moduleState(moduleStates, 'offert') === 'live' || moduleState(moduleStates, 'offert') === 'paused'
+              ? [{ href: '/offert', label: 'Offert' }]
+              : []),
+            ...(moduleState(moduleStates, 'presentkort') === 'live' || moduleState(moduleStates, 'presentkort') === 'paused'
+              ? [{ href: '/presentkort', label: 'Presentkort' }]
               : []),
             { href: '/om', label: 'Om oss' },
             { href: '/kontakt', label: 'Kontakt' },

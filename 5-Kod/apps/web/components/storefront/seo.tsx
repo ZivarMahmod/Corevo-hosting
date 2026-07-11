@@ -25,7 +25,7 @@ type StorefrontPage = 'om' | 'kontakt' | 'tjanster' | 'shop' | 'blogg' | 'offert
 const PAGE_META: Record<StorefrontPage, { title: string; describe: (name: string) => string }> = {
   om: {
     title: 'Om oss',
-    describe: (name) => `Lär känna ${name} — vårt team, vår salong och hur vi arbetar.`,
+    describe: (name) => `Lär känna ${name} — vilka vi är och hur vi arbetar.`,
   },
   kontakt: {
     title: 'Kontakt',
@@ -163,11 +163,22 @@ export async function LocalBusinessJsonLd({
   if (!bundle) return null
   const origin = await requestOrigin()
 
-  // HairSalon is the most specific schema.org subtype of LocalBusiness for a
-  // hair/barber salon; it inherits the same address/hours/telephone fields.
+  // schema.org subtype per BRANSCH (goal-54 körning 2, S11: every tenant used to
+  // emit HairSalon — wrong structured data for e.g. a florist). Unknown/unset
+  // bransch → the safe parent type LocalBusiness. All subtypes inherit the same
+  // address/hours/telephone fields.
+  const vertical = (bundle.tenant as { vertical_id?: string | null }).vertical_id ?? null
+  const SCHEMA_TYPE_BY_VERTICAL: Record<string, string> = {
+    'frisör': 'HairSalon',
+    barbershop: 'HairSalon',
+    nagelstudio: 'NailSalon',
+    florist: 'Florist',
+    restaurang: 'Restaurant',
+  }
+  const schemaType = (vertical && SCHEMA_TYPE_BY_VERTICAL[vertical]) || 'LocalBusiness'
   const data: Record<string, unknown> = {
     '@context': 'https://schema.org',
-    '@type': 'HairSalon',
+    '@type': schemaType,
     '@id': `${origin}/#business`,
     name,
     url: origin,

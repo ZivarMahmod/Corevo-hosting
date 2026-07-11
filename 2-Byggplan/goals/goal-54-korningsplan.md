@@ -120,3 +120,59 @@ Sida-actions gör (samma mönster, ingen ny mekanik).
 - Säkerhet: fd-tenantId får ALDRIG äras för salon_admin — testet ovan är gate.
 - revalidate-miss i kundkortet → router.refresh() finns redan i komponenterna som fallback.
 - Stor yta (15+ actions) → mekanisk, en modul i taget (shop → blogg → media → offert), tsc mellan varje.
+
+**UTFALL KÖRNING 1 (2026-07-11):** KLART — commit dada1f6, tag v1.7.21. moduleCtx
+dual-guard + TenantScope/TenantField (15 formulär) + 4 modul-flikar i kundkortet +
+stub pensionerad. 685 tester gröna (5 nya säkerhetstester), tsc + eslint rent.
+
+---
+
+## DETALJPLAN KÖRNING 2 — Storefronten slutar ljuga
+
+**Mål:** riktig sida för riktiga besökare — inga återvändsgränder, ingen felaktig
+bransch-data, allt nåbart. Fynd som täcks: S1, S2, S3, S4, S9, S11, S12 + S7-delarna.
+
+### Steg 1 — Blogg blir läsbar (S2)
+- Ny loader `loadBlogPost(tenantId, slug)` (published only) + `/blogg/[slug]`-sida:
+  omslag, rubrik, datum, brödtext (samma modul-gate som /blogg; okänd slug → notFound).
+- Inläggskorten (PostCard/PostRow/FeaturedLead i BloggSection) blir länkar till
+  `/blogg/<slug>`; flora-teaserns blogg-kort likaså.
+
+### Steg 2 — Shop slutar säga "otillgänglig" när det finns lager (S3, S4)
+- Rotorsak: köpbarhet = variantrader; produkter skapade UTAN variant (seed/provisionering)
+  blir okörbara trots stock>0. Fix i två delar:
+  a) Backfill-SQL (alla tenants): produkter med 0 varianter får en Standard-variant
+     ur produktens price_cents/stock/image (samma modell som syncDefaultVariant).
+  b) UI-sanning: utan variant ELLER alla varianter slut → "Slutsåld" när stock=0,
+     "Tillfälligt otillgänglig" ENDAST när varianter saknas helt (nu sällsynt).
+- Produktdetaljsida `/shop/[id]`: stor bild, namn, beskrivning, pris, varianter,
+  AddToCart; produktkorten i ShopSection + flora-valven blir länkar dit.
+
+### Steg 3 — Menyn + pelarna slutar gömma/404:a (S1, S9, S12)
+- layout.tsx nav-links: + Offert och Presentkort (modulstyrda, samma som Butik/Blogg).
+- FloraLayout-pelarna gate:as på modulstatus (shop av → pelaren pekar inte på 404;
+  visa boka/annan pelare istället eller göm).
+- Sektioner för LIVE modul utan innehåll returnerar null på startsidan (inga
+  "visas snart"-löften till besökare); modulens egen sida behåller vänlig tom-text.
+
+### Steg 4 — SEO/terminologi per bransch (S11, S7)
+- sitemap.ts: + /shop /blogg /offert /presentkort när modulen är live.
+- JSON-LD `@type` ur bransch (florist→Florist, frisor→HairSalon, annars LocalBusiness).
+- PAGE_META/alt-texter/layout-beskrivning avsalongifieras (neutral svenska).
+- staff-noun default 'Frisör' → neutral default; bransch-ordet ur verticals.terminology
+  (frisören FÅR "Frisör" via sin vertical, ingen regression för FreshCut).
+- BookingWizard stepTitles: bara den hårdaste frisör-frasen neutraliseras (kurs-språk
+  kommer i körning 4 med riktiga kurser).
+
+### Verify
+tsc + vitest + eslint; deploy v1.7.22; prod: florist.corevo.se blogg-inlägg läsbart,
+produkt klickbar + köpbar, meny visar Offert/Presentkort, sitemap.xml innehåller
+modulsidorna, JSON-LD ≠ HairSalon för floristen; FreshCut orörd (HairSalon kvar, boka
+funkar, "Frisör" kvar via vertical).
+
+### Risker
+- Backfill-SQL rör alla tenants → körs som enkel INSERT…SELECT WHERE NOT EXISTS,
+  idempotent, verifieras med count före/efter.
+- Cart/checkout-rälsen förutsätter variant-id — därför backfill, ALDRIG syntetiska
+  varianter i loadern.
+- FreshCut-regression störst i steg 4 → verify-listan ovan är gate.

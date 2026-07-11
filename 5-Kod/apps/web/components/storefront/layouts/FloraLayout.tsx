@@ -1,9 +1,10 @@
+import Link from 'next/link'
 import { Reveal } from '../Reveal'
 import { Gallery } from '../Gallery'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc, serviceNum } from '../service-format'
-import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
+import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
 import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
@@ -48,6 +49,12 @@ export async function FloraLayout({ tenant, content, services, location }: Store
   const shopLive = isModuleLive(moduleStates, 'shop')
   const bloggLive = isModuleLive(moduleStates, 'blogg')
   const presentkortLive = isModuleLive(moduleStates, 'presentkort')
+  // Pelarna länkar bara dit en sida faktiskt finns (live/paused renderar; av/draft
+  // → notFound). En pelare mot avstängd modul vore en 404-fälla (S9).
+  const reachable = (key: 'shop' | 'offert') =>
+    isModuleLive(moduleStates, key) || isModulePaused(moduleStates, key)
+  const shopReachable = reachable('shop')
+  const offertReachable = reachable('offert')
   const [shopData, bloggData] = await Promise.all([
     shopLive ? loadShopData(tenant.id, tenant.slug) : Promise.resolve(null),
     bloggLive ? loadBloggData(tenant.id, tenant.slug) : Promise.resolve(null),
@@ -92,22 +99,26 @@ export async function FloraLayout({ tenant, content, services, location }: Store
       {/* VERKSAMHETS-BEN — det floristen faktiskt gör, tre vägar in */}
       <section style={{ paddingBottom: 'clamp(40px, 6vw, 80px)' }}>
         <div className={styles.flPillars}>
-          <Reveal>
-            <a href="/shop" className={styles.flPillar}>
-              <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[0] ?? arch1})` }} />
-              <h3 className={styles.flPillarName}>Beställ blommor</h3>
-              <p className={styles.flPillarText}>Buketter i säsong — floristen väljer det finaste. Hämta i butik eller skicka bud.</p>
-              <span className={styles.flPillarLink}>Till butiken</span>
-            </a>
-          </Reveal>
-          <Reveal delay={100}>
-            <a href="/offert" className={styles.flPillar}>
-              <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[1] ?? arch2})` }} />
-              <h3 className={styles.flPillarName}>Bröllop & avsked</h3>
-              <p className={styles.flPillarText}>Handbundna brudbuketter, corsage och binderier — eller ett personligt, vackert farväl.</p>
-              <span className={styles.flPillarLink}>Begär offert</span>
-            </a>
-          </Reveal>
+          {shopReachable ? (
+            <Reveal>
+              <Link href="/shop" className={styles.flPillar}>
+                <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[0] ?? arch1})` }} />
+                <h3 className={styles.flPillarName}>Beställ blommor</h3>
+                <p className={styles.flPillarText}>Buketter i säsong — floristen väljer det finaste. Hämta i butik eller skicka bud.</p>
+                <span className={styles.flPillarLink}>Till butiken</span>
+              </Link>
+            </Reveal>
+          ) : null}
+          {offertReachable ? (
+            <Reveal delay={100}>
+              <a href="/offert" className={styles.flPillar}>
+                <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[1] ?? arch2})` }} />
+                <h3 className={styles.flPillarName}>Bröllop & avsked</h3>
+                <p className={styles.flPillarText}>Handbundna brudbuketter, corsage och binderier — eller ett personligt, vackert farväl.</p>
+                <span className={styles.flPillarLink}>Begär offert</span>
+              </a>
+            </Reveal>
+          ) : null}
           <Reveal delay={200}>
             <a href="/boka" className={styles.flPillar}>
               <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }} />
@@ -130,19 +141,19 @@ export async function FloraLayout({ tenant, content, services, location }: Store
           <div className={styles.flCardGrid}>
             {shopTeasers.map((p, i) => (
               <Reveal key={p.id} delay={i * 90}>
-                <a href="/shop" className={styles.flCard}>
+                <Link href={`/shop/${p.id}`} className={styles.flCard}>
                   <div
                     className={styles.flCardImg}
                     style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                   />
                   <h3 className={styles.flCardName}>{p.name}</h3>
                   <p className={styles.flCardMeta}>{formatShopPrice(p.priceCents, p.currency)}</p>
-                </a>
+                </Link>
               </Reveal>
             ))}
           </div>
           <Reveal className={styles.flSecHead}>
-            <a href="/shop" className={styles.flBandCta}>Visa hela butiken</a>
+            <Link href="/shop" className={styles.flBandCta}>Visa hela butiken</Link>
           </Reveal>
         </section>
       ) : null}
@@ -237,19 +248,19 @@ export async function FloraLayout({ tenant, content, services, location }: Store
             <div className={styles.flCardGrid}>
               {bloggTeasers.map((p, i) => (
                 <Reveal key={p.id} delay={i * 90}>
-                  <a href="/blogg" className={styles.flCard}>
+                  <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.flCard}>
                     <div
                       className={styles.flCardImg}
                       style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
                     />
                     <h3 className={styles.flCardName}>{p.title}</h3>
                     {p.excerpt ? <p className={styles.flCardMeta}>{p.excerpt}</p> : null}
-                  </a>
+                  </Link>
                 </Reveal>
               ))}
             </div>
             <Reveal className={styles.flSecHead}>
-              <a href="/blogg" className={styles.flBandCta}>Läs hela bloggen</a>
+              <Link href="/blogg" className={styles.flBandCta}>Läs hela bloggen</Link>
             </Reveal>
           </section>
         </>

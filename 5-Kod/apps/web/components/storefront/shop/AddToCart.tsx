@@ -28,14 +28,48 @@ export function AddToCart({
   const [added, setAdded] = useState(false)
 
   const variant = variants.find((v) => v.id === variantId) ?? variants[0]
+  // available: null = ospårat lager (obegränsat, köpbart); 0 = slutsåld (loadern
+  // klampar stock − reserved_qty till ≥ 0, se load-shop.ts).
+  const allSoldOut = variants.length > 0 && variants.every((v) => v.available === 0)
   const soldOut = !variant || variant.available === 0
   const maxQty = variant?.available ?? null
   const label = shopCtaLabel(fulfilment)
 
+  // (a) Inga varianter alls → ärligt otillgänglig (sällsynt efter DB-backfill).
   if (variants.length === 0) {
     return (
       <div style={{ marginTop: 12, fontFamily: 'var(--font-ui)', fontSize: 13, opacity: 0.6 }}>
         Tillfälligt otillgänglig
+      </div>
+    )
+  }
+
+  // (b) Varianter finns men ALLA är slut → disabled "Slutsåld"-knapp, inget
+  // variantval/stepper (det finns inget köpbart att välja).
+  if (allSoldOut) {
+    return (
+      <div style={{ marginTop: 12 }}>
+        <button
+          type="button"
+          disabled
+          aria-label={`${product.name} — slutsåld`}
+          style={{
+            width: '100%',
+            padding: '10px 16px',
+            fontFamily: 'var(--font-ui)',
+            fontSize: 13,
+            fontWeight: 600,
+            letterSpacing: '0.01em',
+            cursor: 'not-allowed',
+            color: 'var(--color-fg, #232520)',
+            background: 'color-mix(in srgb, var(--color-fg, #232520) 8%, transparent)',
+            border: '1px solid var(--color-accent, #C8A24A)',
+            borderRadius: 'var(--radius, 4px)',
+            opacity: 0.6,
+          }}
+        >
+          Slutsåld
+        </button>
       </div>
     )
   }

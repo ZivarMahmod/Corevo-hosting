@@ -112,3 +112,85 @@ export async function loadShopData(tenantId: string, slug: string): Promise<Shop
   )
   return load()
 }
+
+/** Allt produktdetaljsidan behöver: den resolvade shop-configen + EN produkt. */
+export type ShopProductData = {
+  config: ShopConfig
+  product: ShopProduct
+}
+
+/**
+ * Load ONE active product for the tenant (produktdetaljsidan, goal-54 S4).
+ * Samma select/mappning som list-loadern ovan, samma cache-tagg (`tenant:<slug>`)
+ * så produkt-/config-ändringar bustar även detaljsidan. Okänd/inaktiv produkt
+ * eller saknad shop-modul → null (sidan svarar med notFound).
+ */
+export async function loadShopProduct(
+  tenantId: string,
+  slug: string,
+  productId: string,
+): Promise<ShopProductData | null> {
+  const norm = slug.trim().toLowerCase()
+  const load = unstable_cache(
+    async (): Promise<ShopProductData | null> => {
+      const supabase = createPublicClient()
+
+      const { data: moduleRow, error: modErr } = await supabase
+        .from('tenant_modules')
+        .select('config')
+        .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+        .eq('module_key', 'shop')
+        .maybeSingle()
+      if (modErr || !moduleRow) return null
+
+      const config: ShopConfig = parseShopConfig(moduleRow.config)
+
+      const { data: r } = await supabase
+        .from('shop_products')
+        .select('id, name, description, price_cents, currency, stock, media_assets(url, alt)')
+        .eq('tenant_id', tenantId) // app-layer tenant isolation
+        .eq('id', productId)
+        .eq('active', true)
+        .maybeSingle()
+      if (!r) return null
+
+      const variants: ShopVariant[] = []
+      const { data: vRows } = await supabase
+        .from('shop_product_variants')
+        .select('id, product_id, name, price_cents, currency, stock, reserved_qty, media_assets(url)')
+        .eq('tenant_id', tenantId) // app-layer tenant isolation
+        .eq('active', true)
+        .eq('product_id', r.id)
+        .order('sort_order', { ascending: true })
+      for (const v of vRows ?? []) {
+        const asset = Array.isArray(v.media_assets) ? v.media_assets[0] : v.media_assets
+        variants.push({
+          id: v.id,
+          name: v.name,
+          priceCents: v.price_cents ?? 0,
+          currency: v.currency ?? config.currency,
+          available: v.stock == null ? null : Math.max(0, v.stock - (v.reserved_qty ?? 0)),
+          imageUrl: asset?.url ?? null,
+        })
+      }
+
+      const asset = Array.isArray(r.media_assets) ? r.media_assets[0] : r.media_assets
+      const product: ShopProduct = {
+        id: r.id,
+        name: r.name,
+        description: r.description ?? null,
+        priceCents: r.price_cents ?? 0,
+        currency: r.currency ?? config.currency,
+        stock: r.stock ?? null,
+        imageUrl: asset?.url ?? null,
+        imageAlt: asset?.alt ?? null,
+        variants,
+      }
+
+      return { config, product }
+    },
+    ['shop-product-by-id', tenantId, norm, productId],
+    { tags: [`tenant:${norm}`], revalidate: 300 },
+  )
+  return load()
+}

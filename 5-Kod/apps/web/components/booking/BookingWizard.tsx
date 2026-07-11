@@ -489,7 +489,7 @@ export function BookingWizard({
   // Spec-copy: mono steglabel + display-frågor. Steglabel 2 = bransch-nounet
   // (FreshCut → 'Barberare') — aldrig hårdkodad bransch (goal-46-guardrail).
   const stepLabels = ['Tjänst', staffNoun, 'Tid', 'Uppgifter']
-  const stepTitles = ['Vad vill du ha?', 'Hos vem?', 'När passar det?', 'Dina uppgifter']
+  const stepTitles = ['Vad vill du boka?', 'Hos vem?', 'När passar det?', 'Dina uppgifter']
 
   // Platsfiltrerad personal (VÅG 4b): en frisör erbjuds BARA på en plats hen
   // faktiskt jobbar på (≥1 working_hours-rad med location_id = vald plats). Speglar

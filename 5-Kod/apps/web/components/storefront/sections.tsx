@@ -300,7 +300,7 @@ export async function LocationHours({
 export function ClosingCta({ content }: { content: ResolvedThemeContent }) {
   return (
     <section className={styles.closing} aria-label="Boka tid">
-      <Parallax src={content.closingImage} alt="Inbjudande salongsmiljö redo att ta emot dig">
+      <Parallax src={content.closingImage} alt="Välkomnande miljö redo att ta emot dig">
         <p className={styles.closingEyebrow}>{content.closingEyebrow ?? 'Redo när du är'}</p>
         <h2 className={styles.closingTitle}>{content.closingTitle ?? 'Redo för en ny stil?'}</h2>
         <p className={styles.closingLead}>

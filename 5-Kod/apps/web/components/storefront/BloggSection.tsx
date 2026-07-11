@@ -38,6 +38,29 @@ function formatPostDate(iso: string | null): string | null {
   return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+/** Wrap a post rendering in a link to its detail page (/blogg/[slug]) WITHOUT
+ *  changing the visuals: no underline, inherited color, pointer cursor. Posts
+ *  without a slug (legacy rows) render unlinked, exactly as before. */
+function PostLink({
+  post,
+  style,
+  children,
+}: {
+  post: BloggPost
+  style?: React.CSSProperties
+  children: React.ReactNode
+}) {
+  if (!post.slug) return <div style={style}>{children}</div>
+  return (
+    <a
+      href={`/blogg/${post.slug}`}
+      style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer', ...style }}
+    >
+      {children}
+    </a>
+  )
+}
+
 /** A single post rendered as a card (used by the grid layout + the featured tail
  *  when it falls back to cards). Token-styled, mirrors the shop product card. */
 function PostCard({ post }: { post: BloggPost }) {
@@ -53,6 +76,7 @@ function PostCard({ post }: { post: BloggPost }) {
         overflow: 'hidden',
       }}
     >
+      <PostLink post={post} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
       <div
         style={{
           aspectRatio: '4 / 3',
@@ -109,6 +133,7 @@ function PostCard({ post }: { post: BloggPost }) {
           </p>
         ) : null}
       </div>
+      </PostLink>
     </li>
   )
 }
@@ -120,14 +145,19 @@ function PostRow({ post }: { post: BloggPost }) {
   return (
     <li
       style={{
-        display: 'grid',
-        gridTemplateColumns: post.coverImageUrl ? 'minmax(0, 1fr) 140px' : '1fr',
-        gap: 20,
-        alignItems: 'start',
         padding: '20px 0',
         borderTop: '1px solid color-mix(in srgb, var(--color-fg, #232520) 10%, transparent)',
       }}
     >
+      <PostLink
+        post={post}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: post.coverImageUrl ? 'minmax(0, 1fr) 140px' : '1fr',
+          gap: 20,
+          alignItems: 'start',
+        }}
+      >
       <div>
         {date ? (
           <p
@@ -186,6 +216,7 @@ function PostRow({ post }: { post: BloggPost }) {
           />
         </div>
       ) : null}
+      </PostLink>
     </li>
   )
 }
@@ -195,15 +226,16 @@ function PostRow({ post }: { post: BloggPost }) {
 function FeaturedLead({ post }: { post: BloggPost }) {
   const date = formatPostDate(post.publishedAt)
   return (
-    <article
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: 28,
-        alignItems: 'center',
-        marginTop: 28,
-      }}
-    >
+    <article style={{ marginTop: 28 }}>
+      <PostLink
+        post={post}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 28,
+          alignItems: 'center',
+        }}
+      >
       <div
         style={{
           aspectRatio: '16 / 10',
@@ -263,6 +295,7 @@ function FeaturedLead({ post }: { post: BloggPost }) {
           </p>
         ) : null}
       </div>
+      </PostLink>
     </article>
   )
 }
@@ -291,6 +324,8 @@ export async function BloggSection({
 
   const { config, posts: allPosts } = data
   const posts = typeof limit === 'number' ? allPosts.slice(0, limit) : allPosts
+  // Teaser på startsidan + noll publicerade inlägg → rendera inget (S12).
+  if (typeof limit === 'number' && allPosts.length === 0) return null
 
   return (
     <section className="section" data-module="blogg" data-layout={config.layout}>
