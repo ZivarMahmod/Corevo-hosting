@@ -38,10 +38,14 @@ export function CalytrixNav({
         <span className={styles.calNavAnnounceText}>{utilityText}</span>
       </div>
 
-      {/* 2 — SPLIT: länkar vänster · wordmark centrerat · ikoner höger */}
+      {/* 2 — SPLIT: länkar vänster · wordmark centrerat · ikoner höger
+          Desktop-navet bär max 6 länkar. Med alla moduler live blir listan 9, och nio
+          versala länkar + wordmark + korg + konto + CTA får inte plats på en rad —
+          de bröt till en andra våning. Resten når man via sidfoten (som listar allt)
+          och via mobil-overlayn (NavShell får hela `links`, aldrig den kapade). */}
       <div className={styles.calNavBar}>
         <nav className={styles.calNavLinks} aria-label="Huvudmeny">
-          {links.map((l) => (
+          {links.slice(0, 6).map((l) => (
             <Link key={l.href} href={l.href}>
               {l.label}
             </Link>

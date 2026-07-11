@@ -248,6 +248,7 @@ export default async function PublicLayout({ children }: { children: React.React
             customerAccountsEnabled={settings.customerAccountsEnabled}
             cartEnabled={cartEnabled}
             utilityText={content.utility}
+            hideUtility={chrome.ownsUtility}
             links={navLinks}
             primaryCta={primaryCta}
           >

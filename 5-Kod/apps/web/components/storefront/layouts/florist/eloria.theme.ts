@@ -127,7 +127,8 @@ export const eloria: FloristTheme = {
      Nav = mörkgrön platta med guldramat, centrerat wordmark och menyn i två grupper;
      footer = samma platta i tre guldlinjerade kolumner; /om = guldramat uppslag,
      /tjanster = prislista med guld-ledare, /kontakt = ett guldramat kort. */
-  chrome: { Nav: EloriaNav, Footer: EloriaFooter },
+  // ownsUtility: EloriaNav ritar sin egen guldremsa ur utilityText (se ThemeChrome).
+  chrome: { Nav: EloriaNav, Footer: EloriaFooter, ownsUtility: true },
   pages: { om: EloriaOm, tjanster: EloriaTjanster, kontakt: EloriaKontakt },
   /* MODUL-VYER (goal-59, vektor-regeln): butiken och bloggen renderas i Elorias form —
      höga 4:5-kort med guldlinjen under namnet, bloggen som guldramat uppslag. Modulen

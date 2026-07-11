@@ -134,7 +134,8 @@ export const paisley: FloristTheme = {
   // goal-59 TEMA-PAKET: Paisley äger sitt tryckta sidhuvud (kiosk-remsa →
   // centrerat skript-wordmark → menyband i spärrade versaler), sin kolofon-sidfot
   // och sina tre undersidor (reportage / prislista i spalt / kolofon-kort).
-  chrome: { Nav: PaisleyNav, Footer: PaisleyFooter },
+  // ownsUtility: PaisleyNav ritar sin egen tidningsremsa ur utilityText (se ThemeChrome).
+  chrome: { Nav: PaisleyNav, Footer: PaisleyFooter, ownsUtility: true },
   pages: { om: PaisleyOm, tjanster: PaisleyTjanster, kontakt: PaisleyKontakt },
   // goal-59 MODUL-VYER (vektor-regeln): modulen äger funktionen (data, livscykel,
   // varukorg, kassa) — mallen äger formen. Butiken renderas som tidningsuppslag,

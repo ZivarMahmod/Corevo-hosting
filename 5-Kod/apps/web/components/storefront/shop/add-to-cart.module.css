@@ -1,0 +1,191 @@
+/* goal-60 — köpknappens sex lägen.
+ *
+ * Fram till nu stylades AddToCart med inline `style={{}}`. Inline kan inte bära
+ * pseudoklasser, så knappen KUNDE inte ha :hover, :active eller :focus-visible —
+ * den var dömd att vara torr, oavsett hur mallen såg ut. Här flyttas den till
+ * riktiga klasser.
+ *
+ * Vektor-regeln: modulen äger FUNKTIONEN, mallen äger FORMEN. Därför läser varje
+ * värde nedan en tema-variabel med ett neutralt fallback. En mall som vill ge
+ * köpknappen sin egen själ sätter --sf-btn-* i sitt [data-theme]-block — den
+ * behöver aldrig röra den här filen, och kan aldrig råka ta bort ett tillstånd.
+ */
+
+.wrap {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---- primär köpknapp ---- */
+
+.buy {
+  width: 100%;
+  min-height: var(--sf-btn-h, 48px);
+  padding: var(--sf-btn-pad, 14px 24px);
+  font-family: var(--font-ui);
+  font-size: var(--sf-btn-fs, 13px);
+  font-weight: var(--sf-btn-weight, 600);
+  letter-spacing: var(--sf-btn-ls, 0.01em);
+  text-transform: var(--sf-btn-transform, none);
+  line-height: 1;
+  cursor: pointer;
+  color: var(--sf-btn-ink, var(--color-bg, #fff));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border: 1px solid var(--sf-btn-border, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  transition:
+    background-color var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    transform var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+
+.buy:hover {
+  background: var(--sf-btn-bg-hover, color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 88%, var(--color-fg, #232520)));
+  transform: translateY(-2px);
+}
+
+.buy:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+
+.buy:focus-visible,
+.step:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+/* Disabled får ALDRIG lösas med opacity — det tar knapp-texten under
+ * kontrastgolvet (mätt: guld på 0.6 opacity = 2.89:1). Egna, mätta färger i stället. */
+.buy:disabled {
+  cursor: not-allowed;
+  transform: none;
+  color: color-mix(in srgb, var(--color-fg, #232520) 62%, var(--color-bg, #fff));
+  background: color-mix(in srgb, var(--color-fg, #232520) 8%, transparent);
+  border-color: var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 22%, transparent));
+}
+
+/* Ingen loading-spinner: addLine skriver till klient-varukorgen synkront, så det
+ * finns ingen väntan att visa. "Tillagd ✓" + flyouten ÄR kvittot. En spinner här
+ * hade varit teater. */
+
+/* ---- antals-stepper ---- */
+
+.qtyRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 44×44 = touch-golvet. Var 34px. */
+.step {
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+  font-family: var(--font-ui);
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-fg, #232520);
+  background: transparent;
+  border: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 18%, transparent));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 80ms ease;
+}
+
+.step:hover:not(:disabled) {
+  border-color: var(--color-primary, var(--color-fg, #232520));
+  background: var(--color-accent-soft, color-mix(in srgb, var(--color-fg, #232520) 5%, transparent));
+}
+
+.step:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qtyValue {
+  min-width: 24px;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+/* ---- variantväljare ---- */
+
+.variant {
+  padding: 10px;
+  min-height: 44px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-fg, #232520);
+  background: var(--color-bg, #fff);
+  border: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 18%, transparent));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+}
+
+.variant:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 2px;
+}
+
+/* ---- lägen utan köp ---- */
+
+.unavailable {
+  margin-top: 12px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: color-mix(in srgb, var(--color-fg, #232520) 65%, var(--color-bg, #fff));
+}
+
+/* ---- "tillagd"-flyouten ---- */
+
+.added {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--color-fg, #232520);
+  background: color-mix(in srgb, var(--color-accent, #c8a24a) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent, #c8a24a) 45%, transparent);
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  animation: sfRise 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes sfRise {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.addedLink {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buy,
+  .step,
+  .added {
+    transition: none;
+    animation: none;
+  }
+
+  .buy:hover,
+  .buy:active,
+  .step:active {
+    transform: none;
+  }
+}

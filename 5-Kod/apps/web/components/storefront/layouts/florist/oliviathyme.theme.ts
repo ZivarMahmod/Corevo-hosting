@@ -95,7 +95,8 @@ export const oliviathyme: FloristTheme = {
      wordmark → menyrad), sin SIDFOT (mörkbrun platta i tre kolumner) och sina
      UNDERSIDOR (butiksberättelse med polaroider · menykort · "kom förbi"-kort).
      Funktionen är fortfarande plattformens — navens markup renderas i NavShell. */
-  chrome: { Nav: OliviaThymeNav, Footer: OliviaThymeFooter },
+  // ownsUtility: OliviaThymeNav ritar sin egen remsa ur utilityText (se ThemeChrome).
+  chrome: { Nav: OliviaThymeNav, Footer: OliviaThymeFooter, ownsUtility: true },
   pages: { om: OliviaThymeOm, tjanster: OliviaThymeTjanster, kontakt: OliviaThymeKontakt },
   /* goal-59 VEKTOR-REGELN: modulen äger funktionen (AddToCart, livscykel, priser,
      leveranslöfte), mallen äger formen. Butiken = butikens skyltfönster (två stora

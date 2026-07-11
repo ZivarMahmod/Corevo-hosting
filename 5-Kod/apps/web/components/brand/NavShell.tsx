@@ -36,6 +36,7 @@ export function NavShell({
   customerAccountsEnabled,
   cartEnabled,
   utilityText,
+  hideUtility,
   links,
   primaryCta,
 }: {
@@ -45,6 +46,10 @@ export function NavShell({
   cartEnabled?: boolean
   /** Per-theme utility-strip copy; falls back to UtilityBar's default. */
   utilityText?: string
+  /** goal-60: temat ritar sin EGEN annonsrad i sitt chrome (mallen äger formen).
+      Utan detta renderades BÅDA — plattformens mörka remsa + mallens egna — som
+      två staplade rader. Sätts av (public)/layout ur ThemeChrome.ownsUtility. */
+  hideUtility?: boolean
   /** Modulstyrda menylänkar (mobil-overlayn); utan prop = NAV_LINKS. */
   links?: readonly { href: string; label: string }[]
   /** goal-55 8A: bransch-styrd huvud-CTA för mobil-overlayn — samma färdig-gatade
@@ -125,7 +130,7 @@ export function NavShell({
         .filter(Boolean)
         .join(' ')}
     >
-      <UtilityBar {...(utilityText ? { text: utilityText } : {})} />
+      {hideUtility ? null : <UtilityBar {...(utilityText ? { text: utilityText } : {})} />}
       <div className={shell.navRow}>
         {children}
 

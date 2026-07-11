@@ -48,11 +48,18 @@ export const calytrix: FloristTheme = {
   // mallens ena accent (antikguldet i calytrix.module.css) — 8 palett + guld +
   // egen guld-ink = 10, två över taket. Två återbruk, noll nya kulörer:
   //   1. guld-inken → --color-fg (7.35:1 på guld, bättre än den egna #2b1608:s 7.00).
-  //   2. `line` och `accentSoft` var två toner av SAMMA rosa (#e8d9de / #f4e6ea) i
-  //      olika roller. En ton räcker: #e8d9de bär både hårlinjen och den mjuka ytan.
-  //      Den ljusare togs bort, inte den mörkare — en hårlinje i #f4e6ea på vitt
-  //      ligger på 1.05:1 och försvinner, och en linje som inte syns är ingen linje.
-  // Summa: 7 hex här + guldet = 8. Varje ny hex måste betala för sig med en gammal.
+  //   2. `line` och `accentSoft` slogs ihop till EN rosa ton (#e8d9de) för att spara
+  //      en hex. goal-60 skilde dem åt igen — hopslagningen var fel:
+  //      #e8d9de mot bg = 1.27:1 och mot surface = 1.36:1. Kortets kant är kortets
+  //      ENDA avgränsning (surface #fff mot bg #fbf6f4 är 1.06:1 — samma färg för
+  //      ögat), så kanten är en UI-gräns och lyder WCAG 1.4.11 (≥ 3:1). Den syntes
+  //      inte → produktkorten flöt ihop med sidan och butiken såg ut som "bara bilder".
+  //      `line` är nu #a98d97 (3.02:1 mot surface, 2.82:1 mot bg), samma plommon-rosa
+  //      hue-familj — bara mättad och mörknad. `accentSoft` behåller #e8d9de: den
+  //      mjuka YTAN ska vara mjuk, den bär ingen gräns.
+  // Summa: 8 hex här + guldet = 9, en över taket. Det är medvetet: taket finns för
+  // att hålla mallen skarp, och en osynlig kant är motsatsen till skarp. En regel som
+  // tvingar fram en osynlig UI-gräns tjänar inte sitt syfte.
   palette: {
     primary: '#7d1f46',
     primaryD: '#4a0e2e',
@@ -60,7 +67,7 @@ export const calytrix: FloristTheme = {
     surface: '#ffffff',
     fg: '#241019',
     fg2: '#6e4f5c',
-    line: '#e8d9de',
+    line: '#a98d97',
     accentSoft: '#e8d9de',
   },
   fonts: {
@@ -73,22 +80,30 @@ export const calytrix: FloristTheme = {
   // full pill via den globala .btn-accent (--radius-pill), badgen är pill (999px).
   // Inget däremellan. 14px på allt var precis den "mjuka moroten" passet tog bort.
   radius: '0px',
+  // goal-60: navets höjd är TEMADATA, inte layout-CSS (samma lärdom som onyx i v1.9.1
+  // — en `:global()`-regel utan lokal klass går inte att bygga). NavShell är fixed;
+  // utan detta reserverar main plattformens default 116px medan Calytrix kluster
+  // (annonsrad ~37px + navrad ~68px) är högre → navet la sig över innehållet.
+  navHeight: { desktop: '108px', mobile: '96px' },
+  // COPY-RÖST (goal-60): Calytrix är E-HANDELSMALLEN — butiken är hjälten. Rösten är
+  // säljande, konkret och snabb: pris, sortiment, leverans. Den poetiska ateljé-tonen
+  // ("blommor säger det orden inte hinner") hör hemma i Lunaria/Seraphina, inte här.
+  // Evergreen: ingen adress, inget årtal, inga betyg — mallen används av MÅNGA kunder.
   content: {
-    heroEyebrow: '— Blomsterbutik',
-    heroTitle: 'Blommor alla\nfaller för',
+    heroEyebrow: '— Blomsterbutik online',
+    heroTitle: 'Beställ blommor\nidag',
     heroLede:
-      'Säsongens finaste snitt, bundna för hand. Beställ online, hämta i butik eller få det levererat till dörren.',
-    tagline:
-      'Vi finns här för alla dina blommiga behov — varje beställning packas med omsorg.',
-    utility: 'Missa inte säsongens blommor →',
-    italic: 'Blommor säger det orden inte hinner.',
+      'Hela sortimentet finns online. Välj bukett, betala på ett par klick — hämta i butiken eller få det hemlevererat.',
+    tagline: 'Färska blommor, snabbt levererade.',
+    utility: 'Beställ före kl 14 — levereras samma dag →',
+    italic: 'Färska blommor, redo att skickas.',
     aboutCopy:
-      'Vi är en blomsterbutik där varje bukett binds för hand med säsongens bästa snitt. Oavsett om du handlar i butiken eller beställer hem till dörren möter du samma omsorg i varje detalj.',
-    servicesEyebrow: '— Beställ & boka',
-    servicesTitle: 'Tjänster & priser',
-    aboutTitle: 'Blommor med omsorg, från butik till dörr',
-    teamEyebrow: '— Floristerna',
-    teamTitle: 'Människorna bakom varje bukett',
+      'Vi driver en blomsterbutik med hela sortimentet online. Du ser priset direkt, väljer i lugn och ro och betalar på ett par klick — sedan står buketten redo för hämtning eller går ut med bud. Enkelt att beställa, snabbt att få.',
+    servicesEyebrow: '— Priser & beställning',
+    servicesTitle: 'Beställ direkt',
+    aboutTitle: 'Butiken, alltid öppen',
+    teamEyebrow: '— Butiken',
+    teamTitle: 'De som packar din beställning',
     heroImages: [IMG.heroMain, IMG.heroAlt1, IMG.heroAlt2],
     galleryImages: [IMG.g1, IMG.g2, IMG.g3, IMG.g4, IMG.g5, IMG.g6],
     aboutImage: IMG.about,
@@ -107,7 +122,9 @@ export const calytrix: FloristTheme = {
   caps: { heroEyebrow: false, homeStats: true, homeGallery: true, homeAbout: true },
   // goal-59 TEMA-PAKET: mallen äger sitt sidhuvud (annonsrad + split-nav), sin mörka
   // sidfot och alla tre undersidorna — inte bara hemmets hero.
-  chrome: { Nav: CalytrixNav, Footer: CalytrixFooter },
+  // ownsUtility: CalytrixNav ritar sin egen plommonfärgade annonsrad ur utilityText.
+  // Utan flaggan renderar NavShell OCKSÅ plattformens mörka remsa → två staplade rader.
+  chrome: { Nav: CalytrixNav, Footer: CalytrixFooter, ownsUtility: true },
   pages: { om: CalytrixOm, tjanster: CalytrixTjanster, kontakt: CalytrixKontakt },
   // goal-59 MODUL-VYER: butiken/bloggen renderas i mallens form (modulen äger
   // funktionen: data, köp-räls, livscykel — den ändras aldrig av en mall).

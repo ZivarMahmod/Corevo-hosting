@@ -27,7 +27,8 @@
 .calRoot,
 .calNav,
 .calFooter,
-.calPage {
+.calPage,
+.calShopRoot {
   /* ── Enda egna dekorfärgen: dämpat antikguld. EN accent, och den sitter bara på
      hero-CTA:n och "Populär"-badgen — aldrig på en stor yta. Guldet är därmed den
      ENDA hex mallen lägger till palettens 8 → hex-budgeten (≤8) håller bara om
@@ -66,9 +67,26 @@
   --cal-step-head: 20px; /* rubrik → text */
   --cal-step-cta: 32px; /* text → CTA */
 
-  /* ── MOTION — återhållsam. */
+  /* ── MOTION — återhållsam. Kortet är trögt (400ms), knappen är snabb (160ms):
+     en knapp som svarar på kortets tempo känns seg under fingret. */
   --cal-dur: 400ms;
   --cal-lift: -5px;
+
+  /* ── KÖPKNAPPEN (goal-60). Modulens AddToCart läser --sf-btn-*; mallen sätter dem
+     här och får sin egen knapp utan att röra köp-rälsen. Guld, pill, versaler —
+     samma språk som hero-CTA:n, så butiken känns som resten av mallen. */
+  --sf-btn-h: 48px;
+  --sf-btn-pad: 14px 28px;
+  --sf-btn-radius: 999px;
+  --sf-btn-bg: var(--cal-gold);
+  --sf-btn-ink: var(--cal-gold-ink);
+  --sf-btn-border: var(--cal-gold);
+  --sf-btn-weight: 600;
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: 0.08em;
+  --sf-btn-dur: 160ms;
+  --sf-btn-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --sf-focus: var(--color-fg);
 
   /* Galleriets delade .galleryItem läser --tpl-radius, som ärvs från .tplRoot
      (12px). Nollas här — annars smyger mjuka hörn in i en mall som är radie-0. */
@@ -141,17 +159,20 @@
   margin: 0 auto;
   padding: 12px var(--cal-gutter);
 }
+/* nowrap är avsiktligt: wrap lät länklistan spilla till en andra rad i stället för
+   att hålla en rad. Kapningen till 6 länkar sker i chromet — här får raden aldrig
+   bryta, den ska hellre knipa ihop sitt gap. */
 .calNavLinks {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: clamp(14px, 1.4vw, 24px);
   justify-self: start;
   font-family: var(--font-body);
   font-size: var(--cal-fs-micro);
   font-weight: 600;
   letter-spacing: var(--cal-ls-micro);
   text-transform: uppercase;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .calNavLinks a {
   color: var(--color-fg); /* 16.84:1 */
@@ -195,15 +216,24 @@
 /* NavShell visar sin burger < 720px och gömmer SINA klasser — mallens egna måste
    gömma sig själva, annars ligger länkarna kvar under hamburgaren. */
 @media (max-width: 720px) {
-  .calNavLinks,
-  .calNavCluster {
+  /* Länkarna göms — de bor i NavShells overlay under hamburgaren. Men KLUSTRET
+     stannar: korgen (med sin antalsbadge) och köp-CTA:n får inte försvinna på mobil,
+     det är där de behövs mest. Bara CTA:n krymper. */
+  .calNavLinks {
     display: none;
   }
   .calNavBar {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
   }
   .calNavWordmark {
     justify-self: start;
+  }
+  .calNavCluster {
+    gap: 8px;
+  }
+  .calNavCta {
+    padding: 10px 14px;
   }
 }
 
@@ -316,6 +346,10 @@
 /* Mikrotext-regeln: 12px / 600 / VERSALER / +1px spärr. Understruken permanent —
    en kant som redan finns är skarpare än en som tonar fram vid hover. */
 .calSecCta {
+  display: inline-flex;
+  align-items: center;
+  /* 44px = touch-golvet. Länken var 16px hög utan padding — en klickyta man missar. */
+  min-height: 44px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--cal-fs-micro);
@@ -325,9 +359,16 @@
   border-bottom: 2px solid var(--color-primary);
   padding-bottom: 2px;
   white-space: nowrap;
-  transition: opacity var(--cal-dur) ease;
+  transition: opacity var(--sf-btn-dur) var(--sf-btn-ease);
 }
 .calSecCta:hover { opacity: 0.7; }
+.calSecCta:active { opacity: 0.5; }
+.calSecCta:focus-visible,
+.calNavLinks a:focus-visible,
+.calCard:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
 
 /* ---------- 4. Horisontell kort-rad ("Mest sålda" + blogg) ---------- */
 .calScrollRow {
@@ -343,13 +384,27 @@
   width: clamp(15rem, 26vw, 19rem);
   scroll-snap-align: start;
 }
-/* Hover: hela kortet lyfts 5px. Bilden skalar INTE (scale(1.05) = pösigt). */
+/* Kortet är en flex-kolumn i full höjd så att priset kan bottenankras (margin-top:auto)
+   — annars sköt ett tvåradigt produktnamn priset nedåt och raden tappade sin baslinje.
+   Hover gör TVÅ saker, aldrig fler: kortet lyfts och bilden zoomar mjukt. */
 .calCard {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   text-decoration: none;
   transition: transform var(--cal-dur) ease;
 }
-.calCard:hover { transform: translateY(var(--cal-lift)); }
+.calCard:hover,
+.calCard:focus-visible {
+  transform: translateY(var(--cal-lift));
+}
+.calCard:hover .calCardImg,
+.calCard:focus-visible .calCardImg {
+  transform: scale(1.04);
+}
+.calCardSlot {
+  display: flex;
+}
 .calCardImgWrap {
   position: relative;
   border-radius: var(--sf-radius); /* = 0 */
@@ -360,6 +415,7 @@
   aspect-ratio: 4 / 5; /* mallens ENDA bildratio */
   background-size: cover;
   background-position: center;
+  transition: transform 600ms ease-out;
 }
 /* Badgen är mallens medvetna pill-undantag mot de raka kanterna. */
 .calBadge {
@@ -378,6 +434,9 @@
   padding: 5px 12px;
   border-radius: 999px;
 }
+/* Namnet klipps till två rader: ett långt namn får aldrig knuffa priset ur linje,
+   och ett obrytbart ord ("Höstbukett-Deluxe-Presentförpackning") får aldrig sticka
+   ut ur kortet i den horisontellt scrollande raden. */
 .calCardName {
   margin: var(--cal-step-head) 0 0;
   font-family: var(--font-display);
@@ -386,6 +445,11 @@
   line-height: var(--cal-lh-sub);
   letter-spacing: var(--cal-ls-head);
   color: var(--color-fg); /* 16.84:1 */
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .calCardMeta {
   margin: 12px 0 0;
@@ -400,6 +464,15 @@
   font-weight: 600;
   font-size: var(--cal-fs-body);
   color: var(--color-primary); /* 9.08:1 */
+}
+/* Radjusteringen. I hemmets kort är priset SISTA elementet → det bottenankras och
+   alla priser i den scrollande raden hamnar på samma baslinje, hur långa namnen än är.
+   I butikskortet gör .calShopBuy samma jobb (priset följer med upp) — därför får
+   priset ALDRIG auto-margin där, två auto-marginaler i samma kolumn delar på
+   utrymmet i stället för att trycka ned. */
+.calCard .calCardPrice {
+  margin-top: auto;
+  padding-top: 12px;
 }
 
 @media (max-width: 640px) {
@@ -929,6 +1002,14 @@
   font-weight: 600;
   letter-spacing: var(--cal-ls-micro);
   color: var(--color-primary);
+  flex: 0 0 auto;
+}
+/* Fanns i markupen (calytrix.pages.tsx) men INTE här → className blev "undefined"
+   och tidslinjens textblock var helt ostylat: rubrik + text pressades ihop i en
+   obredd kolumn bredvid siffran. */
+.calTlBody {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .calTlTitle {
   margin: 0;
@@ -1079,31 +1160,11 @@
 
    Formen är hemmets, inte en ny värld: samma mörka plommonband som sektion 2/10,
    samma 4:5-bild, samma "Populär"-pill, samma raka hörn, samma 96/50/28/21/16/12. */
-.calShopRoot {
-  --cal-gold: #cf9d3f;
-  --cal-gold-ink: var(--color-fg);
-  --cal-fs-hero: clamp(3.25rem, 8.4vw, 6rem);
-  --cal-fs-h2: clamp(2rem, 4.4vw, 3.125rem);
-  --cal-fs-sub: clamp(1.5rem, 2.3vw, 1.75rem);
-  --cal-fs-lede: 1.3125rem;
-  --cal-fs-body: 1rem;
-  --cal-fs-micro: 0.75rem;
-  --cal-lh-display: 1.06;
-  --cal-lh-head: 1.1;
-  --cal-lh-sub: 1.15;
-  --cal-lh-body: 1.58;
-  --cal-ls-display: -0.015em;
-  --cal-ls-head: -0.01em;
-  --cal-ls-micro: 0.083em;
-  --cal-sec: clamp(3rem, 7vw, 6rem);
-  --cal-band: clamp(1.5rem, 3.5vw, 3rem);
-  --cal-gutter: clamp(1.5rem, 4vw, 1.75rem);
-  --cal-step-eyebrow: 12px;
-  --cal-step-head: 20px;
-  --cal-step-cta: 32px;
-  --cal-dur: 400ms;
-  --cal-lift: -5px;
-}
+/* .calShopRoot bar tidigare en ORDAGRANT kopierad kopia av hela vars-blocket ovan.
+   Två sanningar som divergerar vid nästa ändring. Den är nu med i den enda
+   deklarationen högst upp i filen — och ärver därmed också --sf-btn-*, så modulens
+   köpknapp får mallens form på butikens egen sida. */
+
 /* Modul-vyernas ögonbryn: mallens EGEN mikrotext-roll (ingen global .sf-*-klass) —
    samma 12px/600/VERSALER/spärr som resten av Calytrix. */
 .calEyebrow {
@@ -1218,7 +1279,6 @@
   padding-top: 20px;
   --color-accent: var(--cal-gold);
   --color-accent-fg: var(--cal-gold-ink);
-  --radius: 999px; /* AddToCarts knapp = mallens pill-undantag, som badgen */
   --font-ui: var(--font-body);
 }
 

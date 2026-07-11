@@ -103,6 +103,15 @@ export type ThemePageProps = {
 export type ThemeChrome = {
   Nav?: ComponentType<ThemeNavProps>
   Footer?: ComponentType<ThemeFooterProps>
+  /**
+   * goal-60: temats Nav ritar sin EGEN annonsrad ur `utilityText`.
+   *
+   * NavShell renderar annars ALLTID plattformens UtilityBar ovanför navet — och en
+   * mall som också ritar sin egen fick då TVÅ staplade remsor (mörk + tema-färgad).
+   * Sätt denna till true i exakt de teman vars Nav konsumerar `utilityText`, så
+   * hoppar NavShell över sin egen. Mallen äger formen; texten är fortfarande ägarens.
+   */
+  ownsUtility?: boolean
 }
 
 /**
