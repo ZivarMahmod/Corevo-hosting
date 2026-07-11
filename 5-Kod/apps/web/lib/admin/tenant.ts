@@ -30,17 +30,28 @@ const FALLBACK_TZ = 'Europe/Stockholm'
  */
 export async function getAdminTenant(user: CurrentUser): Promise<AdminTenant | null> {
   if (!user.tenantId) return null
+  return loadAdminTenantById(user.tenantId)
+}
+
+/**
+ * Load an AdminTenant by EXPLICIT id. Only call this after the caller's right to
+ * touch this tenant is established: getAdminTenant (JWT-forced id) and moduleCtx's
+ * platform_admin branch (cross-tenant by role) are the two legitimate callers.
+ * For a salon admin the RLS fence would empty the read anyway; for a platform
+ * admin the baked platform_admin claim grants the cross-tenant read.
+ */
+export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant | null> {
   const supabase = await createClient()
   const [{ data: tenant }, { data: loc }] = await Promise.all([
     supabase
       .from('tenants')
       .select('id, slug, name, status, vertical_id')
-      .eq('id', user.tenantId)
+      .eq('id', tenantId)
       .maybeSingle(),
     supabase
       .from('locations')
       .select('id, timezone')
-      .eq('tenant_id', user.tenantId)
+      .eq('tenant_id', tenantId)
       .eq('is_primary', true)
       .maybeSingle(),
   ])

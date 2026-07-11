@@ -2,25 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { requirePortal } from '@/lib/auth/session'
-import { getAdminTenant, revalidateTenant } from '@/lib/admin/tenant'
+import { moduleCtx } from '@/lib/admin/module-ctx'
+import { revalidateTenant } from '@/lib/admin/tenant'
 import type { ActionState } from '@/lib/admin/actions'
 import { BLOG_STATUSES, slugify } from './types'
 
 const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
-
-/**
- * Authorization fence for every blog mutation. Mirrors adminCtx() in
- * lib/admin/actions.ts — RLS isolates tenants but is NOT role-aware, so the
- * role gate lives here. Returns null when the user has no tenant context.
- */
-async function adminCtx() {
-  const user = await requirePortal('admin')
-  const tenant = await getAdminTenant(user)
-  if (!tenant) return null
-  return { user, tenant }
-}
 
 /**
  * Resolve a submitted media asset id to a value safe to persist.
@@ -46,7 +34,7 @@ async function resolveTenantAssetId(
 // ── Blog posts ─────────────────────────────────────────────────────────────────
 
 export async function createBlogPost(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const title = String(fd.get('title') ?? '').trim()
@@ -94,7 +82,7 @@ export async function createBlogPost(_p: ActionState, fd: FormData): Promise<Act
 }
 
 export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -171,7 +159,7 @@ export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<Act
  * after archive/draft → keep the original published_at (do not reset).
  */
 export async function setBlogPostStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -212,7 +200,7 @@ export async function setBlogPostStatus(_p: ActionState, fd: FormData): Promise<
 }
 
 export async function deleteBlogPost(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()

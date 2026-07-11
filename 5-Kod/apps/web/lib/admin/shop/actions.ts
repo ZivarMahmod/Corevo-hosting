@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { requirePortal, type CurrentUser } from '@/lib/auth/session'
-import { getAdminTenant, revalidateTenant, type AdminTenant } from '@/lib/admin/tenant'
+import { moduleCtx } from '@/lib/admin/module-ctx'
+import { revalidateTenant } from '@/lib/admin/tenant'
 import { kronorToCents } from '@/lib/admin/format'
 import type { ActionState } from '@/lib/admin/actions'
 import { refundShopOrder } from '@/lib/stripe/refund'
@@ -11,19 +11,6 @@ import { SHOP_ORDER_STATUSES } from './types'
 
 const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
-
-/**
- * Authorization fence for every shop mutation. Mirrors the pattern in
- * lib/admin/actions.ts: requirePortal('admin') + getAdminTenant, which together
- * verify the caller's role AND resolve the tenant (id + slug) for scoped writes
- * and cache invalidation. RLS is defence-in-depth, not a substitute.
- */
-async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
-  const user = await requirePortal('admin')
-  const tenant = await getAdminTenant(user)
-  if (!tenant) return null
-  return { user, tenant }
-}
 
 /**
  * Resolve a submitted media asset id to a value safe to persist.
@@ -96,7 +83,7 @@ export async function createShopProduct(
   _p: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const name = String(fd.get('name') ?? '').trim()
@@ -151,7 +138,7 @@ export async function updateShopProduct(
   _p: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -200,7 +187,7 @@ export async function toggleShopProductActive(
   _p: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -225,7 +212,7 @@ export async function deleteShopProduct(
   _p: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -251,7 +238,7 @@ export async function setShopOrderStatus(
   _p: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -278,7 +265,7 @@ export async function setShopOrderStatus(
 /** Registrera spårningsnummer + transportör på en order (logistik-metadata, 0044).
  *  Sätter shipped_at första gången ett spårningsnummer anges. */
 export async function setShopOrderTracking(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -312,7 +299,7 @@ export async function setShopOrderTracking(_p: ActionState, fd: FormData): Promi
 /** Återbetala en betald order (Fas 3). refundShopOrder är idempotent + no-op om ingen
  *  lyckad betalning finns (betal-rälsen pausad → tyst no-op tills den tänds). */
 export async function refundShopOrderAction(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')

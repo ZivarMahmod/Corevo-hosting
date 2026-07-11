@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { enterHelpMode, sendPasswordReset, setTenantStatus } from '@/lib/platform/actions'
+import { sendPasswordReset, setTenantStatus } from '@/lib/platform/actions'
 import { Button, Icon, useToast } from '@/components/portal/ui'
 import styles from './tenant-detail.module.css'
 
@@ -13,9 +13,10 @@ import styles from './tenant-detail.module.css'
  *
  * HONEST DATA: "Lösenordsreset" runs only when a salonsadmin e-post exists AND the
  * service role is configured — otherwise it toasts an honest reason instead of a
- * dead control / fake success. "Hjälp salongen" no longer claims a (non-existent)
- * impersonation/"allt loggas" — it runs the real enterHelpMode action, which writes
- * ONE platform-side audit row, and toasts only what actually happened.
+ * dead control / fake success. The old "Hjälp salongen"-stub (enterHelpMode — an
+ * audit row and nothing else) is RETIRED (goal-54 §1): helping the customer now
+ * happens for real in the module tabs (Webshop/Blogg/Offerter/Bildbibliotek) on
+ * this very page, so a pretend "help mode" button would only mislead.
  */
 export function TenantHeaderActions({
   tenantId,
@@ -52,14 +53,6 @@ export function TenantHeaderActions({
     })
   }
 
-  function helpMode() {
-    startTransition(async () => {
-      const res = await enterHelpMode(tenantId)
-      if (res.error) notify(res.error, 'warning')
-      else notify(`Hjälp-läge öppnat för ${tenantName} — loggat.`, 'success')
-    })
-  }
-
   return (
     <div className={styles.actions}>
       <Button href={storefrontUrl} variant="ghost" icon="external">
@@ -72,14 +65,6 @@ export function TenantHeaderActions({
         onClick={resetPassword}
       >
         Lösenordsreset
-      </Button>
-      <Button
-        variant="primary"
-        icon="shield"
-        disabled={pending}
-        onClick={helpMode}
-      >
-        Hjälp salongen
       </Button>
     </div>
   )

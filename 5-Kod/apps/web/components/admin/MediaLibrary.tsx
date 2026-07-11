@@ -6,6 +6,7 @@ import type { MediaAssetRow, StorageUsage } from '@/lib/admin/media/types'
 import { MEDIA_ACCEPT, formatBytes, usagePercent } from '@/lib/admin/media/types'
 import { uploadMediaAssets, deleteMediaAsset, updateMediaAlt } from '@/lib/admin/media/actions'
 import type { ActionState } from '@/lib/admin/actions'
+import { TenantScope, TenantField } from './TenantScope'
 import {
   Button,
   Card,
@@ -49,16 +50,20 @@ export function MediaLibrary({
   assets,
   usage,
   tenantName,
+  /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
+  tenantId,
 }: {
   assets: MediaAssetRow[]
   usage: StorageUsage
   tenantName: string
+  tenantId?: string
 }) {
   const [uploading, setUploading] = useState(false)
 
   const pct = usagePercent(usage)
 
   return (
+    <TenantScope tenantId={tenantId}>
     <div>
       <PageHead eyebrow={tenantName} title="Bildbibliotek">
         <Button variant="primary" icon="upload" onClick={() => setUploading(true)}>
@@ -141,6 +146,7 @@ export function MediaLibrary({
 
       {uploading && <UploadDrawer onClose={() => setUploading(false)} />}
     </div>
+    </TenantScope>
   )
 }
 
@@ -299,6 +305,7 @@ function DeleteButton({ asset }: { asset: MediaAssetRow }) {
 
   return (
     <form action={formAction} style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+      <TenantField />
       <input type="hidden" name="id" value={asset.id} />
       <button
         type="submit"
@@ -364,6 +371,7 @@ function AltDrawer({ asset, onClose }: { asset: MediaAssetRow; onClose: () => vo
           id={formId}
           style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
         >
+          <TenantField />
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>
@@ -441,6 +449,7 @@ function UploadDrawer({ onClose }: { onClose: () => void }) {
           id={formId}
           style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
         >
+          <TenantField />
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>

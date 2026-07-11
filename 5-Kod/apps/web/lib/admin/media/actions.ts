@@ -2,26 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { requirePortal, type CurrentUser } from '@/lib/auth/session'
-import { getAdminTenant, type AdminTenant } from '@/lib/admin/tenant'
+import { moduleCtx } from '@/lib/admin/module-ctx'
 import type { ActionState } from '@/lib/admin/actions'
 import { uploadImage, deleteByPublicUrl, uploadErrorMessage } from '@/lib/r2/upload'
 
 const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
-
-/**
- * Authorization fence for every media mutation. Mirrors lib/admin/presentkort/actions.ts:
- * requirePortal('admin') + getAdminTenant, which together verify the caller's role AND
- * resolve the tenant (id + slug) for scoped writes. RLS is defence-in-depth, not a
- * substitute.
- */
-async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
-  const user = await requirePortal('admin')
-  const tenant = await getAdminTenant(user)
-  if (!tenant) return null
-  return { user, tenant }
-}
 
 /** Hex sha-256 of a file's bytes — the dubblett-nyckel (content-addressed, the
  *  media_assets.content_hash column's documented purpose). Web Crypto: finns både
@@ -50,7 +36,7 @@ async function sha256Hex(buf: ArrayBuffer): Promise<string> {
  * best available signal until those rows age out. New rows always store their hash.
  */
 export async function uploadMediaAssets(formData: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(formData)
   if (!ctx) return { error: NO_TENANT }
 
   const files = formData
@@ -142,7 +128,7 @@ export async function uploadMediaAssets(formData: FormData): Promise<ActionState
  * runs only AFTER a successful DB delete). No payment/billing writes. Never throws.
  */
 export async function deleteMediaAsset(formData: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(formData)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(formData.get('id') ?? '')
@@ -179,7 +165,7 @@ export async function deleteMediaAsset(formData: FormData): Promise<ActionState>
  * Never throws.
  */
 export async function updateMediaAlt(formData: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(formData)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(formData.get('id') ?? '')

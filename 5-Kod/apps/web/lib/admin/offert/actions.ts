@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { requirePortal } from '@/lib/auth/session'
-import { getAdminTenant, revalidateTenant } from '@/lib/admin/tenant'
+import { moduleCtx } from '@/lib/admin/module-ctx'
+import { revalidateTenant } from '@/lib/admin/tenant'
 import { kronorToCents } from '@/lib/admin/format'
 import type { ActionState } from '@/lib/admin/actions'
 import { OFFERT_STATUSES } from './types'
@@ -11,18 +11,11 @@ import { OFFERT_STATUSES } from './types'
 const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 
-async function adminCtx() {
-  const user = await requirePortal('admin')
-  const tenant = await getAdminTenant(user)
-  if (!tenant) return null
-  return { user, tenant }
-}
-
 export async function updateOffertRequest(
   _p: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -67,7 +60,7 @@ export async function setOffertStatus(
   _p: ActionState,
   fd: FormData,
 ): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await moduleCtx(fd)
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '').trim()

@@ -6,6 +6,7 @@ import type { BlogPostRow } from '@/lib/admin/blogg/types'
 import { BLOG_STATUSES, BLOG_STATUS_LABELS } from '@/lib/admin/blogg/types'
 import type { MediaAssetRow } from '@/lib/admin/media/types'
 import { ImagePicker } from './ImagePicker'
+import { TenantScope, TenantField } from './TenantScope'
 import {
   createBlogPost,
   updateBlogPost,
@@ -102,6 +103,7 @@ function StatusToggle({ post }: { post: BlogPostRow }) {
 
   return (
     <form action={formAction} style={{ display: 'inline-flex' }}>
+      <TenantField />
       <input type="hidden" name="id" value={post.id} />
       <input type="hidden" name="status" value={nextStatus} />
       <button
@@ -133,16 +135,20 @@ export function BloggAdmin({
   tenantName,
   layoutVariant,
   assets,
+  tenantId,
 }: {
   posts: BlogPostRow[]
   tenantName: string
   layoutVariant: string | null
   assets: MediaAssetRow[]
+  /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
+  tenantId?: string
 }) {
   const [editing, setEditing] = useState<BlogPostRow | null>(null)
   const [creating, setCreating] = useState(false)
 
   return (
+    <TenantScope tenantId={tenantId}>
     <div>
       <PageHead
         eyebrow={tenantName}
@@ -232,6 +238,7 @@ export function BloggAdmin({
         <EditDrawer key={editing.id} post={editing} assets={assets} onClose={() => setEditing(null)} />
       )}
     </div>
+    </TenantScope>
   )
 }
 
@@ -293,6 +300,7 @@ function CreateDrawer({ assets, onClose }: { assets: MediaAssetRow[]; onClose: (
           id="create-blog-post"
           style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
         >
+          <TenantField />
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>
@@ -399,6 +407,7 @@ function EditDrawer({
       footer={
         <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center' }}>
           <form action={delAction}>
+            <TenantField />
             <input type="hidden" name="id" value={post.id} />
             <Button variant="ghost" type="submit" icon="trash" disabled={deleting}>
               {deleting ? '…' : 'Ta bort'}
@@ -421,6 +430,7 @@ function EditDrawer({
       }
     >
       <form action={saveAction} id={formId} style={{ display: 'grid', gap: 14 }}>
+        <TenantField />
         <input type="hidden" name="id" value={post.id} />
         <Field label="Rubrik">
           <input name="title" defaultValue={post.title} required style={inputStyle} />

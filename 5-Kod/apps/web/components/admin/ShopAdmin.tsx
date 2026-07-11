@@ -20,6 +20,7 @@ import {
 import type { ActionState } from '@/lib/admin/actions'
 import type { MediaAssetRow } from '@/lib/admin/media/types'
 import { ImagePicker } from './ImagePicker'
+import { TenantScope, TenantField } from './TenantScope'
 import {
   Badge,
   Button,
@@ -72,18 +73,22 @@ export function ShopAdmin({
   fulfilment,
   tenantName,
   assets,
+  tenantId,
 }: {
   products: ShopProductRow[]
   orders: ShopOrderRow[]
   fulfilment: string
   tenantName: string
   assets: MediaAssetRow[]
+  /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
+  tenantId?: string
 }) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<ShopProductRow | null>(null)
   const [openOrder, setOpenOrder] = useState<ShopOrderRow | null>(null)
 
   return (
+    <TenantScope tenantId={tenantId}>
     <div>
       <PageHead
         eyebrow={tenantName}
@@ -176,6 +181,7 @@ export function ShopAdmin({
         <OrderDetailDrawer key={openOrder.id} order={openOrder} onClose={() => setOpenOrder(null)} />
       )}
     </div>
+    </TenantScope>
   )
 }
 
@@ -314,6 +320,7 @@ function ActiveToggle({ product }: { product: ShopProductRow }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
       <form action={formAction} style={{ display: 'inline-flex' }}>
+        <TenantField />
         <input type="hidden" name="id" value={product.id} />
         <input type="hidden" name="active" value={String(!product.active)} />
         <button
@@ -500,6 +507,7 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
 
         {/* Spårning */}
         <form action={trackAction} id={trackFormId} style={{ display: 'grid', gap: 10 }}>
+          <TenantField />
           <input type="hidden" name="id" value={order.id} />
           <span className="eyebrow">Leverans / spårning</span>
           <Field label="Transportör">
@@ -516,6 +524,7 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
         {/* Refund (bara betald order; betal-rälsen pausad → knappen syns när paid) */}
         {order.payment_status === 'paid' && (
           <form action={refundAction} style={{ borderTop: '1px solid var(--c-line)', paddingTop: 14 }}>
+            <TenantField />
             <input type="hidden" name="id" value={order.id} />
             <Button variant="ghost" type="submit" icon="undo" disabled={refunding}>
               {refunding ? 'Återbetalar…' : 'Återbetala order'}
@@ -561,6 +570,7 @@ function OrderStatusCell({ order }: { order: ShopOrderRow }) {
 
   return (
     <form action={formAction} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <TenantField />
       <input type="hidden" name="id" value={order.id} />
       <select
         name="status"
@@ -628,6 +638,7 @@ function CreateDrawer({
           id={formId}
           style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}
         >
+          <TenantField />
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>
@@ -751,6 +762,7 @@ function EditDrawer({
       footer={
         <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center' }}>
           <form action={delAction}>
+            <TenantField />
             <input type="hidden" name="id" value={product.id} />
             <Button variant="ghost" type="submit" icon="trash" disabled={deleting}>
               {deleting ? '…' : 'Ta bort'}
@@ -773,6 +785,7 @@ function EditDrawer({
       }
     >
       <form action={saveAction} id={formId} style={{ display: 'grid', gap: 14 }}>
+        <TenantField />
         <input type="hidden" name="id" value={product.id} />
         <Field label="Namn">
           <input name="name" defaultValue={product.name} required style={inputStyle} />

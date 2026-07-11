@@ -10,6 +10,7 @@ import {
   formatCents,
 } from '@/lib/admin/offert/types'
 import { updateOffertRequest } from '@/lib/admin/offert/actions'
+import { TenantScope, TenantField } from './TenantScope'
 import {
   Badge,
   Button,
@@ -213,6 +214,7 @@ function DetailDrawer({
 
       {/* Editable fields */}
       <form action={formAction} id={formId} style={{ display: 'grid', gap: 14 }}>
+        <TenantField />
         <input type="hidden" name="id" value={request.id} />
 
         <Field label="Status">
@@ -258,11 +260,19 @@ function DetailDrawer({
 }
 
 // ── Main inbox component ─────────────────────────────────────────────────────
-export function OffertInbox({ requests }: { requests: OffertRequestRow[] }) {
+export function OffertInbox({
+  requests,
+  /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
+  tenantId,
+}: {
+  requests: OffertRequestRow[]
+  tenantId?: string
+}) {
   const [selected, setSelected] = useState<OffertRequestRow | null>(null)
 
   if (requests.length === 0) {
     return (
+      <TenantScope tenantId={tenantId}>
       <Card>
         <div style={{ textAlign: 'center', padding: '24px 8px', color: 'var(--c-ink-2)' }}>
           <Icon name="message" size={32} style={{ color: 'var(--c-ink-3)', marginBottom: 10 }} />
@@ -272,10 +282,12 @@ export function OffertInbox({ requests }: { requests: OffertRequestRow[] }) {
           De dyker upp här när kunder skickar in via din publika sida.
         </div>
       </Card>
+      </TenantScope>
     )
   }
 
   return (
+    <TenantScope tenantId={tenantId}>
     <div>
       <Card pad={0}>
         <div style={{ overflowX: 'auto' }}>
@@ -374,5 +386,6 @@ export function OffertInbox({ requests }: { requests: OffertRequestRow[] }) {
         />
       )}
     </div>
+    </TenantScope>
   )
 }

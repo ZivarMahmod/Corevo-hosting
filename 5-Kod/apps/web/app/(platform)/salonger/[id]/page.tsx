@@ -16,6 +16,15 @@ import { ServicesCard } from '@/components/platform/ServicesCard'
 import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
+import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
+import { listShopProducts, listShopOrders } from '@/lib/admin/shop/data'
+import { listBlogPosts } from '@/lib/admin/blogg/data'
+import { listMediaAssets, getStorageUsage } from '@/lib/admin/media/data'
+import { listOffertRequests } from '@/lib/admin/offert/data'
+import { ShopAdmin } from '@/components/admin/ShopAdmin'
+import { BloggAdmin } from '@/components/admin/BloggAdmin'
+import { MediaLibrary } from '@/components/admin/MediaLibrary'
+import { OffertInbox } from '@/components/admin/OffertInbox'
 import { SidaStudio } from '@/components/platform/SidaStudio'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
 import { createClient } from '@/lib/supabase/server'
@@ -45,10 +54,11 @@ function publicUrl(slug: string): string {
 }
 
 /**
- * Salong-detalj — full operativ kontroll för EN vald salong (law: SuperTenant.jsx,
- * "Supabase med mitt UI"). EXACT copy of the mock's composition: a header (mark +
- * name + status + meta + actions) over six SubTabs (Översikt/Data/Personal/Branding/
- * Integrationer/Drift).
+ * Kund-detalj (KUNDKORTET) — full operativ kontroll för EN vald kund, oavsett
+ * bransch. Header (mark + namn + status + meta + actions) över SubTabs:
+ * kärnflikarna Översikt/Tjänster/Kunder/Personal/Sida/Integrationer/Drift plus
+ * MODUL-flikar (Webshop/Blogg/Offerter/Bildbibliotek, goal-54 §1) som visas endast
+ * när kundens modul är på — samma verktyg som kundens egen admin.
  *
  * Server component: every read is server-only (RLS-bypass via platformCtx). Each
  * tab's content — including the existing `'use client'` forms — is rendered here and
@@ -88,6 +98,36 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     getTenantCustomers(id),
     listTenantModules(id),
   ])
+
+  // MODUL-KONTROLLRUMMET (goal-54 §1): för varje modul som är PÅ (activated =
+  // live/paused, samma gate som kund-adminens nav) får kundkortet en flik med
+  // SAMMA verktyg som kundens egen admin. Platform-adminens cookie-klient läser
+  // cross-tenant via platform_admin-claimet; skrivvägen går via moduleCtx-dual-
+  // guarden (hidden tenantId i varje formulär via TenantScope). Data laddas
+  // ENDAST för moduler som är på — av- och draft-moduler kostar inga reads.
+  const moduleStates = await getAdminModuleStates(id)
+  const shopOn = isModuleActivated(moduleStates, 'shop')
+  const bloggOn = isModuleActivated(moduleStates, 'blogg')
+  const offertOn = isModuleActivated(moduleStates, 'offert')
+  const mediaOn = isModuleActivated(moduleStates, 'media_library')
+  const needAssets = shopOn || bloggOn || mediaOn
+  const mediaQuotaCfg = moduleAdminConfig(moduleStates, 'media_library')
+  const mediaQuota =
+    typeof mediaQuotaCfg.quota_bytes === 'number' ? mediaQuotaCfg.quota_bytes : 500 * 1024 * 1024
+  const [shopProducts, shopOrders, blogPosts, offertRequests, mediaAssets, mediaUsage] =
+    await Promise.all([
+      shopOn ? listShopProducts(id) : Promise.resolve([]),
+      shopOn ? listShopOrders(id) : Promise.resolve([]),
+      bloggOn ? listBlogPosts(id) : Promise.resolve([]),
+      offertOn ? listOffertRequests(id) : Promise.resolve([]),
+      needAssets ? listMediaAssets(id) : Promise.resolve([]),
+      mediaOn ? getStorageUsage(id, mediaQuota) : Promise.resolve(null),
+    ])
+  const shopFulfilmentCfg = moduleAdminConfig(moduleStates, 'shop')
+  const shopFulfilment =
+    typeof shopFulfilmentCfg.fulfilment === 'string' ? shopFulfilmentCfg.fulfilment : 'ship'
+  const bloggLayoutCfg = moduleAdminConfig(moduleStates, 'blogg')
+  const bloggLayout = typeof bloggLayoutCfg.layout === 'string' ? bloggLayoutCfg.layout : null
 
   // Foto-läget i Bokningsflöde-ytan (Sida-fliken) kräver minst en AKTIV medarbetare
   // med profilbild (staff.avatar_url, migr 0049) — annars visas valet avstängt med
@@ -153,7 +193,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const launchReady = launchBlockers.length === 0
   const ownerInvited = !!salonAdmin?.email
 
-  const tabs: Record<TenantTabKey, React.ReactNode> = {
+  const tabs: Partial<Record<TenantTabKey, React.ReactNode>> = {
     Översikt: (
       <>
         {/* Launch-banner: den enda status-signalen operatören behöver överst — redo att
@@ -369,6 +409,73 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         </p>
       </div>
     ),
+
+    // MODUL-FLIKAR (goal-54 §1): samma verktyg som kundens egen admin, mountade med
+    // tenantId (→ TenantScope lägger hidden tenantId i varje formulär → moduleCtx
+    // dual-guard). Visas ENDAST när modulen är på. Bransch-neutral copy — detta är
+    // kundens yta oavsett om kunden är florist, salong eller mekaniker.
+    ...(shopOn && {
+      Webshop: (
+        <div className={styles.maxCol}>
+          <p className={styles.noteText}>
+            Kundens webshop — samma verktyg som i kundens egen admin. Allt du ändrar här
+            slår igenom direkt på kundens publika sida.
+          </p>
+          <ShopAdmin
+            tenantId={tenant.id}
+            products={shopProducts}
+            orders={shopOrders}
+            fulfilment={shopFulfilment}
+            tenantName={tenant.name}
+            assets={mediaAssets}
+          />
+        </div>
+      ),
+    }),
+    ...(bloggOn && {
+      Blogg: (
+        <div className={styles.maxCol}>
+          <p className={styles.noteText}>
+            Kundens blogg — skriv, publicera och avpublicera inlägg åt kunden.
+          </p>
+          <BloggAdmin
+            tenantId={tenant.id}
+            posts={blogPosts}
+            tenantName={tenant.name}
+            layoutVariant={bloggLayout}
+            assets={mediaAssets}
+          />
+        </div>
+      ),
+    }),
+    ...(offertOn && {
+      Offerter: (
+        <div className={styles.maxCol}>
+          <p className={styles.noteText}>
+            Kundens inkomna offertförfrågningar — status, anteckning och prisuppskattning.
+          </p>
+          <OffertInbox tenantId={tenant.id} requests={offertRequests} />
+        </div>
+      ),
+    }),
+    ...(mediaOn && mediaUsage
+      ? {
+          Bildbibliotek: (
+            <div className={styles.maxCol}>
+              <p className={styles.noteText}>
+                Kundens bildbibliotek — ladda upp bilder åt kunden. Webshop och blogg
+                hämtar sina bilder härifrån.
+              </p>
+              <MediaLibrary
+                tenantId={tenant.id}
+                assets={mediaAssets}
+                usage={mediaUsage}
+                tenantName={tenant.name}
+              />
+            </div>
+          ),
+        }
+      : {}),
 
     // Sida = ALLT som rör salongens publika webbsida på ett ställe (Zivar: "samla allt
     // som har med sidan att göra"): förhandsvisning + utseende + text/bilder + kund-
