@@ -34,8 +34,10 @@ export default async function BranschPage({ params }: { params: Promise<{ key: s
     ])
   if (!vertical) notFound()
 
+  // Soft-deletade kunder hör inte hemma i kundbilden (Zivar: "skräp ska inte
+  // synas") — de finns kvar i DB för historik men listas aldrig här.
   const inBransch = (tenants ?? []).filter(
-    (t) => (t as { vertical_id?: string | null }).vertical_id === key,
+    (t) => (t as { vertical_id?: string | null }).vertical_id === key && t.status !== 'deleted',
   )
   const mods = (vertical.default_modules ?? {}) as Record<string, string>
   const term = (vertical.terminology ?? {}) as Record<string, string>

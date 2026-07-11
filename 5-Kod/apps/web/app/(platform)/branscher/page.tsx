@@ -20,11 +20,12 @@ export default async function BranscherPage() {
 
   const [{ data: verticals }, { data: tenants }] = await Promise.all([
     supabase.from('verticals').select('key, name, default_modules, default_template, terminology').order('name'),
-    supabase.from('tenants').select('id, vertical_id'),
+    supabase.from('tenants').select('id, vertical_id, status'),
   ])
 
   const countByVertical = new Map<string, number>()
   for (const t of tenants ?? []) {
+    if (t.status === 'deleted') continue // soft-deletade räknas aldrig
     const k = (t as { vertical_id?: string | null }).vertical_id
     if (k) countByVertical.set(k, (countByVertical.get(k) ?? 0) + 1)
   }
