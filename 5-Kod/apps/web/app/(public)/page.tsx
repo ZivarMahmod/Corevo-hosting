@@ -102,7 +102,12 @@ export default async function HomePage() {
         services={services}
         location={location}
       />
-      <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} variant="teaser" />
+      {/* Flora väver in modulerna i sitt eget formspråk (butik/blogg/presentkort-
+          sektioner inne i layouten) — den generiska teaser-stapeln skulle dubblera
+          dem. Övriga teman får teasers tills de också integrerar modulerna. */}
+      {settings.theme === 'flora' ? null : (
+        <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} variant="teaser" />
+      )}
     </>
   )
 }

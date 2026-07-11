@@ -3,6 +3,10 @@ import { Gallery } from '../Gallery'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc, serviceNum } from '../service-format'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
+import { loadShopData } from '@/lib/storefront/shop/load-shop'
+import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
+import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 
@@ -31,9 +35,25 @@ function Ornament() {
   )
 }
 
-export function FloraLayout({ tenant, content, services, location }: StorefrontLayoutProps) {
+export async function FloraLayout({ tenant, content, services, location }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
   const hasMore = services.length > 6
+
+  // FLORA ÄGER SINA MODULER (Zivar: "klisterlapp utan funktion"-fixen): hemmet
+  // väver in butik/blogg/presentkort i temats eget formspråk (valv-kort, ornament)
+  // istället för den generiska sektions-stapeln — page.tsx hoppar över
+  // StorefrontModuleSections för flora. Modulernas EGNA sidor är fortfarande hemmet
+  // för hela innehållet (/shop, /blogg, /presentkort, /offert).
+  const moduleStates = await getTenantModuleStates(tenant.id, tenant.slug)
+  const shopLive = isModuleLive(moduleStates, 'shop')
+  const bloggLive = isModuleLive(moduleStates, 'blogg')
+  const presentkortLive = isModuleLive(moduleStates, 'presentkort')
+  const [shopData, bloggData] = await Promise.all([
+    shopLive ? loadShopData(tenant.id, tenant.slug) : Promise.resolve(null),
+    bloggLive ? loadBloggData(tenant.id, tenant.slug) : Promise.resolve(null),
+  ])
+  const shopTeasers = (shopData?.products ?? []).slice(0, 3)
+  const bloggTeasers = (bloggData?.posts ?? []).slice(0, 3)
   const [arch1, arch2, arch3] = [
     content.heroImages[0] ?? '',
     content.heroImages[1] ?? content.heroImages[0] ?? '',
@@ -98,6 +118,34 @@ export function FloraLayout({ tenant, content, services, location }: StorefrontL
           </Reveal>
         </div>
       </section>
+
+      {/* UR BUTIKEN — webshop-modulen invävd i flora-formspråket (valv-kort).
+          Bara ett smakprov; hela sortimentet bor på /shop. */}
+      {shopTeasers.length > 0 ? (
+        <section style={{ paddingBottom: 'clamp(40px, 6vw, 80px)' }}>
+          <Reveal className={styles.flSecHead}>
+            <p className="sf-eyebrow">— Ur butiken</p>
+            <h2 className="sf-h2" style={{ marginTop: 10, fontStyle: 'italic' }}>Beställ något vackert</h2>
+          </Reveal>
+          <div className={styles.flCardGrid}>
+            {shopTeasers.map((p, i) => (
+              <Reveal key={p.id} delay={i * 90}>
+                <a href="/shop" className={styles.flCard}>
+                  <div
+                    className={styles.flCardImg}
+                    style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
+                  />
+                  <h3 className={styles.flCardName}>{p.name}</h3>
+                  <p className={styles.flCardMeta}>{formatShopPrice(p.priceCents, p.currency)}</p>
+                </a>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal className={styles.flSecHead}>
+            <a href="/shop" className={styles.flBandCta}>Visa hela butiken</a>
+          </Reveal>
+        </section>
+      ) : null}
 
       {/* CITAT — andhämtning i accent-ytan */}
       <section style={{ padding: 'clamp(48px, 7vw, 84px) 24px', textAlign: 'center', background: 'var(--color-accent-soft)' }}>
@@ -176,6 +224,49 @@ export function FloraLayout({ tenant, content, services, location }: StorefrontL
           </Reveal>
         </div>
       </section>
+
+      {/* FRÅN BLOGGEN — blogg-modulen invävd (3 senaste som valv-kort → /blogg) */}
+      {bloggTeasers.length > 0 ? (
+        <>
+          <Ornament />
+          <section style={{ paddingBottom: 'clamp(40px, 6vw, 80px)' }}>
+            <Reveal className={styles.flSecHead}>
+              <p className="sf-eyebrow">— Från bloggen</p>
+              <h2 className="sf-h2" style={{ marginTop: 10, fontStyle: 'italic' }}>Säsong, tips & inspiration</h2>
+            </Reveal>
+            <div className={styles.flCardGrid}>
+              {bloggTeasers.map((p, i) => (
+                <Reveal key={p.id} delay={i * 90}>
+                  <a href="/blogg" className={styles.flCard}>
+                    <div
+                      className={styles.flCardImg}
+                      style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
+                    />
+                    <h3 className={styles.flCardName}>{p.title}</h3>
+                    {p.excerpt ? <p className={styles.flCardMeta}>{p.excerpt}</p> : null}
+                  </a>
+                </Reveal>
+              ))}
+            </div>
+            <Reveal className={styles.flSecHead}>
+              <a href="/blogg" className={styles.flBandCta}>Läs hela bloggen</a>
+            </Reveal>
+          </section>
+        </>
+      ) : null}
+
+      {/* PRESENTKORT — en rad i temats ton, inte en hel stapel-sektion */}
+      {presentkortLive ? (
+        <section style={{ padding: 'clamp(40px, 6vw, 72px) 24px', textAlign: 'center', background: 'var(--color-accent-soft)' }}>
+          <Reveal>
+            <p className="sf-eyebrow">— Presentkort</p>
+            <p className="sf-italic" style={{ fontSize: 'clamp(20px, 2.4vw, 28px)', maxWidth: '32rem', margin: '12px auto 0', color: 'var(--color-primary)' }}>
+              Ge bort en blomstrande stund.
+            </p>
+            <a href="/presentkort" className={styles.flBandCta}>Till presentkorten</a>
+          </Reveal>
+        </section>
+      ) : null}
 
       {/* GALLERI — masonry + lightbox */}
       <section className={styles.sfGalleryBand}>

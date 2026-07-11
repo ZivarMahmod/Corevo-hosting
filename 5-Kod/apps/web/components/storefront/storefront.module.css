@@ -1298,3 +1298,62 @@
   .flPillarImg { height: 220px; }
   .flArches { gap: 10px; }
 }
+
+/* FLORA — invävda modul-kort (butik + blogg på hemmet, temats formspråk) */
+.flCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 2.5vw, 30px);
+  max-width: 66rem;
+  margin: clamp(28px, 4vw, 44px) auto 0;
+  padding: 0 24px;
+}
+.flCard {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+}
+.flCardImg {
+  border-radius: 999px 999px 14px 14px;
+  height: clamp(170px, 20vw, 250px);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  transition: transform 0.45s ease;
+}
+.flCard:hover .flCardImg { transform: translateY(-6px); }
+.flCardName {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(18px, 1.9vw, 22px);
+  margin: 14px 0 4px;
+  color: var(--color-fg);
+}
+.flCardMeta { font-size: 14px; color: var(--color-fg-2); margin: 0; }
+.flCardPrice {
+  display: inline-block;
+  margin-top: 8px;
+  font-family: var(--font-ui, var(--font-body));
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-primary);
+}
+.flSecHead { text-align: center; padding: 0 24px; }
+.flBandCta {
+  display: inline-block;
+  margin-top: 22px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  padding-bottom: 2px;
+  text-decoration: none;
+}
+@media (max-width: 760px) {
+  .flCardGrid { grid-template-columns: 1fr; max-width: 22rem; }
+  .flCardImg { height: 210px; }
+}
