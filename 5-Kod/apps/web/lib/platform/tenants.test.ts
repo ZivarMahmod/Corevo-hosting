@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { countBookingsByTenant, deriveCustomizationLevel, listTenants } from './tenants'
+import { deriveCustomizationLevel, listTenants } from './tenants'
 
 // listTenants reads through platformCtx — mock that boundary so we can assert it
 // SELECTs city and surfaces both city + ownerName (#10/#14). A tiny chainable stub
@@ -14,55 +14,38 @@ function makeListClient(opts: {
 }) {
   const selects: Record<string, unknown[]> = {}
   const from = (table: string) => {
-    const result =
+    // bookings is now a per-tenant HEAD count (goal-56 A1): capture the .eq('tenant_id', id)
+    // filter and answer with a count instead of rows.
+    let eqTenant: string | null = null
+    const base =
       table === 'tenants'
         ? { data: opts.tenants }
-        : table === 'bookings'
-          ? { data: opts.bookings ?? [] }
-          : table === 'users'
-            ? { data: opts.owners ?? [] }
-            : { data: [] }
+        : table === 'users'
+          ? { data: opts.owners ?? [] }
+          : { data: [] }
     const chain: Record<string, unknown> = {
       select: (cols?: unknown) => ((selects[table] ??= []).push(cols), chain),
-      eq: () => chain,
+      eq: (col?: unknown, val?: unknown) => {
+        if (table === 'bookings' && col === 'tenant_id') eqTenant = String(val)
+        return chain
+      },
       neq: () => chain,
       in: () => chain,
       or: () => chain,
       order: () => chain,
       limit: () => chain,
-      then: (res: (v: typeof result) => unknown) => Promise.resolve(result).then(res),
+      then: (res: (v: unknown) => unknown) => {
+        const result =
+          table === 'bookings'
+            ? { count: (opts.bookings ?? []).filter((b) => b.tenant_id === eqTenant).length }
+            : base
+        return Promise.resolve(result).then(res)
+      },
     }
     return chain
   }
   return { client: { from }, selects }
 }
-
-// #15 — the per-tenant booking count is ONE grouped pass over the cross-tenant
-// bookings read (no N+1). These pin the bucketing the Översikt "Bokningar" column
-// renders: a tenant with N rows shows N, a tenant with none is absent → honest 0.
-describe('countBookingsByTenant (#15 grouped count)', () => {
-  it('counts rows per tenant_id', () => {
-    const m = countBookingsByTenant([
-      { tenant_id: 'a' },
-      { tenant_id: 'a' },
-      { tenant_id: 'b' },
-      { tenant_id: 'a' },
-    ])
-    expect(m.get('a')).toBe(3)
-    expect(m.get('b')).toBe(1)
-  })
-
-  it('a tenant with no bookings is absent → caller reads an honest 0', () => {
-    const m = countBookingsByTenant([{ tenant_id: 'a' }])
-    expect(m.get('a')).toBe(1)
-    expect(m.get('does-not-exist')).toBeUndefined()
-    expect(m.get('does-not-exist') ?? 0).toBe(0)
-  })
-
-  it('empty input → empty map (no fabricated counts)', () => {
-    expect(countBookingsByTenant([]).size).toBe(0)
-  })
-})
 
 // #18 — the "Nivå" chip is derived only from REAL, actually-set signals; the dead
 // custom_override.css Nivå-3 branch and the layout.nav_variant/hero_variant reads

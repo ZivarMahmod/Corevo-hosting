@@ -99,18 +99,23 @@ export async function getTenantCustomers(tenantId: string): Promise<TenantCustom
       .from('customers')
       .select('id, full_name, display_name, name_hidden, email, phone, status, auth_user_id, first_seen_at, last_seen_at')
       .eq('tenant_id', tenantId)
-      .order('last_seen_at', { ascending: false }),
+      .order('last_seen_at', { ascending: false })
+      // ponytail: caps (goal-56 A2) — newest-first so recent activity is always complete;
+      // per-customer stats undercount only past these ceilings. Upgrade = DB-side aggregates.
+      .limit(1000),
     supabase
       .from('bookings')
       .select('id, customer_id, status, start_ts, price_cents, services(name), staff(title)')
       .eq('tenant_id', tenantId)
-      .order('start_ts', { ascending: false }),
+      .order('start_ts', { ascending: false })
+      .limit(2000),
     // offert_requests may be RLS-guarded / the module off — tolerate an error → no inquiries.
     supabase
       .from('offert_requests')
       .select('id, customer_id, subject, status, mode, created_at, customer_name')
       .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(500),
   ])
 
   // Bucket bookings by customer.

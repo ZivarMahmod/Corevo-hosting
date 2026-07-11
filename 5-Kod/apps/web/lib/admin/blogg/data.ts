@@ -17,5 +17,7 @@ export async function listBlogPosts(tenantId: string): Promise<BlogPostRow[]> {
     .eq('tenant_id', tenantId)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false })
+    // ponytail: cap (goal-56 A5) — full body per row makes this heavy; 200 posts is plenty.
+    .limit(200)
   return data ?? []
 }

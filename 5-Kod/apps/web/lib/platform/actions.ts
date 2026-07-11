@@ -19,7 +19,6 @@ export {
   setStaffSchedule,
   setStaffServices,
   createPlatformCustomer,
-  enterHelpMode,
 } from './actions/people'
 export {
   createTenantService,

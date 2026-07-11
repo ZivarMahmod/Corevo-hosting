@@ -32,22 +32,9 @@ export type TenantListItem = {
 export type TenantFilters = { q?: string; status?: string }
 
 /**
- * Bucket booking rows into a per-tenant count map (the #15 grouped-count core,
- * extracted pure so it's testable without a DB). One pass over the rows; a tenant
- * with no rows is simply absent → the caller reads an honest 0.
- */
-export function countBookingsByTenant(
-  rows: { tenant_id: string }[],
-): Map<string, number> {
-  const m = new Map<string, number>()
-  for (const r of rows) m.set(r.tenant_id, (m.get(r.tenant_id) ?? 0) + 1)
-  return m
-}
-
-/**
  * All tenants (cross-tenant), filtered by free-text slug/name + status. The
- * per-tenant bookingsCount is a SINGLE grouped count: one `bookings` read bucketed
- * in JS by tenant_id (the metrics.ts pattern), never an N+1 per-tenant fan-out.
+ * per-tenant bookingsCount is a DB-side HEAD count(*) per tenant — never a read
+ * of every bookings row on the platform (goal-56 A1).
  * platform_admin reads cross-tenant via the RLS bypass. Honest 0 where none.
  */
 export async function listTenants(filters: TenantFilters = {}): Promise<TenantListItem[]> {
@@ -67,19 +54,24 @@ export async function listTenants(filters: TenantFilters = {}): Promise<TenantLi
     q = q.or(`slug.ilike.${term},name.ilike.${term}`)
   }
 
-  // Batched: one bookings read + one owner read across ALL tenants (mirrors
-  // listTenantsWithStats' ownersRes), bucketed in JS — never an N+1 per-tenant fan-out.
-  const [{ data }, bookingsRes, ownersRes] = await Promise.all([
+  const [{ data }, ownersRes] = await Promise.all([
     q,
-    supabase.from('bookings').select('tenant_id'),
     // Owner = the salon_admin user; read full_name (#10). platform_admin reads users
     // cross-tenant via the RLS bypass (users_rls = is_platform_admin()).
     supabase.from('users').select('tenant_id, full_name, roles!inner(name)').eq('roles.name', 'salon_admin').order('created_at'),
   ])
 
-  const bookingsByTenant = countBookingsByTenant(
-    (bookingsRes.data ?? []) as { tenant_id: string }[],
+  // ponytail: per-tenant HEAD count(*) instead of reading every bookings row on the
+  // platform (grew unbounded with total booking volume). T tiny index-only counts,
+  // fine at admin scale; upgrade path = migration 0054 platform_booking_stats() RPC.
+  const tenantIds = ((data ?? []) as { id: string }[]).map((t) => t.id)
+  const counts = await Promise.all(
+    tenantIds.map((id) =>
+      supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', id),
+    ),
   )
+  const bookingsByTenant = new Map<string, number>()
+  tenantIds.forEach((id, i) => bookingsByTenant.set(id, counts[i]?.count ?? 0))
 
   // First salon_admin per tenant with a non-empty name wins (honest null otherwise).
   const ownerName = new Map<string, string>()
@@ -183,23 +175,34 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
   }
   const rows = (data ?? []) as Row[]
 
-  // Batched aggregates: ONE read each for bookings / staff / owners / services /
-  // hours across ALL tenants, bucketed in JS by tenant_id (no per-tenant fan-out).
-  const [bookingsRes, staffRes, ownersRes, servicesRes, hoursRes] = await Promise.all([
-    supabase.from('bookings').select('tenant_id, status, created_at'),
+  // Batched aggregates: ONE read each for staff / owners / services / hours across
+  // ALL tenants, bucketed in JS by tenant_id. Bookings are NOT row-read any more
+  // (goal-56 A1: grew unbounded with platform booking volume) — per-tenant DB-side
+  // counts + a 1-row latest read instead.
+  // ponytail: 3 tiny index queries per tenant; upgrade = 0054 platform_booking_stats() RPC.
+  const [staffRes, ownersRes, servicesRes, hoursRes, ...perTenant] = await Promise.all([
     supabase.from('staff').select('tenant_id').eq('active', true),
     supabase.from('users').select('email, full_name, tenant_id, roles!inner(name)').eq('roles.name', 'salon_admin').order('created_at'),
     supabase.from('services').select('tenant_id').eq('active', true),
     supabase.from('working_hours').select('tenant_id'),
+    ...rows.map(async (t) => {
+      const [totalRes, completedRes, lastRes] = await Promise.all([
+        supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id),
+        supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id).eq('status', 'completed'),
+        supabase.from('bookings').select('created_at').eq('tenant_id', t.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      ])
+      return {
+        id: t.id,
+        total: totalRes.count ?? 0,
+        completed: completedRes.count ?? 0,
+        last: (lastRes.data as { created_at: string } | null)?.created_at ?? null,
+      }
+    }),
   ])
 
   const bk = new Map<string, { total: number; completed: number; last: string | null }>()
-  for (const r of (bookingsRes.data ?? []) as { tenant_id: string; status: string; created_at: string }[]) {
-    const e = bk.get(r.tenant_id) ?? { total: 0, completed: 0, last: null }
-    e.total += 1
-    if (r.status === 'completed') e.completed += 1
-    if (!e.last || r.created_at > e.last) e.last = r.created_at
-    bk.set(r.tenant_id, e)
+  for (const s of perTenant as { id: string; total: number; completed: number; last: string | null }[]) {
+    bk.set(s.id, { total: s.total, completed: s.completed, last: s.last })
   }
   const staffCount = new Map<string, number>()
   for (const r of (staffRes.data ?? []) as { tenant_id: string }[]) {
@@ -488,8 +491,10 @@ export async function getTenantDetail(
       .maybeSingle(),
     // Which staff can perform which service (0001 join) — bucketed per service below.
     supabase.from('staff_services').select('service_id, staff_id').eq('tenant_id', tenantId),
-    // Every booking's service_id → per-service booking count (decides delete vs archive).
-    supabase.from('bookings').select('service_id').eq('tenant_id', tenantId),
+    // Latest bookings' service_id → per-service booking count (decides delete vs archive).
+    // ponytail: capped at 5000 newest — a service with ANY booking still counts >0, which is
+    // all the delete/archive decision needs; upgrade = 0054 service_booking_counts() RPC.
+    supabase.from('bookings').select('service_id').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(5000),
     // Primary location address (footern på storefronten) — super-admin kontakt-kort.
     supabase
       .from('locations')

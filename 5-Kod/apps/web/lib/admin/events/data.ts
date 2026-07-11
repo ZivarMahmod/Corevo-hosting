@@ -19,7 +19,9 @@ export async function listTenantEvents(tenantId: string): Promise<EventRow[]> {
         'id, tenant_id, title, description, starts_at, duration_min, capacity, price_cents, status',
       )
       .eq('tenant_id', tenantId)
-      .order('starts_at', { ascending: false }),
+      .order('starts_at', { ascending: false })
+      // ponytail: cap (goal-56 A5) — newest 200 events; raise/paginate if a tenant runs more.
+      .limit(200),
     supabase
       .from('event_registrations')
       .select('event_id, party_size')
@@ -45,5 +47,7 @@ export async function listEventRegistrations(tenantId: string): Promise<Registra
     .select('id, tenant_id, event_id, name, email, phone, party_size, message, status')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: true })
+    // ponytail: cap (goal-56 A5) — 2000 registrations covers admin scale; paginate past it.
+    .limit(2000)
   return data ?? []
 }

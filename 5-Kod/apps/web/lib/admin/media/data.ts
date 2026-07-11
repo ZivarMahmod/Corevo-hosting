@@ -16,6 +16,8 @@ export async function listMediaAssets(tenantId: string): Promise<MediaAssetRow[]
     .select('id,url,r2_key,type,alt,size_bytes,width,height,source,created_at')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
+    // ponytail: cap (goal-56 A5) — 1000 newest images; paginate if a library outgrows it.
+    .limit(1000)
 
   if (!data) return []
 
@@ -45,6 +47,9 @@ export async function getStorageUsage(tenantId: string, quotaBytes: number): Pro
     .from('media_assets')
     .select('size_bytes')
     .eq('tenant_id', tenantId)
+    // ponytail: cap (goal-56 A5) — matches listMediaAssets' ceiling; upgrade = 0054
+    // tenant_storage_usage() RPC (DB-side SUM) once the migration is applied.
+    .limit(1000)
 
   if (!data) return { usedBytes: 0, quotaBytes }
 
