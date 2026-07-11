@@ -30,6 +30,10 @@ export const THEME_CAPS: Record<string, ThemeCaps> = {
   zigge: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: false },
   linnea: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: false },
   edit: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: true },
+  // goal-57 körning 13: flora saknade egen rad (fick DEFAULT_CAPS med gallery av)
+  // trots att layouten renderar galleri-band + pelar-bilder ur galleryImages[0..2]
+  // och om-sektion ur aboutCopyHome — bilderna gick inte att byta i editorn (D3).
+  flora: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
 }
 
 export function themeCaps(key: string): ThemeCaps {
@@ -42,6 +46,32 @@ export function themeCaps(key: string): ThemeCaps {
 export type ExtraField = { name: string; label: string; hint?: string; rows?: number; default: string }
 
 export const THEME_EXTRA_HOME: Record<string, ExtraField[]> = {
+  // goal-57 körning 13 (D1/D4): floras pelare + invävda modul-band — varje synlig
+  // text på hemmet redigerbar. Defaults = layoutens inbyggda strängar (FloraLayout).
+  flora: [
+    { name: 'pillar1Title', label: 'Pelare 1: rubrik', default: 'Beställ blommor' },
+    { name: 'pillar1Body', label: 'Pelare 1: text', rows: 2, default: 'Buketter i säsong — floristen väljer det finaste. Hämta i butik eller skicka bud.' },
+    { name: 'pillar1Link', label: 'Pelare 1: länktext', default: 'Till butiken' },
+    { name: 'pillar2Title', label: 'Pelare 2: rubrik', default: 'Bröllop & avsked' },
+    { name: 'pillar2Body', label: 'Pelare 2: text', rows: 2, default: 'Handbundna brudbuketter, corsage och binderier — eller ett personligt, vackert farväl.' },
+    { name: 'pillar2Link', label: 'Pelare 2: länktext', default: 'Begär offert' },
+    { name: 'pillar3Title', label: 'Pelare 3: rubrik', default: 'Kurser & kvällar' },
+    { name: 'pillar3Body', label: 'Pelare 3: text', rows: 2, default: 'Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.' },
+    { name: 'pillar3Link', label: 'Pelare 3: länktext', default: 'Boka kurs' },
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Beställ något vackert' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Visa hela butiken' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från bloggen' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Säsong, tips & inspiration' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs hela bloggen' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort en blomstrande stund.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: '— Galleri' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta till butiken' },
+    // closingTitle/closingLede redigeras i Om oss-fliken (delade avslutnings-fälten)
+    // — flora-defaults hanteras i SidaStudio (FLORA_CLOSING) så de inte dubbleras här.
+  ],
   freshcut: [
     {
       name: 'homeSecondTitle',

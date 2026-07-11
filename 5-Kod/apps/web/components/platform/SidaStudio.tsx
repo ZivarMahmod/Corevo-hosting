@@ -194,12 +194,24 @@ export function SidaStudio({
   const teamLeadDefault = vc.teamLead?.trim()
     ? vc.teamLead
     : `Teamet på ${name} brinner för hantverket och för att du ska känna dig hemma.`
+  // Flora har egen avslutnings-prosa (FloraLayout) — fältens standard ska spegla
+  // vad sidan faktiskt visar, inte frisör-defaulten (goal-57 körning 13 D2).
+  const themeClosing =
+    activeTheme === 'flora'
+      ? {
+          closingEyebrow: 'Redo när du är',
+          closingTitle: 'Blommor för din dag?',
+          closingLede: 'Beställ, boka en kurs eller hör av dig — vi hjälper dig gärna.',
+        }
+      : {
+          closingEyebrow: 'Redo när du är',
+          closingTitle: 'Redo för en ny stil?',
+          closingLede: 'Hitta en tid som passar dig och boka online på under en minut — bekräftelse direkt.',
+        }
   const closingDefaults = {
-    closingEyebrow: vc.closingEyebrow?.trim() ? vc.closingEyebrow : 'Redo när du är',
-    closingTitle: vc.closingTitle?.trim() ? vc.closingTitle : 'Redo för en ny stil?',
-    closingLede: vc.closingLede?.trim()
-      ? vc.closingLede
-      : 'Hitta en tid som passar dig och boka online på under en minut — bekräftelse direkt.',
+    closingEyebrow: vc.closingEyebrow?.trim() ? vc.closingEyebrow : themeClosing.closingEyebrow,
+    closingTitle: vc.closingTitle?.trim() ? vc.closingTitle : themeClosing.closingTitle,
+    closingLede: vc.closingLede?.trim() ? vc.closingLede : themeClosing.closingLede,
   }
   const contactHeadDefaults = {
     contactEyebrow: vc.contactEyebrow?.trim() ? vc.contactEyebrow : '— Hitta hit',

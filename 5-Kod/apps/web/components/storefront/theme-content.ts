@@ -364,6 +364,28 @@ export type CopyOverride = {
   /** Kontakt-sidan: eyebrow + rubrik för "Plats & öppettider". */
   contactEyebrow?: string
   contactTitle?: string
+  /** goal-57 körning 13: floras verksamhets-pelare + invävda modul-band — varje
+   *  synligt element redigerbart. Tomt = layoutens inbyggda text. */
+  pillar1Title?: string
+  pillar1Body?: string
+  pillar1Link?: string
+  pillar2Title?: string
+  pillar2Body?: string
+  pillar2Link?: string
+  pillar3Title?: string
+  pillar3Body?: string
+  pillar3Link?: string
+  shopEyebrow?: string
+  shopTitle?: string
+  shopCta?: string
+  blogEyebrow?: string
+  blogTitle?: string
+  blogCta?: string
+  giftEyebrow?: string
+  giftLede?: string
+  giftCta?: string
+  galleryEyebrow?: string
+  findEyebrow?: string
 }
 
 /** The six theme-content fields the owner may override via `settings.copy`. */
@@ -377,6 +399,14 @@ export const COPY_OVERRIDE_KEYS = [
   'servicesEyebrow', 'servicesTitle', 'servicesIntro', 'teamEyebrow', 'teamTitle',
   'teamLead', 'closingEyebrow', 'closingTitle', 'closingLede', 'contactEyebrow',
   'contactTitle',
+  // goal-57 körning 13: floras pelare + modul-band
+  'pillar1Title', 'pillar1Body', 'pillar1Link',
+  'pillar2Title', 'pillar2Body', 'pillar2Link',
+  'pillar3Title', 'pillar3Body', 'pillar3Link',
+  'shopEyebrow', 'shopTitle', 'shopCta',
+  'blogEyebrow', 'blogTitle', 'blogCta',
+  'giftEyebrow', 'giftLede', 'giftCta',
+  'galleryEyebrow', 'findEyebrow',
 ] as const
 
 /** Sanera en rå jsonb till en ren CopyOverride: bara kända nycklar, bara icke-tomma
@@ -470,6 +500,28 @@ export type ResolvedThemeContent = ThemeContent & {
   closingLede?: string
   contactEyebrow?: string
   contactTitle?: string
+  /** goal-57 körning 13: floras pelare + modul-band (satta bara vid egen text —
+   *  layouten faller annars tillbaka på sina inbyggda strängar). */
+  pillar1Title?: string
+  pillar1Body?: string
+  pillar1Link?: string
+  pillar2Title?: string
+  pillar2Body?: string
+  pillar2Link?: string
+  pillar3Title?: string
+  pillar3Body?: string
+  pillar3Link?: string
+  shopEyebrow?: string
+  shopTitle?: string
+  shopCta?: string
+  blogEyebrow?: string
+  blogTitle?: string
+  blogCta?: string
+  giftEyebrow?: string
+  giftLede?: string
+  giftCta?: string
+  galleryEyebrow?: string
+  findEyebrow?: string
 }
 
 export function resolveThemeContent(
@@ -517,6 +569,26 @@ export function resolveThemeContent(
     closingLede: extra('closingLede'),
     contactEyebrow: extra('contactEyebrow'),
     contactTitle: extra('contactTitle'),
+    pillar1Title: extra('pillar1Title'),
+    pillar1Body: extra('pillar1Body'),
+    pillar1Link: extra('pillar1Link'),
+    pillar2Title: extra('pillar2Title'),
+    pillar2Body: extra('pillar2Body'),
+    pillar2Link: extra('pillar2Link'),
+    pillar3Title: extra('pillar3Title'),
+    pillar3Body: extra('pillar3Body'),
+    pillar3Link: extra('pillar3Link'),
+    shopEyebrow: extra('shopEyebrow'),
+    shopTitle: extra('shopTitle'),
+    shopCta: extra('shopCta'),
+    blogEyebrow: extra('blogEyebrow'),
+    blogTitle: extra('blogTitle'),
+    blogCta: extra('blogCta'),
+    giftEyebrow: extra('giftEyebrow'),
+    giftLede: extra('giftLede'),
+    giftCta: extra('giftCta'),
+    galleryEyebrow: extra('galleryEyebrow'),
+    findEyebrow: extra('findEyebrow'),
     heroImages,
     galleryImages,
     aboutImage: typeof b.about_image === 'string' && b.about_image ? b.about_image : base.aboutImage,
