@@ -72,6 +72,27 @@
   --cal-dur: 400ms;
   --cal-lift: -5px;
 
+  /* ══ KORT-ANATOMIN (goal-60) ══════════════════════════════════════════════════
+     EN anatomi, inte fem. Calytrix hade .calCard, .calShopCard, .calSrvCard,
+     .calPriceCard och .calPostCard — fem kort som råkade se lika ut och redan hade
+     börjat glida isär (vissa lyfte kortet, andra bara bilden; vissa hade kant, andra
+     inte). Nu bär mallen kortets FORM och modulen fyller det med sin sak: en bukett,
+     en tjänst, en kurs, ett presentkort, ett blogginlägg, en offert. Nästa bransch
+     ärver anatomin — den behöver inte uppfinna ett kort.
+
+     MEDIA-BEHANDLINGEN har två lägen, och det är skillnaden mellan "en bild i en ruta"
+     och något som känns fysiskt:
+       cover   — fotot fyller plattan (kundens verkliga foton: butiken, teamet, miljön)
+       float   — motivet SVÄVAR på plattan med skugga under (frilagd PNG, transparent
+                 bakgrund). Det är det som ger djup. Fungerar BARA på en frilagd bild —
+                 en drop-shadow på ett rektangulärt foto ger bara en rektangulär skugga.
+                 Frilägningen är ett uppladdningssteg (bildtjänst), inte CSS. */
+  --cal-plate: var(--color-accent-soft); /* rummet motivet står i */
+  --cal-card-ratio: 4 / 5; /* mallens ENDA bildratio */
+  --cal-float-pad: 12%; /* luften runt ett svävande motiv */
+  --cal-float-shadow: drop-shadow(0 18px 22px rgb(36 16 25 / 0.22));
+  --cal-media-dur: 600ms;
+
   /* ── KÖPKNAPPEN (goal-60). Modulens AddToCart läser --sf-btn-*; mallen sätter dem
      här och får sin egen knapp utan att röra köp-rälsen. Guld, pill, versaler —
      samma språk som hero-CTA:n, så butiken känns som resten av mallen. */
@@ -405,17 +426,44 @@
 .calCardSlot {
   display: flex;
 }
+/* PLATTAN — rummet motivet står i. Ägs av mallen, delas av ALLA moduler. */
 .calCardImgWrap {
   position: relative;
   border-radius: var(--sf-radius); /* = 0 */
   overflow: hidden;
-  background: var(--color-accent-soft);
+  background: var(--cal-plate);
 }
 .calCardImg {
-  aspect-ratio: 4 / 5; /* mallens ENDA bildratio */
+  aspect-ratio: var(--cal-card-ratio);
   background-size: cover;
   background-position: center;
-  transition: transform 600ms ease-out;
+  transition: transform var(--cal-media-dur) ease-out;
+}
+
+/* FLOAT — motivet svävar på plattan i stället för att fylla den.
+   `contain` + padding låter motivet stå FRITT i rummet; drop-shadow följer motivets
+   silhuett (inte en rektangel) eftersom bilden är frilagd med transparent bakgrund.
+   Det är skillnaden mellan "ett foto i en ruta" och ett föremål som ligger på en yta.
+   På ett vanligt foto blir skuggan en fyrkant — därför är detta ett OPT-IN-läge som
+   bara sätts när bilden faktiskt är frilagd. */
+.calCardImgFloat {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  padding: var(--cal-float-pad);
+  filter: var(--cal-float-shadow);
+  /* Skuggan hör till motivet, inte till plattan → den får inte klippas av wrappern. */
+  transition:
+    transform var(--cal-media-dur) cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter var(--cal-media-dur) ease-out;
+}
+/* Vid hover lyfter motivet UR plattan: det stiger, och skuggan växer och mjuknar —
+   som ett föremål man lyfter mot ljuset. Två saker, aldrig fler. */
+.calCard:hover .calCardImgFloat,
+.calCard:focus-visible .calCardImgFloat,
+.calShopMedia:hover .calCardImgFloat {
+  transform: translateY(-8px) scale(1.03);
+  filter: drop-shadow(0 30px 34px rgb(36 16 25 / 0.28));
 }
 /* Badgen är mallens medvetna pill-undantag mot de raka kanterna. */
 .calBadge {

@@ -40,6 +40,24 @@ function formatPostDate(iso: string | null): string | null {
   return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+/**
+ * Media-läget (goal-60). Mallen äger kortets FORM — men bara bilden vet om den är
+ * frilagd. En transparent PNG/WebP kan svävA på plattan med en skugga som följer
+ * motivets silhuett; ett vanligt JPG-foto måste fylla plattan, annars blir skuggan
+ * en fyrkant och illusionen dör.
+ *
+ * Vi kan inte läsa alfakanalen i renderingen (det vore I/O i en synkron komponent),
+ * så vi går på filändelsen — den är den enda ärliga signalen vi har vid render.
+ * När frilägning görs vid uppladdning (egen goal) skrivs resultatet som .png/.webp
+ * och kortet byter läge av sig självt. Tills dess: kundens foton beter sig som förr.
+ */
+function mediaClass(imageUrl: string | null): string {
+  const base = styles.calCardImg ?? ''
+  if (!imageUrl) return base
+  const cutout = /\.(png|webp|avif)(\?|$)/i.test(imageUrl)
+  return cutout ? `${base} ${styles.calCardImgFloat ?? ''}`.trim() : base
+}
+
 /** Inlägg utan slug renderas OLÄNKADE (legacy-rader) — annars länk till /blogg/{slug}. */
 function PostShell({ post, children }: { post: BloggPost; children: React.ReactNode }) {
   if (!post.slug) return <div className={styles.calCard}>{children}</div>
@@ -78,7 +96,7 @@ export function CalytrixShop({ data, paused, limit, moreHref, content, tenantNam
             {i < 3 ? <span className={styles.calBadge}>Populär</span> : null}
             {/* imageUrl kan vara null → färgplattan (--color-accent-soft) bär kortet. */}
             <div
-              className={styles.calCardImg}
+              className={mediaClass(p.imageUrl)}
               style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               role="img"
               aria-label={p.imageAlt ?? p.name}
