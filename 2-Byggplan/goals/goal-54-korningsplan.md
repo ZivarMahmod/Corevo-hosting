@@ -1,0 +1,122 @@
+# goal-54 — Körningsplan: 6 körningar (efter grund-audit 2026-07-11)
+
+> Zivars order: "gör en djup utförlig plan innan varje körning… grundlig audit på alla
+> ologiska saker… vi har en SaaS-plattform, komplex — planera ut 6 körningar."
+> Detta dokument = master-planen. Före VARJE körning skrivs en utförlig detaljplan
+> (körning 1:s detaljplan finns längst ner). Efter varje körning: tsc + vitest grönt,
+> commit, deploy via v*-tagg, prod-verify + FreshCut orörd.
+
+## AUDIT-FYND (grunden — allt ologiskt, 2 oberoende genomgångar)
+
+### Storefront (riktig kunds perspektiv)
+- **S1** Nav saknar Offert + Presentkort helt (`app/(public)/layout.tsx:184-195`) — når bara via startsidans teasers; på undersida oåtkomliga.
+- **S2** Blogg = återvändsgränd: ingen `/blogg/[slug]`, inläggskorten är INTE länkar (BloggSection PostCard/PostRow/FeaturedLead). Går inte att läsa ett inlägg.
+- **S3** "Tillfälligt otillgänglig" trots lager: köpbarhet = `product.variants.length > 0` (AddToCart.tsx:35-41); `product.stock` laddas men används ALDRIG (load-shop.ts:84 vs 102). Produkt utan variantrader = okörbar.
+- **S4** Ingen produktdetaljsida; produktkort ej klickbara.
+- **S5** Presentkort: "Köp öppnar snart" — inert CTA, modul utan funktion (PresentkortSection.tsx:138-169).
+- **S6** Kassa `notFound()` om shop pausas medan kund har varukorg → strandad cart (app/butik/kassa/page.tsx:20).
+- **S7** BookingWizard stepTitles hårdkodade ('Vad vill du ha?', 'Hos vem?' — BookingWizard.tsx:492); staff-noun default = 'Frisör' (staff-noun.ts:21).
+- **S8** Kurs-bokning finns inte: "Boka kurs"-pelaren → vanlig 1:1-wizard, inga deltagare/platser.
+- **S9** Flora-pelarna länkar /shop, /offert, /boka OAVSETT modulstatus → kan 404:a (FloraLayout.tsx:96-116).
+- **S10** Endast flora väver in moduler; övriga teman får generisk teaser-stapel (page.tsx:108-110). /om + /kontakt faller alltid tillbaka till salong-sektionerna oavsett tema.
+- **S11** SEO fel: sitemap saknar /shop /blogg /offert /presentkort (sitemap.ts:12); JSON-LD hårdkodar `'@type': 'HairSalon'` för ALLA (seo.tsx:171); PAGE_META.om säger "vår salong"; layout-beskrivning "Boka tid hos X online" boknings-centrerad; alt-texter "salongsmiljö".
+- **S12** LIVE modul utan innehåll visar "Produkter visas snart."/"Inlägg visas snart." till besökare istället för att döljas.
+
+### Admin (kundens verktyg + Zivars kontroll)
+- **A1** Modulverktyg saknas HELT i kundkortet — Drift kan tända modul men ingen yta att hantera innehållet. "Hjälp salongen" = stub (enterHelpMode skriver bara audit-rad, people.ts:485-494).
+- **A2** Alla modul-actions JWT-låsta via `adminCtx()` (copy-pastad i actions.ts:32 + shop/blogg/media/offert) — ingen dual-guard. `sidaCtx` (guard.ts:32) = det färdiga mönstret. Data-loaders tar redan tenantId ✅. Modul-pages resolvar tenant ur JWT via getAdminTenant → platform_admin får "Ingen salong kopplad".
+- **A3** `revalidatePath('/admin/...')` i varje action → fel path vid mount i kundkortet.
+- **A4** OffertInbox: svara-flöde FINNS INTE — status "Offererad" ljuger, inget skickas till kunden någonsin. Note = intern. Ingen FSM på statusövergångar.
+- **A5** Shop-ordrar: ingen ALLOWED_FROM-FSM (fri statusövergång, kontrast bokningarnas matris actions.ts:1392-1410).
+- **A6** Kurs/event-koncept finns inte i datamodellen: services saknar capacity/datum; bokning 1:1 med EXCLUDE-constraint.
+- **A7** `working_hour_slots` redigerbara i admin men publika motorn läser dem ALDRIG — död feature.
+- **A8** Kundkortets flik-kommentarer föråldrade (beskriver 6 gamla flikar); flikval ej URL-state.
+- **A9** Branding/sajtbyggar-uploads skriver R2 men inte media_assets (tredje osynligt bildspår).
+
+## DE 6 KÖRNINGARNA
+
+### Körning 1 — Kundkortet = modul-kontrollrummet (A1, A2, A3, A8 + stub-pension)
+Dual-guard-refactor + 4 modul-flikar i `/salonger/[id]`. Detaljplan nedan.
+
+### Körning 2 — Storefronten slutar ljuga (S1, S2, S3, S4, S9, S11, S12 + S7-terminologi)
+Riktig sida för riktiga besökare:
+- `/blogg/[slug]` detaljsida + klickbara inläggskort (lista + flora-teasern).
+- Shop-tillgänglighet: produkt utan varianter köpbar via `product.stock` (auto-"default variant"-logik i load-shop + AddToCart) — "Tillfälligt otillgänglig" bara när verkligt slut.
+- Produktdetaljsida `/shop/[slug eller id]` (bild, beskrivning, varianter, AddToCart).
+- Nav: Offert + Presentkort in i menyn, modulstyrt som Butik/Blogg.
+- Flora-pelare gate:as på modulstatus (ingen länk → 404).
+- SEO: sitemap dynamisk per modulstatus; JSON-LD `@type` per bransch (Florist/HairSalon/LocalBusiness ur vertical); PAGE_META/alt/layout-beskrivning avsalongifieras (terminology-driven); staff-noun default neutral ('Medarbetare'); BookingWizard stepTitles ur vertical-terminologi.
+- Tomma live-moduler döljs på storefronten (sektion + nav) tills innehåll finns.
+
+### Körning 3 — Modulerna får riktiga flöden (A4, A5, S6 + offert-UX)
+- Offert-svara: skicka svar till kunden via mejl-rälsen (booking@corevo.se, samma räls som bokningsmejl); svar + estimate lagras; status-FSM (ALLOWED_FROM) för offert.
+- Shop-order-FSM: ALLOWED_FROM-matris som bokningarna; ordrar i kundkortets Webshop-flik.
+- Strandad varukorg: kassa vid pausad shop visar "stängt"-sida med kvarvarande kort istället för notFound.
+- Kundmejl vid orderstatus (bekräftad/klar) via samma räls.
+
+### Körning 4 — Kurser som riktigt koncept (A6, S8, A7)
+- Datamodell: `service_events` (tillfälle: service_id, starts_at, capacity, price/anmälningsavgift) + `event_bookings` (n deltagare per tillfälle) — migration.
+- Admin: kurs-tillfällen i Tjänster (kund-admin + kundkortet, dual-guard från start).
+- Storefront: "Boka kurs" → tillfälleslista (datum, platser kvar) → anmälan (namn/antal/kontakt), inte 1:1-wizarden.
+- Beslut i detaljplanen: working_hour_slots kopplas in ELLER rivs (död feature får inte ligga kvar).
+
+### Körning 5 — Betalningar per kund (goal-54 §4 + S5)
+- Integrationer-fliken: koppla KUNDENS Stripe (Connect) — nyckel/onboarding per tenant.
+- Webshop-checkout betalar på riktigt → kundens konto; order payment_status levande.
+- Presentkort köpbart (S5) när rälsen finns.
+- Zettle = utred/parkera i detaljplanen (Stripe först).
+
+### Körning 6 — Tema×moduler + städ (S10, A9 + resterna)
+- Övriga teman (salvia/leander/zigge/linnea/edit) väver in modul-sektioner i sitt formspråk som flora; /om + /kontakt tema-medvetna.
+- Branding/sajtbyggar-uploads → media_assets med source-tagg.
+- Kvarvarande smått: SMS-rad, föråldrade kommentarer, dubbletter.
+
+Ordning: 1 → 2 → 3 → 4 → 5 → 6. Före varje körning: ny utförlig detaljplan skrivs + visas.
+
+---
+
+## DETALJPLAN KÖRNING 1 — Kundkortet = modul-kontrollrummet
+
+**Mål:** för VARJE kund, varje modul som är PÅ → flik i `/salonger/[id]` med samma verktyg
+som kundens admin. "Som att jag är i deras inlogg men ändå inte."
+
+### Steg 1 — En delad dual-guard: `moduleCtx(fd)`
+Ny helper i `lib/admin/context.ts` (eller utöka guard.ts): exakt `sidaCtx`-formen —
+`requirePortal('admin')`; platform_admin → `tenantId = fd.get('tenantId')` (validera uuid,
+tenant finns); annars → JWT. Ersätter de 4-5 copy-pastade `adminCtx()` (actions.ts, shop,
+blogg, media, offert). Actions utan FormData (t.ex. delete med bara id) får tenantId-fält
+tillagt i sina anrop.
+
+### Steg 2 — Actions-refactor (shop/blogg/media/offert)
+Varje action: `adminCtx()` → `moduleCtx(formData)`. Alla writes behåller `.eq('tenant_id', ctx.tenantId)`
+(RLS `private.tenant_id()` gäller bara kund-JWT; platform_admin går via service-fence som Sida-actions —
+följ exakt sidaCtx-actionsens klientval). `revalidatePath`: revalidera BÅDA (`/admin/<mod>` +
+`/salonger/[id]`) eller byt till revalidatePath med `page`-typ + router.refresh i kundkortet.
+
+### Steg 3 — Hidden tenantId i formulären
+ShopAdmin/BloggAdmin/MediaLibrary/OffertInbox får optional prop `tenantId?: string`;
+när satt → `<input type="hidden" name="tenantId">` i varje form + skickas i alla
+action-anrop som tar id-argument (via bindning eller extra FormData-fält). Kund-admin
+skickar INTE prop → inget hidden-fält → JWT-vägen (noll beteendeändring för kunden).
+
+### Steg 4 — Flikar i kundkortet
+`TenantDetailTabs`: + Webshop, Blogg, Offerter, Bildbibliotek — visas ENDAST när
+modulens `tenant_modules.state` ∈ {live, paused} (samma gate som kund-nav).
+page.tsx laddar per modul (endast när på): `listShopProducts/Orders(id)`,
+`listBlogPosts(id)`, `listOffertRequests(id)`, `listMediaAssets(id)` + assets till
+pickers — och mountar samma komponenter med `tenantId={id}`.
+
+### Steg 5 — Pensionera stubben + städ
+Ta bort "Hjälp salongen"-knappen + `enterHelpMode`; uppdatera föråldrade
+flik-kommentarer (A8). Audit-loggning: modul-writes av platform_admin loggas som
+Sida-actions gör (samma mönster, ingen ny mekanik).
+
+### Verify
+- tsc + vitest grönt (befintliga 680).
+- Nya tester: moduleCtx (platform_admin med tenantId-fd; salon_admin ignorerar fd-tenantId — säkerhetstestet).
+- Prod efter deploy: kundkortet florist visar 4 nya flikar; skapa/ändra produkt från kundkortet syns på florist.corevo.se; kund-admin (info@freshcut.se-flöde) oförändrad; FreshCut orörd.
+
+### Risker
+- Säkerhet: fd-tenantId får ALDRIG äras för salon_admin — testet ovan är gate.
+- revalidate-miss i kundkortet → router.refresh() finns redan i komponenterna som fallback.
+- Stor yta (15+ actions) → mekanisk, en modul i taget (shop → blogg → media → offert), tsc mellan varje.
