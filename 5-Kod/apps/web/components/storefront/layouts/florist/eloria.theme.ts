@@ -37,13 +37,17 @@ const IMG = {
  * inget däremellan — 3px var varken en kant att linjera mot eller en medveten
  * kapsel, alltså precis den mjuka moroten.
  *
- * FÄRG — 9 hex: de 8 tokens nedan + mallens ENDA dekorfärg (--eloria-green
- * #182a20, deklarerad i eloria.module.css rot-klassen). Guldet är den enda
- * accenten och sitter bara på småytor. Kontrasten är RÄKNAD (WCAG), inte gissad:
+ * FÄRG — 8 hex: EXAKT de 8 tokens nedan, noll dekorfärger utöver dem. Mallens
+ * mörkgröna (#182A20) ÄR temats bläck: `fg` bär den, och eloria.module.css läser
+ * den som `--eloria-green: var(--color-fg)`. Samma grepp som zentum, där #111926
+ * är BÅDE textfärg och mörk yta — den mörka färgen gör dubbel tjänst i stället för
+ * att kosta en nionde hex. (Bläcket var #241B15, en varm nästan-svart; plattan och
+ * scrimmen har oförändrad kulör.) Guldet är den enda accenten och sitter bara på
+ * småytor. Kontrasten är RÄKNAD (WCAG), inte gissad:
  *
- *   fg #241B15 på bg #FBF3EE (rubrik) ................ 15.42:1  (krav ≥7, mål 11)
- *   fg #241B15 på surface #FFFFFF .................... 16.90:1
- *   fg #241B15 på accentSoft #F5E4DC ................. 13.69:1
+ *   fg #182A20 på bg #FBF3EE (rubrik) ................ 13.77:1  (krav ≥7, mål 11)
+ *   fg #182A20 på surface #FFFFFF .................... 15.10:1
+ *   fg #182A20 på accentSoft #F5E4DC ................. 12.23:1
  *   fg2 #6B5548 på bg (brödtext) ...................... 6.35:1  (krav ≥4.5)
  *   fg2 #6B5548 på surface ............................ 6.96:1
  *   #FFFFFF på primary #7A5D1E (knapptext) ............ 6.15:1  (krav ≥4.5; var 4.98)
@@ -68,7 +72,9 @@ export const eloria: FloristTheme = {
     primaryD: '#5E4715',
     bg: '#FBF3EE',
     surface: '#FFFFFF',
-    fg: '#241B15',
+    // Bläcket ÄR mallens mörkgröna (heroplattan, offertbannern, closing-scrimmen
+    // läser den som --eloria-green). Dubbel tjänst = 8 hex i stället för 9.
+    fg: '#182A20',
     fg2: '#6B5548',
     line: '#E8D9C9',
     accentSoft: '#F5E4DC',

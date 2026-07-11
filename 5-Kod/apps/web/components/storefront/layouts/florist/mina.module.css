@@ -10,9 +10,16 @@
    IDENTITETEN är orörd (rosa färgfamilj, sektionsordning, tät grid-signatur,
    sans-only Jost+Inter). Det är UTFÖRANDET som skärpts:
 
-   1. TYPSKALA i ×1.9–2.0-steg (100 → 52 → 26 → 18 → 16 → 12/11) istället för
+   1. TYPSKALA med ENTYDIGA steg (100 → 52 → 28 → 21 → 16 → 12) istället för
       den gamla grötiga trappan (88 / 56 / 34 / 24 / 16.8 / 15.2 / 13.6 / 12.2).
       sf-h1 och sf-h2 pekade på TVÅ snarlika rubriknivåer (56/34) — de är nu EN.
+      OBEROENDE MÄTNING 2026-07-11 fällde två grannpar i första passet: lede/body
+      låg på ×1.125 (18/16) och ui/micro på ×1.091 (12/11) — under golvet ×1.3,
+      dvs. exakt "allt ser lika viktigt ut"-fällan i det lilla registret. Fixat:
+      kort 26→28, lede 18→21 (kedjan kort→lede→body kan INTE hålla ×1.3 med fyra
+      nivåer mellan 26 och 16 — matematiskt omöjligt, därför flyttades taket), och
+      ui/micro var samma register (600 + versaler + 1px spärr) i två storlekar →
+      slagna till EN nivå (12px). Steg nu: ×1.92 / ×1.86 / ×1.33 / ×1.31 / ×1.33.
    2. VIKT: display i 500 (Jost laddas som variabel font → 500 är ÄKTA, ingen
       syntetisk fetstil). 600/700 på stora rubriker var klumpen; mikrotexten
       bär tyngden istället (600 + versaler + spärr).
@@ -48,15 +55,17 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 .miRoot {
-  /* ── TYPSKALA — 7 nivåer, steg ×1.92 / ×2.00 / ×1.44 / ×1.13 / ×1.33 ────────
-     hero 100 → sek 52 → kort 26 → lede 18 → brödtext 16 → ui 12 → mikro 11 */
+  /* ── TYPSKALA — 6 nivåer, steg ×1.92 / ×1.86 / ×1.33 / ×1.31 / ×1.33 ────────
+     hero 100 → sek 52 → kort 28 → lede 21 → brödtext 16 → mikro 12
+     Varje granne ligger >1.3× isär: ingen nivå kan förväxlas med sin granne. */
   --mi-fs-hero: clamp(48px, 8.6vw, 100px); /* display — texten ÄR heron */
   --mi-fs-sec: clamp(32px, 4.8vw, 52px); /* sektionsrubrik (sf-h1 = sf-h2) */
-  --mi-fs-card: clamp(22px, 2.2vw, 26px); /* bloggnamn, statsiffra */
-  --mi-fs-lede: 18px; /* ingress */
+  --mi-fs-card: clamp(24px, 2.4vw, 28px); /* bloggnamn, statsiffra */
+  --mi-fs-lede: 21px; /* ingress (hero + closing) */
   --mi-fs-body: 16px; /* brödtext, tjänstnamn, tjänstpris */
-  --mi-fs-ui: 12px; /* interaktiv mikro: knappar, mer-länkar, kortnamn/pris */
-  --mi-fs-micro: 11px; /* etiketter: eyebrows, statlabels */
+  --mi-fs-micro: 12px; /* HELA mikroregistret: knappar, mer-länkar, kortnamn/
+                          pris, eyebrows, statlabels. 600 + versaler + 1px spärr
+                          är vad som skiljer dem åt — inte 1px i storlek. */
 
   /* ── LINE-HEIGHT — rubriken är en FORM (spänd), brödtexten en YTA (luftig) ── */
   --mi-lh-hero: 1.05;
@@ -66,10 +75,9 @@
   --mi-lh-micro: 1.5;
 
   /* ── LETTER-SPACING — omvänt mot storleken. Aldrig positiv på stora rubriker ─ */
-  --mi-ls-display: -0.01em; /* svagt negativt på ≥26px */
+  --mi-ls-display: -0.01em; /* svagt negativt på ≥28px */
   --mi-ls-caps: 0.06em; /* 16px versalt (tjänstnamn) → ~1.0px */
-  --mi-ls-ui: 0.083em; /* 12px → 1.0px */
-  --mi-ls-micro: 0.09em; /* 11px → 1.0px */
+  --mi-ls-micro: 0.083em; /* 12px → 1.0px (hela mikroregistret) */
 
   /* ── VIKT — stort = 500 (Jost variabel = äkta medium), litet = 600 ─────────── */
   --mi-fw-display: 500;
@@ -156,9 +164,9 @@
   line-height: 50px;
   border-radius: var(--mi-r-pill);
   font-family: var(--font-body);
-  font-size: var(--mi-fs-ui);
+  font-size: var(--mi-fs-micro);
   font-weight: var(--mi-fw-micro);
-  letter-spacing: var(--mi-ls-ui);
+  letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
   box-shadow: none;
   transition: background var(--mi-dur) var(--mi-ease), color var(--mi-dur) var(--mi-ease);
@@ -172,9 +180,9 @@
    är 0,2,0 och vinner. */
 .miRoot .miMore {
   font-family: var(--font-body);
-  font-size: var(--mi-fs-ui);
+  font-size: var(--mi-fs-micro);
   font-weight: var(--mi-fw-micro);
-  letter-spacing: var(--mi-ls-ui);
+  letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary); /* 7.63:1 */
 }
@@ -277,9 +285,9 @@
 .miCardName {
   font-family: var(--font-body);
   font-weight: var(--mi-fw-micro);
-  font-size: var(--mi-fs-ui);
+  font-size: var(--mi-fs-micro);
   line-height: var(--mi-lh-micro);
-  letter-spacing: var(--mi-ls-ui);
+  letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
   color: var(--color-fg); /* 18.42:1 */
   margin: var(--mi-sp-text) 0 0;
@@ -287,9 +295,9 @@
 .miCardPrice {
   font-family: var(--font-body);
   font-weight: var(--mi-fw-micro);
-  font-size: var(--mi-fs-ui);
+  font-size: var(--mi-fs-micro);
   line-height: var(--mi-lh-micro);
-  letter-spacing: var(--mi-ls-ui);
+  letter-spacing: var(--mi-ls-micro);
   color: var(--color-primary); /* 7.63:1 — accenten på en liten yta */
   margin: var(--mi-sp-eyebrow) 0 0;
 }
