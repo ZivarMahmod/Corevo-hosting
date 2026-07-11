@@ -20,7 +20,7 @@ import type { FC, ReactNode, CSSProperties } from 'react'
 import { Badge, Button, Card, Icon, type IconName } from '@/components/portal/ui'
 import { Field, ModuleStatePills } from './controls'
 import type { PanelProps } from '@/lib/platform/onboarding-studio/state'
-import { type StepId, stepDone } from '@/lib/platform/onboarding-studio/phases'
+import { type StepId } from '@/lib/platform/onboarding-studio/phases'
 import { resolveModuleState, type StudioService } from '@/lib/platform/onboarding-studio/model'
 import { modulesForVertical, termPlural, type TemplateOption } from '@/lib/platform/verticals-shared'
 import { isReservedSlug } from '@/lib/platform/slug'
@@ -40,12 +40,8 @@ const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 /**
  * The prop bag every panel in the registry receives. Extends the frozen PanelProps
  * (cfg/dispatch/presets) with the two callbacks the special panels need:
- *   • onNext   — granska's in-body "Gå till lansering" advances to the NEXT step,
- *                which is `live` (granska→live are adjacent in FLAT_STEP_ORDER), so
- *                this is exactly the design's setStep('live'). ⚠️ The equivalence
- *                holds ONLY while those two steps stay adjacent in the W1 order — a
- *                later wave that inserts a step between them must switch to a real
- *                step-jump.
+ *   • onNext   — kept in the contract for panels that want an in-body advance
+ *                (currently unused — granska merged into live 2026-07-11).
  *   • onLaunch — the live panel's gold Lansera button → the single createTenant submit.
  * Simple panels ignore both (they're typed `FC<PanelProps>` and slot in fine under
  * parameter contravariance).
@@ -140,53 +136,32 @@ function DeferredStub({ icon, children }: { icon: IconName; children: ReactNode 
 
 /* ════════════════════════════ step panels ════════════════════════════ */
 
-/**
- * The bransch list (step 1) — the FULL canon registry (cfg-data.js BRANCHES), not just the
- * 5 DB verticals. DISPLAY is canon: name + icon + staffWord + recommended-module count +
- * «Roadmap» badge for the live:false branches (Image #2). The CLICK dispatches `key`:
- *   • live overlaps (generell/frisör/barbershop/nagelstudio/restaurang) carry the DB
- *     vertical key, so applyBranch finds the real preset (modules/theme/terminology).
- *   • roadmap branches carry their canon key — applyBranch's `if (!v)` early-return just
- *     sets the bransch label ("inga låsningar", no verticals row needed yet).
- * `count` = canon rec.length (the recommendation hint shown in Image #2), NOT a live preset
- * count. Icons absent from IconName (heart/sparkle/bookmark) fall back to 'building' (the
- * icon every card used before). build-once-never-delete: barbershop is DB-live but missing
- * from the canon data — kept here so onboarding never loses a working bransch.
- */
-const BRANSCH_REGISTRY: { key: string; name: string; icon: IconName; staffWord: string; count: number; live: boolean }[] = [
-  { key: 'generell', name: 'Generell / egen mall', icon: 'layers', staffWord: 'Personal', count: 1, live: true },
-  { key: 'frisör', name: 'Frisörsalong', icon: 'scissors', staffWord: 'Frisör', count: 3, live: true },
-  { key: 'barbershop', name: 'Barbershop', icon: 'scissors', staffWord: 'Barberare', count: 2, live: true },
-  { key: 'florist', name: 'Florist', icon: 'building', staffWord: 'Florist', count: 3, live: false },
-  { key: 'klinik', name: 'Privatklinik', icon: 'shield', staffWord: 'Behandlare', count: 3, live: false },
-  { key: 'bilverkstad', name: 'Bilverkstad', icon: 'settings', staffWord: 'Mekaniker', count: 4, live: false },
-  { key: 'cykel', name: 'Cykelbutik', icon: 'repeat', staffWord: 'Mekaniker', count: 4, live: false },
-  { key: 'hund', name: 'Hundsalong / Grooming', icon: 'building', staffWord: 'Groomer', count: 3, live: false },
-  { key: 'nagelstudio', name: 'Nagelsalong', icon: 'building', staffWord: 'Nagelterapeut', count: 3, live: true },
-  { key: 'tatuering', name: 'Tatueringsstudio', icon: 'edit', staffWord: 'Artist', count: 4, live: false },
-  { key: 'optiker', name: 'Optiker', icon: 'eye', staffWord: 'Optiker', count: 2, live: false },
-  { key: 'cafe', name: 'Café / Konditori', icon: 'coffee', staffWord: 'Personal', count: 3, live: false },
-  { key: 'skraddare', name: 'Skräddare / Ändringsateljé', icon: 'scissors', staffWord: 'Skräddare', count: 4, live: false },
-  { key: 'lassmed', name: 'Låssmed', icon: 'shield', staffWord: 'Låssmed', count: 2, live: false },
-  { key: 'fotograf', name: 'Fotograf / Fotostudio', icon: 'eye', staffWord: 'Fotograf', count: 4, live: false },
-  { key: 'secondhand', name: 'Second hand', icon: 'building', staffWord: 'Personal', count: 2, live: false },
-  { key: 'stad', name: 'Städföretag', icon: 'building', staffWord: 'Städare', count: 3, live: false },
-  { key: 'restaurang', name: 'Restaurang', icon: 'coffee', staffWord: 'Personal', count: 3, live: true },
-]
+/** Ikon per bransch-nyckel (fallback 'building'). Korten kommer från DB
+ *  (presets.verticals) — en ny rad i verticals-tabellen dyker upp här av sig själv. */
+const BRANSCH_ICONS: Record<string, IconName> = {
+  generell: 'layers',
+  'frisör': 'scissors',
+  frisor: 'scissors',
+  barbershop: 'scissors',
+  nagelstudio: 'building',
+  restaurang: 'coffee',
+  florist: 'sun',
+  klinik: 'shield',
+}
 
-/** branch — 2-col card grid of BRANSCH_REGISTRY. PURE categorization (Zivar): picking a
- *  branch ONLY tags the customer's type (cfg.branch) for later sorting/filtering — it does
- *  NOT pre-select any template or module. Canon icon + name + Roadmap pill (live:false) +
- *  staffWord subline (the category descriptor, not a module count). */
-function PanelBranch({ cfg, dispatch }: PanelProps) {
+/** branch — kort per RIKTIG bransch (DB verticals, inga roadmap-stubbar). Valet
+ *  FÖRFYLLER mall + moduler + ord från bransch-förvalen (/branscher äger dem);
+ *  allt går att ändra i stegen efter. */
+function PanelBranch({ cfg, dispatch, presets }: PanelProps) {
   return (
     <Panel
-      title="Vilken typ av kund?"
-      sub="Bara för att kategorisera kunden — så du senare kan sortera och filtrera dina kunder per bransch. Det väljer ingen mall och inga moduler; allt sånt bestämmer du i egna steg."
+      title="Vilken bransch?"
+      sub="Valet förfyller mall, moduler och ord enligt branschens förval — du kan ändra allt i stegen efter. Branschens förval styr du under Branscher."
     >
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10 }}>
-        {BRANSCH_REGISTRY.map((b) => {
+        {presets.verticals.map((b) => {
           const on = cfg.branch === b.key
+          const staffWord = b.terminology?.staff ?? 'Personal'
           return (
             <button
               key={b.key}
@@ -221,30 +196,12 @@ function PanelBranch({ cfg, dispatch }: PanelProps) {
                   placeItems: 'center',
                 }}
               >
-                <Icon name={b.icon} size={19} />
+                <Icon name={BRANSCH_ICONS[b.key] ?? 'building'} size={19} />
               </span>
               <span style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
-                  {!b.live ? (
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        letterSpacing: '.04em',
-                        textTransform: 'uppercase',
-                        padding: '1px 6px',
-                        borderRadius: 999,
-                        background: 'var(--c-warning-bg)',
-                        color: 'var(--c-warning)',
-                      }}
-                    >
-                      Roadmap
-                    </span>
-                  ) : null}
-                </span>
-                <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {b.staffWord}
+                <span style={{ display: 'block', fontWeight: 600, fontSize: 13.5, color: 'var(--c-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                <span style={{ display: 'block', fontSize: 11.5, color: 'var(--c-ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {staffWord}
                 </span>
               </span>
               {on ? (
@@ -450,12 +407,15 @@ function PanelTema({ cfg, dispatch, presets, looks }: PanelProps) {
   }
   // ALLTID de riktiga temana — vendor-mallarna ur templatesByVertical valde
   // tidigare orenderbara nycklar (tyst fallback, "tema-steget är trasigt per
-  // bransch"). Branschen styr moduler/ord — temat är ett fritt val bland byggda.
+  // bransch"). Branschen förfyller sitt default-tema; bytet är fritt.
   const options = BUILTIN_TEMPLATES
+  const branschDefault = cfg.branch
+    ? presets.verticals.find((v) => v.key === cfg.branch)?.defaultTemplate ?? null
+    : null
   return (
     <Panel
       title="Temamall"
-      sub="Ett av de byggda storefront-temana. Förhandsvisningen till höger visar kundens riktiga startsida."
+      sub="Branschens mall är förvald — behåll den eller byt. Förhandsvisningen till höger visar kundens riktiga startsida."
     >
       <div style={{ display: 'grid', gap: 10 }}>
         {options.map((opt) => {
@@ -480,6 +440,9 @@ function PanelTema({ cfg, dispatch, presets, looks }: PanelProps) {
               }}
             >
               <span style={{ flex: 1, fontWeight: 600, fontSize: 14.5, color: 'var(--c-ink)' }}>{opt.name}</span>
+              {opt.key === branschDefault ? (
+                <Badge tone="gold" dot={false}>Branschens förval</Badge>
+              ) : null}
               {on ? (
                 <span style={{ color: 'var(--c-forest)', display: 'inline-flex' }}>
                   <Icon name="check" size={18} />
@@ -581,10 +544,10 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
 
   return (
     <Panel
-      title="Välj moduler"
-      sub="Inget är låst till branschen — du väljer fritt bland alla moduler. De rekommenderade är föraktiverade; resten slår du på lika enkelt. Bokning är alltid minst live."
+      title="Moduler"
+      sub="Förvalda enligt branschen — redan rätt för de flesta. Ändra fritt om kunden behöver något extra. Bokning är alltid minst live."
     >
-      <div style={{ ...groupEyebrow, color: 'var(--c-gold-600)', marginBottom: 10 }}>Rekommenderat</div>
+      <div style={{ ...groupEyebrow, color: 'var(--c-gold-600)', marginBottom: 10 }}>Branschens förval</div>
       {rec.length === 0 ? (
         <p style={{ fontSize: 12.5, color: 'var(--c-ink-3)', margin: '0 0 10px' }}>Inga förvalda moduler för branschen.</p>
       ) : (
@@ -603,14 +566,14 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
 /* modplace + modconf borttagna 2026-07-11 (Dunder-fix): stubbar utan skrivväg
    mitt i flödet — logga-uppladdning och modulinställningar bor i kundkortet. */
 
-/** brand — Accent swatches → setAccent (or '' = temats standard);
- *  Tagline Field → setTagline. Logga laddas upp i kundkortets Sida-flik efter
- *  lansering (ingen placeholder-ruta här — den lovade mer än steget gjorde). */
+/** brand — «Utseende & text» (brand+text ihopslagna 2026-07-11, UX-order): accent,
+ *  rubrik, ingress, tagline på EN yta — allt valfritt, allt syns direkt i previewen.
+ *  Logga laddas upp i kundkortets Sida-flik efter lansering. */
 function PanelBrand({ cfg, dispatch }: PanelProps) {
   return (
     <Panel
-      title="Branding"
-      sub="Accentfärg och tagline — token-lagret (no-code). Slår igenom på storefronten utan deploy. Logga laddas upp i kundkortet efter lansering."
+      title="Utseende & text"
+      sub="Allt här är valfritt — tomt = temats egna färger och texter. Ändringarna syns direkt i förhandsvisningen. Logga laddas upp i kundkortet efter lansering."
     >
       <div style={{ display: 'grid', gap: 20 }}>
         <div>
@@ -666,27 +629,6 @@ function PanelBrand({ cfg, dispatch }: PanelProps) {
         </div>
 
         <Field
-          label="Tagline (footer/meta)"
-          ph="Kort slogan för footer & meta"
-          value={cfg.tagline}
-          onChange={(v) => dispatch({ type: 'setTagline', value: v })}
-        />
-      </div>
-    </Panel>
-  )
-}
-
-/** text — W5-REAL. Rubrik (hero headline → heroTitle) + Ingress (hero paragraph →
- *  heroLede) + Företagsnamn (header). Writes settings.copy.{heroTitle,heroLede} via
- *  createTenant → renders on the live page + the preview (resolveThemeContent, all
- *  themes; empty = theme default). Ingress maps to heroLede, NOT the footer tagline (the
- *  brand panel owns tagline). The design's "klicka-redigera i previewen" overlay (salvia-
- *  only SiteEditor) is deferred — the design's own fields update the same data. */
-function PanelText({ cfg, dispatch }: PanelProps) {
-  return (
-    <Panel title="Text & hjälte" sub="Rubriken och ingressen högst upp på sidan. Tomt = temats egen text. Ändringarna syns direkt i förhandsvisningen.">
-      <div style={{ display: 'grid', gap: 16 }}>
-        <Field
           label="Rubrik (hero)"
           ph="Din rubrik"
           value={cfg.heroTitle}
@@ -716,11 +658,12 @@ function PanelText({ cfg, dispatch }: PanelProps) {
             }}
           />
         </div>
+
         <Field
-          label="Företagsnamn (header)"
-          ph="Ditt företag"
-          value={cfg.name}
-          onChange={(v) => dispatch({ type: 'setName', value: v })}
+          label="Tagline (footer/meta)"
+          ph="Kort slogan för footer & meta"
+          value={cfg.tagline}
+          onChange={(v) => dispatch({ type: 'setTagline', value: v })}
         />
       </div>
     </Panel>
@@ -879,98 +822,20 @@ function PanelAgare({ cfg, dispatch }: PanelProps) {
   )
 }
 
-/** granska — DISPLAY-ONLY (§9.11). Checklist DERIVED from REAL cfg (stepDone + cfg);
- *  deferred items (tjänster) never read green. "Gå till lansering" → onNext (= live,
- *  the adjacent next step). */
-function PanelGranska({ cfg, presets, onNext }: StudioPanelProps) {
-  type Item = { label: string; detail: string; done: boolean; optional: boolean; deferred?: boolean }
-  const items: Item[] = [
-    { label: 'Kundkategori vald', detail: 'Branschtagg för sortering — påverkar inte mall/moduler.', done: !!cfg.branch, optional: false },
-    {
-      label: 'Namn & subdomän',
-      detail: 'Företagsnamn + <slug>.corevo.se.',
-      done: !!cfg.name.trim() && !!cfg.slug,
-      optional: false,
-    },
-    { label: 'Temamall', detail: 'Ett byggt storefront-tema.', done: !!cfg.theme, optional: false },
-    {
-      label: 'Minst en aktiv modul',
-      detail: 'Bokning är alltid minst live.',
-      done: stepDone('modval', cfg, presets),
-      optional: false,
-    },
-    { label: 'Ägare inbjuden', detail: 'Får magic-link vid lansering.', done: !!cfg.ownerEmail.trim(), optional: true },
-    {
-      label: 'Tjänster & priser',
-      detail: 'Bokningen behöver minst en tjänst för att kunna ta emot bokningar — krav för lansering.',
-      done: stepDone('tjanster', cfg, presets),
-      optional: false,
-    },
-  ]
-  return (
-    <Panel title="Granska checklista" sub="Onboarding-checklistan. Grönt = klart, gult = valfritt/väntar.">
-      <div style={{ display: 'grid', gap: 10 }}>
-        {items.map((c) => {
-          const tone = c.done
-            ? { bg: 'var(--c-success)', fg: '#fff', icon: 'check' as IconName }
-            : c.deferred
-              ? { bg: 'var(--c-paper-2)', fg: 'var(--c-ink-3)', icon: 'clock' as IconName }
-              : c.optional
-                ? { bg: 'var(--c-warning-bg)', fg: 'var(--c-warning)', icon: 'minus' as IconName }
-                : { bg: 'var(--c-paper-2)', fg: 'var(--c-ink-3)', icon: 'clock' as IconName }
-          return (
-            <div
-              key={c.label}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 12,
-                padding: 14,
-                border: '1px solid var(--c-line)',
-                borderRadius: 12,
-                background: 'var(--c-paper)',
-              }}
-            >
-              <span
-                style={{
-                  width: 26,
-                  height: 26,
-                  flex: 'none',
-                  borderRadius: 999,
-                  background: tone.bg,
-                  color: tone.fg,
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Icon name={tone.icon} size={14} />
-              </span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>
-                  {c.label}
-                  {c.optional ? <span style={{ color: 'var(--c-ink-3)', fontWeight: 400 }}> · valfritt</span> : null}
-                </div>
-                <div style={{ fontSize: 12.5, color: 'var(--c-ink-3)', marginTop: 3, lineHeight: 1.45 }}>{c.detail}</div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-      <div style={{ marginTop: 18 }}>
-        <Button variant="primary" icon="arrowRight" onClick={onNext}>
-          Gå till lansering
-        </Button>
-      </div>
-    </Panel>
-  )
-}
-
-/** live — W1-REAL. The single createTenant trigger. Slug card + active-module count;
- *  readiness gate (theme set && a module resolves live — booking floors to live);
- *  gold Lansera (disabled until ready) → onLaunch. The REAL ActionState.success/error
- *  is surfaced by the parent (§9.2: NO fake DB-task theatre here). */
+/** live — «Granska & lansera» (granska+live ihopslagna 2026-07-11, UX-order): kompakt
+ *  checklista härledd ur REAL cfg + «vad kunden får»-kortet + den enda createTenant-
+ *  triggern. Gold Lansera (disabled tills klart) → onLaunch; ActionState ytas av parent. */
 function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
-  const activeCount = presets.modules.filter((m) => resolveModuleState(cfg, m.key, presets) !== 'off').length
+  const activeModules = presets.modules.filter((m) => resolveModuleState(cfg, m.key, presets) !== 'off')
+  const activeCount = activeModules.length
+  const namedServices = cfg.services.filter((s) => s.name.trim() !== '')
+  const checks: { label: string; done: boolean; optional?: boolean }[] = [
+    { label: 'Bransch vald', done: !!cfg.branch },
+    { label: 'Namn & subdomän', done: !!cfg.name.trim() && !!cfg.slug },
+    { label: 'Temamall', done: !!cfg.theme },
+    { label: `Minst en tjänst (${namedServices.length} tillagda)`, done: namedServices.length > 0 },
+    { label: 'Ägare inbjuds via mail', done: !!cfg.ownerEmail.trim(), optional: true },
+  ]
   // createTenant's only HARD blockers are name + a valid slug (actions.ts). Gate on those
   // + a theme so the gold button never fires a guaranteed-fail submit. booking is force-
   // floored to live in buildCreateTenantFormData, so we don't depend on the catalog read
@@ -978,21 +843,53 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
   // + minst en namngiven tjänst (Dunder-fix): bokningsmodulen golvas till live,
   // så en salong utan tjänster lanserades tidigare med en bokning som inte har
   // något att boka. Tjänsterna läggs i steget «Tjänster & innehåll».
-  const hasService = cfg.services.some((s) => s.name.trim() !== '')
+  const hasService = namedServices.length > 0
   const ready =
     !!cfg.name.trim() && !!cfg.slug && !isReservedSlug(cfg.slug) && !!cfg.theme && hasService
   return (
-    <Panel title="Lansera" sub="Sista steget. Publicerar storefronten på subdomänen och bjuder in ägaren.">
+    <Panel title="Granska & lansera" sub="Sista koll — exakt det här får kunden. Sen live på subdomänen.">
       <div style={{ display: 'grid', gap: 16 }}>
+        {/* Kompakt checklista (ersätter det egna granska-steget) */}
+        <div style={{ display: 'grid', gap: 6 }}>
+          {checks.map((c) => (
+            <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, color: 'var(--c-ink)' }}>
+              <span
+                style={{
+                  width: 22,
+                  height: 22,
+                  flex: 'none',
+                  borderRadius: 999,
+                  background: c.done ? 'var(--c-success)' : c.optional ? 'var(--c-warning-bg)' : 'var(--c-paper-2)',
+                  color: c.done ? '#fff' : c.optional ? 'var(--c-warning)' : 'var(--c-ink-3)',
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
+              >
+                <Icon name={c.done ? 'check' : c.optional ? 'minus' : 'clock'} size={12} />
+              </span>
+              <span style={{ fontWeight: c.done ? 500 : 600 }}>
+                {c.label}
+                {c.optional && !c.done ? <span style={{ color: 'var(--c-ink-3)', fontWeight: 400 }}> · valfritt</span> : null}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Vad kunden får */}
         <Card pad={18} style={{ background: 'var(--c-forest)', color: '#fff', border: 'none' }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--c-gold)' }}>
-            Publiceras på
+            Kunden får
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, margin: '8px 0 4px' }}>
             {cfg.slug || 'dinsalong'}.{ROOT}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--c-on-forest-2)' }}>
-            {activeCount} {activeCount === 1 ? 'modul' : 'moduler'} aktiva · tema {cfg.theme}
+          <div style={{ fontSize: 13, color: 'var(--c-on-forest-2)', lineHeight: 1.6 }}>
+            Tema <b style={{ color: '#fff' }}>{cfg.theme}</b> · {activeCount}{' '}
+            {activeCount === 1 ? 'modul' : 'moduler'}:{' '}
+            {activeModules.map((m) => m.name).join(', ') || '—'}
+            <br />
+            {namedServices.length} {namedServices.length === 1 ? 'tjänst' : 'tjänster'} redo att bokas
+            {cfg.ownerEmail.trim() ? <> · ägar-inbjudan till {cfg.ownerEmail.trim()}</> : null}
           </div>
         </Card>
 
@@ -1043,9 +940,7 @@ export const PANEL_BY_STEP: Record<StepId, FC<StudioPanelProps>> = {
   tema: PanelTema,
   modval: PanelModval,
   brand: PanelBrand,
-  text: PanelText,
   tjanster: PanelTjanster,
   agare: PanelAgare,
-  granska: PanelGranska,
   live: PanelLive,
 }

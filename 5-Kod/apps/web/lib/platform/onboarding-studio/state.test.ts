@@ -44,14 +44,21 @@ describe('makeStudioReducer — slug auto-sync + slugTouched lock', () => {
     expect(cfg.slug).toBe('min-salong')
   })
 
-  // Branch is PURE categorization (Zivar): step 1 ONLY tags the customer's type. It must
-  // NOT seed the theme/look or any module state — those are picked in their own steps.
-  it('applyBranch sets ONLY the branch tag (no theme/module seeding)', () => {
-    const start = initStudioCfg('demolook') // a chosen look — must survive a branch pick
-    const cfg = reducer(start, { type: 'applyBranch', key: 'frisor' })
+  // Bransch FÖRFYLLER (UX-order 2026-07-11): valet seedar tema + modul-states från
+  // bransch-förvalen (VerticalEditor äger dem) — allt går att ändra i stegen efter.
+  it('applyBranch prefills theme + module states from the vertical defaults', () => {
+    const cfg = reducer(initStudioCfg('edit'), { type: 'applyBranch', key: 'frisor' })
     expect(cfg.branch).toBe('frisor')
-    expect(cfg.theme).toBe('demolook') // theme/look untouched
-    expect(cfg.moduleStates).toEqual({}) // no modules seeded from the branch
+    expect(cfg.theme).toBe('salvia') // vertical.defaultTemplate
+    expect(cfg.moduleStates.booking).toBe('live')
+    expect(cfg.moduleStates.lojalitet).toBe('live')
+  })
+
+  it('applyBranch on an unknown key only tags the branch', () => {
+    const cfg = reducer(initStudioCfg('edit'), { type: 'applyBranch', key: 'okänd' })
+    expect(cfg.branch).toBe('okänd')
+    expect(cfg.theme).toBe('edit')
+    expect(cfg.moduleStates).toEqual({})
   })
 
   it('setModule records a module state on the cfg', () => {

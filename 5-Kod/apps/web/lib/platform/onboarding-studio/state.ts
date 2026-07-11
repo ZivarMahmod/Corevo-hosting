@@ -12,6 +12,7 @@ import type { LookMeta } from '@/lib/sajtbyggare/look-registry'
 import {
   type StudioCfg,
   type StudioService,
+  applyBranch,
   studioSlugify,
 } from './model'
 import { krToOre } from './services'
@@ -65,11 +66,11 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
   return function studioReducer(cfg: StudioCfg, action: StudioAction): StudioCfg {
     switch (action.type) {
       case 'applyBranch':
-        // Branch is PURE categorization (Zivar): step 1 ONLY tags the customer's TYPE for
-        // later sorting — it must NOT seed the theme/look or modules. Those are chosen in
-        // their own steps, fully independent of branch. (Was: delegated to model.applyBranch,
-        // which seeded theme + module states from the vertical preset.)
-        return { ...cfg, branch: action.key }
+        // Bransch FÖRFYLLER (Zivar 2026-07-11, "hjärndött att starta en kund"): valet
+        // seedar tema (vertical.default_template) + modul-states från bransch-förvalen
+        // (VerticalEditor på /branscher äger dem). Allt går fortfarande att ändra i de
+        // egna stegen — bransch styr startläget, låser inget.
+        return applyBranch(cfg, action.key, presets)
       case 'setName':
         return cfg.slugTouched
           ? { ...cfg, name: action.value }

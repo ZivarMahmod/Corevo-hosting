@@ -172,13 +172,13 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(preview).toContain('Klippning')
   })
 
-  it('the text panel renders the real hero + ingress fields (W5, not a deferred note)', () => {
+  it('the merged brand panel renders accent + hero + ingress fields (Utseende & text)', () => {
     const html = mounts(
-      <PanelHost cfg={branched} step="text" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+      <PanelHost cfg={branched} step="brand" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
     )
+    expect(html).toContain('Accentfärg')
     expect(html).toContain('Rubrik (hero)')
     expect(html).toContain('Ingress')
-    expect(html).not.toContain('senare våg') // old deferred copy is gone
   })
 
   it('a custom hero title flows through to the live preview (W5)', () => {

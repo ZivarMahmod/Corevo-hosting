@@ -12,19 +12,17 @@ import type { StudioCfg } from './model'
 import { resolveModuleState } from './model'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 
-/** The 12 step ids, in flow order (the StepId string-union the leaves narrow on). */
-// modplace/modconf borttagna 2026-07-11 (Dunder-fix): båda var stubbar utan
-// skrivväg mitt i flödet — två döda steg i rad läste som "pajad wizard".
+/** The step ids, in flow order (the StepId string-union the leaves narrow on). */
+// modplace/modconf borttagna 2026-07-11 (Dunder-fix). text→brand och granska→live
+// ihopslagna 2026-07-11 (UX-order: "lättare steg för steg, hjärndött") — 8 steg.
 export type StepId =
   | 'branch'
   | 'namn'
   | 'tema'
   | 'modval'
   | 'brand'
-  | 'text'
   | 'tjanster'
   | 'agare'
-  | 'granska'
   | 'live'
 
 /** One step in a phase. `req:true` = required before Lansera (branch/namn/tema/live).
@@ -56,46 +54,30 @@ export const PHASES: StudioPhase[] = [
   {
     id: 'grund',
     name: 'Grunden',
-    sub: 'Det som måste sitta först',
+    sub: 'Bransch, namn, mall — resten förfylls',
     steps: [
-      { id: 'branch', label: 'Bransch', icon: 'building', req: true, hint: 'Styr moduler, ord & innehåll' },
+      { id: 'branch', label: 'Bransch', icon: 'building', req: true, hint: 'Förfyller mall, moduler & ord' },
       { id: 'namn', label: 'Namn & subdomän', icon: 'link', req: true, hint: 'tenants.slug → <slug>.corevo.se' },
-      { id: 'tema', label: 'Temamall', icon: 'palette', req: true, hint: 'Ett av 6 byggda teman' },
-    ],
-  },
-  {
-    id: 'moduler',
-    name: 'Moduler',
-    sub: 'Det som gör sidan till deras',
-    steps: [
-      { id: 'modval', label: 'Välj moduler', icon: 'layers', req: false, hint: 'Föraktiverade per bransch' },
+      { id: 'tema', label: 'Temamall', icon: 'palette', req: true, hint: 'Förvald av branschen — byt fritt' },
     ],
   },
   {
     id: 'innehall',
-    name: 'Innehåll & utseende',
-    sub: 'Texten, färgen, känslan',
+    name: 'Innehåll',
+    sub: 'Moduler, utseende, tjänster',
     steps: [
-      { id: 'brand', label: 'Branding', icon: 'sun', req: false, hint: 'Accentfärg & tagline' },
-      { id: 'text', label: 'Text & hjälte', icon: 'edit', req: false, hint: 'Rubrik, ingress & texterna' },
-      { id: 'tjanster', label: 'Tjänster & innehåll', icon: 'scissors', req: false, hint: 'Datat modulerna visar' },
-    ],
-  },
-  {
-    id: 'konto',
-    name: 'Ägare & konto',
-    sub: 'Vem som styr sidan',
-    steps: [
-      { id: 'agare', label: 'Ägare & inbjudan', icon: 'user', req: false, hint: 'Magic-link → eget lösen' },
+      { id: 'modval', label: 'Moduler', icon: 'layers', req: false, hint: 'Förvalda per bransch' },
+      { id: 'brand', label: 'Utseende & text', icon: 'sun', req: false, hint: 'Accent, rubrik & ingress' },
+      { id: 'tjanster', label: 'Tjänster & priser', icon: 'scissors', req: false, hint: 'Minst en för lansering' },
     ],
   },
   {
     id: 'lansera',
-    name: 'Granska & lansera',
-    sub: 'Sista koll, sen live',
+    name: 'Klart',
+    sub: 'Ägare, sista koll, live',
     steps: [
-      { id: 'granska', label: 'Granska checklista', icon: 'checkCircle', req: false, hint: 'Onboarding-checklistan' },
-      { id: 'live', label: 'Lansera', icon: 'rocket', req: true, hint: 'Publicera på subdomän' },
+      { id: 'agare', label: 'Ägare & inbjudan', icon: 'user', req: false, hint: 'Magic-link → eget lösen' },
+      { id: 'live', label: 'Granska & lansera', icon: 'rocket', req: true, hint: 'Checklista + publicera' },
     ],
   },
 ]
@@ -132,8 +114,6 @@ export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPreset
     case 'tjanster':
       return cfg.services.some((s) => s.name.trim() !== '')
     case 'brand':
-    case 'text':
-    case 'granska':
     case 'live':
       return false
     default: {
