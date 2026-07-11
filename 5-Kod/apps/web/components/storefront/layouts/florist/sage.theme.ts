@@ -46,6 +46,15 @@ const IMG = {
  *    fg #2B2820 (12.95:1) och fg2 #6E6656 (5.0:1) uppfyllde redan kraven
  *    (rubrik ≥7, brödtext ≥4.5) och lämnas — fg2 ska backa för rubriken.
  *
+ *  · FÄRGANTAL. Regeln är max 8 hex TOTALT (vitt inräknat, som i Zentums egen
+ *    lista). Paletten var 8 egna hex + #fff (vit text på hero-fotot och på
+ *    closing-bandet) = 9. Den nionde var i praktiken en dubblett: surface #FBF9F4
+ *    låg 2 % från bg #F4F0E8 — två varma tinter som ögat läser som samma yta, dvs
+ *    ingen verklig nivåskillnad mellan sida och kort. surface är nu #FFFFFF: 8 hex
+ *    totalt, och korten/välkomstbandet får ett RIKTIGT steg mot den greige sidan.
+ *      fg #2B2820 på surface ... 14.72:1   primary på surface ... 9.25:1
+ *      fg2 #6E6656 på surface .. 5.68:1    (backar fortfarande för rubriken)
+ *
  *  · RADIE binärt. 6px = "morot"-zonen (mjuka kuddar, inga raka linjer kvar att
  *    linjera mot). --sf-radius är nu 0 för ALL struktur (kort, bilder, ramar,
  *    galleri, karta). Knapparna är det enda medvetna undantaget: full pill
@@ -65,7 +74,8 @@ export const sage: FloristTheme = {
     primary: '#4E4732',
     primaryD: '#383324',
     bg: '#F4F0E8',
-    surface: '#FBF9F4',
+    // #FFFFFF, inte en tredje varm tint: se FÄRGANTAL ovan (8 hex totalt).
+    surface: '#FFFFFF',
     fg: '#2B2820',
     fg2: '#6E6656',
     line: '#DFD6C4',

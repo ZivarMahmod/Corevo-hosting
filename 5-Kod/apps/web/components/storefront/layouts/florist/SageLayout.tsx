@@ -23,13 +23,15 @@ import styles from './sage.module.css'
  * skillnad från Flora).
  *
  * SKÄRPE-PASS (design-skarpa-zentum.md): identiteten är orörd (färgfamilj,
- * struktur-signatur, sektionsordning) — utförandet är skärpt. Typskalan går i
- * ×1.85–2.0-steg (96 → 52 → 26 px), all mikrotext är EN nivå (12px/600/VERSALER
- * /1px), rubrikerna kör Marcellus riktiga vikt (400, inte syntetisk 700) utan
- * positiv tracking, alla bilder ligger i EN ratio (4/5 — även galleriet, som
- * annars är 1/1), radien är binär (0 på struktur, pill på knapp) och hovern är
+ * struktur-signatur, sektionsordning) — utförandet är skärpt. Typskalan är fem
+ * nivåer där varje granne ligger >1.3× isär (96 → 52 → 26 → 18 → 12 px; text =
+ * EN nivå, inte lede 18 + brödtext 16), all mikrotext är 12px/600/VERSALER/1px,
+ * rubrikerna kör Marcellus riktiga vikt (400, inte syntetisk 700) utan positiv
+ * tracking, alla bilder ligger i EN ratio (4/5 — även galleriet, som annars är
+ * 1/1), radien är binär (0 på struktur, pill på knapp), hero-scrimmet bär
+ * kontrasten (vit rubrik ≥7.5:1 även mot ett helvitt foto) och hovern är
  * 5px/400ms utan skugg-bloom. Se sage.module.css för skalan, sage.theme.ts för
- * de räknade kontrastvärdena.
+ * de räknade kontrastvärdena (8 hex totalt).
  */
 export function SageLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)

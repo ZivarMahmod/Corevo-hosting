@@ -10,26 +10,33 @@
    ── SKÄRPE-PASS (4-Dokument-Underlag/design-skarpa-zentum.md) ──────────────
    Mallen ska kännas som ett SVÄRD, inte som en mjuk morot. Sju mätbara val,
    alla som tokens i .seraRoot nedan — INGEN sektion får hitta på egna värden:
-     1. TYPSKALA  steg ×2.0: 104 → 52 → 26 px  (+ lede 18 / brödtext 16 / mikro 11)
+     1. TYPSKALA  FEM nivåer, ALLA grannsteg ≥1.3×:
+                  104 → 52 → 26 → 16 → 12  (×2.00 ×2.00 ×1.63 ×1.33)
+                  Ingen lede-nivå: 26/16 = 1.63 < 1.3² = 1.69, så en nivå mellan
+                  kort och brödtext KAN inte hålla 1.3× åt båda håll — den blir
+                  per definition mush. Hero-leden är brödtext (precis som zentums
+                  110px-display som sitter direkt på 17px body). Knapp = mikro:
+                  12px/600/VERSALER är ETT register, inte två (11 vs 12 = ×1.09).
      2. VIKT      display i 500 (aldrig 300/700), mikrotext i 600 + VERSALER
-     3. LINE-H    rubrik 1.06–1.15  ×  brödtext 1.55–1.58 (register-bytet = skärpan)
-     4. TRACKING  omvänt mot storleken: -0.01em på display, 0 på ≥26px, ~1px på 11–12px
-     5. KONTRAST  rubrik-ink 15.8:1, brödtext 5.8:1, knapptext 7.3:1 (se theme.ts)
+     3. LINE-H    rubrik 1.06–1.15  ×  brödtext 1.58 (register-bytet = skärpan)
+     4. TRACKING  omvänt mot storleken: -0.01em på display, 0 på ≥26px, 1px på 12px
+     5. KONTRAST  rubrik-ink 15.8:1, brödtext 5.8:1, knapptext 7.0:1 (se theme.ts)
      6. RADIE     binärt: 0 på ALL struktur (bild/kort/sektion/ram), pill på knapp
      7. BILDRATIO EN enda ratio i hela mallen: --sera-ratio = 4/5 (aspect-ratio + cover)
-     8. FÄRG      en hue-familj (30–41°), accenten (guld) bara på detaljer
+     8. FÄRG      en hue-familj (30–41°), accenten (guld) bara på detaljer. ÅTTA hex
+                  totalt = hela paletten; INGEN ren vit (papper #FDFBF6 gör jobbet).
      9. HOVER     5px lyft / 500ms ease — ingen scale, ingen skugg-bloom
     10. RYTM      12 / 20 / 24 / 32 / 48 / 96 — samma steg i ALLA sektioner       */
 
 .seraRoot {
-  /* ── 1. TYPSKALA — ×2.0 mellan nivåerna (desktopläget = det mätta målet) ── */
+  /* ── 1. TYPSKALA — FEM nivåer, varje grannsteg ≥1.3× (mätt, ej gissat) ────
+        104 → 52 → 26 → 16 → 12 px  =  ×2.00 · ×2.00 · ×1.63 · ×1.33
+        Mobilens clamp-min håller samma ordning: 44 → 30 → 22 → 16 → 12.   */
   --sera-fs-display: clamp(2.75rem, 7.4vw, 6.5rem); /* 44 → 104px */
   --sera-fs-h2: clamp(1.875rem, 3.9vw, 3.25rem); /*  30 →  52px */
   --sera-fs-card: clamp(1.375rem, 2vw, 1.625rem); /*  22 →  26px */
-  --sera-fs-lede: 1.125rem; /*        18px */
-  --sera-fs-body: 1rem; /*        16px */
-  --sera-fs-btn: 0.75rem; /*        12px */
-  --sera-fs-micro: 0.6875rem; /*        11px */
+  --sera-fs-body: 1rem; /*        16px  (även hero-/closing-lede) */
+  --sera-fs-micro: 0.75rem; /*        12px  (mikro OCH knapp — ett register) */
 
   /* ── 2. VIKT — stort = medium (precisa stammar), litet = semibold ───────── */
   --sera-fw-display: 500;
@@ -39,14 +46,12 @@
   --sera-lh-display: 1.06;
   --sera-lh-h2: 1.08;
   --sera-lh-card: 1.15;
-  --sera-lh-lede: 1.55;
   --sera-lh-body: 1.58;
 
   /* ── 4. LETTER-SPACING — omvänt mot storleken ───────────────────────────── */
   --sera-ls-display: -0.01em; /* ~-1px @ 104px */
   --sera-ls-h2: 0;
-  --sera-ls-btn: 0.083em; /*  1px @ 12px */
-  --sera-ls-micro: 0.09em; /*  1px @ 11px */
+  --sera-ls-micro: 0.083em; /*  1px @ 12px — gäller eyebrow, knapp, mikro */
 
   /* ── 6. RADIE — binärt: 0 på struktur, exakt pill på knapp ──────────────── */
   --sera-radius: 0;
@@ -74,8 +79,11 @@
   --sera-gutter: 24px;
   --sera-measure: 34rem;
 
-  /* ── DEKOR — mallens egna hex/rgba (enda hårdkodade färgerna i filen; båda
-        är alpha-varianter av paletten: ink #241F1A och papper #FDFBF6) ────── */
+  /* ── DEKOR — mallen lägger INTE till en nionde färg. De två rgba:na är rena
+        alpha-varianter av paletten (ink #241F1A, papper #FDFBF6), och texten på
+        guldbandet är papper — inte ren vit. Ren vit hade varit hex nr 9 OCH en
+        kall kulör i en champagne-palett; #FDFBF6 på #6B5320 mäter 7.04:1, alltså
+        AAA-nivå för rubrik (≥7) och långt över kravet för knapptext (≥4.5).  */
   --sera-scrim: linear-gradient(
     180deg,
     rgba(36, 31, 26, 0.22) 0%,
@@ -83,7 +91,7 @@
     rgba(36, 31, 26, 0.72) 100%
   );
   --sera-frame-bg: rgba(253, 251, 246, 0.95);
-  --sera-cta-fg: #fff;
+  --sera-cta-fg: var(--color-bg);
 }
 
 /* ── TYPOGRAFISKA PRIMITIVER — mallens SEX nivåer, inget däremellan ───────── */
@@ -158,9 +166,9 @@
   background: var(--color-primary);
   color: var(--sera-cta-fg);
   font-family: var(--font-body);
-  font-size: var(--sera-fs-btn);
+  font-size: var(--sera-fs-micro);
   font-weight: var(--sera-fw-micro);
-  letter-spacing: var(--sera-ls-btn);
+  letter-spacing: var(--sera-ls-micro);
   text-transform: uppercase;
   text-decoration: none;
   box-shadow: none;
@@ -189,9 +197,9 @@
   margin-top: var(--sera-sp-cta);
   padding-bottom: 4px;
   font-family: var(--font-body);
-  font-size: var(--sera-fs-btn);
+  font-size: var(--sera-fs-micro);
   font-weight: var(--sera-fw-micro);
-  letter-spacing: var(--sera-ls-btn);
+  letter-spacing: var(--sera-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary);
   text-decoration: none;
@@ -252,12 +260,14 @@
   color: var(--color-fg);
   white-space: pre-line;
 }
+/* Leden är brödtext (16px) — samma grepp som zentums 110px-display över 17px
+   body. En egen 18px-nivå hade legat ×1.13 från brödtexten = osynlig skillnad. */
 .seraHeroLede {
   margin: var(--sera-sp-text) auto 0;
   max-width: 30rem;
   font-family: var(--font-body);
-  font-size: var(--sera-fs-lede);
-  line-height: var(--sera-lh-lede);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
   color: var(--color-fg-2);
 }
 .seraHeroActions {

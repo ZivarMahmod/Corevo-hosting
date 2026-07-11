@@ -13,10 +13,12 @@
       display-text renderades alltså som SYNTETISK fetstil/kursiv — browsern smetar
       ut 400-konturerna. Det är precis den "klump" reglerna förbjuder. Allt display
       kör nu äkta 400 upprätt; mikrotext bär tyngden istället (Jost 600, äkta).
-   3. KONTRAST: paletten höll redan (rubrik 14.92:1, brödtext 5.58:1, knapp 6.32:1)
+   3. KONTRAST: paletten höll redan (rubrik 14.92:1, brödtext 5.58:1, knapp 6.17:1)
       — men opacitets-dimmad text (0.62–0.92) och tunna foto-scrims gjorde det.
-      Scrim-platåerna håller nu ≥7:1 för --pa-ink även mot ett HELVITT foto (kunder
-      laddar upp egna bilder — läsbarheten får inte bero på tur).
+      OBEROENDE MÄTNING 2026-07-11 fann att skärpe-passets scrim-fix bara höll i
+      PLATÅN: hero-scrimens toppstopp (alfa 0.42) gav --pa-ink 2.74:1 mot ett
+      helvitt foto. Alfa-golvet är nu 0.78 → SAMTLIGA stopp ≥8.09:1 mot vitt foto
+      (kunder laddar upp egna bilder — läsbarheten får inte bero på tur).
    4. RADIE binärt (0 överallt) + EN bildratio (4:5) → griden får raka linjer.
    5. RÖRELSE: 4px lyft / 400ms / ingen skugga, ingen scale.
 
@@ -68,21 +70,37 @@
   --pa-dur: 400ms;
   --pa-ease: ease;
 
-  /* ── DEKOR-VÄRDEN (mallens egna — härledda ur paletten, inga nya hexar) ──────
-     --pa-ink = palettens benvita surface. 11.99:1 mot --color-primary-d (AAA). */
+  /* ── DEKOR-VÄRDEN (mallens egna — härledda ur paletten, INGA nya hexar) ──────
+     --pa-ink = palettens benvita surface. 11.99:1 mot --color-primary-d (AAA).
+     De on-dark-linjerna är samma benvita yta i olika alfa — inte nya kulörer. */
   --pa-ink: var(--color-surface);
-  --pa-rule-on-dark: rgba(255, 252, 245, 0.55);
-  --pa-line-on-dark: rgba(255, 252, 245, 0.3);
-  --pa-fill-on-dark: rgba(255, 252, 245, 0.1);
-  /* Scrim-platån (där texten sitter) ger --pa-ink ≥7.6:1 även mot ett helvitt foto. */
+  --pa-rule-on-dark: color-mix(in srgb, var(--color-surface) 55%, transparent);
+  --pa-line-on-dark: color-mix(in srgb, var(--color-surface) 30%, transparent);
+  --pa-fill-on-dark: color-mix(in srgb, var(--color-surface) 10%, transparent);
+  /* SCRIMS — mätt, inte gissat (oberoende mätning 2026-07-11).
+     Två fel rättade här:
+     1) FÄRG: scrimsen var byggda på rgba(28,12,8) och rgba(46,17,12) — TVÅ
+        RGB-tripletter som inte finns i paletten. De drog upp mallens färgantal
+        från 8 till 10 (+ #ffffff = 11). Nu är varje stop en color-mix av en
+        PALETTFÄRG (--color-fg / --color-primary-d) → mallen håller sina 8.
+     2) KONTRAST: den gamla hero-scrimens toppstopp låg på alfa 0.42, vilket ger
+        --pa-ink bara 2.74:1 mot ett helvitt kundfoto — och heroens eyebrow/rubrik
+        kan landa där när innehållet är högt (mobil: 48px padding över texten).
+        Alfa-golvet är nu 0.78: minsta stopp = 8.09:1 mot vitt foto, 17.62:1 mot
+        svart, 12.46:1 mot 50 % grått. Alfa är monotont MELLAN två stopp, så
+        minimum ligger alltid PÅ ett stopp → hela ytan är verifierad av stoppen. */
   --pa-scrim-hero: linear-gradient(
     180deg,
-    rgba(28, 12, 8, 0.42) 0%,
-    rgba(28, 12, 8, 0.74) 42%,
-    rgba(28, 12, 8, 0.74) 78%,
-    rgba(28, 12, 8, 0.88) 100%
+    color-mix(in srgb, var(--color-fg) 78%, transparent) 0%,
+    color-mix(in srgb, var(--color-fg) 86%, transparent) 42%,
+    color-mix(in srgb, var(--color-fg) 86%, transparent) 78%,
+    color-mix(in srgb, var(--color-fg) 92%, transparent) 100%
   );
-  --pa-scrim-closing: linear-gradient(180deg, rgba(92, 35, 24, 0.86) 0%, rgba(46, 17, 12, 0.94) 100%);
+  --pa-scrim-closing: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary-d) 88%, transparent) 0%,
+    color-mix(in srgb, var(--color-fg) 94%, transparent) 100%
+  );
 
   background: var(--color-bg);
 }
@@ -316,7 +334,12 @@
 
 /* ── KNAPP — fyrkantig (radie = --sf-radius = 0), mikro-versaler, hård växling ──
    Slår .btn-accent (0,1,0) med 0,2,0. Global .btn-accent har vikt 700, pill-radie
-   och en box-shadow-bloom på hover — alla tre är morots-tells. */
+   och en box-shadow-bloom på hover — alla tre är morots-tells.
+   FÄRG: global .btn-accent tar sin text ur --color-accent-fg = #ffffff
+   (tokens.css storefront-block) — en NIONDE färg utanför paisleys palett. Vi
+   sätter benvitt (--pa-ink = --color-surface, 6.17:1 mot --color-primary, krav
+   4.5) istället: samma vita yta som all annan text på mörkt i mallen, och
+   färgantalet stannar på exakt 8. */
 .paSquareCta:global(.btn-accent) {
   box-sizing: border-box;
   height: 50px;
@@ -328,6 +351,7 @@
   line-height: 46px; /* 50px − 2×2px kant → exakt knapphöjd */
   letter-spacing: var(--pa-ls-ui);
   text-transform: uppercase;
+  color: var(--pa-ink); /* 6.17:1 mot --color-primary (var #ffffff → 9:e färgen) */
   box-shadow: none;
   cursor: pointer;
   transition: transform var(--pa-dur) var(--pa-ease), background var(--pa-dur) var(--pa-ease),

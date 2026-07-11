@@ -45,8 +45,12 @@ export const lunaria: FloristTheme = {
   //        accent-soft (= .sfRow:hover-ytan). Var #6E6A60: 4.06:1 mot accent-soft
   //        → UNDER 4.5-kravet så fort en tjänsterad hovrades. Nu klarar brödtexten
   //        varje yta den kan hamna på.
-  //   primary #1E2A42 → 13.72:1 mot surface (eyebrow/länkar) · vit knapptext på
-  //        primary = 14.33:1 · på primary-d = 17.38:1 (hover).
+  //   primary #1E2A42 → 13.72:1 mot surface (eyebrow/länkar) · knapptexten är
+  //        surface (INTE ett eget #ffffff — det var en 9:e färg och paletten ska
+  //        rymmas i 8): surface på primary = 13.72:1 · på primary-d = 16.64:1
+  //        (hover) · primary-d på surface-fyllningen (closing-CTA) = 16.64:1.
+  //   surface på closing-scrimmen håller 7.39:1 även om kunden laddar upp ett
+  //        HELVITT foto (scrim = primary-d @0.75 → #4D5360).
   palette: {
     primary: '#1E2A42',
     primaryD: '#121A2B',

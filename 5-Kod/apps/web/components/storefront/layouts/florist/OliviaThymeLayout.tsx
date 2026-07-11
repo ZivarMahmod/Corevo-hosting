@@ -20,12 +20,13 @@ import styles from './oliviathyme.module.css'
  * övriga mallar i sviten.
  *
  * SKÄRPE-PASS: typografin går genom mallens EGNA roller (.otDisplay/.otSectionTitle/
- * .otCardTitle/.otLede/.otBody/.otEyebrow) i stället för de globala .sf-*-rollerna.
- * Skälet är mätbart: .sf-h1 är 56px — större än mallens egen hero-rubrik var — och
- * .sf-h2 34px, vilket gav en platt skala (56/54/44/34/22/17/16) där allt vägde lika.
- * Rollerna i oliviathyme.module.css ger 96 → 48 → 26 → 18 → 16 → 12/11 och all
- * spacing ur EN skala (12/20/24/32/48/96), så rytmen är identisk i varje sektion.
- * Inga inline font-size/margin kvar — allt bor i CSS:en och går att mäta där.
+ * .otCardTitle/.otBody/.otEyebrow) i stället för de globala .sf-*-rollerna. Skälet är
+ * mätbart: .sf-h1 är 56px — större än mallens egen hero-rubrik var — och .sf-h2 34px,
+ * vilket gav en platt skala (56/54/44/34/22/17/16) där allt vägde lika.
+ * Rollerna i oliviathyme.module.css ger FEM nivåer — 96 → 48 → 28 → 18 → 12
+ * (×2.00 / ×1.71 / ×1.56 / ×1.50) — och all spacing ur EN skala (12/20/24/32/48/96),
+ * så rytmen är identisk i varje sektion. Inga inline font-size/margin kvar — allt bor
+ * i CSS:en och går att mäta där.
  */
 export function OliviaThymeLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -56,7 +57,7 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
         <Reveal className={`${styles.otWelcomeInner} ${styles.otCenter}`}>
           <span className={styles.otEyebrow}>{content.heroEyebrow}</span>
           <h1 className={`${styles.otDisplay} ${styles.otWelcomeTitle}`}>{content.heroTitle}</h1>
-          <p className={styles.otLede}>{content.heroLede}</p>
+          <p className={styles.otBody}>{content.heroLede}</p>
           <div className={styles.otWelcomeActions}>
             <BookCta className={styles.otBtn} />
             {offertReachable ? (
@@ -70,8 +71,12 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
 
       {/* UR BUTIKEN — webshop-modulen invävd som butikens eget skyltfönster:
           intro + fyrkantig brun CTA, sedan två stora produktbilder (en med
-          stjärn-badge). Hela bandet visas bara när det finns riktiga teasers. */}
-      {showcase.length > 0 ? (
+          stjärn-badge). Hela bandet är gatat på shopReachable OCH på riktiga
+          teasers: produktbrickorna länkar till /shop/:id, så en oåtkomlig butik
+          får inte rendera bandet alls — annars är varje bricka en 404-fälla (S9).
+          Teasers laddas visserligen bara när shop är live, men gatingen ska vara
+          explicit på VARJE /shop-länk, inte underförstådd via datat. */}
+      {shopReachable && showcase.length > 0 ? (
         <>
           <section className={styles.otShopIntro}>
             <Reveal className={`${styles.otShopIntroInner} ${styles.otCenter}`}>
@@ -81,11 +86,9 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
                 Från vardagsbuketter till stora högtidsarrangemang — det här är blommorna vi är mest stolta över just nu.
               </p>
               <div className={styles.otShopActions}>
-                {shopReachable ? (
-                  <Link href="/shop" className={styles.otBtn}>
-                    {content.shopCta ?? 'Se hela sortimentet'}
-                  </Link>
-                ) : null}
+                <Link href="/shop" className={styles.otBtn}>
+                  {content.shopCta ?? 'Se hela sortimentet'}
+                </Link>
               </div>
             </Reveal>
           </section>
@@ -284,8 +287,11 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
           <p className={styles.otClosingLede}>
             {content.closingLede ?? 'Boka, beställ eller kom förbi butiken — vi hjälper dig gärna hitta rätt.'}
           </p>
+          {/* Inte shared.sfClosingCta: den inverterar knappen med hårdkodat #fff
+              (background:#fff, specificitet 0,3,0) och smugglade in en tionde hex
+              utifrån. .otClosingCta gör samma invertering i mallens egen creme. */}
           <div className={styles.otClosingActions}>
-            <BookCta className={`${shared.sfClosingCta} ${styles.otBtn}`} />
+            <BookCta className={`${styles.otBtn} ${styles.otClosingCta}`} />
           </div>
         </Reveal>
       </section>

@@ -167,7 +167,7 @@ export function VioraLayout({ tenant, content, services, location, modules }: St
               {rows.map((s, i) => (
                 <Reveal key={s.id} delay={i * 60}>
                   <Bookable className={shared.sfRow} label={`Boka — ${s.name}`}>
-                    <span className={shared.sfRowNum} aria-hidden="true">
+                    <span className={`${shared.sfRowNum} ${styles.vioRowNum}`} aria-hidden="true">
                       {serviceNum(i)}
                     </span>
                     <span className={shared.sfRowMain}>

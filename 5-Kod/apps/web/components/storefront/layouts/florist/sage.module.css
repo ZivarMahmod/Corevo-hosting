@@ -6,23 +6,27 @@
    4-Dokument-Underlag/design-skarpa-zentum.md) — mallen ska läsa som ett
    svärd, inte som en mjuk morot.
 
-   ── TYPSKALA (steg ×1.8–2.0 i toppen — förut ×1.2–1.3 hela vägen) ────────
-     display  clamp(44px, 8vw, 96px)    lh 1.06   400   ls 0        hero-h1
-     h2       clamp(30px, 4.2vw, 52px)  lh 1.10   400   ls 0        sektionsrubrik / citat / closing
-     kort     clamp(22px, 2.2vw, 26px)  lh 1.15   500   ls 0        kortnamn / tjänstenamn / statvärde
-     lede     18px                      lh 1.58   400
-     brödtext 16px                      lh 1.60   400
-     mikro    12px                      lh 1.5    600   ls 1px + VERSALER
-       96 → 52 → 26 = ×1.85, ×2.0.  EN mikronivå (12px) — inga 13–15px-mellanting.
-       Letter-spacing omvänt mot storleken: 0 på allt ≥22px, 1px på mikro.
-       Rubrik-lh 1.06–1.15 mot text-lh 1.58–1.60 = registerbytet som gör skärpan.
+   ── TYPSKALA (5 nivåer — varje granne >1.3× isär, räknat i CSS:en) ───────
+     display  clamp(44px, 8vw, 96px)    lh 1.06        400   ls 0    hero-h1
+     h2       clamp(32px, 4.2vw, 52px)  lh 1.10        400   ls 0    sektionsrubrik / citat / closing
+     kort     clamp(24px, 2.2vw, 26px)  lh 1.15        500   ls 0    kortnamn / tjänstenamn / statvärde
+     text     18px                      lh 1.58–1.60   400          lede OCH brödtext = EN nivå
+     mikro    12px                      lh 1.5         600   ls 1px + VERSALER
+       Desktop: 96 → 52 → 26 → 18 → 12  = ×1.85 ×2.00 ×1.44 ×1.50
+       Mobil (clamp-min): 44 → 32 → 24 → 18 → 12 = ×1.38 ×1.33 ×1.33 ×1.50
+       Skalan hade tidigare lede 18 OCH brödtext 16 = bara ×1.13 isär → två nivåer
+       som läser som EN grötig mellannivå. Nu en enda textnivå (18px): lede och
+       brödtext skiljs av bredd (max-width) och färg (fg vs fg-2), inte av ett
+       halvsteg i grad. Letter-spacing omvänt mot storleken: 0 på allt ≥24px, 1px på
+       mikro. Rubrik-lh 1.06–1.15 mot text-lh 1.58–1.60 = registerbytet.
 
    ── RYTM (en skala, samma steg i ALLA sektioner) ─────────────────────────
      12 (eyebrow→rubrik) · 20 (rubrik→text) · 24 (grid-gap / kant) ·
      32 (text→CTA) · 48 (huvud→innehåll) · 96–144 (sektionsavstånd)
 
    ── FÄRG / RADIE / RÖRELSE ───────────────────────────────────────────────
-     Färg: bara temats 8 palett-hex (sage.theme.ts) + #fff på fotot. EN accent
+     Färg: 8 hex TOTALT (räknat: temats 7 egna + #fff, som ÄR --color-surface och
+     samtidigt textfärgen på foto/mörkt band — därför ingen nionde). EN accent
      (--color-primary) — etikett, knapp, pris, citat, closing. Inget eget hex
      här utom hero-scrimmet (rgba, samma dekor-mönster som övriga foto-teman).
      Radie: BINÄRT — 0 på all struktur (--sf-radius, temat), full pill BARA på
@@ -56,14 +60,17 @@
   z-index: 0;
 }
 /* Scrimmet BÄR kontrasten (förut 0.32→0.58 + text-shadow-bloom på rubriken:
-   vit text landade på 2.1:1 mot ett ljust foto och suddades ut). Nu 0.62→0.78:
-   vit text ≥ 12.6:1 mot ett normalt (mid-grått) foto och ≥ 7:1 även mot ett
-   helvitt. Skuggan bakom typen är borta — scrim, inte bloom. */
+   vit text landade på 2.1:1 mot ett ljust foto och suddades ut). Ägaren kan ladda
+   upp VILKET foto som helst → värsta fallet är ett HELVITT foto, och där räckte
+   0.62 inte (räknat: 5.25:1 < 7 på det översta stoppet — eyebrow + rubrik sitter
+   där). 0.72→0.84 ger vit text 7.53:1 (topp) … 11.74:1 (botten) mot ett helvitt
+   foto och 13.5–16.0:1 mot ett normalt mid-grått. Skuggan bakom typen är borta —
+   scrim, inte bloom. */
 .sgHeroOverlay {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(20, 18, 12, 0.62) 0%, rgba(20, 18, 12, 0.78) 100%);
+    linear-gradient(180deg, rgba(20, 18, 12, 0.72) 0%, rgba(20, 18, 12, 0.84) 100%);
   z-index: 1;
 }
 .sgHeroInner {
@@ -183,7 +190,7 @@
   letter-spacing: 0;
   line-height: 1.1;
   color: var(--color-fg);
-  font-size: clamp(30px, 4.2vw, 52px);
+  font-size: clamp(32px, 4.2vw, 52px);
 }
 .sgSectionHead {
   text-align: center;
@@ -296,7 +303,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(22px, 2.2vw, 26px);
+  font-size: clamp(24px, 2.2vw, 26px);
   line-height: 1.15;
   letter-spacing: 0;
   color: var(--color-fg);
@@ -304,7 +311,7 @@
 .sgCardMeta {
   margin: 20px 0 0;
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.6;
   color: var(--color-fg-2);
 }
@@ -313,7 +320,7 @@
   margin-top: 20px;
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
   color: var(--color-primary);
 }
 .sgBandCta {
@@ -344,21 +351,21 @@
 .sgRowName.sgRowName {
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(22px, 2.2vw, 26px);
+  font-size: clamp(24px, 2.2vw, 26px);
   line-height: 1.15;
   letter-spacing: 0;
   color: var(--color-fg);
 }
 .sgRowDesc.sgRowDesc {
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.6;
   color: var(--color-fg-2);
 }
 .sgRowPrice.sgRowPrice {
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px;
   color: var(--color-fg);
 }
 .sgRowTime.sgRowTime {
@@ -392,7 +399,7 @@
   max-width: 800px;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(30px, 4.2vw, 52px);
+  font-size: clamp(32px, 4.2vw, 52px);
   line-height: 1.15;
   letter-spacing: 0;
   color: var(--color-primary); /* 7.15:1 mot accentSoft */
@@ -425,7 +432,7 @@
 .sgStatValue.sgStatValue {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(22px, 2.2vw, 26px);
+  font-size: clamp(24px, 2.2vw, 26px);
   line-height: 1.15;
   color: var(--color-primary);
 }
@@ -469,7 +476,7 @@
 .sgGiftLede {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.6;
   color: var(--color-fg);
 }
@@ -478,12 +485,12 @@
 .sgLocAddr {
   margin: 20px 0 0;
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.6;
   color: var(--color-fg-2);
 }
 .sgHours.sgHours { margin-top: 32px; }
-.sgHoursRow.sgHoursRow { padding: 12px 0; font-size: 16px; }
+.sgHoursRow.sgHoursRow { padding: 12px 0; font-size: 18px; }
 .sgMapLink.sgMapLink {
   font-family: var(--font-body);
   font-weight: 600;
@@ -491,7 +498,7 @@
   letter-spacing: 1px;
   text-transform: uppercase;
 }
-.sgMapHint.sgMapHint { font-size: 16px; }
+.sgMapHint.sgMapHint { font-size: 18px; }
 
 /* ── CLOSING ─────────────────────────────────────────────────────────────── */
 .sgClosingTitle {
@@ -499,7 +506,7 @@
   max-width: 800px;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(30px, 4.2vw, 52px);
+  font-size: clamp(32px, 4.2vw, 52px);
   line-height: 1.1;
   letter-spacing: 0;
   text-transform: uppercase;

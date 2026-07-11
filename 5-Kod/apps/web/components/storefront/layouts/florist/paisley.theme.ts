@@ -47,16 +47,20 @@ export const paisley: FloristTheme = {
   // `primary` — den sitter på små ytor (eyebrow, pris, knapp, annonsrad), aldrig
   // som stor bakgrundsyta. Hierarkin görs av SKALAN och KONTRASTEN, inte av kulör.
   //
-  // WCAG-kontrast, räknad (skärpe-pass 2026-07-11) — inga gissningar:
+  // WCAG-kontrast, räknad (oberoende ommätning 2026-07-11) — inga gissningar:
   //   fg      #231b15 på bg #f6f0e2 ....... 14.92:1  AAA (krav ≥7, mål 11)
   //   fg      #231b15 på surface #fffcf5 .. 16.54:1  AAA
   //   fg-2    #6c5d4e på bg ............... 5.58:1   AA  (krav ≥4.5 — backar medvetet)
   //   primary #a43f2a på bg ............... 5.56:1   AA  (eyebrow/pris, 11–12px)
-  //   vit     #ffffff på primary .......... 6.32:1   AA  (knapptext, krav ≥4.5)
+  //   surface #fffcf5 på primary .......... 6.17:1   AA  (knapptext, krav ≥4.5)
   //   surface #fffcf5 på primary-d ........ 11.99:1  AAA (text + inverterad knapp
   //                                                  på det mörka tegelbandet)
-  // Paletten höll redan kraven — det var opaciteten (0.62–0.92) och de tunna
-  // foto-scrimsen som läckte kontrast. De är borta; hexarna är orörda.
+  //   primary #a43f2a på accent-soft ...... 4.74:1   AA  (presentkortsraden)
+  // Knapptexten är benvit (--pa-ink), INTE #ffffff: den globala .btn-accent tar
+  // sin text ur --color-accent-fg = #ffffff, vilket vore en nionde färg utanför
+  // paletten. paisley.module.css .paSquareCta sätter --pa-ink istället.
+  // Antal färger i mallen = exakt 8 (dessa) — scrimsen är color-mix på
+  // --color-fg / --color-primary-d, inte egna RGB-tripletter.
   palette: {
     primary: '#a43f2a',
     primaryD: '#5c2318',

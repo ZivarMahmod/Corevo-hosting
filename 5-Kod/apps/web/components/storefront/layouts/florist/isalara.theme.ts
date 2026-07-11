@@ -53,6 +53,8 @@ export const isalara: FloristTheme = {
   //   #FFFDF7 på primaryD (bandet) 16.39:1 · på primary (closing) 11.32:1
   // Det ENDA kontrastfelet satt i hero-scrimen (ljus text kunde landa på 2.00:1 mot
   // en utbränd fotopixel) — fixat i isalara.module.css, inte i paletten.
+  // Dessa 8 ÄR mallens totala färgbudget: scrimen lånar primaryD, så CSS:en har
+  // NOLL egna hex-värden. Lägg aldrig till en nionde här eller där.
   palette: {
     primary: '#1B3B5B',
     primaryD: '#0C1F33',
@@ -70,8 +72,9 @@ export const isalara: FloristTheme = {
     body: 'var(--font-inter), system-ui, sans-serif',
   },
   // BINÄR radie: 0 på all struktur (kort, bilder, karta, om-foto, genvägar) — knappen
-  // är full pill via globala .btn-accent (--radius-pill) och ikoncirkeln är 999px.
-  // Inget däremellan. 5px på allt var precis den mjuka moroten passet tog bort.
+  // är full pill via globala .btn-accent (--radius-pill) och ikoncirkeln kör SAMMA
+  // token. EN enda icke-noll-radie i mallen, inget däremellan. 5px på allt var precis
+  // den mjuka moroten passet tog bort.
   radius: '0px',
   content: {
     heroEyebrow: '— Blomsterhandel',

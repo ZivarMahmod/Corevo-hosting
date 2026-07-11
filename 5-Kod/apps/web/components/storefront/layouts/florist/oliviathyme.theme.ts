@@ -17,12 +17,18 @@ export const oliviathyme: FloristTheme = {
      hela paletten mätt med WCAG, inte ögonmått:
        fg   #1C1109  17.01:1 mot bg  (rubrik skär mot bakgrunden)
        fg2  #64513F   6.91:1 mot bg  ·  6.30:1 mot surface (var 4.42 = FAIL)
-       primary #6B3E24 med vit text 8.98:1 (knapp/closing)
+       primary #6B3E24 med creme text 8.24:1 (knapp/closing)
      Före låg brödtexten på 4.42:1 mot surface och 4.07:1 mot accentSoft — under
-     AA. Det var den disiga "moroten": kanterna suddades ut. */
+     AA. Det var den disiga "moroten": kanterna suddades ut.
+
+     HEX-TAKET (8, zentums regel): paletten har åtta slots, och mallen lägger till
+     puderrosan (--ot-rose) — nio. primaryD var en NIONDE brun (#4A2716) som bara
+     användes till knapp-hover; den är nu ink-brunet (#1C1109 = fg), samma hue och
+     ett mörkare register, så hovern fortfarande växlar hårt. Rent vitt är samtidigt
+     struket ur CSS:en (papperet är --color-bg). Unika hex: 8. */
   palette: {
     primary: '#6B3E24',
-    primaryD: '#4A2716',
+    primaryD: '#1C1109',
     bg: '#FBF4EE',
     surface: '#F5E9DC',
     fg: '#1C1109',

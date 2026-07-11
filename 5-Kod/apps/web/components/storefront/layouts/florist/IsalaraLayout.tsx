@@ -19,11 +19,19 @@ import styles from './isalara.module.css'
  * in via `modules`-propen (S10) — samma modulkontrakt som övriga florist-mallar.
  *
  * SKÄRPE-PASS (design-skarpa-zentum.md): identitet och sektionsordning är orörda —
- * det är utförandet som skärpts. All typografi/rytm/radie/hover ligger nu i mallens
- * tokens i isalara.module.css (.islRoot): typskala ×2.0 (108/52/26/18/16/12), rytm
- * 12/20/24/32/48/96, EN bildratio (4:5), binär radie (0 + pill), 5px-lyft på 400ms.
- * Därför bär layouten inga egna px-värden i inline-styles längre (bara bakgrunds-
- * bilder och centrering) — hittar du ett hårdkodat mått här är det en regression.
+ * det är utförandet som skärpts. All typografi/rytm/radie/hover ligger i mallens
+ * tokens i isalara.module.css (.islRoot): typskala 108/52/26/16/12 (inget grannpar
+ * under ×1.3), rytm 12/20/24/32/48/96, EN bildratio (4:5), EN icke-noll-radie
+ * (pill), 5px-lyft på 400ms. Därför bär layouten inga egna px-värden i inline-styles
+ * (bara bakgrundsbilder och centrering) — hittar du ett hårdkodat mått här är det en
+ * regression.
+ *
+ * NIVÅ-KLASSER: de delade sf*-klasserna (sfRowName, sfStatValue, sfHoursRow …) bor i
+ * en ANNAN CSS-modul och har sin egen typskala (24/25.6/16.8/15.2/13.6px). Den kan
+ * inte selekteras från isalara.module.css (hashade klassnamn), så varje delat
+ * textelement taggas här med mallens nivå — styles.islLvlSub / islLvlBody /
+ * islLvlMicro. Tar du bort en sådan tagg glider elementet tillbaka till den delade
+ * skalan och mallen renderar grötigt igen, oavsett hur skarpa tokens är.
  */
 
 /** Minimal linje-ikon för ikon-genvägarna — ren dekor, inga externa assets. */
@@ -233,13 +241,13 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
               {rows.map((s, i) => (
                 <Reveal key={s.id} delay={i * 60}>
                   <Bookable className={shared.sfRow} label={`Boka — ${s.name}`}>
-                    <span className={shared.sfRowNum} aria-hidden="true">{serviceNum(i)}</span>
+                    <span className={`${shared.sfRowNum} ${styles.islLvlSub}`} aria-hidden="true">{serviceNum(i)}</span>
                     <span className={shared.sfRowMain}>
-                      <span className={shared.sfRowName}>{s.name}</span>
-                      <span className={shared.sfRowDesc}>{serviceDesc(s)}</span>
+                      <span className={`${shared.sfRowName} ${styles.islLvlSub}`}>{s.name}</span>
+                      <span className={`${shared.sfRowDesc} ${styles.islLvlBody}`}>{serviceDesc(s)}</span>
                     </span>
                     <span className={shared.sfRowMeta}>
-                      <span className={shared.sfRowPrice}>{formatPrice(s)}</span>
+                      <span className={`${shared.sfRowPrice} ${styles.islLvlBody}`}>{formatPrice(s)}</span>
                     </span>
                   </Bookable>
                 </Reveal>
@@ -269,8 +277,8 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
             <ul className={shared.sfStatTrio}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
+                  <span className={`${shared.sfStatValue} ${styles.islLvlSub}`}>{n}</span>
+                  <span className={`${shared.sfStatLabel} ${styles.islLvlMicro}`}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -335,7 +343,7 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
             {location?.hours ? (
               <div className={shared.sfHours}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
+                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.islLvlBody}`}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
@@ -355,7 +363,7 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
                   Visa på karta <span aria-hidden="true">→</span>
                 </a>
               ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
+                <span className={`${shared.sfMapHint} ${styles.islLvlBody}`}>Karta visas när adressen är ifylld.</span>
               )}
             </div>
           </Reveal>
@@ -368,7 +376,7 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
           <h2 className="sf-h1" style={{ maxWidth: '40rem', margin: '0 auto' }}>
             {content.closingTitle ?? 'Redo att beställa något vackert?'}
           </h2>
-          <p className={shared.sfClosingLead}>
+          <p className={`${shared.sfClosingLead} ${styles.islLvlBody}`}>
             {content.closingLede ?? 'Handla i butiken, boka en tid eller hör av dig — vi hjälper dig gärna.'}
           </p>
           <div className={styles.islStepCta}>

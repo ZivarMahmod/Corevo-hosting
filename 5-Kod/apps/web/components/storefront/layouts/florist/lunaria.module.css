@@ -9,9 +9,9 @@
    Identiteten är orörd (nattblå/vete-palett, sektionsordning, offset-hero,
    måne-delare, cirkelporträtt). Det är UTFÖRANDET som skärpts:
 
-   1. TYPSKALA i ×1.9-steg (88 → 46 → 26 → 18 → 16 → 12) istället för den gamla
-      grötiga trappan (49.6 / 35.2 / 20.5 / 16.8 / 16.3 / 15.7 / 14.4 / 12.2 /
-      11.5) där nio nivåer trängdes inom ×1.2–1.3 av varandra.
+   1. TYPSKALA där VARJE granne står ≥×1.31 isär (88 / 46 / 30 / 21 / 16 / 12)
+      istället för den gamla grötiga trappan (49.6 / 35.2 / 20.5 / 16.8 / 16.3 /
+      15.7 / 14.4 / 12.2 / 11.5) där nio nivåer trängdes inom ×1.2–1.3.
    2. VIKT: Italiana laddas med BARA weight 400 (app/layout.tsx). Varje
       `font-weight: 500/600` på display-text renderades alltså som SYNTETISK
       fetstil — browsern smetar ut 400-konturerna. Det är precis den "klump"
@@ -21,10 +21,12 @@
       Tidigare låg allt på 1.5–1.65 → inget register-byte.
    4. RADIE binärt: --sf-radius = 0px (lunaria.theme.ts) på ALL struktur, full
       pill BARA på knapp + eyebrow-chip. Det gamla 8px-hörnet på kort/bilder/
-      hero-platta var själva moroten.
-   5. EN bildratio (4:5) på varenda innehållsbild → griden får raka linjer.
-      Heron är enda undantaget (16:10 panorama, ett ensamt foto utan grid att
-      linjera mot — samma undantag som zentums egen hero).
+      hero-platta var själva moroten. Även --tpl-radius nollas här — annars ärver
+      den delade galleri-brickan .tplRoot-defaulten 12px mitt i en 0-radie-mall.
+   5. EN bildratio (1:1) på varenda innehållsbild → griden får raka linjer. Just
+      1:1 för att den DELADE galleri-brickan är låst till 1/1: med 4:5 på korten
+      fanns två ratio-familjer på sidan. Heron är enda undantaget (16:10 panorama,
+      ett ensamt foto utan grid att linjera mot — som zentums egen hero).
    6. RÖRELSE: 4px lyft / 400ms / INGEN skugga. Alla box-shadow-bloom är borta;
       separationen görs av 1px --color-line mot solid --color-surface.
 
@@ -35,15 +37,21 @@
    längre alls: mallen bär sina egna roller (.lnEyebrow/.lnSecTitle/.lnBody) så
    skalan blir mallens, inte den generiska.
 
-   Inga hårdkodade hex utanför dekor-varsen i .lnRoot (--ln-white/--ln-scrim-*).
+   FÄRG: NOLL råa hex i den här filen. Paletten (8 hex, lunaria.theme.ts) är hela
+   färgvokabuläret — ljus text/fyllning på mörkt är --color-surface, inte ett eget
+   #ffffff (det var en 9:e färg). Scrimmen är --color-primary-d (#121A2B) i alfa.
    ═══════════════════════════════════════════════════════════════════════ */
 
 .lnRoot {
-  /* ── TYPSKALA — 6 nivåer, steg ×1.91 / ×1.77 / ×1.44 / ×1.13 / ×1.33 ─────── */
-  --ln-fs-hero: clamp(46px, 6.8vw, 88px); /* display (Italiana 400) */
-  --ln-fs-sec: clamp(32px, 4.4vw, 46px); /* sektionsrubrik */
-  --ln-fs-card: clamp(22px, 2.2vw, 26px); /* kortnamn, tjänstnamn, stat-tal */
-  --ln-fs-lede: 18px; /* ingress */
+  /* ── TYPSKALA — 6 nivåer. Varje granne står minst ×1.31 isär, i BÅDA ändarna av
+     clamp:en (annars kollapsar trappan på mobil):
+       max:  88 / 46 / 30 / 21 / 16 / 12  → ×1.91 ×1.53 ×1.43 ×1.31 ×1.33
+       min:  50 / 37 / 28 / 21 / 16 / 12  → ×1.35 ×1.32 ×1.33 ×1.31 ×1.33
+     (Var: lede 18 mot body 16 = ×1.13 — två nivåer som gjorde samma jobb.) ──── */
+  --ln-fs-hero: clamp(50px, 6.8vw, 88px); /* display (Italiana 400) */
+  --ln-fs-sec: clamp(37px, 4.4vw, 46px); /* sektionsrubrik */
+  --ln-fs-card: clamp(28px, 2.8vw, 30px); /* kortnamn, tjänstnamn, stat-tal */
+  --ln-fs-lede: 21px; /* ingress */
   --ln-fs-body: 16px; /* brödtext */
   --ln-fs-micro: 12px; /* EN mikronivå: eyebrow, etikett, knapp, länk */
 
@@ -77,12 +85,23 @@
   --ln-ease: ease;
   --ln-lift: -4px;
 
-  /* ── BILD — EN ratio på varenda innehållsbild ───────────────────────────── */
-  --ln-ratio: 4 / 5;
+  /* ── RADIE — binärt. --sf-radius (0px, lunaria.theme.ts) styr mallens egna ytor.
+     --tpl-radius/-lg är den DELADE .tplRoot-defaulten (12px/16px) som Gallery-
+     brickorna (.galleryItem) läser: utan den här överskrivningen fick galleriet
+     12px mjuka hörn mitt i en 0-radie-mall. Deklareras här → ärvs av hela
+     subträdet, rör ingen annan mall. ─────────────────────────────────────────── */
+  --tpl-radius: 0px;
+  --tpl-radius-lg: 0px;
 
-  /* ── DEKOR (mallens enda råa färgvärden; scrim = --color-primary-d i alfa) ─ */
-  --ln-white: #ffffff;
-  --ln-scrim-top: rgba(18, 26, 43, 0.75); /* vit text ≥7:1 även mot ett HELVITT foto */
+  /* ── BILD — EN ratio på varenda innehållsbild. 1/1, för att den DELADE
+     galleri-brickan är låst till 1/1: med 4/5 på korten fanns två ratio-familjer
+     på sidan och grid-kanterna slutade linjera. Heron (16/10) är enda undantaget
+     — ett ensamt panorama utan grid att linjera mot. ─────────────────────────── */
+  --ln-ratio: 1 / 1;
+
+  /* ── DEKOR — scrim = --color-primary-d (#121A2B) i alfa. Ingen egen färg:
+     ljus text/fyllning på mörkt = --color-surface, så paletten stannar på 8 hex. */
+  --ln-scrim-top: rgba(18, 26, 43, 0.75); /* ljus text ≥7:1 även mot ett HELVITT foto */
   --ln-scrim-bottom: rgba(18, 26, 43, 0.9);
 }
 
@@ -127,7 +146,7 @@
   border: 2px solid var(--color-primary);
   border-radius: 999px; /* 25px = exakt halva höjden → ren kapsel */
   background: var(--color-primary);
-  color: var(--ln-white); /* 14.33:1 */
+  color: var(--color-surface); /* 13.72:1 */
   font-family: var(--font-body);
   font-size: var(--ln-fs-micro);
   font-weight: var(--ln-fw-micro);
@@ -142,7 +161,7 @@
 .lnCta:global(.btn-accent):hover {
   transform: translateY(var(--ln-lift));
   background: var(--color-primary-d);
-  border-color: var(--color-primary-d); /* vit text = 17.38:1 */
+  border-color: var(--color-primary-d); /* ljus text = 16.64:1 */
   box-shadow: none;
 }
 
@@ -343,7 +362,7 @@ a.lnMoodCard:hover {
   box-shadow: none;
 }
 .lnCardImg {
-  aspect-ratio: var(--ln-ratio); /* samma 4:5 som stämningskorten */
+  aspect-ratio: var(--ln-ratio); /* samma 1:1 som stämningskorten och galleriet */
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
@@ -479,7 +498,7 @@ a.lnMoodCard:hover {
   font-size: var(--ln-fs-sec);
   line-height: var(--ln-lh-sec);
   letter-spacing: var(--ln-ls-display);
-  color: var(--ln-white);
+  color: var(--color-surface); /* 7.39:1 mot scrimmen även över ett HELVITT foto */
 }
 .lnClosingLede {
   margin: var(--ln-sp-text) auto 0;
@@ -487,17 +506,17 @@ a.lnMoodCard:hover {
   font-family: var(--font-body);
   font-size: var(--ln-fs-lede);
   line-height: var(--ln-lh-body);
-  color: var(--ln-white); /* full opacitet — dimmad vit var 5.9:1, nu 7.72:1 */
+  color: var(--color-surface); /* full opacitet — dimmad vit var 5.9:1, nu 7.39:1 */
 }
 .lnClosingActions {
   margin-top: var(--ln-sp-cta);
 }
-/* CTA på mörk scrim = INVERTERAD (vit fyllning, nattblå text). En nattblå knapp
+/* CTA på mörk scrim = INVERTERAD (ljus fyllning, nattblå text). En nattblå knapp
    på en nattblå scrim tappar sin kant. */
 .lnClosingCta:global(.btn-accent) {
-  background: var(--ln-white);
-  border-color: var(--ln-white);
-  color: var(--color-primary-d); /* 17.38:1 */
+  background: var(--color-surface);
+  border-color: var(--color-surface);
+  color: var(--color-primary-d); /* 16.64:1 */
 }
 .lnClosingCta:global(.btn-accent):hover {
   background: var(--color-accent-soft);

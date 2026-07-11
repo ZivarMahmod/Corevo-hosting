@@ -4,16 +4,21 @@
    bild-duo → butik → tjänster → om → blogg → presentkort → plats → closing), samma
    signatur (handskriven skript-rubrik). Det är UTFÖRANDET som skärpts:
 
-   · TYPSKALA  steg ×2.0 i toppen: 108 → 52 → 26 → 18 → 16 | 12 (mikro).
-               Förut: 108 → 56/34 → 17.6 → 17/16 → 12.5/12/11.5 — tre nivåer låg
-               inom 10% av varandra (kortnamn/lede/brödtext, och tre mikro-storlekar).
-               Det var moroten: allt vägde lika mycket.
+   · TYPSKALA  FEM nivåer, inget däremellan: 108 → 52 → 26 → 16 → 12.
+               Steg ×2.08 / ×2.00 / ×1.63 / ×1.33 — inget grannpar under ×1.3.
+               18px-leden är BORTA (låg ×1.13 från brödtexten). De delade sf*-
+               klasserna (tjänsterader, stats, öppettider, closing) tvingas in på
+               samma fem nivåer via .islLvlSub/-Body/-Micro — de hade annars dragit
+               in 38.4/25.6/24/16.8/15.2/14.72/13.6px i renderingen.
    · VIKT      display 400–500 (Cormorant levereras i 400/500/600/700 → 500 är ÄKTA,
                ingen syntetisk fetstil). Mikrotext/knappar 600.
    · LINE-H    rubrik 1.05–1.15 (spänd FORM) mot brödtext 1.58 (luftig YTA).
    · SPÄRR     omvänt mot storleken: −0.01em på ≥26px, +1px (0.083em) på 12px-versaler.
    · RADIE     binärt: 0 på all struktur (--sf-radius = '0px' i isalara.theme.ts),
-               full pill BARA på knapp + ikoncirkel. 5px-radien var mjuk gröt.
+               full pill (--radius-pill) BARA på knapp + ikoncirkel — EN icke-noll-
+               radie i hela mallen. 5px-radien var mjuk gröt.
+   · FÄRG      8 hex, alla ur paletten. Scrimen lånar --color-primary-d; mallen har
+               ingen egen dekor-hex (den gamla #040a12 var en nionde).
    · BILD      EN ratio (4:5) på ALLA innehållsbilder — kort, duo, om-foto. Korten
                låg i 4:3 → griden tappade sina linjer.
    · KONTRAST  hero-scrimen var det ENDA felet i mallen (vit text kunde landa på
@@ -27,15 +32,20 @@
    selektorer under .islRoot (specificitet (0,2,0) > delad (0,1,0)). */
 
 .islRoot {
-  /* ── Enda egna dekorfärgen: hero-scrimens tint (nästan svart, marinstucken).
-     All TEXT hämtas ur paletten — mallen har därmed 8 hex totalt + denna. */
-  --isl-scrim: #040a12;
+  /* ── Hero-scrimens tint. Ingen EGEN hex: scrimen är paletten mörkaste ton
+     (--color-primary-d = #0C1F33). Den gamla #040a12 var en NIONDE hex utanför
+     paletten → bröt taket på 8. Alfa-nivåerna nedan är omräknade för den ljusare
+     tinten så kontrast-golvet blir HÖGRE än förut (5.52:1 mot 5.19:1). */
+  --isl-scrim: var(--color-primary-d);
 
-  /* ── TYPSKALA — steg ×2.08 (hero→sektion) och ×2.0 (sektion→underrubrik). */
+  /* ── TYPSKALA — 108 / 52 / 26 / 16 / 12. Steg: ×2.08 → ×2.00 → ×1.63 → ×1.33.
+     LEDE-NIVÅN (18px) ÄR BORTTAGEN: 18/16 = ×1.13, alltså två nivåer som vägde
+     lika mycket — den sortens "nästan lika" är precis moroten. Mellan 26 och 16
+     finns bara ×1.63 att fördela, så en nivå däremellan KAN inte hålla ×1.3 åt
+     båda håll. Hero-leden kör därför brödtextens grad; hierarkin görs av 108→16. */
   --isl-fs-hero: clamp(3.5rem, 9vw, 6.75rem); /* 56 → 108px (skript) */
   --isl-fs-h2: clamp(2rem, 4.4vw, 3.25rem); /* 32 → 52px */
   --isl-fs-sub: clamp(1.375rem, 2.1vw, 1.625rem); /* 22 → 26px */
-  --isl-fs-lede: 1.125rem; /* 18px */
   --isl-fs-body: 1rem; /* 16px */
   --isl-fs-micro: 0.75rem; /* 12px */
 
@@ -88,13 +98,36 @@
   line-height: var(--isl-lh-head);
   letter-spacing: var(--isl-ls-head);
 }
-.islRoot.islRoot :global(.sf-lede) {
-  font-size: var(--isl-fs-lede);
-  line-height: var(--isl-lh-body);
-}
+.islRoot.islRoot :global(.sf-lede),
 .islRoot.islRoot :global(.sf-body) {
   font-size: var(--isl-fs-body);
   line-height: var(--isl-lh-body);
+}
+
+/* ── NIVÅ-KLASSER för DELAD struktur (tjänste-rader, stats, öppettider, closing).
+   storefront.module.css är en CSS-modul: dess klassnamn hashas och går INTE att
+   selektera härifrån. Därför taggar layouten varje delat textelement med en av
+   mallens tre nivåer istället. Utan dem renderades mallen med den delade filens
+   egen skala rakt igenom sin egen — 38.4 / 25.6 / 24 / 16.8 / 15.2 / 14.72 / 13.6px,
+   åtta grannpar inom ×1.3. Det ÄR gröten: skalan såg skarp ut i tokens och
+   renderade morot. (0,2,0) > delad (0,1,0), så mallens nivå vinner. */
+.islRoot .islLvlSub {
+  font-family: var(--font-display);
+  font-size: var(--isl-fs-sub);
+  line-height: var(--isl-lh-sub);
+  letter-spacing: var(--isl-ls-head);
+}
+.islRoot .islLvlBody {
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+}
+.islRoot .islLvlMicro {
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-micro);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: var(--isl-ls-micro);
+  text-transform: uppercase;
 }
 
 /* ── SEKTIONSRYTM — samma steg i mallens EGNA sektioner och i de delade
@@ -149,18 +182,18 @@
   align-items: center;
   justify-content: center;
 }
-/* Scrimen är en KONTRAST-komponent, inte dekor. Den gamla mittzonen låg på 0.30
-   alfa — precis där rubriken sitter — vilket mot en utbränd (nästan vit) fotopixel
-   ger ljus text 2.00:1. Uträknat golv: alfa ≥ 0.60 håller --color-surface (#FFFDF7)
-   ≥ 5.20:1 även mot en HELVIT pixel. Ingen punkt i gradienten går under det. */
+/* Scrimen är en KONTRAST-komponent, inte dekor. Tinten är nu palettens --color-
+   primary-d (ingen egen hex), som är LJUSARE än den gamla — därför är alfa höjt:
+   uträknat golv alfa ≥ 0.67 håller --color-surface (#FFFDF7) på 5.52:1 även mot
+   en HELVIT (utbränd) fotopixel. Ingen punkt i gradienten går under det. */
 .islHeroScrim {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--isl-scrim) 62%, transparent) 0%,
-    color-mix(in srgb, var(--isl-scrim) 60%, transparent) 45%,
-    color-mix(in srgb, var(--isl-scrim) 78%, transparent) 100%
+    color-mix(in srgb, var(--isl-scrim) 69%, transparent) 0%,
+    color-mix(in srgb, var(--isl-scrim) 67%, transparent) 45%,
+    color-mix(in srgb, var(--isl-scrim) 86%, transparent) 100%
   );
 }
 .islHeroInner {
@@ -194,11 +227,12 @@
   color: var(--color-surface);
   white-space: pre-line;
 }
-/* Hierarkin görs av SKALAN (108 → 18), inte av uttonad text: leden var rgba(…,0.9)
-   — nu ren --color-surface. */
+/* Hierarkin görs av SKALAN (108 → 16), inte av uttonad text: leden var rgba(…,0.9)
+   — nu ren --color-surface. Graden är brödtextens (se typskalan: 18px-nivån är
+   borttagen, den låg ×1.13 från 16 och vägde därför lika mycket). */
 .islHeroLede {
   font-family: var(--font-body);
-  font-size: var(--isl-fs-lede);
+  font-size: var(--isl-fs-body);
   line-height: var(--isl-lh-body);
   color: var(--color-surface);
   max-width: 32rem;
@@ -235,13 +269,15 @@ a.islShortcut:hover {
   background: var(--color-accent-soft);
   transform: translateY(var(--isl-lift));
 }
-/* Cirkeln är mallens medvetna pill-undantag mot de raka kanterna (jämte knappen). */
+/* Cirkeln är mallens medvetna pill-undantag mot de raka kanterna (jämte knappen).
+   SAMMA token som knappen (--radius-pill) — 999px var ett andra, onödigt pill-värde;
+   nu har mallen exakt EN icke-noll-radie. */
 .islShortcutIconWrap {
   display: grid;
   place-items: center;
   width: 3.25rem;
   height: 3.25rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-accent-soft);
   color: var(--color-primary); /* 9.13:1 mot accent-soft */
 }

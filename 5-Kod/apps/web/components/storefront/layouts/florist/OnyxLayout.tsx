@@ -224,7 +224,9 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
                     style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
                   />
                   <h3 className={styles.onxCardName}>{p.title}</h3>
-                  {p.excerpt ? <p className={styles.onxCardMeta}>{p.excerpt}</p> : null}
+                  {/* Ingress = brödtext (onxCardExcerpt), inte prisetikett
+                      (onxCardMeta) — de delade klass förut. */}
+                  {p.excerpt ? <p className={styles.onxCardExcerpt}>{p.excerpt}</p> : null}
                 </Link>
               </Reveal>
             ))}

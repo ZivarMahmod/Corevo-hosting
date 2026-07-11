@@ -2,14 +2,18 @@
    SKÄRPE-PASS (design-skarpa-zentum.md): identiteten är oförändrad (plommon/vinrött,
    butiken som hjälte, samma sektionsordning) — det är UTFÖRANDET som skärpts:
 
-   · TYPSKALA  steg ×1.9 i toppen (96 → 50 → 26 → 18 → 16 | 12) istället för ×1.3.
+   · TYPSKALA  ALLA grannsteg ≥ ×1.3 (96 → 50 → 28 → 21 → 16 → 12). Mätning efter
+               första passet fällde 18/16 = ×1.125 — två nivåer som vägde lika mycket.
    · VIKT      display ALLTID 400. DM Serif Display levereras BARA i vikt 400
                (app/layout.tsx) — de gamla `font-weight: 600/700` gav SYNTETISK
                fetstil (browsern smetar ut stammarna). 400 = vad fonten faktiskt är.
    · RADIE     binärt: 0 på all struktur (--sf-radius = '0px' i calytrix.theme.ts,
                --tpl-radius nollas nedan), full pill BARA på knapp/badge.
    · BILD      EN ratio (4:5) på ALLA innehållsbilder — kort, galleri, om-foto.
-   · HOVER     5px lyft / 400ms. Inget scale(1.05), ingen skugg-bloom.
+   · HOVER     5px lyft / 400ms. Inget scale(1.05), ingen skugg-bloom — inte heller
+               den ÄRVDA: .btn-accent (globals.css) växlar skugga vid hover, nollas.
+   · FÄRG      8 hex totalt (mätt, se calytrix.theme.ts) — guld-inken återbrukar
+               --color-fg och `line` bär även den mjuka tonen. Ingen hex på övertid.
    · RYTM      eyebrow→rubrik 12px · rubrik→text 20px · text→CTA 32px, i ALLA sektioner.
 
    Delade sf*-klasser (services/about/gallery/plats/closing) lånas från
@@ -18,16 +22,21 @@
 
 .calRoot {
   /* ── Enda egna dekorfärgen: dämpat antikguld. EN accent, och den sitter bara på
-     hero-CTA:n och "Populär"-badgen — aldrig på en stor yta. (7.00:1 mot guld-ink.) */
+     hero-CTA:n och "Populär"-badgen — aldrig på en stor yta. Guldet är därmed den
+     ENDA hex mallen lägger till palettens 8 → hex-budgeten (≤8) håller bara om
+     inken ÅTERBRUKAS: --color-fg (#241019) på guld = 7.35:1 (den gamla egna
+     #2b1608 gav 7.00:1 och kostade en nionde hex utan att synas bättre). */
   --cal-gold: #cf9d3f;
-  --cal-gold-ink: #2b1608;
+  --cal-gold-ink: var(--color-fg);
 
-  /* ── TYPSKALA — steg ×1.92 mellan display → sektion → underrubrik.
-     96 → 50 → 26 → 18 → 16 | 12 (mikro). */
+  /* ── TYPSKALA — VARJE grannsteg ≥ ×1.3, hela vägen ned till mikrotexten:
+     96 → 50 → 28 → 21 → 16 → 12  (×1.92 · ×1.79 · ×1.33 · ×1.31 · ×1.33).
+     Den gamla skalan hade 18/16 = ×1.125 i botten: lede och brödtext vägde lika
+     mycket, och två nivåer som väger lika mycket är noll nivåer. */
   --cal-fs-hero: clamp(3.25rem, 8.4vw, 6rem); /* 52 → 96px */
   --cal-fs-h2: clamp(2rem, 4.4vw, 3.125rem); /* 32 → 50px */
-  --cal-fs-sub: clamp(1.375rem, 2.1vw, 1.625rem); /* 22 → 26px */
-  --cal-fs-lede: 1.125rem; /* 18px */
+  --cal-fs-sub: clamp(1.5rem, 2.3vw, 1.75rem); /* 24 → 28px */
+  --cal-fs-lede: 1.3125rem; /* 21px */
   --cal-fs-body: 1rem; /* 16px */
   --cal-fs-micro: 0.75rem; /* 12px */
 
@@ -117,18 +126,20 @@
   align-items: center;
   justify-content: center;
 }
-/* Scrimen är en KONTRAST-komponent, inte dekor. Den gamla mittzonen låg på
-   rgba(0,0,0,0.24) — exakt där H1:an sitter — vilket i värsta fall (en utbränd,
-   nästan vit fotopixel) ger vit text 1.78:1. Uträknat golv: alfa ≥ 0.56 håller
-   #fff ≥ 4.94:1 även mot en helvit pixel. Ingen punkt i gradienten går under det. */
+/* Scrimen är en KONTRAST-komponent, inte dekor. Golvet sätts av mallens STÖRSTA
+   RUBRIK (H1:an, mitt i heron), och rubriker kräver 7:1 — inte 4.5:1. Räknat mot
+   värsta tänkbara underlag (en utbränd, helvit fotopixel) ger alfa:
+     0.24 → 1.78:1 · 0.56 → 4.95:1 · 0.62 → 6.19:1 · 0.65 → 7.00:1 · 0.66 → 7.23:1.
+   Mittzonen låg på 0.56 (= 4.95:1) — nog för brödtext, för lite för en rubrik.
+   Ingen punkt i gradienten går numera under 0.66. */
 .calHeroScrim {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(0, 0, 0, 0.62) 0%,
-    rgba(0, 0, 0, 0.56) 45%,
-    rgba(0, 0, 0, 0.74) 100%
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.66) 45%,
+    rgba(0, 0, 0, 0.78) 100%
   );
 }
 .calHeroInner {
@@ -164,6 +175,24 @@
      läser variablerna från) — enda stället guldet syns förutom badgen. */
   --color-accent: var(--cal-gold);
   --color-accent-fg: var(--cal-gold-ink);
+}
+
+/* ── KNAPPENS HOVER — den ÄRVDA skugg-bloomen nollas.
+   .btn-accent (globals.css) bär `box-shadow: var(--shadow-gold)` och byter till
+   `var(--glow-gold)` vid hover. På storefronten pekar de om till
+   --sf-shadow-soft (0 10px 30px rgba(0,0,0,.06)) → --sf-shadow-card
+   (0 24px 60px rgba(0,0,0,.12)): skuggan DUBBLERAS i spridning och opacitet vid
+   hover — exakt den pösiga bloom regeln förbjuder, och den satt på BÅDA mallens
+   knappar (hero-CTA + closing-CTA). Nollad, ersatt av mallens enda rörelse:
+   5px lyft / 400ms. `.calRoot :global(.btn-accent):hover` = (0,2,0) slår
+   `.btn-accent:hover` = (0,1,0); .sfClosingCta-reglerna rör bara background. */
+.calRoot :global(.btn-accent) {
+  box-shadow: none;
+  transition: transform var(--cal-dur) ease;
+}
+.calRoot :global(.btn-accent):hover {
+  box-shadow: none;
+  transform: translateY(var(--cal-lift));
 }
 
 /* ---------- 3. Mörkt marknadsförings-band ---------- */
@@ -248,7 +277,7 @@
   left: 12px;
   z-index: 1;
   background: var(--cal-gold);
-  color: var(--cal-gold-ink); /* 7.00:1 */
+  color: var(--cal-gold-ink); /* = --color-fg, 7.35:1 mot guldet */
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--cal-fs-micro);
@@ -322,7 +351,7 @@
   font-size: var(--cal-fs-micro);
   letter-spacing: var(--cal-ls-micro);
   text-transform: uppercase;
-  color: var(--color-primary); /* 8.05:1 mot --color-accent-soft */
+  color: var(--color-primary); /* 7.15:1 mot --color-accent-soft */
   border-bottom: 2px solid var(--color-primary);
   padding-bottom: 2px;
   transition: opacity var(--cal-dur) ease;
@@ -331,7 +360,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .calCard,
-  .calGallery li { transition: none; }
+  .calGallery li,
+  .calRoot :global(.btn-accent) { transition: none; }
   .calCard:hover,
-  .calGallery li:hover { transform: none; }
+  .calGallery li:hover,
+  .calRoot :global(.btn-accent):hover { transform: none; }
 }

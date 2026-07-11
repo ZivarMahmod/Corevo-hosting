@@ -6,35 +6,42 @@
 
    SKÄRPE-PASS (mot design-skarpa-zentum.md). Vad som ändrades och varför:
    · TYPSKALA: låg förut på 44/54/56/22/17/16 — allt "mellanstort", ×1.2–1.3 steg.
-     Nu 96 → 48 → 26 → 18 → 16 → 12/11 (×2.0 / ×1.85 / ×1.44 / ×1.13). Mellanlagren
-     (14px-desc, 14px-excerpt, 13.6px-label, 21.6px-num) är BORTA — de var moroten.
+     Sedan på 96/48/26/18/16/12/11, vilket fortfarande hade TVÅ grannpar inom 1.3×
+     (18→16 = ×1.13, 12→11 = ×1.09) — dvs. två kvarglömda mellanlager.
+     Nu FEM nivåer: 96 → 48 → 28 → 18 → 12 (×2.00 / ×1.71 / ×1.56 / ×1.50).
+     Varje granne ligger ≥1.5× isär, även i clamp-golvet (44/32/24/18/12 = ≥1.33×).
+     Lede-nivån (18) ÄR brödtexten, mikro (12) ÄR badge/etikett — inga halvsteg kvar.
    · VIKT: display-rubrikerna bad om font-weight 600, men DM Serif Display laddas
      BARA i vikt 400 (app/layout.tsx: weight: '400') → webbläsaren syntetiserade fet
      stil = suddiga stammar. Nu 400 rakt igenom på display, 600 på mikrotext.
-   · LINE-HEIGHT: allt låg på 1.04–1.7 huller om buller. Nu rubrik 1.06–1.15,
-     brödtext 1.55–1.58 — registerbytet i sig gör skärpan.
-   · LETTER-SPACING: omvänt mot storlek — negativt på display, 0 på kort, +1px på 11–12px.
+   · LINE-HEIGHT: allt låg på 1.04–1.7 huller om buller. Nu rubrik 1.05–1.15,
+     brödtext 1.55–1.58 (även gift-remsan, som låg kvar på 1.4) — registerbytet
+     i sig gör skärpan.
+   · LETTER-SPACING: omvänt mot storlek — negativt på display, 0 på kort, +1px på 12px.
    · RADIE: --sf-radius = 0 (temat). Enda runda formen = stjärn-badgen (999px).
    · BILD: EN ratio (--ot-ratio: 4/5) på ALLA innehållsbilder — showcase, om-foto,
      bloggkort OCH galleriets brickor (som låg på 1/1). Griden får raka linjer.
    · MOTION: 5px lyft / 400ms ease. Galleriets scale(1.05) är avstängd.
-   Egna dekorfärger deklareras i rot-klassen (--ot-rose). --ot-cream är BORTTAGEN
-   (en hex mindre; plaque/ram är rent vita). */
+   · FÄRG — 8 hex TOTALT (zentums tak). Paletten (8 slots) + --ot-rose + #fff blev
+     TIO. Två värden ströks: (a) primaryD var en egen mörkbrun (#4A2716) som bara
+     användes till knapp-hover → den är nu ink (#1C1109), samma hue, ett värde
+     mindre; (b) rent VITT är struket ur mallen — det var den enda kalla kulören i
+     en genomvarm cremevärld. Papperet är --color-bg (#FBF4EE): skylten, ramen,
+     knapptexten, badge-texten och closing-texten går alla i creme. Kvar: sju
+     varmbruna/creme + puderrosan = 8. */
 
 .otRoot {
   /* ── FÄRG — mallens ENDA egna dekorfärg. Puderrosan är accenten och sitter BARA
      på stjärn-badgen. Var #d98ca0 = 2.56:1 mot vit text (oläsbart); #A8425C är
-     samma kulör (~345°), mörkare ljushet → 5.84:1. */
+     samma kulör (~345°), mörkare ljushet → 5.36:1 mot creme-texten. */
   --ot-rose: #A8425C;
 
-  /* ── TYPSKALA — steg ×2.0 / ×1.85 / ×1.44 / ×1.13 ── */
+  /* ── TYPSKALA — FEM nivåer, steg ×2.00 / ×1.71 / ×1.56 / ×1.50 ── */
   --ot-fs-display: clamp(44px, 7.2vw, 96px); /* hero-rubriken (välkomst-remsan) */
-  --ot-fs-section: clamp(30px, 3.8vw, 48px); /* ALLA sektionsrubriker + wordmark */
-  --ot-fs-card: clamp(22px, 2.2vw, 26px); /* kortnamn, tjänstnamn, stat-siffra */
-  --ot-fs-lede: 18px;
-  --ot-fs-body: 16px;
-  --ot-fs-micro: 12px; /* eyebrows, knappar, länkar, nummer */
-  --ot-fs-nano: 11px; /* badge, stat-etikett */
+  --ot-fs-section: clamp(32px, 3.8vw, 48px); /* ALLA sektionsrubriker + wordmark */
+  --ot-fs-card: clamp(24px, 2.2vw, 28px); /* kortnamn, tjänstnamn, stat-siffra */
+  --ot-fs-body: 18px; /* ALL brödtext: lede, kropp, priser, öppettider */
+  --ot-fs-micro: 12px; /* eyebrows, knappar, länkar, nummer, badge, etiketter */
 
   /* ── RYTM — en skala, samma steg i alla sektioner ── */
   --ot-s-xs: 12px; /* eyebrow → rubrik */
@@ -82,7 +89,7 @@
   font-weight: 400;
   font-size: var(--ot-fs-card);
   line-height: 1.15;
-  letter-spacing: 0; /* 0 på ≥26px */
+  letter-spacing: 0; /* 0 på ≥28px */
   color: var(--color-fg);
   margin: 0;
 }
@@ -97,29 +104,21 @@
   color: var(--color-primary); /* 8.24:1 mot bg */
   margin: 0 0 var(--ot-s-xs); /* eyebrow → rubrik = 12px, överallt */
 }
-.otLede {
-  font-family: var(--font-body);
-  font-weight: 400;
-  font-size: var(--ot-fs-lede);
-  line-height: 1.55;
-  letter-spacing: 0;
-  color: var(--color-fg-2); /* 6.91:1 */
-  margin: var(--ot-s-sm) 0 0; /* rubrik → text = 20px */
-  max-width: 62ch;
-}
+/* EN brödtextnivå. .otLede fanns förut på 18px medan .otBody låg på 16px — ×1.13
+   isär, dvs. exakt det halvsteg som gör en sida grötig. Lede-rollen ÄR brödtexten
+   nu; radlängden (62ch/68ch) skilde dem ändå bara marginellt. */
 .otBody {
   font-family: var(--font-body);
   font-weight: 400;
   font-size: var(--ot-fs-body);
   line-height: 1.58;
   letter-spacing: 0;
-  color: var(--color-fg-2);
-  margin: var(--ot-s-sm) 0 0;
-  max-width: 68ch;
+  color: var(--color-fg-2); /* 6.91:1 mot bg, 6.30:1 mot surface */
+  margin: var(--ot-s-sm) 0 0; /* rubrik → text = 20px */
+  max-width: 66ch;
 }
 /* Centrerade sektioner: håll textblocken centrerade trots max-width. */
 .otCenter { text-align: center; }
-.otCenter .otLede,
 .otCenter .otBody { margin-left: auto; margin-right: auto; }
 
 /* ── KNAPP — 50px hög, radie 0 (binärt), 12px/600/VERSALER/1px ──────────────────
@@ -133,7 +132,7 @@
   height: 50px;
   padding: 0 30px;
   background: var(--color-primary);
-  color: #fff; /* 8.98:1 */
+  color: var(--color-bg); /* creme på brun = 8.24:1 (vitt var mallens enda kalla kulör) */
   border: 0;
   border-radius: 0;
   box-shadow: none; /* guld-halon bort */
@@ -148,11 +147,26 @@
   transition: background var(--ot-dur) var(--ot-ease);
 }
 .otRoot .otBtn:hover {
-  background: var(--color-primary-d); /* hård växling, ingen studs/skugga */
+  background: var(--color-primary-d); /* = ink. Hård växling, ingen studs/skugga */
   transform: none;
   box-shadow: none;
 }
 .otRoot .otBtn:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
+
+/* Closing-knappen ligger PÅ --color-primary → den måste inverteras. Den delade
+   .sfClosingCta gjorde det med hårdkodat #fff (background:#fff, 0,3,0) — dvs. den
+   smugglade in en tionde hex utifrån. Layouten skickar inte längre den klassen;
+   inverteringen sker här, i mallens egen creme. .otRoot .otBtn.otClosingCta (0,3,0)
+   slår .otRoot .otBtn (0,2,0); hover (0,4,0) slår .btn-accent:hover (0,2,0). */
+.otRoot .otBtn.otClosingCta {
+  background: var(--color-bg);
+  color: var(--color-primary); /* 8.24:1 */
+}
+.otRoot .otBtn.otClosingCta:hover {
+  background: var(--color-surface); /* 7.51:1 — hård växling, ingen studs/skugga */
+  transform: none;
+  box-shadow: none;
+}
 
 /* ── MIKRO-LÄNK — "Se allt", "Läs hela bloggen", "Visa på karta" ── */
 .otRoot .otMoreLink {
@@ -199,7 +213,7 @@
   width: fit-content;
   max-width: min(92vw, 34rem);
   margin: -3rem auto 0;
-  background: #fff;
+  background: var(--color-bg); /* creme, inte vitt — se hex-noten överst */
   padding: var(--ot-s-md) var(--ot-s-xl);
   border-radius: 0;
   box-shadow: none;
@@ -212,7 +226,7 @@
   font-size: var(--ot-fs-section); /* skylten konkurrerar inte med hero-rubriken */
   line-height: 1.05;
   letter-spacing: -0.01em;
-  color: var(--color-primary); /* 8.98:1 mot vitt */
+  color: var(--color-primary); /* 8.24:1 mot skyltens creme */
   margin: 0;
 }
 
@@ -281,12 +295,12 @@
   align-items: center;
   gap: 6px;
   background: var(--ot-rose);
-  color: #fff; /* 5.84:1 */
+  color: var(--color-bg); /* 5.36:1 */
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: var(--ot-fs-nano);
+  font-size: var(--ot-fs-micro);
   line-height: 1;
-  letter-spacing: 1px; /* +1px på 11px */
+  letter-spacing: 1px; /* +1px på 12px */
   text-transform: uppercase;
   padding: 9px 14px;
   border-radius: 999px;
@@ -369,7 +383,7 @@
 /* Ram: rak vit passepartout, ingen skugga och inget 3px-hörn. */
 .otAboutPhotoWrap {
   padding: var(--ot-s-xs);
-  background: #fff;
+  background: var(--color-bg); /* creme passepartout mot surface-sektionen */
   border-radius: 0;
   box-shadow: none;
 }
@@ -403,7 +417,7 @@
   display: block;
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: var(--ot-fs-nano);
+  font-size: var(--ot-fs-micro);
   line-height: 1.4;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -434,8 +448,8 @@
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 400;
-  font-size: var(--ot-fs-lede);
-  line-height: 1.4;
+  font-size: var(--ot-fs-body);
+  line-height: 1.55; /* brödtext-register, låg kvar på 1.4 */
   color: var(--color-fg); /* 14.27:1 mot accentSoft */
   margin: 0;
 }
@@ -497,16 +511,16 @@
 
 /* ═══════════════ CLOSING ═══════════════ */
 .otRoot .otClosingTitle {
-  color: #fff; /* 8.98:1 mot --color-primary */
+  color: var(--color-bg); /* 8.24:1 mot --color-primary */
   max-width: 40rem;
   margin: 0 auto;
 }
 .otRoot .otClosingLede {
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: var(--ot-fs-lede);
+  font-size: var(--ot-fs-body);
   line-height: 1.55;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--color-surface); /* 7.51:1 — backar ett snäpp mot rubrikens creme */
   max-width: 46rem;
   margin: var(--ot-s-sm) auto 0;
 }

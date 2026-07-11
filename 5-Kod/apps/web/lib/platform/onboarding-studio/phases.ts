@@ -15,13 +15,16 @@ import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 /** The step ids, in flow order (the StepId string-union the leaves narrow on). */
 // modplace/modconf borttagna 2026-07-11 (Dunder-fix). text→brand och granska→live
 // ihopslagna 2026-07-11 (UX-order: "lättare steg för steg, hjärndött") — 8 steg.
+// 'brand' + 'tjanster' borttagna 2026-07-11 (Zivar: "onboardingen ska inte ha steg där
+// jag skriver in tjänster eller rubriker — det ska vara superlätt att komma igång").
+// Rubriker/ingress kommer från BRANSCHENS mall-text (verticals.default_copy, goal-57
+// K12) och mallens egen evergreen-copy; tjänster + accent/logga läggs upp i kundens
+// admin efteråt, där de hör hemma. Kvar: 6 steg.
 export type StepId =
   | 'branch'
   | 'namn'
   | 'tema'
   | 'modval'
-  | 'brand'
-  | 'tjanster'
   | 'agare'
   | 'live'
 
@@ -64,11 +67,9 @@ export const PHASES: StudioPhase[] = [
   {
     id: 'innehall',
     name: 'Innehåll',
-    sub: 'Moduler, utseende, tjänster',
+    sub: 'Moduler — förvalda av branschen',
     steps: [
       { id: 'modval', label: 'Moduler', icon: 'layers', req: false, hint: 'Förvalda per bransch' },
-      { id: 'brand', label: 'Utseende & text', icon: 'sun', req: false, hint: 'Accent, rubrik & ingress' },
-      { id: 'tjanster', label: 'Tjänster & priser', icon: 'scissors', req: false, hint: 'Minst en för lansering' },
     ],
   },
   {
@@ -111,9 +112,6 @@ export function stepDone(stepId: StepId, cfg: StudioCfg, presets: VerticalPreset
       })
     case 'agare':
       return !!cfg.ownerEmail
-    case 'tjanster':
-      return cfg.services.some((s) => s.name.trim() !== '')
-    case 'brand':
     case 'live':
       return false
     default: {

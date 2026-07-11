@@ -35,13 +35,21 @@ export const calytrix: FloristTheme = {
   key: 'calytrix',
   name: 'Calytrix',
   desc: 'Plommon & vinrött · butiken som hjälte',
-  // Paletten är MÄTT, inte gissad (WCAG 2.x relativ luminans). Alla krav hålls
-  // redan — därför är ingen hex ändrad i skärpe-passet; kulören är mallens identitet:
+  // Paletten är MÄTT, inte gissad (WCAG 2.x relativ luminans):
   //   fg      #241019 på bg  16.84:1 · på surface 18.05:1   (krav ≥ 7:1)
-  //   fg2     #6e4f5c på bg   6.67:1 · på surface  7.15:1   (krav ≥ 4.5:1)
-  //   primary #7d1f46 → #fff på knapp 9.74:1 · som länk på bg 9.08:1 (krav ≥ 4.5:1)
+  //   fg2     #6e4f5c på bg   6.67:1 · på surface  7.15:1 · på tonen 5.25:1  (≥ 4.5:1)
+  //   primary #7d1f46 → #fff på knapp 9.74:1 · som länk på bg 9.08:1 · på tonen 7.15:1
   //   #fff på primaryD (annonsrad + band) 15.07:1
-  // Det ENDA kontrastfelet satt i hero-scrimen, inte i paletten — se calytrix.module.css.
+  //
+  // HEX-BUDGET (≤8, dekor inräknad). Paletten är sidans HELA färgbudget minus
+  // mallens ena accent (antikguldet i calytrix.module.css) — 8 palett + guld +
+  // egen guld-ink = 10, två över taket. Två återbruk, noll nya kulörer:
+  //   1. guld-inken → --color-fg (7.35:1 på guld, bättre än den egna #2b1608:s 7.00).
+  //   2. `line` och `accentSoft` var två toner av SAMMA rosa (#e8d9de / #f4e6ea) i
+  //      olika roller. En ton räcker: #e8d9de bär både hårlinjen och den mjuka ytan.
+  //      Den ljusare togs bort, inte den mörkare — en hårlinje i #f4e6ea på vitt
+  //      ligger på 1.05:1 och försvinner, och en linje som inte syns är ingen linje.
+  // Summa: 7 hex här + guldet = 8. Varje ny hex måste betala för sig med en gammal.
   palette: {
     primary: '#7d1f46',
     primaryD: '#4a0e2e',
@@ -50,7 +58,7 @@ export const calytrix: FloristTheme = {
     fg: '#241019',
     fg2: '#6e4f5c',
     line: '#e8d9de',
-    accentSoft: '#f4e6ea',
+    accentSoft: '#e8d9de',
   },
   fonts: {
     // DM Serif Display levereras BARA i vikt 400 (app/layout.tsx). Mallen sätter

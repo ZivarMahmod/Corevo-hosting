@@ -34,7 +34,7 @@ import {
   RECOMMENDED_BOOKING_VARIANT,
 } from '@/lib/platform/booking-variant'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
-import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
+import { ThemeGallery } from '@/components/platform/ThemeGallery'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
@@ -75,17 +75,6 @@ const MODULE_STATE_HINTS: Record<ModuleState, string> = {
   paused: 'Tillfälligt stängd — visar "stängt" publikt.',
 }
 
-/** De RIKTIGA renderbara temana (STOREFRONT_THEMES minus freshcut — kundens eget
- *  tema erbjuds aldrig nya tenants). FAS 1-fix 2026-07-11: tema-steget listar
- *  ALLTID dessa; templatesByVertical (21 vendor-mallar i templates-tabellen) är
- *  INTE byggda teman — att välja en sådan blev en tyst leander-fallback i både
- *  preview och server (rapport 01-tema-kedjan.md). Vendor-mallarna kopplas in
- *  via looks/render-bron när fidelity-golvet klaras — inte via detta steg. */
-// Härlett ur THEME_PALETTES (mallväljarens sanning) — florist-sviten (goal-58) dyker
-// upp i studion automatiskt. freshcut utesluten: kundens eget tema erbjuds aldrig nya.
-const BUILTIN_TEMPLATES: TemplateOption[] = THEME_PALETTES
-  .filter((p) => p.key !== 'freshcut')
-  .map((p) => ({ key: p.key, name: p.name }))
 
 /** The brand-panel accent swatches (verbatim from studio.jsx:268 — 7 accents). */
 const BRAND_ACCENTS = ['#5E7361', '#7E6E92', '#C8743C', '#B0693F', '#3A3733', '#A8455B', '#3E6B8C']
@@ -404,53 +393,25 @@ function PanelTema({ cfg, dispatch, presets, looks }: PanelProps) {
       </Panel>
     )
   }
-  // ALLTID de riktiga temana — vendor-mallarna ur templatesByVertical valde
-  // tidigare orenderbara nycklar (tyst fallback, "tema-steget är trasigt per
-  // bransch"). Branschen förfyller sitt default-tema; bytet är fritt.
-  const options = BUILTIN_TEMPLATES
+  // ALLTID de riktiga temana — vendor-mallarna ur templatesByVertical valde tidigare
+  // orenderbara nycklar (tyst fallback, "tema-steget är trasigt per bransch").
+  // goal-58: sviten är 20 mallar → ThemeGallery (kategori-flikar + taggar + sök + kort
+  // med mallens hero-bild), SAMMA komponent som kundkortets Sida-flik använder.
+  // Branschen förfyller sitt default-tema, så steget går att passera med Nästa.
   const branschDefault = cfg.branch
     ? presets.verticals.find((v) => v.key === cfg.branch)?.defaultTemplate ?? null
     : null
   return (
     <Panel
-      title="Temamall"
-      sub="Branschens mall är förvald — behåll den eller byt. Förhandsvisningen till höger visar kundens riktiga startsida."
+      title="Välj mall"
+      sub="Branschens mall är redan vald — byt bara om du vill. Förhandsvisningen till höger visar kundens riktiga startsida."
     >
-      <div style={{ display: 'grid', gap: 10 }}>
-        {options.map((opt) => {
-          const on = cfg.theme === opt.key
-          return (
-            <button
-              key={opt.key}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => dispatch({ type: 'setTheme', key: opt.key })}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: 14,
-                borderRadius: 14,
-                border: `2px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
-                background: 'var(--c-paper)',
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-            >
-              <span style={{ flex: 1, fontWeight: 600, fontSize: 14.5, color: 'var(--c-ink)' }}>{opt.name}</span>
-              {opt.key === branschDefault ? (
-                <Badge tone="gold" dot={false}>Branschens förval</Badge>
-              ) : null}
-              {on ? (
-                <span style={{ color: 'var(--c-forest)', display: 'inline-flex' }}>
-                  <Icon name="check" size={18} />
-                </span>
-              ) : null}
-            </button>
-          )
-        })}
-      </div>
+      <ThemeGallery
+        value={cfg.theme}
+        defaultKey={branschDefault}
+        compact
+        onChange={(key) => dispatch({ type: 'setTheme', key })}
+      />
     </Panel>
   )
 }
@@ -564,234 +525,6 @@ function PanelModval({ cfg, dispatch, presets }: PanelProps) {
 
 /* modplace + modconf borttagna 2026-07-11 (Dunder-fix): stubbar utan skrivväg
    mitt i flödet — logga-uppladdning och modulinställningar bor i kundkortet. */
-
-/** brand — «Utseende & text» (brand+text ihopslagna 2026-07-11, UX-order): accent,
- *  rubrik, ingress, tagline på EN yta — allt valfritt, allt syns direkt i previewen.
- *  Logga laddas upp i kundkortets Sida-flik efter lansering. */
-function PanelBrand({ cfg, dispatch }: PanelProps) {
-  return (
-    <Panel
-      title="Utseende & text"
-      sub="Allt här är valfritt — tomt = temats egna färger och texter. Ändringarna syns direkt i förhandsvisningen. Logga laddas upp i kundkortet efter lansering."
-    >
-      <div style={{ display: 'grid', gap: 20 }}>
-        <div>
-          <div style={{ ...labelStyle, marginBottom: 8 }}>
-            Accentfärg <span style={{ color: 'var(--c-ink-3)', fontWeight: 400 }}>— skriver över temats primärfärg live</span>
-          </div>
-          <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              title="Temats standard"
-              aria-pressed={cfg.accent === ''}
-              onClick={() => dispatch({ type: 'setAccent', hex: '' })}
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 9,
-                background: 'var(--c-paper-2)',
-                cursor: 'pointer',
-                border: cfg.accent === '' ? '2px solid var(--c-forest)' : '2px solid var(--c-paper)',
-                boxShadow: '0 0 0 1px var(--c-line)',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'var(--c-forest)',
-                fontSize: 10,
-                fontWeight: 700,
-                fontFamily: 'var(--font-ui)',
-              }}
-            >
-              Auto
-            </button>
-            {BRAND_ACCENTS.map((hex) => {
-              const on = cfg.accent === hex
-              return (
-                <button
-                  key={hex}
-                  type="button"
-                  aria-label={`Accentfärg ${hex}`}
-                  aria-pressed={on}
-                  onClick={() => dispatch({ type: 'setAccent', hex })}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 9,
-                    background: hex,
-                    cursor: 'pointer',
-                    border: on ? '2px solid var(--c-forest)' : '2px solid var(--c-paper)',
-                    boxShadow: '0 0 0 1px var(--c-line)',
-                  }}
-                />
-              )
-            })}
-          </div>
-        </div>
-
-        <Field
-          label="Rubrik (hero)"
-          ph="Din rubrik"
-          value={cfg.heroTitle}
-          onChange={(v) => dispatch({ type: 'setHeroTitle', value: v })}
-          hint="Stora rubriken högst upp. Lämna tomt för temats förvalda rubrik."
-        />
-        <div>
-          <label style={labelStyle}>Ingress</label>
-          <textarea
-            value={cfg.heroLede}
-            onChange={(e) => dispatch({ type: 'setHeroLede', value: e.target.value })}
-            rows={3}
-            placeholder="Kort text under rubriken"
-            style={{
-              width: '100%',
-              marginTop: 6,
-              padding: '11px 13px',
-              borderRadius: 10,
-              border: '1px solid var(--c-line)',
-              background: 'var(--c-paper)',
-              fontFamily: 'var(--font-ui)',
-              fontSize: 14,
-              color: 'var(--c-ink)',
-              outline: 'none',
-              boxSizing: 'border-box',
-              resize: 'vertical',
-            }}
-          />
-        </div>
-
-        <Field
-          label="Tagline (footer/meta)"
-          ph="Kort slogan för footer & meta"
-          value={cfg.tagline}
-          onChange={(v) => dispatch({ type: 'setTagline', value: v })}
-        />
-      </div>
-    </Panel>
-  )
-}
-
-/** tjanster — W4-REAL. Numbered name+price rows → setServices (whole-array set, mirrors
- *  the design's A.setContent). Names + price (kr); buildCreateTenantFormData converts
- *  kr→öre, createTenant inserts services rows on Lansera. Title/labels use the bransch's
- *  `service` term. price stored as the kr STRING the operator types (no controlled-
- *  number fight); the design collected names only — price added per the brief + design
- *  copy ("Pris i price_cents" / "minst en post med pris"). */
-function PanelTjanster({ cfg, dispatch, presets }: PanelProps) {
-  const terminology = cfg.branch ? presets.verticals.find((v) => v.key === cfg.branch)?.terminology ?? {} : {}
-  const servicePlural = termPlural(terminology, 'service', 'Tjänster')
-  const serviceWord = terminology.service ?? 'Tjänst'
-  const set = (services: StudioService[]) => dispatch({ type: 'setServices', services })
-  const add = () => set([...cfg.services, { name: '', price: '' }])
-  const editName = (i: number, name: string) => set(cfg.services.map((s, j) => (j === i ? { ...s, name } : s)))
-  const editPrice = (i: number, raw: string) => {
-    // keep digits + only the FIRST decimal separator (comma/dot); strip later ones so the
-    // kr field can't hold "10,50.5"-style junk that krToOre would parse surprisingly.
-    const c = raw.replace(/[^0-9.,]/g, '')
-    const sep = c.search(/[.,]/)
-    const price = sep === -1 ? c : c.slice(0, sep + 1) + c.slice(sep + 1).replace(/[.,]/g, '')
-    set(cfg.services.map((s, j) => (j === i ? { ...s, price } : s)))
-  }
-  const del = (i: number) => set(cfg.services.filter((_, j) => j !== i))
-
-  const rowInput: CSSProperties = {
-    flex: 1,
-    minWidth: 0,
-    padding: '10px 12px',
-    border: '1px solid var(--c-line)',
-    borderRadius: 10,
-    background: 'var(--c-paper)',
-    fontFamily: 'var(--font-ui)',
-    fontSize: 14,
-    outline: 'none',
-    color: 'var(--c-ink)',
-    boxSizing: 'border-box',
-  }
-  return (
-    <Panel
-      title={`${servicePlural} & priser`}
-      sub="Datat bokningen visar. Minst en post för att kunden ska kunna boka. Pris i kr (sparas i öre) — ägaren finjusterar sen i sin admin."
-    >
-      <div style={{ display: 'grid', gap: 10 }}>
-        {cfg.services.map((s, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span
-              style={{
-                width: 28,
-                height: 28,
-                flex: 'none',
-                borderRadius: 7,
-                background: 'var(--c-paper-2)',
-                color: 'var(--c-forest)',
-                display: 'grid',
-                placeItems: 'center',
-                fontFamily: 'var(--font-ui)',
-                fontWeight: 700,
-                fontSize: 12,
-              }}
-            >
-              {i + 1}
-            </span>
-            <input
-              value={s.name}
-              onChange={(e) => editName(i, e.target.value)}
-              placeholder={`t.ex. ${serviceWord}`}
-              style={rowInput}
-            />
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                flex: 'none',
-                width: 104,
-                border: '1px solid var(--c-line)',
-                borderRadius: 10,
-                background: 'var(--c-paper)',
-                overflow: 'hidden',
-              }}
-            >
-              <input
-                value={s.price}
-                onChange={(e) => editPrice(i, e.target.value)}
-                inputMode="decimal"
-                placeholder="0"
-                aria-label={`Pris för ${s.name || `${serviceWord} ${i + 1}`}`}
-                style={{ ...rowInput, border: 'none', borderRadius: 0, width: '100%', textAlign: 'right', padding: '10px 8px' }}
-              />
-              <span style={{ padding: '0 10px', color: 'var(--c-ink-3)', fontSize: 13, fontFamily: 'var(--font-ui)' }}>kr</span>
-            </div>
-            <button
-              type="button"
-              aria-label="Ta bort"
-              onClick={() => del(i)}
-              style={{
-                width: 34,
-                height: 34,
-                flex: 'none',
-                borderRadius: 8,
-                border: '1px solid var(--c-line)',
-                background: 'var(--c-paper)',
-                color: 'var(--c-ink-3)',
-                cursor: 'pointer',
-                display: 'grid',
-                placeItems: 'center',
-              }}
-            >
-              <Icon name="trash" size={15} />
-            </button>
-          </div>
-        ))}
-        {cfg.services.length === 0 ? (
-          <p style={{ fontSize: 12.5, color: 'var(--c-ink-3)', margin: '0 0 2px', lineHeight: 1.5 }}>
-            Inga {servicePlural.toLowerCase()} än. Lägg till minst en så bokningen har något att boka — du kan
-            lämna priset tomt (0 kr) och sätta det senare.
-          </p>
-        ) : null}
-        <Button variant="ghost" icon="plus" onClick={add} style={{ width: 'fit-content' }}>
-          Lägg till {serviceWord.toLowerCase()}
-        </Button>
-      </div>
-    </Panel>
-  )
-}
 
 /** agare — W1-REAL. Ägarens namn → setOwnerName; Ägarens e-post (type=email) →
  *  setOwnerEmail (magic-link invite path). */
@@ -938,8 +671,6 @@ export const PANEL_BY_STEP: Record<StepId, FC<StudioPanelProps>> = {
   namn: PanelNamn,
   tema: PanelTema,
   modval: PanelModval,
-  brand: PanelBrand,
-  tjanster: PanelTjanster,
   agare: PanelAgare,
   live: PanelLive,
 }

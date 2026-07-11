@@ -153,38 +153,34 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('Snabbboka') // the compact variant label
   })
 
-  it('the tjanster panel renders the real add-service control (W4, not a deferred stub)', () => {
-    const html = mounts(
-      <PanelHost cfg={branched} step="tjanster" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
-    )
-    expect(html).toContain('Lägg till')
-    expect(html).not.toContain('senare våg') // old deferred-stub copy is gone
+  // 2026-07-11: stegen "Tjänster & priser" och "Utseende & text" är BORTA ur onboardingen
+  // (Zivar: "superlätt att komma igång — jag ska inte skriva in tjänster eller rubriker").
+  // Texten kommer från branschens mall-text + mallens evergreen-copy; tjänster och
+  // accent/logga läggs upp i kundens admin efteråt.
+  it('onboardingen har 6 steg och kräver varken tjänster eller rubriker', () => {
+    expect(FLAT_STEP_ORDER).toEqual(['branch', 'namn', 'tema', 'modval', 'agare', 'live'])
+    expect(FLAT_STEP_ORDER).not.toContain('tjanster')
+    expect(FLAT_STEP_ORDER).not.toContain('brand')
   })
 
-  it('a typed service renders in both the tjanster panel and the live preview (W4)', () => {
-    const panel = mounts(
-      <PanelHost cfg={withServices} step="tjanster" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
+  it('mall-steget visar det kategoriserade galleriet (inte en platt namnlista)', () => {
+    const html = mounts(
+      <PanelHost cfg={branched} step="tema" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
     )
-    expect(panel).toContain('Klippning')
-    expect(panel).toContain('350') // the kr price string in the row input
-    // the live preview's booking section reflects the same service (not the empty-state)
+    expect(html).toContain('Blomsterhandel') // kategori-fliken
+    expect(html).toContain('Salong &amp; barber')
+    expect(html).toContain('Sök mall') // fritextsöket
+  })
+
+  it('storefronten visar mallens egen copy utan att operatören skrivit något (branched cfg)', () => {
+    const preview = mounts(<PreviewPane cfg={branched} device="desktop" onDevice={noop} />)
+    expect(preview).toContain('data-world="storefront"')
+    expect(preview.length).toBeGreaterThan(2000) // en hel sida, inte ett tomt skal
+  })
+
+  it('en tjänst som ändå finns i cfg renderas i previewen (kunden lägger upp dem i admin)', () => {
     const preview = mounts(<PreviewPane cfg={withServices} device="desktop" onDevice={noop} />)
     expect(preview).toContain('Klippning')
-  })
-
-  it('the merged brand panel renders accent + hero + ingress fields (Utseende & text)', () => {
-    const html = mounts(
-      <PanelHost cfg={branched} step="brand" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
-    )
-    expect(html).toContain('Accentfärg')
-    expect(html).toContain('Rubrik (hero)')
-    expect(html).toContain('Ingress')
-  })
-
-  it('a custom hero title flows through to the live preview (W5)', () => {
-    const cfg = { ...branched, heroTitle: 'Min Unika Rubrik' }
-    const preview = mounts(<PreviewPane cfg={cfg} device="desktop" onDevice={noop} />)
-    expect(preview).toContain('Min Unika Rubrik') // resolveThemeContent override → layout hero
   })
 
   it('the live panel renders the real Lansera button', () => {
@@ -259,11 +255,14 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).not.toContain('Temamall') // the legacy theme-list title is gone in gallery mode
   })
 
-  it('without a box (flag-OFF) the tema panel stays the legacy theme list, byte-identical', () => {
+  // goal-58: tema-steget är INTE längre en platt namnlista ("Temamall") — utan en box
+  // renderar det ThemeGallery, samma kategoriserade väljare som kundkortets Sida-flik.
+  it('utan box renderar tema-steget mall-galleriet med branschens förval markerat', () => {
     const html = mounts(
       <PanelHost cfg={branched} step="tema" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
     )
-    expect(html).toContain('Temamall') // legacy title
-    expect(html).not.toContain('Välj mall')
+    expect(html).toContain('Välj mall')
+    expect(html).not.toContain('Temamall') // gamla platta listans rubrik
+    expect(html).toContain('Branschens förval') // salvia = frisör-branschens default i presets
   })
 })

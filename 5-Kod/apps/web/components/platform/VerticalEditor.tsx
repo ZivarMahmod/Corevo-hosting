@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { saveVerticalTerminology, saveVerticalDefaults, saveVerticalCopy } from '@/lib/platform/actions/verticals'
 import type { ActionState } from '@/lib/platform/actions/shared'
 import { MODULE_STATES } from '@/lib/tenant-modules'
-import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
+import { SELECTABLE_THEMES } from '@/lib/platform/theme-palettes'
 import { Button, Card, useToast } from '@/components/portal/ui'
 
 export type VerticalModuleRow = { key: string; name: string; state: string }
@@ -13,7 +13,7 @@ export type VerticalModuleRow = { key: string; name: string; state: string }
 // Branschens standardmall väljs bland ALLA byggda mallar (aldrig freshcut — kundens
 // eget tema). Härleds ur THEME_PALETTES så florist-sviten (goal-58) dyker upp här
 // automatiskt; en literal-lista här hade tyst gömt 13 mallar för branscherna.
-const THEMES = THEME_PALETTES.map((p) => p.key).filter((k) => k !== 'freshcut')
+const THEMES = SELECTABLE_THEMES.map((p) => p.key)
 
 const TERM_FIELDS: { key: string; label: string; ph: string }[] = [
   { key: 'staff', label: 'Personal (singular)', ph: 'Personal' },
