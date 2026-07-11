@@ -2,41 +2,53 @@ import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { Bookable } from '../../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
-import { formatPrice, serviceDesc, serviceNum } from '../../service-format'
+import { formatPrice, serviceDesc } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './isalara.module.css'
 
 /**
- * ISALARA — djupblå/marin + varm sand, elegant kvällskänsla (florist-sviten,
- * goal-58). EGEN sektionsordning (ingen annan mall i sviten har den): (1) hero
- * med en HANDSKRIVEN skript-rubrik centrerad över bild + liten pill-CTA, (2)
- * fyra ikon-genvägar i en ljus rad direkt under heron, (3) mörkblått band med
- * en enda rad, (4) TVÅ stora bilder sida vid sida utan mellanrum (portfölj-
- * känsla), (5) shop-teasers, (6) tjänster, (7) om, (8) blogg, (9) presentkort
- * (smal rad), (10) plats, (11) closing. Webshop/blogg/presentkort/offert vävs
- * in via `modules`-propen (S10) — samma modulkontrakt som övriga florist-mallar.
+ * ISALARA — KVÄLLSBLÅ ELEGANS (florist-sviten, tema-paket goal-59).
  *
- * SKÄRPE-PASS (design-skarpa-zentum.md): identitet och sektionsordning är orörda —
- * det är utförandet som skärpts. All typografi/rytm/radie/hover ligger i mallens
- * tokens i isalara.module.css (.islRoot): typskala 108/52/26/16/12 (inget grannpar
- * under ×1.3), rytm 12/20/24/32/48/96, EN bildratio (4:5), EN icke-noll-radie
- * (pill), 5px-lyft på 400ms. Därför bär layouten inga egna px-värden i inline-styles
- * (bara bakgrundsbilder och centrering) — hittar du ett hårdkodat mått här är det en
- * regression.
+ * Mallen äger nu HELA sajten (nav + footer + undersidor i isalara.chrome.tsx /
+ * isalara.pages.tsx). Den här filen är hemmet — och den bär NOLL delade
+ * .sf*-klasser. Det var där sviten rann ihop: heron var unik, resten av sidan var
+ * grannens. Varje sektion nedan är mallens egen.
  *
- * NIVÅ-KLASSER: de delade sf*-klasserna (sfRowName, sfStatValue, sfHoursRow …) bor i
- * en ANNAN CSS-modul och har sin egen typskala (24/25.6/16.8/15.2/13.6px). Den kan
- * inte selekteras från isalara.module.css (hashade klassnamn), så varje delat
- * textelement taggas här med mallens nivå — styles.islLvlSub / islLvlBody /
- * islLvlMicro. Tar du bort en sådan tagg glider elementet tillbaka till den delade
- * skalan och mallen renderar grötigt igen, oavsett hur skarpa tokens är.
+ * SEKTIONSORDNING (mallens svar, inget syskon delar den):
+ *   1  hero — bild + HANDSKRIVEN script-rubrik centrerad + pill-CTA
+ *   2  fyra ikon-genvägar i en ljus rad direkt under heron (modul-gatade)
+ *   3  marinblått band, en enda rad
+ *   4  TVÅ stora portföljbilder sida vid sida, utan mellanrum
+ *   5  butiken — HÖGA eleganta 4/5-kort (webshop-modulen)
+ *   6  priser — TVÅ KOLUMNER med guld-prick, varje rad en <Bookable>
+ *   7  om — split (porträtt + text + statistik)
+ *   8  bloggen — samma höga kort på sandton
+ *   9  presentkort — smal rad, aldrig en hel sektion
+ *  10  plats & öppettider — ankarmål för "Leveransorter"-genvägen
+ *  11  closing — marinblå platta
+ *
+ * Modul-gatingen är HELIG och oförändrad: shopReachable/offertReachable gatar
+ * länkarna, teasers-sektionerna renderas bara när teasers finns, presentkortet är
+ * en smal rad. Layouten är SYNKRON (ingen async, ingen 'use client').
+ *
+ * SKÄRPE-PASS (design-skarpa-zentum.md): all typografi/rytm/radie/hover bor i
+ * mallens tokens i isalara.module.css — hittar du ett hårdkodat px-mått här är det
+ * en regression (inline-styles bär bara bakgrundsbilder).
  */
 
 /** Minimal linje-ikon för ikon-genvägarna — ren dekor, inga externa assets. */
 function ShortcutIcon({ name }: { name: 'bestsellers' | 'plants' | 'pick' | 'pin' }) {
-  const common = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  const common = {
+    width: 22,
+    height: 22,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.5,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  }
   if (name === 'bestsellers') {
     return (
       <svg {...common} aria-hidden="true">
@@ -68,11 +80,9 @@ function ShortcutIcon({ name }: { name: 'bestsellers' | 'plants' | 'pick' | 'pin
   )
 }
 
-/** En ikon-genväg: länk när `href` är satt (intern route → Link, ankare/extern →
- *  vanlig <a>), annars en icke-klickbar kort — samma "gated länk"-mönster som
- *  övriga sviten (S9). Reveal tar bara `as`/`delay`/`className`/`style` (inga
- *  extra props som `href`) — därför nästlas länken/diven INUTI Reveal, som
- *  Flora/Calytrix redan gör för sina pelare/kort. */
+/** En ikon-genväg: länk när `href` är satt (intern route → Link, ankare → <a>),
+ *  annars ett icke-klickbart kort — samma "gated länk"-mönster som resten av
+ *  sviten (S9): en genväg mot en avstängd modul vore en 404-fälla. */
 function Shortcut({
   icon,
   label,
@@ -84,15 +94,15 @@ function Shortcut({
   icon: 'bestsellers' | 'plants' | 'pick' | 'pin'
   label: string
   sub: string
-  /** Sätts bara när målet går att nå (modul-gating, S9). */
   href?: string
-  /** Sidankare (#isl-plats) → vanlig <a>, annars intern route → Link. */
   anchor?: boolean
   delay?: number
 }) {
   const inner = (
     <>
-      <span className={styles.islShortcutIconWrap}><ShortcutIcon name={icon} /></span>
+      <span className={styles.islShortcutIconWrap}>
+        <ShortcutIcon name={icon} />
+      </span>
       <span className={styles.islShortcutLabel}>{label}</span>
       <span className={styles.islShortcutSub}>{sub}</span>
     </>
@@ -101,9 +111,13 @@ function Shortcut({
     <Reveal delay={delay}>
       {href ? (
         anchor ? (
-          <a href={href} className={styles.islShortcut}>{inner}</a>
+          <a href={href} className={styles.islShortcut}>
+            {inner}
+          </a>
         ) : (
-          <Link href={href} className={styles.islShortcut}>{inner}</Link>
+          <Link href={href} className={styles.islShortcut}>
+            {inner}
+          </Link>
         )
       ) : (
         <div className={styles.islShortcut}>{inner}</div>
@@ -119,19 +133,23 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
   const presentkortLive = modules?.presentkortLive ?? false
-  // Ikon-genvägarna länkar bara dit en sida faktiskt finns (live/paused renderar;
-  // av/draft → notFound). En genväg mot avstängd modul vore en 404-fälla (S9).
-  // Utan modules-prop (studions statiska preview) VISAS länkarna — previewn ska
-  // se en hel sida, och dess länkar är ändå inte klickbara på riktigt.
+  // Utan modules-prop (studions statiska preview) VISAS länkarna — previewn ska se
+  // en hel sida, och dess länkar är ändå inte klickbara på riktigt.
   const shopReachable = modules ? modules.shopReachable : true
   const offertReachable = modules ? modules.offertReachable : true
 
-  const duoImages = [content.galleryImages[0] ?? '', content.galleryImages[1] ?? content.galleryImages[0] ?? '']
+  const duoImages = [
+    content.galleryImages[0] ?? '',
+    content.galleryImages[1] ?? content.galleryImages[0] ?? '',
+  ]
 
   return (
     <div className={styles.islRoot}>
-      {/* 1 — HERO: HANDSKRIVEN skript-rubrik centrerad över bild + liten CTA */}
-      <section className={styles.islHero} style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}>
+      {/* 1 — HERO */}
+      <section
+        className={styles.islHero}
+        style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}
+      >
         <div className={styles.islHeroScrim} aria-hidden="true" />
         <div className={styles.islHeroInner}>
           <Reveal>
@@ -145,7 +163,7 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
         </div>
       </section>
 
-      {/* 2 — FYRA IKON-GENVÄGAR — ljus rad direkt under heron */}
+      {/* 2 — FYRA IKON-GENVÄGAR */}
       <section className={styles.islShortcuts}>
         <div className={styles.islShortcutGrid}>
           <Shortcut
@@ -179,34 +197,42 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
         </div>
       </section>
 
-      {/* 3 — MÖRKBLÅTT BAND — en rad */}
+      {/* 3 — MARINBLÅTT BAND */}
       <section className={styles.islBand}>
         <Reveal>
           <p className={styles.islBandText}>{content.tagline}</p>
         </Reveal>
       </section>
 
-      {/* 4 — TVÅ STORA BILDER SIDA VID SIDA — portföljkänsla, inget mellanrum */}
+      {/* 4 — TVÅ STORA PORTFÖLJBILDER */}
       <section className={styles.islDuo}>
-        <Reveal className={styles.islDuoImg} style={{ backgroundImage: `url(${duoImages[0]})` }}>
+        <Reveal
+          className={styles.islDuoImg}
+          style={{ backgroundImage: `url(${duoImages[0]})` }}
+        >
           <span />
         </Reveal>
-        <Reveal delay={100} className={styles.islDuoImg} style={{ backgroundImage: `url(${duoImages[1]})` }}>
+        <Reveal
+          delay={100}
+          className={styles.islDuoImg}
+          style={{ backgroundImage: `url(${duoImages[1]})` }}
+        >
           <span />
         </Reveal>
       </section>
 
-      {/* 5 — UR BUTIKEN — webshop-modulen invävd. Bara ett smakprov; hela
-          sortimentet bor på /shop. Tom modul → ingen sektion. */}
+      {/* 5 — UR BUTIKEN (webshop-modulen). Tom modul → ingen sektion. */}
       {shopTeasers.length > 0 ? (
         <section className={styles.islSection}>
           <Reveal as="div" className={styles.islSecHead}>
             <div>
-              <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-              <h2 className={`sf-h2 ${styles.islStepEyebrow}`}>{content.shopTitle ?? 'Beställ något vackert'}</h2>
+              <p className={styles.islEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
+              <h2 className={styles.islTitle}>{content.shopTitle ?? 'Beställ något vackert'}</h2>
             </div>
             {shopReachable ? (
-              <Link href="/shop" className={styles.islSecCta}>{content.shopCta ?? 'Visa hela butiken'}</Link>
+              <Link href="/shop" className={styles.islLink}>
+                {content.shopCta ?? 'Visa hela butiken'}
+              </Link>
             ) : null}
           </Reveal>
           <div className={styles.islCardGrid}>
@@ -228,36 +254,36 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
         </section>
       ) : null}
 
-      {/* 6 — TJÄNSTER & PRISER — numrerade rader, bara när det finns aktiva
+      {/* 6 — PRISER I TVÅ KOLUMNER MED GULD-PRICK. Bara när det finns aktiva
           tjänster (ingen tom-text på hemmet, goal-55 8B). */}
       {rows.length > 0 ? (
-        <section className={`${shared.sfServices} ${styles.islServices}`}>
-          <div className={shared.sfNarrow}>
-            <Reveal style={{ textAlign: 'center' }}>
-              <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className={`sf-h1 ${styles.islStepEyebrow}`}>{content.servicesTitle}</h2>
-            </Reveal>
-            <div className={shared.sfRowList}>
+        <section className={styles.islSection}>
+          <Reveal as="div" className={styles.islSecHead}>
+            <div>
+              <p className={styles.islEyebrow}>{content.servicesEyebrow}</p>
+              <h2 className={styles.islTitle}>{content.servicesTitle}</h2>
+            </div>
+          </Reveal>
+          <div className={styles.islPriceWrap}>
+            <div className={styles.islPriceCols}>
               {rows.map((s, i) => (
                 <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={shared.sfRow} label={`Boka — ${s.name}`}>
-                    <span className={`${shared.sfRowNum} ${styles.islLvlSub}`} aria-hidden="true">{serviceNum(i)}</span>
-                    <span className={shared.sfRowMain}>
-                      <span className={`${shared.sfRowName} ${styles.islLvlSub}`}>{s.name}</span>
-                      <span className={`${shared.sfRowDesc} ${styles.islLvlBody}`}>{serviceDesc(s)}</span>
+                  <Bookable className={styles.islPriceRow} label={`Boka — ${s.name}`}>
+                    <span className={styles.islPriceDot} aria-hidden="true" />
+                    <span className={styles.islPriceMain}>
+                      <span className={styles.islPriceName}>{s.name}</span>
+                      <span className={styles.islPriceDesc}>{serviceDesc(s)}</span>
                     </span>
-                    <span className={shared.sfRowMeta}>
-                      <span className={`${shared.sfRowPrice} ${styles.islLvlBody}`}>{formatPrice(s)}</span>
-                    </span>
+                    <span className={styles.islPriceValue}>{formatPrice(s)}</span>
                   </Bookable>
                 </Reveal>
               ))}
             </div>
             {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={shared.sfMoreLink}>
-                  Se allt vi gör <span aria-hidden="true">→</span>
-                </a>
+              <Reveal className={styles.islPriceMore}>
+                <Link href="/tjanster" className={styles.islLink}>
+                  Se allt vi gör
+                </Link>
               </Reveal>
             ) : null}
           </div>
@@ -265,37 +291,41 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
       ) : null}
 
       {/* 7 — OM */}
-      <section>
-        <div className={`${shared.sfWide} ${shared.sfAboutGrid} ${styles.islAboutGrid}`}>
-          <Reveal>
-            <div className={shared.sfAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
-          </Reveal>
-          <Reveal delay={120}>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className={`sf-h2 ${styles.islStepEyebrow}`}>{content.aboutTitle}</h2>
-            <p className={`sf-body ${styles.islStepHead}`}>{content.aboutCopyHome}</p>
-            <ul className={shared.sfStatTrio}>
-              {content.stats.map(([n, l]) => (
-                <li key={l}>
-                  <span className={`${shared.sfStatValue} ${styles.islLvlSub}`}>{n}</span>
-                  <span className={`${shared.sfStatLabel} ${styles.islLvlMicro}`}>{l}</span>
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-        </div>
+      <section className={styles.islAbout}>
+        <Reveal>
+          <div
+            className={styles.islAboutPhoto}
+            style={{ backgroundImage: `url(${content.aboutImage})` }}
+          />
+        </Reveal>
+        <Reveal delay={120}>
+          <p className={styles.islEyebrow}>— Om {tenant.name}</p>
+          <h2 className={styles.islTitle}>{content.aboutTitle}</h2>
+          <p className={styles.islBody}>{content.aboutCopyHome ?? content.aboutCopy}</p>
+          <ul className={styles.islStats}>
+            {content.stats.map(([n, l]) => (
+              <li key={l}>
+                <span className={styles.islStatValue}>{n}</span>
+                <span className={styles.islStatLabel}>{l}</span>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
       </section>
 
-      {/* 8 — FRÅN FLORISTEN — blogg-modulen invävd (3 senaste → /blogg). Tom
-          modul → ingen sektion. */}
+      {/* 8 — FRÅN FLORISTEN (blogg-modulen). Tom modul → ingen sektion. */}
       {bloggTeasers.length > 0 ? (
         <section className={`${styles.islSection} ${styles.islSectionSoft}`}>
           <Reveal as="div" className={styles.islSecHead}>
             <div>
-              <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från floristen'}</p>
-              <h2 className={`sf-h2 ${styles.islStepEyebrow}`}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
+              <p className={styles.islEyebrow}>{content.blogEyebrow ?? '— Från floristen'}</p>
+              <h2 className={styles.islTitle}>
+                {content.blogTitle ?? 'Säsong, tips & inspiration'}
+              </h2>
             </div>
-            <Link href="/blogg" className={styles.islSecCta}>{content.blogCta ?? 'Läs hela bloggen'}</Link>
+            <Link href="/blogg" className={styles.islLink}>
+              {content.blogCta ?? 'Läs hela bloggen'}
+            </Link>
           </Reveal>
           <div className={styles.islCardGrid}>
             {bloggTeasers.map((p, i) => (
@@ -316,34 +346,37 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
         </section>
       ) : null}
 
-      {/* 9 — PRESENTKORT — smal rad, aldrig en hel sektion */}
+      {/* 9 — PRESENTKORT — smal rad */}
       {presentkortLive ? (
         <div className={styles.islGiftRow}>
           <Reveal as="div" className={styles.islGiftInner}>
-            <p className="sf-eyebrow" style={{ margin: 0 }}>{content.giftEyebrow ?? '— Presentkort'}</p>
-            <p className="sf-body" style={{ margin: 0 }}>{content.giftLede ?? 'Ge bort något som blommar.'}</p>
-            <Link href="/presentkort" className={styles.islGiftCta}>{content.giftCta ?? 'Till presentkorten'}</Link>
+            <p className={styles.islEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
+            <p className={styles.islBody}>{content.giftLede ?? 'Ge bort något som blommar.'}</p>
+            <Link href="/presentkort" className={styles.islLink}>
+              {content.giftCta ?? 'Till presentkorten'}
+            </Link>
           </Reveal>
         </div>
       ) : null}
 
       {/* 10 — PLATS & ÖPPETTIDER — ankarmål för "Leveransorter"-genvägen */}
-      <section id="isl-plats" className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid} ${styles.islLocGrid}`}>
+      <section id="isl-plats" className={styles.islLoc}>
+        <div className={styles.islLocGrid}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className={`sf-h2 ${styles.islStepEyebrow}`}>
+            <p className={styles.islEyebrow}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
+            <h2 className={styles.islTitle}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
+            {/* Render-on-present: aldrig en påhittad adress. */}
             {location?.address ? (
-              <p className={`sf-body ${styles.islStepHead}`}>{location.address}</p>
+              <p className={styles.islBody}>{location.address}</p>
             ) : (
-              <p className={`sf-body ${styles.islStepHead}`}>Adress visas snart.</p>
+              <p className={styles.islBody}>Adress visas snart.</p>
             )}
             {location?.hours ? (
-              <div className={shared.sfHours}>
+              <div className={styles.islHours}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.islLvlBody}`}>
+                  <div key={h.day} className={styles.islHoursRow}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
@@ -352,18 +385,18 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
             ) : null}
           </Reveal>
           <Reveal delay={120}>
-            <div className={shared.sfMap}>
+            <div className={styles.islMap}>
               {location?.address ? (
                 <a
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={shared.sfMapLink}
+                  className={styles.islLink}
                 >
-                  Visa på karta <span aria-hidden="true">→</span>
+                  Visa på karta
                 </a>
               ) : (
-                <span className={`${shared.sfMapHint} ${styles.islLvlBody}`}>Karta visas när adressen är ifylld.</span>
+                <p className={styles.islMapHint}>Karta visas när adressen är ifylld.</p>
               )}
             </div>
           </Reveal>
@@ -371,16 +404,17 @@ export function IsalaraLayout({ tenant, content, services, location, modules }: 
       </section>
 
       {/* 11 — CLOSING */}
-      <section className={shared.sfClosing}>
-        <Reveal>
-          <h2 className="sf-h1" style={{ maxWidth: '40rem', margin: '0 auto' }}>
+      <section className={styles.islClosing}>
+        <Reveal className={styles.islClosingInner}>
+          <h2 className={styles.islClosingTitle}>
             {content.closingTitle ?? 'Redo att beställa något vackert?'}
           </h2>
-          <p className={`${shared.sfClosingLead} ${styles.islLvlBody}`}>
-            {content.closingLede ?? 'Handla i butiken, boka en tid eller hör av dig — vi hjälper dig gärna.'}
+          <p className={styles.islClosingLede}>
+            {content.closingLede ??
+              'Handla i butiken, boka en tid eller hör av dig — vi hjälper dig gärna.'}
           </p>
-          <div className={styles.islStepCta}>
-            <BookCta className={`${shared.sfClosingCta} ${styles.islBtn}`} />
+          <div className={styles.islClosingCta}>
+            <BookCta className={`${styles.islBtn} ${styles.islBtnLight}`} />
           </div>
         </Reveal>
       </section>

@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { LunariaNav, LunariaFooter } from './lunaria.chrome'
+import { LunariaOm, LunariaTjanster, LunariaKontakt } from './lunaria.pages'
 
 // Foto-id:n verifierade i två steg (2026-07-11): curl -sI → 200 OCH öppnade som
 // bild — bort-sorterade träffar under vägen: en himmel-gradient, en pall, en
@@ -110,4 +112,11 @@ export const lunaria: FloristTheme = {
     ],
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  // goal-59 TEMA-PAKET: Lunaria äger HELA sajten — sidhuvud (sido-rail: stort wordmark
+  // + meny i kolumn bakom en silverlinje), sidfot (nattblå platta med stjärn-ornament)
+  // och undersidorna (offset-uppslag /om, lugn lista med stora tal /tjanster,
+  // överlappande kort /kontakt). Funktionen (NavShell, korg, konto, modul-gatade
+  // länkar, Bookable) är fortfarande plattformens.
+  chrome: { Nav: LunariaNav, Footer: LunariaFooter },
+  pages: { om: LunariaOm, tjanster: LunariaTjanster, kontakt: LunariaKontakt },
 }

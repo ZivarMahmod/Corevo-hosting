@@ -1,94 +1,64 @@
-/* ═══════════════ PAISLEY — tegelröd redaktionell florist (florist-sviten, goal-58) ═══════════════
-   Skarp tidningslayout: versaler, fyrkantiga ytor (--sf-radius = 0 i paisley.theme.ts).
-   Alla klasser paisley-prefixade (pa*).
+/* ═══════════ PAISLEY — tegelröd REDAKTIONELL TIDNING (tema-paket, goal-59) ═══════════
+   Ett helt paket: sidhuvud (tryckt masthead), sidfot (kolofon), undersidor
+   (reportage / prislista / kolofon) OCH hemmets egna sektioner. Inga delade
+   .sf*-klasser längre — det var de som gjorde alla mallar till samma sida.
 
-   SKÄRPE-PASS 2026-07-11 — mätt mot 4-Dokument-Underlag/design-skarpa-zentum.md.
-   Identiteten (tegelröd palett, sektionsordning, redaktionell struktur) är orörd;
-   det är UTFÖRANDET som skärpts. De fem sanningarna bakom passet:
+   Skärpe-reglerna (design-skarpa-zentum.md) gäller fortfarande:
+   • typskala i ×1.8–2.0-steg (96 → 48 → 26 → 18 → 16 → 11)
+   • display = DM Serif Display i ÄKTA 400 (fonten laddas bara i 400/normal →
+     varje 600/700 eller italic på display blir SYNTETISK klump)
+   • rubrik-lh ≤1.15 mot bröd-lh ≥1.55
+   • EN bildratio (4:5), BINÄR radie (0 överallt), EN accent (tegelrött) sparsamt
+   • dekor-vars är color-mix av PALETTFÄRGER — mallen håller sina 8 hexar. */
 
-   1. TYPSKALA i ×2.0 / ×1.85-steg (96 → 48 → 26 → 18 → 16 → 11) istället för den
-      gamla grötiga trappan (120 / 56 / 34 / 21 / 17 / 13.5 / 12.5 / 11.5 / 9).
-   2. VIKT: DM Serif Display laddas med BARA weight 400 och BARA style normal
-      (app/layout.tsx). Varje `font-weight: 600/700` och `font-style: italic` på
-      display-text renderades alltså som SYNTETISK fetstil/kursiv — browsern smetar
-      ut 400-konturerna. Det är precis den "klump" reglerna förbjuder. Allt display
-      kör nu äkta 400 upprätt; mikrotext bär tyngden istället (Jost 600, äkta).
-   3. KONTRAST: paletten höll redan (rubrik 14.92:1, brödtext 5.58:1, knapp 6.17:1)
-      — men opacitets-dimmad text (0.62–0.92) och tunna foto-scrims gjorde det.
-      OBEROENDE MÄTNING 2026-07-11 fann att skärpe-passets scrim-fix bara höll i
-      PLATÅN: hero-scrimens toppstopp (alfa 0.42) gav --pa-ink 2.74:1 mot ett
-      helvitt foto. Alfa-golvet är nu 0.78 → SAMTLIGA stopp ≥8.09:1 mot vitt foto
-      (kunder laddar upp egna bilder — läsbarheten får inte bero på tur).
-   4. RADIE binärt (0 överallt) + EN bildratio (4:5) → griden får raka linjer.
-   5. RÖRELSE: 4px lyft / 400ms / ingen skugga, ingen scale.
+.paRoot,
+.paPage,
+.paNav,
+.paFoot {
+  /* ── TYPSKALA ── */
+  --pa-fs-hero: clamp(46px, 8.4vw, 96px);
+  --pa-fs-sec: clamp(32px, 4.6vw, 48px);
+  --pa-fs-card: clamp(22px, 2.2vw, 26px);
+  --pa-fs-lede: 18px;
+  --pa-fs-body: 16px;
+  --pa-fs-micro: 11px;
+  --pa-fs-ui: 12px;
 
-   Delade .sf*-primitiv (sfRow*, sfStat*, sfMoreLink …) får INTE ändras — de ägs av
-   alla mallar. Där sam-applicerar layouten en pa*-klass som vinner på specificitet
-   (.paRoot .paX = 0,2,0 mot delade 0,1,0). Samma trick mot type-rollerna i
-   tokens.css ([data-world] .sf-h2 = 0,2,0 → vi prefixar :global([data-world]) så
-   paisleys roll blir 0,3,0 och vinner deterministiskt, oavsett CSS-ordning). */
-
-.paRoot {
-  /* ── TYPSKALA — 6 nivåer, steg ×2.0 / ×1.85 / ×1.44 / ×1.13 / ×1.45 ────────── */
-  --pa-fs-hero: clamp(46px, 8.4vw, 96px); /* display */
-  --pa-fs-sec: clamp(32px, 4.6vw, 48px); /* sektionsrubrik + wordmark */
-  --pa-fs-card: clamp(22px, 2.2vw, 26px); /* kortnamn, tjänstnamn, stats, timer */
-  --pa-fs-lede: 18px; /* ingress */
-  --pa-fs-body: 16px; /* brödtext */
-  --pa-fs-micro: 11px; /* etiketter: eyebrow, labels */
-  --pa-fs-ui: 12px; /* interaktiv mikro: nav, knappar, mer-länkar */
-
-  /* ── LINE-HEIGHT — rubriken är en FORM (spänd), brödtexten en YTA (luftig) ─── */
+  /* ── LINE-HEIGHT ── */
   --pa-lh-hero: 1.05;
   --pa-lh-sec: 1.08;
   --pa-lh-card: 1.15;
   --pa-lh-body: 1.57;
   --pa-lh-micro: 1.5;
 
-  /* ── LETTER-SPACING — omvänt mot storleken. Aldrig positiv på stora rubriker ─ */
+  /* ── LETTER-SPACING ── */
   --pa-ls-display: 0;
-  --pa-ls-micro: 0.09em; /* 11px → 1.0px */
-  --pa-ls-ui: 0.083em; /* 12px → 1.0px */
+  --pa-ls-micro: 0.09em;
+  --pa-ls-ui: 0.083em;
 
-  /* ── VIKT — stort = 400 (äkta DM Serif), litet = 600 (äkta Jost) ───────────── */
+  /* ── VIKT: stort = äkta 400, litet = äkta 600 ── */
   --pa-fw-display: 400;
   --pa-fw-micro: 600;
 
-  /* ── RYTM — EN skala: 12 / 20 / 24 / 32 / 48 / 96 ──────────────────────────── */
-  --pa-sp-eyebrow: 12px; /* eyebrow → rubrik */
-  --pa-sp-text: 20px; /* rubrik → text */
-  --pa-sp-cta: 32px; /* text → CTA */
-  --pa-sp-block: 48px; /* rubrikblock → innehåll */
-  --pa-sp-gutter: 24px; /* grid-gutter */
-  --pa-sp-section: clamp(48px, 8vw, 96px); /* sektionsavstånd */
+  /* ── RYTM: 12 / 20 / 24 / 32 / 48 / section ── */
+  --pa-sp-eyebrow: 12px;
+  --pa-sp-text: 20px;
+  --pa-sp-cta: 32px;
+  --pa-sp-block: 48px;
+  --pa-sp-gutter: 24px;
+  --pa-sp-section: clamp(48px, 8vw, 96px);
 
-  /* ── BILD — EN ratio i HELA mallen (kanterna linjerar i griden) ────────────── */
   --pa-ratio: 4 / 5;
 
-  /* ── MOTION — återhållsam ──────────────────────────────────────────────────── */
   --pa-lift: -4px;
   --pa-dur: 400ms;
   --pa-ease: ease;
 
-  /* ── DEKOR-VÄRDEN (mallens egna — härledda ur paletten, INGA nya hexar) ──────
-     --pa-ink = palettens benvita surface. 11.99:1 mot --color-primary-d (AAA).
-     De on-dark-linjerna är samma benvita yta i olika alfa — inte nya kulörer. */
+  /* ── DEKOR (härledda ur paletten, inga nya hexar) ── */
   --pa-ink: var(--color-surface);
   --pa-rule-on-dark: color-mix(in srgb, var(--color-surface) 55%, transparent);
   --pa-line-on-dark: color-mix(in srgb, var(--color-surface) 30%, transparent);
   --pa-fill-on-dark: color-mix(in srgb, var(--color-surface) 10%, transparent);
-  /* SCRIMS — mätt, inte gissat (oberoende mätning 2026-07-11).
-     Två fel rättade här:
-     1) FÄRG: scrimsen var byggda på rgba(28,12,8) och rgba(46,17,12) — TVÅ
-        RGB-tripletter som inte finns i paletten. De drog upp mallens färgantal
-        från 8 till 10 (+ #ffffff = 11). Nu är varje stop en color-mix av en
-        PALETTFÄRG (--color-fg / --color-primary-d) → mallen håller sina 8.
-     2) KONTRAST: den gamla hero-scrimens toppstopp låg på alfa 0.42, vilket ger
-        --pa-ink bara 2.74:1 mot ett helvitt kundfoto — och heroens eyebrow/rubrik
-        kan landa där när innehållet är högt (mobil: 48px padding över texten).
-        Alfa-golvet är nu 0.78: minsta stopp = 8.09:1 mot vitt foto, 17.62:1 mot
-        svart, 12.46:1 mot 50 % grått. Alfa är monotont MELLAN två stopp, så
-        minimum ligger alltid PÅ ett stopp → hela ytan är verifierad av stoppen. */
   --pa-scrim-hero: linear-gradient(
     180deg,
     color-mix(in srgb, var(--color-fg) 78%, transparent) 0%,
@@ -101,24 +71,23 @@
     color-mix(in srgb, var(--color-primary-d) 88%, transparent) 0%,
     color-mix(in srgb, var(--color-fg) 94%, transparent) 100%
   );
+}
 
+.paRoot,
+.paPage {
   background: var(--color-bg);
 }
 
-/* ── TYPE-ROLLER — paisleys egna nivåer slår tokens.css generiska sf-roller ────
-   Paisley har EN sektionsnivå (48px): sf-h1 och sf-h2 pekar medvetet på samma
-   storlek. Två snarlika rubriknivåer (56/34) var själva grötigheten. */
-:global([data-world='storefront']) .paRoot :global(.sf-h1),
-:global([data-world='storefront']) .paRoot :global(.sf-h2) {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: var(--pa-fw-display);
-  font-size: var(--pa-fs-sec);
-  line-height: var(--pa-lh-sec);
-  letter-spacing: var(--pa-ls-display);
-  color: var(--color-fg); /* 14.92:1 mot --color-bg */
+/* ── Tidningens satsyta ─────────────────────────────────────────────────────── */
+.paWrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: var(--pa-sp-gutter);
+  padding-right: var(--pa-sp-gutter);
 }
-:global([data-world='storefront']) .paRoot :global(.sf-eyebrow) {
+
+/* ── Gemensamma typroller (mallens EGNA — inga sf-klasser) ──────────────────── */
+.paKicker {
   display: block;
   margin: 0 0 var(--pa-sp-eyebrow);
   font-family: var(--font-body);
@@ -127,42 +96,97 @@
   line-height: var(--pa-lh-micro);
   letter-spacing: var(--pa-ls-micro);
   text-transform: uppercase;
-  color: var(--color-primary); /* 5.56:1 mot --color-bg */
+  color: var(--color-primary);
 }
-:global([data-world='storefront']) .paRoot :global(.sf-body) {
-  font-family: var(--font-body);
-  font-size: var(--pa-fs-body);
-  line-height: var(--pa-lh-body);
-  color: var(--color-fg-2); /* 5.58:1 — backar medvetet för rubriken */
+.paSecTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--pa-fw-display);
+  font-size: var(--pa-fs-sec);
+  line-height: var(--pa-lh-sec);
+  letter-spacing: var(--pa-ls-display);
+  color: var(--color-fg);
 }
-/* Ingress: rubrik → text = 20px. */
-.paLede {
+.paIngress {
   margin: var(--pa-sp-text) 0 0;
   font-family: var(--font-body);
   font-size: var(--pa-fs-lede);
   line-height: var(--pa-lh-body);
   color: var(--color-fg-2);
 }
-
-/* ── 1. TOPPRAD — leveransområde (vänster) + Kontakt/Om/Leveransorter (höger) ── */
-.paTop {
-  border-bottom: 1px solid var(--color-line);
-  background: var(--color-bg);
+.paCaption {
+  margin: var(--pa-sp-eyebrow) 0 0;
+  padding-left: var(--pa-sp-eyebrow);
+  border-left: 2px solid var(--color-primary);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-micro);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
 }
-.paTopInner {
+/* Textlänk = tidningens "läs mer": versaler, understruken med en 2px-linjal. */
+.paTextCta {
+  display: inline-block;
+  margin-top: var(--pa-sp-cta);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-ui);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-ui);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 4px;
+  transition: transform var(--pa-dur) var(--pa-ease);
+}
+.paTextCta:hover {
+  transform: translateY(var(--pa-lift));
+}
+
+/* ── KNAPP — fyrkantig, mikroversaler, hård växling (slår .btn-accent) ──────── */
+.paSquareCta:global(.btn-accent) {
+  box-sizing: border-box;
+  height: 50px;
+  padding: 0 var(--pa-sp-cta);
+  border-radius: var(--sf-radius);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-ui);
+  font-weight: var(--pa-fw-micro);
+  line-height: 46px;
+  letter-spacing: var(--pa-ls-ui);
+  text-transform: uppercase;
+  color: var(--pa-ink); /* 6.17:1 mot --color-primary; #fff vore en 9:e färg */
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform var(--pa-dur) var(--pa-ease), background var(--pa-dur) var(--pa-ease),
+    border-color var(--pa-dur) var(--pa-ease);
+}
+.paSquareCta:global(.btn-accent):hover {
+  transform: translateY(var(--pa-lift));
+  background: var(--color-primary-d);
+  border-color: var(--color-primary-d);
+  box-shadow: none;
+}
+
+/* ═══════════════════ SIDHUVUD — tryckt masthead i tre rader ═══════════════════
+   NavShell äger position/sticky/mobilmeny; formen är vår. Dubblad klass (.paNav.paNav)
+   för att deterministiskt slå shell.navThemed's grid oavsett CSS-ordning. */
+.paNav.paNav {
+  display: block;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--pa-sp-gutter);
+}
+
+/* RAD 1 — kiosk-remsan */
+.paNavStrip {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--pa-sp-eyebrow);
-  flex-wrap: wrap;
-  padding-top: var(--pa-sp-eyebrow);
-  padding-bottom: var(--pa-sp-eyebrow);
-}
-.paTopZone {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
+  gap: var(--pa-sp-text);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-line);
   font-family: var(--font-body);
   font-size: var(--pa-fs-micro);
   font-weight: var(--pa-fw-micro);
@@ -170,110 +194,81 @@
   text-transform: uppercase;
   color: var(--color-fg-2);
 }
-.paTopZone svg {
+.paNavStripZone {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.paNavStripZone svg {
   flex: none;
   color: var(--color-primary);
 }
-.paTopLinks {
+.paNavStripUtil {
+  white-space: nowrap;
+}
+
+/* RAD 2 — masthead: wordmark centrerat, kluster i högermarginalen */
+.paNavMast {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--pa-sp-text);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  justify-content: center;
+  min-height: 46px;
 }
-.paTopLink {
+.paNavWordmark.paNavWordmark :global(.logo-text) {
+  font-family: var(--font-script);
+  font-weight: var(--pa-fw-display);
+  font-size: 30px;
+  letter-spacing: 0;
+  color: var(--color-primary);
+}
+.paNavWordmark.paNavWordmark :global(.logo-img) {
+  max-height: 34px;
+}
+.paNavCluster.paNavCluster {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--pa-sp-eyebrow);
+}
+/* Navens CTA är LÅG (36px) — masthead-raden ska vara en rad, inte en app-bar. */
+.paNavCta:global(.btn-accent) {
+  height: 36px;
+  line-height: 32px;
+  padding: 0 var(--pa-sp-text);
+}
+
+/* RAD 3 — innehållsbandet */
+.paNavMenu.paNavMenu {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--pa-sp-cta);
+  padding: 8px 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 2px solid var(--color-fg);
+}
+.paNavLink {
   font-family: var(--font-body);
-  font-size: var(--pa-fs-micro);
+  font-size: var(--pa-fs-ui);
   font-weight: var(--pa-fw-micro);
-  letter-spacing: var(--pa-ls-micro);
+  letter-spacing: var(--pa-ls-ui);
   text-transform: uppercase;
-  color: var(--color-fg-2);
+  color: var(--color-fg);
+  opacity: 1;
   text-decoration: none;
   transition: color var(--pa-dur) var(--pa-ease);
 }
-.paTopLink:hover {
+.paNavLink:hover {
   color: var(--color-primary);
 }
-.paTopLinks li + li {
-  border-left: 1px solid var(--color-line);
-  padding-left: var(--pa-sp-text);
-}
 
-/* ── 2. ANNONSRAD — tegelröd rad, en centrerad kampanjrad ── */
-.paAd {
-  background: var(--color-primary);
-  padding: var(--pa-sp-eyebrow) var(--pa-sp-gutter);
-}
-.paAdInner {
-  text-align: center;
-}
-.paAdText {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--pa-fs-ui);
-  font-weight: var(--pa-fw-micro);
-  letter-spacing: var(--pa-ls-ui);
-  text-transform: uppercase;
-  color: var(--pa-ink); /* 6.17:1 mot --color-primary */
-}
+/* ═════════════════════════ HEM — sektionerna ═════════════════════════════════ */
 
-/* ── 3. MASTHEAD — centrerat wordmark + nav-länkar under ──
-   Wordmarket ligger på SEKTIONSNIVÅ (48px), inte på en egen 76px-nivå: 76px mot
-   heroens 96px var två nivåer inom 30% av varandra → de slogs om ingången. Nu
-   äger heron toppen ensam och wordmarket är mallens signatur, inte dess rubrik. */
-.paMasthead {
-  text-align: center;
-  padding: var(--pa-sp-block) var(--pa-sp-gutter) var(--pa-sp-cta);
-}
-.paWordmark {
-  margin: 0;
-  font-family: var(--font-script);
-  font-weight: var(--pa-fw-display);
-  font-size: var(--pa-fs-sec);
-  line-height: var(--pa-lh-sec);
-  color: var(--color-primary);
-}
-.paMastTag {
-  margin: var(--pa-sp-eyebrow) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--pa-fs-micro);
-  font-weight: var(--pa-fw-micro);
-  letter-spacing: var(--pa-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-fg-2);
-}
-.paMastNav {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--pa-sp-cta);
-  margin: var(--pa-sp-text) 0 0;
-  padding: 0;
-  list-style: none;
-}
-.paMastLink {
-  display: inline-block;
-  font-family: var(--font-body);
-  font-size: var(--pa-fs-ui);
-  font-weight: var(--pa-fw-micro);
-  letter-spacing: var(--pa-ls-ui);
-  text-transform: uppercase;
-  color: var(--color-fg); /* 14.92:1 */
-  text-decoration: none;
-  padding-bottom: 8px;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: color var(--pa-dur) var(--pa-ease), border-color var(--pa-dur) var(--pa-ease);
-}
-.paMastLink:hover,
-.paMastLink:focus-visible {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-/* ── 4. HERO — fullbredds foto, versal-serif-rubrik i bilden, fyrkantig CTA ── */
+/* 1 — HERO */
 .paHero {
   position: relative;
   min-height: clamp(440px, 74vh, 700px);
@@ -307,8 +302,6 @@
   padding-bottom: var(--pa-sp-eyebrow);
   border-bottom: 1px solid var(--pa-rule-on-dark);
 }
-/* Ingen text-shadow: scrimen bär läsbarheten, så bokstavskanterna får vara raka.
-   En text-shadow under en versal-didone är precis den suddighet vi jagar bort. */
 .paHeroTitle {
   margin: var(--pa-sp-text) 0 0;
   font-family: var(--font-display);
@@ -332,43 +325,10 @@
   margin-top: var(--pa-sp-cta);
 }
 
-/* ── KNAPP — fyrkantig (radie = --sf-radius = 0), mikro-versaler, hård växling ──
-   Slår .btn-accent (0,1,0) med 0,2,0. Global .btn-accent har vikt 700, pill-radie
-   och en box-shadow-bloom på hover — alla tre är morots-tells.
-   FÄRG: global .btn-accent tar sin text ur --color-accent-fg = #ffffff
-   (tokens.css storefront-block) — en NIONDE färg utanför paisleys palett. Vi
-   sätter benvitt (--pa-ink = --color-surface, 6.17:1 mot --color-primary, krav
-   4.5) istället: samma vita yta som all annan text på mörkt i mallen, och
-   färgantalet stannar på exakt 8. */
-.paSquareCta:global(.btn-accent) {
-  box-sizing: border-box;
-  height: 50px;
-  padding: 0 var(--pa-sp-cta);
-  border-radius: var(--sf-radius);
-  font-family: var(--font-body);
-  font-size: var(--pa-fs-ui);
-  font-weight: var(--pa-fw-micro);
-  line-height: 46px; /* 50px − 2×2px kant → exakt knapphöjd */
-  letter-spacing: var(--pa-ls-ui);
-  text-transform: uppercase;
-  color: var(--pa-ink); /* 6.17:1 mot --color-primary (var #ffffff → 9:e färgen) */
-  box-shadow: none;
-  cursor: pointer;
-  transition: transform var(--pa-dur) var(--pa-ease), background var(--pa-dur) var(--pa-ease),
-    border-color var(--pa-dur) var(--pa-ease);
-}
-/* Hover = 4px lyft + hård färgväxling. Ingen scale, ingen skugg-bloom. */
-.paSquareCta:global(.btn-accent):hover {
-  transform: translateY(var(--pa-lift));
-  background: var(--color-primary-d);
-  border-color: var(--color-primary-d);
-  box-shadow: none;
-}
-
-/* ── 5. SAMMA-DAGS-LEVERANS-BAND — mörkt tegelband, statisk "nedräkning" (DEKOR) ── */
+/* 2 — LEVERANSBAND */
 .paDelivery {
   background: var(--color-primary-d);
-  padding: var(--pa-sp-block) var(--pa-sp-gutter);
+  padding: var(--pa-sp-block) 0;
 }
 .paDeliveryInner {
   display: flex;
@@ -377,9 +337,6 @@
   gap: var(--pa-sp-cta);
   flex-wrap: wrap;
 }
-.paDeliveryText {
-  min-width: 0;
-}
 .paDeliveryTag {
   margin: 0 0 var(--pa-sp-eyebrow);
   font-family: var(--font-body);
@@ -387,16 +344,16 @@
   font-weight: var(--pa-fw-micro);
   letter-spacing: var(--pa-ls-micro);
   text-transform: uppercase;
-  color: var(--pa-ink); /* full opacitet: 11.99:1 (var rgba .65 → 6.08:1) */
+  color: var(--pa-ink);
 }
 .paDeliveryLine {
   margin: 0;
+  max-width: 26rem;
   font-family: var(--font-display);
   font-weight: var(--pa-fw-display);
   font-size: var(--pa-fs-card);
   line-height: var(--pa-lh-card);
   color: var(--pa-ink);
-  max-width: 26rem;
 }
 .paDeliveryRight {
   display: flex;
@@ -404,8 +361,7 @@
   gap: var(--pa-sp-cta);
   flex-wrap: wrap;
 }
-/* CTA på mörkt band = INVERTERAD (benvit fyllning, tegelbrun text, 11.99:1).
-   En tegelröd knapp på ett tegelbrunt band tappade sin kant. */
+/* CTA på mörkt band = INVERTERAD (benvit yta, tegelbrun text, 11.99:1). */
 .paDelivery .paSquareCta:global(.btn-accent) {
   background: var(--pa-ink);
   border-color: var(--pa-ink);
@@ -414,7 +370,7 @@
 .paDelivery .paSquareCta:global(.btn-accent):hover {
   background: var(--color-bg);
   border-color: var(--color-bg);
-  color: var(--color-primary-d); /* 10.82:1 mot --color-bg */
+  color: var(--color-primary-d);
 }
 .paTimer {
   display: flex;
@@ -446,29 +402,27 @@
   color: var(--pa-ink);
 }
 
-/* ── 6. FIRA MED BLOMMOR — bred två-kolumns text+bild (bildkollage: stor + inset) ── */
-.paCelebrate {
+/* 3 — MITTUPPSLAGET */
+.paSpread {
   padding: var(--pa-sp-section) 0;
 }
-.paCelebrateGrid {
+.paSpreadGrid {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
   gap: clamp(2.5rem, 6vw, 5rem);
   align-items: center;
 }
-.paCelebrateMedia {
+.paSpreadMedia {
   position: relative;
 }
-.paCelebrateImgMain {
+.paSpreadImgMain {
   aspect-ratio: var(--pa-ratio);
-  background-size: cover; /* = object-fit: cover för bakgrundsbilder */
+  background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
 }
-/* Inset i SAMMA ratio som allt annat (var 1:1 → bröt griden). Hård hårlinje-ram
-   istället för mjuk skugga. */
-.paCelebrateImgInset {
+.paSpreadImgInset {
   position: absolute;
   left: -6%;
   bottom: -10%;
@@ -481,10 +435,24 @@
   border-radius: var(--sf-radius);
   outline: 1px solid var(--color-line);
 }
-.paCelebrateText {
+.paSpreadText {
   min-width: 0;
 }
-.paCelebrateNote {
+/* Två riktiga textspalter — tidningsuppslagets signatur. */
+.paSpreadCols {
+  margin-top: var(--pa-sp-text);
+  column-count: 2;
+  column-gap: var(--pa-sp-gutter);
+  column-rule: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  line-height: var(--pa-lh-body);
+  color: var(--color-fg-2);
+}
+.paSpreadCols p {
+  margin: 0 0 var(--pa-sp-text);
+}
+.paSpreadNote {
   margin: var(--pa-sp-cta) 0 0;
   padding-top: var(--pa-sp-text);
   border-top: 1px solid var(--color-line);
@@ -493,93 +461,83 @@
   line-height: var(--pa-lh-body);
   color: var(--color-fg-2);
 }
-.paCelebrateNote a {
+.paSpreadNote a {
   color: var(--color-primary);
   font-weight: var(--pa-fw-micro);
-}
-.paCelebrateCta {
-  display: inline-block;
-  margin-top: var(--pa-sp-cta);
-  font-family: var(--font-body);
-  font-size: var(--pa-fs-ui);
-  font-weight: var(--pa-fw-micro);
-  letter-spacing: var(--pa-ls-ui);
-  text-transform: uppercase;
-  color: var(--color-primary);
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 4px;
-  text-decoration: none;
-  transition: transform var(--pa-dur) var(--pa-ease);
-}
-.paCelebrateCta:hover {
-  transform: translateY(var(--pa-lift));
 }
 
-/* ── 7 & 10. TEASER-GRID — delad av shop- och blogg-invävningen ── */
-.paTeaserSection {
+/* 4 & 7 — REDAKTIONELLT RUTNÄT med bildtexter (shop + blogg) */
+.paGridSection {
   padding: var(--pa-sp-section) 0;
   border-top: 1px solid var(--color-line);
 }
-.paTeaserHead {
+.paSecHead {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--pa-sp-text);
   flex-wrap: wrap;
 }
-.paTeaserGrid {
+.paSecHead .paTextCta {
+  margin-top: 0;
+}
+.paSecHeadCentered {
+  text-align: center;
+}
+.paPlateGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--pa-sp-gutter);
   margin-top: var(--pa-sp-block);
 }
-.paTeaserCard {
+.paPlateCard {
   display: block;
   text-decoration: none;
   color: inherit;
   transition: transform var(--pa-dur) var(--pa-ease);
 }
-.paTeaserCard:hover {
+.paPlateCard:hover {
   transform: translateY(var(--pa-lift));
 }
-.paTeaserImg {
+.paPlateImg {
   aspect-ratio: var(--pa-ratio);
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
 }
-.paTeaserMeta {
-  display: flex;
+/* BILDTEXT — en tryckt caption under planschen, inte ett kort med padding. */
+.paPlateCaption {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: baseline;
   gap: var(--pa-sp-eyebrow);
-  margin-top: var(--pa-sp-text);
+  margin: var(--pa-sp-eyebrow) 0 0;
+  padding-top: var(--pa-sp-eyebrow);
+  border-top: 1px solid var(--color-fg);
 }
-.paTeaserNum {
+.paPlateNum {
   font-family: var(--font-body);
   font-size: var(--pa-fs-micro);
   font-weight: var(--pa-fw-micro);
   letter-spacing: var(--pa-ls-micro);
   color: var(--color-primary);
 }
-.paTeaserName {
-  margin: 0;
+.paPlateName {
   font-family: var(--font-display);
-  font-weight: var(--pa-fw-display); /* <h3> default = 700 → syntetisk fetstil */
+  font-weight: var(--pa-fw-display);
   font-size: var(--pa-fs-card);
   line-height: var(--pa-lh-card);
-  letter-spacing: var(--pa-ls-display);
   color: var(--color-fg);
 }
-.paTeaserPrice {
-  display: block;
-  margin-top: var(--pa-sp-eyebrow);
+.paPlatePrice {
   font-family: var(--font-body);
-  font-weight: var(--pa-fw-micro);
   font-size: var(--pa-fs-body);
+  font-weight: var(--pa-fw-micro);
+  font-variant-numeric: tabular-nums;
   color: var(--color-primary);
 }
-.paTeaserExcerpt {
+.paPlateExcerpt {
   margin: var(--pa-sp-eyebrow) 0 0;
   font-family: var(--font-body);
   font-size: var(--pa-fs-body);
@@ -587,10 +545,147 @@
   color: var(--color-fg-2);
 }
 
-/* ── Presentkort — smal rad, aldrig en hel sektion ── */
+/* 5 — PRISER i tidningskolumner (punktlinje-rader) */
+.paPrices {
+  padding: var(--pa-sp-section) 0;
+  border-top: 1px solid var(--color-line);
+}
+.paPriceList {
+  margin: var(--pa-sp-block) 0 0;
+  padding: 0;
+  list-style: none;
+  column-count: 2;
+  column-gap: clamp(2rem, 5vw, 4rem);
+  column-rule: 1px solid var(--color-line);
+}
+.paPriceList > li {
+  break-inside: avoid;
+}
+.paPriceRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: baseline;
+  gap: var(--pa-sp-eyebrow);
+  padding: var(--pa-sp-text) 0;
+  border-bottom: 1px solid var(--color-line);
+  cursor: pointer;
+  transition: background var(--pa-dur) var(--pa-ease);
+}
+.paPriceRow:hover,
+.paPriceRow:focus-visible {
+  background: var(--color-accent-soft);
+}
+.paPriceNum {
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-micro);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-micro);
+  color: var(--color-primary);
+}
+.paPriceBody {
+  display: block;
+  min-width: 0;
+}
+.paPriceName {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--pa-fw-display);
+  font-size: var(--pa-fs-card);
+  line-height: var(--pa-lh-card);
+  color: var(--color-fg);
+}
+.paPriceDesc {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  line-height: var(--pa-lh-body);
+  color: var(--color-fg-2);
+}
+/* Punktlinjen mellan namn och pris — prislistans tell. */
+.paPriceDots {
+  align-self: end;
+  height: 1px;
+  margin-bottom: 6px;
+  border-bottom: 1px dotted var(--color-line);
+}
+.paPriceMeta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pa-sp-eyebrow);
+  white-space: nowrap;
+}
+.paPriceDur {
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-micro);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.paPriceKr {
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  font-weight: var(--pa-fw-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+
+/* 6 — OM */
+.paAbout {
+  padding: var(--pa-sp-section) 0;
+  border-top: 1px solid var(--color-line);
+}
+.paAboutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: clamp(2.5rem, 6vw, 5rem);
+  align-items: center;
+}
+.paFrame {
+  aspect-ratio: var(--pa-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+  box-shadow: 0 0 0 10px var(--color-bg), 0 0 0 11px var(--color-line);
+}
+/* FAKTARUTA — definitionslista med hårlinjer (tidningens fact box). */
+.paFactList {
+  margin: var(--pa-sp-cta) 0 0;
+  padding: 0;
+  border-top: 2px solid var(--color-fg);
+}
+.paFactRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pa-sp-text);
+  padding: var(--pa-sp-eyebrow) 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.paFactRow dt {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--pa-fw-display);
+  font-size: var(--pa-fs-card);
+  line-height: var(--pa-lh-card);
+  color: var(--color-fg);
+}
+.paFactRow dd {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-micro);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+/* PRESENTKORT — smal rad */
 .paGift {
   background: var(--color-accent-soft);
-  padding: var(--pa-sp-gutter);
+  padding: var(--pa-sp-gutter) 0;
 }
 .paGiftInner {
   display: flex;
@@ -600,9 +695,8 @@
   gap: var(--pa-sp-eyebrow) var(--pa-sp-text);
   text-align: center;
 }
-/* Raden är EN linje — eyebrowns 12px-marginal nedåt gäller inte här. Måste bära
-   0,4,0 för att slå paisleys egen sf-eyebrow-roll ovan (0,3,0). */
-:global([data-world='storefront']) .paRoot .paGiftInner :global(.sf-eyebrow) {
+.paGiftInner .paKicker,
+.paGiftInner .paTextCta {
   margin: 0;
 }
 .paGiftText {
@@ -614,27 +708,51 @@
   color: var(--color-primary); /* 4.74:1 mot --color-accent-soft */
 }
 
-/* ── 9. OM — bildram runt sfAboutPhoto (dubbel konturlinje, redaktionell) ── */
-.paAboutGrid {
-  padding-top: var(--pa-sp-section);
-  padding-bottom: var(--pa-sp-section);
+/* 9 — PLATS: tryckt notis */
+.paNotice {
+  padding: var(--pa-sp-section) 0;
+  border-top: 1px solid var(--color-line);
 }
-.paFrame {
-  aspect-ratio: var(--pa-ratio);
-  border-radius: var(--sf-radius);
-  box-shadow: 0 0 0 10px var(--color-bg), 0 0 0 11px var(--color-line);
+.paNoticeGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+.paNoticeAddr {
+  margin: var(--pa-sp-text) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  line-height: var(--pa-lh-body);
+  color: var(--color-fg-2);
+}
+.paNoticeHours {
+  border-top: 2px solid var(--color-fg);
+  padding-top: var(--pa-sp-eyebrow);
+}
+.paNoticeHead {
+  margin: 0 0 var(--pa-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-micro);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.paNoticeRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pa-sp-text);
+  margin: 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  color: var(--color-fg-2);
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── 11. PLATS — rytm ur samma skala som resten ── */
-.paLocGrid {
-  padding-top: var(--pa-sp-section);
-  padding-bottom: var(--pa-sp-section);
-}
-.paLocLine {
-  margin-top: var(--pa-sp-text);
-}
-
-/* ── 12. CLOSING — fullbredds foto, mörkt tegel-overlay, fyrkantig CTA ── */
+/* 10 — CLOSING */
 .paClosing {
   position: relative;
   background-size: cover;
@@ -653,8 +771,6 @@
   max-width: 40rem;
   margin: 0 auto;
 }
-/* Upprätt, inte kursiv: DM Serif Display laddar ingen italic → browsern lutade
-   400-konturerna på skoj (syntetisk oblique). Upprätt didone = tidning. */
 .paClosingTitle {
   margin: 0;
   font-family: var(--font-display);
@@ -676,50 +792,51 @@
   margin-top: var(--pa-sp-cta);
 }
 
-/* ═══ Sam-applicerade skärpningar av de DELADE .sf*-primitiven ═══
-   (.paRoot .paX = 0,2,0 → vinner över storefront.module.css egna 0,1,0.) */
-
-/* Sektionsavstånd ur skalan (delade sfServices har sin egen clamp). */
-.paRoot .paSection {
-  padding-top: var(--pa-sp-section);
-  padding-bottom: var(--pa-sp-section);
+/* ═══════════════════════ UNDERSIDOR (/om /tjanster /kontakt) ═══════════════════ */
+.paPage {
+  padding: var(--pa-sp-section) var(--pa-sp-gutter);
 }
-/* Tjänstrader: namnet på KORT-nivå i äkta 400, beskrivningen i brödtext. */
-.paRoot .paRowName {
-  font-family: var(--font-display);
-  font-weight: var(--pa-fw-display); /* delad primitiv: 600 → syntetisk fetstil */
-  font-size: var(--pa-fs-card);
-  line-height: var(--pa-lh-card);
-  letter-spacing: var(--pa-ls-display);
-}
-.paRoot .paRowDesc {
-  font-size: var(--pa-fs-body);
-  line-height: var(--pa-lh-body);
-}
-.paRoot .paRowNum {
-  font-family: var(--font-body);
-  font-size: var(--pa-fs-micro);
-  font-weight: var(--pa-fw-micro);
-  letter-spacing: var(--pa-ls-micro);
-  opacity: 1; /* var 0.75 — dimmad text är oskärpa */
-}
-.paRoot .paRowPrice {
-  font-size: var(--pa-fs-body);
-  font-weight: var(--pa-fw-micro);
-  font-variant-numeric: tabular-nums;
-}
-.paRoot .paRow {
-  transition: background var(--pa-dur) var(--pa-ease), padding-left var(--pa-dur) var(--pa-ease);
-}
-/* Stats: värdet på KORT-nivå, etiketten som mikrotext. */
-.paRoot .paStatValue {
+.paPageTitle {
+  margin: 0;
   font-family: var(--font-display);
   font-weight: var(--pa-fw-display);
-  font-size: var(--pa-fs-card);
-  line-height: var(--pa-lh-card);
+  text-transform: uppercase;
+  font-size: var(--pa-fs-sec);
+  line-height: var(--pa-lh-sec);
+  letter-spacing: var(--pa-ls-display);
+  color: var(--color-fg);
 }
-.paRoot .paStatLabel {
-  margin-top: 8px;
+.paPageEnd {
+  margin-top: var(--pa-sp-block);
+  text-align: center;
+}
+.paEmpty {
+  max-width: 40rem;
+  margin: var(--pa-sp-block) auto 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-lede);
+  line-height: var(--pa-lh-body);
+  color: var(--color-fg-2);
+}
+.paEmpty a {
+  color: var(--color-primary);
+  font-weight: var(--pa-fw-micro);
+}
+
+/* /om — REPORTAGE */
+.paReportage {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.paByline {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pa-sp-text);
+  margin-top: var(--pa-sp-text);
+  padding: var(--pa-sp-eyebrow) 0;
+  border-top: 2px solid var(--color-fg);
+  border-bottom: 1px solid var(--color-line);
   font-family: var(--font-body);
   font-size: var(--pa-fs-micro);
   font-weight: var(--pa-fw-micro);
@@ -727,45 +844,265 @@
   text-transform: uppercase;
   color: var(--color-fg-2);
 }
-/* Mer-länkar (butik / blogg / karta / "se allt"): interaktiv mikrotext. */
-.paRoot .paMoreLink {
-  margin-top: var(--pa-sp-cta);
+.paPlate {
+  margin-top: var(--pa-sp-block);
+  aspect-ratio: var(--pa-ratio);
+  max-height: 520px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+/* Brödtexten i TVÅ spalter — reportagets kropp. */
+.paColumns {
+  margin-top: var(--pa-sp-block);
+  column-count: 2;
+  column-gap: clamp(2rem, 5vw, 3rem);
+  column-rule: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  line-height: var(--pa-lh-body);
+  color: var(--color-fg-2);
+}
+.paColumns p {
+  margin: 0 0 var(--pa-sp-text);
+}
+/* Urklippt citat — upprätt (DM Serif laddar ingen italic → syntetisk lutning). */
+.paPull {
+  break-inside: avoid;
+  padding: var(--pa-sp-text) 0;
+  border-top: 2px solid var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+  font-family: var(--font-display);
+  font-weight: var(--pa-fw-display);
+  font-size: var(--pa-fs-card);
+  line-height: var(--pa-lh-card);
+  color: var(--color-fg);
+}
+.paFactbox {
+  margin-top: var(--pa-sp-block);
+  padding: var(--pa-sp-gutter);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+}
+.paFactHead {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-micro);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+/* /tjanster + /kontakt — sidhuvud */
+.paListHead {
+  max-width: 900px;
+  margin: 0 auto var(--pa-sp-block);
+}
+
+/* /kontakt — kolofon-kort */
+.paColophon {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--pa-sp-gutter);
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.paColCard {
+  padding: var(--pa-sp-gutter);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-top: 2px solid var(--color-fg);
+  border-radius: var(--sf-radius);
+}
+.paColHead {
+  margin: 0 0 var(--pa-sp-text);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-micro);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.paColText {
+  margin: 0 0 8px;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  line-height: var(--pa-lh-body);
+  color: var(--color-fg-2);
+}
+.paColHours {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pa-sp-text);
+  margin: 0;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  color: var(--color-fg-2);
+  font-variant-numeric: tabular-nums;
+}
+.paColLink {
+  display: inline-block;
+  margin-top: var(--pa-sp-eyebrow);
   font-family: var(--font-body);
   font-size: var(--pa-fs-ui);
   font-weight: var(--pa-fw-micro);
   letter-spacing: var(--pa-ls-ui);
   text-transform: uppercase;
+  color: var(--color-primary);
+  text-decoration: none;
   border-bottom: 2px solid var(--color-primary);
   padding-bottom: 4px;
-  transition: transform var(--pa-dur) var(--pa-ease);
 }
-.paRoot .paMoreLink:hover {
-  gap: 0.4rem; /* ingen "gap-krypning" — rörelsen är lyftet, inget annat */
-  border-color: var(--color-primary);
-  transform: translateY(var(--pa-lift));
+
+/* ═══════════════════════════ SIDFOT — KOLOFON ════════════════════════════════ */
+.paFoot {
+  background: var(--color-primary-d);
+  color: var(--pa-ink);
+  padding: var(--pa-sp-section) var(--pa-sp-gutter) var(--pa-sp-block);
 }
-/* I sektionshuvudet ligger länken på rubrikens baslinje — ingen 32px-marginal.
-   Detsamma i kartrutan (centrerad i sin box) och på presentkortsraden. */
-.paRoot .paTeaserHead .paMoreLink,
-.paRoot .paGiftInner .paMoreLink,
-.paRoot .paMapLink {
-  margin-top: 0;
+.paFootGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: clamp(2rem, 6vw, 4rem);
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.paFootMast {
+  min-width: 0;
+}
+.paFootWordmark {
+  margin: 0;
+  font-family: var(--font-script);
+  font-weight: var(--pa-fw-display);
+  font-size: var(--pa-fs-sec);
+  line-height: var(--pa-lh-sec);
+  color: var(--pa-ink);
+}
+.paFootTagline {
+  margin: var(--pa-sp-text) 0 0;
+  max-width: 22rem;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  line-height: var(--pa-lh-body);
+  color: var(--pa-ink);
+}
+.paFootSocial {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pa-sp-text);
+  margin: var(--pa-sp-cta) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.paFootCols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--pa-sp-gutter);
+}
+.paFootHead {
+  margin: 0 0 var(--pa-sp-text);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--pa-line-on-dark);
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-micro);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-micro);
+  text-transform: uppercase;
+  color: var(--pa-ink);
+}
+.paFootText {
+  margin: 0 0 8px;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  line-height: var(--pa-lh-body);
+  color: var(--pa-ink);
+}
+.paFootHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pa-sp-eyebrow);
+  margin: 0;
+  padding: 4px 0;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-body);
+  color: var(--pa-ink);
+  font-variant-numeric: tabular-nums;
+}
+.paFootNav {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.paFootLink {
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-ui);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-ui);
+  text-transform: uppercase;
+  color: var(--pa-ink);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--pa-dur) var(--pa-ease);
+}
+.paFootLink:hover {
+  border-color: var(--pa-rule-on-dark);
+}
+.paFootRule {
+  max-width: 1180px;
+  margin: var(--pa-sp-block) auto 0;
+  height: 1px;
+  background: var(--pa-line-on-dark);
+}
+.paFootImpressum {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--pa-sp-eyebrow);
+  max-width: 1180px;
+  margin: var(--pa-sp-text) auto 0;
+  font-family: var(--font-body);
+  font-size: var(--pa-fs-micro);
+  font-weight: var(--pa-fw-micro);
+  letter-spacing: var(--pa-ls-micro);
+  text-transform: uppercase;
+  color: var(--pa-ink);
+}
+
+/* ═══════════════════════════ RESPONSIVT ══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .paFootGrid {
+    grid-template-columns: 1fr;
+  }
+  .paFootCols {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 760px) {
-  .paTopInner {
-    justify-content: center;
-    text-align: center;
-  }
-  .paCelebrateGrid {
+  .paSpreadGrid,
+  .paAboutGrid,
+  .paNoticeGrid {
     grid-template-columns: 1fr;
   }
-  .paCelebrateImgInset {
+  .paSpreadImgInset {
     position: static;
     width: 60%;
     margin-top: var(--pa-sp-eyebrow);
   }
-  .paTeaserGrid {
+  .paSpreadCols,
+  .paPriceList,
+  .paColumns {
+    column-count: 1;
+    column-rule: none;
+  }
+  .paPlateGrid {
     grid-template-columns: 1fr 1fr;
   }
   .paDeliveryInner {
@@ -775,10 +1112,30 @@
   .paDeliveryRight {
     justify-content: center;
   }
+  /* NavShell visar burgaren < 720px — masthead-raden blir bara wordmark. */
+  .paNavStripUtil {
+    display: none;
+  }
+}
+
+/* NavShell tar över med burgare + overlay < 720px. Våra dubblade nav-klasser
+   (0,2,0) skulle annars slå shellens display:none (0,1,0) och lämna kvar menyrad
+   + kluster bakom burgaren. */
+@media (max-width: 720px) {
+  .paNavMenu.paNavMenu,
+  .paNavCluster.paNavCluster {
+    display: none;
+  }
+  .paNavMast {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 520px) {
-  .paTeaserGrid {
+  .paPlateGrid {
+    grid-template-columns: 1fr;
+  }
+  .paFootCols {
     grid-template-columns: 1fr;
   }
 }

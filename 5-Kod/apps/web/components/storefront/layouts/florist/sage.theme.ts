@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { SageNav, SageFooter } from './sage.chrome'
+import { SageOm, SageTjanster, SageKontakt } from './sage.pages'
 
 // Foto-id:n verifierade med curl -sI → 200 OCH öppnade som bild (2026-07-11) —
 // bort-sorterade träffar under vägen: lökar, Spider-Man, en kameraväska, en
@@ -119,4 +121,10 @@ export const sage: FloristTheme = {
     ],
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  // goal-59 TEMA-PAKET: Sage äger HELA sajten — sidhuvud (centrerat wordmark,
+  // transparent över heron), sidfot (galleri-plakett) och undersidorna (museal /om,
+  // tabell-/tjanster, luftig /kontakt). Funktionen (NavShell, korg, konto, modul-gatade
+  // länkar, Bookable) är fortfarande plattformens.
+  chrome: { Nav: SageNav, Footer: SageFooter },
+  pages: { om: SageOm, tjanster: SageTjanster, kontakt: SageKontakt },
 }

@@ -3,21 +3,25 @@ import { Reveal } from '../../Reveal'
 import { Gallery } from '../../Gallery'
 import { Bookable } from '../../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
-import { formatPrice, serviceDesc, serviceNum } from '../../service-format'
+import { formatPrice, formatDuration, serviceDesc } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './calytrix.module.css'
 
 /**
- * CALYTRIX — plommon/vinröd e-handelsflorist (florist-sviten, goal-58). E-handel
- * FÖRST: butiken är hjälten, inte hantverket. EGEN sektionsordning (ingen annan
- * mall i sviten har den): (1) smal vinröd annonsrad, (2) fullbredds foto-hero med
- * jättestor centrerad serif-rubrik + liten guld-CTA, (3) mörkt band med en rad
- * marknadsföringscopy, (4) "Mest sålda" — horisontell scroll-rad med flytande
- * "Populär"-pill, (5) tjänster/priser, (6) om, (7) blogg, (8) galleri, (9) plats,
- * (10) closing. Webshop/blogg/presentkort vävs in via `modules`-propen (S10) —
- * samma modulkontrakt som övriga florist-mallar.
+ * CALYTRIX — plommon/vinröd e-handelsflorist (tema-paket, goal-59). NOLL delade
+ * .sf*-sektioner: hemmet är mallens EGET från hero till closing (det var i den
+ * delade nedre halvan alla 20 mallar blev samma sida).
+ *
+ * Ordning: (1) fullbredds foto-hero med rubriken I bilden → (2) mörkt marknadsband
+ * → (3) produkt-karusell (horisontell scroll + "Populär"-pill) → (4) priser som
+ * RUTNÄT av kort (varje kort = <Bookable>) → (5) blogg-rad → (6) presentkort-rad
+ * → (7) galleri → (8) OM som brett bildband med texten i overlay → (9) plats-rad
+ * → (10) closing. Annonsraden bor numera i navet (calytrix.chrome.tsx) så den
+ * finns på varje sida, som i en riktig butik.
+ *
+ * Modul-gatingen är oförändrad: shopReachable gatar butikslänkar, teasers-sektioner
+ * ritas bara när teasers finns, presentkort = smal rad. Layouten är SYNKRON.
  */
 export function CalytrixLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -32,18 +36,7 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
 
   return (
     <div className={styles.calRoot}>
-      {/* 1 — ANNONSRAD: smal vinröd rad högst upp */}
-      <div className={styles.calAnnounce}>
-        {shopReachable ? (
-          <Link href="/shop" className={styles.calAnnounceText}>
-            {content.utility}
-          </Link>
-        ) : (
-          <span className={styles.calAnnounceText}>{content.utility}</span>
-        )}
-      </div>
-
-      {/* 2 — FULLBREDDS FOTO-HERO: jättestor centrerad serif-rubrik + guld-CTA */}
+      {/* 1 — FULLBREDDS FOTO-HERO: rubriken ligger I bilden */}
       <section className={styles.calHero} style={{ backgroundImage: `url(${heroImg})` }}>
         <div className={styles.calHeroScrim} aria-hidden="true" />
         <div className={styles.calHeroInner}>
@@ -55,21 +48,18 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
         </div>
       </section>
 
-      {/* 3 — MÖRKT MARKNADSFÖRINGS-BAND */}
+      {/* 2 — MÖRKT MARKNADSFÖRINGS-BAND */}
       <section className={styles.calBand}>
         <p className={styles.calBandText}>{content.tagline}</p>
       </section>
 
-      {/* 4 — MEST SÅLDA: webshop-modulen invävd som horisontell scroll-rad med
-          flytande "Populär"-pill. Bara ett smakprov; hela sortimentet på /shop. */}
+      {/* 3 — PRODUKT-KARUSELL (webshop-modulen invävd) */}
       {shopTeasers.length > 0 ? (
         <section className={styles.calSection}>
           <Reveal className={styles.calSecHead} as="div">
             <div>
               <p className="sf-eyebrow">{content.shopEyebrow ?? '— Mest sålda'}</p>
-              <h2 className="sf-h2" style={{ marginTop: 12 }}>
-                {content.shopTitle ?? 'Beställ det alla vill ha'}
-              </h2>
+              <h2 className={styles.calSecTitle}>{content.shopTitle ?? 'Beställ det alla vill ha'}</h2>
             </div>
             {shopReachable ? (
               <Link href="/shop" className={styles.calSecCta}>
@@ -97,80 +87,44 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
         </section>
       ) : null}
 
-      {/* 5 — TJÄNSTER & PRISER — numrerade rader, bara när det finns aktiva tjänster. */}
+      {/* 4 — PRISER SOM RUTNÄT AV KORT (mallens egna, inte den delade radlistan) */}
       {rows.length > 0 ? (
-        <section className={shared.sfServices}>
-          <div className={shared.sfNarrow}>
-            <Reveal style={{ textAlign: 'center' }}>
+        <section className={styles.calSection}>
+          <Reveal className={styles.calSecHead} as="div">
+            <div>
               <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className="sf-h1" style={{ marginTop: 12 }}>
-                {content.servicesTitle}
-              </h2>
-            </Reveal>
-            <div className={shared.sfRowList}>
-              {rows.map((s, i) => (
-                <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={shared.sfRow} label={`Boka — ${s.name}`}>
-                    <span className={shared.sfRowNum} aria-hidden="true">
-                      {serviceNum(i)}
-                    </span>
-                    <span className={shared.sfRowMain}>
-                      <span className={shared.sfRowName}>{s.name}</span>
-                      <span className={shared.sfRowDesc}>{serviceDesc(s)}</span>
-                    </span>
-                    <span className={shared.sfRowMeta}>
-                      <span className={shared.sfRowPrice}>{formatPrice(s)}</span>
-                    </span>
-                  </Bookable>
-                </Reveal>
-              ))}
+              <h2 className={styles.calSecTitle}>{content.servicesTitle}</h2>
             </div>
             {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={shared.sfMoreLink}>
-                  Se allt vi gör <span aria-hidden="true">→</span>
-                </a>
-              </Reveal>
+              <Link href="/tjanster" className={styles.calSecCta}>
+                Se allt vi gör
+              </Link>
             ) : null}
+          </Reveal>
+          <div className={styles.calPriceGrid}>
+            {rows.map((s, i) => (
+              <Reveal key={s.id} as="div" delay={i * 60}>
+                <Bookable className={styles.calPriceCard} label={`Boka — ${s.name}`}>
+                  <span className={styles.calPriceName}>{s.name}</span>
+                  <span className={styles.calPriceDesc}>{serviceDesc(s)}</span>
+                  <span className={styles.calPriceFoot}>
+                    <span className={styles.calPriceValue}>{formatPrice(s)}</span>
+                    <span className={styles.calPriceDur}>{formatDuration(s)}</span>
+                  </span>
+                </Bookable>
+              </Reveal>
+            ))}
           </div>
         </section>
       ) : null}
 
-      {/* 6 — OM */}
-      <section className={styles.calSection}>
-        <div className={`${shared.sfWide} ${shared.sfAboutGrid}`}>
-          <Reveal>
-            <div className={shared.sfAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
-          </Reveal>
-          <Reveal delay={120}>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
-              {content.aboutTitle}
-            </h2>
-            <p className="sf-body" style={{ marginTop: 20 }}>
-              {content.aboutCopyHome}
-            </p>
-            <ul className={shared.sfStatTrio}>
-              {content.stats.map(([n, l]) => (
-                <li key={l}>
-                  <span className={shared.sfStatValue}>{n}</span>
-                  <span className={shared.sfStatLabel}>{l}</span>
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* 7 — FRÅN BLOGGEN — blogg-modulen invävd (samma kort-formspråk som butiken). */}
+      {/* 5 — FRÅN BLOGGEN (samma kort-formspråk som butiken) */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.calSection}>
           <Reveal className={styles.calSecHead} as="div">
             <div>
               <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
-              <h2 className="sf-h2" style={{ marginTop: 12 }}>
-                {content.blogTitle ?? 'Nytt från floristen'}
-              </h2>
+              <h2 className={styles.calSecTitle}>{content.blogTitle ?? 'Nytt från floristen'}</h2>
             </div>
             <Link href="/blogg" className={styles.calSecCta}>
               {content.blogCta ?? 'Läs hela bloggen'}
@@ -195,16 +149,14 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
         </section>
       ) : null}
 
-      {/* PRESENTKORT — smal rad, aldrig en hel sektion */}
+      {/* 6 — PRESENTKORT: smal rad, aldrig en hel sektion */}
       {presentkortLive ? (
         <div className={styles.calGiftRow}>
           <Reveal className={styles.calGiftInner} as="div">
             <p className="sf-eyebrow" style={{ margin: 0 }}>
               {content.giftEyebrow ?? '— Presentkort'}
             </p>
-            <p className="sf-body" style={{ margin: 0 }}>
-              {content.giftLede ?? 'Ge bort något som blommar.'}
-            </p>
+            <p className={styles.calGiftText}>{content.giftLede ?? 'Ge bort något som blommar.'}</p>
             <Link href="/presentkort" className={styles.calGiftCta}>
               {content.giftCta ?? 'Till presentkorten'}
             </Link>
@@ -212,78 +164,75 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
         </div>
       ) : null}
 
-      {/* 8 — GALLERI. Wrappern (.calGallery) drar in galleriet i mallens ENDA
-          bildratio (4:5) och raka hörn — Gallery.tsx stylas av den delade
-          storefront.module.css (1:1 + hover-scale) som mallen inte äger. */}
-      <section className={shared.sfGalleryBand}>
-        <div className={shared.sfWide}>
-          <Reveal>
+      {/* 7 — GALLERI (mallens 4:5-ratio + raka hörn via .calGallery-wrappern) */}
+      {content.galleryImages.length > 0 ? (
+        <section className={styles.calSection}>
+          <div className={styles.calSecHead}>
             <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
-          </Reveal>
-          <Reveal className={styles.calGallery} as="div">
+          </div>
+          <Reveal className={`${styles.calGallery} ${styles.calGalleryWrap}`} as="div">
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
           </Reveal>
-        </div>
+        </section>
+      ) : null}
+
+      {/* 8 — OM: brett bildband, texten ligger som overlay-platta i bilden */}
+      <section className={styles.calAboutBand} style={{ backgroundImage: `url(${content.aboutImage})` }}>
+        <div className={styles.calAboutScrim} aria-hidden="true" />
+        <Reveal className={styles.calAboutPanel} as="div">
+          <p className="sf-eyebrow">— Om {tenant.name}</p>
+          <h2 className={styles.calAboutTitle}>{content.aboutTitle}</h2>
+          <p className={styles.calAboutText}>{content.aboutCopyHome}</p>
+          <ul className={styles.calAboutStats}>
+            {content.stats.map(([n, l]) => (
+              <li key={l}>
+                <span className={styles.calStatValue}>{n}</span>
+                <span className={styles.calStatLabel}>{l}</span>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
       </section>
 
-      {/* 9 — PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
-          <Reveal>
+      {/* 9 — PLATS: en rad med adress · tider · karta-länk (butikens fot, inte en split) */}
+      <section className={styles.calLocRow}>
+        <div className={styles.calLocInner}>
+          <div>
             <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta hit'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
-              {location?.address ? location.address.split(',')[0] : tenant.name}
-            </h2>
-            {location?.address ? (
-              <p className="sf-body" style={{ marginTop: 20 }}>
-                {location.address}
-              </p>
-            ) : (
-              <p className="sf-body" style={{ marginTop: 20 }}>
-                Adress visas snart.
-              </p>
-            )}
-            {location?.hours ? (
-              <div className={shared.sfHours}>
-                {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
-                    <span>{h.day}</span>
-                    <span>{h.time}</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </Reveal>
-          <Reveal delay={120}>
-            <div className={shared.sfMap}>
-              {location?.address ? (
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={shared.sfMapLink}
-                >
-                  Visa på karta <span aria-hidden="true">→</span>
-                </a>
-              ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
-              )}
+            <p className={styles.calLocAddr}>{location?.address ?? 'Adress visas snart.'}</p>
+          </div>
+          {location?.hours ? (
+            <div className={styles.calLocHours}>
+              {location.hours.map((h) => (
+                <div key={h.day} className={styles.calLocHoursRow}>
+                  <span>{h.day}</span>
+                  <span>{h.time}</span>
+                </div>
+              ))}
             </div>
-          </Reveal>
+          ) : null}
+          {location?.address ? (
+            <a
+              className={styles.calSecCta}
+              href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              Visa på karta
+            </a>
+          ) : null}
         </div>
       </section>
 
-      {/* 10 — CLOSING */}
-      <section className={shared.sfClosing}>
+      {/* 10 — CLOSING: mörk plommonplatta (ingen parallax, inget foto) */}
+      <section className={styles.calClosing}>
         <Reveal>
-          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto' }}>
-            {content.closingTitle ?? 'Redo att beställa?'}
-          </h2>
-          <p className={shared.sfClosingLead}>
+          <h2 className={styles.calClosingTitle}>{content.closingTitle ?? 'Redo att beställa?'}</h2>
+          <p className={styles.calClosingLede}>
             {content.closingLede ?? 'Handla i butiken, boka en tjänst eller hör av dig — vi finns här.'}
           </p>
-          <div style={{ marginTop: 32 }}>
-            <BookCta className={shared.sfClosingCta} />
+          <div className={styles.calClosingActions}>
+            <BookCta className={styles.calHeroCta} />
           </div>
         </Reveal>
       </section>

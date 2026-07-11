@@ -6,27 +6,28 @@ import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc, serviceNum } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './oliviathyme.module.css'
 
 /**
- * OLIVIA & THYME — puderrosa + varm brun, butiks-charm (goal-58, florist-sviten).
- * EGET formspråk: en fullbredds butiksfasad-hero utan rubrik-overlay (bara ett
- * hängande namnskylt-"wordmark"), en beige välkomst-remsa som bär den riktiga
- * rubriken, en "Ur butiken"-remsa som mynnar ut i två stora produktbilder där
- * den ena bär en stjärn-badge ("Bäst säljare") — sedan tjänster, om, presentkort,
- * blogg, galleri, plats och closing. Kvarterbutikens skyltfönster, inte en mood
- * board. Webshop/blogg/presentkort vävs in via `modules`-propen (S10) precis som
- * övriga mallar i sviten.
+ * OLIVIA & THYME — puderrosa + varm brun, KVARTERSBUTIK (goal-58 → goal-59 tema-paket).
  *
- * SKÄRPE-PASS: typografin går genom mallens EGNA roller (.otDisplay/.otSectionTitle/
- * .otCardTitle/.otBody/.otEyebrow) i stället för de globala .sf-*-rollerna. Skälet är
- * mätbart: .sf-h1 är 56px — större än mallens egen hero-rubrik var — och .sf-h2 34px,
- * vilket gav en platt skala (56/54/44/34/22/17/16) där allt vägde lika.
- * Rollerna i oliviathyme.module.css ger FEM nivåer — 96 → 48 → 28 → 18 → 12
- * (×2.00 / ×1.71 / ×1.56 / ×1.50) — och all spacing ur EN skala (12/20/24/32/48/96),
- * så rytmen är identisk i varje sektion. Inga inline font-size/margin kvar — allt bor
- * i CSS:en och går att mäta där.
+ * goal-59: mallen är inte längre "en hem-layout ovanpå plattformens skelett" utan ett
+ * HELT PAKET — eget sidhuvud (oliviathyme.chrome.tsx), egen sidfot och egna undersidor
+ * (oliviathyme.pages.tsx). Den här filen är hemmet, och den använder NOLL delade
+ * .sf*-klasser: galleri-bandet, plats-bandet och closing-bandet — de tre sektioner som
+ * gjorde alla mallar till samma sida i nedre halvan — är nu butikens egna
+ * (.otGalleryBand / .otFind / .otClosing).
+ *
+ * Sektionsordningen (butikens skyltfönster, inte en mood board):
+ *   butiksfasad fullbleed (ingen rubrik-overlay, bara namnskylten)
+ *   → beige remsa med den riktiga rubriken + fyrkantig CTA
+ *   → "Ur butiken" → TVÅ stora produktbilder, den första med stjärn-badge
+ *   → tjänster som handskriven meny-lista
+ *   → om + stat-trio → presentkort (smal rad) → blogg → galleri → hitta hit → closing.
+ *
+ * Modul-gatingen är oförändrad: shopReachable gatar HELA butiksbandet (varje bricka
+ * länkar till /shop/:id), teasers-sektionerna renderas bara när teasers finns,
+ * presentkort är en smal rad. Layouten är SYNKRON.
  */
 export function OliviaThymeLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -69,13 +70,9 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
         </Reveal>
       </section>
 
-      {/* UR BUTIKEN — webshop-modulen invävd som butikens eget skyltfönster:
-          intro + fyrkantig brun CTA, sedan två stora produktbilder (en med
-          stjärn-badge). Hela bandet är gatat på shopReachable OCH på riktiga
-          teasers: produktbrickorna länkar till /shop/:id, så en oåtkomlig butik
-          får inte rendera bandet alls — annars är varje bricka en 404-fälla (S9).
-          Teasers laddas visserligen bara när shop är live, men gatingen ska vara
-          explicit på VARJE /shop-länk, inte underförstådd via datat. */}
+      {/* UR BUTIKEN — webshop-modulen invävd som butikens eget skyltfönster.
+          Gatat på shopReachable OCH riktiga teasers: brickorna länkar till
+          /shop/:id, så en oåtkomlig butik får aldrig rendera bandet (S9). */}
       {shopReachable && showcase.length > 0 ? (
         <>
           <section className={styles.otShopIntro}>
@@ -119,10 +116,10 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
         </>
       ) : null}
 
-      {/* TJÄNSTER — bara när det finns aktiva tjänster (goal-55 8B). */}
+      {/* TJÄNSTER — handskriven meny-lista. Bara när det finns aktiva tjänster. */}
       {rows.length > 0 ? (
         <section className={styles.otServices}>
-          <div className={shared.sfNarrow}>
+          <div className={styles.otNarrow}>
             <Reveal className={styles.otCenter}>
               <p className={styles.otEyebrow}>{content.servicesEyebrow}</p>
               <h2 className={styles.otSectionTitle}>{content.servicesTitle}</h2>
@@ -156,9 +153,9 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
         </section>
       ) : null}
 
-      {/* OM — foto i rak vit ram + berättelsen + stat-trion. */}
+      {/* OM — foto i creme passepartout + berättelsen + stat-trion. */}
       <section className={styles.otAbout}>
-        <div className={`${shared.sfWide} ${styles.otAboutGrid}`}>
+        <div className={`${styles.otWide} ${styles.otAboutGrid}`}>
           <Reveal>
             <div className={styles.otAboutPhotoWrap}>
               <div className={styles.otAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
@@ -224,21 +221,25 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
         </section>
       ) : null}
 
-      {/* GALLERI — brickorna tvingas in i mallens ratio (4:5) via .otGallery. */}
-      <section className={`${shared.sfGalleryBand} ${styles.otGallery}`}>
-        <div className={shared.sfWide}>
-          <Reveal>
-            <p className={styles.otEyebrow}>{content.galleryEyebrow ?? '— Från butiken'}</p>
-          </Reveal>
-          <Reveal>
-            <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Bild från butiken' }))} />
-          </Reveal>
-        </div>
-      </section>
+      {/* GALLERI — mallens EGET band (var det delade galleri-bandet). Brickorna tvingas
+          in i butikens ratio (4:5) via .otGalleryBand. */}
+      {content.galleryImages.length > 0 ? (
+        <section className={styles.otGalleryBand}>
+          <div className={styles.otWide}>
+            <Reveal>
+              <p className={styles.otEyebrow}>{content.galleryEyebrow ?? '— Från butiken'}</p>
+            </Reveal>
+            <Reveal>
+              <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Bild från butiken' }))} />
+            </Reveal>
+          </div>
+        </section>
+      ) : null}
 
-      {/* PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+      {/* HITTA HIT — mallens EGET plats-band (var det delade plats-bandet + tim-tabellen):
+          adressen som skylt-rubrik, öppettiderna som prickad butikslista. */}
+      <section className={styles.otFind}>
+        <div className={`${styles.otWide} ${styles.otFindGrid}`}>
           <Reveal>
             <p className={styles.otEyebrow}>{content.findEyebrow ?? '— Hitta hit'}</p>
             <h2 className={styles.otSectionTitle}>
@@ -249,37 +250,36 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
             ) : (
               <p className={styles.otBody}>Adress visas snart.</p>
             )}
-            {location?.hours ? (
-              <div className={shared.sfHours}>
-                {location.hours.map((h) => (
-                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.otHoursRow}`}>
-                    <span>{h.day}</span>
-                    <span>{h.time}</span>
-                  </div>
-                ))}
-              </div>
+            {location?.address ? (
+              <a
+                href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={styles.otMoreLink}
+              >
+                Visa på karta <span aria-hidden="true">→</span>
+              </a>
             ) : null}
           </Reveal>
           <Reveal delay={120}>
-            <div className={shared.sfMap}>
-              {location?.address ? (
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={`${styles.otMoreLink} ${styles.otFlush}`}
-                >
-                  Visa på karta <span aria-hidden="true">→</span>
-                </a>
-              ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
-              )}
-            </div>
+            {location?.hours ? (
+              <dl className={styles.otHoursBig}>
+                {location.hours.map((h) => (
+                  <div key={h.day} className={styles.otHoursBigRow}>
+                    <dt>{h.day}</dt>
+                    <dd>{h.time}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className={styles.otBody}>Öppettider visas snart.</p>
+            )}
           </Reveal>
         </div>
       </section>
 
-      <section className={shared.sfClosing}>
+      {/* CLOSING — mallens EGEN bruna platta (var det delade closing-bandet). */}
+      <section className={styles.otClosing}>
         <Reveal>
           <h2 className={`${styles.otSectionTitle} ${styles.otClosingTitle}`}>
             {content.closingTitle ?? 'Redo för din nästa bukett?'}
@@ -287,9 +287,6 @@ export function OliviaThymeLayout({ tenant, content, services, location, modules
           <p className={styles.otClosingLede}>
             {content.closingLede ?? 'Boka, beställ eller kom förbi butiken — vi hjälper dig gärna hitta rätt.'}
           </p>
-          {/* Inte shared.sfClosingCta: den inverterar knappen med hårdkodat #fff
-              (background:#fff, specificitet 0,3,0) och smugglade in en tionde hex
-              utifrån. .otClosingCta gör samma invertering i mallens egen creme. */}
           <div className={styles.otClosingActions}>
             <BookCta className={`${styles.otBtn} ${styles.otClosingCta}`} />
           </div>

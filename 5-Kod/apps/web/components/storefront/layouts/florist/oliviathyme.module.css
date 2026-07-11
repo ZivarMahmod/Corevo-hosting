@@ -1,55 +1,46 @@
-/* ═══════════════ OLIVIA & THYME — puderrosa + varm brun butikscharm ═══════════════
-   Signaturen (OFÖRÄNDRAD): fullbredds butiksfasad-hero utan rubrik-overlay, bara ett
-   hängande namnskylt-"wordmark" → beige välkomst-remsa som bär den riktiga rubriken →
-   "Ur butiken"-remsa som mynnar ut i två stora produktbilder där den ena bär en
-   stjärn-badge. Alla klasser prefixade "ot".
+/* ═══════════════ OLIVIA & THYME — KVARTERSBUTIK (puderrosa + varm brun) ═══════════════
+   goal-59: mallen är ett HELT TEMA-PAKET. Den här filen bär numera FYRA rötter:
+     .otNav   sidhuvudet  (oliviathyme.chrome.tsx)
+     .otFoot  sidfoten    (oliviathyme.chrome.tsx)
+     .otPage  undersidorna (oliviathyme.pages.tsx)
+     .otRoot  hemmet      (OliviaThymeLayout.tsx)
+   Alla fyra får SAMMA vars (typskala/rytm/ratio) — annars gäller mallens grammatik bara
+   på hemmet och undersidorna faller tillbaka i plattformens skala. Därför deklareras
+   var-blocket på alla fyra rötterna, och specificitets-boostade regler skrivs som
+   .otBtn.otBtn (0,2,0) i stället för .otRoot .otBtn — de måste bita på undersidorna med.
 
-   SKÄRPE-PASS (mot design-skarpa-zentum.md). Vad som ändrades och varför:
-   · TYPSKALA: låg förut på 44/54/56/22/17/16 — allt "mellanstort", ×1.2–1.3 steg.
-     Sedan på 96/48/26/18/16/12/11, vilket fortfarande hade TVÅ grannpar inom 1.3×
-     (18→16 = ×1.13, 12→11 = ×1.09) — dvs. två kvarglömda mellanlager.
-     Nu FEM nivåer: 96 → 48 → 28 → 18 → 12 (×2.00 / ×1.71 / ×1.56 / ×1.50).
-     Varje granne ligger ≥1.5× isär, även i clamp-golvet (44/32/24/18/12 = ≥1.33×).
-     Lede-nivån (18) ÄR brödtexten, mikro (12) ÄR badge/etikett — inga halvsteg kvar.
-   · VIKT: display-rubrikerna bad om font-weight 600, men DM Serif Display laddas
-     BARA i vikt 400 (app/layout.tsx: weight: '400') → webbläsaren syntetiserade fet
-     stil = suddiga stammar. Nu 400 rakt igenom på display, 600 på mikrotext.
-   · LINE-HEIGHT: allt låg på 1.04–1.7 huller om buller. Nu rubrik 1.05–1.15,
-     brödtext 1.55–1.58 (även gift-remsan, som låg kvar på 1.4) — registerbytet
-     i sig gör skärpan.
-   · LETTER-SPACING: omvänt mot storlek — negativt på display, 0 på kort, +1px på 12px.
-   · RADIE: --sf-radius = 0 (temat). Enda runda formen = stjärn-badgen (999px).
-   · BILD: EN ratio (--ot-ratio: 4/5) på ALLA innehållsbilder — showcase, om-foto,
-     bloggkort OCH galleriets brickor (som låg på 1/1). Griden får raka linjer.
-   · MOTION: 5px lyft / 400ms ease. Galleriets scale(1.05) är avstängd.
-   · FÄRG — 8 hex TOTALT (zentums tak). Paletten (8 slots) + --ot-rose + #fff blev
-     TIO. Två värden ströks: (a) primaryD var en egen mörkbrun (#4A2716) som bara
-     användes till knapp-hover → den är nu ink (#1C1109), samma hue, ett värde
-     mindre; (b) rent VITT är struket ur mallen — det var den enda kalla kulören i
-     en genomvarm cremevärld. Papperet är --color-bg (#FBF4EE): skylten, ramen,
-     knapptexten, badge-texten och closing-texten går alla i creme. Kvar: sju
-     varmbruna/creme + puderrosan = 8. */
+   SKÄRPE-REGLERNA (design-skarpa-zentum.md) är oförändrade:
+   · TYPSKALA — FEM nivåer: 96 → 48 → 28 → 18 → 12 (×2.00 / ×1.71 / ×1.56 / ×1.50).
+   · VIKT — display 400 (DM Serif Display laddas BARA i 400; 600 gav faux bold), 600 på mikro.
+   · LINE-HEIGHT — rubrik 1.05–1.15 mot brödtext 1.55–1.58.
+   · LETTER-SPACING — negativt på display, 0 på kort, +1px på 12px.
+   · RADIE — binär: 0 på ALLT strukturellt. Enda runda formen = stjärn-badgen (999px).
+   · BILD — EN ratio (--ot-ratio: 4/5) på ALLA innehållsbilder.
+   · FÄRG — 8 hex totalt: paletten (8 slots) + --ot-rose, inget rent vitt (papperet är
+     --color-bg), primaryD = ink (samma hue) så knapp-hovern växlar hårt. */
 
-.otRoot {
-  /* ── FÄRG — mallens ENDA egna dekorfärg. Puderrosan är accenten och sitter BARA
-     på stjärn-badgen. Var #d98ca0 = 2.56:1 mot vit text (oläsbart); #A8425C är
-     samma kulör (~345°), mörkare ljushet → 5.36:1 mot creme-texten. */
+.otRoot,
+.otPage,
+.otNav,
+.otFoot {
+  /* ── FÄRG — mallens ENDA egna dekorfärg. Sitter BARA på stjärn-badgen.
+     #A8425C = puderrosans kulör (~345°) i mörkare ljushet → 5.36:1 mot creme. */
   --ot-rose: #A8425C;
 
-  /* ── TYPSKALA — FEM nivåer, steg ×2.00 / ×1.71 / ×1.56 / ×1.50 ── */
+  /* ── TYPSKALA — FEM nivåer ── */
   --ot-fs-display: clamp(44px, 7.2vw, 96px); /* hero-rubriken (välkomst-remsan) */
-  --ot-fs-section: clamp(32px, 3.8vw, 48px); /* ALLA sektionsrubriker + wordmark */
-  --ot-fs-card: clamp(24px, 2.2vw, 28px); /* kortnamn, tjänstnamn, stat-siffra */
-  --ot-fs-body: 18px; /* ALL brödtext: lede, kropp, priser, öppettider */
-  --ot-fs-micro: 12px; /* eyebrows, knappar, länkar, nummer, badge, etiketter */
+  --ot-fs-section: clamp(32px, 3.8vw, 48px); /* ALLA sektionsrubriker + skyltens wordmark */
+  --ot-fs-card: clamp(24px, 2.2vw, 28px); /* kortnamn, tjänstnamn, stat-siffra, öppettid */
+  --ot-fs-body: 18px; /* ALL brödtext: lede, kropp, priser, adress */
+  --ot-fs-micro: 12px; /* eyebrows, knappar, länkar, nummer, badge, etiketter, meny */
 
-  /* ── RYTM — en skala, samma steg i alla sektioner ── */
-  --ot-s-xs: 12px; /* eyebrow → rubrik */
-  --ot-s-sm: 20px; /* rubrik → text */
-  --ot-s-md: 24px; /* grid-gap, sido-padding */
-  --ot-s-lg: 32px; /* text → CTA */
-  --ot-s-xl: 48px; /* rubrikblock → innehåll */
-  --ot-sec: clamp(48px, 8vw, 96px); /* sektionsavstånd */
+  /* ── RYTM — en skala, samma steg i varje sektion och på varje sida ── */
+  --ot-s-xs: 12px;
+  --ot-s-sm: 20px;
+  --ot-s-md: 24px;
+  --ot-s-lg: 32px;
+  --ot-s-xl: 48px;
+  --ot-sec: clamp(48px, 8vw, 96px);
 
   /* ── BILD — EN ratio i hela mallen ── */
   --ot-ratio: 4 / 5;
@@ -60,17 +51,13 @@
   --ot-lift: -5px;
 }
 
-/* ═══════════════ TYPROLLER — mallens egen grammatik ═══════════════
-   Mallen använder INTE de globala .sf-*-rollerna längre: de ger 56px sektions-
-   rubriker (större än mallens egen hero-rubrik) i syntetiskt fet DM Serif. Rollerna
-   nedan äger hela skalan lokalt, så stegen går att mäta i EN fil. */
-
+/* ═══════════════ TYPROLLER — mallens egen grammatik ═══════════════ */
 .otDisplay {
   font-family: var(--font-display);
-  font-weight: 400; /* DM Serif Display finns bara i 400 — 600 gav faux bold */
+  font-weight: 400;
   font-size: var(--ot-fs-display);
   line-height: 1.06;
-  letter-spacing: -0.02em; /* stor text: negativ tracking, aldrig positiv */
+  letter-spacing: -0.02em;
   color: var(--color-fg); /* 17.01:1 */
   margin: 0;
 }
@@ -89,7 +76,7 @@
   font-weight: 400;
   font-size: var(--ot-fs-card);
   line-height: 1.15;
-  letter-spacing: 0; /* 0 på ≥28px */
+  letter-spacing: 0;
   color: var(--color-fg);
   margin: 0;
 }
@@ -99,14 +86,11 @@
   font-weight: 600;
   font-size: var(--ot-fs-micro);
   line-height: 1.4;
-  letter-spacing: 1px; /* +1px på 12px */
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-primary); /* 8.24:1 mot bg */
-  margin: 0 0 var(--ot-s-xs); /* eyebrow → rubrik = 12px, överallt */
+  margin: 0 0 var(--ot-s-xs);
 }
-/* EN brödtextnivå. .otLede fanns förut på 18px medan .otBody låg på 16px — ×1.13
-   isär, dvs. exakt det halvsteg som gör en sida grötig. Lede-rollen ÄR brödtexten
-   nu; radlängden (62ch/68ch) skilde dem ändå bara marginellt. */
 .otBody {
   font-family: var(--font-body);
   font-weight: 400;
@@ -114,17 +98,20 @@
   line-height: 1.58;
   letter-spacing: 0;
   color: var(--color-fg-2); /* 6.91:1 mot bg, 6.30:1 mot surface */
-  margin: var(--ot-s-sm) 0 0; /* rubrik → text = 20px */
+  margin: var(--ot-s-sm) 0 0;
   max-width: 66ch;
 }
-/* Centrerade sektioner: håll textblocken centrerade trots max-width. */
 .otCenter { text-align: center; }
 .otCenter .otBody { margin-left: auto; margin-right: auto; }
 
-/* ── KNAPP — 50px hög, radie 0 (binärt), 12px/600/VERSALER/1px ──────────────────
-   Skriver över den globala .btn-accent (pillrad, vikt 700, guld-skugga) för BookCta.
-   Selektorn .otRoot .otBtn (0,2,0) slår .btn-accent (0,1,0) deterministiskt. */
-.otRoot .otBtn {
+/* Mallens EGNA bredder (ersätter shared.sfNarrow / shared.sfWide — de delade
+   omslagen var en av trådarna som gjorde alla mallar lika breda och lika luftiga). */
+.otNarrow { max-width: 48rem; margin: 0 auto; padding: 0 var(--ot-s-md); }
+.otWide { max-width: 74rem; margin: 0 auto; padding: 0 var(--ot-s-md); }
+
+/* ── KNAPP — 50px, radie 0, 12px/600/VERSALER. .otBtn.otBtn (0,2,0) slår den globala
+   .btn-accent (0,1,0) på ALLA fyra rötterna (BookCta bär btn-accent). ── */
+.otBtn.otBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -132,10 +119,10 @@
   height: 50px;
   padding: 0 30px;
   background: var(--color-primary);
-  color: var(--color-bg); /* creme på brun = 8.24:1 (vitt var mallens enda kalla kulör) */
+  color: var(--color-bg); /* creme på brun = 8.24:1 */
   border: 0;
   border-radius: 0;
-  box-shadow: none; /* guld-halon bort */
+  box-shadow: none;
   font-family: var(--font-body);
   font-size: var(--ot-fs-micro);
   font-weight: 600;
@@ -146,34 +133,31 @@
   cursor: pointer;
   transition: background var(--ot-dur) var(--ot-ease);
 }
-.otRoot .otBtn:hover {
+.otBtn.otBtn:hover {
   background: var(--color-primary-d); /* = ink. Hård växling, ingen studs/skugga */
   transform: none;
   box-shadow: none;
 }
-.otRoot .otBtn:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
+.otBtn.otBtn:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
 
-/* Closing-knappen ligger PÅ --color-primary → den måste inverteras. Den delade
-   .sfClosingCta gjorde det med hårdkodat #fff (background:#fff, 0,3,0) — dvs. den
-   smugglade in en tionde hex utifrån. Layouten skickar inte längre den klassen;
-   inverteringen sker här, i mallens egen creme. .otRoot .otBtn.otClosingCta (0,3,0)
-   slår .otRoot .otBtn (0,2,0); hover (0,4,0) slår .btn-accent:hover (0,2,0). */
-.otRoot .otBtn.otClosingCta {
+/* Closing-knappen ligger PÅ --color-primary → inverteras i mallens egen creme
+   (aldrig #fff: det vore mallens enda kalla kulör). (0,3,0) slår (0,2,0). */
+.otBtn.otBtn.otClosingCta {
   background: var(--color-bg);
   color: var(--color-primary); /* 8.24:1 */
 }
-.otRoot .otBtn.otClosingCta:hover {
-  background: var(--color-surface); /* 7.51:1 — hård växling, ingen studs/skugga */
+.otBtn.otBtn.otClosingCta:hover {
+  background: var(--color-surface); /* 7.51:1 */
   transform: none;
   box-shadow: none;
 }
 
-/* ── MIKRO-LÄNK — "Se allt", "Läs hela bloggen", "Visa på karta" ── */
-.otRoot .otMoreLink {
+/* ── MIKRO-LÄNK ── */
+.otMoreLink.otMoreLink {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: var(--ot-s-lg); /* text → CTA = 32px */
+  margin-top: var(--ot-s-lg);
   font-family: var(--font-body);
   font-size: var(--ot-fs-micro);
   font-weight: 600;
@@ -186,15 +170,129 @@
   text-decoration: none;
   transition: border-color var(--ot-dur) var(--ot-ease);
 }
-.otRoot .otMoreLink:hover {
-  border-color: var(--color-primary);
-  gap: 8px; /* ingen gap-glidning */
+.otMoreLink.otMoreLink:hover { border-color: var(--color-primary); }
+.otFlush.otFlush { margin-top: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDHUVUD — butikens SKYLT (goal-59). Tre STAPLADE rader i stället för
+   plattformens 3-zons-grid: tunn beige remsa → centrerat wordmark → menyrad.
+   .otNav.otNav (0,2,0) skriver över shell.navThemed (0,1,0) deterministiskt, oavsett
+   i vilken ordning de två CSS-modulerna hamnar i bundlen.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.otNav.otNav {
+  display: block;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-line);
 }
-.otRoot .otFlush { margin-top: 0; }
+/* 1 — den tunna beige remsan */
+.otNavStrip {
+  margin: 0;
+  padding: 9px var(--ot-s-md);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-micro);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2); /* 6.30:1 mot surface */
+}
+/* 2 — wordmarket, centrerat och stort (butikens namn på skylten) */
+.otNavMark {
+  display: flex;
+  justify-content: center;
+  padding: var(--ot-s-sm) var(--ot-s-md) var(--ot-s-xs);
+}
+.otNavWordmark { text-decoration: none; }
+.otNavWordmark :global(.logo-text) {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(26px, 3vw, 34px); /* under sektionsnivån — skylten skriker inte */
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-primary);
+}
+.otNavWordmark :global(.logo-img) { max-height: 34px; width: auto; }
+/* 3 — menyn i EN rad under, centrerad; korg/konto/CTA förankrade till höger */
+.otNavBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ot-s-md);
+  padding: 0 var(--ot-s-md) var(--ot-s-xs);
+  border-top: 1px solid var(--color-line);
+  margin-top: var(--ot-s-xs);
+  padding-top: var(--ot-s-xs);
+}
+.otNavLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--ot-s-md);
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-micro);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.otNavLinks a {
+  color: var(--color-fg);
+  text-decoration: none;
+  padding: 10px 0;
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--ot-dur) var(--ot-ease), color var(--ot-dur) var(--ot-ease);
+}
+.otNavLinks a:hover { color: var(--color-primary); border-color: var(--color-primary); }
+.otNavCluster {
+  position: absolute;
+  right: var(--ot-s-md);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--ot-s-xs);
+}
+/* CTA:n i naven: samma fyrkantiga bruna knapp, en aning lägre. (0,2,0) slår btn-accent. */
+.otNavCta.otNavCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 var(--ot-s-sm);
+  background: var(--color-primary);
+  color: var(--color-bg);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-micro);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--ot-dur) var(--ot-ease);
+}
+.otNavCta.otNavCta:hover { background: var(--color-primary-d); transform: none; box-shadow: none; }
+
+/* Under 720px tar NavShells burger + overlay över navigationen (den känner inte till
+   mina klasser — därför göms de här, precis som shell gömmer sina egna). Skylten
+   (remsa + wordmark) står kvar: det är butikens ansikte. */
+@media (max-width: 720px) {
+  .otNavBar { display: none; }
+  .otNavMark { padding-bottom: var(--ot-s-sm); }
+}
 
 /* ═══════════════ HERO — fullbredds butiksfasad ═══════════════
-   Enda bilden som inte går i --ot-ratio: den är ett fullbredds-band utan grannar
-   att linjera mot (som zentums panorama-hero), inte en bricka i en grid. */
+   Enda bilden utanför --ot-ratio: ett fullbredds-band utan grannar att linjera mot. */
 .otHero {
   position: relative;
   margin-top: calc(-1 * var(--nav-h));
@@ -206,14 +304,13 @@
   background-position: center;
   background-color: var(--color-surface);
 }
-/* Namnskylt — hänger över fotots nedre kant. Raka hörn, ingen skugga: skuggan
-   suddade ut den enda kant som skylten har. */
+/* Namnskylt — hänger över fotots nedre kant. Raka hörn, ingen skugga. */
 .otPlaque {
   position: relative;
   width: fit-content;
   max-width: min(92vw, 34rem);
   margin: -3rem auto 0;
-  background: var(--color-bg); /* creme, inte vitt — se hex-noten överst */
+  background: var(--color-bg);
   padding: var(--ot-s-md) var(--ot-s-xl);
   border-radius: 0;
   box-shadow: none;
@@ -223,7 +320,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 400;
-  font-size: var(--ot-fs-section); /* skylten konkurrerar inte med hero-rubriken */
+  font-size: var(--ot-fs-section);
   line-height: 1.05;
   letter-spacing: -0.01em;
   color: var(--color-primary); /* 8.24:1 mot skyltens creme */
@@ -238,9 +335,9 @@
   padding: var(--ot-sec) var(--ot-s-md);
 }
 .otWelcomeInner { max-width: 46rem; margin: 0 auto; }
-.otWelcomeTitle { white-space: pre-line; } /* används ihop med .otDisplay */
+.otWelcomeTitle { white-space: pre-line; }
 .otWelcomeActions {
-  margin-top: var(--ot-s-lg); /* text → CTA = 32px */
+  margin-top: var(--ot-s-lg);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -248,7 +345,7 @@
   gap: 16px var(--ot-s-lg);
 }
 
-/* ═══════════════ UR BUTIKEN — intro + fyrkantig brun CTA ═══════════════ */
+/* ═══════════════ UR BUTIKEN ═══════════════ */
 .otShopIntro { padding: var(--ot-sec) var(--ot-s-md) 0; }
 .otShopIntroInner { max-width: 46rem; margin: 0 auto; }
 .otShopActions {
@@ -276,7 +373,7 @@
   color: inherit;
   transition: transform var(--ot-dur) var(--ot-ease);
 }
-.otShowcaseCard:hover { transform: translateY(var(--ot-lift)); } /* 5px, inget mer */
+.otShowcaseCard:hover { transform: translateY(var(--ot-lift)); }
 .otShowcaseImg {
   aspect-ratio: var(--ot-ratio);
   background-size: cover;
@@ -284,8 +381,7 @@
   background-color: var(--color-accent-soft);
   border-radius: 0;
 }
-/* Badgen ligger INNANFÖR bildkanten nu — den hängde utanför och bröt den raka
-   linje griden bygger på. Enda runda formen i mallen: medvetet undantag. */
+/* Badgen ligger INNANFÖR bildkanten — enda runda formen i mallen (medvetet undantag). */
 .otShowcaseBadge {
   position: absolute;
   top: 16px;
@@ -300,7 +396,7 @@
   font-weight: 600;
   font-size: var(--ot-fs-micro);
   line-height: 1;
-  letter-spacing: 1px; /* +1px på 12px */
+  letter-spacing: 1px;
   text-transform: uppercase;
   padding: 9px 14px;
   border-radius: 999px;
@@ -326,10 +422,10 @@
   .otShowcaseGrid { grid-template-columns: 1fr; max-width: 26rem; }
 }
 
-/* ═══════════════ TJÄNSTER ═══════════════ */
+/* ═══════════════ TJÄNSTER — meny-lista ═══════════════ */
 .otServices { padding: var(--ot-sec) 0; background: var(--color-bg); }
 .otServiceList {
-  margin-top: var(--ot-s-xl); /* rubrikblock → innehåll = 48px */
+  margin-top: var(--ot-s-xl);
   border-top: 1px solid var(--color-line);
 }
 .otServiceRow {
@@ -344,8 +440,6 @@
 }
 .otServiceRow:hover { background: var(--color-accent-soft); padding-left: var(--ot-s-xs); }
 .otServiceRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
-/* Radnumret var 21.6px display — ett mellanlager mellan kort (26) och brödtext (16).
-   Nu mikro: samma roll som eyebrow/knapp. */
 .otServiceNum {
   font-family: var(--font-body);
   font-weight: 600;
@@ -359,7 +453,7 @@
   display: block;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: var(--ot-fs-body); /* var 14.4px — smält ihop med brödtexten */
+  font-size: var(--ot-fs-body);
   line-height: 1.58;
   color: var(--color-fg-2);
   margin-top: var(--ot-s-xs);
@@ -372,7 +466,7 @@
   color: var(--color-fg);
 }
 
-/* ═══════════════ OM ═══════════════ */
+/* ═══════════════ OM (hemmet) ═══════════════ */
 .otAbout { padding: var(--ot-sec) 0; background: var(--color-surface); }
 .otAboutGrid {
   display: grid;
@@ -380,7 +474,6 @@
   gap: clamp(var(--ot-s-md), 5vw, var(--ot-s-xl));
   align-items: center;
 }
-/* Ram: rak vit passepartout, ingen skugga och inget 3px-hörn. */
 .otAboutPhotoWrap {
   padding: var(--ot-s-xs);
   background: var(--color-bg); /* creme passepartout mot surface-sektionen */
@@ -394,9 +487,8 @@
   background-color: var(--color-accent-soft);
   border-radius: 0;
 }
-/* Stat-trion (skriver över de delade sf-stat-klasserna via .otRoot-specificitet).
-   Siffran låg på 32–38px = ett mellanlager mellan sektion (48) och kort (26). */
-.otRoot .otStats {
+/* Stat-trion — .otStats.otStats (0,2,0) så den biter både på hemmet och /om. */
+.otStats.otStats {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
@@ -404,7 +496,7 @@
   margin: var(--ot-s-lg) 0 0;
   padding: 0;
 }
-.otRoot .otStatValue {
+.otStatValue.otStatValue {
   display: block;
   font-family: var(--font-display);
   font-weight: 400;
@@ -413,7 +505,7 @@
   letter-spacing: 0;
   color: var(--color-primary);
 }
-.otRoot .otStatLabel {
+.otStatLabel.otStatLabel {
   display: block;
   font-family: var(--font-body);
   font-weight: 600;
@@ -421,7 +513,7 @@
   line-height: 1.4;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--color-fg-2); /* 6.30:1 mot surface */
+  color: var(--color-fg-2);
   margin-top: 8px;
 }
 
@@ -430,7 +522,7 @@
   .otAboutPhotoWrap { max-width: 20rem; margin: 0 auto; }
 }
 
-/* ═══════════════ PRESENTKORT — smal rad, aldrig en hel sektion ═══════════════ */
+/* ═══════════════ PRESENTKORT — smal rad ═══════════════ */
 .otGiftBand {
   padding: var(--ot-s-md);
   text-align: center;
@@ -449,7 +541,7 @@
   font-style: italic;
   font-weight: 400;
   font-size: var(--ot-fs-body);
-  line-height: 1.55; /* brödtext-register, låg kvar på 1.4 */
+  line-height: 1.55;
   color: var(--color-fg); /* 14.27:1 mot accentSoft */
   margin: 0;
 }
@@ -472,56 +564,487 @@
 }
 .otBlogCard:hover { transform: translateY(var(--ot-lift)); }
 .otBlogImg {
-  aspect-ratio: var(--ot-ratio); /* var 5/4 — enda kortet som låg i liggande format */
+  aspect-ratio: var(--ot-ratio);
   background-size: cover;
   background-position: center;
   background-color: var(--color-accent-soft);
   border-radius: 0;
 }
-.otBlogName { margin-top: var(--ot-s-sm); } /* används ihop med .otCardTitle */
-.otBlogMeta { margin-top: var(--ot-s-xs); } /* används ihop med .otBody */
+.otBlogName { margin-top: var(--ot-s-sm); }
+.otBlogMeta { margin-top: var(--ot-s-xs); }
 .otBlogCtaWrap { text-align: center; margin-top: var(--ot-s-xl); }
 
 @media (max-width: 700px) {
   .otBlogGrid { grid-template-columns: 1fr; max-width: 24rem; }
 }
 
-/* ═══════════════ GALLERI — delad Gallery-komponent, skärpt lokalt ═══════════════
-   Brickorna låg i 1/1 med scale(1.05) på hover — två regelbrott i en komponent jag
-   inte får röra. Här tvingas de in i mallens ratio och lyft. Specificiteten (0,3,x)
-   slår komponentens egen .galleryBtn:hover .galleryImg (0,3,0). */
-.otGallery .otEyebrow { margin-bottom: var(--ot-s-lg); }
-.otRoot .otGallery ul { gap: var(--ot-s-md); }
-.otRoot .otGallery li {
+/* ═══════════════ GALLERI — mallens EGET band (var shared.sfGalleryBand) ═══════════════
+   Den delade Gallery-komponenten ritar brickorna i 1/1 med scale(1.05) på hover — två
+   regelbrott i en komponent jag inte får röra. Här tvingas de in i butikens ratio. */
+.otGalleryBand {
+  padding: var(--ot-sec) 0;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-line);
+}
+.otGalleryBand .otEyebrow { margin-bottom: var(--ot-s-lg); }
+.otGalleryBand ul { gap: var(--ot-s-md); }
+.otGalleryBand li {
   aspect-ratio: var(--ot-ratio);
   border-radius: 0;
   transition: transform var(--ot-dur) var(--ot-ease);
 }
-.otRoot .otGallery li:hover { transform: translateY(var(--ot-lift)); }
-.otRoot .otGallery li button:hover img { transform: none; } /* scale(1.05) av */
+.otGalleryBand li:hover { transform: translateY(var(--ot-lift)); }
+.otGalleryBand li button:hover img { transform: none; } /* scale(1.05) av */
 
-/* ═══════════════ PLATS & ÖPPETTIDER (delade band, skärpt typografi) ═══════════════ */
-.otRoot .otHoursRow {
+/* ═══════════════ HITTA HIT — mallens EGET plats-band (var shared.sfLocBand) ═══════════
+   Butikens öppettider som PRICKAD LISTA — inte plattformens tabell, inte en karta i en
+   rundad ram. Skylten (adressens första led) är rubriken. */
+.otFind {
+  padding: var(--ot-sec) 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-line);
+}
+.otFindGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(var(--ot-s-md), 5vw, var(--ot-s-xl));
+  align-items: start;
+}
+/* Öppettider i STORT format — butikens viktigaste rad, prickad linje mellan dag och tid. */
+.otHoursBig { margin: 0; padding: 0; }
+.otHoursBigRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ot-s-xs);
+  padding: var(--ot-s-xs) 0;
+  border-bottom: 1px dashed var(--color-line);
   font-family: var(--font-body);
   font-size: var(--ot-fs-body);
-  line-height: 1.58;
+  line-height: 1.55;
+}
+.otHoursBigRow dt {
+  margin: 0;
+  font-weight: 600;
   color: var(--color-fg);
-  padding: var(--ot-s-xs) 0;
+  white-space: nowrap;
+}
+.otHoursBigRow dd {
+  margin: 0 0 0 auto;
+  color: var(--color-fg-2);
+  white-space: nowrap;
 }
 
-/* ═══════════════ CLOSING ═══════════════ */
-.otRoot .otClosingTitle {
+@media (max-width: 760px) {
+  .otFindGrid { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════ CLOSING — mallens EGEN bruna platta (var shared.sfClosing) ═══════════ */
+.otClosing {
+  padding: var(--ot-sec) var(--ot-s-md);
+  background: var(--color-primary);
+  text-align: center;
+}
+.otClosingTitle.otClosingTitle {
   color: var(--color-bg); /* 8.24:1 mot --color-primary */
   max-width: 40rem;
   margin: 0 auto;
 }
-.otRoot .otClosingLede {
+.otClosingLede {
   font-family: var(--font-body);
   font-weight: 400;
   font-size: var(--ot-fs-body);
   line-height: 1.55;
-  color: var(--color-surface); /* 7.51:1 — backar ett snäpp mot rubrikens creme */
+  color: var(--color-surface); /* 7.51:1 */
   max-width: 46rem;
   margin: var(--ot-s-sm) auto 0;
 }
 .otClosingActions { margin-top: var(--ot-s-lg); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SIDFOT — MÖRKBRUN PLATTA, TRE KOLUMNER (goal-59)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.otFoot {
+  background: var(--color-primary-d); /* ink-brun: mörkare register än closing-plattan */
+  color: var(--color-bg);
+  padding: var(--ot-sec) var(--ot-s-md) var(--ot-s-lg);
+}
+.otFootGrid {
+  max-width: 74rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: var(--ot-s-xl);
+}
+.otFootCol { min-width: 0; }
+.otFootMark {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-bg);
+  margin: 0;
+}
+.otFootTagline {
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-body);
+  line-height: 1.55;
+  color: var(--color-surface);
+  margin: var(--ot-s-xs) 0 0;
+  max-width: 34ch;
+}
+.otFootHead {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-accent-soft); /* puderrosans ljusa kusin — 12.7:1 mot ink */
+  margin: 0 0 var(--ot-s-sm);
+}
+.otFootText {
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-body);
+  line-height: 1.55;
+  color: var(--color-surface);
+  margin: 0 0 8px;
+}
+.otFootText a,
+.otFootSocial a {
+  color: var(--color-surface);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--ot-dur) var(--ot-ease);
+}
+.otFootText a:hover,
+.otFootSocial a:hover { border-color: var(--color-surface); }
+.otFootSocial {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ot-s-md);
+  margin: var(--ot-s-sm) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-micro);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.otFootHours { margin: 0; }
+.otFootHoursRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ot-s-xs);
+  padding: 6px 0;
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-surface) 28%, transparent);
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-body);
+  line-height: 1.55;
+  color: var(--color-surface);
+}
+.otFootHoursRow dt { margin: 0; font-weight: 600; white-space: nowrap; }
+.otFootHoursRow dd { margin: 0 0 0 auto; white-space: nowrap; }
+
+.otFootBottom {
+  max-width: 74rem;
+  margin: var(--ot-sec) auto 0;
+  padding-top: var(--ot-s-md);
+  border-top: 1px solid color-mix(in srgb, var(--color-surface) 28%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ot-s-md);
+}
+.otFootLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ot-s-md);
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-micro);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.otFootLinks a {
+  color: var(--color-surface);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  transition: border-color var(--ot-dur) var(--ot-ease);
+}
+.otFootLinks a:hover { border-color: var(--color-accent-soft); }
+.otFootCopy {
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-micro);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-line);
+}
+
+@media (max-width: 860px) {
+  .otFootGrid { grid-template-columns: 1fr; gap: var(--ot-s-lg); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   UNDERSIDOR (goal-59) — /om, /tjanster, /kontakt i butikens egen komposition
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.otPage { background: var(--color-bg); }
+
+/* Sidhuvud: samma beige remsa som hemmets välkomst — sidan är samma butik. */
+.otSubHead {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
+  padding: var(--ot-sec) var(--ot-s-md);
+}
+.otSubHead > * { max-width: 46rem; margin: 0 auto; }
+
+/* ── /om — BUTIKSBERÄTTELSE + POLAROIDER ── */
+.otStory {
+  max-width: 74rem;
+  margin: 0 auto;
+  padding: var(--ot-sec) var(--ot-s-md);
+  display: grid;
+  grid-template-columns: 0.8fr 1fr;
+  gap: clamp(var(--ot-s-md), 5vw, var(--ot-s-xl));
+  align-items: start;
+}
+.otStoryPhotoWrap {
+  padding: var(--ot-s-xs);
+  background: var(--color-surface);
+  border-radius: 0;
+}
+.otStoryPhoto {
+  aspect-ratio: var(--ot-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.otStoryText { min-width: 0; }
+.otStoryText .otBody { margin-top: 0; }
+.otStoryQuote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-primary);
+  margin: var(--ot-s-lg) 0 0;
+  padding-left: var(--ot-s-md);
+  border-left: 2px solid var(--color-line);
+}
+
+.otPolaroids {
+  padding: var(--ot-sec) var(--ot-s-md);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+.otPolaroidGrid {
+  max-width: 68rem;
+  margin: var(--ot-s-xl) auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ot-s-xl) var(--ot-s-lg);
+}
+/* Polaroid: creme kort med tjock underkant, lätt lutning — uppklistrat i butiken.
+   Lutningen alternerar per bricka (nth-child) så raden känns handlagd, inte genererad. */
+.otPolaroid {
+  background: var(--color-bg);
+  padding: var(--ot-s-xs) var(--ot-s-xs) var(--ot-s-md);
+  border-radius: 0;
+  transition: transform var(--ot-dur) var(--ot-ease);
+}
+.otPolaroid:nth-child(3n + 1) { transform: rotate(-1.6deg); }
+.otPolaroid:nth-child(3n + 2) { transform: rotate(0.9deg); }
+.otPolaroid:nth-child(3n + 3) { transform: rotate(-0.6deg); }
+.otPolaroid:hover { transform: rotate(0deg) translateY(var(--ot-lift)); }
+.otPolaroidImg {
+  aspect-ratio: var(--ot-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.otPolaroidCap {
+  margin: var(--ot-s-xs) 0 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-body);
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+@media (max-width: 860px) {
+  .otStory { grid-template-columns: 1fr; }
+  .otStoryPhotoWrap { max-width: 22rem; }
+  .otPolaroidGrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .otPolaroidGrid { grid-template-columns: 1fr; max-width: 22rem; }
+}
+
+/* ── /tjanster — MENYKORTET ── */
+.otMenuWrap { padding: var(--ot-sec) var(--ot-s-md); }
+.otMenuCard {
+  max-width: 52rem;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  padding: var(--ot-s-xl) clamp(var(--ot-s-md), 4vw, var(--ot-s-xl));
+}
+.otMenuHead {
+  margin: 0 0 var(--ot-s-xl);
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-primary);
+}
+.otMenuList { list-style: none; margin: 0; padding: 0; }
+/* Prickad linje mellan namn och pris — butikens uppsatta meny, inte en tabell. */
+.otMenuRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ot-s-xs);
+  padding: var(--ot-s-md) 0;
+  border-bottom: 1px solid var(--color-line);
+  cursor: pointer;
+  transition: color var(--ot-dur) var(--ot-ease);
+}
+.otMenuRow:last-child { border-bottom: 0; }
+.otMenuRow:hover .otMenuName { color: var(--color-primary); }
+.otMenuRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.otMenuMain { min-width: 0; flex: 0 1 auto; }
+.otMenuName {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--color-fg);
+  transition: color var(--ot-dur) var(--ot-ease);
+}
+.otMenuDesc {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+  margin-top: 8px;
+  max-width: 48ch;
+}
+.otMenuDots {
+  flex: 1 1 auto;
+  min-width: var(--ot-s-md);
+  height: 1px;
+  align-self: center;
+  border-bottom: 1px dashed var(--color-line);
+}
+.otMenuPrice {
+  flex: 0 0 auto;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-body);
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+.otMenuEmpty {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+
+/* ── /kontakt — "KOM FÖRBI"-KORTET ── */
+.otVisitWrap { padding: var(--ot-sec) var(--ot-s-md); }
+.otVisitCard {
+  max-width: 62rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: clamp(var(--ot-s-md), 4vw, var(--ot-s-xl));
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  padding: clamp(var(--ot-s-lg), 4vw, var(--ot-s-xl));
+}
+/* Öppettiderna är sidans HUVUDSAK → kort-nivå (28px), inte brödtext. */
+.otVisitHours .otHoursBigRow { padding: var(--ot-s-sm) 0; }
+.otVisitHours .otHoursBigRow dt,
+.otVisitHours .otHoursBigRow dd {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+.otVisitHours .otHoursBigRow dt { color: var(--color-fg); }
+.otVisitHours .otHoursBigRow dd { color: var(--color-primary); }
+.otVisitSide {
+  border-left: 1px solid var(--color-line);
+  padding-left: clamp(var(--ot-s-md), 3vw, var(--ot-s-lg));
+}
+.otVisitAddr {
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg);
+  margin: 0;
+}
+.otVisitContact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: var(--ot-s-lg) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--ot-fs-body);
+  line-height: 1.55;
+}
+.otVisitContact a {
+  color: var(--color-fg-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-line);
+  width: fit-content;
+  transition: color var(--ot-dur) var(--ot-ease), border-color var(--ot-dur) var(--ot-ease);
+}
+.otVisitContact a:hover { color: var(--color-primary); border-color: var(--color-primary); }
+
+@media (max-width: 760px) {
+  .otVisitCard { grid-template-columns: 1fr; }
+  .otVisitSide { border-left: 0; border-top: 1px solid var(--color-line); padding-left: 0; padding-top: var(--ot-s-lg); }
+}
+
+/* Undersidornas avslutning — samma bruna platta som hemmets closing (butiken har EN
+   avslutningston), men alltid centrerad och alltid med boknings-CTA:n. */
+.otVisitBand {
+  padding: var(--ot-sec) var(--ot-s-md);
+  background: var(--color-primary);
+  text-align: center;
+}
+.otVisitBand .otSectionTitle { color: var(--color-bg); max-width: 40rem; margin: 0 auto; }
+.otVisitBand .otBody { color: var(--color-surface); max-width: 46rem; }
+.otVisitActions { margin-top: var(--ot-s-lg); }
+.otVisitBand .otBtn.otBtn {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+.otVisitBand .otBtn.otBtn:hover { background: var(--color-surface); }
+
+@media (prefers-reduced-motion: reduce) {
+  .otShowcaseCard,
+  .otBlogCard,
+  .otPolaroid,
+  .otGalleryBand li { transition: none; }
+  .otPolaroid:hover { transform: none; }
+}

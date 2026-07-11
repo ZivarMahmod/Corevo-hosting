@@ -665,3 +665,394 @@
   border-color: var(--color-surface);
   color: var(--color-primary-d);
 }
+
+/* ═══════════ TEMA-PAKET (goal-59): NAV · SIDFOT · UNDERSIDOR ═══════════
+   Samma tokenblock som hemmet (--sera-*) — inga nya mått uppfinns här.     */
+
+/* ── SIDHUVUD — inbjudningskortet: guldlinje / centrerat wordmark / guldband ──
+      .seraNav dubblas (.seraNav.seraNav) för att vinna över shell.navThemed:s
+      3-kolumnsgrid utan !important. */
+.seraNav.seraNav {
+  display: block;
+  padding: 0 var(--sera-gutter);
+  text-align: center;
+}
+.seraNavRule {
+  height: 1px;
+  background: var(--color-primary);
+  opacity: 0.55;
+}
+/* Wordmark-raden: wordmarket viewport-centrerat, klustret absolut i högerkanten. */
+.seraNavCrest {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 68px;
+}
+.seraNavWordmark {
+  text-decoration: none;
+}
+.seraNavWordmark :global(.logo-text) {
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-size: var(--sera-fs-card);
+  line-height: var(--sera-lh-card);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.seraNavCluster {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--sera-sp-eyebrow);
+}
+/* Nav-CTA:n = mallens pill, men kompakt (samma register, mindre luft). */
+.seraNavBtn {
+  padding: 0 var(--sera-sp-text);
+  line-height: 38px;
+}
+/* Menyraden: små spärrade versaler mellan TVÅ guldhårlinjer. */
+.seraNavLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sera-sp-cta);
+  padding: var(--sera-sp-eyebrow) 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+.seraNavLinks a {
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  text-decoration: none;
+  transition: color var(--sera-dur-ui) ease;
+}
+.seraNavLinks a:hover {
+  color: var(--color-primary);
+}
+
+@media (max-width: 720px) {
+  /* Under 720px äger NavShells burger + overlay navigationen; bara krönet står kvar. */
+  .seraNavLinks,
+  .seraNavCluster {
+    display: none;
+  }
+  .seraNavCrest {
+    justify-content: flex-start;
+    min-height: 56px;
+  }
+}
+
+/* ── SIDFOT — ljus, centrerad, guldlinje (aldrig en mörk platta) ───────────── */
+.seraFooter {
+  padding: var(--sera-section) var(--sera-gutter);
+  text-align: center;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-primary);
+}
+.seraFootInner {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+.seraFootDiamond {
+  display: block;
+  font-size: var(--sera-fs-micro);
+  color: var(--color-primary);
+}
+.seraFootWordmark {
+  margin: var(--sera-sp-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-style: italic;
+  font-size: var(--sera-fs-h2);
+  line-height: var(--sera-lh-h2);
+  color: var(--color-fg);
+}
+.seraFootTagline {
+  margin: var(--sera-sp-eyebrow) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg-2);
+}
+.seraFootDetails {
+  margin: var(--sera-sp-text) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg-2);
+}
+.seraFootSep {
+  padding: 0 var(--sera-sp-eyebrow);
+  color: var(--color-primary);
+}
+.seraFootLink {
+  color: var(--color-fg-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-line);
+  transition: color var(--sera-dur-ui) ease, border-color var(--sera-dur-ui) ease;
+}
+.seraFootLink:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.seraFootHours {
+  max-width: 20rem;
+  margin: var(--sera-sp-cta) auto 0;
+  text-align: left;
+}
+.seraFootHoursRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg);
+}
+.seraFootHoursRow span:first-child {
+  color: var(--color-fg-2);
+}
+.seraFootNav,
+.seraFootSocials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sera-sp-cta);
+  margin-top: var(--sera-sp-cta);
+}
+.seraFootNav a,
+.seraFootSocials a {
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  text-decoration: none;
+}
+.seraFootNav a:hover,
+.seraFootSocials a:hover {
+  color: var(--color-primary);
+}
+.seraFootBottom {
+  margin: var(--sera-sp-head) 0 0;
+  padding-top: var(--sera-sp-text);
+  border-top: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+/* ── UNDERSIDOR — gemensamt sidhuvud (ljus platta, centrerat, guldlinje under) ─ */
+.seraPageHead {
+  padding: var(--sera-section) var(--sera-gutter) var(--sera-sp-head);
+  text-align: center;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
+}
+.seraPageTitle {
+  margin: var(--sera-sp-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-style: italic;
+  font-size: var(--sera-fs-h2);
+  line-height: var(--sera-lh-h2);
+  letter-spacing: var(--sera-ls-h2);
+  color: var(--color-fg);
+}
+.seraPageLede {
+  max-width: var(--sera-measure);
+  margin: var(--sera-sp-text) auto 0;
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg-2);
+}
+
+/* ── /om — BRUDPORTRÄTT-UPPSLAG: porträtt + överlappande guldramat textkort ─── */
+.seraSpread {
+  max-width: var(--sera-container);
+  margin: 0 auto;
+  padding: var(--sera-section) var(--sera-gutter);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sera-split);
+  align-items: center;
+}
+.seraSpreadMat {
+  padding: var(--sera-sp-eyebrow);
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sera-radius);
+}
+.seraSpreadCard {
+  margin-left: calc(-1 * var(--sera-sp-head));
+  padding: clamp(24px, 3vw, 48px);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--sera-radius);
+  /* dubbel guldlinje — samma signatur som hero-ramen */
+  box-shadow: inset 0 0 0 6px var(--color-bg), inset 0 0 0 7px var(--color-primary);
+}
+.seraQuote {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-style: italic;
+  font-size: var(--sera-fs-card);
+  line-height: var(--sera-lh-card);
+  color: var(--color-primary);
+}
+
+@media (max-width: 860px) {
+  .seraSpread {
+    grid-template-columns: 1fr;
+  }
+  .seraSpreadCard {
+    margin-left: 0;
+    margin-top: calc(-1 * var(--sera-sp-cta));
+  }
+}
+
+/* ── /tjanster — GULDRAMAD PRISLISTA (hela listan i EN dubbel guldram) ─────── */
+.seraPriceSection {
+  padding: var(--sera-section) 0;
+}
+.seraPriceFrame {
+  padding: clamp(24px, 4vw, 56px);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--sera-radius);
+  box-shadow: inset 0 0 0 6px var(--color-bg), inset 0 0 0 7px var(--color-primary);
+}
+.seraPriceFrameHead {
+  margin: 0 0 var(--sera-sp-head);
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.seraPriceList {
+  border-top: 1px solid var(--color-line);
+}
+.seraListRow {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: baseline;
+  gap: var(--sera-sp-text);
+  padding: var(--sera-sp-text) 0;
+  border-bottom: 1px solid var(--color-line);
+  cursor: pointer;
+  transition: background var(--sera-dur-ui) ease, padding-left var(--sera-dur-ui) ease;
+}
+.seraListRow:hover {
+  background: var(--color-accent-soft);
+  padding-left: var(--sera-sp-eyebrow);
+}
+.seraListRow:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+.seraListMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .seraListRow {
+    grid-template-columns: 1fr auto;
+  }
+  .seraListRow .seraPriceNum {
+    display: none;
+  }
+}
+
+/* ── /kontakt — BOKNINGSFÖRFRÅGAN-KORT ────────────────────────────────────── */
+.seraContact {
+  padding: var(--sera-section) 0;
+}
+.seraContactGrid {
+  max-width: var(--sera-container);
+  margin: 0 auto;
+  padding: 0 var(--sera-gutter);
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: var(--sera-split);
+  align-items: start;
+}
+.seraRequestCard {
+  padding: clamp(24px, 4vw, 56px);
+  background: var(--color-bg);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--sera-radius);
+  box-shadow: inset 0 0 0 6px var(--color-bg), inset 0 0 0 7px var(--color-primary);
+}
+.seraContactLines {
+  margin: var(--sera-sp-head) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--color-line);
+}
+.seraContactLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sera-sp-text);
+  padding: var(--sera-sp-eyebrow) 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.seraContactKey {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.seraContactVal {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg);
+}
+.seraContactLink {
+  color: var(--color-fg);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-line);
+  transition: color var(--sera-dur-ui) ease, border-color var(--sera-dur-ui) ease;
+}
+.seraContactLink:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+@media (max-width: 860px) {
+  .seraContactGrid {
+    grid-template-columns: 1fr;
+  }
+}

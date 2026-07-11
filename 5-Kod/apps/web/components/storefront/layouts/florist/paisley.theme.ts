@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { PaisleyNav, PaisleyFooter } from './paisley.chrome'
+import { PaisleyOm, PaisleyTjanster, PaisleyKontakt } from './paisley.pages'
 
 // Paisleys egen fotomanifest (Unsplash, curl -sI 200 OK + visuellt granskade
 // 2026-07-11 — flera slumpvis testade Unsplash-id:n visade sig vara arkitektur/
@@ -128,4 +130,9 @@ export const paisley: FloristTheme = {
     closingLede: 'Beställ ett arrangemang, boka en tid eller kom förbi butiken.',
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: true },
+  // goal-59 TEMA-PAKET: Paisley äger sitt tryckta sidhuvud (kiosk-remsa →
+  // centrerat skript-wordmark → menyband i spärrade versaler), sin kolofon-sidfot
+  // och sina tre undersidor (reportage / prislista i spalt / kolofon-kort).
+  chrome: { Nav: PaisleyNav, Footer: PaisleyFooter },
+  pages: { om: PaisleyOm, tjanster: PaisleyTjanster, kontakt: PaisleyKontakt },
 }

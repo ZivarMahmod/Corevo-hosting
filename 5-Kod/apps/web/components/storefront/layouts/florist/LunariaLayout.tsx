@@ -6,36 +6,35 @@ import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc, serviceNum } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './lunaria.module.css'
 
 /**
- * LUNARIA — nattblå + silvergrå + torkat vete, stillsam florist-mall
- * (florist-sviten, goal-58). SIGNATUR-ORDNING (unik i sviten):
- *   (1) hero — bild med en ÖVERLAPPANDE textplatta som skjuter ut över
- *       bildens nedre kant (offset-kort, .lnHeroCard)
- *   (2) tre "stämningskort" (Säsong / Prenumeration / Kurser) — Prenumeration
- *       länkar till /shop när shopReachable, Kurser till /kurser (ogated
- *       bas-rutt, samma antagande som Floras tredje pelare), Säsong är rent
- *       informativ utan länk
- *   (3) tjänster · (4) shop-teasers · (5) om med cirkulärt porträtt ·
- *   (6) galleri · (7) blogg · (8) presentkort (smal rad) · (9) plats ·
- *   (10) closing (helbild med mörk gradient)
- * Modulerna (shop/blogg/presentkort/offert) vävs in via `modules`-propen
- * (S10) — se MODUL-INVÄVNING nedan. SYNKRON komponent (ingen async/await):
- * onboarding-studions klienta preview renderar samma komponent.
+ * LUNARIA — POETISK NATTBLÅ (florist-sviten, tema-paket goal-59).
  *
- * SKÄRPE-PASS 2026-07-11 (design-skarpa-zentum.md): allt innehåll ligger i en
- * .lnRoot-rot som bär mallens typskala/rytm-tokens. Mallen använder INTE längre
- * de generiska type-rollerna (.sf-h1/.sf-h2/.sf-eyebrow/.sf-body) — den bär
- * egna (.lnSecTitle/.lnEyebrow/.lnBody) så skalan blir ×1.9-stegad i stället
- * för den generiska ×1.2-trappan. Delade .sf*-primitiv (sfRow*, sfStat*,
- * sfMap*, sfHours …) behålls för STRUKTUR men får en sam-applicerad ln*-klass
- * som bär typografin (specificitet .lnRoot .lnX = 0,2,0 slår delade 0,1,0).
- * Sektionsordning, modul-gating och signaturformerna är oförändrade.
+ * Hemmet äger nu HELA sin komposition — inga delade storefront-klasser alls.
+ * Det var där sviten blev lika: alla mallar lånade samma sfServices/sfRow/sfLocBand/
+ * sfGalleryBand-skelett i undre halvan. Lunaria bär i stället sina egna:
+ *
+ *   (1) HERO      — inset panorama (16:10) med en ÖVERLAPPANDE textplatta som skjuter
+ *                   ut över bildens nedre vänstra kant (.lnHeroCard)
+ *   (2) STÄMNINGSKORT — Säsong (info) / Prenumeration (→ /shop när shopReachable) /
+ *                   Kurser (→ /kurser)
+ *   (3) TJÄNSTER  — LUGN LISTA med STORA siffror: en tvåspaltig hårlinje-rad där
+ *                   numret är en display-siffra i vetefärg och priset är en stor
+ *                   display-siffra till höger. Varje rad är en <Bookable>.
+ *   (4) UR BUTIKEN — OFFSET-GRID: tre kort i olika höjd (kort 2 sänks, kort 3 höjs)
+ *   (5) OM        — cirkulärt porträtt + statistik i vertikal rad
+ *   (6) GALLERI · (7) BLOGG (samma offset-grid) · (8) PRESENTKORT (smal rad)
+ *   (9) PLATS     — egen två-spalt med streckade tid-rader
+ *  (10) CLOSING   — helbild med nattblå gradient
+ *
+ * Modul-gatingen är oförändrad och HELIG: shopReachable gatar prenumerationskortet,
+ * teasers-sektionerna ritas bara när teasers finns, presentkort = smal rad.
+ * SYNKRON komponent (ingen async/await, ingen 'use client') — onboarding-studions
+ * klienta preview renderar samma komponent.
  */
 
-/** Tunn måne — sektionsdelaren som ersätter Floras stjälk-ornament. */
+/** Tunn måne — sektionsdelaren. */
 function MoonOrnament() {
   return (
     <div className={styles.lnOrnament} aria-hidden="true">
@@ -54,15 +53,10 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
   const rows = services.slice(0, 6)
   const hasMore = services.length > 6
 
-  // LUNARIA ÄGER SINA MODULER (S10): shop/blogg/presentkort/offert vävs in i
-  // temats eget formspråk (stämningskort, lnCard-grid, smal presentkortsrad)
-  // istället för den generiska sektions-stapeln.
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
   const presentkortLive = modules?.presentkortLive ?? false
-  // modules === undefined (studions statiska preview) → visa allt, precis som
-  // Flora: previewn ska se en hel sida även om länkarna inte är klickbara på
-  // riktigt där.
+  // modules === undefined (studions statiska preview) → visa allt.
   const shopReachable = modules ? modules.shopReachable : true
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
@@ -161,79 +155,75 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
         </div>
       </section>
 
-      {/* TJÄNSTER — bara när det finns aktiva tjänster (goal-55 8B: ingen tom-text) */}
+      {/* TJÄNSTER — LUGN LISTA med stora siffror (mallens egen, inga delade sfRow) */}
       {rows.length > 0 ? (
-        <section className={`${shared.sfServices} ${styles.lnBand}`}>
-          <div className={shared.sfNarrow}>
+        <section className={styles.lnPriceSection}>
+          <div className={styles.lnNarrow}>
             <Reveal className={styles.lnSecHead}>
               <p className={styles.lnEyebrow}>{content.servicesEyebrow}</p>
               <h2 className={styles.lnSecTitle}>{content.servicesTitle}</h2>
             </Reveal>
-            <div className={`${shared.sfRowList} ${styles.lnRowList}`}>
+            <div className={styles.lnPriceList}>
               {rows.map((s, i) => (
                 <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={shared.sfRow} label={`Beställ — ${s.name}`}>
-                    <span className={`${shared.sfRowNum} ${styles.lnRowNum}`} aria-hidden="true">
+                  <Bookable className={styles.lnPriceRow} label={`Beställ — ${s.name}`}>
+                    <span className={styles.lnPriceNum} aria-hidden="true">
                       {serviceNum(i)}
                     </span>
-                    <span className={shared.sfRowMain}>
-                      <span className={`${shared.sfRowName} ${styles.lnRowName}`}>{s.name}</span>
-                      <span className={`${shared.sfRowDesc} ${styles.lnRowDesc}`}>{serviceDesc(s)}</span>
+                    <span className={styles.lnPriceMain}>
+                      <span className={styles.lnPriceName}>{s.name}</span>
+                      <span className={styles.lnPriceDesc}>{serviceDesc(s)}</span>
                     </span>
-                    <span className={shared.sfRowMeta}>
-                      <span className={`${shared.sfRowPrice} ${styles.lnRowPrice}`}>{formatPrice(s)}</span>
-                    </span>
+                    <span className={styles.lnPriceValue}>{formatPrice(s)}</span>
                   </Bookable>
                 </Reveal>
               ))}
             </div>
             {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={`${shared.sfMoreLink} ${styles.lnMoreLink}`}>
-                  Se allt vi gör <span aria-hidden="true">→</span>
-                </a>
+              <Reveal>
+                <Link href="/tjanster" className={styles.lnBandCta}>
+                  Se allt vi gör
+                </Link>
               </Reveal>
             ) : null}
           </div>
         </section>
       ) : null}
 
-      {/* UR BUTIKEN — webshop-modulen invävd i lnCard-formspråket */}
+      {/* UR BUTIKEN — offset-grid: tre kort i olika höjd */}
       {shopTeasers.length > 0 ? (
         <section className={styles.lnCardSection}>
-          <div className={shared.sfWide}>
-            <Reveal className={styles.lnSecHead}>
-              <p className={styles.lnEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
-              <h2 className={styles.lnSecTitle}>{content.shopTitle ?? 'Nytt i butiken'}</h2>
-            </Reveal>
-            <div className={styles.lnCardGrid}>
-              {shopTeasers.map((p, i) => (
-                <Reveal key={p.id} delay={i * 90}>
-                  <Link href={`/shop/${p.id}`} className={styles.lnCard}>
-                    <div
-                      className={styles.lnCardImg}
-                      style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
-                    />
-                    <div className={styles.lnCardBody}>
-                      <h3 className={styles.lnCardName}>{p.name}</h3>
-                      <p className={styles.lnCardPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
-                    </div>
-                  </Link>
-                </Reveal>
-              ))}
-            </div>
-            <Reveal className={styles.lnSecHead}>
-              <Link href="/shop" className={styles.lnBandCta}>
-                {content.shopCta ?? 'Till butiken'}
-              </Link>
-            </Reveal>
+          <Reveal className={styles.lnSecHead}>
+            <p className={styles.lnEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
+            <h2 className={styles.lnSecTitle}>{content.shopTitle ?? 'Nytt i butiken'}</h2>
+          </Reveal>
+          <div className={styles.lnOffsetGrid}>
+            {shopTeasers.map((p, i) => (
+              <Reveal key={p.id} delay={i * 90} className={styles.lnOffsetCell}>
+                <Link href={`/shop/${p.id}`} className={styles.lnCard}>
+                  <div
+                    className={styles.lnCardImg}
+                    style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
+                  />
+                  <div className={styles.lnCardBody}>
+                    <h3 className={styles.lnCardName}>{p.name}</h3>
+                    <p className={styles.lnCardPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
           </div>
+          <Reveal className={styles.lnSecHead}>
+            <Link href="/shop" className={styles.lnBandCta}>
+              {content.shopCta ?? 'Till butiken'}
+            </Link>
+          </Reveal>
         </section>
       ) : null}
 
       {/* OM — cirkulärt porträtt + berättelsen */}
       <section className={styles.lnAboutBand}>
-        <div className={`${shared.sfWide} ${styles.lnAboutGrid}`}>
+        <div className={styles.lnAboutGrid}>
           <Reveal className={styles.lnAboutMedia}>
             <div className={styles.lnPortrait} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
@@ -241,11 +231,11 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
             <p className={styles.lnEyebrow}>— Om {tenant.name}</p>
             <h2 className={styles.lnSecTitle}>{content.aboutTitle}</h2>
             <p className={styles.lnBody}>{content.aboutCopyHome}</p>
-            <ul className={`${shared.sfStatTrio} ${styles.lnStatTrio}`}>
+            <ul className={styles.lnStats}>
               {content.stats.map(([n, l]) => (
-                <li key={l}>
-                  <span className={`${shared.sfStatValue} ${styles.lnStatValue}`}>{n}</span>
-                  <span className={`${shared.sfStatLabel} ${styles.lnStatLabel}`}>{l}</span>
+                <li key={l} className={styles.lnStat}>
+                  <span className={styles.lnStatValue}>{n}</span>
+                  <span className={styles.lnStatLabel}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -254,8 +244,8 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
       </section>
 
       {/* GALLERI — masonry + lightbox */}
-      <section className={`${shared.sfGalleryBand} ${styles.lnBand}`}>
-        <div className={shared.sfWide}>
+      <section className={styles.lnGalleryBand}>
+        <div className={styles.lnWide}>
           <Reveal className={styles.lnGalleryHead}>
             <p className={styles.lnEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
           </Reveal>
@@ -267,36 +257,34 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
 
       <MoonOrnament />
 
-      {/* FRÅN BLOGGEN — blogg-modulen invävd (3 senaste som lnCard → /blogg) */}
+      {/* FRÅN BLOGGEN — samma offset-grid */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.lnCardSection}>
-          <div className={shared.sfWide}>
-            <Reveal className={styles.lnSecHead}>
-              <p className={styles.lnEyebrow}>{content.blogEyebrow ?? '— Från bloggen'}</p>
-              <h2 className={styles.lnSecTitle}>{content.blogTitle ?? 'Tankar & säsong'}</h2>
-            </Reveal>
-            <div className={styles.lnCardGrid}>
-              {bloggTeasers.map((p, i) => (
-                <Reveal key={p.id} delay={i * 90}>
-                  <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.lnCard}>
-                    <div
-                      className={styles.lnCardImg}
-                      style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
-                    />
-                    <div className={styles.lnCardBody}>
-                      <h3 className={styles.lnCardName}>{p.title}</h3>
-                      {p.excerpt ? <p className={styles.lnCardMeta}>{p.excerpt}</p> : null}
-                    </div>
-                  </Link>
-                </Reveal>
-              ))}
-            </div>
-            <Reveal className={styles.lnSecHead}>
-              <Link href="/blogg" className={styles.lnBandCta}>
-                {content.blogCta ?? 'Läs hela bloggen'}
-              </Link>
-            </Reveal>
+          <Reveal className={styles.lnSecHead}>
+            <p className={styles.lnEyebrow}>{content.blogEyebrow ?? '— Från bloggen'}</p>
+            <h2 className={styles.lnSecTitle}>{content.blogTitle ?? 'Tankar & säsong'}</h2>
+          </Reveal>
+          <div className={styles.lnOffsetGrid}>
+            {bloggTeasers.map((p, i) => (
+              <Reveal key={p.id} delay={i * 90} className={styles.lnOffsetCell}>
+                <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.lnCard}>
+                  <div
+                    className={styles.lnCardImg}
+                    style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
+                  />
+                  <div className={styles.lnCardBody}>
+                    <h3 className={styles.lnCardName}>{p.title}</h3>
+                    {p.excerpt ? <p className={styles.lnCardMeta}>{p.excerpt}</p> : null}
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
           </div>
+          <Reveal className={styles.lnSecHead}>
+            <Link href="/blogg" className={styles.lnBandCta}>
+              {content.blogCta ?? 'Läs hela bloggen'}
+            </Link>
+          </Reveal>
         </section>
       ) : null}
 
@@ -313,9 +301,9 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
         </section>
       ) : null}
 
-      {/* PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid} ${styles.lnLocGrid}`}>
+      {/* PLATS & ÖPPETTIDER — mallens egen två-spalt */}
+      <section className={styles.lnLocBand}>
+        <div className={styles.lnLocGrid}>
           <Reveal>
             <p className={styles.lnEyebrow}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
             <h2 className={styles.lnSecTitle}>
@@ -326,34 +314,31 @@ export function LunariaLayout({ tenant, content, services, location, modules }: 
             ) : (
               <p className={styles.lnBody}>Adress visas snart.</p>
             )}
+            {location?.address ? (
+              <a
+                href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={styles.lnBandCta}
+                style={{ margin: '32px 0 0' }}
+              >
+                Visa på karta
+              </a>
+            ) : null}
+          </Reveal>
+          <Reveal delay={120}>
             {location?.hours ? (
-              <div className={`${shared.sfHours} ${styles.lnHours}`}>
+              <div className={styles.lnHours}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.lnHoursRow}`}>
+                  <div key={h.day} className={styles.lnHoursRow}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
                 ))}
               </div>
-            ) : null}
-          </Reveal>
-          <Reveal delay={120}>
-            <div className={shared.sfMap}>
-              {location?.address ? (
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={`${shared.sfMapLink} ${styles.lnMapLink}`}
-                >
-                  Visa på karta <span aria-hidden="true">→</span>
-                </a>
-              ) : (
-                <span className={`${shared.sfMapHint} ${styles.lnMapHint}`}>
-                  Karta visas när adressen är ifylld.
-                </span>
-              )}
-            </div>
+            ) : (
+              <p className={styles.lnBody}>Öppettider visas snart.</p>
+            )}
           </Reveal>
         </div>
       </section>

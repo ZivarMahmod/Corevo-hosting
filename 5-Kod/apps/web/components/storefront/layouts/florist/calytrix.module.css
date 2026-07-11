@@ -20,7 +20,14 @@
    ../../storefront.module.css. De filerna ägs inte av mallen — där mallen måste
    skärpa dem görs det med scopade selektorer under .calRoot/.calGallery. */
 
-.calRoot {
+/* Vars delas av HELA tema-paketet: hemmet (.calRoot), navet (.calNav), sidfoten
+   (.calFooter) och undersidorna (.calPage) — de tre sista bor UTANFÖR .calRoot i
+   DOM:en (nav/footer monteras av (public)/layout.tsx), så vars måste deklareras
+   på var och en, annars faller de tillbaka på plattformens skala. */
+.calRoot,
+.calNav,
+.calFooter,
+.calPage {
   /* ── Enda egna dekorfärgen: dämpat antikguld. EN accent, och den sitter bara på
      hero-CTA:n och "Populär"-badgen — aldrig på en stor yta. Guldet är därmed den
      ENDA hex mallen lägger till palettens 8 → hex-budgeten (≤8) håller bara om
@@ -73,7 +80,8 @@
    Mallens skala vinner via dubblad rotklass (0,3,0) — scopat till .calRoot, så
    ingen annan mall påverkas. font-weight: 400 är inte en smaksak: DM Serif
    Display har ingen 600-skärning, så 600 = syntetisk fetstil = suddiga stammar. */
-.calRoot.calRoot :global(.sf-eyebrow) {
+.calRoot.calRoot :global(.sf-eyebrow),
+.calPage.calPage :global(.sf-eyebrow) {
   font-size: var(--cal-fs-micro);
   font-weight: 600;
   line-height: 1.4;
@@ -101,19 +109,102 @@
   padding-bottom: var(--cal-sec);
 }
 
-/* ---------- 1. Annonsrad ---------- */
-.calAnnounce {
+/* ═══════════ NAV — annonsrad + split (länkar · wordmark · ikoner) ═══════════
+   shell.navThemed är ett 3-kolumners grid (0,1,0). Mallens .calNav dubblas (0,2,0)
+   och skriver om formen till två VÅNINGAR utan att röra den delade filen — NavShells
+   sticky/scroll hänger kvar på shell.navThemed. */
+.calNav.calNav {
+  display: block;
+  max-width: none;
+  padding: 0;
+  gap: 0;
+}
+.calNavAnnounce {
   background: var(--color-primary-d);
   color: #fff; /* 15.07:1 mot --color-primary-d */
   text-align: center;
-  padding: 12px 24px;
+  padding: 10px 24px;
 }
-.calAnnounceText {
+.calNavAnnounceText {
   font-family: var(--font-body);
   font-size: var(--cal-fs-micro);
   font-weight: 600;
   letter-spacing: var(--cal-ls-micro);
   text-transform: uppercase;
+}
+.calNavBar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 12px var(--cal-gutter);
+}
+.calNavLinks {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-self: start;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  flex-wrap: wrap;
+}
+.calNavLinks a {
+  color: var(--color-fg); /* 16.84:1 */
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+}
+.calNavLinks a:hover {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+.calNavWordmark {
+  justify-self: center;
+  white-space: nowrap;
+}
+.calNavWordmark :global(.logo-text) {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-sub);
+  line-height: var(--cal-lh-sub);
+  letter-spacing: var(--cal-ls-head);
+  color: var(--color-fg);
+  text-transform: uppercase;
+}
+.calNavCluster {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.calNavCta {
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  padding: 12px 20px;
+  --color-accent: var(--cal-gold);
+  --color-accent-fg: var(--cal-gold-ink);
+}
+/* NavShell visar sin burger < 720px och gömmer SINA klasser — mallens egna måste
+   gömma sig själva, annars ligger länkarna kvar under hamburgaren. */
+@media (max-width: 720px) {
+  .calNavLinks,
+  .calNavCluster {
+    display: none;
+  }
+  .calNavBar {
+    grid-template-columns: 1fr;
+  }
+  .calNavWordmark {
+    justify-self: start;
+  }
 }
 
 /* ---------- 2. Fullbredds foto-hero ---------- */
@@ -365,4 +456,629 @@
   .calCard:hover,
   .calGallery li:hover,
   .calRoot :global(.btn-accent):hover { transform: none; }
+}
+
+/* Knappens ärvda skugg-bloom nollas även i nav/undersidor (de bor utanför .calRoot,
+   där den befintliga nollningen inte når). */
+.calNav :global(.btn-accent),
+.calPage :global(.btn-accent) {
+  box-shadow: none;
+  transition: transform var(--cal-dur) ease;
+}
+.calNav :global(.btn-accent):hover,
+.calPage :global(.btn-accent):hover {
+  box-shadow: none;
+  transform: translateY(var(--cal-lift));
+}
+
+/* ---------- Sektionsrubrik i mallens egen skala (ersätter delade .sf-h2) ---------- */
+.calSecTitle {
+  margin: var(--cal-step-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-h2);
+  line-height: var(--cal-lh-head);
+  letter-spacing: var(--cal-ls-head);
+  color: var(--color-fg);
+}
+
+/* ---------- PRISER SOM RUTNÄT AV KORT (hemmet) ---------- */
+.calPriceGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px var(--cal-gutter) 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 24px;
+}
+.calPriceCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 24px;
+  cursor: pointer;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  transition: transform var(--cal-dur) ease, border-color var(--cal-dur) ease;
+}
+.calPriceCard:hover {
+  transform: translateY(var(--cal-lift));
+  border-color: var(--color-primary);
+}
+.calPriceName {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-sub);
+  line-height: var(--cal-lh-sub);
+  letter-spacing: var(--cal-ls-head);
+  color: var(--color-fg);
+}
+.calPriceDesc {
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2);
+}
+.calPriceFoot {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.calPriceValue {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--cal-fs-body);
+  color: var(--color-primary);
+}
+.calPriceDur {
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+/* ---------- Galleri-wrapper (egen sektion, ingen delad band-klass) ---------- */
+.calGalleryWrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px var(--cal-gutter) 0;
+}
+
+.calGiftText {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg);
+}
+
+/* ---------- OM som brett bildband med text i overlay ---------- */
+.calAboutBand {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  min-height: clamp(28rem, 60vh, 38rem);
+  padding: var(--cal-sec) var(--cal-gutter);
+}
+/* Panelen är OPAK (surface) → texten läser mot en känd yta, aldrig mot fotot.
+   Scrimen finns bara för att panelens kant ska sitta i en dämpad bild. */
+.calAboutScrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.18));
+}
+.calAboutPanel {
+  position: relative;
+  z-index: 1;
+  width: min(34rem, 100%);
+  margin-right: auto;
+  padding: 48px;
+  background: var(--color-surface);
+  border-radius: var(--sf-radius);
+}
+.calAboutTitle {
+  margin: var(--cal-step-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-h2);
+  line-height: var(--cal-lh-head);
+  letter-spacing: var(--cal-ls-head);
+  color: var(--color-fg);
+}
+.calAboutText {
+  margin: var(--cal-step-head) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2);
+}
+.calAboutStats {
+  margin: var(--cal-step-cta) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 48px;
+}
+.calStatValue {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-sub);
+  line-height: var(--cal-lh-sub);
+  color: var(--color-primary);
+}
+.calStatLabel {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+/* ---------- PLATS som EN rad (butikens fot, inte en 2-kolumners split) ---------- */
+.calLocRow {
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  padding: var(--cal-band) var(--cal-gutter);
+}
+.calLocInner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px 48px;
+}
+.calLocAddr {
+  margin: var(--cal-step-eyebrow) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg);
+}
+.calLocHours {
+  display: grid;
+  gap: 4px;
+  min-width: 14rem;
+}
+.calLocHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2);
+}
+
+/* ---------- CLOSING — mörk plommonplatta (foto-fri, till skillnad från heron) ---------- */
+.calClosing {
+  background: var(--color-primary-d);
+  padding: var(--cal-sec) var(--cal-gutter);
+  text-align: center;
+}
+.calClosingTitle {
+  max-width: 40rem;
+  margin: 0 auto;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-h2);
+  line-height: var(--cal-lh-head);
+  letter-spacing: var(--cal-ls-head);
+  color: #fff;
+}
+.calClosingLede {
+  max-width: 34rem;
+  margin: var(--cal-step-head) auto 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-lede);
+  line-height: var(--cal-lh-body);
+  color: #fff;
+}
+.calClosingActions { margin-top: var(--cal-step-cta); }
+
+/* ═══════════ FOOTER — mörk platta, tre kolumner, stort wordmark ═══════════ */
+.calFooter {
+  background: var(--color-fg);
+  color: #fff;
+  padding: var(--cal-sec) var(--cal-gutter) 24px;
+}
+.calFooterGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 48px;
+}
+.calFooterWordmark {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-h2);
+  line-height: var(--cal-lh-head);
+  letter-spacing: var(--cal-ls-head);
+  text-transform: uppercase;
+  color: #fff;
+}
+.calFooterTagline {
+  margin: var(--cal-step-head) 0 0;
+  max-width: 26rem;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: #fff;
+  opacity: 0.82;
+}
+.calFooterSocials {
+  margin-top: var(--cal-step-cta);
+  display: flex;
+  gap: 24px;
+}
+.calFooterSocial,
+.calFooterLinks a,
+.calFooterLink {
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: #fff;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  transition: border-color var(--cal-dur) ease;
+}
+.calFooterSocial:hover,
+.calFooterLinks a:hover,
+.calFooterLink:hover {
+  border-bottom-color: var(--cal-gold);
+}
+.calFooterHead {
+  margin: 0 0 var(--cal-step-head);
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--cal-gold);
+}
+.calFooterLinks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+.calFooterText {
+  margin: 0 0 12px;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: #fff;
+  opacity: 0.82;
+}
+.calFooterHours {
+  margin-top: 20px;
+  display: grid;
+  gap: 4px;
+}
+.calFooterHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: #fff;
+  opacity: 0.82;
+}
+.calFooterBottom {
+  max-width: 1180px;
+  margin: var(--cal-sec) auto 0;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0.7;
+}
+
+/* ═══════════ UNDERSIDOR — /tjanster kort-rutnät · /om tidslinje · /kontakt karta ═══════════ */
+.calPage {
+  padding: var(--cal-sec) var(--cal-gutter);
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.calPageHead {
+  max-width: 40rem;
+  margin: 0 0 48px;
+}
+.calPageTitle {
+  margin: var(--cal-step-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-hero);
+  line-height: var(--cal-lh-display);
+  letter-spacing: var(--cal-ls-display);
+  color: var(--color-fg);
+}
+.calPageLede {
+  margin: var(--cal-step-head) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-lede);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2);
+}
+.calEmpty {
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-lede);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2);
+}
+
+/* /tjanster — KORT-RUTNÄT (4:5-bild + text + pris-fot), varje kort bokar. */
+.calSrvGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 24px;
+}
+.calSrvCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  cursor: pointer;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  transition: transform var(--cal-dur) ease, border-color var(--cal-dur) ease;
+}
+.calSrvCard:hover {
+  transform: translateY(var(--cal-lift));
+  border-color: var(--color-primary);
+}
+.calSrvImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.calSrvBody { padding: 24px 24px 20px; }
+.calSrvName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-sub);
+  line-height: var(--cal-lh-sub);
+  letter-spacing: var(--cal-ls-head);
+  color: var(--color-fg);
+}
+.calSrvDesc {
+  margin: 12px 0 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2);
+}
+.calSrvFoot {
+  margin-top: auto;
+  padding: 20px 24px;
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.calSrvPrice {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--cal-fs-body);
+  color: var(--color-primary);
+}
+.calSrvDur {
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+/* /om — TIDSLINJE: vertikal rail med numrerade noder (ingen foto-split). */
+.calTimeline {
+  position: relative;
+  margin: 0 0 var(--cal-sec);
+  padding-left: 48px;
+  display: grid;
+  gap: 48px;
+  border-left: 1px solid var(--color-line);
+}
+.calTlItem {
+  position: relative;
+  display: flex;
+  gap: 24px;
+  align-items: baseline;
+}
+.calTlItem::before {
+  content: '';
+  position: absolute;
+  left: -53px;
+  top: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+.calTlNum {
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  color: var(--color-primary);
+}
+.calTlTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-h2);
+  line-height: var(--cal-lh-head);
+  letter-spacing: var(--cal-ls-head);
+  color: var(--color-fg);
+}
+.calTlText {
+  margin: var(--cal-step-head) 0 0;
+  max-width: 34rem;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2);
+}
+.calTlPhoto {
+  aspect-ratio: 4 / 5;
+  max-height: 32rem;
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--sf-radius);
+}
+.calTlQuote {
+  margin: var(--cal-sec) auto 0;
+  max-width: 34rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-sub);
+  line-height: var(--cal-lh-sub);
+  color: var(--color-primary);
+}
+
+/* /kontakt — STOR PLATTA (dämpat foto) med flytande kontaktkort ovanpå. */
+.calMapPlate {
+  position: relative;
+  min-height: clamp(30rem, 70vh, 40rem);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 48px var(--cal-gutter);
+  background: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+  overflow: hidden;
+}
+.calMapBg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: grayscale(1) contrast(0.9);
+  opacity: 0.55;
+}
+.calContactCard {
+  position: relative;
+  z-index: 1;
+  width: min(26rem, 100%);
+  padding: 48px;
+  background: var(--color-surface);
+  border-radius: var(--sf-radius);
+}
+.calContactName {
+  margin: 0 0 var(--cal-step-head);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-h2);
+  line-height: var(--cal-lh-head);
+  letter-spacing: var(--cal-ls-head);
+  color: var(--color-fg);
+}
+.calContactLabel {
+  margin: 20px 0 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.calContactValue {
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg);
+}
+.calContactLink {
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+}
+.calContactHours {
+  margin-top: 4px;
+  display: grid;
+  gap: 4px;
+}
+.calContactHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2);
+}
+.calContactActions {
+  margin-top: var(--cal-step-cta);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+}
+.calContactCta {
+  --color-accent: var(--cal-gold);
+  --color-accent-fg: var(--cal-gold-ink);
+}
+.calContactMapLink {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--cal-fs-micro);
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 2px;
+}
+
+@media (max-width: 860px) {
+  .calFooterGrid { grid-template-columns: 1fr; gap: 32px; }
+}
+@media (max-width: 720px) {
+  .calAboutPanel { padding: 24px; }
+  .calContactCard { padding: 24px; }
+  .calMapPlate { justify-content: center; }
+}
+@media (max-width: 640px) {
+  .calTimeline { padding-left: 24px; }
+  .calTlItem::before { left: -29px; }
+  .calTlItem { flex-direction: column; gap: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calPriceCard,
+  .calSrvCard,
+  .calNav :global(.btn-accent),
+  .calPage :global(.btn-accent) { transition: none; }
+  .calPriceCard:hover,
+  .calSrvCard:hover,
+  .calNav :global(.btn-accent):hover,
+  .calPage :global(.btn-accent):hover { transform: none; }
 }

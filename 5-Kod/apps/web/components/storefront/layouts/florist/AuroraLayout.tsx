@@ -5,26 +5,20 @@ import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc, serviceNum } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './aurora.module.css'
 
 /**
- * AURORA — korall/laxrosa på varmvitt florist-mall (florist-sviten, goal-58).
- * EGET formspråk: tunn korall-annonsrad, bred landskaps-hero med en rund
- * "Handla nu"-cirkelknapp ovanpå bilden, ett korall-band med en mening +
- * liten CTA, en rosa panel med ett förskjutet asymmetriskt valv-collage — och
- * DÄREFTER de invävda modulerna (butik/blogg/presentkort) i samma varma
- * formspråk. Webshop/blogg/presentkort vävs in via `modules`-propen (S10),
- * precis som Flora — Aurora äger sina moduler (THEME_OWNS_MODULES).
+ * AURORA — LEKFULL BOUTIQUE i korall (florist-sviten, goal-58 → tema-paket goal-59).
  *
- * SKÄRPE-PASS (design-skarpa-zentum.md): identiteten är orörd — typografin är
- * skärpt. Mallen använder INTE de globala .sf-h1/.sf-h2/.sf-eyebrow/.sf-body
- * längre (de ligger på en slappare skala: h2 34px, eyebrow utan LS-disciplin) —
- * den kör sin egen skala 96/48/26/18/16/11 ur aurora.module.css. Där ett DELAT
- * element bär typografi (tjänsteraderna, stat-trion, closing-leden) läggs
- * mallens klass PÅ det delade klassnamnet; aurora-regeln är dubblad
- * (.auRowName.auRowName) och vinner på specificitet — den delade filen rörs inte.
- * Allt i EN root (.auRoot) så mallens dekor-tokens har ett hem.
+ * Hemmet är HELT Auroras eget: NOLL delade .sf*-klasser (det var där alla 13 mallar
+ * blev samma sida i olika färg). Kompositionen:
+ *   annonsrad → bred landskaps-hero med rund "Handla nu"-cirkel ovanpå bilden →
+ *   korall-band med EN mening → valv-collage i förskjuten grid → butik som RUNDADE
+ *   HÖGA kort → priser i TVÅ mjuka kolumner → om med valv-foto → presentkort-rad →
+ *   blogg → plats som mjukt kort → closing på mörk korall.
+ *
+ * Modul-gatingen är oförändrad: teasers renderas bara när de finns, presentkortet är
+ * en smal rad, cirkelknappen bara när shoppen är nåbar. Layouten är SYNKRON.
  */
 export function AuroraLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -42,9 +36,6 @@ export function AuroraLayout({ tenant, content, services, location, modules }: S
     content.heroImages[1] ?? content.heroImages[0] ?? '',
     content.heroImages[2] ?? content.heroImages[0] ?? '',
   ]
-  // Collagets sex valv: två ur hero-arrayen + fyra ur galleriet. Alla i SAMMA
-  // ratio (9:10) — förskjutningen sitter i marginalen och valv-riktningen (CSS),
-  // aldrig i höjden, så bildkanterna fortsätter linjera i griden.
   const collage = [
     hero2,
     content.galleryImages[0] ?? hero1,
@@ -83,7 +74,7 @@ export function AuroraLayout({ tenant, content, services, location, modules }: S
         </div>
       </section>
 
-      {/* 3+4 — KORALL-BAND med en mening + liten centrerad CTA */}
+      {/* 3 — KORALL-BAND: en mening + liten inverterad CTA */}
       <section className={styles.auStatement}>
         <Reveal>
           <p className={styles.auStatementText}>{content.tagline}</p>
@@ -91,7 +82,7 @@ export function AuroraLayout({ tenant, content, services, location, modules }: S
         </Reveal>
       </section>
 
-      {/* 5 — ROSA PANEL: förskjutet, asymmetriskt valv-collage */}
+      {/* 4 — ROSA PANEL: förskjutet, asymmetriskt valv-collage */}
       <section className={styles.auCollageBand}>
         <Reveal className={styles.auCollageHead}>
           <p className={styles.auEyebrow}>{content.galleryEyebrow ?? '— Från studion'}</p>
@@ -105,7 +96,7 @@ export function AuroraLayout({ tenant, content, services, location, modules }: S
         </div>
       </section>
 
-      {/* 6 — UR BUTIKEN — webshop-modulen invävd (max 3 teasers) */}
+      {/* 5 — UR BUTIKEN — rundade HÖGA kort (3:4) */}
       {shopTeasers.length > 0 ? (
         <section className={styles.auSection}>
           <Reveal className={styles.auSecHead}>
@@ -131,44 +122,38 @@ export function AuroraLayout({ tenant, content, services, location, modules }: S
         </section>
       ) : null}
 
-      {/* 7 — TJÄNSTER — bara när det finns aktiva tjänster (goal-55 8B) */}
+      {/* 6 — PRISER I TVÅ MJUKA KOLUMNER (Auroras egen prislista, ingen delad rad-lista) */}
       {rows.length > 0 ? (
         <section className={styles.auSection}>
-          <div className={shared.sfNarrow}>
-            <Reveal style={{ textAlign: 'center' }}>
-              <p className={styles.auEyebrow}>{content.servicesEyebrow}</p>
-              <h2 className={styles.auH2}>{content.servicesTitle}</h2>
-            </Reveal>
-            <div className={shared.sfRowList}>
-              {rows.map((s, i) => (
-                <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={shared.sfRow} label={`Beställ — ${s.name}`}>
-                    <span className={styles.auRowNum} aria-hidden="true">{serviceNum(i)}</span>
-                    <span className={shared.sfRowMain}>
-                      <span className={`${shared.sfRowName} ${styles.auRowName}`}>{s.name}</span>
-                      <span className={`${shared.sfRowDesc} ${styles.auRowDesc}`}>{serviceDesc(s)}</span>
-                    </span>
-                    <span className={shared.sfRowMeta}>
-                      <span className={`${shared.sfRowPrice} ${styles.auRowPrice}`}>{formatPrice(s)}</span>
-                    </span>
-                  </Bookable>
-                </Reveal>
-              ))}
-            </div>
-            {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={`${shared.sfMoreLink} ${styles.auMoreLink}`}>
-                  Se allt vi gör <span aria-hidden="true">→</span>
-                </a>
+          <Reveal className={styles.auSecHead}>
+            <p className={styles.auEyebrow}>{content.servicesEyebrow}</p>
+            <h2 className={styles.auH2}>{content.servicesTitle}</h2>
+          </Reveal>
+          <div className={styles.auPriceCols}>
+            {rows.map((s, i) => (
+              <Reveal key={s.id} delay={i * 60}>
+                <Bookable className={styles.auPriceRow} label={`Beställ — ${s.name}`}>
+                  <span className={styles.auRowNum} aria-hidden="true">{serviceNum(i)}</span>
+                  <span className={styles.auPriceMain}>
+                    <span className={styles.auRowName}>{s.name}</span>
+                    <span className={styles.auRowDesc}>{serviceDesc(s)}</span>
+                  </span>
+                  <span className={styles.auRowPrice}>{formatPrice(s)}</span>
+                </Bookable>
               </Reveal>
-            ) : null}
+            ))}
           </div>
+          {hasMore ? (
+            <Reveal className={styles.auSecHead}>
+              <Link href="/tjanster" className={styles.auBandCta}>Se allt vi gör</Link>
+            </Reveal>
+          ) : null}
         </section>
       ) : null}
 
-      {/* 8 — OM — foto (9:10) + berättelse + kursiv värmefras + stat-trio */}
+      {/* 7 — OM — valv-foto + berättelse + kursiv värmefras + stat-trio */}
       <section className={styles.auSection}>
-        <div className={`${shared.sfWide} ${shared.sfAboutGrid}`}>
+        <div className={styles.auAboutGrid}>
           <Reveal>
             <div className={styles.auAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
@@ -177,11 +162,11 @@ export function AuroraLayout({ tenant, content, services, location, modules }: S
             <h2 className={styles.auH2}>{content.aboutTitle}</h2>
             <p className={styles.auBody}>{content.aboutCopyHome}</p>
             <p className={styles.auItalicLine}>”{content.italic}”</p>
-            <ul className={shared.sfStatTrio}>
+            <ul className={styles.auStats}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
-                  <span className={`${shared.sfStatValue} ${styles.auStatValue}`}>{n}</span>
-                  <span className={`${shared.sfStatLabel} ${styles.auStatLabel}`}>{l}</span>
+                  <span className={styles.auStatValue}>{n}</span>
+                  <span className={styles.auStatLabel}>{l}</span>
                 </li>
               ))}
             </ul>
@@ -189,18 +174,18 @@ export function AuroraLayout({ tenant, content, services, location, modules }: S
         </div>
       </section>
 
-      {/* 9 — PRESENTKORT — en smal rad, aldrig en hel sektion */}
+      {/* 8 — PRESENTKORT — en smal rad, aldrig en hel sektion */}
       {presentkortLive ? (
         <section className={styles.auGiftBand}>
-          <Reveal style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'center', gap: '12px 20px' }}>
+          <Reveal className={styles.auGiftInner}>
             <p className={styles.auEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.auGiftLede}>{content.giftLede ?? 'Ge bort blomsterglädje, när som helst.'}</p>
-            <a href="/presentkort" className={styles.auBandCta} style={{ marginTop: 0 }}>{content.giftCta ?? 'Köp presentkort'}</a>
+            <Link href="/presentkort" className={styles.auBandCta}>{content.giftCta ?? 'Köp presentkort'}</Link>
           </Reveal>
         </section>
       ) : null}
 
-      {/* 10 — FRÅN BLOGGEN — blogg-modulen invävd (max 3 teasers) */}
+      {/* 9 — FRÅN BLOGGEN */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.auSection}>
           <Reveal className={styles.auSecHead}>
@@ -226,60 +211,58 @@ export function AuroraLayout({ tenant, content, services, location, modules }: S
         </section>
       ) : null}
 
-      {/* 11 — PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
-          <Reveal>
-            <p className={styles.auEyebrow}>{content.findEyebrow ?? '— Hitta hit'}</p>
-            <h2 className={styles.auH2}>
-              {location?.address ? location.address.split(',')[0] : tenant.name}
-            </h2>
-            {location?.address ? (
-              <p className={styles.auBody}>{location.address}</p>
-            ) : (
-              <p className={styles.auBody}>Adress visas snart.</p>
-            )}
-            {location?.hours ? (
-              <div className={shared.sfHours}>
-                {location.hours.map((h) => (
-                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.auHoursRow}`}>
-                    <span>{h.day}</span>
-                    <span>{h.time}</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </Reveal>
-          <Reveal delay={120}>
-            <div className={shared.sfMap}>
+      {/* 10 — PLATS & ÖPPETTIDER — Auroras eget mjuka kort */}
+      <section className={styles.auSection}>
+        <Reveal className={styles.auLocCard}>
+          <div className={styles.auLocGrid}>
+            <div>
+              <p className={styles.auEyebrow}>{content.findEyebrow ?? '— Hitta hit'}</p>
+              <h2 className={styles.auH2}>
+                {location?.address ? location.address.split(',')[0] : tenant.name}
+              </h2>
+              {location?.address ? (
+                <p className={styles.auBody}>{location.address}</p>
+              ) : (
+                <p className={styles.auBody}>Adress visas snart.</p>
+              )}
               {location?.address ? (
                 <a
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={`${shared.sfMapLink} ${styles.auMapLink}`}
+                  className={styles.auBandCta}
                 >
-                  Visa på karta <span aria-hidden="true">→</span>
+                  Visa på karta
                 </a>
+              ) : null}
+            </div>
+            <div>
+              {location?.hours ? (
+                <div className={styles.auHours}>
+                  {location.hours.map((h) => (
+                    <p key={h.day} className={styles.auHoursRow}>
+                      <span>{h.day}</span>
+                      <span>{h.time}</span>
+                    </p>
+                  ))}
+                </div>
               ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
+                <p className={styles.auBody}>Öppettider visas snart.</p>
               )}
             </div>
-          </Reveal>
-        </div>
+          </div>
+        </Reveal>
       </section>
 
-      {/* 12 — CLOSING (auClosing flyttar bandet till mörk korall → rubriken skär 7.27:1) */}
-      <section className={`${shared.sfClosing} ${styles.auClosing}`}>
+      {/* 11 — CLOSING på mörk korall (vit rubrik = 7.27:1) */}
+      <section className={styles.auClosing}>
         <Reveal>
-          <h2 className={styles.auClosingTitle}>
-            {content.closingTitle ?? 'Redo att beställa?'}
-          </h2>
-          <p className={`${shared.sfClosingLead} ${styles.auClosingLede}`}>
+          <h2 className={styles.auClosingTitle}>{content.closingTitle ?? 'Redo att beställa?'}</h2>
+          <p className={styles.auClosingLede}>
             {content.closingLede ?? 'Handla i butiken, boka en tid eller hör av dig — vi hjälper dig gärna.'}
           </p>
           <div className={styles.auClosingActions}>
-            <BookCta className={`${shared.sfClosingCta} ${styles.auBtn}`} />
+            <BookCta className={`${styles.auBtn} ${styles.auStatementCta}`} />
           </div>
         </Reveal>
       </section>

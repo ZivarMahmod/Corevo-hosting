@@ -5,53 +5,38 @@ import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './mina.module.css'
 
 /**
  * MINA — klarrosa & vitt, minimal och ung florist-e-handel (florist-sviten,
- * goal-58). EGEN sektionsordning (ingen annan mall i sviten har den):
- *   1. HERO — ingen bild. En färgplatta bär enorm sans-typografi; texten är
- *      hjälten, bilden kommer först i nästa sektion.
- *   2. BILD-BANNER — fullbredd foto direkt under heron, andrummet efter
- *      typografin. Ingen text ovanpå.
- *   3. SHOP-TEASERS — ett tätt fyr-kolumners grid, de minsta korten i hela
- *      sviten (versal mikro-typografi).
- *   4. TJÄNSTER — täta, ONUMRERADE rader (versalt namn + hårfin linje) —
- *      ingen serif-numrerad radlista som resten av sviten.
- *   5. OM — en smal, centrerad textspalt utan sidobild (alla andra mallar i
- *      sviten kör två-kolumners om+foto; Mina håller det rent typografiskt).
+ * goal-58 → TEMA-PAKET goal-59). Mallen äger nu NAV (mina.chrome.tsx), FOOTER
+ * och undersidorna (mina.pages.tsx) — och hemmet nedan använder NOLL delade
+ * .sf-klasser: varje sektion är Minas egen (miWide, miNarrow, miLoc, miClosing).
+ * Det var de delade sektionerna som gjorde alla mallar till samma sida.
+ *
+ * SEKTIONSORDNING (ingen annan mall i sviten har den):
+ *   1. HERO — ingen bild. En färgplatta bär enorm sans-typografi.
+ *   2. BILD-BANNER — fullbredd foto direkt under heron. Ingen text ovanpå.
+ *   3. SHOP-TEASERS — tätt fyr-kolumners grid, de minsta korten i sviten.
+ *   4. TJÄNSTER — täta, ONUMRERADE rader (versalt namn + hårfin linje).
+ *   5. OM — smal, centrerad textspalt utan sidobild.
  *   6. PRESENTKORT — en smal rad, aldrig en egen sektion.
  *   7. BLOGG — samma täta grid-språk som butiken.
- *   8. PLATS & ÖPPETTIDER.
- *   9. CLOSING — en färgplatta som speglar heron (bookend).
+ *   8. PLATS & ÖPPETTIDER — Minas egen två-spalt (fakta + karta-platta).
+ *   9. CLOSING — färgplatta som speglar heron (bookend).
  * Sans-only typografi (Jost display + Inter body) — enda mallen i sviten utan
- * serif-rubriker. Webshop/blogg/presentkort vävs in via `modules`-propen
- * (S10) — samma modulkontrakt som övriga florist-mallar.
+ * serif-rubriker. Webshop/blogg/presentkort vävs in via `modules`-propen (S10).
  *
- * SKÄRPE-PASS 2026-07-11 (design-skarpa-zentum.md) — identiteten orörd, det är
- * utförandet som skärpts. Två saker att INTE återinföra här:
- *   • INGA inline-styles för typografi/rytm. De gamla (marginTop: 6/10/12,
- *     fontSize: 16, color: '#fff') vann över varje CSS-nivå och var precis det
- *     som gjorde trappan grötig. Allt sådant bor i mina.module.css nu.
- *   • Delade .sf*-primitiv (sfMoreLink/sfHours/sfClosingLead/sf-h1) får inte
- *     ändras — de ägs av alla mallar. Där sam-applicerar vi en mi*-klass som
- *     vinner på specificitet. Tappa inte bort de PAREN.
- * Hela mallen ligger i .miRoot — där bor typskalan, rytmen och radie-tokens.
+ * INGA inline-styles för typografi/rytm (bakgrundsbilder undantagna) — allt bor
+ * i mina.module.css. Layouten är SYNKRON.
  */
 export function MinaLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
   const hasMore = services.length > 6
 
-  // MINA ÄGER SINA MODULER (S10): butik/blogg/presentkort vävs in i temats
-  // egna, täta grid-språk istället för den generiska sektions-stapeln —
-  // page.tsx hoppar över StorefrontModuleSections för mina och förladdar
-  // teasers (loadLayoutModuleTeasers) som `modules`-prop så layouten förblir
-  // SYNKRON (onboarding-studions klient-preview renderar samma komponent).
-  // Modulernas EGNA sidor är fortfarande hemmet (/shop, /blogg, /presentkort).
-  // Ingen fristående /shop- eller /offert-länk finns utanför teaser-
-  // sektionerna nedan (de gatas redan av att teasers bara finns när modulen
-  // faktiskt är nåbar) — därför behövs shopReachable/offertReachable inte här.
+  // MINA ÄGER SINA MODULER (S10): butik/blogg/presentkort vävs in i temats egna,
+  // täta grid-språk istället för den generiska sektions-stapeln. page.tsx förladdar
+  // teasers (loadLayoutModuleTeasers) som `modules`-prop → layouten förblir synkron.
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
   const presentkortLive = modules?.presentkortLive ?? false
@@ -60,8 +45,7 @@ export function MinaLayout({ tenant, content, services, location, modules }: Sto
 
   return (
     <div className={styles.miRoot}>
-      {/* 1 — HERO: ingen bild, färgplattan bär den stora typografin.
-          Inre rytm: eyebrow →12px→ rubrik →20px→ ingress →32px→ CTA. */}
+      {/* 1 — HERO: ingen bild, färgplattan bär den stora typografin. */}
       <section className={styles.miHero}>
         <div className={styles.miHeroInner}>
           <Reveal>
@@ -75,22 +59,21 @@ export function MinaLayout({ tenant, content, services, location, modules }: Sto
         </div>
       </section>
 
-      {/* 2 — BILD-BANNER: fullbredd, ingen text ovanpå (andrummet efter heron) */}
+      {/* 2 — BILD-BANNER: fullbredd, ingen text ovanpå */}
       <Reveal className={styles.miBanner} style={{ backgroundImage: `url(${bannerImg})` }}>
         <span />
       </Reveal>
 
-      {/* 3 — UR BUTIKEN: webshop-modulen invävd i ett tätt fyr-kolumners grid.
-          Bara ett smakprov — hela sortimentet bor på /shop. */}
+      {/* 3 — UR BUTIKEN: webshop-modulen i ett tätt fyr-kolumners grid. */}
       {shopTeasers.length > 0 ? (
         <section className={styles.miShopSection}>
-          <div className={shared.sfWide}>
+          <div className={styles.miWide}>
             <Reveal className={styles.miSecHead}>
               <div>
-                <p className="sf-eyebrow">{content.shopEyebrow ?? '— Handla nu'}</p>
-                <h2 className="sf-h2">{content.shopTitle ?? 'Beställ något fint'}</h2>
+                <p className={styles.miEyebrow}>{content.shopEyebrow ?? '— Handla nu'}</p>
+                <h2 className={styles.miSecTitle}>{content.shopTitle ?? 'Beställ något fint'}</h2>
               </div>
-              <Link href="/shop" className={`${shared.sfMoreLink} ${styles.miMore}`}>
+              <Link href="/shop" className={styles.miMore}>
                 {content.shopCta ?? 'Visa hela sortimentet'} <span aria-hidden="true">→</span>
               </Link>
             </Reveal>
@@ -112,14 +95,13 @@ export function MinaLayout({ tenant, content, services, location, modules }: Sto
         </section>
       ) : null}
 
-      {/* 4 — TJÄNSTER: täta, onumrerade rader. Hela sektionen visas bara när
-          det finns aktiva tjänster (ingen tom-text på hemmet). */}
+      {/* 4 — TJÄNSTER: täta, onumrerade rader. Bara när det finns tjänster. */}
       {rows.length > 0 ? (
         <section className={styles.miServices}>
-          <div className={shared.sfNarrow}>
+          <div className={styles.miNarrow}>
             <Reveal className={styles.miSvcHead}>
-              <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className="sf-h1">{content.servicesTitle}</h2>
+              <p className={styles.miEyebrow}>{content.servicesEyebrow}</p>
+              <h2 className={styles.miSecTitle}>{content.servicesTitle}</h2>
             </Reveal>
             <div className={styles.miSvcList}>
               {rows.map((s, i) => (
@@ -136,7 +118,7 @@ export function MinaLayout({ tenant, content, services, location, modules }: Sto
             </div>
             {hasMore ? (
               <Reveal className={styles.miSvcMore}>
-                <a href="/tjanster" className={`${shared.sfMoreLink} ${styles.miMore}`}>
+                <a href="/tjanster" className={styles.miMore}>
                   Se allt vi gör <span aria-hidden="true">→</span>
                 </a>
               </Reveal>
@@ -149,9 +131,9 @@ export function MinaLayout({ tenant, content, services, location, modules }: Sto
       <section className={styles.miAbout}>
         <div className={styles.miAboutInner}>
           <Reveal>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h1">{content.aboutTitle}</h2>
-            <p className={`sf-body ${styles.miAboutCopy}`}>{content.aboutCopyHome}</p>
+            <p className={styles.miEyebrow}>— Om {tenant.name}</p>
+            <h2 className={styles.miSecTitle}>{content.aboutTitle}</h2>
+            <p className={styles.miAboutCopy}>{content.aboutCopyHome}</p>
             <ul className={styles.miStatRow}>
               {content.stats.map(([n, l]) => (
                 <li key={l} className={styles.miStatItem}>
@@ -168,26 +150,25 @@ export function MinaLayout({ tenant, content, services, location, modules }: Sto
       {presentkortLive ? (
         <div className={styles.miGift}>
           <Reveal className={styles.miGiftInner}>
-            <p className="sf-eyebrow">{content.giftEyebrow ?? '— Presentkort'}</p>
+            <p className={styles.miEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.miGiftText}>{content.giftLede ?? 'Ge bort blommor, när som helst.'}</p>
-            <Link href="/presentkort" className={`${shared.sfMoreLink} ${styles.miMore}`}>
+            <Link href="/presentkort" className={styles.miMore}>
               {content.giftCta ?? 'Köp presentkort'} <span aria-hidden="true">→</span>
             </Link>
           </Reveal>
         </div>
       ) : null}
 
-      {/* 7 — FRÅN BLOGGEN: blogg-modulen invävd i samma täta grid-språk som
-          butiken (3 senaste), SAMMA bildratio som butikens kort. */}
+      {/* 7 — FRÅN BLOGGEN: samma täta grid-språk som butiken, SAMMA bildratio. */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.miBlogSection}>
-          <div className={shared.sfWide}>
+          <div className={styles.miWide}>
             <Reveal className={styles.miSecHead}>
               <div>
-                <p className="sf-eyebrow">{content.blogEyebrow ?? '— Inspiration'}</p>
-                <h2 className="sf-h2">{content.blogTitle ?? 'Tips, säsong & idéer'}</h2>
+                <p className={styles.miEyebrow}>{content.blogEyebrow ?? '— Inspiration'}</p>
+                <h2 className={styles.miSecTitle}>{content.blogTitle ?? 'Tips, säsong & idéer'}</h2>
               </div>
-              <Link href="/blogg" className={`${shared.sfMoreLink} ${styles.miMore}`}>
+              <Link href="/blogg" className={styles.miMore}>
                 {content.blogCta ?? 'Läs mer'} <span aria-hidden="true">→</span>
               </Link>
             </Reveal>
@@ -209,17 +190,19 @@ export function MinaLayout({ tenant, content, services, location, modules }: Sto
         </section>
       ) : null}
 
-      {/* 8 — PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+      {/* 8 — PLATS & ÖPPETTIDER: Minas egen två-spalt (fakta + rosa karta-platta) */}
+      <section className={styles.miLoc}>
+        <div className={styles.miLocGrid}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta hit'}</p>
-            <h2 className="sf-h2">{location?.address ? location.address.split(',')[0] : tenant.name}</h2>
-            <p className={`sf-body ${styles.miLocAddress}`}>{location?.address ?? 'Adress visas snart.'}</p>
+            <p className={styles.miEyebrow}>{content.findEyebrow ?? '— Hitta hit'}</p>
+            <h2 className={styles.miSecTitle}>
+              {location?.address ? location.address.split(',')[0] : tenant.name}
+            </h2>
+            <p className={styles.miLocAddress}>{location?.address ?? 'Adress visas snart.'}</p>
             {location?.hours ? (
-              <div className={`${shared.sfHours} ${styles.miHours}`}>
+              <div className={styles.miHours}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
+                  <div key={h.day} className={styles.miHoursRow}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
@@ -228,34 +211,33 @@ export function MinaLayout({ tenant, content, services, location, modules }: Sto
             ) : null}
           </Reveal>
           <Reveal delay={120}>
-            <div className={shared.sfMap}>
+            <div className={styles.miMap}>
               {location?.address ? (
                 <a
                   href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className={shared.sfMapLink}
+                  className={styles.miMore}
                 >
                   Visa på karta <span aria-hidden="true">→</span>
                 </a>
               ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
+                <span className={styles.miMapHint}>Karta visas när adressen är ifylld.</span>
               )}
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* 9 — CLOSING: färgplatta, speglar heron (bookend). Samma inre rytm som
-          heron: rubrik →20px→ ingress →32px→ CTA. */}
-      <section className={shared.sfClosing}>
+      {/* 9 — CLOSING: färgplatta, speglar heron (bookend). */}
+      <section className={styles.miClosing}>
         <Reveal>
-          <h2 className={`sf-h1 ${styles.miClosingTitle}`}>{content.closingTitle ?? 'Redo att beställa?'}</h2>
-          <p className={`${shared.sfClosingLead} ${styles.miClosingLede}`}>
+          <h2 className={styles.miClosingTitle}>{content.closingTitle ?? 'Redo att beställa?'}</h2>
+          <p className={styles.miClosingLede}>
             {content.closingLede ?? 'Välj din bukett, hämta i butiken eller få den levererad hem.'}
           </p>
           <div className={styles.miClosingActions}>
-            <BookCta className={shared.sfClosingCta} />
+            <BookCta className={styles.miHeroCta} />
           </div>
         </Reveal>
       </section>

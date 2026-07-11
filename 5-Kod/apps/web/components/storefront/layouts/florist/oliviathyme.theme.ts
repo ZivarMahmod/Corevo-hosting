@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { OliviaThymeNav, OliviaThymeFooter } from './oliviathyme.chrome'
+import { OliviaThymeOm, OliviaThymeTjanster, OliviaThymeKontakt } from './oliviathyme.pages'
 
 /**
  * OLIVIA & THYME — puderrosa + varm brun, butiks-charm (goal-58).
@@ -88,4 +90,10 @@ export const oliviathyme: FloristTheme = {
     ],
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  /* goal-59 TEMA-PAKET: mallen äger sitt SIDHUVUD (skylt: beige remsa → centrerat
+     wordmark → menyrad), sin SIDFOT (mörkbrun platta i tre kolumner) och sina
+     UNDERSIDOR (butiksberättelse med polaroider · menykort · "kom förbi"-kort).
+     Funktionen är fortfarande plattformens — navens markup renderas i NavShell. */
+  chrome: { Nav: OliviaThymeNav, Footer: OliviaThymeFooter },
+  pages: { om: OliviaThymeOm, tjanster: OliviaThymeTjanster, kontakt: OliviaThymeKontakt },
 }

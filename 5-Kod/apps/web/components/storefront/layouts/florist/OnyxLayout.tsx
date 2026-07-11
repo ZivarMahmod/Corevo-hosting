@@ -6,42 +6,40 @@ import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc, serviceNum } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './onyx.module.css'
 
 /**
  * ONYX — mörk, dramatisk lyxflorist (Zivar: "ska kännas som ett svärd, inte en
- * mjuk morot"). EGET formspråk, ensamt i sviten om det: en smal annonsremsa, ett
- * mörkt wordmark-band med ett stiliserat EST-emblem (rent dekorativt — inget
- * påhittat årtal), en VÄNSTERSTÄLLD hero-text ovanpå en mörk bild (resten av
- * sviten centrerar sin hero — det är kontrasten), ett ljust leverans-band, en
- * mörk trio av produktbilder mot svart, mörka modul-kort, tjänster i ljus text
- * på mörk botten, om-sektion, galleri, plats och en mörk closing.
- * Webshop/blogg/presentkort vävs in via `modules`-propen (S10).
+ * mjuk morot"). Sedan goal-59 ett HELT TEMA-PAKET: mallen äger sitt sidhuvud och
+ * sin sidfot (onyx.chrome.tsx) och sina undersidor (onyx.pages.tsx) — hemmet
+ * nedan använder NOLL delade .sf*-sektioner. Det var där alla mallar blev lika:
+ * variationen satt i heron, sedan föll alla ner i samma skelett.
  *
- * SKÄRPE-PASSET (design-skarpa-zentum.md): mallen använder sina EGNA typroller
- * (onxEyebrow/onxTitle/onxLede/onxBody + onxBtn) i stället för de delade
- * sf-rollerna där skalan spelar roll — de delade rollerna sitter på en flack
- * ×1.2–1.3-skala som gjorde alla nivåer lika viktiga. Strukturen (grid, rader,
- * about-grid, karta) kommer fortfarande från storefront.module.css. Se CSS:en för
- * mätvärdena. Sektionsordningen är oförändrad.
+ * HEMMETS EGET SKELETT:
+ *   1. HERO — full-bleed mörk bild som möter viewportens topp (`.hero`-sentinelen
+ *      → naven blir transparent över fotot), texten VÄNSTERSTÄLLD i nederkant.
+ *   2. LEVERANS-BAND — hård ljus (bone) invertering mot den svarta sidan.
+ *   3. TRIO — tre 4/5-bilder mot svart.
+ *   4. BUTIK — mörka kort med korall-pris (webshop-modulen invävd).
+ *   5. PRISLISTA — ljus text på svart, hårlinjer, löpnummer i korall.
+ *   6. OM — surface-panel: 4/5-porträtt mot en kort textspalt + statistik.
+ *   7. BLOGG — samma mörka kort (blogg-modulen invävd).
+ *   8. PRESENTKORT — en SMAL rad, aldrig en hel sektion.
+ *   9. GALLERI · 10. PLATS (mallens egen tids-tabell + kartlänk) · 11. CLOSING.
+ *
+ * Modul-gatingen är plattformens och HELIG: teasers-sektionerna finns bara när
+ * modulen levererat något, leverans-bandets shop-knapp bara när butiken går att
+ * nå. Layouten är SYNKRON (inga await, ingen 'use client').
  */
 export function OnyxLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
   const hasMore = services.length > 6
 
-  // ONYX ÄGER SINA MODULER (S10): butik/blogg/presentkort vävs in i temats mörka
-  // kort-språk istället för den generiska sektions-stapeln — page.tsx hoppar
-  // över StorefrontModuleSections för onyx och förladdar teasers
-  // (loadLayoutModuleTeasers) som `modules`-prop så layouten förblir SYNKRON
-  // (onboarding-studions klient-preview renderar samma komponent). Modulernas
-  // EGNA sidor är fortfarande hemmet (/shop, /blogg, /presentkort).
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
   const presentkortLive = modules?.presentkortLive ?? false
-  // Leverans-bandets knapp länkar bara till /shop när modulen går att nå
-  // (live/paused) — annars en 404-fälla (S9). Utan modules-prop (studions
-  // statiska preview) visas shop-vägen — previewn ska se en hel sida.
+  // Utan modules-prop (studions statiska preview) visas shop-vägen — previewn ska
+  // se en hel sida; med prop styr modulens verkliga tillstånd.
   const shopReachable = modules ? modules.shopReachable : true
 
   const trioImages = [
@@ -52,22 +50,10 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
 
   return (
     <>
-      {/* 1 — ANNONSREMSA (korall, smal: accenten på en LITEN yta) */}
-      <div className={styles.onxAnnounce}>
-        <p>{content.utility}</p>
-      </div>
-
-      {/* 2 — MÖRKT WORDMARK-BAND — centrerat namn + rent dekorativt EST-emblem
-          (ingen sifferclaim, bara ett stilgrepp — den riktiga funktionella
-          navigationen är delad chrome utanför den här komponenten). */}
-      <div className={styles.onxWordmark}>
-        <p className={styles.onxWordmarkName}>{tenant.name}</p>
-        <span className={styles.onxEstBadge} aria-hidden="true">Est</span>
-      </div>
-
-      {/* 3 — HERO, vänsterställd över en mörk bild (INTE centrerad) */}
+      {/* 1 — HERO. `hero` (global sentinel) → NavShell går transparent över fotot;
+          .onxHero drar upp sektionen med -(--nav-h) så bilden möter toppen. */}
       <section
-        className={styles.onxHero}
+        className={`hero ${styles.onxHero}`}
         style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}
       >
         <div className={styles.onxHeroScrim} aria-hidden="true" />
@@ -83,7 +69,7 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
         </div>
       </section>
 
-      {/* 4 — LJUST LEVERANS-BAND (bone) — hård invertering mot den svarta sidan */}
+      {/* 2 — LJUST LEVERANS-BAND (bone) — hård invertering mot den svarta sidan */}
       <div className={styles.onxDeliveryBand}>
         <Reveal className={styles.onxDeliveryInner}>
           <p className={styles.onxDeliveryText}>
@@ -99,7 +85,7 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
         </Reveal>
       </div>
 
-      {/* 5 — MÖRK PRODUKTTRIO MOT SVART */}
+      {/* 3 — MÖRK PRODUKTTRIO MOT SVART */}
       <section className={styles.onxTrioSection}>
         <Reveal className={styles.onxTrioHead}>
           <p className={styles.onxEyebrow}>{content.galleryEyebrow ?? '— I säsong'}</p>
@@ -117,8 +103,7 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
         </div>
       </section>
 
-      {/* UR BUTIKEN — webshop-modulen invävd i mörka kort. Bara ett smakprov;
-          hela sortimentet bor på /shop. Tom modul → ingen sektion. */}
+      {/* 4 — UR BUTIKEN (webshop-modulen). Tom modul → ingen sektion. */}
       {shopTeasers.length > 0 ? (
         <section className={styles.onxCardSection}>
           <Reveal className={styles.onxSecHead}>
@@ -147,49 +132,49 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
         </section>
       ) : null}
 
-      {/* TJÄNSTER — ljus text på mörk botten. Bara när det finns aktiva
-          tjänster — ingen tom-text på hemmet (goal-55 8B). */}
+      {/* 5 — PRISLISTA på svart (mallens EGEN rad-grid, inte den delade sfRowList) */}
       {rows.length > 0 ? (
         <section className={styles.onxServices}>
-          <div className={shared.sfNarrow}>
-            <Reveal className={styles.onxServicesHead}>
-              <p className={styles.onxEyebrow}>{content.servicesEyebrow}</p>
-              <h2 className={styles.onxTitle}>{content.servicesTitle}</h2>
-            </Reveal>
-            <div className={shared.sfRowList}>
-              {rows.map((s, i) => (
-                <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={shared.sfRow} label={`Boka — ${s.name}`}>
-                    <span className={styles.onxRowNum} aria-hidden="true">
-                      {serviceNum(i)}
-                    </span>
-                    <span className={shared.sfRowMain}>
-                      <span className={styles.onxRowName}>{s.name}</span>
-                      <span className={styles.onxRowDesc}>{serviceDesc(s)}</span>
-                    </span>
-                    <span className={styles.onxRowMeta}>
-                      <span className={styles.onxRowPrice}>{formatPrice(s)}</span>
-                    </span>
-                  </Bookable>
-                </Reveal>
-              ))}
-            </div>
-            {hasMore ? (
-              <Reveal className={styles.onxSecFoot}>
-                <a href="/tjanster" className={styles.onxMoreLink}>
-                  Se allt vi gör <span aria-hidden="true">→</span>
-                </a>
+          <Reveal className={styles.onxServicesHead}>
+            <p className={styles.onxEyebrow}>{content.servicesEyebrow}</p>
+            <h2 className={styles.onxTitle}>{content.servicesTitle}</h2>
+          </Reveal>
+          <div className={styles.onxPriceList}>
+            {rows.map((s, i) => (
+              <Reveal key={s.id} delay={i * 60}>
+                <Bookable className={styles.onxPriceRow} label={`Boka — ${s.name}`}>
+                  <span className={styles.onxRowNum} aria-hidden="true">
+                    {serviceNum(i)}
+                  </span>
+                  <span className={styles.onxPriceMain}>
+                    <span className={styles.onxRowName}>{s.name}</span>
+                    <span className={styles.onxRowDesc}>{serviceDesc(s)}</span>
+                  </span>
+                  <span className={styles.onxPriceMeta}>
+                    <span className={styles.onxRowPrice}>{formatPrice(s)}</span>
+                  </span>
+                </Bookable>
               </Reveal>
-            ) : null}
+            ))}
           </div>
+          {hasMore ? (
+            <Reveal className={styles.onxSecFoot}>
+              <Link href="/tjanster" className={styles.onxMoreLink}>
+                Se allt vi gör <span aria-hidden="true">→</span>
+              </Link>
+            </Reveal>
+          ) : null}
         </section>
       ) : null}
 
-      {/* OM — surface-panelen bryter rytmen mot den svarta botten runt om. */}
+      {/* 6 — OM (mallens egen split-grid) */}
       <section className={styles.onxAboutSection}>
-        <div className={`${shared.sfWide} ${shared.sfAboutGrid}`}>
+        <div className={styles.onxAboutGrid}>
           <Reveal>
-            <div className={styles.onxAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
+            <div
+              className={styles.onxAboutPhoto}
+              style={{ backgroundImage: `url(${content.aboutImage})` }}
+            />
           </Reveal>
           <Reveal delay={120}>
             <p className={styles.onxEyebrow}>— Om {tenant.name}</p>
@@ -207,8 +192,7 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
         </div>
       </section>
 
-      {/* FRÅN BLOGGEN — blogg-modulen invävd i mörka kort (3 senaste → /blogg).
-          Tom modul → ingen sektion. */}
+      {/* 7 — FRÅN BLOGGEN (blogg-modulen). Tom modul → ingen sektion. */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.onxCardSection}>
           <Reveal className={styles.onxSecHead}>
@@ -224,8 +208,6 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
                     style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
                   />
                   <h3 className={styles.onxCardName}>{p.title}</h3>
-                  {/* Ingress = brödtext (onxCardExcerpt), inte prisetikett
-                      (onxCardMeta) — de delade klass förut. */}
                   {p.excerpt ? <p className={styles.onxCardExcerpt}>{p.excerpt}</p> : null}
                 </Link>
               </Reveal>
@@ -239,7 +221,7 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
         </section>
       ) : null}
 
-      {/* PRESENTKORT — en smal rad i temats ton, aldrig en hel sektion. */}
+      {/* 8 — PRESENTKORT: en smal rad i temats ton, aldrig en hel sektion. */}
       {presentkortLive ? (
         <div className={styles.onxGiftRow}>
           <Reveal className={styles.onxGiftInner}>
@@ -254,21 +236,19 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
         </div>
       ) : null}
 
-      {/* GALLERI — masonry + lightbox (samma 4/5-ratio som resten av mallen) */}
+      {/* 9 — GALLERI */}
       <section className={styles.onxGallery}>
-        <div className={shared.sfWide}>
-          <Reveal className={styles.onxGalleryHead}>
-            <p className={styles.onxEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
-          </Reveal>
-          <Reveal>
-            <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
-          </Reveal>
-        </div>
+        <Reveal className={styles.onxGalleryHead}>
+          <p className={styles.onxEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
+        </Reveal>
+        <Reveal>
+          <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
+        </Reveal>
       </section>
 
-      {/* PLATS & ÖPPETTIDER */}
+      {/* 10 — PLATS & ÖPPETTIDER (mallens egen tids-tabell + kartlänk) */}
       <section className={styles.onxLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+        <div className={styles.onxLocGrid}>
           <Reveal>
             <p className={styles.onxEyebrow}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
             <h2 className={styles.onxTitle}>
@@ -279,37 +259,33 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
             ) : (
               <p className={styles.onxBody}>Adress visas snart.</p>
             )}
-            {location?.hours ? (
-              <div className={shared.sfHours}>
+            {location?.address ? (
+              <a
+                href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={styles.onxMoreLink}
+              >
+                Visa på karta <span aria-hidden="true">→</span>
+              </a>
+            ) : null}
+          </Reveal>
+          {location?.hours ? (
+            <Reveal delay={120}>
+              <div className={styles.onxHours}>
                 {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
+                  <div key={h.day} className={styles.onxHoursRow}>
                     <span>{h.day}</span>
                     <span>{h.time}</span>
                   </div>
                 ))}
               </div>
-            ) : null}
-          </Reveal>
-          <Reveal delay={120}>
-            <div className={shared.sfMap}>
-              {location?.address ? (
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={shared.sfMapLink}
-                >
-                  Visa på karta <span aria-hidden="true">→</span>
-                </a>
-              ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
-              )}
-            </div>
-          </Reveal>
+            </Reveal>
+          ) : null}
         </div>
       </section>
 
-      {/* CLOSING — mörk yta, EN korall-pill (accenten stannar på små ytor) */}
+      {/* 11 — CLOSING — mörk yta, EN korall-pill (accenten stannar på små ytor) */}
       <section className={styles.onxClosing}>
         <Reveal className={styles.onxClosingInner}>
           <h2 className={styles.onxTitle}>

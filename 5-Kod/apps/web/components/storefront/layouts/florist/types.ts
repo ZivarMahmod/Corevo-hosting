@@ -2,6 +2,8 @@ import type { ComponentType } from 'react'
 import type { ThemeContentDefaults, ResolvedThemeContent } from '../../theme-content'
 import type { ThemeCaps } from '@/lib/platform/theme-capabilities'
 import type { Service, TenantLocation, TenantContact } from '@/lib/tenant-data'
+import type { ShopData } from '@/lib/storefront/shop/types'
+import type { BloggPost } from '@/lib/storefront/blogg/types'
 import type { TenantBranding } from '@corevo/ui'
 
 /**
@@ -64,7 +66,8 @@ export type FloristFonts = { display: string; body: string }
  * annars tappar en ny mall korgen eller mobilmenyn utan att någon märker det.
  */
 export type ThemeNavProps = {
-  tenant: { name: string }
+  /** Hela tenant-identiteten — <Logo> kräver id+slug (BrandTenant), inte bara namnet. */
+  tenant: { id: string; name: string; slug: string }
   branding: TenantBranding
   /** Modulstyrda menylänkar (växer med kundens live-moduler). Rendera ALLA. */
   links: readonly { href: string; label: string }[]
@@ -79,7 +82,7 @@ export type ThemeNavProps = {
 }
 
 export type ThemeFooterProps = {
-  tenant: { name: string }
+  tenant: { id: string; name: string; slug: string }
   tagline: string
   location: TenantLocation | null
   contact: TenantContact
@@ -100,6 +103,53 @@ export type ThemePageProps = {
 export type ThemeChrome = {
   Nav?: ComponentType<ThemeNavProps>
   Footer?: ComponentType<ThemeFooterProps>
+}
+
+/**
+ * MODUL-VYER (goal-59, Zivars vektor-regel).
+ *
+ *   "mallens vektor är apex för modulens vektor, men komponenten och modulens
+ *    funktion är densamma"
+ *
+ * En modul (webshop, blogg, offert, presentkort, kurser) äger sin FUNKTION: datan,
+ * livscykeln (off/draft/live/paused), varukorgen, kassan, formulären, e-posten. Det
+ * ändras ALDRIG av en mall — annars skulle en ny mall tyst kunna tappa köpknappen.
+ *
+ * Men modulens FORM ska vara mallens. Idag renderar /shop, /blogg, /offert och
+ * /presentkort EN delad sektion var — samma kort, samma rubrikband, samma rutnät —
+ * oavsett mall. Så fort besökaren klickar in i butiken lämnar hen mallens vektor och
+ * landar i plattformens. Det är samma fel som det delade navet, ett steg längre in.
+ *
+ * Därför: modulen laddar sin data och gatar sin livscykel som förut, och lämnar sedan
+ * över RENDERINGEN till mallens vy när mallen har en. Ingen vy → dagens delade sektion,
+ * byte-identiskt (de sju äldre temana rör vi inte).
+ *
+ * Vyerna är SYNKRONA presentationskomponenter: all I/O är redan gjord åt dem.
+ */
+export type ThemeShopViewProps = {
+  data: ShopData
+  /** Modulen är pausad → katalogen visas läsbar, köp-CTA:erna är stängda. Mallen MÅSTE
+   *  respektera detta (annars kan en kund handla i en stängd butik). */
+  paused: boolean
+  /** Teaser-läge på startsidan: visa max så här många. undefined = modulens egen sida. */
+  limit?: number
+  /** "Visa hela butiken →" när listan klipps. */
+  moreHref?: string
+  content: ResolvedThemeContent
+  tenantName: string
+}
+
+export type ThemeBloggViewProps = {
+  posts: BloggPost[]
+  limit?: number
+  moreHref?: string
+  content: ResolvedThemeContent
+  tenantName: string
+}
+
+export type ThemeModuleViews = {
+  shop?: ComponentType<ThemeShopViewProps>
+  blogg?: ComponentType<ThemeBloggViewProps>
 }
 
 export type ThemePages = {
@@ -129,6 +179,9 @@ export type FloristTheme = {
   chrome?: ThemeChrome
   /** Mallens EGNA undersidor. Utelämnad sida → de delade sektionerna. */
   pages?: ThemePages
+  /** Mallens EGNA modul-vyer (butik/blogg). Modulen äger funktionen och datan; mallen
+   *  äger formen. Utelämnad vy → modulens delade sektion, byte-identiskt. */
+  moduleViews?: ThemeModuleViews
 }
 
 /**

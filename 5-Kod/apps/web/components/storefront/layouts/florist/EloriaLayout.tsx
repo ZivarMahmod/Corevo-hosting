@@ -6,33 +6,33 @@ import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './eloria.module.css'
 
 /**
- * ELORIA — blush, mörkgrön och guld, klassisk premium (florist-sviten, goal-58).
- * Motsatsen till Mina. EGET formspråk, signaturordning:
- *   1. Hero i TVÅ LAGER — en foto-diptyk bakom, en mörkgrön guldramad "platta"
- *      med centrerad display-serif ovanpå.
- *   2. "Tre löften"-rad med tunna guldikoner (Färska blommor / Egen leverans /
- *      Handbundet).
- *   3. Shop-teasers som eleganta höga kort (4:5).
- *   4. Tjänster i en klassisk prislista med guld-dotterade linjer.
- *   5. Om — två-kolumns porträtt + text (delad sfAboutGrid).
- *   6. Offert/bröllop-CTA — gatad mörkgrön guldramad banner, ekar heroplattan.
- *   7. Blogg — samma eleganta kort-språk som butiken.
- *   8. Galleri.
- *   9. Presentkort — en smal rad, aldrig en hel sektion.
- *  10. Plats & öppettider.
- *  11. Closing — foto + mörkgrön scrim, bokstavligen en bracket kring sidan
- *      tillsammans med hero-plattan.
- * Webshop/blogg/presentkort/offert vävs in via `modules`-propen (S10).
+ * ELORIA — blush, mörkgrön och guld, klassisk premium (florist-sviten).
  *
- * SKÄRPE-PASS (design-skarpa-zentum.md): identiteten (färgfamilj, struktur-signatur,
- * sektionsordning) är orörd — utförandet är skärpt. Mallen använder sina EGNA typroller
- * (styles.elEyebrow/elH2/elBody/elMoreLink) istället för de globala .sf-*-rollerna, som
- * ligger på en slapp ×1.2–1.3-skala. Skalan, radien, bildratiot (4:5 överallt), rytmen
- * och kontrasten bor i eloria.module.css / eloria.theme.ts.
+ * TEMA-PAKET (goal-59): hemmet äger nu HELA sin komposition. Tidigare lånade den nedre
+ * halvan plattformens delade .sf*-sektioner (sfAboutGrid, sfGalleryBand, sfLocBand,
+ * sfStatTrio, sfHours, sfMap) — exakt de sektioner som gjorde att elva mallar läste som
+ * samma sida i olika färg. NOLL delade klasser återstår: om-uppslaget, galleribandet,
+ * plats-sektionen och stat-trion är Elorias egna, i mallens klassiska språk.
+ *
+ * SIGNATURORDNING (ingen syskonmall har den):
+ *   1. Hero i TVÅ LAGER — foto-diptyk bakom, mörkgrön guldramad platta ovanpå.
+ *   2. Tre löften med tunna guldikoner.
+ *   3. Butiken som höga 4:5-kort med guldlinje.
+ *   4. Tjänster som klassisk prislista med guld-ledare (varje rad = <Bookable>).
+ *   5. Om — guldramat uppslag (foto | text) med stat-lista i guld-ledare.
+ *   6. Offert/bröllop — mörkgrön guldramad banner som ekar heroplattan.
+ *   7. Bloggen i samma kort-språk som butiken.
+ *   8. Galleri i mallens ENDA bildratio (4:5).
+ *   9. Presentkort — en smal rad, aldrig en hel sektion.
+ *  10. Plats & öppettider — öppettiderna som prislista med guld-ledare.
+ *  11. Closing — foto + mörkgrön scrim; bracketar sidan mot heroplattan.
+ *
+ * Modul-gatingen är plattformens och HELIG: shopReachable/offertReachable gatar länkar,
+ * teasers-sektionerna finns bara när teasers finns, presentkortet är en smal rad. Layouten
+ * är SYNKRON (onboarding-studions klient-preview renderar samma komponent).
  */
 
 /** Fyrkronblomma — löftesikon 1: Färska blommor. */
@@ -76,19 +76,12 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
   const rows = services.slice(0, 6)
   const hasMore = services.length > 6
 
-  // ELORIA ÄGER SINA MODULER (S10): butik/blogg/presentkort/offert vävs in i
-  // temats guldlinje-språk istället för den generiska sektions-stapeln —
-  // page.tsx hoppar över StorefrontModuleSections för eloria och förladdar
-  // teasers (loadLayoutModuleTeasers) som `modules`-prop så layouten förblir
-  // SYNKRON (onboarding-studions klient-preview renderar samma komponent).
-  // Modulernas EGNA sidor är fortfarande hemmet (/shop, /blogg, /presentkort,
-  // /offert).
+  // ELORIA ÄGER SINA MODULER (S10): butik/blogg/presentkort/offert vävs in i temats
+  // guldlinje-språk istället för den generiska sektions-stapeln. Modulernas EGNA sidor är
+  // fortfarande deras hem (/shop, /blogg, /presentkort, /offert).
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
   const presentkortLive = modules?.presentkortLive ?? false
-  // Utan modules-prop (studions statiska preview) visas allt som går att visa
-  // utan riktig data — reachable-flaggorna gatar bara LÄNKAR mot moduler, inte
-  // teaser-sektionerna själva (de kräver ändå riktiga teasers för att synas).
   const shopReachable = modules ? modules.shopReachable : true
   const offertReachable = modules ? modules.offertReachable : true
 
@@ -119,24 +112,22 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
       <section className={styles.elVows}>
         <Reveal className={styles.elVow}>
           <BloomIcon />
-          <h3 className={styles.elVowTitle}>Färska blommor</h3>
+          <h2 className={styles.elVowTitle}>Färska blommor</h2>
           <p className={styles.elVowText}>Snittade i säsong, aldrig äldre än nödvändigt.</p>
         </Reveal>
         <Reveal delay={90} className={styles.elVow}>
           <DeliveryIcon />
-          <h3 className={styles.elVowTitle}>Egen leverans</h3>
+          <h2 className={styles.elVowTitle}>Egen leverans</h2>
           <p className={styles.elVowText}>Vårt eget bud, varsamt hela vägen fram.</p>
         </Reveal>
         <Reveal delay={180} className={styles.elVow}>
           <RibbonIcon />
-          <h3 className={styles.elVowTitle}>Handbundet</h3>
+          <h2 className={styles.elVowTitle}>Handbundet</h2>
           <p className={styles.elVowText}>Varje bukett bunden för hand, aldrig maskinellt.</p>
         </Reveal>
       </section>
 
-      {/* 3 — UR BUTIKEN — webshop-modulen invävd som eleganta höga kort (4:5).
-          Bara ett smakprov; hela sortimentet bor på /shop. Tom modul → ingen
-          sektion. */}
+      {/* 3 — UR BUTIKEN: webshop-modulen som höga 4:5-kort med guldlinje. Tom modul → ingen sektion. */}
       {shopTeasers.length > 0 ? (
         <section className={styles.elShopSection}>
           <Reveal className={styles.elSecHead}>
@@ -168,11 +159,11 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
         </section>
       ) : null}
 
-      {/* 4 — TJÄNSTER: klassisk prislista med guld-dotterade linjer. Bara när
-          det finns aktiva tjänster — ingen tom-text på hemmet (goal-55 8B). */}
+      {/* 4 — TJÄNSTER: klassisk prislista med guld-ledare. Inga tjänster → ingen sektion
+          (hemmet visar aldrig tom-text; /tjanster gör det). */}
       {rows.length > 0 ? (
         <section className={styles.elPriceSection}>
-          <div className={shared.sfNarrow}>
+          <div className={styles.elNarrow}>
             <Reveal className={styles.elSecHead}>
               <p className={styles.elEyebrow}>{content.servicesEyebrow}</p>
               <h2 className={styles.elH2}>{content.servicesTitle}</h2>
@@ -202,30 +193,35 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
         </section>
       ) : null}
 
-      {/* 5 — OM: två-kolumns porträtt + text */}
+      {/* 5 — OM: Elorias EGNA guldramade uppslag (foto | text), stat-lista med guld-ledare.
+          Var tidigare plattformens delade sfAboutGrid — samma bild-vänster/text-höger som
+          alla andra mallar. */}
       <section className={styles.elAboutSection}>
-        <div className={`${shared.sfWide} ${shared.sfAboutGrid}`}>
-          <Reveal>
-            <div className={shared.sfAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
-          </Reveal>
-          <Reveal delay={120}>
+        <Reveal className={styles.elSpread}>
+          <div
+            className={styles.elSpreadPhoto}
+            style={{ backgroundImage: `url(${content.aboutImage})` }}
+            role="img"
+            aria-label={`Miljön hos ${tenant.name}`}
+          />
+          <div className={styles.elSpreadCopy}>
             <p className={styles.elEyebrow}>— Om {tenant.name}</p>
             <h2 className={styles.elH2}>{content.aboutTitle}</h2>
             <p className={styles.elBody}>{content.aboutCopyHome}</p>
-            <ul className={shared.sfStatTrio}>
+            <ul className={styles.elFacts}>
               {content.stats.map(([n, l]) => (
-                <li key={l}>
-                  <span className={`${shared.sfStatValue} ${styles.elStatValue}`}>{n}</span>
-                  <span className={`${shared.sfStatLabel} ${styles.elStatLabel}`}>{l}</span>
+                <li key={l} className={styles.elFactRow}>
+                  <span className={styles.elFactLabel}>{l}</span>
+                  <span className={styles.elPriceDots} aria-hidden="true" />
+                  <span className={styles.elFactValue}>{n}</span>
                 </li>
               ))}
             </ul>
-          </Reveal>
-        </div>
+          </div>
+        </Reveal>
       </section>
 
-      {/* 6 — OFFERT/BRÖLLOP — gatad mörkgrön guldramad banner, ekar
-          heroplattan. Ingen offertReachable → ingen sektion (S9). */}
+      {/* 6 — OFFERT/BRÖLLOP: gatad mörkgrön guldramad banner som ekar heroplattan. */}
       {offertReachable ? (
         <section className={styles.elOfferBand}>
           <Reveal className={styles.elOfferInner}>
@@ -242,8 +238,7 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
         </section>
       ) : null}
 
-      {/* 7 — FRÅN BLOGGEN — blogg-modulen invävd i samma eleganta kort-språk
-          som butiken (3 senaste → /blogg). Tom modul → ingen sektion. */}
+      {/* 7 — FRÅN BLOGGEN: samma kort-språk som butiken. Tom modul → ingen sektion. */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.elCardSectionAlt}>
           <Reveal className={styles.elSecHead}>
@@ -273,9 +268,9 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
         </section>
       ) : null}
 
-      {/* 8 — GALLERI — masonry + lightbox, tvingat till mallens ENDA ratio (4:5) */}
-      <section className={`${shared.sfGalleryBand} ${styles.elGallery}`}>
-        <div className={shared.sfWide}>
+      {/* 8 — GALLERI: mallens EGET band (var delad sfGalleryBand), brickorna tvingade till 4:5. */}
+      <section className={styles.elGallery}>
+        <div className={styles.elWide}>
           <Reveal>
             <p className={styles.elEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
           </Reveal>
@@ -285,7 +280,7 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
         </div>
       </section>
 
-      {/* 9 — PRESENTKORT — en smal rad i temats ton, aldrig en hel sektion */}
+      {/* 9 — PRESENTKORT: en smal rad i temats ton, aldrig en hel sektion. */}
       {presentkortLive ? (
         <div className={styles.elGiftRow}>
           <Reveal className={styles.elGiftInner}>
@@ -298,9 +293,10 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
         </div>
       ) : null}
 
-      {/* 10 — PLATS & ÖPPETTIDER */}
-      <section className={`${shared.sfLocBand} ${styles.elLoc}`}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid}`}>
+      {/* 10 — PLATS & ÖPPETTIDER: Elorias egen två-spalt (var delad sfLocBand/sfHours/sfMap) —
+          öppettiderna sätts som en prislista med guld-ledare, samma grepp som tjänsterna. */}
+      <section className={styles.elLoc}>
+        <div className={styles.elLocGrid}>
           <Reveal>
             <p className={styles.elEyebrow}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
             <h2 className={styles.elH2}>
@@ -309,39 +305,39 @@ export function EloriaLayout({ tenant, content, services, location, modules }: S
             {location?.address ? (
               <p className={styles.elBody}>{location.address}</p>
             ) : (
-              <p className={styles.elBody}>Adress visas snart.</p>
+              <p className={styles.elBody}>Adressen visas så snart den är ifylld.</p>
             )}
-            {location?.hours ? (
-              <div className={shared.sfHours}>
-                {location.hours.map((h) => (
-                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.elHoursRow}`}>
-                    <span>{h.day}</span>
-                    <span>{h.time}</span>
-                  </div>
-                ))}
-              </div>
+            {location?.address ? (
+              <a
+                href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={styles.elMoreLink}
+              >
+                Visa på karta <span aria-hidden="true">→</span>
+              </a>
             ) : null}
           </Reveal>
-          <Reveal delay={120}>
-            <div className={shared.sfMap}>
-              {location?.address ? (
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={styles.elMapLink}
-                >
-                  Visa på karta <span aria-hidden="true">→</span>
-                </a>
-              ) : (
-                <span className={styles.elMapHint}>Karta visas när adressen är ifylld.</span>
-              )}
-            </div>
+          <Reveal delay={120} className={styles.elHoursCard}>
+            <p className={styles.elEyebrow}>— Öppettider</p>
+            {location?.hours ? (
+              <ul className={styles.elFacts}>
+                {location.hours.map((h) => (
+                  <li key={h.day} className={styles.elFactRow}>
+                    <span className={styles.elFactLabel}>{h.day}</span>
+                    <span className={styles.elPriceDots} aria-hidden="true" />
+                    <span className={styles.elFactValue}>{h.time}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.elBody}>Öppettiderna visas så snart de är ifyllda.</p>
+            )}
           </Reveal>
         </div>
       </section>
 
-      {/* 11 — CLOSING: foto + mörkgrön scrim — ekar heroplattan, bracketar sidan */}
+      {/* 11 — CLOSING: foto + mörkgrön scrim — ekar heroplattan, bracketar sidan. */}
       <section className={styles.elClosing} style={{ backgroundImage: `url(${content.closingImage})` }}>
         <div className={styles.elClosingScrim} aria-hidden="true" />
         <Reveal className={styles.elClosingInner}>

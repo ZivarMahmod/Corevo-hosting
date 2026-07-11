@@ -119,11 +119,10 @@
   background: var(--color-bg);
 }
 
-/* ── TYPE-ROLLER — minas nivåer slår tokens.css generiska sf-roller ────────────
-   EN sektionsnivå (52px): sf-h1 och sf-h2 pekar medvetet på samma storlek. Två
+/* ── TYPE-ROLLER — MINAS EGNA (goal-59: noll delade .sf*-klasser kvar) ─────────
+   EN sektionsnivå (52px): allt som är en sektionsrubrik bär .miSecTitle. Två
    snarlika rubriknivåer (56/34 = ×1.65) var själva grötigheten. */
-:global([data-world='storefront']) .miRoot :global(.sf-h1),
-:global([data-world='storefront']) .miRoot :global(.sf-h2) {
+.miSecTitle {
   margin: 0;
   font-family: var(--font-display);
   font-weight: var(--mi-fw-display);
@@ -134,8 +133,8 @@
 }
 /* Eyebrow = INK, inte accent (zentum-regel 8: en accent som syns i varje sektion
    slutar vara en accent). Rosan bor på plattorna, knapparna, priserna och
-   statsiffrorna istället. 18.42:1 mot bg, 15.25:1 mot presentkortsradens fyll. */
-:global([data-world='storefront']) .miRoot :global(.sf-eyebrow) {
+   statsiffrorna istället. */
+.miEyebrow {
   display: block;
   margin: 0 0 var(--mi-sp-eyebrow);
   font-family: var(--font-body);
@@ -146,11 +145,17 @@
   text-transform: uppercase;
   color: var(--color-fg);
 }
-:global([data-world='storefront']) .miRoot :global(.sf-body) {
-  font-family: var(--font-body);
-  font-size: var(--mi-fs-body);
-  line-height: var(--mi-lh-body);
-  color: var(--color-fg-2); /* 5.82:1 — backar medvetet för rubriken */
+
+/* ── EGNA BREDDER (ersätter delade sfWide/sfNarrow — samma sido-padding) ─────── */
+.miWide {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--mi-gutter-x);
+}
+.miNarrow {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 var(--mi-gutter-x);
 }
 
 /* ── KNAPP — exakt pill: höjd 50px, radie = full pill, versal mikro ────────────
@@ -176,16 +181,24 @@
   transform: none;
 }
 /* Mer-länkar ("Visa hela sortimentet", "Läs mer", "Se allt vi gör") — samma
-   mikro-register som knapparna. Delade .sfMoreLink är 0,1,0; .miRoot .miMore
-   är 0,2,0 och vinner. */
-.miRoot .miMore {
+   mikro-register som knapparna. Minas EGEN primitiv (ingen sfMoreLink). */
+.miMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
   font-family: var(--font-body);
   font-size: var(--mi-fs-micro);
   font-weight: var(--mi-fw-micro);
+  line-height: var(--mi-lh-micro);
   letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary); /* 7.63:1 */
+  border-bottom: 1px solid var(--color-primary);
+  padding-bottom: 2px;
+  transition: gap var(--mi-dur) var(--mi-ease);
 }
+.miMore:hover { gap: 14px; }
 
 /* ── 1 — HERO: färgplatta, ingen bild. Inre rytm 12 → 20 → 32 ───────────────── */
 .miHero {
@@ -352,7 +365,13 @@
    (unikt mot resten av sviten som kör två-kolumners om+foto) */
 .miAbout { padding: var(--mi-sp-section) var(--mi-gutter-x); text-align: center; }
 .miAboutInner { max-width: 38rem; margin: 0 auto; }
-.miAboutCopy { margin-top: var(--mi-sp-text); }
+.miAboutCopy {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2); /* 5.82:1 — backar medvetet för rubriken */
+  margin-top: var(--mi-sp-text);
+}
 .miStatRow {
   list-style: none;
   display: flex;
@@ -398,11 +417,8 @@
   gap: var(--mi-sp-eyebrow) var(--mi-sp-gutter);
   text-align: center;
 }
-/* Eyebrow-marginalen (12px) hör till en rubrik under — här är raden vågrät.
-   Måste slå .miRoots egen sf-eyebrow-roll (0,3,0) → 0,4,0. */
-:global([data-world='storefront']) .miRoot .miGiftInner :global(.sf-eyebrow) {
-  margin-bottom: 0;
-}
+/* Eyebrow-marginalen (12px) hör till en rubrik under — här är raden vågrät. */
+.miGiftInner .miEyebrow { margin-bottom: 0; }
 .miGiftText {
   font-family: var(--font-body);
   font-size: var(--mi-fs-body);
@@ -439,29 +455,468 @@
 }
 @media (max-width: 760px) { .miBlogGrid { grid-template-columns: 1fr; max-width: 26rem; margin: 0 auto; } }
 
-/* ── 8 — PLATS & ÖPPETTIDER: delade .sfLocBand/.sfHours + minas nivåer ───────── */
-.miLocAddress { margin-top: var(--mi-sp-text); }
-.miRoot .miHours { margin-top: var(--mi-sp-cta); }
-.miRoot .miHours div {
+/* ── 8 — PLATS & ÖPPETTIDER: Minas EGEN två-spalt (fakta | rosa karta-platta) ──
+   Ingen delad .sfLocBand längre. Kartan är en klarrosa platta med EN länk — inte
+   en grå ruta med en hint. */
+.miLoc {
+  padding: var(--mi-sp-section) 0;
+  border-top: 1px solid var(--color-line);
+}
+.miLocGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--mi-gutter-x);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(24px, 5vw, 64px);
+  align-items: center;
+}
+.miLocAddress {
   font-family: var(--font-body);
   font-size: var(--mi-fs-body);
   line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+  margin-top: var(--mi-sp-text);
 }
+.miHours { margin-top: var(--mi-sp-cta); border-top: 1px solid var(--color-line); }
+.miHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mi-sp-gutter);
+  padding: var(--mi-sp-eyebrow) 0;
+  border-bottom: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg);
+}
+.miMap {
+  aspect-ratio: var(--mi-ratio);
+  background: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mi-sp-gutter);
+  text-align: center;
+}
+.miMapHint {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+}
+@media (max-width: 760px) { .miLocGrid { grid-template-columns: 1fr; } }
 
-/* ── 9 — CLOSING: färgplatta som speglar heron (bookend) ───────────────────────
-   Rubriken bär .sf-h1 + .miClosingTitle: sf-h1-rollen ovan (0,3,0) sätter
-   color: var(--color-fg) — mörk ink på den rosa plattan (2.4:1) om vi inte
-   vinner. 0,4,0 → vit (7.63:1), deterministiskt oavsett CSS-ordning. */
-:global([data-world='storefront']) .miRoot :global(.sf-h1).miClosingTitle {
-  color: var(--mi-on-plate);
+/* ── 9 — CLOSING: färgplatta som speglar heron (bookend) ─────────────────────── */
+.miClosing {
+  background: var(--color-primary);
+  padding: var(--mi-sp-hero) var(--mi-gutter-x);
+  text-align: center;
+}
+.miClosingTitle {
+  font-family: var(--font-display);
+  font-weight: var(--mi-fw-display);
+  font-size: var(--mi-fs-sec);
+  line-height: var(--mi-lh-sec);
+  letter-spacing: var(--mi-ls-display);
+  color: var(--mi-on-plate); /* 7.63:1 */
   max-width: 20ch;
   margin: 0 auto;
 }
-.miRoot .miClosingLede {
+.miClosingLede {
   font-family: var(--font-body);
   font-size: var(--mi-fs-lede);
   line-height: var(--mi-lh-body);
   color: var(--mi-on-plate-2); /* 6.42:1 */
-  margin-top: var(--mi-sp-text);
+  max-width: 40rem;
+  margin: var(--mi-sp-text) auto 0;
 }
 .miClosingActions { margin-top: var(--mi-sp-cta); }
+/* Inverterad CTA även på closing-plattan (samma klass som heron bär). */
+.miClosing :global(.btn-accent).miHeroCta {
+  background: var(--mi-on-plate);
+  color: var(--color-primary);
+  border-color: var(--mi-on-plate);
+}
+.miClosing :global(.btn-accent).miHeroCta:hover { background: var(--mi-fill-on-plate); }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   NAV — BUTIKSRADEN (mina.chrome.tsx). Platt vit remsa, wordmark vänster i stor
+   Jost, allt annat till höger: meny i versal mikro + ikoner + fylld rosa pill.
+   Ingen utility-rad, ingen transparens över hero (Mina har ingen hero-BILD).
+   Dubblad klass (0,2,0) slår nav-shell.module.css utan att röra den delade filen —
+   shell-klasserna sitter kvar på elementen → burger/overlay/korg fungerar som förr.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.miNav.miNav {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 16px clamp(20px, 4vw, 28px);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-line);
+  box-shadow: none;
+}
+.miNavMark.miNavMark { grid-column: 1; justify-self: start; }
+.miNavMark :global(.logo-text) {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--color-fg);
+}
+.miNavLinks.miNavLinks {
+  grid-column: 2;
+  justify-self: end;
+  gap: 28px;
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+}
+.miNavLinks.miNavLinks a { color: var(--color-fg); }
+/* Minimalismen: de tre första ingångarna bär full vikt, resten backar till en
+   tunnare grad. ALLA modul-länkar renderas — de tappas aldrig. */
+.miNavLinks.miNavLinks a:nth-child(n + 4) {
+  font-weight: 400;
+  color: var(--color-fg-2);
+}
+.miNavLinks.miNavLinks a:hover { color: var(--color-primary); }
+.miNavCluster.miNavCluster { grid-column: 3; justify-self: end; gap: 12px; }
+/* Nav-CTA: fylld rosa pill, mikro-registret (btn-accent-basen sätts i .miRoot-
+   blocket ovan; naven ligger UTANFÖR .miRoot → egna värden här). */
+.miNavCta {
+  padding: 0 24px;
+  line-height: 42px;
+  border-radius: var(--mi-r-pill);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+.miNavCta:hover { box-shadow: none; transform: none; }
+@media (max-width: 720px) {
+  .miNav.miNav { grid-template-columns: 1fr; }
+}
+
+/* ═══ FOOTER — EN ROSA RAD (inte tre kolumner, inte en mörk platta) ════════════ */
+.miFoot {
+  background: var(--color-accent-soft);
+  padding: var(--mi-sp-section) var(--mi-gutter-x) var(--mi-sp-text);
+}
+.miFootRow {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--mi-sp-text) var(--mi-sp-gutter);
+}
+.miFootBrand { display: flex; align-items: baseline; gap: var(--mi-sp-gutter); flex-wrap: wrap; }
+.miFootMark {
+  font-family: var(--font-display);
+  font-weight: var(--mi-fw-display);
+  font-size: var(--mi-fs-card);
+  line-height: var(--mi-lh-card);
+  letter-spacing: var(--mi-ls-display);
+  color: var(--color-fg); /* 15.25:1 mot rosan */
+}
+.miFootTagline {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+}
+.miFootLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mi-sp-gutter);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+}
+.miFootLinks a { color: var(--color-fg); text-decoration: none; }
+.miFootLinks a:hover { color: var(--color-primary); }
+.miFootMeta {
+  max-width: 1180px;
+  margin: var(--mi-sp-cta) auto 0;
+  padding-top: var(--mi-sp-text);
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mi-sp-eyebrow) var(--mi-sp-gutter);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.miFootMeta a { color: var(--color-fg-2); text-decoration: none; }
+.miFootMeta a:hover { color: var(--color-primary); }
+.miFootCopy { margin-left: auto; }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   UNDERSIDOR (mina.pages.tsx) — samma typskala/rytm som hemmet, egen komposition:
+   /om = smal centrerad spalt · /tjanster = CHIP-GRID · /kontakt = formulärskort.
+   Sidorna ligger UTANFÖR .miRoot → typskalans vars deklareras om på .miPage.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.miPage {
+  --mi-fs-sec: clamp(32px, 4.8vw, 52px);
+  --mi-fs-card: clamp(24px, 2.4vw, 28px);
+  --mi-fs-lede: 21px;
+  --mi-fs-body: 16px;
+  --mi-fs-micro: 12px;
+  --mi-lh-sec: 1.08;
+  --mi-lh-card: 1.15;
+  --mi-lh-body: 1.57;
+  --mi-lh-micro: 1.5;
+  --mi-ls-display: -0.01em;
+  --mi-ls-caps: 0.06em;
+  --mi-ls-micro: 0.083em;
+  --mi-fw-display: 500;
+  --mi-fw-micro: 600;
+  --mi-sp-eyebrow: 12px;
+  --mi-sp-text: 20px;
+  --mi-sp-cta: 32px;
+  --mi-sp-block: 48px;
+  --mi-sp-gutter: 24px;
+  --mi-sp-section: clamp(48px, 8vw, 96px);
+  --mi-gutter-x: clamp(20px, 4vw, 28px);
+  --mi-ratio: 4 / 5;
+  --mi-r-pill: 999px;
+  --mi-dur: 400ms;
+  --mi-ease: ease;
+  --mi-lift: -4px;
+  --mi-on-plate: #fff;
+  --mi-on-plate-2: rgba(255, 255, 255, 0.9);
+  --mi-rule-on-plate: rgba(255, 255, 255, 0.6);
+  --mi-fill-on-plate: rgba(255, 255, 255, 0.92);
+  background: var(--color-bg);
+  padding: var(--mi-sp-section) var(--mi-gutter-x);
+}
+.miPageHead { max-width: 38rem; margin: 0 auto var(--mi-sp-block); text-align: center; }
+.miPageEyebrow {
+  display: block;
+  margin: 0 0 var(--mi-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.miPageTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--mi-fw-display);
+  font-size: var(--mi-fs-sec);
+  line-height: var(--mi-lh-sec);
+  letter-spacing: var(--mi-ls-display);
+  color: var(--color-fg);
+}
+.miPageLede {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-lede);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+  margin: var(--mi-sp-text) 0 0;
+}
+.miPageColumn { max-width: 38rem; margin: 0 auto; text-align: center; }
+.miProse {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+  margin: 0 0 var(--mi-sp-text);
+}
+.miPageFoot { margin-top: var(--mi-sp-cta); text-align: center; }
+/* Text-CTA på undersidorna = samma mikro-register som .miMore. */
+.miTextCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  padding-bottom: 2px;
+}
+/* Pill-CTA på undersidorna (BookCta/submit bär .btn-accent globalt). */
+.miPlateCta {
+  padding: 0 30px;
+  line-height: 50px;
+  border-radius: var(--mi-r-pill);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  box-shadow: none;
+}
+.miPlateCta:hover { box-shadow: none; transform: none; }
+
+/* /om — citatband på rosa platta som avslutar den smala spalten */
+.miQuoteBand {
+  margin: var(--mi-sp-section) auto 0;
+  max-width: 1180px;
+  background: var(--color-accent-soft);
+  padding: var(--mi-sp-section) var(--mi-gutter-x);
+  text-align: center;
+}
+.miQuote {
+  font-family: var(--font-display);
+  font-weight: var(--mi-fw-display);
+  font-size: var(--mi-fs-sec);
+  line-height: var(--mi-lh-sec);
+  letter-spacing: var(--mi-ls-display);
+  color: var(--color-fg); /* 15.25:1 mot rosan */
+  max-width: 22ch;
+  margin: 0 auto;
+}
+
+/* /tjanster — CHIP-GRID: tjänsterna som täta, klickbara pris-chips */
+.miChipGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--mi-sp-gutter);
+}
+.miChip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mi-sp-eyebrow);
+  height: 100%;
+  padding: var(--mi-sp-gutter);
+  background: var(--color-accent-soft);
+  border: 1px solid transparent;
+  border-radius: var(--sf-radius); /* = 0 */
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--mi-dur) var(--mi-ease), transform var(--mi-dur) var(--mi-ease);
+}
+.miChip:hover { border-color: var(--color-primary); transform: translateY(var(--mi-lift)); }
+.miChip:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.miChipName {
+  font-family: var(--font-body);
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-card);
+  letter-spacing: var(--mi-ls-caps);
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.miChipDesc {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+}
+.miChipMeta {
+  margin-top: auto;
+  padding-top: var(--mi-sp-eyebrow);
+  border-top: 1px solid var(--color-line);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--mi-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+}
+.miChipTime { color: var(--color-fg-2); }
+.miChipPrice { color: var(--color-primary); }
+@media (max-width: 860px) { .miChipGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .miChipGrid { grid-template-columns: 1fr; } }
+
+/* /kontakt — enkelt formulärskort + tunn faktakolumn */
+.miContactGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: clamp(24px, 5vw, 64px);
+  align-items: start;
+}
+.miFormCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  padding: clamp(24px, 4vw, 40px);
+}
+.miForm { display: flex; flex-direction: column; gap: var(--mi-sp-text); }
+.miField { display: flex; flex-direction: column; gap: 8px; }
+.miFieldLabel {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.miInput,
+.miTextarea {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  padding: 12px 14px;
+}
+.miInput:focus-visible,
+.miTextarea:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 0; }
+.miTextarea { resize: vertical; }
+.miFactCol { display: flex; flex-direction: column; gap: var(--mi-sp-cta); }
+.miFact { border-top: 1px solid var(--color-line); padding-top: var(--mi-sp-eyebrow); }
+.miFactLabel {
+  margin: 0 0 var(--mi-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.miFactValue {
+  margin: 0 0 var(--mi-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+}
+.miFactValue a { color: var(--color-fg-2); }
+.miFactHours { border-top: 1px solid var(--color-line); }
+.miFactHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mi-sp-gutter);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg);
+}
+.miFactCol .miPageFoot { text-align: left; }
+@media (max-width: 860px) { .miContactGrid { grid-template-columns: 1fr; } }

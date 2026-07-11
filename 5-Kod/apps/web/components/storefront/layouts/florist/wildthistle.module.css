@@ -41,7 +41,13 @@
    Alla klasser är wt-prefixade. Hårdkodade värden finns BARA som dekor-vars i
    rot-klassen nedan (mallens tillåtna egna färger + dess skala). */
 
-.wtRoot {
+/* Var-blocket delas av mallens FYRA ytor: hemmet (.wtRoot), sidhuvudet (.wtNav),
+   sidfoten (.wtFooter) och undersidorna (.wtPage). Chrome/undersidor renderas
+   UTANFÖR .wtRoot i (public)/layout.tsx, så de måste bära skalan själva. */
+.wtRoot,
+.wtNav,
+.wtFooter,
+.wtPage {
   /* ── FÄRG — mallens egna dekorfärger (enda hårdkodade värdena i filen) ── */
   --wt-moss: #4a5732; /* accent. Vit text på moss = 7.78:1 (var 5.79:1) */
   --wt-paper: #ffffff; /* knappyta + rubrik på mörka fält */
@@ -663,3 +669,422 @@
   color: var(--wt-on-dark);
 }
 .wtClosingActions { margin-top: var(--wt-s3); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TEMA-PAKET (goal-59) — mallens EGET sidhuvud, sidfot och undersidor.
+   Formspråket är detsamma som hemmets: råpapper, streckade linjer, radie 0,
+   grov serif mot mikroversal grotesk. Ingen mjukhet, ingen sticky-elegans.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── SIDHUVUD — wordmark vänster (tung serif), meny höger i GEMENER, tjock
+      underlinje under hela raden. Skriver om NavShells 3-zons-grid. ── */
+.wtNav {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--wt-s3);
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: var(--wt-s2) var(--wt-gut);
+  border-bottom: 4px solid var(--color-fg); /* tjock underlinje = mallens signatur */
+}
+.wtNavWordmark {
+  grid-column: 1;
+  justify-self: start;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.wtNavWordmark :global(.logo-text) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-name); /* tung, stor — inte en 24px-etikett */
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--color-fg);
+}
+.wtNavLinks {
+  grid-column: 2;
+  justify-self: end;
+  display: flex;
+  align-items: baseline;
+  gap: var(--wt-s3);
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  font-weight: 400;
+  text-transform: lowercase; /* gemener — rått, inte "elegant" versal */
+}
+.wtNavLinks a {
+  color: var(--color-fg);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--wt-dur-fast) ease, color var(--wt-dur-fast) ease;
+}
+.wtNavLinks a:hover {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+.wtNavCluster {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--wt-s2);
+}
+@media (max-width: 900px) {
+  .wtNavLinks { gap: var(--wt-s2); font-size: var(--wt-fs-micro); }
+}
+@media (max-width: 720px) {
+  .wtNav { grid-template-columns: 1fr; justify-items: start; }
+  .wtNavLinks,
+  .wtNavCluster { display: none; } /* NavShells burger/overlay tar över */
+}
+
+/* ── SIDFOT — råpapper med grov typografi: gigantiskt wordmark, streckade
+      fältanteckningar i tre spalter, meny i gemener. ── */
+.wtFooter {
+  background: var(--color-surface);
+  border-top: 4px solid var(--color-fg);
+  padding: var(--wt-sec) var(--wt-gut) var(--wt-s3);
+}
+.wtFooterInner {
+  max-width: 1360px;
+  margin: 0 auto;
+}
+.wtFooterWordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-hero); /* typografin ÄR ytan */
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  color: var(--color-fg);
+}
+.wtFooterTagline {
+  margin: var(--wt-s1) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-lede);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+.wtFooterCols {
+  margin-top: var(--wt-s4);
+  padding-top: var(--wt-s3);
+  border-top: 2px dashed var(--color-line);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--wt-s4);
+}
+.wtFooterHead {
+  margin: 0 0 var(--wt-s2);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.wtFooterText {
+  margin: 0 0 var(--wt-s1);
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+.wtFooterLink {
+  color: var(--color-fg);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--color-fg-2);
+}
+.wtFooterLink:hover {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+.wtFooterHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--wt-s2);
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg);
+}
+.wtFooterHoursRow span:first-child { color: var(--color-fg-2); }
+.wtFooterNav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  text-transform: lowercase;
+}
+.wtFooterSocials {
+  margin-top: var(--wt-s2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--wt-s2);
+}
+.wtFooterSocial {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+}
+.wtFooterBottom {
+  max-width: 1360px;
+  margin: var(--wt-s4) auto 0;
+  padding-top: var(--wt-s2);
+  border-top: 2px dashed var(--color-line);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+@media (max-width: 760px) {
+  .wtFooterCols { grid-template-columns: 1fr; gap: var(--wt-s3); }
+}
+
+/* ── UNDERSIDOR — gemensam ram ── */
+.wtPage { background-color: var(--color-bg); }
+.wtPageHead {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: var(--wt-sec) var(--wt-gut) var(--wt-s3);
+  border-bottom: 4px solid var(--color-fg); /* samma tjocka linje som naven */
+}
+.wtPageTitle {
+  margin: var(--wt-s1) 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-hero);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  color: var(--color-fg);
+}
+.wtPageLede {
+  margin: var(--wt-s2) 0 0;
+  max-width: 40rem;
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-lede);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+.wtPageWrap {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: var(--wt-sec) var(--wt-gut);
+}
+
+/* ── /om — FÄLTDAGBOK: numrerade anteckningar i en spalt, foto som "inklistrad"
+      bilaga i marginalen, streckad linje mellan uppslagen. ── */
+.wtJournal {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr;
+  gap: clamp(var(--wt-s3), 5vw, var(--wt-s5));
+  align-items: start;
+}
+.wtEntry {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--wt-s3);
+  padding: var(--wt-s3) 0;
+  border-bottom: 1px dashed var(--color-line);
+}
+.wtEntry:first-child { padding-top: 0; }
+.wtEntryNum {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-name);
+  line-height: 1.12;
+  color: var(--wt-moss);
+}
+.wtEntryTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-name);
+  line-height: 1.12;
+  color: var(--color-fg);
+}
+.wtEntryText {
+  margin: var(--wt-s2) 0 0;
+  max-width: 40rem;
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+.wtEntryQuote {
+  margin: var(--wt-s2) 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: var(--wt-fs-h2);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--color-primary);
+}
+.wtJournalAside { position: sticky; top: 120px; }
+.wtJournalPhoto {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+  border: 8px solid var(--wt-paper); /* "inklistrad" bilaga */
+}
+.wtJournalCaption {
+  margin: var(--wt-s1) 0 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+@media (max-width: 860px) {
+  .wtJournal { grid-template-columns: 1fr; }
+  .wtJournalAside { position: static; order: -1; }
+}
+
+.wtTeamGrid {
+  margin-top: var(--wt-s4);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--wt-s3);
+}
+.wtTeamPhoto {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+.wtTeamName {
+  margin: var(--wt-s2) 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-name);
+  line-height: 1.12;
+  color: var(--color-fg);
+}
+.wtTeamRole {
+  margin: 6px 0 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+@media (max-width: 760px) { .wtTeamGrid { grid-template-columns: 1fr 1fr; } }
+
+/* ── /tjanster — streckad prislista i EN kolumn (hemmet kör två) ── */
+.wtPriceList {
+  max-width: 820px;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.wtPriceDur {
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  white-space: nowrap;
+}
+.wtPriceDesc {
+  margin: 4px 0 0;
+  max-width: 34rem;
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+.wtEmpty { max-width: 40rem; }
+.wtEmptyActions { margin-top: var(--wt-s3); }
+
+/* ── /kontakt — enkel RÅPAPPERS-RUTA: en fyrkantig, ramad platta ── */
+.wtPaperCard {
+  max-width: 720px;
+  background: var(--wt-paper);
+  border: 2px solid var(--color-fg);
+  border-radius: var(--sf-radius);
+  padding: clamp(var(--wt-s3), 4vw, var(--wt-s4));
+}
+.wtPaperRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--wt-s1) var(--wt-s3);
+  margin: 0;
+  padding: var(--wt-s2) 0;
+  border-bottom: 1px dashed var(--color-line);
+}
+.wtPaperKey {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.wtPaperVal {
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg);
+  text-align: right;
+}
+.wtPaperLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--color-primary);
+}
+.wtPaperActions { margin-top: var(--wt-s3); }
+.wtPaperHours { margin-top: var(--wt-s4); max-width: 720px; }
+
+/* Knappen på LJUS botten (nav-CTA + undersidornas CTA): fylld tistel-platta med
+   papperstext (11.59:1). .wtSquareCta är vit-på-mörkt och funkar bara i heron/
+   closingen — den skulle drunkna i råpappret här. Global .btn-accent (pill +
+   glow + accent-fyllning) skrivs över: radie 0, ingen skugga, inget lyft. */
+.wtInkCta,
+.wtInkCta:global(.btn-accent) {
+  display: inline-block;
+  padding: 0 26px;
+  line-height: 42px;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--sf-radius);
+  background: var(--color-primary);
+  color: var(--wt-paper);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color var(--wt-dur-fast) ease, border-color var(--wt-dur-fast) ease;
+}
+.wtInkCta:hover,
+.wtInkCta:global(.btn-accent):hover {
+  background: var(--color-primary-d);
+  border-color: var(--color-primary-d);
+  color: var(--wt-paper);
+  transform: none;
+  box-shadow: none;
+}
+.wtInkCta:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }

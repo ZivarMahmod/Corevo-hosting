@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import type { StorefrontLayoutProps } from '../types'
-import type { ThemeChrome, ThemePages } from './types'
+import type { ThemeChrome, ThemePages, ThemeModuleViews } from './types'
 import { FLORIST_THEMES } from './registry'
 import { CalytrixLayout } from './CalytrixLayout'
 import { AuroraLayout } from './AuroraLayout'
@@ -46,4 +46,14 @@ export function themeChrome(key: string): ThemeChrome {
 /** Mallens EGNA undersidor (/om, /tjanster, /kontakt). Saknas → delade sektioner. */
 export function themePages(key: string): ThemePages {
   return FLORIST_THEMES.find((t) => t.key === key)?.pages ?? {}
+}
+
+/**
+ * Mallens EGNA modul-vyer (butik/blogg). Modulen laddar sin data och gatar sin
+ * livscykel; hittar den en vy här renderas datan i MALLENS formspråk — annars i
+ * modulens delade sektion, byte-identiskt. Zivars vektor-regel: mallens vektor är
+ * apex för modulens, men modulens funktion är alltid densamma.
+ */
+export function themeModuleViews(key: string): ThemeModuleViews {
+  return FLORIST_THEMES.find((t) => t.key === key)?.moduleViews ?? {}
 }

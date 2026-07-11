@@ -1,53 +1,39 @@
-/* ═══════════ ISALARA — djupblå/marin + varm sand, elegant kvällskänsla ═══════════
-   SKÄRPE-PASS (design-skarpa-zentum.md). Identiteten är ORÖRD: samma palett (djupblå
-   marin + varm sand), samma sektionsordning (hero → ikon-genvägar → mörkblått band →
-   bild-duo → butik → tjänster → om → blogg → presentkort → plats → closing), samma
-   signatur (handskriven skript-rubrik). Det är UTFÖRANDET som skärpts:
+/* ═══════════ ISALARA — KVÄLLSBLÅ ELEGANS (helt tema-paket, goal-59) ═══════════
+   Mallen äger nu HELA sajten: sidhuvud, sidfot, hem OCH undersidor. Noll delade
+   .sf*-klasser — hemmets nedre halva (tjänster/om/plats/closing) var exakt där
+   alla tretton mallar rann ihop till samma sida i olika färg.
 
-   · TYPSKALA  FEM nivåer, inget däremellan: 108 → 52 → 26 → 16 → 12.
-               Steg ×2.08 / ×2.00 / ×1.63 / ×1.33 — inget grannpar under ×1.3.
-               18px-leden är BORTA (låg ×1.13 från brödtexten). De delade sf*-
-               klasserna (tjänsterader, stats, öppettider, closing) tvingas in på
-               samma fem nivåer via .islLvlSub/-Body/-Micro — de hade annars dragit
-               in 38.4/25.6/24/16.8/15.2/14.72/13.6px i renderingen.
-   · VIKT      display 400–500 (Cormorant levereras i 400/500/600/700 → 500 är ÄKTA,
-               ingen syntetisk fetstil). Mikrotext/knappar 600.
-   · LINE-H    rubrik 1.05–1.15 (spänd FORM) mot brödtext 1.58 (luftig YTA).
-   · SPÄRR     omvänt mot storleken: −0.01em på ≥26px, +1px (0.083em) på 12px-versaler.
-   · RADIE     binärt: 0 på all struktur (--sf-radius = '0px' i isalara.theme.ts),
-               full pill (--radius-pill) BARA på knapp + ikoncirkel — EN icke-noll-
-               radie i hela mallen. 5px-radien var mjuk gröt.
-   · FÄRG      8 hex, alla ur paletten. Scrimen lånar --color-primary-d; mallen har
-               ingen egen dekor-hex (den gamla #040a12 var en nionde).
-   · BILD      EN ratio (4:5) på ALLA innehållsbilder — kort, duo, om-foto. Korten
-               låg i 4:3 → griden tappade sina linjer.
-   · KONTRAST  hero-scrimen var det ENDA felet i mallen (vit text kunde landa på
-               2.0:1 mot en utbränd fotopixel). Uträknat golv nedan. Paletten själv
-               klarade redan kraven — se isalara.theme.ts.
-   · HOVER     5px lyft / 400ms. scale(1.05) på kortbilden är borttaget.
-   · RYTM      en skala: 12 / 20 / 24 / 32 / 48 / 96. Samma inre steg i ALLA sektioner.
+   MALLENS SVAR (får inte delas med ett syskon):
+   · NAV      SOLID mörkblå rad i full bredd, ALDRIG transparent — script-wordmark
+              vänster, meny + kluster höger. Sajtens ansikte är blått från pixel 1.
+   · HEM      hero m. handskriven script-rubrik → fyra ikon-genvägar → marinblått
+              band → TVÅ portföljbilder → HÖGA eleganta produktkort → priser i TVÅ
+              KOLUMNER med guld-prick istället för prickad ledare → plats → closing.
+   · PRIS     tvåspalt, guld-prick (--color-line) framför namnet, pris i display.
+              Ingen annan mall i sviten listar priser i två kolumner.
+   · FOOTER   marinblå platta, TRE kolumner (besök · öppettider · meny) + script-
+              wordmark överst.
+   · SIDOR    /om = porträtt + BREV (brödtext i brevspalt m. script-signatur),
+              /tjanster = samma tvåspalt, /kontakt = ETT mörkblått kort.
 
-   Delade sf*-klasser (tjänster/om/plats/closing) lånas från ../../storefront.module.css.
-   Den filen ägs inte av mallen — där mallen måste skärpa den görs det med scopade
-   selektorer under .islRoot (specificitet (0,2,0) > delad (0,1,0)). */
+   SKÄRPE-REGLERNA (design-skarpa-zentum.md) är oförändrade och gäller i varje ny
+   sektion: typskala 108/52/26/16/12, display-vikt 400–500, rubrik-lh ≤1.15 mot
+   bröd-lh 1.58, EN bildratio (4:5), BINÄR radie (0 + pill), EN accent (primary)
+   sparsamt, 8 hex ur paletten — noll egna hex. */
 
-.islRoot {
-  /* ── Hero-scrimens tint. Ingen EGEN hex: scrimen är paletten mörkaste ton
-     (--color-primary-d = #0C1F33). Den gamla #040a12 var en NIONDE hex utanför
-     paletten → bröt taket på 8. Alfa-nivåerna nedan är omräknade för den ljusare
-     tinten så kontrast-golvet blir HÖGRE än förut (5.52:1 mot 5.19:1). */
+.islRoot,
+.islNav,
+.islFooter,
+.islPage {
+  /* ── Scrim/mörka ytor: ingen EGEN hex, palettens mörkaste ton. */
   --isl-scrim: var(--color-primary-d);
 
-  /* ── TYPSKALA — 108 / 52 / 26 / 16 / 12. Steg: ×2.08 → ×2.00 → ×1.63 → ×1.33.
-     LEDE-NIVÅN (18px) ÄR BORTTAGEN: 18/16 = ×1.13, alltså två nivåer som vägde
-     lika mycket — den sortens "nästan lika" är precis moroten. Mellan 26 och 16
-     finns bara ×1.63 att fördela, så en nivå däremellan KAN inte hålla ×1.3 åt
-     båda håll. Hero-leden kör därför brödtextens grad; hierarkin görs av 108→16. */
-  --isl-fs-hero: clamp(3.5rem, 9vw, 6.75rem); /* 56 → 108px (skript) */
-  --isl-fs-h2: clamp(2rem, 4.4vw, 3.25rem); /* 32 → 52px */
-  --isl-fs-sub: clamp(1.375rem, 2.1vw, 1.625rem); /* 22 → 26px */
-  --isl-fs-body: 1rem; /* 16px */
-  --isl-fs-micro: 0.75rem; /* 12px */
+  /* ── TYPSKALA — 108 / 52 / 26 / 16 / 12 (×2.08 → ×2.00 → ×1.63 → ×1.33). */
+  --isl-fs-hero: clamp(3.5rem, 9vw, 6.75rem);
+  --isl-fs-h2: clamp(2rem, 4.4vw, 3.25rem);
+  --isl-fs-sub: clamp(1.375rem, 2.1vw, 1.625rem);
+  --isl-fs-body: 1rem;
+  --isl-fs-micro: 0.75rem;
 
   /* ── LINE-HEIGHT — rubriken en form, brödtexten en yta. */
   --isl-lh-display: 1.05;
@@ -55,124 +41,198 @@
   --isl-lh-sub: 1.15;
   --isl-lh-body: 1.58;
 
-  /* ── LETTER-SPACING — aldrig positiv spärr på stor text. Skriptet får 0: en
-     handstil har sammanbundna former, spärr skulle bryta isär dem. */
+  /* ── LETTER-SPACING — aldrig positiv spärr på stor text. */
   --isl-ls-display: 0;
   --isl-ls-head: -0.01em;
-  --isl-ls-micro: 0.083em; /* ≈ +1px vid 12px */
+  --isl-ls-micro: 0.083em;
 
   /* ── RYTM — 12 / 20 / 24 / 32 / 48 / 96. */
-  --isl-sec: clamp(3rem, 7vw, 6rem); /* 48 → 96px sektionsavstånd */
-  --isl-band: clamp(1.5rem, 3.5vw, 3rem); /* 24 → 48px smala band */
+  --isl-sec: clamp(3rem, 7vw, 6rem);
+  --isl-band: clamp(1.5rem, 3.5vw, 3rem);
   --isl-gutter: clamp(1.5rem, 4vw, 1.75rem);
-  --isl-step-eyebrow: 12px; /* eyebrow → rubrik */
-  --isl-step-head: 20px; /* rubrik → text */
-  --isl-step-cta: 32px; /* text → CTA */
+  --isl-step-eyebrow: 12px;
+  --isl-step-head: 20px;
+  --isl-step-cta: 32px;
   --isl-grid-gap: 24px;
 
   /* ── MOTION — återhållsam. */
   --isl-dur: 400ms;
   --isl-lift: -5px;
 
-  /* Delade komponenter läser --tpl-radius (12px från .tplRoot). Nollas här —
-     annars smyger mjuka hörn in i en mall som är radie-0. */
+  /* Delade komponenter (Gallery/Bookable) läser --tpl-radius (12px). Nollas —
+     annars smyger mjuka hörn in i en mall som är binärt radie-0. */
   --tpl-radius: 0px;
   --tpl-radius-lg: 0px;
 }
 
-/* ── TYPROLLER (.sf-*) — globala i tokens.css ([data-world] .sf-h1 = 0,2,0).
-   Mallens skala vinner via dubblad rotklass (0,3,0), scopat till .islRoot så ingen
-   annan mall påverkas. sf-h1 och sf-h2 pekar MEDVETET på samma nivå: mallen har EN
-   sektionsrubrik (52px). Förut var de 56 vs 34px — två konkurrerande sektionsnivåer
-   som gjorde hierarkin luddig. */
-.islRoot.islRoot :global(.sf-eyebrow) {
-  font-size: var(--isl-fs-micro);
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: var(--isl-ls-micro);
-}
-.islRoot.islRoot :global(.sf-h1),
-.islRoot.islRoot :global(.sf-h2) {
-  font-size: var(--isl-fs-h2);
-  font-weight: 500;
-  line-height: var(--isl-lh-head);
-  letter-spacing: var(--isl-ls-head);
-}
-.islRoot.islRoot :global(.sf-lede),
-.islRoot.islRoot :global(.sf-body) {
-  font-size: var(--isl-fs-body);
-  line-height: var(--isl-lh-body);
-}
-
-/* ── NIVÅ-KLASSER för DELAD struktur (tjänste-rader, stats, öppettider, closing).
-   storefront.module.css är en CSS-modul: dess klassnamn hashas och går INTE att
-   selektera härifrån. Därför taggar layouten varje delat textelement med en av
-   mallens tre nivåer istället. Utan dem renderades mallen med den delade filens
-   egen skala rakt igenom sin egen — 38.4 / 25.6 / 24 / 16.8 / 15.2 / 14.72 / 13.6px,
-   åtta grannpar inom ×1.3. Det ÄR gröten: skalan såg skarp ut i tokens och
-   renderade morot. (0,2,0) > delad (0,1,0), så mallens nivå vinner. */
-.islRoot .islLvlSub {
-  font-family: var(--font-display);
-  font-size: var(--isl-fs-sub);
-  line-height: var(--isl-lh-sub);
-  letter-spacing: var(--isl-ls-head);
-}
-.islRoot .islLvlBody {
-  font-size: var(--isl-fs-body);
-  line-height: var(--isl-lh-body);
-}
-.islRoot .islLvlMicro {
+/* ─────────────────────────  GEMENSAMMA TYPROLLER  ─────────────────────────
+   Mallens egna nivåer (inga globala .sf*-klasser längre): allt som skriver text
+   i hem, nav, footer och undersidor plockar EN av de fem graderna. */
+.islEyebrow {
+  margin: 0;
   font-family: var(--font-body);
   font-size: var(--isl-fs-micro);
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: var(--isl-ls-micro);
   text-transform: uppercase;
+  color: var(--color-primary); /* 10.44:1 mot bg */
+}
+.islTitle {
+  margin: var(--isl-step-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--isl-fs-h2);
+  line-height: var(--isl-lh-head);
+  letter-spacing: var(--isl-ls-head);
+  color: var(--color-fg);
+}
+.islSub {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--isl-fs-sub);
+  line-height: var(--isl-lh-sub);
+  letter-spacing: var(--isl-ls-head);
+  color: var(--color-fg);
+}
+.islBody {
+  margin: var(--isl-step-head) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-fg-2); /* 5.78:1 mot bg */
 }
 
-/* ── SEKTIONSRYTM — samma steg i mallens EGNA sektioner och i de delade
-   (tjänster/om/plats), vars 72–112px-padding annars bröt skalan. (0,2,0) vinner. */
-.islSection {
-  padding-top: var(--isl-sec);
-  padding-bottom: var(--isl-sec);
-}
-/* Blogg-sektionens sandton — samma ytfärg som presentkortsraden, ur paletten. */
-.islSectionSoft { background: var(--color-accent-soft); }
-.islRoot .islServices,
-.islRoot .islAboutGrid,
-.islRoot .islLocGrid {
-  padding-top: var(--isl-sec);
-  padding-bottom: var(--isl-sec);
-}
-/* Rubrik → text: 20px. Delad .sf-body/.sf-h2 äger inte sina marginaler, så mallen
-   sätter dem här istället för med inline-styles i layouten. */
-.islStepHead { margin-top: var(--isl-step-head); }
-.islStepEyebrow { margin-top: var(--isl-step-eyebrow); }
-.islStepCta { margin-top: var(--isl-step-cta); }
-
-/* ── KNAPP — mikrotext-regeln: 12px / 600 / VERSALER / +1px spärr, exakt pill.
-   Höjd 50px, radie = --radius-pill (kapsel), padding 0 30px. Delas av hero-CTA:n
-   och closing-CTA:n så de LÄSER lika. Bakgrund/färg kommer från .btn-accent
-   (--color-accent = temats primary → #fff på #1B3B5B = 11.52:1). */
-.islRoot .islBtn {
+/* ── KNAPP — mikrotext-regeln: 12 / 600 / VERSALER / +1px, exakt pill. */
+.islBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 50px;
-  line-height: 46px; /* 50px − 2×2px ram */
   padding: 0 30px;
   font-family: var(--font-body);
   font-size: var(--isl-fs-micro);
   font-weight: 600;
   letter-spacing: var(--isl-ls-micro);
   text-transform: uppercase;
+  border-radius: var(--radius-pill);
+  border: 0;
+  background: var(--color-primary);
+  color: var(--color-surface); /* 11.52:1 */
+  text-decoration: none;
+  cursor: pointer;
   box-shadow: none;
   transition: transform var(--isl-dur) ease;
 }
-/* 5px lyft. Ingen skugg-bloom (den globala .btn-accent:hover tänder en glow). */
-.islRoot .islBtn:hover {
+.islBtn:hover {
   transform: translateY(var(--isl-lift));
   box-shadow: none;
 }
+/* Ljus variant — på de mörkblå ytorna (band/closing/kontaktkort/footer). */
+.islBtnLight {
+  background: var(--color-surface);
+  color: var(--color-primary-d); /* 16.39:1 */
+}
 
-/* ---------- 1. HERO — skript-rubrik centrerad över bild ---------- */
+/* Understruken mikrolänk — en kant som redan finns är skarpare än en som tonar in. */
+.islLink {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--isl-fs-micro);
+  letter-spacing: var(--isl-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 2px;
+  white-space: nowrap;
+  transition: opacity var(--isl-dur) ease;
+}
+.islLink:hover { opacity: 0.7; }
+
+/* ═════════════════════════════  NAV — SOLID MARINBLÅ RAD  ═════════════════════
+   NavShells sticky-kontrakt (.navThemed) ligger kvar på <header>; mallen skriver
+   om dess grid till en FULLBREDDS solid blå rad. Ingen transparens, inget scroll-
+   skinn: sajten möter besökaren blå direkt, till skillnad från syskonen som
+   ligger ljusa/genomskinliga över sin hero. */
+.islNav.islNav {
+  max-width: none;
+  padding: 0;
+  background: var(--color-primary-d);
+  border-bottom: 1px solid var(--color-primary);
+  display: block;
+}
+.islNavInner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0.9rem var(--isl-gutter);
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--isl-grid-gap);
+}
+/* Wordmarket i HANDSKRIVEN skript — mallens signatur, samma hand som hero-rubriken. */
+.islNavWordmark {
+  justify-self: start;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.islNavWordmark :global(.logo-text) {
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: var(--isl-fs-sub);
+  letter-spacing: var(--isl-ls-display);
+  color: var(--color-surface); /* 16.39:1 mot primary-d */
+}
+.islNavLinks {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--isl-grid-gap);
+}
+.islNavLinks a {
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--isl-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-surface);
+  text-decoration: none;
+  white-space: nowrap;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+  transition: border-color var(--isl-dur) ease;
+}
+.islNavLinks a:hover { border-bottom-color: var(--color-line); }
+.islNavCluster {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--isl-step-eyebrow);
+}
+/* Korg/konto ligger på shell.navAccount (hashad, ur en annan modul) — mallens
+   ljusa skinn läggs på med en EGEN klass bredvid, aldrig genom att ta bort deras. */
+.islNavIcon.islNavIcon {
+  border-color: color-mix(in srgb, var(--color-surface) 45%, transparent);
+  color: var(--color-surface);
+  background: transparent;
+}
+.islNavIcon.islNavIcon:hover {
+  border-color: var(--color-surface);
+  color: var(--color-surface);
+}
+.islNavBtn {
+  height: 42px;
+  padding: 0 22px;
+}
+@media (max-width: 720px) {
+  /* NavShells burger tar över; blå raden behåller bara wordmarket. */
+  .islNavInner { grid-template-columns: 1fr; }
+  .islNavLinks,
+  .islNavCluster { display: none; }
+}
+
+/* ═══════════════════════════════  1. HERO  ═══════════════════════════════ */
 .islHero {
   position: relative;
   min-height: clamp(30rem, 78vh, 44rem);
@@ -182,10 +242,8 @@
   align-items: center;
   justify-content: center;
 }
-/* Scrimen är en KONTRAST-komponent, inte dekor. Tinten är nu palettens --color-
-   primary-d (ingen egen hex), som är LJUSARE än den gamla — därför är alfa höjt:
-   uträknat golv alfa ≥ 0.67 håller --color-surface (#FFFDF7) på 5.52:1 även mot
-   en HELVIT (utbränd) fotopixel. Ingen punkt i gradienten går under det. */
+/* Scrimen är en KONTRAST-komponent: alfa ≥ 0.67 håller --color-surface på 5.52:1
+   även mot en helvit (utbränd) fotopixel. */
 .islHeroScrim {
   position: absolute;
   inset: 0;
@@ -214,9 +272,6 @@
   text-transform: uppercase;
   color: var(--color-surface);
 }
-/* Skriptet är signaturen: HANDSKRIVEN rubrik, egen skala fristående från sf-h1/h2
-   (som resten av mallen kör i lugn Cormorant-serif). Dancing Script har 400 som sin
-   riktiga vikt — den behåller vi (rätt vikt > påhittad fetstil). */
 .islHeroTitle {
   margin: var(--isl-step-eyebrow) 0 0;
   font-family: var(--font-script);
@@ -227,9 +282,6 @@
   color: var(--color-surface);
   white-space: pre-line;
 }
-/* Hierarkin görs av SKALAN (108 → 16), inte av uttonad text: leden var rgba(…,0.9)
-   — nu ren --color-surface. Graden är brödtextens (se typskalan: 18px-nivån är
-   borttagen, den låg ×1.13 från 16 och vägde därför lika mycket). */
 .islHeroLede {
   font-family: var(--font-body);
   font-size: var(--isl-fs-body);
@@ -240,7 +292,7 @@
 }
 .islHeroCtaRow { margin-top: var(--isl-step-cta); }
 
-/* ---------- 2. FYRA IKON-GENVÄGAR — ljus rad direkt under heron ---------- */
+/* ══════════════════════  2. FYRA IKON-GENVÄGAR  ══════════════════════ */
 .islShortcuts {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-line);
@@ -269,9 +321,7 @@ a.islShortcut:hover {
   background: var(--color-accent-soft);
   transform: translateY(var(--isl-lift));
 }
-/* Cirkeln är mallens medvetna pill-undantag mot de raka kanterna (jämte knappen).
-   SAMMA token som knappen (--radius-pill) — 999px var ett andra, onödigt pill-värde;
-   nu har mallen exakt EN icke-noll-radie. */
+/* Mallens medvetna pill-undantag (jämte knappen) — SAMMA token, EN icke-noll-radie. */
 .islShortcutIconWrap {
   display: grid;
   place-items: center;
@@ -279,30 +329,27 @@ a.islShortcut:hover {
   height: 3.25rem;
   border-radius: var(--radius-pill);
   background: var(--color-accent-soft);
-  color: var(--color-primary); /* 9.13:1 mot accent-soft */
+  color: var(--color-primary); /* 9.13:1 */
 }
-/* Genvägen är en ikon-rubrik (zentums icon-heading), inte en etikett: den ligger på
-   underrubriks-nivån (26px). Förut 12px label + 12.5px sub — två nivåer inom 4% av
-   varandra = exakt den gröt passet ska bort med. */
 .islShortcutLabel {
   font-family: var(--font-display);
   font-weight: 500;
   font-size: var(--isl-fs-sub);
   line-height: var(--isl-lh-sub);
   letter-spacing: var(--isl-ls-head);
-  color: var(--color-fg); /* 14.88:1 mot surface */
+  color: var(--color-fg);
 }
 .islShortcutSub {
   font-family: var(--font-body);
   font-size: var(--isl-fs-body);
   line-height: var(--isl-lh-body);
-  color: var(--color-fg-2); /* 6.27:1 mot surface */
+  color: var(--color-fg-2);
 }
 @media (max-width: 640px) {
   .islShortcutGrid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ---------- 3. MÖRKBLÅTT BAND — en rad ---------- */
+/* ══════════════════════  3. MARINBLÅTT BAND  ══════════════════════ */
 .islBand {
   background: var(--color-primary-d);
   padding: var(--isl-band) var(--isl-gutter);
@@ -316,10 +363,10 @@ a.islShortcut:hover {
   font-weight: 500;
   font-size: var(--isl-fs-sub);
   line-height: var(--isl-lh-sub);
-  color: var(--color-surface); /* 16.39:1 mot primary-d */
+  color: var(--color-surface); /* 16.39:1 */
 }
 
-/* ---------- 4. TVÅ STORA BILDER SIDA VID SIDA (portfölj) ---------- */
+/* ══════════════════════  4. PORTFÖLJ-DUON  ══════════════════════ */
 .islDuo {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -333,7 +380,12 @@ a.islShortcut:hover {
   .islDuo { grid-template-columns: 1fr; }
 }
 
-/* ---------- Sektionsrubrik (delas av "Ur butiken" + "Från floristen") ---------- */
+/* ══════════════════════  SEKTIONSSKAL + RUBRIKRAD  ══════════════════════ */
+.islSection {
+  padding-top: var(--isl-sec);
+  padding-bottom: var(--isl-sec);
+}
+.islSectionSoft { background: var(--color-accent-soft); }
 .islSecHead {
   max-width: 1180px;
   margin: 0 auto;
@@ -344,23 +396,8 @@ a.islShortcut:hover {
   gap: var(--isl-step-head);
   flex-wrap: wrap;
 }
-/* Mikrotext-regeln igen: 12 / 600 / VERSALER / +1px. Understruken permanent — en
-   kant som redan finns är skarpare än en som tonar fram vid hover. */
-.islSecCta {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--isl-fs-micro);
-  letter-spacing: var(--isl-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary); /* 10.44:1 mot bg */
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 2px;
-  white-space: nowrap;
-  transition: opacity var(--isl-dur) ease;
-}
-.islSecCta:hover { opacity: 0.7; }
 
-/* ---------- 5/8. KORT-GRID (butik + blogg) ---------- */
+/* ══════════════════════  5/8. HÖGA ELEGANTA KORT  ══════════════════════ */
 .islCardGrid {
   max-width: 1180px;
   margin: var(--isl-sec) auto 0;
@@ -369,7 +406,6 @@ a.islShortcut:hover {
   grid-template-columns: repeat(3, 1fr);
   gap: var(--isl-grid-gap);
 }
-/* Hover: hela kortet lyfts 5px. Bilden skalar INTE — scale(1.05) var pösigt. */
 .islCard {
   display: block;
   text-decoration: none;
@@ -378,12 +414,12 @@ a.islShortcut:hover {
 }
 .islCard:hover { transform: translateY(var(--isl-lift)); }
 .islCardImgWrap {
-  border-radius: var(--sf-radius); /* = 0 */
+  border-radius: var(--sf-radius);
   overflow: hidden;
   background: var(--color-accent-soft);
 }
 .islCardImg {
-  aspect-ratio: 4 / 5; /* samma ratio som duon och om-fotot */
+  aspect-ratio: 4 / 5;
   background-size: cover;
   background-position: center;
 }
@@ -394,20 +430,144 @@ a.islShortcut:hover {
   font-size: var(--isl-fs-sub);
   line-height: var(--isl-lh-sub);
   letter-spacing: var(--isl-ls-head);
-  color: var(--color-fg); /* 13.71:1 mot bg */
+  color: var(--color-fg);
 }
 .islCardMeta {
   margin: var(--isl-step-eyebrow) 0 0;
   font-family: var(--font-body);
   font-size: var(--isl-fs-body);
   line-height: var(--isl-lh-body);
-  color: var(--color-fg-2); /* 5.78:1 mot bg */
+  color: var(--color-fg-2);
 }
 @media (max-width: 760px) {
   .islCardGrid { grid-template-columns: 1fr; max-width: 24rem; }
 }
 
-/* ---------- 9. PRESENTKORT-RAD (smal, aldrig egen sektion) ---------- */
+/* ═══════════  6. PRISER — TVÅ KOLUMNER MED GULD-PRICK  ═══════════
+   Mallens svar på "hur listas priser": inte en tabell, inte kort, inte prickade
+   ledare — en TVÅSPALT där varje rad öppnas av en liten sandfärgad prick och
+   priset sätts i display-serifen till höger. */
+.islPriceWrap {
+  max-width: 1100px;
+  margin: var(--isl-sec) auto 0;
+  padding: 0 var(--isl-gutter);
+}
+.islPriceCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: clamp(2rem, 6vw, 6rem);
+}
+.islPriceRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: var(--isl-step-head);
+  width: 100%;
+  padding: var(--isl-step-head) 0;
+  border-bottom: 1px solid var(--color-line);
+  background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: padding-left var(--isl-dur) ease;
+}
+.islPriceRow:hover { padding-left: var(--isl-step-eyebrow); }
+/* "Guld"-pricken = palettens sandton (--color-line). Ingen nionde hex. */
+.islPriceDot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-line);
+  transform: translateY(-3px);
+}
+.islPriceRow:hover .islPriceDot { background: var(--color-primary); }
+.islPriceMain { display: block; }
+.islPriceName {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--isl-fs-sub);
+  line-height: var(--isl-lh-sub);
+  letter-spacing: var(--isl-ls-head);
+  color: var(--color-fg);
+}
+.islPriceDesc {
+  display: block;
+  margin-top: var(--isl-step-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-fg-2);
+}
+.islPriceValue {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--isl-fs-sub);
+  line-height: var(--isl-lh-sub);
+  letter-spacing: var(--isl-ls-head);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+.islPriceMore {
+  margin-top: var(--isl-step-cta);
+  text-align: center;
+}
+@media (max-width: 860px) {
+  .islPriceCols { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════  7. OM — SPLIT  ══════════════════════ */
+.islAbout {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--isl-sec) var(--isl-gutter);
+  display: grid;
+  grid-template-columns: 5fr 6fr;
+  align-items: center;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+.islAboutPhoto {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.islStats {
+  list-style: none;
+  margin: var(--isl-step-cta) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--isl-grid-gap);
+  border-top: 1px solid var(--color-line);
+  padding-top: var(--isl-step-head);
+}
+.islStatValue {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--isl-fs-sub);
+  line-height: var(--isl-lh-sub);
+  letter-spacing: var(--isl-ls-head);
+  color: var(--color-primary);
+}
+.islStatLabel {
+  display: block;
+  margin-top: var(--isl-step-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--isl-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+@media (max-width: 860px) {
+  .islAbout { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════  9. PRESENTKORT-RAD  ══════════════════════ */
 .islGiftRow {
   padding: var(--isl-band) var(--isl-gutter);
   text-align: center;
@@ -420,24 +580,371 @@ a.islShortcut:hover {
   justify-content: center;
   gap: var(--isl-step-eyebrow) var(--isl-grid-gap);
 }
-.islGiftCta {
+
+/* ══════════════════════  10. PLATS & ÖPPETTIDER  ══════════════════════ */
+.islLoc {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+.islLocGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--isl-sec) var(--isl-gutter);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+.islHours {
+  margin-top: var(--isl-step-cta);
+  border-top: 1px solid var(--color-line);
+}
+.islHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--isl-step-head);
+  padding: var(--isl-step-eyebrow) 0;
+  border-bottom: 1px solid var(--color-line);
   font-family: var(--font-body);
-  font-weight: 600;
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-fg-2);
+}
+.islMap {
+  display: grid;
+  place-items: center;
+  min-height: 16rem;
+  height: 100%;
+  background: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+  padding: var(--isl-band);
+  text-align: center;
+}
+.islMapHint {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-fg-2);
+}
+@media (max-width: 860px) {
+  .islLocGrid { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════  11. CLOSING — MARINBLÅ  ══════════════════════ */
+.islClosing {
+  background: var(--color-primary);
+  padding: var(--isl-sec) var(--isl-gutter);
+  text-align: center;
+}
+.islClosingInner {
+  max-width: 40rem;
+  margin: 0 auto;
+}
+.islClosingTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--isl-fs-h2);
+  line-height: var(--isl-lh-head);
+  letter-spacing: var(--isl-ls-head);
+  color: var(--color-surface); /* 11.32:1 mot primary */
+}
+.islClosingLede {
+  margin: var(--isl-step-head) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-surface);
+}
+.islClosingCta { margin-top: var(--isl-step-cta); }
+
+/* ═════════════════════════  FOOTER — MARINBLÅ, TRE KOLUMNER  ═════════════════ */
+.islFooter {
+  background: var(--color-primary-d);
+  color: var(--color-surface);
+  padding: var(--isl-sec) var(--isl-gutter) var(--isl-band);
+}
+.islFooterWordmark {
+  max-width: 1180px;
+  margin: 0 auto;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: var(--isl-fs-h2);
+  line-height: var(--isl-lh-head);
+  letter-spacing: var(--isl-ls-display);
+  color: var(--color-surface);
+}
+.islFooterTagline {
+  max-width: 1180px;
+  margin: var(--isl-step-eyebrow) auto 0;
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-line); /* sandton mot marin — 8.4:1 */
+}
+.islFooterCols {
+  max-width: 1180px;
+  margin: var(--isl-sec) auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--isl-grid-gap);
+  border-top: 1px solid var(--color-primary);
+  padding-top: var(--isl-band);
+}
+.islFooterHead {
+  margin: 0 0 var(--isl-step-head);
+  font-family: var(--font-body);
   font-size: var(--isl-fs-micro);
+  font-weight: 600;
   letter-spacing: var(--isl-ls-micro);
   text-transform: uppercase;
-  color: var(--color-primary); /* 9.13:1 mot accent-soft */
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 2px;
-  transition: opacity var(--isl-dur) ease;
+  color: var(--color-line);
 }
-.islGiftCta:hover { opacity: 0.7; }
+.islFooterText {
+  margin: 0 0 var(--isl-step-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-surface);
+}
+.islFooterLink {
+  color: var(--color-surface);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-line) 60%, transparent);
+  transition: border-color var(--isl-dur) ease;
+}
+.islFooterLink:hover { border-bottom-color: var(--color-line); }
+.islFooterNav {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--isl-step-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+}
+.islFooterHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--isl-step-head);
+  padding-bottom: var(--isl-step-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-surface);
+}
+.islFooterSocials {
+  display: flex;
+  gap: var(--isl-grid-gap);
+  margin-top: var(--isl-step-head);
+}
+.islFooterSocial {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--color-surface) 45%, transparent);
+  color: var(--color-surface);
+  transition: border-color var(--isl-dur) ease;
+}
+.islFooterSocial:hover { border-color: var(--color-surface); }
+.islFooterBottom {
+  max-width: 1180px;
+  margin: var(--isl-band) auto 0;
+  padding-top: var(--isl-step-head);
+  border-top: 1px solid var(--color-primary);
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--isl-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-line);
+}
+@media (max-width: 760px) {
+  .islFooterCols { grid-template-columns: 1fr; gap: var(--isl-band); }
+}
+
+/* ═════════════════════════════  UNDERSIDOR  ═══════════════════════════════ */
+/* Sidhuvudet på /om, /tjanster, /kontakt: SMAL marinblå platta — mallens sidor
+   börjar i samma kvällsblå som naven, inte i ett ljust delat band. */
+.islPageHead {
+  background: var(--color-primary-d);
+  padding: var(--isl-sec) var(--isl-gutter);
+  text-align: center;
+}
+.islPageEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--isl-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-line);
+}
+/* Sidrubriken i SKRIPT — samma hand som hero + wordmark. Undersidorna får
+   signaturen, inte bara hemmet. */
+.islPageTitle {
+  max-width: 40rem;
+  margin: var(--isl-step-head) auto 0;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: var(--isl-fs-h2);
+  line-height: var(--isl-lh-head);
+  letter-spacing: var(--isl-ls-display);
+  color: var(--color-surface);
+}
+.islPageLede {
+  max-width: 34rem;
+  margin: var(--isl-step-head) auto 0;
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-surface);
+}
+
+/* ── /om: PORTRÄTT + BREV. Texten sätts som ett brev — smal spalt, indragen
+   inledning, script-signatur under. Ingen annan sida i sviten läser som ett brev. */
+.islLetterGrid {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--isl-sec) var(--isl-gutter);
+  display: grid;
+  grid-template-columns: 4fr 5fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+.islPortrait {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.islLetter {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+.islLetterOpen {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--isl-fs-sub);
+  line-height: var(--isl-lh-sub);
+  letter-spacing: var(--isl-ls-head);
+  color: var(--color-fg);
+}
+.islLetterBody {
+  margin: var(--isl-step-head) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-fg-2);
+}
+.islLetterBody::first-line { color: var(--color-fg); }
+.islLetterSign {
+  margin: var(--isl-step-cta) 0 0;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: var(--isl-fs-sub);
+  line-height: var(--isl-lh-sub);
+  color: var(--color-primary);
+}
+@media (max-width: 860px) {
+  .islLetterGrid { grid-template-columns: 1fr; }
+}
+
+/* ── /om: galleri-remsa (mallens EGEN, ingen delad Gallery-grid). */
+.islStrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.islStripImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+@media (max-width: 760px) {
+  .islStrip { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── /tjanster: tom-text (ärlig, aldrig påhittade tjänster). */
+.islEmpty {
+  max-width: 34rem;
+  margin: var(--isl-sec) auto;
+  padding: 0 var(--isl-gutter);
+  text-align: center;
+}
+.islEmptyCta { margin-top: var(--isl-step-cta); }
+
+/* ── /kontakt: ETT mörkblått kort, centrerat på sanden. */
+.islContact {
+  padding: var(--isl-sec) var(--isl-gutter);
+}
+.islContactCard {
+  max-width: 44rem;
+  margin: 0 auto;
+  background: var(--color-primary-d);
+  color: var(--color-surface);
+  padding: clamp(2rem, 5vw, 3.5rem);
+  border-radius: var(--sf-radius);
+}
+.islContactLine {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: var(--isl-step-head);
+  align-items: baseline;
+  margin: 0;
+  padding: var(--isl-step-head) 0;
+  border-bottom: 1px solid var(--color-primary);
+}
+.islContactKey {
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--isl-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-line);
+}
+.islContactVal {
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-surface);
+}
+.islContactLink {
+  color: var(--color-surface);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-line) 60%, transparent);
+}
+.islContactLink:hover { border-bottom-color: var(--color-line); }
+.islContactTitle {
+  margin: 0;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: var(--isl-fs-sub);
+  line-height: var(--isl-lh-sub);
+  color: var(--color-surface);
+}
+.islContactBody {
+  margin: var(--isl-step-head) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-body);
+  line-height: var(--isl-lh-body);
+  color: var(--color-line);
+}
+.islContactCta { margin-top: var(--isl-step-cta); }
 
 @media (prefers-reduced-motion: reduce) {
-  .islRoot .islBtn,
+  .islBtn,
   .islCard,
-  .islShortcut { transition: none; }
-  .islRoot .islBtn:hover,
+  .islShortcut,
+  .islPriceRow { transition: none; }
+  .islBtn:hover,
   .islCard:hover,
   a.islShortcut:hover { transform: none; }
+  .islPriceRow:hover { padding-left: 0; }
 }

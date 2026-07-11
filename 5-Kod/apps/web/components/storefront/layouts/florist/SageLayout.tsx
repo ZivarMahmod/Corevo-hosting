@@ -3,59 +3,48 @@ import { Reveal } from '../../Reveal'
 import { Gallery } from '../../Gallery'
 import { Bookable } from '../../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
-import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../../service-format'
+import { formatPrice, formatDuration, serviceDesc } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './sage.module.css'
 
 /**
- * SAGE — varmgrå/greige + mjuk salvia, luftig studio (florist-sviten, goal-58).
- * EGEN struktur-signatur bland de 13 syskonen: (1) transparent nav ÖVER en
- * full-bleed hero (literal `.hero`-sentinel + negativ margin cancellerar
- * --nav-h, samma knep som Salvia använder på ett annat tema), (2) hero med
- * liten versal-eyebrow + STOR versal-rubrik + två knappar sida vid sida (fylld
- * + outline), (3) en centrerad välkomstrad med en enda knapp, (4) en inramad
- * kategori-trio (Mest sålda/Födelsedag/Bröllop) som länkar in i butiken,
- * (5) butiks-teasers, (6) tjänster, (7) citat, (8) om, (9) galleri, (10) blogg,
- * (11) presentkort, (12) plats, (13) closing. Genomgående raka kanter (temats
- * --sf-radius = 0) och EN accentfärg — inga ornament, ingen kursiv (till
- * skillnad från Flora).
+ * SAGE — GALLERI-STUDIO i greige (florist-sviten, goal-58 → tema-paket goal-59).
  *
- * SKÄRPE-PASS (design-skarpa-zentum.md): identiteten är orörd (färgfamilj,
- * struktur-signatur, sektionsordning) — utförandet är skärpt. Typskalan är fem
- * nivåer där varje granne ligger >1.3× isär (96 → 52 → 26 → 18 → 12 px; text =
- * EN nivå, inte lede 18 + brödtext 16), all mikrotext är 12px/600/VERSALER/1px,
- * rubrikerna kör Marcellus riktiga vikt (400, inte syntetisk 700) utan positiv
- * tracking, alla bilder ligger i EN ratio (4/5 — även galleriet, som annars är
- * 1/1), radien är binär (0 på struktur, pill på knapp), hero-scrimmet bär
- * kontrasten (vit rubrik ≥7.5:1 även mot ett helvitt foto) och hovern är
- * 5px/400ms utan skugg-bloom. Se sage.module.css för skalan, sage.theme.ts för
- * de räknade kontrastvärdena (8 hex totalt).
+ * Mallen äger nu HELA sajten: sitt sidhuvud (sage.chrome.tsx: centrerat wordmark,
+ * transparent över heron), sin sidfot (galleri-plakett, en centrerad kolumn av
+ * hårlinjer) och sina undersidor (sage.pages.tsx: museal /om, tabell-/tjanster,
+ * luftig /kontakt). Hemmet nedan använder NOLL delade .sf*-sektioner — det var
+ * där alla 13 syskon föll ner i samma skelett.
+ *
+ * HEMMETS EGNA SEKTIONER (i ordning):
+ *   1 HERO        full-bleed foto, spärrade versaler centrerat, två pill-knappar
+ *   2 VÄLKOMST    centrerad rad på vit platta mellan två hårlinjer
+ *   3 KATEGORI    trio i INRAMADE rutor (passepartout: 12px vit ram runt 4/5-fotot)
+ *   4 BUTIK       3-kolumns GALLERI-GRID: tunn ram, ingen skugga, ingen radie
+ *   5 PRISER      stram TABELL med hårlinjer (ej kort, ej pris-pillar) — klickbar rad
+ *   6 CITAT       band i accentSoft
+ *   7 OM          foto + text + hårlinje-fakta
+ *   8 GALLERI     samma tunna ram-grid som butiken, EN bildratio (4/5)
+ *   9 BLOGG       galleri-grid igen (mallens enda kort-form)
+ *  10 PRESENTKORT smal rad, aldrig en hel sektion
+ *  11 PLATS       adress + öppettider som hårlinje-tabell
+ *  12 CLOSING     mörk primär-platta, versal-rubrik, en knapp
+ *
+ * Modul-gatingen är oförändrad: shopReachable gatar kategori-trion + hero-knappen,
+ * teasers-sektionerna renderas bara när teasers finns, presentkortsraden bara när
+ * modulen är live. Layouten är SYNKRON (studions klient-preview renderar samma
+ * komponent) och THEME_OWNS_MODULES gäller: page.tsx förladdar teasers som prop.
  */
 export function SageLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
   const hasMore = services.length > 6
 
-  // SAGE ÄGER SINA MODULER (S10, samma kontrakt som Flora/Salvia): butik/blogg/
-  // presentkort vävs in i temats egna sektioner istället för den generiska
-  // sektions-stapeln — page.tsx hoppar över StorefrontModuleSections för sage
-  // och förladdar teasers (loadLayoutModuleTeasers) som `modules`-prop, så
-  // layouten förblir SYNKRON (onboarding-studions klient-preview renderar
-  // samma komponent). Modulernas EGNA sidor är fortfarande hemmet för allt
-  // innehåll — hemmet visar bara ett smakprov.
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
   const presentkortLive = modules?.presentkortLive ?? false
-  // Kategori-trion och hero-knappen mot butiken länkar bara dit en sida
-  // faktiskt går att nå (live ELLER paused) — annars en 404-fälla (S9). Utan
-  // modules-prop (studions statiska preview) VISAS de: previewn ska se en hel
-  // sida och dess länkar är ändå inte klickbara på riktigt.
   const shopReachable = modules ? modules.shopReachable : true
 
-  // Ägaren kan ha laddat upp ett eget galleri med färre än tre bilder — falla
-  // tillbaka på hero-fotot så en inramad kategori-kort aldrig får en trasig
-  // bakgrund (samma skydd som Floras pelare: `galleryImages[i] ?? arch`).
   const heroFallback = content.heroImages[0] ?? ''
   const cat1 = content.galleryImages[0] ?? heroFallback
   const cat2 = content.galleryImages[1] ?? heroFallback
@@ -63,7 +52,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
 
   return (
     <>
-      {/* HERO — full-bleed foto, transparent nav ovanpå (.hero-sentinel) */}
+      {/* 1 — HERO. `.hero`-sentinelen läses av NavShell → transparent nav ovanpå. */}
       <section className={`hero ${styles.sgHero}`} aria-label="Välkommen">
         <div className={styles.sgHeroBg} style={{ backgroundImage: `url(${content.heroImages[0]})` }} />
         <div className={styles.sgHeroOverlay} />
@@ -86,7 +75,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
         </div>
       </section>
 
-      {/* VÄLKOMST-RAD — centrerad rubrik + brödtext + en knapp */}
+      {/* 2 — VÄLKOMST */}
       <section className={styles.sgWelcome}>
         <Reveal className={styles.sgWelcomeInner}>
           <h2 className={styles.sgSectionTitle}>Välkommen till {tenant.name}</h2>
@@ -97,7 +86,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
         </Reveal>
       </section>
 
-      {/* KATEGORI-TRIO — inramade foton, versal-etikett under, → butiken */}
+      {/* 3 — KATEGORI-TRIO (passepartout-ramar) */}
       {shopReachable ? (
         <section className={styles.sgSectionTight}>
           <div className={styles.sgCategoryGrid}>
@@ -129,7 +118,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
         </section>
       ) : null}
 
-      {/* UR BUTIKEN — webshop-modulen invävd, bara ett smakprov */}
+      {/* 4 — UR BUTIKEN (galleri-grid) */}
       {shopTeasers.length > 0 ? (
         <section className={styles.sgSection}>
           <Reveal className={styles.sgSectionHead}>
@@ -149,7 +138,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
               </Reveal>
             ))}
           </div>
-          <Reveal style={{ textAlign: 'center' }}>
+          <Reveal className={styles.sgCenter}>
             <Link href="/shop" className={styles.sgBandCta}>
               {content.shopCta ?? 'Till hela butiken'}
             </Link>
@@ -157,88 +146,80 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
         </section>
       ) : null}
 
-      {/* TJÄNSTER — numrerade rader, tom sektion visas aldrig (goal-55 8B) */}
+      {/* 5 — PRISER som stram tabell (mallens EGNA rader, inga delade .sfRow) */}
       {rows.length > 0 ? (
-        <section className={`${shared.sfServices} ${styles.sgSection}`}>
-          <div className={shared.sfNarrow}>
-            <Reveal className={styles.sgSectionHead}>
-              <p className={styles.sgEyebrow}>{content.servicesEyebrow}</p>
-              <h2 className={styles.sgSectionTitle}>{content.servicesTitle}</h2>
-            </Reveal>
-            <div className={shared.sfRowList}>
-              {rows.map((s, i) => (
-                <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={shared.sfRow} label={`Beställ — ${s.name}`}>
-                    <span className={`${shared.sfRowNum} ${styles.sgRowNum}`} aria-hidden="true">
-                      {serviceNum(i)}
-                    </span>
-                    <span className={shared.sfRowMain}>
-                      <span className={`${shared.sfRowName} ${styles.sgRowName}`}>{s.name}</span>
-                      <span className={`${shared.sfRowDesc} ${styles.sgRowDesc}`}>{serviceDesc(s)}</span>
-                    </span>
-                    <span className={shared.sfRowMeta}>
-                      <span className={`${shared.sfRowPrice} ${styles.sgRowPrice}`}>{formatPrice(s)}</span>
-                      <span className={`${shared.sfRowTime} ${styles.sgRowTime}`}>{formatDuration(s)}</span>
-                    </span>
-                  </Bookable>
-                </Reveal>
-              ))}
+        <section className={styles.sgSection}>
+          <Reveal className={styles.sgSectionHead}>
+            <p className={styles.sgEyebrow}>{content.servicesEyebrow}</p>
+            <h2 className={styles.sgSectionTitle}>{content.servicesTitle}</h2>
+          </Reveal>
+          <div className={styles.sgTable}>
+            <div className={styles.sgTableHead} aria-hidden="true">
+              <span>Tjänst</span>
+              <span>Tid</span>
+              <span>Pris</span>
             </div>
-            {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={`${shared.sfMoreLink} ${styles.sgMoreLink}`}>
-                  Se allt vi gör <span aria-hidden="true">→</span>
-                </a>
+            {rows.map((s, i) => (
+              <Reveal key={s.id} delay={i * 60}>
+                <Bookable className={styles.sgTableRow} label={`Beställ — ${s.name}`}>
+                  <span className={styles.sgTableMain}>
+                    <span className={styles.sgTableName}>{s.name}</span>
+                    <span className={styles.sgTableDesc}>{serviceDesc(s)}</span>
+                  </span>
+                  <span className={styles.sgTableTime}>{formatDuration(s)}</span>
+                  <span className={styles.sgTablePrice}>{formatPrice(s)}</span>
+                </Bookable>
               </Reveal>
-            ) : null}
+            ))}
           </div>
+          {hasMore ? (
+            <Reveal className={styles.sgCenter}>
+              <Link href="/tjanster" className={styles.sgBandCta}>
+                Se allt vi gör
+              </Link>
+            </Reveal>
+          ) : null}
         </section>
       ) : null}
 
-      {/* CITAT — andhämtning, upprätt (ej kursiv) */}
+      {/* 6 — CITAT */}
       <section className={styles.sgQuoteBand}>
         <Reveal>
           <p className={styles.sgQuote}>&rdquo;{content.italic}&rdquo;</p>
         </Reveal>
       </section>
 
-      {/* OM — foto + text + statistik-trio */}
-      <section>
-        <div className={`${shared.sfWide} ${styles.sgAboutGrid}`}>
-          <Reveal>
-            <div className={styles.sgAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
-          </Reveal>
-          <Reveal delay={120}>
-            <p className={styles.sgEyebrow}>— Om {tenant.name}</p>
-            <h2 className={styles.sgSectionTitle}>{content.aboutTitle}</h2>
-            <p className={styles.sgAboutLede}>{content.aboutCopyHome}</p>
-            <ul className={`${shared.sfStatTrio} ${styles.sgStatTrio}`}>
-              {content.stats.map(([n, l]) => (
-                <li key={l}>
-                  <span className={`${shared.sfStatValue} ${styles.sgStatValue}`}>{n}</span>
-                  <span className={`${shared.sfStatLabel} ${styles.sgStatLabel}`}>{l}</span>
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-        </div>
+      {/* 7 — OM (foto + text + hårlinje-fakta) */}
+      <section className={styles.sgAboutGrid}>
+        <Reveal>
+          <div className={styles.sgAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
+        </Reveal>
+        <Reveal delay={120}>
+          <p className={styles.sgEyebrow}>— Om {tenant.name}</p>
+          <h2 className={styles.sgSectionTitle}>{content.aboutTitle}</h2>
+          <p className={styles.sgLede}>{content.aboutCopyHome}</p>
+          <ul className={styles.sgFacts}>
+            {content.stats.map(([n, l]) => (
+              <li key={l}>
+                <span className={styles.sgFactValue}>{n}</span>
+                <span className={styles.sgFactLabel}>{l}</span>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
       </section>
 
-      {/* GALLERI — masonry + lightbox, tvingad in i mallens enda bildratio (4/5) */}
-      <section className={`${shared.sfGalleryBand} ${styles.sgSection}`}>
-        <div className={shared.sfWide}>
-          <Reveal>
-            <p className={`${styles.sgEyebrow} ${styles.sgGalleryEyebrow}`}>
-              {content.galleryEyebrow ?? '— Galleri'}
-            </p>
-          </Reveal>
-          <Reveal className={styles.sgGallery}>
-            <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
-          </Reveal>
-        </div>
+      {/* 8 — GALLERI (samma tunna ram-grid, EN ratio 4/5) */}
+      <section className={styles.sgGalleryBand}>
+        <Reveal className={styles.sgSectionHead}>
+          <p className={styles.sgEyebrow}>{content.galleryEyebrow ?? '— Galleri'}</p>
+        </Reveal>
+        <Reveal className={styles.sgGallery}>
+          <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
+        </Reveal>
       </section>
 
-      {/* FRÅN BLOGGEN — blogg-modulen invävd (3 senaste) */}
+      {/* 9 — FRÅN BLOGGEN */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.sgSection}>
           <Reveal className={styles.sgSectionHead}>
@@ -258,7 +239,7 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
               </Reveal>
             ))}
           </div>
-          <Reveal style={{ textAlign: 'center' }}>
+          <Reveal className={styles.sgCenter}>
             <Link href="/blogg" className={styles.sgBandCta}>
               {content.blogCta ?? 'Läs fler inlägg'}
             </Link>
@@ -266,75 +247,64 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
         </section>
       ) : null}
 
-      {/* PRESENTKORT — en smal rad, aldrig en hel sektion */}
+      {/* 10 — PRESENTKORT (smal rad) */}
       {presentkortLive ? (
         <section className={styles.sgGiftRow}>
           <Reveal className={styles.sgGiftInner}>
             <p className={styles.sgEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.sgGiftLede}>{content.giftLede ?? 'Ge bort blommor, när som helst.'}</p>
-            <a href="/presentkort" className={styles.sgBandCta} style={{ margin: 0 }}>
+            <Link href="/presentkort" className={styles.sgBandCta} style={{ margin: 0 }}>
               {content.giftCta ?? 'Till presentkorten'}
-            </a>
+            </Link>
           </Reveal>
         </section>
       ) : null}
 
-      {/* PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid} ${styles.sgGridPad}`}>
-          <Reveal>
-            <p className={styles.sgEyebrow}>{content.findEyebrow ?? '— Hitta hit'}</p>
-            <h2 className={styles.sgSectionTitle}>
-              {location?.address ? location.address.split(',')[0] : tenant.name}
-            </h2>
-            {location?.address ? (
-              <p className={styles.sgLocAddr}>{location.address}</p>
-            ) : (
-              <p className={styles.sgLocAddr}>Adress visas snart.</p>
-            )}
-            {location?.hours ? (
-              <div className={`${shared.sfHours} ${styles.sgHours}`}>
-                {location.hours.map((h) => (
-                  <div key={h.day} className={`${shared.sfHoursRow} ${styles.sgHoursRow}`}>
-                    <span>{h.day}</span>
-                    <span>{h.time}</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </Reveal>
-          <Reveal delay={120}>
-            <div className={shared.sfMap}>
-              {location?.address ? (
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={`${shared.sfMapLink} ${styles.sgMapLink}`}
-                >
-                  Visa på karta <span aria-hidden="true">→</span>
-                </a>
-              ) : (
-                <span className={`${shared.sfMapHint} ${styles.sgMapHint}`}>
-                  Karta visas när adressen är ifylld.
-                </span>
-              )}
+      {/* 11 — PLATS & ÖPPETTIDER (mallens egen hårlinje-tabell) */}
+      <section className={styles.sgLocBand}>
+        <Reveal className={styles.sgLocInner}>
+          <p className={styles.sgEyebrow}>{content.findEyebrow ?? '— Hitta hit'}</p>
+          <h2 className={styles.sgSectionTitle}>
+            {location?.address ? location.address.split(',')[0] : tenant.name}
+          </h2>
+          {location?.address ? (
+            <p className={styles.sgLede}>{location.address}</p>
+          ) : (
+            <p className={styles.sgLede}>Adress visas snart.</p>
+          )}
+          {location?.hours ? (
+            <div className={styles.sgColHours}>
+              {location.hours.map((h) => (
+                <div key={h.day} className={styles.sgColHoursRow}>
+                  <span>{h.day}</span>
+                  <span>{h.time}</span>
+                </div>
+              ))}
             </div>
-          </Reveal>
-        </div>
+          ) : null}
+          {location?.address ? (
+            <a
+              href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
+              target="_blank"
+              rel="noreferrer noopener"
+              className={styles.sgBandCta}
+            >
+              Visa på karta
+            </a>
+          ) : null}
+        </Reveal>
       </section>
 
-      {/* CLOSING */}
-      <section className={`${shared.sfClosing} ${styles.sgBand}`}>
+      {/* 12 — CLOSING */}
+      <section className={styles.sgClosing}>
         <Reveal>
-          <h2 className={styles.sgClosingTitle}>
-            {content.closingTitle ?? 'Redo att beställa?'}
-          </h2>
-          <p className={`${shared.sfClosingLead} ${styles.sgClosingLede}`}>
-            {content.closingLede ?? 'Handla i butiken, boka en kurs eller hör av dig — vi hjälper dig gärna.'}
+          <h2 className={styles.sgClosingTitle}>{content.closingTitle ?? 'Redo att beställa?'}</h2>
+          <p className={styles.sgClosingLede}>
+            {content.closingLede ??
+              'Handla i butiken, boka en kurs eller hör av dig — vi hjälper dig gärna.'}
           </p>
           <div className={styles.sgClosingActions}>
-            <BookCta className={`${shared.sfClosingCta} ${styles.sgPillCta}`} />
+            <BookCta className={styles.sgPillCta} />
           </div>
         </Reveal>
       </section>

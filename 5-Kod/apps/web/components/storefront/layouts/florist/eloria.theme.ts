@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { EloriaNav, EloriaFooter } from './eloria.chrome'
+import { EloriaOm, EloriaTjanster, EloriaKontakt } from './eloria.pages'
 
 /** Unsplash photo manifest — every id below verified `curl -sI` → 200 (2026-07-11). */
 const u = (id: string, w = 1600) =>
@@ -120,4 +122,10 @@ export const eloria: FloristTheme = {
     homeGallery: true,
     homeAbout: true,
   },
+  /* TEMA-PAKET (goal-59): Eloria äger sitt SIDHUVUD, sin SIDFOT och sina UNDERSIDOR.
+     Nav = mörkgrön platta med guldramat, centrerat wordmark och menyn i två grupper;
+     footer = samma platta i tre guldlinjerade kolumner; /om = guldramat uppslag,
+     /tjanster = prislista med guld-ledare, /kontakt = ett guldramat kort. */
+  chrome: { Nav: EloriaNav, Footer: EloriaFooter },
+  pages: { om: EloriaOm, tjanster: EloriaTjanster, kontakt: EloriaKontakt },
 }

@@ -252,7 +252,7 @@ export default async function PublicLayout({ children }: { children: React.React
             primaryCta={primaryCta}
           >
             <chrome.Nav
-              tenant={{ name: tenant.name }}
+              tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
               branding={settings.branding}
               links={navLinks}
               primaryCta={primaryCta}
@@ -288,7 +288,7 @@ export default async function PublicLayout({ children }: { children: React.React
         ) : null}
         {chrome.Footer ? (
           <chrome.Footer
-            tenant={{ name: tenant.name }}
+            tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
             tagline={content.tagline}
             location={location}
             contact={settings.contact}

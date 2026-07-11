@@ -5,31 +5,30 @@ import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc, serviceNum } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
-import shared from '../../storefront.module.css'
 import styles from './paisley.module.css'
 
 /**
- * PAISLEY — tegelröd/rost redaktionell florist (florist-branschens mall,
- * goal-58). Skarp tidningslayout: versaler, spärrad tracking, fyrkantiga ytor.
- * EGEN sektionsordning (ingen annan mall i sviten har den): (1) topprad med
- * leveransområde + Kontakt/Om/Leveransorter, (2) tegelröd annonsrad, (3)
- * centrerat skript-wordmark med spärrade versal-nav-länkar under, (4) fullbredds
- * foto-hero med enorm versal-serif-rubrik i bilden + fyrkantig CTA, (5) mörkt
- * tegelband "beställ före 15:00" med statisk DEKOR-nedräkning, (6) "Fira med
- * blommor" — brett två-kolumns text+bildkollage, (7) shop-teasers, (8) tjänster
- * (numrerade rader), (9) om, (10) blogg, (11) plats, (12) closing i eget
- * fullbredds-foto. Presentkort vävs in som en smal rad mellan plats och closing
- * (aldrig en egen sektion). Webshop/blogg/presentkort/offert vävs in via
- * `modules`-propen (S10) — samma modulkontrakt som övriga florist-mallar.
+ * PAISLEY — tegelröd REDAKTIONELL TIDNING (florist-sviten). Goal-59: mallen är nu
+ * ett HELT TEMA-PAKET (paisley.chrome.tsx = tryckt sidhuvud + kolofon-sidfot,
+ * paisley.pages.tsx = reportage/prislista/kolofon) och hemmet äger ALLA sina
+ * sektioner — NOLL delade .sf*-klasser. Det var de delade sektionerna som gjorde
+ * varje mall till samma sida i en ny färg.
  *
- * SKÄRPE-PASS 2026-07-11 (design-skarpa-zentum.md). Två regler att inte trampa på
- * när mallen rörs igen:
- *  • INGA storlekar/marginaler i inline-style. Hela typskalan och rytmen bor i
- *    paisley.module.css (--pa-fs-… och --pa-sp-…). En `style={{ fontSize: 17 }}` här
- *    är exakt så den grötiga trappan (56/34/21/17/13.5) uppstod.
- *  • De delade .sf*-primitiven ägs av ALLA mallar och får inte ändras. Paisley
- *    skärper dem genom att SAM-APPLICERA en pa*-klass (styles.paRowName intill
- *    shared.sfRowName) som vinner på specificitet. Tappa inte bort de paren.
+ * Hemmets uppslag, i ordning:
+ *   1  HERO — fullbredds foto, enorm versal-serif i bilden, fyrkantig CTA
+ *   2  LEVERANSBAND — mörkt tegelband, dekorativa tidsrutor
+ *   3  UPPSLAG — tidningens mittuppslag: bildkollage + text i två spalter
+ *   4  BUTIKEN — redaktionellt rutnät med BILDTEXTER (shop-teasers)
+ *   5  PRISER — tidningskolumner med punktlinje-rader (varje rad en Bookable)
+ *   6  OM — inramad plansch + spaltad brödtext + faktaruta
+ *   7  BLOGGEN — samma redaktionella rutnät (blogg-teasers)
+ *   8  PRESENTKORT — en smal rad, aldrig en egen sektion
+ *   9  PLATS — adress + öppettider som en tryckt notis
+ *  10  CLOSING — eget fullbredds-foto
+ *
+ * SYNKRON server-komponent (ingen async, ingen 'use client'). Modul-gatingen är
+ * helig: shopReachable/offertReachable gatar varje länk, teasers-sektioner finns
+ * bara när teasers finns.
  */
 export function PaisleyLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -38,99 +37,17 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
   const presentkortLive = modules?.presentkortLive ?? false
-  // Utan modules-prop (studions statiska preview) visas allt — pekarna är ändå
-  // inte klickbara på riktigt där, och previewn ska se en hel, riktig sida.
+  // Utan modules-prop (studions statiska preview) visas allt.
   const shopReachable = modules ? modules.shopReachable : true
   const offertReachable = modules ? modules.offertReachable : true
 
   const heroImg = content.heroImages[0] ?? ''
-  const celebrateMain = content.heroImages[1] ?? content.heroImages[0] ?? ''
-  const celebrateInset = content.heroImages[2] ?? content.heroImages[0] ?? ''
+  const spreadMain = content.heroImages[1] ?? content.heroImages[0] ?? ''
+  const spreadInset = content.heroImages[2] ?? content.heroImages[0] ?? ''
 
   return (
     <div className={styles.paRoot}>
-      {/* 1 — TOPPRAD: leveransområde (vänster) + Kontakt/Om/Leveransorter (höger).
-          "Leveransorter" är ren information, inte en länk — det finns ingen egen
-          sida för den (en död länk vore en 404-fälla). */}
-      <div className={styles.paTop}>
-        <div className={`${shared.sfWide} ${styles.paTopInner}`}>
-          <p className={styles.paTopZone}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M12 22s7-7.4 7-12.6A7 7 0 0 0 5 9.4C5 14.6 12 22 12 22Z"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              />
-              <circle cx="12" cy="9.4" r="2.4" stroke="currentColor" strokeWidth="1.8" />
-            </svg>
-            Lokal leverans &amp; hämtning i butik
-          </p>
-          <ul className={styles.paTopLinks}>
-            <li>
-              <Link href="/kontakt" className={styles.paTopLink}>
-                Kontakt
-              </Link>
-            </li>
-            <li>
-              <Link href="/om" className={styles.paTopLink}>
-                Om
-              </Link>
-            </li>
-            <li>
-              <span className={styles.paTopLink}>Leveransorter</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {/* 2 — ANNONSRAD: tegelröd kampanjrad */}
-      <div className={styles.paAd}>
-        <div className={`${shared.sfWide} ${styles.paAdInner}`}>
-          <p className={styles.paAdText}>{content.tagline}</p>
-        </div>
-      </div>
-
-      {/* 3 — MASTHEAD: centrerat skript-wordmark, nav-länkar under (spärrade
-          versaler). "Boka tid" är en Bookable (öppnar drawern) stylad som
-          samma plana textlänk — ingen knapp-yta i masthead. */}
-      <div className={styles.paMasthead}>
-        <p className={styles.paWordmark}>{tenant.name}</p>
-        <p className={styles.paMastTag}>{content.utility}</p>
-        <ul className={styles.paMastNav}>
-          <li>
-            <Link href="/" className={styles.paMastLink}>
-              Hem
-            </Link>
-          </li>
-          {services.length > 0 ? (
-            <li>
-              <Link href="/tjanster" className={styles.paMastLink}>
-                Tjänster
-              </Link>
-            </li>
-          ) : null}
-          <li>
-            <Link href="/om" className={styles.paMastLink}>
-              Om
-            </Link>
-          </li>
-          <li>
-            <Link href="/kontakt" className={styles.paMastLink}>
-              Kontakt
-            </Link>
-          </li>
-          <li>
-            <Bookable as="span" className={styles.paMastLink} label="Boka tid — öppna bokning">
-              Boka tid
-            </Bookable>
-          </li>
-        </ul>
-      </div>
-
-      {/* 4 — HERO: fullbredds foto, enorm versal-serif-rubrik i bilden, fyrkantig CTA.
-          Scrimen (--pa-scrim-hero) är medvetet tung i platån där texten sitter: kunden
-          laddar upp sitt EGET foto, och rubrikens 7:1 får inte bero på vilken bild det
-          blev. Därför behövs heller ingen text-shadow — kanterna får vara raka. */}
+      {/* 1 — HERO */}
       <section className={styles.paHero} style={{ backgroundImage: `url(${heroImg})` }}>
         <div className={styles.paHeroOverlay} aria-hidden="true" />
         <div className={styles.paHeroInner}>
@@ -143,13 +60,10 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
         </div>
       </section>
 
-      {/* 5 — SAMMA-DAGS-LEVERANS-BAND: mörkt tegelband. Nedräkningen är REN DEKOR
-          — statiska siffror, ingen JS-timer (layouten är och förblir synkron).
-          Rutorna är aria-hidden; textraden bär hela det verkliga budskapet. CTA:n
-          går till butiken (att beställa blommor ≠ att boka en tjänst) — bara när
-          shop är nåbar, annars faller den tillbaka på Boka tid. */}
+      {/* 2 — LEVERANSBAND. Tidsrutorna är REN DEKOR (aria-hidden, inga riktiga
+          sekunder — layouten är och förblir synkron). Textraden bär budskapet. */}
       <section className={styles.paDelivery}>
-        <div className={`${shared.sfWide} ${styles.paDeliveryInner}`}>
+        <div className={`${styles.paWrap} ${styles.paDeliveryInner}`}>
           <div className={styles.paDeliveryText}>
             <p className={styles.paDeliveryTag}>Samma dag</p>
             <p className={styles.paDeliveryLine}>Beställ före 15:00 för leverans idag.</p>
@@ -180,30 +94,30 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
         </div>
       </section>
 
-      {/* 6 — FIRA MED BLOMMOR: brett två-kolumns text+bildkollage (stor bild +
-          mindre inset-bild, SAMMA 4:5-ratio som alla andra bilder i mallen).
-          offertReachable ger en diskret rad för bröllop/event — utelämnas helt
-          när offert inte är nåbar. */}
-      <section className={styles.paCelebrate}>
-        <div className={`${shared.sfWide} ${styles.paCelebrateGrid}`}>
-          <Reveal className={styles.paCelebrateMedia}>
-            <div className={styles.paCelebrateImgMain} style={{ backgroundImage: `url(${celebrateMain})` }} />
-            <div className={styles.paCelebrateImgInset} style={{ backgroundImage: `url(${celebrateInset})` }} />
+      {/* 3 — MITTUPPSLAGET */}
+      <section className={styles.paSpread}>
+        <div className={`${styles.paWrap} ${styles.paSpreadGrid}`}>
+          <Reveal className={styles.paSpreadMedia}>
+            <div className={styles.paSpreadImgMain} style={{ backgroundImage: `url(${spreadMain})` }} />
+            <div className={styles.paSpreadImgInset} style={{ backgroundImage: `url(${spreadInset})` }} />
           </Reveal>
-          <Reveal delay={120} className={styles.paCelebrateText}>
-            <p className="sf-eyebrow">— Fira med blommor</p>
-            <h2 className="sf-h2">En bukett för varje anledning</h2>
-            <p className={styles.paLede}>
-              Födelsedagar, jubileum eller bara en vanlig tisdag som förtjänar något extra — vi väljer
-              säsongens finaste snitt och binder det för hand, oavsett anledning.
-            </p>
+          <Reveal delay={120} className={styles.paSpreadText}>
+            <p className={styles.paKicker}>— Fira med blommor</p>
+            <h2 className={styles.paSecTitle}>En bukett för varje anledning</h2>
+            <div className={styles.paSpreadCols}>
+              <p>
+                Födelsedagar, jubileum eller bara en vanlig tisdag som förtjänar något extra — vi väljer
+                säsongens finaste snitt och binder det för hand.
+              </p>
+              <p>{content.aboutCopyHome}</p>
+            </div>
             {shopReachable ? (
-              <Link href="/shop" className={styles.paCelebrateCta}>
+              <Link href="/shop" className={styles.paTextCta}>
                 Beställ blommor
               </Link>
             ) : null}
             {offertReachable ? (
-              <p className={styles.paCelebrateNote}>
+              <p className={styles.paSpreadNote}>
                 Planerar du bröllop eller ett event? <Link href="/offert">Begär en offert</Link>.
               </p>
             ) : null}
@@ -211,37 +125,34 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
         </div>
       </section>
 
-      {/* 7 — UR BUTIKEN: webshop-modulen invävd. Bara ett smakprov — hela
-          sortimentet bor på /shop. "Handla i butiken"-länken gatas ändå explicit
-          på shopReachable (varje länk till /shop ska vara explicit gated, inte
-          bara implicit via teaser-existens). */}
+      {/* 4 — UR BUTIKEN: redaktionellt rutnät med bildtexter */}
       {shopTeasers.length > 0 ? (
-        <section className={styles.paTeaserSection}>
-          <div className={shared.sfWide}>
-            <Reveal className={styles.paTeaserHead}>
+        <section className={styles.paGridSection}>
+          <div className={styles.paWrap}>
+            <Reveal className={styles.paSecHead}>
               <div>
-                <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-                <h2 className="sf-h2">{content.shopTitle ?? 'Beställ något vackert'}</h2>
+                <p className={styles.paKicker}>{content.shopEyebrow ?? '— Ur butiken'}</p>
+                <h2 className={styles.paSecTitle}>{content.shopTitle ?? 'Beställ något vackert'}</h2>
               </div>
               {shopReachable ? (
-                <Link href="/shop" className={`${shared.sfMoreLink} ${styles.paMoreLink}`}>
+                <Link href="/shop" className={styles.paTextCta}>
                   {content.shopCta ?? 'Handla i butiken'} <span aria-hidden="true">→</span>
                 </Link>
               ) : null}
             </Reveal>
-            <div className={styles.paTeaserGrid}>
+            <div className={styles.paPlateGrid}>
               {shopTeasers.map((p, i) => (
                 <Reveal key={p.id} delay={i * 80}>
-                  <Link href={`/shop/${p.id}`} className={styles.paTeaserCard}>
+                  <Link href={`/shop/${p.id}`} className={styles.paPlateCard}>
                     <div
-                      className={styles.paTeaserImg}
+                      className={styles.paPlateImg}
                       style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                     />
-                    <div className={styles.paTeaserMeta}>
-                      <span className={styles.paTeaserNum}>{serviceNum(i)}</span>
-                      <h3 className={styles.paTeaserName}>{p.name}</h3>
-                    </div>
-                    <span className={styles.paTeaserPrice}>{formatShopPrice(p.priceCents, p.currency)}</span>
+                    <p className={styles.paPlateCaption}>
+                      <span className={styles.paPlateNum}>{serviceNum(i)}</span>
+                      <span className={styles.paPlateName}>{p.name}</span>
+                      <span className={styles.paPlatePrice}>{formatShopPrice(p.priceCents, p.currency)}</span>
+                    </p>
                   </Link>
                 </Reveal>
               ))}
@@ -250,96 +161,95 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
         </section>
       ) : null}
 
-      {/* 8 — TJÄNSTER: numrerade rader. Hela sektionen visas bara när det finns
-          aktiva tjänster (ingen tom-text på hemmet). De delade sfRow*-primitiven
-          bär strukturen; pa*-klasserna intill bär paisleys typskala. */}
+      {/* 5 — PRISER i tidningskolumner (punktlinje-rader, varje rad en Bookable) */}
       {rows.length > 0 ? (
-        <section className={`${shared.sfServices} ${styles.paSection}`}>
-          <div className={shared.sfNarrow}>
-            <Reveal style={{ textAlign: 'center' }}>
-              <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className="sf-h2">{content.servicesTitle}</h2>
+        <section className={styles.paPrices}>
+          <div className={styles.paWrap}>
+            <Reveal className={styles.paSecHeadCentered}>
+              <p className={styles.paKicker}>{content.servicesEyebrow}</p>
+              <h2 className={styles.paSecTitle}>{content.servicesTitle}</h2>
             </Reveal>
-            <div className={shared.sfRowList}>
+            <ol className={styles.paPriceList}>
               {rows.map((s, i) => (
-                <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={`${shared.sfRow} ${styles.paRow}`} label={`Boka — ${s.name}`}>
-                    <span className={`${shared.sfRowNum} ${styles.paRowNum}`} aria-hidden="true">
+                <li key={s.id}>
+                  <Bookable className={styles.paPriceRow} label={`Boka — ${s.name}`}>
+                    <span className={styles.paPriceNum} aria-hidden="true">
                       {serviceNum(i)}
                     </span>
-                    <span className={shared.sfRowMain}>
-                      <span className={`${shared.sfRowName} ${styles.paRowName}`}>{s.name}</span>
-                      <span className={`${shared.sfRowDesc} ${styles.paRowDesc}`}>{serviceDesc(s)}</span>
+                    <span className={styles.paPriceBody}>
+                      <span className={styles.paPriceName}>{s.name}</span>
+                      <span className={styles.paPriceDesc}>{serviceDesc(s)}</span>
                     </span>
-                    <span className={shared.sfRowMeta}>
-                      <span className={`${shared.sfRowPrice} ${styles.paRowPrice}`}>{formatPrice(s)}</span>
+                    <span className={styles.paPriceDots} aria-hidden="true" />
+                    <span className={styles.paPriceMeta}>
+                      <span className={styles.paPriceKr}>{formatPrice(s)}</span>
                     </span>
                   </Bookable>
-                </Reveal>
+                </li>
               ))}
-            </div>
+            </ol>
             {hasMore ? (
-              <Reveal style={{ textAlign: 'center' }}>
-                <a href="/tjanster" className={`${shared.sfMoreLink} ${styles.paMoreLink}`}>
+              <div className={styles.paSecHeadCentered}>
+                <Link href="/tjanster" className={styles.paTextCta}>
                   Se allt vi gör <span aria-hidden="true">→</span>
-                </a>
-              </Reveal>
+                </Link>
+              </div>
             ) : null}
           </div>
         </section>
       ) : null}
 
-      {/* 9 — OM: inramat foto (4:5, hård dubbelkontur) + berättelsen + stats-trio */}
-      <section>
-        <div className={`${shared.sfWide} ${shared.sfAboutGrid} ${styles.paAboutGrid}`}>
+      {/* 6 — OM: inramad plansch + spaltad brödtext + faktaruta */}
+      <section className={styles.paAbout}>
+        <div className={`${styles.paWrap} ${styles.paAboutGrid}`}>
           <Reveal>
-            <div
-              className={`${shared.sfAboutPhoto} ${styles.paFrame}`}
-              style={{ backgroundImage: `url(${content.aboutImage})` }}
-            />
+            <div className={styles.paFrame} style={{ backgroundImage: `url(${content.aboutImage})` }} />
+            <p className={styles.paCaption}>{content.italic}</p>
           </Reveal>
           <Reveal delay={120}>
-            <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h2">{content.aboutTitle}</h2>
-            <p className={styles.paLede}>{content.aboutCopyHome}</p>
-            <ul className={shared.sfStatTrio}>
-              {content.stats.map(([n, l]) => (
-                <li key={l}>
-                  <span className={`${shared.sfStatValue} ${styles.paStatValue}`}>{n}</span>
-                  <span className={`${shared.sfStatLabel} ${styles.paStatLabel}`}>{l}</span>
-                </li>
-              ))}
-            </ul>
+            <p className={styles.paKicker}>— Om {tenant.name}</p>
+            <h2 className={styles.paSecTitle}>{content.aboutTitle}</h2>
+            <p className={styles.paIngress}>{content.aboutCopyHome}</p>
+            {content.stats.length > 0 ? (
+              <dl className={styles.paFactList}>
+                {content.stats.map(([n, l]) => (
+                  <div key={l} className={styles.paFactRow}>
+                    <dt>{n}</dt>
+                    <dd>{l}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
           </Reveal>
         </div>
       </section>
 
-      {/* 10 — FRÅN BLOGGEN: blogg-modulen invävd (3 senaste) */}
+      {/* 7 — FRÅN REDAKTIONEN (blogg) */}
       {bloggTeasers.length > 0 ? (
-        <section className={styles.paTeaserSection}>
-          <div className={shared.sfWide}>
-            <Reveal className={styles.paTeaserHead}>
+        <section className={styles.paGridSection}>
+          <div className={styles.paWrap}>
+            <Reveal className={styles.paSecHead}>
               <div>
-                <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från redaktionen'}</p>
-                <h2 className="sf-h2">{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
+                <p className={styles.paKicker}>{content.blogEyebrow ?? '— Från redaktionen'}</p>
+                <h2 className={styles.paSecTitle}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
               </div>
-              <Link href="/blogg" className={`${shared.sfMoreLink} ${styles.paMoreLink}`}>
+              <Link href="/blogg" className={styles.paTextCta}>
                 {content.blogCta ?? 'Läs hela bloggen'} <span aria-hidden="true">→</span>
               </Link>
             </Reveal>
-            <div className={styles.paTeaserGrid}>
+            <div className={styles.paPlateGrid}>
               {bloggTeasers.map((p, i) => (
                 <Reveal key={p.id} delay={i * 80}>
-                  <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.paTeaserCard}>
+                  <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.paPlateCard}>
                     <div
-                      className={styles.paTeaserImg}
+                      className={styles.paPlateImg}
                       style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
                     />
-                    <div className={styles.paTeaserMeta}>
-                      <span className={styles.paTeaserNum}>{serviceNum(i)}</span>
-                      <h3 className={styles.paTeaserName}>{p.title}</h3>
-                    </div>
-                    {p.excerpt ? <p className={styles.paTeaserExcerpt}>{p.excerpt}</p> : null}
+                    <p className={styles.paPlateCaption}>
+                      <span className={styles.paPlateNum}>{serviceNum(i)}</span>
+                      <span className={styles.paPlateName}>{p.title}</span>
+                    </p>
+                    {p.excerpt ? <p className={styles.paPlateExcerpt}>{p.excerpt}</p> : null}
                   </Link>
                 </Reveal>
               ))}
@@ -348,61 +258,58 @@ export function PaisleyLayout({ tenant, content, services, location, modules }: 
         </section>
       ) : null}
 
-      {/* PRESENTKORT — en smal rad, aldrig en egen sektion */}
+      {/* PRESENTKORT — smal rad */}
       {presentkortLive ? (
         <div className={styles.paGift}>
-          <div className={`${shared.sfWide} ${styles.paGiftInner}`}>
-            <p className="sf-eyebrow">{content.giftEyebrow ?? '— Presentkort'}</p>
+          <div className={`${styles.paWrap} ${styles.paGiftInner}`}>
+            <p className={styles.paKicker}>{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.paGiftText}>{content.giftLede ?? 'Ge bort en bukett, när som helst.'}</p>
-            <Link href="/presentkort" className={`${shared.sfMoreLink} ${styles.paMoreLink}`}>
+            <Link href="/presentkort" className={styles.paTextCta}>
               {content.giftCta ?? 'Till presentkorten'} <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>
       ) : null}
 
-      {/* 11 — PLATS & ÖPPETTIDER */}
-      <section className={shared.sfLocBand}>
-        <div className={`${shared.sfWide} ${shared.sfLocGrid} ${styles.paLocGrid}`}>
+      {/* 9 — PLATS: tryckt notis (adress/tider), render-on-present */}
+      <section className={styles.paNotice}>
+        <div className={`${styles.paWrap} ${styles.paNoticeGrid}`}>
           <Reveal>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className="sf-h2">{location?.address ? location.address.split(',')[0] : tenant.name}</h2>
+            <p className={styles.paKicker}>{content.findEyebrow ?? '— Hitta till butiken'}</p>
+            <h2 className={styles.paSecTitle}>
+              {location?.address ? location.address.split(',')[0] : tenant.name}
+            </h2>
             {location?.address ? (
-              <p className={`sf-body ${styles.paLocLine}`}>{location.address}</p>
+              <p className={styles.paNoticeAddr}>{location.address}</p>
             ) : (
-              <p className={`sf-body ${styles.paLocLine}`}>Adress visas snart.</p>
+              <p className={styles.paNoticeAddr}>Adress visas snart.</p>
             )}
-            {location?.hours ? (
-              <div className={shared.sfHours}>
-                {location.hours.map((h) => (
-                  <div key={h.day} className={shared.sfHoursRow}>
-                    <span>{h.day}</span>
-                    <span>{h.time}</span>
-                  </div>
-                ))}
-              </div>
+            {location?.address ? (
+              <a
+                href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={styles.paTextCta}
+              >
+                Visa på karta <span aria-hidden="true">→</span>
+              </a>
             ) : null}
           </Reveal>
-          <Reveal delay={120}>
-            <div className={shared.sfMap}>
-              {location?.address ? (
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={`${shared.sfMapLink} ${styles.paMoreLink} ${styles.paMapLink}`}
-                >
-                  Visa på karta <span aria-hidden="true">→</span>
-                </a>
-              ) : (
-                <span className={shared.sfMapHint}>Karta visas när adressen är ifylld.</span>
-              )}
-            </div>
-          </Reveal>
+          {location?.hours && location.hours.length > 0 ? (
+            <Reveal delay={120} className={styles.paNoticeHours}>
+              <p className={styles.paNoticeHead}>Öppettider</p>
+              {location.hours.map((h) => (
+                <p key={h.day} className={styles.paNoticeRow}>
+                  <span>{h.day}</span>
+                  <span>{h.time}</span>
+                </p>
+              ))}
+            </Reveal>
+          ) : null}
         </div>
       </section>
 
-      {/* 12 — CLOSING: eget fullbredds-foto, mörkt tegel-overlay, fyrkantig CTA */}
+      {/* 10 — CLOSING */}
       <section className={styles.paClosing} style={{ backgroundImage: `url(${content.closingImage})` }}>
         <div className={styles.paClosingOverlay} aria-hidden="true" />
         <div className={styles.paClosingInner}>

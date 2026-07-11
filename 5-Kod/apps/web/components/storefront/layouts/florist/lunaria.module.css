@@ -337,13 +337,28 @@ a.lnMoodCard:hover {
 .lnGalleryHead {
   margin-bottom: var(--ln-sp-block);
 }
-.lnCardGrid {
+/* OFFSET-GRID — tre kort i OLIKA HÖJD (mitten sänks, sista höjs). Signaturen som
+   skiljer Lunarias produktrad från syskonens raka trio-grid. */
+.lnOffsetGrid {
   max-width: 1100px;
   margin: var(--ln-sp-block) auto 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--ln-sp-gutter);
-  padding: 0 var(--ln-sp-gutter);
+  padding: 0 var(--ln-sp-gutter) var(--ln-sp-block);
+  align-items: start;
+}
+.lnOffsetCell:nth-child(2) {
+  margin-top: var(--ln-sp-section);
+}
+.lnOffsetCell:nth-child(3) {
+  margin-top: calc(var(--ln-sp-block) / 2);
+}
+@media (max-width: 760px) {
+  .lnOffsetCell:nth-child(2),
+  .lnOffsetCell:nth-child(3) {
+    margin-top: 0; /* offseten är en desktop-gest — staplat blir den bara luft */
+  }
 }
 .lnCard {
   display: block;
@@ -524,32 +539,63 @@ a.lnMoodCard:hover {
   color: var(--color-primary-d); /* 13.08:1 */
 }
 
-/* ══ DELADE .sf*-PRIMITIV — sam-applicerade ln*-klasser (0,2,0 slår 0,1,0) ══
-   De delade klasserna ägs av alla mallar och rörs inte; här sätts BARA
-   lunarias typskala/rytm på dem. */
-.lnRoot .lnBand {
-  padding-top: var(--ln-sp-section);
-  padding-bottom: var(--ln-sp-section);
+/* ══ EGNA STRUKTUR-PRIMITIV (goal-59) ═══════════════════════════════════════
+   NOLL delade .sf*-klasser kvar i LunariaLayout.tsx. Bredd-, lista-, plats- och
+   statistik-strukturen är mallens egen — det var precis de delade primitiven som
+   gjorde alla mallars undre halva identisk. */
+.lnWide {
+  max-width: 74rem;
+  margin: 0 auto;
+  padding: 0 var(--ln-sp-gutter);
 }
-.lnRoot .lnLocGrid {
-  padding-top: var(--ln-sp-section);
-  padding-bottom: var(--ln-sp-section);
-  gap: clamp(var(--ln-sp-block), 5vw, 96px);
+.lnNarrow {
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: 0 var(--ln-sp-gutter);
 }
-.lnRoot .lnRowList {
+
+/* ── TJÄNSTER — LUGN LISTA med STORA display-siffror ───────────────────────
+   Varken tabell eller kort: hårlinje-rader där numret till vänster och priset
+   till höger är STORA display-tal (Italiana 400) och beskrivningen backar. */
+.lnPriceSection {
+  padding: var(--ln-sp-section) 0;
+}
+.lnPriceList {
   margin-top: var(--ln-sp-block);
+  border-top: 1px solid var(--color-line);
 }
-/* Tjänstnumret: mikroetikett, inte en halvstor display-siffra (1.6rem låg mitt
-   emellan kort- och brödtextnivån = grötigt). */
-.lnRoot .lnRowNum {
-  font-family: var(--font-body);
-  font-size: var(--ln-fs-micro);
-  font-weight: var(--ln-fw-micro);
-  letter-spacing: var(--ln-ls-micro);
+.lnPriceRow {
+  display: grid;
+  grid-template-columns: 4rem 1fr auto;
+  align-items: baseline;
+  gap: var(--ln-sp-gutter);
+  width: 100%;
+  padding: var(--ln-sp-cta) 0;
+  border-bottom: 1px solid var(--color-line);
+  background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: padding-left var(--ln-dur) var(--ln-ease), background var(--ln-dur) var(--ln-ease);
+}
+.lnPriceRow:hover {
+  padding-left: var(--ln-sp-eyebrow);
+  background: var(--color-accent-soft);
+}
+.lnPriceNum {
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-card);
+  line-height: var(--ln-lh-card);
   color: var(--color-primary);
-  opacity: 1;
 }
-.lnRoot .lnRowName {
+.lnPriceMain {
+  display: block;
+}
+.lnPriceName {
+  display: block;
   font-family: var(--font-display);
   font-weight: var(--ln-fw-display);
   font-size: var(--ln-fs-card);
@@ -557,20 +603,18 @@ a.lnMoodCard:hover {
   letter-spacing: var(--ln-ls-display);
   color: var(--color-fg);
 }
-.lnRoot .lnRowDesc {
+.lnPriceDesc {
+  display: block;
+  margin-top: var(--ln-sp-eyebrow);
+  max-width: var(--ln-measure);
   font-family: var(--font-body);
   font-size: var(--ln-fs-body);
   line-height: var(--ln-lh-body);
   color: var(--color-fg-2); /* 5.09:1 även mot hover-ytan --color-accent-soft */
 }
-.lnRoot .lnRowPrice {
-  font-family: var(--font-body);
-  font-weight: var(--ln-fw-micro);
-  font-size: var(--ln-fs-body);
-  color: var(--color-fg);
-}
-.lnRoot .lnMoreLink {
-  margin-top: var(--ln-sp-cta);
+.lnPriceTime {
+  display: block;
+  margin-top: var(--ln-sp-eyebrow);
   font-family: var(--font-body);
   font-size: var(--ln-fs-micro);
   font-weight: var(--ln-fw-micro);
@@ -578,18 +622,37 @@ a.lnMoodCard:hover {
   text-transform: uppercase;
   color: var(--color-primary);
 }
-.lnRoot .lnStatTrio {
-  margin-top: var(--ln-sp-block);
+.lnPriceValue {
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-card);
+  line-height: var(--ln-lh-card);
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+
+/* ── STATISTIK — vertikal rad med hårlinje mellan (ej delad sfStatTrio) ───── */
+.lnStats {
+  list-style: none;
+  margin: var(--ln-sp-block) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--ln-sp-block);
 }
-.lnRoot .lnStatValue {
+.lnStat {
+  display: block;
+}
+.lnStatValue {
+  display: block;
   font-family: var(--font-display);
   font-weight: var(--ln-fw-display);
   font-size: var(--ln-fs-card);
   line-height: var(--ln-lh-card);
   color: var(--color-primary);
 }
-.lnRoot .lnStatLabel {
+.lnStatLabel {
+  display: block;
   margin-top: var(--ln-sp-eyebrow);
   font-family: var(--font-body);
   font-size: var(--ln-fs-micro);
@@ -598,16 +661,342 @@ a.lnMoodCard:hover {
   text-transform: uppercase;
   color: var(--color-fg-2);
 }
-.lnRoot .lnHours {
-  margin-top: var(--ln-sp-cta);
+
+/* ── GALLERI-BANDET (eget, ej delad sfGalleryBand) ────────────────────────── */
+.lnGalleryBand {
+  padding: var(--ln-sp-section) 0;
+  background: var(--color-surface);
 }
-.lnRoot .lnHoursRow {
+
+/* ── PLATS — egen två-spalt med streckade tid-rader ───────────────────────── */
+.lnLocBand {
+  padding: var(--ln-sp-section) 0;
+}
+.lnLocGrid {
+  max-width: 74rem;
+  margin: 0 auto;
+  padding: 0 var(--ln-sp-gutter);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(var(--ln-sp-block), 5vw, 96px);
+  align-items: start;
+}
+.lnHours {
+  margin-top: var(--ln-sp-cta);
+  border-top: 1px solid var(--color-line);
+}
+.lnHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ln-sp-gutter);
+  padding: var(--ln-sp-eyebrow) 0;
+  border-bottom: 1px solid var(--color-line);
   font-family: var(--font-body);
   font-size: var(--ln-fs-body);
   line-height: var(--ln-lh-micro);
   color: var(--color-fg);
 }
-.lnRoot .lnMapLink {
+
+/* ══ NAV — SIDO-RAIL: stort wordmark vänster · meny i KOLUMN · kluster höger ══
+   Dubblad klass (0,2,0) slår nav-shell.module.css .navThemed utan att röra den
+   delade filen. Shell-klasserna sitter kvar på elementen → transparent-skin,
+   mobil-burger och overlay fungerar precis som för alla andra mallar. */
+.lnNav.lnNav {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: clamp(24px, 4vw, 48px);
+  padding: 20px clamp(24px, 4vw, 40px);
+  border-bottom: 1px solid var(--color-line); /* tunn silverlinje under huvudet */
+}
+.lnNavWordmark.lnNavWordmark {
+  grid-column: 1;
+  justify-self: start;
+}
+.lnNavWordmark :global(.logo-text) {
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: 28px; /* STORT — railens ankare */
+  letter-spacing: 0.02em;
+  color: var(--color-fg);
+}
+/* Menyn som KOLUMN — silverlinjen löper längs kolumnens vänsterkant. */
+.lnNavRail.lnNavRail {
+  grid-column: 2;
+  justify-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-left: clamp(16px, 2vw, 24px);
+  border-left: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+}
+.lnNavCluster.lnNavCluster {
+  grid-column: 3;
+  justify-self: end;
+  gap: 16px;
+}
+/* Under 720px tar NavShells burger + overlay över (shell döljer .navLinks/.navCluster):
+   griden måste tillbaka till en spalt. */
+@media (max-width: 720px) {
+  .lnNav.lnNav {
+    grid-template-columns: 1fr;
+  }
+  .lnNavWordmark.lnNavWordmark {
+    grid-column: 1;
+  }
+}
+
+/* ══ FOOTER — NATTBLÅ PLATTA med stjärn-ornament ═══════════════════════════ */
+.lnFoot {
+  background: var(--color-primary-d);
+  color: var(--color-surface);
+  padding: var(--ln-sp-section) var(--ln-sp-gutter) var(--ln-sp-block);
+}
+.lnFootInner {
+  max-width: 74rem;
+  margin: 0 auto;
+}
+.lnFootTop {
+  text-align: center;
+  padding-bottom: var(--ln-sp-block);
+}
+.lnFootStar {
+  color: var(--color-accent-soft);
+}
+.lnFootMark {
+  margin-top: var(--ln-sp-text);
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-sec); /* STORT wordmark — sidfotens huvudform */
+  line-height: var(--ln-lh-sec);
+  color: var(--color-surface); /* 16.64:1 mot --color-primary-d */
+}
+.lnFootTagline {
+  margin: var(--ln-sp-eyebrow) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-body);
+  color: var(--color-accent-soft); /* 13.08:1 mot --color-primary-d */
+}
+.lnFootCols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--ln-sp-block);
+  padding: var(--ln-sp-block) 0;
+  border-top: 1px solid rgba(232, 223, 199, 0.25); /* accent-soft som hårlinje på mörkt */
+}
+.lnFootCol {
+  min-width: 0;
+}
+.lnFootHead {
+  margin: 0 0 var(--ln-sp-text);
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  line-height: var(--ln-lh-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-accent-soft);
+}
+.lnFootText {
+  margin: 0 0 var(--ln-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-body);
+  color: var(--color-surface);
+}
+.lnFootText a:hover {
+  color: var(--color-accent-soft);
+}
+.lnFootHoursRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--ln-sp-gutter);
+  padding: 4px 0;
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-micro);
+  color: var(--color-surface);
+}
+.lnFootLinks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-micro);
+}
+.lnFootLinks a {
+  color: var(--color-surface);
+}
+.lnFootLinks a:hover {
+  color: var(--color-accent-soft);
+}
+.lnFootBottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--ln-sp-eyebrow) var(--ln-sp-cta);
+  padding-top: var(--ln-sp-gutter);
+  border-top: 1px solid rgba(232, 223, 199, 0.25);
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-accent-soft);
+}
+.lnFootSocial {
+  display: flex;
+  gap: var(--ln-sp-gutter);
+}
+.lnFootSocial a:hover {
+  color: var(--color-surface);
+}
+
+/* ══ UNDERSIDOR ════════════════════════════════════════════════════════════ */
+.lnPage {
+  padding-top: var(--ln-sp-block);
+}
+.lnPageHead {
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: var(--ln-sp-section) var(--ln-sp-gutter) 0;
+  text-align: center;
+}
+.lnPageTitle {
+  margin: var(--ln-sp-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-sec);
+  line-height: var(--ln-lh-sec);
+  letter-spacing: var(--ln-ls-display);
+  color: var(--color-fg);
+}
+.lnPageFoot {
+  padding: var(--ln-sp-block) var(--ln-sp-gutter) var(--ln-sp-section);
+  text-align: center;
+}
+
+/* /om — OFFSET-UPPSLAG (samma grammatik som heron, spegelvänd) */
+.lnSpread {
+  padding: var(--ln-sp-block) var(--ln-sp-gutter) var(--ln-sp-section);
+}
+.lnSpreadFrame {
+  position: relative;
+  max-width: 74rem;
+  margin: 0 auto;
+}
+.lnSpreadPhoto {
+  aspect-ratio: 16 / 10;
+  width: min(74%, 48rem);
+  margin-right: auto; /* fotot till VÄNSTER — spegelvänt mot hemmets hero */
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+.lnSpreadCard {
+  position: absolute;
+  right: 0;
+  bottom: calc(-1 * var(--ln-sp-block));
+  width: min(94%, 38rem);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  padding: var(--ln-sp-block);
+  z-index: 2;
+}
+@media (max-width: 800px) {
+  .lnSpreadPhoto {
+    width: 100%;
+  }
+  .lnSpreadCard {
+    position: static;
+    width: 100%;
+    margin: calc(-1 * var(--ln-sp-block)) auto 0;
+    padding: var(--ln-sp-cta);
+  }
+}
+.lnFactBand {
+  padding: var(--ln-sp-section) var(--ln-sp-gutter) 0;
+}
+.lnFactRow {
+  list-style: none;
+  max-width: 74rem;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-sp-block);
+  justify-content: center;
+  border-top: 1px solid var(--color-line);
+  padding-top: var(--ln-sp-block);
+}
+.lnFact {
+  text-align: center;
+}
+.lnQuoteBand {
+  margin-top: var(--ln-sp-section);
+  padding: var(--ln-sp-section) var(--ln-sp-gutter);
+  background: var(--color-accent-soft);
+  text-align: center;
+}
+.lnQuote {
+  max-width: 44rem;
+  margin: 0 auto;
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-sec);
+  line-height: var(--ln-lh-sec);
+  color: var(--color-fg); /* 12.97:1 mot --color-accent-soft */
+}
+
+/* /kontakt — ÖVERLAPPANDE KORT ovanpå ett nattblått fotoband */
+.lnContactWrap {
+  position: relative;
+  padding-bottom: var(--ln-sp-section);
+}
+.lnContactBand {
+  position: relative;
+  height: clamp(18rem, 34vw, 26rem);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-primary);
+}
+.lnContactScrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--ln-scrim-top) 0%, var(--ln-scrim-bottom) 100%);
+}
+.lnContactCard {
+  position: relative;
+  z-index: 2;
+  max-width: 60rem;
+  margin: calc(-1 * var(--ln-sp-section)) auto 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  padding: clamp(var(--ln-sp-cta), 5vw, 64px);
+}
+.lnContactGrid {
+  margin-top: var(--ln-sp-block);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--ln-sp-block);
+  border-top: 1px solid var(--color-line);
+  padding-top: var(--ln-sp-block);
+}
+.lnContactBlock {
+  min-width: 0;
+}
+.lnContactLabel {
+  margin: 0 0 var(--ln-sp-eyebrow);
   font-family: var(--font-body);
   font-size: var(--ln-fs-micro);
   font-weight: var(--ln-fw-micro);
@@ -615,17 +1004,30 @@ a.lnMoodCard:hover {
   text-transform: uppercase;
   color: var(--color-primary);
 }
-.lnRoot .lnMapHint {
+.lnContactValue {
+  margin: 0 0 4px;
   font-family: var(--font-body);
   font-size: var(--ln-fs-body);
   line-height: var(--ln-lh-body);
-  color: var(--color-fg-2);
+  color: var(--color-fg);
+}
+.lnContactActions {
+  margin-top: var(--ln-sp-block);
 }
 
 @media (max-width: 760px) {
   .lnMoodGrid,
-  .lnCardGrid {
+  .lnOffsetGrid {
     grid-template-columns: 1fr;
     max-width: 24rem;
+  }
+  .lnLocGrid {
+    grid-template-columns: 1fr;
+  }
+  .lnPriceRow {
+    grid-template-columns: 1fr auto;
+  }
+  .lnPriceNum {
+    display: none; /* siffran är dekor — den får inte äta radbredden på mobil */
   }
 }

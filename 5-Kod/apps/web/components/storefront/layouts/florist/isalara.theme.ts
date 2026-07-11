@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { IsalaraNav, IsalaraFooter } from './isalara.chrome'
+import { IsalaraOm, IsalaraTjanster, IsalaraKontakt } from './isalara.pages'
 
 // Isalaras egen fotomanifest (Unsplash, verifierade `curl -sI` → 200 2026-07-11,
 // samtliga id:n redan visuellt granskade av syskonmallarna som återanvänder dem —
@@ -122,4 +124,11 @@ export const isalara: FloristTheme = {
     closingLede: 'Handla i butiken, boka en tid eller hör av dig — vi hjälper dig gärna.',
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: true },
+  // TEMA-PAKET (goal-59): mallen äger HELA sajten, inte bara hemmet. Sidhuvudet är
+  // en solid marinblå fullbreddsrad (aldrig transparent), sidfoten en marinblå
+  // platta med skript-wordmark + tre kolumner, och /om, /tjanster, /kontakt är
+  // komponerade i mallens eget språk (brev · tvåspalt med guld-prick · mörkblått
+  // kort) istället för de delade .sf*-sektionerna som gjorde sviten likformig.
+  chrome: { Nav: IsalaraNav, Footer: IsalaraFooter },
+  pages: { om: IsalaraOm, tjanster: IsalaraTjanster, kontakt: IsalaraKontakt },
 }

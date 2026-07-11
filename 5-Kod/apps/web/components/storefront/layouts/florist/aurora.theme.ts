@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { AuroraNav, AuroraFooter } from './aurora.chrome'
+import { AuroraOm, AuroraTjanster, AuroraKontakt } from './aurora.pages'
 
 /**
  * AURORA — korall/laxrosa på varmvitt, lekfull (goal-58). Signatur: tunn
@@ -44,7 +46,10 @@ export const aurora: FloristTheme = {
     display: 'var(--font-fraunces), Georgia, serif',
     body: 'var(--font-jost), system-ui, sans-serif',
   },
-  radius: '0px',
+  // goal-59: LEKFULL BOUTIQUE → mjuk radie. Fortfarande BINÄRT: 24px på ALL struktur
+  // (hero, kort, prisrader, kontakt-kortet), full pill/cirkel på knappar, badgar och
+  // valv-bågar. Ingenting däremellan.
+  radius: '24px',
   content: {
     heroEyebrow: '— Blomsterbutik',
     heroTitle: 'Blommor som\ngör dagen bättre.',
@@ -89,4 +94,8 @@ export const aurora: FloristTheme = {
     ],
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  // TEMA-PAKET (goal-59): Aurora äger sitt sidhuvud (script-wordmark + rund CTA-cirkel),
+  // sin sidfot (stort centrerat script-wordmark på rosa platta) och sina undersidor.
+  chrome: { Nav: AuroraNav, Footer: AuroraFooter },
+  pages: { om: AuroraOm, tjanster: AuroraTjanster, kontakt: AuroraKontakt },
 }

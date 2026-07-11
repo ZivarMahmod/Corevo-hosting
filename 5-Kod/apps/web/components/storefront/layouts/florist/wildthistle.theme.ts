@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { WildThistleNav, WildThistleFooter } from './wildthistle.chrome'
+import { WildThistleOm, WildThistleTjanster, WildThistleKontakt } from './wildthistle.pages'
 
 // Wild Thistle-temats egen fotomanifest (Unsplash). Varje id nedan curl -sI → 200
 // OCH nedladdat + visuellt öppnat och synat 2026-07-11 (flera slumpvis provade
@@ -130,4 +132,10 @@ export const wildthistle: FloristTheme = {
     findEyebrow: '— Hitta till butiken',
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  // goal-59 TEMA-PAKET: Wild Thistle äger sitt sidhuvud (rå rad + 4px ink-linje),
+  // sin råpappers-sidfot (gigantiskt wordmark + streckade spalter) och sina tre
+  // undersidor (fältdagbok / streckad prislista / råpappers-ruta). FUNKTIONEN är
+  // fortfarande plattformens: NavShell + modul-gatade länkar/CTA + Bookable.
+  chrome: { Nav: WildThistleNav, Footer: WildThistleFooter },
+  pages: { om: WildThistleOm, tjanster: WildThistleTjanster, kontakt: WildThistleKontakt },
 }

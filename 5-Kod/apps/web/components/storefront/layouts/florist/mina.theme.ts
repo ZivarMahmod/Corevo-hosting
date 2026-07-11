@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { MinaNav, MinaFooter } from './mina.chrome'
+import { MinaOm, MinaTjanster, MinaKontakt } from './mina.pages'
 
 // Minas egen fotomanifest (Unsplash, curl -sI 200 OK + visuellt granskade
 // 2026-07-11 — flera slumpvis testade Unsplash-id:n visade sig vara berg/
@@ -127,4 +129,10 @@ export const mina: FloristTheme = {
     closingLede: 'Välj din bukett, hämta i butiken eller få den levererad hem.',
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: true },
+  // goal-59 TEMA-PAKET: Mina äger HELA sajten — sidhuvud (platt butiksrad, wordmark
+  // vänster, meny + korg + rosa pill höger, ingen utility-rad), sidfot (EN rosa rad)
+  // och undersidorna (smal /om, chip-grid /tjanster, formulärskort /kontakt).
+  // Funktionen (NavShell, korg, konto, modul-gatade länkar, Bookable) är plattformens.
+  chrome: { Nav: MinaNav, Footer: MinaFooter },
+  pages: { om: MinaOm, tjanster: MinaTjanster, kontakt: MinaKontakt },
 }

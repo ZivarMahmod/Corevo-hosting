@@ -43,6 +43,13 @@
 
 /* ── 0. SKALAN + DEKOR — deklarerad på mallens alla rot-sektioner (layouten är ett
       fragment, så den här grupperade regeln ÄR mallens "rot-klass"). ──────────────── */
+.elNav,
+.elFoot,
+.elPageHead,
+.elSpreadSection,
+.elTeamSection,
+.elPricePage,
+.elContactSection,
 .elHero,
 .elVows,
 .elShopSection,
@@ -412,28 +419,9 @@
   .elPriceDots { order: 3; flex-basis: 100%; }
 }
 
-/* ── 5. OM — delad .sfAboutGrid (fotot är redan 4:5 = mallens ratio), eloria-rytm ───── */
-.elAboutSection { padding: var(--el-sec) 0; background: var(--color-bg); }
-/* Dubbelklass = specificitet nog att slå .sfStatValue/.sfStatLabel oavsett bundlarens
-   fil-ordning (två CSS-moduler, samma (0,1,0) → källordningen skulle annars avgöra). */
-.elStatValue.elStatValue {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: var(--el-fs-card);
-  line-height: 1.15;
-  color: var(--color-primary);
-}
-.elStatLabel.elStatLabel {
-  display: block;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--el-fs-micro);
-  line-height: 1.4;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--color-fg-2);
-  margin-top: var(--el-s1);
-}
+/* ── 5. OM — mallens EGNA uppslag (.elSpread) + fakta-lista, se "UPPSLAGET" nedan.
+      (De gamla .elStatValue/.elStatLabel var override-krokar mot plattformens delade
+      .sfStatTrio — den sektionen finns inte längre i mallen, så krokarna är borta.) ── */
 
 /* ── 6. OFFERT/BRÖLLOP — gatad, mörkgrön guldramad banner som ekar heroplattan ─────── */
 .elOfferBand {
@@ -484,8 +472,14 @@
 .elOfferCta:hover { background: var(--color-primary-d); transform: translateY(-4px); }
 .elOfferCta:focus-visible { outline: 2px solid var(--color-bg); outline-offset: 2px; }
 
-/* ── 8. GALLERI — delad Gallery-komponent, tvingad till mallens ENDA ratio ─────────── */
-.elGallery { padding: var(--el-sec) 0; }
+/* ── 8. GALLERI — mallens EGET band (var delad .sfGalleryBand), Gallery-komponenten
+      tvingad till mallens ENDA ratio ─────────────────────────────────────────────── */
+.elGallery {
+  padding: var(--el-sec) 0;
+  background: var(--color-accent-soft);
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
 .elGallery .elEyebrow { margin-bottom: var(--el-s3); }
 /* Brickorna är 1:1 i storefront.module.css — här 4:5 som allt annat. (0,1,1) slår
    .galleryItem (0,1,0). */
@@ -533,15 +527,30 @@
 .elGiftCta:hover { border-color: var(--color-primary); }
 .elGiftCta:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 
-/* ── 10. PLATS & ÖPPETTIDER — delad .sfLocBand-struktur, eloria-typografi/rytm ─────── */
-.elLoc { padding: 0; }
-.elHoursRow.elHoursRow {
-  font-family: var(--font-body);
-  font-size: var(--el-fs-body);
-  line-height: 1.6;
+/* ── 10. PLATS & ÖPPETTIDER — Elorias EGEN två-spalt (var delad .sfLocBand/.sfHours/.sfMap):
+      adressen till vänster, öppettiderna som prislista med guld-ledare i ett guldramat
+      kort till höger. Samma grepp som tjänsterna — sidan talar EN dialekt. ──────────── */
+.elLoc { padding: var(--el-sec) 0; background: var(--color-bg); }
+.elLocGrid {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 var(--el-gut);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(32px, 5vw, 64px);
+  align-items: start;
 }
-/* Samma mikro-länk som .elMoreLink men utan margin-top: .sfMap är place-items:center,
-   där skulle en toppmarginal knuffa länken ur mitten. */
+.elHoursCard {
+  border: 1px solid var(--color-primary);
+  border-radius: var(--sf-radius);
+  background: var(--color-surface);
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+@media (max-width: 820px) {
+  .elLocGrid { grid-template-columns: 1fr; }
+}
+
+/* Mikro-länken i mallens ton (utan .elMoreLinks toppmarginal där den inte hör hemma). */
 .elMapLink {
   display: inline-flex;
   align-items: center;
@@ -560,12 +569,6 @@
 }
 .elMapLink:hover { border-color: var(--color-primary); }
 .elMapLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
-.elMapHint {
-  font-family: var(--font-body);
-  font-size: var(--el-fs-body);
-  line-height: 1.6;
-  color: var(--color-fg-2);
-}
 
 /* ── 11. CLOSING — foto + mörkgrön scrim, ekar heron (bokstavlig bracket kring sidan) ── */
 .elClosing {
@@ -608,3 +611,448 @@
   margin: var(--el-s2) auto 0;
 }
 .elClosingActions { margin-top: var(--el-s3); }
+
+/* ═══════════ TEMA-PAKET (goal-59) — mallens EGET skal & undersidor ═══════════
+   Hemmets nedre halva lånade förut plattformens delade .sf*-sektioner, och nav/footer/
+   undersidor var identiska för alla mallar. Allt nedan är Elorias eget, i mallens tre
+   grepp: den mörkgröna plattan med guldram, guld-ledaren och det guldramade kortet.
+   NOLL nya hex — samma 8 tokens + de två dekor-varsen (--eloria-green/--eloria-gold). */
+
+/* ── Bredd-behållare (ersätter delade .sfWide/.sfNarrow) ──────────────────────────── */
+.elWide { max-width: 72rem; margin: 0 auto; padding: 0 var(--el-gut); }
+.elNarrow { max-width: 48rem; margin: 0 auto; padding: 0 var(--el-gut); }
+
+/* ── SIDHUVUD — HEL mörkgrön platta över bredden, wordmark CENTRERAT i guldram, menyn i
+      TVÅ grupper (vänster/höger om ramen). Dubbelklass = specificitet nog att slå
+      .navThemed (3-zons-grid) i nav-shell.module.css oavsett bundlar-ordning. FUNKTIONEN
+      bor kvar i NavShell (burger/overlay/fokusfälla) — vi ritar bara formen. */
+.elNav.elNav {
+  display: block;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--eloria-green);
+  border-bottom: 1px solid var(--eloria-gold);
+}
+/* Tunn topbar med utility-texten — guldlinjerad, VERSALER, mallens mikrograd. */
+.elNavUtility {
+  margin: 0;
+  padding: 0.5rem var(--el-gut);
+  border-bottom: 1px solid color-mix(in srgb, var(--eloria-gold) 45%, transparent);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--eloria-gold);
+}
+.elNavRow {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0.75rem var(--el-gut);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1.25rem;
+}
+.elNavGroup { display: flex; align-items: center; gap: 1.6rem; }
+.elNavGroupL { justify-self: start; }
+.elNavGroupR { justify-self: end; }
+.elNavRight { justify-self: end; display: flex; align-items: center; gap: 1.6rem; }
+.elNavLink {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-decoration: none;
+  color: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  border-bottom: 1px solid transparent;
+  padding-bottom: 3px;
+  transition: color var(--el-dur) ease, border-color var(--el-dur) ease;
+}
+.elNavLink:hover { color: var(--eloria-gold); border-color: var(--eloria-gold); }
+.elNavLink:focus-visible { outline: 2px solid var(--eloria-gold); outline-offset: 4px; }
+
+/* Wordmarket i GULDRAM — mallens signatur (samma ram som heroplattan). */
+.elNavMark.elNavMark {
+  grid-column: 2;
+  justify-self: center;
+  border: 1px solid var(--eloria-gold);
+  border-radius: var(--sf-radius);
+  padding: 0.5rem 1.5rem;
+  text-decoration: none;
+}
+.elNavMark :global(.logo-text) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  color: var(--color-bg);
+}
+.elNavMark :global(.logo-img) { max-height: 2rem; }
+
+.elNavCluster { display: flex; align-items: center; gap: 0.75rem; }
+/* Ikonerna ärver .navAccount (--color-fg = mörkgrönt) → osynliga på plattan. Guld istället. */
+.elNavIcon.elNavIcon {
+  border-color: color-mix(in srgb, var(--eloria-gold) 60%, transparent);
+  color: var(--eloria-gold);
+}
+.elNavIcon.elNavIcon:hover { border-color: var(--eloria-gold); color: var(--color-bg); }
+/* CTA:n — samma pill som resten av mallen, aldrig den globala glow-skuggan. */
+:global(.btn-accent).elNavCta {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 38px;
+  padding: 0 22px;
+  box-shadow: none;
+  transition: background var(--el-dur) ease;
+}
+:global(.btn-accent).elNavCta:hover { box-shadow: none; background: var(--color-primary-d); }
+
+/* Under 720px tar NavShells burger + overlay över; plattan behåller bara wordmarket. */
+@media (max-width: 720px) {
+  .elNavRow { grid-template-columns: 1fr; justify-items: start; padding-right: 4rem; }
+  .elNavGroup, .elNavRight { display: none; }
+  .elNavMark.elNavMark { grid-column: 1; justify-self: start; }
+}
+
+/* ── SIDFOT — samma mörkgröna platta, TRE kolumner delade av vertikala guldlinjer,
+      menylänkarna på en guldlinjerad bottenrad. ─────────────────────────────────── */
+.elFoot {
+  background: var(--eloria-green);
+  border-top: 1px solid var(--eloria-gold);
+  padding: var(--el-sec) var(--el-gut) var(--el-s3);
+  color: var(--color-bg);
+}
+.elFootGrid {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: clamp(24px, 4vw, 48px);
+}
+.elFootCol + .elFootCol {
+  border-left: 1px solid color-mix(in srgb, var(--eloria-gold) 45%, transparent);
+  padding-left: clamp(24px, 4vw, 48px);
+}
+.elFootMark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--el-fs-card);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  color: var(--color-bg);
+}
+.elFootTagline {
+  margin: var(--el-s1) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-bg) 82%, transparent);
+}
+.elFootSocials { display: flex; gap: 0.75rem; margin-top: var(--el-s2); align-items: center; }
+.elFootSocial {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid color-mix(in srgb, var(--eloria-gold) 60%, transparent);
+  border-radius: var(--sf-radius);
+  color: var(--eloria-gold);
+  transition: color var(--el-dur) ease, border-color var(--el-dur) ease;
+}
+.elFootSocial:hover { color: var(--color-bg); border-color: var(--eloria-gold); }
+.elFootSocialText {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--eloria-gold);
+  text-decoration: none;
+}
+.elFootSocialText:hover { color: var(--color-bg); }
+.elFootHead {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--eloria-gold);
+}
+.elFootText {
+  margin: var(--el-s1) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-bg) 82%, transparent);
+}
+.elFootLink { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; }
+.elFootLink:hover { color: var(--eloria-gold); border-color: var(--eloria-gold); }
+/* Öppettiderna i sidfoten bär samma guld-ledare som prislistan — en dialekt i hela mallen. */
+.elFootHoursRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: var(--el-s1) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-bg) 82%, transparent);
+}
+.elFootDots {
+  flex: 1;
+  min-width: 1rem;
+  border-bottom: 2px dotted color-mix(in srgb, var(--eloria-gold) 70%, transparent);
+  transform: translateY(-5px);
+}
+.elFootBottom {
+  max-width: 72rem;
+  margin: var(--el-sec) auto 0;
+  padding-top: var(--el-s3);
+  border-top: 1px solid color-mix(in srgb, var(--eloria-gold) 45%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--el-s2);
+}
+.elFootNav { display: flex; flex-wrap: wrap; gap: 1.25rem; }
+.elFootNavLink {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  text-decoration: none;
+}
+.elFootNavLink:hover { color: var(--eloria-gold); }
+.elFootCopy {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-bg) 66%, transparent);
+}
+@media (max-width: 820px) {
+  .elFootGrid { grid-template-columns: 1fr; }
+  .elFootCol + .elFootCol {
+    border-left: 0;
+    padding-left: 0;
+    padding-top: var(--el-s3);
+    border-top: 1px solid color-mix(in srgb, var(--eloria-gold) 45%, transparent);
+  }
+}
+
+/* ── UNDERSIDORNAS SIDHUVUD — mörkgrön guldramad platta (heroplattans lilla syskon) ── */
+.elPageHead { background: var(--color-bg); padding: var(--el-sec) var(--el-gut); }
+.elPagePlate {
+  max-width: 46rem;
+  margin: 0 auto;
+  background: var(--eloria-green);
+  border: 1px solid var(--eloria-gold);
+  border-radius: var(--sf-radius);
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1.5rem, 5vw, 3rem);
+  text-align: center;
+}
+.elPageTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--el-fs-h2);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-bg);
+  margin: var(--el-s1) 0 0;
+}
+.elPageLede {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--el-fs-body);
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  max-width: 32rem;
+  margin: var(--el-s2) auto 0;
+}
+/* Knappen på plattan resp. på de ljusa ytorna — samma pill, ingen glow. */
+:global(.btn-accent).elPlateCta,
+:global(.btn-accent).elPlateCtaLight {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 46px;
+  padding: 0 30px;
+  box-shadow: none;
+  transition: transform var(--el-dur) ease, background var(--el-dur) ease;
+}
+:global(.btn-accent).elPlateCta:hover,
+:global(.btn-accent).elPlateCtaLight:hover {
+  transform: translateY(-4px);
+  box-shadow: none;
+}
+
+/* ── UPPSLAGET (/om + hemmets om-sektion) — EN guldram runt hela ytan, foto | sättning
+      med anfang. Ersätter delade .sfAboutGrid som ALLA mallar delade. ─────────────── */
+.elSpreadSection { background: var(--color-surface); padding: var(--el-sec) var(--el-gut); }
+.elAboutSection { padding: var(--el-sec) var(--el-gut); background: var(--color-bg); }
+.elSpread {
+  max-width: 68rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: clamp(24px, 4vw, 48px);
+  align-items: stretch;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--sf-radius);
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+.elSpreadPhoto {
+  aspect-ratio: var(--el-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+.elSpreadCopy { display: flex; flex-direction: column; justify-content: center; }
+/* Anfangen — klassiskt uppslag: första bokstaven i display-serifen, tre rader hög. */
+.elSpreadLead {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg-2);
+  margin: var(--el-s2) 0 0;
+  max-width: 34rem;
+}
+.elSpreadLead::first-letter {
+  float: left;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 3.2em;
+  line-height: 0.86;
+  color: var(--color-primary);
+  padding: 0.08em 0.12em 0 0;
+}
+@media (max-width: 820px) {
+  .elSpread { grid-template-columns: 1fr; }
+}
+
+/* ── FAKTA-LISTAN — guld-ledare, samma sättning som prislistan (stats, öppettider) ─── */
+.elFacts { list-style: none; margin: var(--el-s3) 0 0; padding: 0; }
+.elFactRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: var(--el-s1) 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.elFactLabel {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  white-space: nowrap;
+}
+.elFactValue {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+/* ── /tjanster — hela prislistan, guld-ledare, varje rad en <Bookable> ─────────────── */
+.elPricePage {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-line);
+  padding: var(--el-sec) 0;
+}
+.elPricePageInner { max-width: 48rem; margin: 0 auto; padding: 0 var(--el-gut); }
+.elEmpty { text-align: center; }
+.elEmpty .elBody { margin-left: auto; margin-right: auto; }
+
+/* ── /om — teamet (ÄGAR-ONLY: bara riktiga uppladdade medarbetare) ─────────────────── */
+.elTeamSection {
+  background: var(--color-bg);
+  padding: var(--el-sec) var(--el-gut);
+  border-top: 1px solid var(--color-line);
+}
+.elTeamGrid {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 3vw, 32px);
+}
+.elTeamPhoto {
+  aspect-ratio: var(--el-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+  display: grid;
+  place-items: center;
+}
+.elTeamMonogram {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 3rem;
+  color: var(--color-primary);
+  letter-spacing: 0.04em;
+}
+@media (max-width: 760px) {
+  .elTeamGrid { grid-template-columns: 1fr; max-width: 22rem; }
+}
+
+/* ── /kontakt — ETT guldramat kort: besöksuppgifter | öppettider ───────────────────── */
+.elContactSection { background: var(--color-surface); padding: var(--el-sec) var(--el-gut); }
+.elContactCard {
+  max-width: 62rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(32px, 5vw, 64px);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--sf-radius);
+  padding: clamp(1.75rem, 4vw, 3rem);
+  background: var(--color-bg);
+}
+.elContactCol { display: flex; flex-direction: column; }
+.elContactGap { margin-top: var(--el-s4); }
+.elContactValue {
+  font-family: var(--font-body);
+  font-size: var(--el-fs-body);
+  line-height: 1.6;
+  color: var(--color-fg);
+  margin: var(--el-s1) 0 0;
+}
+.elContactLink {
+  color: var(--color-fg);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-primary);
+}
+.elContactLink:hover { color: var(--color-primary); }
+@media (max-width: 820px) {
+  .elContactCard { grid-template-columns: 1fr; }
+}

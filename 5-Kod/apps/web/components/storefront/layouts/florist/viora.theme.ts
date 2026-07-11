@@ -1,4 +1,6 @@
 import type { FloristTheme } from './types'
+import { VioraNav, VioraFooter } from './viora.chrome'
+import { VioraOm, VioraTjanster, VioraKontakt } from './viora.pages'
 
 /** Unsplash photo manifest — every id below verified `curl -sI` → 200 (2026-07-11). */
 const u = (id: string, w = 1600) =>
@@ -110,4 +112,9 @@ export const viora: FloristTheme = {
     homeGallery: true,
     homeAbout: true,
   },
+  // TEMA-PAKET (goal-59): mallen äger sitt sidhuvud (två rader, vänsterställt), sin
+  // sidfot (violett platta, två kolumner) och sina undersidor (/om split, /tjanster
+  // kort-grid, /kontakt split med karta). Funktionen är fortfarande plattformens.
+  chrome: { Nav: VioraNav, Footer: VioraFooter },
+  pages: { om: VioraOm, tjanster: VioraTjanster, kontakt: VioraKontakt },
 }
