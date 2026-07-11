@@ -43,8 +43,12 @@ export function IsalaraNav({
           <Logo tenant={{ id: '', name: tenant.name, slug: '' }} branding={branding} />
         </Link>
 
+        {/* Desktop-navet bär MAX 6 länkar (goal-60). Med alla moduler live blir listan
+            9, och nio versaler + wordmark + korg + konto + CTA fick inte plats på en
+            rad — navet bröt till två våningar. NavShell får fortfarande HELA `links`
+            (mobil-overlayn) och sidfoten listar allt, så inget blir oåtkomligt. */}
         <nav className={styles.islNavLinks} aria-label="Huvudmeny">
-          {links.map((l) => (
+          {links.slice(0, 6).map((l) => (
             <Link key={l.href} href={l.href}>
               {l.label}
             </Link>

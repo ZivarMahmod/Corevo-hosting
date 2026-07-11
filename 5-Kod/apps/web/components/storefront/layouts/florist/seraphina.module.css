@@ -28,7 +28,15 @@
      9. HOVER     5px lyft / 500ms ease — ingen scale, ingen skugg-bloom
     10. RYTM      12 / 20 / 24 / 32 / 48 / 96 — samma steg i ALLA sektioner       */
 
-.seraRoot {
+/* goal-60: vars deklarerades bara på .seraRoot — navet, sidfoten, undersidorna och
+   butikssidan bor UTANFÖR .seraRoot (nav/footer monteras av (public)/layout.tsx), så
+   --sera-* var ogiltiga där och skalan föll till browserns default. Rotklasserna
+   delar var-blocket (samma mönster som calytrix). */
+.seraRoot,
+.seraNav,
+.seraFooter,
+.seraPage,
+.seraShop {
   /* ── 1. TYPSKALA — FEM nivåer, varje grannsteg ≥1.3× (mätt, ej gissat) ────
         104 → 52 → 26 → 16 → 12 px  =  ×2.00 · ×2.00 · ×1.63 · ×1.33
         Mobilens clamp-min håller samma ordning: 44 → 30 → 22 → 16 → 12.   */
@@ -92,6 +100,28 @@
   );
   --sera-frame-bg: rgba(253, 251, 246, 0.95);
   --sera-cta-fg: var(--color-bg);
+
+  /* ── KÖPKNAPPEN (goal-60) — modulens AddToCart läser --sf-btn-*; Seraphina ger den
+        inbjudningskortets form: champagneguld fyllning, TUNN guldram (1px, aldrig en
+        fet kant), exakt pill, versalt 12px-mikro. Samma register som .btn-accent
+        ovan — butikens köpknapp ska vara samma knapp som bröllops-CTA:n.
+        KONTRAST (mätt): papper #FDFBF6 på guld #6B5320 = 7.04:1 (krav ≥4.5, AAA-nivå
+        även för rubrik). Hover går till #4A3813 → 10.3:1. Ren vit undviks: den vore
+        en nionde hex OCH en kall kulör i en champagne-palett. */
+  --sf-btn-h: 50px;
+  --sf-btn-pad: 0 var(--sera-btn-pad);
+  --sf-btn-radius: var(--sera-pill);
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-ink: var(--sera-cta-fg); /* 7.04:1 */
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-bg-hover: var(--color-primary-d); /* 10.3:1 */
+  --sf-btn-fs: var(--sera-fs-micro);
+  --sf-btn-weight: var(--sera-fw-micro);
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: var(--sera-ls-micro);
+  --sf-btn-dur: var(--sera-dur-ui);
+  --sf-btn-ease: ease;
+  --sf-focus: var(--color-primary); /* 7.04:1 mot papper — syns på alla ljusa ytor */
 }
 
 /* ── TYPOGRAFISKA PRIMITIVER — mallens SEX nivåer, inget däremellan ───────── */
@@ -719,7 +749,9 @@
 /* Menyraden: små spärrade versaler mellan TVÅ guldhårlinjer. */
 .seraNavLinks {
   display: flex;
-  flex-wrap: wrap;
+  /* goal-60: `wrap` lät guldbandet bryta till TVÅ rader så fort modulerna gav 9
+     länkar. Raden är EN rad (chrome kapar till 6) — bryts den är den inte en rad. */
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: var(--sera-sp-cta);
@@ -728,6 +760,7 @@
   border-bottom: 1px solid var(--color-line);
 }
 .seraNavLinks a {
+  white-space: nowrap;
   font-family: var(--font-body);
   font-weight: var(--sera-fw-micro);
   font-size: var(--sera-fs-micro);
@@ -1260,4 +1293,87 @@
     grid-template-columns: 1fr 5rem;
     gap: var(--sera-sp-text);
   }
+}
+
+/* ═══ goal-60 — FOKUS, PRESS, REDUCED MOTION ══════════════════════════════════
+   FOKUS: mallen hade ring bara på .seraMore/.seraPriceRow/.seraCard/.seraListRow/
+   .seraRow — navet, sidfoten, knapparna och galleriet var blinda. Guldringen mäter
+   7.04:1 mot papper (#FDFBF6) och 6.5:1 mot den ljusa tonen (#F6EFE0) — långt över
+   3:1-kravet för en UI-gräns. */
+.seraNavLinks a:focus-visible,
+.seraNavWordmark:focus-visible,
+.seraNavCluster a:focus-visible,
+.seraNavCluster button:focus-visible,
+.seraNavBtn:focus-visible,
+.seraCta:focus-visible,
+.seraFootLink:focus-visible,
+.seraFootNav a:focus-visible,
+.seraFootSocials a:focus-visible,
+.seraContactLink:focus-visible,
+.seraGallery > ul button:focus-visible,
+.seraRoot :global(.btn-accent):focus-visible,
+.seraPage :global(.btn-accent):focus-visible,
+.seraShop :global(.btn-accent):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+/* På closing-scrimmen (mörk bild) syns inte guldet → ringen blir papper:
+   #FDFBF6 mot scrimmen ≥ 9:1. */
+.seraClosing a:focus-visible,
+.seraClosing button:focus-visible {
+  outline: 2px solid var(--color-bg);
+  outline-offset: 3px;
+}
+
+/* PRESS — mallen hade :hover men aldrig :active. Kort, subtilt (80ms, scale .97). */
+.seraCard:active,
+.seraGallery > ul li:active,
+.seraRoot :global(.btn-accent):active,
+.seraPage :global(.btn-accent):active,
+.seraShop :global(.btn-accent):active,
+.seraCta:active,
+.seraNavBtn:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+.seraPriceRow:active,
+.seraListRow:active,
+.seraRow:active { background: var(--color-accent-soft); }
+.seraNavLinks a:active,
+.seraMore:active { color: var(--color-primary-d); }
+
+/* REDUCED MOTION — täcker mallens ALLA rörelser: kortens/galleriets 5px-lyft
+   (.seraCard, .seraGallery li), knapparnas färgövergång (.btn-accent/.seraCta/
+   .seraNavBtn), prisradernas padding-glid (.seraPriceRow/.seraListRow/.seraRow),
+   mer-länkens gap-glid (.seraMore), nav/footer-länkarnas färgtoning och press-scale. */
+@media (prefers-reduced-motion: reduce) {
+  .seraCard,
+  .seraGallery > ul li,
+  .seraPriceRow,
+  .seraListRow,
+  .seraRow,
+  .seraMore,
+  .seraNavLinks a,
+  .seraFootLink,
+  .seraContactLink,
+  .seraCta,
+  .seraNavBtn,
+  .seraRoot :global(.btn-accent),
+  .seraPage :global(.btn-accent),
+  .seraShop :global(.btn-accent) {
+    transition: none;
+    animation: none;
+  }
+  .seraCard:hover,
+  .seraCard:active,
+  .seraGallery > ul li:hover,
+  .seraGallery > ul li:active,
+  .seraCta:active,
+  .seraNavBtn:active,
+  .seraRoot :global(.btn-accent):active,
+  .seraPage :global(.btn-accent):active,
+  .seraShop :global(.btn-accent):active {
+    transform: none;
+  }
+  .seraMore:hover { gap: 0.5rem; }
 }

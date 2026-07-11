@@ -42,7 +42,15 @@
    #ffffff (det var en 9:e färg). Scrimmen är --color-primary-d (#121A2B) i alfa.
    ═══════════════════════════════════════════════════════════════════════ */
 
-.lnRoot {
+/* goal-60: vars deklarerades BARA på .lnRoot — men navet, sidfoten, undersidorna
+   och modulsidorna bor UTANFÖR .lnRoot i DOM:en (nav/footer monteras av
+   (public)/layout.tsx). Där var --ln-* ogiltiga → typskalan föll till browserns
+   default. Samma mönster som calytrix: rotklasserna delar var-blocket. */
+.lnRoot,
+.lnNav,
+.lnFoot,
+.lnPage,
+.lnModule {
   /* ── TYPSKALA — 6 nivåer. Varje granne står minst ×1.31 isär, i BÅDA ändarna av
      clamp:en (annars kollapsar trappan på mobil):
        max:  88 / 46 / 30 / 21 / 16 / 12  → ×1.91 ×1.53 ×1.43 ×1.31 ×1.33
@@ -103,6 +111,42 @@
      ljus text/fyllning på mörkt = --color-surface, så paletten stannar på 8 hex. */
   --ln-scrim-top: rgba(18, 26, 43, 0.75); /* ljus text ≥7:1 även mot ett HELVITT foto */
   --ln-scrim-bottom: rgba(18, 26, 43, 0.9);
+
+  /* ── FOKUS (goal-60) — Lunaria hade NOLL :focus-visible. Ringen måste bytas med
+     botten: nattblått på ljus botten, ljust på mörk. MÄTT (WCAG 2.x, krav ≥3:1 för
+     en UI-gräns):
+       primary #1E2A42 på bg #F1EEE6 ......... 12.37:1  (ljusa sektioner)
+       primary #1E2A42 på surface #FBFAF6 .... 13.72:1  (kort)
+       surface #FBFAF6 på primary #1E2A42 .... 13.72:1  (hero-scrim, closing, sidfot)
+       surface #FBFAF6 på primary-d #121A2B .. 16.64:1  (sidfotens platta)
+     En nattblå ring på den nattblå sidfoten hade varit 1:1 — osynlig. */
+  --ln-focus: var(--color-primary);
+
+  /* ── KÖPKNAPPEN (goal-60) — modulens AddToCart läser --sf-btn-*. Lunarias form =
+     samma kapsel som .lnCta: 50px, full pill, nattblå fyllning, versalt 12px-mikro.
+     KONTRAST: --color-surface #FBFAF6 på --color-primary #1E2A42 = 13.72:1 (≥4.5). */
+  --sf-btn-h: 50px;
+  --sf-btn-pad: 0 30px;
+  --sf-btn-radius: 999px;
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-ink: var(--color-surface); /* 13.72:1 */
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-bg-hover: var(--color-primary-d); /* ljus text = 16.64:1 */
+  --sf-btn-fs: 12px;
+  --sf-btn-weight: 600;
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: 0.083em;
+  --sf-btn-dur: 160ms;
+  --sf-btn-ease: ease;
+  --sf-focus: var(--ln-focus);
+}
+
+/* MÖRKA YTOR — ringen (och köpknappens fokusring) blir LJUS där botten är mörk. */
+.lnHero,
+.lnClosing,
+.lnFoot {
+  --ln-focus: var(--color-surface); /* 13.72:1 mot nattblått, 16.64:1 mot plattan */
+  --sf-focus: var(--color-surface);
 }
 
 /* ══ TYPROLLER — mallens egna (ersätter de globala .sf-*) ═══════════════════ */
@@ -749,6 +793,16 @@ a.lnMoodCard:hover {
   .lnNavWordmark.lnNavWordmark {
     grid-column: 1;
   }
+  /* goal-60 — BUGGEN: .lnNavRail.lnNavRail deklarerar `display: flex` (0,2,0) och
+     slog därmed shells mobil-döljning (.navLinks { display: none }, 0,1,0). Railen
+     överlevde alltså in i mobilen: en LODRÄT länkstapel i ett FIXED sidhuvud, rakt
+     ovanpå heron — samtidigt som burgern också ritades. Mallen måste dölja det den
+     själv har tagit över. Klustret hade ingen egen `display` och göms redan av
+     shell; det dubblas här ändå, så regeln inte kan tappas igen. */
+  .lnNavRail.lnNavRail,
+  .lnNavCluster.lnNavCluster {
+    display: none;
+  }
 }
 
 /* ══ FOOTER — NATTBLÅ PLATTA med stjärn-ornament ═══════════════════════════ */
@@ -1266,5 +1320,74 @@ a.lnPostCard:hover {
     max-width: 30rem;
     margin: calc(-1 * var(--ln-sp-block)) auto 0;
     padding: var(--ln-sp-cta);
+  }
+}
+
+/* ═══ goal-60 — FOKUS, PRESS, REDUCED MOTION ══════════════════════════════════
+   Lunaria hade NOLL :focus-visible: tangentbordet var blint i hela mallen. Ringen
+   läser --ln-focus, som byts på de mörka ytorna (hero/closing/sidfot) — se
+   var-blocket överst. Alla kvoter mätta där. */
+.lnNavRail.lnNavRail a:focus-visible,
+.lnNavWordmark.lnNavWordmark:focus-visible,
+.lnNavCluster.lnNavCluster a:focus-visible,
+.lnNavCluster.lnNavCluster button:focus-visible,
+.lnCta:focus-visible,
+.lnCard:focus-visible,
+a.lnMoodCard:focus-visible,
+a.lnPostCard:focus-visible,
+.lnShopCard:focus-visible,
+.lnPriceRow:focus-visible,
+.lnPlainLink:focus-visible,
+.lnFoot a:focus-visible,
+.lnPage a:focus-visible,
+.lnModule a:focus-visible,
+.lnRoot :global(.btn-accent):focus-visible,
+.lnPage :global(.btn-accent):focus-visible,
+.lnModule :global(.btn-accent):focus-visible {
+  outline: 2px solid var(--ln-focus);
+  outline-offset: 3px;
+}
+
+/* PRESS — subtilt, ~80ms. Mallen hade bara :hover. */
+.lnCard:active,
+a.lnMoodCard:active,
+a.lnPostCard:active,
+.lnShopCard:active,
+.lnCta:global(.btn-accent):active,
+.lnClosingCta:global(.btn-accent):active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+.lnNavRail.lnNavRail a:active { color: var(--color-primary); }
+
+/* REDUCED MOTION — täcker mallens ALLA rörelser: kortens 4px-lyft (.lnCard,
+   .lnMoodCard, .lnPostCard, .lnShopCard), knappens lyft (.lnCta/.lnClosingCta),
+   prisradens padding-glid (.lnPriceRow) och alla press-scale. */
+@media (prefers-reduced-motion: reduce) {
+  .lnCard,
+  .lnMoodCard,
+  .lnPostCard,
+  .lnShopCard,
+  .lnPriceRow,
+  .lnPlainLink,
+  .lnCta:global(.btn-accent),
+  .lnClosingCta:global(.btn-accent),
+  .lnRoot :global(.btn-accent),
+  .lnPage :global(.btn-accent),
+  .lnModule :global(.btn-accent) {
+    transition: none;
+    animation: none;
+  }
+  .lnCard:hover,
+  .lnCard:active,
+  a.lnMoodCard:hover,
+  a.lnMoodCard:active,
+  a.lnPostCard:hover,
+  a.lnPostCard:active,
+  .lnShopCard:active,
+  .lnCta:global(.btn-accent):hover,
+  .lnCta:global(.btn-accent):active,
+  .lnClosingCta:global(.btn-accent):active {
+    transform: none;
   }
 }

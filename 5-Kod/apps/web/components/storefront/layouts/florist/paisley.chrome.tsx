@@ -68,9 +68,13 @@ export function PaisleyNav({
         </div>
       </div>
 
-      {/* RAD 3 — innehållsbandet: ALLA modul-gatade länkar */}
+      {/* RAD 3 — innehållsbandet: MAX 6 länkar (goal-60). Med alla moduler live blir
+          listan 9, och nio spärrade versal-länkar fick inte plats i bandet — det bröt
+          till en andra rad och tidningens tryckta huvud blev en app-meny. NavShell får
+          fortfarande HELA `links` (mobil-overlayn) och kolofonens "Innehåll" listar
+          allt: ingenting blir oåtkomligt. */}
       <nav className={`${shell.navLinks} ${styles.paNavMenu}`} aria-label="Huvudmeny">
-        {links.map((l) => (
+        {links.slice(0, 6).map((l) => (
           <Link key={l.href} href={l.href} className={styles.paNavLink}>
             {l.label}
           </Link>

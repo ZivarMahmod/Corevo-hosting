@@ -27,6 +27,42 @@
      Hover: 5px lyft ELLER hårlinje→accent. Ingen scale, ingen skugg-bloom.
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* ═══ VARS (goal-60) ══════════════════════════════════════════════════════
+   Sage har ingen enda rot-wrapper: SageLayout returnerar ett fragment, undersidorna
+   bär .sgPage, modul-vyerna .sgSection, och nav/footer monteras HELT utanför
+   ((public)/layout.tsx). Vars deklareras därför på var och en av mallens rotytor —
+   annars faller köpknappen tillbaka på plattformens neutrala form just på butikens
+   egen sida (den enda plats den faktiskt syns). */
+.sgNav,
+.sgFoot,
+.sgPage,
+.sgSection,
+.sgSectionTight,
+.sgShopBuy {
+  /* FOKUSRING — galleristudions egen olivgröna accent på ljus botten; på mörk botten
+     (hero-scrimmen, den mörka closing-plattan) vitt, annars syns ringen inte alls. */
+  --sg-focus: var(--color-primary);
+  --sg-focus-on-dark: #fff;
+
+  /* KÖPKNAPPEN — modulens AddToCart läser --sf-btn-*. Mallen ger den sin EGEN form:
+     full pill (mallens enda runda gest), 12/600/VERSALER/1px, olivgrön.
+     Kontrast: #fff på --color-primary #4E4732 = 9.25:1 (krav ≥4.5 — AAA). */
+  --sf-btn-h: 50px;
+  --sf-btn-pad: 0 30px;
+  --sf-btn-radius: var(--radius-pill, 999px);
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-bg-hover: var(--color-primary-d);
+  --sf-btn-ink: #fff;
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-fs: 12px;
+  --sf-btn-weight: 600;
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: 1px;
+  --sf-btn-dur: 160ms;
+  --sf-btn-ease: ease;
+  --sf-focus: var(--sg-focus);
+}
+
 /* ═══ NAV — galleri-huvudet: [länkar] [WORDMARK] [kluster] ════════════════
    Dubblad klass (specificitet 2) slår nav-shell.module.css .navThemed utan att
    röra den delade filen. Shell-klasserna sitter kvar på elementen → transparent-
@@ -37,10 +73,13 @@
   gap: 24px;
   padding: 20px clamp(24px, 4vw, 40px);
 }
+/* nowrap är avsiktligt (goal-60): raden ska hellre knipa ihop sitt gap än bryta till
+   en andra våning. Kapningen till 6 länkar sker i chromet. */
 .sgNavLinks.sgNavLinks {
   grid-column: 1;
   justify-self: start;
-  gap: 32px;
+  flex-wrap: nowrap;
+  gap: clamp(16px, 1.8vw, 32px);
   font-family: var(--font-body);
   font-size: 12px;
   font-weight: 600;
@@ -1005,6 +1044,87 @@ a.sgPostInner:hover .sgPostTitle { color: var(--color-primary); }
   background-color: var(--color-accent-soft);
   border: 1px solid var(--color-line);
   border-radius: var(--sf-radius);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FOKUS + PRESS (goal-60) — golv: VARJE klickbar yta har en synlig ring.
+   Mallen hade bara en :focus-visible (pristabellens rad) och den bytte bara
+   hårlinje-färg — ingen ring alls. Ringen ritas i mallens egen accent; på hero-
+   scrimmen och den mörka closing-plattan i vitt, annars är den osynlig.
+   ═══════════════════════════════════════════════════════════════════════ */
+.sgNavLinks.sgNavLinks a:focus-visible,
+.sgCategoryCard:focus-visible,
+.sgCard:focus-visible,
+.sgBandCta:focus-visible,
+.sgTableRow:focus-visible,
+.sgFootLinks a:focus-visible,
+.sgFootMeta a:focus-visible,
+.sgColValue a:focus-visible,
+.sgShopLink:focus-visible,
+.sgPostInner:focus-visible,
+.sgGallery.sgGallery button:focus-visible,
+.sgPillCta:global(.btn-accent):focus-visible {
+  outline: 2px solid var(--sg-focus);
+  outline-offset: 3px;
+}
+/* Mörka ytor: heron (scrim) + closing-plattan (--color-primary). */
+.sgHeroBtnOutline:focus-visible,
+.sgHeroActions .sgPillCta:global(.btn-accent):focus-visible,
+.sgClosing .sgPillCta:global(.btn-accent):focus-visible {
+  outline: 2px solid var(--sg-focus-on-dark);
+  outline-offset: 3px;
+}
+
+/* Pressen: kort (80ms) och subtil — lyftet går tillbaka till 0, knappen krymper .97. */
+.sgPillCta:global(.btn-accent):active,
+.sgHeroBtnOutline:active,
+.sgBandCta:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+.sgCategoryCard:active .sgCategoryFrame,
+.sgCard:active,
+.sgShopFrame:active,
+.sgShopLink:active .sgShopFrame {
+  transform: translateY(0);
+  transition-duration: 80ms;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   REDUCED MOTION (goal-60) — mallens transforms: 5px-lyftet på kategori-ramen,
+   kort-griden och butikens passepartout-ram, samt pressens scale(.97) på knapparna
+   (pill-CTA, hero-outline, band-länken). Alla nollas; alla transitions/animationer
+   stängs av. (sgGallery img har redan `transform: none` vid hover — inget kvar där.)
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .sgCategoryFrame,
+  .sgCard,
+  .sgShopFrame,
+  .sgShopName,
+  .sgPostTitle,
+  .sgTableRow,
+  .sgTableName,
+  .sgPillCta:global(.btn-accent),
+  .sgHeroBtnOutline,
+  .sgBandCta,
+  .sgFootLinks a,
+  .sgFootMeta a,
+  .sgGallery.sgGallery img {
+    transition: none;
+    animation: none;
+  }
+  .sgCategoryCard:hover .sgCategoryFrame,
+  .sgCategoryCard:active .sgCategoryFrame,
+  .sgCard:hover,
+  .sgCard:active,
+  .sgShopFrame:hover,
+  .sgShopFrame:active,
+  .sgShopLink:active .sgShopFrame,
+  .sgPillCta:global(.btn-accent):active,
+  .sgHeroBtnOutline:active,
+  .sgBandCta:active {
+    transform: none;
+  }
 }
 
 @media (max-width: 760px) {

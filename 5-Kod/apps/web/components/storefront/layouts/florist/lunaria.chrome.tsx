@@ -40,9 +40,13 @@ export function LunariaNav(p: ThemeNavProps) {
         <Logo tenant={{ id: '', name: p.tenant.name, slug: '' }} branding={p.branding} />
       </Link>
 
-      {/* Menyn som KOLUMN — silverlinjen sitter på kolumnens vänsterkant. */}
+      {/* Menyn som KOLUMN — silverlinjen sitter på kolumnens vänsterkant.
+          goal-60: railen bär max 6 länkar. Med alla moduler live blir listan 9, och
+          nio rader gör railen högre än sidhuvudet — den lodräta formen är MEDVETEN,
+          höjden var det inte. NavShell får hela `links` (mobil-overlayn) och sidfoten
+          listar allt. */}
       <nav className={`${shell.navLinks} ${styles.lnNavRail}`} aria-label="Huvudmeny">
-        {p.links.map((l) => (
+        {p.links.slice(0, 6).map((l) => (
           <Link key={l.href} href={l.href}>
             {l.label}
           </Link>

@@ -73,6 +73,29 @@
 
   /* EN bildratio i hela paketet */
   --onx-ratio: 4 / 5;
+
+  /* ── FOKUSRING (goal-60). Onyx är MÖRK rakt igenom (bg #111110, surface #1B1A18)
+     — en mörk ring hade varit osynlig. Korallen är ljus nog: 6.67:1 mot bg,
+     6.14:1 mot surface (golv 3:1 för en UI-gräns). */
+  --onx-focus: var(--color-primary);
+
+  /* ── KÖPKNAPPEN (goal-60). AddToCart läser --sf-btn-*; mallen sätter dem här och
+     får sin egen knapp utan att röra köp-rälsen. Korall-pill med ink-text (samma
+     som hemmets .onxBtn): #111110 på #FF6A4A = 6.67:1. */
+  --sf-btn-h: 50px;
+  --sf-btn-pad: 0 30px;
+  --sf-btn-radius: var(--radius-pill);
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-bg-hover: var(--color-primary-d);
+  --sf-btn-ink: var(--color-bg);
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-fs: var(--onx-fs-micro);
+  --sf-btn-weight: 600;
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: 1px;
+  --sf-btn-dur: var(--onx-dur);
+  --sf-btn-ease: var(--onx-ease);
+  --sf-focus: var(--color-primary);
 }
 
 /* Nav-höjden (--nav-h, två våningar) deklareras i onyx.theme.ts navHeight och
@@ -139,7 +162,9 @@
 .onxNavLinks {
   grid-column: 2;
   display: flex;
-  flex-wrap: wrap;
+  /* goal-60: `wrap` VAR buggen — nio versala länkar bröt raden till två våningar.
+     Desktop-listan kapas till 6 i onyx.chrome.tsx; här får den aldrig radbryta. */
+  flex-wrap: nowrap;
   justify-content: center;
   gap: 1.5rem;
   font-family: var(--font-body);
@@ -159,6 +184,19 @@
 .onxNavLinks a:hover {
   color: var(--color-primary);
   border-color: var(--color-primary);
+}
+.onxNavLinks a:active { color: var(--color-primary-d); }
+/* Korg/konto: shell.navAccount är hashad i en annan modul (dess kant är --color-line,
+   nästan osynlig på svart, och den saknar fokusring). Mallens egen klass läggs
+   BREDVID — aldrig genom att ta bort deras. */
+.onxNavIcon.onxNavIcon {
+  border-color: var(--color-fg-2);
+  color: var(--color-fg);
+  background: transparent;
+}
+.onxNavIcon.onxNavIcon:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 .onxNavCluster {
   grid-column: 3;
@@ -273,8 +311,40 @@
 }
 .onxBtn.onxBtn:focus-visible,
 .onxBtnInk.onxBtnInk:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--onx-focus);
   outline-offset: 3px;
+}
+/* PRESS — 80ms, subtil. Hover byter fyllning; press trycker in. */
+.onxBtn.onxBtn:active,
+.onxBtnInk.onxBtnInk:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* ═══════════ FOKUS + PRESS PÅ ALLA KLICKBARA YTOR (goal-60) ═══════════
+   Ringen är korall (--onx-focus): på Onyx svarta/mörka ytor MÅSTE ringen vara ljus
+   — mätt 6.67:1 mot bg och 6.14:1 mot surface. En mörk ring på svart botten finns
+   inte för ögat. */
+.onxNavLinks a:focus-visible,
+.onxNavWordmark:focus-visible,
+.onxNavIcon:focus-visible,
+.onxMoreLink:focus-visible,
+.onxCard:focus-visible,
+.onxCardMedia:focus-visible,
+.onxCardTitleLink:focus-visible,
+.onxPostLink:focus-visible,
+.onxGiftLink:focus-visible,
+.onxFooterLink:focus-visible,
+.onxFooterSocial:focus-visible,
+.onxContactLink:focus-visible,
+.onxGallery li button:focus-visible {
+  outline: 2px solid var(--onx-focus);
+  outline-offset: 3px;
+}
+.onxCard:active,
+.onxShopCard:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
 }
 
 /* Läs-mer-länk — mikrotext, inte brödtext (en signal, ingen viskning) */
@@ -1089,4 +1159,37 @@
 }
 @media (max-width: 760px) {
   .onxFooterCols { grid-template-columns: 1fr; gap: var(--onx-band); }
+}
+
+/* ═══════════════════════ REDUCED MOTION (goal-60) ═══════════════════════
+   Täcker mallens ALLA rörelser: knapparnas färg-/press-övergång, kortens 5px-lyft
+   och press, prisradens padding-glid, nav- och footer-länkarnas kant-toning,
+   läs-mer-länkens gap-glid samt galleriets opacitets-övergång. Färg, kant och
+   fokusring är kvar — bara rörelsen försvinner. */
+@media (prefers-reduced-motion: reduce) {
+  .onxBtn.onxBtn,
+  .onxBtnInk.onxBtnInk,
+  .onxNavLinks a,
+  .onxNavIcon,
+  .onxMoreLink,
+  .onxCard,
+  .onxShopCard,
+  .onxCardTitleLink,
+  .onxPriceRow,
+  .onxFooterLink,
+  .onxFooterSocial,
+  .onxContactLink,
+  .onxGallery.onxGallery li img {
+    transition: none;
+  }
+  .onxBtn.onxBtn:active,
+  .onxBtnInk.onxBtnInk:active,
+  .onxCard:hover,
+  .onxCard:active,
+  .onxShopCard:hover,
+  .onxShopCard:active {
+    transform: none;
+  }
+  .onxPriceRow:hover { padding-left: 0; }
+  .onxMoreLink:hover { gap: 0.5rem; }
 }

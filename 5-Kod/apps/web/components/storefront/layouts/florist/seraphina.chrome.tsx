@@ -65,8 +65,11 @@ export function SeraphinaNav({
         </div>
       </div>
 
+      {/* goal-60: menyraden bär max 6 länkar. Med alla moduler live blir listan 9 och
+          guldbandet bröt till två rader. NavShell får HELA `links` (mobil-overlayn),
+          sidfoten listar allt. */}
       <nav className={styles.seraNavLinks} aria-label="Huvudmeny">
-        {links.map((l) => (
+        {links.slice(0, 6).map((l) => (
           <Link key={l.href} href={l.href}>
             {l.label}
           </Link>

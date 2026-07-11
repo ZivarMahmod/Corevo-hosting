@@ -34,11 +34,19 @@ export function EloriaNav({
   customerAccountsEnabled,
   utilityText,
 }: ThemeNavProps) {
-  // Menyn delas i två grupper kring det centrerade wordmarket. Udda antal → den
+  // goal-60: DESKTOP-navet bär max SEX länkar. Med alla moduler live blir `links` nio,
+  // och nio versala länkar + guldramat wordmark + korg + konto + CTA får inte plats på
+  // en rad — raden bröt till en andra våning (en riktig blomsterhandel har aldrig fler
+  // än sex topplänkar; resten bor i sidfoten). Kapningen sitter HÄR, inte i CSS:en:
+  // NavShell får fortfarande HELA `links` till mobil-overlayn, och .elFootNav listar
+  // allihop — ingen modul kan alltså försvinna ur menyn, den flyttar bara ned.
+  const topLinks = links.slice(0, 6)
+
+  // De sex delas i två grupper kring det centrerade wordmarket. Udda antal → den
   // extra länken hamnar till vänster (läsordningen börjar där).
-  const half = Math.ceil(links.length / 2)
-  const leftLinks = links.slice(0, half)
-  const rightLinks = links.slice(half)
+  const half = Math.ceil(topLinks.length / 2)
+  const leftLinks = topLinks.slice(0, half)
+  const rightLinks = topLinks.slice(half)
 
   return (
     <header className={`${shell.navThemed} ${styles.elNav}`}>

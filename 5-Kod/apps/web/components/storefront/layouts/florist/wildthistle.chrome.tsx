@@ -40,8 +40,11 @@ export function WildThistleNav({
         <Logo tenant={{ id: '', name: tenant.name, slug: '' }} branding={branding} />
       </Link>
 
+      {/* goal-60: desktopnavet bär max 6 länkar — 9 moduler-länkar + wordmark + korg
+          + konto + CTA fick inte plats på raden och bröt till två våningar. NavShell
+          får HELA `links` (mobil-overlayn); sidfoten listar allt. */}
       <nav className={styles.wtNavLinks} aria-label="Huvudmeny">
-        {links.map((l) => (
+        {links.slice(0, 6).map((l) => (
           <Link key={l.href} href={l.href}>
             {l.label}
           </Link>

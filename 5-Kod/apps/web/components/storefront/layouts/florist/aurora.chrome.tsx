@@ -33,8 +33,12 @@ export function AuroraNav(p: ThemeNavProps) {
         <Logo tenant={p.tenant} branding={p.branding} />
       </Link>
 
+      {/* Desktop-navet bär MAX 6 länkar (goal-60). Med alla moduler live blir listan 9,
+          och nio piller + script-wordmark + korg + konto + CTA-cirkel får inte plats på
+          en rad — de spillde till en andra våning. NavShell får fortfarande HELA `links`
+          (mobil-overlayn), och sidfoten listar allt: inget blir oåtkomligt. */}
       <nav className={`${shell.navLinks} ${styles.auNavLinks}`} aria-label="Huvudmeny">
-        {p.links.map((l) => (
+        {p.links.slice(0, 6).map((l) => (
           <Link key={l.href} href={l.href}>
             {l.label}
           </Link>

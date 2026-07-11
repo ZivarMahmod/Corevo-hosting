@@ -44,9 +44,15 @@ export function VioraNav({
         </Link>
 
         <div className={styles.vioNavCluster}>
-          {cartEnabled ? <CartNavButton className={shell.navAccount} /> : null}
+          {cartEnabled ? (
+            <CartNavButton className={`${shell.navAccount} ${styles.vioNavIcon}`} />
+          ) : null}
           {customerAccountsEnabled ? (
-            <Link href="/login" className={shell.navAccount} aria-label="Logga in">
+            <Link
+              href="/login"
+              className={`${shell.navAccount} ${styles.vioNavIcon}`}
+              aria-label="Logga in"
+            >
               <StorefrontIcon name="user" size={18} />
             </Link>
           ) : null}
@@ -60,9 +66,12 @@ export function VioraNav({
         </div>
       </div>
 
-      {/* MENYN SOM EGEN RAD — vänsterställd, hårlinje över. */}
+      {/* MENYN SOM EGEN RAD — vänsterställd, hårlinje över. MAX 6 länkar på desktop
+          (goal-60): med alla moduler live blir listan 9 och raden bröt till två
+          våningar. NavShell får fortfarande HELA `links` (mobil-overlayn) och
+          sidfoten listar allt — inget blir oåtkomligt. */}
       <nav className={styles.vioNavLinks} aria-label="Huvudmeny">
-        {links.map((l) => (
+        {links.slice(0, 6).map((l) => (
           <Link key={l.href} href={l.href}>
             {l.label}
           </Link>

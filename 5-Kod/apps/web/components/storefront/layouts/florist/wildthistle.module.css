@@ -47,7 +47,11 @@
 .wtRoot,
 .wtNav,
 .wtFooter,
-.wtPage {
+.wtPage,
+/* goal-60: modulvyerna (butik/blogg) renderar .wtCardSection som ROT på sin egen
+   sida (/shop, /blogg) — utanför .wtRoot/.wtPage. Utan vars här faller butikens
+   typskala OCH köpknappens --sf-btn-* tillbaka på plattformens neutrala form. */
+.wtCardSection {
   /* ── FÄRG — mallens egna dekorfärger (enda hårdkodade värdena i filen) ── */
   --wt-moss: #4a5732; /* accent. Vit text på moss = 7.78:1 (var 5.79:1) */
   --wt-paper: #ffffff; /* knappyta + rubrik på mörka fält */
@@ -84,6 +88,26 @@
   --wt-dur: 500ms;
   --wt-dur-fast: 300ms;
   --wt-lift: -5px;
+
+  /* ── KÖPKNAPPEN (goal-60) — modulens AddToCart läser --sf-btn-*. WildThistle är
+     rustik: RADIE 0 (rakt avskuret — knappen får ALDRIG bli en pill), mossgrön
+     fyllning, gemener som i navet, hård växling utan lyft.
+     KONTRAST (mätt): --wt-paper #ffffff på --wt-moss #4a5732 = 7.78:1 (krav ≥4.5).
+     Hover går till --color-fg #201a16 (papper på ink = 15.99:1). */
+  --sf-btn-h: 52px;
+  --sf-btn-pad: 16px 28px;
+  --sf-btn-radius: 0; /* mallens signatur: inget rundat, någonstans */
+  --sf-btn-bg: var(--wt-moss);
+  --sf-btn-ink: var(--wt-paper); /* 7.78:1 */
+  --sf-btn-border: var(--wt-moss);
+  --sf-btn-bg-hover: var(--color-fg); /* 15.99:1 */
+  --sf-btn-fs: var(--wt-fs-body);
+  --sf-btn-weight: 600;
+  --sf-btn-transform: none; /* gemener — versaler vore "elegant", inte rått */
+  --sf-btn-ls: 0;
+  --sf-btn-dur: var(--wt-dur-fast);
+  --sf-btn-ease: ease;
+  --sf-focus: var(--color-primary); /* tistel-lila #4b2e52 = 9.66:1 mot råpappret */
 
   background-color: var(--color-bg);
   /* Råpapper-korn: en ultratunn diagonal fiber-textur, ren dekor. */
@@ -352,7 +376,14 @@
 }
 
 /* ── 3 & 7. UR BUTIKEN / BLOGG — delad rå kort-grid, rakt avskurna bilder (radius 0) ── */
-.wtCardSection { padding: var(--wt-sec) 0; }
+/* .wtCardSection ÄRVER var-blocket ovan (den är modulvyernas rot på /shop och
+   /blogg). Bakgrunden ur det blocket nollas här: råpapper-kornet hör till SIDANS
+   rot — målas det även på varje sektion läggs fibern dubbelt. */
+.wtCardSection {
+  padding: var(--wt-sec) 0;
+  background-color: transparent;
+  background-image: none;
+}
 .wtSecHead {
   display: flex;
   align-items: flex-end;
@@ -707,6 +738,7 @@
   grid-column: 2;
   justify-self: end;
   display: flex;
+  flex-wrap: nowrap; /* goal-60: raden är EN rad — bryts den är den inte en rad */
   align-items: baseline;
   gap: var(--wt-s3);
   font-family: var(--font-body);
@@ -717,6 +749,7 @@
 .wtNavLinks a {
   color: var(--color-fg);
   text-decoration: none;
+  white-space: nowrap;
   padding-bottom: 2px;
   border-bottom: 2px solid transparent;
   transition: border-color var(--wt-dur-fast) ease, color var(--wt-dur-fast) ease;
@@ -1305,4 +1338,83 @@
   .wtLogRow { gap: var(--wt-s2); }
   .wtLogBody { grid-template-columns: 1fr; }
   .wtLogThumb { width: 100%; }
+}
+
+/* ═══ goal-60 — FOKUS, PRESS, REDUCED MOTION ══════════════════════════════════
+   FOKUS: ringen fanns bara på .wtCard/.wtPriceRow/.wtLinkCta/.wtBandCta — navet,
+   sidfoten, knapparna och loggkorten var blinda för tangentbordet. Tistel-lila
+   #4b2e52 mot råpappret #f1ead9 = 9.66:1 (krav ≥3:1 för en UI-gräns). */
+.wtNavLinks a:focus-visible,
+.wtNavWordmark:focus-visible,
+.wtNavCluster a:focus-visible,
+.wtNavCluster button:focus-visible,
+.wtInkCta:focus-visible,
+.wtSquareCta:focus-visible,
+.wtLogLink:focus-visible,
+.wtFooterLink:focus-visible,
+.wtFooterNav a:focus-visible,
+.wtFooterSocial:focus-visible,
+.wtRoot :global(.btn-accent):focus-visible,
+.wtPage :global(.btn-accent):focus-visible,
+.wtCardSection :global(.btn-accent):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+/* På den mörka tistel-scrimmen (closing) blir ringen papper — lila på lila syns inte.
+   #ffffff mot scrimmen (rgba(46,26,52,.92) över foto) ≥ 12:1. */
+.wtClosing a:focus-visible,
+.wtClosing button:focus-visible {
+  outline: 2px solid var(--wt-paper);
+  outline-offset: 3px;
+}
+
+/* PRESS — mallen hade bara :hover. Kort (80ms), subtilt (scale .97). */
+.wtCard:active,
+.wtLogLink:active,
+.wtInkCta:active,
+.wtSquareCta:active,
+.wtBandCta:active,
+.wtRoot :global(.btn-accent):active,
+.wtPage :global(.btn-accent):active,
+.wtCardSection :global(.btn-accent):active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+.wtNavLinks a:active,
+.wtLinkCta:active { color: var(--color-primary); }
+
+/* REDUCED MOTION — täcker mallens ALLA rörelser: kortens och loggkortens 5px-lyft
+   (.wtCard, .wtLogLink), knapparnas hårda färgväxling (.wtInkCta/.wtSquareCta/
+   .wtBandCta/.btn-accent), nav- och footer-länkarnas färg/kant-toning, prisradens
+   hover-färg och alla press-scale. (Undantag: .wtPriceDots translateY(-4px) är
+   STATISK optisk justering av punktlinjen — ingen rörelse, rörs inte.) */
+@media (prefers-reduced-motion: reduce) {
+  .wtCard,
+  .wtLogLink,
+  .wtPriceRow,
+  .wtPriceName,
+  .wtNavLinks a,
+  .wtFooterLink,
+  .wtLinkCta,
+  .wtBandCta,
+  .wtInkCta,
+  .wtSquareCta,
+  .wtRoot :global(.btn-accent),
+  .wtPage :global(.btn-accent),
+  .wtCardSection :global(.btn-accent) {
+    transition: none;
+    animation: none;
+  }
+  .wtCard:hover,
+  .wtCard:active,
+  .wtLogLink:hover,
+  .wtLogLink:active,
+  .wtInkCta:active,
+  .wtSquareCta:active,
+  .wtBandCta:active,
+  .wtRoot :global(.btn-accent):active,
+  .wtPage :global(.btn-accent):active,
+  .wtCardSection :global(.btn-accent):active {
+    transform: none;
+  }
 }

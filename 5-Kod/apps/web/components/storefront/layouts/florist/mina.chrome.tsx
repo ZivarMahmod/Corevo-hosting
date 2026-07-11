@@ -36,8 +36,11 @@ export function MinaNav(p: ThemeNavProps) {
         <Logo tenant={{ id: '', name: p.tenant.name, slug: '' }} branding={p.branding} />
       </Link>
 
+      {/* goal-60: DESKTOP-navet bär max 6 länkar. Med alla moduler live blir listan 9,
+          och 9 versaler + wordmark + korg + konto + pill-CTA får inte plats på en rad.
+          NavShell får fortfarande HELA `links` (mobil-overlayn) och sidfoten listar allt. */}
       <nav className={`${shell.navLinks} ${styles.miNavLinks}`} aria-label="Huvudmeny">
-        {p.links.map((l) => (
+        {p.links.slice(0, 6).map((l) => (
           <Link key={l.href} href={l.href}>
             {l.label}
           </Link>

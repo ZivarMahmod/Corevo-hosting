@@ -15,7 +15,13 @@
    · Rytm ur EN skala: 12 / 20 / 32 / 48 / 96 px.
    Alla klasser prefixas au* och används BARA av den här mallen. */
 
-.auRoot {
+/* Vars delas av HELA tema-paketet: hemmet/undersidorna/modul-vyerna (.auRoot), navet
+   (.auNav) och sidfoten (.auFoot). De två sista bor UTANFÖR .auRoot i DOM:en (nav/footer
+   monteras av (public)/layout.tsx) — deklareras vars bara på .auRoot faller de tillbaka
+   på plattformens neutrala värden där. */
+.auRoot,
+.auNav,
+.auFoot {
   --au-on-dark: #ffffff;
   --au-ink-rgb: 42, 31, 24; /* = --color-fg #2A1F18 → scrim utan en nionde färg */
   --au-scrim: linear-gradient(
@@ -58,6 +64,31 @@
 
   --au-dur: 400ms;
   --au-lift: -5px;
+
+  /* ── FOKUSRING (goal-60). Aurora hade NOLL fokusringar — en tangentbords-användare
+     såg aldrig var hen stod. Ringen är mallens egen korall på ljus botten; på de mörka
+     korall-banden (auStatement/auClosing/auShopClosed) och över hero-scrimmen byts den
+     mot vitt, annars försvinner korall-mot-korall. */
+  --au-focus: var(--color-primary-d);
+  --au-focus-on-dark: var(--au-on-dark);
+
+  /* ── KÖPKNAPPEN (goal-60). Modulens AddToCart läser --sf-btn-*; Aurora sätter dem här
+     och får BOUTIQUENS knapp — full pill, korall, 12/600/VERSALER/1px — utan att röra
+     köp-rälsen. Kontrast: #fff på --color-primary #C8412A = 4.95:1 (krav ≥4.5). */
+  --sf-btn-h: 46px;
+  --sf-btn-pad: 0 28px;
+  --sf-btn-radius: 999px;
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-bg-hover: var(--color-primary-d);
+  --sf-btn-ink: var(--au-on-dark);
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-fs: var(--au-fs-micro);
+  --sf-btn-weight: var(--au-fw-micro);
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: var(--au-ls-micro);
+  --sf-btn-dur: 160ms;
+  --sf-btn-ease: ease;
+  --sf-focus: var(--au-focus);
 }
 
 /* ── Typroller ────────────────────────────────────────────────────────────── */
@@ -1031,13 +1062,11 @@
   font-weight: var(--au-fw-micro);
   color: var(--color-primary-d);
 }
-/* Köp-rälsen: modulens egen kontroll, klädd i mallens pill-radie */
+/* Köp-rälsen: modulens egen kontroll, klädd i mallens pill-radie. Formen kommer numera
+   ur --sf-btn-* (deklarerade högst upp) — de gamla `!important`-överskrivningarna av
+   modulens knappar är borta: de kunde bara nå radien och stängde i praktiken dörren för
+   knappens sex lägen (:hover/:active/:focus-visible/disabled). */
 .auShopBuy { margin-top: auto; padding-top: var(--au-sp-eyebrow); }
-.auShopBuy button,
-.auShopBuy select,
-.auShopBuy div[role='status'] { border-radius: 999px !important; }
-.auShopBuy button[aria-label^='Minska'],
-.auShopBuy button[aria-label^='Öka'] { border-radius: 50% !important; }
 
 /* Blogg — mjuka VALV-kort (999px-topp = mallens signaturbåge) */
 .auPostCard {
@@ -1087,6 +1116,120 @@
 
 .auModuleMore { margin: var(--au-sp-block) 0 0; text-align: center; }
 .auModuleMore .auBandCta { margin-top: 0; }
+
+/* ═══════════ FOKUS + PRESS (goal-60) ══════════════════════════════════════
+   Golv: VARJE klickbar yta har en synlig ring. Mallen hade noll — ringen ritas i
+   Auroras egen korall (--au-focus = --color-primary-d), och på MÖRK botten i vitt,
+   annars är den osynlig. Pressen (:active) är kort (80ms) och liten (scale .97 /
+   lyftet tillbaka till 0): en knapp som bara svarar på hover känns död under fingret. */
+.auNavLinks.auNavLinks a:focus-visible,
+.auCard:focus-visible,
+.auPriceRow:focus-visible,
+.auSvcCard:focus-visible,
+.auShopCard:focus-visible,
+.auPostCard:focus-visible,
+.auPostInner:focus-visible,
+.auShopCardMedia:focus-visible,
+.auShopCardLink:focus-visible,
+.auBandCta:focus-visible,
+.auSvcGo:focus-visible,
+.auFootLinks a:focus-visible,
+.auFootLink:focus-visible,
+.auFootSocial:focus-visible,
+.auGiftBand .auBandCta:focus-visible,
+:global(.btn-accent).auBtn:focus-visible,
+:global(.btn-accent).auNavCircle:focus-visible,
+.auNavCircle:focus-visible {
+  outline: 2px solid var(--au-focus);
+  outline-offset: 3px;
+}
+/* Mörka ytor: heron (scrim), korall-banden och closing → ljus ring. */
+.auShopCircle:focus-visible,
+.auStatement .auBandCta:focus-visible,
+:global(.btn-accent).auStatementCta:focus-visible,
+.auClosing :global(.btn-accent):focus-visible {
+  outline: 2px solid var(--au-focus-on-dark);
+  outline-offset: 3px;
+}
+
+:global(.btn-accent).auBtn:active,
+:global(.btn-accent).auStatementCta:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+:global(.btn-accent).auNavCircle:active,
+.auNavCircle:active,
+.auShopCircle:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+.auCard:active,
+.auPriceRow:active,
+.auSvcCard:active,
+.auShopCard:active,
+.auPostCard:active {
+  transform: translateY(0);
+  transition-duration: 80ms;
+}
+.auBandCta:active,
+.auSvcGo:active,
+.auFootLinks a:active,
+.auFootSocial:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* ═══════════ REDUCED MOTION (goal-60) ═════════════════════════════════════
+   Mallen lyfter (translateY(--au-lift)) och trycker (scale .97) på: nav-cirkeln,
+   hero-cirkeln, hem-kortet, prisraden, tjänstekortet, butikskortet, bloggkortet,
+   knapparna och sidfotens piller. Alla nollas här — ingen transform blir kvar. */
+@media (prefers-reduced-motion: reduce) {
+  :global(.btn-accent).auBtn,
+  :global(.btn-accent).auStatementCta,
+  :global(.btn-accent).auNavCircle,
+  .auNavCircle,
+  .auNavLinks.auNavLinks a,
+  .auShopCircle,
+  .auCard,
+  .auPriceRow,
+  .auSvcCard,
+  .auShopCard,
+  .auShopCardCircle,
+  .auPostCard,
+  .auFootLinks a,
+  .auFootSocial,
+  .auBandCta,
+  .auSvcGo {
+    transition: none;
+    animation: none;
+  }
+  :global(.btn-accent).auBtn:hover,
+  :global(.btn-accent).auBtn:active,
+  :global(.btn-accent).auStatementCta:hover,
+  :global(.btn-accent).auStatementCta:active,
+  :global(.btn-accent).auNavCircle:hover,
+  :global(.btn-accent).auNavCircle:active,
+  .auNavCircle:hover,
+  .auNavCircle:active,
+  .auShopCircle:hover,
+  .auShopCircle:active,
+  .auCard:hover,
+  .auCard:active,
+  .auPriceRow:hover,
+  .auPriceRow:active,
+  .auSvcCard:hover,
+  .auSvcCard:active,
+  .auShopCard:hover,
+  .auShopCard:active,
+  .auPostCard:hover,
+  .auPostCard:active,
+  .auBandCta:active,
+  .auSvcGo:active,
+  .auFootLinks a:active,
+  .auFootSocial:active {
+    transform: none;
+  }
+}
 
 /* ═══════════ MOBIL ════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {

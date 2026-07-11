@@ -72,6 +72,31 @@
     color-mix(in srgb, var(--color-primary-d) 88%, transparent) 0%,
     color-mix(in srgb, var(--color-fg) 94%, transparent) 100%
   );
+
+  /* ── FOKUSRING (goal-60) — tidningens egen tegelröda linjal. På de MÖRKA ytorna
+     (leveransbandet, kolofonen, hero-/closing-scrimmen, modul-bandet) byts den mot
+     benvitt (--pa-ink): tegelrött på tegelbrunt är ingen ring alls. */
+  --pa-focus: var(--color-primary);
+  --pa-focus-on-dark: var(--pa-ink);
+
+  /* ── KÖPKNAPPEN (goal-60) — modulens AddToCart läser --sf-btn-*. Paisley sätter dem
+     här och får TIDNINGENS knapp: fyrkantig (radie 0), mikroversal, tegelröd — samma
+     språk som .paSquareCta. Kontrast: --pa-ink (#fffcf5) på --color-primary (#a43f2a)
+     = 6.17:1 (krav ≥4.5). #fff hade varit en 9:e hex utan att läsa bättre. */
+  --sf-btn-h: 50px;
+  --sf-btn-pad: 0 var(--pa-sp-cta);
+  --sf-btn-radius: var(--sf-radius); /* = 0 */
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-bg-hover: var(--color-primary-d);
+  --sf-btn-ink: var(--pa-ink);
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-fs: var(--pa-fs-ui);
+  --sf-btn-weight: var(--pa-fw-micro);
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: var(--pa-ls-ui);
+  --sf-btn-dur: 160ms;
+  --sf-btn-ease: var(--pa-ease);
+  --sf-focus: var(--pa-focus);
 }
 
 .paRoot,
@@ -243,11 +268,14 @@
 }
 
 /* RAD 3 — innehållsbandet */
+/* nowrap (goal-60): wrap VAR buggen — den lät innehållsbandet spilla till en andra rad
+   i stället för att hålla en rad. Kapningen till 6 länkar sker i chromet; bandet får
+   hellre knipa ihop sitt gap. */
 .paNavMenu.paNavMenu {
   display: flex;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: var(--pa-sp-cta);
+  flex-wrap: nowrap;
+  gap: clamp(var(--pa-sp-text), 2.4vw, var(--pa-sp-cta));
   padding: 8px 0;
   border-top: 1px solid var(--color-line);
   border-bottom: 2px solid var(--color-fg);
@@ -260,6 +288,7 @@
   text-transform: uppercase;
   color: var(--color-fg);
   opacity: 1;
+  white-space: nowrap;
   text-decoration: none;
   transition: color var(--pa-dur) var(--pa-ease);
 }
@@ -1181,37 +1210,17 @@
   color: var(--color-fg-2);
 }
 
-/* KÖP-RÄLSEN — AddToCart är plattformens (inline-stilar). Vi ger den mallens form:
-   fyrkantig, mikroversal, tegelröd; funktionen rör vi aldrig. */
+/* KÖP-RÄLSEN — AddToCart är modulens; formen är mallens och kommer numera ur
+   --sf-btn-* (deklarerade i vars-blocket högst upp). De gamla `!important`-hackens
+   `button:last-of-type` träffade dessutom FEL knapp så fort stepparen ritades — och
+   inline-överskrivningar kan aldrig bära knappens sex lägen. Här ger vi den bara sitt
+   rum och sitt typsnitt. */
 .paBuy {
   margin-top: var(--pa-sp-cta);
   padding-top: var(--pa-sp-text);
   border-top: 2px solid var(--color-fg);
   max-width: 20rem;
-}
-.paBuy button {
-  border-radius: var(--sf-radius) !important;
-  font-family: var(--font-body) !important;
-  font-size: var(--pa-fs-ui) !important;
-  font-weight: var(--pa-fw-micro) !important;
-  letter-spacing: var(--pa-ls-ui) !important;
-  text-transform: uppercase;
-  transition: transform var(--pa-dur) var(--pa-ease) !important;
-}
-.paBuy button:last-of-type:not(:disabled) {
-  background: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
-  color: var(--pa-ink) !important;
-}
-.paBuy button:last-of-type:not(:disabled):hover {
-  background: var(--color-primary-d) !important;
-  border-color: var(--color-primary-d) !important;
-  transform: translateY(var(--pa-lift));
-}
-.paBuy select {
-  border-radius: var(--sf-radius) !important;
-  font-family: var(--font-body) !important;
-  border-color: var(--color-line) !important;
+  --font-ui: var(--font-body);
 }
 
 /* ── Bloggens artikellista ──────────────────────────────────────────────────── */
@@ -1294,6 +1303,85 @@ a.paArtTitle:hover {
   background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
   outline: 1px solid var(--color-line);
+}
+
+/* ══════════════════════ FOKUS + PRESS (goal-60) ══════════════════════════════
+   Golv: VARJE klickbar yta bär en synlig ring. Mallen hade bara pris-radens
+   :focus-visible, och den bytte bara bakgrund — inte samma sak som en ring.
+   Ringen är tidningens tegelröda linjal; på de mörka ytorna benvit (--pa-ink). */
+.paNavLink:focus-visible,
+.paTextCta:focus-visible,
+.paPlateCard:focus-visible,
+.paPriceRow:focus-visible,
+.paSpreadPlate:focus-visible,
+.paSpreadTitleLink:focus-visible,
+.paArtTitle:focus-visible,
+.paArtRead:focus-visible,
+.paArtInner:focus-visible,
+.paColLink:focus-visible,
+.paSpreadNote a:focus-visible,
+.paEmpty a:focus-visible,
+.paSquareCta:global(.btn-accent):focus-visible {
+  outline: 2px solid var(--pa-focus);
+  outline-offset: 3px;
+}
+/* Mörkt: kolofonen, leveransbandet, hero- och closing-scrimmen. */
+.paFootLink:focus-visible,
+.paDelivery .paSquareCta:global(.btn-accent):focus-visible,
+.paHeroActions .paSquareCta:global(.btn-accent):focus-visible,
+.paClosingActions .paSquareCta:global(.btn-accent):focus-visible {
+  outline: 2px solid var(--pa-focus-on-dark);
+  outline-offset: 3px;
+}
+
+/* Pressen: kort (80ms), subtil — lyftet tillbaka till 0 / scale .97. */
+.paSquareCta:global(.btn-accent):active,
+.paTextCta:active,
+.paPlateCard:active,
+.paSpreadPlate:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+.paArtRead:active,
+.paColLink:active,
+.paFootLink:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* ══════════════════════ REDUCED MOTION (goal-60) ═════════════════════════════
+   Mallens transforms: 4px-lyftet (--pa-lift) på .paSquareCta, .paTextCta,
+   .paPlateCard och .paSpreadPlate, samt pressens scale(.97) på desamma + de tryckta
+   textlänkarna. Alla nollas. (Klustrets translateY(-50%) i mastheaden är LAYOUT,
+   inte rörelse — den lämnas orörd, annars ramlar korgen ur sin rad.) */
+@media (prefers-reduced-motion: reduce) {
+  .paSquareCta:global(.btn-accent),
+  .paTextCta,
+  .paPlateCard,
+  .paSpreadPlate,
+  .paPriceRow,
+  .paNavLink,
+  .paFootLink,
+  .paArtTitle,
+  .paArtRead,
+  .paColLink,
+  .paSpreadTitleLink {
+    transition: none;
+    animation: none;
+  }
+  .paSquareCta:global(.btn-accent):hover,
+  .paSquareCta:global(.btn-accent):active,
+  .paTextCta:hover,
+  .paTextCta:active,
+  .paPlateCard:hover,
+  .paPlateCard:active,
+  .paSpreadPlate:hover,
+  .paSpreadPlate:active,
+  .paArtRead:active,
+  .paColLink:active,
+  .paFootLink:active {
+    transform: none;
+  }
 }
 
 /* ═══════════════════════════ RESPONSIVT ══════════════════════════════════════ */

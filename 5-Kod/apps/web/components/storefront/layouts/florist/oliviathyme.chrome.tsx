@@ -49,10 +49,16 @@ export function OliviaThymeNav({
         </Link>
       </div>
 
-      {/* 3 — MENYN I EN RAD UNDER, kluster till höger */}
+      {/* 3 — MENYN I EN RAD UNDER, kluster till höger.
+          goal-60: max SEX länkar på skyltens menyrad. Med alla moduler live blir
+          `links` nio, och nio versala länkar + korg + konto + CTA fick inte plats —
+          raden bröt till en andra våning (`flex-wrap: wrap` lät den spilla). En
+          kvartersbutik har aldrig fler än sex topplänkar; resten bor i sidfoten,
+          som listar allihop. NavShell får fortfarande HELA `links` till mobil-
+          overlayn, så ingen modul kan försvinna ur menyn — den flyttar bara ned. */}
       <div className={styles.otNavBar}>
         <nav className={styles.otNavLinks} aria-label="Huvudmeny">
-          {links.map((l) => (
+          {links.slice(0, 6).map((l) => (
             <Link key={l.href} href={l.href}>
               {l.label}
             </Link>

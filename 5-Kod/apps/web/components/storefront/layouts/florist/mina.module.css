@@ -548,7 +548,38 @@
    Dubblad klass (0,2,0) slår nav-shell.module.css utan att röra den delade filen —
    shell-klasserna sitter kvar på elementen → burger/overlay/korg fungerar som förr.
    ═══════════════════════════════════════════════════════════════════════════════ */
+/* goal-60 — MINAS NAV-KOLLAPS (Zivars foto: länkarna staplade LODRÄTT ovanpå
+   heron istället för att sitta i en rad i sidhuvudet). TVÅ fel, båda här:
+
+   1. NAVET ÄGDE INGEN EGEN LAYOUT. .miNav satte `grid-template-columns` men aldrig
+      `display: grid`, och .miNavLinks satte `grid-column`/`gap` men aldrig
+      `display: flex`. HELA radformen lånades från nav-shell.module.css (.navThemed
+      display:grid, .navLinks display:flex) — mallens egna, DUBBLADE klasser
+      (0,2,0) skrev bara ovanpå. Tappas den delade regeln (eller vinner en annan
+      display på elementet) faller listan tillbaka till browserns default och
+      länkarna staplas. Ett fixed sidhuvud som växer på höjden lägger sig ovanpå
+      innehållet → stapeln hamnade ÖVER heron. Navet deklarerar nu sin egen form:
+      display: grid + flex-rad med nowrap. Den kan inte kollapsa igen.
+   2. VARS SAKNADES. --mi-* deklarerades bara på .miRoot/.miPage/.miModule — navet
+      och sidfoten ligger UTANFÖR alla tre (de monteras av (public)/layout.tsx). Så
+      `font-size: var(--mi-fs-micro)` var ogiltig → länkarna ärvde 16px istället för
+      mallens 12px-mikro, och 9 sådana länkar spränger raden. Vars deklareras nu på
+      .miNav/.miFoot också (samma mönster som calytrix).
+   Dessutom kapas desktopnavet till 6 länkar (mina.chrome.tsx). Höjden behöver ingen
+   navHeight i temat: navet är ~74px + plattformens utility-remsa och ryms under
+   default --nav-h (116px) — och NavShell mäter dessutom den faktiska höjden efter
+   mount. Det var kollapsen som gjorde navet högt, inte geometrin. */
 .miNav.miNav {
+  /* Var-blocket (navet bor utanför .miRoot) */
+  --mi-fs-micro: 12px;
+  --mi-fw-micro: 600;
+  --mi-ls-micro: 0.083em;
+  --mi-lh-micro: 1.5;
+  --mi-r-pill: 999px;
+  --mi-dur: 400ms;
+  --mi-ease: ease;
+
+  display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 24px;
@@ -569,6 +600,11 @@
 .miNavLinks.miNavLinks {
   grid-column: 2;
   justify-self: end;
+  /* EGEN radform — lånas inte längre av shell (se kommentaren vid .miNav). */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 28px;
   font-family: var(--font-body);
   font-size: var(--mi-fs-micro);
@@ -576,7 +612,7 @@
   letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
 }
-.miNavLinks.miNavLinks a { color: var(--color-fg); }
+.miNavLinks.miNavLinks a { color: var(--color-fg); white-space: nowrap; }
 /* Minimalismen: de tre första ingångarna bär full vikt, resten backar till en
    tunnare grad. ALLA modul-länkar renderas — de tappas aldrig. */
 .miNavLinks.miNavLinks a:nth-child(n + 4) {
@@ -584,7 +620,14 @@
   color: var(--color-fg-2);
 }
 .miNavLinks.miNavLinks a:hover { color: var(--color-primary); }
-.miNavCluster.miNavCluster { grid-column: 3; justify-self: end; gap: 12px; }
+.miNavLinks.miNavLinks a:active { color: var(--color-primary-d, var(--color-primary)); }
+.miNavCluster.miNavCluster {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 /* Nav-CTA: fylld rosa pill, mikro-registret (btn-accent-basen sätts i .miRoot-
    blocket ovan; naven ligger UTANFÖR .miRoot → egna värden här). */
 .miNavCta {
@@ -599,15 +642,49 @@
   box-shadow: none;
 }
 .miNavCta:hover { box-shadow: none; transform: none; }
+.miNavCta:active { transform: scale(0.97); transition-duration: 80ms; }
+
+/* FOKUS — varje klickbar yta i navet. Rosa ring (7.63:1 mot vit navremsa). */
+.miNavLinks.miNavLinks a:focus-visible,
+.miNavMark.miNavMark:focus-visible,
+.miNavCluster.miNavCluster a:focus-visible,
+.miNavCluster.miNavCluster button:focus-visible,
+.miNavCta:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
 @media (max-width: 720px) {
   .miNav.miNav { grid-template-columns: 1fr; }
+  /* MÅSTE ligga här: mallens .miNavLinks/.miNavCluster deklarerar numera `display`
+     med 0,2,0 → shells mobil-döljning (.navLinks{display:none}, 0,1,0) förlorar.
+     Utan de här två raderna hade desktop-navet läckt in i mobilen (= exakt den
+     lodräta stapeln över heron igen). Burger + overlay äger mobilen. */
+  .miNavLinks.miNavLinks,
+  .miNavCluster.miNavCluster { display: none; }
 }
 
 /* ═══ FOOTER — EN ROSA RAD (inte tre kolumner, inte en mörk platta) ════════════ */
+/* goal-60: sidfoten bor också UTANFÖR .miRoot → egna vars (samma orsak som navet). */
 .miFoot {
+  --mi-fs-micro: 12px;
+  --mi-fs-body: 16px;
+  --mi-fw-micro: 600;
+  --mi-ls-micro: 0.083em;
+  --mi-lh-micro: 1.5;
+  --mi-sp-text: 20px;
+  --mi-sp-gutter: 24px;
+  --mi-sp-section: clamp(48px, 8vw, 96px);
+  --mi-gutter-x: clamp(20px, 4vw, 28px);
+
   background: var(--color-accent-soft);
   padding: var(--mi-sp-section) var(--mi-gutter-x) var(--mi-sp-text);
 }
+.miFoot a:focus-visible {
+  outline: 2px solid var(--color-primary); /* 7.63:1 mot den rosa sidfotsytan */
+  outline-offset: 3px;
+}
+.miFoot a:active { color: var(--color-primary-d, var(--color-primary)); }
 .miFootRow {
   max-width: 1180px;
   margin: 0 auto;
@@ -1150,4 +1227,97 @@
 }
 @media (max-width: 760px) {
   .miModPostGrid { grid-template-columns: 1fr; max-width: 26rem; }
+}
+
+/* ═══ goal-60 — KÖPKNAPPEN, FOKUS/PRESS, REDUCED MOTION ════════════════════════
+   KÖPKNAPPEN: modulens AddToCart läser --sf-btn-*. Minas form = DTC-chip: tät,
+   kompakt, full pill, versalt 12px-mikro — samma register som nav-CTA:n. Vars
+   deklareras på ALLA rotklasser mallen har (hem/nav/sidfot/undersida/modulsida),
+   annars faller köpknappen tillbaka på plattformens neutrala form på /shop.
+   KONTRAST: vit text på --color-primary #A31449 = 7.63:1 (krav ≥4.5). ─────────── */
+.miRoot,
+.miNav,
+.miFoot,
+.miPage,
+.miModule {
+  --sf-btn-h: 44px; /* kompakt — Minas chip-känsla (calytrix kör 48) */
+  --sf-btn-pad: 12px 20px;
+  --sf-btn-radius: 999px; /* pill: mallens ENDA radie-undantag */
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-ink: #fff; /* 7.63:1 */
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-fs: 12px;
+  --sf-btn-weight: 600;
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: 0.083em;
+  --sf-btn-dur: 160ms;
+  --sf-btn-ease: ease;
+  --sf-focus: var(--color-primary); /* 7.63:1 mot vit/rosa ljus botten */
+}
+/* På de rosa FÄRGPLATTORNA (hero, closing) är botten primary → en rosa ring är
+   osynlig. Ringen blir vit där: 7.63:1 mot plattan. */
+.miHero,
+.miClosing {
+  --sf-focus: var(--mi-on-plate);
+}
+.miHero a:focus-visible,
+.miHero button:focus-visible,
+.miClosing a:focus-visible,
+.miClosing button:focus-visible {
+  outline: 2px solid var(--mi-on-plate);
+  outline-offset: 3px;
+}
+
+/* FOKUS + PRESS på mallens klickbara ytor (hem, undersidor, modulvyer). */
+.miCard:focus-visible,
+.miModLink:focus-visible,
+.miMore:focus-visible,
+.miRoot :global(.btn-accent):focus-visible,
+.miPage :global(.btn-accent):focus-visible,
+.miModule :global(.btn-accent):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+.miCard:active,
+.miChip:active,
+.miModLink:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+.miRoot :global(.btn-accent):active,
+.miPage :global(.btn-accent):active,
+.miModule :global(.btn-accent):active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* REDUCED MOTION — täcker mallens ALLA transitions/transforms: korten (.miCard,
+   .miChip, .miModLink: 4px lyft), mer-länkens gap-glid (.miMore), knapparna
+   (.btn-accent, .miNavCta, .miPlateCta) och alla press-scale. */
+@media (prefers-reduced-motion: reduce) {
+  .miCard,
+  .miChip,
+  .miModLink,
+  .miMore,
+  .miNavCta,
+  .miPlateCta,
+  .miRoot :global(.btn-accent),
+  .miPage :global(.btn-accent),
+  .miModule :global(.btn-accent) {
+    transition: none;
+    animation: none;
+  }
+  .miCard:hover,
+  .miCard:active,
+  .miChip:hover,
+  .miChip:active,
+  .miModLink:hover,
+  .miModLink:active,
+  .miNavCta:active,
+  .miRoot :global(.btn-accent):active,
+  .miPage :global(.btn-accent):active,
+  .miModule :global(.btn-accent):active {
+    transform: none;
+  }
+  .miMore:hover { gap: 8px; }
 }

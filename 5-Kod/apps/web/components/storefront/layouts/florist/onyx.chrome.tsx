@@ -50,8 +50,12 @@ export function OnyxNav({
       </div>
 
       <div className={styles.onxNavBar}>
+        {/* Desktop-raden bär MAX 6 länkar (goal-60). Med alla moduler live blir listan
+            9, och nio versala länkar + kluster fick inte plats — raden bröt till en
+            andra våning. NavShell får fortfarande HELA `links` (mobil-overlayn) och
+            sidfoten listar allt, så inget blir oåtkomligt. */}
         <nav className={styles.onxNavLinks} aria-label="Huvudmeny">
-          {links.map((l) => (
+          {links.slice(0, 6).map((l) => (
             <Link key={l.href} href={l.href}>
               {l.label}
             </Link>
@@ -59,9 +63,15 @@ export function OnyxNav({
         </nav>
 
         <div className={styles.onxNavCluster}>
-          {cartEnabled ? <CartNavButton className={shell.navAccount} /> : null}
+          {cartEnabled ? (
+            <CartNavButton className={`${shell.navAccount} ${styles.onxNavIcon}`} />
+          ) : null}
           {customerAccountsEnabled ? (
-            <Link href="/login" className={shell.navAccount} aria-label="Logga in">
+            <Link
+              href="/login"
+              className={`${shell.navAccount} ${styles.onxNavIcon}`}
+              aria-label="Logga in"
+            >
               <StorefrontIcon name="user" size={18} />
             </Link>
           ) : null}

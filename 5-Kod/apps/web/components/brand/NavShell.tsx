@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { NAV_LINKS } from './NavLinks'
@@ -63,6 +63,28 @@ export function NavShell({
   const burgerRef = useRef<HTMLButtonElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const overlayCloseRef = useRef<HTMLButtonElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  // goal-60: --nav-h är höjden <main> reserverar åt det FIXED nav-klustret. Den var
+  // ett magiskt tal (116px) som varje mall måste råka matcha — och 11 av 13 gjorde
+  // inte det, så navet la sig över innehållet. Mät i stället den faktiska höjden:
+  // en sanning, och en ny mall kan aldrig ärva buggen.
+  //
+  // useLayoutEffect + ResizeObserver: höjden skrivs FÖRE paint, så inget hopp (CLS).
+  // Temats navHeight (om satt) är kvar som SSR-värde — den första serverrenderade
+  // paintningen har inget DOM att mäta.
+  useLayoutEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    const apply = () => {
+      const h = el.getBoundingClientRect().height
+      if (h > 0) document.documentElement.style.setProperty('--nav-h', `${Math.round(h)}px`)
+    }
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   // Detect a full-bleed hero below the nav (Salvia home only). Read after mount,
   // so the SSR/first-render state stays SOLID (transparent is purely additive).
@@ -122,6 +144,7 @@ export function NavShell({
 
   return (
     <div
+      ref={rootRef}
       className={[
         shell.root,
         scrolled ? shell.scrolled : '',

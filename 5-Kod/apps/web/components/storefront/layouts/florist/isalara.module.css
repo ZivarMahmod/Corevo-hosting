@@ -24,9 +24,33 @@
 .islRoot,
 .islNav,
 .islFooter,
-.islPage {
+.islPage,
+.islSection {
   /* ── Scrim/mörka ytor: ingen EGEN hex, palettens mörkaste ton. */
   --isl-scrim: var(--color-primary-d);
+
+  /* ── FOKUSRING (goal-60). Ljus botten → marinblå ring (10.44:1 mot bg).
+     De mörkblå ytorna byter ringen till sandtonen längre ned — en marinblå ring
+     på marinblå botten hade varit osynlig (1.00:1). */
+  --isl-focus: var(--color-primary);
+
+  /* ── KÖPKNAPPEN (goal-60). Modulens AddToCart läser --sf-btn-*; mallen sätter
+     dem här och får sin egen knapp utan att röra köp-rälsen. Marinblå pill med
+     GULD-KANT (sandtonen) — samma språk som prisradens guld-prick.
+     Knapptext (surface) på marinblå fyllning = 11.32:1. */
+  --sf-btn-h: 50px;
+  --sf-btn-pad: 0 30px;
+  --sf-btn-radius: var(--radius-pill);
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-ink: var(--color-surface);
+  --sf-btn-border: var(--color-line);
+  --sf-btn-fs: var(--isl-fs-micro);
+  --sf-btn-weight: 600;
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: var(--isl-ls-micro);
+  --sf-btn-dur: 160ms;
+  --sf-btn-ease: ease;
+  --sf-focus: var(--color-primary);
 
   /* ── TYPSKALA — 108 / 52 / 26 / 16 / 12 (×2.08 → ×2.00 → ×1.63 → ×1.33). */
   --isl-fs-hero: clamp(3.5rem, 9vw, 6.75rem);
@@ -63,6 +87,15 @@
      annars smyger mjuka hörn in i en mall som är binärt radie-0. */
   --tpl-radius: 0px;
   --tpl-radius-lg: 0px;
+}
+
+/* MÖRKBLÅ YTOR (nav, footer, kontaktkortet): fokusringen byter till sandtonen —
+   11.95:1 mot marinblått, mot marinblå-på-marinblå 1.00:1. En ring som inte syns
+   är ingen ring. */
+.islNav,
+.islFooter,
+.islContactCard {
+  --isl-focus: var(--color-line);
 }
 
 /* ─────────────────────────  GEMENSAMMA TYPROLLER  ─────────────────────────
@@ -135,8 +168,10 @@
   color: var(--color-primary-d); /* 16.39:1 */
 }
 
-/* Understruken mikrolänk — en kant som redan finns är skarpare än en som tonar in. */
-.islLink {
+/* Understruken mikrolänk — en kant som redan finns är skarpare än en som tonar in.
+   Dubblad klass av samma skäl som nav-länkarna: `.tenant-root a{color:inherit}`
+   (0-1-1) slår annars `.islLink` (0-1-0) och länken tappar sin marinblå färg. */
+.islLink.islLink {
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--isl-fs-micro);
@@ -148,7 +183,33 @@
   white-space: nowrap;
   transition: opacity var(--isl-dur) ease;
 }
-.islLink:hover { opacity: 0.7; }
+.islLink.islLink:hover { opacity: 0.7; }
+.islLink.islLink:active { opacity: 0.5; }
+
+/* ═══════════════  FOKUS + PRESS (goal-60)  ═══════════════
+   Varje klickbar yta i mallen får en SYNLIG ring. Ringen är --isl-focus, som byter
+   till sandtonen på de marinblå ytorna (se blocket överst) — mätt, inte gissat:
+   marinblå ring på marinblå nav = 1.00:1, sand på marinblå = 11.95:1, marinblå på
+   sandbotten = 10.44:1. */
+.islNavLinks a:focus-visible,
+.islNavWordmark:focus-visible,
+.islNavIcon:focus-visible,
+.islBtn:focus-visible,
+.islLink:focus-visible,
+.islCard:focus-visible,
+.islShortcut:focus-visible,
+.islPriceRow:focus-visible,
+.islPostRow:focus-visible,
+.islFooterLink:focus-visible,
+.islFooterSocial:focus-visible,
+.islContactLink:focus-visible {
+  outline: 2px solid var(--isl-focus);
+  outline-offset: 3px;
+}
+/* PRESS — kort (80ms) och subtil. Hover lyfter, press trycker tillbaka. */
+.islBtn:active { transform: scale(0.97); transition-duration: 80ms; }
+.islCard:active,
+a.islShortcut:active { transform: scale(0.97); transition-duration: 80ms; }
 
 /* ═════════════════════════════  NAV — SOLID MARINBLÅ RAD  ═════════════════════
    NavShells sticky-kontrakt (.navThemed) ligger kvar på <header>; mallen skriver
@@ -188,9 +249,15 @@
   justify-self: end;
   display: flex;
   align-items: center;
+  flex-wrap: nowrap; /* wrap ÄR buggen — navet får aldrig bli två våningar */
   gap: var(--isl-grid-gap);
 }
-.islNavLinks a {
+/* DUBBLAD KLASS (0-2-1) — och det är hela buggen Zivar fotograferade:
+   globals.css har `.tenant-root a { color: inherit }` (0-1-1), exakt SAMMA
+   specificitet som `.islNavLinks a`. Vid lika specificitet vinner den som ligger
+   sist i bundeln → länkarna ärvde --color-fg (#1C2733) på den marinblå plattan
+   (#0C1F33) = 1.10:1. Nu tvingas mallens ljusa ton igenom: 16.39:1. */
+.islNavLinks.islNavLinks a {
   font-family: var(--font-body);
   font-size: var(--isl-fs-micro);
   font-weight: 600;
@@ -203,7 +270,8 @@
   border-bottom: 2px solid transparent;
   transition: border-color var(--isl-dur) ease;
 }
-.islNavLinks a:hover { border-bottom-color: var(--color-line); }
+.islNavLinks.islNavLinks a:hover { border-bottom-color: var(--color-line); }
+.islNavLinks.islNavLinks a:active { opacity: 0.72; }
 .islNavCluster {
   justify-self: end;
   display: flex;
@@ -843,7 +911,10 @@ a.islShortcut:hover {
   line-height: var(--isl-lh-body);
   color: var(--color-fg-2);
 }
-.islLetterBody::first-line { color: var(--color-fg); }
+/* goal-60: `::first-line { color: var(--color-fg) }` är BORTTAGEN. Den färgade den
+   första raden av brödtexten mörkare än resten — och eftersom radbrytningen flyttar
+   sig med bredden såg det ut som att ENSKILDA ORD hade en avvikande färg (Zivars
+   foto). Ett ord i brödtext får bara byta färg om det ÄR en länk. */
 .islLetterSign {
   margin: var(--isl-step-cta) 0 0;
   font-family: var(--font-script);
@@ -1061,15 +1132,32 @@ a.islShortcut:hover {
   .islPostRowDate { display: none; }
 }
 
+/* REDUCED MOTION — täcker mallens ALLA transition/transform-ytor: knappen, korten,
+   genvägarna, pris- och bloggraderna (padding-left-glidet), nav/footer/kontakt-
+   länkarnas kant-toning och köpknappens press. Färg och fokusring är kvar; bara
+   rörelsen tas bort. */
 @media (prefers-reduced-motion: reduce) {
-  .islPostRow { transition: none; }
-  .islPostRow:hover { padding-left: 0; }
   .islBtn,
+  .islLink,
   .islCard,
   .islShortcut,
-  .islPriceRow { transition: none; }
+  .islPriceRow,
+  .islPostRow,
+  .islNavLinks a,
+  .islNavIcon,
+  .islFooterLink,
+  .islFooterSocial,
+  .islContactLink {
+    transition: none;
+  }
   .islBtn:hover,
+  .islBtn:active,
   .islCard:hover,
-  a.islShortcut:hover { transform: none; }
-  .islPriceRow:hover { padding-left: 0; }
+  .islCard:active,
+  a.islShortcut:hover,
+  a.islShortcut:active {
+    transform: none;
+  }
+  .islPriceRow:hover,
+  .islPostRow:hover { padding-left: 0; }
 }

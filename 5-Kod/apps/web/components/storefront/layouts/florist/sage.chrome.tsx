@@ -31,9 +31,13 @@ import styles from './sage.module.css'
 export function SageNav(p: ThemeNavProps) {
   return (
     <header className={`${shell.navThemed} ${styles.sgNav}`}>
-      {/* Länkarna först i DOM (läsordning), wordmarket placeras i mitten av griden. */}
+      {/* Länkarna först i DOM (läsordning), wordmarket placeras i mitten av griden.
+          Desktop-spåret bär MAX 6 länkar (goal-60): med alla moduler live blir listan 9,
+          och nio spärrade versal-länkar + centrerat wordmark + korg + konto + pill-CTA
+          får inte plats på en rad — galleri-huvudet bröt till en andra våning. NavShell
+          får HELA `links` (mobil-overlayn) och plaketten i sidfoten listar allt. */}
       <nav className={`${shell.navLinks} ${styles.sgNavLinks}`} aria-label="Huvudmeny">
-        {p.links.map((l) => (
+        {p.links.slice(0, 6).map((l) => (
           <Link key={l.href} href={l.href}>
             {l.label}
           </Link>

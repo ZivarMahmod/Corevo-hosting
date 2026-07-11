@@ -59,6 +59,37 @@
   /* motion — återhållsam */
   --vio-lift: -5px;
   --vio-dur: 400ms;
+
+  /* ── FOKUSRING (goal-60). Ljus krämvit botten → violett ring (11.92:1). De
+     violetta plattorna (hero, footer, closing, presentkort) byter till krämvitt
+     längre ned — violett ring på violett platta = 1.00:1, alltså ingen ring. */
+  --vio-focus: var(--color-primary);
+
+  /* ── KÖPKNAPPEN (goal-60). AddToCart läser --sf-btn-*; mallen sätter dem här och
+     får sin egen knapp utan att röra köp-rälsen. Violett pill, krämvit text
+     (#FBF7F1 på #402463 = 11.92:1), versal mikrotext — samma som .vioBtn. */
+  --sf-btn-h: 46px;
+  --sf-btn-pad: 0 26px;
+  --sf-btn-radius: var(--radius-pill);
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-bg-hover: var(--color-primary-d);
+  --sf-btn-ink: var(--color-bg);
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-fs: var(--vio-fs-micro);
+  --sf-btn-weight: 600;
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: 1px;
+  --sf-btn-dur: var(--vio-dur);
+  --sf-btn-ease: ease;
+  --sf-focus: var(--color-primary);
+}
+
+/* VIOLETTA PLATTOR: ringen måste vara LJUS (krämvit på violett = 11.92:1). */
+.vioHero,
+.vioFooter,
+.vioClosing,
+.vioGiftRow {
+  --vio-focus: var(--color-bg);
 }
 
 /* ── 0b. TYPROLLER — mallens egen skala (ersätter .sf-h1/.sf-h2/.sf-eyebrow/.sf-body) ── */
@@ -181,6 +212,9 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  /* goal-60: aldrig radbrytning — menyraden är EN rad. Desktop-listan kapas till 6
+     i viora.chrome.tsx (nio länkar sprängde raden). */
+  flex-wrap: nowrap;
   gap: 1.75rem;
   margin-top: 0.75rem;
   padding: 0.6rem 0;
@@ -201,6 +235,53 @@
 .vioNavLinks a:hover {
   color: var(--color-primary);
   border-color: var(--color-primary);
+}
+.vioNavLinks a:active { color: var(--color-primary-d); }
+/* Korg/konto: shell.navAccount saknar fokusring; mallens klass läggs BREDVID. */
+.vioNavIcon.vioNavIcon {
+  border-color: var(--color-line);
+  color: var(--color-fg);
+}
+.vioNavIcon.vioNavIcon:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ═══════════ FOKUS + PRESS PÅ ALLA KLICKBARA YTOR (goal-60) ═══════════
+   Ringen är --vio-focus: violett på de ljusa ytorna (11.92:1) och krämvit på de
+   violetta plattorna (11.92:1) — mätt, inte gissat. En violett ring på violett
+   platta hade varit 1.00:1, alltså osynlig. */
+.vioNavLinks a:focus-visible,
+.vioNavWordmark:focus-visible,
+.vioNavIcon:focus-visible,
+.vioBtn:focus-visible,
+.vioHeroCta:focus-visible,
+.vioClosingCta:focus-visible,
+.vioHeroSecondary:focus-visible,
+.vioLinkItem:focus-visible,
+.vioShopCard:focus-visible,
+.vioTeaserCard:focus-visible,
+.vioGiftCta:focus-visible,
+.vioFooterLink:focus-visible,
+.vioFooterSocial:focus-visible,
+.vioContactLink:focus-visible,
+.vioShopNameLink:focus-visible,
+.vioGallery li button:focus-visible {
+  outline: 2px solid var(--vio-focus);
+  outline-offset: 3px;
+}
+/* PRESS — 80ms, subtil (hover lyfter 4–5px, press trycker in). */
+.vioBtn.vioBtn:active,
+.vioHeroCta.vioHeroCta:active,
+.vioClosingCta.vioClosingCta:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+.vioShopCard:active .vioShopImg,
+.vioTeaserCard:active .vioTeaserImg,
+.vioLinkItem:active .vioLinkIcon {
+  transform: scale(0.97);
+  transition-duration: 80ms;
 }
 /* NavShell visar burgaren < 720px och döljer sina egna zoner; vår meny-rad göms här
    (overlayn bär navigationen på mobil), wordmarket stannar. */
@@ -971,6 +1052,27 @@
   --vio-lift: -5px;
   --vio-dur: 400ms;
 
+  /* goal-60: modul-vyerna är EGNA rot-ytor. Utan knapp-varsen och --vio-focus HÄR faller
+     butikens köpknapp och fokusringen tillbaka på plattformens neutrala form på
+     butikens EGEN sida (vars ärvs inte från hemmets sektioner).
+     (Skriv aldrig "--sf-btn-" följt av asterisk i en blockkommentar: asterisk+slash
+      stänger kommentaren mitt i meningen och resten av raden blir kod.) */
+  --vio-focus: var(--color-primary);
+  --sf-btn-h: 46px;
+  --sf-btn-pad: 0 26px;
+  --sf-btn-radius: var(--radius-pill);
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-bg-hover: var(--color-primary-d);
+  --sf-btn-ink: var(--color-bg);
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-fs: var(--vio-fs-micro);
+  --sf-btn-weight: 600;
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: 1px;
+  --sf-btn-dur: var(--vio-dur);
+  --sf-btn-ease: ease;
+  --sf-focus: var(--color-primary);
+
   padding: var(--vio-sec) var(--vio-gut);
 }
 /* Bloggen sitter på surface-plattan — samma register-byte som hemmets tjänste-band. */
@@ -1132,4 +1234,52 @@ a.vioPostSplit:focus-visible { outline: 2px solid var(--color-primary); outline-
 }
 @media (max-width: 760px) {
   .vioPostSplit { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════ REDUCED MOTION (goal-60) ═══════════════
+   Täcker mallens ALLA transition/transform-ytor: knapparnas 4px-lyft och press,
+   bildernas/ikonernas 5px-lyft (butik, blogg, team, galleri, ikonlänkar), kort-
+   hovern i tjänstegriden samt alla kant-toningar i nav, footer, kontakt och
+   läs-mer-länkar. Färg och fokusring är kvar — bara rörelsen tas bort. */
+@media (prefers-reduced-motion: reduce) {
+  .vioBtn.vioBtn,
+  .vioHeroCta.vioHeroCta,
+  .vioClosingCta.vioClosingCta,
+  .vioNavLinks a,
+  .vioNavIcon,
+  .vioMoreLink,
+  .vioHeroSecondary,
+  .vioLinkIcon,
+  .vioShopImg,
+  .vioTeaserImg,
+  .vioTeamPhoto,
+  .vioSvcCard,
+  .vioPostSplit,
+  .vioShopNameLink,
+  .vioGiftCta,
+  .vioFooterLink,
+  .vioFooterSocial,
+  .vioContactLink,
+  .vioGallery li {
+    transition: none;
+  }
+  .vioBtn.vioBtn:hover,
+  .vioBtn.vioBtn:active,
+  .vioHeroCta.vioHeroCta:hover,
+  .vioHeroCta.vioHeroCta:active,
+  .vioClosingCta.vioClosingCta:hover,
+  .vioClosingCta.vioClosingCta:active,
+  .vioLinkItem:hover .vioLinkIcon,
+  .vioLinkItem:active .vioLinkIcon,
+  .vioShopCard:hover .vioShopImg,
+  .vioShopCard:active .vioShopImg,
+  .vioShopViewCard:hover .vioShopImg,
+  .vioTeaserCard:hover .vioTeaserImg,
+  .vioTeaserCard:active .vioTeaserImg,
+  .vioTeamCard:hover .vioTeamPhoto,
+  .vioSvcCard:hover,
+  .vioGallery li:hover,
+  a.vioPostSplit:hover {
+    transform: none;
+  }
 }

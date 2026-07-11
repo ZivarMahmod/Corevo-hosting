@@ -22,7 +22,9 @@
 .otRoot,
 .otPage,
 .otNav,
-.otFoot {
+.otFoot,
+.otShop,
+.otBloggView {
   /* ── FÄRG — mallens ENDA egna dekorfärg. Sitter BARA på stjärn-badgen.
      #A8425C = puderrosans kulör (~345°) i mörkare ljushet → 5.36:1 mot creme. */
   --ot-rose: #A8425C;
@@ -49,6 +51,33 @@
   --ot-dur: 400ms;
   --ot-ease: ease;
   --ot-lift: -5px;
+
+  /* ── KÖPKNAPPEN (goal-60). Modulens AddToCart läser --sf-btn-*; mallen sätter dem
+     här och får sin egen knapp utan att röra köp-rälsen. Butikens knapp: BRUN, HELT
+     FYRKANTIG, 50px, versaler — exakt .otBtn, så köpknappen är samma knapp som
+     "Boka tid" och sidan talar EN dialekt.
+
+     Detta ERSÄTTER den gamla hacken i .otShopBuy, som sköt `!important` på
+     `button, select` för att tvinga bort radien. Den nådde bara de element den råkade
+     träffa och skrev över modulens egna tillstånd — nu bär modulen sex äkta lägen
+     (hover/active/focus/disabled) och mallen bestämmer bara FORMEN.
+
+     Kontrast RÄKNAD: creme #FBF4EE på brun #6B3E24 = 8.24:1 · på hover-brunet
+     #1C1109 = 17.01:1. Fokusringen är mallens bläck (17.01:1 mot papperet). */
+  --sf-btn-h: 50px;
+  --sf-btn-pad: 0 30px;
+  --sf-btn-fs: var(--ot-fs-micro);
+  --sf-btn-radius: 0;
+  --sf-btn-bg: var(--color-primary);
+  --sf-btn-bg-hover: var(--color-primary-d);
+  --sf-btn-ink: var(--color-bg);
+  --sf-btn-border: var(--color-primary);
+  --sf-btn-weight: 600;
+  --sf-btn-transform: uppercase;
+  --sf-btn-ls: 1px;
+  --sf-btn-dur: 160ms;
+  --sf-btn-ease: var(--ot-ease);
+  --sf-focus: var(--color-fg);
 }
 
 /* ═══════════════ TYPROLLER — mallens egen grammatik ═══════════════ */
@@ -139,6 +168,9 @@
   box-shadow: none;
 }
 .otBtn.otBtn:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
+/* PRESS — kort (80ms) och subtil (0.97). Hovern växlar färg utan att röra sig; pressen
+   är den enda rörelse knappen har, och den ska kännas under fingret, inte ses. */
+.otBtn.otBtn:active { transform: scale(0.97); transition-duration: 80ms; }
 
 /* Closing-knappen ligger PÅ --color-primary → inverteras i mallens egen creme
    (aldrig #fff: det vore mallens enda kalla kulör). (0,3,0) slår (0,2,0). */
@@ -151,6 +183,10 @@
   transform: none;
   box-shadow: none;
 }
+/* Closing-knappen står PÅ den bruna plattan → ljus ring (creme, 8.24:1 mot brunt).
+   Egen :active-rad: .otClosingCta:hover är (0,3,0) och hade annars slagit pressen. */
+.otBtn.otBtn.otClosingCta:active { transform: scale(0.97); transition-duration: 80ms; }
+.otBtn.otBtn.otClosingCta:focus-visible { outline: 2px solid var(--color-bg); outline-offset: 3px; }
 
 /* ── MIKRO-LÄNK ── */
 .otMoreLink.otMoreLink {
@@ -171,6 +207,8 @@
   transition: border-color var(--ot-dur) var(--ot-ease);
 }
 .otMoreLink.otMoreLink:hover { border-color: var(--color-primary); }
+.otMoreLink.otMoreLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.otMoreLink.otMoreLink:active { opacity: 0.7; }
 .otFlush.otFlush { margin-top: 0; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -231,9 +269,11 @@
   margin-top: var(--ot-s-xs);
   padding-top: var(--ot-s-xs);
 }
+/* nowrap (var `wrap`): raden får ALDRIG bryta till en andra våning — den ska hellre
+   knipa ihop sitt gap. Kapningen till 6 länkar sker i chromet (oliviathyme.chrome.tsx). */
 .otNavLinks {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   gap: var(--ot-s-md);
   font-family: var(--font-body);
@@ -244,12 +284,15 @@
 }
 .otNavLinks a {
   color: var(--color-fg);
+  white-space: nowrap;
   text-decoration: none;
   padding: 10px 0;
   border-bottom: 2px solid transparent;
   transition: border-color var(--ot-dur) var(--ot-ease), color var(--ot-dur) var(--ot-ease);
 }
 .otNavLinks a:hover { color: var(--color-primary); border-color: var(--color-primary); }
+.otNavLinks a:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.otNavLinks a:active { color: var(--color-primary); opacity: 0.7; transition-duration: 80ms; }
 .otNavCluster {
   position: absolute;
   right: var(--ot-s-md);
@@ -282,6 +325,8 @@
   transition: background var(--ot-dur) var(--ot-ease);
 }
 .otNavCta.otNavCta:hover { background: var(--color-primary-d); transform: none; box-shadow: none; }
+.otNavCta.otNavCta:active { transform: scale(0.97); transition-duration: 80ms; }
+.otNavCta.otNavCta:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
 
 /* Under 720px tar NavShells burger + overlay över navigationen (den känner inte till
    mina klasser — därför göms de här, precis som shell gömmer sina egna). Skylten
@@ -374,6 +419,8 @@
   transition: transform var(--ot-dur) var(--ot-ease);
 }
 .otShowcaseCard:hover { transform: translateY(var(--ot-lift)); }
+.otShowcaseCard:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.otShowcaseCard:active { transform: scale(0.97); transition-duration: 80ms; }
 .otShowcaseImg {
   aspect-ratio: var(--ot-ratio);
   background-size: cover;
@@ -563,6 +610,8 @@
   transition: transform var(--ot-dur) var(--ot-ease);
 }
 .otBlogCard:hover { transform: translateY(var(--ot-lift)); }
+.otBlogCard:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.otBlogCard:active { transform: scale(0.97); transition-duration: 80ms; }
 .otBlogImg {
   aspect-ratio: var(--ot-ratio);
   background-size: cover;
@@ -720,6 +769,15 @@
 }
 .otFootText a:hover,
 .otFootSocial a:hover { border-color: var(--color-surface); }
+/* Sidfoten är en MÖRKBRUN platta → fokusringen måste vara LJUS. Puderrosans ljusa
+   kusin läser 12.7:1 mot ink-brunet; mallens accent (den mörka brunen) hade varit
+   osynlig här. */
+.otFootText a:focus-visible,
+.otFootSocial a:focus-visible,
+.otFootLinks a:focus-visible {
+  outline: 2px solid var(--color-accent-soft);
+  outline-offset: 3px;
+}
 .otFootSocial {
   display: flex;
   flex-wrap: wrap;
@@ -775,6 +833,7 @@
   transition: border-color var(--ot-dur) var(--ot-ease);
 }
 .otFootLinks a:hover { border-color: var(--color-accent-soft); }
+.otFootLinks a:active { opacity: 0.7; }
 .otFootCopy {
   font-family: var(--font-body);
   font-size: var(--ot-fs-micro);
@@ -1019,6 +1078,7 @@
   transition: color var(--ot-dur) var(--ot-ease), border-color var(--ot-dur) var(--ot-ease);
 }
 .otVisitContact a:hover { color: var(--color-primary); border-color: var(--color-primary); }
+.otVisitContact a:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
 
 @media (max-width: 760px) {
   .otVisitCard { grid-template-columns: 1fr; }
@@ -1047,25 +1107,11 @@
    .otShop / .otBloggView bär samma var-block som de fyra andra — annars skulle
    /shop och /blogg falla ur mallens typskala och rytm.
    ═══════════════════════════════════════════════════════════════════════════════ */
-.otShop,
-.otBloggView {
-  --ot-rose: #A8425C;
-  --ot-fs-display: clamp(44px, 7.2vw, 96px);
-  --ot-fs-section: clamp(32px, 3.8vw, 48px);
-  --ot-fs-card: clamp(24px, 2.2vw, 28px);
-  --ot-fs-body: 18px;
-  --ot-fs-micro: 12px;
-  --ot-s-xs: 12px;
-  --ot-s-sm: 20px;
-  --ot-s-md: 24px;
-  --ot-s-lg: 32px;
-  --ot-s-xl: 48px;
-  --ot-sec: clamp(48px, 8vw, 96px);
-  --ot-ratio: 4 / 5;
-  --ot-dur: 400ms;
-  --ot-ease: ease;
-  --ot-lift: -5px;
-}
+/* goal-60: .otShop/.otBloggView bar tidigare en ORDAGRANT kopierad kopia av hela
+   var-blocket ovan — två sanningar som divergerar vid nästa ändring (och den här
+   kopian saknade redan --sf-btn-*, så köpknappen föll tillbaka på plattformens
+   neutrala form på butikens EGEN sida). Rötterna står nu i den ENDA deklarationen
+   högst upp i filen och ärver därmed allt, köpknappens form inkluderad. */
 
 /* ── BUTIKEN ── */
 .otShop { padding: var(--ot-sec) 0; background: var(--color-bg); }
@@ -1155,6 +1201,8 @@
   transition: transform var(--ot-dur) var(--ot-ease);
 }
 .otShopMedia:hover { transform: translateY(var(--ot-lift)); }
+.otShopMedia:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.otShopMedia:active { transform: scale(0.97); transition-duration: 80ms; }
 .otShopImg {
   aspect-ratio: var(--ot-ratio);
   background-size: cover;
@@ -1207,24 +1255,17 @@
   margin: var(--ot-s-xs) 0 0;
   max-width: 50ch;
 }
-/* Köp-rälsen (AddToCart) fyrkantas in i butikens grammatik: den ritar sig med
-   var(--radius)/var(--color-accent)/var(--font-ui) — här sätts de lokalt så knappen
-   blir mallens bruna, fyrkantiga knapp utan att komponenten rörs. */
+/* Köp-rälsen (AddToCart) bär butikens form via --sf-btn-* (deklarerade i mallens enda
+   var-block högst upp). Den gamla hacken här sköt `border-radius: 0 !important` på
+   `button, select` och gissade sig fram med `> div > button:last-of-type` — den träffade
+   fel element så fort modulen ändrade markup, och `!important` skulle ha kvävt modulens
+   nya :hover/:active/:focus-visible-lägen. Formen sätts numera i EN riktning: modulen
+   läser vars, mallen sätter dem. Kvar här är bara kortets fot. */
 .otShopBuy {
   margin-top: auto;
   padding-top: var(--ot-s-sm);
-  --radius: 0px;
-  --color-accent: var(--color-primary);
   --font-ui: var(--font-body);
 }
-.otShopBuy button,
-.otShopBuy select {
-  border-radius: 0 !important;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  font-size: var(--ot-fs-micro);
-}
-.otShopBuy > div > button:last-of-type { height: 50px; }
 
 /* Ärlig tom-text (modulens EGEN sida). */
 .otShopEmpty {
@@ -1277,6 +1318,7 @@
 .otPost:nth-child(3n + 3) { transform: rotate(-0.6deg); }
 .otPost:hover { transform: rotate(0deg) translateY(var(--ot-lift)); }
 .otPostLink { display: block; text-decoration: none; color: inherit; }
+.otPostLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
 .otPostImg {
   aspect-ratio: var(--ot-ratio);
   background-size: cover;
@@ -1326,13 +1368,56 @@
   .otPostGrid { grid-template-columns: 1fr; max-width: 22rem; }
 }
 
+/* ═══════════ REDUCED MOTION (goal-60) ═══════════
+   Blocket FANNS, men täckte bara halva sanningen: det släckte transitions på sex
+   ytor och nollade transform på TVÅ av dem. Kvar rörde sig fortfarande
+   .otShowcaseCard, .otBlogCard, .otShopMedia och .otGalleryBand li (5px-lyft på
+   hover) plus alla knappars press — en `transition: none` tar inte bort ett
+   transform, den gör det bara ögonblickligt. Listan är nu grep:ad ur filen
+   (`transform:`) och täcker VARJE rörelse mallen faktiskt gör.
+
+   Två STATISKA transforms lämnas medvetet i fred, för de bär layout och inte rörelse:
+   .otNavCluster (translateY(-50%) — centrerar klustret vertikalt i menyraden) och
+   polaroidernas vilo-lutning (rotate på :nth-child). Ett svepande `transform: none`
+   hade tappat ned nav-klustret ur sin rad och rätat ut hela polaroid-väggen. Därför
+   nollas rörelse bara på de tillstånd som RÖR sig (:hover/:active) — vilo-lutningen
+   står kvar, men slutar animera. */
 @media (prefers-reduced-motion: reduce) {
   .otShowcaseCard,
   .otBlogCard,
   .otPolaroid,
   .otShopMedia,
   .otPost,
-  .otGalleryBand li { transition: none; }
-  .otPolaroid:hover,
-  .otPost:hover { transform: none; }
+  .otGalleryBand li,
+  .otServiceRow,
+  .otBtn.otBtn,
+  .otNavCta.otNavCta,
+  .otNavLinks a,
+  .otMoreLink.otMoreLink {
+    transition: none;
+    animation: none;
+  }
+
+  .otShowcaseCard:hover,
+  .otShowcaseCard:active,
+  .otBlogCard:hover,
+  .otBlogCard:active,
+  .otShopMedia:hover,
+  .otShopMedia:active,
+  .otGalleryBand li:hover,
+  .otBtn.otBtn:active,
+  .otBtn.otBtn.otClosingCta:active,
+  .otNavCta.otNavCta:active {
+    transform: none;
+  }
+
+  /* Polaroiderna: hovern får inte längre räta ut eller lyfta kortet — men kortets
+     egen vilo-lutning (rotate) ligger kvar, annars vore det en annan design. */
+  .otPolaroid:hover { transform: rotate(0deg); }
+  .otPolaroid:nth-child(3n + 1):hover { transform: rotate(-1.6deg); }
+  .otPolaroid:nth-child(3n + 2):hover { transform: rotate(0.9deg); }
+  .otPolaroid:nth-child(3n + 3):hover { transform: rotate(-0.6deg); }
+  .otPost:nth-child(3n + 1):hover { transform: rotate(-1.6deg); }
+  .otPost:nth-child(3n + 2):hover { transform: rotate(0.9deg); }
+  .otPost:nth-child(3n + 3):hover { transform: rotate(-0.6deg); }
 }
