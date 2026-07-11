@@ -119,7 +119,9 @@ export async function OffertSection({
             anonymous offert_requests row via the submitOffertRequest action (tenant +
             variant resolved server-side). When PAUSED we render only the closed-notice
             above and DO NOT mount the form — no submission path while intake is shut. */}
-        {paused ? null : <OffertForm mode={config.mode} responseDays={config.responseDays} />}
+        {paused ? null : (
+          <OffertForm mode={config.mode} responseDays={config.responseDays} subjects={config.subjects} />
+        )}
       </div>
     </section>
   )

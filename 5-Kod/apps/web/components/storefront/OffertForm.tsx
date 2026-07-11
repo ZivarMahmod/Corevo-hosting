@@ -79,13 +79,23 @@ function SubmitButton({ mode }: { mode: OffertMode }) {
 /** Variant-correct, wired offert form. Mirrors the section's field logic:
  *  name + email + phone always; subject ONLY for estimate_form; message textarea
  *  for every variant except callback. */
-export function OffertForm({ mode, responseDays }: { mode: OffertMode; responseDays: number }) {
+export function OffertForm({
+  mode,
+  responseDays,
+  subjects = [],
+}: {
+  mode: OffertMode
+  responseDays: number
+  /** Config-styrda snabbval ("Vad gäller det?"-chips). Tom = fritext/inget ämne. */
+  subjects?: string[]
+}) {
   const [state, formAction] = useActionState<OffertSubmitState, FormData>(
     submitOffertRequest,
     OFFERT_SUBMIT_INITIAL,
   )
 
-  const showSubject = mode === 'estimate_form'
+  const hasChips = subjects.length > 0
+  const showSubject = mode === 'estimate_form' && !hasChips
   const showMessage = mode !== 'callback'
 
   if (state.phase === 'done') {
@@ -120,6 +130,44 @@ export function OffertForm({ mode, responseDays }: { mode: OffertMode; responseD
         maxWidth: 560,
       }}
     >
+      {/* Ämnes-chips (config.subjects): ETT klick istället för fritext — kunden
+          väljer vad det gäller (Bröllop/Begravning/…) innan uppgifterna. */}
+      {hasChips ? (
+        <fieldset style={{ border: 'none', margin: 0, padding: 0 }}>
+          <legend style={{ ...LABEL_STYLE, padding: 0 }}>Vad gäller det?</legend>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {subjects.map((s) => (
+              <label
+                key={s}
+                style={{
+                  cursor: 'pointer',
+                  padding: '9px 16px',
+                  borderRadius: 999,
+                  border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 20%, transparent)',
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  color: 'var(--color-fg, #232520)',
+                  background: 'var(--color-bg, #fff)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
+                }}
+              >
+                <input
+                  type="radio"
+                  name="subject"
+                  value={s}
+                  required
+                  style={{ accentColor: 'var(--color-accent, var(--color-primary, #C8A24A))' }}
+                />
+                {s}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
+
       <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         <div>
           <label style={LABEL_STYLE} htmlFor="offert-name">Namn</label>

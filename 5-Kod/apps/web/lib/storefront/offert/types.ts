@@ -33,6 +33,9 @@ export type OffertConfig = {
   /** Promised response time (days) for estimate_form / callback. */
   responseDays: number
   currency: string
+  /** Snabbval-ämnen ("Vad gäller det?"-chips) — config-styrda per kund/bransch
+   *  (t.ex. florist: Bröllop/Begravning/Event). Tom lista = inga chips, fritext. */
+  subjects: string[]
   /** Betal-hook — PAUSAD. enabled is false until rails open; provider is null. */
   payment: { provider: string | null; enabled: boolean }
 }
@@ -46,6 +49,7 @@ const DEFAULT_OFFERT_CONFIG: OffertConfig = {
   mode: 'request_quote',
   responseDays: 2,
   currency: 'SEK',
+  subjects: [],
   payment: { provider: null, enabled: false },
 }
 
@@ -77,6 +81,12 @@ export function parseOffertConfig(raw: unknown): OffertConfig {
     mode: asMode(src.mode),
     responseDays: asPositiveInt(src.response_days, DEFAULT_OFFERT_CONFIG.responseDays),
     currency: typeof src.currency === 'string' && src.currency ? src.currency : 'SEK',
+    subjects: Array.isArray(src.subjects)
+      ? src.subjects
+          .filter((s): s is string => typeof s === 'string' && s.trim() !== '')
+          .map((s) => s.trim().slice(0, 60))
+          .slice(0, 8)
+      : [],
     payment: {
       provider: typeof pay.provider === 'string' ? pay.provider : null,
       enabled: pay.enabled === true,

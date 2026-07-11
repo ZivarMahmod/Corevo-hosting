@@ -116,7 +116,9 @@ export async function submitOffertRequest(
     customer_name: name,
     customer_email: email || null,
     customer_phone: phone || null,
-    subject: mode === 'estimate_form' ? subject || null : null,
+    // subject sparas för ALLA lägen (config.subjects-chips finns oavsett mode);
+    // required-valideringen ovan gäller fortfarande bara estimate_form.
+    subject: subject || null,
     message: message || null,
   })
   if (error) {
