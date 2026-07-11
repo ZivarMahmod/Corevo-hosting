@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
-import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
+import { STOREFRONT_LAYOUTS, THEME_OWNS_MODULES } from '@/components/storefront/layouts'
 import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
@@ -90,18 +90,13 @@ export default async function HomePage() {
   const content = resolveThemeContent(settings.theme, branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
-  // S10: teman som ÄGER sina moduler (flora/salvia/leander/zigge/linnea/edit)
-  // väver in butik/blogg/presentkort i sitt eget formspråk men förblir SYNKRONA
-  // komponenter (studions klient-preview renderar dem) — teasers förladdas här
-  // och skickas som prop. Freshcut-temat rörs inte (egen väg).
-  const weavesViaProps =
-    settings.theme === 'flora' ||
-    settings.theme === 'salvia' ||
-    settings.theme === 'leander' ||
-    settings.theme === 'zigge' ||
-    settings.theme === 'linnea' ||
-    settings.theme === 'edit'
-  const modules = weavesViaProps
+  // S10: teman som ÄGER sina moduler väver in butik/blogg/presentkort i sitt eget
+  // formspråk men förblir SYNKRONA komponenter (studions klient-preview renderar
+  // dem) — teasers förladdas här och skickas som prop. Vilka teman det är bor i
+  // THEME_OWNS_MODULES (layouts/index.ts), inte i en OR-kedja här: en glömd nyckel
+  // gav förr BÅDE modul-lösa hem OCH dubbelrenderade sektioner, helt tyst.
+  const ownsModules = THEME_OWNS_MODULES.has(settings.theme)
+  const modules = ownsModules
     ? await loadLayoutModuleTeasers(tenant.id, tenant.slug)
     : undefined
 
@@ -119,16 +114,10 @@ export default async function HomePage() {
         location={location}
         modules={modules}
       />
-      {/* Teman som ÄGER sina moduler (flora/salvia/leander/zigge/linnea/edit väver
-          in butik/blogg/presentkort i sitt eget formspråk inne i layouten) — den
-          generiska teaser-stapeln skulle dubblera dem. Övriga teman får teasers
-          tills de också integrerar modulerna. */}
-      {settings.theme === 'flora' ||
-      settings.theme === 'salvia' ||
-      settings.theme === 'leander' ||
-      settings.theme === 'zigge' ||
-      settings.theme === 'linnea' ||
-      settings.theme === 'edit' ? null : (
+      {/* Teman som ÄGER sina moduler väver in butik/blogg/presentkort i sitt eget
+          formspråk inne i layouten — den generiska teaser-stapeln skulle dubblera
+          dem. Övriga teman får teasers tills de också integrerar modulerna. */}
+      {ownsModules ? null : (
         <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} variant="teaser" />
       )}
     </>

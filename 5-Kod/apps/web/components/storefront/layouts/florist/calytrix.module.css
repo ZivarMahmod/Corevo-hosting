@@ -1,0 +1,207 @@
+/* CALYTRIX — plommon/vinröd e-handelsflorist. Egna klasser prefixade "cal".
+   Delade sf*-klasser (services/about/gallery/plats/closing-scaffolding) lånas
+   från ../../storefront.module.css via `shared` i CalytrixLayout.tsx. */
+
+.calRoot {
+  /* Enda egna dekorfärgen (kravet tillåter 1-2): dämpat antikguld, bara på
+     hero-CTA:n och "Populär"-badgen — aldrig hela sidan igenom. */
+  --cal-gold: #cf9d3f;
+  --cal-gold-ink: #2b1608;
+}
+
+/* ---------- 1. Annonsrad ---------- */
+.calAnnounce {
+  background: var(--color-primary-d);
+  color: #fff;
+  text-align: center;
+  padding: 0.6rem 1.25rem;
+}
+.calAnnounceText {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- 2. Fullbredds foto-hero ---------- */
+.calHero {
+  position: relative;
+  min-height: clamp(28rem, 76vh, 42rem);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.calHeroScrim {
+  position: absolute;
+  inset: 0;
+  /* Rent svart skrim (universell foto-kontrast-teknik, ingen temafärg) — håller
+     dekorfärg-budgeten (1-2 egna) intakt för guldet. */
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.24) 45%, rgba(0, 0, 0, 0.56) 100%);
+}
+.calHeroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  text-align: center;
+}
+.calHeroTitle {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.75rem, 7.5vw, 5.5rem);
+  line-height: 0.98;
+  color: #fff;
+  margin: 0;
+  white-space: pre-line;
+}
+.calHeroLede {
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 1.7vw, 1.2rem);
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 32rem;
+  margin: 1.1rem auto 0;
+  line-height: 1.55;
+}
+.calHeroCtaRow { margin-top: 1.9rem; }
+.calHeroCta {
+  /* Sätter om --color-accent/-fg lokalt på knappen (samma element som .btn-accent
+     läser variablerna från) — enda stället guldet syns. */
+  --color-accent: var(--cal-gold);
+  --color-accent-fg: var(--cal-gold-ink);
+}
+
+/* ---------- 3. Mörkt marknadsförings-band ---------- */
+.calBand {
+  background: var(--color-primary-d);
+  padding: clamp(2rem, 4.5vw, 3rem) 1.5rem;
+  text-align: center;
+}
+.calBandText {
+  max-width: 44rem;
+  margin: 0 auto;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
+  line-height: 1.4;
+  color: #fff;
+}
+
+/* ---------- Sektionsrubrik (delas av "Mest sålda" + "Från bloggen") ---------- */
+.calSecHead {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.calSecCta {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--color-primary);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  white-space: nowrap;
+  transition: border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.calSecCta:hover { border-color: var(--color-primary); }
+
+/* ---------- 4. Horisontell kort-rad ("Mest sålda" + blogg) ---------- */
+.calScrollRow {
+  display: flex;
+  gap: 1.1rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 1.75rem clamp(1.25rem, 4vw, 1.75rem) 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+.calCardSlot {
+  flex: 0 0 auto;
+  width: clamp(11.5rem, 23vw, 15.5rem);
+  scroll-snap-align: start;
+}
+.calCard {
+  display: block;
+  text-decoration: none;
+}
+.calCardImgWrap {
+  position: relative;
+  border-radius: var(--sf-radius);
+  overflow: hidden;
+  background: var(--color-accent-soft);
+}
+.calCardImg {
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  background-position: center;
+  transition: transform var(--dur-fast, 0.2s) var(--ease-out, ease);
+}
+.calCard:hover .calCardImg { transform: scale(1.05); }
+.calBadge {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 1;
+  background: var(--cal-gold);
+  color: var(--cal-gold-ink);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+}
+.calCardName {
+  margin: 0.85rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--color-fg);
+}
+.calCardMeta {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--color-fg-2);
+}
+.calCardPrice {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-primary);
+}
+
+@media (max-width: 640px) {
+  .calScrollRow { gap: 0.85rem; }
+  .calCardSlot { width: 9.5rem; }
+}
+
+/* ---------- Presentkort-rad (smal, aldrig egen sektion) ---------- */
+.calGiftRow {
+  padding: clamp(1.1rem, 2.5vw, 1.6rem) 1.5rem;
+  text-align: center;
+  background: var(--color-accent-soft);
+}
+.calGiftInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+}
+.calGiftCta {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--color-primary);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+}
+.calGiftCta:hover { border-color: var(--color-primary); }

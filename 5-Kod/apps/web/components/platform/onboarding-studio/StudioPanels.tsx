@@ -34,6 +34,7 @@ import {
   RECOMMENDED_BOOKING_VARIANT,
 } from '@/lib/platform/booking-variant'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
+import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
@@ -80,14 +81,11 @@ const MODULE_STATE_HINTS: Record<ModuleState, string> = {
  *  INTE byggda teman — att välja en sådan blev en tyst leander-fallback i både
  *  preview och server (rapport 01-tema-kedjan.md). Vendor-mallarna kopplas in
  *  via looks/render-bron när fidelity-golvet klaras — inte via detta steg. */
-const BUILTIN_TEMPLATES: TemplateOption[] = [
-  { key: 'salvia', name: 'Salvia' },
-  { key: 'leander', name: 'Leander' },
-  { key: 'zigge', name: 'Zigge' },
-  { key: 'linnea', name: 'Linnea' },
-  { key: 'edit', name: 'Edit' },
-  { key: 'flora', name: 'Flora' },
-]
+// Härlett ur THEME_PALETTES (mallväljarens sanning) — florist-sviten (goal-58) dyker
+// upp i studion automatiskt. freshcut utesluten: kundens eget tema erbjuds aldrig nya.
+const BUILTIN_TEMPLATES: TemplateOption[] = THEME_PALETTES
+  .filter((p) => p.key !== 'freshcut')
+  .map((p) => ({ key: p.key, name: p.name }))
 
 /** The brand-panel accent swatches (verbatim from studio.jsx:268 — 7 accents). */
 const BRAND_ACCENTS = ['#5E7361', '#7E6E92', '#C8743C', '#B0693F', '#3A3733', '#A8455B', '#3E6B8C']

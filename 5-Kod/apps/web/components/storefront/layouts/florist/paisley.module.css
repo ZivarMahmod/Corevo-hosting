@@ -1,0 +1,389 @@
+/* ═══════════════ PAISLEY — tegelröd redaktionell florist (florist-sviten, goal-58) ═══════════════
+   Skarp tidningslayout: versaler, spärrad tracking, fyrkantiga ytor (--sf-radius är
+   nästan noll i paisley.theme.ts). Alla klasser paisley-prefixade (pa*) utom de
+   genuint delade .sf*-primitiven (sfWide/sfRowList/sfAboutGrid/sfLocBand/…) som
+   redan är temaneutrala (bygger på --sf-radius/--color-*, inga hårdkodade former). */
+
+.paRoot { background: var(--color-bg); }
+
+/* ── 1. TOPPRAD — leveransområde (vänster) + Kontakt/Om/Leveransorter (höger) ── */
+.paTop {
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-bg);
+}
+.paTopInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+.paTopZone {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--color-fg-2);
+}
+.paTopZone svg { flex: none; color: var(--color-primary); }
+.paTopLinks {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.paTopLink {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  text-decoration: none;
+}
+.paTopLink:hover { color: var(--color-primary); }
+.paTopLinks li + li { border-left: 1px solid var(--color-line); padding-left: 16px; }
+
+/* ── 2. ANNONSRAD — tegelröd rad, en centrerad kampanjrad ── */
+.paAd { background: var(--color-primary); padding: 9px 20px; }
+.paAdInner { text-align: center; }
+.paAdText {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* ── 3. MASTHEAD — centrerat skript-wordmark + nav-länkar under ── */
+.paMasthead {
+  text-align: center;
+  padding: clamp(34px, 5.5vw, 60px) 24px clamp(26px, 4vw, 40px);
+}
+.paWordmark {
+  margin: 0;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 7vw, 4.75rem);
+  line-height: 1;
+  color: var(--color-primary);
+}
+.paMastTag {
+  margin: 8px 0 0;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.paMastNav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: clamp(18px, 3vw, 34px);
+  margin: clamp(20px, 3vw, 30px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.paMastLink {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  text-decoration: none;
+  padding-bottom: 5px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.paMastLink:hover, .paMastLink:focus-visible { color: var(--color-primary); border-color: var(--color-primary); }
+
+/* ── 4. HERO — fullbredds foto, enorm versal-serif-rubrik i bilden, fyrkantig CTA ── */
+.paHero {
+  position: relative;
+  min-height: clamp(440px, 74vh, 700px);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.paHeroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(20, 12, 8, 0.22) 0%, rgba(20, 12, 8, 0.32) 55%, rgba(20, 12, 8, 0.62) 100%);
+}
+.paHeroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: 0 24px;
+  text-align: center;
+}
+.paHeroEyebrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #fff;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+}
+.paHeroTitle {
+  margin: 20px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: clamp(46px, 8.6vw, 120px);
+  line-height: 0.94;
+  letter-spacing: 0.005em;
+  color: #fff;
+  white-space: pre-line;
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.28);
+}
+.paHeroLede {
+  max-width: 32rem;
+  margin: 22px auto 0;
+  color: rgba(255, 255, 255, 0.92);
+}
+.paHeroActions { margin-top: 30px; }
+
+/* Fyrkantig CTA-modifierare — .btn-accent är annars var(--radius-pill) globalt. */
+.paSquareCta:global(.btn-accent) {
+  border-radius: var(--sf-radius);
+  letter-spacing: 0.04em;
+}
+
+/* ── 5. SAMMA-DAGS-LEVERANS-BAND — mörkt tegelband, statisk "nedräkning" (DEKOR) ── */
+.paDelivery { background: var(--color-primary-d); padding: clamp(30px, 5vw, 48px) 24px; }
+.paDeliveryInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(20px, 4vw, 40px);
+  flex-wrap: wrap;
+}
+.paDeliveryText { min-width: 0; }
+.paDeliveryTag {
+  margin: 0 0 6px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+.paDeliveryLine {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(20px, 2.6vw, 30px);
+  color: #fff;
+  max-width: 26rem;
+}
+.paDeliveryRight {
+  display: flex;
+  align-items: center;
+  gap: clamp(18px, 3vw, 30px);
+  flex-wrap: wrap;
+}
+.paTimer { display: flex; gap: 10px; }
+.paTimerBox {
+  width: clamp(52px, 6vw, 64px);
+  padding: 10px 0;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+.paTimerNum {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.6vw, 28px);
+  color: #fff;
+  line-height: 1;
+}
+.paTimerLabel {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* ── 6. FIRA MED BLOMMOR — bred två-kolumns text+bild (bildkollage: stor + inset) ── */
+.paCelebrate { padding: clamp(64px, 9vw, 108px) 0; }
+.paCelebrateGrid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: clamp(2.5rem, 6vw, 5rem);
+  align-items: center;
+}
+.paCelebrateMedia { position: relative; }
+.paCelebrateImgMain {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.paCelebrateImgInset {
+  position: absolute;
+  left: -6%;
+  bottom: -10%;
+  width: 46%;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border: 8px solid var(--color-bg);
+  box-shadow: 0 14px 34px -18px rgba(35, 27, 21, 0.5);
+}
+.paCelebrateText { min-width: 0; }
+.paCelebrateBody { margin-top: 16px; font-size: 17px; }
+.paCelebrateNote {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-fg-2);
+}
+.paCelebrateNote a { color: var(--color-primary); font-weight: 600; }
+.paCelebrateCta {
+  display: inline-block;
+  margin-top: 26px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 3px;
+  text-decoration: none;
+}
+
+/* ── 7 & 10. TEASER-GRID — delad av shop- och blogg-invävningen ── */
+.paTeaserSection { padding: clamp(56px, 8vw, 92px) 0; border-top: 1px solid var(--color-line); }
+.paTeaserHead { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.paTeaserGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 3vw, 34px);
+  margin-top: clamp(30px, 4vw, 44px);
+}
+.paTeaserCard { display: block; text-decoration: none; color: inherit; }
+.paTeaserImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+.paTeaserMeta { display: flex; align-items: baseline; gap: 10px; margin-top: 12px; }
+.paTeaserNum {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--color-primary);
+  opacity: 0.8;
+}
+.paTeaserName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(18px, 1.8vw, 21px);
+  color: var(--color-fg);
+  line-height: 1.2;
+}
+.paTeaserPrice {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-primary);
+}
+.paTeaserExcerpt {
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--color-fg-2);
+  line-height: 1.5;
+}
+
+/* ── Presentkort — smal rad, aldrig en hel sektion ── */
+.paGift { background: var(--color-accent-soft); padding: clamp(18px, 2.6vw, 30px) 24px; }
+.paGiftInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px 18px;
+  text-align: center;
+}
+.paGiftText {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(16px, 1.7vw, 19px);
+  color: var(--color-primary);
+}
+
+/* ── 9. OM — bildram runt sfAboutPhoto (dubbel konturlinje, redaktionell) ── */
+.paFrame { box-shadow: 0 0 0 10px var(--color-bg), 0 0 0 11px var(--color-line); }
+
+/* ── 12. CLOSING — fullbredds foto, mörkt tegel-overlay, fyrkantig CTA ── */
+.paClosing {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  padding: clamp(80px, 12vw, 130px) 24px;
+  text-align: center;
+}
+.paClosingOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(92, 35, 24, 0.72), rgba(46, 17, 12, 0.86));
+}
+.paClosingInner { position: relative; z-index: 1; max-width: 40rem; margin: 0 auto; }
+.paClosingTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(30px, 4.4vw, 54px);
+  color: #fff;
+}
+.paClosingLead { margin-top: 14px; color: rgba(255, 255, 255, 0.88); }
+.paClosingActions { margin-top: 28px; }
+
+@media (max-width: 760px) {
+  .paTopInner { justify-content: center; text-align: center; }
+  .paCelebrateGrid { grid-template-columns: 1fr; }
+  .paCelebrateImgInset { position: static; width: 60%; margin-top: 14px; border-width: 6px; }
+  .paTeaserGrid { grid-template-columns: 1fr 1fr; }
+  .paDeliveryInner { justify-content: center; text-align: center; }
+  .paDeliveryRight { justify-content: center; }
+}
+
+@media (max-width: 520px) {
+  .paTeaserGrid { grid-template-columns: 1fr; }
+}

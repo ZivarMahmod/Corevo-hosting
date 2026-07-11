@@ -13,6 +13,8 @@
  * ClosingCta. Byter man mall försvinner/dyker kontrollerna upp — sparade värden
  * ligger kvar i tenant_settings och återanvänds när mallen väljs igen.
  */
+import { FLORIST_CAPS } from '@/components/storefront/layouts/florist/registry'
+
 export type ThemeCaps = {
   heroEyebrow: boolean
   homeStats: boolean
@@ -24,6 +26,10 @@ export type ThemeCaps = {
 const DEFAULT_CAPS: ThemeCaps = { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: false }
 
 export const THEME_CAPS: Record<string, ThemeCaps> = {
+  // FLORIST-SVITEN (goal-58): varje mall deklarerar sina caps i sin egen
+  // <key>.theme.ts — ingen mall kan hamna på DEFAULT_CAPS av glömska (floras
+  // saknade rad göme dess galleri-kontroll i editorn i månader, se raden nedan).
+  ...FLORIST_CAPS,
   freshcut: { heroEyebrow: false, homeStats: false, homeGallery: true, homeAbout: true },
   salvia: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
   leander: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: false },

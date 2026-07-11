@@ -6,6 +6,8 @@
  * accent = mallens primary: storefronten sätter --color-accent: var(--color-primary)
  * när tenanten inte valt en egen accent (tokens.css, storefront-blocket).
  */
+import { FLORIST_PALETTES } from '@/components/storefront/layouts/florist/registry'
+
 export type ThemePalette = {
   key: string
   name: string
@@ -17,6 +19,9 @@ export type ThemePalette = {
 }
 
 export const THEME_PALETTES: ThemePalette[] = [
+  // FLORIST-SVITEN (goal-58) — 13 mallar, härledda ur florist/registry.ts. Ligger
+  // först: det är de nyaste och de branschen (florist) väljer bland.
+  ...FLORIST_PALETTES,
   { key: 'freshcut', name: 'FreshCut', desc: 'Barbershop · vit & guld, skarp', primary: '#B59775', bg: '#FFFFFF', fg: '#252525', accent: '#B59775' },
   { key: 'salvia', name: 'Salvia', desc: 'Sage · luftig, minimal', primary: '#5E7361', bg: '#F6F4EE', fg: '#232520', accent: '#5E7361' },
   { key: 'leander', name: 'Leander', desc: 'Lavendel · romantisk editorial', primary: '#7E6E92', bg: '#FBFAF8', fg: '#2A2630', accent: '#7E6E92' },

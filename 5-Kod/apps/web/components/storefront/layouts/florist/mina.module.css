@@ -1,0 +1,186 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   MINA — klarrosa & vitt, minimal DTC-e-handel (florist-sviten, goal-58).
+   Signaturen: hero UTAN bild (en klarrosa färgplatta bär den enorma
+   typografin, texten är hjälten), en fullbredds bild-banner direkt under,
+   ett tätt fyr-kolumners butiksgrid (minsta korten i sviten), onumrerade
+   täta tjänsterader och en smal centrerad om-spalt utan sidobild — ingen
+   annan mall i sviten har den kombinationen. Alla färger/typsnitt kommer
+   från temats CSS-variabler (satta via floristThemeBlock i mina.theme.ts)
+   — inget hårdkodat hex här förutom den vita hero/closing-texten (samma
+   mönster som .sfClosing i storefront.module.css).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1 — HERO: klarrosa färgplatta, ingen bild ──────────────────────────── */
+.miHero {
+  background: var(--color-primary);
+  padding: clamp(4.5rem, 10vw, 8rem) 0 clamp(3.5rem, 7vw, 6rem);
+}
+.miHeroInner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+}
+.miHeroEyebrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+}
+.miHeroTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.75rem, 7vw, 5.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin: 1.15rem 0 0;
+  max-width: 16ch;
+  white-space: pre-line;
+}
+.miHeroLede {
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.86);
+  max-width: 34rem;
+  margin: 1.4rem 0 0;
+}
+.miHeroActions { margin-top: 2.1rem; }
+/* Samma knep som .sfClosing :global(.btn-accent).sfClosingCta — dubblad
+   specificitet krävs för att slå .btn-accent på samma element. */
+.miHero :global(.btn-accent).miHeroCta { background: #fff; color: var(--color-primary); border-color: #fff; }
+.miHero :global(.btn-accent).miHeroCta:hover { background: rgba(255, 255, 255, 0.92); }
+
+/* ── 2 — BILD-BANNER: fullbredd, ingen text ovanpå (andrummet efter heron) ── */
+.miBanner {
+  width: 100%;
+  height: clamp(260px, 40vw, 520px);
+  background-color: var(--color-accent-soft);
+  background-size: cover;
+  background-position: center;
+}
+
+/* ── delad sektionsrubrik-rad (shop + blogg): eyebrow/rubrik vänster,
+   "visa alla"-länk höger ─────────────────────────────────────────────── */
+.miSecHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: clamp(1.5rem, 3vw, 2.1rem);
+}
+
+/* ── 3 — SHOP: tätt fyr-kolumners grid, minsta korten i sviten ──────────── */
+.miShopSection { padding: clamp(3.5rem, 7vw, 5.5rem) 0; }
+.miShopGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+.miCard { display: block; }
+.miCardImg {
+  aspect-ratio: 1 / 1;
+  background-color: var(--color-accent-soft);
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--sf-radius);
+}
+.miCardName {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  margin: 0.65rem 0 0.2rem;
+}
+.miCardPrice {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+}
+@media (max-width: 860px) { .miShopGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .miShopGrid { grid-template-columns: 1fr; max-width: 20rem; margin: 0 auto; } }
+
+/* ── 4 — TJÄNSTER: täta onumrerade rader (versal namn, hårfin linje) ────── */
+.miServices { padding: clamp(3.5rem, 7vw, 5.5rem) 0; border-top: 1px solid var(--color-line); }
+.miSvcHead { text-align: center; margin-bottom: clamp(1.75rem, 4vw, 2.5rem); }
+.miSvcList { border-top: 1px solid var(--color-line); }
+.miSvcRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.1rem 0.25rem;
+  border-bottom: 1px solid var(--color-line);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), padding-left var(--dur-fast) var(--ease-out);
+}
+.miSvcRow:hover { background: var(--color-accent-soft); padding-left: 0.65rem; }
+.miSvcRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.miSvcMain { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.miSvcName {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.miSvcDesc { font-family: var(--font-body); font-size: 0.86rem; color: var(--color-fg-2); line-height: 1.5; }
+.miSvcPrice { font-family: var(--font-body); font-weight: 700; font-size: 1rem; color: var(--color-primary); white-space: nowrap; }
+
+/* ── 5 — OM: smal centrerad spalt, ingen sidobild (unikt mot resten av
+   sviten som kör två-kolumners om+foto) ────────────────────────────────── */
+.miAbout { padding: clamp(4rem, 8vw, 6.5rem) clamp(1.25rem, 4vw, 1.75rem); text-align: center; }
+.miAboutInner { max-width: 38rem; margin: 0 auto; }
+.miAboutCopy { margin-top: 1.1rem; }
+.miStatRow {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  margin: clamp(1.75rem, 4vw, 2.5rem) auto 0;
+  padding: 0;
+  max-width: 30rem;
+}
+.miStatItem { flex: 1; padding: 0 1.25rem; border-left: 1px solid var(--color-line); }
+.miStatItem:first-child { border-left: none; }
+.miStatValue { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; color: var(--color-primary); }
+.miStatLabel { display: block; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-fg-2); margin-top: 0.3rem; }
+@media (max-width: 560px) { .miStatItem { padding: 0 0.75rem; } .miStatLabel { font-size: 0.62rem; } }
+
+/* ── 6 — PRESENTKORT: smal rad, aldrig en egen sektion ──────────────────── */
+.miGift { background: var(--color-accent-soft); padding: 1.4rem clamp(1.25rem, 4vw, 1.75rem); }
+.miGiftInner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem 1.35rem;
+  text-align: center;
+}
+.miGiftText { font-family: var(--font-body); font-weight: 500; font-size: 0.95rem; color: var(--color-fg); margin: 0; }
+
+/* ── 7 — BLOGG: samma täta grid-språk som butiken, portrait-ratio ───────── */
+.miBlogSection { padding: clamp(3.5rem, 7vw, 5.5rem) 0; }
+.miBlogGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+.miBlogImg {
+  aspect-ratio: 4 / 5;
+  background-color: var(--color-accent-soft);
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--sf-radius);
+}
+.miBlogName { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; color: var(--color-fg); margin: 0.85rem 0 0.3rem; }
+.miBlogExcerpt { font-family: var(--font-body); font-size: 0.86rem; color: var(--color-fg-2); line-height: 1.5; }
+@media (max-width: 760px) { .miBlogGrid { grid-template-columns: 1fr; max-width: 26rem; margin: 0 auto; } }

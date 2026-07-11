@@ -1,0 +1,330 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   SAGE — varmgrå/greige + mjuk salvia, luftig studio (florist-sviten,
+   goal-58). Signaturen: transparent nav över en full-bleed hero i spärrade
+   versaler, en centrerad välkomstrad, en inramad kategori-trio och crisp
+   galleri-kant genomgående (--sf-radius från temat, satt via floristThemeBlock).
+   Alla färger/typsnitt kommer från temats CSS-variabler — inget hårdkodat
+   hex här förutom hero-scrimmet (mörk overlay, samma på alla foto-teman).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── HERO — full-bleed foto, transparent nav ovanpå (.hero-sentinelen läses
+   av NavShell via document.querySelector('.hero')) ─────────────────────── */
+.sgHero {
+  position: relative;
+  margin-top: calc(-1 * var(--nav-h));
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+@media (max-width: 720px) {
+  .sgHero { min-height: 86vh; }
+}
+.sgHeroBg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  z-index: 0;
+}
+.sgHeroOverlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(20, 18, 12, 0.32) 0%, rgba(20, 18, 12, 0.58) 100%);
+  z-index: 1;
+}
+.sgHeroInner {
+  position: relative;
+  z-index: 2;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: clamp(6rem, 12vw, 9rem) clamp(1.5rem, 5vw, 2.5rem) clamp(3rem, 6vw, 4rem);
+  text-align: center;
+  color: #fff;
+}
+.sgHeroEyebrow {
+  display: inline-block;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0.92;
+}
+.sgHeroTitle {
+  margin: 0.9rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.06;
+  font-size: clamp(2.6rem, 7.2vw, 5.4rem);
+  text-shadow: 0 2px 26px rgba(0, 0, 0, 0.32);
+  white-space: pre-line;
+}
+.sgHeroLede {
+  margin: 1.4rem auto 0;
+  max-width: 32rem;
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  line-height: 1.65;
+  color: #fff;
+  opacity: 0.94;
+}
+.sgHeroActions {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.sgHeroBtnFilled {
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.9rem 2.1rem;
+}
+.sgHeroBtnOutline {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: var(--sf-radius);
+  padding: 0.9rem 2.1rem;
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.sgHeroBtnOutline:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #fff;
+}
+
+/* ── Delad rubrik-grammatik: uppercase + tracking, används av alla
+   sektionshuvuden nedanför hero (welcome/kategori/tjänster/om/galleri…) ─── */
+.sgEyebrow {
+  display: block;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.sgSectionTitle {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.14;
+  color: var(--color-fg);
+  font-size: clamp(1.7rem, 3.2vw, 2.6rem);
+}
+.sgSectionHead {
+  text-align: center;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+.sgLede {
+  margin: 1rem auto 0;
+  max-width: 34rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+/* ── WELCOME — centrerad välkomstrad, en knapp ───────────────────────────── */
+.sgWelcome {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  padding: clamp(4rem, 8vw, 6.5rem) 1.5rem;
+  text-align: center;
+}
+.sgWelcomeInner { max-width: 36rem; margin: 0 auto; }
+.sgWelcomeCta { margin-top: 1.9rem; display: inline-block; }
+
+/* ── KATEGORI-TRIO — inramade foton, versal-etikett under, → /shop ──────── */
+.sgCategoryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1.25rem, 3vw, 2.25rem);
+  max-width: 66rem;
+  margin: clamp(2.5rem, 5vw, 3.5rem) auto 0;
+  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+}
+.sgCategoryCard {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+}
+.sgCategoryFrame {
+  padding: 0.6rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  transition: box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.sgCategoryCard:hover .sgCategoryFrame {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 34px -22px rgba(43, 40, 32, 0.35);
+}
+.sgCategoryImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: calc(var(--sf-radius) - 2px);
+}
+.sgCategoryLabel {
+  display: block;
+  margin-top: 0.9rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+/* ── Generisk sektions-padding (shop-teasers/tjänster/om/galleri/blogg) ──── */
+.sgSection { padding: clamp(4rem, 8vw, 6.5rem) 0; }
+.sgSectionTight { padding: clamp(3rem, 6vw, 4.5rem) 0; }
+
+/* ── Kort-grid — butik/blogg-teasers (samma bildratio som kategori-trion) ─ */
+.sgCardGrid {
+  max-width: 1100px;
+  margin: clamp(2.5rem, 5vw, 3.5rem) auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1.1rem, 2.5vw, 1.6rem);
+}
+.sgCard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  overflow: hidden;
+  transition: box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.sgCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 34px -22px rgba(43, 40, 32, 0.35);
+}
+.sgCardImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.sgCardBody { padding: 1.1rem 1.2rem 1.3rem; }
+.sgCardName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.08rem;
+  color: var(--color-fg);
+}
+.sgCardMeta {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  color: var(--color-fg-2);
+  line-height: 1.5;
+}
+.sgCardPrice {
+  display: block;
+  margin-top: 0.6rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-primary);
+}
+.sgBandCta {
+  display: block;
+  width: fit-content;
+  margin: clamp(2rem, 4vw, 2.75rem) auto 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  padding-bottom: 3px;
+  text-decoration: none;
+}
+
+/* ── Citat-band — upprätt (ej kursiv, till skillnad från Floras formspråk) ─ */
+.sgQuoteBand {
+  background: var(--color-accent-soft);
+  padding: clamp(3.5rem, 7vw, 5.5rem) 1.5rem;
+  text-align: center;
+}
+.sgQuote {
+  margin: 0 auto;
+  max-width: 40rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.35rem, 2.6vw, 2.1rem);
+  line-height: 1.35;
+  color: var(--color-primary);
+}
+
+/* ── OM — foto + text, statistik-trio ────────────────────────────────────── */
+.sgAboutGrid {
+  padding: clamp(4.5rem, 9vw, 7rem) clamp(1.25rem, 4vw, 1.75rem);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+  align-items: center;
+}
+.sgAboutPhoto {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+
+/* ── Presentkort — smal rad, aldrig en hel sektion ───────────────────────── */
+.sgGiftRow {
+  padding: clamp(1.25rem, 3vw, 2rem) 1.5rem;
+  text-align: center;
+  background: var(--color-accent-soft);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+}
+.sgGiftLede {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-fg);
+}
+
+@media (max-width: 760px) {
+  .sgCategoryGrid { grid-template-columns: 1fr; max-width: 22rem; }
+  .sgCardGrid { grid-template-columns: 1fr; max-width: 22rem; }
+  .sgAboutGrid { grid-template-columns: 1fr; }
+}

@@ -12,6 +12,7 @@
 import { revalidatePath } from 'next/cache'
 import { platformCtx } from '../guard'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
+import { STOREFRONT_THEMES } from '@/lib/tenant-data'
 import { COPY_OVERRIDE_KEYS } from '@/components/storefront/theme-content'
 import { type ActionState, GENERIC } from './shared'
 
@@ -94,7 +95,9 @@ export async function saveVerticalDefaults(_p: ActionState, fd: FormData): Promi
 
   const rawTemplate = String(fd.get('default_template') ?? '').trim()
   // Bara riktiga renderbara teman (freshcut = kundens, aldrig ett bransch-default).
-  const VALID = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora']
+  // Härlett ur STOREFRONT_THEMES → nya mallar (florist-sviten, goal-58) blir giltiga
+  // utan att någon minns att uppdatera en literal-lista här.
+  const VALID: string[] = STOREFRONT_THEMES.filter((t) => t !== 'freshcut')
   const defaultTemplate = VALID.includes(rawTemplate) ? rawTemplate : null
 
   const { error } = await supabase

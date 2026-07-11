@@ -1,0 +1,323 @@
+/* ═══════════════ WILD THISTLE — tistel-lila & mossgrönt, rustikt/vilt (florist-sviten, goal-58) ═══════════════
+   "Svärd, inte morot": radie 0 rakt igenom (--sf-radius är '0px' i
+   wildthistle.theme.ts), tunga display-vikter (700/800), en enda accent
+   (tistel-lila) + två egna dekorfärger (mossgrönt, satta som CSS-vars på
+   .wtRoot — mallens tillåtna 1-2 egna dekorfärger). Alla klasser wt-prefixade
+   utom de genuint delade .sf*-primitiven (sfPriceBand/-Grid/-Row/-Dots,
+   sfStatTrio, sfGalleryBand, sfLocBand, sfClosing …) som redan är
+   temaneutrala (bygger på --sf-radius/--color-*, inga hårdkodade former). */
+
+.wtRoot {
+  --wt-moss: #5c6b3f;
+  --wt-moss-d: #3e4a29;
+  background-color: var(--color-bg);
+  /* Råpapper-korn: en ultratunn diagonal fiber-textur, ren dekor. */
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(32, 26, 22, 0.02) 0px,
+    rgba(32, 26, 22, 0.02) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.wtContain {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding-left: clamp(1.1rem, 3vw, 2rem);
+  padding-right: clamp(1.1rem, 3vw, 2rem);
+}
+
+/* ── 1. HERO — bild + text i ETT asymmetriskt block nere till vänster (bruten grid) ── */
+.wtHero { padding: clamp(28px, 4vw, 48px) 0 0; }
+.wtHeroGrid {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 clamp(1.1rem, 3vw, 2rem);
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(2, minmax(180px, auto));
+  gap: clamp(10px, 1.4vw, 18px);
+}
+.wtHeroImg {
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+.wtHeroImgWide { grid-column: 5 / 13; grid-row: 1 / 2; aspect-ratio: 16 / 9; }
+.wtHeroImgSmall { grid-column: 1 / 5; grid-row: 1 / 2; align-self: end; aspect-ratio: 4 / 5; }
+.wtHeroImgTall { grid-column: 7 / 13; grid-row: 2 / 3; aspect-ratio: 21 / 8; }
+
+/* Textkortet BRYTER griden: det ligger i samma cell-rad som bilderna nedanför
+   men äger bara halva bredden, förankrat nere till vänster — asymmetrin är
+   hela poängen (ingen annan mall i sviten har en hero formad så här). */
+.wtHeroTextCard {
+  grid-column: 1 / 7;
+  grid-row: 2 / 3;
+  align-self: end;
+  position: relative;
+  z-index: 2;
+  background: var(--color-primary);
+  color: #fff;
+  padding: clamp(1.75rem, 4vw, 3rem);
+}
+.wtHeroEyebrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+.wtHeroTitle {
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.1rem, 4.6vw, 3.5rem);
+  line-height: 1.03;
+  color: #fff;
+  white-space: pre-line;
+}
+.wtHeroLede {
+  margin: 16px 0 0;
+  max-width: 26rem;
+  color: rgba(255, 255, 255, 0.88);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.wtHeroActions { margin-top: 26px; }
+
+@media (max-width: 820px) {
+  .wtHeroGrid { grid-template-columns: 1fr; grid-template-rows: auto; }
+  .wtHeroImgWide, .wtHeroImgSmall, .wtHeroImgTall, .wtHeroTextCard {
+    grid-column: 1;
+    grid-row: auto;
+    align-self: auto;
+  }
+  .wtHeroTextCard { order: -1; }
+  .wtHeroImgWide { aspect-ratio: 16 / 10; }
+  .wtHeroImgTall { aspect-ratio: 16 / 9; }
+}
+
+/* ── 2. SÅ JOBBAR VI — numrerad trio (01/02/03), rå typografi, inga bilder ── */
+.wtSteps { border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); }
+.wtStepsGrid {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 clamp(1.1rem, 3vw, 2rem);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.wtStep { padding: clamp(2.5rem, 5vw, 4rem) clamp(1.25rem, 3vw, 2.25rem); border-left: 1px solid var(--color-line); }
+.wtStep:first-child { border-left: none; }
+.wtStepNum {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.75rem, 6vw, 4rem);
+  line-height: 1;
+  color: var(--wt-moss);
+}
+.wtStepTitle {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.25rem, 2.2vw, 1.55rem);
+  color: var(--color-fg);
+}
+.wtStepText {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+  max-width: 22rem;
+}
+@media (max-width: 760px) {
+  .wtStepsGrid { grid-template-columns: 1fr; }
+  .wtStep { border-left: none; border-top: 1px solid var(--color-line); }
+  .wtStep:first-child { border-top: none; }
+}
+
+/* ── 3 & 7. UR BUTIKEN / BLOGG — delad rå kort-grid, rakt avskurna bilder (radius 0) ── */
+.wtCardSection { padding: clamp(3.5rem, 7vw, 6rem) 0; }
+.wtSecHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.wtSecCta {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 2px;
+  white-space: nowrap;
+}
+.wtCardGrid {
+  margin-top: clamp(1.75rem, 4vw, 2.75rem);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1.25rem, 2.5vw, 2rem);
+}
+.wtCard { display: block; text-decoration: none; color: inherit; }
+.wtCardImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+.wtCardName {
+  margin: 0.9rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.25;
+  color: var(--color-fg);
+}
+.wtCardMeta {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--color-primary);
+}
+.wtCardExcerpt {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-fg-2);
+}
+@media (max-width: 760px) { .wtCardGrid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .wtCardGrid { grid-template-columns: 1fr; } }
+
+/* ── 5. OM — porträtt + stort citat ── */
+.wtAbout { padding: clamp(4.5rem, 9vw, 7.5rem) 0; }
+.wtAboutGrid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+  align-items: center;
+}
+.wtAboutPhoto {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+@media (max-width: 760px) { .wtAboutGrid { grid-template-columns: 1fr; } }
+
+/* ── 6. KURSER-CTA — mossgrön remsa ── */
+.wtCourseBand { background: var(--wt-moss); padding: clamp(3rem, 6vw, 4.5rem) 24px; text-align: center; }
+.wtCourseEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+.wtCourseTitle {
+  margin: 10px 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  color: #fff;
+}
+.wtCourseLede {
+  margin: 0.75rem auto 0;
+  max-width: 32rem;
+  color: rgba(255, 255, 255, 0.88);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.wtCourseActions { margin-top: 1.75rem; }
+.wtCourseCta {
+  display: inline-block;
+  background: #fff;
+  color: var(--wt-moss-d);
+  padding: 0.85rem 1.9rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: var(--sf-radius);
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.wtCourseCta:hover { opacity: 0.85; }
+
+/* ── Presentkort — smal rad mellan blogg och galleri, aldrig en egen sektion ── */
+.wtGift { background: var(--color-accent-soft); padding: clamp(18px, 2.6vw, 30px) 24px; }
+.wtGiftInner {
+  max-width: 1360px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px 18px;
+  text-align: center;
+}
+.wtGiftCta {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 2px;
+}
+
+/* ── 10. CLOSING — eget mörkt fullbredds-foto, fyrkantig CTA ── */
+.wtClosing {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  padding: clamp(84px, 12vw, 130px) 24px;
+  text-align: center;
+}
+.wtClosingOverlay {
+  position: absolute;
+  inset: 0;
+  /* Tistel-lila scrim (samma toner som --color-primary/-primary-d) — literal
+     rgba som gradient-lager, samma mönster som Paisleys/Onyx closing-scrim. */
+  background: linear-gradient(180deg, rgba(75, 46, 82, 0.55) 0%, rgba(46, 26, 52, 0.9) 100%);
+}
+.wtClosingInner { position: relative; z-index: 1; max-width: 40rem; margin: 0 auto; }
+.wtClosingEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+.wtClosingTitle {
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: italic;
+  font-size: clamp(2rem, 4.4vw, 3.2rem);
+  color: #fff;
+}
+.wtClosingLede { margin-top: 14px; color: rgba(255, 255, 255, 0.9); font-family: var(--font-body); font-size: 1rem; }
+.wtClosingActions { margin-top: 28px; }
+/* Fyrkantig CTA-modifierare — .btn-accent är annars var(--radius-pill) globalt. */
+.wtSquareCta:global(.btn-accent) { border-radius: var(--sf-radius); letter-spacing: 0.04em; }

@@ -1,0 +1,311 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   LUNARIA — nattblå + silvergrå + torkat vete, stillsam (florist-sviten,
+   goal-58). Signaturen: en hero-bild med en textplatta som skjuter ut över
+   bildens nedre/vänstra kant (offset-kort, .lnHeroCard), en måne-ornament
+   som sektionsdelare, tre "stämningskort" i fast trio-grid, cirkulärt
+   porträtt i om-sektionen och en helbilds-closing med mörk gradient.
+   Allt hämtar färg/typsnitt/radie från temats CSS-variabler (satta via
+   floristThemeBlock) — inget hårdkodat hex nedan förutom scrim-overlays
+   (samma undantag som övriga foto-teman i sviten).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── HERO — inset foto + offset textplatta som bryter dess nedre kant ───── */
+.lnHero {
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 1.75rem) clamp(7.5rem, 14vw, 10rem);
+}
+.lnHeroFrame {
+  position: relative;
+  max-width: 74rem;
+  margin: 0 auto;
+}
+.lnHeroPhoto {
+  aspect-ratio: 16 / 10;
+  width: min(82%, 54rem);
+  margin-left: auto;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+.lnHeroCard {
+  position: absolute;
+  left: 0;
+  bottom: clamp(-5rem, -9vw, -3.25rem);
+  width: min(94%, 28rem);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  padding: clamp(1.9rem, 4vw, 2.75rem);
+  box-shadow: 0 34px 70px -32px rgba(20, 24, 34, 0.4);
+  z-index: 2;
+}
+.lnHeroEyebrow {
+  display: inline-block;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: var(--color-accent-soft);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+}
+.lnHeroTitle {
+  margin: 1.1rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2rem, 4.2vw, 3.1rem);
+  line-height: 1.08;
+  letter-spacing: 0;
+  color: var(--color-fg);
+  white-space: pre-line;
+}
+.lnHeroLede {
+  margin: 1rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: var(--color-fg-2);
+}
+.lnHeroActions { margin-top: 1.7rem; }
+.lnHeroCta { font-size: 0.9rem; }
+
+@media (max-width: 800px) {
+  .lnHeroPhoto { width: 100%; aspect-ratio: 4 / 3; }
+  .lnHeroCard { position: static; width: 100%; max-width: 26rem; margin: -3.5rem auto 0; }
+  .lnHero { padding-bottom: clamp(2.5rem, 6vw, 3.5rem); }
+}
+
+/* ── Måne-ornament — sektionsdelaren (ersätter Floras stjälk-ornament) ──── */
+.lnOrnament {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: clamp(1.5rem, 4vw, 2.5rem) 0;
+  color: var(--color-primary);
+  opacity: 0.6;
+}
+
+/* ── STÄMNINGSKORT — Säsong / Prenumeration / Kurser, fast trio ─────────── */
+.lnMoodSection { padding: 0 0 clamp(4rem, 8vw, 6.5rem); }
+.lnMoodGrid {
+  max-width: 74rem;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1.5rem, 3vw, 2.25rem);
+}
+.lnMoodCard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  overflow: hidden;
+  transition: transform 500ms ease, box-shadow 500ms ease;
+}
+a.lnMoodCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px -26px rgba(20, 24, 34, 0.32);
+}
+.lnMoodImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.lnMoodBody { padding: 1.4rem 1.5rem 1.7rem; }
+.lnMoodTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.28rem;
+  color: var(--color-fg);
+}
+.lnMoodText {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+.lnMoodLink {
+  display: inline-block;
+  margin-top: 0.9rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  padding-bottom: 2px;
+}
+
+/* ── Delad kort-sektion — Ur butiken / Från bloggen ──────────────────────── */
+.lnCardSection { padding: clamp(4rem, 8vw, 6.5rem) 0; }
+.lnSecHead { text-align: center; padding: 0 1.25rem; }
+.lnSecTitle {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+  line-height: 1.15;
+  color: var(--color-fg);
+}
+.lnCardGrid {
+  max-width: 1100px;
+  margin: 2.75rem auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1.1rem, 2.5vw, 1.6rem);
+  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+}
+.lnCard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  overflow: hidden;
+  transition: transform 500ms ease, box-shadow 500ms ease;
+}
+.lnCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px -26px rgba(20, 24, 34, 0.32);
+}
+.lnCardImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.lnCardBody { padding: 1.1rem 1.2rem 1.35rem; }
+.lnCardName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.05rem;
+  color: var(--color-fg);
+}
+.lnCardMeta {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--color-fg-2);
+  line-height: 1.5;
+}
+.lnCardPrice {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--color-primary);
+}
+.lnBandCta {
+  display: block;
+  width: fit-content;
+  margin: 2.25rem auto 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  padding-bottom: 3px;
+  text-decoration: none;
+}
+
+/* ── OM — cirkulärt porträtt + text + statistik-trio ─────────────────────── */
+.lnAboutBand { padding: clamp(4.5rem, 9vw, 7rem) 0; }
+.lnAboutGrid {
+  display: grid;
+  grid-template-columns: 0.8fr 1fr;
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+  align-items: center;
+}
+.lnAboutMedia { display: flex; justify-content: center; }
+.lnPortrait {
+  width: clamp(14rem, 22vw, 19rem);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border: 1px solid var(--color-line);
+  box-shadow: 0 26px 50px -30px rgba(20, 24, 34, 0.35);
+}
+
+@media (max-width: 760px) {
+  .lnAboutGrid { grid-template-columns: 1fr; text-align: center; }
+  .lnAboutMedia { order: -1; }
+}
+
+/* ── Presentkort — smal rad, aldrig en hel sektion ───────────────────────── */
+.lnGiftRow {
+  padding: clamp(1.25rem, 3vw, 2rem) 1.5rem;
+  text-align: center;
+  background: var(--color-accent-soft);
+}
+.lnGiftInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+}
+.lnGiftLede {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-fg);
+}
+
+/* ── CLOSING — helbild med mörk gradient, ljus text ovanpå ──────────────── */
+.lnClosing {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-primary);
+  padding: clamp(5rem, 10vw, 7.5rem) 1.5rem;
+  text-align: center;
+  overflow: hidden;
+}
+.lnClosingOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(14, 18, 28, 0.6) 0%, rgba(14, 18, 28, 0.84) 100%);
+}
+.lnClosingInner {
+  position: relative;
+  z-index: 1;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+.lnClosingTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.9rem, 3.6vw, 2.9rem);
+  line-height: 1.12;
+  color: #fff;
+}
+.lnClosingLede {
+  margin: 1rem 0 0;
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+}
+.lnClosingCta { font-size: 0.95rem; }
+
+@media (max-width: 760px) {
+  .lnMoodGrid,
+  .lnCardGrid { grid-template-columns: 1fr; max-width: 24rem; }
+}

@@ -14,6 +14,7 @@
 
 import type { TenantBranding } from '@corevo/ui'
 import type { StorefrontTheme } from '@/lib/tenant-data'
+import { FLORIST_CONTENT } from './layouts/florist/registry'
 
 export type ThemeTeamMember = { name: string; role: string; img: string }
 export type ThemeStat = [value: string, label: string]
@@ -99,6 +100,10 @@ const FLORA_IMG = {
 } as const
 
 export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
+  // FLORIST-SVITEN (goal-58): copy + fotostandard för de 13 mallarna bor i deras
+  // egna <key>.theme.ts (florist/registry.ts). Spridda först — nycklarna nedan är
+  // disjunkta, så ordningen skuggar ingenting.
+  ...(FLORIST_CONTENT as Record<StorefrontTheme, ThemeContent>),
   salvia: {
     heroEyebrow: '— Frisörsalong',
     heroTitle: 'Skarpt klippt.\nSkönt mottagen.',
@@ -523,6 +528,17 @@ export type ResolvedThemeContent = ThemeContent & {
   galleryEyebrow?: string
   findEyebrow?: string
 }
+
+/**
+ * Vad en MALL får leverera som sina standardtexter: bas-kontraktet (ThemeContent)
+ * plus de sektions-texter som annars bara kan komma från ägaren (shopEyebrow,
+ * blogTitle, giftLede, closingTitle …, goal-57 K13). resolveThemeContent sprider
+ * `...base` → sätter mallen dem följer de med hela vägen till layouten, och ägarens
+ * settings.copy skriver fortfarande över dem per fält. Utan den här typen tvingas en
+ * mall till `as ThemeContent` (excess-property-check), vilket TYST döljer stavfel.
+ */
+export type ThemeContentDefaults = ThemeContent &
+  Partial<Omit<ResolvedThemeContent, keyof ThemeContent>>
 
 export function resolveThemeContent(
   theme: StorefrontTheme,

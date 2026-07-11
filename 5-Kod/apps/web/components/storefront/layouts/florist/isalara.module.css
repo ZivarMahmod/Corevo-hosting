@@ -1,0 +1,237 @@
+/* ISALARA — djupblå/marin + varm sand, elegant kvällskänsla. Egna klasser
+   prefixade "isl". Delade sf*-klasser (services/about/plats/closing-scaffolding)
+   lånas från ../../storefront.module.css via `shared` i IsalaraLayout.tsx. */
+
+/* ---------- 1. HERO — skript-rubrik centrerad över bild ---------- */
+.islHero {
+  position: relative;
+  min-height: clamp(30rem, 78vh, 44rem);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.islHeroScrim {
+  position: absolute;
+  inset: 0;
+  /* Rent svart skrim (universell foto-kontrast-teknik, ingen egen dekorfärg) —
+     navyn i paletten gör jobbet, ingen extra kulör behövs. */
+  background: linear-gradient(180deg, rgba(4, 10, 18, 0.42) 0%, rgba(4, 10, 18, 0.3) 40%, rgba(4, 10, 18, 0.62) 100%);
+}
+.islHeroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  text-align: center;
+}
+.islHeroEyebrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fdf9f0;
+}
+/* Skriptet är signaturen: HANDSKRIVEN rubrik, egen skala helt fristående från
+   sf-h1/h2 (som resten av mallen kör i lugn Cormorant-serif). */
+.islHeroTitle {
+  margin: 14px 0 0;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: clamp(3.4rem, 9vw, 6.75rem);
+  line-height: 1.05;
+  color: #fff;
+  white-space: pre-line;
+}
+.islHeroLede {
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 30rem;
+  margin: 20px auto 0;
+}
+.islHeroCtaRow { margin-top: 26px; }
+/* Liten CTA (kravet) — samma --color-accent/-fg som .btn-accent redan läser,
+   bara mindre yta. */
+.islHeroCta {
+  padding: 0.65rem 1.6rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- 2. FYRA IKON-GENVÄGAR — ljus rad direkt under heron ---------- */
+.islShortcuts {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-line);
+}
+.islShortcutGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(1.75rem, 4vw, 2.75rem) clamp(1.25rem, 4vw, 1.75rem);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(1rem, 3vw, 1.75rem);
+}
+.islShortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.5rem;
+  border-radius: var(--sf-radius);
+  transition: background var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+a.islShortcut:hover { background: var(--color-accent-soft); }
+.islShortcutIconWrap {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
+}
+.islShortcutLabel {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.islShortcutSub {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--color-fg-2);
+  line-height: 1.4;
+}
+@media (max-width: 640px) {
+  .islShortcutGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---------- 3. MÖRKBLÅTT BAND — en rad ---------- */
+.islBand {
+  background: var(--color-primary-d);
+  padding: clamp(2.25rem, 4.5vw, 3.25rem) 1.5rem;
+  text-align: center;
+}
+.islBandText {
+  max-width: 44rem;
+  margin: 0 auto;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.2rem, 2.3vw, 1.7rem);
+  line-height: 1.4;
+  color: #fdf9f0;
+}
+
+/* ---------- 4. TVÅ STORA BILDER SIDA VID SIDA (portfölj) ---------- */
+.islDuo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.islDuoImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+}
+@media (max-width: 700px) {
+  .islDuo { grid-template-columns: 1fr; }
+}
+
+/* ---------- Sektionsrubrik (delas av "Ur butiken" + "Från floristen") ---------- */
+.islSecHead {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.islSecCta {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--color-primary);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  white-space: nowrap;
+  transition: border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
+}
+.islSecCta:hover { border-color: var(--color-primary); }
+
+/* ---------- 5/8. KORT-GRID (butik + blogg) ---------- */
+.islCardGrid {
+  max-width: 1180px;
+  margin: 2.25rem auto 0;
+  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+.islCard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.islCardImgWrap {
+  border-radius: var(--sf-radius);
+  overflow: hidden;
+  background: var(--color-accent-soft);
+}
+.islCardImg {
+  aspect-ratio: 4 / 3;
+  background-size: cover;
+  background-position: center;
+  transition: transform var(--dur-fast, 0.2s) var(--ease-out, ease);
+}
+.islCard:hover .islCardImg { transform: scale(1.05); }
+.islCardName {
+  margin: 0.85rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--color-fg);
+}
+.islCardMeta {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--color-fg-2);
+}
+@media (max-width: 760px) {
+  .islCardGrid { grid-template-columns: 1fr; max-width: 24rem; }
+}
+
+/* ---------- 9. PRESENTKORT-RAD (smal, aldrig egen sektion) ---------- */
+.islGiftRow {
+  padding: clamp(1.1rem, 2.5vw, 1.6rem) 1.5rem;
+  text-align: center;
+  background: var(--color-accent-soft);
+}
+.islGiftInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+}
+.islGiftCta {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--color-primary);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+}
+.islGiftCta:hover { border-color: var(--color-primary); }

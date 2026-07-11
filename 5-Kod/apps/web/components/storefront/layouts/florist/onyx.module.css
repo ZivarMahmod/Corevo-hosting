@@ -1,0 +1,267 @@
+/* ═══════════════ ONYX — mörk, dramatisk lyxflorist (florist-sviten) ═══════════════
+   "Ett svärd, inte en mjuk morot": hög kontrast, EN driven accentfärg (korall),
+   skarpa hörn (temats --sf-radius: 0px) och konsekvent bildratio. Mint förekommer
+   BARA som två fullstora band (annonsrad + leverans-band) — aldrig som en tunt
+   tonad yta — och håller sina EGNA dekorfärger lokalt (--onyx-mint/--onyx-ink),
+   satta här i sina egna rot-klasser, inte i den delade paletten. */
+
+.onxAnnounce,
+.onxDeliveryBand {
+  --onyx-mint: #3fe7b0;
+  --onyx-ink: #101210;
+}
+
+/* 1 — MINT ANNONSRAD */
+.onxAnnounce {
+  background: var(--onyx-mint);
+  color: var(--onyx-ink);
+  text-align: center;
+  padding: 0.6rem 1.25rem;
+}
+.onxAnnounce p {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* 2 — MÖRKT WORDMARK-BAND — centrerat namn + dekorativt EST-emblem */
+.onxWordmark {
+  background: var(--color-bg);
+  text-align: center;
+  padding: clamp(28px, 4.5vw, 44px) 24px clamp(20px, 3vw, 30px);
+}
+.onxWordmarkName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(22px, 2.6vw, 32px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.onxEstBadge {
+  display: inline-grid;
+  place-items: center;
+  margin: 12px auto 0;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* 3 — HERO: vänsterställd text ovanpå en mörk bild (INTE centrerad) */
+.onxHero {
+  position: relative;
+  min-height: clamp(30rem, 74vh, 42rem);
+  display: flex;
+  align-items: flex-end;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-bg);
+}
+.onxHeroScrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(6, 6, 5, 0.82) 0%, rgba(6, 6, 5, 0.38) 48%, rgba(6, 6, 5, 0.08) 78%),
+    linear-gradient(0deg, rgba(6, 6, 5, 0.65) 0%, rgba(6, 6, 5, 0) 42%);
+}
+.onxHeroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 36rem;
+  padding: clamp(40px, 7vw, 76px) clamp(1.25rem, 5vw, 4.5rem);
+}
+.onxHeroTitle {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(46px, 6.8vw, 92px);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  color: #fdfbf6;
+  margin: 16px 0 0;
+  white-space: pre-line;
+}
+/* Delad rubrikskala för sektionerna jag skriver själv (services/closing = onxTitleLg,
+   kort-sektioner/om/plats = onxSecTitle) — egen vikt 400 (DM Serif Display finns bara
+   i 400; en 600-deklaration hade tvingat fram en syntetisk fetstil). Tydligt STEG
+   ner mot brödtexten (16-19px) = skärpan, inte tyngden. */
+.onxTitleLg {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(32px, 4.6vw, 60px);
+  line-height: 1.05;
+  color: var(--color-fg);
+  margin: 12px 0 0;
+}
+.onxSecTitle {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(26px, 3.2vw, 40px);
+  line-height: 1.1;
+  color: var(--color-fg);
+  margin: 10px 0 0;
+}
+.onxHeroLede {
+  font-family: var(--font-body);
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.6;
+  color: rgba(253, 251, 246, 0.82);
+  max-width: 28rem;
+  margin: 20px 0 0;
+}
+.onxHeroActions { margin-top: 28px; }
+.onxHeroCta { font-size: 14px; }
+
+/* 4 — MINTGRÖNT LEVERANS-BAND */
+.onxDeliveryBand {
+  background: var(--onyx-mint);
+  padding: clamp(22px, 3.5vw, 34px) 24px;
+}
+.onxDeliveryInner {
+  max-width: 60rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem 1.75rem;
+  text-align: center;
+}
+.onxDeliveryText {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(18px, 2vw, 24px);
+  color: var(--onyx-ink);
+}
+.onxDeliveryCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--onyx-ink);
+  color: var(--onyx-mint);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.6rem;
+  /* Radie = alltid full pill på knappar, ALDRIG --sf-radius (som är 0 här) —
+     binärt hörnradie-system: 0 på struktur, pill på knappar/taggar. */
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--onyx-ink);
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.onxDeliveryCta:hover {
+  background: transparent;
+  color: var(--onyx-ink);
+}
+
+/* 5 — MÖRK PRODUKTTRIO MOT SVART */
+.onxTrioSection {
+  background: var(--color-bg);
+  padding: clamp(48px, 8vw, 84px) 24px;
+}
+.onxTrioHead { text-align: center; margin-bottom: clamp(24px, 4vw, 40px); }
+.onxTrio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 2vw, 20px);
+  max-width: 72rem;
+  margin: 0 auto;
+}
+.onxTrioImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-surface);
+}
+@media (max-width: 700px) {
+  .onxTrio { grid-template-columns: 1fr; max-width: 24rem; }
+}
+
+/* UR BUTIKEN / BLOGGEN — invävda modulsektioner i mörka, bildledda kort */
+.onxCardSection {
+  background: var(--color-surface);
+  padding: clamp(48px, 8vw, 84px) 24px;
+}
+.onxSecHead { text-align: center; margin-bottom: clamp(24px, 4vw, 40px); }
+.onxCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 2.5vw, 28px);
+  max-width: 72rem;
+  margin: 0 auto;
+}
+.onxCard {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  overflow: hidden;
+  transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.onxCard:hover { transform: translateY(-4px); border-color: var(--color-primary); }
+.onxCardImg {
+  aspect-ratio: 4 / 3;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-surface);
+}
+.onxCardName {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--color-fg);
+  margin: 1rem 1.1rem 0.3rem;
+}
+.onxCardMeta {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  margin: 0 1.1rem 1.1rem;
+}
+@media (max-width: 760px) {
+  .onxCardGrid { grid-template-columns: 1fr; max-width: 24rem; }
+}
+
+/* OM — surface-panel (bryter rytmen mot svart) runt den delade sfAboutGrid */
+.onxAboutSection {
+  background: var(--color-surface);
+  padding: clamp(4.5rem, 9vw, 7rem) 0;
+}
+
+/* PRESENTKORT — smal rad, aldrig en hel sektion */
+.onxGiftRow {
+  background: var(--color-bg);
+  padding: clamp(20px, 3vw, 32px) 24px;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+.onxGiftInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  text-align: center;
+}
+.onxGiftLede {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(16px, 1.6vw, 19px);
+  color: var(--color-fg);
+}

@@ -31,7 +31,15 @@ export type CustomOverride = { css?: string }
  *  storefront root, which selects the theme's color/font base tokens in
  *  @corevo/ui/tokens.css. injectTenantTokens() then layers any per-tenant override
  *  inline on top. Default = leander. */
-export const STOREFRONT_THEMES = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora', 'freshcut'] as const
+export const STOREFRONT_THEMES = [
+  'salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora', 'freshcut',
+  // FLORIST-SVITEN (goal-58) — 13 mallar; allt annat om dem (layout, palett, copy,
+  // caps, CSS) bor i components/storefront/layouts/florist/registry.ts. Nycklarna
+  // MÅSTE vara literaler här (StorefrontTheme härleds ur listan) → den enda platsen
+  // en florist-mall syns utanför sitt registry.
+  'calytrix', 'aurora', 'sage', 'oliviathyme', 'paisley', 'onyx', 'viora',
+  'isalara', 'seraphina', 'wildthistle', 'mina', 'lunaria', 'eloria',
+] as const
 export type StorefrontTheme = (typeof STOREFRONT_THEMES)[number]
 export const DEFAULT_STOREFRONT_THEME: StorefrontTheme = 'leander'
 

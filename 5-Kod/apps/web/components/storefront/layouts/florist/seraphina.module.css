@@ -1,0 +1,291 @@
+/* ═══════════════ SERAPHINA — champagne/guld bröllopslyx ═══════════════
+   Signaturen: (1) fullskärms-hero med en centrerad kort-ram (tunn guldram runt
+   rubriken, inget nav-läckage), (2) BRÖLLOP FÖRST — stor bild + text + "Begär
+   offert" direkt efter heron (offerten är hjälten, inte butiken), (3) tjänste-
+   priser i en elegant TVÅSPALT, (4) shop-teasers, (5) om med guld-statistik-
+   trio, (6) galleri (delad Gallery-komponent, redan tre kolumner), (7) blogg,
+   (8) presentkort, (9) plats, (10) closing. Alla klasser prefixade "sera" —
+   unika för mallen. Temats variabler (--color-*, --font-*, --sf-radius) styr
+   paletten; två egna dekorvariabler sätts i roten nedan. */
+
+.seraRoot {
+  --sera-scrim: linear-gradient(
+    180deg,
+    rgba(36, 31, 26, 0.12) 0%,
+    rgba(36, 31, 26, 0.38) 55%,
+    rgba(36, 31, 26, 0.62) 100%
+  );
+  --sera-frame-bg: rgba(253, 251, 246, 0.92);
+  --sera-cta-fg: #fff;
+}
+
+/* ── 1. HERO — fullskärmsbild + centrerad guldram-kort ───────────────────── */
+.seraHero {
+  position: relative;
+  margin-top: calc(-1 * var(--nav-h));
+  min-height: clamp(34rem, 92vh, 52rem);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.seraHeroImg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-surface);
+}
+.seraHeroScrim {
+  position: absolute;
+  inset: 0;
+  background: var(--sera-scrim);
+}
+.seraHeroFrame {
+  position: relative;
+  z-index: 1;
+  max-width: 36rem;
+  margin: 0 1.5rem;
+  padding: clamp(2.5rem, 5vw, 3.75rem) clamp(2rem, 5vw, 3.25rem);
+  text-align: center;
+  background: var(--sera-frame-bg);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--sf-radius);
+  box-shadow:
+    inset 0 0 0 6px rgba(253, 251, 246, 0.92),
+    inset 0 0 0 7px var(--color-primary),
+    var(--sf-shadow-card);
+}
+.seraHeroEyebrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.seraHeroTitle {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-style: italic;
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
+  line-height: 1.08;
+  color: var(--color-fg);
+  margin: 0.9rem 0 0;
+  white-space: pre-line;
+}
+.seraHeroLede {
+  margin: 1.1rem auto 0;
+  max-width: 26rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+.seraHeroActions { margin-top: 1.9rem; }
+.seraHeroCta { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.8rem; }
+
+/* ── 2. BRÖLLOP FÖRST — offerten är hjälten ──────────────────────────────── */
+.seraWedding { padding: clamp(4.5rem, 9vw, 7rem) 0; background: var(--color-surface); }
+.seraWeddingGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(2.5rem, 6vw, 4.5rem);
+  align-items: center;
+}
+.seraWeddingImgWrap {
+  padding: 0.55rem;
+  background: var(--color-bg);
+  box-shadow: var(--sf-shadow-soft);
+  border-radius: var(--sf-radius);
+}
+.seraWeddingImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: calc(var(--sf-radius) - 1px);
+}
+.seraWeddingEyebrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.seraWeddingTitle {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1.9rem, 3.6vw, 2.75rem);
+  line-height: 1.14;
+  color: var(--color-fg);
+  margin: 0.75rem 0 0;
+}
+.seraWeddingBody {
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: var(--color-fg-2);
+  margin: 1.1rem 0 0;
+  max-width: 30rem;
+}
+.seraWeddingCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 1.75rem;
+  background: var(--color-primary);
+  color: var(--sera-cta-fg);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.95rem 2.1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.seraWeddingCta:hover { background: var(--color-primary-d); }
+
+@media (max-width: 780px) {
+  .seraWeddingGrid { grid-template-columns: 1fr; }
+  .seraWeddingImgWrap { max-width: 22rem; margin: 0 auto; }
+}
+
+/* ── 3. TJÄNSTE-PRISER — elegant tvåspalt ────────────────────────────────── */
+.seraServices { padding: clamp(4.5rem, 9vw, 7rem) 0; }
+.seraPriceCols {
+  margin-top: 2.75rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 clamp(2.5rem, 5vw, 4rem);
+}
+.seraPriceCol { border-top: 1px solid var(--color-line); }
+.seraPriceRow {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--color-line);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), padding-left var(--dur-fast) var(--ease-out);
+}
+.seraPriceRow:hover { background: var(--color-accent-soft); padding-left: 0.6rem; }
+.seraPriceRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.seraPriceNum {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--color-primary);
+  align-self: start;
+  margin-top: 0.15rem;
+}
+.seraPriceMain { min-width: 0; }
+.seraPriceName {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+  color: var(--color-fg);
+}
+.seraPriceDesc {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--color-fg-2);
+  margin-top: 0.2rem;
+  line-height: 1.45;
+}
+.seraPriceMeta { text-align: right; white-space: nowrap; }
+.seraPricePrice { font-family: var(--font-body); font-weight: 600; font-size: 0.95rem; color: var(--color-fg); }
+
+@media (max-width: 700px) {
+  .seraPriceCols { grid-template-columns: 1fr; }
+  .seraPriceCol + .seraPriceCol { border-top: none; }
+}
+
+/* ── 4. SHOP-TEASERS ──────────────────────────────────────────────────────── */
+.seraShop { padding: 0 1.5rem clamp(4.5rem, 8vw, 7rem); }
+.seraShopHead { max-width: 38rem; margin: 0 auto; text-align: center; }
+.seraShopGrid {
+  max-width: 1100px;
+  margin: clamp(2.25rem, 4vw, 3rem) auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1.1rem, 2.5vw, 1.75rem);
+}
+.seraShopCard { display: block; text-decoration: none; color: inherit; }
+.seraShopImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.seraShopCard:hover .seraShopImg { transform: translateY(-5px); }
+.seraShopInfo { display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; margin-top: 0.9rem; }
+.seraShopName { font-family: var(--font-display); font-size: 1.1rem; color: var(--color-fg); }
+.seraShopPrice { font-family: var(--font-body); font-weight: 600; color: var(--color-primary); white-space: nowrap; }
+.seraShopFoot { text-align: center; margin-top: clamp(2rem, 4vw, 2.75rem); }
+
+@media (max-width: 700px) {
+  .seraShopGrid { grid-template-columns: 1fr; max-width: 24rem; }
+}
+
+/* ── 5. OM — guld-statistik-trio ─────────────────────────────────────────── */
+.seraAbout { padding: clamp(4.5rem, 9vw, 7rem) 0; background: var(--color-surface); }
+.seraAboutGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 1.75rem);
+  display: grid;
+  grid-template-columns: 0.85fr 1fr;
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+  align-items: center;
+}
+.seraAboutPhotoWrap { padding: 0.55rem; background: var(--color-bg); box-shadow: var(--sf-shadow-soft); border-radius: var(--sf-radius); }
+.seraAboutPhoto { aspect-ratio: 4 / 5; background-size: cover; background-position: center; background-color: var(--color-accent-soft); border-radius: calc(var(--sf-radius) - 1px); }
+
+@media (max-width: 780px) {
+  .seraAboutGrid { grid-template-columns: 1fr; }
+  .seraAboutPhotoWrap { max-width: 20rem; margin: 0 auto; }
+}
+
+/* ── 7. BLOGG ─────────────────────────────────────────────────────────────── */
+.seraBlog { padding: clamp(4rem, 7vw, 6rem) 1.5rem; }
+.seraBlogHead { max-width: 40rem; margin: 0 auto; text-align: center; }
+.seraBlogGrid {
+  max-width: 1100px;
+  margin: clamp(2.25rem, 4vw, 3rem) auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1.1rem, 2.5vw, 1.75rem);
+}
+.seraBlogCard { display: block; text-decoration: none; color: inherit; }
+.seraBlogImg {
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.seraBlogCard:hover .seraBlogImg { transform: translateY(-4px); }
+.seraBlogName { font-family: var(--font-display); font-size: 1.1rem; color: var(--color-fg); margin: 0.85rem 0 0.3rem; }
+.seraBlogMeta { font-family: var(--font-body); font-size: 0.85rem; color: var(--color-fg-2); margin: 0; }
+.seraBlogFoot { text-align: center; margin-top: clamp(1.75rem, 3vw, 2.5rem); }
+
+@media (max-width: 700px) {
+  .seraBlogGrid { grid-template-columns: 1fr; max-width: 24rem; }
+}
+
+/* ── 8. PRESENTKORT — smal rad ───────────────────────────────────────────── */
+.seraGift { padding: clamp(1.5rem, 3vw, 2.25rem) 1.5rem; text-align: center; background: var(--color-accent-soft); }
+.seraGiftInner { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 0.5rem 1rem; }

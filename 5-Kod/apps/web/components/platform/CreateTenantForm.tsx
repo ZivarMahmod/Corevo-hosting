@@ -24,6 +24,7 @@ import {
   SiteEditor,
   type SiteEditorRegion,
 } from '@/components/admin/SiteEditor'
+import { FLORIST_THEMES } from '@/components/storefront/layouts/florist/registry'
 import { resolveSiteContent } from '@/lib/sajtbyggare/resolve'
 import { SALVIA_REGION_MANIFEST } from '@/lib/sajtbyggare/manifest/salvia'
 import { type Draft } from '@/lib/sajtbyggare/editor/overlay-model'
@@ -75,7 +76,33 @@ type ThemeDef = {
 const uns = (id: string) =>
   `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`
 // freshcut utesluten (FAS 1 2026-07-11): kundens eget tema erbjuds aldrig nya tenants.
-const THEME_KEYS: ThemeKey[] = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora']
+const BUILTIN_THEME_KEYS: ThemeKey[] = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora']
+
+// FLORIST-SVITEN (goal-58): de 13 mallarnas preview-kort HÄRLEDS ur florist-registryt
+// (palett, typsnitt, radie, copy, hero-foto) — ingen kopierad literal-tabell som kan
+// glida isär från det storefronten faktiskt renderar.
+const FLORIST_WIZARD: Record<string, ThemeDef> = Object.fromEntries(
+  FLORIST_THEMES.map((t) => [
+    t.key,
+    {
+      name: t.name,
+      primary: t.palette.primary,
+      bg: t.palette.bg,
+      fg: t.palette.fg,
+      fg2: t.palette.fg2,
+      line: t.palette.line,
+      display: t.fonts.display,
+      radius: parseInt(t.radius, 10) || 0,
+      caps: false,
+      vibe: t.desc,
+      eyebrow: t.content.heroEyebrow.replace(/^—\s*/, ''),
+      hero: t.content.heroTitle.replace('\n', ' '),
+      lede: t.content.heroLede,
+      img: t.content.heroImages[0] ?? uns('1487530811176-3780de880c2d'),
+    } satisfies ThemeDef,
+  ]),
+)
+const THEME_KEYS: string[] = [...BUILTIN_THEME_KEYS, ...FLORIST_THEMES.map((t) => t.key)]
 const WIZARD_THEMES: Record<ThemeKey, ThemeDef> = {
   salvia: {
     name: 'Salvia', primary: '#5E7361', bg: '#F6F4EE', fg: '#232520', fg2: '#5C5F55', line: '#E2DED2',
@@ -136,7 +163,11 @@ function neutralTheme(name: string): ThemeDef {
 /** Preview metadata for a template key: the rich built-in theme when known, else a
  *  neutral fallback carrying the template's display name. */
 function wizardTheme(key: string, name?: string): ThemeDef {
-  return (WIZARD_THEMES as Record<string, ThemeDef>)[key] ?? neutralTheme(name ?? key)
+  return (
+    (WIZARD_THEMES as Record<string, ThemeDef>)[key] ??
+    FLORIST_WIZARD[key] ??
+    neutralTheme(name ?? key)
+  )
 }
 
 // Multi-bransch (spår 5): a NEW step 0 "Bransch" leads the wizard (preset-driven),
@@ -268,7 +299,7 @@ export function CreateTenantForm({
   // five themes when no bransch is picked OR the bransch has no templates seeded yet,
   // so the step is never empty. The first option's key is the safe default theme.
   const BUILTIN_TEMPLATES: TemplateOption[] = useMemo(
-    () => THEME_KEYS.map((k) => ({ key: k, name: WIZARD_THEMES[k].name })),
+    () => THEME_KEYS.map((k) => ({ key: k, name: wizardTheme(k).name })),
     [],
   )
   const templateOptions: TemplateOption[] = useMemo(() => {
