@@ -267,3 +267,36 @@ TILLFÄLLEN med datum, max antal platser och anmälningsavgift — inte 1:1-bokn
 tsc/vitest/eslint → v1.7.24 → prod: /kurser listar tillfällen, anmälan minskar
 platser kvar, kundkortets Kurser-flik visar anmälan; FreshCut orörd (ingen
 kurser-nav utan event).
+
+**UTFALL KÖRNING 4 (2026-07-11):** KLART — tag v1.7.24. tenant_events/registrations
+(0052), publik /kurser + anmälan m. kapacitetsvakt + bekräftelsemejl, KursAdmin i
+båda ytorna, floristens 2 kurser seedade, gamla Kurs-tjänster av. 699 tester gröna.
+OBS: överbokningsvakt = check-then-insert (ponytail-ceiling dokumenterad).
+
+---
+
+## DETALJPLAN KÖRNING 5 — Betalningar per kund (Stripe i kundbilden)
+
+**Läge:** hela Stripe Connect-rälsen FINNS (G09): Express-konton, onboarding-länk,
+status-spegling, payments_enabled-toggle, checkout-session för awaiting_payment-
+ordrar med DIRECT charge på kundens konto. Allt bor dock ENBART i kund-adminens
+/admin/installningar. Körning 5 = samma kontroll i KUNDKORTET (principen från
+körning 1) så Zivar kopplar betalningar åt kunden.
+
+### Steg
+1. lib/admin/stripe.ts: alla tre actions (startStripeOnboarding, refreshStripeStatus,
+   setPaymentsEnabled) → moduleCtx(fd)-dual-guard. Konto-mejl vid skapande = bara
+   salon-adminens (platform-vägen skickar null — kunden fyller i hos Stripe).
+   Return/refresh-URL per yta: kund-admin → /admin/installningar, kundkortet →
+   /salonger/<id>. revalidatePath för båda ytorna.
+2. StripeConnectCard: tenantId-prop + TenantScope/TenantField (tre formulär).
+3. Kundkortets Integrationer-flik: riktiga Stripe-panelen (samma kort) ersätter den
+   statiska Stripe-raden; payments_enabled + stripe_* läses per kund.
+4. Zettle: ärlig "planerad"-rad (ingen fejk-integration).
+5. Presentkort-köp: SKJUTS — kräver egen köpräls; byggs när första kund vill sälja
+   presentkort online (noterat i goal-54 §2).
+
+### Verify
+tsc/vitest/eslint → v1.7.25 → prod: kundkortets Integrationer visar Stripe-panel för
+floristen ("Ej kopplad" + Koppla Stripe-knapp — riktig koppling görs när floristens
+Stripe-konto ska in); kund-admin /admin/installningar oförändrad; FreshCut orörd.

@@ -8,6 +8,7 @@ import {
   type StripeActionState,
 } from '@/lib/admin/stripe'
 import { Card, Callout, Badge } from '@/components/portal/ui'
+import { TenantScope, TenantField } from './TenantScope'
 import styles from './admin.module.css'
 
 export type StripeConnectCardProps = {
@@ -18,6 +19,8 @@ export type StripeConnectCardProps = {
   paymentsEnabled: boolean
   /** True right after returning from the Stripe-hosted onboarding (?stripe=return). */
   justReturned: boolean
+  /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
+  tenantId?: string
 }
 
 /**
@@ -72,6 +75,7 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
     !toggleState.error
 
   return (
+    <TenantScope tenantId={props.tenantId}>
     <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
       <h2 className="h2" style={{ margin: 0 }}>
         Betalning
@@ -79,6 +83,7 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
 
       {/* ── Live-toggle: Betalning vid bokning (= payments_enabled) ── */}
       <form action={toggleAction} ref={toggleRef}>
+        <TenantField />
         <input type="hidden" name="payments_enabled" value={(!props.paymentsEnabled).toString()} />
         <label className="pswitch-row" style={{ cursor: canToggle ? 'pointer' : 'default' }}>
           <span style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', minWidth: 0 }}>
@@ -198,6 +203,7 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
       {/* ── Shippade actions: koppla/hantera + uppdatera status ── */}
       <div className={styles.actions}>
         <form action={onboardAction}>
+          <TenantField />
           <button type="submit" className={styles.btn} disabled={onboarding}>
             {onboarding
               ? 'Öppnar Stripe…'
@@ -211,6 +217,7 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
 
         {props.hasAccount ? (
           <form action={refreshAction} ref={refreshRef}>
+            <TenantField />
             <button type="submit" className={styles.btn} disabled={refreshing}>
               {refreshing ? 'Uppdaterar…' : 'Uppdatera status'}
             </button>
@@ -227,5 +234,6 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
         </p>
       ) : null}
     </Card>
+    </TenantScope>
   )
 }

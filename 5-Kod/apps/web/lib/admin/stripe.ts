@@ -3,17 +3,17 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { requirePortal } from '@/lib/auth/session'
-import { getAdminTenant } from './tenant'
+import { moduleCtx } from '@/lib/admin/module-ctx'
 import { revalidateTenant } from './tenant'
 import { getStripe } from '@/lib/stripe/client'
 import { createExpressAccount, createOnboardingLink, fetchConnectStatus } from '@/lib/stripe/connect'
 import { requestOrigin } from '@/lib/url'
 
-// Stripe Connect onboarding actions for the salongsadmin (G09 step 2). The role
-// gate lives here (RLS isolates tenants but is not role-aware). Stripe writes to
-// tenants.stripe_* go through the authed client — tenants_rls lets an admin update
-// their OWN tenant row.
+// Stripe Connect onboarding actions (G09 step 2), delade mellan kund-adminens
+// /admin/installningar och super-admin-kundkortet /salonger/[id] (goal-54 körning 5)
+// via moduleCtx-dual-guarden: platform_admin väljer tenant ur formulärets hidden
+// tenantId, salon_admin tvingas ur JWT. RLS isolates tenants but is not role-aware —
+// the role gate lives here; platform-adminens writes går via platform_admin-claimet.
 
 export type StripeActionState = { error?: string; success?: string }
 
@@ -30,9 +30,9 @@ export async function startStripeOnboarding(
   _prev: StripeActionState,
   _fd: FormData,
 ): Promise<StripeActionState> {
-  const user = await requirePortal('admin')
-  const tenant = await getAdminTenant(user)
-  if (!tenant) return { error: NO_TENANT }
+  const ctx = await moduleCtx(_fd)
+  if (!ctx) return { error: NO_TENANT }
+  const { user, tenant } = ctx
 
   const stripe = getStripe()
   if (!stripe) return { error: NO_STRIPE }
@@ -47,7 +47,9 @@ export async function startStripeOnboarding(
   let accountId = row?.stripe_account_id ?? null
   if (!accountId) {
     try {
-      accountId = await createExpressAccount(stripe, user.email)
+      // Konto-mejlen är KUNDENS: bara salon-adminens egen mejl används; platform-
+      // vägen skickar null så kunden fyller i sin mejl hos Stripe (aldrig Zivars).
+      accountId = await createExpressAccount(stripe, user.platformAdmin ? null : user.email)
     } catch {
       return { error: 'Kunde inte skapa Stripe-konto. Försök igen.' }
     }
@@ -59,11 +61,14 @@ export async function startStripeOnboarding(
   }
 
   const origin = await requestOrigin()
+  // Tillbaka till ytan man kom ifrån: kundkortet för platform-admin, annars
+  // kund-adminens inställningar.
+  const backPath = user.platformAdmin ? `/salonger/${tenant.id}` : '/admin/installningar'
   let url: string
   try {
     url = await createOnboardingLink(stripe, accountId, {
-      refreshUrl: `${origin}/admin/installningar?stripe=refresh`,
-      returnUrl: `${origin}/admin/installningar?stripe=return`,
+      refreshUrl: `${origin}${backPath}?stripe=refresh`,
+      returnUrl: `${origin}${backPath}?stripe=return`,
     })
   } catch {
     return { error: 'Kunde inte skapa onboarding-länk. Försök igen.' }
@@ -76,9 +81,9 @@ export async function refreshStripeStatus(
   _prev: StripeActionState,
   _fd: FormData,
 ): Promise<StripeActionState> {
-  const user = await requirePortal('admin')
-  const tenant = await getAdminTenant(user)
-  if (!tenant) return { error: NO_TENANT }
+  const ctx = await moduleCtx(_fd)
+  if (!ctx) return { error: NO_TENANT }
+  const { tenant } = ctx
 
   const stripe = getStripe()
   if (!stripe) return { error: NO_STRIPE }
@@ -109,6 +114,7 @@ export async function refreshStripeStatus(
   if (error) return { error: GENERIC }
 
   revalidatePath('/admin/installningar')
+  revalidatePath(`/salonger/${tenant.id}`)
   return {
     success: status.chargesEnabled
       ? 'Stripe aktiv — kortbetalning möjlig.'
@@ -125,9 +131,9 @@ export async function setPaymentsEnabled(
   _prev: StripeActionState,
   fd: FormData,
 ): Promise<StripeActionState> {
-  const user = await requirePortal('admin')
-  const tenant = await getAdminTenant(user)
-  if (!tenant) return { error: NO_TENANT }
+  const ctx = await moduleCtx(fd)
+  if (!ctx) return { error: NO_TENANT }
+  const { tenant } = ctx
 
   const enabled = String(fd.get('payments_enabled') ?? '') === 'true'
   const supabase = await createClient()
@@ -150,5 +156,6 @@ export async function setPaymentsEnabled(
 
   revalidateTenant(tenant.slug)
   revalidatePath('/admin/installningar')
+  revalidatePath(`/salonger/${tenant.id}`)
   return { success: enabled ? 'Onlinebetalning vid bokning: PÅ.' : 'Onlinebetalning vid bokning: AV.' }
 }

@@ -27,6 +27,7 @@ import { BloggAdmin } from '@/components/admin/BloggAdmin'
 import { KursAdmin } from '@/components/admin/KursAdmin'
 import { MediaLibrary } from '@/components/admin/MediaLibrary'
 import { OffertInbox } from '@/components/admin/OffertInbox'
+import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
 import { SidaStudio } from '@/components/platform/SidaStudio'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
 import { createClient } from '@/lib/supabase/server'
@@ -148,6 +149,22 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     .not('avatar_url', 'is', null)
     .limit(1)
   const hasStaffPhoto = (staffPhotoRows?.length ?? 0) > 0
+
+  // Stripe-läget per kund (goal-54 körning 5): kundkortets Integrationer-flik bär
+  // den RIKTIGA Stripe-panelen (samma StripeConnectCard som kund-adminens
+  // /admin/installningar, dual-guardad via moduleCtx) — inte bara en status-rad.
+  const [{ data: stripeRow }, { data: paymentsRow }] = await Promise.all([
+    supabaseForStaffPhoto
+      .from('tenants')
+      .select('stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted')
+      .eq('id', id)
+      .maybeSingle(),
+    supabaseForStaffPhoto
+      .from('tenant_settings')
+      .select('payments_enabled')
+      .eq('tenant_id', id)
+      .maybeSingle(),
+  ])
 
   const url = publicUrl(tenant.slug)
   const serviceRoleAvailable = hasServiceRole()
@@ -538,7 +555,19 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
     Integrationer: (
       <div className={styles.cardGrid}>
-        {integrationRows(tenant.stripe_charges_enabled, operative.googleReviewUrl).map((it) => (
+        {/* KUNDENS betalningar (goal-54 körning 5): samma Stripe-panel som kundens
+            egen admin — koppla konto, onboarding-länk, status, betalning-vid-bokning-
+            toggle. Pengarna går till KUNDENS konto (DIRECT charges), aldrig till oss. */}
+        <StripeConnectCard
+          tenantId={tenant.id}
+          hasAccount={Boolean(stripeRow?.stripe_account_id)}
+          chargesEnabled={stripeRow?.stripe_charges_enabled ?? false}
+          payoutsEnabled={stripeRow?.stripe_payouts_enabled ?? false}
+          detailsSubmitted={stripeRow?.stripe_details_submitted ?? false}
+          paymentsEnabled={paymentsRow?.payments_enabled ?? false}
+          justReturned={false}
+        />
+        {integrationRows(operative.googleReviewUrl).map((it) => (
           <Card key={it.name}>
             <div className={styles.intRow}>
               <div className={styles.intAvatar} style={{ background: it.color }} aria-hidden="true">
@@ -713,17 +742,17 @@ type IntRow = {
   color: string
   letter: string
 }
-function integrationRows(stripeEnabled: boolean, googleReviewUrl: string | null): IntRow[] {
+// Stripe har sedan körning 5 ett RIKTIGT kort (StripeConnectCard ovan) — raden här
+// skulle bara duplicera det. Zettle = ärlig "planerad" (ingen fejk-integration).
+function integrationRows(googleReviewUrl: string | null): IntRow[] {
   return [
     {
-      name: 'Stripe Connect',
-      desc: stripeEnabled
-        ? 'Betalning vid bokning · kontot kan ta betalt'
-        : 'Inte aktiverat — kontot kan inte ta betalt ännu',
-      status: stripeEnabled ? 'Ansluten' : 'Ej ansluten',
-      tone: stripeEnabled ? 'success' : 'warning',
-      color: '#635BFF',
-      letter: 'S',
+      name: 'Zettle',
+      desc: 'Kortterminal i butik — planerad integration',
+      status: 'Planerad',
+      tone: 'neutral',
+      color: '#3D3D3D',
+      letter: 'Z',
     },
     {
       name: 'Google-recensioner',
