@@ -14,11 +14,31 @@ import { AccountBookings, CancelledBookings } from '@/components/kund/AccountBoo
 import { AccountHistory } from '@/components/kund/AccountHistory'
 import { AccountPrivacy, type NameMode } from '@/components/kund/AccountPrivacy'
 import { FavoritesList } from '@/components/kund/FavoritesList'
+import { getMyOrders, type KundOrder } from '@/lib/kund/shop-orders'
+import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
+import { formatShopPrice } from '@/lib/storefront/shop/types'
 import { cleanTerminology, type Terminology } from '@/lib/platform/verticals-shared'
 import account from '@/components/kund/account.module.css'
+import kund from '@/components/kund/kund.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Mina sidor' }
+
+// Samma etiketter som /konto/bestallningar (kund-order-FSM:ens kundvända lägen).
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  pending: 'Mottagen',
+  confirmed: 'Bekräftad',
+  ready: 'Klar att hämta',
+  completed: 'Slutförd',
+  cancelled: 'Avbruten',
+}
+
+function orderSummary(o: KundOrder): string {
+  const first = o.items[0]
+  if (!first) return '—'
+  const more = o.items.length - 1
+  return more > 0 ? `${first.productName} + ${more} till` : `${first.productName} × ${first.quantity}`
+}
 
 export default async function KontoPage() {
   const user = await requirePortal('kund')
@@ -46,12 +66,14 @@ export default async function KontoPage() {
   // no-override / 'generell' tenant renders precisely today's text (DIFF-0). The
   // resolved object is plain serialisable JSON → safe to pass to client leaves.
   let terminology: Terminology = {}
+  let tenantSlug: string | null = null
   if (tenantId) {
     const { data: tenantRow } = await supabase
       .from('tenants')
-      .select('vertical_id')
+      .select('vertical_id, slug')
       .eq('id', tenantId)
       .maybeSingle()
+    tenantSlug = (tenantRow?.slug as string | null) ?? null
     const verticalId = (tenantRow?.vertical_id as string | null) ?? null
     if (verticalId) {
       const { data: vertical } = await supabase
@@ -62,6 +84,20 @@ export default async function KontoPage() {
       terminology = cleanTerminology(vertical?.terminology)
     }
   }
+
+  // Kundkonto för handel (goal-55 körning 9): kontot får butik-vinkel ENDAST när
+  // tenantens shop-modul är LIVE — annars renderas exakt dagens bokningscentrerade
+  // ordning (FreshCut oförändrad). Senaste ordrarna återanvänder samma läsning som
+  // /konto/bestallningar (getMyOrders).
+  // TODO (framtid): kursanmälningar (event_registrations) har ingen user-koppling —
+  // raderna bär bara email. När en säker email-match finns (verifierad e-post på
+  // kontot == registration email) kan "Mina kursanmälningar" lyftas in här.
+  const shopLive = tenantSlug
+    ? isModuleLive(await getTenantModuleStates(tenantId, tenantSlug), 'shop')
+    : false
+  const recentOrders: KundOrder[] = shopLive
+    ? await getMyOrders(customerId).then(({ active, completed }) => [...active, ...completed].slice(0, 3))
+    : []
 
   const [{ upcoming, past }, loyalty, favorites, staffFavorite, pointsPerVisit] = await Promise.all([
     getMyBookings(user.id),
@@ -106,6 +142,43 @@ export default async function KontoPage() {
   return (
     <div className={account.page}>
       <IdentityHero firstName={firstName} next={next} />
+
+      {/* Butik-vinkel (körning 9): "Mina beställningar" som eget kort HÖGT upp när
+          shop-modulen är live. Ej live → kortet finns inte alls (dagens ordning). */}
+      {shopLive ? (
+        <section>
+          <h2 className={account.sectionTitle}>Mina beställningar</h2>
+          <div className={account.card}>
+            {recentOrders.length === 0 ? (
+              <p className={kund.notice} style={{ margin: 0 }}>
+                Du har inga beställningar än.
+              </p>
+            ) : (
+              <ul className={kund.list}>
+                {recentOrders.map((o) => (
+                  <li key={o.id} className={kund.item}>
+                    <Link href={`/konto/bestallningar/${o.id}`} className={kund.link}>
+                      <span className={kund.main}>
+                        <strong>#{o.id.slice(0, 8)}</strong>
+                        <span className={kund.sub}>{orderSummary(o)}</span>
+                      </span>
+                      <span className={kund.meta}>
+                        <span>{formatShopPrice(o.totalCents, o.currency)}</span>
+                        <span className={kund.badge}>{ORDER_STATUS_LABEL[o.status] ?? o.status}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p style={{ margin: '12px 0 0' }}>
+              <Link href="/konto/bestallningar" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                Alla beställningar →
+              </Link>
+            </p>
+          </div>
+        </section>
+      ) : null}
 
       <StylistCard
         favorite={staffFavorite}
