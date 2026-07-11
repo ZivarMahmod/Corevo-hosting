@@ -39,6 +39,7 @@ export const PROTECTED_PREFIXES = [
   '/admin',
   '/platform',
   '/salonger',
+  '/branscher',
   '/fakturering',
   // goal-17 platform control-center surfaces (clean URLs on booking.corevo.se,
   // siblings of /salonger + /fakturering). Each page ALSO self-gates with

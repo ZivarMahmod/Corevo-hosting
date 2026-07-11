@@ -36,6 +36,7 @@ const DASHBOARD = '/platform'
 const PLATFORM_GROUP = [
   '/platform',
   '/salonger',
+  '/branscher',
   '/fakturering',
   '/kunder',
   '/roller',

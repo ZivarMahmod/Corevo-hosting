@@ -50,6 +50,7 @@ const NAV: Record<PortalRole, NavConfig> = {
       { group: 'Kunder' },
       { href: '/salonger', label: 'Kunder', icon: 'building' },
       { href: '/salonger/ny', label: 'Onboarda kund', icon: 'plus' },
+      { href: '/branscher', label: 'Branscher', icon: 'layers' },
       { group: 'Plattform' },
       { href: '/integrationer', label: 'Integrationer', icon: 'layers' },
       { href: '/domaner', label: 'Domäner', icon: 'link' },

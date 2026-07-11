@@ -70,7 +70,7 @@ export type Terminology = Record<string, string>
 /** Generic Swedish singular fallbacks per terminology key — used ONLY when the
  *  vertical has no override AND the call site passes no explicit fallback. Neutral
  *  platform defaults, never bransch-guesses. */
-const TERMINOLOGY_DEFAULTS: Record<string, string> = {
+export const TERMINOLOGY_DEFAULTS: Record<string, string> = {
   staff: 'Personal',
   service: 'Tjänst',
   unit: 'Resurs',

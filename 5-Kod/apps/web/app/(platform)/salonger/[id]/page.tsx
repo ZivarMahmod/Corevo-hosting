@@ -131,8 +131,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // the Aktiv/Onboarding pill on the card grid. Bransch/kontakt read the raw settings
   // jsonb (same seam as theme/booking above).
   const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
+  // Bransch läses ur SANNINGSKÄLLAN tenants.vertical_id (styr admin-terminologin,
+  // 0026) — inte settings.vertical-jsonben som kunde glida isär (rapport 02 §1.7).
+  const verticalId = (tenant as { vertical_id?: string | null }).vertical_id ?? null
   const vertical =
-    typeof rawSettings.vertical === 'string' && rawSettings.vertical.trim() ? rawSettings.vertical.trim() : null
+    verticalId ??
+    (typeof rawSettings.vertical === 'string' && rawSettings.vertical.trim()
+      ? rawSettings.vertical.trim()
+      : null)
   const contactObj = (rawSettings.contact ?? {}) as { email?: unknown; phone?: unknown }
   const contactEmail =
     typeof contactObj.email === 'string' && contactObj.email.trim() ? contactObj.email.trim() : null
