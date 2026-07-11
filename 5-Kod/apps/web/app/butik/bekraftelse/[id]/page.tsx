@@ -1,17 +1,11 @@
-import type { Metadata } from 'next'
-import { OrderConfirmation } from './OrderConfirmation'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Tack för din beställning' }
 
-// Orderbekräftelse (köp-räls, goal-49). Token-gatad: client-delen läser session-
-// token ur localStorage och anropar get_public_shop_order (PII-gräns — ordern bär
-// leveransadress, exponeras aldrig fritt by-id).
-export default async function BekraftelsePage({ params }: { params: Promise<{ id: string }> }) {
+// goal-55 körning 7A: bekräftelsen flyttad till (public)/bekraftelse/[id] så köparen
+// aldrig byter värld (temade naven behålls). Filen behålls som ren redirect
+// (build-once-never-delete) — gamla länkar/mejl till /butik/bekraftelse landar rätt.
+export default async function BekraftelseRedirect({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  return (
-    <section className="section" style={{ maxWidth: 640, margin: '0 auto', padding: '40px 20px' }}>
-      <OrderConfirmation orderId={id} />
-    </section>
-  )
+  redirect(`/bekraftelse/${id}`)
 }

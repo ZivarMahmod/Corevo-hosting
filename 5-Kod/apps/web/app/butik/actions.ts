@@ -8,6 +8,8 @@ import { getStripe } from '@/lib/stripe/client'
 import { requestOrigin } from '@/lib/url'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import { parseShopConfig } from '@/lib/storefront/shop/types'
+import { sendOrderPlacedEmail } from '@/lib/notifications/shop'
+import { logger } from '@/lib/observability'
 
 // Webshop köp-räls (goal-49). Runs as the anon role — the order INSERT goes
 // through the SECURITY DEFINER RPC:er in migration 0042 (reserve_shop_order /
@@ -153,6 +155,21 @@ export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> 
   }
   const row = Array.isArray(data) ? data[0] : data
   if (!row) return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
+
+  // Orderbekräftelse-mejl direkt vid lagd order (goal-55 W5). BEST-EFFORT — får
+  // ALDRIG blockera confirm-svaret. Service-klient krävs: vi kör som anon här och
+  // RLS släpper inte in anon i shop_orders; mejlaren läser ordern tenant-scopat.
+  try {
+    const service = createServiceClient()
+    if (service) await sendOrderPlacedEmail(service, ctx.tenantId, row.order_id as string)
+    else logger.warn('shop.notify.no_service_client', { orderId: row.order_id })
+  } catch (err) {
+    logger.warn('shop.notify.placed_failed', {
+      orderId: row.order_id,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
+
   return { ok: true, orderId: row.order_id as string, requiresPayment: Boolean(row.requires_payment) }
 }
 
@@ -265,8 +282,10 @@ export async function startShopCheckout(orderId: string): Promise<CheckoutResult
         // application_fee_amount UTELÄMNAS medvetet ⇒ fee = 0 (DIRECT charge).
         payment_intent_data: { metadata: { order_id: orderId, tenant_id: ctx.tenantId } },
         metadata: { order_id: orderId, tenant_id: ctx.tenantId },
-        success_url: `${origin}/butik/bekraftelse/${orderId}?betald=1`,
-        cancel_url: `${origin}/butik/bekraftelse/${orderId}?avbruten=1`,
+        // goal-55 körning 7A: bekräftelsen bor i (public)/bekraftelse — köparen
+        // stannar i det temade skalet efter Stripe-returen.
+        success_url: `${origin}/bekraftelse/${orderId}?betald=1`,
+        cancel_url: `${origin}/bekraftelse/${orderId}?avbruten=1`,
       },
       { stripeAccount: tenant.stripe_account_id }, // DIRECT charge på salongens konto
     )

@@ -77,4 +77,21 @@ inloggning för köp. (Kund-portal-fördjupning = fortfarande SIST, per tidigare
   nav-städ, dubblett-rensning per tema).
 - **Körning 9 — Kundkonto för handel:** rekommendationen ovan (om Zivar säger ja).
 
-Status: VÄNTAR PÅ ZIVARS BESLUT (webshop-idén, presentkort-vägen, kundkonto ja/nej).
+Status: Zivar 2026-07-11: "kör 7 8 9 efter varandra" — godkänt, autonomt.
+
+## KÖRNING 10 — Admin-UI baseline (Zivars order under körning 7)
+> "Jag gillar inte hur UI är för de olika modulerna i admin — 5 olika CSS och
+> layouts. Lägg en snygg baseline för allt så det är enhetligt och snyggt. Kolla
+> över designen för hela admin-sidan och alla modulers beteende. Ta bort
+> 'Moduler'-texten i sidopanelen — den är för mig, inte för kunden. Kolla om
+> layouten kan bli mer UX-vänlig."
+- [ ] Audit: ShopAdmin/BloggAdmin/KursAdmin/MediaLibrary/OffertInbox — inventera
+      avvikande mönster (inline-styles vs admin.module.css, olika tabeller/drawers/
+      formulär/knappar/tomma-lägen).
+- [ ] EN baseline: gemensamma list/tabell-, drawer-, formulär-, badge- och
+      empty-state-mönster (befintliga portal/ui-primitiver som norm); modulerna
+      konvergeras till den.
+- [ ] PortalSidebar: grupprubriken "Moduler" bort (intern terminologi) — navet
+      pratar kundens språk.
+- [ ] UX-översyn hela kund-adminen: layout, hierarki, mobil.
+Körs EFTER körning 9.

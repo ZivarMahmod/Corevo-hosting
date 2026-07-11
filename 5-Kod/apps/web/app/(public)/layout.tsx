@@ -112,6 +112,10 @@ export default async function PublicLayout({ children }: { children: React.React
   const bookingState = moduleState(moduleStates, 'booking')
   const bookingLive = bookingState === 'live'
   const bookingPaused = bookingState === 'paused'
+  // goal-55 7B: shop live/paused → korg-ikon i naven (alltid synlig, badge vid
+  // count>0) + korg-rad i mobil-overlayn, i stället för den flytande bollen.
+  const shopState = moduleState(moduleStates, 'shop')
+  const cartEnabled = shopState === 'live' || shopState === 'paused'
 
   // Services + active locations shaped for the embedded booking wizard — same as
   // /boka, cached. locations feed the drawer's picker (hidden for 1-location tenants).
@@ -177,18 +181,22 @@ export default async function PublicLayout({ children }: { children: React.React
         {/* Paused booking → "stängt"-banner at the very top (draft/off render
             nothing public, so only 'paused' surfaces here). */}
         {bookingPaused ? <ModulePausedBanner /> : null}
+        {/* CartProvider omsluter HELA skalet (nav + main + footer) — navens
+            CartNavButton och mobil-overlayns korg-rad använder useCart, så
+            providern måste ligga ovanför Nav (goal-55 7B). Den flytande
+            CartButton-bollen är borttagen här — korgen bor i naven. */}
+        <CartProvider>
         {/* Modulstyrd meny: Butik/Blogg får en riktig plats i navigationen när
             modulerna är live/paused — modulens egen sida är dess hem, startsidan
             visar bara teasers ("mosas in"-fixen). */}
         <Nav
           {...brandProps}
           customerAccountsEnabled={settings.customerAccountsEnabled}
+          cartEnabled={cartEnabled}
           utilityText={content.utility}
           links={[
             { href: '/', label: 'Hem' },
-            ...(moduleState(moduleStates, 'shop') === 'live' || moduleState(moduleStates, 'shop') === 'paused'
-              ? [{ href: '/shop', label: 'Butik' }]
-              : []),
+            ...(cartEnabled ? [{ href: '/shop', label: 'Butik' }] : []),
             { href: '/tjanster', label: 'Tjänster' },
             // Kurser & event: bara när booking är live OCH minst ett kommande
             // open-tillfälle finns (loadern är cachad → billig extra läsning).
@@ -210,13 +218,8 @@ export default async function PublicLayout({ children }: { children: React.React
         />
         {/* `.shellMain` reserves space for the fixed top cluster (--nav-h). The
             Salvia home hero cancels it exactly with a negative margin, so the hero
-            photo still meets the viewport top under the nav. CartProvider wraps the
-            content + flytande kundvagn (köp-räls, goal-49); CartButton döljer sig
-            själv när varukorgen är tom → inert för icke-shop-tenants. */}
-        <CartProvider>
-          <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
-          <CartButton />
-        </CartProvider>
+            photo still meets the viewport top under the nav. */}
+        <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
         {/* Inline-boknings-vyn: sektionen ligger I sidan, ovanför footern. */}
         {settings.bookingVariant === 'inline' && wizardServices.length > 0 ? (
           <InlineBooking
@@ -240,6 +243,7 @@ export default async function PublicLayout({ children }: { children: React.React
           <Footer tenant={{ name: tenant.name }} />
         )}
         {settings.cookieBannerEnabled ? <CookieConsent /> : null}
+        </CartProvider>
       </BookingProvider>
     </div>
   )

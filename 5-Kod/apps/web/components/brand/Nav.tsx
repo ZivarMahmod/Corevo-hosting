@@ -4,6 +4,7 @@ import { NAV_LINKS } from './NavLinks'
 import { BookCta } from './BookCta'
 import { NavShell } from './NavShell'
 import { StorefrontIcon } from '@/components/storefront/StorefrontIcon'
+import { CartNavButton } from '@/components/storefront/shop/CartNavButton'
 import type { NavProps } from './types'
 import shell from './nav-shell.module.css'
 
@@ -23,15 +24,27 @@ import shell from './nav-shell.module.css'
  */
 export function Nav({
   customerAccountsEnabled,
+  cartEnabled,
   utilityText,
   links,
   ...props
-}: NavProps & { utilityText?: string; links?: readonly { href: string; label: string }[] }) {
+}: NavProps & {
+  utilityText?: string
+  links?: readonly { href: string; label: string }[]
+  /** goal-55 7B: shop-modul på → korg-ikon i klustret + korg-rad i mobil-overlayn.
+      Kräver att navens call site är omsluten av CartProvider (useCart). */
+  cartEnabled?: boolean
+}) {
   // Modulstyrd meny: layouten skickar länkar som växer med kundens live-moduler
   // (Butik/Blogg får plats när modulerna är på); utan prop = de fyra klassiska.
   const navLinks = links ?? NAV_LINKS
   return (
-    <NavShell customerAccountsEnabled={customerAccountsEnabled} utilityText={utilityText} links={navLinks}>
+    <NavShell
+      customerAccountsEnabled={customerAccountsEnabled}
+      cartEnabled={cartEnabled}
+      utilityText={utilityText}
+      links={navLinks}
+    >
       <header className={shell.navThemed}>
         {/* DOM order = wordmark (home) → links → cluster (logical reading order);
             visual column placement is handled per-theme by CSS grid-column. */}
@@ -48,6 +61,9 @@ export function Nav({
         </nav>
 
         <div className={shell.navCluster}>
+          {/* goal-55 7B: alltid synlig korg-ikon när shop-modulen är på
+              (badge först vid count > 0). Öppnar den delade CartDrawer:n. */}
+          {cartEnabled ? <CartNavButton className={shell.navAccount} /> : null}
           {/* G12: storefront customer login — only when the owner enabled it. */}
           {customerAccountsEnabled ? (
             <Link href="/login" className={shell.navAccount} aria-label="Logga in">

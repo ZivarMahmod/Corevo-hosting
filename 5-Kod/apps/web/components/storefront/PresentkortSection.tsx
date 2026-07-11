@@ -29,6 +29,7 @@
 // no row). The "Köp presentkort"-CTA is a STATIC, inert server element (no onClick,
 // no 'use client', aria-disabled) because the purchase rails are not built yet.
 
+import Link from 'next/link'
 import { SectionHeader } from './sections'
 import {
   presentkortFulfilmentLabel,
@@ -135,38 +136,38 @@ export async function PresentkortSection({
             : 'Skickas direkt till mottagarens mejl.'}
         </p>
 
-        {/* STATIC, inert CTA — purchase rails are not built yet (compliance: no
-            betal-rails without OK), so this is a non-interactive server element that
-            merely looks disabled (no onClick, no 'use client', aria-disabled). */}
+        {/* ÄRLIG CTA-rad (goal-55 P1): inga döda knappar. Online-köp finns inte
+            (betal-rails pausade, compliance), så vi säger det rakt och ger EN riktig
+            handling — kontakta oss. Fortsatt server-only, ingen 'use client'. */}
         <p
-          aria-disabled="true"
+          style={{
+            margin: '24px 0 0',
+            fontFamily: 'var(--font-body)',
+            fontSize: 15,
+            lineHeight: 1.6,
+            color: 'color-mix(in srgb, var(--color-fg, #232520) 72%, transparent)',
+          }}
+        >
+          Presentkort köper du i butiken — eller hör av dig så ordnar vi det.
+        </p>
+        <Link
+          href="/kontakt"
           style={{
             display: 'inline-block',
-            marginTop: 24,
+            marginTop: 12,
             fontFamily: 'var(--font-ui)',
             fontSize: 14,
             fontWeight: 600,
-            color: 'color-mix(in srgb, var(--color-fg, #232520) 55%, transparent)',
+            color: 'var(--color-fg, #232520)',
             background: 'color-mix(in srgb, var(--color-fg, #232520) 6%, transparent)',
             border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 14%, transparent)',
             borderRadius: 'var(--radius, 4px)',
             padding: '10px 18px',
-            cursor: 'not-allowed',
+            textDecoration: 'none',
           }}
         >
-          Köp presentkort
-        </p>
-        {/* Honest note: the purchase flow opens when betal-rails are approved. */}
-        <p
-          style={{
-            margin: '10px 0 0',
-            fontFamily: 'var(--font-ui)',
-            fontSize: 13,
-            color: 'color-mix(in srgb, var(--color-fg, #232520) 50%, transparent)',
-          }}
-        >
-          Köp öppnar snart.
-        </p>
+          Kontakta oss
+        </Link>
       </div>
     </section>
   )

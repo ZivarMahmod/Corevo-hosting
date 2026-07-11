@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { NAV_LINKS } from './NavLinks'
 import { BookCta } from './BookCta'
 import { UtilityBar } from '@/components/storefront/UtilityBar'
+import { CartNavButton } from '@/components/storefront/shop/CartNavButton'
 import shell from './nav-shell.module.css'
 
 /**
@@ -33,11 +34,14 @@ import shell from './nav-shell.module.css'
 export function NavShell({
   children,
   customerAccountsEnabled,
+  cartEnabled,
   utilityText,
   links,
 }: {
   children: ReactNode
   customerAccountsEnabled?: boolean
+  /** goal-55 7B: shop-modul på → "Varukorg (N)"-rad i mobil-overlayn. */
+  cartEnabled?: boolean
   /** Per-theme utility-strip copy; falls back to UtilityBar's default. */
   utilityText?: string
   /** Modulstyrda menylänkar (mobil-overlayn); utan prop = NAV_LINKS. */
@@ -163,6 +167,11 @@ export function NavShell({
               {l.label}
             </Link>
           ))}
+          {/* goal-55 7B: korg-rad i mobil-overlayn — stänger menyn och öppnar
+              den delade CartDrawer:n. */}
+          {cartEnabled ? (
+            <CartNavButton variant="overlay" tabIndex={menuOpen ? 0 : -1} onOpen={() => setMenuOpen(false)} />
+          ) : null}
           {customerAccountsEnabled ? (
             <Link href="/login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}>
               Logga in

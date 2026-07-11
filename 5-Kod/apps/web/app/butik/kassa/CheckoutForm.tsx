@@ -100,7 +100,7 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
       }
     }
     clear()
-    router.push(`/butik/bekraftelse/${res.orderId}`)
+    router.push(`/bekraftelse/${res.orderId}`)
   }
 
   // v1: total = delsumma (frakt/moms additivt senare). Full kostnad visas FÖRE köp.
@@ -129,8 +129,6 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
         ))}
         <div style={{ marginTop: 10, borderTop: '1px solid color-mix(in srgb, var(--color-fg, #232520) 12%, transparent)', paddingTop: 10, fontSize: 14 }}>
           <Row label="Delsumma" value={formatShopPrice(subtotalCents, currency)} />
-          <Row label="Frakt" value="0 kr" />
-          <Row label="Moms" value="Ingår" />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontWeight: 700, fontSize: 16 }}>
           <span>Att betala</span>

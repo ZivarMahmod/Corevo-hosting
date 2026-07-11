@@ -5,7 +5,7 @@
 // add-knapp med feedback. Klient-pur: importerar bara pure types + useCart (ingen
 // server-only). Lägger raden i klient-varukorgen; ordern föds vid kassa-start.
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCart } from './CartProvider'
 import {
   shopCtaLabel,
@@ -26,6 +26,13 @@ export function AddToCart({
   const [variantId, setVariantId] = useState(variants[0]?.id ?? '')
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
+  const addedTimer = useRef<number | null>(null)
+  useEffect(
+    () => () => {
+      if (addedTimer.current != null) window.clearTimeout(addedTimer.current)
+    },
+    [],
+  )
 
   const variant = variants.find((v) => v.id === variantId) ?? variants[0]
   // available: null = ospårat lager (obegränsat, köpbart); 0 = slutsåld (loadern
@@ -89,8 +96,11 @@ export function AddToCart({
       },
       qty,
     )
+    // goal-55 7B: add-feedback — inline-flyout under knappen (~4 s) med länk till
+    // kassan; navens korg-badge uppdateras samtidigt via useCart.
     setAdded(true)
-    setTimeout(() => setAdded(false), 1600)
+    if (addedTimer.current != null) window.clearTimeout(addedTimer.current)
+    addedTimer.current = window.setTimeout(() => setAdded(false), 4000)
   }
 
   const stepBtn: React.CSSProperties = {
@@ -180,6 +190,33 @@ export function AddToCart({
       >
         {soldOut ? 'Slutsåld' : added ? 'Tillagd ✓' : label}
       </button>
+
+      {added ? (
+        <div
+          role="status"
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: 8,
+            padding: '8px 12px',
+            fontFamily: 'var(--font-ui)',
+            fontSize: 13,
+            color: 'var(--color-fg, #232520)',
+            background: 'color-mix(in srgb, var(--color-accent, #C8A24A) 12%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-accent, #C8A24A) 45%, transparent)',
+            borderRadius: 'var(--radius, 4px)',
+          }}
+        >
+          <span>Tillagd i varukorgen</span>
+          <a
+            href="/kassa"
+            style={{ color: 'inherit', fontWeight: 600, textDecoration: 'underline', whiteSpace: 'nowrap' }}
+          >
+            till kassan
+          </a>
+        </div>
+      ) : null}
     </div>
   )
 }
