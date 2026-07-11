@@ -23,6 +23,7 @@ export const THEME_PALETTES: ThemePalette[] = [
   { key: 'zigge', name: 'Zigge', desc: 'Mörk · djärv barber', primary: '#C8743C', bg: '#14120E', fg: '#F2ECE2', accent: '#C8743C' },
   { key: 'linnea', name: 'Linnea', desc: 'Terrakotta · varm skandinavisk', primary: '#B0693F', bg: '#F4EDE1', fg: '#2E2820', accent: '#B0693F' },
   { key: 'edit', name: 'Edit', desc: 'Charcoal på ivory · stram', primary: '#3A3733', bg: '#F8F6F1', fg: '#232220', accent: '#3A3733' },
+  { key: 'flora', name: 'Flora', desc: 'Mossgrönt på linne · bohemisk florist', primary: '#44523B', bg: '#F7F3EA', fg: '#2B2A24', accent: '#44523B' },
 ]
 
 export function themePalette(key: string): ThemePalette {

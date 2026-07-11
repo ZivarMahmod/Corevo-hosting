@@ -6,6 +6,7 @@ import { LeanderLayout } from './LeanderLayout'
 import { ZiggeLayout } from './ZiggeLayout'
 import { LinneaLayout } from './LinneaLayout'
 import { EditLayout } from './EditLayout'
+import { FloraLayout } from './FloraLayout'
 import { FreshCutLayout } from './FreshCutLayout'
 
 export type { StorefrontLayoutProps } from './types'
@@ -25,5 +26,6 @@ export const STOREFRONT_LAYOUTS: Record<
   zigge: ZiggeLayout,
   linnea: LinneaLayout,
   edit: EditLayout,
+  flora: FloraLayout,
   freshcut: FreshCutLayout,
 }

@@ -55,7 +55,7 @@ const MODULE_STATE_HINTS: Record<ModuleState, string> = {
 // renders (settings.theme → [data-theme]). hero img = each theme's own default photo
 // (THEME_CONTENT.heroImages[0]) so the preview reflects the real storefront, not a
 // generic stand-in. Keep these in sync with tokens.css / theme-content.ts.
-type ThemeKey = 'salvia' | 'leander' | 'zigge' | 'linnea' | 'edit' | 'freshcut'
+type ThemeKey = 'salvia' | 'leander' | 'zigge' | 'linnea' | 'edit' | 'flora' | 'freshcut'
 type ThemeDef = {
   name: string
   primary: string
@@ -75,7 +75,7 @@ type ThemeDef = {
 const uns = (id: string) =>
   `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`
 // freshcut utesluten (FAS 1 2026-07-11): kundens eget tema erbjuds aldrig nya tenants.
-const THEME_KEYS: ThemeKey[] = ['salvia', 'leander', 'zigge', 'linnea', 'edit']
+const THEME_KEYS: ThemeKey[] = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora']
 const WIZARD_THEMES: Record<ThemeKey, ThemeDef> = {
   salvia: {
     name: 'Salvia', primary: '#5E7361', bg: '#F6F4EE', fg: '#232520', fg2: '#5C5F55', line: '#E2DED2',
@@ -106,6 +106,12 @@ const WIZARD_THEMES: Record<ThemeKey, ThemeDef> = {
     display: "'Cormorant Garamond', Georgia, serif", radius: 2, caps: false, vibe: 'Elegant minimal',
     eyebrow: 'Hair atelier', hero: 'Tidlöst. Editorial.',
     lede: 'Ren typografi och skarp komposition.', img: uns('1599351431202-1e0f0137899a'),
+  },
+  flora: {
+    name: 'Flora', primary: '#44523B', bg: '#F7F3EA', fg: '#2B2A24', fg2: '#6E6A5B', line: '#E4DDCC',
+    display: "'Playfair Display', Georgia, serif", radius: 14, caps: false, vibe: 'Bohemisk florist',
+    eyebrow: 'Blomsterbutik', hero: 'Blommor, bundna för hand.',
+    lede: 'Buketter i säsong, binderier och kurser.', img: uns('1487530811176-3780de880c2d'),
   },
   freshcut: {
     name: 'FreshCut', primary: '#B59775', bg: '#FFFFFF', fg: '#252525', fg2: '#555555', line: '#E7E2DA',

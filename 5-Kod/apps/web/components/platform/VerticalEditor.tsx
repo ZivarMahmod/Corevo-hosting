@@ -9,7 +9,7 @@ import { Button, Card, useToast } from '@/components/portal/ui'
 
 export type VerticalModuleRow = { key: string; name: string; state: string }
 
-const THEMES = ['salvia', 'leander', 'zigge', 'linnea', 'edit'] // aldrig freshcut
+const THEMES = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora'] // aldrig freshcut
 
 const TERM_FIELDS: { key: string; label: string; ph: string }[] = [
   { key: 'staff', label: 'Personal (singular)', ph: 'Personal' },

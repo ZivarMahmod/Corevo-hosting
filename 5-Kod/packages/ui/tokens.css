@@ -261,6 +261,23 @@
   --sf-radius: 2px;
 }
 
+/* ---- TEMPLATE G — "Flora" : bohemisk blomsterbutik (mossgrönt + linne + torkat).
+   Byggd för florist-branschen (första kund: Hantverksfloristerna, Linköping) men
+   modulär som de andra — mossgrön primär, linne-bakgrund, Playfair-serif. */
+[data-world="storefront"][data-theme="flora"] {
+  --color-primary:   #44523B;  /* mossgrön (deras #404d3b-familj) */
+  --color-primary-d: #303B2A;
+  --color-bg:        #F7F3EA;  /* linne */
+  --color-surface:   #FFFFFF;
+  --color-fg:        #2B2A24;
+  --color-fg-2:      #6E6A5B;
+  --color-line:      #E4DDCC;
+  --color-accent-soft:#ECE6D6;
+  --font-display: var(--font-playfair), 'Playfair Display', Georgia, serif;
+  --font-body:    'PT Serif', Georgia, serif;
+  --sf-radius: 14px;
+}
+
 /* ---- TEMPLATE F — "FreshCut" : barbershop, exakt kopia av freshcut.se
    (white + gold, Playfair headings, Source Sans body, sharp corners). */
 [data-world="storefront"][data-theme="freshcut"] {

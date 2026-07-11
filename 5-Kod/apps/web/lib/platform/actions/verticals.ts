@@ -65,7 +65,7 @@ export async function saveVerticalDefaults(_p: ActionState, fd: FormData): Promi
 
   const rawTemplate = String(fd.get('default_template') ?? '').trim()
   // Bara riktiga renderbara teman (freshcut = kundens, aldrig ett bransch-default).
-  const VALID = ['salvia', 'leander', 'zigge', 'linnea', 'edit']
+  const VALID = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora']
   const defaultTemplate = VALID.includes(rawTemplate) ? rawTemplate : null
 
   const { error } = await supabase

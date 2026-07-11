@@ -83,6 +83,21 @@ const IMG = {
   g6: u('1457972729786-0411a3b2b626', 900),
 } as const
 
+// Flora-temats generiska blomster-foton (Unsplash, verifierade 200 OK 2026-07-11).
+const FLORA_IMG = {
+  shop: u('1487530811176-3780de880c2d'),
+  bouquet: u('1490750967868-88aa4486c946'),
+  peonies: u('1462275646964-a0e3386b89fa'),
+  work: u('1526047932273-341f2a7631f9'),
+  wildflowers: u('1470509037663-253afd7f0f51'),
+  ranunculus: u('1494972308805-463bc619d34e'),
+  vase: u('1502977249166-824b3a8a4d6d'),
+  greenhouse: u('1466692476868-aef1dfb1e735'),
+  bouquet2: u('1508610048659-a06b669e3321', 900),
+  rose: u('1518895949257-7621c3c786d7', 900),
+  field: u('1500382017468-9049fed747ef', 900),
+} as const
+
 export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
   salvia: {
     heroEyebrow: '— Frisörsalong',
@@ -232,6 +247,35 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
       ['Precision', 'i varje klipp'],
       ['Modernt', 'hantverk'],
       ['Genomtänkt', 'form'],
+    ],
+  },
+  // Flora — bohemisk blomsterbutik (florist-branschens tema). GENERIC evergreen-
+  // copy som funkar för vilken florist som helst; Hantverksfloristernas egna texter
+  // och foton bor i DERAS tenant (settings.copy + branding), inte här.
+  flora: {
+    heroEyebrow: '— Blomsterbutik',
+    heroTitle: 'Blommor,\nbundna för hand.',
+    heroLede:
+      'En blomsterbutik med hantverket i centrum. Buketter i säsong, binderier och kurser — bundna med omsorg.',
+    tagline: 'Blomsterhantverk i säsong',
+    utility: 'Beställ online eller kom förbi · Välkommen in',
+    italic: 'Var blomma har sin tid.',
+    aboutCopy:
+      'Vi brinner för blomsterhantverket — buketter bundna för hand, blommor i säsong och så närodlat som möjligt. Kvalitet och hållbarhet går hand i hand hos oss.',
+    servicesEyebrow: '— Buketter & binderier',
+    servicesTitle: 'Beställ hos oss',
+    aboutTitle: 'Hantverk, säsong och omsorg',
+    teamEyebrow: '— Vi i butiken',
+    teamTitle: 'Floristerna bakom disken',
+    heroImages: [FLORA_IMG.shop, FLORA_IMG.bouquet, FLORA_IMG.peonies],
+    galleryImages: [FLORA_IMG.bouquet2, FLORA_IMG.ranunculus, FLORA_IMG.vase, FLORA_IMG.wildflowers, FLORA_IMG.rose, FLORA_IMG.field],
+    aboutImage: FLORA_IMG.work,
+    closingImage: FLORA_IMG.greenhouse,
+    team: [],
+    stats: [
+      ['Säsong', 'alltid'],
+      ['Handbundet', 'hantverk'],
+      ['Närodlat', 'när det går'],
     ],
   },
   // FreshCut — exakt kopia av freshcut.se (barbershop, Linköping). Copy defaults are

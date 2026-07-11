@@ -31,7 +31,7 @@ export type CustomOverride = { css?: string }
  *  storefront root, which selects the theme's color/font base tokens in
  *  @corevo/ui/tokens.css. injectTenantTokens() then layers any per-tenant override
  *  inline on top. Default = leander. */
-export const STOREFRONT_THEMES = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'freshcut'] as const
+export const STOREFRONT_THEMES = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora', 'freshcut'] as const
 export type StorefrontTheme = (typeof STOREFRONT_THEMES)[number]
 export const DEFAULT_STOREFRONT_THEME: StorefrontTheme = 'leander'
 
