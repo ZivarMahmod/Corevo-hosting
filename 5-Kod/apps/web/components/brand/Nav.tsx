@@ -27,6 +27,7 @@ export function Nav({
   cartEnabled,
   utilityText,
   links,
+  primaryCta,
   ...props
 }: NavProps & {
   utilityText?: string
@@ -34,6 +35,10 @@ export function Nav({
   /** goal-55 7B: shop-modul på → korg-ikon i klustret + korg-rad i mobil-overlayn.
       Kräver att navens call site är omsluten av CartProvider (useCart). */
   cartEnabled?: boolean
+  /** goal-55 8A: bransch-styrd huvud-CTA (t.ex. "Beställ blommor" → /shop).
+      Layouten skickar ENDAST en färdig, modul-gatad cta — null/undefined =
+      dagens BookCta ('Boka tid' + drawer) exakt som förr. */
+  primaryCta?: { label: string; href: string } | null
 }) {
   // Modulstyrd meny: layouten skickar länkar som växer med kundens live-moduler
   // (Butik/Blogg får plats när modulerna är på); utan prop = de fyra klassiska.
@@ -44,6 +49,7 @@ export function Nav({
       cartEnabled={cartEnabled}
       utilityText={utilityText}
       links={navLinks}
+      primaryCta={primaryCta}
     >
       <header className={shell.navThemed}>
         {/* DOM order = wordmark (home) → links → cluster (logical reading order);
@@ -70,7 +76,15 @@ export function Nav({
               <StorefrontIcon name="user" size={18} />
             </Link>
           ) : null}
-          <BookCta className={shell.navBook} />
+          {/* goal-55 8A: bransch-styrd huvud-CTA — vanlig länk med samma pill-klass
+              när branschen pekar bort från /boka; annars BookCta (drawer) som förr. */}
+          {primaryCta && primaryCta.href !== '/boka' ? (
+            <Link href={primaryCta.href} className={`btn-accent ${shell.navBook}`}>
+              {primaryCta.label}
+            </Link>
+          ) : (
+            <BookCta className={shell.navBook} label={primaryCta?.label} />
+          )}
         </div>
       </header>
     </NavShell>

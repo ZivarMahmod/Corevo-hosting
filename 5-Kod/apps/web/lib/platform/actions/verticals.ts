@@ -24,6 +24,10 @@ const TERM_KEYS = [
   'unit',
   'unit_plural',
   'business',
+  // goal-55 8A: navens bransch-styrda huvud-CTA. Måste finnas här — save:n
+  // skriver om HELA terminology-jsonben, annars raderas nycklarna vid nästa spar.
+  'primary_cta_label',
+  'primary_cta_href',
 ] as const
 
 /** Terminologi — live-arv. Tomt fält = tillbaka till standard (nyckeln droppas). */

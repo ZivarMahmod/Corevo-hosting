@@ -64,8 +64,16 @@ export function modulesForVertical(
 
 /** A vertical's label overlay: terminology key → bransch noun (singular, stored
  *  capitalized). Keys in use today: 'staff', 'service', 'unit'. Operators may add
- *  '<key>_plural' entries (e.g. 'staff_plural') to drive {@link termPlural}. */
-export type Terminology = Record<string, string>
+ *  '<key>_plural' entries (e.g. 'staff_plural') to drive {@link termPlural}.
+ *  goal-55 8A: 'primary_cta_label' + 'primary_cta_href' styr navens huvud-CTA
+ *  per bransch (t.ex. florist → "Beställ blommor" → /shop). */
+export type Terminology = Record<string, string> & {
+  primary_cta_label?: string
+  primary_cta_href?: string
+}
+
+/** goal-55 8A: max-längd för navens CTA-etikett (pillen får aldrig svämma över). */
+export const PRIMARY_CTA_LABEL_MAX = 40
 
 /** Generic Swedish singular fallbacks per terminology key — used ONLY when the
  *  vertical has no override AND the call site passes no explicit fallback. Neutral
@@ -84,6 +92,14 @@ export function cleanTerminology(raw: unknown): Terminology {
   const out: Terminology = {}
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     if (typeof v === 'string' && v.trim().length > 0) out[k] = v.trim()
+  }
+  // goal-55 8A: CTA-nycklarna är UI-styrande (inte bara ord) → hårdare sanering.
+  // Ogiltiga värden droppas helt så resolvern faller tillbaka till 'Boka tid'.
+  if (out.primary_cta_label && out.primary_cta_label.length > PRIMARY_CTA_LABEL_MAX) {
+    delete out.primary_cta_label
+  }
+  if (out.primary_cta_href && !out.primary_cta_href.startsWith('/')) {
+    delete out.primary_cta_href
   }
   return out
 }

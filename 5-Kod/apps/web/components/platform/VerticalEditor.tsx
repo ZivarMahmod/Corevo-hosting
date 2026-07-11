@@ -19,6 +19,9 @@ const TERM_FIELDS: { key: string; label: string; ph: string }[] = [
   { key: 'unit', label: 'Resurs (t.ex. stol/bord)', ph: 'Resurs' },
   { key: 'unit_plural', label: 'Resurs (plural)', ph: 'Resurser' },
   { key: 'business', label: 'Verksamhetsord (t.ex. Salong/Restaurang)', ph: 'Salong' },
+  // goal-55 8A: navens huvud-CTA per bransch (båda krävs; tomt = 'Boka tid').
+  { key: 'primary_cta_label', label: 'Huvud-CTA i naven (etikett)', ph: 'Boka tid' },
+  { key: 'primary_cta_href', label: 'Huvud-CTA länk (börjar med /)', ph: '/boka' },
 ]
 
 /**

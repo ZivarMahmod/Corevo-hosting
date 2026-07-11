@@ -159,50 +159,50 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
         </Reveal>
       </section>
 
-      {/* PRISER — numrerade rader utan duration (blommor är inte klipptider) */}
-      <section className={styles.sfServices}>
-        <div className={styles.sfNarrow}>
-          <Reveal style={{ textAlign: 'center' }}>
-            <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-            <h2 className="sf-h1" style={{ marginTop: 12 }}>
-              {content.servicesTitle}
-            </h2>
-          </Reveal>
-          {rows.length > 0 ? (
-            <div className={styles.sfRowList}>
-              {rows.map((s, i) => (
-                <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={styles.sfRow} label={`Beställ — ${s.name}`}>
-                    <span className={styles.sfRowNum} aria-hidden="true">
-                      {serviceNum(i)}
-                    </span>
-                    <span className={styles.sfRowMain}>
-                      <span className={styles.sfRowName}>{s.name}</span>
-                      <span className={styles.sfRowDesc}>{serviceDesc(s)}</span>
-                    </span>
-                    <span className={styles.sfRowMeta}>
-                      <span className={styles.sfRowPrice}>{formatPrice(s)}</span>
-                    </span>
-                  </Bookable>
+      {/* PRISER — numrerade rader utan duration (blommor är inte klipptider).
+          Hela sektionen visas bara när det finns aktiva tjänster — ingen
+          tom-text på hemmet (goal-55 8B). */}
+      {rows.length > 0 ? (
+        <>
+          <section className={styles.sfServices}>
+            <div className={styles.sfNarrow}>
+              <Reveal style={{ textAlign: 'center' }}>
+                <p className="sf-eyebrow">{content.servicesEyebrow}</p>
+                <h2 className="sf-h1" style={{ marginTop: 12 }}>
+                  {content.servicesTitle}
+                </h2>
+              </Reveal>
+              <div className={styles.sfRowList}>
+                {rows.map((s, i) => (
+                  <Reveal key={s.id} delay={i * 60}>
+                    <Bookable className={styles.sfRow} label={`Beställ — ${s.name}`}>
+                      <span className={styles.sfRowNum} aria-hidden="true">
+                        {serviceNum(i)}
+                      </span>
+                      <span className={styles.sfRowMain}>
+                        <span className={styles.sfRowName}>{s.name}</span>
+                        <span className={styles.sfRowDesc}>{serviceDesc(s)}</span>
+                      </span>
+                      <span className={styles.sfRowMeta}>
+                        <span className={styles.sfRowPrice}>{formatPrice(s)}</span>
+                      </span>
+                    </Bookable>
+                  </Reveal>
+                ))}
+              </div>
+              {hasMore ? (
+                <Reveal style={{ textAlign: 'center' }}>
+                  <a href="/tjanster" className={styles.sfMoreLink}>
+                    Se allt vi gör <span aria-hidden="true">→</span>
+                  </a>
                 </Reveal>
-              ))}
+              ) : null}
             </div>
-          ) : (
-            <p className="sf-body" style={{ marginTop: 32, textAlign: 'center' }}>
-              Buketter och binderier läggs upp inom kort. Ring oss gärna så länge.
-            </p>
-          )}
-          {hasMore ? (
-            <Reveal style={{ textAlign: 'center' }}>
-              <a href="/tjanster" className={styles.sfMoreLink}>
-                Se allt vi gör <span aria-hidden="true">→</span>
-              </a>
-            </Reveal>
-          ) : null}
-        </div>
-      </section>
+          </section>
 
-      <Ornament />
+          <Ornament />
+        </>
+      ) : null}
 
       {/* OM — valv-porträtt + berättelsen */}
       <section style={{ paddingBottom: 'clamp(48px, 7vw, 90px)' }}>
@@ -260,13 +260,13 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
 
       {/* PRESENTKORT — en rad i temats ton, inte en hel stapel-sektion */}
       {presentkortLive ? (
-        <section style={{ padding: 'clamp(40px, 6vw, 72px) 24px', textAlign: 'center', background: 'var(--color-accent-soft)' }}>
-          <Reveal>
-            <p className="sf-eyebrow">— Presentkort</p>
-            <p className="sf-italic" style={{ fontSize: 'clamp(20px, 2.4vw, 28px)', maxWidth: '32rem', margin: '12px auto 0', color: 'var(--color-primary)' }}>
+        <section style={{ padding: 'clamp(20px, 3vw, 36px) 24px', textAlign: 'center', background: 'var(--color-accent-soft)' }}>
+          <Reveal style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'center', gap: '8px 16px' }}>
+            <p className="sf-eyebrow" style={{ margin: 0 }}>— Presentkort</p>
+            <p className="sf-italic" style={{ fontSize: 'clamp(17px, 1.8vw, 20px)', margin: 0, color: 'var(--color-primary)' }}>
               Ge bort en blomstrande stund.
             </p>
-            <a href="/presentkort" className={styles.flBandCta}>Till presentkorten</a>
+            <a href="/presentkort" className={styles.flBandCta} style={{ marginTop: 0 }}>Till presentkorten</a>
           </Reveal>
         </section>
       ) : null}

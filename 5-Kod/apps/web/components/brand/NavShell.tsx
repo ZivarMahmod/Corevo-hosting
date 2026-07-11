@@ -37,6 +37,7 @@ export function NavShell({
   cartEnabled,
   utilityText,
   links,
+  primaryCta,
 }: {
   children: ReactNode
   customerAccountsEnabled?: boolean
@@ -46,6 +47,9 @@ export function NavShell({
   utilityText?: string
   /** Modulstyrda menylänkar (mobil-overlayn); utan prop = NAV_LINKS. */
   links?: readonly { href: string; label: string }[]
+  /** goal-55 8A: bransch-styrd huvud-CTA för mobil-overlayn — samma färdig-gatade
+      cta som desktop-klustret; null/undefined = BookCta som förr. */
+  primaryCta?: { label: string; href: string } | null
 }) {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
@@ -179,7 +183,14 @@ export function NavShell({
           ) : null}
         </nav>
         <div className={shell.overlayCta} onClick={() => setMenuOpen(false)}>
-          <BookCta />
+          {/* goal-55 8A: samma bransch-styrda CTA som desktop-klustret. */}
+          {primaryCta && primaryCta.href !== '/boka' ? (
+            <Link href={primaryCta.href} className="btn-accent" tabIndex={menuOpen ? 0 : -1}>
+              {primaryCta.label}
+            </Link>
+          ) : (
+            <BookCta label={primaryCta?.label} />
+          )}
         </div>
       </div>
     </div>

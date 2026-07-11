@@ -18,6 +18,7 @@ import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
 import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
 import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
+import { resolvePrimaryCta } from '@/components/storefront/primary-cta'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { LocalBusinessJsonLd } from '@/components/storefront/seo'
@@ -135,6 +136,27 @@ export default async function PublicLayout({ children }: { children: React.React
   // so a non-frisör tenant's drawer reads e.g. "Barberare"/"Nagelteknolog".
   const staffNoun = await resolveStaffNoun(tenant.vertical_id)
 
+  // goal-55 8A: bransch-styrd huvud-CTA i naven (config-first, aldrig if(bransch)).
+  // Modul-gaten bor HÄR (layouten har moduleStates): pekar branschens CTA på en
+  // modulsida vars modul inte är live → falla tillbaka till BookCta (null-prop).
+  // Nav/NavShell får bara en färdig cta — eller null = dagens 'Boka tid' exakt.
+  const rawPrimaryCta = await resolvePrimaryCta(tenant.vertical_id)
+  const CTA_HREF_MODULE: Record<string, string> = {
+    '/shop': 'shop',
+    '/blogg': 'blogg',
+    '/offert': 'offert',
+    '/presentkort': 'presentkort',
+    '/boka': 'booking',
+    '/kurser': 'booking',
+  }
+  const ctaModule = rawPrimaryCta
+    ? CTA_HREF_MODULE[`/${rawPrimaryCta.href.split('/')[1] ?? ''}`]
+    : undefined
+  const primaryCta =
+    rawPrimaryCta && (!ctaModule || moduleState(moduleStates, ctaModule) === 'live')
+      ? rawPrimaryCta
+      : null
+
   // Salvia + FreshCut lead with the richer 3-column footer (real address/hours/contact
   // — freshcut.se's footer carries phone/address/Instagram); the other themes (and
   // boka/avboka) use the compact MiniFooter.
@@ -194,10 +216,13 @@ export default async function PublicLayout({ children }: { children: React.React
           customerAccountsEnabled={settings.customerAccountsEnabled}
           cartEnabled={cartEnabled}
           utilityText={content.utility}
+          primaryCta={primaryCta}
           links={[
             { href: '/', label: 'Hem' },
             ...(cartEnabled ? [{ href: '/shop', label: 'Butik' }] : []),
-            { href: '/tjanster', label: 'Tjänster' },
+            // Tjänster bara när det finns minst en aktiv tjänst (listan är tom
+            // när booking inte är live — då ska länken inte visas).
+            ...(allWizardServices.length > 0 ? [{ href: '/tjanster', label: 'Tjänster' }] : []),
             // Kurser & event: bara när booking är live OCH minst ett kommande
             // open-tillfälle finns (loadern är cachad → billig extra läsning).
             ...(bookingLive && (await loadUpcomingEvents(tenant.id, tenant.slug)).length > 0
