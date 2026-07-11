@@ -7,7 +7,8 @@ import { revalidateTenant } from '@/lib/admin/tenant'
 import { kronorToCents } from '@/lib/admin/format'
 import type { ActionState } from '@/lib/admin/actions'
 import { refundShopOrder } from '@/lib/stripe/refund'
-import { SHOP_ORDER_STATUSES } from './types'
+import { SHOP_ORDER_STATUSES, isShopOrderTransitionAllowed, type ShopOrderStatus } from './types'
+import { sendOrderStatusEmail } from '@/lib/notifications/shop'
 
 const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
@@ -250,12 +251,37 @@ export async function setShopOrderStatus(
   }
 
   const supabase = await createClient()
-  const { error } = await supabase
+
+  // FSM-gate (goal-54): läs nuvarande status tenant-scopat. Samma status = no-op-
+  // success (admin-selecten defaultar till nuvarande — spegel av bokningsmönstret).
+  // Okänd/legacy nuvarande status → endast →cancelled; annars matrisen.
+  const { data: current } = await supabase
+    .from('shop_orders')
+    .select('status')
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!current) return { error: 'Saknar order.' }
+  if (current.status === status) return { success: 'Status uppdaterad.' }
+  if (!isShopOrderTransitionAllowed(current.status, status as ShopOrderStatus)) {
+    return { error: 'Ogiltig statusövergång.' }
+  }
+
+  // Gate the write on the status we validated against (zero rows ⇒ concurrent change).
+  const { data: updated, error } = await supabase
     .from('shop_orders')
     .update({ status })
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
+    .eq('status', current.status)
+    .select('id')
+    .maybeSingle()
   if (error) return { error: GENERIC }
+  if (!updated) return { error: 'Ogiltig statusövergång.' }
+
+  // Kundmejl EFTER lyckad write. Best-effort — sendOrderStatusEmail kastar aldrig
+  // och får aldrig blockera statusändringen.
+  await sendOrderStatusEmail(supabase, ctx.tenant.id, id, status)
 
   // NOTE: payment_status is intentionally NOT touched here (checkout rails paused).
   revalidatePath('/admin/webshop')

@@ -176,3 +176,49 @@ funkar, "Frisör" kvar via vertical).
 - Cart/checkout-rälsen förutsätter variant-id — därför backfill, ALDRIG syntetiska
   varianter i loadern.
 - FreshCut-regression störst i steg 4 → verify-listan ovan är gate.
+
+**UTFALL KÖRNING 2 (2026-07-11):** KLART — tag v1.7.22. /blogg/[slug] + /shop/[id],
+klickbara kort överallt, köpbarhets-sanning (Slutsåld vs otillgänglig) + DB-backfill
+6 Standard-varianter, meny + flora-pelare modulstyrda, tomma teasers döljs, sitemap +
+JSON-LD per bransch, salong-hårdkodningar neutraliserade. 685 tester, tsc/eslint rent.
+
+---
+
+## DETALJPLAN KÖRNING 3 — Modulerna får riktiga flöden (A4, A5, S6)
+
+**Mål:** offerter och ordrar blir ärliga processer med kundkommunikation, inte bara
+statusetiketter som ljuger.
+
+### Steg 1 — Offert-svar som når kunden (A4)
+- Migration: `offert_requests` + `reply_message text`, `replied_at timestamptz`.
+- Ny action `sendOffertReply` (moduleCtx dual-guard): svarstext (+ ev. prisuppskattning)
+  → mejl till kundens e-post via mejl-rälsen (sendEmail; From = kundens namn via
+  buildFrom, Reply-To = kundens kontaktmejl så svaret landar hos kunden, inte hos oss).
+  Vid skickat: spara reply_message/replied_at + status → 'quoted'. Best-effort-mejl:
+  utan kund-e-post → ärligt fel ("förfrågan saknar e-post").
+- OffertInbox-drawern: "Svara kunden"-sektion (textarea + skicka-knapp, visar
+  replied_at när svar finns). Funkar i BÅDA ytorna (kund-admin + kundkortet) via
+  TenantField som körning 1 la in.
+- Offert-status-FSM: ALLOWED_FROM (new→reviewing/quoted/declined/closed;
+  reviewing→quoted/declined/closed; quoted→accepted/declined/closed;
+  accepted/declined→closed; closed→∅; samma status = no-op) i updateOffertRequest.
+
+### Steg 2 — Order-FSM + kundmejl (A5)
+- setShopOrderStatus: ALLOWED_FROM-matris (pending→confirmed/cancelled;
+  confirmed→ready/cancelled; ready→completed; completed/cancelled→∅) — samma
+  mönster som bokningarnas matris.
+- Kundmejl (best-effort, aldrig blockerande) vid confirmed/ready/completed —
+  ordernummer, rader, status på svenska; brand-From som offert-svaret.
+
+### Steg 3 — Strandad varukorg (S6)
+- /butik/kassa vid PAUSAD shop: "stängt"-sida (behåll varukorgen, ärlig text) i
+  stället för notFound. Av/draft → notFound som idag.
+
+### Verify
+tsc + vitest (+ nya FSM-tester för offert & order) + eslint → v1.7.23 → prod-smoke
+(florist offert-svar mejlas — relay konfad i prod; FreshCut orörd).
+
+### Risker
+- Mejl får ALDRIG blockera statusskrivning → send efter lyckad DB-write, fel loggas.
+- FSM får inte låsa gamla rader i ogiltiga states → okänd/legacy status behandlas
+  som fri övergång till closed/cancelled.

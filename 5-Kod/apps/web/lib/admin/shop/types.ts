@@ -52,6 +52,30 @@ export const SHOP_ORDER_STATUSES = [
 ] as const
 export type ShopOrderStatus = (typeof SHOP_ORDER_STATUSES)[number]
 
+/**
+ * Order-FSM (goal-54): tillåtna övergångar FRÅN varje status. Terminala states
+ * (completed/cancelled) har tomma listor. Speglar ALLOWED_FROM-mönstret för
+ * bokningar (lib/admin/actions.ts) fast keyat på NUVARANDE status → mål.
+ */
+export const SHOP_ORDER_ALLOWED_FROM: Record<ShopOrderStatus, readonly ShopOrderStatus[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['ready', 'cancelled'],
+  ready: ['completed'],
+  completed: [],
+  cancelled: [],
+}
+
+/**
+ * PURE övergångs-check. Samma status = tillåtet (no-op i actionen). Okänd/legacy
+ * nuvarande status (köp-rälsens transienta states m.m.) → endast →cancelled tillåts.
+ */
+export function isShopOrderTransitionAllowed(current: string, next: ShopOrderStatus): boolean {
+  if (current === next) return true
+  const allowed = SHOP_ORDER_ALLOWED_FROM[current as ShopOrderStatus]
+  if (!allowed) return next === 'cancelled'
+  return allowed.includes(next)
+}
+
 export const SHOP_ORDER_STATUS_LABELS: Record<ShopOrderStatus, string> = {
   pending: 'Väntar',
   confirmed: 'Bekräftad',

@@ -776,6 +776,8 @@ export type Database = {
           mode: string
           note: string | null
           payment_status: string
+          replied_at: string | null
+          reply_message: string | null
           status: string
           subject: string | null
           tenant_id: string
@@ -795,6 +797,8 @@ export type Database = {
           mode?: string
           note?: string | null
           payment_status?: string
+          replied_at?: string | null
+          reply_message?: string | null
           status?: string
           subject?: string | null
           tenant_id: string
@@ -814,6 +818,8 @@ export type Database = {
           mode?: string
           note?: string | null
           payment_status?: string
+          replied_at?: string | null
+          reply_message?: string | null
           status?: string
           subject?: string | null
           tenant_id?: string

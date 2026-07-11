@@ -7,7 +7,7 @@ export async function listOffertRequests(tenantId: string): Promise<OffertReques
   const { data } = await supabase
     .from('offert_requests')
     .select(
-      'id, customer_name, customer_email, customer_phone, mode, subject, message, details, estimate_cents, currency, status, payment_status, note, created_at',
+      'id, customer_name, customer_email, customer_phone, mode, subject, message, details, estimate_cents, currency, status, payment_status, note, reply_message, replied_at, created_at',
     )
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })

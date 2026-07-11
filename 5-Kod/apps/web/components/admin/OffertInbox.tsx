@@ -8,8 +8,9 @@ import {
   OFFERT_STATUS_LABELS,
   OFFERT_MODE_LABELS,
   formatCents,
+  offertTransitionAllowed,
 } from '@/lib/admin/offert/types'
-import { updateOffertRequest } from '@/lib/admin/offert/actions'
+import { updateOffertRequest, sendOffertReply } from '@/lib/admin/offert/actions'
 import { TenantScope, TenantField } from './TenantScope'
 import {
   Badge,
@@ -218,8 +219,9 @@ function DetailDrawer({
         <input type="hidden" name="id" value={request.id} />
 
         <Field label="Status">
+          {/* FSM: bara tillåtna övergångar visas (nuvarande status alltid valbar). */}
           <select name="status" defaultValue={request.status} style={inputStyle}>
-            {OFFERT_STATUSES.map((s) => (
+            {OFFERT_STATUSES.filter((s) => offertTransitionAllowed(request.status, s)).map((s) => (
               <option key={s} value={s}>
                 {statusLabel(s)}
               </option>
@@ -255,7 +257,86 @@ function DetailDrawer({
           {state.error}
         </p>
       )}
+
+      {/* SVARA KUNDEN (goal-54 körning 3, A4): svaret mejlas via mejl-rälsen och
+          status flyttas till Offererad — "Offererad" betyder nu att kunden faktiskt
+          fått något. Eget formulär (egen action) så Spara ovan förblir intern. */}
+      <ReplySection request={request} onDone={onClose} />
     </Drawer>
+  )
+}
+
+function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(sendOffertReply, {})
+
+  useEffect(() => {
+    if (state.success) {
+      notify(state.success, 'success')
+      router.refresh()
+      onDone()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+  useEffect(() => {
+    if (state.error) notify(state.error, 'warning')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.error])
+
+  const noEmail = !request.customer_email
+
+  return (
+    <div style={{ marginTop: 20, borderTop: '1px solid var(--c-line)', paddingTop: 16 }}>
+      <span className="eyebrow">Svara kunden</span>
+      {request.replied_at ? (
+        <div
+          style={{
+            margin: '10px 0 12px',
+            padding: '10px 14px',
+            borderRadius: 10,
+            border: '1px solid var(--c-line)',
+            background: 'var(--c-paper-2)',
+            fontSize: 13,
+            color: 'var(--c-ink-2)',
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.55,
+          }}
+        >
+          <strong style={{ display: 'block', marginBottom: 4, color: 'var(--c-ink)' }}>
+            Svar skickat {formatDate(request.replied_at)}
+          </strong>
+          {request.reply_message}
+        </div>
+      ) : null}
+      {noEmail ? (
+        <p style={{ marginTop: 8, fontSize: 13, color: 'var(--c-ink-3)' }}>
+          Förfrågan saknar e-postadress — kontakta kunden per telefon.
+        </p>
+      ) : (
+        <form action={formAction} style={{ display: 'grid', gap: 10, marginTop: 10 }}>
+          <TenantField />
+          <input type="hidden" name="id" value={request.id} />
+          <textarea
+            name="reply"
+            rows={4}
+            required
+            placeholder={
+              request.replied_at
+                ? 'Skicka ett nytt svar till kunden…'
+                : `Skriv ditt svar — mejlas till ${request.customer_email}. Sparad prisuppskattning följer med.`
+            }
+            style={{ ...inputStyle, resize: 'vertical', minHeight: 96 }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button type="submit" disabled={pending} className="pbtn pbtn--primary pbtn--md">
+              <Icon name="mail" size={16} />
+              {pending ? 'Skickar…' : 'Skicka svar till kunden'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   )
 }
 
