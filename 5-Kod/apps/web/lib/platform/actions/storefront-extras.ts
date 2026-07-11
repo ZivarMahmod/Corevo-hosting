@@ -9,6 +9,7 @@ import { revalidateTenant } from '@/lib/admin/tenant'
 import type { TenantBranding } from '@corevo/ui'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
+import { recordMediaAsset } from './media-record'
 
 // ── Rikare-tema-media: about_image + closing_image (enkla bild-slots) + stats-par ──
 // Används av de RIKARE mallarna (Salvia m.fl.), inte FreshCut. Skriver branding-jsonb;
@@ -48,6 +49,7 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
   const prevUrl = typeof prev[key] === 'string' ? (prev[key] as string) : null
 
   let nextUrl: string | null = prevUrl
+  let uploaded: { file: File; url: string; key: string } | null = null
   if (remove) {
     nextUrl = null
   } else {
@@ -56,6 +58,7 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
     const res = await uploadImage(image, `tenants/${tenantId}/storefront`)
     if (!res.ok) return { error: uploadErrorMessage(res.reason) }
     nextUrl = res.url
+    uploaded = { file: image, url: res.url, key: res.key }
   }
 
   const branding = mergeBranding(prev, { [key]: nextUrl } as Partial<TenantBranding>)
@@ -69,6 +72,9 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
 
   // Städa gamla objektet när det byttes/togs bort (aldrig blockerande).
   if (prevUrl && prevUrl !== nextUrl) await deleteByPublicUrl(prevUrl)
+
+  // A9: synlig i Bildbiblioteket (best-effort, fäller aldrig save).
+  if (uploaded) await recordMediaAsset(supabase, tenantId, uploaded.file, uploaded, 'sajtbyggare')
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
@@ -161,6 +167,7 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
   }))
 
   let removedImg: string | null = null
+  let uploaded: { file: File; url: string; key: string } | null = null
   if (remove) {
     if (index === null || index >= team.length) return { error: 'Okänd medlem.' }
     removedImg = team[index]!.img || null
@@ -177,6 +184,7 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
       const res = await uploadImage(image, `tenants/${tenantId}/team`)
       if (!res.ok) return { error: uploadErrorMessage(res.reason) }
       img = res.url
+      uploaded = { file: image, url: res.url, key: res.key }
       if (prevImg) removedImg = prevImg
     }
 
@@ -196,6 +204,9 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
   }
 
   if (removedImg) await deleteByPublicUrl(removedImg)
+
+  // A9: synlig i Bildbiblioteket (best-effort, fäller aldrig save).
+  if (uploaded) await recordMediaAsset(supabase, tenantId, uploaded.file, uploaded, 'sajtbyggare')
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)
@@ -250,12 +261,14 @@ export async function saveTenantStaffPhoto(_p: ActionState, fd: FormData): Promi
   const prevUrl = member.avatar_url
 
   let nextUrl: string | null = null
+  let uploadedPhoto: { file: File; url: string; key: string } | null = null
   if (!remove) {
     const image = fd.get('image')
     if (!(image instanceof File) || image.size === 0) return { error: 'Välj en bild att ladda upp.' }
     const res = await uploadImage(image, `tenants/${tenantId}/staff`)
     if (!res.ok) return { error: uploadErrorMessage(res.reason) }
     nextUrl = res.url
+    uploadedPhoto = { file: image, url: res.url, key: res.key }
   }
 
   const { error } = await supabase
@@ -272,6 +285,11 @@ export async function saveTenantStaffPhoto(_p: ActionState, fd: FormData): Promi
 
   // Städa gamla objektet när det byttes/togs bort (aldrig blockerande, FX-14).
   if (prevUrl && prevUrl !== nextUrl) await deleteByPublicUrl(prevUrl)
+
+  // A9: synlig i Bildbiblioteket (best-effort, fäller aldrig save).
+  if (uploadedPhoto) {
+    await recordMediaAsset(supabase, tenantId, uploadedPhoto.file, uploadedPhoto, 'sajtbyggare')
+  }
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)

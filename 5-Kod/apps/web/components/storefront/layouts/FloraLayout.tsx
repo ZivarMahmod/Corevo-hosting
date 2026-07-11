@@ -4,9 +4,6 @@ import { Gallery } from '../Gallery'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc, serviceNum } from '../service-format'
-import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
-import { loadShopData } from '@/lib/storefront/shop/load-shop'
-import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
@@ -17,7 +14,7 @@ import styles from '../storefront.module.css'
  * Playfair-hero över TRE valv-bilder i olika höjd, ornament-avdelare (stjälk-SVG),
  * verksamhets-ben (Beställ/Bröllop & avsked/Kurser), numrerade prisrader utan
  * duration, valv-porträtt i om-sektionen, galleri, plats och closing. Webshop/
- * blogg/offert/presentkort renderar som modulsektioner direkt efter layouten.
+ * blogg/presentkort vävs in i layouten via `modules`-propen (S10).
  */
 
 /** Stiliserad blomstjälk — ornamentet som skiljer sektionerna åt. */
@@ -36,31 +33,26 @@ function Ornament() {
   )
 }
 
-export async function FloraLayout({ tenant, content, services, location }: StorefrontLayoutProps) {
+export function FloraLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
   const hasMore = services.length > 6
 
   // FLORA ÄGER SINA MODULER (Zivar: "klisterlapp utan funktion"-fixen): hemmet
   // väver in butik/blogg/presentkort i temats eget formspråk (valv-kort, ornament)
   // istället för den generiska sektions-stapeln — page.tsx hoppar över
-  // StorefrontModuleSections för flora. Modulernas EGNA sidor är fortfarande hemmet
-  // för hela innehållet (/shop, /blogg, /presentkort, /offert).
-  const moduleStates = await getTenantModuleStates(tenant.id, tenant.slug)
-  const shopLive = isModuleLive(moduleStates, 'shop')
-  const bloggLive = isModuleLive(moduleStates, 'blogg')
-  const presentkortLive = isModuleLive(moduleStates, 'presentkort')
+  // StorefrontModuleSections för flora och förladdar teasers
+  // (loadLayoutModuleTeasers) som `modules`-prop så layouten förblir SYNKRON
+  // (onboarding-studions klient-preview renderar samma komponent). Modulernas
+  // EGNA sidor är fortfarande hemmet (/shop, /blogg, /presentkort, /offert).
+  const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
+  const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
+  const presentkortLive = modules?.presentkortLive ?? false
   // Pelarna länkar bara dit en sida faktiskt finns (live/paused renderar; av/draft
-  // → notFound). En pelare mot avstängd modul vore en 404-fälla (S9).
-  const reachable = (key: 'shop' | 'offert') =>
-    isModuleLive(moduleStates, key) || isModulePaused(moduleStates, key)
-  const shopReachable = reachable('shop')
-  const offertReachable = reachable('offert')
-  const [shopData, bloggData] = await Promise.all([
-    shopLive ? loadShopData(tenant.id, tenant.slug) : Promise.resolve(null),
-    bloggLive ? loadBloggData(tenant.id, tenant.slug) : Promise.resolve(null),
-  ])
-  const shopTeasers = (shopData?.products ?? []).slice(0, 3)
-  const bloggTeasers = (bloggData?.posts ?? []).slice(0, 3)
+  // → notFound). En pelare mot avstängd modul vore en 404-fälla (S9). Utan
+  // modules-prop (studions statiska preview) VISAS pelarna — previewn ska se en
+  // hel sida, och dess länkar är ändå inte klickbara på riktigt.
+  const shopReachable = modules ? modules.shopReachable : true
+  const offertReachable = modules ? modules.offertReachable : true
   const [arch1, arch2, arch3] = [
     content.heroImages[0] ?? '',
     content.heroImages[1] ?? content.heroImages[0] ?? '',

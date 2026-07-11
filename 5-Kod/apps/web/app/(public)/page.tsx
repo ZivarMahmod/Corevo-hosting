@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
 import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
+import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { StorefrontModuleSections } from '@/components/storefront/StorefrontModuleSections'
@@ -89,6 +90,21 @@ export default async function HomePage() {
   const content = resolveThemeContent(settings.theme, branding, copy)
   const services = await getServices(tenant.id, tenant.slug)
 
+  // S10: teman som ÄGER sina moduler (flora/salvia/leander/zigge/linnea/edit)
+  // väver in butik/blogg/presentkort i sitt eget formspråk men förblir SYNKRONA
+  // komponenter (studions klient-preview renderar dem) — teasers förladdas här
+  // och skickas som prop. Freshcut-temat rörs inte (egen väg).
+  const weavesViaProps =
+    settings.theme === 'flora' ||
+    settings.theme === 'salvia' ||
+    settings.theme === 'leander' ||
+    settings.theme === 'zigge' ||
+    settings.theme === 'linnea' ||
+    settings.theme === 'edit'
+  const modules = weavesViaProps
+    ? await loadLayoutModuleTeasers(tenant.id, tenant.slug)
+    : undefined
+
   // Multi-bransch (spår 5): the live module sections (shop/offert/blogg/lojalitet/
   // presentkort) render right after the theme layout's own sections, gated by the
   // tenant's per-module lifecycle. Extracted to StorefrontModuleSections so the
@@ -101,11 +117,18 @@ export default async function HomePage() {
         content={content}
         services={services}
         location={location}
+        modules={modules}
       />
-      {/* Flora väver in modulerna i sitt eget formspråk (butik/blogg/presentkort-
-          sektioner inne i layouten) — den generiska teaser-stapeln skulle dubblera
-          dem. Övriga teman får teasers tills de också integrerar modulerna. */}
-      {settings.theme === 'flora' ? null : (
+      {/* Teman som ÄGER sina moduler (flora/salvia/leander/zigge/linnea/edit väver
+          in butik/blogg/presentkort i sitt eget formspråk inne i layouten) — den
+          generiska teaser-stapeln skulle dubblera dem. Övriga teman får teasers
+          tills de också integrerar modulerna. */}
+      {settings.theme === 'flora' ||
+      settings.theme === 'salvia' ||
+      settings.theme === 'leander' ||
+      settings.theme === 'zigge' ||
+      settings.theme === 'linnea' ||
+      settings.theme === 'edit' ? null : (
         <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} variant="teaser" />
       )}
     </>

@@ -1,9 +1,11 @@
+import Link from 'next/link'
 import { HeroCarousel } from '../HeroCarousel'
 import { Reveal } from '../Reveal'
 import { Gallery } from '../Gallery'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../service-format'
+import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 
@@ -18,9 +20,19 @@ import styles from '../storefront.module.css'
  * `.heroSection` (whose negative margin cancels the reserved --nav-h so the photo
  * meets the viewport top under the nav).
  */
-export function SalviaLayout({ tenant, content, services, location }: StorefrontLayoutProps) {
+export function SalviaLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 5)
   const hasMore = services.length > 5
+
+  // SALVIA ÄGER SINA MODULER (S10): butik/blogg/presentkort vävs in i temats
+  // editoriala grammatik (3-up-foton som teamet, accent-soft-band) istället för
+  // den generiska sektions-stapeln — page.tsx hoppar över StorefrontModuleSections
+  // för salvia och förladdar teasers (loadLayoutModuleTeasers) som `modules`-prop
+  // så layouten förblir synkron (studions klient-preview renderar samma komponent).
+  // Modulernas EGNA sidor är fortfarande hemmet för hela innehållet.
+  const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
+  const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
+  const presentkortLive = modules?.presentkortLive ?? false
 
   return (
     <>
@@ -84,6 +96,43 @@ export function SalviaLayout({ tenant, content, services, location }: Storefront
           ) : null}
         </div>
       </section>
+
+      {/* UR BUTIKEN — webshop-modulen invävd i salvias editoriala grammatik:
+          samma 3-up-fotokort som teamet, centrerad rubrik, sfMoreLink-CTA.
+          Bara ett smakprov; hela sortimentet bor på /shop. Tom modul → ingen sektion. */}
+      {shopTeasers.length > 0 ? (
+        <section className={styles.sfTeam}>
+          <div className={styles.sfWide}>
+            <Reveal style={{ textAlign: 'center' }}>
+              <p className="sf-eyebrow">— Ur butiken</p>
+              <h2 className="sf-h1" style={{ marginTop: 12 }}>
+                Ta med dig salongen hem
+              </h2>
+            </Reveal>
+            <ul className={styles.sfTeamGrid}>
+              {shopTeasers.map((p, i) => (
+                <Reveal as="li" key={p.id} delay={i * 90} className={styles.sfTeamCard}>
+                  <Link href={`/shop/${p.id}`} style={{ display: 'block' }}>
+                    <div
+                      className={styles.sfTeamPhoto}
+                      style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
+                    />
+                    <h3 className={styles.sfTeamName}>{p.name}</h3>
+                    <p className="sf-body" style={{ fontSize: 14 }}>
+                      {formatShopPrice(p.priceCents, p.currency)}
+                    </p>
+                  </Link>
+                </Reveal>
+              ))}
+            </ul>
+            <Reveal style={{ textAlign: 'center' }}>
+              <Link href="/shop" className={styles.sfMoreLink}>
+                Visa hela butiken <span aria-hidden="true">→</span>
+              </Link>
+            </Reveal>
+          </div>
+        </section>
+      ) : null}
 
       {/* OM — split photo + copy + stat-trio */}
       <section className={styles.sfAboutBand}>
@@ -168,6 +217,60 @@ export function SalviaLayout({ tenant, content, services, location }: Storefront
           </Reveal>
         </div>
       </section>
+
+      {/* FRÅN BLOGGEN — blogg-modulen invävd (3 senaste i samma 3-up-form → /blogg).
+          Tom modul → ingen sektion. */}
+      {bloggTeasers.length > 0 ? (
+        <section className={styles.sfTeam} style={{ paddingTop: 0 }}>
+          <div className={styles.sfWide}>
+            <Reveal style={{ textAlign: 'center' }}>
+              <p className="sf-eyebrow">— Från bloggen</p>
+              <h2 className="sf-h1" style={{ marginTop: 12 }}>
+                Senaste från oss
+              </h2>
+            </Reveal>
+            <ul className={styles.sfTeamGrid}>
+              {bloggTeasers.map((p, i) => (
+                <Reveal as="li" key={p.id} delay={i * 90} className={styles.sfTeamCard}>
+                  <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} style={{ display: 'block' }}>
+                    <div
+                      className={styles.sfTeamPhoto}
+                      style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
+                    />
+                    <h3 className={styles.sfTeamName}>{p.title}</h3>
+                    {p.excerpt ? (
+                      <p className="sf-body" style={{ fontSize: 14 }}>
+                        {p.excerpt}
+                      </p>
+                    ) : null}
+                  </Link>
+                </Reveal>
+              ))}
+            </ul>
+            <Reveal style={{ textAlign: 'center' }}>
+              <Link href="/blogg" className={styles.sfMoreLink}>
+                Läs hela bloggen <span aria-hidden="true">→</span>
+              </Link>
+            </Reveal>
+          </div>
+        </section>
+      ) : null}
+
+      {/* PRESENTKORT — smal band-rad i accent-soft-ytan (samma yta som Om-bandet),
+          inte en hel stapel-sektion. */}
+      {presentkortLive ? (
+        <section className={styles.sfAboutBand} style={{ padding: 'clamp(40px, 6vw, 64px) 24px', textAlign: 'center' }}>
+          <Reveal>
+            <p className="sf-eyebrow">— Presentkort</p>
+            <p className={`sf-italic ${styles.sfAboutItalic}`} style={{ maxWidth: '32rem', margin: '12px auto 0' }}>
+              Ge bort en stund att se fram emot.
+            </p>
+            <Link href="/presentkort" className={styles.sfMoreLink}>
+              Till presentkorten <span aria-hidden="true">→</span>
+            </Link>
+          </Reveal>
+        </section>
+      ) : null}
 
       {/* PLATS & ÖPPETTIDER + closing CTA */}
       <section className={styles.sfLocBand}>

@@ -300,3 +300,48 @@ körning 1) så Zivar kopplar betalningar åt kunden.
 tsc/vitest/eslint → v1.7.25 → prod: kundkortets Integrationer visar Stripe-panel för
 floristen ("Ej kopplad" + Koppla Stripe-knapp — riktig koppling görs när floristens
 Stripe-konto ska in); kund-admin /admin/installningar oförändrad; FreshCut orörd.
+
+**UTFALL KÖRNING 5 (2026-07-11):** KLART — tag v1.7.25. Tre Stripe-actions dual-
+guardade, StripeConnectCard i kundkortets Integrationer med per-kund data, Zettle
+ärlig Planerad-rad. Presentkort-köp medvetet skjutet (egen köpräls, byggs vid behov).
+
+---
+
+## DETALJPLAN KÖRNING 6 — Tema × moduler + städ (S10, A9, A7-rest)
+
+### Steg 1 — Varje tema äger sina moduler (S10)
+salvia/leander/zigge/linnea/edit får väva in shop/blogg/presentkort-teasers i SITT
+formspråk (flora = mönstret: layouten läser modulstates + loaders själv, sektioner i
+temats grammatik, länkar till modulens egen sida). page.tsx slutar klistra generiska
+StorefrontModuleSections efter dessa teman. UNDANTAG freshcut-temat: RÖRS INTE
+(FreshCut FREDAD; deras enda modul är bokning → generiska stapeln renderar ändå
+ingenting).
+
+### Steg 2 — Tredje bildspåret stängs (A9)
+branding/sajtbyggar-uploads (lib/platform/actions/branding.ts, storefront-extras.ts,
+storefront-content.ts) skriver R2 men INTE media_assets → osynliga för Bildbiblioteket.
+Fix: efter lyckad R2-upload → insert media_assets-rad med source-tagg ('branding'
+resp. 'sajtbyggare'), best-effort (får aldrig fälla uppladdningen), dubblett-skydd via
+content_hash-mönstret från media/actions.ts.
+
+### Steg 3 — working_hour_slots ärlighet (A7-rest)
+Publika motorn läser inte slots → admin-UI:t får ärlig märkning ("används ännu inte
+av publika bokningen") tills motorn kopplas; ingen rivning (build-once-never-delete).
+
+### Verify
+tsc/vitest/eslint → v1.7.26 → prod-smoke alla teman via demo-tenant? Nej — inga andra
+live-tenants; render-verify sker via befintliga tester + FreshCut/florist-smoke.
+Slutrapport till Zivar när 1–6 är klara.
+
+**UTFALL KÖRNING 6 (2026-07-11):** KLART — tag v1.7.26. Alla 5 teman väver in
+shop/blogg/presentkort i sitt eget formspråk (salvia foto-kort, leander punktrader,
+zigge band, linnea rundade kort, edit editorial-rader); arkitekturen landade i
+SYNKRONA layouter + `modules`-prop (LayoutModuleTeasers, load-module-teasers.ts,
+page.tsx matar alla sex vävande teman) eftersom async-layouter kraschar studions
+klient-preview — flora konverterades också. freshcut-temat orört (FREDAD).
+Bildspåret stängt: branding/sajtbyggar-uploads → media_assets med source-tagg
+(migration 0053, constraint breddad, applicerad live); slots-editorn ärligt märkt.
+699 tester gröna. Känd rest: bild-byte städar R2 men lämnar media_assets-rad
+(bruten bild i biblioteket) — egen framtida fix-punkt.
+
+## ALLA 6 KÖRNINGAR KLARA 2026-07-11 (v1.7.21 → v1.7.26)

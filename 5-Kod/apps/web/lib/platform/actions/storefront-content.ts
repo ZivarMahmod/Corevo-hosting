@@ -9,6 +9,7 @@ import { revalidateTenant } from '@/lib/admin/tenant'
 import type { TenantBranding } from '@corevo/ui'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
+import { recordMediaAsset } from './media-record'
 
 // ── Super-admin storefront CONTENT (editorial copy + hero/gallery photos) ─────────
 // The platform operator manages a CHOSEN tenant's public storefront from
@@ -184,6 +185,9 @@ export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData)
     await reportActionError('uploadTenantStorefrontImage.upsert', error, { tenantId })
     return { error: GENERIC }
   }
+
+  // A9: synlig i Bildbiblioteket (best-effort, fäller aldrig save).
+  await recordMediaAsset(supabase, tenantId, image, res, 'sajtbyggare')
 
   revalidateTenant(tenant.slug)
   revalidatePath(`/salonger/${tenantId}`)

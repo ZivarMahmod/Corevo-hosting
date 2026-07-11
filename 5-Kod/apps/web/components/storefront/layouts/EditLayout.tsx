@@ -1,7 +1,9 @@
+import Link from 'next/link'
 import { Reveal } from '../Reveal'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../service-format'
+import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 
@@ -11,8 +13,20 @@ import styles from '../storefront.module.css'
  *  it), a numbered 2-column service grid, an about split with inline stats, and
  *  square (radius-2) buttons. Solid left nav + MiniFooter (chrome). Charcoal on
  *  ivory, lots of hairlines — magazine, not salon-soft.
+ *
+ * goal-54 S10: EDIT ÄGER SINA MODULER — butik/blogg/presentkort vävs in i
+ * temats editorial-grammatik (hairline-band, inline-etiketter, gråskala-foton,
+ * numrerade rader) istället för den generiska sektions-stapeln; page.tsx hoppar
+ * över StorefrontModuleSections och förladdar teasers (loadLayoutModuleTeasers)
+ * som `modules`-prop så layouten förblir SYNKRON (studions klient-preview
+ * renderar samma komponent). Modulernas EGNA sidor är fortfarande hemmet
+ * (/shop, /blogg, /presentkort).
  */
-export function EditLayout({ tenant, content, services }: StorefrontLayoutProps) {
+export function EditLayout({ tenant, content, services, modules }: StorefrontLayoutProps) {
+  const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
+  const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
+  const presentkortLive = modules?.presentkortLive ?? false
+
   return (
     <>
       {/* asymmetric hero: big image + overlapping card */}
@@ -67,6 +81,35 @@ export function EditLayout({ tenant, content, services }: StorefrontLayoutProps)
         </div>
       </section>
 
+      {/* UR BUTIKEN — webshop-modulen invävd i edit-grammatiken (hairline-band,
+          gråskala-foton, namn/pris-huvud). Smakprov; hela sortimentet bor på /shop. */}
+      {shopTeasers.length > 0 ? (
+        <section className={styles.sfEditServices} style={{ paddingBottom: 'clamp(2.5rem, 5vw, 4rem)' }}>
+          <div className={styles.sfWide}>
+            <div className={styles.sfBandLabelInline}>Ur butiken</div>
+            <div className={styles.sfEdTeaserGrid}>
+              {shopTeasers.map((p, i) => (
+                <Reveal as="div" key={p.id} delay={i * 60}>
+                  <Link href={`/shop/${p.id}`} className={styles.sfEdTeaserCard}>
+                    <div
+                      className={styles.sfEdTeaserImg}
+                      style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
+                    />
+                    <span className={styles.sfEditRowHead}>
+                      <span className={styles.sfEditRowName}>{p.name}</span>
+                      <span className={styles.sfEditRowPrice}>{formatShopPrice(p.priceCents, p.currency)}</span>
+                    </span>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+            <Link href="/shop" className={styles.sfMoreLink}>
+              Visa hela butiken <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       {/* about split + inline stats */}
       <section className={styles.sfEditAbout}>
         <div className={`${styles.sfWide} ${styles.sfEditAboutGrid}`}>
@@ -93,6 +136,55 @@ export function EditLayout({ tenant, content, services }: StorefrontLayoutProps)
           </Reveal>
         </div>
       </section>
+
+      {/* JOURNALEN — blogg-modulen invävd som numrerade editorial-rader (3 senaste) */}
+      {bloggTeasers.length > 0 ? (
+        <section className={styles.sfEditServices} style={{ paddingBottom: 'clamp(2.5rem, 5vw, 4rem)' }}>
+          <div className={styles.sfWide}>
+            <div className={styles.sfBandLabelInline}>Journalen</div>
+            <div className={styles.sfEditGrid}>
+              {bloggTeasers.map((p, i) => (
+                <Link
+                  key={p.id}
+                  href={p.slug ? `/blogg/${p.slug}` : '/blogg'}
+                  className={styles.sfEditRow}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <span className={styles.sfEditNum} aria-hidden="true">
+                    {serviceNum(i)}
+                  </span>
+                  <span className={styles.sfEditRowMain}>
+                    <span className={styles.sfEditRowHead}>
+                      <span className={styles.sfEditRowName}>{p.title}</span>
+                    </span>
+                    {p.excerpt ? <span className={styles.sfEditRowDesc}>{p.excerpt}</span> : null}
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <Link href="/blogg" className={styles.sfMoreLink}>
+              Läs hela journalen <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
+      {/* PRESENTKORT — en hairline-rad i temats ton, inte en hel stapel-sektion */}
+      {presentkortLive ? (
+        <section className={styles.sfEditServices} style={{ paddingBottom: 'clamp(2.5rem, 5vw, 4rem)' }}>
+          <div className={styles.sfWide}>
+            <div className={styles.sfBandLabelInline}>Presentkort</div>
+            <p className={`sf-italic ${styles.sfEditQuote}`} style={{ marginTop: 0 }}>
+              Ge bort ett besök värt att minnas.
+            </p>
+            <div style={{ marginTop: 8 }}>
+              <Link href="/presentkort" className={`btn-accent ${styles.sfSquareCta}`}>
+                Till presentkorten
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : null}
     </>
   )
 }

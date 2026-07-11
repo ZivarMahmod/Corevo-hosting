@@ -107,6 +107,15 @@ export function SlotManager({
         </Callout>
       </div>
 
+      {/* A7-ärlighet: publika bokningsmotorn läser working_hours (veckoschemat),
+          inte working_hour_slots — säg det rakt ut istället för att låtsas. */}
+      <div style={{ marginBottom: 16 }}>
+        <Callout tone="info" icon="info">
+          Obs: exakta tider här styr ännu inte den publika bokningen — den utgår från
+          veckoschemat.
+        </Callout>
+      </div>
+
       {/* 7-dagars rutnät — dagens kolumn guld-tonad, in-cell × + "+ Tid" */}
       <WeekGrid
         weekCols={weekCols}
