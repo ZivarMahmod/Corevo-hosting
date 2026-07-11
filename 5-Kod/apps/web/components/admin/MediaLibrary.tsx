@@ -198,8 +198,10 @@ function AssetCard({ asset }: { asset: MediaAssetRow }) {
             gap: 8,
           }}
         >
+          {/* Storlek bara när den är KÄND — legacy/importerade rader saknar
+              size_bytes och renderade "0 B" (death metric). */}
           <span className="num" style={{ fontSize: 11.5, color: 'var(--c-ink-3)' }}>
-            {formatBytes(asset.sizeBytes)}
+            {asset.sizeBytes > 0 ? formatBytes(asset.sizeBytes) : ''}
           </span>
           <span style={{ display: 'inline-flex', gap: 4 }}>
             <IconButton

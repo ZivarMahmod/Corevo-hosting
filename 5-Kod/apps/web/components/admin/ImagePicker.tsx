@@ -104,10 +104,16 @@ export function ImagePicker({
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <Button variant="ghost" size="sm" type="button" onClick={() => setOpen((v) => !v)}>
-                {selected ? 'Byt bild' : 'Välj bild'}
+                {selected ? 'Byt bild' : 'Välj ur Bildbiblioteket'}
               </Button>
+              {/* Röd tråd: gör källan EXPLICIT — det här är inte ett eget galleri,
+                  det är samma Bildbibliotek som modul-fliken (Zivar: "blandningar
+                  av varandra"-känslan kom av att källan var osynlig). */}
+              <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)' }}>
+                Bilderna kommer från ditt Bildbibliotek
+              </span>
               {selected && (
                 <Button
                   variant="ghost"
