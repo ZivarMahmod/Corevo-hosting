@@ -1,15 +1,14 @@
 'use client'
 
-// Varukorgs-knapp i naven (goal-55 körning 7B — korgen slutar vara en osynlig
-// flytande boll). ALLTID synlig när shop-modulen är på (count 0 = ikon utan
-// badge); klick öppnar samma delade CartDrawer som look-vägens flytande boll.
-// Två varianter: 'nav' (ikon + antal-badge i desktop-klustret) och 'overlay'
-// (textrad "Varukorg (N)" i mobil-overlayn). Varje instans äger sitt eget
-// drawer-state — cart-innehållet delas via useCart, så de är alltid i synk.
+// Varukorgs-knapp i naven — sedan goal-57 körning 11 en ren LÄNK till /varukorg
+// (egen sida). Drawern är borttagen: den renderades inne i navens fixed-lager och
+// fick fel stacking-context (sidinnehåll kunde rendera ovanpå korgen). ALLTID
+// synlig när shop-modulen är på (count 0 = ikon utan badge). Två varianter:
+// 'nav' (ikon + antal-badge i desktop-klustret) och 'overlay' (textrad
+// "Varukorg (N)" i mobil-overlayn).
 
-import { useState } from 'react'
+import Link from 'next/link'
 import { useCart } from './CartProvider'
-import { CartDrawer } from './CartDrawer'
 import { StorefrontIcon } from '@/components/storefront/StorefrontIcon'
 
 export function CartNavButton({
@@ -21,84 +20,74 @@ export function CartNavButton({
   variant?: 'nav' | 'overlay'
   className?: string
   tabIndex?: number
-  /** Körs innan drawern öppnas (mobil-overlayn stänger sig själv här). */
+  /** Körs vid klick (mobil-overlayn stänger sig själv här). */
   onOpen?: () => void
 }) {
   const { count } = useCart()
-  const [open, setOpen] = useState(false)
 
-  const openDrawer = () => {
-    onOpen?.()
-    setOpen(true)
+  if (variant === 'overlay') {
+    return (
+      <Link
+        href="/varukorg"
+        className={className}
+        tabIndex={tabIndex}
+        onClick={onOpen}
+        aria-label={`Varukorg (${count} varor)`}
+        style={{
+          // Speglar .overlayLinks a (nav-shell.module.css) så korg-raden ser ut
+          // som en menylänk, inkl. 44px-tap-target.
+          fontFamily: 'inherit',
+          fontSize: '1.5rem',
+          fontWeight: 600,
+          color: 'var(--color-fg)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '2.75rem',
+          padding: '0.25rem 1rem',
+          textDecoration: 'none',
+        }}
+      >
+        Varukorg{count > 0 ? ` (${count})` : ''}
+      </Link>
+    )
   }
 
   return (
-    <>
-      {variant === 'overlay' ? (
-        <button
-          type="button"
-          className={className}
-          tabIndex={tabIndex}
-          onClick={openDrawer}
-          aria-label={`Öppna varukorg (${count} varor)`}
+    <Link
+      href="/varukorg"
+      className={className}
+      tabIndex={tabIndex}
+      onClick={onOpen}
+      aria-label={`Varukorg (${count} varor)`}
+      style={{ position: 'relative', cursor: 'pointer', display: 'inline-flex', color: 'inherit' }}
+    >
+      <StorefrontIcon name="bag" size={18} />
+      {count > 0 ? (
+        <span
+          aria-hidden="true"
           style={{
-            // Speglar .overlayLinks a (nav-shell.module.css) så korg-raden ser ut
-            // som en menylänk, inkl. 44px-tap-target.
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-            fontSize: '1.5rem',
-            fontWeight: 600,
-            color: 'var(--color-fg)',
+            position: 'absolute',
+            top: -4,
+            right: -4,
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '2.75rem',
-            padding: '0.25rem 1rem',
+            minWidth: 17,
+            height: 17,
+            padding: '0 4px',
+            fontFamily: 'var(--font-ui)',
+            fontSize: 11,
+            fontWeight: 700,
+            lineHeight: 1,
+            color: 'var(--color-bg, #fff)',
+            background: 'var(--color-accent, #C8A24A)',
+            borderRadius: 999,
           }}
         >
-          Varukorg{count > 0 ? ` (${count})` : ''}
-        </button>
-      ) : (
-        <button
-          type="button"
-          className={className}
-          tabIndex={tabIndex}
-          onClick={openDrawer}
-          aria-label={`Öppna varukorg (${count} varor)`}
-          style={{ position: 'relative', cursor: 'pointer' }}
-        >
-          <StorefrontIcon name="bag" size={18} />
-          {count > 0 ? (
-            <span
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                top: -4,
-                right: -4,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: 17,
-                height: 17,
-                padding: '0 4px',
-                fontFamily: 'var(--font-ui)',
-                fontSize: 11,
-                fontWeight: 700,
-                lineHeight: 1,
-                color: 'var(--color-bg, #fff)',
-                background: 'var(--color-accent, #C8A24A)',
-                borderRadius: 999,
-              }}
-            >
-              {count}
-            </span>
-          ) : null}
-        </button>
-      )}
-
-      <CartDrawer open={open} onClose={() => setOpen(false)} />
-    </>
+          {count}
+        </span>
+      ) : null}
+    </Link>
   )
 }

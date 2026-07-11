@@ -68,7 +68,7 @@ export function Nav({
 
         <div className={shell.navCluster}>
           {/* goal-55 7B: alltid synlig korg-ikon när shop-modulen är på
-              (badge först vid count > 0). Öppnar den delade CartDrawer:n. */}
+              (badge först vid count > 0). Länkar till /varukorg (goal-57). */}
           {cartEnabled ? <CartNavButton className={shell.navAccount} /> : null}
           {/* G12: storefront customer login — only when the owner enabled it. */}
           {customerAccountsEnabled ? (

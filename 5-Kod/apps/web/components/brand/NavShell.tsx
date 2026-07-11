@@ -172,7 +172,7 @@ export function NavShell({
             </Link>
           ))}
           {/* goal-55 7B: korg-rad i mobil-overlayn — stänger menyn och öppnar
-              den delade CartDrawer:n. */}
+              /varukorg-sidan (goal-57). */}
           {cartEnabled ? (
             <CartNavButton variant="overlay" tabIndex={menuOpen ? 0 : -1} onOpen={() => setMenuOpen(false)} />
           ) : null}

@@ -210,10 +210,10 @@ export function AddToCart({
         >
           <span>Tillagd i varukorgen</span>
           <a
-            href="/kassa"
+            href="/varukorg"
             style={{ color: 'inherit', fontWeight: 600, textDecoration: 'underline', whiteSpace: 'nowrap' }}
           >
-            till kassan
+            till varukorgen
           </a>
         </div>
       ) : null}
