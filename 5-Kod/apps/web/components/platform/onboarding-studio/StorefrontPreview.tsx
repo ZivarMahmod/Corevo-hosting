@@ -17,6 +17,7 @@ import type { CSSProperties } from 'react'
 import { injectTenantTokens } from '@corevo/ui'
 import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
 import type { StorefrontLayoutProps } from '@/components/storefront/layouts'
+import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import type { StorefrontTheme, Service } from '@/lib/tenant-data'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
@@ -80,6 +81,21 @@ export function StorefrontPreview({ cfg, lookKeys }: { cfg: StudioCfg; lookKeys?
   }
   const content = resolveThemeContent(theme, null, Object.keys(copyOverride).length ? copyOverride : null)
 
+  // goal-60: mallens EGNA sidhuvud/sidfot (tema-paketen, goal-59). Utan chrome-nyckel
+  // → undefined → attrapperna nedan, byte-identiskt med förr.
+  const chrome = themeChrome(theme)
+  const activeKeys = activeModuleKeys(cfg)
+  // Modulstyrd meny, samma regel som (public)/layout: en modul som är av får ingen länk.
+  // Kapad till 6 av mallens chrome självt (nio bryter till två rader).
+  const previewNavLinks = [
+    { href: '/', label: 'Hem' },
+    ...(activeKeys.includes('webshop') ? [{ href: '/shop', label: 'Butik' }] : []),
+    { href: '/tjanster', label: 'Tjänster' },
+    ...(activeKeys.includes('blogg') ? [{ href: '/blogg', label: 'Blogg' }] : []),
+    { href: '/om', label: 'Om oss' },
+    { href: '/kontakt', label: 'Kontakt' },
+  ]
+
   // W4: reflect the services the operator is typing (kr→öre) so the preview's booking
   // section is live, not an empty-state. Shaped as the real services row (Tables<'services'>);
   // empty names dropped; duration is the same 30-min default createTenant seeds. Display-
@@ -129,9 +145,26 @@ export function StorefrontPreview({ cfg, lookKeys }: { cfg: StudioCfg; lookKeys?
     // [data-theme] palette block (tokens.css) → flipping cfg.theme recomputes the whole
     // palette; tplRoot supplies --nav-h/--sf-radius (required by Salvia's hero).
     <div data-world="storefront" data-theme={theme} className={styles.tplRoot} style={rootStyle}>
-      {/* Preview-nav chrome, exactly --nav-h tall + normal-flow, so Salvia's hero
-          (margin-top: calc(-1*--nav-h)) tucks under it instead of clipping. */}
-      <PreviewNav cfg={cfg} />
+      {/* goal-60: previewn visade tidigare ALLTID attrapp-navet/-footern, även för de
+          teman som äger sitt eget chrome (goal-59). Mallens sidhuvud och sidfot — hela
+          poängen med tema-paketen — syntes alltså aldrig i den yta ägaren väljer mall i.
+          Previewn halkade efter live. Nu renderas mallens EGET chrome när det finns;
+          bara teman utan eget chrome faller tillbaka på attrapperna. */}
+      {chrome?.Nav ? (
+        <chrome.Nav
+          tenant={props.tenant}
+          branding={{}}
+          links={previewNavLinks}
+          primaryCta={null}
+          cartEnabled={activeKeys.includes('webshop')}
+          customerAccountsEnabled={activeKeys.includes('kundkonton')}
+          utilityText={content.utility}
+        />
+      ) : (
+        // Attrapp-navet är exakt --nav-h högt och ligger i normalflödet, så Salvias hero
+        // (margin-top: calc(-1*--nav-h)) tuckar in under det i stället för att klippas.
+        <PreviewNav cfg={cfg} />
+      )}
 
       {/* The REAL per-theme layout (booking covered by its service rows + Boka CTAs). */}
       <Layout {...props} />
@@ -142,7 +175,18 @@ export function StorefrontPreview({ cfg, lookKeys }: { cfg: StudioCfg; lookKeys?
         <KontoPanel cfg={cfg} />
       </div>
 
-      <PreviewFooter cfg={cfg} />
+      {chrome?.Footer ? (
+        <chrome.Footer
+          tenant={props.tenant}
+          tagline={content.tagline}
+          location={null}
+          contact={{ phone: null, email: null }}
+          social={{ instagram: null, facebook: null, tiktok: null }}
+          links={previewNavLinks}
+        />
+      ) : (
+        <PreviewFooter cfg={cfg} />
+      )}
     </div>
   )
 }

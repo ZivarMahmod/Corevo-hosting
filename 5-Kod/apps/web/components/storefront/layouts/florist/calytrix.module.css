@@ -465,12 +465,15 @@
   font-size: var(--cal-fs-body);
   color: var(--color-primary); /* 9.08:1 */
 }
-/* Radjusteringen. I hemmets kort är priset SISTA elementet → det bottenankras och
-   alla priser i den scrollande raden hamnar på samma baslinje, hur långa namnen än är.
-   I butikskortet gör .calShopBuy samma jobb (priset följer med upp) — därför får
-   priset ALDRIG auto-margin där, två auto-marginaler i samma kolumn delar på
-   utrymmet i stället för att trycka ned. */
-.calCard .calCardPrice {
+/* Radjusteringen: priset bottenankras, och eftersom köp-rälsen ligger DIREKT efter
+   priset i DOM:en trycks paret ned som en enhet. Alla priser i raden hamnar då på
+   samma baslinje oavsett hur långa namn och beskrivningar är.
+   Mätt live: utan detta låg tre priser i samma rad på y=293/293/318 — kortet med
+   kortare beskrivning drog upp sitt pris 25px. Köpknapparna stod i linje, priserna
+   hoppade. Endast EN auto-margin per kolumn (den på .calShopBuy är borttagen),
+   annars delar de på utrymmet i stället för att trycka ned. */
+.calCard .calCardPrice,
+.calShopBody .calCardPrice {
   margin-top: auto;
   padding-top: 12px;
 }
@@ -1274,8 +1277,8 @@
 }
 .calShopNameLink:hover { color: var(--color-primary); }
 /* Köp-rälsen sitter i kortets fot — alltid i linje mellan grannkort. */
+/* Ingen auto-margin här: priset ovanför bär bottenankaret för hela paret. */
 .calShopBuy {
-  margin-top: auto;
   padding-top: 20px;
   --color-accent: var(--cal-gold);
   --color-accent-fg: var(--cal-gold-ink);
