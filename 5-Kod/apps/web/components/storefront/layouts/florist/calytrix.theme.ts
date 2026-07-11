@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { CalytrixNav, CalytrixFooter } from './calytrix.chrome'
 import { CalytrixOm, CalytrixTjanster, CalytrixKontakt } from './calytrix.pages'
+import { CalytrixShop, CalytrixBlogg } from './calytrix.modules'
 
 // Calytrix-temats egen fotomanifest (Unsplash, verifierade 200 OK 2026-07-11).
 // Lokal u() — INGEN värde-import från theme-content.ts (bara `import type` tillåts
@@ -108,4 +109,7 @@ export const calytrix: FloristTheme = {
   // sidfot och alla tre undersidorna — inte bara hemmets hero.
   chrome: { Nav: CalytrixNav, Footer: CalytrixFooter },
   pages: { om: CalytrixOm, tjanster: CalytrixTjanster, kontakt: CalytrixKontakt },
+  // goal-59 MODUL-VYER: butiken/bloggen renderas i mallens form (modulen äger
+  // funktionen: data, köp-räls, livscykel — den ändras aldrig av en mall).
+  moduleViews: { shop: CalytrixShop, blogg: CalytrixBlogg },
 }

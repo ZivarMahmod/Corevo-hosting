@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { AuroraNav, AuroraFooter } from './aurora.chrome'
 import { AuroraOm, AuroraTjanster, AuroraKontakt } from './aurora.pages'
+import { AuroraShop, AuroraBlogg } from './aurora.modules'
 
 /**
  * AURORA — korall/laxrosa på varmvitt, lekfull (goal-58). Signatur: tunn
@@ -98,4 +99,8 @@ export const aurora: FloristTheme = {
   // sin sidfot (stort centrerat script-wordmark på rosa platta) och sina undersidor.
   chrome: { Nav: AuroraNav, Footer: AuroraFooter },
   pages: { om: AuroraOm, tjanster: AuroraTjanster, kontakt: AuroraKontakt },
+  // MODUL-VYER (goal-59, vektor-regeln): butiken och bloggen renderas i Auroras form
+  // (förskjuten grid av höga valv-kort, cirkel-CTA, korall-piller) — men FUNKTIONEN är
+  // fortfarande modulens: AddToCart, formatShopPrice, fulfilmentPromise, paused-gaten.
+  moduleViews: { shop: AuroraShop, blogg: AuroraBlogg },
 }

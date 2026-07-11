@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { SageNav, SageFooter } from './sage.chrome'
 import { SageOm, SageTjanster, SageKontakt } from './sage.pages'
+import { SageShop, SageBlogg } from './sage.modules'
 
 // Foto-id:n verifierade med curl -sI → 200 OCH öppnade som bild (2026-07-11) —
 // bort-sorterade träffar under vägen: lökar, Spider-Man, en kameraväska, en
@@ -127,4 +128,7 @@ export const sage: FloristTheme = {
   // länkar, Bookable) är fortfarande plattformens.
   chrome: { Nav: SageNav, Footer: SageFooter },
   pages: { om: SageOm, tjanster: SageTjanster, kontakt: SageKontakt },
+  // Modulens funktion är plattformens (AddToCart, priser, livscykel); Sage äger formen:
+  // butiken = passepartout-galleri, bloggen = hårlinje-lista. Se sage.modules.tsx.
+  moduleViews: { shop: SageShop, blogg: SageBlogg },
 }

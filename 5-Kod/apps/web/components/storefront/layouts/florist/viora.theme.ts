@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { VioraNav, VioraFooter } from './viora.chrome'
 import { VioraOm, VioraTjanster, VioraKontakt } from './viora.pages'
+import { VioraShop, VioraBlogg } from './viora.modules'
 
 /** Unsplash photo manifest — every id below verified `curl -sI` → 200 (2026-07-11). */
 const u = (id: string, w = 1600) =>
@@ -117,4 +118,8 @@ export const viora: FloristTheme = {
   // kort-grid, /kontakt split med karta). Funktionen är fortfarande plattformens.
   chrome: { Nav: VioraNav, Footer: VioraFooter },
   pages: { om: VioraOm, tjanster: VioraTjanster, kontakt: VioraKontakt },
+  // MODUL-VYER (goal-59, vektor-regeln): butiken och bloggen renderas i mallens form —
+  // stora 2-kolumners 4:5-kort med priset i kortets fot, blogg-inlägg som split-kort.
+  // Funktionen (data, paused-gate, AddToCart, priser, leveranslöfte) är modulens.
+  moduleViews: { shop: VioraShop, blogg: VioraBlogg },
 }

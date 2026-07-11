@@ -1088,3 +1088,221 @@
   box-shadow: none;
 }
 .wtInkCta:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODUL-VYER (goal-59) — butiken och bloggen i mallens FORM.
+   Samma skala (--wt-fs-*), samma rytm (--wt-s*), samma radie (0) och samma
+   4:5-bildratio som hemmet. Butiken ärver hemmets .wtCard/.wtCardImg/.wtCardName
+   rakt av och lägger bara till prisraden + köp-rälsen; bloggen ärver /om:s
+   fältdagbok (.wtEntryNum + streckad linje). Ingen ny färg, ingen ny nivå.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── BUTIKEN ── */
+
+/* Leveranslöftet — fältnotis till höger i rubrikraden (.wtSecHead är flex/space-between). */
+.wtShopPromise {
+  margin: 0;
+  max-width: 22rem;
+  text-align: right;
+}
+.wtShopPromiseLabel {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.wtShopPromiseText {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+
+/* PAUSAT — en rå, ink-ramad remsa (ingen mjuk "toast"): fyrkantig, 2px ram,
+   versal STÄNGT-stämpel i tistel till vänster. */
+.wtShopClosed {
+  margin: var(--wt-s3) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--wt-s1) var(--wt-s2);
+  max-width: 44rem;
+  padding: var(--wt-s2);
+  background: var(--wt-paper);
+  border: 2px solid var(--color-fg);
+  border-radius: var(--sf-radius);
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg);
+}
+.wtShopClosedMark {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--wt-paper);
+  background: var(--color-primary);
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.wtShopEmpty {
+  margin: var(--wt-s4) 0 0;
+  max-width: 40rem;
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+
+.wtShopGrid {
+  list-style: none;
+  margin: var(--wt-s4) 0 0; /* rubrikblock → innehåll = 48px, som hemmets .wtCardGrid */
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--wt-s5) var(--wt-s3);
+}
+.wtShopItem { display: block; }
+
+/* Löpnummer + leveranssätt som mikroversal etikett över namnet (samma roll som
+   hemmets .wtCardMeta — leveranslöftet upprepas där köpet faktiskt sker). */
+.wtShopIndex {
+  margin: var(--wt-s2) 0 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+/* .wtCardName har margin-top 20px — efter en etikett räcker 12px. */
+.wtShopItem .wtCardName { margin-top: var(--wt-s1); }
+
+/* PRISET — tung serif på egen rad, h2-nivåns lillebror (name-nivån). */
+.wtShopPrice {
+  margin: var(--wt-s2) 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-name);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+
+/* Streckad avdelare mellan varan och köp-rälsen — mallens signaturlinje. */
+.wtShopRule {
+  margin-top: var(--wt-s2);
+  border-bottom: 2px dashed var(--color-line);
+}
+
+/* AddToCart är modulens egen (inline-stilar). Vi kan inte skriva om dess knappar
+   utifrån — men vi kan ge den mallens rum: den sitter i en råpappersplatta med
+   ink-ram, så köp-rälsen läser som en del av arket och inte som ett främmande kort. */
+.wtShopBuy {
+  padding: 0 var(--wt-s1) var(--wt-s1);
+  background: var(--wt-paper);
+  border: 1px solid var(--color-line);
+  border-top: none;
+  border-radius: var(--sf-radius);
+}
+.wtShopItemClosed {
+  margin: var(--wt-s1) 0 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+@media (max-width: 760px) {
+  .wtShopGrid { grid-template-columns: 1fr 1fr; gap: var(--wt-s4) var(--wt-s3); }
+  .wtShopPromise { text-align: left; }
+}
+@media (max-width: 520px) {
+  .wtShopGrid { grid-template-columns: 1fr; }
+}
+
+/* ── BLOGGEN — FÄLTDAGBOK (samma uppslagsform som /om) ── */
+.wtLog {
+  list-style: none;
+  margin: var(--wt-s4) 0 0;
+  padding: 0;
+  max-width: 62rem;
+  border-top: 2px dashed var(--color-line);
+}
+.wtLogEntry { border-bottom: 1px dashed var(--color-line); }
+.wtLogRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--wt-s3);
+  padding: var(--wt-s3) 0;
+}
+.wtLogBody {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--wt-s3);
+  align-items: start;
+}
+.wtLogLink {
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--wt-dur) ease;
+}
+.wtLogLink:hover { transform: translateY(var(--wt-lift)); }
+.wtLogLink:hover .wtLogTitle { color: var(--color-primary); }
+.wtLogLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.wtLogText { min-width: 0; }
+.wtLogDate {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--wt-fs-micro);
+  line-height: 1.5;
+  letter-spacing: var(--wt-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.wtLogTitle {
+  margin: var(--wt-s1) 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--wt-fs-name);
+  line-height: 1.12;
+  color: var(--color-fg);
+  transition: color var(--wt-dur-fast) ease;
+}
+.wtLogExcerpt {
+  margin: var(--wt-s2) 0 0;
+  max-width: 40rem;
+  font-family: var(--font-body);
+  font-size: var(--wt-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+/* Omslaget = "inklistrad" bilaga i marginalen, samma 4:5 och vita passepartout
+   som fältdagbokens foto på /om. */
+.wtLogThumb {
+  width: clamp(120px, 14vw, 180px);
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+  border: 6px solid var(--wt-paper);
+}
+@media (max-width: 640px) {
+  .wtLogRow { gap: var(--wt-s2); }
+  .wtLogBody { grid-template-columns: 1fr; }
+  .wtLogThumb { width: 100%; }
+}

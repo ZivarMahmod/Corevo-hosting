@@ -909,6 +909,185 @@
   color: var(--color-fg-2);
 }
 
+/* ═══════════ MODUL-VYER — butik + blogg i Auroras vektor (goal-59) ═════════
+   Modulen äger funktionen (AddToCart, priser, livscykel); Aurora äger formen:
+   samma 3:4-ratio, samma 24px-radie på struktur, samma cirkel-gest som hemmets
+   "Handla nu", samma valv-båge som collaget. Den förskjutna (masonry-aktiga)
+   griden = boutiquens lekfullhet, utan att kortet tappar en enda funktion. */
+
+/* Leveranslöftet — rosa piller direkt under butikens rubrik (alltid synligt) */
+.auShopPromise {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: var(--au-sp-text) auto 0;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+}
+.auShopPromiseTag {
+  font-family: var(--font-body);
+  font-size: var(--au-fs-micro);
+  font-weight: var(--au-fw-micro);
+  letter-spacing: var(--au-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary-d);
+}
+.auShopPromiseText {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: var(--au-fw-display);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+  color: var(--color-fg);
+}
+
+/* Pausat läge — korall-band i mallens ton, inte en generisk varningsruta */
+.auShopClosed {
+  max-width: 46rem;
+  margin: var(--au-sp-cta) auto 0;
+  padding: 18px 28px;
+  border-radius: 999px;
+  background: var(--color-primary-d);
+  color: var(--au-on-dark);
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+  font-weight: 400;
+}
+
+/* Förskjuten grid av höga kort (masonry-känsla utan JS: jämna kort faller ner) */
+.auShopGrid,
+.auPostGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--au-sp-block) var(--au-gutter);
+  align-items: start;
+  list-style: none;
+  max-width: 70rem;
+  margin: var(--au-sp-block) auto 0;
+  padding: 0 var(--au-gutter);
+}
+.auShopCard {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  overflow: hidden;
+  transition: transform var(--au-dur) ease, border-color var(--au-dur) ease;
+}
+.auShopCard:nth-child(3n + 2) { margin-top: var(--au-sp-block); }
+.auShopCard:hover { transform: translateY(var(--au-lift)); border-color: var(--color-primary); }
+.auShopCardMedia {
+  position: relative;
+  display: block;
+  aspect-ratio: var(--au-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft); /* fallback när imageUrl saknas */
+  text-decoration: none;
+}
+/* Rund korall-CTA per kort — ekar hemmets "Handla nu"-cirkel ovanpå heron */
+.auShopCardCircle {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid var(--au-on-dark);
+  color: var(--au-on-dark);
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: var(--au-fw-micro);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: background var(--au-dur) ease;
+}
+.auShopCard:hover .auShopCardCircle { background: var(--color-primary-d); }
+.auShopCardBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: var(--au-sp-text);
+}
+.auShopCardLink { color: inherit; text-decoration: none; }
+.auShopCardLink:hover { color: var(--color-primary-d); }
+.auShopPrice {
+  margin: var(--au-sp-text) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+  font-weight: var(--au-fw-micro);
+  color: var(--color-primary-d);
+}
+/* Köp-rälsen: modulens egen kontroll, klädd i mallens pill-radie */
+.auShopBuy { margin-top: auto; padding-top: var(--au-sp-eyebrow); }
+.auShopBuy button,
+.auShopBuy select,
+.auShopBuy div[role='status'] { border-radius: 999px !important; }
+.auShopBuy button[aria-label^='Minska'],
+.auShopBuy button[aria-label^='Öka'] { border-radius: 50% !important; }
+
+/* Blogg — mjuka VALV-kort (999px-topp = mallens signaturbåge) */
+.auPostCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 999px 999px var(--sf-radius) var(--sf-radius);
+  overflow: hidden;
+  transition: transform var(--au-dur) ease, border-color var(--au-dur) ease;
+}
+.auPostCard:nth-child(3n + 2) { margin-top: var(--au-sp-block); }
+.auPostCard:hover { transform: translateY(var(--au-lift)); border-color: var(--color-primary); }
+.auPostInner { display: block; text-decoration: none; color: inherit; }
+.auPostMedia {
+  display: block;
+  aspect-ratio: var(--au-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.auPostBody { display: block; padding: var(--au-sp-text); }
+.auPostDate {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--au-fs-micro);
+  font-weight: var(--au-fw-micro);
+  letter-spacing: var(--au-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary-d);
+}
+.auPostTitle {
+  display: block;
+  margin-top: var(--au-sp-eyebrow);
+  font-family: var(--font-display);
+  font-size: var(--au-fs-card);
+  line-height: var(--au-lh-card);
+  font-weight: var(--au-fw-card);
+  color: var(--color-fg);
+}
+.auPostExcerpt {
+  display: block;
+  margin-top: var(--au-sp-eyebrow);
+  font-family: var(--font-body);
+  font-size: var(--au-fs-body);
+  line-height: var(--au-lh-body);
+  color: var(--color-fg-2);
+}
+
+.auModuleMore { margin: var(--au-sp-block) 0 0; text-align: center; }
+.auModuleMore .auBandCta { margin-top: 0; }
+
 /* ═══════════ MOBIL ════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   .auAboutGrid,
@@ -924,6 +1103,10 @@
   .auOmCollage { grid-template-columns: repeat(2, 1fr); }
   .auCardGrid,
   .auSvcGrid { grid-template-columns: 1fr; max-width: 24rem; }
+  .auShopGrid,
+  .auPostGrid { grid-template-columns: 1fr; max-width: 26rem; }
+  .auShopCard:nth-child(3n + 2),
+  .auPostCard:nth-child(3n + 2) { margin-top: 0; }
   .auShopCircle { width: 78px; height: 78px; }
   .auPriceRow { border-radius: var(--sf-radius); }
 }

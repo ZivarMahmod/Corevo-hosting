@@ -920,3 +920,234 @@
 }
 .miFactCol .miPageFoot { text-align: left; }
 @media (max-width: 860px) { .miContactGrid { grid-template-columns: 1fr; } }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MODUL-VYER (mina.modules.tsx) — goal-59, vektor-regeln: modulen äger FUNKTIONEN
+   (data, livscykel, varukorg, kassa), Mina äger FORMEN. Butiken och bloggen är
+   samma sida som hemmet: samma typskala, samma 4/5-ratio, samma versala mikro-
+   register, samma 0-radie, samma 4px-lyft. Butiken kör hemmets TÄTA fyr-kolumners
+   grid (mallens signatur, minsta korten i sviten) och pris som CHIP; bloggen kör
+   hemmets kompakta kort-grid.
+
+   Vyerna renderas BÅDE på startsidan (teaser, inuti .miRoot) och på modulens egen
+   sida (/shop, /blogg — UTANFÖR .miRoot) → hela var-blocket deklareras om på
+   .miModule, exakt som .miPage gör. Annars faller typskalan till webbläsarens
+   default på modulsidan och butiken lämnar mallens vektor igen.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.miModule {
+  --mi-fs-sec: clamp(32px, 4.8vw, 52px);
+  --mi-fs-card: clamp(24px, 2.4vw, 28px);
+  --mi-fs-lede: 21px;
+  --mi-fs-body: 16px;
+  --mi-fs-micro: 12px;
+  --mi-lh-sec: 1.08;
+  --mi-lh-card: 1.15;
+  --mi-lh-body: 1.57;
+  --mi-lh-micro: 1.5;
+  --mi-ls-display: -0.01em;
+  --mi-ls-caps: 0.06em;
+  --mi-ls-micro: 0.083em;
+  --mi-fw-display: 500;
+  --mi-fw-micro: 600;
+  --mi-sp-hair: 4px;
+  --mi-sp-eyebrow: 12px;
+  --mi-sp-text: 20px;
+  --mi-sp-cta: 32px;
+  --mi-sp-block: 48px;
+  --mi-sp-gutter: 24px;
+  --mi-sp-gutter-tight: 12px;
+  --mi-sp-section: clamp(48px, 8vw, 96px);
+  --mi-gutter-x: clamp(20px, 4vw, 28px);
+  --mi-ratio: 4 / 5;
+  --mi-r-pill: 999px;
+  --mi-lift: -4px;
+  --mi-dur: 400ms;
+  --mi-ease: ease;
+  background: var(--color-bg);
+  padding: var(--mi-sp-section) 0;
+}
+/* Rubrikblocket: eyebrow · sektionsrubrik (52px) · leveranslöfte som mallens lede.
+   Mer-länken sitter till höger, precis som hemmets .miSecHead. */
+.miModHead {
+  max-width: 1180px;
+  margin: 0 auto var(--mi-sp-block);
+  padding: 0 var(--mi-gutter-x);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--mi-sp-text);
+  flex-wrap: wrap;
+}
+.miModHeadText { max-width: 34rem; }
+.miModLede {
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-lede);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2); /* 5.82:1 */
+  margin: var(--mi-sp-text) 0 0;
+}
+/* Leveranslöftets etikett ("Posta hem" / "Hämta i butik") — mikro-registret. */
+.miModTag {
+  display: inline-block;
+  margin: var(--mi-sp-eyebrow) 0 0;
+  padding: 4px 14px;
+  background: var(--color-accent-soft);
+  border-radius: var(--mi-r-pill);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg); /* 15.25:1 mot rosan */
+}
+
+/* STÄNGT — en rosa remsa i fullbredd över katalogen (samma platt-språk som gift-
+   raden). Inte en gul varningsruta: mallens ton bär även dåliga nyheter. */
+.miModNotice {
+  max-width: 1180px;
+  margin: 0 auto var(--mi-sp-block);
+  padding: var(--mi-sp-text) var(--mi-gutter-x);
+  background: var(--color-accent-soft);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--sf-radius); /* = 0 */
+}
+.miModNoticeLabel {
+  margin: 0 0 var(--mi-sp-hair);
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-micro);
+  font-weight: var(--mi-fw-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary); /* 7.63:1 */
+}
+.miModNoticeText {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg); /* 15.25:1 mot rosan */
+}
+.miModEmpty {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--mi-gutter-x);
+}
+.miModEmptyText {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+}
+
+/* ── BUTIKEN — hemmets TÄTA fyr-kolumners grid, 12px gutter, minsta korten ────── */
+.miModGrid {
+  list-style: none;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--mi-gutter-x);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--mi-sp-block) var(--mi-sp-gutter-tight);
+}
+/* Kortet är ALDRIG ett <a> runt allt — bild + namn länkar, köp-rälsen står fri. */
+.miModItem { display: flex; flex-direction: column; min-width: 0; }
+.miModLink {
+  display: block;
+  text-decoration: none;
+  transition: transform var(--mi-dur) var(--mi-ease);
+}
+.miModLink:hover { transform: translateY(var(--mi-lift)); }
+.miModImg {
+  display: block;
+  aspect-ratio: var(--mi-ratio);
+  background-color: var(--color-accent-soft); /* imageUrl = null → färgplatta */
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--sf-radius); /* = 0 */
+}
+.miModName {
+  display: block;
+  margin: var(--mi-sp-text) 0 0;
+  font-family: var(--font-body);
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg); /* 18.42:1 */
+}
+.miModDesc {
+  margin: var(--mi-sp-hair) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+}
+/* PRIS SOM CHIP — mallens accent på en liten yta (aldrig i eyebrows). */
+.miPriceChip {
+  align-self: flex-start;
+  margin: var(--mi-sp-eyebrow) 0 0;
+  padding: 4px 12px;
+  background: var(--color-accent-soft);
+  border-radius: var(--mi-r-pill);
+  font-family: var(--font-body);
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  color: var(--color-primary); /* 7.63:1 mot rosan */
+}
+/* Köp-rälsen (AddToCart) sitter i kortets fot — pressas ner så knapparna linjerar
+   över hela raden även när namnen bryter olika många rader. */
+.miModBuy { margin-top: auto; padding-top: var(--mi-sp-eyebrow); }
+@media (max-width: 860px) { .miModGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) {
+  .miModGrid { grid-template-columns: 1fr; max-width: 20rem; }
+}
+
+/* ── BLOGGEN — hemmets kompakta kort-grid (3 kolumner, 24px gutter) ───────────── */
+.miModPostGrid {
+  list-style: none;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--mi-gutter-x);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--mi-sp-block) var(--mi-sp-gutter);
+}
+.miModPost { min-width: 0; }
+.miModPostDate {
+  display: block;
+  margin: var(--mi-sp-text) 0 0;
+  font-family: var(--font-body);
+  font-weight: var(--mi-fw-micro);
+  font-size: var(--mi-fs-micro);
+  line-height: var(--mi-lh-micro);
+  letter-spacing: var(--mi-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2); /* 5.82:1 */
+}
+.miModPostTitle {
+  display: block;
+  margin: var(--mi-sp-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--mi-fw-display);
+  font-size: var(--mi-fs-card);
+  line-height: var(--mi-lh-card);
+  letter-spacing: var(--mi-ls-display);
+  color: var(--color-fg); /* 18.42:1 */
+}
+.miModPostExcerpt {
+  display: block;
+  margin: var(--mi-sp-eyebrow) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--mi-fs-body);
+  line-height: var(--mi-lh-body);
+  color: var(--color-fg-2);
+}
+@media (max-width: 760px) {
+  .miModPostGrid { grid-template-columns: 1fr; max-width: 26rem; }
+}

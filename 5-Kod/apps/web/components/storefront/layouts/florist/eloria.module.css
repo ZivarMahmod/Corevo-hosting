@@ -1039,6 +1039,7 @@
   background: var(--color-bg);
 }
 .elContactCol { display: flex; flex-direction: column; }
+
 .elContactGap { margin-top: var(--el-s4); }
 .elContactValue {
   font-family: var(--font-body);
@@ -1055,4 +1056,103 @@
 .elContactLink:hover { color: var(--color-primary); }
 @media (max-width: 820px) {
   .elContactCard { grid-template-columns: 1fr; }
+}
+
+/* ═══════════ MODUL-VYER (goal-59) — butiken & bloggen i Elorias vektor ═══════════
+   Modulen äger funktionen (data, korg, kassa); mallen äger formen. Allt nedan är
+   samma tre grepp som hemmet: den mörkgröna guldramade plattan, guldlinjen och det
+   höga 4:5-kortet. NOLL nya hex, samma typskala/radie/rytm/hover som resten.
+   Rot-sektionerna är .elShopSection (butik) och .elCardSectionAlt (blogg) — båda
+   ligger redan i skal-gruppen högst upp, så tokens/typskala ärvs oförändrade. */
+
+/* Sektionsledet (leveranslöftet) centrerat under rubriken — .elBody är vänsterställd
+   med max-width 34rem, .elSecHead är centrerad. */
+.elModLede { margin-left: auto; margin-right: auto; }
+
+/* Kort-rutnätet — SAMMA tre spalter och samma gap som hemmets .elCardGrid, fast som
+   <ul> (modulerna renderar semantiska listor). */
+.elModGrid {
+  list-style: none;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 3vw, 32px);
+}
+/* Efter uppslaget (bloggen) — sektionens inre steg, aldrig ett nytt avstånd. */
+.elModGridAfterSpread { margin-top: var(--el-s4); }
+.elModCard { display: flex; flex-direction: column; }
+.elModCard > * { display: flex; flex-direction: column; flex: 1; }
+/* Köpkontrollen sitter i kortets fot — alla kort får samma baslinje oavsett hur
+   lång beskrivningen är. */
+.elModBuy { margin-top: auto; padding-top: var(--el-s2); }
+
+/* GULDLINJEN UNDER NAMNET — butikens signatur (hemmets .elCardRule ligger ÖVER
+   namnet; här hänger regeln under det och binder ihop namn → pris). */
+.elCardRuleUnder {
+  display: block;
+  width: 2rem;
+  height: 1px;
+  background: var(--color-primary);
+  margin: var(--el-s1) 0 0;
+}
+/* Bloggkortets datum — mallens mikrograd, samma roll som .elEyebrow men i brödtextens
+   dämpade ton (datumet är en upplysning, inte en rubrik). */
+.elCardDate {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--el-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  margin: var(--el-s2) 0 0;
+}
+
+/* STÄNGD BUTIK — mörkgrön guldramad platta (heroplattans lilla syskon). Inga köp-CTA:er
+   renderas när den här syns; katalogen läses som ett skyltfönster. */
+.elClosedPlate {
+  max-width: 46rem;
+  margin: 0 auto var(--el-s4);
+  background: var(--eloria-green);
+  border: 1px solid var(--eloria-gold);
+  border-radius: var(--sf-radius);
+  padding: clamp(1.5rem, 4vw, 2.25rem) clamp(1.5rem, 5vw, 2.5rem);
+  text-align: center;
+}
+.elClosedText {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--el-fs-body);
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  max-width: 32rem;
+  margin: var(--el-s1) auto 0;
+}
+
+/* BLOGGENS UPPSLAG — samma guldramade .elSpread som /om. Här är fotot en länk, så
+   spalten måste fylla ramen. */
+.elSpreadLink { display: block; text-decoration: none; color: inherit; }
+.elSpreadLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.elSpreadTitleLink { text-decoration: none; color: inherit; }
+.elSpreadTitleLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+/* Uppslagets rubrik ligger EN grad över kortets namn — 44px (h2), inte en fjärde nivå. */
+.elSpreadTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--el-fs-h2);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  margin: var(--el-s1) 0 0;
+  transition: color var(--el-dur) ease;
+}
+.elSpreadTitleLink:hover .elSpreadTitle { color: var(--color-primary); }
+.elSpreadLink .elSpreadPhoto { height: 100%; }
+.elSpreadLink:hover .elSpreadPhoto { transform: translateY(var(--el-lift)); }
+.elSpreadPhoto { transition: transform var(--el-dur) ease; }
+
+@media (max-width: 760px) {
+  .elModGrid { grid-template-columns: 1fr; max-width: 22rem; }
 }

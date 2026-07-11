@@ -938,7 +938,132 @@ a.islShortcut:hover {
 }
 .islContactCta { margin-top: var(--isl-step-cta); }
 
+/* ═══════════════  MODUL-VYER — BUTIK & BLOGG (goal-59)  ═══════════════
+   Modulens FORM är mallens: samma 4/5-ratio, samma radie 0, samma guld-prick som
+   prislistans tvåspalt, samma sektionsrytm. Inget nytt formspråk, inga nya hex —
+   bara mallens egna byggstenar återanvända en nivå längre in i sajten. */
+
+/* ── Pausad modul / notis: sanden + en marinblå kant, mallens enda "banner". */
+.islNoticeWrap {
+  max-width: 1180px;
+  margin: var(--isl-band) auto 0;
+  padding: 0 var(--isl-gutter);
+}
+.islNotice {
+  margin: 0;
+  padding: var(--isl-step-head) var(--isl-band);
+  background: var(--color-accent-soft);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--sf-radius); /* = 0 */
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--isl-fs-sub);
+  line-height: var(--isl-lh-sub);
+  color: var(--color-fg);
+}
+
+/* ── BUTIKENS KORT — hemmets höga kort + en fot med pris och köp-räls. */
+.islShopCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.islShopBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+/* Priset: guld-pricken framför, värdet i display-serifen — precis prisradens ton. */
+.islShopPrice {
+  display: flex;
+  align-items: baseline;
+  gap: var(--isl-step-eyebrow);
+  margin: var(--isl-step-head) 0 0;
+  padding-top: var(--isl-step-head);
+  border-top: 1px solid var(--color-line);
+}
+/* Köp-rälsen sitter alltid i kortets fot, oavsett hur lång texten ovanför är. */
+.islShopCart { margin-top: auto; }
+
+/* Mer-länk under en klippt lista. */
+.islModMore {
+  max-width: 1180px;
+  margin: var(--isl-step-cta) auto 0;
+  padding: 0 var(--isl-gutter);
+}
+
+/* ── BLOGGEN — TVÅ STORA FÖRST, sedan lista. */
+.islLeadGrid {
+  max-width: 1180px;
+  margin: var(--isl-sec) auto 0;
+  padding: 0 var(--isl-gutter);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+.islLeadImg {
+  aspect-ratio: 4 / 5; /* mallens ENDA bildratio */
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.islPostDate {
+  margin: var(--isl-step-head) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--isl-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.islLeadTitle {
+  margin: var(--isl-step-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--isl-fs-h2);
+  line-height: var(--isl-lh-head);
+  letter-spacing: var(--isl-ls-head);
+  color: var(--color-fg);
+}
+.islPostList {
+  list-style: none;
+  max-width: 1100px;
+  margin: var(--isl-sec) auto 0;
+  padding: 0 var(--isl-gutter);
+}
+/* Bloggradens anatomi = prisradens: prick · titel/ingress · datum till höger. */
+.islPostRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: var(--isl-step-head);
+  padding: var(--isl-step-head) 0;
+  border-bottom: 1px solid var(--color-line);
+  text-decoration: none;
+  color: inherit;
+  transition: padding-left var(--isl-dur) ease;
+}
+.islPostRow:hover { padding-left: var(--isl-step-eyebrow); }
+.islPostRow:hover .islPriceDot { background: var(--color-primary); }
+.islPostRowDate {
+  font-family: var(--font-body);
+  font-size: var(--isl-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--isl-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .islLeadGrid { grid-template-columns: 1fr; max-width: 28rem; }
+  .islPostRow { grid-template-columns: auto 1fr; }
+  .islPostRowDate { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .islPostRow { transition: none; }
+  .islPostRow:hover { padding-left: 0; }
   .islBtn,
   .islCard,
   .islShortcut,

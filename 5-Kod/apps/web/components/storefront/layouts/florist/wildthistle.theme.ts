@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { WildThistleNav, WildThistleFooter } from './wildthistle.chrome'
 import { WildThistleOm, WildThistleTjanster, WildThistleKontakt } from './wildthistle.pages'
+import { WildThistleShop, WildThistleBlogg } from './wildthistle.modules'
 
 // Wild Thistle-temats egen fotomanifest (Unsplash). Varje id nedan curl -sI → 200
 // OCH nedladdat + visuellt öppnat och synat 2026-07-11 (flera slumpvis provade
@@ -138,4 +139,9 @@ export const wildthistle: FloristTheme = {
   // fortfarande plattformens: NavShell + modul-gatade länkar/CTA + Bookable.
   chrome: { Nav: WildThistleNav, Footer: WildThistleFooter },
   pages: { om: WildThistleOm, tjanster: WildThistleTjanster, kontakt: WildThistleKontakt },
+  // MODUL-VYER (goal-59, vektor-regeln): butiken och bloggen renderas i mallens form
+  // — rakt avskurna 4:5-bilder, pris i tung serif, streckade avdelare, fältdagbok med
+  // numrerade uppslag. Modulen äger fortfarande FUNKTIONEN: AddToCart, livscykeln
+  // (pausat → inga köp-CTA:er), priser via formatShopPrice, leveranslöftet ur configen.
+  moduleViews: { shop: WildThistleShop, blogg: WildThistleBlogg },
 }

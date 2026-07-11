@@ -830,7 +830,187 @@
   border-bottom-color: var(--color-primary);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   MODUL-VYER (goal-59) — butiken + journalen i galleri-studions eget språk.
+   Samma raster som hemmets kort-grid, samma 4/5-ratio, samma hårlinjer,
+   samma versal-mikro. Inga nya färger: bara temats vars.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Leveranslöftets etikett — mikro-versaler under ledet (Posta hem / Hämta i butik …). */
+.sgShopPromise {
+  margin: 20px 0 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+/* Stängt-notisen: en hårlinje-ruta på surface, aldrig en färgad varnings-banner. */
+.sgNotice {
+  max-width: 800px;
+  margin: 32px auto 0;
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-fg);
+  border-radius: var(--sf-radius);
+  text-align: center;
+}
+.sgNoticeLabel {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.sgNoticeText {
+  margin: 12px 0 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+
+/* ── BUTIKEN — passepartout-galleri, 3 kolumner ── */
+.sgShopGrid {
+  list-style: none;
+  max-width: 1140px;
+  margin: 48px auto 0;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.sgShopItem { display: block; }
+.sgShopFrame {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 12px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  transition: transform 400ms ease, border-color 400ms ease;
+}
+.sgShopFrame:hover {
+  transform: translateY(-5px);
+  border-color: var(--color-primary);
+}
+.sgShopLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.sgShopImg {
+  display: block;
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border-radius: var(--sf-radius);
+}
+/* Spärrade versaler under bilden — utställningsskylten. */
+.sgShopName {
+  display: block;
+  margin-top: 20px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(24px, 2.2vw, 26px);
+  line-height: 1.15;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  transition: color 400ms ease;
+}
+.sgShopFrame:hover .sgShopName { color: var(--color-primary); }
+.sgShopDesc {
+  margin: 12px 0 0;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+.sgShopPrice {
+  margin: 20px 0 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--color-primary);
+}
+/* Köp-rälsens fot: skild från katalogtexten av en hårlinje. AddToCart är modulens
+   egen klientkomponent (token-stylad) — vi ger den bara sitt rum. */
+.sgShopBuy {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-line);
+}
+
+/* ── JOURNALEN — stram lista av hårlinje-rader ── */
+.sgPostList {
+  list-style: none;
+  max-width: 900px;
+  margin: 48px auto 0;
+  padding: 0 24px;
+  border-top: 1px solid var(--color-fg);
+}
+.sgPostRow { border-bottom: 1px solid var(--color-line); }
+.sgPostInner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0;
+  text-decoration: none;
+  color: inherit;
+}
+.sgPostMain { display: block; min-width: 0; }
+.sgPostDate {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+.sgPostTitle {
+  display: block;
+  margin-top: 12px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(24px, 2.2vw, 26px);
+  line-height: 1.15;
+  color: var(--color-fg);
+  transition: color 400ms ease;
+}
+a.sgPostInner:hover .sgPostTitle { color: var(--color-primary); }
+.sgPostExcerpt {
+  display: block;
+  margin-top: 12px;
+  max-width: 40rem;
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+.sgPostThumb {
+  flex: 0 0 auto;
+  width: 8rem;
+  aspect-ratio: 4 / 5;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+}
+
 @media (max-width: 760px) {
+  .sgShopGrid { grid-template-columns: 1fr; max-width: 22rem; }
+  .sgPostInner { flex-direction: column-reverse; }
+  .sgPostThumb { width: 100%; }
   .sgCategoryGrid { grid-template-columns: 1fr; max-width: 22rem; }
   .sgCardGrid { grid-template-columns: 1fr; max-width: 22rem; }
   .sgAboutGrid { grid-template-columns: 1fr; }

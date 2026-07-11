@@ -1031,3 +1031,240 @@ a.lnMoodCard:hover {
     display: none; /* siffran är dekor — den får inte äta radbredden på mobil */
   }
 }
+
+/* ══ MODUL-VYER (goal-59) — butiken + bloggen i Lunarias vektor ═════════════
+   Modulen äger funktionen (data, livscykel, korg, kassa); mallen äger formen.
+   NOLL nya hex: paletten (8) + de befintliga ln-varsen är hela vokabuläret, och
+   inga delade .sf*-klasser förekommer.
+
+   BUTIKEN återanvänder hemmets OFFSET-GRID (.lnOffsetGrid/.lnOffsetCell) rakt av
+   — samma sänkta mitt-kort, samma 1:1-ratio, samma 0-radie. Skillnaden mot
+   hemmets teaser-kort är att butikskortet bär KÖP-RÄLSEN: priset växer till en
+   display-siffra och en hårlinje skiljer texten från AddToCart-zonen.
+
+   BLOGGEN bär mallens andra signatur: den ÖVERLAPPANDE textplattan (samma
+   grammatik som .lnHeroCard och /kontakt-kortet), växelvis från vänster/höger. */
+
+/* Griden bärs av en <ul> i modul-vyn → punktlistan bort (rör inte grid-regeln
+   ovan, som fortfarande gäller hemmets <div>). */
+ul.lnOffsetGrid,
+.lnPostList {
+  list-style: none;
+}
+
+/* ── Modulens ingress (leveranslöftet / bloggens rad) — ingress-rollen, centrerad
+   i sektionshuvudet. */
+.lnModuleLede {
+  margin: var(--ln-sp-text) auto 0;
+  max-width: var(--ln-measure);
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-lede);
+  line-height: var(--ln-lh-body);
+  color: var(--color-fg-2);
+}
+
+/* ── STÄNGT-NOTIS — vetefärgad platta, mikroversaler, nattblå kant. Ingen egen
+   färg: --color-accent-soft + --color-primary. Fg på accent-soft = 12.97:1. */
+.lnClosedNotice {
+  max-width: 54rem;
+  margin: var(--ln-sp-cta) auto 0;
+  padding: var(--ln-sp-gutter);
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--sf-radius); /* 0 */
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  line-height: var(--ln-lh-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+/* ── ÄRLIG TOM-TEXT (modulens egen sida) ─────────────────────────────────── */
+.lnEmpty {
+  max-width: var(--ln-measure);
+  margin: var(--ln-sp-block) auto 0;
+  padding: 0 var(--ln-sp-gutter);
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-body);
+  line-height: var(--ln-lh-body);
+  color: var(--color-fg-2);
+}
+
+/* ── BUTIKSKORT — kortkroppen är en kolumn så köp-rälsen alltid bottnar ──── */
+.lnShopCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius); /* 0 */
+  overflow: hidden;
+  transition: border-color var(--ln-dur) var(--ln-ease);
+}
+.lnShopCard:hover {
+  border-color: var(--color-primary);
+}
+.lnShopMedia {
+  display: block;
+  position: relative; /* ankare åt .lnSrOnly */
+  aspect-ratio: var(--ln-ratio); /* samma 1:1 som hemmets kort och galleriet */
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft); /* p.imageUrl === null → vetefärgad platta */
+}
+.lnShopBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: var(--ln-sp-gutter);
+}
+.lnPlainLink {
+  color: inherit;
+  text-decoration: none;
+}
+.lnPlainLink:hover {
+  color: var(--color-primary);
+}
+/* STORT PRIS — display-siffran (Italiana 400), samma register som .lnPriceValue. */
+.lnShopPrice {
+  margin: var(--ln-sp-text) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-card);
+  line-height: var(--ln-lh-card);
+  letter-spacing: var(--ln-ls-display);
+  color: var(--color-fg); /* priset är data — det ska skära */
+}
+/* Köp-zonen: hårlinje över, alltid längst ned i kortet. */
+.lnShopBuy {
+  margin-top: auto;
+  padding-top: var(--ln-sp-gutter);
+}
+.lnShopBuy::before {
+  content: '';
+  display: block;
+  margin-bottom: var(--ln-sp-gutter);
+  border-top: 1px solid var(--color-line);
+}
+
+/* Skärmläsartext (bildens alt när bilden bärs av background-image). */
+.lnSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── BLOGGEN — ÖVERLAPPANDE TEXTPLATTOR ───────────────────────────────────
+   Panorama-remsa (16:10, mallens enda andra ratio — heron) med en textplatta
+   som skjuter ut över dess nedre kant. Växelvis vänster/höger via .lnPostFlip. */
+.lnPostList {
+  max-width: 74rem;
+  margin: var(--ln-sp-block) auto 0;
+  padding: 0 var(--ln-sp-gutter);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ln-sp-section) + var(--ln-sp-block));
+}
+.lnPostSpread {
+  position: relative;
+  padding-bottom: var(--ln-sp-block); /* rum åt plattans utskjutande kant */
+}
+.lnPostPhoto {
+  aspect-ratio: 16 / 10;
+  width: min(74%, 48rem);
+  margin-left: auto; /* fotot till höger, plattan bryter in från vänster */
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft); /* inget omslag → vetefärgad platta */
+  border-radius: var(--sf-radius); /* 0 */
+}
+.lnPostCard {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 2;
+  display: block;
+  width: min(94%, 34rem);
+  padding: var(--ln-sp-block);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius); /* 0 */
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--ln-dur) var(--ln-ease), border-color var(--ln-dur) var(--ln-ease);
+}
+a.lnPostCard:hover {
+  transform: translateY(var(--ln-lift)); /* 4px lyft, ingen skugga */
+  border-color: var(--color-primary);
+}
+/* Varannat uppslag speglas — fotot vänster, plattan bryter in från höger. */
+.lnPostFlip .lnPostPhoto {
+  margin-left: 0;
+  margin-right: auto;
+}
+.lnPostFlip .lnPostCard {
+  left: auto;
+  right: 0;
+}
+.lnPostDate {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  line-height: var(--ln-lh-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.lnPostTitle {
+  margin: var(--ln-sp-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--ln-fw-display);
+  font-size: var(--ln-fs-card);
+  line-height: var(--ln-lh-card);
+  letter-spacing: var(--ln-ls-display);
+  color: var(--color-fg);
+}
+.lnPostMore {
+  display: inline-block;
+  margin-top: var(--ln-sp-cta);
+  padding-bottom: 2px;
+  font-family: var(--font-body);
+  font-size: var(--ln-fs-micro);
+  font-weight: var(--ln-fw-micro);
+  line-height: var(--ln-lh-micro);
+  letter-spacing: var(--ln-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+}
+
+@media (max-width: 800px) {
+  .lnPostList {
+    gap: var(--ln-sp-section);
+  }
+  .lnPostSpread {
+    padding-bottom: 0;
+  }
+  .lnPostPhoto,
+  .lnPostFlip .lnPostPhoto {
+    width: 100%;
+    margin: 0;
+  }
+  /* Överlappet är en desktop-gest — staplat blir plattan ett indraget kort. */
+  .lnPostCard,
+  .lnPostFlip .lnPostCard {
+    position: static;
+    width: 100%;
+    max-width: 30rem;
+    margin: calc(-1 * var(--ln-sp-block)) auto 0;
+    padding: var(--ln-sp-cta);
+  }
+}

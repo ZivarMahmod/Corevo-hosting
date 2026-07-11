@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { MinaNav, MinaFooter } from './mina.chrome'
 import { MinaOm, MinaTjanster, MinaKontakt } from './mina.pages'
+import { MinaShop, MinaBlogg } from './mina.modules'
 
 // Minas egen fotomanifest (Unsplash, curl -sI 200 OK + visuellt granskade
 // 2026-07-11 — flera slumpvis testade Unsplash-id:n visade sig vara berg/
@@ -135,4 +136,8 @@ export const mina: FloristTheme = {
   // Funktionen (NavShell, korg, konto, modul-gatade länkar, Bookable) är plattformens.
   chrome: { Nav: MinaNav, Footer: MinaFooter },
   pages: { om: MinaOm, tjanster: MinaTjanster, kontakt: MinaKontakt },
+  // goal-59 VEKTOR-REGELN: butiken och bloggen renderas i Minas form (täta gridet,
+  // 4/5-ratio, versalt mikro-register, pris som chip). FUNKTIONEN är modulens —
+  // AddToCart, priser, leveranslöfte, pausat läge kommer oförändrade från modulen.
+  moduleViews: { shop: MinaShop, blogg: MinaBlogg },
 }

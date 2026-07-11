@@ -1072,6 +1072,174 @@
   .calTlItem { flex-direction: column; gap: 12px; }
 }
 
+/* ═══════════ MODUL-VYER — butik + blogg (goal-59, vektor-regeln) ═══════════
+   Modulen äger funktionen (data, kassa, livscykel), mallen äger formen. Vyerna bor
+   UTANFÖR .calRoot (moduls egna sidor monteras av modul-rutten), så vars deklareras
+   även på .calShopRoot — annars faller skalan tillbaka på plattformens.
+
+   Formen är hemmets, inte en ny värld: samma mörka plommonband som sektion 2/10,
+   samma 4:5-bild, samma "Populär"-pill, samma raka hörn, samma 96/50/28/21/16/12. */
+.calShopRoot {
+  --cal-gold: #cf9d3f;
+  --cal-gold-ink: var(--color-fg);
+  --cal-fs-hero: clamp(3.25rem, 8.4vw, 6rem);
+  --cal-fs-h2: clamp(2rem, 4.4vw, 3.125rem);
+  --cal-fs-sub: clamp(1.5rem, 2.3vw, 1.75rem);
+  --cal-fs-lede: 1.3125rem;
+  --cal-fs-body: 1rem;
+  --cal-fs-micro: 0.75rem;
+  --cal-lh-display: 1.06;
+  --cal-lh-head: 1.1;
+  --cal-lh-sub: 1.15;
+  --cal-lh-body: 1.58;
+  --cal-ls-display: -0.015em;
+  --cal-ls-head: -0.01em;
+  --cal-ls-micro: 0.083em;
+  --cal-sec: clamp(3rem, 7vw, 6rem);
+  --cal-band: clamp(1.5rem, 3.5vw, 3rem);
+  --cal-gutter: clamp(1.5rem, 4vw, 1.75rem);
+  --cal-step-eyebrow: 12px;
+  --cal-step-head: 20px;
+  --cal-step-cta: 32px;
+  --cal-dur: 400ms;
+  --cal-lift: -5px;
+}
+/* Modul-vyernas ögonbryn: mallens EGEN mikrotext-roll (ingen global .sf-*-klass) —
+   samma 12px/600/VERSALER/spärr som resten av Calytrix. */
+.calEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+/* Modulsidans sidhuvud = mallens mörka plommonplatta (samma som calBand/calClosing). */
+.calShopHero {
+  background: var(--color-primary-d);
+  padding: var(--cal-sec) var(--cal-gutter);
+  text-align: center;
+}
+.calShopHeroEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--cal-gold);
+}
+.calShopHeroTitle {
+  max-width: 44rem;
+  margin: var(--cal-step-eyebrow) auto 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-hero);
+  line-height: var(--cal-lh-display);
+  letter-spacing: var(--cal-ls-display);
+  color: #fff; /* 15.07:1 mot --color-primary-d */
+}
+/* Leveranslöftet: sidhuvudets lede — ren #fff, hierarkin görs av skalan. */
+.calShopHeroLede {
+  max-width: 34rem;
+  margin: var(--cal-step-head) auto 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-lede);
+  line-height: var(--cal-lh-body);
+  color: #fff;
+}
+/* Teaser-lägets leveranslöfte (under rubriken i .calSecHead). */
+.calShopPromise {
+  margin: var(--cal-step-head) 0 0;
+  max-width: 34rem;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg-2);
+}
+
+.calShopNoticeWrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--cal-gutter);
+}
+/* STÄNGT-notisen: guldkantad platta — samma accent som "Populär"-pillen, så det
+   läses som mallens röst och inte som ett plattforms-larm. */
+.calShopClosed {
+  margin: 0;
+  padding: 20px 24px;
+  border-left: 4px solid var(--cal-gold);
+  background: var(--color-accent-soft);
+  border-radius: var(--sf-radius); /* = 0 */
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  font-weight: 600;
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg); /* 18.05:1 mot den mjuka tonen-ytan */
+}
+
+/* Brett rutnät — butiken är hjälten på sin egen sida. */
+.calShopGrid {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--cal-gutter);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 48px 24px;
+}
+.calShopCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+/* Bilden lyfts (5px), inte hela kortet — köpknappen ska stå stilla under pekaren. */
+.calShopMedia {
+  display: block;
+  text-decoration: none;
+  transition: transform var(--cal-dur) ease;
+}
+.calShopMedia:hover { transform: translateY(var(--cal-lift)); }
+.calShopBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.calShopNameLink {
+  color: inherit;
+  text-decoration: none;
+}
+.calShopNameLink:hover { color: var(--color-primary); }
+/* Köp-rälsen sitter i kortets fot — alltid i linje mellan grannkort. */
+.calShopBuy {
+  margin-top: auto;
+  padding-top: 20px;
+  --color-accent: var(--cal-gold);
+  --color-accent-fg: var(--cal-gold-ink);
+  --radius: 999px; /* AddToCarts knapp = mallens pill-undantag, som badgen */
+  --font-ui: var(--font-body);
+}
+
+/* Bloggens datumrad — mikrotext-regeln (12/600/VERSALER/+1px). */
+.calPostDate {
+  margin: var(--cal-step-head) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+/* Datumet äger steget efter bilden → namnet flyttar upp till 12px. */
+.calPostDate + .calCardName { margin-top: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .calShopMedia { transition: none; }
+  .calShopMedia:hover { transform: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .calPriceCard,
   .calSrvCard,

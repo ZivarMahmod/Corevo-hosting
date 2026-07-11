@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { LunariaNav, LunariaFooter } from './lunaria.chrome'
 import { LunariaOm, LunariaTjanster, LunariaKontakt } from './lunaria.pages'
+import { LunariaShop, LunariaBlogg } from './lunaria.modules'
 
 // Foto-id:n verifierade i två steg (2026-07-11): curl -sI → 200 OCH öppnade som
 // bild — bort-sorterade träffar under vägen: en himmel-gradient, en pall, en
@@ -119,4 +120,9 @@ export const lunaria: FloristTheme = {
   // länkar, Bookable) är fortfarande plattformens.
   chrome: { Nav: LunariaNav, Footer: LunariaFooter },
   pages: { om: LunariaOm, tjanster: LunariaTjanster, kontakt: LunariaKontakt },
+  // goal-59 MODUL-VYER: butiken och bloggen renderas i Lunarias formspråk
+  // (offset-grid med stora display-priser · överlappande textplattor). Modulen
+  // äger fortfarande funktionen: AddToCart, livscykel (paused), priser via
+  // formatShopPrice, leveranslöftet via fulfilmentPromise.
+  moduleViews: { shop: LunariaShop, blogg: LunariaBlogg },
 }

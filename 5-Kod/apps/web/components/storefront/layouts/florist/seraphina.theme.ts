@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { SeraphinaNav, SeraphinaFooter } from './seraphina.chrome'
 import { SeraphinaOm, SeraphinaTjanster, SeraphinaKontakt } from './seraphina.pages'
+import { SeraphinaShop, SeraphinaBlogg } from './seraphina.modules'
 
 /**
  * SERAPHINA — champagne/guld + varmgrå, bröllops-lyx (florist-sviten, goal-58).
@@ -93,4 +94,7 @@ export const seraphina: FloristTheme = {
   /** TEMA-PAKET (goal-59): mallen äger sitt sidhuvud, sin sidfot och sina undersidor. */
   chrome: { Nav: SeraphinaNav, Footer: SeraphinaFooter },
   pages: { om: SeraphinaOm, tjanster: SeraphinaTjanster, kontakt: SeraphinaKontakt },
+  /** MODUL-VYER (goal-59): modulen äger funktionen, mallen formen — butiken och
+   *  bloggen renderas i bröllopsmagasinets språk, inte plattformens. */
+  moduleViews: { shop: SeraphinaShop, blogg: SeraphinaBlogg },
 }

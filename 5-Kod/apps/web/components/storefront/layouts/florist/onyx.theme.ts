@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { OnyxNav, OnyxFooter } from './onyx.chrome'
 import { OnyxOm, OnyxTjanster, OnyxKontakt } from './onyx.pages'
+import { OnyxShop, OnyxBlogg } from './onyx.modules'
 
 /** Unsplash photo manifest — every id below verified `curl -sI` → 200 (2026-07-11). */
 const u = (id: string, w = 1600) =>
@@ -103,4 +104,6 @@ export const onyx: FloristTheme = {
   // modul-gatade länkar/CTA) — bara FORMEN är mallens.
   chrome: { Nav: OnyxNav, Footer: OnyxFooter },
   pages: { om: OnyxOm, tjanster: OnyxTjanster, kontakt: OnyxKontakt },
+  // Vektor-regeln: modulen äger funktionen (data, varukorg, kassa), mallen formen.
+  moduleViews: { shop: OnyxShop, blogg: OnyxBlogg },
 }

@@ -1056,3 +1056,208 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ═══════════ MODUL-VYER (goal-59): BUTIK · BLOGG ═══════════════════════════
+   Vektor-regeln: modulen äger funktionen, mallen äger formen. Inga nya mått —
+   samma tokens (--sera-*) som hemmet: 4/5-ratio, 0-radie, 3-kolumnsrutnät,
+   5px-lyft, 12/600/VERSALER i mikroregistret.                                */
+
+.seraShopView,
+.seraBloggView {
+  padding: 0 0 var(--sera-section);
+  background: var(--color-bg);
+}
+/* Teaser-läget (startsidan) står FRITT i flödet → samma sektionsluft som hemmet;
+   modulens egen sida bär redan sin luft i .seraPageHead. */
+.seraShopView > .seraHead,
+.seraBloggView > .seraHead {
+  padding-top: var(--sera-section);
+}
+.seraModBody {
+  padding: 0 var(--sera-gutter);
+}
+
+/* Leveranslöftet i teaser-läge: guld-mikro under rubriken (på sidan bär
+   .seraPageLede samma löfte). Kunden måste veta hur hen får blommorna. */
+.seraPromise {
+  margin: var(--sera-sp-text) 0 0;
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+/* Pausad modul: ett guldband tvärs över — mallens accentSoft + guldlinje, i
+   knapp-registret (12/600/VERSALER). Läsbart, aldrig ett rött larm. */
+.seraNotice {
+  max-width: var(--sera-container);
+  margin: var(--sera-sp-head) auto 0;
+  padding: var(--sera-sp-text) var(--sera-sp-cta);
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg);
+  background: var(--color-accent-soft);
+  border-top: 1px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  border-radius: var(--sera-radius);
+}
+/* Ärlig tom-text — aldrig påhittade produkter/inlägg. */
+.seraEmpty {
+  max-width: var(--sera-measure);
+  margin: var(--sera-sp-head) auto 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg-2);
+}
+
+/* Rutnätet = hemmets .seraGrid, men som lista (ul/li). */
+.seraModGrid {
+  max-width: var(--sera-container);
+  margin: var(--sera-sp-head) auto 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sera-section) var(--sera-sp-gap);
+}
+.seraShopItem {
+  display: flex;
+}
+.seraShopItemInner {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+/* Namn ←guld-ledare→ pris: prickad guldlinje mellan, som en prislista. */
+.seraShopInfo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+.seraShopLeader {
+  flex: 1;
+  min-width: 1rem;
+  height: 1px;
+  border-bottom: 1px dotted var(--color-primary);
+  opacity: 0.7;
+}
+/* Köp-rälsen sitter alltid i kortets fot — alla kort får samma bottenlinje. */
+.seraShopBuy {
+  margin-top: auto;
+  padding-top: var(--sera-sp-text);
+}
+.seraShopDesc {
+  margin: var(--sera-sp-eyebrow) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--sera-fs-body);
+  line-height: var(--sera-lh-body);
+  color: var(--color-fg-2);
+}
+.seraShopView .seraFoot,
+.seraBloggView .seraFoot {
+  margin-top: var(--sera-sp-head);
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .seraModGrid {
+    grid-template-columns: 1fr;
+    max-width: 24rem;
+  }
+}
+
+/* ── BLOGG: brud-magasinets uppslag + streckade rader ─────────────────────── */
+.seraLead {
+  max-width: var(--sera-container);
+  margin: var(--sera-sp-head) auto 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sera-split);
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+.seraDate {
+  display: block;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: var(--sera-fw-micro);
+  font-size: var(--sera-fs-micro);
+  letter-spacing: var(--sera-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.seraLeadTitle {
+  margin: var(--sera-sp-eyebrow) 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--sera-fw-display);
+  font-style: italic;
+  font-size: var(--sera-fs-h2);
+  line-height: var(--sera-lh-h2);
+  letter-spacing: var(--sera-ls-h2);
+  color: var(--color-fg);
+}
+.seraRows {
+  margin: var(--sera-section) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-line);
+}
+.seraRow {
+  display: grid;
+  grid-template-columns: 1fr 9rem;
+  align-items: center;
+  gap: var(--sera-sp-cta);
+  padding: var(--sera-sp-text) 0;
+  border-bottom: 1px solid var(--color-line);
+  text-decoration: none;
+  color: inherit;
+  transition: background var(--sera-dur-ui) ease, padding-left var(--sera-dur-ui) ease;
+}
+.seraRow:hover {
+  background: var(--color-accent-soft);
+  padding-left: var(--sera-sp-eyebrow);
+}
+.seraRow:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+.seraRowMain {
+  min-width: 0;
+}
+.seraRowMain .seraBlogName,
+.seraRowMain .seraBlogMeta {
+  display: block;
+}
+.seraRowThumb {
+  display: block;
+}
+.seraRowThumb .seraImg {
+  display: block;
+}
+
+@media (max-width: 860px) {
+  .seraLead {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+  .seraLead .seraSpreadCard {
+    margin-left: 0;
+    margin-top: calc(-1 * var(--sera-sp-cta));
+  }
+}
+
+@media (max-width: 640px) {
+  .seraRow {
+    grid-template-columns: 1fr 5rem;
+    gap: var(--sera-sp-text);
+  }
+}

@@ -1041,10 +1041,298 @@
 }
 .otVisitBand .otBtn.otBtn:hover { background: var(--color-surface); }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MODUL-VYER (goal-59, vektor-regeln) — butiken + bloggen i BUTIKENS form.
+   Modulen äger funktionen (AddToCart, livscykel, priser); mallen äger formen. Rötterna
+   .otShop / .otBloggView bär samma var-block som de fyra andra — annars skulle
+   /shop och /blogg falla ur mallens typskala och rytm.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.otShop,
+.otBloggView {
+  --ot-rose: #A8425C;
+  --ot-fs-display: clamp(44px, 7.2vw, 96px);
+  --ot-fs-section: clamp(32px, 3.8vw, 48px);
+  --ot-fs-card: clamp(24px, 2.2vw, 28px);
+  --ot-fs-body: 18px;
+  --ot-fs-micro: 12px;
+  --ot-s-xs: 12px;
+  --ot-s-sm: 20px;
+  --ot-s-md: 24px;
+  --ot-s-lg: 32px;
+  --ot-s-xl: 48px;
+  --ot-sec: clamp(48px, 8vw, 96px);
+  --ot-ratio: 4 / 5;
+  --ot-dur: 400ms;
+  --ot-ease: ease;
+  --ot-lift: -5px;
+}
+
+/* ── BUTIKEN ── */
+.otShop { padding: var(--ot-sec) 0; background: var(--color-bg); }
+/* Teaser-läget på startsidan ligger redan i en sektionsrytm → ingen dubbel luft. */
+.otShopTeaser { padding: var(--ot-sec) 0 0; }
+
+.otShopHead { max-width: 46rem; margin: 0 auto; padding: 0 var(--ot-s-md); }
+
+/* Leveranslöftet: butikens hängande SKYLT under rubriken — samma prickade linje som
+   menykortet/öppettiderna, så löftet läses som butikens egen handskrivna notis. */
+.otPromise {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ot-s-xs);
+  margin: var(--ot-s-md) 0 0;
+  padding: var(--ot-s-xs) var(--ot-s-md);
+  background: var(--color-accent-soft);
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-body);
+  line-height: 1.5;
+  color: var(--color-fg); /* 14.27:1 mot accentSoft */
+  text-align: left;
+}
+.otPromiseTag {
+  font-family: var(--font-body);
+  font-style: normal;
+  font-weight: 600;
+  font-size: var(--ot-fs-micro);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+.otPromiseDot { color: var(--color-line); }
+
+/* Stängt-notis: hela remsan blir puderrosa-badgens kulör i ram + versal-etikett. */
+.otClosedNote {
+  max-width: 46rem;
+  margin: var(--ot-s-lg) auto 0;
+  padding: var(--ot-s-md);
+  background: var(--color-surface);
+  border: 2px solid var(--ot-rose);
+  border-radius: 0;
+  text-align: center;
+}
+.otClosedTag {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ot-rose); /* 5.36:1 mot surface-familjen */
+  margin: 0 0 8px;
+}
+.otClosedText {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.15;
+  color: var(--color-fg);
+}
+
+/* TVÅ STORA KORT PER RAD — exakt hemmets skyltfönster (.otShowcaseGrid), fast med
+   köp-rälsen under varje bild. */
+.otShopGrid {
+  list-style: none;
+  max-width: 62rem;
+  margin: var(--ot-s-xl) auto 0;
+  padding: 0 var(--ot-s-md);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ot-sec) var(--ot-s-md);
+}
+.otShopCard { display: flex; flex-direction: column; min-width: 0; }
+.otShopMedia {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--ot-dur) var(--ot-ease);
+}
+.otShopMedia:hover { transform: translateY(var(--ot-lift)); }
+.otShopImg {
+  aspect-ratio: var(--ot-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft); /* fallback när imageUrl saknas */
+  border-radius: 0;
+}
+/* Stjärn-badgen — mallens enda runda form, samma plats som på hemmet. */
+.otShopBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ot-rose);
+  color: var(--color-bg);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-micro);
+  line-height: 1;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 9px 14px;
+  border-radius: 999px;
+}
+.otShopInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-top: var(--ot-s-sm);
+}
+.otShopName { text-decoration: none; color: inherit; min-width: 0; }
+.otShopName:hover { color: var(--color-primary); }
+.otShopPrice {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-body);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+.otShopDesc {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--ot-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+  margin: var(--ot-s-xs) 0 0;
+  max-width: 50ch;
+}
+/* Köp-rälsen (AddToCart) fyrkantas in i butikens grammatik: den ritar sig med
+   var(--radius)/var(--color-accent)/var(--font-ui) — här sätts de lokalt så knappen
+   blir mallens bruna, fyrkantiga knapp utan att komponenten rörs. */
+.otShopBuy {
+  margin-top: auto;
+  padding-top: var(--ot-s-sm);
+  --radius: 0px;
+  --color-accent: var(--color-primary);
+  --font-ui: var(--font-body);
+}
+.otShopBuy button,
+.otShopBuy select {
+  border-radius: 0 !important;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: var(--ot-fs-micro);
+}
+.otShopBuy > div > button:last-of-type { height: 50px; }
+
+/* Ärlig tom-text (modulens EGEN sida). */
+.otShopEmpty {
+  max-width: 46rem;
+  margin: var(--ot-s-xl) auto 0;
+  padding: 0 var(--ot-s-md);
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.2;
+  color: var(--color-fg-2);
+}
+.otShopMore { text-align: center; margin-top: var(--ot-sec); }
+
+@media (max-width: 640px) {
+  .otShopGrid { grid-template-columns: 1fr; max-width: 26rem; gap: var(--ot-s-xl); }
+}
+
+/* ── BLOGGEN — POLAROID-VÄGGEN ── */
+.otBloggView { padding: var(--ot-sec) 0; background: var(--color-surface); }
+.otBloggTeaser { background: var(--color-bg); }
+.otBloggHead { max-width: 46rem; margin: 0 auto; padding: 0 var(--ot-s-md); }
+
+.otBloggClosed {
+  max-width: 46rem;
+  margin: var(--ot-s-lg) auto 0;
+}
+
+.otPostGrid {
+  list-style: none;
+  max-width: 68rem;
+  margin: var(--ot-s-xl) auto 0;
+  padding: 0 var(--ot-s-md);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ot-s-xl) var(--ot-s-lg);
+}
+/* Polaroid: creme kort, tjock underkant, lätt lutning som alternerar per bricka —
+   exakt samma kort som /om:s polaroider, nu med bloggens innehåll. */
+.otPost {
+  background: var(--color-bg);
+  padding: var(--ot-s-xs) var(--ot-s-xs) var(--ot-s-md);
+  border-radius: 0;
+  transition: transform var(--ot-dur) var(--ot-ease);
+}
+.otPost:nth-child(3n + 1) { transform: rotate(-1.6deg); }
+.otPost:nth-child(3n + 2) { transform: rotate(0.9deg); }
+.otPost:nth-child(3n + 3) { transform: rotate(-0.6deg); }
+.otPost:hover { transform: rotate(0deg) translateY(var(--ot-lift)); }
+.otPostLink { display: block; text-decoration: none; color: inherit; }
+.otPostImg {
+  aspect-ratio: var(--ot-ratio);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--color-accent-soft);
+}
+.otPostBody { padding: var(--ot-s-sm) 8px 0; text-align: center; }
+.otPostDate {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--ot-fs-micro);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0 0 8px;
+}
+.otPostTitle { margin: 0; }
+.otPostExcerpt {
+  margin: var(--ot-s-xs) 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-body);
+  line-height: 1.5;
+  color: var(--color-fg-2);
+}
+.otPostEmpty {
+  max-width: 46rem;
+  margin: var(--ot-s-xl) auto 0;
+  padding: 0 var(--ot-s-md);
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--ot-fs-card);
+  line-height: 1.2;
+  color: var(--color-fg-2);
+}
+.otPostMore { text-align: center; margin-top: var(--ot-sec); }
+
+@media (max-width: 860px) {
+  .otPostGrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .otPostGrid { grid-template-columns: 1fr; max-width: 22rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .otShowcaseCard,
   .otBlogCard,
   .otPolaroid,
+  .otShopMedia,
+  .otPost,
   .otGalleryBand li { transition: none; }
-  .otPolaroid:hover { transform: none; }
+  .otPolaroid:hover,
+  .otPost:hover { transform: none; }
 }

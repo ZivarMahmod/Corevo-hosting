@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { PaisleyNav, PaisleyFooter } from './paisley.chrome'
 import { PaisleyOm, PaisleyTjanster, PaisleyKontakt } from './paisley.pages'
+import { PaisleyShop, PaisleyBlogg } from './paisley.modules'
 
 // Paisleys egen fotomanifest (Unsplash, curl -sI 200 OK + visuellt granskade
 // 2026-07-11 — flera slumpvis testade Unsplash-id:n visade sig vara arkitektur/
@@ -135,4 +136,8 @@ export const paisley: FloristTheme = {
   // och sina tre undersidor (reportage / prislista i spalt / kolofon-kort).
   chrome: { Nav: PaisleyNav, Footer: PaisleyFooter },
   pages: { om: PaisleyOm, tjanster: PaisleyTjanster, kontakt: PaisleyKontakt },
+  // goal-59 MODUL-VYER (vektor-regeln): modulen äger funktionen (data, livscykel,
+  // varukorg, kassa) — mallen äger formen. Butiken renderas som tidningsuppslag,
+  // bloggen som artikellista med ingress i spalt. Se paisley.modules.tsx.
+  moduleViews: { shop: PaisleyShop, blogg: PaisleyBlogg },
 }

@@ -475,6 +475,115 @@
   .onxCardGrid { grid-template-columns: 1fr; max-width: 24rem; }
 }
 
+/* ── MODUL-VYERNA (butik + blogg, goal-59) ────────────────────────────────────
+   Samma band (.onxCardSection), samma huvud (.onxSecHead), samma kort-språk och
+   samma 4/5-ratio som hemmets modul-teasers — modulens EGNA sidor ska inte kunna
+   skiljas från hemmet. Skillnaden mot teasern är bara djupet: beskrivning, pris +
+   leveransvariant och köp-foten. */
+
+/* Leveranslöftet/ingressen under sektionsrubriken (brödtext, centrerad i huvudet) */
+.onxModuleLede {
+  margin: var(--onx-gap-title) auto 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--onx-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+  max-width: 52ch;
+}
+
+/* Stängt-notis / ärlig tom-text — hårlinje-ram + korall-kant, aldrig ett mjukt kort */
+.onxNotice {
+  max-width: var(--onx-narrow);
+  margin: 0 auto var(--onx-head-gap);
+  padding: var(--onx-gap-title) var(--onx-gutter);
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--sf-radius);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--onx-fs-micro);
+  line-height: 1.5;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.onxModuleEmpty {
+  max-width: var(--onx-narrow);
+  margin: 0 auto;
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--onx-fs-body);
+  line-height: 1.58;
+  color: var(--color-fg-2);
+}
+
+/* Kortet: samma mörka platta som hemmets .onxCard, men med en köp-fot. <li> bär
+   Reveal-wrappern → listan nollas här. */
+.onxCardGrid { list-style: none; padding: 0; }
+.onxShopCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius);
+  overflow: hidden;
+  transition: transform var(--onx-dur) var(--onx-ease), border-color var(--onx-dur) var(--onx-ease);
+}
+.onxShopCard:hover { transform: translateY(var(--onx-lift)); border-color: var(--color-primary); }
+.onxCardMedia { display: block; text-decoration: none; }
+.onxShopCard .onxCardImg { display: block; }
+.onxCardBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: var(--onx-gutter);
+}
+/* Kort-typografin ärvs från hemmets roller — bara marginalerna byts (padding bär nu). */
+.onxCardBody .onxCardName { display: block; margin: 0; }
+.onxCardBody .onxCardExcerpt { margin: var(--onx-gap-eyebrow) 0 0; }
+.onxCardBody .onxCardMeta { margin: var(--onx-gap-title) 0 0; }
+.onxCardTitleLink {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color var(--onx-dur) var(--onx-ease);
+}
+.onxCardTitleLink:hover { color: var(--color-primary); }
+/* Leveransvarianten bredvid priset — samma mikronivå, dämpad (priset är signalen). */
+.onxCardFulfil { color: var(--color-fg-2); }
+.onxPostDate {
+  display: block;
+  margin-bottom: var(--onx-gap-eyebrow);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--onx-fs-micro);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.onxPostLink {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* KÖP-FOTEN. AddToCart är plattformens klientkomponent med inline-tokens — vi rör
+   inte dess markup, vi sätter om TOKENS på wrappern: accent = korall (aldrig
+   plattformens guld), ui-fonten = mallens body, radien = mallens raka 0. */
+.onxBuy {
+  margin-top: auto;
+  padding-top: var(--onx-gap-title);
+  --color-accent: var(--color-primary);
+  --font-ui: var(--font-body);
+  --radius: var(--sf-radius);
+}
+
 /* 5 — PRISLISTAN: ljus text på svart, HÅRLINJER mellan raderna. Mallens EGEN
    rad-grid (löpnummer · namn/beskrivning · pris) — inget delat sfRow. */
 .onxServices {

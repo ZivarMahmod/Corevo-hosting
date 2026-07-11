@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { IsalaraNav, IsalaraFooter } from './isalara.chrome'
 import { IsalaraOm, IsalaraTjanster, IsalaraKontakt } from './isalara.pages'
+import { IsalaraShop, IsalaraBlogg } from './isalara.modules'
 
 // Isalaras egen fotomanifest (Unsplash, verifierade `curl -sI` → 200 2026-07-11,
 // samtliga id:n redan visuellt granskade av syskonmallarna som återanvänder dem —
@@ -131,4 +132,8 @@ export const isalara: FloristTheme = {
   // kort) istället för de delade .sf*-sektionerna som gjorde sviten likformig.
   chrome: { Nav: IsalaraNav, Footer: IsalaraFooter },
   pages: { om: IsalaraOm, tjanster: IsalaraTjanster, kontakt: IsalaraKontakt },
+  // MODUL-VYER (vektor-regeln): webshoppen och bloggen behåller sin funktion (data,
+  // livscykel, varukorg, kassa) men får mallens FORM — höga kort med guld-prick vid
+  // priset, blogg med två stora inlägg + lista. Besökaren lämnar aldrig kvällsblått.
+  moduleViews: { shop: IsalaraShop, blogg: IsalaraBlogg },
 }

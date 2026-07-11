@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { OliviaThymeNav, OliviaThymeFooter } from './oliviathyme.chrome'
 import { OliviaThymeOm, OliviaThymeTjanster, OliviaThymeKontakt } from './oliviathyme.pages'
+import { OliviaThymeShop, OliviaThymeBlogg } from './oliviathyme.modules'
 
 /**
  * OLIVIA & THYME — puderrosa + varm brun, butiks-charm (goal-58).
@@ -96,4 +97,8 @@ export const oliviathyme: FloristTheme = {
      Funktionen är fortfarande plattformens — navens markup renderas i NavShell. */
   chrome: { Nav: OliviaThymeNav, Footer: OliviaThymeFooter },
   pages: { om: OliviaThymeOm, tjanster: OliviaThymeTjanster, kontakt: OliviaThymeKontakt },
+  /* goal-59 VEKTOR-REGELN: modulen äger funktionen (AddToCart, livscykel, priser,
+     leveranslöfte), mallen äger formen. Butiken = butikens skyltfönster (två stora
+     kort per rad, stjärn-badge), bloggen = polaroid-väggen. Se oliviathyme.modules.tsx. */
+  moduleViews: { shop: OliviaThymeShop, blogg: OliviaThymeBlogg },
 }

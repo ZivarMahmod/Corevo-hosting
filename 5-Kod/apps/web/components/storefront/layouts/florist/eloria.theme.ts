@@ -1,6 +1,7 @@
 import type { FloristTheme } from './types'
 import { EloriaNav, EloriaFooter } from './eloria.chrome'
 import { EloriaOm, EloriaTjanster, EloriaKontakt } from './eloria.pages'
+import { EloriaShop, EloriaBlogg } from './eloria.modules'
 
 /** Unsplash photo manifest — every id below verified `curl -sI` → 200 (2026-07-11). */
 const u = (id: string, w = 1600) =>
@@ -128,4 +129,8 @@ export const eloria: FloristTheme = {
      /tjanster = prislista med guld-ledare, /kontakt = ett guldramat kort. */
   chrome: { Nav: EloriaNav, Footer: EloriaFooter },
   pages: { om: EloriaOm, tjanster: EloriaTjanster, kontakt: EloriaKontakt },
+  /* MODUL-VYER (goal-59, vektor-regeln): butiken och bloggen renderas i Elorias form —
+     höga 4:5-kort med guldlinjen under namnet, bloggen som guldramat uppslag. Modulen
+     äger fortfarande funktionen (AddToCart, priser, livscykel, korg). */
+  moduleViews: { shop: EloriaShop, blogg: EloriaBlogg },
 }
