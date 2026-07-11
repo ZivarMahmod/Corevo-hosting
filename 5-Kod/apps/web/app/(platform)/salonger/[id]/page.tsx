@@ -16,13 +16,15 @@ import { ServicesCard } from '@/components/platform/ServicesCard'
 import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
-import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, isBookingActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listShopProducts, listShopOrders } from '@/lib/admin/shop/data'
 import { listBlogPosts } from '@/lib/admin/blogg/data'
+import { listTenantEvents, listEventRegistrations } from '@/lib/admin/events/data'
 import { listMediaAssets, getStorageUsage } from '@/lib/admin/media/data'
 import { listOffertRequests } from '@/lib/admin/offert/data'
 import { ShopAdmin } from '@/components/admin/ShopAdmin'
 import { BloggAdmin } from '@/components/admin/BloggAdmin'
+import { KursAdmin } from '@/components/admin/KursAdmin'
 import { MediaLibrary } from '@/components/admin/MediaLibrary'
 import { OffertInbox } from '@/components/admin/OffertInbox'
 import { SidaStudio } from '@/components/platform/SidaStudio'
@@ -110,11 +112,14 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const bloggOn = isModuleActivated(moduleStates, 'blogg')
   const offertOn = isModuleActivated(moduleStates, 'offert')
   const mediaOn = isModuleActivated(moduleStates, 'media_library')
+  // booking är default-live utan tenant_modules-rad — Kurser-fliken visas för i
+  // princip alla kunder och göms bara vid en EXPLICIT off-rad.
+  const kurserOn = isBookingActivated(moduleStates)
   const needAssets = shopOn || bloggOn || mediaOn
   const mediaQuotaCfg = moduleAdminConfig(moduleStates, 'media_library')
   const mediaQuota =
     typeof mediaQuotaCfg.quota_bytes === 'number' ? mediaQuotaCfg.quota_bytes : 500 * 1024 * 1024
-  const [shopProducts, shopOrders, blogPosts, offertRequests, mediaAssets, mediaUsage] =
+  const [shopProducts, shopOrders, blogPosts, offertRequests, mediaAssets, mediaUsage, tenantEvents, eventRegistrations] =
     await Promise.all([
       shopOn ? listShopProducts(id) : Promise.resolve([]),
       shopOn ? listShopOrders(id) : Promise.resolve([]),
@@ -122,6 +127,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       offertOn ? listOffertRequests(id) : Promise.resolve([]),
       needAssets ? listMediaAssets(id) : Promise.resolve([]),
       mediaOn ? getStorageUsage(id, mediaQuota) : Promise.resolve(null),
+      kurserOn ? listTenantEvents(id) : Promise.resolve([]),
+      kurserOn ? listEventRegistrations(id) : Promise.resolve([]),
     ])
   const shopFulfilmentCfg = moduleAdminConfig(moduleStates, 'shop')
   const shopFulfilment =
@@ -414,6 +421,21 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     // tenantId (→ TenantScope lägger hidden tenantId i varje formulär → moduleCtx
     // dual-guard). Visas ENDAST när modulen är på. Bransch-neutral copy — detta är
     // kundens yta oavsett om kunden är florist, salong eller mekaniker.
+    ...(kurserOn && {
+      Kurser: (
+        <div className={styles.maxCol}>
+          <p className={styles.noteText}>
+            Kundens kurser &amp; event — tillfällen med datum, platser och avgift.
+          </p>
+          <KursAdmin
+            tenantId={tenant.id}
+            events={tenantEvents}
+            registrations={eventRegistrations}
+            tenantName={tenant.name}
+          />
+        </div>
+      ),
+    }),
     ...(shopOn && {
       Webshop: (
         <div className={styles.maxCol}>

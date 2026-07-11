@@ -120,12 +120,12 @@ export async function FloraLayout({ tenant, content, services, location }: Store
             </Reveal>
           ) : null}
           <Reveal delay={200}>
-            <a href="/boka" className={styles.flPillar}>
+            <Link href="/kurser" className={styles.flPillar}>
               <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }} />
               <h3 className={styles.flPillarName}>Kurser & kvällar</h3>
               <p className={styles.flPillarText}>Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.</p>
               <span className={styles.flPillarLink}>Boka kurs</span>
-            </a>
+            </Link>
           </Reveal>
         </div>
       </section>

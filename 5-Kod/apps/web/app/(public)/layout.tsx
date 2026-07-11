@@ -14,6 +14,7 @@ import { CartButton } from '@/components/storefront/shop/CartButton'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
 import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
+import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
 import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
 import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
@@ -189,6 +190,11 @@ export default async function PublicLayout({ children }: { children: React.React
               ? [{ href: '/shop', label: 'Butik' }]
               : []),
             { href: '/tjanster', label: 'Tjänster' },
+            // Kurser & event: bara när booking är live OCH minst ett kommande
+            // open-tillfälle finns (loadern är cachad → billig extra läsning).
+            ...(bookingLive && (await loadUpcomingEvents(tenant.id, tenant.slug)).length > 0
+              ? [{ href: '/kurser', label: 'Kurser' }]
+              : []),
             ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'
               ? [{ href: '/blogg', label: 'Blogg' }]
               : []),

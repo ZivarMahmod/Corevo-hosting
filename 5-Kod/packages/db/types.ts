@@ -761,6 +761,110 @@ export type Database = {
         }
         Relationships: []
       }
+      event_registrations: {
+        Row: {
+          created_at: string
+          email: string | null
+          event_id: string
+          id: string
+          message: string | null
+          name: string
+          party_size: number
+          phone: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event_id: string
+          id?: string
+          message?: string | null
+          name: string
+          party_size?: number
+          phone?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event_id?: string
+          id?: string
+          message?: string | null
+          name?: string
+          party_size?: number
+          phone?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_events: {
+        Row: {
+          capacity: number
+          created_at: string
+          description: string | null
+          duration_min: number
+          id: string
+          price_cents: number
+          starts_at: string
+          status: string
+          tenant_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          capacity: number
+          created_at?: string
+          description?: string | null
+          duration_min?: number
+          id?: string
+          price_cents?: number
+          starts_at: string
+          status?: string
+          tenant_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          description?: string | null
+          duration_min?: number
+          id?: string
+          price_cents?: number
+          starts_at?: string
+          status?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offert_requests: {
         Row: {
           created_at: string

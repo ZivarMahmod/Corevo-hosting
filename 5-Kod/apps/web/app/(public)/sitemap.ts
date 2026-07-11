@@ -17,6 +17,7 @@ const MODULE_PATHS: readonly { module: string; path: string }[] = [
   { module: 'shop', path: '/shop' },
   { module: 'blogg', path: '/blogg' },
   { module: 'offert', path: '/offert' },
+  { module: 'booking', path: '/kurser' }, // kurser rider på booking-modulen (goal-54 körning 4)
   { module: 'presentkort', path: '/presentkort' },
 ]
 

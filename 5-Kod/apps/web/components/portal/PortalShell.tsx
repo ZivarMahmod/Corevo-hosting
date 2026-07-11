@@ -9,7 +9,7 @@ import { cleanTerminology, resolveTerm } from '@/lib/platform/verticals-shared'
 import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 import { PortalSidebar, type PortalRole } from './PortalSidebar'
-import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated, isBookingActivated } from '@/lib/admin/modules'
 import { listLocations } from '@/lib/admin/data'
 import { PLATS_COOKIE } from '@/lib/admin/plats'
 import { PortalTopbar } from './PortalTopbar'
@@ -108,6 +108,7 @@ export async function PortalShell({
     // och låt sidomeny + ⌘K-palett visa BARA aktiverade moduler. Platform/personal
     // gatar inte (undefined → PortalSidebar visar allt).
     const MODULE_PALETTE: (CommandItem & { module: string })[] = [
+      { href: '/admin/kurser', label: 'Kurser', icon: 'calendar', kind: 'Gå till', module: 'booking' },
       { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', kind: 'Gå till', module: 'media_library' },
       { href: '/admin/webshop', label: 'Webshop', icon: 'grid', kind: 'Gå till', module: 'shop' },
       { href: '/admin/blogg', label: 'Blogg', icon: 'edit', kind: 'Gå till', module: 'blogg' },
@@ -119,7 +120,11 @@ export async function PortalShell({
     let paletteItems: CommandItem[] = PALETTE[portal]
     if (portal === 'admin' && bundle) {
       const states = await getAdminModuleStates(bundle.tenant.id)
-      activeModuleKeys = MODULE_PALETTE.map((m) => m.module).filter((k) => isModuleActivated(states, k))
+      // 'booking' är default-live utan tenant_modules-rad (isBookingActivated) —
+      // övriga moduler är opt-in (rad krävs, isModuleActivated).
+      activeModuleKeys = MODULE_PALETTE.map((m) => m.module).filter((k) =>
+        k === 'booking' ? isBookingActivated(states) : isModuleActivated(states, k),
+      )
       paletteItems = [
         ...PALETTE.admin,
         ...MODULE_PALETTE.filter((m) => activeModuleKeys!.includes(m.module)).map(

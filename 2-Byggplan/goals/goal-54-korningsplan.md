@@ -222,3 +222,48 @@ tsc + vitest (+ nya FSM-tester för offert & order) + eslint → v1.7.23 → pro
 - Mejl får ALDRIG blockera statusskrivning → send efter lyckad DB-write, fel loggas.
 - FSM får inte låsa gamla rader i ogiltiga states → okänd/legacy status behandlas
   som fri övergång till closed/cancelled.
+
+**UTFALL KÖRNING 3 (2026-07-11):** KLART — tag v1.7.23. Offert-svar mejlas kunden
+(reply_message/replied_at, migration 0051), offert- + order-FSM med race-skydd,
+kundmejl vid orderstatus, kassa-paus ärlig. 699 tester gröna.
+
+---
+
+## DETALJPLAN KÖRNING 4 — Kurser som riktiga event (A6, S8, delar av A7)
+
+**Mål:** floristens kurser (och vilken bransch-kunds event som helst) blir riktiga
+TILLFÄLLEN med datum, max antal platser och anmälningsavgift — inte 1:1-bokningstider.
+
+### Datamodell (migration 0052)
+- `tenant_events`: id, tenant_id, title, description, starts_at, duration_min,
+  capacity (1–500), price_cents (anmälningsavgift, 0 = gratis), status
+  (open/cancelled/done), created/updated. RLS = offert-mönstret; anon får LÄSA
+  (publik kurslista) men inget mer.
+- `event_registrations`: id, tenant_id, event_id, name, email, phone, party_size
+  (1–20), message, status (confirmed/cancelled), created_at. anon INSERT only
+  (publik anmälan, som offert-intake); ingen anon-läsning (PII).
+- Platser kvar = capacity − sum(party_size där status=confirmed). Överbokningsskydd:
+  insert → räkna om → vid översåld ta bort egen rad + ärligt "fullbokat"-svar.
+
+### Storefront
+- Ny sida `/kurser` (gate: booking-modul live/paused): kommande tillfällen med
+  datum (sv-SE), platser kvar, avgift + anmälningsformulär (namn, e-post, antal,
+  meddelande) — rate-limited anon-intake som offert. Bekräftelsemejl best-effort.
+- Flora-pelaren "Boka kurs" → /kurser; nav-länk "Kurser" när kommande tillfällen finns.
+
+### Admin (BÅDA ytorna via dual-guard, som körning 1)
+- `KursAdmin`-komponent + actions (moduleCtx): skapa/ändra/ställ in tillfälle,
+  se anmälningar (namn, antal, kontakt), summa platser. TenantScope/TenantField.
+- Kund-admin: ny sida /admin/kurser (nav under bokning). Kundkort: ny flik "Kurser".
+
+### Floristens data
+- Seed: 2 kommande tillfällen (Bukett & bubbel, Barr & bubbel — 690 kr, 15 platser).
+- De gamla "Kurs:"-tjänsterna avaktiveras (kurser bor nu i /kurser, inte i 1:1-boka).
+
+### Ej i denna körning
+- working_hour_slots-beslutet flyttas till körning 6 (städ) — orelaterat till event.
+
+### Verify
+tsc/vitest/eslint → v1.7.24 → prod: /kurser listar tillfällen, anmälan minskar
+platser kvar, kundkortets Kurser-flik visar anmälan; FreshCut orörd (ingen
+kurser-nav utan event).

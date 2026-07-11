@@ -26,6 +26,7 @@ export type TenantTabKey =
   | 'Tjänster'
   | 'Kunder'
   | 'Personal'
+  | 'Kurser'
   | 'Webshop'
   | 'Blogg'
   | 'Offerter'
@@ -41,6 +42,7 @@ const TABS: { key: TenantTabKey; icon: IconName }[] = [
   { key: 'Tjänster', icon: 'star' },
   { key: 'Kunder', icon: 'users' },
   { key: 'Personal', icon: 'scissors' },
+  { key: 'Kurser', icon: 'calendar' },
   { key: 'Webshop', icon: 'grid' },
   { key: 'Blogg', icon: 'edit' },
   { key: 'Offerter', icon: 'mail' },

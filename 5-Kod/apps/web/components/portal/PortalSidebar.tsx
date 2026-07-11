@@ -71,6 +71,9 @@ const NAV: Record<PortalRole, NavConfig> = {
       { href: '/admin/platser', label: 'Platser', icon: 'building' },
       { href: '/admin/scheman', label: 'Scheman', icon: 'clock' },
       { group: 'Moduler' },
+      // 'booking' är default-live utan tenant_modules-rad — PortalShell lägger då
+      // med 'booking' i activeModuleKeys (isBookingActivated) så posten syns.
+      { href: '/admin/kurser', label: 'Kurser', icon: 'calendar', module: 'booking' },
       { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', module: 'media_library' },
       { href: '/admin/webshop', label: 'Webshop', icon: 'grid', module: 'shop' },
       { href: '/admin/blogg', label: 'Blogg', icon: 'edit', module: 'blogg' },

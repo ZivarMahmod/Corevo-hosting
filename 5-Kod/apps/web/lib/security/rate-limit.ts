@@ -19,6 +19,7 @@ export const LIMITS = {
   login: { max: 8, windowSecs: 300 } as RateLimit, // 8 attempts / 5 min per IP
   booking: { max: 12, windowSecs: 300 } as RateLimit, // 12 booking writes / 5 min per IP+tenant
   offert: { max: 12, windowSecs: 300 } as RateLimit, // 12 offert submissions / 5 min per IP+tenant
+  event: { max: 12, windowSecs: 300 } as RateLimit, // 12 kurs-anmälningar / 5 min per IP+tenant
 } as const
 
 /** Best-guess client IP from Cloudflare / proxy headers (never trusted for auth). */

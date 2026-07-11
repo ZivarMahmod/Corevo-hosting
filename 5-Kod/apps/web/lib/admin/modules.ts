@@ -60,6 +60,15 @@ export function isModuleActivated(states: AdminModuleStates, key: string): boole
   return moduleAdminState(states, key) !== 'off'
 }
 
+/**
+ * Booking-specialfallet (speglar lib/tenant-modules.ts DEFAULT_MODULE_STATE):
+ * före tenant_modules fanns körde varje tenant booking — en SAKNAD booking-rad
+ * betyder därför "live", inte "off". Endast en EXPLICIT off-rad stänger av.
+ */
+export function isBookingActivated(states: AdminModuleStates): boolean {
+  return !('booking' in states) || isModuleActivated(states, 'booking')
+}
+
 /** Read one module's config jsonb (read-only display). Empty object if absent. */
 export function moduleAdminConfig(states: AdminModuleStates, key: string): Record<string, unknown> {
   return states[key]?.config ?? {}
