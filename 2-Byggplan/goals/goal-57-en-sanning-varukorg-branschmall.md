@@ -112,3 +112,27 @@ Kräver bildmaterial från Zivar/floristen — content-jobb i editorn, ej kod.
 11 (bugg, minst) → 12 (mall-nivån, störst värde) → 13 (täckning) → 14 (design) → 15 (content).
 Varje körning: egen detaljplan före bygge (goal-54-mönstret), tsc/vitest/eslint, deploy m. tag,
 FreshCut-verify.
+
+## UTFALL (2026-07-11)
+
+- **Körning 11 KLAR + deployad (v1.7.32, success):** /varukorg egen sida (fruitkha-
+  mönster: radlista + summeringspanel), CartDrawer BORTTAGEN (stacking-buggen död),
+  CartNavButton/CartButton = rena länkar, AddToCart-flyout → /varukorg.
+  Prod-smoke: /varukorg 200, florist 200, freshcut 200.
+- **Körning 12 KLAR + deployad (v1.7.33, success):** verticals.default_copy (migration
+  0055 applicerad live — CLI-token funkar igen), kedjan kund → bransch → tema
+  (layerCopy i getTenantCopy, alla 11 call sites), Sidtext-mall-kort i /branscher/[key]
+  (saveVerticalCopy), SidaStudio visar branschmallens text som fältstandard.
+  Floristens texter LYFTA till florist-branschmallen (nästa florist ärver dem).
+- **Körning 13 KLAR + deployad (v1.7.34, success):** flora 100% redigerbar — pelare
+  (3×rubrik/text/länk), banden (Ur butiken/Från bloggen/Presentkort/Galleri/Hitta),
+  closing wire:ad till closingTitle/closingLede, flora fick egen THEME_CAPS-rad
+  (galleri/pelar-bilder kan nu bytas i editorn). 696 tester gröna varje steg.
+- **Körning 14 BYGGD + committad (06d2703) men EJ deployad:** SubpageHero (fruitkha-
+  bandet) på /shop /blogg /offert /kurser /varukorg /kassa via pageHero-prop.
+  DEPLOY PAUSAD: parallell session bygger goal-58 florist-sviten (13 mallar) i samma
+  arbetsträd — tsc rött av deras halvfärdiga filer; taggas när sviten kompilerar.
+  OBS kollision: layouts/florist/ raderades först som "orphan" (var deras WIP) —
+  återskapad av dem; framtida sessioner: kolla git status för parallellt WIP innan rensning.
+- **Körning 15 EJ STARTAD:** kräver floristens riktiga foton (content) + att v1.7.34-
+  bildslottarna används i editorn — Zivars/floristens bollplank.
