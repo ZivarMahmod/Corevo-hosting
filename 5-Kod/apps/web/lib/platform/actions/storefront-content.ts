@@ -26,35 +26,20 @@ import { recordMediaAsset } from './media-record'
 // server-side (the `select('slug')` read doubles as the existence check + the slug
 // needed to bust the cached public bundle so the change goes live immediately).
 
-const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'aboutCopyHome', 'tagline', 'italic', 'aboutTitle', 'homeSecondTitle', 'whyTitle', 'whySub', 'whyBody', 'servicesEyebrow', 'servicesTitle', 'servicesIntro', 'teamEyebrow', 'teamTitle', 'teamLead', 'closingEyebrow', 'closingTitle', 'closingLede', 'contactEyebrow', 'contactTitle'] as const
+// EN sanning för vilka copy-nycklar som finns: COPY_OVERRIDE_KEYS i theme-content.ts
+// (samma lista som resolvern läser och bransch-mallen sparar). Den lokala literal-
+// listan här var en TYST DUBBLETT — flora-editorns 20 nya pelare/band-fält fanns i
+// editorn och i resolvern men inte här, så spar-loopen slängde dem med grön toast.
+import { COPY_OVERRIDE_KEYS } from '@/components/storefront/theme-content'
+const COPY_FIELDS = COPY_OVERRIDE_KEYS
 type CopyField = (typeof COPY_FIELDS)[number]
 
-// Per-field length caps (generous; the theme defaults are well under these). Guards
-// against an abusive paste without truncating legitimate editorial copy.
-const COPY_MAX: Record<CopyField, number> = {
-  heroEyebrow: 120,
-  heroTitle: 200,
-  heroLede: 600,
-  aboutCopy: 4000,
-  aboutCopyHome: 4000,
-  tagline: 200,
-  italic: 300,
-  aboutTitle: 120,
-  homeSecondTitle: 200,
-  whyTitle: 200,
-  whySub: 200,
-  whyBody: 4000,
-  servicesEyebrow: 120,
-  servicesTitle: 200,
-  servicesIntro: 500,
-  teamEyebrow: 120,
-  teamTitle: 200,
-  teamLead: 500,
-  closingEyebrow: 120,
-  closingTitle: 200,
-  closingLede: 500,
-  contactEyebrow: 120,
-  contactTitle: 200,
+// Längd-tak per fältTYP i stället för per fält (generöst; temats defaults ligger
+// långt under). Brödtext-fält får långt tak, ledes mellanting, resten rubrik-tak.
+function copyMax(field: CopyField): number {
+  if (field.endsWith('Body') || field.endsWith('Copy') || field === 'aboutCopyHome') return 4000
+  if (field.endsWith('Lede') || field.endsWith('Intro') || field.endsWith('Lead') || field === 'italic') return 600
+  return 200
 }
 
 /**
@@ -91,7 +76,7 @@ export async function saveTenantStorefrontCopy(_p: ActionState, fd: FormData): P
     const posted = fd.get(field)
     if (posted === null) continue // fältet fanns inte i formuläret → rör ej
     const raw = String(posted).trim()
-    if (raw.length > 0) copy[field] = raw.slice(0, COPY_MAX[field])
+    if (raw.length > 0) copy[field] = raw.slice(0, copyMax(field))
     else delete copy[field]
   }
 

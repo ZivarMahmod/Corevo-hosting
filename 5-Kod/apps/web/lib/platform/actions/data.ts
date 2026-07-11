@@ -143,50 +143,6 @@ export async function saveTenantName(_p: ActionState, fd: FormData): Promise<Act
   return { success: 'Namn sparat. Publika sajten uppdaterad.' }
 }
 
-/**
- * Boknings-vy — flyttad till Sida-fliken (Zivar: "jag tror även den här delen ska vara
- * i sida"). Sparar ENDAST settings.booking.variant (merge, aldrig clobber) så den kan
- * leva som eget kort utan att dra med sig namn/recensionslänk.
- */
-export async function saveTenantBookingView(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
-  const variantRaw = String(fd.get('booking_variant') ?? '')
-  const bookingVariant: BookingVariant = isBookingVariant(variantRaw)
-    ? variantRaw
-    : DEFAULT_BOOKING_VARIANT
-
-  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
-
-  const { data: existing } = await supabase
-    .from('tenant_settings')
-    .select('settings')
-    .eq('tenant_id', tenantId)
-    .maybeSingle()
-  const prev = (existing?.settings ?? {}) as Record<string, unknown>
-  const prevBooking = (prev.booking ?? {}) as Record<string, unknown>
-  const settings = { ...prev, booking: { ...prevBooking, variant: bookingVariant } }
-
-  const { error } = await supabase
-    .from('tenant_settings')
-    .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
-  if (error) {
-    await reportActionError('saveTenantBookingView.settings_upsert', error, { tenantId })
-    return { error: GENERIC }
-  }
-
-  revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
-  revalidatePath('/admin/sida')
-  await logPlatformAction(supabase, {
-    action: 'tenant.update',
-    tenantId,
-    actorId: user.id,
-    meta: { booking_variant: bookingVariant },
-  })
-  return { success: 'Boknings-vy sparad. Publika sajten uppdaterad.' }
-}
 
 /**
  * Bokningsinställningar — designpaketet "Frisörbokningsformulär redesign" ⭐-kravet:
