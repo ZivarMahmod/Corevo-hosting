@@ -11,11 +11,14 @@
 // boundary, not an import of server code into the bundle. Do NOT add load-offert,
 // @/lib/supabase/*, or any other server util here.
 //
-// Styling is token-driven and identical to the section's shell (FIELD_STYLE /
-// LABEL_STYLE copied verbatim) so the live form is a byte-faithful continuation of
-// the inert one — only now it's enabled and wired.
+// goal-60: stilarna bor i storefront-form.module.css (delad med kurs-formuläret och
+// kontaktformuläret). De låg tidigare i inline `style={{...FIELD_STYLE}}` — inline kan
+// inte bära :focus/:hover/:user-invalid, och en mall kunde aldrig nå dem. Formulären
+// var inte fula, de var omöjliga att göra fina. Ämnes-chipsen var systemradios i
+// pillerramar; nu är de riktiga valytor (radion finns kvar i DOM:en för tangentbord,
+// skärmläsare och formdata — bara den visuella prickens plats är tagen av chipet).
 
-import { useActionState, type CSSProperties } from 'react'
+import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 import {
   offertCtaLabel,
@@ -24,54 +27,23 @@ import {
   type OffertSubmitState,
 } from '@/lib/storefront/offert/types'
 import { submitOffertRequest } from '@/lib/storefront/offert/intake'
-
-// Copied VERBATIM from OffertSection's inert shell so the enabled form matches the
-// parked one exactly (var(--color-*) / var(--font-*) / var(--radius)).
-const FIELD_STYLE: CSSProperties = {
-  width: '100%',
-  padding: '10px 12px',
-  fontFamily: 'var(--font-body)',
-  fontSize: 15,
-  color: 'var(--color-fg, #232520)',
-  background: 'var(--color-bg, #fff)',
-  border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 18%, transparent)',
-  borderRadius: 'var(--radius, 4px)',
-}
-
-const LABEL_STYLE: CSSProperties = {
-  display: 'block',
-  marginBottom: 6,
-  fontFamily: 'var(--font-ui)',
-  fontSize: 13,
-  fontWeight: 600,
-  color: 'color-mix(in srgb, var(--color-fg, #232520) 80%, transparent)',
-}
+import styles from './storefront-form.module.css'
 
 /** Submit button. Nested so useFormStatus reads THIS form's pending state. Enabled
  *  (unlike the parked shell) — disabled only while the action is in flight. */
 function SubmitButton({ mode }: { mode: OffertMode }) {
   const { pending } = useFormStatus()
+  const label = offertCtaLabel(mode)
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      aria-label={offertCtaLabel(mode)}
-      style={{
-        width: '100%',
-        padding: '12px 16px',
-        fontFamily: 'var(--font-ui)',
-        fontSize: 14,
-        fontWeight: 600,
-        letterSpacing: '0.01em',
-        cursor: pending ? 'default' : 'pointer',
-        color: 'var(--color-bg, #fff)',
-        background: 'var(--color-accent, #C8A24A)',
-        border: '1px solid var(--color-accent, #C8A24A)',
-        borderRadius: 'var(--radius, 4px)',
-        opacity: pending ? 0.6 : 1,
-      }}
-    >
-      {pending ? 'Skickar…' : offertCtaLabel(mode)}
+    <button type="submit" className={styles.submit} disabled={pending} aria-label={label}>
+      {pending ? (
+        <>
+          <span className={styles.spinner} aria-hidden="true" />
+          Skickar…
+        </>
+      ) : (
+        label
+      )}
     </button>
   )
 }
@@ -100,100 +72,99 @@ export function OffertForm({
 
   if (state.phase === 'done') {
     return (
-      <p
-        role="status"
-        style={{
-          marginTop: 28,
-          maxWidth: 560,
-          fontFamily: 'var(--font-ui)',
-          fontSize: 15,
-          fontWeight: 600,
-          color: 'var(--color-fg, #232520)',
-          background: 'color-mix(in srgb, var(--color-accent, #C8A24A) 14%, transparent)',
-          border: '1px solid color-mix(in srgb, var(--color-accent, #C8A24A) 30%, transparent)',
-          borderRadius: 'var(--radius, 4px)',
-          padding: '14px 16px',
-        }}
-      >
+      <p role="status" className={styles.done} style={{ marginTop: 28, maxWidth: 560 }}>
         Tack! Vi återkommer inom {responseDays} {responseDays === 1 ? 'dag' : 'dagar'}.
       </p>
     )
   }
 
   return (
-    <form
-      action={formAction}
-      style={{
-        marginTop: 28,
-        display: 'grid',
-        gap: 18,
-        maxWidth: 560,
-      }}
-    >
+    <form action={formAction} className={styles.form} style={{ marginTop: 28 }}>
       {/* Ämnes-chips (config.subjects): ETT klick istället för fritext — kunden
           väljer vad det gäller (Bröllop/Begravning/…) innan uppgifterna. */}
       {hasChips ? (
         <fieldset style={{ border: 'none', margin: 0, padding: 0 }}>
-          <legend style={{ ...LABEL_STYLE, padding: 0 }}>Vad gäller det?</legend>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <legend className={styles.label}>Vad gäller det?</legend>
+          <div className={styles.choiceRow}>
             {subjects.map((s) => (
-              <label
-                key={s}
-                style={{
-                  cursor: 'pointer',
-                  padding: '9px 16px',
-                  borderRadius: 999,
-                  border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 20%, transparent)',
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: 13.5,
-                  fontWeight: 600,
-                  color: 'var(--color-fg, #232520)',
-                  background: 'var(--color-bg, #fff)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 7,
-                }}
-              >
+              <label key={s} className={styles.choice}>
                 <input
                   type="radio"
                   name="subject"
                   value={s}
                   required
-                  style={{ accentColor: 'var(--color-accent, var(--color-primary, #C8A24A))' }}
+                  className={styles.choiceInput}
                 />
-                {s}
+                <span className={styles.choiceText}>{s}</span>
               </label>
             ))}
           </div>
         </fieldset>
       ) : null}
 
-      <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+      <div className={styles.row}>
         <div>
-          <label style={LABEL_STYLE} htmlFor="offert-name">Namn</label>
-          <input id="offert-name" name="name" type="text" autoComplete="name" required maxLength={120} style={FIELD_STYLE} />
+          <label className={styles.label} htmlFor="offert-name">
+            Namn
+          </label>
+          <input
+            id="offert-name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            maxLength={120}
+            className={styles.field}
+          />
         </div>
         <div>
-          <label style={LABEL_STYLE} htmlFor="offert-email">E-post</label>
-          <input id="offert-email" name="email" type="email" autoComplete="email" maxLength={160} style={FIELD_STYLE} />
+          <label className={styles.label} htmlFor="offert-email">
+            E-post
+          </label>
+          <input
+            id="offert-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            maxLength={160}
+            className={styles.field}
+          />
         </div>
       </div>
 
       <div>
-        <label style={LABEL_STYLE} htmlFor="offert-phone">Telefon</label>
-        <input id="offert-phone" name="phone" type="tel" autoComplete="tel" maxLength={40} style={FIELD_STYLE} />
+        <label className={styles.label} htmlFor="offert-phone">
+          Telefon
+        </label>
+        <input
+          id="offert-phone"
+          name="phone"
+          type="tel"
+          autoComplete="tel"
+          maxLength={40}
+          className={styles.field}
+        />
       </div>
 
       {showSubject ? (
         <div>
-          <label style={LABEL_STYLE} htmlFor="offert-subject">Vad gäller det?</label>
-          <input id="offert-subject" name="subject" type="text" required maxLength={200} style={FIELD_STYLE} />
+          <label className={styles.label} htmlFor="offert-subject">
+            Vad gäller det?
+          </label>
+          <input
+            id="offert-subject"
+            name="subject"
+            type="text"
+            required
+            maxLength={200}
+            className={styles.field}
+          />
         </div>
       ) : null}
 
       {showMessage ? (
         <div>
-          <label style={LABEL_STYLE} htmlFor="offert-message">
+          <label className={styles.label} htmlFor="offert-message">
             {showSubject ? 'Beskriv omfattning' : 'Beskriv ditt behov'}
           </label>
           <textarea
@@ -202,27 +173,14 @@ export function OffertForm({
             rows={4}
             required
             maxLength={4000}
-            style={{ ...FIELD_STYLE, resize: 'vertical' }}
+            className={`${styles.field} ${styles.textarea}`}
           />
         </div>
       ) : null}
 
       <div>
         {state.phase === 'error' ? (
-          <p
-            role="alert"
-            style={{
-              margin: '0 0 12px',
-              fontFamily: 'var(--font-ui)',
-              fontSize: 13.5,
-              fontWeight: 600,
-              color: 'var(--color-fg, #232520)',
-              background: 'color-mix(in srgb, #b00020 10%, transparent)',
-              border: '1px solid color-mix(in srgb, #b00020 28%, transparent)',
-              borderRadius: 'var(--radius, 4px)',
-              padding: '10px 14px',
-            }}
-          >
+          <p role="alert" className={styles.error} style={{ marginBottom: 12 }}>
             {state.message}
           </p>
         ) : null}

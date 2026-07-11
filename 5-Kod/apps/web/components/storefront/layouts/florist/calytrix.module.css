@@ -114,6 +114,30 @@
      runda formen på sidan, och därför den som ögat söker sig till. */
   --sf-navicon-radius: 0px;
 
+  /* ══ FORMULÄREN (goal-60) ══════════════════════════════════════════════════════
+     Mallen ägde nav, hero, kort och sidfot — men i samma sekund som besökaren skulle
+     ANMÄLA sig, BEGÄRA en offert eller HÖRA AV SIG möttes hon av plattformens
+     generiska fält. Mallen slutade där affären började. Nu äger mallen även den ytan.
+
+     Calytrix formulärspråk = samma som resten av mallen: rakskuret, tydlig kant,
+     plommon som fokusfärg. Fältet är en YTA man skriver i, inte en liten ruta —
+     48px hög, tydlig kant, och en kant som mörknar när man hovrar. */
+  --sf-field-h: 48px;
+  --sf-field-pad: 13px 15px;
+  --sf-field-radius: 0px; /* rakskuret, som allt annat strukturellt i mallen */
+  --sf-field-bg: var(--color-surface);
+  --sf-field-border: var(--color-line);
+  --sf-field-border-hover: var(--color-primary);
+  --sf-field-border-focus: var(--color-primary);
+  --sf-field-ring: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --sf-field-gap: 18px;
+  --sf-label-transform: uppercase;
+  --sf-label-ls: var(--cal-ls-micro);
+  --sf-label-fs: var(--cal-fs-micro);
+  --sf-chip-radius: 0px; /* valchipsen: raka, som korten */
+  --color-primary-fg: var(--color-surface); /* vitt på plommon = 9.74:1 */
+  --sf-danger: #a3122b; /* mättad vinröd — bor i mallens familj, skriker inte */
+
   /* Galleriets delade .galleryItem läser --tpl-radius, som ärvs från .tplRoot
      (12px). Nollas här — annars smyger mjuka hörn in i en mall som är radie-0. */
   --tpl-radius: 0px;

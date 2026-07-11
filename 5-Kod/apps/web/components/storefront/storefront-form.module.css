@@ -1,0 +1,277 @@
+/* goal-60 — FORMULÄR-ANATOMIN.
+ *
+ * Mallen ägde nav, hero, kort och sidfot — men i samma sekund som besökaren skulle
+ * GÖRA något (anmäla sig till en kurs, begära en offert, höra av sig, betala) möttes
+ * hon av plattformens generiska fält. Mallen slutade exakt där affären började.
+ *
+ * Orsaken var inte slarv: fälten stylades med inline `style={{...FIELD_STYLE}}`, och
+ * inline kan varken bära :focus, :hover, :invalid eller nås av en mall. Formulären var
+ * inte fula — de var OMÖJLIGA att göra fina. Exakt samma sjuka som köpknappen hade.
+ *
+ * Nu gäller vektor-regeln även här: modulen äger funktionen (validering, server action,
+ * pending-läget, felmeddelandet), mallen äger formen. Varje värde nedan läser en
+ * --sf-field-* / --sf-btn-*-variabel med ett neutralt fallback, så en mall ger sina
+ * formulär sin egen röst utan att röra en enda rad logik — och kan aldrig råka ta bort
+ * ett tillstånd eller en fokusring.
+ *
+ * RADIEN är medvetet en variabel, inte ett värde. Calytrix är rakskuren, Aurora är mjuk,
+ * Seraphina är elegant. Det finns ingen radie som är rätt för alla mallar — bara en
+ * radie som är rätt för VARJE mall.
+ */
+
+.form {
+  margin-top: 18px;
+  display: grid;
+  gap: var(--sf-field-gap, 18px);
+  max-width: 560px;
+}
+
+/* Två fält bredvid varandra som ryms; annars staplade. */
+.row {
+  display: grid;
+  gap: var(--sf-field-gap, 18px);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.label {
+  display: block;
+  margin-bottom: 7px;
+  font-family: var(--font-ui);
+  font-size: var(--sf-label-fs, 13px);
+  font-weight: var(--sf-label-weight, 600);
+  letter-spacing: var(--sf-label-ls, 0.01em);
+  text-transform: var(--sf-label-transform, none);
+  color: var(--sf-label-ink, color-mix(in srgb, var(--color-fg, #232520) 82%, transparent));
+}
+
+/* ---- fälten ---- */
+
+.field {
+  width: 100%;
+  min-height: var(--sf-field-h, 48px); /* 44px är touch-golvet; 48 ger luft */
+  padding: var(--sf-field-pad, 12px 14px);
+  font-family: var(--font-body);
+  font-size: 15px; /* < 16px på mobil triggar iOS auto-zoom — därför aldrig lägre */
+  color: var(--color-fg, #232520);
+  background: var(--sf-field-bg, var(--color-surface, #fff));
+  border: var(--sf-field-border-w, 1px) solid
+    var(--sf-field-border, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 20%, transparent)));
+  border-radius: var(--sf-field-radius, var(--sf-btn-radius, var(--sf-radius, 4px)));
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+/* Hovring säger "den här går att fylla i" innan man klickat. */
+.field:hover:not(:disabled) {
+  border-color: var(--sf-field-border-hover, var(--color-primary, #232520));
+}
+
+/* Fokus är INTE en outline här utan en förstärkt kant + ring: fältet växer i vikt när
+ * det är aktivt. En outline hade legat utanför kanten och dubblerat den. */
+.field:focus {
+  outline: none;
+  border-color: var(--sf-field-border-focus, var(--color-primary, #232520));
+  box-shadow: 0 0 0 3px
+    var(--sf-field-ring, color-mix(in srgb, var(--color-primary, #232520) 18%, transparent));
+}
+
+.field:disabled {
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--color-fg, #232520) 4%, transparent);
+  color: color-mix(in srgb, var(--color-fg, #232520) 55%, var(--color-bg, #fff));
+}
+
+/* Ogiltigt fält får kanten röd — men FÖRST när användaren lämnat det (:user-invalid),
+ * aldrig medan hon skriver. Att skrika "fel!" i en halvskriven e-postadress är
+ * fientligt, och det är den vanligaste formulär-buggen som finns. */
+.field:user-invalid {
+  border-color: var(--sf-danger, #b00020);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sf-danger, #b00020) 16%, transparent);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 120px;
+  padding-top: 12px;
+}
+
+/* En <select> ser ut som ett fält, inte som en systemkontroll: egen pil, egen radie. */
+.select {
+  appearance: none;
+  padding-right: 40px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(50% + 2px),
+    calc(100% - 15px) calc(50% + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* ---- valchips (offertens "Vad gäller det?") ----
+ * Var: en rad systemradio-knappar i pillerramar — samma UI som ett Windows-formulär.
+ * Nu: riktiga val-ytor. Radion finns kvar i DOM:en (tangentbord, skärmläsare, formdata),
+ * men den är visuellt ersatt av chipet. Vald yta bär mallens accent, inte en liten prick. */
+.choiceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.choice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-fg, #232520);
+  background: var(--sf-field-bg, var(--color-surface, #fff));
+  border: 1px solid var(--sf-field-border, var(--color-line, currentColor));
+  border-radius: var(--sf-chip-radius, var(--sf-field-radius, var(--sf-radius, 4px)));
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.choice:hover {
+  border-color: var(--color-primary, #232520);
+}
+
+.choiceInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.choiceInput:checked + .choiceText {
+  font-weight: 600;
+}
+
+/* Hela chipet fylls när valet är gjort — man ska se sitt val från andra sidan rummet. */
+.choice:has(.choiceInput:checked) {
+  background: var(--color-primary, #232520);
+  border-color: var(--color-primary, #232520);
+  color: var(--color-primary-fg, var(--color-surface, #fff));
+}
+
+.choice:has(.choiceInput:focus-visible) {
+  outline: 2px solid var(--sf-focus, var(--color-primary, #232520));
+  outline-offset: 3px;
+}
+
+/* ---- submit ---- */
+
+.submit {
+  width: 100%;
+  min-height: var(--sf-btn-h, 48px);
+  padding: var(--sf-btn-pad, 14px 24px);
+  font-family: var(--font-ui);
+  font-size: var(--sf-btn-fs, 14px);
+  font-weight: var(--sf-btn-weight, 600);
+  letter-spacing: var(--sf-btn-ls, 0.01em);
+  text-transform: var(--sf-btn-transform, none);
+  cursor: pointer;
+  color: var(--sf-btn-ink, var(--color-bg, #fff));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border: 1px solid var(--sf-btn-border, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  transition:
+    background-color var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    transform var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--sf-btn-bg-hover, color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 88%, var(--color-fg, #232520)));
+  transform: translateY(-2px);
+}
+
+.submit:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 80ms;
+}
+
+.submit:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+/* Pending: knappen behåller sin färg (den "flimrar" inte till grått mitt i ett köp),
+ * men slutar ta klick och visar att något händer. opacity vore fel — det tar
+ * knapptexten under kontrastgolvet. */
+.submit:disabled {
+  cursor: progress;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 72%, var(--color-bg, #fff));
+}
+
+.spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 9px;
+  vertical-align: -1px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: sfFormSpin 600ms linear infinite;
+}
+
+@keyframes sfFormSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- kvitton ---- */
+
+.done,
+.error {
+  margin: 0;
+  padding: 14px 16px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  border-radius: var(--sf-field-radius, var(--sf-radius, 4px));
+  /* Färg är ALDRIG den enda bäraren av betydelse (WCAG 1.4.1) — därför en tjock
+   * vänsterkant som form OCH en ikon i texten, inte bara en grön/röd ton. */
+  border-left: 4px solid;
+}
+
+.done {
+  color: var(--color-fg, #232520);
+  background: color-mix(in srgb, var(--color-accent, #c8a24a) 14%, transparent);
+  border-color: var(--color-accent, #c8a24a);
+}
+
+.error {
+  color: var(--color-fg, #232520);
+  background: color-mix(in srgb, var(--sf-danger, #b00020) 9%, transparent);
+  border-color: var(--sf-danger, #b00020);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field,
+  .choice,
+  .submit {
+    transition: none;
+  }
+
+  .submit:hover,
+  .submit:active {
+    transform: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
+}
