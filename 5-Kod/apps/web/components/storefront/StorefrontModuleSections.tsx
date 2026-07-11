@@ -13,7 +13,24 @@ import { BloggSection } from '@/components/storefront/BloggSection'
 import { LojalitetSection } from '@/components/storefront/LojalitetSection'
 import { PresentkortSection } from '@/components/storefront/PresentkortSection'
 
-export async function StorefrontModuleSections({ tenantId, slug }: { tenantId: string; slug: string }) {
+/**
+ * `variant`:
+ *  - 'full' (default, bakåtkompatibelt): hela sektionerna — används av modulernas
+ *    EGNA sidor och render-bron-looks.
+ *  - 'teaser' (startsidan): modulerna har egna hem (/shop, /blogg, /offert,
+ *    /presentkort) — hemmet visar bara ett smakprov + länk dit, så framsidan
+ *    aldrig blir en oändlig stapel ("mosas in"-fixen, Zivar 2026-07-11).
+ */
+export async function StorefrontModuleSections({
+  tenantId,
+  slug,
+  variant = 'full',
+}: {
+  tenantId: string
+  slug: string
+  variant?: 'full' | 'teaser'
+}) {
+  const teaser = variant === 'teaser'
   const moduleStates = await getTenantModuleStates(tenantId, slug)
   const shopLive = isModuleLive(moduleStates, 'shop')
   const shopPaused = isModulePaused(moduleStates, 'shop')
@@ -28,9 +45,25 @@ export async function StorefrontModuleSections({ tenantId, slug }: { tenantId: s
 
   return (
     <>
-      {shopLive || shopPaused ? <ShopSection tenantId={tenantId} slug={slug} paused={shopPaused} /> : null}
-      {offertLive || offertPaused ? <OffertSection tenantId={tenantId} slug={slug} paused={offertPaused} /> : null}
-      {bloggLive || bloggPaused ? <BloggSection tenantId={tenantId} slug={slug} paused={bloggPaused} /> : null}
+      {shopLive || shopPaused ? (
+        <ShopSection
+          tenantId={tenantId}
+          slug={slug}
+          paused={shopPaused}
+          {...(teaser ? { limit: 3, moreHref: '/shop' } : {})}
+        />
+      ) : null}
+      {offertLive || offertPaused ? (
+        <OffertSection tenantId={tenantId} slug={slug} paused={offertPaused} teaser={teaser} />
+      ) : null}
+      {bloggLive || bloggPaused ? (
+        <BloggSection
+          tenantId={tenantId}
+          slug={slug}
+          paused={bloggPaused}
+          {...(teaser ? { limit: 3, moreHref: '/blogg' } : {})}
+        />
+      ) : null}
       {lojalitetLive || lojalitetPaused ? (
         <LojalitetSection tenantId={tenantId} slug={slug} paused={lojalitetPaused} />
       ) : null}

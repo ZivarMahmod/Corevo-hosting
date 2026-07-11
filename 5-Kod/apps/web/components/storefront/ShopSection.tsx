@@ -42,16 +42,24 @@ export async function ShopSection({
   tenantId,
   slug,
   paused = false,
+  limit,
+  moreHref,
 }: {
   tenantId: string
   slug: string
   /** true when tenant_modules.state='shop' is 'paused' → catalog visible, closed. */
   paused?: boolean
+  /** Teaser-läge (startsidan): visa max så här många produkter. */
+  limit?: number
+  /** Länk till modulens EGEN sida ("Visa hela butiken →") — visas när något klipps. */
+  moreHref?: string
 }) {
   const data: ShopData | null = await loadShopData(tenantId, slug)
   if (!data) return null
 
-  const { config, products } = data
+  const { config, products: allProducts } = data
+  const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
+  const clipped = products.length < allProducts.length
 
   return (
     <section className="section" data-module="shop" data-fulfilment={config.fulfilment}>
@@ -180,6 +188,26 @@ export async function ShopSection({
             })}
           </ul>
         )}
+
+        {moreHref && (clipped || typeof limit === 'number') && allProducts.length > 0 ? (
+          <p style={{ margin: '24px 0 0' }}>
+            <a
+              href={moreHref}
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                color: 'var(--color-primary, #232520)',
+                textDecoration: 'none',
+                borderBottom: '1px solid var(--color-primary, #232520)',
+                paddingBottom: 2,
+              }}
+            >
+              Visa hela butiken →
+            </a>
+          </p>
+        ) : null}
       </div>
     </section>
   )

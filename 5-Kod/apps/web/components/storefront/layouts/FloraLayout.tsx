@@ -7,58 +7,113 @@ import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 
 /**
- * FLORA — bohemisk blomsterbutik (florist-branschens tema; byggt 2026-07-11 med
- * Hantverksfloristerna som första kund, men modulärt som de andra fem). Distinkt
- * form: sido-hero med mjuk blob (linne + mossgrönt), italisk citat-band, numrerade
- * bukett-rader (pris-lista, ingen duration — blommor är inte tidsbokningar),
- * om-split med foto, galleri-masonry, plats/öppettider och stängnings-CTA.
- * Serif-tungt (Playfair + PT Serif) för hantverkskänslan.
+ * FLORA — bohemisk blomsterbutik (florist-branschens tema; modulärt, aldrig låst).
+ * EGET formspråk (v2 efter Zivars "kändes som frisörens"): centrerad italisk
+ * Playfair-hero över TRE valv-bilder i olika höjd, ornament-avdelare (stjälk-SVG),
+ * verksamhets-ben (Beställ/Bröllop & avsked/Kurser), numrerade prisrader utan
+ * duration, valv-porträtt i om-sektionen, galleri, plats och closing. Webshop/
+ * blogg/offert/presentkort renderar som modulsektioner direkt efter layouten.
  */
+
+/** Stiliserad blomstjälk — ornamentet som skiljer sektionerna åt. */
+function Ornament() {
+  return (
+    <div className={styles.flOrnament} aria-hidden="true">
+      <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
+        <path d="M22 6v40" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M22 18c-6-2-10-7-10-13 6 0 11 4 10 13Z" fill="currentColor" opacity=".55" />
+        <path d="M22 18c6-2 10-7 10-13-6 0-11 4-10 13Z" fill="currentColor" opacity=".35" />
+        <path d="M22 32c-5-1.5-8.5-5.5-8.5-11 5 0 9.5 3.5 8.5 11Z" fill="currentColor" opacity=".35" />
+        <path d="M22 32c5-1.5 8.5-5.5 8.5-11-5 0-9.5 3.5-8.5 11Z" fill="currentColor" opacity=".55" />
+        <circle cx="22" cy="5" r="3" fill="currentColor" />
+      </svg>
+    </div>
+  )
+}
+
 export function FloraLayout({ tenant, content, services, location }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
   const hasMore = services.length > 6
+  const [arch1, arch2, arch3] = [
+    content.heroImages[0] ?? '',
+    content.heroImages[1] ?? content.heroImages[0] ?? '',
+    content.heroImages[2] ?? content.heroImages[0] ?? '',
+  ]
 
   return (
     <>
-      {/* HERO — text bredvid rundad bild med blob-accent (bohemiskt mjukt) */}
-      <section className={styles.sfSideHero}>
-        <div className={styles.sfSideText}>
+      {/* HERO — centrerad italisk serif över valv-trion */}
+      <section className={styles.flHero}>
+        <div className={styles.flHeroInner}>
           <span className={styles.sfPillEyebrow}>{content.heroEyebrow}</span>
-          <h1 className={styles.heroTitle} style={{ whiteSpace: 'pre-line', color: 'var(--color-fg)' }}>
-            {content.heroTitle}
-          </h1>
-          <p className="sf-lede" style={{ maxWidth: '28rem', marginTop: 20 }}>
+          <h1 className={styles.flHeroTitle}>{content.heroTitle}</h1>
+          <p className="sf-lede" style={{ maxWidth: '30rem', margin: '22px auto 0' }}>
             {content.heroLede}
           </p>
-          <div className={styles.sfSideActions}>
+          <div style={{ marginTop: 26, display: 'flex', justifyContent: 'center', gap: 14 }}>
             <BookCta className={styles.heroCta} />
-            <span className={styles.sfSideNote}>eller kom förbi butiken →</span>
           </div>
         </div>
-        <div className={styles.sfSideMedia}>
-          <span className={styles.sfBlob} aria-hidden="true" />
-          <div
-            className={styles.sfSidePhoto}
-            style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}
-          />
+        <div className={styles.flArches}>
+          <Reveal className={styles.flArch} style={{ backgroundImage: `url(${arch2})` }}>
+            <span />
+          </Reveal>
+          <Reveal delay={100} className={styles.flArch} style={{ backgroundImage: `url(${arch1})` }}>
+            <span />
+          </Reveal>
+          <Reveal delay={200} className={styles.flArch} style={{ backgroundImage: `url(${arch3})` }}>
+            <span />
+          </Reveal>
         </div>
       </section>
 
-      {/* CITAT — det italiska bandet (bohemisk andhämtning mellan sektionerna) */}
-      <section style={{ padding: '64px 24px', textAlign: 'center', background: 'var(--color-accent-soft)' }}>
+      <Ornament />
+
+      {/* VERKSAMHETS-BEN — det floristen faktiskt gör, tre vägar in */}
+      <section style={{ paddingBottom: 'clamp(40px, 6vw, 80px)' }}>
+        <div className={styles.flPillars}>
+          <Reveal>
+            <a href="/shop" className={styles.flPillar}>
+              <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[0] ?? arch1})` }} />
+              <h3 className={styles.flPillarName}>Beställ blommor</h3>
+              <p className={styles.flPillarText}>Buketter i säsong — floristen väljer det finaste. Hämta i butik eller skicka bud.</p>
+              <span className={styles.flPillarLink}>Till butiken</span>
+            </a>
+          </Reveal>
+          <Reveal delay={100}>
+            <a href="/offert" className={styles.flPillar}>
+              <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[1] ?? arch2})` }} />
+              <h3 className={styles.flPillarName}>Bröllop & avsked</h3>
+              <p className={styles.flPillarText}>Handbundna brudbuketter, corsage och binderier — eller ett personligt, vackert farväl.</p>
+              <span className={styles.flPillarLink}>Begär offert</span>
+            </a>
+          </Reveal>
+          <Reveal delay={200}>
+            <a href="/boka" className={styles.flPillar}>
+              <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }} />
+              <h3 className={styles.flPillarName}>Kurser & kvällar</h3>
+              <p className={styles.flPillarText}>Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.</p>
+              <span className={styles.flPillarLink}>Boka kurs</span>
+            </a>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* CITAT — andhämtning i accent-ytan */}
+      <section style={{ padding: 'clamp(48px, 7vw, 84px) 24px', textAlign: 'center', background: 'var(--color-accent-soft)' }}>
         <Reveal>
-          <p className="sf-italic" style={{ fontSize: 'clamp(22px, 2.6vw, 32px)', maxWidth: '36rem', margin: '0 auto', color: 'var(--color-primary)' }}>
-            {content.italic}
+          <p className="sf-italic" style={{ fontSize: 'clamp(24px, 3vw, 38px)', maxWidth: '38rem', margin: '0 auto', color: 'var(--color-primary)', lineHeight: 1.3 }}>
+            ”{content.italic}”
           </p>
         </Reveal>
       </section>
 
-      {/* BUKETTER & TJÄNSTER — numrerade rader, pris utan duration */}
+      {/* PRISER — numrerade rader utan duration (blommor är inte klipptider) */}
       <section className={styles.sfServices}>
         <div className={styles.sfNarrow}>
-          <Reveal>
+          <Reveal style={{ textAlign: 'center' }}>
             <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-            <h2 className="sf-h1" style={{ marginTop: 12, maxWidth: '38rem' }}>
+            <h2 className="sf-h1" style={{ marginTop: 12 }}>
               {content.servicesTitle}
             </h2>
           </Reveal>
@@ -82,12 +137,12 @@ export function FloraLayout({ tenant, content, services, location }: StorefrontL
               ))}
             </div>
           ) : (
-            <p className="sf-body" style={{ marginTop: 32 }}>
+            <p className="sf-body" style={{ marginTop: 32, textAlign: 'center' }}>
               Buketter och binderier läggs upp inom kort. Ring oss gärna så länge.
             </p>
           )}
           {hasMore ? (
-            <Reveal>
+            <Reveal style={{ textAlign: 'center' }}>
               <a href="/tjanster" className={styles.sfMoreLink}>
                 Se allt vi gör <span aria-hidden="true">→</span>
               </a>
@@ -96,18 +151,17 @@ export function FloraLayout({ tenant, content, services, location }: StorefrontL
         </div>
       </section>
 
-      {/* OM — split foto + text + stat-trio */}
-      <section className={styles.sfAboutBand}>
+      <Ornament />
+
+      {/* OM — valv-porträtt + berättelsen */}
+      <section style={{ paddingBottom: 'clamp(48px, 7vw, 90px)' }}>
         <div className={`${styles.sfWide} ${styles.sfAboutGrid}`}>
           <Reveal>
-            <div
-              className={styles.sfAboutPhoto}
-              style={{ backgroundImage: `url(${content.aboutImage})` }}
-            />
+            <div className={styles.flPortrait} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
           <Reveal delay={120}>
             <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>{content.aboutTitle}</h2>
+            <h2 className="sf-h2" style={{ marginTop: 12, fontStyle: 'italic' }}>{content.aboutTitle}</h2>
             <p className="sf-body" style={{ fontSize: 17, marginTop: 16 }}>
               {content.aboutCopyHome}
             </p>
@@ -123,7 +177,7 @@ export function FloraLayout({ tenant, content, services, location }: StorefrontL
         </div>
       </section>
 
-      {/* GALLERI — masonry + lightbox (bröllop, begravning, inspiration) */}
+      {/* GALLERI — masonry + lightbox */}
       <section className={styles.sfGalleryBand}>
         <div className={styles.sfWide}>
           <Reveal>
@@ -184,10 +238,10 @@ export function FloraLayout({ tenant, content, services, location }: StorefrontL
 
       <section className={styles.sfClosing}>
         <Reveal>
-          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto' }}>
+          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto', fontStyle: 'italic' }}>
             Blommor för din dag?
           </h2>
-          <p className={styles.sfClosingLead}>Beställ eller hör av dig — vi hjälper dig gärna.</p>
+          <p className={styles.sfClosingLead}>Beställ, boka en kurs eller hör av dig — vi hjälper dig gärna.</p>
           <div style={{ marginTop: 30 }}>
             <BookCta className={styles.sfClosingCta} />
           </div>

@@ -34,11 +34,14 @@ export function NavShell({
   children,
   customerAccountsEnabled,
   utilityText,
+  links,
 }: {
   children: ReactNode
   customerAccountsEnabled?: boolean
   /** Per-theme utility-strip copy; falls back to UtilityBar's default. */
   utilityText?: string
+  /** Modulstyrda menylänkar (mobil-overlayn); utan prop = NAV_LINKS. */
+  links?: readonly { href: string; label: string }[]
 }) {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
@@ -150,7 +153,7 @@ export function NavShell({
           <span aria-hidden="true">✕</span>
         </button>
         <nav className={shell.overlayLinks} aria-label="Mobilmeny">
-          {NAV_LINKS.map((l) => (
+          {(links ?? NAV_LINKS).map((l) => (
             <Link
               key={l.href}
               href={l.href}

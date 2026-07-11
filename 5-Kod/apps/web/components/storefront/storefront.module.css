@@ -1188,3 +1188,113 @@
   padding: 1.25rem 1.25rem 2rem;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ═══════════════ FLORA — bohemiska byggstenar (bara flora-layouten) ═══════════════ */
+/* Centrerad hero med ornament + tre valv-bilder i olika höjd (asymmetrin är poängen —
+   INTE frisörernas sido-hero). Valvet (border-radius 999px 999px 0 0) är formspråket. */
+.flHero {
+  padding: clamp(56px, 9vw, 110px) 24px 0;
+  text-align: center;
+}
+.flHeroInner { max-width: 52rem; margin: 0 auto; }
+.flHeroTitle {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-style: italic;
+  font-size: clamp(44px, 7vw, 92px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  color: var(--color-fg);
+  margin: 18px 0 0;
+  white-space: pre-line;
+}
+.flArches {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(12px, 2.5vw, 28px);
+  max-width: 62rem;
+  margin: clamp(36px, 5vw, 64px) auto 0;
+  padding: 0 8px;
+}
+.flArch {
+  border-radius: 999px 999px 0 0;
+  background-size: cover;
+  background-position: center;
+  flex: 1 1 0;
+  min-width: 0;
+  box-shadow: 0 18px 40px -22px rgba(43, 42, 36, 0.45);
+}
+.flArch:nth-child(1) { height: clamp(200px, 26vw, 340px); }
+.flArch:nth-child(2) { height: clamp(260px, 34vw, 460px); }
+.flArch:nth-child(3) { height: clamp(180px, 23vw, 300px); }
+
+/* Ornament-avdelare — stiliserad stjälk, temats färger */
+.flOrnament {
+  display: grid;
+  place-items: center;
+  padding: clamp(30px, 4.5vw, 56px) 0;
+  color: var(--color-primary);
+  opacity: 0.75;
+}
+
+/* Verksamhets-ben: Buketter / Bröllop & begravning / Kurser — valv-toppade kort */
+.flPillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 2.5vw, 30px);
+  max-width: 66rem;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.flPillar {
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.flPillarImg {
+  border-radius: 999px 999px 14px 14px;
+  height: clamp(180px, 22vw, 280px);
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.45s ease;
+}
+.flPillar:hover .flPillarImg { transform: translateY(-6px); }
+.flPillarName {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(20px, 2.2vw, 26px);
+  margin: 16px 0 6px;
+  color: var(--color-fg);
+}
+.flPillarText { font-size: 14.5px; line-height: 1.6; color: var(--color-fg-2); margin: 0; max-width: 20rem; margin-inline: auto; }
+.flPillarLink {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  padding-bottom: 2px;
+}
+
+/* Om-sektionen: valv-porträtt istället för fyrkantigt foto */
+.flPortrait {
+  border-radius: 999px 999px 0 0;
+  aspect-ratio: 3 / 4;
+  background-size: cover;
+  background-position: center;
+  max-width: 26rem;
+  margin: 0 auto;
+  box-shadow: 0 18px 40px -22px rgba(43, 42, 36, 0.45);
+}
+
+@media (max-width: 760px) {
+  .flPillars { grid-template-columns: 1fr; max-width: 24rem; }
+  .flPillarImg { height: 220px; }
+  .flArches { gap: 10px; }
+}

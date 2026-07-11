@@ -45,7 +45,7 @@ export default async function HomePage() {
           {/* "lägg modul → vävs in i den valda mallen, live": booking weaves at its
               inline marker above; the other enabled modules render below the look,
               the SAME live sections the theme storefront uses. */}
-          <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} />
+          <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} variant="teaser" />
         </div>
       </>
     )
@@ -102,7 +102,7 @@ export default async function HomePage() {
         services={services}
         location={location}
       />
-      <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} />
+      <StorefrontModuleSections tenantId={tenant.id} slug={tenant.slug} variant="teaser" />
     </>
   )
 }

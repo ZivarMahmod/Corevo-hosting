@@ -20,7 +20,7 @@ import { createPublicClient } from '@/lib/supabase/public'
  */
 
 /** Pages that get per-tenant metadata. The home page is handled by the layout. */
-type StorefrontPage = 'om' | 'kontakt' | 'tjanster'
+type StorefrontPage = 'om' | 'kontakt' | 'tjanster' | 'shop' | 'blogg' | 'offert' | 'presentkort'
 
 const PAGE_META: Record<StorefrontPage, { title: string; describe: (name: string) => string }> = {
   om: {
@@ -34,6 +34,22 @@ const PAGE_META: Record<StorefrontPage, { title: string; describe: (name: string
   tjanster: {
     title: 'Tjänster',
     describe: (name) => `Behandlingar och priser hos ${name}. Boka en ledig tid online.`,
+  },
+  shop: {
+    title: 'Butik',
+    describe: (name) => `Handla online hos ${name}.`,
+  },
+  blogg: {
+    title: 'Blogg',
+    describe: (name) => `Nyheter, tips och inspiration från ${name}.`,
+  },
+  offert: {
+    title: 'Offert',
+    describe: (name) => `Begär en offert från ${name}.`,
+  },
+  presentkort: {
+    title: 'Presentkort',
+    describe: (name) => `Ge bort ett presentkort hos ${name}.`,
   },
 }
 

@@ -174,10 +174,25 @@ export default async function PublicLayout({ children }: { children: React.React
         {/* Paused booking → "stängt"-banner at the very top (draft/off render
             nothing public, so only 'paused' surfaces here). */}
         {bookingPaused ? <ModulePausedBanner /> : null}
+        {/* Modulstyrd meny: Butik/Blogg får en riktig plats i navigationen när
+            modulerna är live/paused — modulens egen sida är dess hem, startsidan
+            visar bara teasers ("mosas in"-fixen). */}
         <Nav
           {...brandProps}
           customerAccountsEnabled={settings.customerAccountsEnabled}
           utilityText={content.utility}
+          links={[
+            { href: '/', label: 'Hem' },
+            ...(moduleState(moduleStates, 'shop') === 'live' || moduleState(moduleStates, 'shop') === 'paused'
+              ? [{ href: '/shop', label: 'Butik' }]
+              : []),
+            { href: '/tjanster', label: 'Tjänster' },
+            ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'
+              ? [{ href: '/blogg', label: 'Blogg' }]
+              : []),
+            { href: '/om', label: 'Om oss' },
+            { href: '/kontakt', label: 'Kontakt' },
+          ]}
         />
         {/* `.shellMain` reserves space for the fixed top cluster (--nav-h). The
             Salvia home hero cancels it exactly with a negative margin, so the hero

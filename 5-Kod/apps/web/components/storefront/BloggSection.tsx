@@ -274,16 +274,23 @@ export async function BloggSection({
   tenantId,
   slug,
   paused = false,
+  limit,
+  moreHref,
 }: {
   tenantId: string
   slug: string
   /** true when tenant_modules.state='blogg' is 'paused' → posts visible, archive. */
   paused?: boolean
+  /** Teaser-läge (startsidan): visa max så här många inlägg. */
+  limit?: number
+  /** Länk till bloggens EGEN sida ("Läs hela bloggen →"). */
+  moreHref?: string
 }) {
   const data: BloggData | null = await loadBloggData(tenantId, slug)
   if (!data) return null
 
-  const { config, posts } = data
+  const { config, posts: allPosts } = data
+  const posts = typeof limit === 'number' ? allPosts.slice(0, limit) : allPosts
 
   return (
     <section className="section" data-module="blogg" data-layout={config.layout}>
@@ -357,6 +364,26 @@ export async function BloggSection({
             ))}
           </ul>
         )}
+
+        {moreHref && typeof limit === 'number' && allPosts.length > 0 ? (
+          <p style={{ margin: '24px 0 0' }}>
+            <a
+              href={moreHref}
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                color: 'var(--color-primary, #232520)',
+                textDecoration: 'none',
+                borderBottom: '1px solid var(--color-primary, #232520)',
+                paddingBottom: 2,
+              }}
+            >
+              Läs hela bloggen →
+            </a>
+          </p>
+        ) : null}
       </div>
     </section>
   )

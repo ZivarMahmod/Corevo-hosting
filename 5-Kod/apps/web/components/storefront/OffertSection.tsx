@@ -42,16 +42,50 @@ export async function OffertSection({
   tenantId,
   slug,
   paused = false,
+  teaser = false,
 }: {
   tenantId: string
   slug: string
   /** true when tenant_modules.state='offert' is 'paused' → form visible, closed. */
   paused?: boolean
+  /** Startsidans kompakta läge: rubrik + länk till /offert istället för hela formuläret. */
+  teaser?: boolean
 }) {
   const data: OffertData | null = await loadOffertData(tenantId, slug)
   if (!data) return null
 
   const { config } = data
+
+  if (teaser) {
+    return (
+      <section className="section" data-module="offert" data-mode={config.mode}>
+        <div className="section-inner">
+          <SectionHeader
+            eyebrow="— Offert"
+            title="Större jobb? Få en offert"
+            lead={offertPromise(config)}
+          />
+          <p style={{ margin: '18px 0 0' }}>
+            <a
+              href="/offert"
+              style={{
+                fontFamily: 'var(--font-ui)',
+                fontSize: 14,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                color: 'var(--color-primary, #232520)',
+                textDecoration: 'none',
+                borderBottom: '1px solid var(--color-primary, #232520)',
+                paddingBottom: 2,
+              }}
+            >
+              Begär offert →
+            </a>
+          </p>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="section" data-module="offert" data-mode={config.mode}>

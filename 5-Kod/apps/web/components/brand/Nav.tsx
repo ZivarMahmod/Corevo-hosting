@@ -24,10 +24,14 @@ import shell from './nav-shell.module.css'
 export function Nav({
   customerAccountsEnabled,
   utilityText,
+  links,
   ...props
-}: NavProps & { utilityText?: string }) {
+}: NavProps & { utilityText?: string; links?: readonly { href: string; label: string }[] }) {
+  // Modulstyrd meny: layouten skickar länkar som växer med kundens live-moduler
+  // (Butik/Blogg får plats när modulerna är på); utan prop = de fyra klassiska.
+  const navLinks = links ?? NAV_LINKS
   return (
-    <NavShell customerAccountsEnabled={customerAccountsEnabled} utilityText={utilityText}>
+    <NavShell customerAccountsEnabled={customerAccountsEnabled} utilityText={utilityText} links={navLinks}>
       <header className={shell.navThemed}>
         {/* DOM order = wordmark (home) → links → cluster (logical reading order);
             visual column placement is handled per-theme by CSS grid-column. */}
@@ -36,7 +40,7 @@ export function Nav({
         </Link>
 
         <nav className={shell.navLinks} aria-label="Huvudmeny">
-          {NAV_LINKS.map((l) => (
+          {navLinks.map((l) => (
             <Link key={l.href} href={l.href}>
               {l.label}
             </Link>

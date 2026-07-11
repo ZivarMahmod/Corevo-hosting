@@ -1,6 +1,8 @@
 import Link from 'next/link'
 
-export const NAV_LINKS = [
+export type NavLink = { href: string; label: string }
+
+export const NAV_LINKS: readonly NavLink[] = [
   { href: '/', label: 'Hem' },
   { href: '/tjanster', label: 'Tjänster' },
   { href: '/om', label: 'Om oss' },
