@@ -74,7 +74,8 @@ type ThemeDef = {
 }
 const uns = (id: string) =>
   `https://images.unsplash.com/photo-${id}?w=800&q=80&auto=format&fit=crop`
-const THEME_KEYS: ThemeKey[] = ['salvia', 'leander', 'zigge', 'linnea', 'edit', 'freshcut']
+// freshcut utesluten (FAS 1 2026-07-11): kundens eget tema erbjuds aldrig nya tenants.
+const THEME_KEYS: ThemeKey[] = ['salvia', 'leander', 'zigge', 'linnea', 'edit']
 const WIZARD_THEMES: Record<ThemeKey, ThemeDef> = {
   salvia: {
     name: 'Salvia', primary: '#5E7361', bg: '#F6F4EE', fg: '#232520', fg2: '#5C5F55', line: '#E2DED2',

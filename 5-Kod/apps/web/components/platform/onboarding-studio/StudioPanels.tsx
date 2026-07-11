@@ -78,17 +78,18 @@ const MODULE_STATE_HINTS: Record<ModuleState, string> = {
   paused: 'Tillfälligt stängd — visar "stängt" publikt.',
 }
 
-/** The built-in storefront themes (the 5 real lowercase STOREFRONT_THEMES keys) —
- *  fallback when the chosen bransch has no templates seeded in templatesByVertical.
- *  Mirrors CreateTenantForm's BUILTIN_TEMPLATES (key + display name only — the rich
- *  per-theme preview is the PreviewPane's job, W2). */
+/** De RIKTIGA renderbara temana (STOREFRONT_THEMES minus freshcut — kundens eget
+ *  tema erbjuds aldrig nya tenants). FAS 1-fix 2026-07-11: tema-steget listar
+ *  ALLTID dessa; templatesByVertical (21 vendor-mallar i templates-tabellen) är
+ *  INTE byggda teman — att välja en sådan blev en tyst leander-fallback i både
+ *  preview och server (rapport 01-tema-kedjan.md). Vendor-mallarna kopplas in
+ *  via looks/render-bron när fidelity-golvet klaras — inte via detta steg. */
 const BUILTIN_TEMPLATES: TemplateOption[] = [
   { key: 'salvia', name: 'Salvia' },
   { key: 'leander', name: 'Leander' },
   { key: 'zigge', name: 'Zigge' },
   { key: 'linnea', name: 'Linnea' },
   { key: 'edit', name: 'Edit' },
-  { key: 'freshcut', name: 'FreshCut' },
 ]
 
 /** The brand-panel accent swatches (verbatim from studio.jsx:268 — 7 accents). */
@@ -447,9 +448,10 @@ function PanelTema({ cfg, dispatch, presets, looks }: PanelProps) {
       </Panel>
     )
   }
-  // Flag-OFF legacy list (byte-identical to the pre-goal-50 studio).
-  const branschTemplates = cfg.branch ? presets.templatesByVertical[cfg.branch] : undefined
-  const options = branschTemplates && branschTemplates.length > 0 ? branschTemplates : BUILTIN_TEMPLATES
+  // ALLTID de riktiga temana — vendor-mallarna ur templatesByVertical valde
+  // tidigare orenderbara nycklar (tyst fallback, "tema-steget är trasigt per
+  // bransch"). Branschen styr moduler/ord — temat är ett fritt val bland byggda.
+  const options = BUILTIN_TEMPLATES
   return (
     <Panel
       title="Temamall"
