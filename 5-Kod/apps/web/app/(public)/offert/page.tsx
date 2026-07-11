@@ -20,5 +20,5 @@ export default async function OffertPage() {
   const paused = isModulePaused(states, 'offert')
   if (!isModuleLive(states, 'offert') && !paused) notFound()
 
-  return <OffertSection tenantId={tenant.id} slug={tenant.slug} paused={paused} />
+  return <OffertSection tenantId={tenant.id} slug={tenant.slug} paused={paused} pageHero />
 }

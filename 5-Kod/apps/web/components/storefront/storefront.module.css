@@ -1365,3 +1365,27 @@
   .flCardGrid { grid-template-columns: 1fr; max-width: 22rem; }
   .flCardImg { height: 210px; }
 }
+
+/* ── Subpage-hero (goal-57 körning 14) — fruitkha-mönstrets breadcrumb-sektion:
+   tonad hel-bredds-band med centrerad eyebrow + stor rubrik som standard-sidhuvud
+   på modulernas egna sidor (/shop, /kurser, /blogg, /offert, /varukorg, /kassa). */
+.subHero {
+  background: var(--color-accent-soft, color-mix(in srgb, var(--color-accent, #C8A24A) 10%, transparent));
+  text-align: center;
+  padding: clamp(44px, 6vw, 76px) 24px;
+}
+.subHeroTitle {
+  margin: 10px 0 0;
+  font-family: var(--font-display, var(--font-body));
+  font-size: clamp(30px, 4.4vw, 52px);
+  line-height: 1.08;
+  color: var(--color-primary, var(--color-fg, #232520));
+}
+.subHeroLead {
+  max-width: 40rem;
+  margin: 14px auto 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-fg, #232520) 78%, transparent);
+}

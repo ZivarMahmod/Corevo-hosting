@@ -26,7 +26,7 @@
 // payment. The form (now the OffertForm 'use client' island) inserts an
 // offert_requests row via the submitOffertRequest action; no money flow, no pay step.
 
-import { SectionHeader } from './sections'
+import { SectionHeader, SubpageHero } from './sections'
 import {
   offertPromise,
   OFFERT_MODE_LABELS,
@@ -43,6 +43,7 @@ export async function OffertSection({
   slug,
   paused = false,
   teaser = false,
+  pageHero = false,
 }: {
   tenantId: string
   slug: string
@@ -50,6 +51,8 @@ export async function OffertSection({
   paused?: boolean
   /** Startsidans kompakta läge: rubrik + länk till /offert istället för hela formuläret. */
   teaser?: boolean
+  /** Modulens EGEN sida: hero-bandet i stället för SectionHeader (goal-57). */
+  pageHero?: boolean
 }) {
   const data: OffertData | null = await loadOffertData(tenantId, slug)
   if (!data) return null
@@ -88,13 +91,23 @@ export async function OffertSection({
   }
 
   return (
-    <section className="section" data-module="offert" data-mode={config.mode}>
-      <div className="section-inner">
-        <SectionHeader
+    <>
+      {pageHero ? (
+        <SubpageHero
           eyebrow={`— Offert · ${OFFERT_MODE_LABELS[config.mode]}`}
           title="Få en offert"
-          lead={offertPromise(config)}
+          lede={offertPromise(config)}
         />
+      ) : null}
+    <section className="section" data-module="offert" data-mode={config.mode}>
+      <div className="section-inner">
+        {!pageHero ? (
+          <SectionHeader
+            eyebrow={`— Offert · ${OFFERT_MODE_LABELS[config.mode]}`}
+            title="Få en offert"
+            lead={offertPromise(config)}
+          />
+        ) : null}
 
         {paused ? (
           <p
@@ -124,5 +137,6 @@ export async function OffertSection({
         )}
       </div>
     </section>
+    </>
   )
 }

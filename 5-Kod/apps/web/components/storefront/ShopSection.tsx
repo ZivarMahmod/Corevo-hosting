@@ -25,7 +25,7 @@
 // BETAL-RAILS PAUSADE (beslut 14.2): no price-checkout, no pay step. ShopCta is an
 // inert interaction shell; orders/payment are wired only when rails open.
 
-import { SectionHeader } from './sections'
+import { SectionHeader, SubpageHero } from './sections'
 import { AddToCart } from './shop/AddToCart'
 import {
   fulfilmentPromise,
@@ -44,6 +44,7 @@ export async function ShopSection({
   paused = false,
   limit,
   moreHref,
+  pageHero = false,
 }: {
   tenantId: string
   slug: string
@@ -53,6 +54,8 @@ export async function ShopSection({
   limit?: number
   /** Länk till modulens EGEN sida ("Visa hela butiken →") — visas när något klipps. */
   moreHref?: string
+  /** Modulens EGEN sida: fruitkha-hero-bandet i stället för SectionHeader (goal-57). */
+  pageHero?: boolean
 }) {
   const data: ShopData | null = await loadShopData(tenantId, slug)
   if (!data) return null
@@ -66,13 +69,23 @@ export async function ShopSection({
   if (typeof limit === 'number' && allProducts.length === 0 && !paused) return null
 
   return (
-    <section className="section" data-module="shop" data-fulfilment={config.fulfilment}>
-      <div className="section-inner">
-        <SectionHeader
+    <>
+      {pageHero ? (
+        <SubpageHero
           eyebrow={`— Webshop · ${SHOP_FULFILMENT_LABELS[config.fulfilment]}`}
           title="Handla hos oss"
-          lead={fulfilmentPromise(config)}
+          lede={fulfilmentPromise(config)}
         />
+      ) : null}
+    <section className="section" data-module="shop" data-fulfilment={config.fulfilment}>
+      <div className="section-inner">
+        {!pageHero ? (
+          <SectionHeader
+            eyebrow={`— Webshop · ${SHOP_FULFILMENT_LABELS[config.fulfilment]}`}
+            title="Handla hos oss"
+            lead={fulfilmentPromise(config)}
+          />
+        ) : null}
 
         {paused ? (
           <p
@@ -224,5 +237,6 @@ export async function ShopSection({
         ) : null}
       </div>
     </section>
+    </>
   )
 }

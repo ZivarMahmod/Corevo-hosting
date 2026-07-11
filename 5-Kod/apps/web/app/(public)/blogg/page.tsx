@@ -20,5 +20,5 @@ export default async function BloggPage() {
   const paused = isModulePaused(states, 'blogg')
   if (!isModuleLive(states, 'blogg') && !paused) notFound()
 
-  return <BloggSection tenantId={tenant.id} slug={tenant.slug} paused={paused} />
+  return <BloggSection tenantId={tenant.id} slug={tenant.slug} paused={paused} pageHero />
 }

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
 import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
 import { CartPageContents } from '@/components/storefront/shop/CartPageContents'
+import { SubpageHero } from '@/components/storefront/sections'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Varukorg' }
@@ -33,9 +34,11 @@ export default async function VarukorgPage() {
   }
 
   return (
-    <section className="section" style={{ maxWidth: 960, margin: '0 auto', padding: '32px 20px' }}>
-      <h1 style={{ fontFamily: 'var(--font-display, var(--font-body))', fontSize: 28, margin: '0 0 24px' }}>Varukorg</h1>
-      <CartPageContents />
-    </section>
+    <>
+      <SubpageHero eyebrow="— Din beställning" title="Varukorg" />
+      <section className="section" style={{ maxWidth: 960, margin: '0 auto', padding: '32px 20px' }}>
+        <CartPageContents />
+      </section>
+    </>
   )
 }

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
 import { CheckoutForm } from '@/app/butik/kassa/CheckoutForm'
+import { SubpageHero } from '@/components/storefront/sections'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kassa' }
@@ -55,8 +56,9 @@ export default async function KassaPage() {
   }
 
   return (
+    <>
+      <SubpageHero eyebrow="— Snart klart" title="Kassa" />
     <section className="section" style={{ maxWidth: 720, margin: '0 auto', padding: '32px 20px' }}>
-      <h1 style={{ fontFamily: 'var(--font-display, var(--font-body))', fontSize: 28, margin: '0 0 24px' }}>Kassa</h1>
       {accountsEnabled && !signedIn ? (
         <p style={{ margin: '-12px 0 20px', fontSize: 14, opacity: 0.75 }}>
           Har du ett konto?{' '}
@@ -73,5 +75,6 @@ export default async function KassaPage() {
       ) : null}
       <CheckoutForm fulfilment={fulfilment} />
     </section>
+    </>
   )
 }

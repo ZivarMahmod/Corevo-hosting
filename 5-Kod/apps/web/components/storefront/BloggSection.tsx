@@ -25,7 +25,7 @@
 // NO PAYMENT (unlike shop/offert): a blog publishes content and never touches money,
 // so there is no CTA, no pay step, no order — nothing money-bearing in this surface.
 
-import { SectionHeader } from './sections'
+import { SectionHeader, SubpageHero } from './sections'
 import { bloggLayoutLabel, type BloggData, type BloggPost } from '@/lib/storefront/blogg/types'
 import { loadBloggData } from '@/lib/storefront/blogg/load-blogg'
 
@@ -309,6 +309,7 @@ export async function BloggSection({
   paused = false,
   limit,
   moreHref,
+  pageHero = false,
 }: {
   tenantId: string
   slug: string
@@ -318,6 +319,8 @@ export async function BloggSection({
   limit?: number
   /** Länk till bloggens EGEN sida ("Läs hela bloggen →"). */
   moreHref?: string
+  /** Modulens EGEN sida: hero-bandet i stället för SectionHeader (goal-57). */
+  pageHero?: boolean
 }) {
   const data: BloggData | null = await loadBloggData(tenantId, slug)
   if (!data) return null
@@ -328,13 +331,23 @@ export async function BloggSection({
   if (typeof limit === 'number' && allPosts.length === 0) return null
 
   return (
-    <section className="section" data-module="blogg" data-layout={config.layout}>
-      <div className="section-inner">
-        <SectionHeader
+    <>
+      {pageHero ? (
+        <SubpageHero
           eyebrow={`— Blogg · ${bloggLayoutLabel(config.layout)}`}
           title="Från bloggen"
-          lead="Nyheter, tips och inspiration från oss."
+          lede="Nyheter, tips och inspiration från oss."
         />
+      ) : null}
+    <section className="section" data-module="blogg" data-layout={config.layout}>
+      <div className="section-inner">
+        {!pageHero ? (
+          <SectionHeader
+            eyebrow={`— Blogg · ${bloggLayoutLabel(config.layout)}`}
+            title="Från bloggen"
+            lead="Nyheter, tips och inspiration från oss."
+          />
+        ) : null}
 
         {paused ? (
           <p
@@ -421,5 +434,6 @@ export async function BloggSection({
         ) : null}
       </div>
     </section>
+    </>
   )
 }

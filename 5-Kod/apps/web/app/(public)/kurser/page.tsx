@@ -5,7 +5,7 @@ import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenan
 import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
 import { formatEventPrice, formatEventStart } from '@/lib/storefront/kurser/types'
 import { KursAnmalanForm } from '@/components/storefront/KursAnmalanForm'
-import { SectionHeader } from '@/components/storefront/sections'
+import { SubpageHero } from '@/components/storefront/sections'
 import { pageMetadata } from '@/components/storefront/seo'
 
 export const dynamic = 'force-dynamic'
@@ -30,13 +30,14 @@ export default async function KurserPage() {
   const events = await loadUpcomingEvents(tenant.id, tenant.slug)
 
   return (
+    <>
+      <SubpageHero
+        eyebrow="— Kurser & event"
+        title="Kommande tillfällen"
+        lede="Anmäl dig och ditt sällskap — avgiften betalas på plats."
+      />
     <section className="section" data-module="kurser">
       <div className="section-inner">
-        <SectionHeader
-          eyebrow="— Kurser & event"
-          title="Kommande tillfällen"
-          lead="Anmäl dig och ditt sällskap — avgiften betalas på plats."
-        />
 
         {paused ? (
           <p
@@ -166,5 +167,6 @@ export default async function KurserPage() {
         )}
       </div>
     </section>
+    </>
   )
 }

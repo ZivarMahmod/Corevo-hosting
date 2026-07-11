@@ -22,5 +22,5 @@ export default async function ShopPage() {
   const paused = isModulePaused(states, 'shop')
   if (!isModuleLive(states, 'shop') && !paused) notFound()
 
-  return <ShopSection tenantId={tenant.id} slug={tenant.slug} paused={paused} />
+  return <ShopSection tenantId={tenant.id} slug={tenant.slug} paused={paused} pageHero />
 }

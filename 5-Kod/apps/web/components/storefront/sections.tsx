@@ -34,6 +34,27 @@ export function SectionHeader({
   )
 }
 
+/** Subpage-hero (goal-57 körning 14, fruitkha-mönstret): tonad hel-bredds-band med
+ *  centrerad eyebrow + stor rubrik — standard-sidhuvud på modulernas EGNA sidor.
+ *  Teasers/sektioner på startsidan fortsätter använda SectionHeader. */
+export function SubpageHero({
+  eyebrow,
+  title,
+  lede,
+}: {
+  eyebrow: string
+  title: string
+  lede?: string
+}) {
+  return (
+    <header className={styles.subHero}>
+      <p className={styles.eyebrow} style={{ margin: 0 }}>{eyebrow}</p>
+      <h1 className={styles.subHeroTitle}>{title}</h1>
+      {lede ? <p className={styles.subHeroLead}>{lede}</p> : null}
+    </header>
+  )
+}
+
 /** Centred large italic warmth phrase, generous whitespace. */
 export function AccentPhrase({ text }: { text: string }) {
   return (
