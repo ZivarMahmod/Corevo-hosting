@@ -63,3 +63,26 @@ holds.ts + migration 0014 (medvetet vilande, build-once), alla scripts.
 1. **Körning A:** A1+A2+A5 (DB-tak/count-aggregat) + C1-C3 (rensning) — en commit, tsc/vitest/eslint, tag, deploy, FreshCut-verify.
 2. **Körning B:** B1-bevis under den deployen (polla under deploy-fönstret) → beslut B3.
 3. A3/A4/A6 = dokumenterade, byggs först när trafik motiverar.
+
+## UTFALL (2026-07-11, v1.7.31)
+
+**Körning A KLAR + deployad (success):**
+- A1: listTenants/listTenantsWithStats läser inte längre varje bookings-rad —
+  per-tenant HEAD count(*) + 1-rads senaste-läsning. `countBookingsByTenant` borttagen.
+- A2: getTenantDetail per-service-räkning takad 5000; getTenantCustomers takad
+  1000 kunder / 2000 bokningar / 500 offerter.
+- A5: kurser (200 events / 2000 anmälningar), media (1000 + storage-tak), blogg (200).
+- C1-C3 rensade: setOffertStatus, enterHelpMode (+barrel), ButikLayout.
+- Migration 0054 (platform_booking_stats/service_booking_counts/tenant_storage_usage)
+  COMMITTAD men EJ applicerad — Supabase CLI-token utgången (`npx supabase login` krävs;
+  MCP saknar write-rättighet). Koden kräver den inte; RPC:erna = uppgraderingsväg
+  (ponytail-kommentarer pekar hit).
+- Verify: tsc 0 fel, 696 tester gröna, eslint 0 fel. Prod-smoke: florist 200,
+  freshcut 200 (FREDAD ok), booking-login 200, superbooking 307.
+
+**Körning B (B1-bevis):** poll 1 Hz på booking + superbooking under HELA deployen —
+**0 avvikelser, inget 403-fönster observerat denna deploy.** (florist.boka.corevo.se
+resolvar inte via DNS — fel jämförelsehost, säger inget.) Slutsats: fönstret är inte
+varje-deploy-deterministiskt; hypotes 1 kvarstår som trolig men obevisad. Nästa bevissteg
+om 403 återkommer: kolla CF-dash → Workers → domains-status i samma stund + B2
+(token-scope Zone→DNS→Edit).
