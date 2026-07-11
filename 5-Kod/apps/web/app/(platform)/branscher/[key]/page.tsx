@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requirePlatformAdmin } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
-import { TERMINOLOGY_DEFAULTS } from '@/lib/platform/verticals-shared'
 import { PageHead, Card, Badge, Icon } from '@/components/portal/ui'
+import { VerticalEditor } from '@/components/platform/VerticalEditor'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Bransch · Plattform' }
@@ -38,17 +38,10 @@ export default async function BranschPage({ params }: { params: Promise<{ key: s
     (t) => (t as { vertical_id?: string | null }).vertical_id === key,
   )
   const mods = (vertical.default_modules ?? {}) as Record<string, string>
-  const moduleName = new Map((modules ?? []).map((m) => [m.key, m.name]))
   const term = (vertical.terminology ?? {}) as Record<string, string>
   const branschTemplates = (templates ?? []).filter(
     (t) => ((t.tags ?? {}) as { bransch?: string }).bransch === key && t.status === 'active',
   )
-
-  const termRows = Object.keys(TERMINOLOGY_DEFAULTS).map((k) => ({
-    key: k,
-    value: term[k] ?? null,
-    fallback: TERMINOLOGY_DEFAULTS[k as keyof typeof TERMINOLOGY_DEFAULTS],
-  }))
 
   const sec = { marginTop: '1.75rem' } as const
   const h = { margin: '0 0 10px', fontSize: 15.5, fontWeight: 700 } as const
@@ -69,58 +62,18 @@ export default async function BranschPage({ params }: { params: Promise<{ key: s
         ← Alla branscher
       </Link>
 
-      {/* Terminologi — live-arv */}
-      <div style={sec}>
-        <h2 style={h}>Terminologi</h2>
-        <Card>
-          <p style={{ margin: '0 0 12px', fontSize: 12.5, color: 'var(--c-ink-3)' }}>
-            Orden adminen och sidorna använder. Ändringar här slår <b>direkt</b> på alla{' '}
-            {inBransch.length} kunder i branschen (live-arv). Redigering byggs i nästa steg.
-          </p>
-          <div style={{ display: 'grid', gap: 6 }}>
-            {termRows.map((r) => (
-              <div key={r.key} style={{ display: 'flex', gap: 10, fontSize: 13.5, alignItems: 'baseline' }}>
-                <span style={{ width: 130, color: 'var(--c-ink-3)', fontSize: 12.5 }}>{r.key}</span>
-                <span style={{ fontWeight: 600 }}>{r.value ?? r.fallback}</span>
-                {!r.value ? (
-                  <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)' }}>(standard)</span>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* Modul-presets — kopia vid onboarding */}
-      <div style={sec}>
-        <h2 style={h}>Modul-förval</h2>
-        <Card>
-          <p style={{ margin: '0 0 12px', fontSize: 12.5, color: 'var(--c-ink-3)' }}>
-            Förvalen nya kunder i branschen startar med — befintliga kunder behåller sina egna
-            modulval (kopia vid onboarding, aldrig retroaktivt).
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {Object.entries(mods).map(([k, s]) => (
-              <span
-                key={k}
-                style={{
-                  fontSize: 12.5,
-                  padding: '6px 12px',
-                  borderRadius: 999,
-                  background: s === 'live' ? 'var(--c-success-bg)' : s === 'off' ? 'var(--c-paper-2)' : 'var(--c-warning-bg)',
-                  color: s === 'live' ? 'var(--c-forest)' : 'var(--c-ink-2)',
-                  fontWeight: 600,
-                }}
-              >
-                {moduleName.get(k) ?? k} · {s}
-              </span>
-            ))}
-          </div>
-          <p style={{ margin: '12px 0 0', fontSize: 12.5, color: 'var(--c-ink-3)' }}>
-            Default-mall vid onboarding: <b style={{ color: 'var(--c-ink-2)' }}>{vertical.default_template ?? '—'}</b>
-          </p>
-        </Card>
-      </div>
+      {/* Terminologi (live-arv) + modul-förval/mall (kopia) — REDIGERBARA (FAS 2 steg 3) */}
+      <VerticalEditor
+        verticalKey={vertical.key}
+        kundAntal={inBransch.length}
+        terminology={term}
+        modules={(modules ?? []).map((m) => ({
+          key: m.key,
+          name: m.name,
+          state: mods[m.key] ?? 'off',
+        }))}
+        defaultTemplate={vertical.default_template ?? null}
+      />
 
       {/* Mallar taggade för branschen */}
       <div style={sec}>
