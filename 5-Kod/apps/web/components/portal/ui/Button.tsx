@@ -26,6 +26,7 @@ export function Button({
   onClick,
   target,
   rel,
+  form,
 }: {
   children: ReactNode
   variant?: ButtonVariant
@@ -43,6 +44,9 @@ export function Button({
   /** Anchor-attribut för href-formen (t.ex. öppna storefronten i ny flik). */
   target?: string
   rel?: string
+  /** HTML form-attribut — låter en submit-knapp bo utanför sitt <form> (t.ex.
+   *  drawer-footers). Ignoreras när `href` renderar en <a>. */
+  form?: string
 }) {
   const cls = `pbtn pbtn--${variant} pbtn--${size}${className ? ` ${className}` : ''}`
   const inner = (
@@ -66,6 +70,7 @@ export function Button({
       disabled={disabled}
       style={style}
       onClick={onClick}
+      form={form}
     >
       {inner}
     </button>

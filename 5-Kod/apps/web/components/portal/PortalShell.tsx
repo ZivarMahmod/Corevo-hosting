@@ -9,6 +9,7 @@ import { cleanTerminology, resolveTerm } from '@/lib/platform/verticals-shared'
 import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 import { PortalSidebar, type PortalRole } from './PortalSidebar'
+import { NAV, isGroup, paletteFromNav } from './nav-items'
 import { getAdminModuleStates, isModuleActivated, isBookingActivated } from '@/lib/admin/modules'
 import { listLocations } from '@/lib/admin/data'
 import { PLATS_COOKIE } from '@/lib/admin/plats'
@@ -17,40 +18,9 @@ import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
 
-/** Role-keyed go-to list for the ⌘K command palette. Mirrors PortalSidebar's NAV
- *  (kept in sync by hand — PortalSidebar is outside this component's ownership;
- *  duplicating the small route map is the correct trade vs lifting NAV across a
- *  scope boundary). Only routes that actually exist appear — no 404 entries. */
-const PALETTE: Record<PortalRole, CommandItem[]> = {
-  platform: [
-    { href: '/', label: 'Översikt', icon: 'grid', kind: 'Gå till' },
-    { href: '/fakturering', label: 'Fakturering', icon: 'dollar', kind: 'Gå till' },
-    { href: '/salonger', label: 'Salonger', icon: 'building', kind: 'Gå till' },
-    { href: '/salonger/ny', label: 'Onboarda salong', icon: 'plus', kind: 'Gå till' },
-    { href: '/kunder', label: 'Kunder', icon: 'users', kind: 'Gå till' },
-    { href: '/personal-plattform', label: 'Personal', icon: 'scissors', kind: 'Gå till' },
-    { href: '/drift-och-logg', label: 'Drift & logg', icon: 'alert', kind: 'Gå till' },
-    { href: '/integrationer', label: 'Integrationer', icon: 'layers', kind: 'Gå till' },
-    { href: '/roller', label: 'Roller', icon: 'shield', kind: 'Gå till' },
-    { href: '/installningar', label: 'Inställningar', icon: 'settings', kind: 'Gå till' },
-  ],
-  admin: [
-    { href: '/admin', label: 'Översikt', icon: 'home', kind: 'Gå till' },
-    { href: '/admin/bokningar', label: 'Bokningar', icon: 'calendar', kind: 'Gå till' },
-    { href: '/admin/kunder', label: 'Kunder', icon: 'user', kind: 'Gå till' },
-    { href: '/admin/tjanster', label: 'Tjänster', icon: 'scissors', kind: 'Gå till' },
-    { href: '/admin/personal', label: 'Personal', icon: 'users', kind: 'Gå till' },
-    { href: '/admin/platser', label: 'Platser', icon: 'building', kind: 'Gå till' },
-    { href: '/admin/scheman', label: 'Scheman', icon: 'clock', kind: 'Gå till' },
-    { href: '/admin/sida', label: 'Redigera sidan', icon: 'palette', kind: 'Gå till' },
-    { href: '/admin/installningar', label: 'Inställningar', icon: 'settings', kind: 'Gå till' },
-  ],
-  personal: [
-    { href: '/personal', label: 'Idag', icon: 'grid', kind: 'Gå till' },
-    { href: '/personal/arbetstider', label: 'Arbetstider', icon: 'calendar', kind: 'Gå till' },
-    { href: '/personal/franvaro', label: 'Frånvaro', icon: 'coffee', kind: 'Gå till' },
-  ],
-}
+// ⌘K-palettens "Gå till"-lista härleds ur nav-items.ts (paletteFromNav) — SAMMA
+// NAV som PortalSidebar renderar, så palett och sidomeny kan inte drifta isär
+// (goal-55 steg 1; ersätter den handkopierade PALETTE/MODULE_PALETTE-dubbletten).
 
 /** Shared, tenant-themed chrome for every portal (kund/personal/admin/platform).
  *
@@ -107,31 +77,18 @@ export async function PortalShell({
     // Modulstyrd admin-yta: läs kundens tenant_modules EN gång här (RLS-scopad)
     // och låt sidomeny + ⌘K-palett visa BARA aktiverade moduler. Platform/personal
     // gatar inte (undefined → PortalSidebar visar allt).
-    const MODULE_PALETTE: (CommandItem & { module: string })[] = [
-      { href: '/admin/kurser', label: 'Kurser', icon: 'calendar', kind: 'Gå till', module: 'booking' },
-      { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', kind: 'Gå till', module: 'media_library' },
-      { href: '/admin/webshop', label: 'Webshop', icon: 'grid', kind: 'Gå till', module: 'shop' },
-      { href: '/admin/blogg', label: 'Blogg', icon: 'edit', kind: 'Gå till', module: 'blogg' },
-      { href: '/admin/offerter', label: 'Offerter', icon: 'mail', kind: 'Gå till', module: 'offert' },
-      { href: '/admin/lojalitet', label: 'Lojalitet', icon: 'star', kind: 'Gå till', module: 'lojalitet' },
-      { href: '/admin/presentkort', label: 'Presentkort', icon: 'gift', kind: 'Gå till', module: 'presentkort' },
-    ]
     let activeModuleKeys: string[] | undefined
-    let paletteItems: CommandItem[] = PALETTE[portal]
     if (portal === 'admin' && bundle) {
       const states = await getAdminModuleStates(bundle.tenant.id)
+      // Modul-nycklarna läses ur NAV (nav-items.ts) — samma poster som sidomenyn.
       // 'booking' är default-live utan tenant_modules-rad (isBookingActivated) —
       // övriga moduler är opt-in (rad krävs, isModuleActivated).
-      activeModuleKeys = MODULE_PALETTE.map((m) => m.module).filter((k) =>
+      const moduleKeys = NAV.admin.items.flatMap((e) => (!isGroup(e) && e.module ? [e.module] : []))
+      activeModuleKeys = moduleKeys.filter((k) =>
         k === 'booking' ? isBookingActivated(states) : isModuleActivated(states, k),
       )
-      paletteItems = [
-        ...PALETTE.admin,
-        ...MODULE_PALETTE.filter((m) => activeModuleKeys!.includes(m.module)).map(
-          ({ module: _m, ...item }) => item,
-        ),
-      ]
     }
+    const paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys)
     // Bransch terminology overlay for the sidebar identity cell. Resolve the
     // tenant's vertical terminology on the server (mirrors getAdminTenant's
     // separate-read seam: a verticals shape/RLS change can never null the

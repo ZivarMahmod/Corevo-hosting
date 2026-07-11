@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useActionState, useEffect, useState, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import type { MediaAssetRow, StorageUsage } from '@/lib/admin/media/types'
 import { MEDIA_ACCEPT, formatBytes, usagePercent } from '@/lib/admin/media/types'
@@ -9,34 +9,15 @@ import type { ActionState } from '@/lib/admin/actions'
 import { TenantScope, TenantField } from './TenantScope'
 import {
   Button,
-  Card,
   Callout,
   Drawer,
+  EmptyState,
+  Field,
   Icon,
   PageHead,
+  inputStyle,
   useToast,
 } from '@/components/portal/ui'
-
-// ── Shared input style (mirrors PresentkortAdmin) ───────────────────────────
-const inputStyle: CSSProperties = {
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid var(--c-line)',
-  background: 'var(--c-paper)',
-  color: 'var(--c-ink)',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  width: '100%',
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span className="eyebrow">{label}</span>
-      {children}
-    </label>
-  )
-}
 
 // useActionState wants a (prevState, formData) reducer, but the server actions are
 // single-arg administrative writes (take only FormData). Thin adapters bridge the
@@ -65,7 +46,11 @@ export function MediaLibrary({
   return (
     <TenantScope tenantId={tenantId}>
     <div>
-      <PageHead eyebrow={tenantName} title="Bildbibliotek">
+      <PageHead
+        eyebrow={tenantName}
+        title="Bildbibliotek"
+        lede="Bilderna här används av webshop, blogg och din sida."
+      >
         <Button variant="primary" icon="upload" onClick={() => setUploading(true)}>
           Ladda upp
         </Button>
@@ -120,15 +105,16 @@ export function MediaLibrary({
         </h2>
 
         {assets.length === 0 ? (
-          <Card>
-            <p className="eyebrow" style={{ marginBottom: 6 }}>
-              Inga bilder än
-            </p>
-            <p className="body" style={{ margin: 0, maxWidth: 460, color: 'var(--c-ink-2)' }}>
-              Ladda upp din första bild med <strong>Ladda upp</strong> — den dyker upp här och
-              kan återanvändas på din sida.
-            </p>
-          </Card>
+          <EmptyState
+            icon="upload"
+            title="Inga bilder än"
+            text={
+              <>
+                Ladda upp din första bild med <strong>Ladda upp</strong> — den dyker upp här och
+                kan återanvändas på din sida.
+              </>
+            }
+          />
         ) : (
           <div
             style={{

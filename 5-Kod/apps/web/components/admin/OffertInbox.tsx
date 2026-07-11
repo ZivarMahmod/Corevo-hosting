@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { OffertRequestRow } from '@/lib/admin/offert/types'
 import {
@@ -17,34 +17,20 @@ import {
   Button,
   Card,
   Drawer,
+  EmptyState,
+  Field,
   Icon,
+  PageHead,
+  RowEditButton,
   Table,
+  inputStyle,
+  statusTone,
   useToast,
-  type BadgeTone,
 } from '@/components/portal/ui'
 
 // Local alias — matches ActionState from @/lib/admin/actions without crossing
 // the 'use server' boundary in a client import (type-only, erased at build time).
 type ActionState = { error?: string; success?: string }
-
-// ── Status → Badge tone map ──────────────────────────────────────────────────
-function statusTone(status: string): BadgeTone {
-  switch (status) {
-    case 'new':
-      return 'info'
-    case 'reviewing':
-      return 'warning'
-    case 'quoted':
-      return 'gold'
-    case 'accepted':
-      return 'success'
-    case 'declined':
-    case 'closed':
-      return 'neutral'
-    default:
-      return 'neutral'
-  }
-}
 
 function statusLabel(status: string): string {
   return (OFFERT_STATUS_LABELS as Record<string, string>)[status] ?? status
@@ -52,27 +38,6 @@ function statusLabel(status: string): string {
 
 function modeLabel(mode: string): string {
   return OFFERT_MODE_LABELS[mode] ?? mode
-}
-
-// ── Shared field wrapper ─────────────────────────────────────────────────────
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span className="eyebrow">{label}</span>
-      {children}
-    </label>
-  )
-}
-
-const inputStyle: CSSProperties = {
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid var(--c-line)',
-  background: 'var(--c-paper)',
-  color: 'var(--c-ink)',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  width: '100%',
 }
 
 // ── Date formatter ───────────────────────────────────────────────────────────
@@ -134,15 +99,9 @@ function DetailDrawer({
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>
-          <button
-            type="submit"
-            form={formId}
-            disabled={pending}
-            className="pbtn pbtn--primary pbtn--md"
-          >
-            <Icon name="check" size={17} />
+          <Button variant="primary" type="submit" form={formId} icon="check" disabled={pending}>
             {pending ? 'Sparar…' : 'Spara'}
-          </button>
+          </Button>
         </div>
       }
     >
@@ -329,10 +288,9 @@ function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: 
             style={{ ...inputStyle, resize: 'vertical', minHeight: 96 }}
           />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="submit" disabled={pending} className="pbtn pbtn--primary pbtn--md">
-              <Icon name="mail" size={16} />
+            <Button variant="primary" type="submit" icon="mail" disabled={pending}>
               {pending ? 'Skickar…' : 'Skicka svar till kunden'}
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -343,35 +301,33 @@ function ReplySection({ request, onDone }: { request: OffertRequestRow; onDone: 
 // ── Main inbox component ─────────────────────────────────────────────────────
 export function OffertInbox({
   requests,
+  tenantName,
   /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
   tenantId,
 }: {
   requests: OffertRequestRow[]
+  tenantName: string
   tenantId?: string
 }) {
   const [selected, setSelected] = useState<OffertRequestRow | null>(null)
 
-  if (requests.length === 0) {
-    return (
-      <TenantScope tenantId={tenantId}>
-      <Card>
-        <div style={{ textAlign: 'center', padding: '24px 8px', color: 'var(--c-ink-2)' }}>
-          <Icon name="message" size={32} style={{ color: 'var(--c-ink-3)', marginBottom: 10 }} />
-          <strong style={{ display: 'block', color: 'var(--c-ink)', marginBottom: 6 }}>
-            Inga förfrågningar än.
-          </strong>
-          De dyker upp här när kunder skickar in via din publika sida.
-        </div>
-      </Card>
-      </TenantScope>
-    )
-  }
-
   return (
     <TenantScope tenantId={tenantId}>
     <div>
+      <PageHead
+        eyebrow={tenantName}
+        title="Offerter"
+        lede="Kundens inkomna offertförfrågningar — status, anteckning, prisuppskattning och svar."
+      />
+
+      {requests.length === 0 ? (
+        <EmptyState
+          icon="message"
+          title="Inga förfrågningar än."
+          text="De dyker upp här när kunder skickar in via din publika sida."
+        />
+      ) : (
       <Card pad={0}>
-        <div style={{ overflowX: 'auto' }}>
           <Table
             cols={['Kund', 'Typ', 'Meddelande', 'Status', 'Datum', '']}
             rows={requests.map((r) => [
@@ -437,27 +393,15 @@ export function OffertInbox({
               </span>,
 
               /* Redigera */
-              <button
+              <RowEditButton
                 key="edit"
-                type="button"
                 onClick={() => setSelected(r)}
-                aria-label={`Öppna förfrågan från ${r.customer_name ?? 'okänd kund'}`}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--c-ink-3)',
-                  cursor: 'pointer',
-                  padding: 4,
-                  display: 'inline-grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Icon name="edit" size={17} />
-              </button>,
+                ariaLabel={`Öppna förfrågan från ${r.customer_name ?? 'okänd kund'}`}
+              />,
             ])}
           />
-        </div>
       </Card>
+      )}
 
       {selected && (
         <DetailDrawer

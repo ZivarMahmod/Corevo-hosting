@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { EventRow, RegistrationRow } from '@/lib/admin/events/types'
 import { EVENT_STATUSES, EVENT_STATUS_LABELS } from '@/lib/admin/events/types'
@@ -20,46 +20,17 @@ import {
   Callout,
   Card,
   Drawer,
-  Icon,
+  EmptyState,
+  Field,
   PageHead,
+  PillToggle,
+  RowEditButton,
   Table,
+  inputStyle,
+  statusTone,
+  textareaStyle,
   useToast,
 } from '@/components/portal/ui'
-
-// ── Shared input styles (mirrors BloggAdmin/ServicesManager) ─────────────────
-const inputStyle: CSSProperties = {
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid var(--c-line)',
-  background: 'var(--c-paper)',
-  color: 'var(--c-ink)',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  width: '100%',
-}
-
-const textareaStyle: CSSProperties = {
-  ...inputStyle,
-  resize: 'vertical',
-  minHeight: 80,
-}
-
-// ── Field wrapper (mirrors BloggAdmin) ────────────────────────────────────────
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span className="eyebrow">{label}</span>
-      {children}
-    </label>
-  )
-}
-
-// ── Status badge tone mapping ─────────────────────────────────────────────────
-function statusTone(status: string): 'success' | 'warning' | 'neutral' {
-  if (status === 'open') return 'success'
-  if (status === 'cancelled') return 'warning'
-  return 'neutral'
-}
 
 // ── Formatted date/time (sv-SE) ───────────────────────────────────────────────
 function fmtDateTime(iso: string): string {
@@ -120,15 +91,15 @@ export function KursAdmin({
 
       <Card pad={0} style={{ marginTop: 16 }}>
         {events.length === 0 ? (
-          <div style={{ padding: 22 }}>
-            <p className="eyebrow" style={{ marginBottom: 6 }}>
-              Inga tillfällen ännu
-            </p>
-            <p className="body" style={{ margin: 0, maxWidth: 460, color: 'var(--c-ink-2)' }}>
-              Skapa ditt första tillfälle med <strong>Nytt tillfälle</strong> — titel, datum och
-              tid, max antal platser och avgift.
-            </p>
-          </div>
+          <EmptyState
+            title="Inga tillfällen ännu"
+            text={
+              <>
+                Skapa ditt första tillfälle med <strong>Nytt tillfälle</strong> — titel, datum och
+                tid, max antal platser och avgift.
+              </>
+            }
+          />
         ) : (
           <Table
             cols={['Datum', 'Titel', 'Platser', 'Avgift', 'Status', '']}
@@ -148,23 +119,7 @@ export function KursAdmin({
               <Badge key="status" tone={statusTone(e.status)}>
                 {EVENT_STATUS_LABELS[e.status as keyof typeof EVENT_STATUS_LABELS] ?? e.status}
               </Badge>,
-              <button
-                key="edit"
-                type="button"
-                onClick={() => setEditing(e)}
-                aria-label={`Redigera ${e.title}`}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--c-ink-3)',
-                  cursor: 'pointer',
-                  padding: 4,
-                  display: 'inline-grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Icon name="edit" size={17} />
-              </button>,
+              <RowEditButton key="edit" onClick={() => setEditing(e)} ariaLabel={`Redigera ${e.title}`} />,
             ])}
           />
         )}
@@ -352,25 +307,14 @@ function RegistrationItem({ reg }: { reg: RegistrationRow }) {
         <TenantField />
         <input type="hidden" name="id" value={reg.id} />
         <input type="hidden" name="status" value={cancelled ? 'confirmed' : 'cancelled'} />
-        <button
+        <PillToggle
           type="submit"
+          active={!cancelled}
           disabled={pending}
-          aria-label={`${cancelled ? 'Återanmäl' : 'Avboka'}: ${reg.name}`}
-          style={{
-            border: '1px solid var(--c-line)',
-            background: 'var(--c-paper)',
-            borderRadius: 8,
-            padding: '4px 10px',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: pending ? 'default' : 'pointer',
-            color: cancelled ? 'var(--c-forest)' : 'var(--c-ink-2)',
-            opacity: pending ? 0.5 : 1,
-            whiteSpace: 'nowrap',
-          }}
+          ariaLabel={`${cancelled ? 'Återanmäl' : 'Avboka'}: ${reg.name}`}
         >
           {pending ? '…' : cancelled ? 'Återanmäl' : 'Avboka'}
-        </button>
+        </PillToggle>
       </form>
     </div>
   )
@@ -399,24 +343,9 @@ function StatusButton({ event, status }: { event: EventRow; status: (typeof EVEN
       <TenantField />
       <input type="hidden" name="id" value={event.id} />
       <input type="hidden" name="status" value={status} />
-      <button
-        type="submit"
-        disabled={pending || active}
-        style={{
-          border: '1px solid var(--c-line)',
-          background: active ? 'var(--c-paper-2)' : 'var(--c-paper)',
-          borderRadius: 8,
-          padding: '4px 10px',
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: pending || active ? 'default' : 'pointer',
-          color: active ? 'var(--c-ink)' : 'var(--c-ink-2)',
-          opacity: pending ? 0.5 : 1,
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <PillToggle type="submit" active={active} disabled={pending || active}>
         {pending ? '…' : EVENT_STATUS_LABELS[status]}
-      </button>
+      </PillToggle>
     </form>
   )
 }
@@ -481,15 +410,9 @@ function EditDrawer({
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>
-          <button
-            type="submit"
-            form={formId}
-            disabled={saving}
-            className="pbtn pbtn--primary pbtn--md"
-          >
-            <Icon name="check" size={17} />
+          <Button variant="primary" type="submit" form={formId} icon="check" disabled={saving}>
             {saving ? 'Sparar…' : 'Spara'}
-          </button>
+          </Button>
         </div>
       }
     >

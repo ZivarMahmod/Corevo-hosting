@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useActionState, useEffect, useState, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import type { BlogPostRow } from '@/lib/admin/blogg/types'
 import { BLOG_STATUSES, BLOG_STATUS_LABELS } from '@/lib/admin/blogg/types'
@@ -20,50 +20,23 @@ import {
   Callout,
   Card,
   Drawer,
+  EmptyState,
+  Field,
   Icon,
   PageHead,
+  PillToggle,
+  RowEditButton,
   Table,
+  inputStyle,
+  statusTone,
+  textareaStyle,
   useToast,
 } from '@/components/portal/ui'
 
-// ── Shared input styles (mirrors ServicesManager) ────────────────────────────
-const inputStyle: CSSProperties = {
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid var(--c-line)',
-  background: 'var(--c-paper)',
-  color: 'var(--c-ink)',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  width: '100%',
-}
-
-const textareaStyle: CSSProperties = {
-  ...inputStyle,
-  resize: 'vertical',
-  minHeight: 80,
-}
-
+// Blogg-unik variant av delade textareaStyle — brödtexten behöver mer höjd.
 const bodyStyle: CSSProperties = {
   ...textareaStyle,
   minHeight: 180,
-}
-
-// ── Field wrapper (mirrors ServicesManager) ───────────────────────────────────
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span className="eyebrow">{label}</span>
-      {children}
-    </label>
-  )
-}
-
-// ── Status badge tone mapping ─────────────────────────────────────────────────
-function statusTone(status: string): 'success' | 'warning' | 'neutral' {
-  if (status === 'published') return 'success'
-  if (status === 'archived') return 'neutral'
-  return 'warning'
 }
 
 // ── Formatted publish date ────────────────────────────────────────────────────
@@ -106,25 +79,14 @@ function StatusToggle({ post }: { post: BlogPostRow }) {
       <TenantField />
       <input type="hidden" name="id" value={post.id} />
       <input type="hidden" name="status" value={nextStatus} />
-      <button
+      <PillToggle
         type="submit"
+        active={isPublished}
         disabled={pending}
-        aria-label={`${label}: ${post.title}`}
-        style={{
-          border: '1px solid var(--c-line)',
-          background: 'var(--c-paper)',
-          borderRadius: 8,
-          padding: '4px 10px',
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: pending ? 'default' : 'pointer',
-          color: isPublished ? 'var(--c-ink-2)' : 'var(--c-forest)',
-          opacity: pending ? 0.5 : 1,
-          whiteSpace: 'nowrap',
-        }}
+        ariaLabel={`${label}: ${post.title}`}
       >
         {pending ? '…' : label}
-      </button>
+      </PillToggle>
     </form>
   )
 }
@@ -183,15 +145,15 @@ export function BloggAdmin({
 
       <Card pad={0} style={{ marginTop: 16 }}>
         {posts.length === 0 ? (
-          <div style={{ padding: 22 }}>
-            <p className="eyebrow" style={{ marginBottom: 6 }}>
-              Inga inlägg ännu
-            </p>
-            <p className="body" style={{ margin: 0, maxWidth: 460, color: 'var(--c-ink-2)' }}>
-              Skapa ditt första blogginlägg med <strong>Nytt inlägg</strong> — rubrik, ingress och
-              brödtext. Publicera direkt eller spara som utkast.
-            </p>
-          </div>
+          <EmptyState
+            title="Inga inlägg ännu"
+            text={
+              <>
+                Skapa ditt första blogginlägg med <strong>Nytt inlägg</strong> — rubrik, ingress
+                och brödtext. Publicera direkt eller spara som utkast.
+              </>
+            }
+          />
         ) : (
           <Table
             cols={['Rubrik', 'Status', 'Publicerad', 'Ordning', '', '']}
@@ -211,23 +173,7 @@ export function BloggAdmin({
                 {p.sort_order}
               </span>,
               <StatusToggle key="toggle" post={p} />,
-              <button
-                key="edit"
-                type="button"
-                onClick={() => setEditing(p)}
-                aria-label={`Redigera ${p.title}`}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--c-ink-3)',
-                  cursor: 'pointer',
-                  padding: 4,
-                  display: 'inline-grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Icon name="edit" size={17} />
-              </button>,
+              <RowEditButton key="edit" onClick={() => setEditing(p)} ariaLabel={`Redigera ${p.title}`} />,
             ])}
           />
         )}
@@ -417,15 +363,9 @@ function EditDrawer({
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>
-          <button
-            type="submit"
-            form={formId}
-            disabled={saving}
-            className="pbtn pbtn--primary pbtn--md"
-          >
-            <Icon name="check" size={17} />
+          <Button variant="primary" type="submit" form={formId} icon="check" disabled={saving}>
             {saving ? 'Sparar…' : 'Spara'}
-          </button>
+          </Button>
         </div>
       }
     >

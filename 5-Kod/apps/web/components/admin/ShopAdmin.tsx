@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ShopProductRow, ShopOrderRow } from '@/lib/admin/shop/types'
 import {
@@ -27,37 +27,17 @@ import {
   Card,
   Callout,
   Drawer,
-  Icon,
+  EmptyState,
+  Field,
   PageHead,
+  PillToggle,
+  RowEditButton,
   Table,
+  inputStyle,
+  selectStyle,
+  statusTone,
   useToast,
 } from '@/components/portal/ui'
-
-// ── Shared input style (mirrors ServicesManager) ────────────────────────────
-const inputStyle: CSSProperties = {
-  padding: '9px 12px',
-  borderRadius: 10,
-  border: '1px solid var(--c-line)',
-  background: 'var(--c-paper)',
-  color: 'var(--c-ink)',
-  fontFamily: 'var(--font-ui)',
-  fontSize: 14,
-  width: '100%',
-}
-
-const selectStyle: CSSProperties = {
-  ...inputStyle,
-  cursor: 'pointer',
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span className="eyebrow">{label}</span>
-      {children}
-    </label>
-  )
-}
 
 // ── Fulfilment display label ────────────────────────────────────────────────
 const FULFILMENT_LABELS: Record<string, string> = {
@@ -111,15 +91,15 @@ export function ShopAdmin({
         </h2>
         <Card pad={0}>
           {products.length === 0 ? (
-            <div style={{ padding: 22 }}>
-              <p className="eyebrow" style={{ marginBottom: 6 }}>
-                Inga produkter ännu
-              </p>
-              <p className="body" style={{ margin: 0, maxWidth: 460, color: 'var(--c-ink-2)' }}>
-                Lägg till din första produkt med{' '}
-                <strong>Ny produkt</strong> — namn, pris och lagerstatus.
-              </p>
-            </div>
+            <EmptyState
+              title="Inga produkter ännu"
+              text={
+                <>
+                  Lägg till din första produkt med <strong>Ny produkt</strong> — namn, pris och
+                  lagerstatus.
+                </>
+              }
+            />
           ) : (
             <Table
               cols={['Produkt', 'Pris', 'Lager', 'Status', '']}
@@ -134,23 +114,11 @@ export function ShopAdmin({
                 </span>,
                 <StockCell key="lager" product={p} />,
                 <ActiveToggle key="status" product={p} />,
-                <button
+                <RowEditButton
                   key="edit"
-                  type="button"
                   onClick={() => setEditing(p)}
-                  aria-label={`Redigera ${p.name}`}
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--c-ink-3)',
-                    cursor: 'pointer',
-                    padding: 4,
-                    display: 'inline-grid',
-                    placeItems: 'center',
-                  }}
-                >
-                  <Icon name="edit" size={17} />
-                </button>,
+                  ariaLabel={`Redigera ${p.name}`}
+                />,
               ])}
             />
           )}
@@ -287,6 +255,7 @@ function StockCell({ product }: { product: ShopProductRow }) {
     return <span style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>Obegränsat</span>
   }
   if (product.stock === 0) {
+    // Specialfall: 'Slut' är lager-logik (inte en status-sträng) — statusTone gäller ej här.
     return <Badge tone="warning">Slut</Badge>
   }
   return (
@@ -323,38 +292,16 @@ function ActiveToggle({ product }: { product: ShopProductRow }) {
         <TenantField />
         <input type="hidden" name="id" value={product.id} />
         <input type="hidden" name="active" value={String(!product.active)} />
-        <button
+        <PillToggle
           type="submit"
+          active={product.active}
           disabled={pending}
-          aria-label={product.active ? `Dölj ${product.name}` : `Visa ${product.name}`}
-          aria-pressed={product.active}
-          style={{
-            width: 42,
-            height: 24,
-            borderRadius: 999,
-            border: 'none',
-            cursor: pending ? 'default' : 'pointer',
-            background: product.active ? 'var(--c-forest)' : 'var(--c-line-strong)',
-            position: 'relative',
-            flex: 'none',
-            opacity: pending ? 0.6 : 1,
-            transition: 'background var(--dur-fast)',
-          }}
+          ariaLabel={product.active ? `Dölj ${product.name}` : `Visa ${product.name}`}
         >
-          <span
-            style={{
-              position: 'absolute',
-              top: 3,
-              left: product.active ? 21 : 3,
-              width: 18,
-              height: 18,
-              borderRadius: 999,
-              background: '#fff',
-              transition: 'left var(--dur-fast)',
-            }}
-          />
-        </button>
+          {product.active ? 'Dölj' : 'Visa'}
+        </PillToggle>
       </form>
+      {/* Boolean aktiv-flagga (ingen status-sträng) — statusTone gäller ej här. */}
       <Badge tone={product.active ? 'success' : 'neutral'}>
         {product.active ? 'Aktiv' : 'Av'}
       </Badge>
@@ -367,16 +314,11 @@ function ActiveToggle({ product }: { product: ShopProductRow }) {
 function OrdersSection({ orders, onOpen }: { orders: ShopOrderRow[]; onOpen: (o: ShopOrderRow) => void }) {
   if (orders.length === 0) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '24px 0' }}>
-          <p className="eyebrow" style={{ marginBottom: 6 }}>
-            Inga ordrar ännu
-          </p>
-          <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: 0 }}>
-            När kunder beställer från din webshop visas ordarna här. Du kan följa status
-            och uppdatera varje order från den här vyn.
-          </p>
-        </div>
+      <Card pad={0}>
+        <EmptyState
+          title="Inga ordrar ännu"
+          text="När kunder beställer från din webshop visas ordarna här. Du kan följa status och uppdatera varje order från den här vyn."
+        />
       </Card>
     )
   }
@@ -397,23 +339,12 @@ function OrdersSection({ orders, onOpen }: { orders: ShopOrderRow[]; onOpen: (o:
           <span key="datum" style={{ fontSize: 12, color: 'var(--c-ink-3)', whiteSpace: 'nowrap' }}>
             {new Date(o.created_at).toLocaleDateString('sv-SE')}
           </span>,
-          <button
+          <RowEditButton
             key="visa"
-            type="button"
+            icon="chevronRight"
             onClick={() => onOpen(o)}
-            aria-label={`Visa order ${o.id}`}
-            style={{
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--c-ink-3)',
-              cursor: 'pointer',
-              padding: 4,
-              display: 'inline-grid',
-              placeItems: 'center',
-            }}
-          >
-            <Icon name="chevronRight" size={17} />
-          </button>,
+            ariaLabel={`Visa order ${o.id}`}
+          />,
         ])}
       />
     </Card>
@@ -452,7 +383,7 @@ function OrderDetailDrawer({ order, onClose }: { order: ShopOrderRow; onClose: (
     <Drawer
       title={`Order #${order.id.slice(0, 8)}`}
       sub={`${FULFILMENT_LABELS[order.fulfilment] ?? order.fulfilment} · ${new Date(order.created_at).toLocaleString('sv-SE')}`}
-      accent={<Badge tone={order.payment_status === 'paid' ? 'success' : 'neutral'}>{order.payment_status}</Badge>}
+      accent={<Badge tone={statusTone(order.payment_status)}>{order.payment_status}</Badge>}
       onClose={onClose}
       ariaLabel={`Order ${order.id}`}
     >
@@ -772,15 +703,9 @@ function EditDrawer({
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>
-          <button
-            type="submit"
-            form={formId}
-            disabled={saving}
-            className="pbtn pbtn--primary pbtn--md"
-          >
-            <Icon name="check" size={17} />
+          <Button variant="primary" type="submit" form={formId} icon="check" disabled={saving}>
             {saving ? 'Sparar…' : 'Spara'}
-          </button>
+          </Button>
         </div>
       }
     >

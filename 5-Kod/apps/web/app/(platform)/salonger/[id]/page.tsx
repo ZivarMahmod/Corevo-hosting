@@ -493,7 +493,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <p className={styles.noteText}>
             Kundens inkomna offertförfrågningar — status, anteckning och prisuppskattning.
           </p>
-          <OffertInbox tenantId={tenant.id} requests={offertRequests} />
+          <OffertInbox tenantId={tenant.id} tenantName={tenant.name} requests={offertRequests} />
         </div>
       ),
     }),

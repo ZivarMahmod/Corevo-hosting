@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
+import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
 import { listOffertRequests } from '@/lib/admin/offert/data'
 import { OffertInbox } from '@/components/admin/OffertInbox'
 import { PageHead, Callout } from '@/components/portal/ui'
@@ -35,19 +35,10 @@ export default async function OfferterPage() {
   }
 
   const requests = await listOffertRequests(tenant.id)
-  const config = moduleAdminConfig(states, 'offert')
-  const variant = typeof config.variant === 'string' ? config.variant : null
 
   return (
     <section className="portal-section">
-      <PageHead eyebrow={tenant.name} title="Offertförfrågningar">
-        {variant && (
-          <span className="eyebrow" style={{ color: 'var(--c-ink-3)', fontWeight: 500 }}>
-            Variant: {variant}
-          </span>
-        )}
-      </PageHead>
-      <OffertInbox requests={requests} />
+      <OffertInbox requests={requests} tenantName={tenant.name} />
     </section>
   )
 }
