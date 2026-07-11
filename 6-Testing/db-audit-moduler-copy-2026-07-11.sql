@@ -70,7 +70,7 @@ where k.k <> all (w.keys)
 union all
 -- 8. gamla "Kurs:"-tjänster (skulle vara avaktiverade — kurser är egen modul nu)
 select '8. Kurs:-prefixade tjänster',
-       coalesce(string_agg(t.slug || ': ' || s.name || ' (' || case when s.is_active then 'AKTIV!' else 'inaktiv' end || ')', ', '), 'OK — inga')
+       coalesce(string_agg(t.slug || ': ' || s.name || ' (' || case when s.active then 'AKTIV!' else 'inaktiv' end || ')', ', '), 'OK — inga')
 from public.services s join public.tenants t on t.id = s.tenant_id
 where s.name like 'Kurs:%'
 
