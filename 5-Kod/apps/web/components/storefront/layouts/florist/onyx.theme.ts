@@ -63,6 +63,8 @@ export const onyx: FloristTheme = {
     body: 'var(--font-jost), system-ui, sans-serif',
   },
   radius: '0px',
+  // Sidhuvudet är TVÅ våningar (krön + rad) → toppklustret måste reservera mer.
+  navHeight: { desktop: '184px', mobile: '132px' },
   content: {
     heroEyebrow: '— Blomsterhandel & bud',
     heroTitle: 'Blommor med\nkaraktär.',

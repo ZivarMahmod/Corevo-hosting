@@ -169,6 +169,12 @@ export type FloristTheme = {
   fonts: FloristFonts
   /** --sf-radius (t.ex. '0px' för skarpa hörn, '18px' för mjuka kort). */
   radius: string
+  /** --nav-h: höjden det fixerade toppklustret reserverar. Sätt BARA när mallens
+   *  sidhuvud är högre än plattformens default (t.ex. Onyx krön + rad = två våningar).
+   *  Bor här och INTE i mallens CSS: .shellMain/.tenant-main är globala klasser, och en
+   *  ren :global()-regel i en CSS Module är inte "pure" → webpack-fel i produktionsbygget.
+   *  [mobil, desktop] — mobilvärdet läggs i en max-width:720px-media. */
+  navHeight?: { desktop: string; mobile: string }
   /** Mallens evergreen-copy + fotostandard. ThemeContentDefaults = THEME_CONTENTs
    *  bas-kontrakt + de valfria sektions-texterna (shopEyebrow/blogTitle/giftLede …)
    *  som mallen får ge egna standardvärden för; ägarens settings.copy vinner ändå. */
@@ -191,5 +197,9 @@ export type FloristTheme = {
  * och onboarding-studions preview.
  */
 export function floristThemeBlock(t: FloristTheme): string {
-  return `[data-world="storefront"][data-theme="${t.key}"]{--color-primary:${t.palette.primary};--color-primary-d:${t.palette.primaryD};--color-bg:${t.palette.bg};--color-surface:${t.palette.surface};--color-fg:${t.palette.fg};--color-fg-2:${t.palette.fg2};--color-line:${t.palette.line};--color-accent-soft:${t.palette.accentSoft};--font-display:${t.fonts.display};--font-body:${t.fonts.body};--sf-radius:${t.radius};}`
+  const nav = t.navHeight
+    ? `[data-world="storefront"][data-theme="${t.key}"]{--nav-h:${t.navHeight.desktop};}` +
+      `@media(max-width:720px){[data-world="storefront"][data-theme="${t.key}"]{--nav-h:${t.navHeight.mobile};}}`
+    : ''
+  return nav + `[data-world="storefront"][data-theme="${t.key}"]{--color-primary:${t.palette.primary};--color-primary-d:${t.palette.primaryD};--color-bg:${t.palette.bg};--color-surface:${t.palette.surface};--color-fg:${t.palette.fg};--color-fg-2:${t.palette.fg2};--color-line:${t.palette.line};--color-accent-soft:${t.palette.accentSoft};--font-display:${t.fonts.display};--font-body:${t.fonts.body};--sf-radius:${t.radius};}`
 }

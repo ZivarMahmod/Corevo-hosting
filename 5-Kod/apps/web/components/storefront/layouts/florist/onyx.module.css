@@ -75,18 +75,9 @@
   --onx-ratio: 4 / 5;
 }
 
-/* Naven är TVÅ VÅNINGAR hög (krön + rad) — det fixerade toppklustret måste därför
-   reservera mer än plattformens default. --nav-h läses av .shellMain (padding-top)
-   och av hemmets hero (negativ marginal). Vi sätter den på <main> (global klass
-   .tenant-main), scopad till [data-theme='onyx'] så ingen annan mall rörs. */
-:global([data-theme='onyx'] .tenant-main) {
-  --nav-h: 184px;
-}
-@media (max-width: 720px) {
-  :global([data-theme='onyx'] .tenant-main) {
-    --nav-h: 132px;
-  }
-}
+/* Nav-höjden (--nav-h, två våningar) deklareras i onyx.theme.ts navHeight och
+   emitteras i temats [data-theme]-block — .tenant-main är en GLOBAL klass, och en ren
+   :global()-regel i en CSS Module är inte "pure" (webpack-fel i produktionsbygget). */
 
 /* ═══════════════════════ SIDHUVUD — KRÖN + RAD ═══════════════════════
    Dubblad klass (.onxNav.onxNav = 0-2-0) för att skriva om NavShells .navThemed
