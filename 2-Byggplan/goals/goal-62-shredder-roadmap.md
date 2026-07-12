@@ -15,6 +15,18 @@
 5. Kontext hålls ren: en körning gör sitt, avslutar, nästa körning börjar från roadmapen.
 6. Efter varje avbockad punkt: uppdatera denna fil i samma commit.
 
+## PRINCIP: modulen beter sig per BRANSCH (Zivar 2026-07-12)
+Samma modul, två branscher, två olika uppgifter/uttryck. Boka-modulen är "boka tid" hos
+frisören men "beställ"/"skicka förfrågan"/"ansök" hos floristen/annan bransch — verb, flöde
+och fält styrs av branschen (bransch-lagret `bransch-copy.ts` är rätt hem för verben; flödes-
+varianter deklareras per bransch, inte hårdkodas per modul). Varje körning som rör en modul-yta
+frågar först: "vad heter/gör detta i DENNA bransch?" — aldrig salongs-defaulten rakt av.
+Inloggen: `5-Kod/docs/ops/INLOGGNINGAR.md` (LOKAL, gitignorad — Zivar fyller i superkontot).
+
+## RAPPORT-FORMAT (Zivar 2026-07-12): inga paragrafer.
+Efter varje körning: "A1 klar ✅ — kör A2." + bock i denna fil. Billigaste vägen alltid.
+Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga läsningar.
+
 ## Referenser (läses av körningen som behöver dem, inte alla)
 - Zivars skärmdumpar: `4-Dokument-Underlag/skarmdumpar-bygg/` (rot + `goal-60-referenser/` +
   `goal-60-mall-granskning/`) — webshop-delar, kundvagnar, hur produktkort SKA se ut.
