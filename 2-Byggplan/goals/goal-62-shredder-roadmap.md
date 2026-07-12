@@ -319,8 +319,14 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 > En elementtyp åt gången, över alla ställen med samma syfte. Anatomi ur biblioteket,
 > uttryck ur mallens tokens.
 
-- [ ] **F1. Sociala knappar** (Instagram/Facebook/TikTok): idag textlänkar/enkla ikoner i
-      footer — ge dem uiverse-anatomi (ikon-knappar med hover-liv), per mall-uttryck.
+- [x] **F1. Sociala knappar** ✅ De MÄTTE som ren text: "Instagram", 79×44, radie 0, ingen ram,
+      **ingen ikon**. `components/storefront/SocialButtons.tsx` — ikon-knapp (SVG-paths, inga
+      fjärr-assets → CSP), 44×44 träffyta, hover som lyfter och fyller, fokusring, `aria-label`
+      bär betydelsen (ikonen är `aria-hidden`). Anatomin är uiverse-mönstret; **värdena kommer ur
+      mallens tokens** — aldrig deras hexar, ingen `transition: all`, ingen hover-only affordance.
+      `--sf-social-radius` faller tillbaka på mallens ikon-radie: wildthistle 0px, onyx 999px,
+      mina 0 (pillen är struken ur hela den mallen). Inkopplad i alla tio mallar som visar socials.
+      **Mätt efter:** 44×44, riktig SVG, radie följer mallen.
 - [ ] **F2. Formulär-stilarna**: kontaktformulär + offertformulär — input-anatomi
       (label-float eller tydlig label, fokus-liv, validerings-uttryck). Storefront-sidan.
 - [ ] **F3. Checkboxar/radios**: storefront-formulärens kryssrutor (samtycke, val) —
