@@ -56,7 +56,7 @@ export function BookingProvider({
   services,
   locations = [],
   tenantName,
-  staffNoun = 'Frisör',
+  staffNoun = 'Personal',
   variant = 'wizard',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',

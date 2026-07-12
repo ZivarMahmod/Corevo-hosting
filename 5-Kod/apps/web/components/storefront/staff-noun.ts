@@ -16,9 +16,9 @@ import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { cleanTerminology, resolveTerm } from '@/lib/platform/verticals-shared'
 
-/** Current hardcoded customer-facing staff word. DIFF-0: a tenant with no bransch
- *  override resolves EXACTLY this, so no-override tenants render byte-identically. */
-export const DEFAULT_STAFF_NOUN = 'Frisör'
+/** Neutral customer-facing staff word for tenants WITHOUT a bransch override.
+ *  Branschens terminologi vinner alltid (resolveTerm) — detta är bara fallbacken. */
+export const DEFAULT_STAFF_NOUN = 'Personal'
 
 /**
  * Resolve the singular staff noun for a tenant's bransch. `verticalId` is the

@@ -61,7 +61,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
       ) : isActive ? (
         <p className={styles.notice}>
           Den här tiden kan inte längre ändras online (avbokning måste ske minst {cutoff} timmar i
-          förväg). Kontakta salongen för att ändra eller avboka.
+          förväg). Hör av dig direkt för att ändra eller avboka.
         </p>
       ) : (
         <p className={styles.notice}>Den här bokningen är avslutad.</p>

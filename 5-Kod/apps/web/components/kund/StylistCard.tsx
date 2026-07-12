@@ -44,9 +44,9 @@ export function StylistCard({
   // Resolve the bransch nouns ONCE per render, per exact-case literal. Nominative
   // forms only — inflected/compound forms ('frisören', 'favoritfrisör') are left
   // hardcoded (resolveTerm/termPlural never inflect Swedish).
-  const staffLc = resolveTerm(terminology, 'staff', 'frisör') // base, lowercase nominative
-  const staffUc = resolveTerm(terminology, 'staff', 'Frisör') // base, capitalized
-  const staffPlUc = termPlural(terminology, 'staff', 'Frisörer') // plural, capitalized
+  const staffLc = resolveTerm(terminology, 'staff', 'personal') // base, lowercase nominative
+  const staffUc = resolveTerm(terminology, 'staff', 'Personal') // base, capitalized
+  const staffPlUc = termPlural(terminology, 'staff', 'Personal') // plural, capitalized
   if (favorite) {
     const name = favorite.title?.trim() || `Din ${staffLc}`
     const initial = name.charAt(0).toUpperCase()
@@ -55,7 +55,7 @@ export function StylistCard({
       ? band.visits === 1
         ? `Din sparade ${staffLc} · ni har setts 1 gång`
         : `Din sparade ${staffLc} · ni har setts ${band.visits} gånger`
-      : `Din sparade ${staffLc} hos salongen.`
+      : `Din sparade ${staffLc}.`
     return (
       <section className={styles.card}>
         <div className={styles.stylistHead}>

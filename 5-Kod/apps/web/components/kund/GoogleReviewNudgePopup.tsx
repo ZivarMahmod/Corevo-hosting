@@ -85,7 +85,7 @@ export function GoogleReviewNudgePopup({
         </h2>
         <p className={styles.body}>
           Om du blev nöjd skulle vi bli jätteglada om du lämnade ett omdöme på Google. Det tar bara
-          en minut och hjälper salongen enormt.
+          en minut och hjälper {tenantName} enormt.
         </p>
         <a
           href={reviewUrl}

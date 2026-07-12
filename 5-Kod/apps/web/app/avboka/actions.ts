@@ -51,7 +51,7 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
   // 4. Re-check the cancellation window (the page may have been open a while).
   const cutoff = await getCancellationCutoffHours(admin, b.tenant_id)
   if (!withinCancellationWindow(b.start_ts, cutoff)) {
-    return { ok: false, reason: 'too_late', message: 'Det är för sent att avboka online — kontakta salongen.' }
+    return { ok: false, reason: 'too_late', message: 'Det är för sent att avboka online — hör av dig direkt.' }
   }
 
   // Set status='cancelled' (service-role). Guard on status so a concurrent cancel
@@ -80,7 +80,7 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
   // toggles: cancellation confirmations are transactional/legal and are never
   // suppressed (see lib/notifications/settings.ts header). SMS stays opt-in.
   try {
-    const tenantName = (b.tenants as { name?: string } | null)?.name ?? 'Salongen'
+    const tenantName = (b.tenants as { name?: string } | null)?.name ?? 'Verksamheten'
     const serviceName = (b.services as { name?: string } | null)?.name ?? 'Behandling'
     const timeZone = (b.locations as { timezone?: string } | null)?.timezone ?? 'Europe/Stockholm'
 

@@ -37,7 +37,7 @@ export function FavoriteStaffButton({
         type="submit"
         className={styles.favAdd}
         disabled={pending}
-        aria-label={`Spara ${staffTitle ?? 'frisören'} som favorit`}
+        aria-label={`Spara ${staffTitle ?? 'personalen'} som favorit`}
       >
         {pending ? 'Sparar…' : '☆ Spara'}
       </button>

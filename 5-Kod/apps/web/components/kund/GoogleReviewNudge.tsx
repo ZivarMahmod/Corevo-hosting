@@ -59,7 +59,7 @@ export async function GoogleReviewNudge({
   return (
     <GoogleReviewNudgePopup
       reviewUrl={reviewUrl}
-      tenantName={tenantName ?? 'salongen'}
+      tenantName={tenantName ?? 'oss'}
       bookingId={bookingId}
     />
   )

@@ -78,7 +78,7 @@ export function AuroraLayout({ tenant, content, services, location, modules }: S
       <section className={styles.auStatement}>
         <Reveal>
           <p className={styles.auStatementText}>{content.tagline}</p>
-          <BookCta className={`${styles.auBtn} ${styles.auStatementCta}`} label="Boka tid" />
+          <BookCta className={`${styles.auBtn} ${styles.auStatementCta}`} />
         </Reveal>
       </section>
 

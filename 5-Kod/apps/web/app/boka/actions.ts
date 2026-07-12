@@ -104,7 +104,7 @@ export async function getAvailableSlots(
   locationId?: string | null,
 ): Promise<SlotsResult> {
   const ctx = await getTenantContext()
-  if (!ctx) return { ok: false, error: 'Okänd salong.' }
+  if (!ctx) return { ok: false, error: 'Något gick fel — ladda om sidan och försök igen.' }
   const supabase = createPublicClient()
 
   // Default-scope: explicit val → annars tenantens primära plats. Saknas båda
@@ -285,7 +285,7 @@ export async function getAvailableSlots(
 /** Create a booking from the public flow. Leans on the EXCLUDE constraint. */
 export async function createBooking(input: CreateBookingInput): Promise<CreateResult> {
   const ctx = await getTenantContext()
-  if (!ctx) return { ok: false, reason: 'invalid', message: 'Okänd salong.' }
+  if (!ctx) return { ok: false, reason: 'invalid', message: 'Något gick fel — ladda om sidan och försök igen.' }
 
   // Rate-limit booking writes per IP+tenant (G10) — guards the public, unauthed
   // create path against spam. Fails open on DB error.
@@ -410,7 +410,7 @@ export type CheckoutResult =
  */
 export async function startBookingCheckout(bookingId: string): Promise<CheckoutResult> {
   const ctx = await getTenantContext()
-  if (!ctx) return { ok: false, reason: 'error', message: 'Okänd salong.' }
+  if (!ctx) return { ok: false, reason: 'error', message: 'Något gick fel — ladda om sidan och försök igen.' }
   if (!bookingId) return { ok: false, reason: 'error', message: 'Saknar bokning.' }
 
   const stripe = getStripe()

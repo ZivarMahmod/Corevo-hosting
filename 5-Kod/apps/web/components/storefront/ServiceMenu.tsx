@@ -31,8 +31,7 @@ export function ServiceMenu({
       <div className={styles.menuEmpty}>
         <p className={styles.menuEmptyTitle}>Tjänster läggs upp inom kort</p>
         <p className={styles.menuEmptyText}>
-          Salongen håller på att lägga upp sina behandlingar. Du är ändå varmt välkommen att
-          höra av dig.
+          Tjänsterna läggs upp inom kort — titta in igen snart.
         </p>
         <div className={styles.menuEmptyCta}>
           <BookCta />

@@ -37,7 +37,7 @@ export function BookingDrawer({
   services,
   locations = [],
   tenantName,
-  staffNoun = 'Frisör',
+  staffNoun = 'Personal',
   mode = 'wizard',
   presentation = 'drawer',
   pickerMode = 'calendar',

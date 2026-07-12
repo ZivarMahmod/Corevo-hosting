@@ -175,7 +175,7 @@ export default async function ConfirmationPage({
       ) : refunded ? (
         <p className="tkt-note">Betalningen är återbetald.</p>
       ) : checkoutCancelled ? (
-        <p className="tkt-note">Betalningen avbröts. Du kan betala i salongen vid besöket.</p>
+        <p className="tkt-note">Betalningen avbröts. Du kan betala på plats vid besöket.</p>
       ) : canTakeOnline ? (
         <p className="tkt-note">Betalningen behandlas — du får en bekräftelse strax.</p>
       ) : (

@@ -105,7 +105,7 @@ export function BookingWizard({
   open,
   onClose,
   mode = 'wizard',
-  staffNoun = 'Frisör',
+  staffNoun = 'Personal',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
   brandName,
@@ -127,11 +127,11 @@ export function BookingWizard({
   /** Variant 3 wizard (default) or Variant 4 kompakt snabbboka. */
   mode?: BookingMode
   /** Customer-facing staff noun (singular), bransch-resolved on the SERVER mount
-   *  and passed down as a plain string. OPTIONAL — defaults to 'Frisör' so the
-   *  un-edited sajtbyggare mount (and any caller that doesn't pass it) renders
-   *  EXACTLY today's text. Tenants with a bransch override read e.g. 'Barberare',
-   *  'Nagelteknolog', 'Stylist'. Resolve via resolveTerm(terminology,'staff',
-   *  'Frisör') — NEVER pass the raw terminology object to this client component. */
+   *  and passed down as a plain string. OPTIONAL — defaults to neutral 'Personal'
+   *  for mounts/tenants without bransch. Tenants with a bransch override read e.g.
+   *  'Barberare', 'Nagelteknolog', 'Stylist'. Resolve via resolveTerm(terminology,
+   *  'staff', DEFAULT_STAFF_NOUN) — NEVER pass the raw terminology object to this
+   *  client component. */
   staffNoun?: string
   /** Tid-väljaren (settings.booking.pickerMode): månadskalender eller dag-remsa. */
   pickerMode?: PickerMode
@@ -592,8 +592,7 @@ export function BookingWizard({
               </div>
               <p className={styles.emptyTitle}>Inga tjänster att boka just nu</p>
               <p className={styles.emptyText}>
-                Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare
-                eller kontakta salongen direkt.
+                Inga bokningsbara tjänster ännu — hör av dig{brandName ? ` till ${brandName}` : ''} direkt.
               </p>
             </div>
           ) : (
@@ -799,7 +798,7 @@ export function BookingWizard({
         </div>
         <div className="wizard-stepbody">
           <p className="wizard-muted" style={{ marginTop: 0 }}>
-            Välj salong — vi visar lediga tider för just den platsen.
+            Välj plats — vi visar lediga tider för just den platsen.
           </p>
           <ul className="wizard-list">
             {locations.map((l) => (
@@ -891,8 +890,7 @@ export function BookingWizard({
               </div>
               <p className={styles.emptyTitle}>Inga tjänster att boka just nu</p>
               <p className={styles.emptyText}>
-                Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare
-                eller kontakta salongen direkt.
+                Inga bokningsbara tjänster ännu — hör av dig{brandName ? ` till ${brandName}` : ''} direkt.
               </p>
             </div>
           ) : (

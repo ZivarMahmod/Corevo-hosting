@@ -53,7 +53,7 @@ function UpcomingCard({ b }: { b: KundBooking }) {
         <div className={styles.bookingMain}>
           <div className={styles.bookingService}>{b.serviceName ?? 'Tjänst'}</div>
           <div className={styles.bookingMeta}>
-            {b.staffTitle ? `hos ${b.staffTitle}` : 'hos salongen'}
+            {b.staffTitle ? `hos ${b.staffTitle}` : 'på plats'}
           </div>
         </div>
         <span className={`${styles.pill} ${styles.pillUpcoming}`}>{statusText}</span>

@@ -71,12 +71,12 @@ export function AccountPrivacy({
         <h2 className={styles.privacyTitle}>Integritet</h2>
       </div>
       <p className={styles.privacyLede}>
-        Du bestämmer hur du syns för salongen. Ditt lojalitetsband finns kvar oavsett — det bygger på
+        Du bestämmer hur du syns för verksamheten. Ditt lojalitetsband finns kvar oavsett — det bygger på
         dig, inte på dina kontaktuppgifter.
       </p>
 
-      <div className={styles.fieldLabel}>Så här ser frisören mitt namn</div>
-      <div className={styles.seg} role="group" aria-label="Visningsnamn (hanteras av salongen)">
+      <div className={styles.fieldLabel}>Så här ser personalen mitt namn</div>
+      <div className={styles.seg} role="group" aria-label="Visningsnamn (hanteras av verksamheten)">
         {SEG.map((o) => {
           const active = o.value === nameMode
           return (
@@ -91,14 +91,14 @@ export function AccountPrivacy({
         })}
       </div>
       <p className={styles.segHint}>
-        Visas i salongens system som <b>{shown}</b>
+        Visas i verksamhetens system som <b>{shown}</b>
       </p>
 
       {/* Honest FLAG (per-path, no non-existent paths): name-DISPLAY mode has no
           customer-callable save action in the consume-only lib — only the salon
           can change it. */}
       <p className={styles.flag}>
-        Hur ditt namn visas hanteras av salongen — hör av dig om du vill ändra det. Ditt namn och
+        Hur ditt namn visas hanteras av verksamheten — hör av dig om du vill ändra det. Ditt namn och
         telefonnummer kan du själv uppdatera under{' '}
         <Link href="/konto/profil" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
           Min profil

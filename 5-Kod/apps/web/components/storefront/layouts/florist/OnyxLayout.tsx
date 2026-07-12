@@ -80,7 +80,7 @@ export function OnyxLayout({ tenant, content, services, location, modules }: Sto
               Beställ blommor
             </Link>
           ) : (
-            <BookCta className={styles.onxBtnInk} label="Boka tid" />
+            <BookCta className={styles.onxBtnInk} />
           )}
         </Reveal>
       </div>

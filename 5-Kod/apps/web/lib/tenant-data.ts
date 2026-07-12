@@ -407,11 +407,30 @@ export async function currentTenant(): Promise<TenantBundle | null> {
   // Prefer the slug the middleware already resolved (covers subdomain, ?tenant=
   // and /t/<slug> uniformly — the latter two are the workers.dev preview path).
   const headerSlug = h.get('x-corevo-tenant-slug')
-  if (headerSlug) return getTenantBySlug(headerSlug)
+  if (headerSlug) return applyDevThemeOverride(await getTenantBySlug(headerSlug))
   // Fallback: direct host parse (e.g. if middleware did not run for this path).
   const res = getTenantFromHost(h.get('host'))
   if (res.kind !== 'tenant') return null
-  return getTenantBySlug(res.slug)
+  return applyDevThemeOverride(await getTenantBySlug(res.slug))
+}
+
+/**
+ * DEV-ONLY mall-växel (goal-61): cookien `corevo-dev-theme` låter localhost rendera
+ * VILKEN mall som helst med riktig tenant-data på ALLA sidor (hem, /shop, /kassa …) —
+ * utan DB-skrivning, utan super-admin-inlogg. Det är verify-maskinen för 13-mallars-
+ * svepen: sätt cookien i Playwright, öppna sidan, mät.
+ *
+ * Prod-yta: NOLL. `process.env.NODE_ENV` är compile-time — i en prod-build är hela
+ * grenen död kod. Okänt tema ignoreras (styr inte till default — en felskriven cookie
+ * ska inte kunna ändra något alls). Nytt objekt returneras, aldrig mutation:
+ * getTenantBySlug är cachad och dess objekt delas inom requesten.
+ */
+async function applyDevThemeOverride(bundle: TenantBundle | null): Promise<TenantBundle | null> {
+  if (process.env.NODE_ENV !== 'development' || !bundle) return bundle
+  const { cookies } = await import('next/headers')
+  const devTheme = (await cookies()).get('corevo-dev-theme')?.value
+  if (!devTheme || !(STOREFRONT_THEMES as readonly string[]).includes(devTheme)) return bundle
+  return { ...bundle, settings: { ...bundle.settings, theme: devTheme as StorefrontTheme } }
 }
 
 /**

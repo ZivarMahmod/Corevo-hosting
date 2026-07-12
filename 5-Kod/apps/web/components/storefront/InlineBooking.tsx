@@ -14,7 +14,7 @@ export function InlineBooking({
   services,
   locations = [],
   tenantName,
-  staffNoun = 'Frisör',
+  staffNoun = 'Personal',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
 }: {

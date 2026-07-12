@@ -49,8 +49,8 @@ export function FavoritesList({
    *  today's exact text (DIFF-0). Passed by the /konto mount which has tenant ctx. */
   terminology?: Terminology
 }) {
-  const staffLc = resolveTerm(terminology, 'staff', 'frisör') // lowercase nominative
-  const staffUc = resolveTerm(terminology, 'staff', 'Frisör') // capitalized nominative
+  const staffLc = resolveTerm(terminology, 'staff', 'personal') // lowercase nominative
+  const staffUc = resolveTerm(terminology, 'staff', 'Personal') // capitalized nominative
   if (favorites.length === 0) {
     return (
       <div className={styles.empty}>

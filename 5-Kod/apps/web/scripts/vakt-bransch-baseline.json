@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-12T03:13:56.910Z",
+  "generated": "2026-07-12T03:50:40.367Z",
   "note": "Kända historiska bransch-ord-träffar (städlista). Nya träffar utöver dessa failar vakten. Städa en träff = fixa koden och ta bort raden här. Regenerera = radera filen och kör om.",
   "entries": [
     {
@@ -13,36 +13,6 @@
       "line": 14,
       "word": "Salongsadmin",
       "text": "<PortalShell user={user} title=\"Salongsadmin\" world=\"backoffice\" portal=\"admin\">"
-    },
-    {
-      "file": "app/avboka/actions.ts",
-      "line": 54,
-      "word": "salongen",
-      "text": "return { ok: false, reason: 'too_late', message: 'Det är för sent att avboka online — kontakta salongen.' }"
-    },
-    {
-      "file": "app/avboka/actions.ts",
-      "line": 83,
-      "word": "Salongen",
-      "text": "const tenantName = (b.tenants as { name?: string } | null)?.name ?? 'Salongen'"
-    },
-    {
-      "file": "app/boka/actions.ts",
-      "line": 107,
-      "word": "salong",
-      "text": "if (!ctx) return { ok: false, error: 'Okänd salong.' }"
-    },
-    {
-      "file": "app/boka/actions.ts",
-      "line": 288,
-      "word": "salong",
-      "text": "if (!ctx) return { ok: false, reason: 'invalid', message: 'Okänd salong.' }"
-    },
-    {
-      "file": "app/boka/actions.ts",
-      "line": 413,
-      "word": "salong",
-      "text": "if (!ctx) return { ok: false, reason: 'error', message: 'Okänd salong.' }"
     },
     {
       "file": "app/(admin)/admin/page.tsx",
@@ -247,30 +217,6 @@
       "line": 9,
       "word": "Salongslistan",
       "text": "message=\"Salongslistan gick inte att hämta just nu. Försök igen.\""
-    },
-    {
-      "file": "app/avboka/[id]/page.tsx",
-      "line": 119,
-      "word": "salongen",
-      "text": "return <Message title=\"Avbokning otillgänglig\" body=\"Avbokning är inte tillgänglig just nu. Kontakta salongen.\" />"
-    },
-    {
-      "file": "app/avboka/[id]/page.tsx",
-      "line": 133,
-      "word": "Salongen",
-      "text": "const tenantName = (booking.tenants as { name?: string } | null)?.name ?? 'Salongen'"
-    },
-    {
-      "file": "app/avboka/[id]/page.tsx",
-      "line": 183,
-      "word": "Salong",
-      "text": "<span className=\"tkt-row-label\">Salong</span>"
-    },
-    {
-      "file": "app/avboka/[id]/page.tsx",
-      "line": 226,
-      "word": "salongen",
-      "text": "Vi kunde inte avboka just nu. Försök igen eller kontakta salongen."
     },
     {
       "file": "app/(admin)/admin/blogg/page.tsx",
@@ -574,19 +520,19 @@
     },
     {
       "file": "app/(admin)/admin/sida/page.tsx",
-      "line": 15,
+      "line": 16,
       "word": "Salongsadmin",
       "text": "export const metadata: Metadata = { title: 'Redigera sidan · Salongsadmin' }"
     },
     {
       "file": "app/(admin)/admin/sida/page.tsx",
-      "line": 36,
+      "line": 37,
       "word": "salong",
       "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
     },
     {
       "file": "app/(admin)/admin/sida/page.tsx",
-      "line": 49,
+      "line": 50,
       "word": "salongens",
       "text": "<p className=\"prose\">Kunde inte läsa salongens data. Försök igen.</p>"
     },
@@ -706,7 +652,7 @@
     },
     {
       "file": "app/(platform)/salonger/[id]/page.tsx",
-      "line": 635,
+      "line": 638,
       "word": "salongens",
       "text": "Slår på/av den kund-egna sid-editorn i salongens admin. Påverkar bara kundens"
     },
@@ -715,12 +661,6 @@
       "line": 207,
       "word": "Salongen",
       "text": "tenantName: rel.tenants?.name ?? 'Salongen',"
-    },
-    {
-      "file": "app/boka/bekraftelse/[id]/page.tsx",
-      "line": 178,
-      "word": "salongen",
-      "text": "<p className=\"tkt-note\">Betalningen avbröts. Du kan betala i salongen vid besöket.</p>"
     },
     {
       "file": "app/(admin)/admin/bokningar/vy/page.tsx",
@@ -763,12 +703,6 @@
       "line": 112,
       "word": "Frisör",
       "text": "label={`Favorit${resolveTerm(tenant.terminology, 'staff', 'Frisör').toLowerCase()}`}"
-    },
-    {
-      "file": "app/(kund)/konto/bokningar/[id]/page.tsx",
-      "line": 64,
-      "word": "salongen",
-      "text": "förväg). Kontakta salongen för att ändra eller avboka."
     },
     {
       "file": "components/admin/BloggAdmin.tsx",
@@ -885,12 +819,6 @@
       "text": "placeholder=\"t.ex. Hilal — frisör\""
     },
     {
-      "file": "components/admin/StorefrontCopyForm.tsx",
-      "line": 11,
-      "word": "salong",
-      "text": "{ name: 'heroEyebrow', label: 'Hero — eyebrow', hint: 'Liten överrad, t.ex. “— Din salong”.' },"
-    },
-    {
       "file": "components/admin/StorefrontMediaForm.tsx",
       "line": 70,
       "word": "salongen",
@@ -913,138 +841,6 @@
       "line": 164,
       "word": "salong",
       "text": "? 'Ansluten · utbetalning till din salong'"
-    },
-    {
-      "file": "components/booking/BookingWizard.tsx",
-      "line": 108,
-      "word": "Frisör",
-      "text": "staffNoun = 'Frisör',"
-    },
-    {
-      "file": "components/booking/BookingWizard.tsx",
-      "line": 595,
-      "word": "Salongen",
-      "text": "Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare"
-    },
-    {
-      "file": "components/booking/BookingWizard.tsx",
-      "line": 596,
-      "word": "salongen",
-      "text": "eller kontakta salongen direkt."
-    },
-    {
-      "file": "components/booking/BookingWizard.tsx",
-      "line": 802,
-      "word": "salong",
-      "text": "Välj salong — vi visar lediga tider för just den platsen."
-    },
-    {
-      "file": "components/booking/BookingWizard.tsx",
-      "line": 894,
-      "word": "Salongen",
-      "text": "Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare"
-    },
-    {
-      "file": "components/booking/BookingWizard.tsx",
-      "line": 895,
-      "word": "salongen",
-      "text": "eller kontakta salongen direkt."
-    },
-    {
-      "file": "components/kund/AccountBookings.tsx",
-      "line": 56,
-      "word": "salongen",
-      "text": "{b.staffTitle ? `hos ${b.staffTitle}` : 'hos salongen'}"
-    },
-    {
-      "file": "components/kund/AccountPrivacy.tsx",
-      "line": 74,
-      "word": "salongen",
-      "text": "Du bestämmer hur du syns för salongen. Ditt lojalitetsband finns kvar oavsett — det bygger på"
-    },
-    {
-      "file": "components/kund/AccountPrivacy.tsx",
-      "line": 78,
-      "word": "frisören",
-      "text": "<div className={styles.fieldLabel}>Så här ser frisören mitt namn</div>"
-    },
-    {
-      "file": "components/kund/AccountPrivacy.tsx",
-      "line": 79,
-      "word": "salongen",
-      "text": "<div className={styles.seg} role=\"group\" aria-label=\"Visningsnamn (hanteras av salongen)\">"
-    },
-    {
-      "file": "components/kund/AccountPrivacy.tsx",
-      "line": 94,
-      "word": "salongens",
-      "text": "Visas i salongens system som <b>{shown}</b>"
-    },
-    {
-      "file": "components/kund/AccountPrivacy.tsx",
-      "line": 101,
-      "word": "salongen",
-      "text": "Hur ditt namn visas hanteras av salongen — hör av dig om du vill ändra det. Ditt namn och"
-    },
-    {
-      "file": "components/kund/FavoritesList.tsx",
-      "line": 52,
-      "word": "frisör",
-      "text": "const staffLc = resolveTerm(terminology, 'staff', 'frisör') // lowercase nominative"
-    },
-    {
-      "file": "components/kund/FavoritesList.tsx",
-      "line": 53,
-      "word": "Frisör",
-      "text": "const staffUc = resolveTerm(terminology, 'staff', 'Frisör') // capitalized nominative"
-    },
-    {
-      "file": "components/kund/FavoriteStaffButton.tsx",
-      "line": 40,
-      "word": "frisören",
-      "text": "aria-label={`Spara ${staffTitle ?? 'frisören'} som favorit`}"
-    },
-    {
-      "file": "components/kund/GdprControls.tsx",
-      "line": 32,
-      "word": "salongens",
-      "text": "Detta är permanent. Bokningshistoriken anonymiseras (sparas avidentifierad för salongens"
-    },
-    {
-      "file": "components/kund/GoogleReviewNudge.tsx",
-      "line": 62,
-      "word": "salongen",
-      "text": "tenantName={tenantName ?? 'salongen'}"
-    },
-    {
-      "file": "components/kund/GoogleReviewNudgePopup.tsx",
-      "line": 88,
-      "word": "salongen",
-      "text": "en minut och hjälper salongen enormt."
-    },
-    {
-      "file": "components/kund/StylistCard.tsx",
-      "line": 47,
-      "word": "frisör",
-      "text": "const staffLc = resolveTerm(terminology, 'staff', 'frisör') // base, lowercase nominative"
-    },
-    {
-      "file": "components/kund/StylistCard.tsx",
-      "line": 48,
-      "word": "Frisör",
-      "text": "const staffUc = resolveTerm(terminology, 'staff', 'Frisör') // base, capitalized"
-    },
-    {
-      "file": "components/kund/StylistCard.tsx",
-      "line": 49,
-      "word": "Frisörer",
-      "text": "const staffPlUc = termPlural(terminology, 'staff', 'Frisörer') // plural, capitalized"
-    },
-    {
-      "file": "components/kund/StylistCard.tsx",
-      "line": 58,
-      "word": "salongen",
-      "text": ": `Din sparade ${staffLc} hos salongen.`"
     },
     {
       "file": "components/kund/StylistCard.tsx",
@@ -1569,18 +1365,6 @@
       "text": "? 'Sök salong, kund, personal, åtgärd…'"
     },
     {
-      "file": "components/storefront/BookingDrawer.tsx",
-      "line": 40,
-      "word": "Frisör",
-      "text": "staffNoun = 'Frisör',"
-    },
-    {
-      "file": "components/storefront/BookingProvider.tsx",
-      "line": 59,
-      "word": "Frisör",
-      "text": "staffNoun = 'Frisör',"
-    },
-    {
       "file": "components/storefront/images.ts",
       "line": 16,
       "word": "Frisör",
@@ -1671,12 +1455,6 @@
       "text": "alt: 'Inbjudande salongsmiljö redo att ta emot dig',"
     },
     {
-      "file": "components/storefront/InlineBooking.tsx",
-      "line": 17,
-      "word": "Frisör",
-      "text": "staffNoun = 'Frisör',"
-    },
-    {
       "file": "components/storefront/sections.tsx",
       "line": 107,
       "word": "stylistName",
@@ -1699,18 +1477,6 @@
       "line": 177,
       "word": "barbershop",
       "text": "barbershop: 'HairSalon',"
-    },
-    {
-      "file": "components/storefront/ServiceMenu.tsx",
-      "line": 34,
-      "word": "Salongen",
-      "text": "Salongen håller på att lägga upp sina behandlingar. Du är ändå varmt välkommen att"
-    },
-    {
-      "file": "components/storefront/staff-noun.ts",
-      "line": 21,
-      "word": "Frisör",
-      "text": "export const DEFAULT_STAFF_NOUN = 'Frisör'"
     },
     {
       "file": "components/storefront/theme-content.ts",
@@ -2092,61 +1858,55 @@
     },
     {
       "file": "components/platform/onboarding-studio/OnboardingStudio.tsx",
-      "line": 314,
+      "line": 323,
       "word": "salongen",
       "text": "<span style={{ ...cardTitle, display: 'block' }}>Öppna &amp; hantera salongen</span>"
     },
     {
       "file": "components/platform/onboarding-studio/OnboardingStudio.tsx",
-      "line": 344,
+      "line": 353,
       "word": "salong",
       "text": "status ovan) och styr bara sin egen salong."
     },
     {
       "file": "components/platform/onboarding-studio/preview-modules.tsx",
-      "line": 94,
+      "line": 95,
       "word": "Frisörsalong",
       "text": "frisor: { name: 'Frisörsalong', eyebrow: 'Frisörsalong', staffWord: 'Frisör', serviceWord: 'Behandling' },"
     },
     {
       "file": "components/platform/onboarding-studio/preview-modules.tsx",
-      "line": 94,
+      "line": 95,
       "word": "Frisörsalong",
       "text": "frisor: { name: 'Frisörsalong', eyebrow: 'Frisörsalong', staffWord: 'Frisör', serviceWord: 'Behandling' },"
     },
     {
       "file": "components/platform/onboarding-studio/preview-modules.tsx",
-      "line": 94,
+      "line": 95,
       "word": "Frisör",
       "text": "frisor: { name: 'Frisörsalong', eyebrow: 'Frisörsalong', staffWord: 'Frisör', serviceWord: 'Behandling' },"
     },
     {
-      "file": "components/platform/onboarding-studio/StorefrontPreview.tsx",
-      "line": 123,
-      "word": "salong",
-      "text": "tenant: { id: '', name: cfg.name || 'Din salong', slug: cfg.slug || 'dinsalong' },"
-    },
-    {
       "file": "components/platform/onboarding-studio/StudioPanels.tsx",
-      "line": 131,
+      "line": 132,
       "word": "frisör",
       "text": "'frisör': 'scissors',"
     },
     {
       "file": "components/platform/onboarding-studio/StudioPanels.tsx",
-      "line": 133,
+      "line": 134,
       "word": "barbershop",
       "text": "barbershop: 'scissors',"
     },
     {
       "file": "components/platform/onboarding-studio/StudioPanels.tsx",
-      "line": 295,
+      "line": 296,
       "word": "salongs",
       "text": "<Icon name=\"alert\" size={14} /> &quot;{cfg.slug}&quot; är reserverad — kan inte bli en salongs-slug."
     },
     {
       "file": "components/platform/onboarding-studio/StudioPanels.tsx",
-      "line": 644,
+      "line": 645,
       "word": "salongsnamn",
       "text": "Kräver: salongsnamn, en giltig subdomän, ett tema och minst en tjänst. Komplettera i"
     },
@@ -2197,18 +1957,6 @@
       "line": 111,
       "word": "salongen",
       "text": "<h2 className={`sf-h1 ${sv.secTitle}`}>Ta med dig salongen hem</h2>"
-    },
-    {
-      "file": "components/storefront/layouts/florist/AuroraLayout.tsx",
-      "line": 81,
-      "word": "Boka tid",
-      "text": "<BookCta className={`${styles.auBtn} ${styles.auStatementCta}`} label=\"Boka tid\" />"
-    },
-    {
-      "file": "components/storefront/layouts/florist/OnyxLayout.tsx",
-      "line": 83,
-      "word": "Boka tid",
-      "text": "<BookCta className={styles.onxBtnInk} label=\"Boka tid\" />"
     },
     {
       "file": "components/storefront/layouts/florist/paisley.pages.tsx",
@@ -2440,31 +2188,31 @@
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 86,
+      "line": 90,
       "word": "frisörsalong",
       "text": "default: 'Mer än bara en frisörsalong.',"
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 104,
+      "line": 108,
       "word": "frisörer",
       "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 104,
+      "line": 108,
       "word": "klippningen",
       "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 104,
+      "line": 108,
       "word": "klippning",
       "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 104,
+      "line": 108,
       "word": "klippning",
       "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
     },

@@ -29,7 +29,7 @@ export function GdprControls() {
           <input name="confirm" type="text" autoComplete="off" placeholder="RADERA" />
         </label>
         <p className={styles.gdprWarn}>
-          Detta är permanent. Bokningshistoriken anonymiseras (sparas avidentifierad för salongens
+          Detta är permanent. Bokningshistoriken anonymiseras (sparas avidentifierad för verksamhetens
           bokföring), och dina personuppgifter raderas.
         </p>
         {state.error ? (

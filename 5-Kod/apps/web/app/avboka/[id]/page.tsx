@@ -116,7 +116,7 @@ export default async function AvbokaPage({
   //    kan visas i ALLA utfall per designen — samma token-gatade läsning som ready.
   const admin = createServiceClient()
   if (!admin) {
-    return <Message title="Avbokning otillgänglig" body="Avbokning är inte tillgänglig just nu. Kontakta salongen." />
+    return <Message title="Avbokning otillgänglig" body="Avbokning är inte tillgänglig just nu. Hör av dig direkt." />
   }
 
   const { data: booking } = await admin
@@ -130,7 +130,7 @@ export default async function AvbokaPage({
 
   const serviceName = (booking.services as { name?: string } | null)?.name ?? 'Behandling'
   const staffTitle = (booking.staff as { title?: string } | null)?.title ?? null
-  const tenantName = (booking.tenants as { name?: string } | null)?.name ?? 'Salongen'
+  const tenantName = (booking.tenants as { name?: string } | null)?.name ?? 'Verksamheten'
   const loc = booking.locations as { name?: string; timezone?: string } | null
   const tz = loc?.timezone ?? 'Europe/Stockholm'
   const start = new Date(booking.start_ts)
@@ -180,7 +180,7 @@ export default async function AvbokaPage({
       {/* Stubben: Salong / Tjänst / Tid / Hos med 1px dashed dividers */}
       <div className="tkt-stub">
         <div className="tkt-row">
-          <span className="tkt-row-label">Salong</span>
+          <span className="tkt-row-label">Plats</span>
           <span className="tkt-row-value">{tenantName}</span>
         </div>
         <div className="tkt-row">
@@ -223,7 +223,7 @@ export default async function AvbokaPage({
         <p className="tkt-state">Det är för sent att avboka online — ring oss så hjälper vi dig.</p>
       ) : (
         <p className="tkt-state" role="alert">
-          Vi kunde inte avboka just nu. Försök igen eller kontakta salongen.
+          Vi kunde inte avboka just nu. Försök igen eller hör av dig direkt.
         </p>
       )}
 
