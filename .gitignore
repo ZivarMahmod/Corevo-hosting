@@ -80,3 +80,7 @@ mappar i katalog-roten (numrerade 01–100
 
 # uiverse-dumpen = lokal verktygslada (Zivars klipp), inte repo-innehall
 4-Dokument-Underlag/uiverse-komponentbibliotek.md
+
+# goal-61 verify-maskinens lokala matskript (dev-only, refereras fran memory)
+5-Kod/apps/web/_*.mjs
+5-Kod/apps/web/_sweep/
