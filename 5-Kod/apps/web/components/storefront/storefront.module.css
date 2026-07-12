@@ -535,18 +535,27 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  min-height: 44px;
+  /* Ur-boxen var content(24.47) + padding-bottom(2) + border-bottom(2) = 28.47px — INTE
+     jämna 28. Ett `min-height: 44px` + `margin-block: -8px` hade gett exakt 28.0 och alltså
+     krympt den 0.47px; det räckte för att dra hela kontaktsidan 1px uppåt (mätt).
+     Kvittningen får därför aldrig gissa den naturliga höjden — den ska bara nolla det jag
+     lägger på: +8px över, +8px under (de 2+2 som padding/border bar bor kvar i de 12), och
+     `margin-block: -8px` tar bort exakt samma 16px. Flödesboxen blir 28.47px, oavsett font.
+     min-height är bara ett skyddsnät om en mall krymper texten. */
+  padding: 8px 0 12px;
   margin-block: -8px;
+  min-height: 44px;
   font-weight: 600;
   color: var(--color-primary);
   transition: gap var(--dur-fast) var(--ease-out);
 }
+/* Strecket sitter där border-bottom satt: de sista 2px av den ursprungliga boxen. */
 .moreLink::after {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(50% + 0.7em);
+  bottom: 8px;
   height: 2px;
   background: transparent;
   transition: background var(--dur-fast) var(--ease-out);
@@ -1015,8 +1024,8 @@
 .sfMap { height: 320px; border-radius: var(--sf-radius); overflow: hidden; border: 1px solid var(--color-line); background: var(--color-accent-soft); display: grid; place-items: center; padding: 1.5rem; text-align: center; }
 /* goal-61 svep: 28px (salvia, flora) → 44px träffyta, kvittad till 28px flöde.
    Bär aldrig en mall-klass (mätt) → kvittningen är säker. Understrykning → ::after. */
-.sfMapLink { position: relative; display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; margin-block: -8px; font-family: var(--font-body); font-weight: 600; color: var(--color-primary); transition: gap var(--dur-fast) var(--ease-out); }
-.sfMapLink::after { content: ''; position: absolute; left: 0; right: 0; top: calc(50% + 0.7em); height: 2px; background: transparent; transition: background var(--dur-fast) var(--ease-out); }
+.sfMapLink { position: relative; display: inline-flex; align-items: center; gap: 0.45rem; padding: 8px 0 12px; margin-block: -8px; min-height: 44px; font-family: var(--font-body); font-weight: 600; color: var(--color-primary); transition: gap var(--dur-fast) var(--ease-out); }
+.sfMapLink::after { content: ''; position: absolute; left: 0; right: 0; bottom: 8px; height: 2px; background: transparent; transition: background var(--dur-fast) var(--ease-out); }
 .sfMapLink:hover { gap: 0.7rem; }
 .sfMapLink:hover::after { background: var(--color-accent); }
 .sfMapLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
@@ -1520,17 +1529,15 @@
   flex-wrap: wrap;
 }
 .locSocialRow .locContactLink {
-  padding-block: 0;
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  /* Radens naturliga höjd är EN radbox (font-size × line-height) ≈ 25.4px — inte jämnt
-     25. En hårdkodad -9.5px tvingade den till exakt 25.0 och krympte blocket 0.4px, vilket
-     råkade passera en avrundningsgräns → hela kontaktsidan under sköts 1px. `1lh` ÄR
-     radhöjden, så kvittningen blir exakt oavsett mallens font. -9.5px står kvar först som
-     fallback för motorer utan lh-enheten. */
-  margin-block: -9.5px;
-  margin-block: calc((1lh - 44px) / 2);
+  /* Basregelns `padding-block: 13px` ger träffytan (25.4 + 26 = 51px ≥ 44), men HÄR räknas
+     den i layouten eftersom länken är ett flex-item. En lika stor NEGATIV marginal kvittar
+     den exakt — marginalboxen blir radens naturliga höjd, vad den än råkar vara.
+     Kvittningen behöver INTE veta radens naturliga höjd (den är 24.47px, inte jämna 25) —
+     den behöver bara nolla det jag lade på. Räkningen: +26px padding, −1px för den
+     border-bottom som flyttade till text-decoration = +25px netto → −12.5px per sida.
+     (Ett tidigare -9.5px och ett `calc((1lh - 44px)/2)` GISSADE höjden i stället och sköt
+     ~0.5px fel — nog för att passera en avrundningsgräns och flytta hela kontaktsidan 1px.) */
+  margin-block: -12.5px;
 }
 
 /* OSM-embed: aspect-ratio i stället för fast höjd → kartan hoppar inte in när iframen
