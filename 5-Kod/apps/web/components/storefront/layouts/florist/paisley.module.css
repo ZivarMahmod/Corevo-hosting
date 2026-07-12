@@ -90,10 +90,15 @@
   --sf-btn-bg-hover: var(--color-primary-d);
   --sf-btn-ink: var(--pa-ink);
   --sf-btn-border: var(--color-primary);
-  --sf-btn-fs: var(--pa-fs-ui);
-  --sf-btn-weight: var(--pa-fw-micro);
-  --sf-btn-transform: uppercase;
-  --sf-btn-ls: var(--pa-ls-ui);
+  /* goal-62 C3: mätningen visade att paisley och onyx hade IDENTISK formprofil
+     (radie 999, kvadratisk versalknapp, flat kort, DM Serif/Jost) — samma mall i två
+     färger. Onyx äger versalen; paisley är tidningen och sätter sin knapp i GEMENER,
+     som en byline i löptext. Den enda skillnaden som behövdes, och den är sann mot
+     mallens vektor. */
+  --sf-btn-fs: 15px;
+  --sf-btn-weight: 600;
+  --sf-btn-transform: none;
+  --sf-btn-ls: 0.01em;
   --sf-btn-dur: 160ms;
   --sf-btn-ease: var(--pa-ease);
   --sf-focus: var(--pa-focus);
@@ -197,11 +202,14 @@
   padding: 0 var(--pa-sp-cta);
   border-radius: var(--sf-radius);
   font-family: var(--font-body);
-  font-size: var(--pa-fs-ui);
-  font-weight: var(--pa-fw-micro);
+  font-size: 15px;
+  font-weight: 600;
   line-height: 46px;
-  letter-spacing: var(--pa-ls-ui);
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  /* goal-62 C3 — GEMENER. Paisley och onyx mätte identisk formprofil (samma mall,
+     två färger). Onyx äger versalen; paisley är tidningen och sätter knappen som en
+     byline i löptext. */
+  text-transform: none;
   color: var(--pa-ink); /* 6.17:1 mot --color-primary; #fff vore en 9:e färg */
   box-shadow: none;
   cursor: pointer;

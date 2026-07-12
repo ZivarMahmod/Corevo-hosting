@@ -80,6 +80,31 @@ h3 {
 .tenant-root a.btn-accent { color: var(--color-accent-fg); }
 .tenant-root a.btn-primary { color: #fff; }
 
+/* goal-62 C3 — KNAPPEN SOM VAR SAMMA I ALLA MALLAR.
+   Mätt: salvia, leander, zigge, linnea och edit renderade ALLA en pill på 48px i
+   gemener — trots att var och en deklarerar sina egna --sf-btn-*-tokens i tokens.css.
+   Orsaken: bara webshop-modulens knapp läste tokens; sidans CTA:er är .btn-accent
+   och tog den globala guld-pillen rakt av. Formen låg alltså i mallen men nådde
+   aldrig knappen. Här kopplas den in — mallen äger FORMEN (vektor-regeln).
+   :where() håller specificiteten på 0-1-0 så en malls egen knappregel fortfarande
+   vinner, och varje token faller tillbaka på det gamla utseendet om mallen tiger. */
+   flora och freshcut är UNDANTAGNA: båda är levande kunder, och mätningen visar att
+   inkopplingen hade ändrat deras knapp (freshcut pill/gemener → rak/versal, flora
+   h48 → h50). Skyddade mallar får inte forma om sig av en generell fix. */
+:where(.tenant-root:not([data-theme='freshcut']):not([data-theme='flora'])) .btn-accent {
+  border-radius: var(--sf-btn-radius, var(--radius-pill));
+  min-height: var(--sf-btn-h, auto);
+  padding: var(--sf-btn-pad, 0.75rem 1.75rem);
+  font-weight: var(--sf-btn-weight, 700);
+  font-size: var(--sf-btn-fs, inherit);
+  text-transform: var(--sf-btn-transform, none);
+  letter-spacing: var(--sf-btn-ls, inherit);
+  /* min-height + inline-block ger ingen vertikal centrering — flex gör det. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ---- nav (shared) ---- */
 .nav { border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent); }
 .nav-inner { max-width: 1080px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; }

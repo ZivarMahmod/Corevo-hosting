@@ -327,10 +327,13 @@
 
      RÖSTEN: rustik amber på nära-svart. VERSALER, hårda kanter, rappt svar (120ms).
      Zigge ska kännas som en klippmaskin — den studsar inte, den KLICKAR. */
-  --sf-btn-h: 48px;
-  --sf-btn-pad: 15px 28px;
+  /* goal-62 C3 — Zigge är sviten KRAFTIGASTE knapp: bred, hög, versal, tung.
+     Den ska se ut som en skylt över en barberarstol. */
+  --sf-btn-h: 56px;
+  --sf-btn-pad: 18px 40px;
   --sf-btn-radius: 4px;     /* = --sf-radius: samma kant som .sfSquareCta redan har */
   --sf-btn-weight: 700;
+  --sf-btn-fs: 15px;
   --sf-btn-transform: uppercase;
   --sf-btn-ls: 0.14em;
   --sf-btn-dur: 120ms;      /* snabbast av de fyra */
@@ -454,12 +457,16 @@
      (radie 0 — en tidskriftsspalt har inga rundade hörn). Knappen behåller mallens
      2px eftersom .sfSquareCta redan ritar hero-CTA:n så; att ge köpknappen 0 och
      boknings-CTA:n 2 hade varit två sanningar på samma sida. */
-  --sf-btn-h: 48px;
-  --sf-btn-pad: 15px 30px;
+  /* goal-62 C3 — edits röst är REDAKTIONELL: knappen ska läsas som en byline, inte
+     som en app-knapp. Gemener, tät sats, låg höjd, nästan rak kant. Zigge äger
+     versalerna i sviten; edit får inte tala samma språk. */
+  --sf-btn-h: 44px;
+  --sf-btn-pad: 12px 26px;
   --sf-btn-radius: 2px;     /* = --sf-radius: samma kant som .sfSquareCta */
   --sf-btn-weight: 600;
-  --sf-btn-transform: uppercase;
-  --sf-btn-ls: 0.12em;
+  --sf-btn-transform: none;
+  --sf-btn-fs: 15px;
+  --sf-btn-ls: 0.01em;
   --sf-btn-dur: 160ms;
   --sf-btn-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   /* Vit ink på kol (#3A3733) = 11.84:1. --color-accent-fg är redan #ffffff globalt,
