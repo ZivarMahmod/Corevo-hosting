@@ -117,6 +117,11 @@ export async function ShopSection({
                         className={s.img}
                       />
                     ) : null}
+                    {/* goal-61: hover-/fokus-hint — ren affordance-dubblett av länken
+                        (aria-label ovan bär redan betydelsen), därför aria-hidden. */}
+                    <span className={s.mediaHint} aria-hidden="true">
+                      Se produkt
+                    </span>
                   </a>
                   <div className={s.body}>
                     <h3 className={s.title}>

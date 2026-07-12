@@ -64,6 +64,7 @@
  * (goal-54 S4). Ratio ligger på ytan, inte på <img>, så platshållaren (produkt utan
  * bild) har exakt samma höjd som en laddad bild: noll layouthopp. */
 .media {
+  position: relative; /* ankare för hover-hinten */
   display: block;
   aspect-ratio: var(--sf-media-ratio, 4 / 3);
   background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
@@ -73,6 +74,40 @@
 .media:focus-visible {
   outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
   outline-offset: -2px;
+}
+
+/* goal-61 — hover-lagret ("Se produkt"): affordance-hinten som stiger upp ur bildens
+ * nederkant. Anatomin ur uiverse-hover-reveal-knapparna, men med de två reglerna
+ * originalen bryter: (1) FOCUS-PARITET — :focus-visible visar exakt det hover visar,
+ * annars är åtgärden osynlig för tangentbord; (2) pekskärm förlorar inget — bilden ÄR
+ * länken, hinten är en dubblett av en affordance som redan finns (därför aria-hidden
+ * i markupen). pointer-events: none — länken under tar klicket. */
+.mediaHint {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translate(-50%, 8px);
+  opacity: 0;
+  pointer-events: none;
+  padding: 8px 16px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: var(--sf-btn-weight, 600);
+  letter-spacing: var(--sf-btn-ls, 0.02em);
+  text-transform: var(--sf-btn-transform, uppercase);
+  white-space: nowrap;
+  color: var(--sf-btn-ink, var(--color-fg, #232520));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  transition:
+    opacity 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.media:hover .mediaHint,
+.media:focus-visible .mediaHint {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .img {
@@ -215,7 +250,8 @@
 @media (prefers-reduced-motion: reduce) {
   .card,
   .img,
-  .more {
+  .more,
+  .mediaHint {
     transition: none;
   }
 
@@ -223,5 +259,13 @@
   .card:hover .img,
   .more:active {
     transform: none;
+  }
+
+  /* Hinten står redan på plats (ingen stigning) och tänds/släcks via opacity — som är
+   * tillåten rörelse. transform i BÅDA lägena, annars hoppar den 8px vid visning. */
+  .mediaHint,
+  .media:hover .mediaHint,
+  .media:focus-visible .mediaHint {
+    transform: translate(-50%, 0);
   }
 }

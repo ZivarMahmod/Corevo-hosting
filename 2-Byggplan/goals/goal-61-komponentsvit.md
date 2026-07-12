@@ -49,12 +49,23 @@ batteri-/klock-loaders (berättar inget om vår väntan). "Använd brett" ≠ an
 ## Faser (Zivars ordning: mallar → super-admin → kund-admin → bokning → FreshCut)
 
 ### Fas 1 — MALLAR
-**1a. Varukorgen först.** Den är fortfarande trasig och Zivar har klagat två gånger. Mätta defekter:
-produktbilden kollapsar i sin platta · rad-/panel-baslinjer 16px isär (405 vs 421) · 8 klickytor
-under 44px (footer-länkar 22px). Fixarna är anatomi-nivå → delad modul; formen förblir per-mall
-via tokens.
-**1b. Toast + loader** in i köp-/boknings-rälsen.
-**1c. Produktkortets hover-lager** (snabbvy, hjärta) — med focus-paritet.
+**1a. Varukorgen.** ✅ AVSKRIVEN 2026-07-12: defekterna var ALDRIG i koden — den gamla mätningen
+gjordes mot en dev-server som gav 404 på all `/_next/static/*` (ostylad HTML-skelett). Efter
+server-omstart mäter korgen rent: 0 overflow, 0 klickytor under 44, rad/panel på samma baslinje.
+**1b. Toast + loader + payoff.** ✅ KLART (commits 9657e60 + 91624cb): CartToast (kvitto-kort),
+CheckoutLoader (varor faller i vagnen under confirmOrder), ritad bekräftelse-bock. Läxa som är
+LAG nu: storefront-overlays portaleras till STOREFRONT-ROTEN via `portal-host.ts`, aldrig body —
+[data-theme] sitter på skalet, en body-portal faller ur mallens tokens (mätt: guld-ikon bredvid
+grön knapp i flora).
+**1b½. Svep-verify-maskinen.** ✅ BYGGD: dev-only cookien `corevo-dev-theme` (tenant-data.ts,
+död kod i prod) renderar VILKEN mall som helst med riktig tenant-data på alla sidor. Verktyg:
+`_diag.mjs` / `_probe.mjs` / `_sweep.mjs` i apps/web. Svep-1 fann: mobil-overflow i 6 mallar
+(onyx 256px = footer-ordmärket; wildthistle 59; aurora 50; sage 35 + saknad fokusring; viora 14;
+calytrix 6) och nav-länkar 18–28px höga i ALLA 13 (touch-golv 44). Fix-rundan = 13 parallella
+agenter, disjunkta filer (wf_e3228ae9).
+**1c. Produktkortets hover-lager** (snabbvy — "hjärta" SKIPPAS: ingen wishlist-funktion finns,
+och vi klär aldrig en funktion som inte finns) — med focus-paritet. KVAR.
+**1d. Mobil-nav-mönster.** NYTT FYND: ingen mall har mobilmeny — länkarna radbryts. Egen runda.
 Mallarna får komponenterna som **opt-in-anatomi, inte en blank omstilning**: EN delad anatomi med
 `--sf-*`-hakar; var och en av de 13 `theme.ts` bestämmer uttrycket. En likformig uiverse-skin över
 13 mallar återskapar exakt den skelett-konvergens goal-58 slogs mot.
