@@ -272,9 +272,20 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 > Zivar: *"när man lägger upp en produkt ska det inte kännas som en post-it-lapp. Kolla
 > skärmdumparna. Interflora är jättefin för florister."*
 
-- [ ] **E1. Läs referenserna**: gå igenom `skarmdumpar-bygg/` (webshop-delarna, kundvagnarna)
-      + Interfloras produktkort/kassa. Skriv 10-punkters gap-lista här (vad deras kort har
-      som våra saknar: bildformat, luft, prisplacering, hover, badge-språk).
+- [x] **E1. Gap-listan** ✅ Vårt produktkort MÄTT i webbläsaren (florist/shop, 1360px). Post-it-
+      känslan är inte en känsla — den är sex mätbara val:
+      | # | Mätt hos oss | Referensen (Interflora) |
+      |---|---|---|
+      | 1 | **Bilden är 250×188 (4:3 LIGGANDE)** och bara **37% av kortets 508px höjd** | bilden ÄR kortet: stående 4:5, 65–75% av höjden |
+      | 2 | **Priset 16px** — MINDRE än produktnamnet (17px) och samma grad som brödtext | priset är kortets näst starkaste röst, tyngre än namnet |
+      | 3 | Hela beskrivningen (14px) ligger i gridkortet | griden visar namn + pris. Beskrivningen bor på produktsidan |
+      | 4 | **Qty-stepper (−/1/+) syns ALLTID i griden** | griden har ingen stepper — den är ett skyltfönster, inte ett formulär |
+      | 5 | "Lägg i kundvagn"-knappen syns alltid i varje kort | köp-CTA:n kommer på hover/fokus, eller finns bara på produktsidan |
+      | 6 | Kortet: radie 0, ingen skugga, ingen ram, grå platta bakom bilden | bilden bär kortet; ingen platta behövs |
+      **Diagnos:** varje kort är ett litet FORMULÄR (bild + text + räknare + knapp) i stället för
+      en VARA. Det är post-it-lappen. → E2 (bilden dominerar) + E3 (hierarki + stepper ut ur griden).
+      Bifynd: Zivars skärmdump med "DIN SALONG" i en floristmall är från FÖRE goal-61 —
+      `studio-placeholder.ts` (commit 735c856) härleder redan namnet ur branschen.
 - [ ] **E2. Produktbilderna**: generisk bildbehandling — produktfoton ska kännas fristående
       (ingen "lapp på en bakgrund"). Per mall bestäms uttrycket (skuren mot bakgrundsfärg,
       mjuk skugga, ram) i form-manifestet från C2. EN körning för bild-standarden.
