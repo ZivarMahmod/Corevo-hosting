@@ -66,7 +66,11 @@
   font-variant-numeric: tabular-nums;
   color: var(--sf-badge-ink, var(--sf-btn-ink, var(--color-fg, #232520))); /* 6.4:1 på guld */
   background: var(--sf-badge-bg, var(--sf-btn-bg, var(--color-accent, #c8a24a)));
-  border-radius: var(--sf-badge-radius, 999px);
+  /* goal-62 E6: badgen var en pill i ALLA mallar — även i edit, wildthistle och calytrix
+     där varje annan kontroll är rak (mätt: knapp radie 0, badge radie 999). "Samma runda
+     figur om och om igen." Badgen ärver nu mallens ikon-radie; en mall som vill ha en
+     rund räknare i en rak sajt sätter --sf-badge-radius själv. */
+  border-radius: var(--sf-badge-radius, var(--sf-navicon-radius, 999px));
 }
 
 /* ---- overlay-varianten (mobilmenyns korg-rad) ----
@@ -162,7 +166,7 @@
   font-variant-numeric: tabular-nums;
   color: var(--color-fg, #232520);
   background: var(--color-bg, #fff);
-  border-radius: var(--sf-badge-radius, 999px);
+  border-radius: var(--sf-badge-radius, var(--sf-navicon-radius, 999px));
 }
 
 @media (prefers-reduced-motion: reduce) {

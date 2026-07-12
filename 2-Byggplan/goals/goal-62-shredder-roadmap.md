@@ -297,10 +297,22 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
         Flera varianter → knappen leder till produktsidan, så man aldrig råkar köpa fel.
       **Mätt efter:** kort 494px, bild 313px (63%), pris 21px > namn 17px, en enda kontroll.
       Kontrast 0 brott · 780 tester gröna.
-- [ ] **E4. Varukorgs-sidan**: jämför mot skärmdumparna — radlayout, kvantitet, summering,
-      tom-läge. EN körning.
-- [ ] **E5. Kassan**: fältgruppering, steg-känsla, trust-rad — mot referenserna. EN körning.
-- [ ] **E6. Kundvagns-ikonen/badgen i nav** per mall (mallens uttryck, inte en generisk). EN körning.
+- [x] **E4. Varukorgs-sidan** ✅ Miniatyren var **72×72 (1:1)** medan produktkortet nu visar varan
+      i 4:5 — två bildspråk i samma köpflöde läser som två butiker. Samma ratio hela vägen
+      (88×110). Varunamn och radsumma mätte BÅDA 15px (inget bar raden) → namnet är radens röst
+      (17px), radsumman dess siffra (17px/700).
+- [x] **E5. Kassan** ✅ Fem fält i EN oavbruten radda → grupperade i `fieldset`+`legend`
+      ("Dina uppgifter" / "Leverans"). Samma fält, samma ordning, men steg-känslan kommer gratis
+      och skärmläsaren annonserar gruppen. Ingen ram på gruppen — luft, inte ännu en låda.
+      **Redan friskt (mätt, ej antaget):** riktiga `<label>` på alla fält, `autoComplete` satt
+      (name/email/tel/street-address), 55px fälthöjd, trust-rad, och "Till kassan" är en
+      full-bredds primärknapp som läser mallens `--sf-btn-*`.
+- [x] **E6. Kundvagns-badgen per mall** ✅ Badgen tog redan mallens accentfärg — men var **pill
+      (999px) i ALLA 20 mallar**, även i edit, wildthistle och calytrix där varje annan kontroll
+      är rak (mätt: knapp radie 0, badge radie 999). Exakt "samma runda figur om och om igen".
+      Badgen ärver nu mallens ikon-radie (`--sf-navicon-radius`); en mall som VILL ha en rund
+      räknare i en rak sajt sätter `--sf-badge-radius` själv.
+      **Mätt efter:** edit/wildthistle/calytrix 0px · zigge 4px · onyx/seraphina 999px.
 
 ## FAS F — UIVERSE-ELEMENTEN SOM SAKNAS (det Zivar tjatat om)
 
