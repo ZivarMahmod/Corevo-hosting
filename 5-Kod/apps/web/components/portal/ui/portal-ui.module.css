@@ -12,9 +12,14 @@
   background: transparent;
   color: var(--c-ink-3);
   cursor: pointer;
-  /* 17px-ikon + 8px padding = 33px visuell yta; träffytan växer med raden. */
+  /* goal-62 G1: den MÄTTE 33×33. Kommentaren sa "träffytan växer med raden" — men en
+     <button> växer inte med sin rad, den är exakt så stor som sin box. Mätningen tog
+     kål på antagandet. 44×44 träffyta, kvittad marginal (-6px) så ikonen sitter kvar på
+     samma pixel och radhöjden är oförändrad. */
+  width: 44px;
+  height: 44px;
   padding: 8px;
-  margin: -4px;
+  margin: -6px;
   transition: background 140ms ease, color 140ms ease, transform 120ms ease;
 }
 .rowBtn:hover {
@@ -36,11 +41,16 @@
 }
 
 /* ── PillToggle: status-pill i tabellrader ── */
+/* goal-62 G1: mätte 91×28. Pillen ÄR knappen som publicerar/avpublicerar — den får inte
+   vara den minsta träffytan på sidan. 44px höjd via padding; ramen ser likadan ut. */
 .pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   border: 1px solid var(--c-line);
   background: var(--c-paper);
   border-radius: 8px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;

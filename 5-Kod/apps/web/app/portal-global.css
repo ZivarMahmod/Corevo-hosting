@@ -16,7 +16,9 @@
 /* Sign-out button — shared by the /konto storefront header (below) and any other
    simple top-header surface. (The old generic .portal-header/.portal-tenant/
    .portal-user-meta strip was removed when /konto moved to the storefront header.) */
-.portal-signout { background: none; border: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent); border-radius: 0.5rem; padding: 0.4rem 0.8rem; font: inherit; cursor: pointer; color: inherit; }
+/* goal-62 G1: "Logga ut" mätte 26×26 — den minsta knappen i hela kund-adminen var den
+   som loggar ut dig. 44px träffyta; padding-en bär höjden, så ramen ser likadan ut. */
+.portal-signout { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; background: none; border: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent); border-radius: 0.5rem; padding: 0.4rem 0.9rem; font: inherit; cursor: pointer; color: inherit; }
 .portal-signout:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 /* ---- /konto storefront salon header (kund branch of PortalShell) ----
@@ -214,11 +216,15 @@
 [data-world="backoffice"] .portal-aside.is-collapsed .portal-aside-user { justify-content: center; }
 
 /* the rail's collapse/expand chevron (forest ghost button) */
+/* goal-62 G1: MÄTT 30×30 — under 44px-golvet. Samma brist som kebaben i super-admin
+   (A6) och som svepet rensade ur mallarna. Kvittningen (-7px) håller den visuella rutan
+   och radens höjd exakt som förut, så inget hoppar i sidopanelen. */
 [data-world="backoffice"] .portal-aside-toggle {
   margin-left: auto;
+  margin-right: -7px;
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border: none;
@@ -261,12 +267,13 @@
   background: var(--c-paper-2);
   flex: none;
 }
+/* goal-62 G1: segmenten mätte 36×32 — under golvet. 44px höjd, samma bredd på ytan. */
 [data-world="backoffice"] .bo-theme button {
   border: 0;
   background: none;
   color: var(--c-ink-3);
-  height: 32px;
-  padding: 0 11px;
+  min-height: 44px;
+  padding: 0 12px;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -872,10 +879,12 @@
   background: var(--c-paper-2);
   border: 1px solid var(--c-line);
 }
+/* goal-62 G1: vy-växlarens knappar (Vecka/Lista) mätte 34px höga — under golvet. */
 [data-world="backoffice"] .bo-viewswitch button {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  min-height: 44px;
   padding: 7px 13px;
   border: none;
   border-radius: 6px;
@@ -909,12 +918,14 @@
    ===================================================================== */
 
 /* ---- topbar: ⌘K trigger (replaces the inert search input) ---- */
+/* goal-62 G1: sökrutan mätte 43px — EN pixel under golvet. */
 [data-world="backoffice"] .bo-cmdk-trigger {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 340px;
   max-width: 42vw;
+  min-height: 44px;
   padding: 9px 12px;
   border-radius: 7px;
   border: 1px solid var(--c-line);
@@ -949,10 +960,12 @@
 }
 
 /* ---- topbar: Bell icon-button + gold unread dot ---- */
+/* goal-62 G1: aviseringsklockan mätte 38×38. 44×44; kvittningen håller radens höjd. */
 [data-world="backoffice"] .bo-bell {
   position: relative;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
+  margin: -3px;
   flex: none;
   display: grid;
   place-items: center;

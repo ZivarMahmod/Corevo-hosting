@@ -109,11 +109,15 @@ export function ServicesManager({
                   onClick={() => setEditing(s)}
                   aria-label={`Redigera ${s.name}`}
                   style={{
+                    // goal-62 G1: mätte 25×25 — redigera-knappen på varje tjänsterad låg
+                    // under touch-golvet. 44×44, kvittad marginal → radhöjden oförändrad.
+                    width: 44,
+                    height: 44,
+                    margin: -6,
                     border: 'none',
                     background: 'transparent',
                     color: 'var(--c-ink-3)',
                     cursor: 'pointer',
-                    padding: 4,
                     display: 'inline-grid',
                     placeItems: 'center',
                   }}
@@ -205,36 +209,52 @@ function OnlineToggle({ service }: { service: ServiceRow }) {
       <form action={formAction} style={{ display: 'inline-flex' }}>
         <input type="hidden" name="id" value={service.id} />
         <input type="hidden" name="active" value={String(!service.active)} />
+        {/* goal-62 G1: reglaget MÄTTE 42×24 — under 44px-golvet. Spåret behåller sin form
+            (42×24, det ska LÄSAS som en switch), men det bor nu i ett inre <span> så att
+            själva knappen kan bära en 44×44 träffyta utan att svälla visuellt. Kvittad
+            marginal håller radens höjd. */}
         <button
           type="submit"
           disabled={pending}
           aria-label={service.active ? `Dölj ${service.name}` : `Visa ${service.name}`}
           aria-pressed={service.active}
           style={{
-            width: 42,
-            height: 24,
-            borderRadius: 999,
+            width: 44,
+            height: 44,
+            margin: '-10px -1px',
+            display: 'inline-grid',
+            placeItems: 'center',
             border: 'none',
+            background: 'transparent',
             cursor: pending ? 'default' : 'pointer',
-            background: service.active ? 'var(--c-forest)' : 'var(--c-line-strong)',
-            position: 'relative',
             flex: 'none',
             opacity: pending ? 0.6 : 1,
-            transition: 'background var(--dur-fast)',
           }}
         >
           <span
             style={{
-              position: 'absolute',
-              top: 3,
-              left: service.active ? 21 : 3,
-              width: 18,
-              height: 18,
+              width: 42,
+              height: 24,
               borderRadius: 999,
-              background: '#fff',
-              transition: 'left var(--dur-fast)',
+              background: service.active ? 'var(--c-forest)' : 'var(--c-line-strong)',
+              position: 'relative',
+              display: 'block',
+              transition: 'background var(--dur-fast)',
             }}
-          />
+          >
+            <span
+              style={{
+                position: 'absolute',
+                top: 3,
+                left: service.active ? 21 : 3,
+                width: 18,
+                height: 18,
+                borderRadius: 999,
+                background: '#fff',
+                transition: 'left var(--dur-fast)',
+              }}
+            />
+          </span>
         </button>
       </form>
       <Badge tone={service.active ? 'success' : 'neutral'}>

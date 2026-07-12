@@ -266,12 +266,18 @@
   flex-wrap: wrap;
   align-items: center;
 }
+/* goal-62 G1: admin-knappen mätte 37px hög ("Koppla Stripe") — under 44px-golvet.
+   Padding-en bär höjden, så pillen ser likadan ut, bara träffytan växer. */
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   border: 1px solid color-mix(in srgb, var(--c-ink) 22%, transparent);
   background: var(--c-paper);
   color: inherit;
   border-radius: var(--radius-pill);
-  padding: 0.45rem 0.95rem;
+  padding: 0.45rem 1.05rem;
   cursor: pointer;
   font: inherit;
   font-size: 0.85rem;

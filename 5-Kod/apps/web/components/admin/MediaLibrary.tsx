@@ -263,10 +263,15 @@ function DeleteButton({ asset }: { asset: MediaAssetRow }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.success, state.error])
 
+  // goal-62 G1: "Ta bort bild" och "Redigera alt-text" mätte 26×26 — de två knapparna som
+  // ändrar respektive RADERAR en bild var de minsta träffytorna i hela mediabiblioteket.
+  // 44×44 (touch-golvet); ikonen ligger kvar i mitten, bara ytan växer.
   const baseBtn: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
+    width: 44,
+    height: 44,
     border: '1px solid var(--c-line)',
     background: 'transparent',
     color: 'var(--c-ink-2)',

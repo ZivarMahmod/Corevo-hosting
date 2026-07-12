@@ -277,6 +277,8 @@ export function BookingsClient({
               onClick={() => setFilter(f)}
               aria-pressed={isActive}
               style={{
+                // goal-62 G1: statusfiltren mätte 40px höga — under touch-golvet.
+                minHeight: 44,
                 padding: '9px 15px',
                 borderRadius: 10,
                 border: '1px solid var(--c-line)',
