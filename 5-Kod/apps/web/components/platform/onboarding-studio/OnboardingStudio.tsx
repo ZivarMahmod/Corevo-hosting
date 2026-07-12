@@ -38,6 +38,7 @@ import { JourneyBar } from './JourneyBar'
 import { StepRail } from './StepRail'
 import { PanelHost } from './PanelHost'
 import { PreviewPane, type PreviewDevice } from './PreviewPane'
+import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
@@ -138,6 +139,10 @@ function StudioMachine({
     formAction(buildCreateTenantFormData(cfg))
   }
 
+  // Bransch-NAMNET (cfg bär bara nyckeln) → preview/resultat-attrappernas placeholder-
+  // ord följer den valda branschen i stället för hårdkodat "salong" (studio-placeholder).
+  const branchName = studioBranchName(presets.verticals, cfg.branch)
+
   return (
     <div
       style={{
@@ -171,7 +176,7 @@ function StudioMachine({
           {/* right — live preview (riktig StorefrontPreview-render) */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--c-paper-2)', minHeight: 0 }}>
             <div style={{ flex: 1, minHeight: 0, padding: '18px' }}>
-              <PreviewPane cfg={cfg} device={device} onDevice={setDevice} lookKeys={lookKeys} />
+              <PreviewPane cfg={cfg} device={device} onDevice={setDevice} lookKeys={lookKeys} branchName={branchName} />
             </div>
           </div>
 
@@ -189,6 +194,7 @@ function StudioMachine({
           tenant={result.tenant}
           message={result.success ?? ''}
           onRestart={onRestart}
+          branchName={branchName}
         />
       )}
     </div>
@@ -212,14 +218,17 @@ export function ResultView({
   tenant,
   message,
   onRestart,
+  branchName,
 }: {
   name: string
   slug: string
   tenant?: { id: string; slug: string }
   message: string
   onRestart: () => void
+  /** Vald bransch (visningsnamn) → placeholder-slugen följer branschen, aldrig "salong". */
+  branchName?: string | null
 }) {
-  const address = `${slug || 'dinsalong'}.${ROOT}`
+  const address = `${slug || studioPlaceholderSlug(branchName)}.${ROOT}`
   // The platform tenant-detail always works (platform route). Its embedded storefront
   // preview iframe points at the same unresolvable host, so we label this "öppna &
   // hantera" — NOT "se den publika sidan".

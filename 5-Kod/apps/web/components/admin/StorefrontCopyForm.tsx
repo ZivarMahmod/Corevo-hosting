@@ -8,7 +8,7 @@ import styles from './admin.module.css'
 type Field = keyof CopyFields
 
 const FIELDS: { name: Field; label: string; hint: string; multiline?: boolean }[] = [
-  { name: 'heroEyebrow', label: 'Hero — eyebrow', hint: 'Liten överrad, t.ex. “— Din salong”.' },
+  { name: 'heroEyebrow', label: 'Hero — eyebrow', hint: 'Liten överrad, t.ex. “— Din verksamhet”.' },
   { name: 'heroTitle', label: 'Hero — rubrik', hint: 'Stora rubriken högst upp.', multiline: true },
   { name: 'heroLede', label: 'Hero — ingress', hint: 'Kort rad under rubriken.', multiline: true },
   { name: 'tagline', label: 'Tagline', hint: 'En mening som fångar känslan.' },

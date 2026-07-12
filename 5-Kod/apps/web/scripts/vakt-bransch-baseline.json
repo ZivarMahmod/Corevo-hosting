@@ -1,0 +1,3000 @@
+{
+  "generated": "2026-07-12T03:13:56.910Z",
+  "note": "Kända historiska bransch-ord-träffar (städlista). Nya träffar utöver dessa failar vakten. Städa en träff = fixa koden och ta bort raden här. Regenerera = radera filen och kör om.",
+  "entries": [
+    {
+      "file": "app/not-found.tsx",
+      "line": 20,
+      "word": "salongen",
+      "text": "Adressen finns inte, eller så är salongen inte tillgänglig."
+    },
+    {
+      "file": "app/(admin)/layout.tsx",
+      "line": 14,
+      "word": "Salongsadmin",
+      "text": "<PortalShell user={user} title=\"Salongsadmin\" world=\"backoffice\" portal=\"admin\">"
+    },
+    {
+      "file": "app/avboka/actions.ts",
+      "line": 54,
+      "word": "salongen",
+      "text": "return { ok: false, reason: 'too_late', message: 'Det är för sent att avboka online — kontakta salongen.' }"
+    },
+    {
+      "file": "app/avboka/actions.ts",
+      "line": 83,
+      "word": "Salongen",
+      "text": "const tenantName = (b.tenants as { name?: string } | null)?.name ?? 'Salongen'"
+    },
+    {
+      "file": "app/boka/actions.ts",
+      "line": 107,
+      "word": "salong",
+      "text": "if (!ctx) return { ok: false, error: 'Okänd salong.' }"
+    },
+    {
+      "file": "app/boka/actions.ts",
+      "line": 288,
+      "word": "salong",
+      "text": "if (!ctx) return { ok: false, reason: 'invalid', message: 'Okänd salong.' }"
+    },
+    {
+      "file": "app/boka/actions.ts",
+      "line": 413,
+      "word": "salong",
+      "text": "if (!ctx) return { ok: false, reason: 'error', message: 'Okänd salong.' }"
+    },
+    {
+      "file": "app/(admin)/admin/page.tsx",
+      "line": 18,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/page.tsx",
+      "line": 44,
+      "word": "Salongsadmin",
+      "text": "<h1>Salongsadmin</h1>"
+    },
+    {
+      "file": "app/(admin)/admin/page.tsx",
+      "line": 45,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto. Kontakta Corevo.</p>"
+    },
+    {
+      "file": "app/(personal)/personal/page.tsx",
+      "line": 33,
+      "word": "salongsadmin",
+      "text": "Ditt konto är inte kopplat till en personalrad ännu. Kontakta salongsadmin så kopplas du"
+    },
+    {
+      "file": "app/(platform)/domaner/page.tsx",
+      "line": 27,
+      "word": "salongs",
+      "text": "lede=\"Varje salongs subdomän kopplas automatiskt och re-asserteras vid varje deploy — en deploy kan aldrig ta ner en kundsida. Bara manuell radering tar bort en domän.\""
+    },
+    {
+      "file": "app/(platform)/drift-och-logg/DriftLog.tsx",
+      "line": 46,
+      "word": "Salong",
+      "text": "'tenant.create': 'Salong skapad (atomiskt)',"
+    },
+    {
+      "file": "app/(platform)/drift-och-logg/DriftLog.tsx",
+      "line": 47,
+      "word": "Salong",
+      "text": "'tenant.suspend': 'Salong suspenderad',"
+    },
+    {
+      "file": "app/(platform)/drift-och-logg/DriftLog.tsx",
+      "line": 48,
+      "word": "Salong",
+      "text": "'tenant.activate': 'Salong återaktiverad',"
+    },
+    {
+      "file": "app/(platform)/drift-och-logg/DriftLog.tsx",
+      "line": 49,
+      "word": "Salong",
+      "text": "'tenant.delete': 'Salong raderad (mjuk)',"
+    },
+    {
+      "file": "app/(platform)/drift-och-logg/DriftLog.tsx",
+      "line": 53,
+      "word": "Salongsdata",
+      "text": "'tenant.update': 'Salongsdata redigerad',"
+    },
+    {
+      "file": "app/(platform)/drift-och-logg/DriftLog.tsx",
+      "line": 92,
+      "word": "salong",
+      "text": "const tenant = e.tenant && e.tenant !== '—' ? e.tenant : 'okänd salong'"
+    },
+    {
+      "file": "app/(platform)/drift-och-logg/DriftLog.tsx",
+      "line": 152,
+      "word": "salonger",
+      "text": "lede=\"Vem gjorde vad, och när. Din svarta låda — tvärs över alla salonger via platform_admin.\""
+    },
+    {
+      "file": "app/(platform)/drift-och-logg/DriftLog.tsx",
+      "line": 237,
+      "word": "salong",
+      "text": "? 'Ingen aktivitet loggad ännu. Operativa åtgärder (skapa salong, suspendera, lösenordsreset) och systemhändelser dyker upp här.'"
+    },
+    {
+      "file": "app/(platform)/fakturering/page.tsx",
+      "line": 41,
+      "word": "salong",
+      "text": "FLÖDE 2 — läs-vy som Corevo fakturerar manuellt från. Per salong per kalendermånad:"
+    },
+    {
+      "file": "app/(platform)/fakturering/page.tsx",
+      "line": 60,
+      "word": "Salong",
+      "text": "<th>Salong</th>"
+    },
+    {
+      "file": "app/(platform)/fakturering/page.tsx",
+      "line": 92,
+      "word": "salong",
+      "text": "<Link href=\"/salonger/ny\">Skapa en salong →</Link>"
+    },
+    {
+      "file": "app/(platform)/fakturering/page.tsx",
+      "line": 110,
+      "word": "salong",
+      "text": "Startavgift (engångs) faktureras separat per salong och ingår inte i månadsunderlaget ovan."
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 56,
+      "word": "Salong",
+      "text": "'tenant.create': 'Salong skapad',"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 57,
+      "word": "Salong",
+      "text": "'tenant.suspend': 'Salong pausad',"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 58,
+      "word": "Salong",
+      "text": "'tenant.activate': 'Salong aktiverad',"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 59,
+      "word": "Salong",
+      "text": "'tenant.delete': 'Salong borttagen',"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 63,
+      "word": "Salongsdata",
+      "text": "'tenant.update': 'Salongsdata uppdaterad',"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 128,
+      "word": "salonger",
+      "text": "lede=\"Din insyn över alla salonger — klicka in på vilken som helst och styr allt utan kod.\""
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 131,
+      "word": "salong",
+      "text": "Onboarda salong"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 153,
+      "word": "Salonger",
+      "text": "label=\"Salonger\""
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 162,
+      "word": "salonger",
+      "text": "hint={`av ${overview.tenantsTotal} salonger`}"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 214,
+      "word": "salonger",
+      "text": "<h2 className=\"h2\">Alla salonger</h2>"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 222,
+      "word": "salonger",
+      "text": "<p className={`h2 ${styles.tableEmptyTitle}`}>Inga salonger ännu</p>"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 224,
+      "word": "salong",
+      "text": "Onboarda din första kund — skapa salong, välj temamall och färger, så"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 228,
+      "word": "salongen",
+      "text": "Skapa den första salongen"
+    },
+    {
+      "file": "app/(platform)/platform/page.tsx",
+      "line": 233,
+      "word": "Salong",
+      "text": "cols={['Salong', 'Subdomän', 'Stad', 'Skapad', 'Bokningar', 'Status']}"
+    },
+    {
+      "file": "app/(platform)/roller/page.tsx",
+      "line": 30,
+      "word": "salongs",
+      "text": "lede=\"Minsta möjliga behörighet (least privilege). private.tenant_id() isolerar tenant-data — ägaren ser aldrig en annan salongs rader.\""
+    },
+    {
+      "file": "app/(platform)/salonger/error.tsx",
+      "line": 8,
+      "word": "salongerna",
+      "text": "title=\"Kunde inte ladda salongerna\""
+    },
+    {
+      "file": "app/(platform)/salonger/error.tsx",
+      "line": 9,
+      "word": "Salongslistan",
+      "text": "message=\"Salongslistan gick inte att hämta just nu. Försök igen.\""
+    },
+    {
+      "file": "app/avboka/[id]/page.tsx",
+      "line": 119,
+      "word": "salongen",
+      "text": "return <Message title=\"Avbokning otillgänglig\" body=\"Avbokning är inte tillgänglig just nu. Kontakta salongen.\" />"
+    },
+    {
+      "file": "app/avboka/[id]/page.tsx",
+      "line": 133,
+      "word": "Salongen",
+      "text": "const tenantName = (booking.tenants as { name?: string } | null)?.name ?? 'Salongen'"
+    },
+    {
+      "file": "app/avboka/[id]/page.tsx",
+      "line": 183,
+      "word": "Salong",
+      "text": "<span className=\"tkt-row-label\">Salong</span>"
+    },
+    {
+      "file": "app/avboka/[id]/page.tsx",
+      "line": 226,
+      "word": "salongen",
+      "text": "Vi kunde inte avboka just nu. Försök igen eller kontakta salongen."
+    },
+    {
+      "file": "app/(admin)/admin/blogg/page.tsx",
+      "line": 11,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Blogg · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/blogg/page.tsx",
+      "line": 25,
+      "word": "salong",
+      "text": "Blogg är inte aktiverad för din salong. Be plattformsadmin aktivera modulen."
+    },
+    {
+      "file": "app/(admin)/admin/blogg/page.tsx",
+      "line": 53,
+      "word": "Salongsadmin",
+      "text": "<PageHead eyebrow=\"Salongsadmin\" title=\"Blogg\" />"
+    },
+    {
+      "file": "app/(admin)/admin/blogg/page.tsx",
+      "line": 54,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/bokningar/page.tsx",
+      "line": 21,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Bokningar · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/bokningar/page.tsx",
+      "line": 34,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Bokningar\" />"
+    },
+    {
+      "file": "app/(admin)/admin/bokningar/page.tsx",
+      "line": 35,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/bokningar/page.tsx",
+      "line": 223,
+      "word": "Frisör",
+      "text": "staffNoun={resolveTerm(tenant.terminology, 'staff', 'Frisör')}"
+    },
+    {
+      "file": "app/(admin)/admin/installningar/page.tsx",
+      "line": 12,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Inställningar · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/installningar/page.tsx",
+      "line": 26,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Inställningar\" />"
+    },
+    {
+      "file": "app/(admin)/admin/installningar/page.tsx",
+      "line": 27,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/installningar/page.tsx",
+      "line": 62,
+      "word": "Salongens",
+      "text": "lede=\"Varje reglage är på riktigt kopplat. Slår du på något funkar funktionen — annars finns den inte här. Salongens namn, kontakt, tidszon, betalning och avbokningsregel styrs härifrån.\""
+    },
+    {
+      "file": "app/(admin)/admin/kunder/CustomerExport.tsx",
+      "line": 37,
+      "word": "Frisör",
+      "text": "const header = ['Kund', 'Nivå', 'Besök', 'Senaste besök', 'Frisör', 'Lojalitetspoäng']"
+    },
+    {
+      "file": "app/(admin)/admin/kunder/page.tsx",
+      "line": 14,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Kunder · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/kunder/page.tsx",
+      "line": 42,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Kunder\" />"
+    },
+    {
+      "file": "app/(admin)/admin/kunder/page.tsx",
+      "line": 43,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/kunder/page.tsx",
+      "line": 79,
+      "word": "Frisören",
+      "text": "lede=\"Frisören känner igen återkommande kunder år efter år — utan att kundens personuppgifter ligger exponerade.\""
+    },
+    {
+      "file": "app/(admin)/admin/kunder/page.tsx",
+      "line": 136,
+      "word": "Frisör",
+      "text": "<th>{resolveTerm(tenant.terminology, 'staff', 'Frisör')}</th>"
+    },
+    {
+      "file": "app/(admin)/admin/kurser/page.tsx",
+      "line": 10,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Kurser & event · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/kurser/page.tsx",
+      "line": 24,
+      "word": "salong",
+      "text": "Kurser &amp; event är inte aktiverad för din salong. Be plattformsadmin aktivera modulen."
+    },
+    {
+      "file": "app/(admin)/admin/kurser/page.tsx",
+      "line": 45,
+      "word": "Salongsadmin",
+      "text": "<PageHead eyebrow=\"Salongsadmin\" title=\"Kurser & event\" />"
+    },
+    {
+      "file": "app/(admin)/admin/kurser/page.tsx",
+      "line": 46,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/lojalitet/page.tsx",
+      "line": 11,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Lojalitet · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/lojalitet/page.tsx",
+      "line": 19,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Lojalitet\" />"
+    },
+    {
+      "file": "app/(admin)/admin/lojalitet/page.tsx",
+      "line": 20,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/lojalitet/page.tsx",
+      "line": 32,
+      "word": "salong",
+      "text": "Lojalitet är inte aktiverad för din salong. Be plattformsadmin aktivera modulen."
+    },
+    {
+      "file": "app/(admin)/admin/media/page.tsx",
+      "line": 10,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Bildbibliotek · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/media/page.tsx",
+      "line": 18,
+      "word": "Salongsadmin",
+      "text": "<PageHead eyebrow=\"Salongsadmin\" title=\"Bildbibliotek\" />"
+    },
+    {
+      "file": "app/(admin)/admin/media/page.tsx",
+      "line": 19,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/media/page.tsx",
+      "line": 31,
+      "word": "salong",
+      "text": "Bildbibliotek är inte aktiverat för din salong. Be plattformsadmin aktivera modulen."
+    },
+    {
+      "file": "app/(admin)/admin/offerter/page.tsx",
+      "line": 10,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Offertförfrågningar · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/offerter/page.tsx",
+      "line": 18,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Offertförfrågningar\" />"
+    },
+    {
+      "file": "app/(admin)/admin/offerter/page.tsx",
+      "line": 19,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/offerter/page.tsx",
+      "line": 31,
+      "word": "salong",
+      "text": "Offert är inte aktiverad för din salong. Be plattformsadmin aktivera modulen."
+    },
+    {
+      "file": "app/(admin)/admin/personal/page.tsx",
+      "line": 18,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Personal · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/personal/page.tsx",
+      "line": 26,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Personal\" />"
+    },
+    {
+      "file": "app/(admin)/admin/personal/page.tsx",
+      "line": 27,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/platser/page.tsx",
+      "line": 9,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Platser · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/platser/page.tsx",
+      "line": 31,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Platser\" />"
+    },
+    {
+      "file": "app/(admin)/admin/platser/page.tsx",
+      "line": 32,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/presentkort/page.tsx",
+      "line": 10,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Presentkort · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/presentkort/page.tsx",
+      "line": 18,
+      "word": "Salongsadmin",
+      "text": "<PageHead eyebrow=\"Salongsadmin\" title=\"Presentkort\" />"
+    },
+    {
+      "file": "app/(admin)/admin/presentkort/page.tsx",
+      "line": 19,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/presentkort/page.tsx",
+      "line": 31,
+      "word": "salong",
+      "text": "Presentkort är inte aktiverat för din salong. Be plattformsadmin aktivera modulen."
+    },
+    {
+      "file": "app/(admin)/admin/sajtbyggare/page.tsx",
+      "line": 18,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Sajtbyggare · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/sajtbyggare/page.tsx",
+      "line": 64,
+      "word": "Salongsadmin",
+      "text": "<PageHead eyebrow=\"Salongsadmin\" title=\"Sajtbyggare\" />"
+    },
+    {
+      "file": "app/(admin)/admin/sajtbyggare/page.tsx",
+      "line": 65,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/scheman/page.tsx",
+      "line": 25,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Schema · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/scheman/page.tsx",
+      "line": 55,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Schema\" />"
+    },
+    {
+      "file": "app/(admin)/admin/scheman/page.tsx",
+      "line": 56,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/sida/page.tsx",
+      "line": 15,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Redigera sidan · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/sida/page.tsx",
+      "line": 36,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/sida/page.tsx",
+      "line": 49,
+      "word": "salongens",
+      "text": "<p className=\"prose\">Kunde inte läsa salongens data. Försök igen.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/tjanster/page.tsx",
+      "line": 9,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Tjänster · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/tjanster/page.tsx",
+      "line": 31,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Tjänster\" />"
+    },
+    {
+      "file": "app/(admin)/admin/tjanster/page.tsx",
+      "line": 32,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/webshop/page.tsx",
+      "line": 11,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Webshop · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/webshop/page.tsx",
+      "line": 19,
+      "word": "Salongsadmin",
+      "text": "<PageHead eyebrow=\"Salongsadmin\" title=\"Webshop\" />"
+    },
+    {
+      "file": "app/(admin)/admin/webshop/page.tsx",
+      "line": 20,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/webshop/page.tsx",
+      "line": 32,
+      "word": "salong",
+      "text": "Webshop är inte aktiverad för din salong. Be plattformsadmin aktivera modulen."
+    },
+    {
+      "file": "app/(personal)/personal/arbetstider/page.tsx",
+      "line": 52,
+      "word": "salongsadmin",
+      "text": "Kontakta salongsadmin för att kopplas till en personalrad — sedan visas dina arbetstider"
+    },
+    {
+      "file": "app/(personal)/personal/franvaro/page.tsx",
+      "line": 24,
+      "word": "salongsadmin",
+      "text": "Kontakta salongsadmin för att kopplas till en personalrad — sedan kan du registrera din"
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/error.tsx",
+      "line": 8,
+      "word": "salongen",
+      "text": "title=\"Kunde inte ladda salongen\""
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/error.tsx",
+      "line": 9,
+      "word": "Salongens",
+      "text": "message=\"Salongens detaljer gick inte att hämta just nu. Försök igen.\""
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/page.tsx",
+      "line": 241,
+      "word": "salongen",
+      "text": "? 'Aktivera salongen i Drift för att gå publik.'"
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/page.tsx",
+      "line": 352,
+      "word": "Salongsägare",
+      "text": "{/* #10 — owner name from users.full_name; honest \"Salongsägare\""
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/page.tsx",
+      "line": 354,
+      "word": "Salongsägare",
+      "text": "<div className={styles.ownerName}>{salonAdmin.fullName || 'Salongsägare'}</div>"
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/page.tsx",
+      "line": 361,
+      "word": "Salongsadmin",
+      "text": "<KV label=\"Roll\" value=\"Salongsadmin (ägare)\" />"
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/page.tsx",
+      "line": 367,
+      "word": "salongsadmin",
+      "text": "Ingen salongsadmin inbjuden ännu. Bjud in en ägare via Onboarda salong, eller skapa"
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/page.tsx",
+      "line": 367,
+      "word": "salong",
+      "text": "Ingen salongsadmin inbjuden ännu. Bjud in en ägare via Onboarda salong, eller skapa"
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/page.tsx",
+      "line": 396,
+      "word": "salongens",
+      "text": "Hantera salongens tjänster direkt härifrån — lägg till, redigera pris/längd,"
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/page.tsx",
+      "line": 418,
+      "word": "salongens",
+      "text": "Hantera salongens personal direkt härifrån — redigera namn/titel, aktivera/inaktivera,"
+    },
+    {
+      "file": "app/(platform)/salonger/[id]/page.tsx",
+      "line": 635,
+      "word": "salongens",
+      "text": "Slår på/av den kund-egna sid-editorn i salongens admin. Påverkar bara kundens"
+    },
+    {
+      "file": "app/api/stripe/webhook/route.ts",
+      "line": 207,
+      "word": "Salongen",
+      "text": "tenantName: rel.tenants?.name ?? 'Salongen',"
+    },
+    {
+      "file": "app/boka/bekraftelse/[id]/page.tsx",
+      "line": 178,
+      "word": "salongen",
+      "text": "<p className=\"tkt-note\">Betalningen avbröts. Du kan betala i salongen vid besöket.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/bokningar/vy/page.tsx",
+      "line": 21,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Bokningsvy · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/bokningar/vy/page.tsx",
+      "line": 51,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/bokningar/vy/page.tsx",
+      "line": 186,
+      "word": "Frisör",
+      "text": "const staffNoun = resolveTerm(tenant.terminology, 'staff', 'Frisör')"
+    },
+    {
+      "file": "app/(admin)/admin/kunder/[id]/page.tsx",
+      "line": 21,
+      "word": "Salongsadmin",
+      "text": "export const metadata: Metadata = { title: 'Kund · Salongsadmin' }"
+    },
+    {
+      "file": "app/(admin)/admin/kunder/[id]/page.tsx",
+      "line": 53,
+      "word": "Salong",
+      "text": "<PageHead eyebrow=\"Salong-admin\" title=\"Kund\" />"
+    },
+    {
+      "file": "app/(admin)/admin/kunder/[id]/page.tsx",
+      "line": 54,
+      "word": "salong",
+      "text": "<p className=\"prose\">Ingen salong är kopplad till ditt konto.</p>"
+    },
+    {
+      "file": "app/(admin)/admin/kunder/[id]/page.tsx",
+      "line": 112,
+      "word": "Frisör",
+      "text": "label={`Favorit${resolveTerm(tenant.terminology, 'staff', 'Frisör').toLowerCase()}`}"
+    },
+    {
+      "file": "app/(kund)/konto/bokningar/[id]/page.tsx",
+      "line": 64,
+      "word": "salongen",
+      "text": "förväg). Kontakta salongen för att ändra eller avboka."
+    },
+    {
+      "file": "components/admin/BloggAdmin.tsx",
+      "line": 118,
+      "word": "salong",
+      "text": "lede=\"Skapa och hantera blogginlägg för din salong. Ändringar slår igenom utan kod eller deploy.\""
+    },
+    {
+      "file": "components/admin/BookingsClient.tsx",
+      "line": 125,
+      "word": "Frisör",
+      "text": "staffNoun = 'Frisör',"
+    },
+    {
+      "file": "components/admin/BrandingForm.tsx",
+      "line": 458,
+      "word": "Klippning",
+      "text": "<div className={styles.serviceName}>Klippning &amp; styling</div>"
+    },
+    {
+      "file": "components/admin/LocationsManager.tsx",
+      "line": 83,
+      "word": "Salongens",
+      "text": "lede=\"Salongens platser (filialer). Den primära platsen är den bokningar och den publika sajten utgår från — varje salong har exakt en.\""
+    },
+    {
+      "file": "components/admin/LocationsManager.tsx",
+      "line": 83,
+      "word": "salong",
+      "text": "lede=\"Salongens platser (filialer). Den primära platsen är den bokningar och den publika sajten utgår från — varje salong har exakt en.\""
+    },
+    {
+      "file": "components/admin/LocationsManager.tsx",
+      "line": 239,
+      "word": "Salongen",
+      "text": "placeholder=\"t.ex. Salongen Söder\""
+    },
+    {
+      "file": "components/admin/LocationsManager.tsx",
+      "line": 403,
+      "word": "salongens",
+      "text": "Detta är salongens primära plats — bokningar och den publika sajten utgår härifrån. Vill"
+    },
+    {
+      "file": "components/admin/MediaLibrary.tsx",
+      "line": 376,
+      "word": "Frisör",
+      "text": "placeholder=\"t.ex. Frisör klipper en kund\""
+    },
+    {
+      "file": "components/admin/ServicesManager.tsx",
+      "line": 460,
+      "word": "Klippning",
+      "text": "placeholder=\"t.ex. Klippning\""
+    },
+    {
+      "file": "components/admin/ServicesManager.tsx",
+      "line": 595,
+      "word": "Klippning",
+      "text": "placeholder=\"t.ex. Klippning\""
+    },
+    {
+      "file": "components/admin/SettingsForm.tsx",
+      "line": 137,
+      "word": "Salongsnamn",
+      "text": "<span>Salongsnamn</span>"
+    },
+    {
+      "file": "components/admin/SettingsForm.tsx",
+      "line": 259,
+      "word": "salongens",
+      "text": "Klistra in salongens Google-recensionslänk. Lämna tomt för att stänga av."
+    },
+    {
+      "file": "components/admin/SlotManager.tsx",
+      "line": 105,
+      "word": "salongens",
+      "text": "Upplägget är förinställt från salongens nuvarande mönster. Justera per dag — minimalt"
+    },
+    {
+      "file": "components/admin/SlotManager.tsx",
+      "line": 150,
+      "word": "Frisör",
+      "text": "Frisör:"
+    },
+    {
+      "file": "components/admin/StaffRoster.tsx",
+      "line": 384,
+      "word": "salongens",
+      "text": "sub={member.hasAccount ? 'Eget konto · egen vy' : 'Hanteras i salongens sida'}"
+    },
+    {
+      "file": "components/admin/StaffRoster.tsx",
+      "line": 456,
+      "word": "salonger",
+      "text": "salonger per vecka kommer — bokningarna får aldrig krocka."
+    },
+    {
+      "file": "components/admin/StaffRoster.tsx",
+      "line": 999,
+      "word": "salongens",
+      "text": "Hanteras i salongens sida just nu. Bjud in med en engångslänk för att ge ett eget konto med"
+    },
+    {
+      "file": "components/admin/StaffRoster.tsx",
+      "line": 1067,
+      "word": "salongen",
+      "text": "Lägg till i salongen"
+    },
+    {
+      "file": "components/admin/StaffRoster.tsx",
+      "line": 1077,
+      "word": "frisör",
+      "text": "placeholder=\"t.ex. Hilal — frisör\""
+    },
+    {
+      "file": "components/admin/StorefrontCopyForm.tsx",
+      "line": 11,
+      "word": "salong",
+      "text": "{ name: 'heroEyebrow', label: 'Hero — eyebrow', hint: 'Liten överrad, t.ex. “— Din salong”.' },"
+    },
+    {
+      "file": "components/admin/StorefrontMediaForm.tsx",
+      "line": 70,
+      "word": "salongen",
+      "text": "hint=\"Bilden bredvid texten ”Om salongen”.\""
+    },
+    {
+      "file": "components/admin/StorefrontMediaForm.tsx",
+      "line": 352,
+      "word": "Frisör",
+      "text": "placeholder=\"Roll (t.ex. Frisör)\""
+    },
+    {
+      "file": "components/admin/StripeConnectCard.tsx",
+      "line": 108,
+      "word": "salong",
+      "text": "? 'Kunden betalar online när tiden bokas — pengarna går rakt till din salong.'"
+    },
+    {
+      "file": "components/admin/StripeConnectCard.tsx",
+      "line": 164,
+      "word": "salong",
+      "text": "? 'Ansluten · utbetalning till din salong'"
+    },
+    {
+      "file": "components/booking/BookingWizard.tsx",
+      "line": 108,
+      "word": "Frisör",
+      "text": "staffNoun = 'Frisör',"
+    },
+    {
+      "file": "components/booking/BookingWizard.tsx",
+      "line": 595,
+      "word": "Salongen",
+      "text": "Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare"
+    },
+    {
+      "file": "components/booking/BookingWizard.tsx",
+      "line": 596,
+      "word": "salongen",
+      "text": "eller kontakta salongen direkt."
+    },
+    {
+      "file": "components/booking/BookingWizard.tsx",
+      "line": 802,
+      "word": "salong",
+      "text": "Välj salong — vi visar lediga tider för just den platsen."
+    },
+    {
+      "file": "components/booking/BookingWizard.tsx",
+      "line": 894,
+      "word": "Salongen",
+      "text": "Salongen har inte lagt upp några bokningsbara tjänster ännu. Försök igen senare"
+    },
+    {
+      "file": "components/booking/BookingWizard.tsx",
+      "line": 895,
+      "word": "salongen",
+      "text": "eller kontakta salongen direkt."
+    },
+    {
+      "file": "components/kund/AccountBookings.tsx",
+      "line": 56,
+      "word": "salongen",
+      "text": "{b.staffTitle ? `hos ${b.staffTitle}` : 'hos salongen'}"
+    },
+    {
+      "file": "components/kund/AccountPrivacy.tsx",
+      "line": 74,
+      "word": "salongen",
+      "text": "Du bestämmer hur du syns för salongen. Ditt lojalitetsband finns kvar oavsett — det bygger på"
+    },
+    {
+      "file": "components/kund/AccountPrivacy.tsx",
+      "line": 78,
+      "word": "frisören",
+      "text": "<div className={styles.fieldLabel}>Så här ser frisören mitt namn</div>"
+    },
+    {
+      "file": "components/kund/AccountPrivacy.tsx",
+      "line": 79,
+      "word": "salongen",
+      "text": "<div className={styles.seg} role=\"group\" aria-label=\"Visningsnamn (hanteras av salongen)\">"
+    },
+    {
+      "file": "components/kund/AccountPrivacy.tsx",
+      "line": 94,
+      "word": "salongens",
+      "text": "Visas i salongens system som <b>{shown}</b>"
+    },
+    {
+      "file": "components/kund/AccountPrivacy.tsx",
+      "line": 101,
+      "word": "salongen",
+      "text": "Hur ditt namn visas hanteras av salongen — hör av dig om du vill ändra det. Ditt namn och"
+    },
+    {
+      "file": "components/kund/FavoritesList.tsx",
+      "line": 52,
+      "word": "frisör",
+      "text": "const staffLc = resolveTerm(terminology, 'staff', 'frisör') // lowercase nominative"
+    },
+    {
+      "file": "components/kund/FavoritesList.tsx",
+      "line": 53,
+      "word": "Frisör",
+      "text": "const staffUc = resolveTerm(terminology, 'staff', 'Frisör') // capitalized nominative"
+    },
+    {
+      "file": "components/kund/FavoriteStaffButton.tsx",
+      "line": 40,
+      "word": "frisören",
+      "text": "aria-label={`Spara ${staffTitle ?? 'frisören'} som favorit`}"
+    },
+    {
+      "file": "components/kund/GdprControls.tsx",
+      "line": 32,
+      "word": "salongens",
+      "text": "Detta är permanent. Bokningshistoriken anonymiseras (sparas avidentifierad för salongens"
+    },
+    {
+      "file": "components/kund/GoogleReviewNudge.tsx",
+      "line": 62,
+      "word": "salongen",
+      "text": "tenantName={tenantName ?? 'salongen'}"
+    },
+    {
+      "file": "components/kund/GoogleReviewNudgePopup.tsx",
+      "line": 88,
+      "word": "salongen",
+      "text": "en minut och hjälper salongen enormt."
+    },
+    {
+      "file": "components/kund/StylistCard.tsx",
+      "line": 47,
+      "word": "frisör",
+      "text": "const staffLc = resolveTerm(terminology, 'staff', 'frisör') // base, lowercase nominative"
+    },
+    {
+      "file": "components/kund/StylistCard.tsx",
+      "line": 48,
+      "word": "Frisör",
+      "text": "const staffUc = resolveTerm(terminology, 'staff', 'Frisör') // base, capitalized"
+    },
+    {
+      "file": "components/kund/StylistCard.tsx",
+      "line": 49,
+      "word": "Frisörer",
+      "text": "const staffPlUc = termPlural(terminology, 'staff', 'Frisörer') // plural, capitalized"
+    },
+    {
+      "file": "components/kund/StylistCard.tsx",
+      "line": 58,
+      "word": "salongen",
+      "text": ": `Din sparade ${staffLc} hos salongen.`"
+    },
+    {
+      "file": "components/kund/StylistCard.tsx",
+      "line": 67,
+      "word": "stylistName",
+      "text": "<div className={styles.stylistName}>{name}</div>"
+    },
+    {
+      "file": "components/kund/StylistCard.tsx",
+      "line": 68,
+      "word": "stylistRel",
+      "text": "<div className={styles.stylistRel}>{rel}</div>"
+    },
+    {
+      "file": "components/kund/StylistCard.tsx",
+      "line": 103,
+      "word": "stylistName",
+      "text": "<div className={styles.stylistName}>Välj din {staffLc}</div>"
+    },
+    {
+      "file": "components/personal/ClientCard.tsx",
+      "line": 282,
+      "word": "salongen",
+      "text": ": `${card.loyalty.points.toLocaleString('sv-SE')} poäng. Nivåer är inte aktiverade för salongen.`}"
+    },
+    {
+      "file": "components/personal/ClientCard.tsx",
+      "line": 344,
+      "word": "salongen",
+      "text": "Endast för dig och salongen. Visas aldrig för kunden."
+    },
+    {
+      "file": "components/personal/WalkInForm.tsx",
+      "line": 26,
+      "word": "salongsadmin",
+      "text": "Inga tjänster är kopplade till dig än — be salongsadmin koppla dina tjänster så kan du logga"
+    },
+    {
+      "file": "components/platform/BookingSettings.tsx",
+      "line": 157,
+      "word": "salongens",
+      "text": "Hur bokningen öppnar sig på salongens sida. Alla fyra ger samma steg och"
+    },
+    {
+      "file": "components/platform/BookingSettings.tsx",
+      "line": 214,
+      "word": "Barberarbilder",
+      "text": "<h3 className={studio.cardHead}>Barberarbilder</h3>"
+    },
+    {
+      "file": "components/platform/BookingSettings.tsx",
+      "line": 216,
+      "word": "Barberarbilder",
+      "text": "<div style={segRail} role=\"radiogroup\" aria-label=\"Barberarbilder\">"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 110,
+      "word": "Frisörsalong",
+      "text": "eyebrow: 'Frisörsalong', hero: 'Skarpt klippt. Skönt mottagen.',"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 111,
+      "word": "salong",
+      "text": "lede: 'En stilla salong där varje klippning får ta sin tid.', img: uns('1521590832167-7bcbfaa6381f'),"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 111,
+      "word": "klippning",
+      "text": "lede: 'En stilla salong där varje klippning får ta sin tid.', img: uns('1521590832167-7bcbfaa6381f'),"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 116,
+      "word": "Salong",
+      "text": "eyebrow: 'Salong & studio', hero: 'Din stund av lugn.',"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 121,
+      "word": "barber",
+      "text": "display: \"'Bebas Neue', sans-serif\", radius: 4, caps: true, vibe: 'Mörk & rå barber',"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 122,
+      "word": "Barber",
+      "text": "eyebrow: 'Barber & frisör', hero: 'Skarp fade. Ren stil.',"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 122,
+      "word": "frisör",
+      "text": "eyebrow: 'Barber & frisör', hero: 'Skarp fade. Ren stil.',"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 123,
+      "word": "barbering",
+      "text": "lede: 'Klassisk barbering med modern attityd.', img: uns('1585747860715-2ba37e788b70'),"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 129,
+      "word": "salong",
+      "text": "lede: 'Varma jordnära toner i en avslappnad salong.', img: uns('1595476108010-b4d1f102b1b1'),"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 145,
+      "word": "Barbershop",
+      "text": "display: \"'Playfair Display', Georgia, serif\", radius: 0, caps: false, vibe: 'Barbershop (freshcut.se)',"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 146,
+      "word": "Barbershop",
+      "text": "eyebrow: 'Barbershop', hero: 'FreshCut',"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 147,
+      "word": "Barbershop",
+      "text": "lede: 'Barbershop i centrala Linköping.', img: uns('1503951914875-452162b0f3f1'),"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 607,
+      "word": "salongen",
+      "text": "tillsammans med salongen när du skapar den. (Förhandsvisning visas när kunden"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 626,
+      "word": "Hårvård",
+      "text": "<Field label=\"Tagline\" ph=\"Hårvård med lugn hand\" value={tagline} onChange={setTagline} />"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 784,
+      "word": "Hårvård",
+      "text": "<Field label=\"Tagline\" ph=\"Hårvård med lugn hand\" value={tagline} onChange={setTagline} />"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 834,
+      "word": "Salongsadmin",
+      "text": "<Badge tone=\"gold\" dot={false}>Salongsadmin (ägare)</Badge>"
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 836,
+      "word": "salongspanel",
+      "text": "Full åtkomst till sin egen salongspanel."
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 848,
+      "word": "salongsadmin",
+      "text": "Ägaren bjuds in som salongsadmin."
+    },
+    {
+      "file": "components/platform/CreateTenantForm.tsx",
+      "line": 966,
+      "word": "Klippning",
+      "text": "const chips = serviceLabel ? [serviceLabel, 'Färg', 'Styling'] : ['Klippning', 'Färg', 'Styling']"
+    },
+    {
+      "file": "components/platform/DomainManager.tsx",
+      "line": 110,
+      "word": "Salongen",
+      "text": "Salongen körs på <code className={styles.code}>{slug}.corevo.se</code>. Lägg till kundens egna"
+    },
+    {
+      "file": "components/platform/DomainManager.tsx",
+      "line": 125,
+      "word": "salongnamn",
+      "text": "placeholder=\"boka.salongnamn.se\""
+    },
+    {
+      "file": "components/platform/DomainOverview.tsx",
+      "line": 48,
+      "word": "Salong",
+      "text": "<h2>Salong-domäner ({rows.length})</h2>"
+    },
+    {
+      "file": "components/platform/DomainOverview.tsx",
+      "line": 51,
+      "word": "salonger",
+      "text": "<p className={styles.muted}>Inga aktiva salonger ännu.</p>"
+    },
+    {
+      "file": "components/platform/DomainPanel.tsx",
+      "line": 31,
+      "word": "salongnamn",
+      "text": "(t.ex. <code className={styles.code}>boka.salongnamn.se</code> via CNAME) är ett parkerat"
+    },
+    {
+      "file": "components/platform/IntegrationsGrid.tsx",
+      "line": 26,
+      "word": "salong",
+      "text": "return <span className={styles.tenants}>Plattformsbred · ingen per-salong-status</span>"
+    },
+    {
+      "file": "components/platform/PersonalCard.tsx",
+      "line": 88,
+      "word": "Frisör",
+      "text": "<input name=\"title\" placeholder=\"t.ex. Anna – Frisör\" required />"
+    },
+    {
+      "file": "components/platform/PersonalCard.tsx",
+      "line": 108,
+      "word": "Frisör",
+      "text": "<input name=\"title\" placeholder=\"t.ex. Anna – Frisör\" />"
+    },
+    {
+      "file": "components/platform/PersonalCard.tsx",
+      "line": 112,
+      "word": "salongen",
+      "text": "<input name=\"email\" type=\"email\" inputMode=\"email\" placeholder=\"anna@salongen.se\" required />"
+    },
+    {
+      "file": "components/platform/PersonalCard.tsx",
+      "line": 213,
+      "word": "Salongen",
+      "text": "Salongen har inga tjänster än — lägg till i Tjänster-fliken först."
+    },
+    {
+      "file": "components/platform/PersonalCard.tsx",
+      "line": 286,
+      "word": "salongen",
+      "text": "<input name=\"email\" type=\"email\" inputMode=\"email\" placeholder=\"anna@salongen.se\" required />"
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 84,
+      "word": "salonger",
+      "text": "salonger,"
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 115,
+      "word": "frisörer",
+      "text": "lede=\"Lägg till frisörer åt salonger som vill ha hjälp. Skapar en personalrad direkt på vald salong.\""
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 115,
+      "word": "salonger",
+      "text": "lede=\"Lägg till frisörer åt salonger som vill ha hjälp. Skapar en personalrad direkt på vald salong.\""
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 115,
+      "word": "salong",
+      "text": "lede=\"Lägg till frisörer åt salonger som vill ha hjälp. Skapar en personalrad direkt på vald salong.\""
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 131,
+      "word": "Salonger",
+      "text": "<Stat label=\"Salonger\" value={stats.salonger} icon=\"building\" />"
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 131,
+      "word": "salonger",
+      "text": "<Stat label=\"Salonger\" value={stats.salonger} icon=\"building\" />"
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 161,
+      "word": "salong",
+      "text": "placeholder=\"Sök personal, salong…\""
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 191,
+      "word": "Salong",
+      "text": "cols={['Namn', 'Salong', 'Roll', 'Tjänster', 'Inbjuden', 'Status', '']}"
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 250,
+      "word": "salong",
+      "text": "När en salong onboardar frisörer dyker de upp här — tvärs alla salonger."
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 250,
+      "word": "frisörer",
+      "text": "När en salong onboardar frisörer dyker de upp här — tvärs alla salonger."
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 250,
+      "word": "salonger",
+      "text": "När en salong onboardar frisörer dyker de upp här — tvärs alla salonger."
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 286,
+      "word": "salong",
+      "text": "sub=\"Skapar en personalrad direkt på vald salong.\""
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 293,
+      "word": "frisör",
+      "text": "<input name=\"title\" required placeholder=\"t.ex. Hilal — frisör\" aria-label=\"Namn / titel\" />"
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 296,
+      "word": "Salong",
+      "text": "<span>Salong</span>"
+    },
+    {
+      "file": "components/platform/PersonalClient.tsx",
+      "line": 299,
+      "word": "salong",
+      "text": "<option value=\"\">Ingen salong ännu</option>"
+    },
+    {
+      "file": "components/platform/PlatformBrandingForm.tsx",
+      "line": 254,
+      "word": "salongsnamnet",
+      "text": "<span style={secSub}>Visas i sidhuvudet — utan logotyp visas salongsnamnet</span>"
+    },
+    {
+      "file": "components/platform/PlatformBrandingForm.tsx",
+      "line": 267,
+      "word": "salongsnamnet",
+      "text": "<span className={styles.muted}>Ingen logotyp uppladdad — salongsnamnet visas i sidhuvudet.</span>"
+    },
+    {
+      "file": "components/platform/SajtbyggareControl.tsx",
+      "line": 28,
+      "word": "salongen",
+      "text": "? 'Stäng av sajtbyggaren för salongen'"
+    },
+    {
+      "file": "components/platform/SajtbyggareControl.tsx",
+      "line": 29,
+      "word": "salongen",
+      "text": ": 'Aktivera sajtbyggaren för salongen'}"
+    },
+    {
+      "file": "components/platform/SalongerClient.tsx",
+      "line": 80,
+      "word": "salonger",
+      "text": "const [view, setView] = usePersistentView<'kort' | 'lista'>('salonger:view', ['kort', 'lista'], 'kort')"
+    },
+    {
+      "file": "components/platform/SalongerClient.tsx",
+      "line": 114,
+      "word": "salonger",
+      "text": "a.download = 'salonger.csv'"
+    },
+    {
+      "file": "components/platform/ServicesCard.tsx",
+      "line": 86,
+      "word": "salongens",
+      "text": "Inga tjänster ännu — lägg till salongens första ovan. Bokningsmotorn kräver minst en"
+    },
+    {
+      "file": "components/platform/ServicesCard.tsx",
+      "line": 117,
+      "word": "Klippning",
+      "text": "<input name=\"name\" placeholder=\"t.ex. Klippning\" required />"
+    },
+    {
+      "file": "components/platform/ServicesCard.tsx",
+      "line": 216,
+      "word": "Klippning",
+      "text": "<input name=\"category\" placeholder=\"t.ex. Klippning\" defaultValue={service.category ?? ''} />"
+    },
+    {
+      "file": "components/platform/SidaStudio.tsx",
+      "line": 370,
+      "word": "salongen",
+      "text": "label: 'Om salongen',"
+    },
+    {
+      "file": "components/platform/SidaStudio.tsx",
+      "line": 423,
+      "word": "Salongsnamn",
+      "text": "<h3 className={styles.cardHead}>Salongsnamn</h3>"
+    },
+    {
+      "file": "components/platform/SidaStudio.tsx",
+      "line": 650,
+      "word": "salongens",
+      "text": "Team-sektionen på sidan hämtas från salongens <strong>riktiga personal</strong> —"
+    },
+    {
+      "file": "components/platform/SidaStudio.tsx",
+      "line": 849,
+      "word": "Salongen",
+      "text": "? 'Salongen är inte aktiv, så den publika sidan är blockerad. Återaktivera salongen i Drift för att förhandsvisa den.'"
+    },
+    {
+      "file": "components/platform/SidaStudio.tsx",
+      "line": 849,
+      "word": "salongen",
+      "text": "? 'Salongen är inte aktiv, så den publika sidan är blockerad. Återaktivera salongen i Drift för att förhandsvisa den.'"
+    },
+    {
+      "file": "components/platform/StatusControl.tsx",
+      "line": 24,
+      "word": "salong",
+      "text": "? 'Pausa salong (blockera publika sajten)'"
+    },
+    {
+      "file": "components/platform/StatusControl.tsx",
+      "line": 25,
+      "word": "salong",
+      "text": ": 'Aktivera salong igen'}"
+    },
+    {
+      "file": "components/platform/TeamCard.tsx",
+      "line": 124,
+      "word": "Barberare",
+      "text": "<input name=\"role\" defaultValue={member.role} maxLength={300} placeholder=\"Barberare · fade-specialist\" />"
+    },
+    {
+      "file": "components/platform/TenantContactForm.tsx",
+      "line": 59,
+      "word": "salong",
+      "text": "<input name=\"email\" type=\"email\" defaultValue={email ?? ''} placeholder=\"salong@exempel.se\" />"
+    },
+    {
+      "file": "components/platform/TenantContactForm.tsx",
+      "line": 92,
+      "word": "salongen",
+      "text": "<input name=\"tiktok\" defaultValue={social?.tiktok ?? ''} placeholder=\"tiktok.com/@salongen\" autoCapitalize=\"none\" spellCheck={false} />"
+    },
+    {
+      "file": "components/platform/TenantCustomers.tsx",
+      "line": 57,
+      "word": "salongen",
+      "text": "Inga kunder ännu — en stabil kund-rad skapas automatiskt när salongen tar emot sin första"
+    },
+    {
+      "file": "components/platform/TenantDetailActions.tsx",
+      "line": 39,
+      "word": "salongsadmin",
+      "text": "notify('Ingen salongsadmin inbjuden ännu — bjud in en ägare först.', 'warning')"
+    },
+    {
+      "file": "components/platform/TenantDetailActions.tsx",
+      "line": 95,
+      "word": "Salongen",
+      "text": "notify(res.success ?? 'Salongen är borttagen.', 'success')"
+    },
+    {
+      "file": "components/platform/TenantDetailActions.tsx",
+      "line": 110,
+      "word": "salong",
+      "text": "Ta bort salong"
+    },
+    {
+      "file": "components/platform/TenantNameCard.tsx",
+      "line": 39,
+      "word": "Salongsnamn",
+      "text": "Salongsnamn"
+    },
+    {
+      "file": "components/platform/TenantPreviewFrame.tsx",
+      "line": 222,
+      "word": "Salongen",
+      "text": "Salongen är inte aktiv, så den publika sidan är blockerad (RLS). Återaktivera"
+    },
+    {
+      "file": "components/platform/TenantPreviewFrame.tsx",
+      "line": 223,
+      "word": "salongen",
+      "text": "salongen i Drift för att förhandsvisa och redigera innehållet."
+    },
+    {
+      "file": "components/platform/TenantPreviewFrame.tsx",
+      "line": 546,
+      "word": "salongens",
+      "text": "Bilden sparas på salongens skarpa sida direkt (cache-bustas). PNG/JPG/WEBP/SVG/GIF, max 8 MB."
+    },
+    {
+      "file": "components/platform/TenantPreviewFrame.tsx",
+      "line": 644,
+      "word": "salongens",
+      "text": "Texten sparas på salongens skarpa sida direkt."
+    },
+    {
+      "file": "components/platform/VerticalEditor.tsx",
+      "line": 25,
+      "word": "Salong",
+      "text": "{ key: 'business', label: 'Verksamhetsord (t.ex. Salong/Restaurang)', ph: 'Salong' },"
+    },
+    {
+      "file": "components/platform/VerticalEditor.tsx",
+      "line": 25,
+      "word": "Salong",
+      "text": "{ key: 'business', label: 'Verksamhetsord (t.ex. Salong/Restaurang)', ph: 'Salong' },"
+    },
+    {
+      "file": "components/portal/nav-items.ts",
+      "line": 63,
+      "word": "Salong",
+      "text": "sub: 'Salong-admin',"
+    },
+    {
+      "file": "components/portal/PortalShell.tsx",
+      "line": 115,
+      "word": "Frisör",
+      "text": "staff: resolveTerm(terminology, 'staff', 'Frisör'),"
+    },
+    {
+      "file": "components/portal/PortalShell.tsx",
+      "line": 170,
+      "word": "salong",
+      "text": "? 'Sök salong, kund, personal, åtgärd…'"
+    },
+    {
+      "file": "components/storefront/BookingDrawer.tsx",
+      "line": 40,
+      "word": "Frisör",
+      "text": "staffNoun = 'Frisör',"
+    },
+    {
+      "file": "components/storefront/BookingProvider.tsx",
+      "line": 59,
+      "word": "Frisör",
+      "text": "staffNoun = 'Frisör',"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 16,
+      "word": "Frisör",
+      "text": "{ src: u('1600948836101-f9ffda59d250'), alt: 'Frisör som stylar håret på en kund i salongen' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 16,
+      "word": "salongen",
+      "text": "{ src: u('1600948836101-f9ffda59d250'), alt: 'Frisör som stylar håret på en kund i salongen' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 17,
+      "word": "klippning",
+      "text": "{ src: u('1560066984-138dadb4c035'), alt: 'Närbild på klippning hos frisören' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 17,
+      "word": "frisören",
+      "text": "{ src: u('1560066984-138dadb4c035'), alt: 'Närbild på klippning hos frisören' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 18,
+      "word": "salongsmiljö",
+      "text": "{ src: u('1521590832167-7bcbfaa6381f'), alt: 'Ljus och inbjudande salongsmiljö' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 23,
+      "word": "klippning",
+      "text": "{ src: u('1503951914875-452162b0f3f1', 900), alt: 'Resultat efter klippning och styling' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 24,
+      "word": "salongen",
+      "text": "{ src: u('1599351431202-1e0f0137899a', 900), alt: 'Färgning och behandling i salongen' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 26,
+      "word": "Salongens",
+      "text": "{ src: u('1521590832167-7bcbfaa6381f', 900), alt: 'Salongens interiör' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 27,
+      "word": "Frisör",
+      "text": "{ src: u('1560066984-138dadb4c035', 900), alt: 'Frisör i arbete' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 28,
+      "word": "Stylist",
+      "text": "{ src: u('1600948836101-f9ffda59d250', 900), alt: 'Stylist med kund vid stolen' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 34,
+      "word": "Salongens",
+      "text": "alt: 'Salongens lugna och omsorgsfulla miljö',"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 39,
+      "word": "frisör",
+      "text": "{ src: u('1580618672591-eb180b1a973f', 700), alt: 'Porträtt av frisör' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 40,
+      "word": "frisör",
+      "text": "{ src: u('1582095133179-bfd08e2fc6b3', 700), alt: 'Porträtt av frisör' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 41,
+      "word": "frisör",
+      "text": "{ src: u('1607990281513-2c110a25bd8c', 700), alt: 'Porträtt av frisör' },"
+    },
+    {
+      "file": "components/storefront/images.ts",
+      "line": 47,
+      "word": "salongsmiljö",
+      "text": "alt: 'Inbjudande salongsmiljö redo att ta emot dig',"
+    },
+    {
+      "file": "components/storefront/InlineBooking.tsx",
+      "line": 17,
+      "word": "Frisör",
+      "text": "staffNoun = 'Frisör',"
+    },
+    {
+      "file": "components/storefront/sections.tsx",
+      "line": 107,
+      "word": "stylistName",
+      "text": "<h3 className={styles.stylistName}>{s.name}</h3>"
+    },
+    {
+      "file": "components/storefront/sections.tsx",
+      "line": 108,
+      "word": "stylistRole",
+      "text": "<p className={styles.stylistRole}>{s.role}</p>"
+    },
+    {
+      "file": "components/storefront/seo.tsx",
+      "line": 176,
+      "word": "frisör",
+      "text": "'frisör': 'HairSalon',"
+    },
+    {
+      "file": "components/storefront/seo.tsx",
+      "line": 177,
+      "word": "barbershop",
+      "text": "barbershop: 'HairSalon',"
+    },
+    {
+      "file": "components/storefront/ServiceMenu.tsx",
+      "line": 34,
+      "word": "Salongen",
+      "text": "Salongen håller på att lägga upp sina behandlingar. Du är ändå varmt välkommen att"
+    },
+    {
+      "file": "components/storefront/staff-noun.ts",
+      "line": 21,
+      "word": "Frisör",
+      "text": "export const DEFAULT_STAFF_NOUN = 'Frisör'"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 108,
+      "word": "Frisörsalong",
+      "text": "heroEyebrow: '— Frisörsalong',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 111,
+      "word": "salong",
+      "text": "'En stilla salong där varje klippning får ta sin tid. Boka en stund som är helt din.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 111,
+      "word": "klippning",
+      "text": "'En stilla salong där varje klippning får ta sin tid. Boka en stund som är helt din.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 112,
+      "word": "Hårvård",
+      "text": "tagline: 'Hårvård med lugn hand',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 116,
+      "word": "frisörbesök",
+      "text": "'Hos oss ska ett frisörbesök kännas som en paus, inte ett ärende. Vi är ett litet team som bryr oss om hantverket och om dig som sitter i stolen.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 120,
+      "word": "frisörer",
+      "text": "teamEyebrow: '— Våra frisörer',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 127,
+      "word": "Frisörer",
+      "text": "{ name: 'Vårt team', role: 'Frisörer & stylister', img: IMG.p1 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 127,
+      "word": "stylister",
+      "text": "{ name: 'Vårt team', role: 'Frisörer & stylister', img: IMG.p1 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 129,
+      "word": "Klippning",
+      "text": "{ name: 'Klippning', role: 'Klipp & form', img: IMG.p5 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 138,
+      "word": "Salong",
+      "text": "heroEyebrow: '— Salong & färgateljé',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 139,
+      "word": "frisör",
+      "text": "heroTitle: 'Din frisör\\ni lugn och ro',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 158,
+      "word": "frisör",
+      "text": "{ name: 'Senior frisör', role: 'Klipp & form', img: IMG.p4 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 159,
+      "word": "Frisör",
+      "text": "{ name: 'Frisör', role: 'Färg & slingor', img: IMG.p1 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 168,
+      "word": "Frisör",
+      "text": "heroEyebrow: '— Frisör & barberare',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 168,
+      "word": "barberare",
+      "text": "heroEyebrow: '— Frisör & barberare',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 171,
+      "word": "Klippning",
+      "text": "'Klippning och skäggvård för alla. Drop in eller boka online — du sitter i stolen samma dag.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 172,
+      "word": "Frisör",
+      "text": "tagline: 'Frisör & barberare',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 172,
+      "word": "barberare",
+      "text": "tagline: 'Frisör & barberare',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 174,
+      "word": "frisörer",
+      "text": "italic: 'Av frisörer, för alla.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 176,
+      "word": "frisör",
+      "text": "'Hörnsalongen där frisör möter barberare. Vi håller det enkelt, vasst och prisvärt — och vi minns hur du gillar din fade.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 176,
+      "word": "barberare",
+      "text": "'Hörnsalongen där frisör möter barberare. Vi håller det enkelt, vasst och prisvärt — och vi minns hur du gillar din fade.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 187,
+      "word": "Barberare",
+      "text": "{ name: 'Barberare', role: 'Skägg & fade', img: IMG.p6 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 188,
+      "word": "Barberare",
+      "text": "{ name: 'Barberare', role: 'Klipp & trim', img: IMG.p4 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 189,
+      "word": "Frisör",
+      "text": "{ name: 'Frisör', role: 'Fade-specialist', img: IMG.p2 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 198,
+      "word": "Frisör",
+      "text": "heroEyebrow: '— Frisör & färgsalong',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 201,
+      "word": "salong",
+      "text": "'En varm salong med fokus på friskt hår och naturliga toner. Välkommen in för en stund av omtanke.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 202,
+      "word": "hårvård",
+      "text": "tagline: 'Naturlig hårvård',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 206,
+      "word": "Salongen",
+      "text": "'Salongen för dig som vill vårda ditt hår på riktigt. Vi arbetar med skonsamma produkter och naturliga färger — och tar oss alltid tid.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 209,
+      "word": "hårvård",
+      "text": "aboutTitle: 'Naturlig hårvård med omtanke',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 210,
+      "word": "frisörer",
+      "text": "teamEyebrow: '— Våra frisörer',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 218,
+      "word": "Frisör",
+      "text": "{ name: 'Frisör', role: 'Klipp & vård', img: IMG.p1 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 219,
+      "word": "Frisör",
+      "text": "{ name: 'Frisör', role: 'Hårvård', img: IMG.p3 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 219,
+      "word": "Hårvård",
+      "text": "{ name: 'Frisör', role: 'Hårvård', img: IMG.p3 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 247,
+      "word": "Stylist",
+      "text": "{ name: 'Stylist', role: 'Precisionsklipp', img: IMG.p2 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 248,
+      "word": "frisör",
+      "text": "{ name: 'Senior frisör', role: 'Klipp & form', img: IMG.p1 },"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 294,
+      "word": "Barbershop",
+      "text": "heroEyebrow: '— Barbershop',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 296,
+      "word": "Barbershop",
+      "text": "heroLede: 'Barbershop i centrala Linköping',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 297,
+      "word": "Barbershop",
+      "text": "tagline: 'Barbershop i centrala Linköping',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 298,
+      "word": "Boka tid",
+      "text": "utility: 'Boka tid online · Välkommen in',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 299,
+      "word": "frisörsalong",
+      "text": "italic: 'Mer än bara en frisörsalong.',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 301,
+      "word": "barberare",
+      "text": "'I våra fräscha lokaler mitt i Linköping City känner du dig väl omhändertagen av våra barberare, som har mångårig erfarenhet inom herrklippningar. Oavsett om du vill snygga till ditt skägg, ögonbryn e"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 301,
+      "word": "klippning",
+      "text": "'I våra fräscha lokaler mitt i Linköping City känner du dig väl omhändertagen av våra barberare, som har mångårig erfarenhet inom herrklippningar. Oavsett om du vill snygga till ditt skägg, ögonbryn e"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 305,
+      "word": "barberare",
+      "text": "teamEyebrow: '— Våra barberare',"
+    },
+    {
+      "file": "components/storefront/theme-content.ts",
+      "line": 306,
+      "word": "barberare",
+      "text": "teamTitle: 'Våra barberare.',"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 131,
+      "word": "Salonger",
+      "text": "<Stat label=\"Salonger\" value={<span className=\"num\">{salons}</span>} icon=\"building\" />"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 150,
+      "word": "salong",
+      "text": "placeholder=\"Sök namn, e-post, salong…\""
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 159,
+      "word": "salong",
+      "text": "aria-label=\"Filtrera på salong\""
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 161,
+      "word": "salonger",
+      "text": "<option value=\"all\">Alla salonger</option>"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 184,
+      "word": "salong",
+      "text": "? 'Prova en bredare sökning eller välj en annan salong. Sökningen täcker namn, e-post och salong.'"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 184,
+      "word": "salong",
+      "text": "? 'Prova en bredare sökning eller välj en annan salong. Sökningen täcker namn, e-post och salong.'"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 185,
+      "word": "salong",
+      "text": ": 'När en salong tar emot sin första bokning dyker kunden upp här — tvärs alla salonger.'}"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 185,
+      "word": "salonger",
+      "text": ": 'När en salong tar emot sin första bokning dyker kunden upp här — tvärs alla salonger.'}"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 211,
+      "word": "Salong",
+      "text": "<th>Salong</th>"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 303,
+      "word": "Salong",
+      "text": "<KV label=\"Salong\" value={selected.tenant} />"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 358,
+      "word": "salong",
+      "text": "sub=\"Skapar en riktig kund-rad på vald salong.\""
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 385,
+      "word": "salongen",
+      "text": "En stabil kund-rad skapas oftast automatiskt när salongen tar emot kundens första"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 399,
+      "word": "Salong",
+      "text": "<span className={styles.fieldLabel}>Salong</span>"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 404,
+      "word": "salong",
+      "text": "aria-label=\"Välj salong\""
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 408,
+      "word": "salong",
+      "text": "<option value=\"\">Välj salong…</option>"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 467,
+      "word": "salonger",
+      "text": "<span className={styles.chip}>customers · {activeTenants.length} aktiva salonger</span>"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 486,
+      "word": "salong",
+      "text": "notify('Kunde inte koppla kunden till en salong.', 'warning')"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 535,
+      "word": "salong",
+      "text": "setAddError('Välj en salong.')"
+    },
+    {
+      "file": "components/platform/kunder/KunderView.tsx",
+      "line": 566,
+      "word": "Salong",
+      "text": "const header = ['Namn', 'E-post', 'Telefon', 'Salong', 'Roll', 'Auth', 'Senast inloggad', 'Status']"
+    },
+    {
+      "file": "components/platform/onboarding-studio/OnboardingStudio.tsx",
+      "line": 314,
+      "word": "salongen",
+      "text": "<span style={{ ...cardTitle, display: 'block' }}>Öppna &amp; hantera salongen</span>"
+    },
+    {
+      "file": "components/platform/onboarding-studio/OnboardingStudio.tsx",
+      "line": 344,
+      "word": "salong",
+      "text": "status ovan) och styr bara sin egen salong."
+    },
+    {
+      "file": "components/platform/onboarding-studio/preview-modules.tsx",
+      "line": 94,
+      "word": "Frisörsalong",
+      "text": "frisor: { name: 'Frisörsalong', eyebrow: 'Frisörsalong', staffWord: 'Frisör', serviceWord: 'Behandling' },"
+    },
+    {
+      "file": "components/platform/onboarding-studio/preview-modules.tsx",
+      "line": 94,
+      "word": "Frisörsalong",
+      "text": "frisor: { name: 'Frisörsalong', eyebrow: 'Frisörsalong', staffWord: 'Frisör', serviceWord: 'Behandling' },"
+    },
+    {
+      "file": "components/platform/onboarding-studio/preview-modules.tsx",
+      "line": 94,
+      "word": "Frisör",
+      "text": "frisor: { name: 'Frisörsalong', eyebrow: 'Frisörsalong', staffWord: 'Frisör', serviceWord: 'Behandling' },"
+    },
+    {
+      "file": "components/platform/onboarding-studio/StorefrontPreview.tsx",
+      "line": 123,
+      "word": "salong",
+      "text": "tenant: { id: '', name: cfg.name || 'Din salong', slug: cfg.slug || 'dinsalong' },"
+    },
+    {
+      "file": "components/platform/onboarding-studio/StudioPanels.tsx",
+      "line": 131,
+      "word": "frisör",
+      "text": "'frisör': 'scissors',"
+    },
+    {
+      "file": "components/platform/onboarding-studio/StudioPanels.tsx",
+      "line": 133,
+      "word": "barbershop",
+      "text": "barbershop: 'scissors',"
+    },
+    {
+      "file": "components/platform/onboarding-studio/StudioPanels.tsx",
+      "line": 295,
+      "word": "salongs",
+      "text": "<Icon name=\"alert\" size={14} /> &quot;{cfg.slug}&quot; är reserverad — kan inte bli en salongs-slug."
+    },
+    {
+      "file": "components/platform/onboarding-studio/StudioPanels.tsx",
+      "line": 644,
+      "word": "salongsnamn",
+      "text": "Kräver: salongsnamn, en giltig subdomän, ett tema och minst en tjänst. Komplettera i"
+    },
+    {
+      "file": "components/portal/ui/NotesThread.tsx",
+      "line": 15,
+      "word": "frisör",
+      "text": "from: 'kund' | 'frisör' | 'staff' | 'system'"
+    },
+    {
+      "file": "components/storefront/layouts/FreshCutLayout.tsx",
+      "line": 29,
+      "word": "frisörsalong",
+      "text": "const SEC1_TITLE = 'Mer än bara en frisörsalong.'"
+    },
+    {
+      "file": "components/storefront/layouts/FreshCutLayout.tsx",
+      "line": 33,
+      "word": "frisörer",
+      "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
+    },
+    {
+      "file": "components/storefront/layouts/FreshCutLayout.tsx",
+      "line": 33,
+      "word": "klippningen",
+      "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
+    },
+    {
+      "file": "components/storefront/layouts/FreshCutLayout.tsx",
+      "line": 33,
+      "word": "klippning",
+      "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
+    },
+    {
+      "file": "components/storefront/layouts/FreshCutLayout.tsx",
+      "line": 33,
+      "word": "klippning",
+      "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
+    },
+    {
+      "file": "components/storefront/layouts/FreshCutLayout.tsx",
+      "line": 47,
+      "word": "frisörsalong",
+      "text": "{/* \"Mer än bara en frisörsalong.\" — centered editorial + 4-photo gallery */}"
+    },
+    {
+      "file": "components/storefront/layouts/SalviaLayout.tsx",
+      "line": 111,
+      "word": "salongen",
+      "text": "<h2 className={`sf-h1 ${sv.secTitle}`}>Ta med dig salongen hem</h2>"
+    },
+    {
+      "file": "components/storefront/layouts/florist/AuroraLayout.tsx",
+      "line": 81,
+      "word": "Boka tid",
+      "text": "<BookCta className={`${styles.auBtn} ${styles.auStatementCta}`} label=\"Boka tid\" />"
+    },
+    {
+      "file": "components/storefront/layouts/florist/OnyxLayout.tsx",
+      "line": 83,
+      "word": "Boka tid",
+      "text": "<BookCta className={styles.onxBtnInk} label=\"Boka tid\" />"
+    },
+    {
+      "file": "components/storefront/layouts/florist/paisley.pages.tsx",
+      "line": 85,
+      "word": "boka tid",
+      "text": "`Alla priser inkl. moms. Klicka en rad för att boka tid hos ${tenant.name}.`}"
+    },
+    {
+      "file": "lib/admin/actions.ts",
+      "line": 23,
+      "word": "salong",
+      "text": "const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'"
+    },
+    {
+      "file": "lib/admin/actions.ts",
+      "line": 1277,
+      "word": "salongsnamn",
+      "text": "if (!name) return { error: 'Ange ett salongsnamn.' }"
+    },
+    {
+      "file": "lib/admin/dropin-actions.ts",
+      "line": 27,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Ingen salong är kopplad till ditt konto.' }"
+    },
+    {
+      "file": "lib/admin/schedule-actions.ts",
+      "line": 12,
+      "word": "salong",
+      "text": "const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'"
+    },
+    {
+      "file": "lib/admin/stripe.ts",
+      "line": 20,
+      "word": "salong",
+      "text": "const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'"
+    },
+    {
+      "file": "lib/gdpr/actions.ts",
+      "line": 21,
+      "word": "salongen",
+      "text": "return { error: 'Kunde inte radera kontot. Kontakta salongen.' }"
+    },
+    {
+      "file": "lib/gdpr/actions.ts",
+      "line": 29,
+      "word": "salongen",
+      "text": "? 'Radering är inte tillgänglig just nu. Kontakta salongen så hjälper de dig.'"
+    },
+    {
+      "file": "lib/kund/actions.ts",
+      "line": 17,
+      "word": "Salongen",
+      "text": "if (!tenantId) return 'Salongen'"
+    },
+    {
+      "file": "lib/kund/actions.ts",
+      "line": 19,
+      "word": "Salongen",
+      "text": "return data?.name ?? 'Salongen'"
+    },
+    {
+      "file": "lib/kund/actions.ts",
+      "line": 58,
+      "word": "salongs",
+      "text": "return { error: 'Registrering sker via en salongs sida. Öppna salongens adress och försök igen.' }"
+    },
+    {
+      "file": "lib/kund/actions.ts",
+      "line": 58,
+      "word": "salongens",
+      "text": "return { error: 'Registrering sker via en salongs sida. Öppna salongens adress och försök igen.' }"
+    },
+    {
+      "file": "lib/kund/actions.ts",
+      "line": 220,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/kund/favorites-actions.ts",
+      "line": 36,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/kund/favorites-actions.ts",
+      "line": 51,
+      "word": "Frisören",
+      "text": "if (!data) return { error: 'Frisören hittades inte.' }"
+    },
+    {
+      "file": "lib/kund/favorites.ts",
+      "line": 55,
+      "word": "Frisör",
+      "text": "? (r.staff?.title?.trim() || 'Frisör')"
+    },
+    {
+      "file": "lib/notifications/google-review.ts",
+      "line": 166,
+      "word": "Salongen",
+      "text": "const tenantName = b.tenants?.name ?? 'Salongen'"
+    },
+    {
+      "file": "lib/notifications/reminders.ts",
+      "line": 116,
+      "word": "Salongen",
+      "text": "const tenantName = b.tenants?.name ?? 'Salongen'"
+    },
+    {
+      "file": "lib/personal/actions.ts",
+      "line": 14,
+      "word": "salongsadmin",
+      "text": "const NO_PROFILE = 'Ingen personalprofil är kopplad till ditt konto. Kontakta salongsadmin.'"
+    },
+    {
+      "file": "lib/personal/actions.ts",
+      "line": 83,
+      "word": "salongen",
+      "text": "if (!me.locationId) return { error: 'Din profil saknar en kopplad plats. Kontakta salongen.' }"
+    },
+    {
+      "file": "lib/platform/catalog.ts",
+      "line": 77,
+      "word": "salongen",
+      "text": "flow: 'Flöde 1 (kund betalar salongen direkt)',"
+    },
+    {
+      "file": "lib/platform/catalog.ts",
+      "line": 83,
+      "word": "salong",
+      "text": "desc: 'Recensionslänk per salong — visas i kundportal & bekräftelse.',"
+    },
+    {
+      "file": "lib/platform/catalog.ts",
+      "line": 110,
+      "word": "salong",
+      "text": "desc: 'Subdomän salong.corevo.se. Egen domän = parkerat spår.',"
+    },
+    {
+      "file": "lib/platform/domains.ts",
+      "line": 47,
+      "word": "salongnamn",
+      "text": "if (!isValidDomain(domain)) return { error: 'Ogiltigt domänformat (t.ex. boka.salongnamn.se).' }"
+    },
+    {
+      "file": "lib/platform/people.ts",
+      "line": 29,
+      "word": "Salong",
+      "text": "tenant: string // salon NAME (mock column \"Salong\")"
+    },
+    {
+      "file": "lib/platform/people.ts",
+      "line": 140,
+      "word": "Salongschef",
+      "text": "salon_admin: 'Salongschef',"
+    },
+    {
+      "file": "lib/platform/people.ts",
+      "line": 141,
+      "word": "Frisör",
+      "text": "staff: 'Frisör',"
+    },
+    {
+      "file": "lib/platform/people.ts",
+      "line": 144,
+      "word": "Frisör",
+      "text": "if (!roleName) return 'Frisör'"
+    },
+    {
+      "file": "lib/platform/preview-admin.ts",
+      "line": 72,
+      "word": "salong",
+      "text": "if (!tenantId || !templateKey) return { ok: false, error: 'Saknar salong eller mall.' }"
+    },
+    {
+      "file": "lib/platform/preview-admin.ts",
+      "line": 125,
+      "word": "salong",
+      "text": "if (!tenantId) return { ok: false, error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/preview-admin.ts",
+      "line": 234,
+      "word": "salong",
+      "text": "return { ok: false, error: 'Saknar salong, mall eller slot.' }"
+    },
+    {
+      "file": "lib/platform/preview-admin.ts",
+      "line": 339,
+      "word": "salong",
+      "text": "return { ok: false, error: 'Saknar salong, mall eller slot.' }"
+    },
+    {
+      "file": "lib/platform/roles-permissions.ts",
+      "line": 58,
+      "word": "Salongsägare",
+      "text": "name: 'Salongsägare',"
+    },
+    {
+      "file": "lib/platform/roles-permissions.ts",
+      "line": 67,
+      "word": "Frisör",
+      "text": "name: 'Frisör',"
+    },
+    {
+      "file": "lib/platform/tenant-modules-admin.ts",
+      "line": 96,
+      "word": "salong",
+      "text": "if (!tenantId || !moduleKey) return { error: 'Saknar salong eller modul.' }"
+    },
+    {
+      "file": "lib/platform/tenants.ts",
+      "line": 299,
+      "word": "salong",
+      "text": "label: 'Skapa salong',"
+    },
+    {
+      "file": "lib/platform/tenants.ts",
+      "line": 302,
+      "word": "salongsadmin",
+      "text": "? `${f.slug}.corevo.se · salongsadmin inbjuden`"
+    },
+    {
+      "file": "lib/platform/tenants.ts",
+      "line": 303,
+      "word": "salongsadmin",
+      "text": ": `${f.slug}.corevo.se · ingen salongsadmin ännu`,"
+    },
+    {
+      "file": "lib/platform/theme-capabilities.ts",
+      "line": 86,
+      "word": "frisörsalong",
+      "text": "default: 'Mer än bara en frisörsalong.',"
+    },
+    {
+      "file": "lib/platform/theme-capabilities.ts",
+      "line": 104,
+      "word": "frisörer",
+      "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
+    },
+    {
+      "file": "lib/platform/theme-capabilities.ts",
+      "line": 104,
+      "word": "klippningen",
+      "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
+    },
+    {
+      "file": "lib/platform/theme-capabilities.ts",
+      "line": 104,
+      "word": "klippning",
+      "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
+    },
+    {
+      "file": "lib/platform/theme-capabilities.ts",
+      "line": 104,
+      "word": "klippning",
+      "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
+    },
+    {
+      "file": "lib/platform/theme-palettes.ts",
+      "line": 17,
+      "word": "salong",
+      "text": "export type ThemeCategory = 'florist' | 'salong' | 'kund'"
+    },
+    {
+      "file": "lib/platform/theme-palettes.ts",
+      "line": 21,
+      "word": "salong",
+      "text": "{ key: 'salong', label: 'Salong & barber', hint: 'Bokning, stolar, behandlingar' },"
+    },
+    {
+      "file": "lib/platform/theme-palettes.ts",
+      "line": 21,
+      "word": "Salong",
+      "text": "{ key: 'salong', label: 'Salong & barber', hint: 'Bokning, stolar, behandlingar' },"
+    },
+    {
+      "file": "lib/platform/theme-palettes.ts",
+      "line": 21,
+      "word": "barber",
+      "text": "{ key: 'salong', label: 'Salong & barber', hint: 'Bokning, stolar, behandlingar' },"
+    },
+    {
+      "file": "lib/platform/theme-palettes.ts",
+      "line": 68,
+      "word": "barber",
+      "text": "{ key: 'zigge', name: 'Zigge', desc: 'Mörk · djärv barber', primary: '#C8743C', bg: '#14120E', fg: '#F2ECE2', accent: '#C8743C' },"
+    },
+    {
+      "file": "lib/platform/theme-palettes.ts",
+      "line": 95,
+      "word": "salong",
+      "text": "category: 'salong' as const,"
+    },
+    {
+      "file": "lib/platform/theme-palettes.ts",
+      "line": 102,
+      "word": "Barbershop",
+      "text": "desc: 'Barbershop · vit & guld, skarp',"
+    },
+    {
+      "file": "lib/platform/theme-palettes.ts",
+      "line": 110,
+      "word": "Barbershop",
+      "text": "tags: ['Ljus', 'Barbershop'],"
+    },
+    {
+      "file": "lib/sajtbyggare/save-site-content.ts",
+      "line": 53,
+      "word": "salong",
+      "text": "if (!tenant) return { ok: false, error: 'Ingen salong är kopplad till ditt konto.' }"
+    },
+    {
+      "file": "lib/sajtbyggare/save-site-content.ts",
+      "line": 74,
+      "word": "salongen",
+      "text": "return { ok: false, error: 'Sajtbyggaren är inte aktiverad för den här salongen.' }"
+    },
+    {
+      "file": "lib/admin/blogg/actions.ts",
+      "line": 10,
+      "word": "salong",
+      "text": "const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'"
+    },
+    {
+      "file": "lib/admin/events/actions.ts",
+      "line": 11,
+      "word": "salong",
+      "text": "const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'"
+    },
+    {
+      "file": "lib/admin/media/actions.ts",
+      "line": 9,
+      "word": "salong",
+      "text": "const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'"
+    },
+    {
+      "file": "lib/admin/offert/actions.ts",
+      "line": 13,
+      "word": "salong",
+      "text": "const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'"
+    },
+    {
+      "file": "lib/admin/presentkort/actions.ts",
+      "line": 10,
+      "word": "salong",
+      "text": "const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'"
+    },
+    {
+      "file": "lib/admin/shop/actions.ts",
+      "line": 13,
+      "word": "salong",
+      "text": "const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'"
+    },
+    {
+      "file": "lib/platform/actions/billing.ts",
+      "line": 14,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/branding.ts",
+      "line": 23,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/branding.ts",
+      "line": 42,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/contact.ts",
+      "line": 58,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/contact.ts",
+      "line": 75,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/contact.ts",
+      "line": 130,
+      "word": "Salong",
+      "text": "name: tenant.name ?? 'Salong',"
+    },
+    {
+      "file": "lib/platform/actions/contact.ts",
+      "line": 162,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/contact.ts",
+      "line": 171,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/data.ts",
+      "line": 46,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/data.ts",
+      "line": 60,
+      "word": "salongsnamn",
+      "text": "if (!name) return { error: 'Ange ett salongsnamn.' }"
+    },
+    {
+      "file": "lib/platform/actions/data.ts",
+      "line": 66,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/data.ts",
+      "line": 110,
+      "word": "Salongsdata",
+      "text": "return { success: 'Salongsdata sparad. Publika sajten uppdaterad.' }"
+    },
+    {
+      "file": "lib/platform/actions/data.ts",
+      "line": 121,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/data.ts",
+      "line": 123,
+      "word": "salongsnamn",
+      "text": "if (!name) return { error: 'Ange ett salongsnamn.' }"
+    },
+    {
+      "file": "lib/platform/actions/data.ts",
+      "line": 126,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/data.ts",
+      "line": 161,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/data.ts",
+      "line": 177,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/domains.ts",
+      "line": 40,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/domains.ts",
+      "line": 51,
+      "word": "Salongen",
+      "text": "if (!tenant) return { error: 'Salongen finns inte.' }"
+    },
+    {
+      "file": "lib/platform/actions/domains.ts",
+      "line": 52,
+      "word": "Salongen",
+      "text": "if (tenant.status !== 'active') return { error: 'Salongen är inte aktiv — kan inte lägga till domän.' }"
+    },
+    {
+      "file": "lib/platform/actions/domains.ts",
+      "line": 104,
+      "word": "salong",
+      "text": "if (!tenantId || !domain) return { error: 'Saknar salong eller domän.' }"
+    },
+    {
+      "file": "lib/platform/actions/domains.ts",
+      "line": 157,
+      "word": "salong",
+      "text": "if (!tenantId || !domain) return { error: 'Saknar salong eller domän.' }"
+    },
+    {
+      "file": "lib/platform/actions/features.ts",
+      "line": 21,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/features.ts",
+      "line": 25,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/features.ts",
+      "line": 56,
+      "word": "salongen",
+      "text": "? 'Sajtbyggaren aktiverad för salongen.'"
+    },
+    {
+      "file": "lib/platform/actions/features.ts",
+      "line": 57,
+      "word": "salongen",
+      "text": ": 'Sajtbyggaren avstängd för salongen.',"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 22,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 57,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 90,
+      "word": "salongen",
+      "text": "return { success: `Medarbetare \"${title}\" tillagd hos salongen.` }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 109,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 118,
+      "word": "Salongen",
+      "text": "if (!tenant) return { error: 'Salongen finns inte.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 200,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 238,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 303,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 350,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 361,
+      "word": "salongen",
+      "text": "if (!staffRow) return { error: 'Medarbetaren finns inte hos den här salongen.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 448,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Välj en salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 460,
+      "word": "Salongen",
+      "text": "if (!tenant) return { error: 'Salongen finns inte.' }"
+    },
+    {
+      "file": "lib/platform/actions/people.ts",
+      "line": 462,
+      "word": "Salongen",
+      "text": "return { error: 'Salongen är inte aktiv — kan inte lägga till kund.' }"
+    },
+    {
+      "file": "lib/platform/actions/services.ts",
+      "line": 73,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/services.ts",
+      "line": 78,
+      "word": "Salongen",
+      "text": "if (!tenant) return { error: 'Salongen finns inte.' }"
+    },
+    {
+      "file": "lib/platform/actions/services.ts",
+      "line": 124,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/services.ts",
+      "line": 183,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/services.ts",
+      "line": 228,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/services.ts",
+      "line": 290,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/services.ts",
+      "line": 347,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/status.ts",
+      "line": 15,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/status.ts",
+      "line": 51,
+      "word": "Salongen",
+      "text": "? 'Salongen är borttagen — publika sajten och admin blockeras.'"
+    },
+    {
+      "file": "lib/platform/actions/status.ts",
+      "line": 53,
+      "word": "Salongen",
+      "text": "? 'Salongen är pausad — publika sajten blockeras.'"
+    },
+    {
+      "file": "lib/platform/actions/status.ts",
+      "line": 54,
+      "word": "Salongen",
+      "text": ": 'Salongen är aktiv igen — publika sajten öppen.',"
+    },
+    {
+      "file": "lib/platform/actions/storefront-content.ts",
+      "line": 56,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-content.ts",
+      "line": 60,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-content.ts",
+      "line": 137,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-content.ts",
+      "line": 147,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-content.ts",
+      "line": 197,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-content.ts",
+      "line": 207,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 33,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 41,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 100,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 112,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 147,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 155,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 242,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 249,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 320,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/storefront-extras.ts",
+      "line": 327,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/tenants.ts",
+      "line": 300,
+      "word": "salongen",
+      "text": "'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops) — eller skapa salongen utan ägar-epost och bjud in ägaren senare'"
+    },
+    {
+      "file": "lib/platform/actions/tenants.ts",
+      "line": 360,
+      "word": "Salongen",
+      "text": "return { error: `Salongen skapades inte: ${ownerFailed}. Försök igen.` }"
+    },
+    {
+      "file": "lib/platform/actions/tenants.ts",
+      "line": 392,
+      "word": "Salong",
+      "text": "success: `Salong \"${name}\" skapad (${slug}.corevo.se).${inviteNote}`,"
+    },
+    {
+      "file": "lib/platform/actions/theme.ts",
+      "line": 17,
+      "word": "salong",
+      "text": "if (!tenantId) return { error: 'Saknar salong.' }"
+    },
+    {
+      "file": "lib/platform/actions/theme.ts",
+      "line": 26,
+      "word": "salong",
+      "text": "if (!tenant) return { error: 'Okänd salong.' }"
+    },
+    {
+      "file": "lib/storefront/offert/intake.ts",
+      "line": 49,
+      "word": "salong",
+      "text": "if (!ctx) return { phase: 'error', message: 'Okänd salong.' }"
+    }
+  ]
+}

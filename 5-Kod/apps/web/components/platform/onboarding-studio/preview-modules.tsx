@@ -25,6 +25,7 @@ import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { makeTerm } from '@/lib/platform/verticals-shared'
 import { BUILT_MAIN, ROADMAP_MAIN, KONTO_KEYS, ALL_PREVIEW_MODULES } from '@/lib/platform/onboarding-studio/module-keys'
+import { studioPlaceholderSlug } from './studio-placeholder'
 
 /** The visible, honest "this is a preview, not the built feature" marker on each mock. */
 export const MODULE_LABEL = 'Förhandsvisning · byggs vid lansering'
@@ -593,9 +594,9 @@ export function PreviewNav({ cfg }: { cfg: StudioCfg }) {
   )
 }
 
-export function PreviewFooter({ cfg }: { cfg: StudioCfg }) {
+export function PreviewFooter({ cfg, branchName }: { cfg: StudioCfg; branchName?: string | null }) {
   const meta = branschMeta(cfg.branch)
-  const slug = cfg.slug || 'dinsalong'
+  const slug = cfg.slug || studioPlaceholderSlug(branchName)
   return (
     <footer
       style={{

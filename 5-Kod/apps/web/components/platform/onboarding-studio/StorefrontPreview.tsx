@@ -24,12 +24,22 @@ import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import { krToOre } from '@/lib/platform/onboarding-studio/services'
 import styles from '@/components/storefront/storefront.module.css'
 import { ModuleSections, KontoPanel, PreviewNav, PreviewFooter, activeModuleKeys } from './preview-modules'
+import { studioPlaceholderName, studioPlaceholderSlug } from './studio-placeholder'
 
 // Platform default (DEFAULT_STOREFRONT_THEME, tenant-data.ts:28) — inlined as a literal
 // so we never import the runtime guard from the server-poisoned tenant-data module.
 const DEFAULT_THEME: StorefrontTheme = 'leander'
 
-export function StorefrontPreview({ cfg, lookKeys }: { cfg: StudioCfg; lookKeys?: string[] }) {
+export function StorefrontPreview({
+  cfg,
+  lookKeys,
+  branchName,
+}: {
+  cfg: StudioCfg
+  lookKeys?: string[]
+  /** Vald bransch (visningsnamn) → attrapp-namn/-slug följer branschen, aldrig "salong". */
+  branchName?: string | null
+}) {
   // goal-50: when the operator picked a render-bron LOOK from the box, render its REAL
   // HTML — distinct per look (live-bevis #3). We do it through an <iframe> to the
   // flag-gated, tenant-less look-preview route: the iframe boundary isolates the look's
@@ -120,7 +130,7 @@ export function StorefrontPreview({ cfg, lookKeys }: { cfg: StudioCfg; lookKeys?
     }))
 
   const props: StorefrontLayoutProps = {
-    tenant: { id: '', name: cfg.name || 'Din salong', slug: cfg.slug || 'dinsalong' },
+    tenant: { id: '', name: cfg.name || studioPlaceholderName(branchName), slug: cfg.slug || studioPlaceholderSlug(branchName) },
     theme,
     content,
     services: previewServices, // unsaved cfg → live preview of the typed services (empty → honest empty-state)
@@ -185,7 +195,7 @@ export function StorefrontPreview({ cfg, lookKeys }: { cfg: StudioCfg; lookKeys?
           links={previewNavLinks}
         />
       ) : (
-        <PreviewFooter cfg={cfg} />
+        <PreviewFooter cfg={cfg} branchName={branchName} />
       )}
     </div>
   )

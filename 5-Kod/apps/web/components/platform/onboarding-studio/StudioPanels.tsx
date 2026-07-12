@@ -35,6 +35,7 @@ import {
 } from '@/lib/platform/booking-variant'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 import { ThemeGallery } from '@/components/platform/ThemeGallery'
+import { studioBranchName, studioPlaceholderSlug } from './studio-placeholder'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
@@ -613,7 +614,7 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
             Kunden får
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24, margin: '8px 0 4px' }}>
-            {cfg.slug || 'dinsalong'}.{ROOT}
+            {cfg.slug || studioPlaceholderSlug(studioBranchName(presets.verticals, cfg.branch))}.{ROOT}
           </div>
           <div style={{ fontSize: 13, color: 'var(--c-on-forest-2)', lineHeight: 1.6 }}>
             Tema <b style={{ color: '#fff' }}>{cfg.theme}</b> · {activeCount}{' '}

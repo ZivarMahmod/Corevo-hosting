@@ -13,6 +13,7 @@
 import { Icon, type IconName } from '@/components/portal/ui/Icon'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import { StorefrontPreview } from './StorefrontPreview'
+import { studioPlaceholderSlug } from './studio-placeholder'
 
 export type PreviewDevice = 'desktop' | 'mobile'
 
@@ -24,6 +25,8 @@ type PreviewPaneProps = {
   onDevice?: (device: PreviewDevice) => void
   /** goal-50: registered look keys → StorefrontPreview renders a picked look's real HTML. */
   lookKeys?: string[]
+  /** Vald bransch (visningsnamn) → URL-pillens/previewns placeholder följer branschen. */
+  branchName?: string | null
 }
 
 // design maps phone→creditCard for the rectangular "device" glyph (preview.jsx:563–564)
@@ -32,8 +35,8 @@ const DEVICES: { id: PreviewDevice; icon: IconName }[] = [
   { id: 'mobile', icon: 'creditCard' },
 ]
 
-export function PreviewPane({ cfg, device = 'desktop', onDevice, lookKeys }: PreviewPaneProps) {
-  const url = `${cfg.slug || 'dinsalong'}.corevo.se`
+export function PreviewPane({ cfg, device = 'desktop', onDevice, lookKeys, branchName }: PreviewPaneProps) {
+  const url = `${cfg.slug || studioPlaceholderSlug(branchName)}.corevo.se`
   // W1: pre-launch — the tenant does not exist yet, so the preview is never live.
   // Kept as a typed flag so the conditional chrome stays faithful + W2-ready.
   const live: boolean = false
@@ -157,7 +160,7 @@ export function PreviewPane({ cfg, device = 'desktop', onDevice, lookKeys }: Pre
             boxShadow: device === 'mobile' ? '0 0 40px rgba(0,0,0,.3)' : 'none',
           }}
         >
-          <StorefrontPreview cfg={cfg} lookKeys={lookKeys} />
+          <StorefrontPreview cfg={cfg} lookKeys={lookKeys} branchName={branchName} />
         </div>
       </div>
     </div>
