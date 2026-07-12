@@ -118,10 +118,20 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 > Zivar: *"allt ser ut som en mall man återanvänt … samma runda figurer, inga övergångar,
 > samma sak om och om igen utan layoutförändringar."*
 
-- [ ] **C1. Divergens-mätningen**: screenshot per mall (hem + butik), mät formvokabulären
-      mekaniskt: border-radius-fördelning, knappform (pill/kvadrat/skuren), kortstil
-      (skugga/ram/flat), sektionsövergångar (rak kant/våg/diagonal/överlapp), typografi-par.
-      Två mallar med samma profil = FAIL. Rapport-tabell in i denna fil.
+- [x] **C1. Divergens-mätningen** ✅ `node scripts/divergens.mjs` — öppnar varje mall och läser dess
+      FORMVOKABULÄR ur pixlarna (radie, knappform, kortstil, sektionsövergångar, typografi).
+      **Zivar hade rätt, och nu är det mätt:**
+      | Fynd | Siffra |
+      |---|---|
+      | **Mallar UTAN en enda sektionsövergång** (bara raka kanter) | **13 av 20** |
+      | Pill-knapp ("samma runda figurer") | 16 av 20 |
+      | Dominant radie = helrund (999px) | 14 av 20 |
+      | Flata kort (varken skugga eller ram) | 15 av 20 |
+      | Delade body-typsnitt | Inter 9 · Source Sans 5 · Jost 4 · PT Serif 1 · Archivo 1 |
+      Display-typsnitten VARIERAR (Playfair, DM Serif, Cormorant, Marcellus, Italiana, Bebas,
+      Fraunces, Jost, Dancing Script) — variationen sitter i rubrikerna, formspråket är gemensamt.
+      Ingen mall delar exakt formprofil med en annan, men **det gemensamma är för stort**: rund
+      knapp + flat kort + rak kant = samma skelett i olika färg. Det är precis vad Zivar ser.
 - [ ] **C2. Form-manifest per mall**: varje mall får ett uttalat formspråk i sin `.theme.ts`
       (radius-skala, knappform, kortstil, övergångstyp, bildbehandling). Skrivs FÖRST som
       13+7 raders tabell här i dokumentet (en design-runda), sen implementeras.
@@ -216,7 +226,8 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 | 2026-07-12 | B2b accent-som-text | 4c9a2f1 | npm run kontrast: 95 → 9 brott; 16 av 20 mallar rena |
 | 2026-07-12 | B2 + I1 sista brotten | c7d3e88 | **npm run kontrast: 0 FAIL i alla 20 mallar** |
 | 2026-07-12 | A5 florist-inlogg | — | admin@florist.corevo.se loggar in (Playwright) |
-| 2026-07-12 | B3 kontrast-vakten | (denna) | i CI; negativt test failar, friska paletter passerar |
+| 2026-07-12 | B3 kontrast-vakten | 1a4f2b9 | i CI; negativt test failar, friska paletter passerar |
+| 2026-07-12 | C1 divergens-mätningen | (denna) | 13/20 mallar har 0 sektionsövergångar; 16/20 pill; 15/20 flata kort |
 
 ---
 
