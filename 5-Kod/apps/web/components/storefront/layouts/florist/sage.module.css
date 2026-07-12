@@ -60,7 +60,9 @@
      Kontrast: #fff på --color-primary #4E4732 = 9.25:1 (krav ≥4.5 — AAA). */
   --sf-btn-h: 50px;
   --sf-btn-pad: 0 30px;
-  --sf-btn-radius: var(--radius-pill, 999px);
+  /* goal-62 C3: sage är den luftiga studion — dess knapp är en hårfin ram med nästan
+     ingen radie, inte en fylld kapsel. Lugnet ligger i tunnheten. */
+  --sf-btn-radius: 2px;
   --sf-btn-bg: var(--color-primary);
   --sf-btn-bg-hover: var(--color-primary-d);
   --sf-btn-ink: #fff;
@@ -1260,4 +1262,13 @@ a.sgPostInner:hover .sgPostTitle { color: var(--color-primary); }
   .sgAboutGrid { grid-template-columns: 1fr; }
   .sgMuseum { grid-template-columns: 1fr; }
   .sgMuseumAside { position: static; }
+}
+
+
+/* goal-62 C3 — SAGES KNAPP: hårfin, nästan rak.
+   Klassen hette .sgPillCta men bar den globala pillen (0-1-0 vs 0-1-0 → globals vann på
+   källordning, mätt 9999px). Sage är den luftiga studion: 2px radie, inte en kapsel.
+   Namnet på klassen är historia; formen är mallens. */
+.sgPillCta.sgPillCta {
+  border-radius: 2px;
 }

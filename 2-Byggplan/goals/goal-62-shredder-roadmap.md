@@ -184,7 +184,10 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
         sektionsbrytning. Tidningens vokabulär, inte en våg: paisley är PLAN, dess drama är typografiskt.
   - [x] **aurora** — valvet ut i SEKTIONSKANTEN: rosa panelen bågar upp och glider in under
         sektionen ovanför (mallens egna valv-foton, nu buret av en yta). Formade sektioner 0 → 1.
-  - [ ] calytrix · [ ] sage · [ ] oliviathyme · [ ] viora
+  - [x] **calytrix** — **varan LYFTER**: kort med plommonfärgad skugga som djupnar på hover
+        (15/20 mallar hade flata kort) · kantiga knappar.
+  - [x] **sage** — hårfin, nästan rak knapp (2px) — lugnet ligger i tunnheten, inte i en kapsel.
+  - [ ] oliviathyme · [ ] viora
   - [x] **mina** — ALLT rakt (pillen struken, även nav-knappen) + **produkten på färgplattan**:
         bilden fyller inte längre rutan (post-it-känslan) utan ligger centrerad och luftad som
         en vara i ett skyltfönster.
