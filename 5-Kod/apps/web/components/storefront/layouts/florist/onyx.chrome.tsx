@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SocialButtons } from '../../SocialButtons'
 import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { CartNavButton } from '@/components/storefront/shop/CartNavButton'
@@ -132,17 +133,7 @@ export function OnyxFooter({ tenant, tagline, location, contact, social, links }
               ruta. Bara ifyllda länkar ritas. */}
           {socials.length > 0 ? (
             <div className={styles.onxFooterSocials}>
-              {socials.map((s) => (
-                <a
-                  key={s.key}
-                  href={s.href as string}
-                  className={styles.onxFooterSocial}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  {s.label}
-                </a>
-              ))}
+              <SocialButtons links={socials} />
             </div>
           ) : null}
         </div>

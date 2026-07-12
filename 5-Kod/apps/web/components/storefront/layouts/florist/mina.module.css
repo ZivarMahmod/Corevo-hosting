@@ -1454,3 +1454,11 @@
   padding-bottom: var(--mi-sp-sec, 5rem);
   clip-path: inset(0 5%);
 }
+
+/* goal-62 F1: mina är den raka mallen — pillen är struken ur knapp, nav och kort. Då kan
+   de sociala knapparna inte vara runda heller. (Default följer --sf-navicon-radius, som
+   mina inte sätter → den hade fallit till pill.) */
+.miRoot,
+.miFoot {
+  --sf-social-radius: 0;
+}

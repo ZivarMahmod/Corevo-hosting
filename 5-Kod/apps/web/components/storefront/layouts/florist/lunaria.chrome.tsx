@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SocialButtons } from '../../SocialButtons'
 import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { StorefrontIcon } from '@/components/storefront/StorefrontIcon'
@@ -154,11 +155,7 @@ export function LunariaFooter(p: ThemeFooterProps) {
           </span>
           {socials.length > 0 ? (
             <span className={styles.lnFootSocial}>
-              {socials.map((s) => (
-                <a key={s.label} href={s.href} target="_blank" rel="noreferrer noopener">
-                  {s.label}
-                </a>
-              ))}
+              <SocialButtons links={socials} />
             </span>
           ) : null}
         </div>

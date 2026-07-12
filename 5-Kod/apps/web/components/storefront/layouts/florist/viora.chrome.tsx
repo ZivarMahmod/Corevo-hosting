@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SocialButtons } from '../../SocialButtons'
 import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { CartNavButton } from '@/components/storefront/shop/CartNavButton'
@@ -105,17 +106,7 @@ export function VioraFooter({ tenant, tagline, location, contact, social, links 
           <p className={styles.vioFooterTagline}>{tagline}.</p>
           {socials.length > 0 ? (
             <div className={styles.vioFooterSocials}>
-              {socials.map((s) => (
-                <a
-                  key={s.key}
-                  href={s.href as string}
-                  className={styles.vioFooterSocial}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  {s.label}
-                </a>
-              ))}
+              <SocialButtons links={socials} />
             </div>
           ) : null}
         </div>

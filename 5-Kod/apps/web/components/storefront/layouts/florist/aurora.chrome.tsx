@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SocialButtons } from '../../SocialButtons'
 import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { StorefrontIcon } from '@/components/storefront/StorefrontIcon'
@@ -129,18 +130,7 @@ export function AuroraFooter(p: ThemeFooterProps) {
 
       {socials.length > 0 ? (
         <div className={styles.auFootSocials}>
-          {socials.map((s) => (
-            <a
-              key={s.label}
-              className={styles.auFootSocial}
-              href={s.href as string}
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label={s.label}
-            >
-              <StorefrontIcon name={s.icon} size={18} />
-            </a>
-          ))}
+          <SocialButtons links={socials} />
         </div>
       ) : null}
 

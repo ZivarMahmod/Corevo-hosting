@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SocialButtons } from '../../SocialButtons'
 import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { StorefrontIcon } from '@/components/storefront/StorefrontIcon'
@@ -98,11 +99,7 @@ export function MinaFooter(p: ThemeFooterProps) {
           <a href={`tel:${p.contact.phone.replace(/\s+/g, '')}`}>{p.contact.phone}</a>
         ) : null}
         {p.contact.email ? <a href={`mailto:${p.contact.email}`}>{p.contact.email}</a> : null}
-        {socials.map((s) => (
-          <a key={s.label} href={s.href} target="_blank" rel="noreferrer noopener">
-            {s.label}
-          </a>
-        ))}
+        <SocialButtons links={socials} />
         <span className={styles.miFootCopy}>
           © {new Date().getFullYear()} {p.tenant.name}
         </span>

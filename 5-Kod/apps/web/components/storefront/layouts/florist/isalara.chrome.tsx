@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SocialButtons } from '../../SocialButtons'
 import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { CartNavButton } from '@/components/storefront/shop/CartNavButton'
@@ -142,18 +143,7 @@ export function IsalaraFooter({
             ) : null}
             {socials.length > 0 ? (
               <div className={styles.islFooterSocials}>
-                {socials.map((s) => (
-                  <a
-                    key={s.key}
-                    href={s.href as string}
-                    className={styles.islFooterSocial}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    aria-label={s.label}
-                  >
-                    <StorefrontIcon name={s.icon} size={18} />
-                  </a>
-                ))}
+                <SocialButtons links={socials} />
               </div>
             ) : null}
           </div>

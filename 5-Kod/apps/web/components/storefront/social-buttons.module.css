@@ -1,0 +1,57 @@
+/* goal-62 F1 — sociala knappar. Anatomin (ikon-knapp, 44px träffyta, hover som lyfter och
+   fyller) är uiverse-mönstret; VÄRDENA kommer ur mallens tokens, aldrig ur en lånad hex. */
+
+.row {
+  display: flex;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.btn {
+  display: grid;
+  place-items: center;
+  width: 44px; /* touch-golvet — knappen mätte 79×44 som textlänk */
+  height: 44px;
+  border: 1px solid var(--sf-social-border, color-mix(in srgb, currentColor 28%, transparent));
+  /* Följer mallens ikon-språk: rak mall → rak knapp, pill-mall → rund. */
+  border-radius: var(--sf-social-radius, var(--sf-navicon-radius, 999px));
+  color: var(--sf-social-ink, inherit);
+  background: transparent;
+  text-decoration: none;
+  transition:
+    background var(--sf-social-dur, 180ms) ease,
+    color var(--sf-social-dur, 180ms) ease,
+    border-color var(--sf-social-dur, 180ms) ease,
+    transform var(--sf-social-dur, 180ms) ease;
+}
+
+.btn:hover {
+  /* Fyllningen är mallens primary; ink:en är den färg mallen redan räknat fram som läsbar
+     mot den (--color-primary-fg, satt av tema-blocket). Ingen ny hex, ingen gissning. */
+  background: var(--sf-social-bg-hover, var(--color-primary));
+  color: var(--sf-social-ink-hover, var(--color-primary-fg, #fff));
+  border-color: var(--sf-social-bg-hover, var(--color-primary));
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.96);
+  transition-duration: 80ms;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--sf-focus, currentColor);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+  .btn:hover,
+  .btn:active {
+    transform: none;
+  }
+}

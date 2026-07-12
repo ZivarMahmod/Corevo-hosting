@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { SocialButtons } from '../../SocialButtons'
 import Link from 'next/link'
 import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
@@ -168,17 +169,7 @@ export function SeraphinaFooter({
 
         {socials.length > 0 ? (
           <div className={styles.seraFootSocials}>
-            {socials.map((s) => (
-              <a
-                key={s.key}
-                href={s.href as string}
-                target="_blank"
-                rel="noreferrer noopener"
-                className={styles.seraFootLink}
-              >
-                {s.label}
-              </a>
-            ))}
+            <SocialButtons links={socials} />
           </div>
         ) : null}
 

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { SocialButtons } from '../../SocialButtons'
 import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { CartNavButton } from '@/components/storefront/shop/CartNavButton'
@@ -107,13 +108,7 @@ export function PaisleyFooter({ tenant, tagline, location, contact, social, link
           <p className={styles.paFootTagline}>{tagline}</p>
           {socials.length > 0 ? (
             <ul className={styles.paFootSocial}>
-              {socials.map((s) => (
-                <li key={s.label}>
-                  <a href={s.href} target="_blank" rel="noreferrer noopener" className={styles.paFootLink}>
-                    {s.label}
-                  </a>
-                </li>
-              ))}
+              <SocialButtons links={socials} />
             </ul>
           ) : null}
         </div>
