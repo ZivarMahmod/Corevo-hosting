@@ -1,0 +1,503 @@
+/* ============================================================
+   BALANS — fristående statisk sida (ekonomi/redovisning).
+   Alla mätvärden dokumenterade i 4-Dokument-Underlag/zentum-mall-spec.md.
+   Egen CSS. Zero koppling till Corevo-mallsystemet.
+   ============================================================ */
+
+:root{
+  /* Färger — 8 hex, en hue-familj 205–220° */
+  --c-global:   #212c40;   /* primär navy */
+  --c-blackish: #111926;   /* text/footer-bg */
+  --c-display:  #0c3c60;   /* hero-H1 */
+  --c-surface:  #ffffff;
+  --c-surface2: #f2f4f8;
+  --c-accent:   #a5cbe3;
+  --c-body:     #666666;
+  --c-muted:    #9da5b5;
+  --white-rgb:  255,255,255;
+
+  /* Typskala — steg ×1.9–2.0 */
+  --fs-display: 110px; --lh-display: 120px;
+  --fs-h2: 54px;       --lh-h2: 60px;
+  --fs-card: 28px;     --lh-card: 34px;
+  --fs-lead: 18px;     --lh-lead: 28px;
+
+  --container: 1140px;
+  --measure: 800px;
+
+  --dur: 500ms;
+  --reveal-ease: cubic-bezier(.22,.61,.36,1);
+}
+
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+
+/* Originalets faktiska rendering: Inter deklareras men laddas aldrig →
+   systemets sans. Vi deklarerar samma stack och laddar inte Inter. */
+body{
+  font-family: Inter, Arial, Helvetica, sans-serif;
+  font-size:16px; line-height:1.6; font-weight:400;
+  color:var(--c-body); background:var(--c-surface);
+  -webkit-font-smoothing:antialiased;
+}
+img{ max-width:100%; display:block; }
+a{ text-decoration:none; color:inherit; transition:color .25s ease; }
+ul{ list-style:none; }
+
+h1,h2,h3,h4,h5,h6{ color:var(--c-global); }
+h1{ font-size:48px; line-height:54px; font-weight:500; }
+h2{ font-size:42px; line-height:48px; font-weight:600; }
+h3{ font-size:36px; line-height:42px; font-weight:600; }
+h4{ font-size:30px; line-height:36px; font-weight:600; }
+h5{ font-size:24px; line-height:30px; font-weight:600; }
+h6{ font-size:20px; line-height:30px; font-weight:400; }
+
+.container{ max-width:var(--container); margin:0 auto; padding:0 12px; }
+
+/* ---------- Knappar: exakt pill (radie = halva höjden), hård växling 350ms ---------- */
+.btn{
+  display:inline-block; height:50px; line-height:50px; padding:0 30px;
+  border-radius:25px; border:0; cursor:pointer;
+  font-family:inherit; font-size:12px; font-weight:600;
+  letter-spacing:1px; text-transform:uppercase;
+  background:var(--c-global); color:#fff;
+  transition:all 350ms ease;
+}
+.btn:hover{ background:var(--c-blackish); color:#fff; }
+.btn .btn-arrow{ margin-left:8px; vertical-align:middle; }
+
+/* ---------- Eyebrow (mikro-etikett) ---------- */
+.eyebrow{
+  display:inline-block;
+  font-size:11px; line-height:22px; font-weight:600;
+  letter-spacing:1px; text-transform:uppercase;
+  color:var(--c-global);
+  margin-bottom:5px; /* eyebrow → rubrik = 5px */
+}
+
+/* ============================================================
+   HEADER — style-4: overlay, transparent över heron
+   ============================================================ */
+.site-header{ position:relative; }
+.header-overlay{
+  position:absolute; top:0; left:0; width:100%; z-index:999;
+  border-bottom:1px solid rgba(var(--white-rgb),.2);
+}
+.header-inner{
+  margin:0 60px;
+  display:flex; align-items:center; justify-content:space-between;
+  height:90px;
+}
+.site-logo{
+  color:#fff; font-family:'Wix Madefor Display',sans-serif;
+  font-size:26px; font-weight:600; letter-spacing:.5px;
+}
+.site-logo .logo-dot{ color:var(--c-accent); }
+.main-nav{ display:flex; align-items:center; }
+.main-nav > ul{ display:flex; }
+.main-nav > ul > li{ margin:0 35px; position:relative; }
+.main-nav > ul > li > a{
+  display:block; line-height:90px;
+  font-size:13px; font-weight:500; letter-spacing:.5px; text-transform:uppercase;
+  color:#fff;
+}
+.main-nav > ul > li > a:hover{ color:rgba(var(--white-rgb),.7); }
+/* Dropdown — vit ruta, radie 0 */
+.main-nav li.has-sub > ul{
+  position:absolute; top:100%; left:0; min-width:260px;
+  background:#fff; padding:15px 0; border-radius:0;
+  opacity:0; visibility:hidden; transform:translateY(10px);
+  transition:all .25s ease;
+  box-shadow:0 10px 30px rgba(17,25,38,.08);
+}
+.main-nav li.has-sub:hover > ul{ opacity:1; visibility:visible; transform:translateY(0); }
+.main-nav li.has-sub > ul a{
+  display:block; padding:8px 25px; font-size:14px; color:var(--c-global);
+}
+.main-nav li.has-sub > ul a:hover{ color:var(--c-display); background:var(--c-surface2); }
+
+.header-right{ display:flex; align-items:center; gap:30px; }
+.header-search{ color:#fff; font-size:16px; line-height:1; cursor:pointer; background:none; border:0; padding:0; }
+.header-search:hover{ color:rgba(var(--white-rgb),.7); }
+/* Sök-overlay */
+.search-overlay{
+  position:fixed; inset:0; z-index:1300; background:rgba(17,25,38,.97);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; visibility:hidden; transition:all .3s ease;
+}
+.search-overlay.is-open{ opacity:1; visibility:visible; }
+.search-form{ width:min(720px,86vw); border-bottom:2px solid rgba(var(--white-rgb),.3); }
+.search-form input{
+  width:100%; background:transparent; border:0; outline:0;
+  font-family:inherit; font-size:42px; font-weight:500; color:#fff;
+  padding:10px 0;
+}
+.search-form input::placeholder{ color:rgba(var(--white-rgb),.4); }
+.search-close{
+  position:absolute; top:35px; right:50px; background:none; border:0;
+  color:#fff; font-size:34px; cursor:pointer; line-height:1;
+}
+/* CTA outline-variant: 2px solid, padding 12px 25px */
+.btn-outline{
+  display:inline-block; padding:12px 25px; border-radius:50px;
+  background:transparent; color:#fff; border:2px solid #fff;
+  font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase;
+  line-height:24px; transition:all 350ms ease;
+}
+.btn-outline:hover{ background:#fff; border-color:#fff; color:var(--c-blackish); }
+.btn-outline svg{ margin-left:8px; vertical-align:middle; }
+
+/* Sticky header — fälls ner efter scroll (visibility håller den ur tab-ordningen) */
+.header-sticky{
+  position:fixed; top:0; left:0; width:100%; z-index:1000;
+  background:#fff; box-shadow:0 4px 20px rgba(17,25,38,.06);
+  transform:translateY(-100%); visibility:hidden;
+  transition:transform .4s ease, visibility 0s .4s;
+}
+.header-sticky.is-visible{ transform:translateY(0); visibility:visible; transition:transform .4s ease; }
+.header-sticky .site-logo{ color:var(--c-global); }
+.header-sticky .main-nav > ul > li > a{ color:var(--c-global); line-height:80px; }
+.header-sticky .main-nav > ul > li > a:hover{ color:var(--c-display); }
+.header-sticky .header-inner{ height:80px; border-bottom:0; }
+.header-sticky .header-search{ color:var(--c-global); }
+.header-sticky .btn-outline{ color:var(--c-global); border-color:var(--c-global); }
+.header-sticky .btn-outline:hover{ background:var(--c-global); border-color:var(--c-global); color:#fff; }
+
+/* Burger + off-canvas (≤1200px) */
+.burger{ display:none; width:28px; height:20px; position:relative; cursor:pointer; background:none; border:0; }
+.burger span{ position:absolute; left:0; width:100%; height:2px; background:#fff; transition:all .25s ease; }
+.burger span:nth-child(1){ top:0; } .burger span:nth-child(2){ top:9px; } .burger span:nth-child(3){ top:18px; }
+.header-sticky .burger span{ background:var(--c-global); }
+.offcanvas{
+  position:fixed; top:0; right:-320px; width:320px; height:100vh; z-index:1200;
+  background:var(--c-blackish); padding:80px 40px; transition:right .4s ease; overflow-y:auto;
+}
+.offcanvas.is-open{ right:0; }
+.offcanvas a{ display:block; padding:12px 0; color:#fff; font-size:14px; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+.offcanvas a:hover{ color:var(--c-accent); }
+.offcanvas-close{ position:absolute; top:25px; right:25px; background:none; border:0; color:#fff; font-size:22px; cursor:pointer; }
+.offcanvas-backdrop{
+  position:fixed; inset:0; background:rgba(17,25,38,.5); z-index:1100;
+  opacity:0; visibility:hidden; transition:all .3s ease;
+}
+.offcanvas-backdrop.is-open{ opacity:1; visibility:visible; }
+
+/* ============================================================
+   HERO — SR7-beteendet: bg-foto + 270°-gradient + lagerintro
+   Modulhöjd: 950 / 800 / 700 / 550 (SR7 size-steg)
+   ============================================================ */
+.hero{ position:relative; height:950px; overflow:hidden; background:var(--c-global); }
+.hero-bg{ position:absolute; inset:0; }
+.hero-bg img{ width:100%; height:100%; object-fit:cover; }
+/* Gradient-lagret, EXAKT ur SR7-JSON (horisontellt):
+   linear-gradient(270deg, rgba(44,56,63,.77) 0%, rgba(33,44,64,0) 100%) */
+.hero-shade{
+  position:absolute; inset:0;
+  background:linear-gradient(270deg, rgba(44,56,63,.77) 0%, rgba(33,44,64,0) 100%);
+}
+/* Originalets hero-FOTO har ett mörkt toppband bakat i själva bilden
+   (ger vita headern kontrast). Vårt ersättningsfoto saknar det —
+   detta lager ersätter bild-bandet, det är inte gradient-lagret ovan. */
+.hero-top-shade{
+  position:absolute; top:0; left:0; right:0; height:22%;
+  background:linear-gradient(180deg, rgba(17,25,38,.6) 0%, rgba(17,25,38,0) 100%);
+}
+.hero-content{
+  position:relative; z-index:2;
+  max-width:var(--container); margin:0 auto; padding:0 12px;
+  height:100%; display:flex; flex-direction:column; justify-content:center;
+}
+/* Lager 2: eyebrow-pill — 13px/24px/500/LS 2px vit, pill-ram */
+.hero-eyebrow{
+  display:inline-block; align-self:flex-start;
+  font-family:'Wix Madefor Display',sans-serif;
+  font-size:13px; line-height:24px; font-weight:500; letter-spacing:2px;
+  text-transform:uppercase; color:#fff;
+  border:1px solid rgba(var(--white-rgb),.5); border-radius:50px;
+  padding:2px 20px; margin-bottom:30px;
+}
+/* Lager 1: H1 — Wix Madefor Display 110/120/500 #0c3c60 */
+.hero-title{
+  font-family:'Wix Madefor Display',sans-serif;
+  font-size:var(--fs-display); line-height:var(--lh-display);
+  font-weight:500; letter-spacing:0; color:var(--c-display);
+  max-width:820px;
+}
+/* Lager 3: brödtext — DM Sans 17/24 vit */
+.hero-text{
+  font-family:'DM Sans',sans-serif;
+  font-size:17px; line-height:24px; font-weight:400; color:#fff;
+  max-width:520px; margin-top:30px;
+}
+/* Lager 4: CTA-pill */
+.hero-cta{ margin-top:35px; }
+
+/* Lagerintro: sekventiell in (eyebrow → H1 → text → CTA), y+fade, power3-känsla */
+.hero-layer{ opacity:0; transform:translateY(40px); }
+.hero.is-loaded .hero-layer{
+  animation:heroIn 1s cubic-bezier(.215,.61,.355,1) forwards;
+}
+.hero.is-loaded .hero-eyebrow{ animation-delay:.3s; }
+.hero.is-loaded .hero-title{   animation-delay:.5s; }
+.hero.is-loaded .hero-text{    animation-delay:.8s; }
+.hero.is-loaded .hero-cta{     animation-delay:1.05s; }
+@keyframes heroIn{ to{ opacity:1; transform:translateY(0); } }
+.hero-bg{ opacity:0; transition:opacity .8s ease; }
+.hero.is-loaded .hero-bg{ opacity:1; }
+
+/* ============================================================
+   SEKTION 1 — intro-statement: 80px 30px 0, Merriweather 26px centrerat
+   ============================================================ */
+.sec-intro{ padding:80px 30px 0; }
+.intro-statement{
+  font-family:'Merriweather',serif;
+  font-size:26px; font-weight:400; font-style:normal; line-height:1.6;
+  color:var(--c-global); text-align:center;
+  max-width:980px; margin:0 auto;
+}
+
+/* ============================================================
+   SEKTION 2 — Våra tjänster: 50px 0 100px, 6 kort × 3 kolumner
+   ============================================================ */
+.sec-services{ padding:50px 0 100px; }
+.section-head{ margin-bottom:50px; }
+.section-title{
+  font-size:var(--fs-h2); line-height:var(--lh-h2); font-weight:500;
+  letter-spacing:0; color:var(--c-global);
+}
+.section-desc{
+  margin-top:30px; max-width:var(--measure);
+  font-size:var(--fs-lead); line-height:var(--lh-lead); color:var(--c-body);
+}
+.services-grid{
+  display:grid; grid-template-columns:repeat(3,1fr);
+  column-gap:24px; row-gap:24px; /* kolumnpadding 12px per sida */
+}
+.service-card{
+  transform:translateY(0); transition:all var(--dur) ease;
+}
+.service-card:hover{ transform:translateY(-5px); }
+.service-media{ position:relative; margin-bottom:30px; } /* bild → text = 30px */
+.service-media img{
+  width:100%; aspect-ratio:900/1000; object-fit:cover; border-radius:0;
+}
+/* Hörnknapp 60×60 vit med pil, exakt ur service-style-2 */
+.service-arrow{
+  position:absolute; right:0; bottom:0;
+  width:60px; height:60px; line-height:60px; text-align:center;
+  background:#fff; color:var(--c-global);
+  display:flex; align-items:center; justify-content:center;
+}
+.service-arrow svg{ width:15px; height:15px; }
+.service-title{
+  font-size:var(--fs-card); line-height:var(--lh-card); font-weight:600;
+}
+.service-title a:hover{ color:var(--c-display); }
+
+/* ============================================================
+   SEKTION 3 — full-bleed split på NAVY: foto vänster, text höger
+   ============================================================ */
+.sec-split{
+  display:grid; grid-template-columns:1fr 1fr;
+  background:var(--c-global); padding:0;
+}
+.split-media{
+  background-position:center center; background-repeat:no-repeat; background-size:cover;
+  min-height:100%;
+}
+.split-body{ padding:110px 0 110px 110px; }
+.split-body-inner{ padding-left:145px; padding-right:0; }
+.split-title{
+  font-size:var(--fs-h2); line-height:var(--lh-h2); font-weight:500; color:#fff;
+}
+.split-lead{
+  margin-top:30px; font-size:var(--fs-lead); line-height:var(--lh-lead);
+  color:rgba(var(--white-rgb),.7);
+}
+.split-spacer{ height:50px; }
+/* ihbox-style-2 — exakt: flex, ikon 90px vit, mr 35px, titel 24/30, desc pt10 */
+.ihbox{ display:flex; align-items:flex-start; }
+.ihbox + .ihbox{ margin-top:50px; }
+.ihbox-first{ margin-top:60px; }
+.ihbox-icon{
+  display:inline-block; margin-right:35px;
+  font-size:90px; line-height:90px; color:#fff;
+  transition:all var(--dur) ease; transform:translateY(0);
+}
+.ihbox-icon svg{ width:90px; height:90px; fill:none; stroke:#fff; stroke-width:1.1; }
+.ihbox:hover .ihbox-icon{ transform:translateY(-5px); }
+.ihbox-title{ font-size:24px; line-height:30px; font-weight:600; color:#fff; margin-bottom:0; }
+.ihbox-desc{ padding-top:10px; color:rgba(var(--white-rgb),.7); }
+
+/* ============================================================
+   SEKTION 4 — Referenser: rubrikblock vänster (25%), slider höger (75%),
+   vänsterställt (rå: col-lg-3 + col-lg-9)
+   ============================================================ */
+.sec-testimonials{ padding:100px 0; background:#fff; }
+.testi-row{ display:grid; grid-template-columns:1fr 3fr; column-gap:24px; }
+.testi-head{ text-align:left; }
+.testi-main{ padding:0 12px; }
+.testi-viewport{ position:relative; overflow:hidden; }
+.testi-track{ display:flex; transition:transform .6s var(--reveal-ease); }
+.testi-slide{ min-width:100%; text-align:left; }
+.testi-quote{
+  font-size:var(--fs-lead); line-height:1.7; color:var(--c-body);
+  max-width:var(--measure);
+}
+/* Författar-rad: rund logga 80×80 med 15px till namnet (rå testimonial-style-2) */
+.testi-author{ display:flex; align-items:center; margin-top:40px; }
+.testi-logo{
+  width:80px; height:80px; border-radius:50%; margin-right:15px; flex-shrink:0;
+  background:var(--c-surface2); color:var(--c-global);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:600; font-size:14px; letter-spacing:1px;
+}
+.testi-name{ font-size:18px; line-height:24px; font-weight:600; color:var(--c-global); }
+.testi-company{ margin-top:5px; color:var(--c-muted); font-size:14px; }
+.testi-dots{ display:flex; justify-content:flex-start; gap:10px; margin-top:40px; }
+.testi-dot{
+  width:7px; height:7px; border-radius:50%; border:0; padding:0; cursor:pointer;
+  background:rgba(33,44,64,.2); transition:all .25s ease;
+}
+.testi-dot.is-active{ background:var(--c-accent); transform:scale(1.4); }
+
+/* ============================================================
+   SEKTION 5 — partner-logotyper: margin 50px 0, 4 synliga
+   ============================================================ */
+.sec-logos{ margin:50px 0; }
+.logos-viewport{ overflow:hidden; }
+.logos-track{ display:flex; align-items:center; transition:transform .6s ease; }
+.logo-item{
+  min-width:25%; min-height:150px; /* rå: brickor 150×150 */
+  display:flex; align-items:center; justify-content:center;
+  padding:20px 12px;
+}
+.logo-item span{
+  font-size:22px; font-weight:600; letter-spacing:2px; text-transform:uppercase;
+  color:var(--c-muted); opacity:.7; transition:all .25s ease; white-space:nowrap;
+}
+.logo-item:hover span{ opacity:1; color:var(--c-global); }
+
+/* ============================================================
+   FOOTER — blackish
+   ============================================================ */
+.site-footer{ background:var(--c-blackish); color:var(--c-muted); }
+.footer-main{ padding:100px 0 60px; }
+.footer-cols{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:40px; /* rå: tre col-md-4 */
+}
+.footer-h{
+  color:#fff; font-size:20px; line-height:30px; font-weight:600; margin-bottom:20px;
+}
+.footer-col li{ margin-bottom:10px; }
+.footer-col a:hover{ color:#fff; }
+.footer-mail{ color:var(--c-accent); }
+.footer-mail:hover{ color:#fff; }
+.footer-bottom{
+  border-top:1px solid rgba(var(--white-rgb),.1);
+  padding:25px 0; font-size:14px;
+  display:flex; justify-content:space-between; align-items:center; gap:20px;
+  max-width:var(--container); margin:0 auto; padding-left:12px; padding-right:12px;
+}
+.footer-bottom a:hover{ color:#fff; }
+
+/* ============================================================
+   Scroll-progress-knapp — rå: 50×50 @ right/bottom 50px,
+   inset-ring 2px rgba(0,0,0,.2), stroke 4, 200ms linear, ingen rotation
+   ============================================================ */
+.progress-wrap{
+  position:fixed; right:50px; bottom:50px; z-index:1000;
+  width:50px; height:50px; border-radius:50%; cursor:pointer;
+  background:transparent;
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.2);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; visibility:hidden; transform:translateY(15px);
+  transition:all .4s ease; border:0; padding:0;
+}
+.progress-wrap.is-visible{ opacity:1; visibility:visible; transform:translateY(0); }
+.progress-wrap svg.progress-circle{ position:absolute; inset:0; width:50px; height:50px; }
+.progress-wrap svg.progress-circle path{
+  fill:none; stroke:var(--c-global); stroke-width:4;
+  transition:stroke-dashoffset 200ms linear;
+}
+.progress-wrap .arrow-up{ width:14px; height:14px; stroke:var(--c-blackish); fill:none; stroke-width:2; }
+
+/* ============================================================
+   Rubrik-reveal: split-line-uppglidning, cubic-bezier(.22,.61,.36,1)
+   ============================================================ */
+.reveal-lines .line{ display:block; overflow:hidden; }
+.reveal-lines .line > span{
+  display:block; transform:translateY(110%);
+  transition:transform .9s var(--reveal-ease);
+}
+.reveal-lines.is-inview .line > span{ transform:translateY(0); }
+.reveal-lines.is-inview .line:nth-child(2) > span{ transition-delay:.12s; }
+.reveal-lines.is-inview .line:nth-child(3) > span{ transition-delay:.24s; }
+.reveal-fade{ opacity:0; transform:translateY(30px); transition:all .9s var(--reveal-ease); }
+.reveal-fade.is-inview{ opacity:1; transform:translateY(0); }
+
+@media (prefers-reduced-motion:reduce){
+  html{ scroll-behavior:auto; }
+  .hero-layer,.reveal-lines .line > span,.reveal-fade,
+  .hero-bg,.testi-track,.logos-track{ animation:none!important; transition:none!important; transform:none!important; opacity:1!important; }
+}
+
+/* ============================================================
+   RESPONSIVT — brytpunkter exakt ur post-73/responsive
+   ============================================================ */
+@media (max-width:1600px){
+  .header-inner{ margin:0 50px; }
+  .main-nav > ul > li{ margin:0 30px; }
+}
+@media (max-width:1366px){
+  .hero-title{ font-size:80px; line-height:90px; }
+  .sec-services{ padding:100px 0 70px; }
+  .split-body{ padding:80px 30px 80px 40px; }
+  .split-body-inner{ padding-left:0; }
+  .ihbox-first{ margin-top:40px; }
+  .ihbox + .ihbox{ margin-top:40px; }
+  .sec-testimonials{ padding:100px 0 450px; } /* rå post-73 @1366 */
+  .testi-main{ padding:0 30px; }
+}
+@media (max-width:1200px){
+  .main-nav{ display:none; }
+  .burger{ display:block; }
+  .header-right .btn-outline{ display:none; }
+}
+@media (max-width:1024px){
+  .hero{ height:800px; }
+  .hero-title{ font-size:70px; line-height:80px; }
+  .sec-services{ padding:80px 0 50px; }
+  .services-grid{ grid-template-columns:repeat(2,1fr); }
+  .sec-split{ grid-template-columns:1fr; }
+  .split-media{ padding:230px 0; }
+  .split-body{ padding:60px 30px 80px; }
+  .sec-testimonials{ padding:80px 0 330px; } /* rå post-73 @1024 */
+  .testi-row{ grid-template-columns:1fr; row-gap:40px; }
+  .section-title{ font-size:44px; line-height:50px; }
+  .split-title{ font-size:44px; line-height:50px; }
+  .footer-cols{ grid-template-columns:1fr 1fr; }
+}
+@media (max-width:767px){
+  .hero{ height:700px; }
+  .hero-title{ font-size:50px; line-height:58px; }
+  .sec-intro{ padding:60px 30px 0; }
+  .intro-statement{ font-size:21px; }
+  .sec-services{ padding:60px 0 30px; }
+  .services-grid{ grid-template-columns:1fr; }
+  .section-title{ font-size:36px; line-height:42px; }
+  .split-title{ font-size:36px; line-height:42px; }
+  .split-media{ padding:150px 0; }
+  .split-body{ padding:40px 30px 60px; }
+  .sec-testimonials{ padding:60px 0; }
+  .testi-name{ font-size:24px; line-height:30px; }
+  .logo-item{ min-width:50%; }
+  .footer-main{ padding:60px 0 40px; }
+  .footer-bottom{ flex-direction:column; text-align:center; }
+}
+@media (max-width:500px){
+  .hero{ height:550px; }
+  .ihbox{ display:block; }
+  .ihbox-icon{ margin:0 0 10px; }
+  .footer-cols{ grid-template-columns:1fr; }
+}

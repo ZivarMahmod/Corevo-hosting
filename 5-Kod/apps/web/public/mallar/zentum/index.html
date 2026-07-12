@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="sv-SE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#212c40">
+<meta name="robots" content="noindex, nofollow">
+<title>Balans — En personlig redovisningsbyrå</title>
+<!-- Fonter: Wix Madefor Display 500/600 + DM Sans 400 + Merriweather 400. Inter laddas medvetet INTE (originalets faktiska rendering). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Wix+Madefor+Display:wght@500;600&family=DM+Sans:wght@400&family=Merriweather:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ HEADER: overlay (transparent över heron) ============ -->
+<header class="site-header">
+  <div class="header-overlay">
+    <div class="header-inner">
+      <a href="#" class="site-logo">balans<span class="logo-dot">.</span></a>
+      <nav class="main-nav" aria-label="Huvudmeny">
+        <ul>
+          <li><a href="#">Start</a></li>
+          <li class="has-sub">
+            <a href="#tjanster">Våra tjänster</a>
+            <ul>
+              <li><a href="#tjanster">Bokföring</a></li>
+              <li><a href="#tjanster">Bokslut &amp; årsredovisning</a></li>
+              <li><a href="#tjanster">Rådgivning &amp; skatteplanering</a></li>
+              <li><a href="#tjanster">Deklarationer, INK1, INK2</a></li>
+              <li><a href="#tjanster">Interimslösningar</a></li>
+              <li><a href="#tjanster">Projekt &amp; punktinsatser</a></li>
+            </ul>
+          </li>
+          <li><a href="#partner">Om oss</a></li>
+          <li><a href="#kontakt">Kontakt</a></li>
+        </ul>
+      </nav>
+      <div class="header-right">
+        <button class="header-search" aria-label="Sök">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        </button>
+        <a href="#kontakt" class="btn-outline">Kontakta oss
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg>
+        </a>
+        <button class="burger" aria-label="Meny" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sticky-varianten (vit) -->
+  <div class="header-sticky" aria-hidden="true">
+    <div class="header-inner">
+      <a href="#" class="site-logo">balans<span class="logo-dot">.</span></a>
+      <nav class="main-nav">
+        <ul>
+          <li><a href="#">Start</a></li>
+          <li class="has-sub">
+            <a href="#tjanster">Våra tjänster</a>
+            <ul>
+              <li><a href="#tjanster">Bokföring</a></li>
+              <li><a href="#tjanster">Bokslut &amp; årsredovisning</a></li>
+              <li><a href="#tjanster">Rådgivning &amp; skatteplanering</a></li>
+              <li><a href="#tjanster">Deklarationer, INK1, INK2</a></li>
+              <li><a href="#tjanster">Interimslösningar</a></li>
+              <li><a href="#tjanster">Projekt &amp; punktinsatser</a></li>
+            </ul>
+          </li>
+          <li><a href="#partner">Om oss</a></li>
+          <li><a href="#kontakt">Kontakt</a></li>
+        </ul>
+      </nav>
+      <div class="header-right">
+        <button class="header-search" aria-label="Sök">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        </button>
+        <a href="#kontakt" class="btn-outline">Kontakta oss
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg>
+        </a>
+        <button class="burger" aria-label="Meny" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Off-canvas mobilmeny -->
+<div class="offcanvas-backdrop"></div>
+<nav class="offcanvas" aria-label="Mobilmeny">
+  <button class="offcanvas-close" aria-label="Stäng">&times;</button>
+  <ul>
+    <li><a href="#">Start</a></li>
+    <li><a href="#tjanster">Våra tjänster</a></li>
+    <li><a href="#partner">Om oss</a></li>
+    <li><a href="#kontakt">Kontakt</a></li>
+  </ul>
+</nav>
+
+<!-- ============ HERO: bg-foto + 270°-gradient + sekventiell lagerintro ============ -->
+<section class="hero" id="hero">
+  <div class="hero-bg">
+    <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1920&h=950&fit=crop&q=80&auto=format" alt="" fetchpriority="high">
+  </div>
+  <div class="hero-shade"></div>
+  <div class="hero-top-shade"></div>
+  <div class="hero-content">
+    <span class="hero-eyebrow hero-layer">Välkommen till Balans</span>
+    <h1 class="hero-title hero-layer">Ditt ekonomiska verktyg</h1>
+    <p class="hero-text hero-layer">Vi skapar lösningar som hjälper dig driva ditt bolag framåt.</p>
+    <div class="hero-cta hero-layer">
+      <a href="#kontakt" class="btn">Kontakta oss
+        <svg class="btn-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SEKTION 1: intro-statement (Merriweather 26px) ============ -->
+<section class="sec-intro">
+  <p class="intro-statement reveal-fade">En modern redovisningsbyrå där digital effektivitet möter personlig rådgivning — så att du kan lägga din tid på det du gör bäst: din verksamhet.</p>
+</section>
+
+<!-- ============ SEKTION 2: Våra tjänster (6 kort, 3 kolumner) ============ -->
+<section class="sec-services" id="tjanster">
+  <div class="container">
+    <div class="section-head">
+      <h2 class="section-title reveal-lines">Våra tjänster</h2>
+      <p class="section-desc reveal-fade">Från löpande bokföring till bokslut, deklarationer och strategisk rådgivning — vi stöttar bolag i alla skeden, oavsett om du söker en långsiktig partner eller hjälp med en avgränsad insats.</p>
+    </div>
+    <div class="services-grid">
+      <article class="service-card reveal-fade">
+        <div class="service-media">
+          <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=900&h=1000&fit=crop&q=80&auto=format" alt="Bokföring" loading="lazy">
+          <span class="service-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg></span>
+        </div>
+        <h3 class="service-title"><a href="#kontakt">Bokföring</a></h3>
+      </article>
+      <article class="service-card reveal-fade">
+        <div class="service-media">
+          <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=900&h=1000&fit=crop&q=80&auto=format" alt="Bokslut och årsredovisning" loading="lazy">
+          <span class="service-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg></span>
+        </div>
+        <h3 class="service-title"><a href="#kontakt">Bokslut &amp; årsredovisning</a></h3>
+      </article>
+      <article class="service-card reveal-fade">
+        <div class="service-media">
+          <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?w=900&h=1000&fit=crop&q=80&auto=format" alt="Rådgivning och skatteplanering" loading="lazy">
+          <span class="service-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg></span>
+        </div>
+        <h3 class="service-title"><a href="#kontakt">Rådgivning &amp; skatteplanering</a></h3>
+      </article>
+      <article class="service-card reveal-fade">
+        <div class="service-media">
+          <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&h=1000&fit=crop&q=80&auto=format" alt="Deklarationer" loading="lazy">
+          <span class="service-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg></span>
+        </div>
+        <h3 class="service-title"><a href="#kontakt">Deklarationer, INK1, INK2</a></h3>
+      </article>
+      <article class="service-card reveal-fade">
+        <div class="service-media">
+          <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&h=1000&fit=crop&q=80&auto=format" alt="Interimslösningar" loading="lazy">
+          <span class="service-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg></span>
+        </div>
+        <h3 class="service-title"><a href="#kontakt">Interimslösningar</a></h3>
+      </article>
+      <article class="service-card reveal-fade">
+        <div class="service-media">
+          <img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?w=900&h=1000&fit=crop&q=80&auto=format" alt="Projekt och punktinsatser" loading="lazy">
+          <span class="service-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg></span>
+        </div>
+        <h3 class="service-title"><a href="#kontakt">Projekt &amp; punktinsatser</a></h3>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SEKTION 3: full-bleed split på navy ============ -->
+<section class="sec-split">
+  <div class="split-media" style="background-image:url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1200&q=80&auto=format&fit=crop')" role="img" aria-label="Rådgivningsmöte"></div>
+  <div class="split-body">
+    <div class="split-body-inner">
+      <h2 class="split-title reveal-lines">Din trygga partner inom<br>redovisning och bokföring.</h2>
+      <p class="split-lead reveal-fade">Som din lokala redovisningsbyrå tar vi hand om siffrorna så att du kan fokusera på verksamheten. Vi erbjuder både helhetsåtaganden och skräddarsydda punktinsatser — en stabil grund för ditt bolag att växa ifrån.</p>
+      <div class="split-spacer"></div>
+      <div class="ihbox ihbox-first reveal-fade">
+        <span class="ihbox-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="M8 6h24a4 4 0 0 1 4 4v32H12a4 4 0 0 1-4-4V6zM36 14h4v24a4 4 0 0 1-4 4M14 14h14M14 21h14M14 28h9"/></svg>
+        </span>
+        <div>
+          <h3 class="ihbox-title">Löpande bokföring</h3>
+          <p class="ihbox-desc">Din redovisning skött i tid, varje månad — med helt digitala flöden.</p>
+        </div>
+      </div>
+      <div class="ihbox reveal-fade">
+        <span class="ihbox-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path d="M6 40h36M10 34l8-10 7 6 12-16M31 14h6v6"/></svg>
+        </span>
+        <div>
+          <h3 class="ihbox-title">Rådgivning</h3>
+          <p class="ihbox-desc">Bolla stort som smått med oss — vi finns nära, oavsett vilken fas ditt bolag är i.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SEKTION 4: Referenser — rubrik vänster (25%), slider höger (75%) ============ -->
+<section class="sec-testimonials">
+  <div class="container">
+    <div class="testi-row">
+      <div class="testi-head">
+        <h4 class="eyebrow reveal-fade">Referenser</h4>
+        <h2 class="section-title reveal-lines">Så säger våra kunder</h2>
+      </div>
+      <div class="testi-main">
+        <div class="testi-viewport">
+          <div class="testi-track">
+            <div class="testi-slide">
+              <p class="testi-quote">Sedan vi lämnade över ekonomin har vi kunnat lägga all kraft på kärnverksamheten. Snabba svar, ordning och reda och en känsla av att de faktiskt bryr sig om vårt bolag — det är därför vi stannar.</p>
+              <div class="testi-author">
+                <div class="testi-logo" aria-hidden="true">NB</div>
+                <div>
+                  <h3 class="testi-name">Johan Lindqvist</h3>
+                  <p class="testi-company">Nordfält Bygg AB</p>
+                </div>
+              </div>
+            </div>
+            <div class="testi-slide">
+              <p class="testi-quote">De sköter hela vår redovisning och förklarar alltid vad som händer och varför, på ett språk man förstår. Professionellt, prestigelöst och alltid nära till hjälp när frågorna dyker upp.</p>
+              <div class="testi-author">
+                <div class="testi-logo" aria-hidden="true">SF</div>
+                <div>
+                  <h3 class="testi-name">Sara Aydin</h3>
+                  <p class="testi-company">Studio Form AB</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="testi-dots" aria-label="Referenser"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SEKTION 5: partner-logotyper (4 synliga) ============ -->
+<section class="sec-logos" id="partner">
+  <div class="container">
+    <div class="logos-viewport">
+      <div class="logos-track">
+        <div class="logo-item"><span>Finova</span></div>
+        <div class="logo-item"><span>Kontea</span></div>
+        <div class="logo-item"><span>Ledgo</span></div>
+        <div class="logo-item"><span>Numra</span></div>
+        <div class="logo-item"><span>Saldia</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER (blackish) ============ -->
+<footer class="site-footer" id="kontakt">
+  <div class="footer-main">
+    <div class="container">
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h2 class="footer-h">Kontakta oss</h2>
+          <ul>
+            <li><a href="mailto:info@balansbyra.se" class="footer-mail">info@balansbyra.se</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h2 class="footer-h">Org. nummer</h2>
+          <ul>
+            <li>559000-0000</li>
+            <li>Innehar F-skattsedel</li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h2 class="footer-h">Våra tjänster</h2>
+          <ul>
+            <li><a href="#tjanster">Bokföring</a></li>
+            <li><a href="#tjanster">Bokslut &amp; årsredovisning</a></li>
+            <li><a href="#tjanster">Skatteplanering &amp; rådgivning</a></li>
+            <li><a href="#tjanster">Deklarationer</a></li>
+            <li><a href="#tjanster">Interimslösningar</a></li>
+            <li><a href="#tjanster">Projekt &amp; punktinsatser</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>Copyright © 2026 Balans.</span>
+    <a href="#">Integritetspolicy</a>
+  </div>
+</footer>
+
+<!-- Scroll-progress-knapp: 50×50 @ 50/50, inset-ring, stroke 4, 200ms linear -->
+<button class="progress-wrap" aria-label="Till toppen">
+  <svg class="progress-circle" viewBox="0 0 50 50">
+    <path d="M25 4 a 21 21 0 0 1 0 42 a 21 21 0 0 1 0 -42"/>
+  </svg>
+  <svg class="arrow-up" viewBox="0 0 24 24"><polyline points="6 14 12 8 18 14"/></svg>
+</button>
+
+<!-- Sök-overlay (öppnas av header-sökknappen) -->
+<div class="search-overlay" aria-hidden="true">
+  <button class="search-close" aria-label="Stäng sök">&times;</button>
+  <form class="search-form" role="search" onsubmit="return false">
+    <input type="search" placeholder="Sök …" aria-label="Sök">
+  </form>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
