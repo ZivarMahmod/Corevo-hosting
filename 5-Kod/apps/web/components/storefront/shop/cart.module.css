@@ -71,9 +71,12 @@
     var(--sf-row-line, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 12%, transparent)));
 }
 
+/* goal-62 E4: miniatyren var 72×72 (1:1) medan produktkortet nu visar varan i 4:5.
+   Två bildspråk i samma flöde läser som två butiker. Samma ratio hela vägen: griden,
+   korgen, kassan. */
 .thumb {
-  width: 72px;
-  height: 72px;
+  width: 88px;
+  height: 110px;
   flex-shrink: 0;
   overflow: hidden;
   border-radius: var(--sf-radius, var(--radius, 4px));
@@ -92,9 +95,11 @@
   min-width: 0;
 }
 
+/* goal-62 E4: varunamnet och radsumman mätte BÅDA 15px — inget bar raden. Namnet är
+   radens röst (17px), radsumman dess siffra (17px/700). */
 .name {
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--color-fg, #232520);
 }
@@ -114,8 +119,8 @@
 /* Radtotalen: tabulära siffror så kolumnen inte hoppar när antalet ändras. */
 .lineTotal {
   font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   color: var(--color-fg, #232520);

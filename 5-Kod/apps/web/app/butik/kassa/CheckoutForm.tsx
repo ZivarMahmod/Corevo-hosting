@@ -162,13 +162,24 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
 
       {/* Gäst-checkout (konto efter köp). ≤8 fält. */}
       <form onSubmit={onSubmit} className={s.form} noValidate>
-        <Field id="name" label="Namn" value={fields.name} onChange={(v) => setFields((f) => ({ ...f, name: v }))} autoComplete="name" required />
-        <Field id="email" label="E-post" type="email" value={fields.email} onChange={(v) => setFields((f) => ({ ...f, email: v }))} autoComplete="email" required />
-        <Field id="phone" label="Telefon" type="tel" value={fields.phone} onChange={(v) => setFields((f) => ({ ...f, phone: v }))} autoComplete="tel" required />
-        {needsAddress ? (
-          <Field id="address" label="Leveransadress" value={fields.address} onChange={(v) => setFields((f) => ({ ...f, address: v }))} autoComplete="street-address" required />
-        ) : null}
-        <Field id="note" label="Meddelande (valfritt)" value={fields.note} onChange={(v) => setFields((f) => ({ ...f, note: v }))} />
+        {/* goal-62 E5: fem fält låg i EN oavbruten radda — kassan läste som ett formulär
+            att beta av, inte som två frågor ("vem är du?" / "vart ska det?"). Grupperade
+            i fieldset+legend: samma fält, samma ordning, men steg-känslan kommer gratis
+            och skärmläsaren annonserar gruppen. */}
+        <fieldset className={s.group}>
+          <legend className={s.legend}>Dina uppgifter</legend>
+          <Field id="name" label="Namn" value={fields.name} onChange={(v) => setFields((f) => ({ ...f, name: v }))} autoComplete="name" required />
+          <Field id="email" label="E-post" type="email" value={fields.email} onChange={(v) => setFields((f) => ({ ...f, email: v }))} autoComplete="email" required />
+          <Field id="phone" label="Telefon" type="tel" value={fields.phone} onChange={(v) => setFields((f) => ({ ...f, phone: v }))} autoComplete="tel" required />
+        </fieldset>
+
+        <fieldset className={s.group}>
+          <legend className={s.legend}>{needsAddress ? 'Leverans' : 'Till beställningen'}</legend>
+          {needsAddress ? (
+            <Field id="address" label="Leveransadress" value={fields.address} onChange={(v) => setFields((f) => ({ ...f, address: v }))} autoComplete="street-address" required />
+          ) : null}
+          <Field id="note" label="Meddelande (valfritt)" value={fields.note} onChange={(v) => setFields((f) => ({ ...f, note: v }))} />
+        </fieldset>
 
         {formError ? (
           <p role="alert" className={s.alert}>

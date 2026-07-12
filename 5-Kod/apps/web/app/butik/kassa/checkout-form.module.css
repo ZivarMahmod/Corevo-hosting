@@ -284,3 +284,29 @@
     animation: none;
   }
 }
+
+/* goal-62 E5 — FÄLTGRUPPERNA. Kassan hade fem fält i en oavbruten radda; nu två frågor
+   ("vem är du?" / "vart ska det?"). fieldset bär ingen egen ram — grupperingen görs med
+   luft och en legend, så kassan inte får ännu en låda att titta på. */
+.group {
+  display: grid;
+  gap: var(--sf-field-gap, 16px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.group + .group {
+  margin-top: 10px;
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: 10px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff));
+}
