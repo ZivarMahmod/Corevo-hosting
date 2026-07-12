@@ -73,16 +73,16 @@ export const seraphina: FloristTheme = {
     ],
     galleryImages: [
       'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1570729137062-66ba5a5a7f72?w=900&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1462275646964-a0e3386b89fa?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1494972308805-463bc619d34e?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1502977249166-824b3a8a4d6d?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1629998485949-98ac155218cf?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1703756291806-03f5f7b70ba4?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1612429176974-7697f62d8485?w=900&q=80&auto=format&fit=crop',
     ],
     aboutImage:
-      'https://images.unsplash.com/photo-1596438459194-f275f413d6ff?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1559751315-488c65cf0629?w=1600&q=80&auto=format&fit=crop',
     closingImage:
-      'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1658836515534-0a0c483eb954?w=1600&q=80&auto=format&fit=crop',
     team: [],
     stats: [
       ['100%', 'handbundet'],

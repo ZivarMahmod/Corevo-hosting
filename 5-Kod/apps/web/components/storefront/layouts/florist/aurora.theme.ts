@@ -67,22 +67,22 @@ export const aurora: FloristTheme = {
     teamEyebrow: '— Vårt team',
     teamTitle: 'Händerna bakom varje bukett',
     heroImages: [
-      'https://images.unsplash.com/photo-1487070183336-b863922373d4?w=1600&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=1600&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1709983967470-f6c72b61cc62?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1628456676381-cf822e3c3f9f?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1711638241167-796a782bd3f4?w=1600&q=80&auto=format&fit=crop',
     ],
     galleryImages: [
       'https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=900&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1519378058457-4c29a0a2efac?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1520763185298-1b434c919102?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1747226757800-6d8f87cfc0fe?w=900&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1533038590840-1cde6e668a91?w=900&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1457089328109-e5d9bd499191?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1747226757815-d827b3aa4c5a?w=900&q=80&auto=format&fit=crop',
     ],
     aboutImage:
-      'https://images.unsplash.com/photo-1502977249166-824b3a8a4d6d?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1746929015083-b313a9cb7dff?w=1600&q=80&auto=format&fit=crop',
     closingImage:
-      'https://images.unsplash.com/photo-1494972308805-463bc619d34e?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1711638753941-3a7128aa759f?w=1600&q=80&auto=format&fit=crop',
     team: [
       { name: 'Vårt team', role: 'Florister & rådgivare', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=700&q=80&auto=format&fit=crop' },
       { name: 'Buketter', role: 'Handbundet, dagligen', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=700&q=80&auto=format&fit=crop' },

@@ -63,22 +63,22 @@ export const oliviathyme: FloristTheme = {
     teamEyebrow: '— Bakom disken',
     teamTitle: 'Händerna som binder din bukett',
     heroImages: [
-      'https://images.unsplash.com/photo-1487070183336-b863922373d4?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1754891955767-efe818cd68ca?w=1600&q=80&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1522748906645-95d8adfd52c7?w=1600&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1589244159943-460088ed5c92?w=1600&q=80&auto=format&fit=crop',
     ],
     galleryImages: [
       'https://images.unsplash.com/photo-1495231916356-a86217efff12?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1520763185298-1b434c919102?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1494972308805-463bc619d34e?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1502977249166-824b3a8a4d6d?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=900&q=80&auto=format&fit=crop',
-      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1776799215256-c7bb5cfbcef4?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1780082723034-91b5dcdf4fca?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1777879760931-3a21a9bf42d6?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1770051669143-9e11b102a0f2?w=900&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1768180316485-2c7306ab38ff?w=900&q=80&auto=format&fit=crop',
     ],
     aboutImage:
-      'https://images.unsplash.com/photo-1596438459194-f275f413d6ff?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1781242934964-3b19db3673a7?w=1600&q=80&auto=format&fit=crop',
     closingImage:
-      'https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=1600&q=80&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1763672087818-03257864c026?w=1600&q=80&auto=format&fit=crop',
     team: [
       { name: 'Vårt team', role: 'Florister', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=700&q=80&auto=format&fit=crop' },
       { name: 'Buketter', role: 'Handbundet', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=700&q=80&auto=format&fit=crop' },
