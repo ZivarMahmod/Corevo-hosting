@@ -70,6 +70,39 @@ export function accentForeground(hex: string | null | undefined): string | null 
   return ink >= paper ? ACCENT_INK : ACCENT_PAPER
 }
 
+const toHex = (c: [number, number, number]) =>
+  '#' + c.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('').toUpperCase()
+
+/**
+ * goal-62 B2b — TEXTSÄKER SYSKONTON till mallens primärfärg.
+ *
+ * En färg som bär en YTA är inte automatiskt läsbar som TEXT. FreshCuts guld (#B59775)
+ * är en vacker knappfyllning men mäter 2.75:1 som brödtext på vitt; Salvias salviagröna
+ * 4.27:1 — båda under WCAG-golvet. Mallarna använde ändå `--color-primary` rakt av för
+ * eyebrows, priser och sifferled, och just de texterna "försvann".
+ *
+ * Denna funktion mörknar kulören STEGVIS (samma nyans, ingen ny färg i paletten) tills
+ * den klarar `min` mot den ljusaste bakgrunden den ska ligga på. Klarar den redan → orörd.
+ */
+export function accentInk(
+  primary: string | null | undefined,
+  bg: string | null | undefined,
+  min = 4.5,
+): string | null {
+  const p = rgbOf(primary)
+  if (!p || !bg) return null
+  const already = contrastRatio(primary!, bg)
+  if (already == null) return null
+  if (already >= min) return toHex(p)
+  for (let k = 0.98; k >= 0.2; k -= 0.02) {
+    const c: [number, number, number] = [p[0] * k, p[1] * k, p[2] * k]
+    const hex = toHex(c)
+    const cr = contrastRatio(hex, bg)
+    if (cr != null && cr >= min) return hex
+  }
+  return ACCENT_INK
+}
+
 /**
  * Maps a tenant's branding jsonb to inline CSS custom properties
  * (e.g. `style={injectTenantTokens(branding)}` on <body>).

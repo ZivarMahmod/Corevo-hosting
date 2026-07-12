@@ -90,8 +90,12 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
          globalt vitt. Nu räknas den ur mallens egen primary. FreshCut fick sin (guld → mörk ink,
          2.75 → 5.64:1). Linneas lera kunde ingen textfärg rädda (vit 4.25, ink 3.64) → fyllningen
          fördjupades minimalt (#B0693F → #A9653C) → 4.55:1.
-- [ ] **B2b. SYSTEMFEL 2: accent-som-text får en egen mörkare ink-ton** (eyebrows/priser/siffror).
-      Accentfärgen behålls för YTOR; texten får en läsbar syskonton per mall.
+- [x] **B2b. SYSTEMFEL 2: accent-som-text** ✅ **95 → 9 brott.** Ny token `--color-primary-ink`:
+      mallens egen primärfärg, mörkad tills den klarar 4.5:1 mot mallens MÖRKASTE ljusa yta
+      (accent-soft, inte den vita — mäts den mot vitt faller texten igenom på tonade sektioner).
+      Räknas i florist-generatorn, inskriven i de 7 fasta mallarna. 44 delade regler (eyebrow,
+      pris, sifferled, adress, telefon, subhero-rubrik) läser den nu i stället för `--color-primary`.
+      **Ytorna behåller sin färg** — bara texten flyttade. FreshCuts guld: 2.38 → 4.67:1.
 - [ ] **B2. Resten av FAIL-listan mall för mall** — EN mall per körning (kör `npm run kontrast <mall>`
       efteråt: 0 FAIL = bock). Bocka per mall:
   - [ ] calytrix · [ ] aurora · [ ] sage · [ ] oliviathyme · [ ] paisley · [ ] onyx
@@ -200,4 +204,5 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 | 2026-07-12 | A3 sajtbyggar-rest | — | grep = 0 rester; live-rutter 404/307 = död |
 | 2026-07-12 | A4 prestanda | — | live 0.08–0.98 s alla ytor; dev-kompilering var "segheten" |
 | 2026-07-12 | B1 kontrast-roboten | 6a1f7ae | 20 mallar × 5 sidor uppmätta → 151 riktiga brott, 2 systemfel |
-| 2026-07-12 | B2a knapptexten | (denna) | npm run kontrast: 0 btn-accent-brott i alla 20 mallar (151→95) |
+| 2026-07-12 | B2a knapptexten | 8f2e0c1 | npm run kontrast: 0 btn-accent-brott i alla 20 mallar (151→95) |
+| 2026-07-12 | B2b accent-som-text | (denna) | npm run kontrast: 95 → 9 brott; 16 av 20 mallar helt rena |

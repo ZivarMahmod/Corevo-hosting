@@ -5,7 +5,7 @@ import type { Service, TenantLocation, TenantContact } from '@/lib/tenant-data'
 import type { ShopData } from '@/lib/storefront/shop/types'
 import type { BloggPost } from '@/lib/storefront/blogg/types'
 import type { TenantBranding } from '@corevo/ui'
-import { accentForeground } from '@corevo/ui'
+import { accentForeground, accentInk, contrastRatio } from '@corevo/ui'
 
 /**
  * FLORIST-SVITEN — 13 mall-syskon (goal-58). Varje mall bor i EN egen fil-trio
@@ -224,5 +224,18 @@ export function floristThemeBlock(t: FloristTheme): string {
   // den av ink/vit som ger högst WCAG-kontrast vinner. Ingen mall kan längre ärva
   // en knapptext som inte syns.
   const accentFg = accentForeground(t.palette.primary) ?? '#ffffff'
-  return nav + `[data-world="storefront"][data-theme="${t.key}"]{--color-primary:${t.palette.primary};--color-primary-d:${t.palette.primaryD};--color-bg:${t.palette.bg};--color-surface:${t.palette.surface};--color-fg:${t.palette.fg};--color-fg-2:${t.palette.fg2};--color-line:${t.palette.line};--color-accent-soft:${t.palette.accentSoft};--color-accent-fg:${accentFg};--color-primary-fg:${accentFg};--font-display:${t.fonts.display};--font-body:${t.fonts.body};--sf-radius:${t.radius};}`
+  // goal-62 B2b: TEXTSÄKER syskonton. Eyebrows, priser och sifferled läser den här i
+  // stället för --color-primary, som är gjord för att BÄRA en yta.
+  // Värsta fallet för mörk text är den MÖRKASTE av mallens ljusa ytor (nästan alltid
+  // accent-soft, inte den vita) — mäts den mot den vita blir tonen för ljus och texten
+  // faller igenom på tonade sektioner. Mörka mallar (onyx) har ingen ljus yta → primary
+  // står orörd, den ligger redan på mörkt.
+  const lightSurfaces = [t.palette.bg, t.palette.surface, t.palette.accentSoft].filter(
+    (c) => accentForeground(c) === '#15281f',
+  )
+  const worstLight = lightSurfaces.sort(
+    (a, b) => (contrastRatio('#000000', a) ?? 0) - (contrastRatio('#000000', b) ?? 0),
+  )[0]
+  const ink = (worstLight ? accentInk(t.palette.primary, worstLight) : null) ?? t.palette.primary
+  return nav + `[data-world="storefront"][data-theme="${t.key}"]{--color-primary:${t.palette.primary};--color-primary-d:${t.palette.primaryD};--color-bg:${t.palette.bg};--color-surface:${t.palette.surface};--color-fg:${t.palette.fg};--color-fg-2:${t.palette.fg2};--color-line:${t.palette.line};--color-accent-soft:${t.palette.accentSoft};--color-accent-fg:${accentFg};--color-primary-fg:${accentFg};--color-primary-ink:${ink};--font-display:${t.fonts.display};--font-body:${t.fonts.body};--sf-radius:${t.radius};}`
 }

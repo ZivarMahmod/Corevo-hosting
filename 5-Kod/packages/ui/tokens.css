@@ -196,6 +196,8 @@
   --color-fg-2:      #5C5F55;
   --color-line:      #E2DED2;
   --color-accent-soft:#EAEBE3;
+  /* goal-62 B2b: primärfärgen som TEXT (eyebrow, pris, sifferled) — 4.58:1 mot mallens mörkaste ljusa yta (accent-soft) — primary mätte 4.27 */
+  --color-primary-ink: #5A6E5D;
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body:    'Jost', 'Inter', sans-serif;
   --sf-radius: 10px;
@@ -251,6 +253,8 @@
   --color-fg-2:      #6A6472;
   --color-line:      #ECE7EF;
   --color-accent-soft:#F1ECF3;
+  /* goal-62 B2b: primärfärgen som TEXT (eyebrow, pris, sifferled) — 4.57:1 — primary mätte 3.98 */
+  --color-primary-ink: #746586;
   --font-display: 'Playfair Display', Georgia, serif;
   --font-body:    'Inter', system-ui, sans-serif;
   --sf-radius: 14px;
@@ -310,6 +314,8 @@
   --color-fg-2:      #B3A998;
   --color-line:      #322C24;
   --color-accent-soft:#241F19;
+  /* goal-62 B2b: primärfärgen som TEXT (eyebrow, pris, sifferled) — primary klarar redan 5.36:1 — oförändrad, token finns för konsekvensens skull */
+  --color-primary-ink: #C8743C;
   --font-display: 'Bebas Neue', 'Archivo', sans-serif;
   --font-body:    'Archivo', 'Inter', sans-serif;
   --sf-radius: 4px;
@@ -375,6 +381,8 @@
   --color-fg-2:      #6E6452;
   --color-line:      #E3D9C8;
   --color-accent-soft:#ECE3D3;
+  /* goal-62 B2b: primärfärgen som TEXT (eyebrow, pris, sifferled) — 4.56:1 — primary mätte 3.58 */
+  --color-primary-ink: #915734;
   --font-display: 'DM Serif Display', Georgia, serif;
   --font-body:    'Inter', system-ui, sans-serif;
   --sf-radius: 12px;
@@ -431,6 +439,8 @@
   --color-fg-2:      #6B675F;
   --color-line:      #E5E0D6;
   --color-accent-soft:#EEEAE1;
+  /* goal-62 B2b: primärfärgen som TEXT (eyebrow, pris, sifferled) — primary klarar redan 9.86:1 — oförändrad */
+  --color-primary-ink: #3A3733;
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body:    'Inter', system-ui, sans-serif;
   --sf-radius: 2px;
@@ -485,6 +495,8 @@
   --color-fg-2:      #6E6A5B;
   --color-line:      #E4DDCC;
   --color-accent-soft:#ECE6D6;
+  /* goal-62 B2b: primärfärgen som TEXT (eyebrow, pris, sifferled) — primary klarar redan 6.70:1 — oförändrad */
+  --color-primary-ink: #44523B;
   --font-display: var(--font-playfair), 'Playfair Display', Georgia, serif;
   --font-body:    'PT Serif', Georgia, serif;
   --sf-radius: 14px;
@@ -539,6 +551,8 @@
   --color-fg-2:      #555555;  /* body grey */
   --color-line:      #E7E2DA;
   --color-accent-soft:#F3EEE7;
+  /* goal-62 B2b: primärfärgen som TEXT (eyebrow, pris, sifferled) — guldet mätte 2.38:1 som TEXT → 4.67:1. Ytan behåller sitt guld. */
+  --color-primary-ink: #7B6750;
   /* goal-62 B2a: accenten ÄR guldet (#B59775). Global accent-fg var vit → 2.75:1 på
      guld (mätt) — det brott Zivar såg på nav-CTA:n och closing-bandet. Mörk ink ger
      5.64:1 på samma guld. Räknat, inte tyckt. */
@@ -593,7 +607,10 @@
 }
 
 /* storefront type roles (theme-agnostic — pull from the theme's families) */
-[data-world="storefront"] .sf-eyebrow { font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--color-primary); }
+/* goal-62 B2b: eyebrowen är TEXT och läser därför --color-primary-ink (mallens egen
+   primärfärg, mörkad tills den klarar 4.5:1 mot mallens mörkaste ljusa yta). Ytorna
+   behåller --color-primary orörd. Fallbacken gör raden säker för teman utan egen ink. */
+[data-world="storefront"] .sf-eyebrow { font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--color-primary-ink, var(--color-primary)); }
 [data-world="storefront"] .sf-hero    { font-family: var(--font-display); font-weight: 600; font-size: clamp(36px, 4.6vw, 62px); line-height: 1.08; letter-spacing: -0.01em; }
 [data-world="storefront"] .sf-h1      { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 4vw, 56px); line-height: 1.04; }
 [data-world="storefront"] .sf-h2      { font-family: var(--font-display); font-weight: 600; font-size: clamp(22px, 2.4vw, 34px); line-height: 1.12; }

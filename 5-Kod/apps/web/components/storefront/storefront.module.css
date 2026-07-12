@@ -399,7 +399,7 @@
   font-weight: 700;
   /* WCAG AA: gold-on-cream small text fails (~2:1). Forest primary is 9.96:1.
      Gold stays for CTA fill / decorative use only. */
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .secTitle {
   margin: 0;
@@ -449,7 +449,7 @@
   font-size: 1.05rem;
   font-weight: 700;
   /* WCAG AA: small gold numerals on cream fail contrast → forest primary (9.96:1). */
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   font-variant-numeric: tabular-nums;
 }
 .menuMain { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
@@ -480,7 +480,7 @@
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1.25rem;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .menuOldPrice {
   font-family: var(--font-display);
@@ -546,7 +546,7 @@
   margin-block: -8px;
   min-height: 44px;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   transition: gap var(--dur-fast) var(--ease-out);
 }
 /* Strecket sitter där border-bottom satt: de sista 2px av den ursprungliga boxen. */
@@ -581,7 +581,7 @@
   font-weight: 500;
   font-size: clamp(1.5rem, 4vw, 2.6rem);
   line-height: 1.3;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 
 /* ===========================================================================
@@ -633,7 +633,7 @@
   letter-spacing: 0.12em;
   font-weight: 700;
   /* WCAG AA: small gold role label on cream fails contrast → forest primary (9.96:1). */
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .stylistBio { margin: 0; opacity: 0.78; line-height: 1.6; font-size: 0.98rem; }
 
@@ -783,7 +783,7 @@
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(2rem, 4vw, 2.8rem);
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   line-height: 1;
 }
 .statLabel { font-size: 0.85rem; opacity: 0.7; }
@@ -820,7 +820,7 @@
   font-weight: 700;
   opacity: 0.6;
 }
-.locValue { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--color-primary); }
+.locValue { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--color-primary-ink, var(--color-primary)); }
 .locContactValue { margin: 0.35rem 0 0; font-size: 1.02rem; }
 /* goal-61 svep: 20–30px (telefon/mejl/sociala på kontakt-sidan, alla 7 mallar).
    Den här är en LÖPANDE inline-länk i ett <p> — inte ett flex-item. På en inline-box
@@ -831,7 +831,7 @@
    Understrykningen kan inte vara border-bottom (den hade hamnat 13px under texten,
    i botten av padding-boxen) → text-decoration, som följer TEXTEN. */
 .locContactLink {
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   padding-block: 13px;
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
@@ -839,7 +839,7 @@
   text-underline-offset: 3px;
   transition: text-decoration-color var(--dur-fast) var(--ease-out);
 }
-.locContactLink:hover { text-decoration-color: var(--color-primary); }
+.locContactLink:hover { text-decoration-color: var(--color-primary-ink, var(--color-primary)); }
 .locContactLink:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .locHint { margin: 0.25rem 0 0; font-size: 0.92rem; opacity: 0.7; line-height: 1.5; }
 .hoursTable { width: 100%; max-width: 22rem; border-collapse: collapse; margin: 0.25rem 0; }
@@ -944,7 +944,7 @@
   min-height: 44px;
   margin-top: 2rem;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   transition: gap var(--dur-fast) var(--ease-out);
 }
 .sfMoreLink::after {
@@ -967,8 +967,8 @@
 }
 
 /* shared stat primitives */
-.sfStatValue { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 2.4rem); color: var(--color-primary); line-height: 1; }
-.sfStatValueLg { font-family: var(--font-display); font-size: clamp(2.4rem, 5vw, 2.9rem); color: var(--color-primary); line-height: 1; }
+.sfStatValue { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 2.4rem); color: var(--color-primary-ink, var(--color-primary)); line-height: 1; }
+.sfStatValueLg { font-family: var(--font-display); font-size: clamp(2.4rem, 5vw, 2.9rem); color: var(--color-primary-ink, var(--color-primary)); line-height: 1; }
 .sfStatLabel { display: block; font-size: 0.85rem; color: var(--color-fg-2); margin-top: 0.4rem; }
 
 /* ── SALVIA ─────────────────────────────────────────────────────────────── */
@@ -986,7 +986,7 @@
 }
 .sfRow:hover { background: var(--color-accent-soft); padding-left: 1.25rem; }
 .sfRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
-.sfRowNum { font-family: var(--font-display); font-size: 1.6rem; color: var(--color-primary); opacity: 0.75; }
+.sfRowNum { font-family: var(--font-display); font-size: 1.6rem; color: var(--color-primary-ink, var(--color-primary)); opacity: 0.75; }
 .sfRowMain { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
 .sfRowName { font-family: var(--font-display); font-size: clamp(1.25rem, 2.4vw, 1.5rem); font-weight: 600; color: var(--color-fg); }
 .sfRowDesc { font-family: var(--font-body); font-size: 0.95rem; color: var(--color-fg-2); line-height: 1.5; }
@@ -1024,7 +1024,7 @@
 .sfMap { height: 320px; border-radius: var(--sf-radius); overflow: hidden; border: 1px solid var(--color-line); background: var(--color-accent-soft); display: grid; place-items: center; padding: 1.5rem; text-align: center; }
 /* goal-61 svep: 28px (salvia, flora) → 44px träffyta, kvittad till 28px flöde.
    Bär aldrig en mall-klass (mätt) → kvittningen är säker. Understrykning → ::after. */
-.sfMapLink { position: relative; display: inline-flex; align-items: center; gap: 0.45rem; padding: 8px 0 12px; margin-block: -8px; min-height: 44px; font-family: var(--font-body); font-weight: 600; color: var(--color-primary); transition: gap var(--dur-fast) var(--ease-out); }
+.sfMapLink { position: relative; display: inline-flex; align-items: center; gap: 0.45rem; padding: 8px 0 12px; margin-block: -8px; min-height: 44px; font-family: var(--font-body); font-weight: 600; color: var(--color-primary-ink, var(--color-primary)); transition: gap var(--dur-fast) var(--ease-out); }
 .sfMapLink::after { content: ''; position: absolute; left: 0; right: 0; bottom: 8px; height: 2px; background: transparent; transition: background var(--dur-fast) var(--ease-out); }
 .sfMapLink:hover { gap: 0.7rem; }
 .sfMapLink:hover::after { background: var(--color-accent); }
@@ -1034,7 +1034,7 @@
 
 .sfClosing { background: var(--color-primary); text-align: center; padding: clamp(4.5rem, 9vw, 6.5rem) 1.5rem; color: #fff; }
 .sfClosingLead { font-family: var(--font-body); font-size: 1.05rem; color: rgba(255, 255, 255, 0.9); margin-top: 0.9rem; }
-.sfClosing :global(.btn-accent).sfClosingCta { background: #fff; color: var(--color-primary); }
+.sfClosing :global(.btn-accent).sfClosingCta { background: #fff; color: var(--color-primary-ink, var(--color-primary)); }
 .sfClosing :global(.btn-accent).sfClosingCta:hover { background: rgba(255, 255, 255, 0.92); }
 
 /* ── LEANDER (centered) ─────────────────────────────────────────────────── */
@@ -1043,11 +1043,11 @@
 .sfPriceBand { max-width: 900px; margin: 0 auto; padding: clamp(4rem, 8vw, 6rem) clamp(1.25rem, 4vw, 1.75rem); text-align: center; }
 .sfPriceGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem clamp(2rem, 5vw, 3.5rem); text-align: left; }
 .sfPriceRow { display: flex; align-items: baseline; gap: 0.75rem; padding: 1rem 0; border-bottom: 1px solid var(--color-line); cursor: pointer; }
-.sfPriceRow:hover .sfPriceName { color: var(--color-primary); }
+.sfPriceRow:hover .sfPriceName { color: var(--color-primary-ink, var(--color-primary)); }
 .sfPriceRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 .sfPriceName { font-family: var(--font-display); font-size: 1.25rem; color: var(--color-fg); transition: color var(--dur-fast) var(--ease-out); }
 .sfPriceDots { flex: 1; border-bottom: 1px dotted var(--color-line); transform: translateY(-4px); }
-.sfPriceVal { font-family: var(--font-body); font-weight: 600; color: var(--color-primary); white-space: nowrap; }
+.sfPriceVal { font-family: var(--font-body); font-weight: 600; color: var(--color-primary-ink, var(--color-primary)); white-space: nowrap; }
 @media (max-width: 640px) { .sfPriceGrid { grid-template-columns: 1fr; } }
 
 .sfQuoteBand { background: var(--color-accent-soft); padding: clamp(3.5rem, 8vw, 5.5rem) 1.5rem; text-align: center; }
@@ -1078,11 +1078,11 @@
    viewporten). Vid ≥761px lämnas min-content orörd → 765/515-delningen står kvar. */
 @media (max-width: 760px) { .sfSplitHero { grid-template-columns: 1fr; } .sfSplitPanel { min-width: 0; } .sfSplitPhoto { min-height: 16rem; order: -1; } }
 
-.sfBandLabel { padding: 1.35rem clamp(1.75rem, 5vw, 4.5rem); border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); font-family: var(--font-body); font-size: 0.75rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--color-primary); }
+.sfBandLabel { padding: 1.35rem clamp(1.75rem, 5vw, 4.5rem); border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); font-family: var(--font-body); font-size: 0.75rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--color-primary-ink, var(--color-primary)); }
 .sfBand { display: grid; grid-template-columns: 5rem 1fr auto; gap: 1.5rem; align-items: center; padding: 1.5rem clamp(1.75rem, 5vw, 4.5rem); border-bottom: 1px solid var(--color-line); cursor: pointer; transition: background var(--dur-fast) var(--ease-out); }
 .sfBand:hover { background: var(--color-accent-soft); }
 .sfBand:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
-.sfBandNum { font-family: var(--font-display); font-size: 1.9rem; color: var(--color-primary); }
+.sfBandNum { font-family: var(--font-display); font-size: 1.9rem; color: var(--color-primary-ink, var(--color-primary)); }
 .sfBandMain { min-width: 0; }
 /* goal-61 svep: 7px horisontell overflow på zigge/ vid 390px. Boven var ett enda
    obrytbart ord — "Bröllopskonsultation" blir 278px versalt i en 262px-box, och en
@@ -1106,7 +1106,7 @@
 /* ── LINNEA (warm natural, side-by-side, cards) ─────────────────────────── */
 .sfSideHero { max-width: 1200px; margin: 0 auto; padding: clamp(2.5rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 1.75rem) clamp(3.5rem, 6vw, 4.5rem); display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 3.5rem); align-items: center; }
 .sfSideText { min-width: 0; }
-.sfPillEyebrow { display: inline-block; font-family: var(--font-body); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); background: var(--color-accent-soft); padding: 0.45rem 1rem; border-radius: 999px; }
+.sfPillEyebrow { display: inline-block; font-family: var(--font-body); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary-ink, var(--color-primary)); background: var(--color-accent-soft); padding: 0.45rem 1rem; border-radius: 999px; }
 .sfSideText .heroTitle, .sfSideText > h1 { margin-top: 1.25rem; }
 .sfSideActions { display: flex; gap: 0.9rem; margin-top: 1.9rem; align-items: center; flex-wrap: wrap; }
 .sfSideNote { font-family: var(--font-body); font-weight: 600; color: var(--color-fg-2); font-size: 0.9rem; }
@@ -1120,14 +1120,14 @@
 .sfCard { background: var(--color-bg); border: 1px solid var(--color-line); border-radius: 20px; padding: 1.6rem; cursor: pointer; transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out); display: block; }
 .sfCard:hover { transform: translateY(-4px); box-shadow: var(--sf-shadow-soft); }
 .sfCard:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
-.sfCardIcon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 14px; background: var(--color-accent-soft); color: var(--color-primary); }
+.sfCardIcon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 14px; background: var(--color-accent-soft); color: var(--color-primary-ink, var(--color-primary)); }
 .sfCardName { font-family: var(--font-display); font-size: 1.4rem; color: var(--color-fg); margin: 1rem 0 0; }
 .sfCardMeta { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; font-family: var(--font-body); font-weight: 600; }
-.sfCardPrice { color: var(--color-primary); font-size: 1.05rem; }
+.sfCardPrice { color: var(--color-primary-ink, var(--color-primary)); font-size: 1.05rem; }
 .sfCardTime { color: var(--color-fg-2); font-size: 0.85rem; }
 .sfChips { list-style: none; display: flex; justify-content: center; gap: 1rem; margin: 2.5rem 0 0; padding: 0; flex-wrap: wrap; }
 .sfChip { background: var(--color-bg); border: 1px solid var(--color-line); border-radius: 18px; padding: 1.25rem 2rem; text-align: center; min-width: 9rem; }
-.sfChipValue { font-family: var(--font-display); font-size: 2.1rem; color: var(--color-primary); line-height: 1; }
+.sfChipValue { font-family: var(--font-display); font-size: 2.1rem; color: var(--color-primary-ink, var(--color-primary)); line-height: 1; }
 @media (max-width: 860px) { .sfCardGrid { grid-template-columns: 1fr; max-width: 30rem; } }
 /* linnea modul-teasers (goal-54 S10): mjuk rundad fotoyta i sfCard-korten */
 .sfLnCardPhoto { height: 10rem; border-radius: 14px; background-color: var(--color-accent-soft); background-size: cover; background-position: center; }
@@ -1137,12 +1137,12 @@
 .sfEditHeroImg { height: clamp(22rem, 60vh, 34rem); background-color: var(--color-accent-soft); background-size: cover; background-position: center; filter: grayscale(0.15); }
 .sfEditCard { position: relative; margin-top: -6.5rem; margin-left: clamp(0px, 4vw, 4rem); max-width: 35rem; background: var(--color-bg); padding: clamp(1.75rem, 4vw, 2.75rem); border: 1px solid var(--color-line); }
 .sfEditServices { border-top: 1px solid var(--color-line); padding: 0 0 clamp(1rem, 3vw, 2rem); }
-.sfBandLabelInline { padding: 1.4rem 0; font-family: var(--font-body); font-size: 0.72rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--color-primary); }
+.sfBandLabelInline { padding: 1.4rem 0; font-family: var(--font-body); font-size: 0.72rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--color-primary-ink, var(--color-primary)); }
 .sfEditGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 clamp(2rem, 5vw, 3.5rem); }
 .sfEditRow { display: flex; gap: 1.1rem; padding: 1.5rem 0; border-top: 1px solid var(--color-line); cursor: pointer; transition: background var(--dur-fast) var(--ease-out); }
 .sfEditRow:hover { background: var(--color-accent-soft); }
 .sfEditRow:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
-.sfEditNum { font-family: var(--font-display); font-size: 1.4rem; color: var(--color-primary); }
+.sfEditNum { font-family: var(--font-display); font-size: 1.4rem; color: var(--color-primary-ink, var(--color-primary)); }
 .sfEditRowMain { flex: 1; min-width: 0; }
 .sfEditRowHead { display: flex; justify-content: space-between; gap: 0.75rem; }
 .sfEditRowName { font-family: var(--font-display); font-size: 1.45rem; color: var(--color-fg); }
@@ -1279,7 +1279,7 @@
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1.15rem;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .drawerTitle {
   font-size: 0.78rem;
@@ -1304,7 +1304,7 @@
   transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
 .drawerClose:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-ink, var(--color-primary));
   background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 .drawerClose:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
@@ -1360,7 +1360,7 @@
   display: grid;
   place-items: center;
   padding: clamp(30px, 4.5vw, 56px) 0;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   opacity: 0.75;
 }
 
@@ -1403,7 +1403,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   border-bottom: 1px solid var(--color-primary);
   padding-bottom: 2px;
 }
@@ -1464,7 +1464,7 @@
   font-family: var(--font-ui, var(--font-body));
   font-weight: 700;
   font-size: 15px;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .flSecHead { text-align: center; padding: 0 24px; }
 .flBandCta {
@@ -1474,7 +1474,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   border-bottom: 1px solid var(--color-primary);
   padding-bottom: 2px;
   text-decoration: none;
@@ -1512,7 +1512,7 @@
   font-size: 3.2rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   background: color-mix(in srgb, var(--color-primary) 9%, var(--color-bg));
 }
 
@@ -1561,7 +1561,7 @@
   font-family: var(--font-display, var(--font-body));
   font-size: clamp(30px, 4.4vw, 52px);
   line-height: 1.08;
-  color: var(--color-primary, var(--color-fg, #232520));
+  color: var(--color-primary-ink, var(--color-primary, var(--color-fg, #232520)));
 }
 .subHeroLead {
   max-width: 40rem;

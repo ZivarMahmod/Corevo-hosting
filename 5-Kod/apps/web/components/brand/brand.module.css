@@ -58,7 +58,7 @@
   align-items: center;
   gap: 0.4rem;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   border-bottom: 2px solid transparent;
   padding-bottom: 2px;
   transition: border-color var(--dur-fast) var(--ease-out), gap var(--dur-fast) var(--ease-out);
@@ -115,7 +115,7 @@
 .infoValue {
   font-size: 1.02rem;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .infoHint {
   font-size: 0.85rem;
@@ -261,7 +261,7 @@
   font-family: var(--font-display);
   font-size: 1.3rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .footerLinks {
   display: flex;
@@ -275,7 +275,7 @@
 }
 .footerLinks a:hover {
   opacity: 1;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .footerLegal {
   max-width: 1080px;
@@ -335,7 +335,7 @@
 }
 .navCLinks :global(.nav-links a:hover) {
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .navCActions {
   display: flex;
@@ -345,7 +345,7 @@
 .navCAccount {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 .navCAccount:hover { opacity: 0.75; }
 
@@ -397,7 +397,7 @@
   font-family: var(--font-display);
   font-style: italic;
   font-size: 0.9rem;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   margin-top: 0.85rem;
 }
 .miniLegal {
@@ -462,7 +462,7 @@
   font-size: 0.72rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   margin: 0 0 0.9rem;
 }
 .fullText {
@@ -477,7 +477,7 @@
    (samma mönster som .locContactLink). Understrykningen → text-decoration, som följer
    TEXTEN; en border-bottom hade ritats i botten av padding-boxen, 13px under. */
 .fullLink {
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
   padding-block: 13px;
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
@@ -486,7 +486,7 @@
   transition: text-decoration-color var(--dur-fast) var(--ease-out);
 }
 .fullLink:hover {
-  text-decoration-color: var(--color-primary);
+  text-decoration-color: var(--color-primary-ink, var(--color-primary));
 }
 .fullHoursRow {
   display: flex;
@@ -513,7 +513,7 @@
 .fullSign {
   font-family: var(--font-display);
   font-style: italic;
-  color: var(--color-primary);
+  color: var(--color-primary-ink, var(--color-primary));
 }
 @media (max-width: 760px) {
   .fullGrid { grid-template-columns: 1fr; gap: 1.75rem; }
