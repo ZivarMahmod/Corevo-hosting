@@ -48,8 +48,6 @@
   justify-content: center;
   width: 56px;
   height: 56px;
-  font-size: 28px;
-  line-height: 1;
   color: var(--color-fg, #232520); /* 12.8:1 mot 16%-tinten */
   background: color-mix(in srgb, var(--color-accent, #c8a24a) 16%, var(--color-bg, #fff));
   border: 1px solid color-mix(in srgb, var(--color-accent, #c8a24a) 45%, transparent);
@@ -61,6 +59,21 @@
   from {
     opacity: 0;
     transform: scale(0.86);
+  }
+}
+
+/* goal-61: bocken är ett SVG-streck som RITAS (dashoffset 24 → 0) i stället för ett
+ * ✓-tecken som bara finns — sigillet stämplas, sedan skrivs bocken. Fördröjningen
+ * (260ms) låter cirkelns pop landa först; `both` håller strecket osynligt tills dess. */
+.markPath {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: sfReceiptDraw 440ms cubic-bezier(0.2, 0.8, 0.2, 1) 260ms both;
+}
+
+@keyframes sfReceiptDraw {
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -291,6 +304,14 @@
 @media (prefers-reduced-motion: reduce) {
   .mark {
     animation: none;
+  }
+
+  /* Färdigritad bock — `animation: none` ensam hade lämnat dashoffset 24 = OSYNLIGT
+   * streck (samma fälla som transition/transform: startvärdet ligger i regeln, inte
+   * i animationen). */
+  .markPath {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 
   .cta {

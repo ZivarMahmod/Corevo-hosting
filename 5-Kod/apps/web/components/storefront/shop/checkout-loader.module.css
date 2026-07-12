@@ -1,0 +1,150 @@
+/* goal-61 — KASSANS VÄNTAN ("Bekräftar din beställning…").
+ *
+ * Var: en 13px-spinner inne i en disabled knapp. Ögonblicket då kunden lämnat ifrån
+ * sig sina uppgifter och väntar på svar — köpets mest nervösa sekund — hade köp-rälsens
+ * minsta signal.
+ *
+ * Anatomin är lånad ur uiverse-cart-loadern Zivar skickade (varor som faller ner i en
+ * kundvagn — laddaren BERÄTTAR vad som händer, den snurrar inte bara) — men inget av
+ * dess CSS: originalet bär fasta pixelfärger, och saknar reduced-motion helt. Här läser
+ * varje värde en --sf-*-token, så väntan bär mallens form precis som resten av köpet.
+ *
+ * Overlayn BLOCKERAR formuläret medveten: confirmOrder är i luften, och varje ändring i
+ * fälten under tiden vore en lögn (den skickade versionen är låst). Ingen stängknapp,
+ * ingen Esc — det finns inget att avbryta som inte redan är skickat.
+ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1000; /* över nav (40) och korgens lager (70) — samma nivå som kvitto-toasten */
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--color-bg, #fff) 62%, transparent);
+  backdrop-filter: blur(4px);
+  animation: sfLoaderScrimIn 200ms ease;
+}
+
+@keyframes sfLoaderScrimIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.card {
+  width: min(340px, 100%);
+  padding: 32px 28px;
+  text-align: center;
+  background: var(--sf-panel-bg, var(--color-surface, #fff));
+  border: 1px solid
+    var(--sf-panel-border, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 14%, transparent)));
+  border-radius: var(--sf-panel-radius, var(--sf-radius, 4px));
+  box-shadow: 0 24px 60px -16px rgb(0 0 0 / 0.3);
+}
+
+/* ---- scenen: varor faller ner i vagnen ---- */
+
+.scene {
+  position: relative;
+  width: 96px;
+  height: 88px;
+  margin: 0 auto 18px;
+}
+
+.cartIcon {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--color-fg, #232520);
+}
+
+/* Varorna bär accenten — de är det som rör sig, och det som rör sig ska vara butikens
+ * färg, inte en grå prick. Olika storlek + otakt (1.4s / 3 faser) → levande, inte
+ * metronom. Radien läser mallens knappradie: rakskuren mall får rakskurna varor. */
+.item {
+  position: absolute;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 3px));
+  opacity: 0;
+  animation: sfItemDrop 1400ms cubic-bezier(0.5, 0, 0.7, 0.4) infinite;
+}
+
+.item:nth-child(1) {
+  left: 30px;
+}
+
+.item:nth-child(2) {
+  left: 48px;
+  width: 9px;
+  height: 9px;
+  animation-delay: 460ms;
+}
+
+.item:nth-child(3) {
+  left: 62px;
+  width: 11px;
+  height: 11px;
+  animation-delay: 920ms;
+}
+
+/* Varan blir till uppe i luften, faller ner i vagnen och försvinner I den — inte
+ * genom den (opacity släcks vid landningsdjupet, translate stannar där korgen är). */
+@keyframes sfItemDrop {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  12% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(42px);
+  }
+  70% {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+}
+
+/* ---- orden ---- */
+
+.title {
+  margin: 0 0 6px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-fg, #232520);
+}
+
+/* 68% fg-mix = 5.5:1 mot ytan — aldrig opacity på text. */
+.hint {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--color-fg, #232520) 68%, var(--color-bg, #fff));
+}
+
+/* Reduced-motion: fallet släcks HELT (varorna göms — en statisk vara som hänger i
+ * luften ovanför vagnen läser som en bugg) och scrim-tonen står still. Vagnen + orden
+ * bär hela betydelsen: "Bekräftar din beställning…" säger allt rörelsen sa. */
+@media (prefers-reduced-motion: reduce) {
+  .scrim {
+    animation: none;
+  }
+
+  .item {
+    display: none;
+  }
+}

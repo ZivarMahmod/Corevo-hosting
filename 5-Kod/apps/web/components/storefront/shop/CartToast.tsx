@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { storefrontPortalHost } from './portal-host'
 import s from './cart-toast.module.css'
 
 export function CartToast({
@@ -40,13 +41,9 @@ export function CartToast({
 
   if (!mounted) return null
 
-  // Portalens värd är storefront-ROTEN, inte <body>: [data-theme] sitter på skalet, så
-  // ett kvitto i body hade fallit ur temat och renderats i plattformens default-guld
-  // bredvid mallens gröna köpknapp. (Verifierat i flora: ikonen blev guld, knappen grön.)
-  const host =
-    document.querySelector('[data-world="storefront"]') ??
-    document.querySelector('[data-theme]') ??
-    document.body
+  // Portalens värd är storefront-ROTEN, inte <body> — se portal-host.ts (delad med
+  // kassa-loadern; läxan: en portal i body faller ur mallens [data-theme]-tokens).
+  const host = storefrontPortalHost()
 
   return createPortal(
     <div role="status" aria-live="polite" className={s.toast}>

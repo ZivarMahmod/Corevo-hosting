@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/components/storefront/shop/CartProvider'
+import { CheckoutLoader } from '@/components/storefront/shop/CheckoutLoader'
 import { formatShopPrice, type ShopFulfilment } from '@/lib/storefront/shop/types'
 import { reserveOrder, confirmOrder, cancelOrder, startShopCheckout } from '../actions'
 import s from './checkout-form.module.css'
@@ -174,6 +175,12 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
             {formError}
           </p>
         ) : null}
+
+        {/* goal-61: köpets mest nervösa sekund (uppgifterna skickade, svaret i luften)
+            hade köp-rälsens minsta signal — en 13px-spinner. Nu en overlay som berättar
+            VAD som händer. Bara under submitting: reserving sker vid mount och är snabb,
+            där räcker knapptexten. */}
+        {submitting ? <CheckoutLoader /> : null}
 
         <button type="submit" className={s.submit} disabled={pending} aria-busy={submitting || reserving}>
           {submitting ? (
