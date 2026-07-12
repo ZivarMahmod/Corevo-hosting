@@ -236,9 +236,21 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 > Zivar: *"när jag klickar på onboarding ska de ha egna renderade element och bilder —
 > en bas, inte hantverksfloristens. En egen mall är en egen typ av branding."*
 
-- [ ] **D1. Inventera vad previewn visar idag** (studions StorefrontPreview: vems innehåll,
-      vems foton, per mall). Dokumentera gapet här.
-- [ ] **D2. Bas-innehållspaket per mall**: varje mall-registry-post får eget demo-innehåll
+- [x] **D1. Inventera vad previewn visar idag** ✅ GAPET MÄTT — och det var bildernas, inte
+      previewns: **mallarna DELADE sina foton**. Ett och samma Unsplash-foto låg i ÅTTA mallar,
+      16 foto-id var delade, hela sviten drog ur en pool på **26 bilder**. De fem äldre mallarna
+      delade ETT enda bildmanifest (`IMG` i theme-content.ts) — samma salongsinteriör i olika
+      färg. Mekaniken för eget bas-innehåll fanns redan (`THEME_CONTENT[tema]` → previewn), men
+      innehållet var gemensamt. Copy/texter är redan per mall.
+- [x] **D2. Bas-innehållspaket per mall** ✅ FOTON KLARA (copy var redan per mall).
+      `scripts/foton-per-mall.mjs` hämtar ÄKTA foto-id ur Unsplashs publika sök-API — ett eget
+      sökord per mall (mallens bildvärld, aldrig en synonym för "blommor"), global claim-lista så
+      ingen mall kan låna en annans bild, och varje id HEAD-verifieras innan det skrivs (id:n
+      hittas ALDRIG på). `node scripts/foton-per-mall.mjs --verify` = mekanisk kontroll.
+      **Mätt: 20 mallar · 280 foton · 280 unika · 0 delade · alla URL:er lever.**
+      111 delade foton utbytta i de 13 florist-mallarna, eget IMG-manifest åt de 5 äldre.
+      PORTRÄTTEN rörs inte (ansikten; team är owner-only). flora + freshcut orörda.
+      ~~Gammal formulering:~~ Bas-innehållspaket per mall: varje mall-registry-post får eget demo-innehåll
       (egna foton via u()-mönstret, egen copy-ton, egna produktexempel) som previewn och
       mallväljar-korten renderar när ingen riktig tenant-data finns. INTE Hantverksfloristernas
       texter/bilder. EN mall per körning (bock-listan igen):
