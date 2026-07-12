@@ -327,14 +327,26 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       `--sf-social-radius` faller tillbaka på mallens ikon-radie: wildthistle 0px, onyx 999px,
       mina 0 (pillen är struken ur hela den mallen). Inkopplad i alla tio mallar som visar socials.
       **Mätt efter:** 44×44, riktig SVG, radie följer mallen.
-- [ ] **F2. Formulär-stilarna**: kontaktformulär + offertformulär — input-anatomi
-      (label-float eller tydlig label, fokus-liv, validerings-uttryck). Storefront-sidan.
-- [ ] **F3. Checkboxar/radios**: storefront-formulärens kryssrutor (samtycke, val) —
-      riktig anatomi i stället för OS-default.
-- [ ] **F4. Qty-steppern** i butiken: uiverse-anatomi (finns funktionellt — ge den liv).
-- [ ] **F5. Badges/chips** (slutsåld, nyhet, kategori): enhetlig anatomi, mallens färger.
+- [x] **F2. Formulär-stilarna** ✅ REDAN SANT — mätt, inte antaget: offertformulärets fält är
+      ~50px höga och tar **mallens** radie (edit/onyx/wildthistle: 0px; flora: 14px), riktiga
+      `<label>` överallt. Gjordes i goal-60/61-svepen. ⚠️ **ÖPPEN LUCKA (Zivar avgör):**
+      `/kontakt` har INGET formulär alls — bara kontaktuppgifter. Kunden kan inte skriva ett
+      meddelande därifrån. Kräver server-action + mejlväg (offert-modulen har redan en) →
+      egen goal om det ska byggas.
+- [x] **F3. Checkboxar/radios** ✅ REDAN SANT — offertens radioval är riktiga **44px-kort med
+      sr-only input**, inte OS-default kryssrutor. Ingen naken `appearance: auto`-ruta i
+      storefronten.
+- [~] **F4. Qty-steppern** — UTGÅR som egen punkt: steppern är BORTA ur butiksgriden (E3, den
+      var en del av post-it-känslan). Den finns kvar på produktsidan och i varukorgen, där den
+      redan har egna hover-/aktiv-/disabled-tillstånd och 44px-ytor.
+- [x] **F5. Badges/chips** ✅ **Slutsåld syns nu på VARAN.** Enda signalen förr: köpknappen
+      längst ned blev grå — man hann bli intresserad innan man förstod. Badgen sitter på bilden
+      och läser mallens `--sf-badge-*` (samma arketyp som korgens räknare → en mall stämmer sina
+      små etiketter på ETT ställe, och radien följer dess formspråk).
 - [ ] **F6. Bokningsflödets knappar/kort** (hör ihop med fas H — bara storefront-delen här).
-- [ ] **F7. Loader/skeletons** på butikssidor (bildladdning) — inte tomma hål.
+- [x] **F7. Loader/skeletons** ✅ Bildytan hade ratio (ingen CLS) och en grå platta — men plattan
+      var DÖD. Nu en långsam shimmer UNDER bilden, som täcks i samma sekund som bilden dekodats.
+      Ren CSS: ingen laddnings-state i JS, inget extra element, respekterar reduced-motion.
 
 ## FAS G — KUND-ADMIN (goal-61 fas 3)
 - [ ] G1. Tooltips + fil-knapp + rad-knappar — verifiera att fas 2-primitiverna slår igenom
