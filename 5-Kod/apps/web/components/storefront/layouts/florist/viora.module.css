@@ -195,7 +195,14 @@
   justify-content: space-between;
   gap: 1.25rem;
 }
-.vioNavWordmark { justify-self: start; white-space: nowrap; }
+.vioNavWordmark {
+  justify-self: start;
+  white-space: nowrap;
+  /* goal-61: logotyp-länken mätte 40px — 44px-golvet nås med luft, inte större logga. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
 .vioNavWordmark :global(.logo-text) {
   font-family: var(--font-display);
   font-weight: 600;
@@ -217,7 +224,9 @@
   flex-wrap: nowrap;
   gap: 1.75rem;
   margin-top: 0.75rem;
-  padding: 0.6rem 0;
+  /* goal-61: länkarna bär nu radhöjden själva (44px klickyta) — det gamla
+     0.6rem-vaddet ovanpå hade svällt raden ~25px i stället för några px. */
+  padding: 0;
   border-top: 1px solid var(--color-line);
   font-family: var(--font-body);
   font-weight: 600;
@@ -226,15 +235,23 @@
   text-transform: uppercase;
 }
 .vioNavLinks a {
+  /* goal-61: 44px-klickyta — boxen växer, typografin är orörd. Underlinjen flyttar
+     från border-bottom (som hade hamnat vid 44px-boxens botten, 12px under texten)
+     till text-decoration som följer texten precis som förut. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--color-fg);
-  border-bottom: 2px solid transparent;
-  padding-bottom: 2px;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
   white-space: nowrap;
-  transition: color var(--vio-dur) ease, border-color var(--vio-dur) ease;
+  transition: color var(--vio-dur) ease, text-decoration-color var(--vio-dur) ease;
 }
 .vioNavLinks a:hover {
   color: var(--color-primary);
-  border-color: var(--color-primary);
+  text-decoration-color: var(--color-primary);
 }
 .vioNavLinks a:active { color: var(--color-primary-d); }
 /* Korg/konto: shell.navAccount saknar fokusring; mallens klass läggs BREDVID. */
@@ -381,13 +398,28 @@
 .vioFooterNav {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--vio-s1) var(--vio-s2);
+  /* goal-61: radgapet nollas — länkarna bär nu sin egen lufthöjd (44px klickyta). */
+  gap: 0 var(--vio-s2);
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--vio-fs-micro);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
+/* goal-61: sidfotsmenyns länkar mätte 19px — 44px-golvet. Specificiteten (0,1,1) slår
+   .vioFooterLink:s border-underlinje; text-decoration följer texten i 44px-boxen. */
+.vioFooterNav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--vio-dur) ease;
+}
+.vioFooterNav a:hover { text-decoration-color: var(--color-bg); }
 .vioFooterBottom {
   max-width: 1240px;
   margin: var(--vio-s4) auto 0;
@@ -664,6 +696,12 @@
   font-size: var(--vio-fs-card);
   line-height: 1.15;
   color: var(--color-fg);
+  /* goal-61: flex-barnets min-width:auto lät ett långt tjänstenamn ("Bröllops-
+     konsultation", 250px i 26px Playfair) diktera kortets min-content och spränga
+     390-viewporten. Låt namnet krympa och avstava — priset stannar på baslinjen. */
+  min-width: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 .vioSvcPrice {
   font-family: var(--font-body);
@@ -699,7 +737,9 @@
 .vioSvcDur { color: var(--color-fg-2); }
 .vioSvcBook { color: var(--color-primary); display: inline-flex; gap: 0.5rem; }
 .vioEmpty { max-width: 40rem; margin: 0 auto; text-align: center; }
-@media (max-width: 760px) { .vioSvcGrid { grid-template-columns: 1fr; } }
+/* goal-61: minmax(0,1fr) — inte bara 1fr — annars är spårets min = auto och ett
+   kort med långt namn drar hela griden bredare än viewporten (14px overflow @390). */
+@media (max-width: 760px) { .vioSvcGrid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ── 6. OM — mallens egen split (foto | text), spegelvänd mot heron ────────────────── */
 .vioAbout {
@@ -1258,6 +1298,7 @@ a.vioPostSplit:focus-visible { outline: 2px solid var(--color-primary); outline-
   .vioShopNameLink,
   .vioGiftCta,
   .vioFooterLink,
+  .vioFooterNav a,
   .vioFooterSocial,
   .vioContactLink,
   .vioGallery li {

@@ -237,6 +237,11 @@ a.islShortcut:active { transform: scale(0.97); transition-duration: 80ms; }
   justify-self: start;
   white-space: nowrap;
   text-decoration: none;
+  /* Touch-golv (goal-61): med kundens logo-BILD mätte länken 40px. Boxen lyfts
+     till 44px och innehållet centreras — bilden/texten behåller sin storlek. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 .islNavWordmark :global(.logo-text) {
   font-family: var(--font-script);
@@ -258,19 +263,27 @@ a.islShortcut:active { transform: scale(0.97); transition-duration: 80ms; }
    sist i bundeln → länkarna ärvde --color-fg (#1C2733) på den marinblå plattan
    (#0C1F33) = 1.10:1. Nu tvingas mallens ljusa ton igenom: 16.39:1. */
 .islNavLinks.islNavLinks a {
+  /* Touch-golv (goal-61): 12px-versalerna mätte ~19px. Klickboxen lyfts till 44px
+     med flex-centrering — fonten är orörd, navhöjden får växa de px som krävs. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: var(--font-body);
   font-size: var(--isl-fs-micro);
   font-weight: 600;
   letter-spacing: var(--isl-ls-micro);
   text-transform: uppercase;
   color: var(--color-surface);
-  text-decoration: none;
   white-space: nowrap;
-  padding-bottom: 2px;
-  border-bottom: 2px solid transparent;
-  transition: border-color var(--isl-dur) ease;
+  /* Hover-strecket bodde på border-bottom; på en 44px-box hade det legat långt
+     under texten. text-decoration följer textraden oavsett boxhöjd. */
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--isl-dur) ease;
 }
-.islNavLinks.islNavLinks a:hover { border-bottom-color: var(--color-line); }
+.islNavLinks.islNavLinks a:hover { text-decoration-color: var(--color-line); }
 .islNavLinks.islNavLinks a:active { opacity: 0.72; }
 .islNavCluster {
   justify-self: end;
@@ -290,7 +303,7 @@ a.islShortcut:active { transform: scale(0.97); transition-duration: 80ms; }
   color: var(--color-surface);
 }
 .islNavBtn {
-  height: 42px;
+  height: 44px; /* touch-golv (goal-61): 42px låg 2px under 44-golvet */
   padding: 0 22px;
 }
 @media (max-width: 720px) {
@@ -787,11 +800,28 @@ a.islShortcut:hover {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--isl-step-eyebrow);
+  /* gap 12px är borta: 44px-klickboxarna nedan bär radrytmen själva
+     (26+12=38px pitch förr, 44+0=44px nu — nästan samma luft, hela ytan klickbar). */
+  gap: 0;
   font-family: var(--font-body);
   font-size: var(--isl-fs-body);
   line-height: var(--isl-lh-body);
 }
+/* Touch-golv (goal-61): menylänkarna mätte 26px. Boxen lyfts till 44px via flex —
+   fonten är orörd — och understrykningen flyttar från border-bottom (som på en
+   44px-box hamnat långt under texten) till text-decoration som följer textraden. */
+.islFooterNav .islFooterLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: 0;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: color-mix(in srgb, var(--color-line) 60%, transparent);
+  transition: text-decoration-color var(--isl-dur) ease;
+}
+.islFooterNav .islFooterLink:hover { text-decoration-color: var(--color-line); }
 .islFooterHoursRow {
   display: flex;
   justify-content: space-between;
@@ -1143,9 +1173,10 @@ a.islShortcut:hover {
   .islShortcut,
   .islPriceRow,
   .islPostRow,
-  .islNavLinks a,
+  .islNavLinks.islNavLinks a, /* matchar bas-regelns dubblade specificitet — annars vinner basens transition */
   .islNavIcon,
   .islFooterLink,
+  .islFooterNav .islFooterLink, /* dito för 44px-boxarnas text-decoration-toning */
   .islFooterSocial,
   .islContactLink {
     transition: none;

@@ -755,6 +755,11 @@ a.lnMoodCard:hover {
 .lnNavWordmark.lnNavWordmark {
   grid-column: 1;
   justify-self: start;
+  /* goal-61: touch-golvet. Logotypen mätte 40px — länkboxen lyfts till 44px och
+     logotypen centreras i den. Navhöjden växer max 4px (mäts dynamiskt, --nav-h). */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 .lnNavWordmark :global(.logo-text) {
   font-family: var(--font-display);
@@ -776,8 +781,20 @@ a.lnMoodCard:hover {
   font-family: var(--font-body);
   font-size: var(--ln-fs-micro);
   font-weight: var(--ln-fw-micro);
+  line-height: var(--ln-lh-micro); /* 12px × 1.5 = 18px radbox — deterministisk för hit-arean nedan */
   letter-spacing: var(--ln-ls-micro);
   text-transform: uppercase;
+}
+/* goal-61: touch-golvet på railens länkar. Radboxen är 18px — en ärlig 44px-rad
+   hade gjort railen 264px hög och dödat den medvetna lodräta formen. Istället
+   klassisk utökad hit-area: boxen lyfts till 44px och exakt lika mycket dras
+   tillbaka i margin ((44 − 18) / 2 = 13px) → marginboxen förblir 18px och railens
+   visuella rytm (4px-gap, samma höjd) är pixelidentisk, men klickytan mäter 44px. */
+.lnNavRail.lnNavRail a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -13px 0;
 }
 .lnNavCluster.lnNavCluster {
   grid-column: 3;
@@ -880,12 +897,18 @@ a.lnMoodCard:hover {
 .lnFootLinks {
   display: flex;
   flex-direction: column;
-  gap: var(--ln-sp-eyebrow);
+  /* goal-61: gapet (12px) är inbakat i 44px-raderna nedan — radboxen är 24px, så
+     44px-raden ger 20px luft mellan textraderna. Kolumnen andas som förut, bara
+     något luftigare, och varje länk bär ett ärligt touch-golv utan överlapp. */
+  gap: 0;
   font-family: var(--font-body);
   font-size: var(--ln-fs-body);
   line-height: var(--ln-lh-micro);
 }
 .lnFootLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* touch-golvet — sidfotsmenyn ÄR mobilens nav-yta */
   color: var(--color-surface);
 }
 .lnFootLinks a:hover {

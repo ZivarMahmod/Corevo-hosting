@@ -180,6 +180,13 @@
   padding: 18px clamp(var(--au-gutter), 4vw, 40px);
   max-width: 1400px;
 }
+.auNavWordmark.auNavWordmark {
+  /* Touch-golv (goal-61): wordmark-länken mätte 40px hög — centrera loggan i en
+     minst 44px hög klickyta. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
 .auNavWordmark.auNavWordmark :global(.logo-text) {
   font-family: var(--font-script), cursive;
   font-weight: 500;
@@ -196,6 +203,12 @@
   text-transform: uppercase;
 }
 .auNavLinks.auNavLinks a {
+  /* Touch-golv (goal-61): pillren mätte 36px — inline-flex + min-height lyfter
+     klickytan till 44px utan att röra typografin. Navet mäts dynamiskt (--nav-h)
+     så de extra pixlarna är ofarliga. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   opacity: 1;
   color: var(--color-fg);
   padding: 8px 16px;
@@ -370,8 +383,13 @@
 .auCollageHead { text-align: center; margin-bottom: var(--au-sp-block); }
 .auCollageGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* minmax(0) + start: bara `1fr` låter spårens auto-minimum växa — valvens 3:4-ratio
+     förde nth-child-offsetens 48px tillbaka in i spårbredden (48 × 3/4 = +36px/spår)
+     och griden blev bredare än sin container → horisontell overflow på hem-sidan.
+     `align-items: start` bryter stretch→ratio-återkopplingen; offseten behålls. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--au-gutter);
+  align-items: start;
   max-width: 68rem;
   margin: 0 auto;
 }
@@ -442,7 +460,10 @@
 /* 6. PRISER I TVÅ MJUKA KOLUMNER — Auroras egen prislista (ej den delade rad-listan) */
 .auPriceCols {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0): med bara `1fr` blir spårets minimum = prisradens min-content (~416px
+     på mobil) och spåret tvingas bredare än viewporten. 0-minimum låter raden krympa
+     — auPriceMain har redan min-width: 0 så texten radbryts i stället. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--au-sp-text) var(--au-sp-block);
   max-width: 68rem;
   margin: var(--au-sp-block) auto 0;
@@ -460,7 +481,18 @@
   transition: transform var(--au-dur) ease, border-color var(--au-dur) ease;
 }
 .auPriceRow:hover { transform: translateY(var(--au-lift)); border-color: var(--color-primary); }
-.auPriceMain { display: block; flex: 1; min-width: 0; }
+.auPriceMain {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  /* Långa enords-namn ("Bröllopskonsultation") får brytas när pillret är smalare än
+     ordet — annars sticker texten ut ur den rundade raden på små skärmar. Hyphens
+     föredras när ordboken finns, så brytningen får bindestreck i stället för ett
+     naket klipp mitt i ordet. */
+  overflow-wrap: anywhere;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
 .auRowNum {
   display: inline-flex;
   align-items: center;
@@ -663,8 +695,11 @@
 /* /om — valv-collage + berättelse i TVÅ spalter */
 .auOmCollage {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* Samma valv+offset-mönster som hemmets collage → samma minmax(0)+start-skydd,
+     annars blåser nth-child-offseten upp spåren via 3:4-ration även på /om. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--au-gutter);
+  align-items: start;
   max-width: 68rem;
   margin: 0 auto;
 }
@@ -863,6 +898,10 @@
   margin-top: var(--au-sp-cta);
 }
 .auFootLinks a {
+  /* Touch-golv (goal-61): sidfotens piller mätte 36px — samma 44px-golv som navet. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 8px 18px;
   border-radius: 999px;
   border: 1px solid var(--color-primary-d);
@@ -1236,14 +1275,14 @@
   .auAboutGrid,
   .auLocGrid,
   .auContactGrid { grid-template-columns: 1fr; }
-  .auPriceCols { grid-template-columns: 1fr; }
+  .auPriceCols { grid-template-columns: minmax(0, 1fr); }
   .auSvcGrid { grid-template-columns: repeat(2, 1fr); }
   .auOmStory { columns: 1; }
 }
 @media (max-width: 760px) {
   .auHeroImg { aspect-ratio: 4 / 5; }
   .auCollageGrid,
-  .auOmCollage { grid-template-columns: repeat(2, 1fr); }
+  .auOmCollage { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .auCardGrid,
   .auSvcGrid { grid-template-columns: 1fr; max-width: 24rem; }
   .auShopGrid,

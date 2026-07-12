@@ -721,6 +721,11 @@
   min-height: 68px;
 }
 .seraNavWordmark {
+  /* goal-61: 44px touch-golv — loggan mätte 40px. Krönet är redan 56/68px högt,
+     så länken växer INÅT utan att raden växer. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   text-decoration: none;
 }
 .seraNavWordmark :global(.logo-text) {
@@ -741,10 +746,11 @@
   align-items: center;
   gap: var(--sera-sp-eyebrow);
 }
-/* Nav-CTA:n = mallens pill, men kompakt (samma register, mindre luft). */
+/* Nav-CTA:n = mallens pill, men kompakt (samma register, mindre luft).
+   goal-61: 40px rad + 2×2px ram = 44px total — touch-golvet, 2px högre än förr. */
 .seraNavBtn {
   padding: 0 var(--sera-sp-text);
-  line-height: 38px;
+  line-height: 40px;
 }
 /* Menyraden: små spärrade versaler mellan TVÅ guldhårlinjer. */
 .seraNavLinks {
@@ -755,11 +761,18 @@
   align-items: center;
   justify-content: center;
   gap: var(--sera-sp-cta);
-  padding: var(--sera-sp-eyebrow) 0;
+  /* goal-61: radens egen padding (12px) flyttade in i länkarna som 44px touch-golv;
+     bandet mellan guldhårlinjerna växer bara 42 → 44px. */
+  padding: 0;
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
 }
 .seraNavLinks a {
+  /* goal-61: 44px klickyta — samma 12px-typografi, luften bär höjden. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 13px 0;
   white-space: nowrap;
   font-family: var(--font-body);
   font-weight: var(--sera-fw-micro);
@@ -868,6 +881,15 @@
 }
 .seraFootNav a,
 .seraFootSocials a {
+  /* goal-61: 44px touch-golv — 18px text + 13px luft upp/ner = 44px klickyta.
+     Negativa marginaler kvittar paddingen så sidfotens rytm (32px-gapen) står
+     exakt still; bara den klickbara ytan växer. 13+13 = 26px utfall < 32px gap
+     → grannlänkarnas ytor överlappar aldrig. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 13px 8px;
+  margin: -13px -8px;
   font-family: var(--font-body);
   font-weight: var(--sera-fw-micro);
   font-size: var(--sera-fs-micro);

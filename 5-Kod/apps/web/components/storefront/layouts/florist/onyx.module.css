@@ -121,6 +121,10 @@
   padding: 14px var(--onx-gutter) 10px;
 }
 .onxNavWordmark {
+  /* goal-61: 44px touch-golv — länken mätte 40px (wordmarket ensamt bar höjden). */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -177,13 +181,20 @@
   color: var(--color-fg);
   text-decoration: none;
   white-space: nowrap;
-  padding: 6px 0;
-  border-bottom: 1px solid transparent;
-  transition: color var(--onx-dur) var(--onx-ease), border-color var(--onx-dur) var(--onx-ease);
+  /* goal-61: 44px touch-golv utan större font — texten flexcentreras i en hög länk.
+     Hover-strecket flyttar från border-bottom (hade hamnat ~15px under texten i den
+     höga boxen) till text-decoration med offset — linjen ligger kvar tätt under
+     versalerna, exakt som förut. Raden växer 42→60px; nav-h mäts dynamiskt. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  transition: color var(--onx-dur) var(--onx-ease);
 }
 .onxNavLinks a:hover {
   color: var(--color-primary);
-  border-color: var(--color-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
 }
 .onxNavLinks a:active { color: var(--color-primary-d); }
 /* Korg/konto: shell.navAccount är hashad i en annan modul (dess kant är --color-line,
@@ -1062,6 +1073,11 @@
   letter-spacing: -0.015em;
   text-transform: uppercase;
   color: var(--color-fg);
+  /* goal-61: ett långt en-ords-namn (HANTVERKSFLORISTERNA, 622px i 54px display) är
+     bredare än mobil-viewporten och gav 256px sid-overflow. Wordmarket är designat
+     att brytas ("brutet överst") — break-word låter det radbrytas när det inte
+     får plats, i stället för att skjuta ut sidan. */
+  overflow-wrap: break-word;
 }
 .onxFooterTagline {
   margin: var(--onx-gap-title) 0 0;
@@ -1109,10 +1125,27 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--onx-gap-eyebrow);
+  /* goal-61: 44px-raderna bär rytmen själva — gap 0 ger 44px radhöjd mot förr
+     26px rad + 12px gap = 38px. Tätast möjliga utan att tumma på touch-golvet. */
+  gap: 0;
   font-family: var(--font-body);
   font-size: var(--onx-fs-body);
   line-height: 1.58;
+}
+/* goal-61: menylänkarna mätte 26px — under 44px-touch-golvet. Flexcentrerad text i
+   en 44px-hög länk; hover-strecket byter från border-bottom (hade legat ~9px under
+   texten i den höga boxen) till text-decoration med offset, samma tunna linje. */
+.onxFooterNav .onxFooterLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border-bottom: none;
+  transition: color var(--onx-dur) var(--onx-ease);
+}
+.onxFooterNav .onxFooterLink:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
 }
 .onxFooterHoursRow {
   display: flex;

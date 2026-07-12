@@ -588,7 +588,15 @@
   border-bottom: 1px solid var(--color-line);
   box-shadow: none;
 }
-.miNavMark.miNavMark { grid-column: 1; justify-self: start; }
+/* goal-61 touch-golv: wordmark-länken mätte 40px → inline-flex + min-height 44.
+   Texten sitter kvar på samma plats (centreras i den 4px högre ytan). */
+.miNavMark.miNavMark {
+  grid-column: 1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
 .miNavMark :global(.logo-text) {
   font-family: var(--font-display);
   font-weight: 500;
@@ -605,14 +613,26 @@
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 28px;
+  /* goal-61 touch-golv: länkarnas klickyta byggs av padding (10px per sida) —
+     gap 28 → 8 och −10px kantmarginal ger EXAKT samma visuella avstånd
+     (8 + 10 + 10 = 28) och samma textkant mot wordmark/cluster som förut. */
+  gap: 8px;
+  margin: 0 -10px;
   font-family: var(--font-body);
   font-size: var(--mi-fs-micro);
   font-weight: var(--mi-fw-micro);
   letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
 }
-.miNavLinks.miNavLinks a { color: var(--color-fg); white-space: nowrap; }
+.miNavLinks.miNavLinks a {
+  color: var(--color-fg);
+  white-space: nowrap;
+  /* klickytan ≥44px — mikro-registret (12px/600/versaler) är orört */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+}
 /* Minimalismen: de tre första ingångarna bär full vikt, resten backar till en
    tunnare grad. ALLA modul-länkar renderas — de tappas aldrig. */
 .miNavLinks.miNavLinks a:nth-child(n + 4) {
@@ -712,14 +732,27 @@
 .miFootLinks {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mi-sp-gutter);
+  /* goal-61 touch-golv: sidfotsmenyn är en <nav> — länkarna mätte 18px.
+     Klickytan byggs av padding (10px sidor, 44px min-höjd). Kolumn-gap
+     24 → 4 (4 + 10 + 10 = 24 = samma visuella lucka), rad-gap 0 (44px-boxar
+     ger ~samma radrytm som 18px-rader med 24px gap), −10px kantmarginal
+     håller textkanterna i linje med brand-blocket och meta-raden. */
+  gap: 0 4px;
+  margin: 0 -10px;
   font-family: var(--font-body);
   font-size: var(--mi-fs-micro);
   font-weight: var(--mi-fw-micro);
   letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
 }
-.miFootLinks a { color: var(--color-fg); text-decoration: none; }
+.miFootLinks a {
+  color: var(--color-fg);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+}
 .miFootLinks a:hover { color: var(--color-primary); }
 .miFootMeta {
   max-width: 1180px;

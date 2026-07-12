@@ -241,6 +241,14 @@
   justify-content: center;
   min-height: 46px;
 }
+/* Touch-golvet (goal-61): logga-länken mätte 34px hög (logo-img-taket). Klickytan
+   lyfts till 44px via flex-centrering — mastheadens min-height är redan 46px, så
+   raden växer inte och logotypen sitter kvar exakt där den satt. */
+.paNavWordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
 .paNavWordmark.paNavWordmark :global(.logo-text) {
   font-family: var(--font-script);
   font-weight: var(--pa-fw-display);
@@ -260,10 +268,12 @@
   align-items: center;
   gap: var(--pa-sp-eyebrow);
 }
-/* Navens CTA är LÅG (36px) — masthead-raden ska vara en rad, inte en app-bar. */
+/* Navens CTA är LÄGRE än sidans 50px-knapp — masthead-raden ska vara en rad, inte
+   en app-bar. 44px (inte 36) är touch-golvet (goal-61): den ryms fortfarande i
+   mastheadens 46px-rad och matchar ikonknapparnas 2.75rem. */
 .paNavCta:global(.btn-accent) {
-  height: 36px;
-  line-height: 32px;
+  height: 44px;
+  line-height: 40px;
   padding: 0 var(--pa-sp-text);
 }
 
@@ -276,11 +286,16 @@
   justify-content: center;
   flex-wrap: nowrap;
   gap: clamp(var(--pa-sp-text), 2.4vw, var(--pa-sp-cta));
-  padding: 8px 0;
+  /* padding låg tidigare på BANDET (8px). Touch-golvet (goal-61) flyttar luften in
+     i länkarna själva (44px klickyta) — bandet växer bara 34 → 44px, inte till 60. */
+  padding: 0;
   border-top: 1px solid var(--color-line);
   border-bottom: 2px solid var(--color-fg);
 }
 .paNavLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: var(--font-body);
   font-size: var(--pa-fs-ui);
   font-weight: var(--pa-fw-micro);

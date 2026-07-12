@@ -246,7 +246,14 @@
   justify-content: center;
   padding: var(--ot-s-sm) var(--ot-s-md) var(--ot-s-xs);
 }
-.otNavWordmark { text-decoration: none; }
+/* 44px-golvet: bildlogotypen är 34px hög — länkens KLICKYTA lyfts till touch-golvet
+   med inline-flex + min-height, utan att logotypen växer en pixel. */
+.otNavWordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: none;
+}
 .otNavWordmark :global(.logo-text) {
   font-family: var(--font-display);
   font-style: italic;
@@ -282,11 +289,16 @@
   letter-spacing: 1px;
   text-transform: uppercase;
 }
+/* 44px-golvet: förr `padding: 10px 0` (~35px hög). inline-flex + min-height lyfter
+   KLICKYTAN till touch-golvet utan att röra typografin; hover-underlinjen bor kvar
+   på boxens botten precis som förut — bara några px längre ned. */
 .otNavLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--color-fg);
   white-space: nowrap;
   text-decoration: none;
-  padding: 10px 0;
   border-bottom: 2px solid transparent;
   transition: border-color var(--ot-dur) var(--ot-ease), color var(--ot-dur) var(--ot-ease);
 }
@@ -302,12 +314,13 @@
   align-items: center;
   gap: var(--ot-s-xs);
 }
-/* CTA:n i naven: samma fyrkantiga bruna knapp, en aning lägre. (0,2,0) slår btn-accent. */
+/* CTA:n i naven: samma fyrkantiga bruna knapp, en aning lägre än .otBtn:s 50px men
+   aldrig under 44px-touchgolvet. (0,2,0) slår btn-accent. */
 .otNavCta.otNavCta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
+  height: 44px;
   padding: 0 var(--ot-s-sm);
   background: var(--color-primary);
   color: var(--color-bg);
@@ -825,14 +838,22 @@
   letter-spacing: 1px;
   text-transform: uppercase;
 }
+/* 44px-golvet: förr en 22px textrad. inline-flex + min-height lyfter KLICKYTAN till
+   touch-golvet. Hover-strecket bytte teknik (border-bottom → text-decoration) så det
+   fortsätter krama texten i stället för att åka ned till 44px-boxens botten — samma
+   2px-linje i samma kulör, bara ritad med rätt verktyg för en hög box. */
 .otFootLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--color-surface);
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  padding-bottom: 2px;
-  transition: border-color var(--ot-dur) var(--ot-ease);
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: transparent;
+  text-underline-offset: 5px;
+  transition: text-decoration-color var(--ot-dur) var(--ot-ease);
 }
-.otFootLinks a:hover { border-color: var(--color-accent-soft); }
+.otFootLinks a:hover { text-decoration-color: var(--color-accent-soft); }
 .otFootLinks a:active { opacity: 0.7; }
 .otFootCopy {
   font-family: var(--font-body);

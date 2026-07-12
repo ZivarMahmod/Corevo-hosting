@@ -227,16 +227,38 @@
 .calNavLinks a {
   color: var(--color-fg); /* 16.84:1 */
   white-space: nowrap;
-  border-bottom: 2px solid transparent;
-  padding-bottom: 2px;
+  /* 44px = touch-golvet. Länken var ~19px hög (12px text + 2px kant) — en klickyta
+     man missar med tummen. Boxen växer, INTE fonten; navet mäter sin höjd dynamiskt.
+     Hover-underlinjen flyttar till ::after så den ligger kvar tätt under TEXTEN —
+     en border-bottom hade hamnat vid 44px-boxens botten, långt under orden. */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.calNavLinks a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(50% - 1em);
+  height: 2px;
+  background: transparent;
 }
 .calNavLinks a:hover {
   color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+}
+.calNavLinks a:hover::after {
+  background: var(--color-primary);
 }
 .calNavWordmark {
   justify-self: center;
   white-space: nowrap;
+  /* Logotyp-bilden är 40px hög → länkboxen mätte 40px. Boxen lyfts till touch-golvet
+     (44px) med logotypen centrerad — logotypen själv ritas i exakt samma storlek. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 .calNavWordmark :global(.logo-text) {
   font-family: var(--font-display);
@@ -252,6 +274,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+/* Touch-golvet gäller även ikonknapparna: kontolänken mätte 40x44 (plattformens
+   navAccount sätter 40px bredd). min-bredd/-höjd vinner alltid över width/height i
+   CSS oavsett specificitet, så de delade klasserna behöver inte röras. Korgen (44x44)
+   och CTA:n (64px hög) passerar redan — för dem är detta ett no-op. */
+.calNavCluster a,
+.calNavCluster button {
+  min-width: 44px;
+  min-height: 44px;
 }
 .calNavCta {
   font-family: var(--font-body);
@@ -861,7 +892,13 @@
 .calFooterWordmark {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: var(--cal-fs-h2);
+  /* Wordmarket är EN obrytbar rad ("Hantverksfloristerna" = 20 versala serif-tecken).
+     Vid 390px gav h2-golvet (32px) en min-content på 372px > sidfotens 342px innehålls-
+     box — ordet tvingade 1fr-spåret brett och HELA sidan fick 6px horisontell overflow.
+     Fluid storlek: 7.2vw = 28px vid 390 (namnet ryms på EN rad), taket = samma
+     3.125rem som förr (desktop OFÖRÄNDRAD — på bred skärm får 1.4fr-spåret växa och
+     bära hela ordet, precis som innan). */
+  font-size: clamp(1.75rem, 7.2vw, 3.125rem);
   line-height: var(--cal-lh-head);
   letter-spacing: var(--cal-ls-head);
   text-transform: uppercase;
@@ -1221,6 +1258,11 @@
 
 @media (max-width: 860px) {
   .calFooterGrid { grid-template-columns: 1fr; gap: 32px; }
+  /* Säkerhetsnätet gäller BARA singelkolumnläget: ett tenant-namn ännu längre än
+     dagens får hellre radbrytas än tvinga 1fr-spåret bredare än viewporten (= sido-
+     scroll). På bred skärm (>860) skulle samma regel i stället bryta namnet mitt i
+     ordet — där ska spåret växa, inte ordet brytas. */
+  .calFooterWordmark { overflow-wrap: anywhere; }
 }
 @media (max-width: 720px) {
   .calAboutPanel { padding: 24px; }

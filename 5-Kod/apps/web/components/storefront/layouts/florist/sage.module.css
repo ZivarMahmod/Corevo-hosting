@@ -30,15 +30,26 @@
 /* ═══ VARS (goal-60) ══════════════════════════════════════════════════════
    Sage har ingen enda rot-wrapper: SageLayout returnerar ett fragment, undersidorna
    bär .sgPage, modul-vyerna .sgSection, och nav/footer monteras HELT utanför
-   ((public)/layout.tsx). Vars deklareras därför på var och en av mallens rotytor —
+   ((public)/layout.tsx). Vars deklareras därför på VAR OCH EN av mallens rotytor —
    annars faller köpknappen tillbaka på plattformens neutrala form just på butikens
-   egen sida (den enda plats den faktiskt syns). */
+   egen sida (den enda plats den faktiskt syns).
+   goal-61: hemmets egna sektioner (hero, välkomst, citat, om, galleri, present, plats,
+   closing) saknades i listan → var(--sg-focus) blev ogiltig där (IACVT) och outline
+   föll till initial "none" — fokusringen försvann på just hemmets CTA:er. */
 .sgNav,
 .sgFoot,
 .sgPage,
 .sgSection,
 .sgSectionTight,
-.sgShopBuy {
+.sgShopBuy,
+.sgHero,
+.sgWelcome,
+.sgQuoteBand,
+.sgAboutGrid,
+.sgGalleryBand,
+.sgGiftRow,
+.sgLocBand,
+.sgClosing {
   /* FOKUSRING — galleristudions egen olivgröna accent på ljus botten; på mörk botten
      (hero-scrimmen, den mörka closing-plattan) vitt, annars syns ringen inte alls. */
   --sg-focus: var(--color-primary);
@@ -86,9 +97,21 @@
   letter-spacing: 1px;
   text-transform: uppercase;
 }
+/* Touch-golv (goal-61): länktexten är 12px (18px hög) men klickytan måste vara ≥44px.
+   Ytan växer via flex-centrering + min-height — typograden rörs inte, och --nav-h
+   mäts dynamiskt så huvudet får växa de få px det handlar om. */
+.sgNavLinks.sgNavLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
 .sgNavWordmark.sgNavWordmark {
   grid-column: 2;
   justify-self: center;
+  /* Touch-golv (goal-61): wordmark-länken mätte 40px — centrera loggan i en ≥44px yta. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 /* Utställningsskylten: spärrade versaler, display-snittet, aldrig fetstil. */
 .sgNavWordmark :global(.logo-text) {
@@ -177,6 +200,7 @@
   line-height: 1.06;
   font-size: clamp(44px, 8vw, 96px);
   white-space: pre-line;
+  overflow-wrap: break-word; /* skyddsnät: långa kundnamn får aldrig driva overflow */
 }
 .sgHeroLede {
   margin: 20px auto 0;
@@ -260,6 +284,14 @@
   line-height: 1.1;
   color: var(--color-fg);
   font-size: clamp(32px, 4.2vw, 52px);
+  overflow-wrap: break-word;
+}
+/* Smala mobiler (goal-61): "Välkommen till Hantverksfloristerna" — ett 20-teckens
+   versal-ord mäter 375px vid 32px men spalten är 342px → 9px horisontell overflow.
+   Under 460px glider rubriken med viewporten (7.2vw) i stället för att bryta ordet;
+   vid brytpunkten 460px är 7.2vw ≈ 32px så steget är sömlöst. */
+@media (max-width: 460px) {
+  .sgSectionTitle { font-size: clamp(24px, 7.2vw, 32px); }
 }
 .sgSectionHead {
   text-align: center;
@@ -640,6 +672,7 @@
   letter-spacing: 0;
   text-transform: uppercase;
   color: #fff; /* 9.25:1 */
+  overflow-wrap: break-word; /* skyddsnät: långa kundnamn får aldrig driva overflow */
 }
 .sgClosingLede {
   margin: 20px auto 0;
@@ -681,6 +714,17 @@
   letter-spacing: 6px;
   text-transform: uppercase;
   color: var(--color-fg);
+  overflow-wrap: break-word;
+}
+/* Smala mobiler (goal-61): 20 spärrade versaler à 24px + 6px tracking = 401px men
+   spalten är 342px → plaketten drev HELA sidans 35px-overflow. Under 460px knips
+   både grad och spärr (fortfarande spärrat, aldrig brutet ord); break-word ovan är
+   bara ett skyddsnät för ännu längre kundnamn. */
+@media (max-width: 460px) {
+  .sgFootMark {
+    font-size: 18px;
+    letter-spacing: 4px;
+  }
 }
 .sgFootTagline {
   margin: 12px 0 0;
@@ -689,15 +733,19 @@
   line-height: 1.58;
   color: var(--color-fg-2);
 }
+/* Touch-golv (goal-61): menylänkarna mätte 18px höga — varje länk får en ≥44px klick-
+   yta via flex-centrering + min-height och 8px sido-padding. Rytmen bevaras exakt:
+   bandets höjd 7+44+7 = gamla 20+18+20, och luckan 16px + 8px padding på var sida
+   = gamla 32px mellan länktexterna. */
 .sgFootLinks {
   margin-top: 32px;
-  padding: 20px 0;
+  padding: 7px 0;
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px 32px;
+  gap: 0 16px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 12px;
@@ -705,6 +753,10 @@
   text-transform: uppercase;
 }
 .sgFootLinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
   color: var(--color-fg);
   text-decoration: none;
   transition: color 400ms ease;
@@ -776,6 +828,10 @@
   letter-spacing: 0;
   text-transform: uppercase;
   color: var(--color-fg);
+  overflow-wrap: break-word; /* skyddsnät: långa kundnamn får aldrig driva overflow */
+}
+@media (max-width: 460px) {
+  .sgPageTitle { font-size: clamp(24px, 7.2vw, 32px); }
 }
 .sgPageFoot {
   margin-top: 32px;
@@ -1064,14 +1120,14 @@ a.sgPostInner:hover .sgPostTitle { color: var(--color-primary); }
 .sgPostInner:focus-visible,
 .sgGallery.sgGallery button:focus-visible,
 .sgPillCta:global(.btn-accent):focus-visible {
-  outline: 2px solid var(--sg-focus);
+  outline: 2px solid var(--sg-focus, var(--color-primary));
   outline-offset: 3px;
 }
 /* Mörka ytor: heron (scrim) + closing-plattan (--color-primary). */
 .sgHeroBtnOutline:focus-visible,
 .sgHeroActions .sgPillCta:global(.btn-accent):focus-visible,
 .sgClosing .sgPillCta:global(.btn-accent):focus-visible {
-  outline: 2px solid var(--sg-focus-on-dark);
+  outline: 2px solid var(--sg-focus-on-dark, #fff);
   outline-offset: 3px;
 }
 

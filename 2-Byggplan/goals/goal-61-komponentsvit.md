@@ -66,6 +66,18 @@ agenter, disjunkta filer (wf_e3228ae9).
 **1c. Produktkortets hover-lager** (snabbvy — "hjärta" SKIPPAS: ingen wishlist-funktion finns,
 och vi klär aldrig en funktion som inte finns) — med focus-paritet. KVAR.
 **1d. Mobil-nav-mönster.** NYTT FYND: ingen mall har mobilmeny — länkarna radbryts. Egen runda.
+
+### Preview-parity (Zivar 2026-07-12: "previewn ska alltid matcha verkligheten")
+✅ **Rotorsak 1 FIXAD** (commit ceef05f): tjänste-/personal-/location-/Stripe-actions skrev
+tenant-synlig data utan att busta `tenant:<slug>`-taggen — previewn OCH publika sajten visade
+gammalt i upp till 300 s (unstable_cache-TTL) trots att iframen laddade om efter spara.
+`revalidatePath('/salonger/…')` uppdaterar bara admin-sidans render, ALDRIG datacachen.
+Ny helper `revalidateTenantById` + bust i services/people/admin-actions/stripe.
+⏳ **Rotorsak 2 KVAR:** previewn kan bara visa Hem/Tjänster/Om/Kontakt (`PREVIEW_PATHS` i
+SidaPreviewBridge + `PAGES` i SidaStudio) — modulsidorna (butik/varukorg/kurser/blogg/offert/
+presentkort) saknar preview-tvillingar under /salong-preview/<slug>/. Zivar redigerar en butik
+han inte kan se. Egen körning: preview-tvillingar för modulsidor + flikar i SidaStudio.
+⏳ **KVAR:** verticals-actions bustar ingen tenant (kräver bust av alla branschens tenants).
 Mallarna får komponenterna som **opt-in-anatomi, inte en blank omstilning**: EN delad anatomi med
 `--sf-*`-hakar; var och en av de 13 `theme.ts` bestämmer uttrycket. En likformig uiverse-skin över
 13 mallar återskapar exakt den skelett-konvergens goal-58 slogs mot.

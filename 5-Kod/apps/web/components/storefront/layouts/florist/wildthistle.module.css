@@ -725,6 +725,9 @@
 .wtNavWordmark {
   grid-column: 1;
   justify-self: start;
+  display: inline-flex; /* goal-61: 44px touch-golv — logotypen mätte 40px */
+  align-items: center;
+  min-height: 44px;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -749,18 +752,32 @@
   font-weight: 400;
   text-transform: lowercase; /* gemener — rått, inte "elegant" versal */
 }
+/* goal-61: 44px touch-golv — klickytan växer via inline-flex + min-height, ALDRIG
+   via större font. Underlinjen flyttar från border-bottom (som hade hamnat vid
+   44px-boxens botten, långt från ordet) till ::after strax under texten — samma
+   2px-linje, samma optik som förut. */
 .wtNavLinks a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--color-fg);
   text-decoration: none;
   white-space: nowrap;
-  padding-bottom: 2px;
-  border-bottom: 2px solid transparent;
-  transition: border-color var(--wt-dur-fast) ease, color var(--wt-dur-fast) ease;
+  transition: color var(--wt-dur-fast) ease;
 }
-.wtNavLinks a:hover {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+.wtNavLinks a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 0.65em); /* precis under gemenernas nedstaplar, som gamla border-läget */
+  height: 2px;
+  background: transparent;
+  transition: background-color var(--wt-dur-fast) ease;
 }
+.wtNavLinks a:hover { color: var(--color-primary); }
+.wtNavLinks a:hover::after { background: var(--color-primary); }
 .wtNavCluster {
   grid-column: 3;
   justify-self: end;
@@ -796,6 +813,14 @@
   line-height: 1.06;
   letter-spacing: -0.015em;
   color: var(--color-fg);
+  overflow-wrap: anywhere; /* säkerhetsnät: extremt långa namn bryter i stället för att svämma över */
+}
+/* goal-61: hero-nivåns golv (46px) är bredare än en 390px-viewport när namnet är
+   långt ("Hantverksfloristerna" mätte 429px i 350px spalt = 59px overflow).
+   Under 640px skalar wordmarket med viewporten; taket = gamla golvet 2.9rem,
+   så storleken är kontinuerlig vid brytpunkten och orörd på desktop. */
+@media (max-width: 640px) {
+  .wtFooterWordmark { font-size: clamp(1.75rem, 9vw, 2.9rem); }
 }
 .wtFooterTagline {
   margin: var(--wt-s1) 0 0;
@@ -853,11 +878,19 @@
 .wtFooterNav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0; /* goal-61: raderna bär rytmen själva (44px-rader), gapet behövs inte */
   font-family: var(--font-body);
   font-size: var(--wt-fs-body);
   line-height: 1.58;
   text-transform: lowercase;
+}
+/* goal-61: 44px touch-golv för menyraderna — via boxhöjd, inte större font.
+   Punktlinjen (border-bottom på .wtFooterLink) följer med till radens botten,
+   samma fältanteckningsrader som öppettiderna. */
+.wtFooterNav .wtFooterLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 .wtFooterSocials {
   margin-top: var(--wt-s2);
@@ -1397,6 +1430,7 @@
   .wtPriceRow,
   .wtPriceName,
   .wtNavLinks a,
+  .wtNavLinks a::after,
   .wtFooterLink,
   .wtLinkCta,
   .wtBandCta,
