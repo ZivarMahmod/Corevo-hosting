@@ -127,7 +127,9 @@
      KONTRAST: --color-surface #FBFAF6 på --color-primary #1E2A42 = 13.72:1 (≥4.5). */
   --sf-btn-h: 50px;
   --sf-btn-pad: 0 30px;
-  --sf-btn-radius: 999px;
+  --sf-btn-radius: 0;   /* goal-62 C3: lunarias knapp är rak — nattens lugn, inte en kapsel */
+  /* goal-62 C3: överlappets djup — hur långt sektionen glider upp över den föregående. */
+  --ln-overlap: clamp(32px, 5vw, 72px);
   --sf-btn-bg: var(--color-primary);
   --sf-btn-ink: var(--color-surface); /* 13.72:1 */
   --sf-btn-border: var(--color-primary);
@@ -188,7 +190,7 @@
   height: 50px;
   padding: 0 30px;
   border: 2px solid var(--color-primary);
-  border-radius: 999px; /* 25px = exakt halva höjden → ren kapsel */
+  border-radius: 0; /* goal-62 C3: lunarias knapp är rak — nattens lugn, inte en kapsel */
   background: var(--color-primary);
   color: var(--color-surface); /* 13.72:1 */
   font-family: var(--font-body);
@@ -369,8 +371,27 @@ a.lnMoodCard:hover {
 }
 
 /* ── Delad kort-sektion — Ur butiken / Från bloggen ──────────────────────── */
+/* goal-62 C3 — LUNARIAS SIGNATUR: ÖVERLAPPET.
+   Mallen är den stillsamma nattblå. Dess sektioner staplades kant i kant som alla andras.
+   Nu GLIDER butiks-/bloggsektionen upp över den föregående: en egen yta som lägger sig
+   ovanpå, med sidorna indragna. Ingen kant att teckna — bara ett lager som skjuts in,
+   lika stillsamt som mallen. z-index håller den över; den negativa marginalen är exakt
+   överlappets djup, så inget hoppar under den. */
 .lnCardSection {
-  padding: var(--ln-sp-section) 0;
+  position: relative;
+  z-index: 1;
+  margin: calc(-1 * var(--ln-overlap)) auto 0;
+  max-width: 88rem;
+  background: var(--color-bg);
+  padding: var(--ln-sp-section) var(--ln-sp-gutter);
+}
+@media (max-width: 720px) {
+  /* i mobil finns ingen sidled att dra in — överlappet blir en kant, alltså ingen kant */
+  .lnCardSection {
+    margin-top: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
 .lnSecHead {
   text-align: center;

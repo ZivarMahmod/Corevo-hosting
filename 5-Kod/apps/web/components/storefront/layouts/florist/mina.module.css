@@ -101,7 +101,9 @@
   --mi-ratio: 4 / 5;
 
   /* ── RADIE — binärt: 0 på struktur (via --sf-radius), pill på knappar/taggar ─ */
-  --mi-r-pill: 999px;
+  /* goal-62 C3: mina är RAK rakt igenom — knappen med. Var 999px (mallens enda mjuka
+     drag, och samtidigt det enda den delade med 15 andra mallar). */
+  --mi-r-pill: 0px;
 
   /* ── MOTION — återhållsam ──────────────────────────────────────────────────── */
   --mi-lift: -4px;
@@ -310,8 +312,17 @@
 .miCardImg {
   aspect-ratio: var(--mi-ratio);
   background-color: var(--color-accent-soft);
-  background-size: cover;
+  /* goal-62 C3 — MINAS SIGNATUR: PRODUKTEN PÅ FÄRGPLATTAN.
+     Zivar: "när man lägger upp en produkt ska det inte kännas som en post-it-lapp."
+     Bilden fyllde hela rutan (cover) → varje produkt blev en tapetbit. Nu ligger den
+     CENTRERAD och luftad på mallens rosa platta, som en vara i ett skyltfönster.
+     `contain` bevarar varans egen form; plattan bär den. Ingen ram, ingen skugga —
+     mina är typografi och luft. */
+  background-image: inherit;
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: center;
+  padding: var(--mi-sp-block);
   border-radius: var(--sf-radius); /* = 0 (mina.theme.ts) */
 }
 .miCardName {
@@ -594,7 +605,9 @@
   --mi-fw-micro: 600;
   --mi-ls-micro: 0.083em;
   --mi-lh-micro: 1.5;
-  --mi-r-pill: 999px;
+  /* goal-62 C3: mina är RAK rakt igenom — knappen med. Var 999px (mallens enda mjuka
+     drag, och samtidigt det enda den delade med 15 andra mallar). */
+  --mi-r-pill: 0px;
   --mi-dur: 400ms;
   --mi-ease: ease;
 
@@ -680,6 +693,10 @@
   text-transform: uppercase;
   box-shadow: none;
 }
+/* goal-62 C3: nav-knappen bar fortfarande den GLOBALA .btn-accent-pillen (samma
+   specificitet 0-1-0, och globals.css vinner på källordning — mätt: 9999px trots att
+   mallens egen regel sa 0). Dubbel klass (0-2-0) tar tillbaka mallens raka form. */
+.miNavCta.miNavCta { border-radius: 0; }
 .miNavCta:hover { box-shadow: none; transform: none; }
 .miNavCta:active { transform: scale(0.97); transition-duration: 80ms; }
 
@@ -846,7 +863,9 @@
   --mi-sp-section: clamp(48px, 8vw, 96px);
   --mi-gutter-x: clamp(20px, 4vw, 28px);
   --mi-ratio: 4 / 5;
-  --mi-r-pill: 999px;
+  /* goal-62 C3: mina är RAK rakt igenom — knappen med. Var 999px (mallens enda mjuka
+     drag, och samtidigt det enda den delade med 15 andra mallar). */
+  --mi-r-pill: 0px;
   --mi-dur: 400ms;
   --mi-ease: ease;
   --mi-lift: -4px;
@@ -1128,7 +1147,9 @@
   --mi-sp-section: clamp(48px, 8vw, 96px);
   --mi-gutter-x: clamp(20px, 4vw, 28px);
   --mi-ratio: 4 / 5;
-  --mi-r-pill: 999px;
+  /* goal-62 C3: mina är RAK rakt igenom — knappen med. Var 999px (mallens enda mjuka
+     drag, och samtidigt det enda den delade med 15 andra mallar). */
+  --mi-r-pill: 0px;
   --mi-lift: -4px;
   --mi-dur: 400ms;
   --mi-ease: ease;
@@ -1334,7 +1355,10 @@
 .miModule {
   --sf-btn-h: 44px; /* kompakt — Minas chip-känsla (calytrix kör 48) */
   --sf-btn-pad: 12px 20px;
-  --sf-btn-radius: 999px; /* pill: mallens ENDA radie-undantag */
+  /* goal-62 C3: undantaget stryks. Mina är den minimala DTC-mallen — ALLT är rakt,
+     även knappen. En ensam pill i en fyrkantig mall var det enda mjuka på sidan, och
+     det var också det enda den delade med 15 andra mallar. */
+  --sf-btn-radius: 0;
   --sf-btn-bg: var(--color-primary);
   --sf-btn-ink: #fff; /* 7.63:1 */
   --sf-btn-border: var(--color-primary);

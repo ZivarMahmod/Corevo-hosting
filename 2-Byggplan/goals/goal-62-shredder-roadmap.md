@@ -185,7 +185,12 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
   - [x] **aurora** — valvet ut i SEKTIONSKANTEN: rosa panelen bågar upp och glider in under
         sektionen ovanför (mallens egna valv-foton, nu buret av en yta). Formade sektioner 0 → 1.
   - [ ] calytrix · [ ] sage · [ ] oliviathyme · [ ] viora
-  - [ ] isalara · [ ] seraphina · [ ] wildthistle · [ ] mina · [ ] lunaria · [ ] eloria
+  - [x] **mina** — ALLT rakt (pillen struken, även nav-knappen) + **produkten på färgplattan**:
+        bilden fyller inte längre rutan (post-it-känslan) utan ligger centrerad och luftad som
+        en vara i ett skyltfönster.
+  - [x] **lunaria** — **överlappet**: butiks-/bloggsektionen glider upp ÖVER den föregående med
+        indragna sidor · rak knapp. Formade sektioner 0 → 2.
+  - [ ] isalara · [ ] seraphina · [ ] wildthistle · [ ] eloria
   - [ ] salvia · [ ] leander · [ ] zigge · [ ] linnea · [ ] edit
   - [~] flora (skyddad — valv-språket finns) · [~] freshcut (levande kund — rörs ej)
 - [ ] **C4. Övergångarna**: sektionsbyten ska ha medvetna övergångar där mallens manifest
