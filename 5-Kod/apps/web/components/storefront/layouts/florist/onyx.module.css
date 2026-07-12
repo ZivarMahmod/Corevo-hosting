@@ -74,6 +74,10 @@
   /* EN bildratio i hela paketet */
   --onx-ratio: 4 / 5;
 
+  /* goal-62 C3 — SNITTET: djupet på den diagonala sektionskanten. Ett värde, två
+     sektioner (butik/blogg lutar ena hållet, closing det andra). */
+  --onx-cut: clamp(28px, 4.5vw, 64px);
+
   /* ── FOKUSRING (goal-60). Onyx är MÖRK rakt igenom (bg #111110, surface #1B1A18)
      — en mörk ring hade varit osynlig. Korallen är ljus nog: 6.67:1 mot bg,
      6.14:1 mot surface (golv 3:1 för en UI-gräns). */
@@ -84,15 +88,15 @@
      som hemmets .onxBtn): #111110 på #FF6A4A = 6.67:1. */
   --sf-btn-h: 50px;
   --sf-btn-pad: 0 30px;
-  --sf-btn-radius: var(--radius-pill);
+  --sf-btn-radius: 0;   /* goal-62 C3: köpknappen är ett block, som mallens övriga knappar */
   --sf-btn-bg: var(--color-primary);
   --sf-btn-bg-hover: var(--color-primary-d);
   --sf-btn-ink: var(--color-bg);
   --sf-btn-border: var(--color-primary);
   --sf-btn-fs: var(--onx-fs-micro);
-  --sf-btn-weight: 600;
+  --sf-btn-weight: 700;
   --sf-btn-transform: uppercase;
-  --sf-btn-ls: 1px;
+  --sf-btn-ls: 1.6px;
   --sf-btn-dur: var(--onx-dur);
   --sf-btn-ease: var(--onx-ease);
   --sf-focus: var(--color-primary);
@@ -275,7 +279,12 @@
   color: var(--color-primary);
 }
 
-/* KNAPP — exakt pill, 12px/600/VERSALER/1px. Dubbel klass (0-2-0) vinner över den
+/* KNAPP — goal-62 C3: onyx signaturform är KANTIG, inte pill.
+   Mätt (divergens-mätaren): 16 av 20 mallar hade pill-knapp och 13 av 20 hade enbart raka
+   sektionskanter — därför kändes mallarna som samma sida i olika färg. Onyx är den mörka,
+   dramatiska mallen: dess knapp är ett block med skarpa hörn och tung versal, inte en mjuk
+   kapsel. Formen upprepas i korten (raka hörn) och i den diagonala sektionskanten nedan —
+   EN signatur, buren av hela sidan. 12px/700/VERSALER. Dubbel klass (0-2-0) vinner över den
    globala .btn-accent (0-1-0) när BookCta renderar knappen. */
 .onxBtn.onxBtn,
 .onxBtnInk.onxBtnInk {
@@ -283,14 +292,14 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  height: 50px;
-  padding: 0 30px;
-  border-radius: var(--radius-pill);
+  height: 52px;
+  padding: 0 34px;
+  border-radius: 0;
   font-family: var(--font-body);
-  font-weight: 600;
+  font-weight: 700;
   font-size: var(--onx-fs-micro);
   line-height: 1;
-  letter-spacing: 1px;
+  letter-spacing: 1.6px;
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
@@ -496,10 +505,20 @@
   .onxTrio { grid-template-columns: 1fr; max-width: 24rem; }
 }
 
-/* 4/7 — BUTIK & BLOGG: invävda modulsektioner i mörka, bildledda kort */
+/* 4/7 — BUTIK & BLOGG: invävda modulsektioner i mörka, bildledda kort.
+   goal-62 C3 — ONYX SIGNATUR: DIAGONALEN.
+   13 av 20 mallar hade enbart raka sektionskanter (mätt) — sidorna staplades som lådor
+   och kändes därför likadana. Onyx är den dramatiska mallen: dess sektionsbyte är ett
+   SNITT, inte en söm. Ytan skjuts in under den föregående sektionen och klipps diagonalt,
+   så svart möter grafit i en lutande linje tvärs över sidan. Samma vinkel återkommer i
+   closing-bandet nedan (spegelvänd) → en signatur, inte en effekt.
+   clip-path påverkar inte layoutflödet; den negativa marginalen betalar exakt tillbaka
+   höjden som snittet äter, så rytmen under är oförändrad. */
 .onxCardSection {
   background: var(--color-surface);
-  padding: var(--onx-section) var(--onx-gutter);
+  padding: calc(var(--onx-section) + var(--onx-cut)) var(--onx-gutter) var(--onx-section);
+  margin-top: calc(-1 * var(--onx-cut));
+  clip-path: polygon(0 var(--onx-cut), 100% 0, 100% 100%, 0 100%);
 }
 .onxSecHead { text-align: center; margin-bottom: var(--onx-head-gap); }
 .onxSecFoot { text-align: center; }
@@ -516,7 +535,8 @@
   color: inherit;
   background: var(--color-bg);
   border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
+  /* goal-62 C3: raka hörn — samma signatur som knappen. Onyx är block, inte kapslar. */
+  border-radius: 0;
   overflow: hidden;
   transition: transform var(--onx-dur) var(--onx-ease), border-color var(--onx-dur) var(--onx-ease);
 }
@@ -902,11 +922,16 @@
 }
 .onxHoursRow span:last-child { color: var(--color-fg); }
 
-/* 11 — CLOSING — mörk yta + EN korall-pill. Accenten stannar på små ytor. */
+/* 11 — CLOSING — mörk yta + EN korall-knapp. Accenten stannar på små ytor.
+   goal-62 C3: samma diagonal som .onxCardSection, SPEGELVÄND — snittet lutar åt andra
+   hållet så sidan öppnar och stänger med samma gest. Kantlinjen bort: en rak hårlinje
+   ovanpå ett diagonalt snitt hade motsagt sig själv. */
 .onxClosing {
   background: var(--color-bg);
-  border-top: 1px solid var(--color-line);
   text-align: center;
+  padding-top: calc(var(--onx-section-lg) + var(--onx-cut));
+  margin-top: calc(-1 * var(--onx-cut));
+  clip-path: polygon(0 0, 100% var(--onx-cut), 100% 100%, 0 100%);
   padding: var(--onx-section-lg) var(--onx-gutter);
 }
 .onxClosingInner { max-width: 40rem; margin: 0 auto; }

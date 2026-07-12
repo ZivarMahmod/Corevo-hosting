@@ -176,9 +176,14 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       lägger EN sektionsövergång enligt tabellen. Ingen delad fil rörs. Efter varje mall körs
       `node scripts/divergens.mjs <mall>` + `npm run kontrast <mall>` → 0 FAIL innan bock.
 
-- [ ] **C3. Implementera divergensen** — EN mall per körning (samma bock-lista som B2).
-      Per mall: egna sektionsövergångar (inte rak kant överallt), egen knapp-/kortform,
-      egna hover-uttryck. Ingen delad "rund figur" över alla.
+- [ ] **C3. Implementera divergensen** — EN mall per körning. Bocka per mall:
+  - [x] **onyx** — kantig knapp (var pill) · raka kort · **diagonalt snitt** mellan butik/blogg och
+        i closing (spegelvänt) · köpknappen blev block. Mätt: formade sektioner **0 → 4**,
+        knapp "pill" → "kvadrat", kontrast 0 FAIL.
+  - [ ] calytrix · [ ] aurora · [ ] sage · [ ] oliviathyme · [ ] paisley · [ ] viora
+  - [ ] isalara · [ ] seraphina · [ ] wildthistle · [ ] mina · [ ] lunaria · [ ] eloria
+  - [ ] salvia · [ ] leander · [ ] zigge · [ ] linnea · [ ] edit
+  - [~] flora (skyddad — valv-språket finns) · [~] freshcut (levande kund — rörs ej)
 - [ ] **C4. Övergångarna**: sektionsbyten ska ha medvetna övergångar där mallens manifest
       säger det (våg, färgblock-skifte, diagonal, foto-bleed) — aldrig 13 × rak kant.
 
