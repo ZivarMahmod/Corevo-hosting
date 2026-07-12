@@ -15,9 +15,11 @@ const MSG_SOURCE = 'corevo-sida'
 const TOKEN_KEYS = ['--color-primary', '--color-bg', '--color-fg', '--color-accent', '--color-accent-fg', '--font-body', '--font-display']
 
 // Publika undersidor som HAR en preview-tvilling under /salong-preview/<slug>/…
-// (nav-länkarna Hem/Tjänster/Om oss/Kontakt). Allt annat (t.ex. /boka, externa
-// länkar) blockeras — previewen lämnar aldrig preview-världen.
-const PREVIEW_PATHS = new Set(['', 'tjanster', 'om', 'kontakt'])
+// goal-61 preview-parity: modulsidorna (shop/kurser/blogg/offert/presentkort) fick
+// tvillingar — Zivar redigerade tidigare en butik han inte kunde se, och ett nav-klick
+// på "Butik" i previewen gjorde ingenting. Allt annat (t.ex. /boka, externa länkar,
+// enskilda produkt-/inläggssidor) blockeras — previewen lämnar aldrig preview-världen.
+const PREVIEW_PATHS = new Set(['', 'tjanster', 'om', 'kontakt', 'shop', 'kurser', 'blogg', 'offert', 'presentkort'])
 
 export function SidaPreviewBridge() {
   useEffect(() => {

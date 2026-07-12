@@ -550,6 +550,9 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             showOnSite: s.show_on_site,
           }))}
           verticalCopy={await getVerticalCopy(verticalId)}
+          liveModules={['shop', 'kurser', 'blogg', 'offert', 'presentkort'].filter((k) =>
+            isModuleActivated(moduleStates, k),
+          )}
         />
       </>
     ),

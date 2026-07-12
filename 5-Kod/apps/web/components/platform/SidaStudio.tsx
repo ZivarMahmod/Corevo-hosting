@@ -59,8 +59,20 @@ type Copy = {
  */
 const MSG_SOURCE = 'corevo-sida'
 
-type PageKey = 'allmant' | 'hem' | 'tjanster' | 'om' | 'kontakt' | 'bokning'
-const PAGES: { key: PageKey; label: string; sub: string; path: string }[] = [
+type PageKey =
+  | 'allmant'
+  | 'hem'
+  | 'tjanster'
+  | 'om'
+  | 'kontakt'
+  | 'bokning'
+  | 'shop'
+  | 'kurser'
+  | 'blogg'
+  | 'offert'
+  | 'presentkort'
+type PageDef = { key: PageKey; label: string; sub: string; path: string }
+const PAGES: PageDef[] = [
   { key: 'allmant', label: 'Allmänt', sub: 'Mall · färger · typsnitt', path: '' },
   { key: 'hem', label: 'Hem', sub: 'Hero · bilder', path: '' },
   { key: 'tjanster', label: 'Tjänster', sub: 'Utbud & priser', path: '/tjanster' },
@@ -70,6 +82,27 @@ const PAGES: { key: PageKey; label: string; sub: string; path: string }[] = [
   // (Zivar 2026-07-10: "de går hand i hand — gör dem samma, en preview").
   { key: 'bokning', label: 'Bokning', sub: 'Bokningssätt · tider · bilder', path: '' },
 ]
+
+// goal-61 preview-parity: modulsidorna får egna flikar (bara när modulen är PÅ) — Zivar
+// redigerade tidigare en butik han inte kunde se. Fliken visar sidans preview-tvilling
+// och mallens EGNA bandtext-fält (ur THEME_EXTRA_HOME, filtrerat på modulens prefix).
+const MODULE_PAGES: PageDef[] = [
+  { key: 'shop', label: 'Butik', sub: 'Butikssidan · bandtexter', path: '/shop' },
+  { key: 'kurser', label: 'Kurser', sub: 'Kurssidan', path: '/kurser' },
+  { key: 'blogg', label: 'Blogg', sub: 'Bloggsidan · bandtexter', path: '/blogg' },
+  { key: 'offert', label: 'Offert', sub: 'Offertsidan', path: '/offert' },
+  { key: 'presentkort', label: 'Presentkort', sub: 'Presentkortssidan · bandtexter', path: '/presentkort' },
+]
+/** Vilka THEME_EXTRA_HOME-fält som HÖR TILL en modulflik (namnprefix-kontraktet:
+ *  prefixen shop/blog/gift — floras befintliga nycklar satte mönstret). Övriga
+ *  extras stannar på Hem-fliken. */
+const MODULE_FIELD_PREFIX: Partial<Record<PageKey, RegExp>> = {
+  shop: /^shop/,
+  blogg: /^blog/,
+  presentkort: /^gift/,
+  kurser: /^kurs/,
+  offert: /^offert/,
+}
 
 export function SidaStudio({
   tenantId,
@@ -95,6 +128,7 @@ export function SidaStudio({
   staffTeam = [],
   canChangeTemplate = true,
   verticalCopy,
+  liveModules = [],
 }: {
   tenantId: string
   previewPath: string
@@ -134,6 +168,9 @@ export function SidaStudio({
    *  fältens "Mallens text"-standard så editorn speglar vad publika sidan faktiskt
    *  faller tillbaka på (kund → bransch → tema). */
   verticalCopy?: Record<string, string>
+  /** Modulnycklar som är PÅ (live/paused) för kunden — styr vilka modulsid-flikar
+   *  som visas. Default [] så äldre mounts kompilerar (inga modulflikar). */
+  liveModules?: string[]
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [page, setPage] = useState<PageKey>('allmant')
@@ -218,7 +255,28 @@ export function SidaStudio({
     contactTitle: vc.contactTitle?.trim() ? vc.contactTitle : 'Plats & öppettider',
   }
 
-  const activePage = PAGES.find((p) => p.key === page) ?? PAGES[0]!
+  // Flikordningen speglar publika navens ordning: Hem · Butik · Tjänster · Kurser ·
+  // Blogg · Offert · Presentkort · Om · Kontakt (+ Allmänt först, Bokning sist).
+  // Modulflikar visas BARA för moduler som är på — previewn matchar verkligheten.
+  const pages = useMemo(() => {
+    const on = new Set(liveModules)
+    const mod = (k: PageKey) => MODULE_PAGES.filter((p) => p.key === k && on.has(k))
+    return [
+      PAGES[0]!, // allmant
+      PAGES[1]!, // hem
+      ...mod('shop'),
+      PAGES[2]!, // tjanster
+      ...mod('kurser'),
+      ...mod('blogg'),
+      ...mod('offert'),
+      ...mod('presentkort'),
+      PAGES[3]!, // om
+      PAGES[4]!, // kontakt
+      PAGES[5]!, // bokning
+    ]
+  }, [liveModules])
+
+  const activePage = pages.find((p) => p.key === page) ?? pages[0]!
   const src = useMemo(() => {
     const q = new URLSearchParams()
     if (previewTheme) q.set('theme', previewTheme)
@@ -288,10 +346,19 @@ export function SidaStudio({
   ]
   // Mall-EGNA hem-sektioner (t.ex. FreshCuts "Varför Oss?") — fält + mallens inbyggda
   // text som standard, så ALLT som står på sidan går att skriva om.
-  const extraHome = THEME_EXTRA_HOME[activeTheme] ?? []
+  // goal-61: fält vars namn bär ett modulprefix (shop/blog/gift …) flyttar till SIN
+  // modulflik — Hem-fliken visar bara hemmets egna element (pelare, band utan modul).
+  const allExtra = THEME_EXTRA_HOME[activeTheme] ?? []
+  const isModuleField = (name: string) =>
+    Object.values(MODULE_FIELD_PREFIX).some((re) => re.test(name))
+  const extraHome = allExtra.filter((f) => !isModuleField(f.name))
+  const moduleFieldsFor = (key: PageKey) => {
+    const re = MODULE_FIELD_PREFIX[key]
+    return re ? allExtra.filter((f) => re.test(f.name)) : []
+  }
   const extraHomeFields: CopyFieldDef[] = extraHome.map(({ name, label, hint, rows }) => ({ name, label, hint, rows }))
-  const extraHomeOverrides = Object.fromEntries(extraHome.map((f) => [f.name, (copy as unknown as Record<string, string>)[f.name] ?? '']))
-  const extraHomeDefaults = Object.fromEntries(extraHome.map((f) => [f.name, f.default]))
+  const extraHomeOverrides = Object.fromEntries(allExtra.map((f) => [f.name, (copy as unknown as Record<string, string>)[f.name] ?? '']))
+  const extraHomeDefaults = Object.fromEntries(allExtra.map((f) => [f.name, f.default]))
   const omFields: CopyFieldDef[] = [
     {
       name: 'aboutTitle',
@@ -316,7 +383,7 @@ export function SidaStudio({
       <div className={styles.left}>
         {/* Sid-flikar: samma struktur som kundens publika sida. */}
         <nav style={pageRail} aria-label="Sidans delar">
-          {PAGES.map((p) => {
+          {pages.map((p) => {
             const on = p.key === page
             const sub = p.key === 'allmant' && !canChangeTemplate ? 'Färger · typsnitt' : p.sub
             return (
@@ -696,6 +763,43 @@ export function SidaStudio({
               />
             </section>
           </>
+        ) : null}
+
+        {/* goal-61 preview-parity: modulsidornas flikar. Previewn till höger visar
+            sidans TVILLING (salong-preview/<slug>/<modulsida>); fälten är mallens EGNA
+            bandtexter (THEME_EXTRA_HOME filtrerat på modulprefix) — varje mall visar
+            precis sina element. Innehållet (produkter, inlägg, kurstillfällen) bor i
+            modulens egen flik, inte här — den här fliken äger sidans ORD. */}
+        {MODULE_PAGES.some((m) => m.key === page) ? (
+          <section className={styles.card}>
+            <h3 className={styles.cardHead}>{activePage.label}-sidans texter</h3>
+            <p className={styles.note}>
+              {page === 'shop'
+                ? 'Produkter, priser och lager hanteras i modulens egen Butik-flik. Här äger du sidans och butiksbandets texter.'
+                : page === 'blogg'
+                  ? 'Inläggen skrivs i modulens egen Blogg-flik. Här äger du sidans och bloggbandets texter.'
+                  : page === 'kurser'
+                    ? 'Kurstillfällen (datum, pris, platser) skapas i modulens egen flik. Sidan visar alltid kommande tillfällen.'
+                    : page === 'offert'
+                      ? 'Inkomna förfrågningar ligger i modulens egen Offert-flik. Formulärets ämnen styrs där.'
+                      : 'Presentkortens belopp och giltighet hanteras i modulens egen flik. Här äger du presentkortsbandets texter.'}
+            </p>
+            {moduleFieldsFor(page).length > 0 ? (
+              <CopyFieldsCard
+                tenantId={tenantId}
+                fields={moduleFieldsFor(page).map(({ name, label, hint, rows }) => ({ name, label, hint, rows }))}
+                overrides={extraHomeOverrides}
+                defaults={extraHomeDefaults}
+                onSaved={reload}
+                onFlash={pushFlash}
+              />
+            ) : (
+              <p className={styles.note}>
+                Mallen {activeTheme} har inga egna textfält för den här sidan ännu — texterna är
+                mallens inbyggda. Använd previewen för att se hur sidan ser ut.
+              </p>
+            )}
+          </section>
         ) : null}
       </div>
 

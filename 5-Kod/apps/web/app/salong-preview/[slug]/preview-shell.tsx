@@ -7,6 +7,7 @@ import { getTenantBySlug, STOREFRONT_THEMES, type StorefrontTheme, type TenantBu
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { Nav } from '@/components/brand/Nav'
+import { NavShell } from '@/components/brand/NavShell'
 import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
@@ -14,7 +15,10 @@ import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
 import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
+import { resolvePrimaryCta } from '@/components/storefront/primary-cta'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
+import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
+import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
 import { SidaPreviewBridge } from '@/components/platform/SidaPreviewBridge'
 import storefront from '@/components/storefront/storefront.module.css'
 
@@ -37,6 +41,24 @@ export function resolvePreviewTheme(bundle: TenantBundle, themeParam: string | u
   return typeof themeParam === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(themeParam)
     ? (themeParam as StorefrontTheme)
     : bundle.settings.theme
+}
+
+/** goal-61 preview-parity: ärligt besked när en modulsida previewas men modulen är AV —
+ *  den skarpa sidan hade gett 404, men i editorn är "varför ser jag inget?" en fråga
+ *  som förtjänar ett svar, inte en krasch-sida. */
+export function PreviewModuleOff({ moduleLabel }: { moduleLabel: string }) {
+  return (
+    <section className="section">
+      <div className="section-inner" style={{ textAlign: 'center', padding: '64px 0' }}>
+        <p role="status" style={{ font: '600 15px/1.5 var(--font-ui)', margin: 0 }}>
+          Modulen {moduleLabel} är inte påslagen för den här kunden.
+        </p>
+        <p style={{ font: '400 13px/1.5 var(--font-ui)', opacity: 0.75, margin: '8px 0 0' }}>
+          Slå på den under Drift-fliken så visas sidan här och på den publika sajten.
+        </p>
+      </div>
+    </section>
+  )
 }
 
 export async function loadPreviewBundle(slug: string): Promise<TenantBundle> {
@@ -87,6 +109,53 @@ export async function PreviewShell({
   const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const tagline = resolveTenantCopy(theme, copy).tagline
 
+  // goal-61 preview-parity: previewn bar tidigare ALLTID den delade Nav/Footer —
+  // Zivar previewade calytrix och såg fel sidhuvud (samma bugg goal-60 fixade i
+  // onboarding-studions StorefrontPreview, men Sida-flikens iframe missades).
+  // Nu exakt samma chrome-dispatch + modul-gatade länklista + bransch-CTA som
+  // app/(public)/layout.tsx. OBS: chromen följer ?theme= (previewens hela poäng).
+  const chrome = themeChrome(theme)
+  const shopState = moduleState(moduleStates, 'shop')
+  const cartEnabled = shopState === 'live' || shopState === 'paused'
+  const navLinks = [
+    { href: '/', label: 'Hem' },
+    ...(cartEnabled ? [{ href: '/shop', label: 'Butik' }] : []),
+    ...(allWizardServices.length > 0 ? [{ href: '/tjanster', label: 'Tjänster' }] : []),
+    ...(moduleState(moduleStates, 'kurser') === 'live' &&
+    (await loadUpcomingEvents(tenant.id, tenant.slug)).length > 0
+      ? [{ href: '/kurser', label: 'Kurser' }]
+      : []),
+    ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'
+      ? [{ href: '/blogg', label: 'Blogg' }]
+      : []),
+    ...(moduleState(moduleStates, 'offert') === 'live' || moduleState(moduleStates, 'offert') === 'paused'
+      ? [{ href: '/offert', label: 'Offert' }]
+      : []),
+    ...(moduleState(moduleStates, 'presentkort') === 'live' ||
+    moduleState(moduleStates, 'presentkort') === 'paused'
+      ? [{ href: '/presentkort', label: 'Presentkort' }]
+      : []),
+    { href: '/om', label: 'Om oss' },
+    { href: '/kontakt', label: 'Kontakt' },
+  ]
+  // Bransch-CTA med samma modul-gate som layouten (peka aldrig på en död modulsida).
+  const rawPrimaryCta = await resolvePrimaryCta(tenant.vertical_id)
+  const CTA_HREF_MODULE: Record<string, string> = {
+    '/shop': 'shop',
+    '/blogg': 'blogg',
+    '/offert': 'offert',
+    '/presentkort': 'presentkort',
+    '/boka': 'booking',
+    '/kurser': 'kurser',
+  }
+  const ctaModule = rawPrimaryCta
+    ? CTA_HREF_MODULE[`/${rawPrimaryCta.href.split('/')[1] ?? ''}`]
+    : undefined
+  const primaryCta =
+    rawPrimaryCta && (!ctaModule || moduleState(moduleStates, ctaModule) === 'live')
+      ? rawPrimaryCta
+      : null
+
   return (
     <div
       className={`tenant-root ${storefront.tplRoot}`}
@@ -103,15 +172,40 @@ export async function PreviewShell({
         staffNoun={staffNoun}
         variant={settings.bookingVariant}
       >
-        <Nav
-          tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
-          branding={settings.branding}
-          customerAccountsEnabled={settings.customerAccountsEnabled}
-          utilityText={themeBase.utility}
-        />
+        {/* CartProvider omsluter nav+main+footer (navens korg-knapp använder useCart) —
+            samma ordning som (public)/layout. */}
         <CartProvider>
-          <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
-        </CartProvider>
+        {chrome.Nav ? (
+          <NavShell
+            customerAccountsEnabled={settings.customerAccountsEnabled}
+            cartEnabled={cartEnabled}
+            utilityText={themeBase.utility}
+            hideUtility={chrome.ownsUtility}
+            links={navLinks}
+            primaryCta={primaryCta}
+          >
+            <chrome.Nav
+              tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
+              branding={settings.branding}
+              links={navLinks}
+              primaryCta={primaryCta}
+              cartEnabled={cartEnabled}
+              customerAccountsEnabled={settings.customerAccountsEnabled}
+              utilityText={themeBase.utility}
+            />
+          </NavShell>
+        ) : (
+          <Nav
+            tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
+            branding={settings.branding}
+            customerAccountsEnabled={settings.customerAccountsEnabled}
+            cartEnabled={cartEnabled}
+            utilityText={themeBase.utility}
+            primaryCta={primaryCta}
+            links={navLinks}
+          />
+        )}
+        <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
         {settings.bookingVariant === 'inline' && wizardServices.length > 0 ? (
           <InlineBooking
             services={wizardServices}
@@ -120,7 +214,16 @@ export async function PreviewShell({
             staffNoun={staffNoun}
           />
         ) : null}
-        {isFullFooter ? (
+        {chrome.Footer ? (
+          <chrome.Footer
+            tenant={{ id: tenant.id, name: tenant.name, slug: tenant.slug }}
+            tagline={tagline}
+            location={location}
+            contact={settings.contact}
+            social={settings.social}
+            links={navLinks}
+          />
+        ) : isFullFooter ? (
           <FooterFull
             tenant={{ name: tenant.name }}
             tagline={tagline}
@@ -131,6 +234,7 @@ export async function PreviewShell({
         ) : (
           <Footer tenant={{ name: tenant.name }} />
         )}
+        </CartProvider>
       </BookingProvider>
     </div>
   )

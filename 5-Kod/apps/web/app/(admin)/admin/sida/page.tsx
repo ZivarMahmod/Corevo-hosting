@@ -8,6 +8,7 @@ import { getVerticalCopy } from '@/components/storefront/vertical-copy'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
+import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
 import { PageHead } from '@/components/portal/ui'
 import type { TenantBranding } from '@corevo/ui'
 
@@ -52,6 +53,9 @@ export default async function AdminSidaPage() {
   }
 
   const { tenant: row, settings, branding, operative, copy } = detail
+  // Modulflikarna (Butik/Kurser/Blogg/Offert/Presentkort) visas bara för moduler som
+  // är PÅ — samma gate som kund-adminens nav.
+  const adminModuleStates = await getAdminModuleStates(row.id)
   const b = branding as TenantBranding
   const rawTheme = (settings?.settings as { theme?: unknown } | null)?.theme
   const activeTemplateKey =
@@ -104,6 +108,9 @@ export default async function AdminSidaPage() {
         canChangeTemplate={false}
         verticalCopy={await getVerticalCopy(
           (row as { vertical_id?: string | null }).vertical_id ?? null,
+        )}
+        liveModules={['shop', 'kurser', 'blogg', 'offert', 'presentkort'].filter((k) =>
+          isModuleActivated(adminModuleStates, k),
         )}
       />
     </>
