@@ -536,9 +536,14 @@
   gap: var(--sera-sp-gap);
   margin-top: var(--sera-sp-head);
 }
+/* SIGNATURFORM (goal-62 C3), del 1: galleriet är RUNT. Mallen håller radie 0 på
+   all struktur — cirkeln är det enda undantaget, och därför gestens hela poäng:
+   en rad guldkantade medaljonger. Ingen annan mall i sviten cirkel-croppar. */
 .seraGallery > ul li {
-  aspect-ratio: var(--sera-ratio);
-  border-radius: var(--sera-radius);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--color-line);
   transition: transform var(--sera-dur) ease;
 }
 .seraGallery > ul li:hover {
@@ -668,10 +673,14 @@
 }
 
 /* ── 10. CLOSING ──────────────────────────────────────────────────────────── */
+/* SIGNATURFORM (goal-62 C3), del 2: VÅGEN. Guldbandet möter sidan i en mjuk
+   kupol i stället för en rak kant — sajtens enda krökta sektionsövergång.
+   Extra toppadding så rubriken aldrig hamnar under kupolens skära. */
 .seraClosing {
-  padding: var(--sera-section) var(--sera-gutter);
+  padding: calc(var(--sera-section) + 3.5rem) var(--sera-gutter) var(--sera-section);
   text-align: center;
   background: var(--color-primary);
+  clip-path: ellipse(140% 100% at 50% 100%);
 }
 .seraClosingTitle {
   max-width: 40rem;

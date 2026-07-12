@@ -29,6 +29,9 @@
   /* ── Scrim/mörka ytor: ingen EGEN hex, palettens mörkaste ton. */
   --isl-scrim: var(--color-primary-d);
 
+  /* ── SIGNATURFORM (goal-62 C3): den förskjutna ramens kast. */
+  --isl-frame: 12px;
+
   /* ── FOKUSRING (goal-60). Ljus botten → marinblå ring (10.44:1 mot bg).
      De mörkblå ytorna byter ringen till sandtonen längre ned — en marinblå ring
      på marinblå botten hade varit osynlig (1.00:1). */
@@ -462,6 +465,8 @@ a.islShortcut:hover {
 .islDuo {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  /* luft för den förskjutna ramen — annars skär vänsterbildens ram in i högerbilden */
+  gap: calc(var(--isl-frame) * 2);
 }
 .islDuoImg {
   aspect-ratio: 4 / 5; /* mallens ENDA bildratio */
@@ -507,8 +512,35 @@ a.islShortcut:hover {
 .islCard:hover { transform: translateY(var(--isl-lift)); }
 .islCardImgWrap {
   border-radius: var(--sf-radius);
-  overflow: hidden;
   background: var(--color-accent-soft);
+}
+
+/* ══════════════════  SIGNATURFORMEN — DEN FÖRSKJUTNA RAMEN  ══════════════════
+   goal-62 C3. Varje bild i mallen bär en hårfin guldram som ligger 12px ned/höger
+   om bilden själv och sticker ut utanför den. Vid hover kastas ramen om till
+   upp/vänster — bilden byter fot. Ingen annan mall i sviten har gesten. */
+.islCardImgWrap,
+.islDuoImg,
+.islAboutPhoto,
+.islPortrait {
+  position: relative;
+}
+.islCardImgWrap::after,
+.islDuoImg::after,
+.islAboutPhoto::after,
+.islPortrait::after {
+  content: '';
+  position: absolute;
+  inset: var(--isl-frame) calc(-1 * var(--isl-frame)) calc(-1 * var(--isl-frame)) var(--isl-frame);
+  border: 1px solid var(--color-line);
+  pointer-events: none;
+  transition: inset var(--isl-dur) ease;
+}
+.islCard:hover .islCardImgWrap::after {
+  inset: calc(-1 * var(--isl-frame)) var(--isl-frame) var(--isl-frame) calc(-1 * var(--isl-frame));
+}
+@media (prefers-reduced-motion: reduce) {
+  .islCardImgWrap::after { transition: none; }
 }
 .islCardImg {
   aspect-ratio: 4 / 5;

@@ -372,7 +372,33 @@
   border-top: 1px solid var(--color-line);
   border-bottom: 1px solid var(--color-line);
 }
-.elSecHead { text-align: center; margin-bottom: var(--el-s4); }
+/* SIGNATURFORM (goal-62 C3): GULDREGELN. Varje sektion inleds med en hårfin
+   guldlinje som tonar ut mot kanterna, med en romb i mitten — sömmen mellan två
+   sektioner blir en gest i stället för en rak kant. Guldkant runt bilderna (nedan)
+   är samma linje, böjd runt fotot. Ingen annan mall i sviten regelmarkerar sömmen. */
+.elSecHead {
+  position: relative;
+  text-align: center;
+  margin-bottom: var(--el-s4);
+  padding-top: var(--el-s4);
+}
+.elSecHead::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+}
+.elSecHead::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  background: var(--color-primary);
+  transform: translateX(-50%) rotate(45deg);
+}
 .elSecFoot { text-align: center; }
 
 .elCardGrid {
@@ -392,9 +418,14 @@
   background-position: center;
   background-color: var(--color-accent-soft);
   border-radius: var(--sf-radius);
-  transition: transform var(--el-dur) ease;
+  /* guldkanten — samma hårfina linje som sektionsregeln, böjd runt fotot */
+  box-shadow: 0 0 0 1px var(--color-primary);
+  transition: transform var(--el-dur) ease, box-shadow var(--el-dur) ease;
 }
-.elCard:hover .elCardImgTall { transform: translateY(var(--el-lift)); }
+.elCard:hover .elCardImgTall {
+  transform: translateY(var(--el-lift));
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
 .elCardRule { display: block; width: 2rem; height: 1px; background: var(--color-primary); margin: var(--el-s2) 0 0; }
 .elCardName {
   font-family: var(--font-display);

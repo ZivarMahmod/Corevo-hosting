@@ -432,6 +432,19 @@
 }
 .wtCard:hover { transform: translateY(var(--wt-lift)); }
 .wtCard:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+/* SIGNATURFORM (goal-62 C3): DEN RIVNA KANTEN. Bilden slutar inte på en rak linje
+   — den är riven av, som papper. Ramen är tjock (3px bläck) och rivs med, så
+   kanten blir en gest och inte en defekt. Mallen är den vilda i sviten; ingen
+   annan får riva. --wt-tear håller tandningen på ETT ställe. */
+.wtCardImg,
+.wtHeroImg {
+  --wt-tear: polygon(
+    0 0, 100% 0, 100% 95.5%, 88% 100%, 74% 96%, 60% 100%,
+    46% 95.5%, 32% 100%, 18% 96%, 0 100%
+  );
+  clip-path: var(--wt-tear);
+  border-bottom: 3px solid var(--color-fg);
+}
 .wtCardImg {
   aspect-ratio: 4 / 5; /* EN ratio för alla innehållsbilder */
   background-size: cover;
