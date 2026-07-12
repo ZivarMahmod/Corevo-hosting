@@ -187,7 +187,10 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
   - [x] **calytrix** — **varan LYFTER**: kort med plommonfärgad skugga som djupnar på hover
         (15/20 mallar hade flata kort) · kantiga knappar.
   - [x] **sage** — hårfin, nästan rak knapp (2px) — lugnet ligger i tunnheten, inte i en kapsel.
-  - [ ] oliviathyme · [ ] viora
+  - [x] **oliviathyme** — **polaroiden**: fotot får vit ram, tunn runt om och TJOCK i foten,
+        som ett framkallat kort uppsatt i butiken (box-shadow-inset → ratio och rutnät orörda).
+  - [x] **viora** — **färgblocks-skiftet**: butiken står på violett tonplatta mot krämvit sida —
+        färgen är gränsen, ingen linje behövs · mjuk 8px genom knapp, kort och platta.
   - [x] **mina** — ALLT rakt (pillen struken, även nav-knappen) + **produkten på färgplattan**:
         bilden fyller inte längre rutan (post-it-känslan) utan ligger centrerad och luftad som
         en vara i ett skyltfönster.

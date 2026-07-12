@@ -68,6 +68,9 @@
   --sf-btn-pad: 0 30px;
   --sf-btn-fs: var(--ot-fs-micro);
   --sf-btn-radius: 0;
+  /* goal-62 C3: polaroidens vita ram — tunn runt om, tjock i foten (som ett framkallat kort). */
+  --ot-polaroid: 10px;
+  --ot-polaroid-foot: 30px;
   --sf-btn-bg: var(--color-primary);
   --sf-btn-bg-hover: var(--color-primary-d);
   --sf-btn-ink: var(--color-bg);
@@ -449,6 +452,15 @@
   background-position: center;
   background-color: var(--color-accent-soft);
   border-radius: 0;
+  /* goal-62 C3 — OLIVIA & THYME SIGNATUR: POLAROIDEN.
+     Mallen är butikscharmen — den ska kännas som fotografier uppsatta i en butik, inte
+     som ett rutnät av bilder. Fotot får därför en vit ram: tunn upptill/på sidorna,
+     TJOCKARE nedtill, exakt som ett framkallat kort. Ramen är en box-shadow-inset, så
+     bildens ratio och rutnätets mått är oförändrade — bara motivet krymper in i sitt kort. */
+  box-shadow:
+    inset 0 0 0 var(--ot-polaroid) var(--color-surface),
+    inset 0 calc(-1 * var(--ot-polaroid-foot)) 0 0 var(--color-surface),
+    0 2px 8px color-mix(in srgb, var(--color-fg) 12%, transparent);
 }
 /* Badgen ligger INNANFÖR bildkanten — enda runda formen i mallen (medvetet undantag). */
 .otShowcaseBadge {

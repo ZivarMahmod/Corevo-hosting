@@ -70,7 +70,7 @@
      (#FBF7F1 på #402463 = 11.92:1), versal mikrotext — samma som .vioBtn. */
   --sf-btn-h: 46px;
   --sf-btn-pad: 0 26px;
-  --sf-btn-radius: var(--radius-pill);
+  --sf-btn-radius: 8px;   /* goal-62 C3: viora är mjuk, inte kapsel — 8px genom hela mallen */
   --sf-btn-bg: var(--color-primary);
   --sf-btn-bg-hover: var(--color-primary-d);
   --sf-btn-ink: var(--color-bg);
@@ -666,7 +666,16 @@
 }
 
 /* ── 4. UR BUTIKEN — STORT 2-kolumners kort-grid ───────────────────────────────────── */
-.vioShopSection { padding: var(--vio-sec) var(--vio-gut); }
+/* goal-62 C3 — VIORAS SIGNATUR: FÄRGBLOCKS-SKIFTET.
+   Mallen är den moderna boutiquen. Dess sektionsbyte är inte en kant utan ett BYTE av
+   grund: butiken står på violett tonplatta medan resten står på krämvitt. Två färgblock
+   som möts — samma gest som en boutiques skyltfönster mot gatan. Ingen linje behövs;
+   färgen ÄR gränsen. Inner-radien (8px) är mallens mjuka form, samma som knapp och kort. */
+.vioShopSection {
+  padding: var(--vio-sec) var(--vio-gut);
+  background: var(--color-accent-soft);
+  border-radius: 8px;
+}
 .vioSecHead { max-width: 44rem; margin: 0 auto; text-align: center; }
 .vioShopGrid {
   max-width: 68rem;
@@ -1167,7 +1176,7 @@
   --vio-focus: var(--color-primary);
   --sf-btn-h: 46px;
   --sf-btn-pad: 0 26px;
-  --sf-btn-radius: var(--radius-pill);
+  --sf-btn-radius: 8px;   /* goal-62 C3: viora är mjuk, inte kapsel — 8px genom hela mallen */
   --sf-btn-bg: var(--color-primary);
   --sf-btn-bg-hover: var(--color-primary-d);
   --sf-btn-ink: var(--color-bg);
@@ -1392,4 +1401,15 @@ a.vioPostSplit:focus-visible { outline: 2px solid var(--color-primary); outline-
   a.vioPostSplit:hover {
     transform: none;
   }
+}
+
+
+/* goal-62 C3 — VIORAS KNAPPFORM: 8px, inte pill.
+   Samma fälla som mina/calytrix/sage: mallens knappklasser har specificitet 0-1-0 och den
+   globala .btn-accent-pillen vann på källordning (mätt: 9999px). Dubbel klass tar tillbaka
+   mallens mjuka 8px — samma radie som korten och den violetta tonplattan. */
+.vioBtn.vioBtn,
+.vioHeroCta.vioHeroCta,
+.vioSecCta.vioSecCta {
+  border-radius: 8px;
 }
