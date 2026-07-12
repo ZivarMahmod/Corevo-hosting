@@ -217,8 +217,19 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
     kontrast = 0 brott (20 mallar × 5 sidor i webbläsare + vakten) · tsc grönt.
     ⚠️ Kvar till C4: **11 av 20 mallar har fortfarande 0 sektionsövergångar** (bara raka kanter).
   - [~] flora (skyddad — valv-språket finns) · [~] freshcut (levande kund — rörs ej)
-- [ ] **C4. Övergångarna**: sektionsbyten ska ha medvetna övergångar där mallens manifest
-      säger det (våg, färgblock-skifte, diagonal, foto-bleed) — aldrig 13 × rak kant.
+- [x] **C4. Övergångarna** ✅ Mätt före: **11 av 20 mallar hade NOLL sektionsövergångar**.
+      Efter: bara `flora` (skyddad kund — dess valv-språk finns redan i bilderna). 24 formade
+      sektioner totalt. Varje mall fick sin EGEN övergång, aldrig en delad våg:
+      wildthistle = riven kant (samma tandning som bilderna) · calytrix = lyft platta (rundade
+      överhörn) · viora = tonplatta indragen i sidan (mallens 8px) · isalara = förskjutet band
+      (samma som ramen) · paisley = TRAPPAN i spaltbredder · mina = färgplatta smalare än sidan
+      (allt rakt) · eloria = ROMBEN i stort format · zigge = hård färgblocks-kant · linnea =
+      ÖVERLAPPET (lerplatta med skugga) · edit = det vikta hörnet.
+      **Mätaren rättad i samma svep:** tröskeln 180px + bara direkta barn missade banden — alltså
+      precis de ytor mallarna formar sin söm i. Den rapporterade "raka kanter" om sidor som hade
+      sex gester. Nu: alla section-ättlingar över 120px.
+      **Fälla, dokumenterad:** paisleys leveransband fick först en ljus bakgrund → 8 kontrastbrott
+      (den ljusa texten satt kvar). **Gesten är kanten, aldrig färgen.**
 
 ## FAS D — ONBOARDING-PREVIEWN: EGET BAS-INNEHÅLL PER MALL
 
