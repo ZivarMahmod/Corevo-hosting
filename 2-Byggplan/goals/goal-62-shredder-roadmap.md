@@ -209,3 +209,31 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 | 2026-07-12 | B2a knapptexten | 8f2e0c1 | npm run kontrast: 0 btn-accent-brott i alla 20 mallar (151→95) |
 | 2026-07-12 | B2b accent-som-text | 4c9a2f1 | npm run kontrast: 95 → 9 brott; 16 av 20 mallar rena |
 | 2026-07-12 | B2 + I1 sista brotten | (denna) | **npm run kontrast: 0 FAIL i alla 20 mallar** |
+
+---
+
+## SESSIONSLOGG 2026-07-12 (Fable 5 → Opus 4.8)
+
+**Klart denna session:** A1 (deploy v1.18.0) · A2 (kundkonto-toggeln i kundkortet) · A3 (sajtbyggar-rest
+= 0) · A4 (prestanda: inget segt i prod) · B1 (kontrast-roboten) · B2a · B2b · B2 · I1 —
+**151 → 0 kontrastbrott i alla 20 mallar.**
+**Deployer:** v1.18.0 · v1.19.0 · v1.20.0 · v1.21.0 (alla CI-gröna, alla hostar 200).
+**Väntar på Zivar:** A5 (florist-ägarens inlogg — bjuds in i kundkortets Personal-flik) ·
+A6 (superkontot i `INLOGGNINGAR.md` så super-admin-ytan kan mätas).
+
+**Nästa punkt att köra:** B3 (kontrast-roboten in i ritualen) → sedan FAS C (mall-identiteten:
+divergens-mätning → form-manifest → egna sektionsövergångar per mall).
+
+### Token-användning
+Sessionen har inte haft någon exakt token-räknare exponerad för mig — jag kan inte skriva ut en
+siffra jag har mätt, och tänker inte hitta på en. Det som ÄR mätbart och sant om kostnaden:
+- **Störst besparing:** kontrast-roboten (`npm run kontrast`). Den ersatte det som annars hade
+  blivit 20 mallar × 5 sidor × manuell ögongranskning + skärmdumpar in i kontexten. I stället
+  kom ETT tal per mall tillbaka (`onyx OK`, `flora 5 FAIL`) och detaljerna stannade i en JSON-fil
+  på disk. Samma teknik gjorde att tre systemfel kunde hittas på minuter i stället för att gissas.
+- **Näst störst:** att fixa ROTORSAKEN i stället för symptomen. Ett `:where()` i globals.css tog
+  bort 61 + 4 brott på en gång; per-mall-fixar hade krävt 20 körningar och 20 gånger så mycket
+  läsning.
+- **Dyraste momentet:** de tre gångerna kontrast-roboten mätte FEL (klampad punkt utanför vyn,
+  foto bakom text) och hela sveppet fick köras om. Läxan står i skriptets kommentarer så nästa
+  körning slipper betala den igen.
