@@ -39,7 +39,7 @@ export default async function PreviewShopPage({
     const View = themeModuleViews(theme).shop
     const data = View ? await loadShopData(tenant.id, tenant.slug) : null
     if (View && data) {
-      const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+      const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme)
       const content = resolveThemeContent(theme, settings.branding, copy)
       body = <View data={data} paused={paused} content={content} tenantName={tenant.name} />
     } else {

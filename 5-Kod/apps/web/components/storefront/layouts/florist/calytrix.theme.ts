@@ -2,6 +2,9 @@ import type { FloristTheme } from './types'
 import { CalytrixNav, CalytrixFooter } from './calytrix.chrome'
 import { CalytrixOm, CalytrixTjanster, CalytrixKontakt } from './calytrix.pages'
 import { CalytrixShop, CalytrixBlogg } from './calytrix.modules'
+import { CalytrixProduct } from './calytrix.product'
+import { CalytrixCart } from './calytrix.cart'
+import { CalytrixCheckout } from './calytrix.checkout'
 
 // Calytrix-temats egen fotomanifest (Unsplash, verifierade 200 OK 2026-07-11).
 // Lokal u() — INGEN värde-import från theme-content.ts (bara `import type` tillåts
@@ -128,7 +131,16 @@ export const calytrix: FloristTheme = {
   pages: { om: CalytrixOm, tjanster: CalytrixTjanster, kontakt: CalytrixKontakt },
   // goal-59 MODUL-VYER: butiken/bloggen renderas i mallens form (modulen äger
   // funktionen: data, köp-räls, livscykel — den ändras aldrig av en mall).
-  moduleViews: { shop: CalytrixShop, blogg: CalytrixBlogg },
+  // goal-64: produkt/korg/kassa flyttade HIT från de hårdkodade tabellerna i
+  // route-filerna (PRODUCT_VIEWS/CART_VIEWS/CHECKOUT_VIEWS). Samma komponenter,
+  // samma köp-räls — bara registrerade där mallen bor. Identiskt beteende.
+  moduleViews: {
+    shop: CalytrixShop,
+    blogg: CalytrixBlogg,
+    product: CalytrixProduct,
+    cart: CalytrixCart,
+    checkout: CalytrixCheckout,
+  },
   // goal-61 editor-paritet: mallens redigerbara element utöver de generella korten.
   // default = layoutens inbyggda fallback-sträng VERBATIM (CalytrixLayout.tsx).
   // OBS: shopEyebrow/shopTitle/blogTitle läses även av modul-vyerna med dynamiska

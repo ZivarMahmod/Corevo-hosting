@@ -36,7 +36,7 @@ export default async function PreviewBloggPage({
     const View = themeModuleViews(theme).blogg
     if (View) {
       const data = await loadBloggData(tenant.id, tenant.slug)
-      const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+      const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme)
       const content = resolveThemeContent(theme, settings.branding, copy)
       body = <View posts={data?.posts ?? []} content={content} tenantName={tenant.name} />
     } else {

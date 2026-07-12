@@ -64,6 +64,10 @@ export const FLORIST_PALETTES = FLORIST_THEMES.map((t) => ({
   accent: t.palette.primary,
 }))
 
+/** goal-64: mallar som äger sin egen text (bransch-lagret hoppas över). Se
+ *  FloristTheme.ownsCopy + lib/platform/theme-capabilities.ts → THEME_OWNS_COPY. */
+export const FLORIST_OWNS_COPY: string[] = FLORIST_THEMES.filter((t) => t.ownsCopy).map((t) => t.key)
+
 /** Alla 13 [data-theme]-blocken, emitteras en gång i app/layout.tsx. */
 export const FLORIST_THEME_CSS: string = FLORIST_THEMES.map(floristThemeBlock).join('\n')
 

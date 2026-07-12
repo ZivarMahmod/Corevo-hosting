@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { layerCopy, type CopyOverride } from './theme-content'
 import { getVerticalCopy } from './vertical-copy'
+import { themeOwnsCopy } from '@/lib/platform/theme-capabilities'
 
 /**
  * Owner-editable storefront COPY reader (M2 side of the M2↔M6 copy contract).
@@ -27,27 +28,40 @@ export async function getTenantCopy(
   tenantId: string,
   slug: string,
   /** tenants.vertical_id — lagrar branschens mall-text UNDER kundens egna fält
-   *  (goal-57 körning 12): kund → bransch → tema. null/utelämnad = ingen bransch-nivå. */
+   *  (goal-57 körning 12): kund → bransch → tema. null/utelämnad = ingen bransch-nivå.
+   *  Hoppas HELT över när mallen äger sin text (goal-64, se themeOwnsCopy nedan). */
   verticalId: string | null = null,
+  /** goal-64: mallen som faktiskt renderas. Utelämnad → den mall tenanten valt
+   *  (settings.theme, samma rad vi redan läser). Skickas explicit av preview-tvillingen,
+   *  som kan rendera en ANNAN mall än den sparade (?theme= i SidaStudio) — annars skulle
+   *  previewen gata bransch-lagret på fel mall och visa något live aldrig visar. */
+  themeOverride: string | null = null,
 ): Promise<CopyOverride | null> {
   const norm = slug.trim().toLowerCase()
   const load = unstable_cache(
-    async (): Promise<CopyOverride | null> => {
+    async (): Promise<{ copy: CopyOverride | null; theme: string | null }> => {
       const supabase = createPublicClient()
       const { data, error } = await supabase
         .from('tenant_settings')
         .select('settings')
         .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
         .maybeSingle()
-      if (error || !data) return null
+      if (error || !data) return { copy: null, theme: null }
       const raw = (data.settings ?? {}) as Record<string, unknown>
       const copy = raw.copy
-      // Pass through raw — resolveTenantCopy is fully defensive about the shape.
-      return copy && typeof copy === 'object' ? (copy as CopyOverride) : null
+      return {
+        // Pass through raw — resolveTenantCopy is fully defensive about the shape.
+        copy: copy && typeof copy === 'object' ? (copy as CopyOverride) : null,
+        theme: typeof raw.theme === 'string' ? raw.theme : null,
+      }
     },
     ['tenant-copy-by-tenant', tenantId],
     { tags: [`tenant:${norm}`], revalidate: 300 },
   )
-  const [tenantCopy, verticalCopy] = await Promise.all([load(), getVerticalCopy(verticalId)])
-  return layerCopy(verticalCopy, tenantCopy)
+  const stored = await load()
+  // goal-64: äger mallen sin text finns ingen bransch-nivå — vi slipper DB-rundan helt.
+  const theme = themeOverride ?? stored.theme
+  if (theme && themeOwnsCopy(theme)) return stored.copy
+  const verticalCopy = await getVerticalCopy(verticalId)
+  return layerCopy(verticalCopy, stored.copy)
 }

@@ -109,7 +109,7 @@ export async function PreviewShell({
   // kontrakt som (public)/layout.
   // BRANSCH-REGELN: bokningens verb ur bransch-lagret (se (public)/layout.tsx).
   const bokning = branschBokning(tenant.vertical_id)
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null, theme)
   const tagline = resolveTenantCopy(theme, copy).tagline
 
   // goal-61 preview-parity: previewn bar tidigare ALLTID den delade Nav/Footer —

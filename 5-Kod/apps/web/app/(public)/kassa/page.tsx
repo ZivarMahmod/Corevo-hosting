@@ -7,18 +7,15 @@ import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenan
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
 import { CheckoutForm } from '@/app/butik/kassa/CheckoutForm'
 import { SubpageHero } from '@/components/storefront/sections'
-import { CalytrixCheckout } from '@/components/storefront/layouts/florist/calytrix.checkout'
-import type { ComponentType } from 'react'
-import type { ShopFulfilment } from '@/lib/storefront/shop/types'
+import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import s from './kassa.module.css'
 
-// ZIVARS LAG (goal-62): MALLEN ÄGER SIDAN — samma CART_VIEWS-mönster som
-// varukorg/page.tsx. En mall med egen kassa-scen registreras här; funktionen
-// (reserve/confirm, valideringar, CheckoutLoader) är EN och delad. Mallar utan
-// egen kassa får den delade — tills de bygger sin.
-const CHECKOUT_VIEWS: Partial<Record<string, ComponentType<{ fulfilment: ShopFulfilment }>>> = {
-  calytrix: CalytrixCheckout,
-}
+// ZIVARS LAG (goal-62): MALLEN ÄGER SIDAN. En mall med egen kassa-scen bygger sin egen;
+// funktionen (reserve/confirm, valideringar, CheckoutLoader) är EN och delad. Mallar
+// utan egen kassa får den delade — tills de bygger sin.
+//
+// goal-64: registreringen bodde i en HÅRDKODAD tabell här (CHECKOUT_VIEWS). Nu deklarerar
+// mallen sin kassa i sin egen <key>.theme.ts (moduleViews.checkout).
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kassa' }
@@ -53,8 +50,8 @@ export default async function KassaPage() {
   const shop = await loadShopData(tenant.id, tenant.slug)
   const fulfilment = shop?.config.fulfilment ?? 'ship'
 
-  // Mallens egen kassa vinner; den delade är bara fallback (CART_VIEWS-mönstret).
-  const OwnCheckout = CHECKOUT_VIEWS[bundle.settings.theme]
+  // Mallens egen kassa vinner; den delade är bara fallback (samma mönster som korgen).
+  const OwnCheckout = themeModuleViews(bundle.settings.theme).checkout
 
   // Kundkonto för handel (goal-55 körning 9): kassan ERBJUDER inloggning — aldrig
   // tvingar (gästköp förblir default). Samma session-seam som confirmOrder i

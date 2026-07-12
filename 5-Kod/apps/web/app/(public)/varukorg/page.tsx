@@ -5,18 +5,17 @@ import { currentTenant } from '@/lib/tenant-data'
 import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
 import { CartPageContents } from '@/components/storefront/shop/CartPageContents'
 import { SubpageHero } from '@/components/storefront/sections'
-import { CalytrixCart } from '@/components/storefront/layouts/florist/calytrix.cart'
-import type { ComponentType } from 'react'
+import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import styles from './varukorg.module.css'
 
 // ZIVARS LAG (goal-62): MALLEN ÄGER SIDAN. Varukorgen är inte en delad vy som byter
-// färg — en mall som vill ha ett eget packbord bygger sin EGEN komponent och
-// registrerar den här. Funktionen är fortfarande en (useCart, samma localStorage,
-// samma priser); bara scenen byts. Mallar utan egen korg får den delade — tills de
-// bygger sin. Slutmålet är att VARJE mall står i den här tabellen.
-const CART_VIEWS: Partial<Record<string, ComponentType>> = {
-  calytrix: CalytrixCart,
-}
+// färg — en mall som vill ha ett eget packbord bygger sin EGEN komponent.
+// Funktionen är fortfarande en (useCart, samma localStorage, samma priser); bara
+// scenen byts. Mallar utan egen korg får den delade — tills de bygger sin.
+//
+// goal-64: registreringen bodde i en HÅRDKODAD tabell här (CART_VIEWS). Nu deklarerar
+// mallen sin korg i sin egen <key>.theme.ts (moduleViews.cart) och vi slår upp den —
+// samma väg som butiken och bloggen. En ny mall rör inte längre den här filen.
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Varukorg' }
@@ -49,7 +48,7 @@ export default async function VarukorgPage() {
   }
 
   // Mallens egen korg vinner; den delade är bara fallback tills varje mall byggt sin.
-  const OwnCart = CART_VIEWS[settings.theme]
+  const OwnCart = themeModuleViews(settings.theme).cart
   if (OwnCart) {
     return (
       <>

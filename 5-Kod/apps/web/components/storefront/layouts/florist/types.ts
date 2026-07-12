@@ -2,7 +2,7 @@ import type { ComponentType } from 'react'
 import type { ThemeContentDefaults, ResolvedThemeContent } from '../../theme-content'
 import type { ThemeCaps, ExtraField } from '@/lib/platform/theme-capabilities'
 import type { Service, TenantLocation, TenantContact } from '@/lib/tenant-data'
-import type { ShopData } from '@/lib/storefront/shop/types'
+import type { ShopData, ShopConfig, ShopProduct, ShopFulfilment } from '@/lib/storefront/shop/types'
 import type { BloggPost } from '@/lib/storefront/blogg/types'
 import type { TenantBranding } from '@corevo/ui'
 import { accentForeground, accentInk, contrastRatio } from '@corevo/ui'
@@ -157,9 +157,43 @@ export type ThemeBloggViewProps = {
   tenantName: string
 }
 
+/**
+ * goal-64 — KÖP-RÄLSENS VYER IN I KONTRAKTET.
+ *
+ * Produktsidan, varukorgen och kassan var registrerade i tre HÅRDKODADE tabeller inne i
+ * route-filerna (PRODUCT_VIEWS/CART_VIEWS/CHECKOUT_VIEWS, goal-62) — bara `calytrix` stod
+ * i dem. Följden: en mall ägde sin form överallt UTOM där kunden faktiskt betalar, och en
+ * ny mall som ville äga sitt packbord tvingades editera tre route-filer. Nu deklarerar
+ * mallen dem i sin egen <key>.theme.ts, precis som shop/blogg.
+ *
+ * FUNKTIONEN är oförändrad och delad (vektor-regeln): samma loadShopProduct/loadShopData,
+ * samma useCart/AddToCart, samma reserve/confirm-FSM, samma modul-gate. Vyerna är
+ * SYNKRONA presentationskomponenter — all I/O är redan gjord åt dem. Utelämnad vy →
+ * dagens delade sida, byte-identiskt.
+ */
+export type ThemeProductViewProps = {
+  config: ShopConfig
+  product: ShopProduct
+  /** Butiken är pausad → katalogen läsbar, köp-CTA stängd. Mallen MÅSTE respektera det. */
+  paused: boolean
+}
+
+/** Varukorgen läser sitt innehåll ur useCart() på klienten — inga props behövs. */
+export type ThemeCartViewProps = Record<string, never>
+
+export type ThemeCheckoutViewProps = {
+  fulfilment: ShopFulfilment
+}
+
 export type ThemeModuleViews = {
   shop?: ComponentType<ThemeShopViewProps>
   blogg?: ComponentType<ThemeBloggViewProps>
+  /** goal-64: mallens EGEN produktsida (/shop/[id]). Ersätter PRODUCT_VIEWS. */
+  product?: ComponentType<ThemeProductViewProps>
+  /** goal-64: mallens EGEN varukorg (/varukorg). Ersätter CART_VIEWS. */
+  cart?: ComponentType<ThemeCartViewProps>
+  /** goal-64: mallens EGEN kassa (/kassa). Ersätter CHECKOUT_VIEWS. */
+  checkout?: ComponentType<ThemeCheckoutViewProps>
 }
 
 export type ThemePages = {
@@ -205,6 +239,20 @@ export type FloristTheme = {
    *  Hem-fliken. ÅTERANVÄND befintliga CopyOverride-nycklar — en ny nyckel kräver
    *  trippel-listan i theme-content.ts (typ + whitelist + resolve). */
   extraHome?: ExtraField[]
+  /**
+   * goal-64: MALLEN ÄGER SIN TEXT — bransch-lagret hoppas över för den här mallen.
+   *
+   * Utan flaggan är precedensen `kund > bransch > mall` (theme-content.ts → layerCopy):
+   * BRANSCH_COPY ligger ovanpå mallens content, så en florist-tenant får branschens
+   * generiska hero-text även om mallen har en egen. För en mall som är en EXAKT KOPIA av
+   * ett Claude Design-paket är det fel väg — då är designens copy en del av designen, och
+   * att tyst byta ut den är samma sak som att improvisera bort mallen.
+   *
+   * ownsCopy: true → `kund > mall`. Ägarens settings.copy vinner fortfarande (det ÄR
+   * redigeraren); bara bransch-nivån tas bort. Utelämnad/false → oförändrat beteende,
+   * så de sju äldre temana + flora/freshcut/zentum ligger kvar precis som förut.
+   */
+  ownsCopy?: boolean
 }
 
 /**

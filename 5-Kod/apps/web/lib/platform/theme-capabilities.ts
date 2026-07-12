@@ -13,8 +13,12 @@
  * ClosingCta. Byter man mall försvinner/dyker kontrollerna upp — sparade värden
  * ligger kvar i tenant_settings och återanvänds när mallen väljs igen.
  */
-import { FLORIST_CAPS, FLORIST_EXTRA_HOME } from '@/components/storefront/layouts/florist/registry'
-import { EKONOMI_CAPS } from '@/components/storefront/layouts/ekonomi/registry'
+import {
+  FLORIST_CAPS,
+  FLORIST_EXTRA_HOME,
+  FLORIST_OWNS_COPY,
+} from '@/components/storefront/layouts/florist/registry'
+import { EKONOMI_CAPS, EKONOMI_OWNS_COPY } from '@/components/storefront/layouts/ekonomi/registry'
 
 export type ThemeCaps = {
   heroEyebrow: boolean
@@ -46,6 +50,28 @@ export const THEME_CAPS: Record<string, ThemeCaps> = {
 
 export function themeCaps(key: string): ThemeCaps {
   return THEME_CAPS[key] ?? DEFAULT_CAPS
+}
+
+/**
+ * goal-64 — MALLEN ÄGER SIN TEXT.
+ *
+ * Copy-precedensen är annars `kund > bransch > mall` (theme-content.ts → layerCopy):
+ * BRANSCH_COPY läggs OVANPÅ mallens egna texter, så en florist-tenant får branschens
+ * generiska hero-copy även när mallen har en egen. För mallar som är exakta kopior av
+ * ett Claude Design-paket är designens copy en DEL av designen — att tyst byta ut den
+ * är att improvisera bort mallen (CLAUDE.md § DESIGN-TROHET).
+ *
+ * Står mallen här hoppas bransch-nivån över: `kund > mall`. Ägarens settings.copy
+ * vinner fortfarande — det ÄR redigeraren. Tom mängd i dag ⇒ noll beteendeändring;
+ * de sju äldre temana + flora/freshcut/zentum är opåverkade.
+ */
+export const THEME_OWNS_COPY: ReadonlySet<string> = new Set<string>([
+  ...FLORIST_OWNS_COPY,
+  ...EKONOMI_OWNS_COPY,
+])
+
+export function themeOwnsCopy(key: string): boolean {
+  return THEME_OWNS_COPY.has(key)
 }
 
 /** Mall-EGNA extrafält på HEM (utöver de generella hero-fälten): fält + mallens
