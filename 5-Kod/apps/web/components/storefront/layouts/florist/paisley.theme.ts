@@ -131,6 +131,23 @@ export const paisley: FloristTheme = {
     closingLede: 'Beställ ett arrangemang, boka en tid eller kom förbi butiken.',
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: true },
+  // goal-61 editor-paritet: mallens EGNA redigerbara element. Defaults = layoutens
+  // inbyggda fallback-strängar (PaisleyLayout/paisley.modules), ordagrant — tomt
+  // fält = mallens inbyggda text fortsätter gälla. OBS: giftLede-fallbacken i
+  // PaisleyLayout ('… när som helst.') är den som faktiskt renderas — content-
+  // blockets '… på året.' skrivs över av resolveThemeContent (extra() är owner-only).
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Beställ något vackert' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Handla i butiken' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från redaktionen' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Säsong, tips & inspiration' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs hela bloggen' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort en bukett, när som helst.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'findEyebrow', label: 'Plats-notisen: eyebrow', default: '— Hitta till butiken' },
+  ],
   // goal-59 TEMA-PAKET: Paisley äger sitt tryckta sidhuvud (kiosk-remsa →
   // centrerat skript-wordmark → menyband i spärrade versaler), sin kolofon-sidfot
   // och sina tre undersidor (reportage / prislista i spalt / kolofon-kort).

@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import type { ThemeContentDefaults, ResolvedThemeContent } from '../../theme-content'
-import type { ThemeCaps } from '@/lib/platform/theme-capabilities'
+import type { ThemeCaps, ExtraField } from '@/lib/platform/theme-capabilities'
 import type { Service, TenantLocation, TenantContact } from '@/lib/tenant-data'
 import type { ShopData } from '@/lib/storefront/shop/types'
 import type { BloggPost } from '@/lib/storefront/blogg/types'
@@ -197,6 +197,13 @@ export type FloristTheme = {
   /** Mallens EGNA modul-vyer (butik/blogg). Modulen äger funktionen och datan; mallen
    *  äger formen. Utelämnad vy → modulens delade sektion, byte-identiskt. */
   moduleViews?: ThemeModuleViews
+  /** goal-61 editor-paritet: mallens REDIGERBARA element (Sida-editorns fält).
+   *  name = CopyOverride-nyckeln layouten läser via content.<name>; default = layoutens
+   *  inbyggda fallback-sträng VERBATIM (fältet ska förifyllas ärligt). Namnprefixen
+   *  shop/blog/gift routar fältet till sin modulflik i SidaStudio; övriga hamnar på
+   *  Hem-fliken. ÅTERANVÄND befintliga CopyOverride-nycklar — en ny nyckel kräver
+   *  trippel-listan i theme-content.ts (typ + whitelist + resolve). */
+  extraHome?: ExtraField[]
 }
 
 /**

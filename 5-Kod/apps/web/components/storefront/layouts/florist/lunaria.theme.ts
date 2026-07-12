@@ -125,4 +125,31 @@ export const lunaria: FloristTheme = {
   // äger fortfarande funktionen: AddToCart, livscykel (paused), priser via
   // formatShopPrice, leveranslöftet via fulfilmentPromise.
   moduleViews: { shop: LunariaShop, blogg: LunariaBlogg },
+  // goal-61 editor-paritet: mallens redigerbara element utöver de generella korten.
+  // default = layoutens inbyggda fallback-sträng VERBATIM (LunariaLayout.tsx).
+  // OBS: shop-/blog-fälten läses även av modul-vyerna (lunaria.modules.tsx) med
+  // andra fallbacks (shopEyebrow = template-literal med leveranssätt, shopTitle
+  // 'Handla hos oss', shopCta 'Visa hela butiken') — defaulten här är HEM-bandens
+  // statiska strängar, samma mönster som calytrix/aurora.
+  extraHome: [
+    { name: 'pillar1Title', label: 'Stämningskort 1: rubrik', default: 'Säsongens blommor' },
+    { name: 'pillar1Body', label: 'Stämningskort 1: text', rows: 2, default: 'Vi följer årstiderna — från vårens första lökar till vinterns torkade grenar. Fråga oss vad som är vackrast just nu.' },
+    { name: 'pillar2Title', label: 'Stämningskort 2: rubrik', default: 'Blomprenumeration' },
+    { name: 'pillar2Body', label: 'Stämningskort 2: text', rows: 2, default: 'Nya, säsongsbundna kompositioner — levererade eller redo att hämta varje vecka, varannan vecka eller en gång i månaden.' },
+    { name: 'pillar2Link', label: 'Stämningskort 2: länktext', default: 'Bli prenumerant' },
+    { name: 'pillar3Title', label: 'Stämningskort 3: rubrik', default: 'Kurser & kvällar' },
+    { name: 'pillar3Body', label: 'Stämningskort 3: text', rows: 2, default: 'Lär dig binda din egen komposition tillsammans med oss — en stilla kväll med blommor, bubbel och nya bekantskaper.' },
+    { name: 'pillar3Link', label: 'Stämningskort 3: länktext', default: 'Se kurser' },
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Nytt i butiken' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Till butiken' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från bloggen' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Tankar & säsong' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs hela bloggen' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort en stilla, blommande stund.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: '— Galleri' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta till butiken' },
+  ],
 }

@@ -13,7 +13,7 @@
  * ClosingCta. Byter man mall försvinner/dyker kontrollerna upp — sparade värden
  * ligger kvar i tenant_settings och återanvänds när mallen väljs igen.
  */
-import { FLORIST_CAPS } from '@/components/storefront/layouts/florist/registry'
+import { FLORIST_CAPS, FLORIST_EXTRA_HOME } from '@/components/storefront/layouts/florist/registry'
 
 export type ThemeCaps = {
   heroEyebrow: boolean
@@ -52,6 +52,10 @@ export function themeCaps(key: string): ThemeCaps {
 export type ExtraField = { name: string; label: string; hint?: string; rows?: number; default: string }
 
 export const THEME_EXTRA_HOME: Record<string, ExtraField[]> = {
+  // goal-61 editor-paritet: florist-mallarna deklarerar sina redigerbara element i
+  // sin egen <key>.theme.ts (extraHome) — registryt samlar, hit spreadas de. En mall
+  // utan deklaration får inga extra fält (ingen tyst default).
+  ...FLORIST_EXTRA_HOME,
   // goal-57 körning 13 (D1/D4): floras pelare + invävda modul-band — varje synlig
   // text på hemmet redigerbar. Defaults = layoutens inbyggda strängar (FloraLayout).
   flora: [

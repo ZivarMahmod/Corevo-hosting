@@ -101,6 +101,27 @@ export const onyx: FloristTheme = {
     homeGallery: true,
     homeAbout: true,
   },
+  // goal-61 editor-paritet: mallens EGNA redigerbara element på HEM. Defaults =
+  // layoutens inbyggda fallback-strängar (OnyxLayout/onyx.modules), ordagrant —
+  // tomt fält = mallens inbyggda text fortsätter gälla.
+  extraHome: [
+    {
+      name: 'galleryEyebrow',
+      label: 'Galleri: eyebrow',
+      hint: 'Styr både säsongs-trion och galleriet — tomt ger trion "— I säsong" och galleriet "— Galleri".',
+      default: '— Galleri',
+    },
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Beställ något dramatiskt' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Visa hela butiken' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från bloggen' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Säsong, tips & inspiration' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs hela bloggen' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort något som sticker ut.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta till butiken' },
+  ],
   // goal-59 TEMA-PAKET: Onyx äger sitt sidhuvud (krön + rad), sin helsvarta sidfot
   // och sina tre undersidor. FUNKTIONEN är fortfarande plattformens (NavShell +
   // modul-gatade länkar/CTA) — bara FORMEN är mallens.

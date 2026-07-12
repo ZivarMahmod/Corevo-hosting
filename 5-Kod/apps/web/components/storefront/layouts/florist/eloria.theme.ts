@@ -123,6 +123,26 @@ export const eloria: FloristTheme = {
     homeGallery: true,
     homeAbout: true,
   },
+  // goal-61 editor-paritet: mallens EGNA redigerbara element (Sida-editorn). Defaults =
+  // layoutens inbyggda fallback-strängar VERBATIM (EloriaLayout.tsx = hemmets band).
+  // OBS: eloria.modules.tsx har EGNA fallbacks på modulsidorna för shopEyebrow
+  // (dynamisk fulfilment-etikett), shopTitle ('Ur butiken') och blogTitle
+  // ('Ord om blommor') — ett sparat värde styr BÅDA ytorna, tomt fält låter varje
+  // yta behålla sin egen inbyggda text. hero/about/services/closing/contact-nycklarna
+  // har redan egna redigeringskort och deklareras inte här.
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Beställ något klassiskt' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Visa hela butiken' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från bloggen' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Säsong, tips & inspiration' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs hela bloggen' },
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: '— Galleri' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort något tidlöst.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta till butiken' },
+  ],
   /* TEMA-PAKET (goal-59): Eloria äger sitt SIDHUVUD, sin SIDFOT och sina UNDERSIDOR.
      Nav = mörkgrön platta med guldramat, centrerat wordmark och menyn i två grupper;
      footer = samma platta i tre guldlinjerade kolumner; /om = guldramat uppslag,

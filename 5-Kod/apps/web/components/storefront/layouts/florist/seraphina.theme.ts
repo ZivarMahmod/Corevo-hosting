@@ -91,6 +91,25 @@ export const seraphina: FloristTheme = {
     ],
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  // goal-61 editor-paritet: Seraphinas REDIGERBARA element (Sida-editorns fält).
+  // defaults = layoutens inbyggda fallback-strängar VERBATIM (SeraphinaLayout, hem-banden).
+  // OBS: modulvyerna (seraphina.modules.tsx) har EGNA fallbacks för shop-/blog-nycklarna
+  // ('Visa hela butiken', 'Läs hela bloggen') och om-sidan för galleryEyebrow
+  // ('— Ur våra bröllop') — hem-bandens strängar valdes som default enligt
+  // flora-förlagan i theme-capabilities.ts.
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur kollektionen' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Färdiga favoriter' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Se hela butiken' },
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: '— Galleri' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Journalen' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Inspiration & bröllopstips' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs fler inlägg' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', rows: 2, default: 'Ge bort finess, i valfri summa.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Besök oss' },
+  ],
   /** TEMA-PAKET (goal-59): mallen äger sitt sidhuvud, sin sidfot och sina undersidor. */
   chrome: { Nav: SeraphinaNav, Footer: SeraphinaFooter },
   pages: { om: SeraphinaOm, tjanster: SeraphinaTjanster, kontakt: SeraphinaKontakt },

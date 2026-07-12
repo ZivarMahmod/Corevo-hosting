@@ -91,6 +91,23 @@ export const oliviathyme: FloristTheme = {
     ],
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  // goal-61 editor-paritet: mallens redigerbara element (Sida-editorn). Defaults =
+  // layoutens inbyggda fallback-strängar VERBATIM (OliviaThymeLayout.tsx +
+  // oliviathyme.modules.tsx + oliviathyme.pages.tsx). closing/contact/services/about-
+  // nycklarna har redan egna redigeringskort och deklareras inte här.
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Butikens favoriter' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Se hela sortimentet' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från bloggen' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Tips, säsong & inspiration' },
+    { name: 'blogCta', label: 'Blogg-bandet: länktext', default: 'Läs hela bloggen' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', rows: 2, default: 'Ge bort en blomstrande stund, när som helst på året.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'galleryEyebrow', label: 'Galleri-bandet: eyebrow', default: '— Från butiken' },
+    { name: 'findEyebrow', label: 'Hitta hit-sektionen: eyebrow', default: '— Hitta hit' },
+  ],
   /* goal-59 TEMA-PAKET: mallen äger sitt SIDHUVUD (skylt: beige remsa → centrerat
      wordmark → menyrad), sin SIDFOT (mörkbrun platta i tre kolumner) och sina
      UNDERSIDOR (butiksberättelse med polaroider · menykort · "kom förbi"-kort).

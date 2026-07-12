@@ -130,6 +130,23 @@ export const mina: FloristTheme = {
     closingLede: 'Välj din bukett, hämta i butiken eller få den levererad hem.',
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: true },
+  // goal-61 editor-paritet: mallens EGNA redigerbara element (Sida-editorn). Defaults =
+  // layoutens inbyggda fallback-strängar VERBATIM (MinaLayout.tsx; mina.modules.tsx
+  // läser shop-/blog-nycklarna med IDENTISKA fallbacks, så ett sparat värde styr både
+  // hem-banden och modulsidorna). hero/about/services/closing/contact-nycklarna har
+  // redan egna redigeringskort och deklareras inte här.
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Handla nu' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Beställ något fint' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Visa hela sortimentet' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Inspiration' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Tips, säsong & idéer' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs mer' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort blommor, när som helst.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Köp presentkort' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta hit' },
+  ],
   // goal-59 TEMA-PAKET: Mina äger HELA sajten — sidhuvud (platt butiksrad, wordmark
   // vänster, meny + korg + rosa pill höger, ingen utility-rad), sidfot (EN rosa rad)
   // och undersidorna (smal /om, chip-grid /tjanster, formulärskort /kontakt).

@@ -133,6 +133,27 @@ export const wildthistle: FloristTheme = {
     findEyebrow: '— Hitta till butiken',
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  // goal-61 editor-paritet: mallens EGNA redigerbara element på HEM. Defaults =
+  // layoutens inbyggda fallback-strängar (WildThistleLayout + wildthistle.modules),
+  // ordagrant — tomt fält = mallens inbyggda text fortsätter gälla.
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Rakt från fältet' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Handla i butiken' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Fältanteckningar' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Säsong, växtlighet & vildvuxet' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs mer' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort något som fått växa vilt.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    {
+      name: 'galleryEyebrow',
+      label: 'Galleri: eyebrow',
+      hint: 'Styr galleriet på Hem och Om-sidans galleri — tomt ger "— Galleri" på Hem och "— Ur arbetet" på Om.',
+      default: '— Galleri',
+    },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta till butiken' },
+  ],
   // goal-59 TEMA-PAKET: Wild Thistle äger sitt sidhuvud (rå rad + 4px ink-linje),
   // sin råpappers-sidfot (gigantiskt wordmark + streckade spalter) och sina tre
   // undersidor (fältdagbok / streckad prislista / råpappers-ruta). FUNKTIONEN är

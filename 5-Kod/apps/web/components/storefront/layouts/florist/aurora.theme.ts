@@ -95,6 +95,24 @@ export const aurora: FloristTheme = {
     ],
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  // goal-61 editor-paritet: Auroras REDIGERBARA element (Sida-editorns fält).
+  // defaults = layoutens inbyggda fallback-strängar VERBATIM (AuroraLayout, hem-banden).
+  // OBS: modulvyerna (aurora.modules.tsx) har EGNA fallbacks för shop-/blog-nycklarna
+  // (t.ex. '— Journalen', 'Visa hela butiken →') — hem-bandens strängar valdes som
+  // default enligt flora-förlagan i theme-capabilities.ts.
+  extraHome: [
+    { name: 'galleryEyebrow', label: 'Galleri-bandet: eyebrow', default: '— Från studion' },
+    { name: 'shopEyebrow', label: 'Butiksbandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiksbandet: rubrik', default: 'Handla något fint' },
+    { name: 'shopCta', label: 'Butiksbandet: knapptext', default: 'Se hela butiken' },
+    { name: 'giftEyebrow', label: 'Presentkort-bandet: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-bandet: text', rows: 2, default: 'Ge bort blomsterglädje, när som helst.' },
+    { name: 'giftCta', label: 'Presentkort-bandet: knapptext', default: 'Köp presentkort' },
+    { name: 'blogEyebrow', label: 'Bloggbandet: eyebrow', default: '— Bloggen' },
+    { name: 'blogTitle', label: 'Bloggbandet: rubrik', default: 'Nyheter & inspiration' },
+    { name: 'blogCta', label: 'Bloggbandet: knapptext', default: 'Läs fler inlägg' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta hit' },
+  ],
   // TEMA-PAKET (goal-59): Aurora äger sitt sidhuvud (script-wordmark + rund CTA-cirkel),
   // sin sidfot (stort centrerat script-wordmark på rosa platta) och sina undersidor.
   chrome: { Nav: AuroraNav, Footer: AuroraFooter },

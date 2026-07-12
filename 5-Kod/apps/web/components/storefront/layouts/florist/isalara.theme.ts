@@ -125,6 +125,27 @@ export const isalara: FloristTheme = {
     closingLede: 'Handla i butiken, boka en tid eller hör av dig — vi hjälper dig gärna.',
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: true },
+  // goal-61 editor-paritet: mallens EGNA redigerbara element. Defaults = layoutens
+  // inbyggda fallback-strängar (IsalaraLayout/isalara.modules), ordagrant — tomt
+  // fält = mallens inbyggda text fortsätter gälla. shop-/blog-nycklarna läses av
+  // BÅDE hemmets band och modul-vyernas egna sidor med SAMMA fallback, så ett
+  // sparat värde styr båda ställena utan överraskning. OBS: giftLede-fallbacken i
+  // IsalaraLayout ('… som blommar.') är den som faktiskt renderas — content-
+  // blockets '… blomstrande stund.' skrivs över av resolveThemeContent (extra()
+  // är owner-only). closing/contact-nycklarna har redan egna redigeringskort och
+  // deklareras inte här; aboutCopyHome faller tillbaka på aboutCopy (uttryck).
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Beställ något vackert' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Visa hela butiken' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från floristen' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Säsong, tips & inspiration' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs hela bloggen' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort något som blommar.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta till butiken' },
+  ],
   // TEMA-PAKET (goal-59): mallen äger HELA sajten, inte bara hemmet. Sidhuvudet är
   // en solid marinblå fullbreddsrad (aldrig transparent), sidfoten en marinblå
   // platta med skript-wordmark + tre kolumner, och /om, /tjanster, /kontakt är

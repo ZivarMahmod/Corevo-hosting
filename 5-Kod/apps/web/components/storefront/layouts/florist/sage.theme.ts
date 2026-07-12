@@ -122,6 +122,26 @@ export const sage: FloristTheme = {
     ],
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
+  // goal-61 editor-paritet: mallens EGNA redigerbara element, kartlagda ur
+  // SageLayout.tsx + sage.modules.tsx (mönstret "content.<nyckel> ?? fallback").
+  // default = layoutens inbyggda fallback-sträng VERBATIM. Namnprefixen shop/blog/gift
+  // routar fältet till sin modulflik i SidaStudio; galleryEyebrow/findEyebrow hamnar
+  // på Hem-fliken. OBS: shop- och blog-nycklarna läses BÅDE av hemmets band (defaulten
+  // nedan, ur SageLayout) och av modulsidan (egen inbyggd text, ur sage.modules) —
+  // ett sparat värde styr båda ställena; hint anger modulsidans text där de skiljer sig.
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken', hint: 'Styr även butikssidans eyebrow (inbyggd text där: — Webshop).' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Nyheter från butiken', hint: 'Styr även butikssidans rubrik (inbyggd text där: Butiken).' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Till hela butiken', hint: 'Styr även butikssidans knapp (inbyggd text där: Visa hela butiken).' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Inspiration', hint: 'Styr även bloggsidans eyebrow (inbyggd text där: — Journalen).' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Från bloggen' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs fler inlägg', hint: 'Styr även bloggsidans knapp (inbyggd text där: Läs hela bloggen).' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort blommor, när som helst.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: '— Galleri' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta hit' },
+  ],
   // goal-59 TEMA-PAKET: Sage äger HELA sajten — sidhuvud (centrerat wordmark,
   // transparent över heron), sidfot (galleri-plakett) och undersidorna (museal /om,
   // tabell-/tjanster, luftig /kontakt). Funktionen (NavShell, korg, konto, modul-gatade

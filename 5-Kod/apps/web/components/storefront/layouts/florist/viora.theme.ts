@@ -113,6 +113,24 @@ export const viora: FloristTheme = {
     homeGallery: true,
     homeAbout: true,
   },
+  // goal-61 editor-paritet: Vioras REDIGERBARA element (Sida-editorns fält).
+  // defaults = layoutens inbyggda fallback-strängar VERBATIM (VioraLayout hem-banden;
+  // viora.modules.tsx använder SAMMA strängar för shop-/blog-nycklarna). OBS:
+  // galleryEyebrow har en avvikande fallback på undersidan (viora.pages.tsx,
+  // '— Ur arbetet') — hem-bandets sträng valdes som default enligt flora-förlagan.
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiksbandet: eyebrow', default: '— Ur butiken' },
+    { name: 'shopTitle', label: 'Butiksbandet: rubrik', default: 'Handplockat till dig' },
+    { name: 'shopCta', label: 'Butiksbandet: knapptext', default: 'Visa hela butiken' },
+    { name: 'giftEyebrow', label: 'Presentkort-bandet: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-bandet: text', rows: 2, default: 'Ge bort en blomstrande stund.' },
+    { name: 'giftCta', label: 'Presentkort-bandet: knapptext', default: 'Till presentkorten' },
+    { name: 'blogEyebrow', label: 'Bloggbandet: eyebrow', default: '— Från bloggen' },
+    { name: 'blogTitle', label: 'Bloggbandet: rubrik', default: 'Säsong, tips & inspiration' },
+    { name: 'blogCta', label: 'Bloggbandet: knapptext', default: 'Läs hela bloggen' },
+    { name: 'galleryEyebrow', label: 'Galleri-bandet: eyebrow', default: '— Galleri' },
+    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta till butiken' },
+  ],
   // TEMA-PAKET (goal-59): mallen äger sitt sidhuvud (två rader, vänsterställt), sin
   // sidfot (violett platta, två kolumner) och sina undersidor (/om split, /tjanster
   // kort-grid, /kontakt split med karta). Funktionen är fortfarande plattformens.

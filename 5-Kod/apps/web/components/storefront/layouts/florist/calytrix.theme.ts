@@ -129,4 +129,21 @@ export const calytrix: FloristTheme = {
   // goal-59 MODUL-VYER: butiken/bloggen renderas i mallens form (modulen äger
   // funktionen: data, köp-räls, livscykel — den ändras aldrig av en mall).
   moduleViews: { shop: CalytrixShop, blogg: CalytrixBlogg },
+  // goal-61 editor-paritet: mallens redigerbara element utöver de generella korten.
+  // default = layoutens inbyggda fallback-sträng VERBATIM (CalytrixLayout.tsx).
+  // OBS: shopEyebrow/shopTitle/blogTitle läses även av modul-vyerna med dynamiska
+  // tenant-fallbacks (calytrix.modules.tsx) — defaulten här är HEM-bandens statiska.
+  extraHome: [
+    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Mest sålda' },
+    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Beställ det alla vill ha' },
+    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Visa hela butiken' },
+    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från bloggen' },
+    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Nytt från floristen' },
+    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs hela bloggen' },
+    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
+    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort något som blommar.' },
+    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: '— Galleri' },
+    { name: 'findEyebrow', label: 'Plats-raden: eyebrow', default: '— Hitta hit' },
+  ],
 }

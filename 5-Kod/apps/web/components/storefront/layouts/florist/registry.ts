@@ -1,7 +1,7 @@
 import type { FloristTheme } from './types'
 import { floristThemeBlock } from './types'
 import type { ThemeContentDefaults } from '../../theme-content'
-import type { ThemeCaps } from '@/lib/platform/theme-capabilities'
+import type { ThemeCaps, ExtraField } from '@/lib/platform/theme-capabilities'
 import { calytrix } from './calytrix.theme'
 import { aurora } from './aurora.theme'
 import { sage } from './sage.theme'
@@ -44,6 +44,12 @@ export const FLORIST_CONTENT: Record<string, ThemeContentDefaults> = Object.from
 
 export const FLORIST_CAPS: Record<string, ThemeCaps> = Object.fromEntries(
   FLORIST_THEMES.map((t) => [t.key, t.caps]),
+)
+
+/** goal-61 editor-paritet: mallens redigerbara element → Sida-editorns fält
+ *  (spreadas in i THEME_EXTRA_HOME). Bara mallar som deklarerat extraHome. */
+export const FLORIST_EXTRA_HOME: Record<string, ExtraField[]> = Object.fromEntries(
+  FLORIST_THEMES.filter((t) => t.extraHome?.length).map((t) => [t.key, t.extraHome!]),
 )
 
 /** Swatchar till mallväljaren (samma form som THEME_PALETTES). accent = primary,
