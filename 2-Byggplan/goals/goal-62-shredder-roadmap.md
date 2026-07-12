@@ -196,7 +196,13 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
         en vara i ett skyltfönster.
   - [x] **lunaria** — **överlappet**: butiks-/bloggsektionen glider upp ÖVER den föregående med
         indragna sidor · rak knapp. Formade sektioner 0 → 2.
-  - [ ] isalara · [ ] seraphina · [ ] wildthistle · [ ] eloria
+  - [x] **isalara** — **den förskjutna ramen**: guldramen ligger 12px ned/höger om bilden och
+        kastar om till upp/vänster vid hover.
+  - [x] **seraphina** — **medaljongerna**: galleriet cirkel-croppat (enda undantaget från mallens
+        binära radie) + guldbandet möter sidan i en **mjuk kupol** (clip-path). Formade sektioner 2.
+  - [x] **wildthistle** — **den rivna kanten**: bilderna slutar i en tandad rivning med 3px bläckram.
+  - [x] **eloria** — **guldregeln**: uttonande guldlinje med romb i varje sektionssöm, samma linje
+        böjd som guldkant runt korten.
   - [ ] salvia · [ ] leander · [ ] zigge · [ ] linnea · [ ] edit
   - [~] flora (skyddad — valv-språket finns) · [~] freshcut (levande kund — rörs ej)
 - [ ] **C4. Övergångarna**: sektionsbyten ska ha medvetna övergångar där mallens manifest
