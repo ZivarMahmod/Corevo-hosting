@@ -52,6 +52,7 @@ export function StorefrontMediaForm(props: MediaProps) {
         filesField="hero_files"
         initial={props.heroImages}
         max={HERO_MAX}
+        pending={pending}
       />
 
       <GallerySection
@@ -62,6 +63,7 @@ export function StorefrontMediaForm(props: MediaProps) {
         filesField="gallery_files"
         initial={props.galleryImages}
         max={GALLERY_MAX}
+        pending={pending}
       />
 
       <SingleImageSection
@@ -80,9 +82,9 @@ export function StorefrontMediaForm(props: MediaProps) {
         initial={props.closingImage}
       />
 
-      <TeamSection key={`team-${savedNonce}`} initial={props.team} />
+      <TeamSection key={`team-${savedNonce}`} initial={props.team} pending={pending} />
 
-      <StatsSection key={`stats-${savedNonce}`} initial={props.stats} />
+      <StatsSection key={`stats-${savedNonce}`} initial={props.stats} pending={pending} />
 
       <div className={styles.actions}>
         <button type="submit" className="btn-primary" disabled={pending}>
@@ -111,6 +113,7 @@ function GallerySection({
   filesField,
   initial,
   max,
+  pending,
 }: {
   label: string
   hint: string
@@ -118,10 +121,16 @@ function GallerySection({
   filesField: string
   initial: string[]
   max: number
+  /** Formulärets spara-läge — inget får plockas bort medan det skickas. */
+  pending: boolean
 }) {
   // Retained server URLs (a remove toggle drops one from this list → no hidden
   // input emitted → the server doesn't keep it).
   const [retained, setRetained] = useState<string[]>(initial)
+  // Tvåstegsbekräftelse: × plockade förr bort en sparad bild på ETT klick (den
+  // försvann ur listan och nästa Spara skrev bort den ur DB). Klick 1 armerar
+  // BILDEN (url:en), klick 2 tar bort. Samma röda tråd som ServicesManager.
+  const [armedUrl, setArmedUrl] = useState<string | null>(null)
   // Object-URL previews for the files CURRENTLY in the file input. A native
   // multi-file <input> replaces its FileList on each pick (it can't accumulate
   // across separate selections), and only that FileList is submitted — so we
@@ -153,14 +162,40 @@ function GallerySection({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={url} alt="" />
               <input type="hidden" name={existingField} value={url} />
-              <button
-                type="button"
-                className={styles.mediaRemove}
-                aria-label="Ta bort bild"
-                onClick={() => setRetained((prev) => prev.filter((u) => u !== url))}
-              >
-                ×
-              </button>
+              {armedUrl === url ? (
+                <div className={styles.mediaConfirm}>
+                  <button
+                    type="button"
+                    className={styles.mediaConfirmYes}
+                    aria-label="Säker? Ta bort bilden permanent"
+                    disabled={pending}
+                    onClick={() => {
+                      setRetained((prev) => prev.filter((u) => u !== url))
+                      setArmedUrl(null)
+                    }}
+                  >
+                    Säker? Ta bort permanent
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.mediaConfirmNo}
+                    disabled={pending}
+                    onClick={() => setArmedUrl(null)}
+                  >
+                    Ångra
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.mediaRemove}
+                  aria-label="Ta bort bild"
+                  disabled={pending}
+                  onClick={() => setArmedUrl(url)}
+                >
+                  ×
+                </button>
+              )}
             </figure>
           ))}
           {locals.map((url) => (
@@ -270,7 +305,7 @@ function SingleImageSection({
 }
 
 /* ── Team: repeatable name + role + photo ── */
-function TeamSection({ initial }: { initial: TeamMember[] }) {
+function TeamSection({ initial, pending }: { initial: TeamMember[]; pending: boolean }) {
   const [rows, setRows] = useState<{ key: string; member: TeamMember }[]>(
     initial.map((m) => ({ key: crypto.randomUUID(), member: m })),
   )
@@ -288,6 +323,7 @@ function TeamSection({ initial }: { initial: TeamMember[] }) {
           key={r.key}
           index={i}
           member={r.member}
+          pending={pending}
           onRemove={() => setRows((prev) => prev.filter((x) => x.key !== r.key))}
         />
       ))}
@@ -314,13 +350,17 @@ function TeamSection({ initial }: { initial: TeamMember[] }) {
 function TeamRow({
   index,
   member,
+  pending,
   onRemove,
 }: {
   index: number
   member: TeamMember
+  pending: boolean
   onRemove: () => void
 }) {
   const [local, setLocal] = useState<string | null>(null)
+  // Tvåstegsbekräftelse: raden (namn + roll + foto) försvann förr på ETT klick.
+  const [armed, setArmed] = useState(false)
 
   useEffect(
     () => () => {
@@ -367,18 +407,46 @@ function TeamRow({
           }}
         />
       </div>
-      <button type="button" className={`${styles.btn} ${styles.btnDanger}`} onClick={onRemove}>
-        Ta bort
-      </button>
+      {armed ? (
+        <span style={{ display: 'inline-flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnDanger}`}
+            disabled={pending}
+            onClick={onRemove}
+          >
+            Säker? Ta bort permanent
+          </button>
+          <button
+            type="button"
+            className={styles.btn}
+            disabled={pending}
+            onClick={() => setArmed(false)}
+          >
+            Ångra
+          </button>
+        </span>
+      ) : (
+        <button
+          type="button"
+          className={`${styles.btn} ${styles.btnDanger}`}
+          disabled={pending}
+          onClick={() => setArmed(true)}
+        >
+          Ta bort
+        </button>
+      )}
     </div>
   )
 }
 
 /* ── Stats: repeatable value + label ── */
-function StatsSection({ initial }: { initial: StatTuple[] }) {
+function StatsSection({ initial, pending }: { initial: StatTuple[]; pending: boolean }) {
   const [rows, setRows] = useState<{ key: string; value: string; label: string }[]>(
     initial.map(([value, label]) => ({ key: crypto.randomUUID(), value, label })),
   )
+  // Tvåstegsbekräftelse per rad (nyckel = radens key) — samma röda tråd som resten.
+  const [armedKey, setArmedKey] = useState<string | null>(null)
 
   return (
     <div className={styles.field}>
@@ -404,13 +472,38 @@ function StatsSection({ initial }: { initial: StatTuple[] }) {
               aria-label="Text"
             />
           </div>
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.btnDanger}`}
-            onClick={() => setRows((prev) => prev.filter((x) => x.key !== r.key))}
-          >
-            Ta bort
-          </button>
+          {armedKey === r.key ? (
+            <span style={{ display: 'inline-flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnDanger}`}
+                disabled={pending}
+                onClick={() => {
+                  setRows((prev) => prev.filter((x) => x.key !== r.key))
+                  setArmedKey(null)
+                }}
+              >
+                Säker? Ta bort permanent
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                disabled={pending}
+                onClick={() => setArmedKey(null)}
+              >
+                Ångra
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnDanger}`}
+              disabled={pending}
+              onClick={() => setArmedKey(r.key)}
+            >
+              Ta bort
+            </button>
+          )}
         </div>
       ))}
 

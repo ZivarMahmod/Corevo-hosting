@@ -75,3 +75,43 @@ export function kronorToCents(kr: number): number {
   if (!Number.isFinite(kr) || kr < 0) return 0
   return Math.round(kr * 100)
 }
+
+/**
+ * Får kortet makuleras? Bara ETT aktivt kort kan spärras — ett redan inlöst,
+ * utgånget eller makulerat kort är per definition inte en öppen pengaskuld, och
+ * att "makulera" det igen skulle bara skriva över historiken.
+ *
+ * ENDA SANNINGEN: både VoidCell (UI, döljer knappen) och voidGiftCard (server,
+ * nekar skrivningen) filtrerar genom den här — precis som offertTransitionAllowed.
+ * UI-kontrollen är bekvämlighet; server-kontrollen är fencen (en server-action är
+ * en publik HTTP-yta, en klient kan posta vad som helst).
+ */
+export function giftCardVoidable(status: GiftCardStatus): boolean {
+  return status === 'active'
+}
+
+/**
+ * Får kortet lösas in? ETT MAKULERAT KORT FÅR ALDRIG LÖSAS IN — det är hela
+ * poängen med makulering: ett felutfärdat värdebevis är en pengaskuld, och
+ * spärren måste gälla på inlösen-vägen, inte bara i listan.
+ *
+ * Reglerna, i ordning: status måste vara 'active' ('void' | 'redeemed' | 'expired'
+ * är alla obrukbara), saldot måste vara > 0, och giltighetstiden får inte ha
+ * passerat.
+ *
+ * ⚠️ INGEN INLÖSEN-VÄG FINNS ÄN (2026-07-12). gift_cards är inte anon-läsbar
+ * (0036) och lib/storefront/presentkort/load-presentkort.ts gör medvetet INGEN
+ * tabell-query — den publika ytan är ren promo; adminens Callout säger "inlösen
+ * aktiveras när betalning slås på". Den här predikaten är därför KONTRAKTET som
+ * inlösen-vägen MÅSTE gå igenom den dagen den byggs — lägg inte en egen
+ * status-koll bredvid, anropa den här.
+ */
+export function giftCardRedeemable(
+  card: Pick<GiftCardRow, 'status' | 'balanceCents' | 'expiresAt'>,
+  now: Date = new Date(),
+): boolean {
+  if (card.status !== 'active') return false // 'void' fastnar här — makulerat = obrukbart
+  if (!(card.balanceCents > 0)) return false
+  if (card.expiresAt && new Date(card.expiresAt).getTime() < now.getTime()) return false
+  return true
+}

@@ -43,6 +43,12 @@ export function SingleImageSlot({
     if (res.success) onSaved?.()
     return res
   }, {})
+  // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffRoster): bilden låg ETT
+  // klick från att raderas ur R2 (ingen ångra). Klick 1 armerar (knappen blir "Säker? Ta
+  // bort permanent" + en Ångra), klick 2 skickar formuläret.
+  const [armed, setArmed] = useState(false)
+  // Ny/utbytt bild → avväpna, annars står knappen kvar SKARP över den nya bilden.
+  useEffect(() => setArmed(false), [url])
   const effective = url ?? defaultUrl ?? null
 
   return (
@@ -82,13 +88,31 @@ export function SingleImageSlot({
             </button>
           ) : null}
           {url ? (
-            <form action={action}>
+            // Kvitto för raderingen: samma useActionState som upload-formuläret nedan →
+            // "Bild borttagen. Publika sajten uppdaterad." visas där när raden försvinner.
+            <form action={action} style={{ display: 'inline-flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <input type="hidden" name="tenantId" value={tenantId} />
               <input type="hidden" name="slot" value={slot} />
               <input type="hidden" name="remove" value="true" />
-              <button type="submit" className={styles.btnDanger} disabled={pending}>
-                {pending ? 'Tar bort…' : 'Ta bort'}
-              </button>
+              {armed ? (
+                <>
+                  <button type="submit" className={styles.btnDanger} disabled={pending}>
+                    {pending ? 'Tar bort…' : 'Säker? Ta bort permanent'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btn}
+                    disabled={pending}
+                    onClick={() => setArmed(false)}
+                  >
+                    Ångra
+                  </button>
+                </>
+              ) : (
+                <button type="button" className={styles.btnDanger} onClick={() => setArmed(true)}>
+                  Ta bort
+                </button>
+              )}
             </form>
           ) : null}
         </div>

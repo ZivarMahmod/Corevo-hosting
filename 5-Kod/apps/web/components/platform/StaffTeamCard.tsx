@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { saveTenantStaffPhoto, setTenantStaffOnSite, type ActionState } from '@/lib/platform/actions'
 import styles from './platform.module.css'
 
@@ -88,6 +88,9 @@ function StaffMemberRow({
     },
     {},
   )
+  // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffRoster): "Ta bort
+  // foto" raderade förr porträttet på ETT klick. Klick 1 armerar, klick 2 skickar.
+  const [armed, setArmed] = useState(false)
 
   const name = displayName(member)
   const visibleOnSite = member.active && member.showOnSite
@@ -163,16 +166,36 @@ function StaffMemberRow({
                 {photoPending ? 'Sparar…' : 'Spara foto'}
               </button>
               {member.avatarUrl ? (
-                <button
-                  type="submit"
-                  name="remove"
-                  value="true"
-                  className={styles.btnDanger}
-                  disabled={photoPending}
-                  formNoValidate
-                >
-                  Ta bort foto
-                </button>
+                armed ? (
+                  <>
+                    <button
+                      type="submit"
+                      name="remove"
+                      value="true"
+                      className={styles.btnDanger}
+                      disabled={photoPending}
+                      formNoValidate
+                    >
+                      {photoPending ? '…' : 'Säker? Ta bort permanent'}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.btn}
+                      disabled={photoPending}
+                      onClick={() => setArmed(false)}
+                    >
+                      Ångra
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.btnDanger}
+                    onClick={() => setArmed(true)}
+                  >
+                    Ta bort foto
+                  </button>
+                )
               ) : null}
               {photoState.error ? (
                 <span className={`${styles.feedback} auth-error`} role="alert">

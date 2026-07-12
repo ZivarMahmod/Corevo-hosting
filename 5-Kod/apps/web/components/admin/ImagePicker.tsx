@@ -54,6 +54,11 @@ export function ImagePicker({
     defaultAssetId && assets.some((a) => a.id === defaultAssetId) ? defaultAssetId : null,
   )
   const [open, setOpen] = useState(false)
+  // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffRoster): "Ta bort"
+  // nollställde förr bildvalet på ETT klick. Klick 1 armerar, klick 2 tar bort.
+  // Ingen server-action här — valet skrivs av det omgivande formulärets Spara —
+  // så det finns inget pending-läge att spegla; armeringen är hela skyddet.
+  const [armed, setArmed] = useState(false)
 
   const selected = selectedId ? assets.find((a) => a.id === selectedId) ?? null : null
 
@@ -105,7 +110,15 @@ export function ImagePicker({
             </div>
 
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <Button variant="ghost" size="sm" type="button" onClick={() => setOpen((v) => !v)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setArmed(false)
+                  setOpen((v) => !v)
+                }}
+              >
                 {selected ? 'Byt bild' : 'Välj ur Bildbiblioteket'}
               </Button>
               {/* Röd tråd: gör källan EXPLICIT — det här är inte ett eget galleri,
@@ -114,19 +127,38 @@ export function ImagePicker({
               <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)' }}>
                 Bilderna kommer från ditt Bildbibliotek
               </span>
-              {selected && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  type="button"
-                  onClick={() => {
-                    setSelectedId(null)
-                    setOpen(false)
-                  }}
-                >
-                  Ta bort
-                </Button>
-              )}
+              {selected &&
+                (armed ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      icon="trash"
+                      style={{ color: 'var(--c-danger)' }}
+                      onClick={() => {
+                        setSelectedId(null)
+                        setOpen(false)
+                        setArmed(false)
+                      }}
+                    >
+                      Säker? Ta bort permanent
+                    </Button>
+                    <Button variant="ghost" size="sm" type="button" onClick={() => setArmed(false)}>
+                      Ångra
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    icon="trash"
+                    onClick={() => setArmed(true)}
+                  >
+                    Ta bort
+                  </Button>
+                ))}
             </div>
           </div>
 
@@ -160,6 +192,7 @@ export function ImagePicker({
                     onClick={() => {
                       setSelectedId(a.id)
                       setOpen(false)
+                      setArmed(false)
                     }}
                     style={{
                       aspectRatio: '1 / 1',

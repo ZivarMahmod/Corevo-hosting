@@ -1376,6 +1376,86 @@ export async function setCustomerPrivacy(_p: ActionState, fd: FormData): Promise
   return { success: 'Visningsnamn uppdaterat.' }
 }
 
+/**
+ * Rättar en kunds kontakt-PII (telefon + e-post) från kundkortet — front-desk
+ * måste kunna fixa en feltypad siffra utan att be kunden boka om.
+ *
+ * TVÅ FÄLLOR som gör den här mer än en rak update:
+ *
+ *  1) GDPR: en skrubbad kund (status='anonymized', 0011 §4.3) får ALDRIG
+ *     återfyllas med ny PII — då vore raderingen ogjord. Vi läser status FÖRST
+ *     och vägrar skriva. (Klienten döljer också formuläret; det här är grinden.)
+ *
+ *  2) contact_hash är GÄST-identiteten (0011 §3.1 + 0015): nästa bokning
+ *     resolvas via hash(tenant|e-post|telefon) → unique (tenant_id, contact_hash).
+ *     Ändrar vi e-post/telefon utan att räkna om hashen pekar den på de GAMLA
+ *     uppgifterna → nästa bokning matchar inte kunden och det uppstår en tyst
+ *     dubblett. Vi räknar därför om den med SAMMA DB-funktion som resolvern
+ *     använder (aldrig en TS-kopia av hash-regeln — den skulle kunna glida isär).
+ *     Inloggade kunder nycklas på auth_user_id och har contact_hash = null
+ *     (0015: "AUTHED branch ... leaves contact_hash NULL") — rör den inte då.
+ */
+export async function saveCustomerContact(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const customerId = String(fd.get('customer_id') ?? '')
+  const email = String(fd.get('email') ?? '').trim().slice(0, 160)
+  const phone = String(fd.get('phone') ?? '').trim().slice(0, 40)
+  if (!customerId) return { error: 'Saknar kund.' }
+  if (email && !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
+  if (phone && phone.replace(/\D/g, '').length < 6) return { error: 'Ogiltigt telefonnummer.' }
+
+  const supabase = await createClient()
+
+  // Tenant-scopad läsning (RLS + explicit .eq) → status-grinden ovan.
+  const { data: row, error: readErr } = await supabase
+    .from('customers')
+    .select('id, status, auth_user_id')
+    .eq('id', customerId)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (readErr) return { error: GENERIC }
+  if (!row) return { error: 'Saknar kund.' }
+  if (row.status !== 'active')
+    return { error: 'Kunden är raderad (GDPR) — uppgifterna kan inte ändras.' }
+
+  const patch: { email: string | null; phone: string | null; contact_hash?: string | null } = {
+    email: email || null,
+    phone: phone || null,
+  }
+
+  if (!row.auth_user_id) {
+    // '' ≡ null för funktionen: den nullif:ar tomma strängar internt (0011 §3.1),
+    // och de genererade typerna kräver string. Samma hash, ingen semantikglidning.
+    const { data: hash, error: hashErr } = await supabase.rpc('customer_contact_hash', {
+      p_tenant: ctx.tenant.id,
+      p_email: patch.email ?? '',
+      p_phone: patch.phone ?? '',
+    })
+    // Fail closed: hellre ingen ändring än en hash som pekar på gamla uppgifter.
+    if (hashErr) return { error: GENERIC }
+    patch.contact_hash = (hash as string | null) ?? null
+  }
+
+  const { error } = await supabase
+    .from('customers')
+    .update(patch)
+    .eq('id', customerId)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) {
+    // 23505 = unique (tenant_id, contact_hash): uppgifterna tillhör redan en
+    // annan kund i tenanten. Ärligt fel — vi slår INTE ihop två identiteter här.
+    if (error.code === '23505')
+      return { error: 'En annan kund har redan den e-posten/telefonen.' }
+    return { error: GENERIC }
+  }
+
+  revalidatePath('/admin/kunder')
+  revalidatePath(`/admin/kunder/${customerId}`)
+  return { success: 'Kontaktuppgifter sparade.' }
+}
+
 // ── Bookings overview ─────────────────────────────────────────────────────────
 // Status-transition matrix (ALLOWED_FROM) lives in ./format alongside
 // BOOKING_STATUSES so its invariant is unit-testable without this 'use server'

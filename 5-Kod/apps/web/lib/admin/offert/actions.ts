@@ -8,7 +8,12 @@ import { kronorToCents } from '@/lib/admin/format'
 import type { ActionState } from '@/lib/admin/actions'
 import { sendOffertReplyEmail } from '@/lib/notifications/offert'
 import { logger } from '@/lib/observability'
-import { OFFERT_STATUSES, offertTransitionAllowed, type OffertStatus } from './types'
+import {
+  OFFERT_STATUSES,
+  offertDeletable,
+  offertTransitionAllowed,
+  type OffertStatus,
+} from './types'
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
@@ -63,6 +68,58 @@ export async function updateOffertRequest(
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/offerter')
   return { success: 'Förfrågan uppdaterad.' }
+}
+
+/**
+ * Radera en offertförfrågan — så spam faktiskt går att rensa. Utan den här kunde
+ * en inkorg full av skräp aldrig städas; "skapa utan ta bort" var hela gapet.
+ *
+ * AFFÄRS-VAKT: en offert som blivit en affär får INTE raderas — regeln bor i
+ * offertDeletable (types.ts), som både UI:t och den här actionen filtrerar genom.
+ * Statusen läses ur DB:n, ALDRIG ur formuläret: klienten skickar bara ett id, så
+ * en klient som ljuger om statusen kan inte radera bort en accepterad affär.
+ *
+ * Samma auth-fence som modulens övriga actions: moduleCtx(fd) (dual-guard —
+ * platform_admin via hidden tenantId, salon_admin FORCERAD ur JWT) och varje
+ * query .eq('tenant_id', ctx.tenant.id). RLS är djupförsvar, inte ersättning.
+ */
+export async function deleteOffertRequest(
+  _p: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const ctx = await moduleCtx(fd)
+  if (!ctx) return { error: NO_TENANT }
+
+  const id = String(fd.get('id') ?? '').trim()
+  if (!id) return { error: 'Saknar förfrågan.' }
+
+  const supabase = await createClient()
+
+  const { data: current } = await supabase
+    .from('offert_requests')
+    .select('status, payment_status')
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!current) return { error: 'Förfrågan hittades inte.' }
+
+  if (!offertDeletable(current.status, current.payment_status)) {
+    return {
+      error:
+        'Förfrågan har blivit en affär (accepterad eller betald) och kan inte raderas — stäng den i stället.',
+    }
+  }
+
+  const { error } = await supabase
+    .from('offert_requests')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/offerter')
+  return { success: 'Förfrågan raderad.' }
 }
 
 /**

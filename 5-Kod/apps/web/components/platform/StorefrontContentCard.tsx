@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import {
   uploadTenantStorefrontImage,
   removeTenantStorefrontImage,
@@ -118,6 +118,10 @@ function ImageThumb({
     removeTenantStorefrontImage,
     {},
   )
+  // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffRoster): bilden låg ETT
+  // klick från att raderas ur R2 (ingen ångra). Klick 1 armerar (knappen blir "Säker? Ta
+  // bort permanent" + en Ångra), klick 2 skickar formuläret. Egen state per thumbnail.
+  const [armed, setArmed] = useState(false)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: 120 }}>
@@ -145,24 +149,44 @@ function ImageThumb({
           Visa var
         </button>
       ) : null}
-      <form action={action}>
+      <form action={action} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
         <input type="hidden" name="tenantId" value={tenantId} />
         <input type="hidden" name="slot" value={slot} />
         <input type="hidden" name="url" value={url} />
-        <button
-          type="submit"
-          className={styles.btnDanger}
-          disabled={pending}
-          style={{ width: '100%' }}
-        >
-          {pending ? 'Tar bort…' : 'Ta bort'}
-        </button>
+        {armed ? (
+          <>
+            <button
+              type="submit"
+              className={styles.btnDanger}
+              disabled={pending}
+              style={{ width: '100%' }}
+            >
+              {pending ? 'Tar bort…' : 'Säker? Ta bort permanent'}
+            </button>
+            <button
+              type="button"
+              className={styles.btn}
+              disabled={pending}
+              style={{ width: '100%' }}
+              onClick={() => setArmed(false)}
+            >
+              Ångra
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className={styles.btnDanger}
+            style={{ width: '100%' }}
+            onClick={() => setArmed(true)}
+          >
+            Ta bort
+          </button>
+        )}
       </form>
-      {state.error && (
-        <span className={`${styles.feedback} auth-error`} role="alert">
-          {state.error}
-        </span>
-      )}
+      {/* Kvitto: både fel OCH "Bild borttagen…" (tidigare visades bara fel — en lyckad
+          radering gav ingen bekräftelse alls). */}
+      <Feedback state={state} />
     </div>
   )
 }

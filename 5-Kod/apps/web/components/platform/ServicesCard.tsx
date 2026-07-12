@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import {
   createTenantService,
   updateTenantService,
@@ -142,6 +142,15 @@ function ServiceRow({ tenantId, service, staff }: { tenantId: string; service: S
   const [imgState, imgAction, imgPending] = useActionState<ActionState, FormData>(uploadServiceImage, {})
   const [rmImgState, rmImgAction, rmImgPending] = useActionState<ActionState, FormData>(removeServiceImage, {})
   const [delState, delAction, delPending] = useActionState<ActionState, FormData>(deleteTenantService, {})
+  // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffRoster): raderingen är
+  // KUNDENS tjänst — den som klickar är inte den som drabbas. Klick 1 armerar (knappen
+  // blir "Säker? Ta bort permanent" + en Ångra), klick 2 skickar formuläret. En arm per
+  // rad (komponenten är per tjänst) → kan aldrig läcka mellan tjänster.
+  const [armedImg, setArmedImg] = useState(false)
+  const [armedDel, setArmedDel] = useState(false)
+  // Ny/utbytt bild → avväpna, annars står bild-knappen kvar SKARP och nästa klick
+  // raderar den nyss uppladdade bilden på ett klick.
+  useEffect(() => setArmedImg(false), [service.image_url])
 
   const hasSale = service.sale_price_cents !== null && service.sale_price_cents < service.price_cents
   const booked = service.bookingCount > 0
@@ -295,9 +304,25 @@ function ServiceRow({ tenantId, service, staff }: { tenantId: string; service: S
             <form action={rmImgAction} className={styles.actions}>
               <input type="hidden" name="tenantId" value={tenantId} />
               <input type="hidden" name="serviceId" value={service.id} />
-              <button type="submit" className={styles.btnDanger} disabled={rmImgPending}>
-                {rmImgPending ? 'Tar bort…' : 'Ta bort bild'}
-              </button>
+              {armedImg ? (
+                <>
+                  <button type="submit" className={styles.btnDanger} disabled={rmImgPending}>
+                    {rmImgPending ? 'Tar bort…' : 'Säker? Ta bort permanent'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btn}
+                    disabled={rmImgPending}
+                    onClick={() => setArmedImg(false)}
+                  >
+                    Ångra
+                  </button>
+                </>
+              ) : (
+                <button type="button" className={styles.btnDanger} onClick={() => setArmedImg(true)}>
+                  Ta bort bild
+                </button>
+              )}
               <Feedback state={rmImgState} />
             </form>
           ) : null}
@@ -314,9 +339,25 @@ function ServiceRow({ tenantId, service, staff }: { tenantId: string; service: S
             <form action={delAction} className={styles.actions}>
               <input type="hidden" name="tenantId" value={tenantId} />
               <input type="hidden" name="serviceId" value={service.id} />
-              <button type="submit" className={styles.btnDanger} disabled={delPending}>
-                {delPending ? 'Tar bort…' : 'Ta bort tjänst'}
-              </button>
+              {armedDel ? (
+                <>
+                  <button type="submit" className={styles.btnDanger} disabled={delPending}>
+                    {delPending ? 'Tar bort…' : 'Säker? Ta bort permanent'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btn}
+                    disabled={delPending}
+                    onClick={() => setArmedDel(false)}
+                  >
+                    Ångra
+                  </button>
+                </>
+              ) : (
+                <button type="button" className={styles.btnDanger} onClick={() => setArmedDel(true)}>
+                  Ta bort tjänst
+                </button>
+              )}
               <Feedback state={delState} />
             </form>
           )}

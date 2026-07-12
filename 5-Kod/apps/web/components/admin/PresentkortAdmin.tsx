@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { GiftCardRow } from '@/lib/admin/presentkort/types'
 import {
   formatGiftAmount,
+  giftCardVoidable,
   giftStatusTone,
   giftStatusLabel,
 } from '@/lib/admin/presentkort/types'
@@ -16,7 +17,6 @@ import {
   Card,
   Callout,
   Drawer,
-  Icon,
   PageHead,
   Table,
   useToast,
@@ -156,6 +156,10 @@ function RecipientCell({ card }: { card: GiftCardRow }) {
 function VoidCell({ card }: { card: GiftCardRow }) {
   const { notify } = useToast()
   const router = useRouter()
+  // Tvåstegs-"arm" — EXAKT samma mönster som ServicesManager/StaffRoster: klick 1
+  // armar, klick 2 utför. Ersätter det gamla window.confirm() (röd tråd: samma
+  // bekräftelse-gest i hela adminen, ingen webbläsar-dialog på ett ställe).
+  const [armed, setArmed] = useState(false)
   const [state, formAction, pending] = useActionState<ActionState, FormData>(voidAction, {})
 
   useEffect(() => {
@@ -165,49 +169,45 @@ function VoidCell({ card }: { card: GiftCardRow }) {
     }
     if (state.error) {
       notify(state.error, 'warning')
+      setArmed(false) // avvisat av server-vakten → backa ur armat läge
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.success, state.error])
 
-  // Only active cards can be voided.
-  if (card.status !== 'active') {
+  // Bara aktiva kort kan makuleras — samma predikat som server-vakten i
+  // voidGiftCard läser, så UI och server aldrig kan glida isär.
+  if (!giftCardVoidable(card.status)) {
     return <span aria-hidden="true" />
   }
 
   return (
-    <form
-      action={formAction}
-      onSubmit={(e) => {
-        if (!window.confirm(`Makulera presentkortet ${card.code}? Det kan inte ångras.`)) {
-          e.preventDefault()
-        }
-      }}
-      style={{ display: 'inline-flex', justifyContent: 'flex-end' }}
-    >
+    <form action={formAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
       <input type="hidden" name="id" value={card.id} />
-      <button
-        type="submit"
-        disabled={pending}
-        aria-label={`Makulera presentkort ${card.code}`}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          border: '1px solid var(--c-line)',
-          background: 'transparent',
-          color: 'var(--c-ink-2)',
-          cursor: pending ? 'default' : 'pointer',
-          borderRadius: 8,
-          padding: '5px 10px',
-          fontSize: 12.5,
-          fontFamily: 'var(--font-ui)',
-          opacity: pending ? 0.6 : 1,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <Icon name="trash" size={14} />
-        {pending ? '…' : 'Makulera'}
-      </button>
+      {armed ? (
+        <>
+          {/* Ingen aria-label här: Button (components/portal/ui/Button.tsx) tar en
+              EXPLICIT prop-lista utan rest-spread, så ett aria-label hade tyst
+              slängts bort. Radens första kolumn bär koden och ger kontexten.
+              Samma utformning som ServicesManager/StaffRoster. */}
+          <Button
+            variant="ghost"
+            type="submit"
+            icon="trash"
+            size="sm"
+            disabled={pending}
+            style={{ color: 'var(--c-danger)' }}
+          >
+            {pending ? '…' : 'Säker? Makulera permanent'}
+          </Button>
+          <Button variant="ghost" size="sm" type="button" onClick={() => setArmed(false)}>
+            Ångra
+          </Button>
+        </>
+      ) : (
+        <Button variant="ghost" type="button" icon="trash" size="sm" onClick={() => setArmed(true)}>
+          Makulera
+        </Button>
+      )}
     </form>
   )
 }

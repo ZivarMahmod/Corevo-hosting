@@ -31,6 +31,12 @@ export function DomainManager({
   const [error, setError] = useState<string | null>(null)
   // DCV records to show after an add (or a still-pending verify), keyed by domain.
   const [dcv, setDcv] = useState<{ domain: string; records: DcvRecord[] } | null>(null)
+  // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffRoster): "Ta bort"
+  // raderade tidigare på ETT klick — och att ta bort en domän tar ner kundens LIVE-sajt
+  // (DNS/cert går inte att ångra i appen). Klick 1 armerar RADEN (knappen blir "Säker?
+  // Ta bort permanent" + en Ångra), klick 2 kör removeCustomDomain. Armeringen är keyad
+  // på domänen så den aldrig kan läcka till en annan rad.
+  const [armed, setArmed] = useState<string | null>(null)
 
   function fd(domain: string): FormData {
     const f = new FormData()
@@ -94,9 +100,12 @@ export function DomainManager({
     startTransition(async () => {
       const res = await removeCustomDomain({}, fd(domain))
       if (res.error) {
+        // Raden lever kvar → avväpna den, annars står en skarp knapp kvar och väntar.
+        setArmed(null)
         notify(res.error, 'warning')
         return
       }
+      setArmed(null)
       setDomains((d) => d.filter((x) => x.domain !== domain))
       setDcv((cur) => (cur?.domain === domain ? null : cur))
       notify(res.success ?? 'Domän borttagen.', 'success')
@@ -167,14 +176,35 @@ export function DomainManager({
                 {d.verified ? 'Verifierad' : 'Väntar'}
               </span>
               <span style={{ flex: 1 }} />
-              {!d.verified && (
+              {!d.verified && armed !== d.domain && (
                 <button type="button" className={styles.btnSubtle} disabled={pending} onClick={() => verify(d.domain)}>
                   Verifiera
                 </button>
               )}
-              <button type="button" className={styles.btnDanger} disabled={pending} onClick={() => remove(d.domain)}>
-                Ta bort
-              </button>
+              {armed === d.domain ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.btnDanger}
+                    disabled={pending}
+                    onClick={() => remove(d.domain)}
+                  >
+                    {pending ? '…' : 'Säker? Ta bort permanent'}
+                  </button>
+                  <button type="button" className={styles.btn} disabled={pending} onClick={() => setArmed(null)}>
+                    Ångra
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.btnDanger}
+                  disabled={pending}
+                  onClick={() => setArmed(d.domain)}
+                >
+                  Ta bort
+                </button>
+              )}
             </li>
           ))}
         </ul>

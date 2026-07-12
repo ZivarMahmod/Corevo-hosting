@@ -164,6 +164,9 @@ function AddTimeOffForm({
 function TimeOffRowItem({ item, onDone }: { item: TimeOffItem; onDone: () => void }) {
   const { notify } = useToast()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(removeStaffTimeOff, {})
+  // Tvåstegsbekräftelse (samma röda tråd som ServicesManager/StaffRoster): frånvaron
+  // raderades förr på ETT klick. Klick 1 armerar, klick 2 skickar formuläret.
+  const [armed, setArmed] = useState(false)
 
   const lastHandled = useRef(state)
   useEffect(() => {
@@ -217,29 +220,49 @@ function TimeOffRowItem({ item, onDone }: { item: TimeOffItem; onDone: () => voi
         <Badge tone={item.ongoing ? 'gold' : 'info'}>
           {item.ongoing ? 'Pågår nu' : 'Kommande'}
         </Badge>
-        <form action={formAction} style={{ margin: 0 }}>
+        <form
+          action={formAction}
+          style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}
+        >
           <input type="hidden" name="id" value={item.id} />
-          <button
-            type="submit"
-            disabled={pending}
-            aria-label={`Ta bort frånvaro för ${item.staffName} (${item.rangeLabel})`}
-            title="Ta bort denna frånvaro"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--c-ink-3)',
-              cursor: pending ? 'default' : 'pointer',
-              fontFamily: 'var(--font-ui)',
-              fontSize: 12.5,
-              fontWeight: 600,
-              padding: '4px 6px',
-            }}
-          >
-            <Icon name="trash" size={14} /> Ta bort
-          </button>
+          {armed ? (
+            <>
+              <button
+                type="submit"
+                disabled={pending}
+                aria-label={`Säker? Ta bort frånvaro för ${item.staffName} (${item.rangeLabel}) permanent`}
+                style={{ ...confirmBtnStyle, cursor: pending ? 'default' : 'pointer' }}
+              >
+                <Icon name="trash" size={14} />
+                {pending ? '…' : 'Säker? Ta bort permanent'}
+              </button>
+              <button type="button" onClick={() => setArmed(false)} style={undoBtnStyle}>
+                Ångra
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setArmed(true)}
+              aria-label={`Ta bort frånvaro för ${item.staffName} (${item.rangeLabel})`}
+              title="Ta bort denna frånvaro"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--c-ink-3)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-ui)',
+                fontSize: 12.5,
+                fontWeight: 600,
+                padding: '4px 6px',
+              }}
+            >
+              <Icon name="trash" size={14} /> Ta bort
+            </button>
+          )}
         </form>
       </div>
     </li>
@@ -265,3 +288,33 @@ const inputStyle = {
   background: 'var(--c-paper)',
   color: 'var(--c-ink)',
 }
+
+// Armerad borttagning: samma --c-danger-ton som resten av back-office
+// (ServicesManager/StaffRoster) — enda "danger"-ytan i den här filen.
+const confirmBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5,
+  border: '1px solid var(--c-danger, #b3261e)',
+  borderRadius: 7,
+  background: 'transparent',
+  color: 'var(--c-danger, #b3261e)',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 12.5,
+  fontWeight: 700,
+  padding: '4px 7px',
+} as const
+
+const undoBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  border: '1px solid var(--c-line)',
+  borderRadius: 7,
+  background: 'var(--c-paper)',
+  color: 'var(--c-ink-3)',
+  cursor: 'pointer',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 12.5,
+  fontWeight: 600,
+  padding: '4px 7px',
+} as const

@@ -935,6 +935,43 @@
 .mediaRemove:hover {
   background: var(--c-danger, #dc2626);
 }
+/* Armerad borttagning på en bild-thumb (tvåstegs, samma röda tråd som
+   ServicesManager/StaffRoster): klick 1 lägger den här bekräftelse-ytan över
+   bilden, klick 2 tar bort den. Thumben är bara 96×72 → knapparna staplas. */
+.mediaConfirm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px;
+  background: color-mix(in srgb, var(--c-ink) 76%, transparent);
+}
+.mediaConfirm button {
+  border: none;
+  border-radius: 5px;
+  padding: 3px 4px;
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.15;
+  cursor: pointer;
+}
+.mediaConfirm button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.mediaConfirmYes {
+  background: var(--c-danger, #dc2626);
+  color: #fff;
+}
+.mediaConfirmNo {
+  background: color-mix(in srgb, #fff 88%, transparent);
+  color: var(--c-ink, #1a1a1a);
+  font-weight: 600;
+}
 .mediaNew {
   position: absolute;
   bottom: 3px;

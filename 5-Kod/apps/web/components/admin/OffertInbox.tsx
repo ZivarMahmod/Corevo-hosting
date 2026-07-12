@@ -8,9 +8,14 @@ import {
   OFFERT_STATUS_LABELS,
   OFFERT_MODE_LABELS,
   formatCents,
+  offertDeletable,
   offertTransitionAllowed,
 } from '@/lib/admin/offert/types'
-import { updateOffertRequest, sendOffertReply } from '@/lib/admin/offert/actions'
+import {
+  updateOffertRequest,
+  sendOffertReply,
+  deleteOffertRequest,
+} from '@/lib/admin/offert/actions'
 import { TenantScope, TenantField } from './TenantScope'
 import {
   Badge,
@@ -95,7 +100,9 @@ function DetailDrawer({
       onClose={onClose}
       ariaLabel={`Förfrågan från ${request.customer_name ?? 'okänd kund'}`}
       footer={
-        <div style={{ display: 'flex', gap: 8, width: '100%', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center', flexWrap: 'wrap' }}>
+          <DeleteForm request={request} onDeleted={onClose} />
+          <div style={{ flex: 1 }} />
           <Button variant="ghost" type="button" onClick={onClose}>
             Avbryt
           </Button>
@@ -222,6 +229,77 @@ function DetailDrawer({
           fått något. Eget formulär (egen action) så Spara ovan förblir intern. */}
       <ReplySection request={request} onDone={onClose} />
     </Drawer>
+  )
+}
+
+/**
+ * Radera förfrågan — så spam går att rensa. Tvåstegs-"arm" (EXAKT samma mönster
+ * som ServicesManager/StaffRoster): klick 1 armar, klick 2 raderar. Egen <form>
+ * med egen action, så Spara-formuläret i kroppen förblir orört.
+ *
+ * En offert som blivit en affär visar ingen knapp alls — och server-actionen
+ * nekar ändå (offertDeletable läses där ur DB:n, inte ur formuläret).
+ */
+function DeleteForm({
+  request,
+  onDeleted,
+}: {
+  request: OffertRequestRow
+  onDeleted: () => void
+}) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [armed, setArmed] = useState(false)
+  const [state, formAction, pending] = useActionState<ActionState, FormData>(
+    deleteOffertRequest,
+    {},
+  )
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Förfrågan raderad.', 'info')
+      router.refresh()
+      onDeleted()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  useEffect(() => {
+    if (state.error) {
+      notify(state.error, 'warning')
+      setArmed(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.error])
+
+  // En accepterad/betald förfrågan är en affär — den raderas inte bort ur historiken.
+  if (!offertDeletable(request.status, request.payment_status)) return null
+
+  return (
+    <form action={formAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+      <TenantField />
+      <input type="hidden" name="id" value={request.id} />
+      {armed ? (
+        <>
+          <Button
+            variant="ghost"
+            type="submit"
+            icon="trash"
+            disabled={pending}
+            style={{ color: 'var(--c-danger)' }}
+          >
+            {pending ? '…' : 'Säker? Ta bort permanent'}
+          </Button>
+          <Button variant="ghost" type="button" onClick={() => setArmed(false)}>
+            Ångra
+          </Button>
+        </>
+      ) : (
+        <Button variant="ghost" type="button" icon="trash" onClick={() => setArmed(true)}>
+          Ta bort
+        </Button>
+      )}
+    </form>
   )
 }
 

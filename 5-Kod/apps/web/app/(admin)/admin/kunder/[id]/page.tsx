@@ -140,7 +140,13 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             Telefon och e-post visas bara i det operativa fönstret kring en bokning. Utanför fönstret
             är de maskerade — så data inte ligger framme i onödan.
           </p>
-          <CustomerContactCard contact={contact} />
+          {/* canEdit: en GDPR-skrubbad kund (status ≠ 'active') får ALDRIG
+              återfyllas med ny PII — server-actionen vägrar, kortet döljer formen. */}
+          <CustomerContactCard
+            contact={contact}
+            customerId={customer.id}
+            canEdit={customer.status === 'active'}
+          />
         </Card>
 
         {/* Lojalitet — stor guld-poängsiffra + Nästa nivå + progress (§4.6).

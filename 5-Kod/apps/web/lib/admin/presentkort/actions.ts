@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requirePortal, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, type AdminTenant } from '@/lib/admin/tenant'
 import type { ActionState } from '@/lib/admin/actions'
-import { kronorToCents } from './types'
+import { giftCardVoidable, giftStatusLabel, kronorToCents, type GiftCardStatus } from './types'
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
@@ -105,6 +105,14 @@ export async function issueGiftCard(formData: FormData): Promise<ActionState> {
  * Makulera (void) a gift card — administrative cancellation. Sets status='void'.
  * NEVER mutates balance_cents (the recorded value stays intact for audit); this is
  * not a refund or redemption, just marking the card unusable.
+ *
+ * SPÅRBARHET: raden RADERAS ALDRIG. Ett utfärdat värdebevis får inte försvinna ur
+ * historiken — makulering är ett status-byte (active → void), inte ett delete.
+ *
+ * STATUS-VAKT (server-fence): bara ett 'active'-kort kan makuleras, via
+ * giftCardVoidable. UI:t döljer redan knappen för icke-aktiva kort, men en
+ * server-action är en publik HTTP-yta — utan den här kollen kan en handgjord POST
+ * skriva 'void' över ett redan inlöst kort och därmed förfalska historiken.
  */
 export async function voidGiftCard(formData: FormData): Promise<ActionState> {
   const ctx = await adminCtx()
@@ -114,11 +122,26 @@ export async function voidGiftCard(formData: FormData): Promise<ActionState> {
   if (!id) return { error: 'Saknar presentkort.' }
 
   const supabase = await createClient()
+
+  // Läs nuvarande status tenant-scopat (samma fence som skrivningen nedan) — en
+  // rad som inte tillhör tenanten finns helt enkelt inte.
+  const { data: current } = await supabase
+    .from('gift_cards')
+    .select('status')
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
+    .maybeSingle()
+  if (!current) return { error: 'Presentkortet hittades inte.' }
+  if (!giftCardVoidable(current.status as GiftCardStatus)) {
+    return { error: `Kortet är ${giftStatusLabel(current.status as GiftCardStatus).toLowerCase()} och kan inte makuleras.` }
+  }
+
   const { error } = await supabase
     .from('gift_cards')
     .update({ status: 'void' })
     .eq('id', id)
     .eq('tenant_id', ctx.tenant.id)
+    .eq('status', 'active') // race-fence: kortet får inte hinna lösas in mellan läsning och skrivning
   if (error) return { error: GENERIC }
 
   revalidatePath('/admin/presentkort')

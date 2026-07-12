@@ -1524,7 +1524,13 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+  /* Radens naturliga höjd är EN radbox (font-size × line-height) ≈ 25.4px — inte jämnt
+     25. En hårdkodad -9.5px tvingade den till exakt 25.0 och krympte blocket 0.4px, vilket
+     råkade passera en avrundningsgräns → hela kontaktsidan under sköts 1px. `1lh` ÄR
+     radhöjden, så kvittningen blir exakt oavsett mallens font. -9.5px står kvar först som
+     fallback för motorer utan lh-enheten. */
   margin-block: -9.5px;
+  margin-block: calc((1lh - 44px) / 2);
 }
 
 /* OSM-embed: aspect-ratio i stället för fast höjd → kartan hoppar inte in när iframen

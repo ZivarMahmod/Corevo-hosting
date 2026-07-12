@@ -80,6 +80,10 @@ function MemberForm({
     },
     {},
   )
+  // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffRoster): "Ta bort" låg
+  // ETT klick från Spara och raderade medlemmen + fotot. Klick 1 armerar (knappen blir
+  // "Säker? Ta bort permanent" + en Ångra), klick 2 submittar med remove=true.
+  const [armed, setArmed] = useState(false)
 
   return (
     <form
@@ -137,16 +141,27 @@ function MemberForm({
           {pending ? 'Sparar…' : index === null ? 'Lägg till' : 'Spara'}
         </button>
         {index !== null ? (
-          <button
-            type="submit"
-            name="remove"
-            value="true"
-            className={styles.btnDanger}
-            disabled={pending}
-            formNoValidate
-          >
-            Ta bort
-          </button>
+          armed ? (
+            <>
+              <button
+                type="submit"
+                name="remove"
+                value="true"
+                className={styles.btnDanger}
+                disabled={pending}
+                formNoValidate
+              >
+                {pending ? '…' : 'Säker? Ta bort permanent'}
+              </button>
+              <button type="button" className={styles.btn} disabled={pending} onClick={() => setArmed(false)}>
+                Ångra
+              </button>
+            </>
+          ) : (
+            <button type="button" className={styles.btnDanger} onClick={() => setArmed(true)}>
+              Ta bort
+            </button>
+          )
         ) : null}
         {state.error ? (
           <span className={`${styles.feedback} auth-error`} role="alert">

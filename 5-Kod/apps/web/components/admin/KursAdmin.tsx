@@ -364,6 +364,13 @@ function EditDrawer({
   const router = useRouter()
   const [save, saveAction, saving] = useActionState<ActionState, FormData>(updateTenantEvent, {})
   const [del, delAction, deleting] = useActionState<ActionState, FormData>(deleteTenantEvent, {})
+  // Tvåstegsbekräftelse: "Ta bort" raderade tidigare på ETT klick — granne med
+  // "Spara" i samma footer, på ett tillfälle som kan ha anmälda deltagare.
+  // Klick 1 armerar (knappen blir "Säker? Ta bort permanent" i varningston + en
+  // Ångra), klick 2 skickar delete-formuläret. Drawern remountas per tillfälle
+  // (key=event.id) så armeringen kan aldrig läcka mellan tillfällen. Samma
+  // mönster som ServicesManager/StaffRoster.
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     if (save.success) {
@@ -398,13 +405,30 @@ function EditDrawer({
       onClose={onClose}
       ariaLabel={`Redigera ${event.title}`}
       footer={
-        <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center' }}>
-          <form action={delAction}>
+        <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center', flexWrap: 'wrap' }}>
+          <form action={delAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
             <TenantField />
             <input type="hidden" name="id" value={event.id} />
-            <Button variant="ghost" type="submit" icon="trash" disabled={deleting}>
-              {deleting ? '…' : 'Ta bort'}
-            </Button>
+            {confirmDelete ? (
+              <>
+                <Button
+                  variant="ghost"
+                  type="submit"
+                  icon="trash"
+                  disabled={deleting}
+                  style={{ color: 'var(--c-danger)' }}
+                >
+                  {deleting ? '…' : 'Säker? Ta bort permanent'}
+                </Button>
+                <Button variant="ghost" type="button" onClick={() => setConfirmDelete(false)}>
+                  Ångra
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" type="button" icon="trash" onClick={() => setConfirmDelete(true)}>
+                Ta bort
+              </Button>
+            )}
           </form>
           <div style={{ flex: 1 }} />
           <Button variant="ghost" type="button" onClick={onClose}>

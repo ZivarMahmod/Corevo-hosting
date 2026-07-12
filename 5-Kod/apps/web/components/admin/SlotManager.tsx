@@ -58,6 +58,40 @@ export type StaffChip = {
 const AVATAR_COLORS = ['var(--c-forest)', 'var(--c-success)', 'var(--c-gold-600)']
 const HHMM = /^\d{1,2}:\d{2}$/
 
+// Tvåstegs-borttagning (samma röda tråd som ServicesManager/StaffRoster): klick 1
+// ARMERAR, klick 2 raderar. Knapp-tonerna nedan är de enda "danger"-ytorna i den
+// här filen — samma --c-danger-token som resten av back-office.
+const confirmBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 5,
+  border: '1px solid var(--c-danger, #b3261e)',
+  borderRadius: 7,
+  background: 'transparent',
+  color: 'var(--c-danger, #b3261e)',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 11.5,
+  fontWeight: 700,
+  lineHeight: 1.2,
+  padding: '4px 7px',
+} as const
+const undoBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: '1px solid var(--c-line)',
+  borderRadius: 7,
+  background: 'var(--c-paper)',
+  color: 'var(--c-ink-3)',
+  cursor: 'pointer',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 11.5,
+  fontWeight: 600,
+  lineHeight: 1.2,
+  padding: '4px 7px',
+} as const
+
 export function SlotManager({
   staffId,
   staff,
@@ -342,6 +376,10 @@ function EmptyDayHint() {
 function SlotChip({ id, time, onDone }: { id: string; time: string; onDone: () => void }) {
   const { notify } = useToast()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(deleteStaffSlot, {})
+  // Tvåstegsbekräftelse: × raderade tidigare en bokbar tid på ETT klick. Klick 1
+  // armerar (chipet visar "Säker? Ta bort permanent" i varningston + en Ångra),
+  // klick 2 skickar delete-formuläret. Armeringen är lokal per chip.
+  const [armed, setArmed] = useState(false)
 
   // Vakta på resultat-objektet (en lyckad borttagning avmonterar visserligen chipet,
   // men ett upprepat identiskt FEL ska ändå ge toast).
@@ -363,8 +401,10 @@ function SlotChip({ id, time, onDone }: { id: string; time: string; onDone: () =
       <div
         style={{
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: armed ? 'column' : 'row',
+          alignItems: armed ? 'stretch' : 'center',
           justifyContent: 'space-between',
+          gap: armed ? 6 : 0,
           padding: '8px 10px',
           borderRadius: 9,
           background: 'var(--c-success-bg)',
@@ -374,23 +414,40 @@ function SlotChip({ id, time, onDone }: { id: string; time: string; onDone: () =
         <span className="num" style={{ fontSize: 13, fontWeight: 700, color: 'var(--c-success)' }}>
           {time}
         </span>
-        <button
-          type="submit"
-          disabled={pending}
-          aria-label={`Ta bort ${time}`}
-          title="Ta bort denna tid"
-          style={{
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--c-ink-3)',
-            cursor: 'pointer',
-            padding: 0,
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          <Icon name="x" size={14} />
-        </button>
+        {armed ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <button
+              type="submit"
+              disabled={pending}
+              aria-label={`Säker? Ta bort ${time} permanent`}
+              style={{ ...confirmBtnStyle, cursor: pending ? 'default' : 'pointer' }}
+            >
+              <Icon name="trash" size={12} />
+              {pending ? '…' : 'Säker? Ta bort permanent'}
+            </button>
+            <button type="button" onClick={() => setArmed(false)} style={undoBtnStyle}>
+              Ångra
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setArmed(true)}
+            aria-label={`Ta bort ${time}`}
+            title="Ta bort denna tid"
+            style={{
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--c-ink-3)',
+              cursor: 'pointer',
+              padding: 0,
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <Icon name="x" size={14} />
+          </button>
+        )}
       </div>
     </form>
   )
@@ -779,6 +836,9 @@ function WorkingHourRowItem({ row, onDone }: { row: WorkingHourRow; onDone: () =
     deleteStaffWorkingHours,
     {},
   )
+  // Tvåstegsbekräftelse — arbetstiden är rastret bokningarna genereras ur och
+  // raderades förr på ETT klick. Klick 1 armerar, klick 2 skickar formuläret.
+  const [armed, setArmed] = useState(false)
   const label = `${WEEKDAYS_SV[row.weekday]} ${row.start_time.slice(0, 5)}–${row.end_time.slice(0, 5)}`
 
   const lastHandled = useRef(state)
@@ -820,29 +880,53 @@ function WorkingHourRowItem({ row, onDone }: { row: WorkingHourRow; onDone: () =
           {row.start_time.slice(0, 5)}–{row.end_time.slice(0, 5)}
         </span>
       </span>
-      <form action={formAction} style={{ margin: 0 }}>
+      <form
+        action={formAction}
+        style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}
+      >
         <input type="hidden" name="id" value={row.id} />
-        <button
-          type="submit"
-          disabled={pending}
-          aria-label={`Ta bort ${label}`}
-          title="Ta bort denna arbetstid"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--c-ink-3)',
-            cursor: pending ? 'default' : 'pointer',
-            fontFamily: 'var(--font-ui)',
-            fontSize: 12.5,
-            fontWeight: 600,
-            padding: '4px 6px',
-          }}
-        >
-          <Icon name="trash" size={14} /> Ta bort
-        </button>
+        {armed ? (
+          <>
+            <button
+              type="submit"
+              disabled={pending}
+              aria-label={`Säker? Ta bort ${label} permanent`}
+              style={{ ...confirmBtnStyle, fontSize: 12.5, cursor: pending ? 'default' : 'pointer' }}
+            >
+              <Icon name="trash" size={14} />
+              {pending ? '…' : 'Säker? Ta bort permanent'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setArmed(false)}
+              style={{ ...undoBtnStyle, fontSize: 12.5 }}
+            >
+              Ångra
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setArmed(true)}
+            aria-label={`Ta bort ${label}`}
+            title="Ta bort denna arbetstid"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--c-ink-3)',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-ui)',
+              fontSize: 12.5,
+              fontWeight: 600,
+              padding: '4px 6px',
+            }}
+          >
+            <Icon name="trash" size={14} /> Ta bort
+          </button>
+        )}
       </form>
     </li>
   )
