@@ -34,7 +34,6 @@ export {
   removeTenantStorefrontImage,
 } from './actions/storefront-content'
 export { saveRolePermissionsAction } from './actions/roles'
-export { setSajtbyggareEnabled } from './actions/features'
 export { setTenantTheme } from './actions/theme'
 export { saveTenantContact, saveTenantOpeningHours } from './actions/contact'
 export {

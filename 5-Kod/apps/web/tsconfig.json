@@ -15,7 +15,6 @@
     ".next",
     ".open-next",
     "scripts",
-    "lib/sajtbyggare/_optimize/**",
     "**/*.test.ts"
   ]
 }

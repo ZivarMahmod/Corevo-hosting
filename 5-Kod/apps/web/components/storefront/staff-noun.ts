@@ -3,8 +3,7 @@
 // nagelstudio reads "Nagelteknolog", a barbershop "Barberare", etc. — instead of
 // the hardcoded 'Frisör'. Used by BOTH non-sweep wizard mounts: the standalone
 // /boka route (app/boka/page.tsx) and the storefront drawer ((public)/layout.tsx
-// → BookingProvider). The sajtbyggare mount (lib/sajtbyggare/*) is NOT a caller;
-// it relies on BookingWizard's default prop and keeps showing 'Frisör' as today.
+// → BookingProvider).
 //
 // Mirror of getAdminTenant's terminology read (lib/admin/tenant.ts): a SEPARATE,
 // non-embedded read on `verticals` so a verticals shape/RLS change can never null

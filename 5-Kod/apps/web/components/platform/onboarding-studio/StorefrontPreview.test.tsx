@@ -76,29 +76,4 @@ describe('W2 StorefrontPreview', () => {
     // no module states seeded → no main sections, bare layout chrome only
     expect(html).not.toContain('Webshop')
   })
-
-  // ── goal-50: render-bron dispatch — a picked LOOK renders via the iframe route ─────
-  it('a registered look (theme ∈ lookKeys) renders the render-bron iframe, not the theme layout', () => {
-    const html = renderToStaticMarkup(
-      <StorefrontPreview cfg={cfgWith({ theme: 'demolook' })} lookKeys={['demolook', 'demoklipp']} />,
-    )
-    expect(html).toContain('<iframe')
-    expect(html).toContain('/sajtbyggare-spike/look/demolook')
-    expect(html).not.toContain('data-world="storefront"') // NOT the 5-theme inline layout
-  })
-
-  it('the accent rides the look-preview iframe query when picked', () => {
-    const html = renderToStaticMarkup(
-      <StorefrontPreview cfg={cfgWith({ theme: 'demoklipp', accent: '#D81324' })} lookKeys={['demoklipp']} />,
-    )
-    expect(html).toContain('/sajtbyggare-spike/look/demoklipp?accent=%23D81324')
-  })
-
-  it('a non-look theme key still renders the legacy inline layout (flag-OFF parity)', () => {
-    const html = renderToStaticMarkup(
-      <StorefrontPreview cfg={cfgWith({ theme: 'salvia' })} lookKeys={['demolook']} />,
-    )
-    expect(html).toContain('data-world="storefront"')
-    expect(html).not.toContain('<iframe')
-  })
 })

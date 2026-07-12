@@ -1,10 +1,10 @@
-// Salvia template — editable-region manifest (Sajtbyggare S1, F1).
+// Salvia template — editable-region manifest.
 //
 // Declares the regions a tenant may edit on the `salvia` storefront theme, with
 // each region's Universal/theme default and the storage binding for a per-tenant
-// override. Pure data; imported by the F2 resolver / F1 test only — NOT by any
-// rendered route yet (the surface is wired behind the SAJTBYGGARE_ENABLED flag
-// in a later slice).
+// override. Pure data (no React, no I/O), consumed by the skin overlay
+// (./overlay) that the PUBLIC storefront renders through — app/(public)/page.tsx
+// imports it directly, so this file is ON THE LIVE RENDER PATH.
 //
 // Single source of truth: text + image defaults are referenced LIVE from
 // THEME_CONTENT.salvia (components/storefront/theme-content) — never re-typed —
@@ -14,7 +14,7 @@
 // importable as data, so the exact values are mirrored here with their source.
 
 import { THEME_CONTENT } from '@/components/storefront/theme-content'
-import type { Region, RegionManifest } from './types'
+import type { Region, RegionManifest } from './manifest-types'
 
 const salvia = THEME_CONTENT.salvia
 

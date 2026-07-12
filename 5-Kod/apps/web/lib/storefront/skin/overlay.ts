@@ -17,7 +17,7 @@
 // guard still applies so a dangling asset (url=null) never blanks a working image.
 
 import type { ResolvedSkin } from './types'
-import type { RegionManifest } from '@/lib/sajtbyggare/manifest/types'
+import type { RegionManifest } from './manifest-types'
 
 /**
  * Fold a resolved skin onto base copy/branding using the manifest's region bindings.

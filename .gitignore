@@ -84,3 +84,4 @@ mappar i katalog-roten (numrerade 01–100
 # goal-61 verify-maskinens lokala matskript (dev-only, refereras fran memory)
 5-Kod/apps/web/_*.mjs
 5-Kod/apps/web/_sweep/
+5-Kod/apps/web/_geom-*.json

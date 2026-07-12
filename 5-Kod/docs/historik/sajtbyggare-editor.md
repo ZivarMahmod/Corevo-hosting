@@ -1,3 +1,8 @@
+> **RIVET 2026-07-12 — HISTORIK.** Sajtbyggarens egna ytor och moduler är BORTTAGNA ur
+> kodbasen (app/sajtbyggare-spike/, app/(admin)/admin/sajtbyggare/, components/admin/SiteEditor.tsx,
+> hela lib/sajtbyggare/, SAJTBYGGARE_ENABLED-flaggan). Dokumentet sparas som historik —
+> det beskriver INTE nuvarande kod. Datalagret lib/storefront/skin/ lever vidare.
+
 # Sajtbyggare-editor (S2) — arkitektur + kontrakt
 
 > Kod-doc för goal-37 (S2, visuell innehålls-editor). Status 2026-06-18: **kärnor +

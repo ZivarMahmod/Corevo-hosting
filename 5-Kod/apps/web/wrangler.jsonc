@@ -46,12 +46,6 @@
     // Kräver worker-secrets CF_API_TOKEN + CF_ZONE_ID (+ CF_FALLBACK_ORIGIN) — satta
     // 2026-06-06. Av = sätt "false"/ta bort + redeploy → panelen spärras direkt.
     "DOMAIN_PROVISIONING_ENABLED": "true",
-    // goal-31 (S0 sajtbyggare-spike): deploy-wide flag for the site-builder spike.
-    // OFF here = zero new public surface on PRODUCTION (the spike route notFound()s).
-    // ON only on the staging worker (env.staging.vars below). Read at call-time.
-    // 2026-06-18: PROD go-live av sajtbyggaren (S1+S2+S3 byggda + staging-bevisade,
-    // Zivar-auktoriserat "deploy så jag kan testa direkt" + CF-token tillhandahållen).
-    "SAJTBYGGARE_ENABLED": "true",
     // goal-48: onboarding-studio. ON i prod 2026-06-26 (Zivar: inga kunder än → prod ÄR
     // testmiljön, "lägg live så jag kan testa"). CreateTenantForm kvar bakom flaggan som
     // fallback om studion krånglar. Read at call-time.
@@ -128,8 +122,8 @@
       "name": "bokningsplatformen-staging",
       // Named envs do NOT inherit top-level bindings/vars → assets + vars are
       // repeated here. Without `assets` the staging worker serves no static files
-      // (Next chunks + /sajtbyggare/* 404); without the public Supabase
-      // vars the anon client throws → 500 on every DB read (goal-31 spike needs
+      // (Next chunks 404); without the public Supabase
+      // vars the anon client throws → 500 on every DB read (needs
       // real booking data). The anon key is browser-exposed by design (same as the
       // top-level block), so plaintext here is correct; server secrets still go via
       // `wrangler secret put --env staging`.
@@ -155,8 +149,6 @@
         "NOTIFICATIONS_FROM": "Corevo <booking@corevo.se>",
         "R2_PUBLIC_BASE_URL": "https://pub-8f440f10134347eeb2491f9712f5a6f5.r2.dev",
         "DOMAIN_PROVISIONING_ENABLED": "false",
-        // goal-31 — spike ENABLED on staging only.
-        "SAJTBYGGARE_ENABLED": "true",
         // goal-48 — onboarding-studio ENABLED on staging only.
         "ONBOARDING_STUDIO_ENABLED": "true"
       }

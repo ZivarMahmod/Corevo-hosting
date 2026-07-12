@@ -222,42 +222,14 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
 
   it('OnboardingStudio (root machine) mounts DIRECTLY in the studio stage', () => {
     const html = mounts(
-      <OnboardingStudio presets={presets} tenants={tenants} editorEnabled={false} />,
+      <OnboardingStudio presets={presets} tenants={tenants} />,
     )
     expect(html).toContain('Grunden') // step-rail phase 1 → wizarden är startskärmen
   })
 
-  // ── goal-50: the look-gallery + render-bron preview (sajtbyggare ON) ──────────────
-  // goal-51 baseline: no real looks exist; these are neutral fixtures proving the gallery
-  // renders whatever look list it is GIVEN (the box is a prop here, not look-registry).
-  const looks = [
-    { key: 'demolook', name: 'Demolook', vibeTags: ['varm', 'mat'], thumbnail: '/sajtbyggare/demolook/img/hero.jpg' },
-    { key: 'demoklipp', name: 'Demoklipp', vibeTags: ['bold'], thumbnail: '/sajtbyggare/demoklipp/img/hero.jpg' },
-  ]
-
-  it('the tema panel becomes the flat look-GALLERY when the box is passed (no bransch filter)', () => {
-    // cfg.branch=frisor, but the gallery shows ALL looks regardless (live-bevis #2 fix).
-    const html = mounts(
-      <PanelHost
-        cfg={{ ...branched, theme: 'demolook' }}
-        step="tema"
-        dispatch={noopDispatch}
-        presets={presets}
-        looks={looks}
-        onPrev={noop}
-        onNext={noop}
-        onLaunch={noop}
-      />,
-    )
-    expect(html).toContain('Välj mall')
-    expect(html).toContain('Demolook')
-    expect(html).toContain('Demoklipp') // ALL looks, not just the bransch's
-    expect(html).not.toContain('Temamall') // the legacy theme-list title is gone in gallery mode
-  })
-
-  // goal-58: tema-steget är INTE längre en platt namnlista ("Temamall") — utan en box
-  // renderar det ThemeGallery, samma kategoriserade väljare som kundkortets Sida-flik.
-  it('utan box renderar tema-steget mall-galleriet med branschens förval markerat', () => {
+  // goal-58: tema-steget är INTE längre en platt namnlista ("Temamall") — det renderar
+  // ThemeGallery, samma kategoriserade väljare som kundkortets Sida-flik.
+  it('tema-steget renderar mall-galleriet med branschens förval markerat', () => {
     const html = mounts(
       <PanelHost cfg={branched} step="tema" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
     )

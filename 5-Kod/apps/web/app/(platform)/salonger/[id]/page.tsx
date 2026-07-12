@@ -32,9 +32,8 @@ import { SidaStudio } from '@/components/platform/SidaStudio'
 import { getVerticalCopy } from '@/components/storefront/vertical-copy'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
 import { createClient } from '@/lib/supabase/server'
-import { SajtbyggareControl } from '@/components/platform/SajtbyggareControl'
 import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
-import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, tenantSiteEditorEnabled } from '@/lib/tenant-data'
+import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
 import {
   TenantDetailTabs,
   type TenantTabKey,
@@ -183,9 +182,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     typeof rawTheme === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
       ? rawTheme
       : DEFAULT_STOREFRONT_THEME
-  // Per-tenant edit-toggle (Task 3): is the site editor (sajtbyggaren) enabled for THIS
-  // salon? Default OFF — the platform turns it on per customer in the Sida-tab (SidaStudio).
-  const siteEditorEnabled = tenantSiteEditorEnabled(settings?.settings)
   const storefrontUrl = tenantStorefrontUrl(tenant.slug) ?? url
   const storefrontHost = tenantStorefrontHost(tenant.slug) ?? `${tenant.slug}.${ROOT}`
 
@@ -625,20 +621,6 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             super-admin-spärrad i DB. Live slår igenom på storefronten direkt (cache-bust).
           </p>
           <ModulesCard tenantId={tenant.id} modules={modules} />
-        </Card>
-
-        {/* Kund-editor-reglaget: styr bara om KUNDEN får redigera själv,
-            aldrig den publika sidan. */}
-        <Card>
-          <div className={styles.sectionHead}>
-            <h2 className={styles.h2}>Kunden redigerar själv</h2>
-            <span className={styles.chip}>sajtbyggare</span>
-          </div>
-          <p className={styles.noteText} style={{ marginBottom: 8 }}>
-            Slår på/av den kund-egna sid-editorn i kundens admin. Påverkar bara kundens
-            editor — aldrig den publika sidan.
-          </p>
-          <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />
         </Card>
 
         {/* Status + riskzon i ETT kort — båda skriver tenants.status, två kort

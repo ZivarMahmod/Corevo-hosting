@@ -315,85 +315,8 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
   )
 }
 
-/** tema — goal-50 look-GALLERY (sajtbyggare ON): the BOX. A flat thumbnail grid of
- *  ALL registered looks — no tags.bransch filter (live-bevis #2), no privileged theme.
- *  Pick → setTheme(look.key); the right preview renders that look's REAL HTML (distinct,
- *  live-bevis #3). Flag-OFF (looks empty/undefined) → the legacy {key,name} list,
- *  byte-identical. */
-function PanelTema({ cfg, dispatch, presets, looks }: PanelProps) {
-  if (looks && looks.length > 0) {
-    return (
-      <Panel
-        title="Välj mall"
-        sub="Alla mallar i din box — oavsett bransch. Varje mall ser olika ut. Välj en, så blir den sidans look; förhandsvisningen till höger visar den på riktigt."
-      >
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
-          {looks.map((look) => {
-            const on = cfg.theme === look.key
-            return (
-              <button
-                key={look.key}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() => dispatch({ type: 'setTheme', key: look.key })}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: 0,
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  border: `2px solid ${on ? 'var(--c-forest)' : 'var(--c-line)'}`,
-                  background: 'var(--c-paper)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all var(--dur-fast)',
-                }}
-              >
-                <span
-                  style={{
-                    display: 'block',
-                    height: 96,
-                    background: look.thumbnail
-                      ? `#e9e6df center/cover no-repeat url("${look.thumbnail}")`
-                      : '#e9e6df',
-                    position: 'relative',
-                  }}
-                >
-                  {on ? (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        width: 24,
-                        height: 24,
-                        borderRadius: 999,
-                        background: 'var(--c-forest)',
-                        color: '#fff',
-                        display: 'grid',
-                        placeItems: 'center',
-                      }}
-                    >
-                      <Icon name="check" size={14} />
-                    </span>
-                  ) : null}
-                </span>
-                <span style={{ padding: '10px 12px 12px' }}>
-                  <span style={{ display: 'block', fontWeight: 600, fontSize: 14, color: 'var(--c-ink)' }}>{look.name}</span>
-                  {look.vibeTags.length ? (
-                    <span style={{ display: 'block', fontSize: 11.5, color: 'var(--c-ink-3)', marginTop: 2 }}>
-                      {look.vibeTags.join(' · ')}
-                    </span>
-                  ) : null}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </Panel>
-    )
-  }
+/** tema — mall-väljaren. */
+function PanelTema({ cfg, dispatch, presets }: PanelProps) {
   // ALLTID de riktiga temana — vendor-mallarna ur templatesByVertical valde tidigare
   // orenderbara nycklar (tyst fallback, "tema-steget är trasigt per bransch").
   // goal-58: sviten är 20 mallar → ThemeGallery (kategori-flikar + taggar + sök + kort

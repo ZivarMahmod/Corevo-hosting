@@ -7,7 +7,7 @@
 // READ AT CALL TIME, never at module scope: on the OpenNext/Workers adapter wrangler
 // `vars` are injected into process.env per-request, so a top-level read can observe
 // `undefined` even when set (the documented lib/tenant.ts 404). Call inside the
-// server-component/route body. Same convention as sajtbyggareEnabled().
+// server-component/route body.
 export function onboardingStudioEnabled(): boolean {
   return process.env.ONBOARDING_STUDIO_ENABLED === 'true'
 }

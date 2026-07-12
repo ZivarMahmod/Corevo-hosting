@@ -155,10 +155,9 @@ describe('buildCreateTenantFormData — the Lansera FormData contract (§6)', ()
     expect(withAccent.get('color_accent')).toBe('#5E7361')
   })
 
-  it('includes the fixed owner_role + empty site_content_draft hidden fields', () => {
+  it('includes the fixed owner_role hidden field', () => {
     const fd = buildCreateTenantFormData(initStudioCfg('salvia'))
     expect(fd.get('owner_role')).toBe('salon_admin')
-    expect(fd.get('site_content_draft')).toBe('{}')
   })
 
   it('emits vertical_id always (empty string when no bransch picked)', () => {

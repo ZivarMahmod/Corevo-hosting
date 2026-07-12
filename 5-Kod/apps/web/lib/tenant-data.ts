@@ -61,11 +61,6 @@ export type TenantSettings = {
   layout: LayoutConfig
   /** Storefront theme preset (validated; default leander) → [data-theme] on root. */
   theme: StorefrontTheme
-  /** goal-50: a render-bron LOOK key chosen in onboarding (e.g. 'demolook'). When set
-   *  AND it resolves in the look-registry, the storefront renders that look's real HTML
-   *  instead of the theme layout. Raw string here (registry-validated at the dispatch
-   *  site, so tenant-data stays free of the heavy look HTML). null = use the theme. */
-  look: string | null
   /** non-null only when an actual css override string is present (nivå 3). */
   customOverride: CustomOverride | null
   paymentMode: string
@@ -141,9 +136,6 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     // Lives in the settings JSON (`theme: "leander"`); validated against the known
     // preset set so an unknown/typo value safely falls back to the default.
     theme: parseTheme(raw.theme),
-    // goal-50: optional render-bron look key (settings.look). Passed through as a raw
-    // string; the storefront validates it against the look-registry before dispatching.
-    look: typeof raw.look === 'string' && raw.look.trim().length > 0 ? raw.look.trim() : null,
     customOverride: hasCss ? override : null,
     paymentMode: row?.payment_mode ?? 'on_site',
     // Lives in the settings JSON (no dedicated column — same seam as
@@ -162,20 +154,6 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     },
     map: parseMap(raw.map),
   }
-}
-
-/**
- * Per-tenant gate for the SITE EDITOR (sajtbyggaren) — the customer-facing edit
- * surface. Reads the raw tenant_settings.settings jsonb flag `sajtbyggare_enabled`,
- * DEFAULT OFF (absent / non-true / garbage → false). Mirrors the customer_accounts_enabled
- * seam above. The deploy-wide env flag (lib/sajtbyggare/flag.ts sajtbyggareEnabled) stays
- * a separate kill-switch; the editor is available to a tenant only when BOTH are on.
- * This gates the EDITOR only — never the public render of already-authored content.
- * Lives here (not in flag.ts) so the save-path test's `vi.mock('./flag')` can't blank it.
- */
-export function tenantSiteEditorEnabled(settings: unknown): boolean {
-  if (!settings || typeof settings !== 'object') return false
-  return (settings as Record<string, unknown>).sajtbyggare_enabled === true
 }
 
 /** settings.opening_hours → validerade rader; null när inget giltigt finns. */

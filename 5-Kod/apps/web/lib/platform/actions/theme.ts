@@ -10,8 +10,7 @@ import { reportActionError } from './observe'
 
 // ── Storefront-mall (settings.theme) — super-admin byter kundens mall från kundkortet.
 // Merge, never clobber: settings är co-owned jsonb (copy/contact/booking/flags …), så vi
-// läser prev och spread:ar `...prev` innan vi skriver theme. Nolla även `look`: en satt
-// render-bron-look överrider temat i publika rendern, så ett mall-byte ska landa på temat.
+// läser prev och spread:ar `...prev` innan vi skriver theme.
 export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar kund.' }
@@ -31,7 +30,7 @@ export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<Act
     .eq('tenant_id', tenantId)
     .maybeSingle()
   const prev = (existing?.settings ?? {}) as Record<string, unknown>
-  const settings = { ...prev, theme, look: null }
+  const settings = { ...prev, theme }
 
   const { error } = await supabase
     .from('tenant_settings')

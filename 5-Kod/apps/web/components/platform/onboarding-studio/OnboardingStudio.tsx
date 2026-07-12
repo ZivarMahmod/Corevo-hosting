@@ -26,7 +26,6 @@ import { Button, Icon } from '@/components/portal/ui'
 import { createTenant } from '@/lib/platform/actions'
 import type { TenantCardItem } from '@/lib/platform/tenants'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
-import type { LookMeta } from '@/lib/sajtbyggare/look-registry'
 import { initStudioCfg } from '@/lib/platform/onboarding-studio/model'
 import {
   buildCreateTenantFormData,
@@ -46,14 +45,6 @@ export type OnboardingStudioProps = {
   presets: VerticalPresetData
   /** The real cross-tenant card feed (listTenantsWithStats) → SuperEntry (§8). */
   tenants: TenantCardItem[]
-  /** Reserved for the W2 in-preview sajtbyggare editor (same axis CreateTenantForm
-   *  uses). Accepted for page-parity + forward wiring; W1's preview is a placeholder,
-   *  so it is intentionally not consumed yet. */
-  editorEnabled: boolean
-  /** goal-50: the BOX (client-safe meta, no html). Non-empty ONLY when sajtbyggare is
-   *  ON (the page passes [] otherwise) → look-gallery + render-bron preview; empty →
-   *  the legacy theme list (flag-OFF byte-identical). */
-  looks?: LookMeta[]
 }
 
 /**
@@ -63,13 +54,12 @@ export type OnboardingStudioProps = {
  * footgun of re-prefilling the previous customer's name/slug/modules and re-submitting
  * a duplicate slug. Keep this wrapper minimal — only the remount key lives here.
  */
-export function OnboardingStudio({ presets, looks }: OnboardingStudioProps) {
+export function OnboardingStudio({ presets }: OnboardingStudioProps) {
   const [runId, setRunId] = useState(0)
   return (
     <StudioMachine
       key={runId}
       presets={presets}
-      looks={looks}
       onRestart={() => setRunId((n) => n + 1)}
     />
   )
@@ -77,27 +67,15 @@ export function OnboardingStudio({ presets, looks }: OnboardingStudioProps) {
 
 function StudioMachine({
   presets,
-  looks,
   onRestart,
 }: {
   presets: VerticalPresetData
-  looks?: LookMeta[]
   onRestart: () => void
 }) {
-  // goal-50: gallery mode = the box is non-empty (sajtbyggare ON). It (a) binds the
-  // reducer so a bransch never sets the look (LÅST #1), and (b) seeds the initial look
-  // from the box so the preview is distinct from the first render (not the leander
-  // fallback). Empty box → unchanged legacy behaviour (default 'salvia').
-  const galleryMode = !!looks && looks.length > 0
-  const lookKeys = useMemo(() => (looks ?? []).map((l) => l.key), [looks])
-
   // PURE reducer bound to the loaded presets. Memoised so the identity is stable across
-  // renders; the cfg defaults to the first look (gallery) or 'salvia'. Branch no longer
-  // seeds theme/modules, so the reducer is gallery-agnostic.
+  // renders. Branch no longer seeds theme/modules.
   const reducer = useMemo(() => makeStudioReducer(presets), [presets])
-  const [cfg, dispatch] = useReducer(reducer, undefined, () =>
-    initStudioCfg(galleryMode ? (looks![0]!.key) : 'salvia'),
-  )
+  const [cfg, dispatch] = useReducer(reducer, undefined, () => initStudioCfg('salvia'))
 
   // Dunder-fix 2026-07-11: starta DIREKT i studion. Gamla 'super'-entrén var en
   // dubblett av /salonger-kundlistan (med två döda stat-kort) som man tvingades
@@ -168,7 +146,6 @@ function StudioMachine({
             step={step}
             dispatch={dispatch}
             presets={presets}
-            looks={looks}
             onPrev={onPrev}
             onNext={onNext}
             onLaunch={onLaunch}
@@ -176,7 +153,7 @@ function StudioMachine({
           {/* right — live preview (riktig StorefrontPreview-render) */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--c-paper-2)', minHeight: 0 }}>
             <div style={{ flex: 1, minHeight: 0, padding: '18px' }}>
-              <PreviewPane cfg={cfg} device={device} onDevice={setDevice} lookKeys={lookKeys} branchName={branchName} />
+              <PreviewPane cfg={cfg} device={device} onDevice={setDevice} branchName={branchName} />
             </div>
           </div>
 

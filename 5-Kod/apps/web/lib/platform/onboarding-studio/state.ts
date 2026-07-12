@@ -8,7 +8,6 @@ import type { Dispatch } from 'react'
 import { type ModuleState } from '@/lib/tenant-modules'
 import { type BookingVariant } from '@/lib/platform/booking-variant'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
-import type { LookMeta } from '@/lib/sajtbyggare/look-registry'
 import {
   type StudioCfg,
   type StudioService,
@@ -105,15 +104,11 @@ export function makeStudioReducer(presets: VerticalPresetData): StudioReducer {
   }
 }
 
-/** The prop contract every leaf panel receives (frozen — leaves import this type).
- *  goal-50: `looks` is the box (client-safe meta, no html). Present only when
- *  sajtbyggare is ON → PanelTema renders the flat look-gallery; empty/undefined →
- *  the legacy theme/template list (flag-OFF byte-identical). */
+/** The prop contract every leaf panel receives (frozen — leaves import this type). */
 export type PanelProps = {
   cfg: StudioCfg
   dispatch: Dispatch<StudioAction>
   presets: VerticalPresetData
-  looks?: LookMeta[]
 }
 
 /**
@@ -132,8 +127,7 @@ export type PanelProps = {
  *                  dropped. createTenant re-validates (parseServiceInputs) + inserts.
  * - `hero_title` / `hero_lede` (W5) → settings.copy.{heroTitle,heroLede}; empty = theme
  *                  default. Renders on the live page + preview via resolveThemeContent.
- * - `owner_role`   fixed 'salon_admin'; `site_content_draft` fixed '{}' (W1 — hero copy
- *                  rides settings.copy, NOT the salvia-only draft-fold path).
+ * - `owner_role`   fixed 'salon_admin'.
  * - logo / city are intentionally omitted (deferred / not in StudioCfg).
  */
 export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
@@ -165,7 +159,5 @@ export function buildCreateTenantFormData(cfg: StudioCfg): FormData {
   // The owner role seam: salon_admin is the only assignable role today (honest fixed
   // value, mirrors CreateTenantForm.tsx). createTenant resolves it via resolveOwnerRole.
   fd.set('owner_role', 'salon_admin')
-  // Text persistence (hero/ingress) is a later wave; submit an empty draft in W1.
-  fd.set('site_content_draft', '{}')
   return fd
 }

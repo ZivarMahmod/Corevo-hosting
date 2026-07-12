@@ -1049,18 +1049,25 @@
 .sfSplitHero { display: grid; grid-template-columns: 1fr 1fr; min-height: clamp(30rem, 70vh, 44rem); }
 /* goal-61: HÄR satt zigges 7px-overflow — inte i .sfBandMain som mätningen pekade ut
    (den var en äkta men INSTÄNGD 16px-overflow; sidans 7px kom härifrån).
-   Titeln är ett clamp(3rem …)-displaytypsnitt: vid 390px behöver mallens långa namn
-   341px men panelen ger 334px innanför sin padding. Ett `1fr`-spår kan inte krympa
-   under sitt innehålls min-content → SPÅRET växte till 397px och tog med sig hela
-   sidan. `min-width: 0` låter spåret krympa till sin andel; `overflow-wrap: anywhere`
-   låter ordet brytas när det ändå inte får plats (och krymper min-content-bidraget).
-   Rör inga px, färger eller fontstorlekar — bara brytbarheten. */
-.sfSplitPanel { background: var(--color-surface); display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: clamp(2.5rem, 5vw, 4.5rem) clamp(1.75rem, 5vw, 4.5rem); }
-.sfSplitTitle { font-family: var(--font-display); font-weight: 400; color: var(--color-fg); text-transform: uppercase; line-height: 0.92; letter-spacing: 0.01em; font-size: clamp(3rem, 7vw, 6.5rem); margin: 1.1rem 0 0; overflow-wrap: anywhere; }
+   Vid 390px behöver mallens långa namn 341px men panelen ger 334px innanför sin padding.
+   Ett `1fr`-spår kan inte krympa under sitt innehålls min-content → SPÅRET växte till
+   397px och tog med sig hela sidan.
+   VARFÖR `break-word` och inte `anywhere`, och varför `min-width: 0` BARA i mobil-frågan:
+   båda krymper min-content-bidraget — och vid 1280px har titelns min-content i praktiken
+   ALLTID tvingat panelen till 765px i stället för sin `1fr`-andel 640px. Zigges desktop-
+   hero ÄR alltså en 60/40-delning. Att släppa min-content där hade "rättat" den till
+   50/50 och brutit rubriken från 2 rader till 4 — en omdesign av en bredd som inte hade
+   någon overflow att fixa. `break-word` bryter bara ordet när det ändå inte får plats och
+   rör inte min-content → desktop renderar pixelidentiskt, mobilen slutar spilla. */
+.sfSplitPanel { background: var(--color-surface); display: flex; flex-direction: column; justify-content: center; padding: clamp(2.5rem, 5vw, 4.5rem) clamp(1.75rem, 5vw, 4.5rem); }
+.sfSplitTitle { font-family: var(--font-display); font-weight: 400; color: var(--color-fg); text-transform: uppercase; line-height: 0.92; letter-spacing: 0.01em; font-size: clamp(3rem, 7vw, 6.5rem); margin: 1.1rem 0 0; overflow-wrap: break-word; }
 .sfSplitActions { display: flex; gap: 0.9rem; margin-top: 2rem; align-items: center; flex-wrap: wrap; }
 .sfSplitNote { font-family: var(--font-body); font-size: 0.8rem; color: var(--color-fg-2); letter-spacing: 0.08em; text-transform: uppercase; }
 .sfSplitPhoto { background-color: var(--color-accent-soft); background-size: cover; background-position: center; min-height: 22rem; filter: saturate(0.9); }
-@media (max-width: 760px) { .sfSplitHero { grid-template-columns: 1fr; } .sfSplitPhoto { min-height: 16rem; order: -1; } }
+/* `min-width: 0` bara här: det är i enkolumnsläget spåret måste få krympa till 390px
+   (grid-items har automatiskt minimum = min-content, och titelns ord är bredare än
+   viewporten). Vid ≥761px lämnas min-content orörd → 765/515-delningen står kvar. */
+@media (max-width: 760px) { .sfSplitHero { grid-template-columns: 1fr; } .sfSplitPanel { min-width: 0; } .sfSplitPhoto { min-height: 16rem; order: -1; } }
 
 .sfBandLabel { padding: 1.35rem clamp(1.75rem, 5vw, 4.5rem); border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); font-family: var(--font-body); font-size: 0.75rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--color-primary); }
 .sfBand { display: grid; grid-template-columns: 5rem 1fr auto; gap: 1.5rem; align-items: center; padding: 1.5rem clamp(1.75rem, 5vw, 4.5rem); border-bottom: 1px solid var(--color-line); cursor: pointer; transition: background var(--dur-fast) var(--ease-out); }
@@ -1500,11 +1507,24 @@
   background: color-mix(in srgb, var(--color-primary) 9%, var(--color-bg));
 }
 
-/* Sociala länkar på en rad. Ärver .locContactLink för färg + tillstånd. */
+/* Sociala länkar på en rad. Ärver .locContactLink för färg + tillstånd.
+   goal-61: den här raden är FLEX — alltså är länkarna inuti flex-items och blockifierade,
+   och då bär de sin lodräta padding i layouten (till skillnad från syskonen i <p>, som är
+   äkta inline-boxar där padding inte rör radboxen). .locContactLink:s `padding-block: 13px`
+   sköt därför upp raden 25px → 50px och tryckte ner hela kontaktsidan ~24px. Mätt, inte
+   gissat. Här får de i stället flex-mönstret: 44px träffyta kvittad med `margin-block`
+   (44 − 2×9.5 = 25 = radens ursprungliga höjd på samtliga 7 mallar och båda bredderna). */
 .locSocialRow {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+}
+.locSocialRow .locContactLink {
+  padding-block: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -9.5px;
 }
 
 /* OSM-embed: aspect-ratio i stället för fast höjd → kartan hoppar inte in när iframen

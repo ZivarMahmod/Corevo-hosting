@@ -32,49 +32,12 @@ const DEFAULT_THEME: StorefrontTheme = 'leander'
 
 export function StorefrontPreview({
   cfg,
-  lookKeys,
   branchName,
 }: {
   cfg: StudioCfg
-  lookKeys?: string[]
   /** Vald bransch (visningsnamn) → attrapp-namn/-slug följer branschen, aldrig "salong". */
   branchName?: string | null
 }) {
-  // goal-50: when the operator picked a render-bron LOOK from the box, render its REAL
-  // HTML — distinct per look (live-bevis #3). We do it through an <iframe> to the
-  // flag-gated, tenant-less look-preview route: the iframe boundary isolates the look's
-  // vendor CSS from the backoffice document (R5) and the HTML stays server-side (R6).
-  // A React THEME (the 5 layouts) renders inline below, unchanged (flag-OFF parity).
-  if (lookKeys && lookKeys.includes(cfg.theme)) {
-    // goal-36: thread the SELECTED modules + bransch to the look route so a chosen
-    // module actually weaves into the look's preview (not just below a React theme).
-    // The route rebuilds a cfg from these and renders the module sections in the
-    // look's own palette/typography (the look's manifest tokens) — "löst i förväg".
-    const params = new URLSearchParams()
-    if (cfg.accent) params.set('accent', cfg.accent)
-    if (cfg.branch) params.set('branch', cfg.branch)
-    const mods = activeModuleKeys(cfg)
-    if (mods.length) params.set('modules', mods.join(','))
-    const qs = params.toString() ? `?${params.toString()}` : ''
-    return (
-      <iframe
-        // key on the full query so picking another look OR toggling a module reloads the frame
-        key={`${cfg.theme}${qs}`}
-        title="Mall-förhandsvisning"
-        src={`/sajtbyggare-spike/look/${encodeURIComponent(cfg.theme)}${qs}`}
-        sandbox="allow-same-origin"
-        style={{
-          display: 'block',
-          width: '100%',
-          height: 1600,
-          border: 'none',
-          background: '#fff',
-          pointerEvents: 'none', // display-only preview
-        }}
-      />
-    )
-  }
-
   // CLIENT-SAFE theme guard: cfg.theme is typed `string`; an unknown key (e.g. the
   // design's "Bohem", which has no real layout) → fall back to the default, never crash.
   const theme: StorefrontTheme = (cfg.theme in STOREFRONT_LAYOUTS ? cfg.theme : DEFAULT_THEME) as StorefrontTheme

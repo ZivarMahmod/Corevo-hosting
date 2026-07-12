@@ -10,10 +10,8 @@ import { resolveOwnerRole } from '../owner-role'
 import { parseModuleSelections, writeTenantVerticalAndModules } from '../tenant-modules-write'
 import { parseServiceInputs } from '../onboarding-studio/services'
 import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, type StorefrontTheme } from '@/lib/tenant-data'
-import { sajtbyggareEnabled } from '@/lib/sajtbyggare/flag'
 import { uploadImage } from '@/lib/r2/upload'
 import { attachWorkerSubdomain } from '@/lib/cloudflare/worker-domains'
-import { foldOnboardingDraft } from '@/lib/sajtbyggare/onboarding-fold'
 import type { Json } from '@corevo/db'
 import { type ActionState, GENERIC, EMAIL_RE, HEX_RE } from './shared'
 import { reportActionError } from './observe'
@@ -91,18 +89,8 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
 
   // Storefront look (the five named themes) → settings.theme → [data-theme].
   const theme = pickTheme(fd.get('theme'))
-  // goal-50: a render-bron LOOK from the box (e.g. 'demolook') arrives in the same
-  // `theme` field but is NOT one of the 5 named themes → pickTheme coerces it to the
-  // default. Capture it separately into settings.look so the storefront renders the
-  // look's real HTML. Flag-gated: only when sajtbyggare is ON (flag-OFF never writes
-  // `look` → byte-identical legacy). Registry-validated at the storefront dispatch.
-  const rawTheme = String(fd.get('theme') ?? '').trim().toLowerCase()
-  const lookKey =
-    sajtbyggareEnabled() && rawTheme && !(STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
-      ? rawTheme
-      : null
   // Booking-vy-val (§2.4): one of the four design ids; 'wizard' default. M3 reads
-  // settings.booking.variant. Held apart from the theme (look) above.
+  // settings.booking.variant.
   const bookingVariantRaw = String(fd.get('booking_variant') ?? '')
   const bookingVariant: BookingVariant = isBookingVariant(bookingVariantRaw)
     ? bookingVariantRaw
@@ -178,28 +166,12 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   if (heroLede) copy.heroLede = heroLede
   const settings = {
     theme,
-    ...(lookKey ? { look: lookKey } : {}),
     booking: { variant: bookingVariant },
     ...(Object.keys(copy).length ? { copy } : {}),
   }
 
-  // Sajtbyggare (goal-37/38): the onboarding editor posts a JSON draft (region.key →
-  // value) in the hidden `site_content_draft` input. We FOLD it ON TOP of the base
-  // settings/branding above (accent + logo + tagline are the base; the draft becomes
-  // the new tenant's sanitized Kund-overrides). PURE + fail-open: a bad draft NEVER
-  // fails tenant creation — we just keep the base. Only the salvia manifest is wired
-  // today; any other theme ignores the draft.
-  // Fold the onboarding editor's site_content_draft on top of the base settings/branding
-  // via the sanitizing apply-core (PURE + fail-open — a bad/empty draft keeps the base,
-  // never blocks onboarding). Only salvia is wired today. Tested: onboarding-fold.test.ts.
-  const folded = foldOnboardingDraft(
-    theme,
-    String(fd.get('site_content_draft') ?? ''),
-    settings,
-    initialBranding as unknown as Record<string, unknown>,
-  )
-  const settingsForInsert: Json = folded.settings as unknown as Json
-  const brandingForInsert: Json = folded.branding as unknown as Json
+  const settingsForInsert: Json = settings as unknown as Json
+  const brandingForInsert: Json = initialBranding as unknown as Json
 
   const { error: sErr } = await supabase.from('tenant_settings').insert({
     tenant_id: tenantId,
@@ -365,7 +337,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     action: 'tenant.create',
     tenantId,
     actorId: user.id,
-    meta: { slug, name, theme, ...(lookKey ? { look: lookKey } : {}), booking_variant: bookingVariant, vertical_id: verticalKey },
+    meta: { slug, name, theme, booking_variant: bookingVariant, vertical_id: verticalKey },
   })
 
   // goal-32 F2 — couple <slug>.corevo.se to the worker. The DURABLE coupling is

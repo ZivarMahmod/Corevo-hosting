@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { THEME_CONTENT } from '@/components/storefront/theme-content'
-import { SALVIA_REGION_MANIFEST } from './salvia'
-import type { Region, RegionType } from './types'
+import { SALVIA_REGION_MANIFEST } from './salvia-manifest'
+import type { Region, RegionType } from './manifest-types'
 
 const VALID_TYPES: RegionType[] = ['text', 'image', 'color', 'font', 'logo']
 

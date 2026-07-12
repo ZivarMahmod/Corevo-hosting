@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { applySkinOverlay } from './overlay'
-import { SALVIA_REGION_MANIFEST } from '@/lib/sajtbyggare/manifest/salvia'
+import { SALVIA_REGION_MANIFEST } from './salvia-manifest'
 import type { ResolvedSkin, ResolvedSlot } from './types'
 
 // Build a minimal ResolvedSkin from a slot_key → ResolvedSlot map. `authored`

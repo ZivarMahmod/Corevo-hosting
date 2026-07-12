@@ -37,7 +37,6 @@ export type PlatformAuditAction =
   | 'tenant.storefront_copy' // super-admin edits a tenant's storefront editorial copy (settings.copy) on /salonger/[id]
   | 'tenant.storefront_image_add' // super-admin uploads a hero/gallery storefront photo (branding.{hero,gallery}_images) on /salonger/[id]
   | 'tenant.storefront_image_remove' // super-admin removes a hero/gallery storefront photo on /salonger/[id]
-  | 'tenant.sajtbyggare' // per-tenant edit-toggle: platform turned the site editor on/off for a chosen tenant
   | 'tenant.theme' // super-admin bytte storefront-mall (settings.theme) på /salonger/[id]
   | 'tenant.contact' // super-admin edits a tenant's public contact (settings.contact email/phone + primär location-adress) on /salonger/[id]
   | 'platform.help_mode_open' // platform admin opens help-mode for a tenant (logged platform-side)

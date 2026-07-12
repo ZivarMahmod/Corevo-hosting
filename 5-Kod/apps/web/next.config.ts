@@ -52,10 +52,10 @@ const cspDirectives = [
 ]
 const csp = cspDirectives.join('; ')
 
-// goal-50: the look-preview route (/sajtbyggare-spike/look/[key]) is rendered INSIDE the
-// onboarding studio's SAME-ORIGIN <iframe>. The global `frame-ancestors 'none'` +
-// `X-Frame-Options: DENY` (correct default everywhere else) would block that → blank
-// preview. This variant allows SAME-ORIGIN framing only — no cross-origin embedding.
+// The super-admin live storefront preview (/salong-preview/[slug]) is rendered INSIDE a
+// SAME-ORIGIN <iframe>. The global `frame-ancestors 'none'` + `X-Frame-Options: DENY`
+// (correct default everywhere else) would block that → blank preview. This variant
+// allows SAME-ORIGIN framing only — no cross-origin embedding.
 const framableCsp = cspDirectives
   .map((d) => (d.startsWith('frame-ancestors') ? `frame-ancestors 'self'` : d))
   .join('; ')
@@ -88,16 +88,14 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: false },
   async headers() {
-    // Global DENY first (covers EVERY route — never a CSP regression). The look-preview
+    // Global DENY first (covers EVERY route — never a CSP regression). The preview
     // override is listed LAST so that for that path it wins (Next applies matching header
     // rules in order; later entries override earlier ones for the same key). Worst case
-    // the override doesn't take → look route stays DENY (blank), never a security loss.
-    // Verified post-deploy by curling the look route's frame-ancestors.
+    // the override doesn't take → preview route stays DENY (blank), never a security loss.
     return [
       { source: '/:path*', headers: securityHeaders },
-      { source: '/sajtbyggare-spike/look/:key*', headers: framableSecurityHeaders },
       // Super-admin live storefront preview (Sida tab) — framed SAME-ORIGIN by
-      // /salonger/[id]; same 'self' carve-out as the look route.
+      // /salonger/[id]: the 'self' frame-ancestors carve-out.
       { source: '/salong-preview/:slug*', headers: framableSecurityHeaders },
     ]
   },

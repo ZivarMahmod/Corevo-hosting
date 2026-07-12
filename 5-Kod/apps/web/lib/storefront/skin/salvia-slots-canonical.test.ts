@@ -9,7 +9,7 @@
 // inte som slots).
 
 import { describe, it, expect } from 'vitest'
-import { SALVIA_REGION_MANIFEST } from './salvia'
+import { SALVIA_REGION_MANIFEST } from './salvia-manifest'
 
 // De EXAKTA slot_key:erna migration 0040 deklarerar för salvia. Ändras denna lista
 // MÅSTE 0040 (eller en efterföljande migration) ändras i takt — och tvärtom.

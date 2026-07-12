@@ -83,7 +83,6 @@ import {
   addCustomDomain,
   verifyCustomDomain,
   removeCustomDomain,
-  setSajtbyggareEnabled,
 } from './actions'
 import { resolveOwnerRole } from './owner-role'
 
@@ -262,43 +261,6 @@ describe('createTenant rolls back on owner-creation failure (no ghost salons)', 
     expect(res.success).toBeDefined()
     expect(captured['tenants.delete']).toBeUndefined() // no invite attempted → no rollback
     expect(captured.tenants?.[0]).toMatchObject({ slug: 'klippoteket' })
-  })
-})
-
-// ── Task 3 — setSajtbyggareEnabled (per-tenant edit-toggle, merge-prev) ────────────
-describe('setSajtbyggareEnabled (per-tenant site-editor toggle)', () => {
-  function seed(prevSettings: unknown) {
-    const { client, captured } = makeSupabase({
-      tenants: { data: { slug: 'demo' }, error: null },
-      tenant_settings: { data: { settings: prevSettings }, error: null },
-    })
-    platformCtxMock.mockReturnValue(Promise.resolve({ user: { id: 'admin-1' }, supabase: client }))
-    return captured
-  }
-
-  it('enable: merges the flag onto prev settings (never clobbers co-owned keys)', async () => {
-    const captured = seed({ theme: 'salvia', booking: { variant: 'wizard' } })
-    const res = await setSajtbyggareEnabled({}, fd({ tenantId: 't1', enabled: 'true' }))
-    expect(res.success).toMatch(/aktiverad/)
-    const up = (captured['tenant_settings.upsert']?.[0] as { settings: Record<string, unknown> }).settings
-    expect(up.sajtbyggare_enabled).toBe(true)
-    expect(up.theme).toBe('salvia') // co-owned key preserved (merge, not clobber)
-    expect((up.booking as { variant: string }).variant).toBe('wizard')
-  })
-
-  it('disable: writes sajtbyggare_enabled=false', async () => {
-    const captured = seed({ sajtbyggare_enabled: true })
-    const res = await setSajtbyggareEnabled({}, fd({ tenantId: 't1', enabled: 'false' }))
-    expect(res.success).toMatch(/avstängd/)
-    const up = (captured['tenant_settings.upsert']?.[0] as { settings: Record<string, unknown> }).settings
-    expect(up.sajtbyggare_enabled).toBe(false)
-  })
-
-  it('missing tenantId → error, no write', async () => {
-    const captured = seed({})
-    const res = await setSajtbyggareEnabled({}, fd({ enabled: 'true' }))
-    expect(res.error).toBeDefined()
-    expect(captured['tenant_settings.upsert']).toBeUndefined()
   })
 })
 
