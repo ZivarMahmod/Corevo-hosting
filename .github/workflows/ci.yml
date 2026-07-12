@@ -42,6 +42,12 @@ jobs:
         if: ${{ !cancelled() }}
       - run: pnpm test
         if: ${{ !cancelled() }}
+      # Bransch-vakten (goal-61): failar på NYA hårdkodade bransch-ord (salong/frisör/
+      # klippning …) i user-facing strängar. Corevo är multi-bransch — texten ska komma
+      # ur terminologi-systemet eller bransch-lagret (bransch-copy.ts), aldrig ur koden.
+      # Baseline = scripts/vakt-bransch-baseline.json (58 kända, sanna träffar).
+      - run: pnpm --filter web vakt
+        if: ${{ !cancelled() }}
       # next build inlines NEXT_PUBLIC_* at BUILD time (live-blocker #1) — set the
       # production-shaped values so a wrong-host default ("salongen inte tillgänglig")
       # can never ship. Supabase publishable values are safe to expose to the client.
