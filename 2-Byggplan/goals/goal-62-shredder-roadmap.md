@@ -286,11 +286,17 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       en VARA. Det är post-it-lappen. → E2 (bilden dominerar) + E3 (hierarki + stepper ut ur griden).
       Bifynd: Zivars skärmdump med "DIN SALONG" i en floristmall är från FÖRE goal-61 —
       `studio-placeholder.ts` (commit 735c856) härleder redan namnet ur branschen.
-- [ ] **E2. Produktbilderna**: generisk bildbehandling — produktfoton ska kännas fristående
-      (ingen "lapp på en bakgrund"). Per mall bestäms uttrycket (skuren mot bakgrundsfärg,
-      mjuk skugga, ram) i form-manifestet från C2. EN körning för bild-standarden.
-- [ ] **E3. Produktkortet** (delade `shop/`-komponenter, mallens tokens styr): pris-hierarki,
-      luft, hover-lagret (finns) — lyft till referens-nivån. EN körning.
+- [x] **E2. Produktbilderna** ✅ **BILDEN BÄR KORTET.** 4:3 liggande → 4:5 stående i den delade
+      butiksvyn. Mätt: bilden gick från **37% → 63%** av kortets höjd. Mallen kan fortfarande
+      välja egen ratio via `--sf-media-ratio` (men aldrig "ingen" — CLS).
+- [x] **E3. Produktkortet** ✅ Tre av gap-listans punkter:
+      · **priset väger**: 16px → 21px (det mätte MINDRE än produktnamnets 17px)
+      · **beskrivningen ut ur griden** (låg som 14px brödtext i varje kort)
+      · **qty-steppern ut ur griden** (`AddToCart compact`): varje kort bar variantväljare +
+        räknare + knapp = fyra kontroller × tolv varor = en vägg av formulär. Kvar: EN knapp.
+        Flera varianter → knappen leder till produktsidan, så man aldrig råkar köpa fel.
+      **Mätt efter:** kort 494px, bild 313px (63%), pris 21px > namn 17px, en enda kontroll.
+      Kontrast 0 brott · 780 tester gröna.
 - [ ] **E4. Varukorgs-sidan**: jämför mot skärmdumparna — radlayout, kvantitet, summering,
       tom-läge. EN körning.
 - [ ] **E5. Kassan**: fältgruppering, steg-känsla, trust-rad — mot referenserna. EN körning.
