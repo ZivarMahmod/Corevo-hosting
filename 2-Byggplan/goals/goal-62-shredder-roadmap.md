@@ -40,7 +40,7 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 
 ## FAS A — AKUT & STÄD (småpunkter, en i taget)
 
-- [ ] **A1. Deploya det som redan är pushat** (admin-knapparna 3545761 + fas 2-admin 2e2719c
+- [x] **A1. Deploya det som redan är pushat** ✅ v1.18.0 (CI success; POS + 3 fasta hostar + florist + freshcut alla 200) (admin-knapparna 3545761 + fas 2-admin 2e2719c
       + storefront-kvittningen 63b06a7). v*-tagg, polla deployen, verifiera live.
 - [ ] **A2. Kundkonto-toggeln FINNS INTE i frontend** (Zivar letade — bara backend).
       Bygg av/på-kontroll för `settings.customerAccountsEnabled` i kundkortet på superbooking
@@ -168,3 +168,4 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 ## LOGG (senaste överst — körningen skriver EN rad när den bockar)
 | Datum | Punkt | Commit | Verifierad hur |
 |---|---|---|---|
+| 2026-07-12 | A1 deploy | v1.18.0 | CI success; corevo.se/booking/superbooking/florist/freshcut = 200 |
