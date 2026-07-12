@@ -117,6 +117,14 @@ export async function ShopSection({
                         className={s.img}
                       />
                     ) : null}
+                    {/* goal-62 F5: SLUTSÅLD SYNS PÅ VARAN, inte bara på knappen. Förr var
+                        enda signalen att köpknappen längst ned var grå — man hann bli
+                        intresserad innan man förstod. Badgen sitter på bilden och läser
+                        mallens badge-tokens (samma arketyp som korgens räknare). Villkoret
+                        är modulens sanning: alla varianter slut (available === 0). */}
+                    {p.variants.length > 0 && p.variants.every((v) => v.available === 0) ? (
+                      <span className={s.soldOut}>Slutsåld</span>
+                    ) : null}
                     {/* goal-61: hover-/fokus-hint — ren affordance-dubblett av länken
                         (aria-label ovan bär redan betydelsen), därför aria-hidden. */}
                     <span className={s.mediaHint} aria-hidden="true">

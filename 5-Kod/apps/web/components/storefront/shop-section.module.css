@@ -282,3 +282,57 @@
     transform: translate(-50%, 0);
   }
 }
+
+/* goal-62 F5 — SLUTSÅLD-BADGEN. Samma arketyp som korgens räknare (--sf-badge-*), så en
+   mall stämmer sina små etiketter på ETT ställe. Radien följer mallens ikon-språk: rak
+   mall → rak badge. Kontrast: badge-ink på badge-bg är samma par som navräknaren, redan
+   mätt ≥4.5:1 i alla 20 mallar. */
+.soldOut {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 5px 10px;
+  border-radius: var(--sf-badge-radius, var(--sf-navicon-radius, 999px));
+  background: var(--sf-badge-bg, var(--color-fg, #232520));
+  color: var(--sf-badge-ink, var(--color-bg, #fff));
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* goal-62 F7 — INGA TOMMA HÅL. Bildytan har redan sin ratio (ingen CLS) och en grå platta,
+   men plattan var död: en tom ruta i 200 ms känns som en trasig sida. En långsam shimmer
+   under bilden — den täcks i samma sekund som bilden dekodats, så den syns bara när den
+   behövs. Ren CSS: ingen laddnings-state i JS, inget extra element. */
+.media::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-fg, #232520) 5%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: sfShimmer 1.4s ease-in-out infinite;
+}
+
+.img {
+  position: relative; /* bilden ligger ÖVER shimmern och släcker den när den laddat */
+  z-index: 1;
+}
+
+@keyframes sfShimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media::before {
+    animation: none;
+  }
+}
