@@ -40,12 +40,11 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 
 ## FAS A — AKUT & STÄD (småpunkter, en i taget)
 
-- [x] **A1. Deploya det som redan är pushat** ✅ v1.18.0 (CI success; POS + 3 fasta hostar + florist + freshcut alla 200) (admin-knapparna 3545761 + fas 2-admin 2e2719c
-      + storefront-kvittningen 63b06a7). v*-tagg, polla deployen, verifiera live.
-- [ ] **A2. Kundkonto-toggeln FINNS INTE i frontend** (Zivar letade — bara backend).
-      Bygg av/på-kontroll för `settings.customerAccountsEnabled` i kundkortet på superbooking
-      (Drift- eller Översikt-fliken, samma <details>-mönster som övriga). Av = /konto,
-      /registrera och logga-in-länken släcks på kundens sajt. EN toggle, EN körning.
+- [x] **A1. Deploya det som redan är pushat** ✅ v1.18.0 — CI grön; corevo.se + booking + superbooking + florist + freshcut alla 200.
+- [x] **A2. Kundkonto-toggeln i kundkortet** ✅ Drift-fliken på superbooking (`setTenantCustomerAccounts`
+      + `CustomerAccountsCard`). Reglaget fanns BARA i kundens egen admin — därför hittade Zivar det
+      aldrig. Samma settings-nyckel, MERGE-skrivning, revalidate av kundens sajt. Av = inloggning +
+      Mitt konto + /registrera släcks; gästbokning/gästköp orört.
 - [ ] **A3. Sajtbyggar-resten**: Zivar ser fortfarande "sajtbyggar-grejen" någonstans.
       Inventera vad som syns (kundkortets flik? gammal skärmdump-yta? "Redigera sidan"-namnet?).
       Hittas rest → riv i egen körning. OBS: SidaStudio är INTE sajtbyggaren — den ska stå kvar.
@@ -169,3 +168,4 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 | Datum | Punkt | Commit | Verifierad hur |
 |---|---|---|---|
 | 2026-07-12 | A1 deploy | v1.18.0 | CI success; corevo.se/booking/superbooking/florist/freshcut = 200 |
+| 2026-07-12 | A2 kundkonto-toggel | (denna) | tsc 0, vitest 778/778; deployas i nästa tagg |

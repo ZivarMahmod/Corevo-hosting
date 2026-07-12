@@ -15,6 +15,7 @@ import { GoogleReviewCard } from '@/components/platform/GoogleReviewCard'
 import { ServicesCard } from '@/components/platform/ServicesCard'
 import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
+import { CustomerAccountsCard } from '@/components/platform/CustomerAccountsCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listShopProducts, listShopOrders } from '@/lib/admin/shop/data'
@@ -621,6 +622,23 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             super-admin-spärrad i DB. Live slår igenom på storefronten direkt (cache-bust).
           </p>
           <ModulesCard tenantId={tenant.id} modules={modules} />
+        </Card>
+
+        {/* goal-62 A2: kund-konton (inloggning på kundens publika sajt) — reglaget
+            fanns bara i kundens egen admin, aldrig här. Samma settings-nyckel. */}
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Kund-konton</h2>
+            <span className={styles.chip}>settings.customer_accounts_enabled</span>
+          </div>
+          <p className={styles.noteText} style={{ marginBottom: 4 }}>
+            Styr om kundens besökare kan logga in och få ”Mitt konto” på den publika sajten.
+            Av = enbart gäst (bokning och köp fungerar oförändrat).
+          </p>
+          <CustomerAccountsCard
+            tenantId={tenant.id}
+            enabled={rawSettings.customer_accounts_enabled === true}
+          />
         </Card>
 
         {/* Status + riskzon i ETT kort — båda skriver tenants.status, två kort

@@ -9,7 +9,12 @@ export { createTenant, isSlugTaken } from './actions/tenants'
 export { savePlatformBranding } from './actions/branding'
 export { setTenantStatus } from './actions/status'
 export { saveBilling } from './actions/billing'
-export { saveTenantData, saveTenantName, updateBookingSettings } from './actions/data'
+export {
+  saveTenantData,
+  saveTenantName,
+  updateBookingSettings,
+  setTenantCustomerAccounts,
+} from './actions/data'
 export {
   sendPasswordReset,
   createTenantStaff,
