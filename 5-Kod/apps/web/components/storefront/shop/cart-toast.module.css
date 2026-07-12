@@ -1,0 +1,171 @@
+/* goal-61 — KVITTOT ("Tillagd i varukorgen").
+ *
+ * Var: en tunn textremsa under köpknappen som klämdes in i produktkortet. Den sa ATT
+ * något hände, men inte VAD: vilken vara, vilket pris, vart man går härnäst.
+ *
+ * Anatomin är lånad ur uiverse-kortet Zivar skickade (ikon-kolumn · titel + stäng ·
+ * produktnamn · pris · "till varukorgen"-knapp) — men INGET av dess CSS. Originalet
+ * bär hårdkodad teal (#009688), `transition: 0.4s ease-in-out` på allt, och saknar
+ * fokusring och reduced-motion. Här läser varje värde en --sf-*-token, så MALLEN äger
+ * formen (vektor-regeln) och kvittot ser ut som just den butiken.
+ *
+ * Portaleras till <body>: produktkorten lyfter sig med transform på hover, och en
+ * transform skapar ett nytt containing block — ett `position: fixed`-kvitto inuti
+ * kortet hade klippts eller följt med kortets lyft.
+ */
+
+.toast {
+  position: fixed;
+  z-index: 1000; /* över nav (40) och korgens lager (70) */
+  right: 20px;
+  bottom: 20px;
+  width: min(320px, calc(100vw - 40px));
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  padding: 16px;
+  background: var(--sf-notice-bg, var(--color-surface, #fff));
+  border: 1px solid var(--sf-notice-border, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 16%, transparent)));
+  border-radius: var(--sf-panel-radius, var(--sf-radius, 4px));
+  box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.28);
+  animation: sfToastIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes sfToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* Ikonen bär accenten — den är kvittots enda färgklick, allt annat är text. */
+.icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--sf-btn-ink, var(--color-fg, #232520));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-fg, #232520);
+}
+
+/* Stäng: 44px klickyta, men visuellt liten — hit-arean sträcks med negativ margin
+ * så knappen inte trycker isär kortet. */
+.close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: -12px -12px 0 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  /* 68% fg-mix = 5.5:1 mot ytan. Ikonknappar får aldrig lösas med opacity. */
+  color: color-mix(in srgb, var(--color-fg, #232520) 68%, var(--color-bg, #fff));
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+
+.close:hover {
+  color: var(--color-fg, #232520);
+  background: color-mix(in srgb, var(--color-fg, #232520) 7%, transparent);
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 2px;
+}
+
+.name {
+  margin-top: 2px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff));
+}
+
+.price {
+  margin-top: 2px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-fg, #232520);
+}
+
+/* Vägen vidare. Sekundär, inte primär: kvittot ska inte tävla med sidans köpknapp —
+ * den som lade i korgen kanske vill handla mer. */
+.link {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: var(--sf-btn-ls, 0.01em);
+  text-transform: var(--sf-btn-transform, none);
+  text-decoration: none;
+  cursor: pointer;
+  color: var(--color-fg, #232520);
+  background: transparent;
+  border: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 30%, transparent));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.link:hover {
+  color: var(--sf-btn-ink, var(--color-fg, #232520));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border-color: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .toast {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+  }
+}
+
+/* Reduced-motion nollar BÅDE animation och transform — en `animation: none` ensam
+ * hade lämnat kortet kvar på sin startposition (translateY(16px)). */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+    transform: none;
+  }
+
+  .close,
+  .link {
+    transition: none;
+  }
+}

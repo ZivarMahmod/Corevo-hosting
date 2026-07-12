@@ -155,41 +155,12 @@
   color: color-mix(in srgb, var(--color-fg, #232520) 65%, var(--color-bg, #fff));
 }
 
-/* ---- "tillagd"-flyouten ---- */
-
-.added {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 12px;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--color-fg, #232520);
-  background: color-mix(in srgb, var(--color-accent, #c8a24a) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-accent, #c8a24a) 45%, transparent);
-  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
-  animation: sfRise 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes sfRise {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
-
-.addedLink {
-  color: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-  white-space: nowrap;
-}
+/* goal-61: "tillagd"-flyouten är borta. Kvittot är nu ett riktigt kort (CartToast) med
+ * vara, pris och väg vidare — se cart-toast.module.css. */
 
 @media (prefers-reduced-motion: reduce) {
   .buy,
-  .step,
-  .added {
+  .step {
     transition: none;
     animation: none;
   }

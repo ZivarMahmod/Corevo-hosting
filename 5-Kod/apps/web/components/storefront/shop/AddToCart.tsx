@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useCart } from './CartProvider'
+import { CartToast } from './CartToast'
 import {
   shopCtaLabel,
   formatShopPrice,
@@ -144,13 +145,15 @@ export function AddToCart({
         {soldOut ? 'Slutsåld' : added ? 'Tillagd ✓' : label}
       </button>
 
-      {added ? (
-        <div role="status" className={styles.added}>
-          <span>Tillagd i varukorgen</span>
-          <a href="/varukorg" className={styles.addedLink}>
-            till varukorgen
-          </a>
-        </div>
+      {/* goal-61: kvittot är ett riktigt kort (vara + pris + väg vidare), portalerat till
+          body — inte längre en textremsa nedklämd i produktkortet. */}
+      {added && variant ? (
+        <CartToast
+          productName={product.name}
+          variantName={variants.length > 1 ? variant.name : null}
+          priceLabel={formatShopPrice(variant.priceCents * qty, variant.currency)}
+          onClose={() => setAdded(false)}
+        />
       ) : null}
     </div>
   )
