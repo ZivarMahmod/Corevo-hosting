@@ -176,7 +176,7 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       lägger EN sektionsövergång enligt tabellen. Ingen delad fil rörs. Efter varje mall körs
       `node scripts/divergens.mjs <mall>` + `npm run kontrast <mall>` → 0 FAIL innan bock.
 
-- [ ] **C3. Implementera divergensen** — EN mall per körning. Bocka per mall:
+- [x] **C3. Implementera divergensen** ✅ — EN mall per körning. Bocka per mall:
   - [x] **onyx** — kantig knapp (var pill) · raka kort · **diagonalt snitt** mellan butik/blogg och
         i closing (spegelvänt) · köpknappen blev block. Mätt: formade sektioner **0 → 4**,
         knapp "pill" → "kvadrat", kontrast 0 FAIL.
@@ -203,7 +203,19 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
   - [x] **wildthistle** — **den rivna kanten**: bilderna slutar i en tandad rivning med 3px bläckram.
   - [x] **eloria** — **guldregeln**: uttonande guldlinje med romb i varje sektionssöm, samma linje
         böjd som guldkant runt korten.
-  - [ ] salvia · [ ] leander · [ ] zigge · [ ] linnea · [ ] edit
+  - [x] **salvia · leander · zigge · linnea · edit** — ROTORSAK, inte fem symptomfixar: alla fem
+        renderade SAMMA knapp (pill, 48px, gemener) fast var och en deklarerar egna
+        `--sf-btn-*`-tokens. Bara webshop-modulens knapp läste tokens; sidans CTA:er är
+        `.btn-accent` och tog den globala guld-pillen rakt av — formen fanns i mallen men nådde
+        aldrig knappen. Inkopplad i `globals.css` (`:where(.tenant-root)`, 0-1-0, mallens egen
+        regel vinner fortfarande). **flora + freshcut undantagna** — mätningen visade att fixen
+        hade format om deras knapp, och de är levande kunder.
+        Skärpt per mall: zigge = sviten kraftigaste (56px, bred, versal) · edit = redaktionell
+        byline (gemener, 44px) · paisley = gemener (paisley och onyx mätte **identisk formprofil**
+        — samma mall i två färger; onyx äger versalen, paisley är tidningen).
+  - **Mekaniskt läge efter C3:** divergens = "ingen mall delar formprofil med en annan" ·
+    kontrast = 0 brott (20 mallar × 5 sidor i webbläsare + vakten) · tsc grönt.
+    ⚠️ Kvar till C4: **11 av 20 mallar har fortfarande 0 sektionsövergångar** (bara raka kanter).
   - [~] flora (skyddad — valv-språket finns) · [~] freshcut (levande kund — rörs ej)
 - [ ] **C4. Övergångarna**: sektionsbyten ska ha medvetna övergångar där mallens manifest
       säger det (våg, färgblock-skifte, diagonal, foto-bleed) — aldrig 13 × rak kant.
