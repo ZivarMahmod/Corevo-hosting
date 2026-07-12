@@ -57,10 +57,14 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       0.4–2.7 s — det är Next dev-kompilering, inte appen. Slutsats: segheten Zivar känner är
       antingen dev-servern eller en enskild SPARA-action → återkommer som egen punkt när vi kan
       peka ut vilken yta. Bifynd: **/butik = 404, rätt rutt är /shop** (svensk rutt saknas → E-fasen).
-- [ ] **A5. Florist-admin-kontot**: bjud in/skapa ägar-login för Hantverksfloristerna via
-      kundkortet, skriv upp kontot i `5-Kod/docs/ops/INLOGGNINGAR.md`.
-- [ ] **A6. Verifiera fas 2-admin med Playwright på superbooking** (Zivar har nu ETT superkonto —
-      be om/använd det, mät kebab-menyn + mall-galleriet, bocka fas 2 helt).
+- [~] **A5. Florist-admin-kontot — VÄNTAR PÅ ZIVAR** (jag skapar aldrig konton/lösenord åt någon).
+      Ytan FINNS: superbooking → kundkortet (Hantverksfloristerna) → **Personal-fliken** →
+      "Bjud in med inlogg" → skriv e-postadressen → medarbetaren får magic-link och sätter eget
+      lösenord. Kräver att SUPABASE_SERVICE_ROLE_KEY är satt i prod (annars säger knappen till).
+      Skriv in kontot i `5-Kod/docs/ops/INLOGGNINGAR.md` (lokal fil) när det är gjort.
+- [~] **A6. Verifiera fas 2-admin på superbooking — VÄNTAR PÅ SUPERKONTOT** (fyll i det i
+      `INLOGGNINGAR.md`, lokal fil). Då mäts kebab-menyn + mall-galleriet med Playwright och
+      goal-61 fas 2 kan bockas helt.
 
 ## FAS B — FÄRGERNA SKA VARA EXAKTA (texter göms av paletter idag)
 
