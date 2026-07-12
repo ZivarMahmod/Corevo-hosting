@@ -182,7 +182,9 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
         knapp "pill" → "kvadrat", kontrast 0 FAIL.
   - [x] **paisley** — spaltlinjer mellan planscherna (hårlinje, ingen box) + dubbelregel som
         sektionsbrytning. Tidningens vokabulär, inte en våg: paisley är PLAN, dess drama är typografiskt.
-  - [ ] calytrix · [ ] aurora · [ ] sage · [ ] oliviathyme · [ ] viora
+  - [x] **aurora** — valvet ut i SEKTIONSKANTEN: rosa panelen bågar upp och glider in under
+        sektionen ovanför (mallens egna valv-foton, nu buret av en yta). Formade sektioner 0 → 1.
+  - [ ] calytrix · [ ] sage · [ ] oliviathyme · [ ] viora
   - [ ] isalara · [ ] seraphina · [ ] wildthistle · [ ] mina · [ ] lunaria · [ ] eloria
   - [ ] salvia · [ ] leander · [ ] zigge · [ ] linnea · [ ] edit
   - [~] flora (skyddad — valv-språket finns) · [~] freshcut (levande kund — rörs ej)

@@ -61,6 +61,8 @@
   --au-gutter: 24px;
 
   --au-ratio: 3 / 4; /* höga kort — boutiquens enda innehållsratio */
+  /* goal-62 C3: bågens höjd i sektionskanten — samma gest som valv-fotona. */
+  --au-arch: clamp(40px, 6vw, 90px);
 
   --au-dur: 400ms;
   --au-lift: -5px;
@@ -392,7 +394,20 @@
 }
 
 /* 4. Rosa panel — förskjutet valv-collage (bågen = mallens signatur) */
-.auCollageBand { background: var(--color-accent-soft); padding: var(--au-sec) var(--au-gutter); }
+/* goal-62 C3 — AURORAS SIGNATUR: VALVET, ända ut i sektionskanten.
+   Mallens bilder bågar redan (999px 999px 0 0) men SEKTIONERNA möttes i raka kanter —
+   samma lådstapling som alla andra mallar. Nu bär bandet självt valvet: den rosa panelen
+   bågar upp i toppen och glider in under sektionen ovanför, precis som mallens valv-foton.
+   Formen är alltså inte en ny idé, den är mallens egen — buren av en yta i stället för
+   bara av en bild. Den negativa marginalen betalar tillbaka bågens höjd, så rytmen står. */
+.auCollageBand {
+  background: var(--color-accent-soft);
+  padding: calc(var(--au-sec) + var(--au-arch)) var(--au-gutter) var(--au-sec);
+  margin-top: calc(-1 * var(--au-arch));
+  border-radius: 50% 50% 0 0 / var(--au-arch) var(--au-arch) 0 0;
+  position: relative;
+  z-index: 1;
+}
 .auCollageHead { text-align: center; margin-bottom: var(--au-sp-block); }
 .auCollageGrid {
   display: grid;
