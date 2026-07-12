@@ -5,6 +5,12 @@
 // inline-validering, trust-rad. Reserverar ordern vid mount (håller lager under
 // ifyllnad, 30-min TTL); bekräftar vid submit. Betal-rails pausade → "betala vid
 // leverans/upphämtning" (Stripe-steget tänds i Fas 3 bakom payments_enabled).
+//
+// goal-60: styling flyttad till checkout-form.module.css (inline kunde inte bära
+// :focus/:hover/:invalid och ingen mall kunde nå in — sista steget i köpet var dömt
+// att bli en grå blankett). Betalknappen har nu ett ÄKTA pending-läge: spinner +
+// dubbelklick-vakt. FORMEN flyttade, FUNKTIONEN (validering, server actions,
+// felmeddelanden, lager-hold) står orörd.
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -12,6 +18,7 @@ import Link from 'next/link'
 import { useCart } from '@/components/storefront/shop/CartProvider'
 import { formatShopPrice, type ShopFulfilment } from '@/lib/storefront/shop/types'
 import { reserveOrder, confirmOrder, cancelOrder, startShopCheckout } from '../actions'
+import s from './checkout-form.module.css'
 
 export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
   const { lines, token, subtotalCents, clear } = useCart()
@@ -24,6 +31,11 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
   const [formError, setFormError] = useState<string | null>(null)
   const [fields, setFields] = useState({ name: '', email: '', phone: '', address: '', note: '' })
   const didReserve = useRef(false)
+  // Dubbelbetalnings-vakt. `disabled` + pointer-events är den VISUELLA halvan; en ref
+  // som sätts synkront är den riktiga — state-uppdateringar är asynkrona, så två snabba
+  // klick (eller Enter + klick) kan annars hinna in i samma render och skicka två
+  // confirmOrder. En dubbelbetalning är en riktig bugg.
+  const inFlight = useRef(false)
 
   const currency = lines[0]?.currency ?? 'SEK'
   const needsAddress = fulfilment === 'ship'
@@ -56,14 +68,17 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
   if (lines.length === 0 && !orderId) {
     return (
       <div>
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: 16 }}>Din varukorg är tom.</p>
-        <Link href="/" style={{ color: 'var(--color-accent, #C8A24A)' }}>← Tillbaka till butiken</Link>
+        <p className={s.emptyText}>Din varukorg är tom.</p>
+        <Link href="/" className={s.alertLink}>
+          ← Tillbaka till butiken
+        </Link>
       </div>
     )
   }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (inFlight.current) return // dubbelklick-vakt (synkron, till skillnad från state)
     setFormError(null)
     const name = fields.name.trim()
     const email = fields.email.trim()
@@ -73,6 +88,7 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
     if (needsAddress && !fields.address.trim()) return setFormError('Fyll i leveransadress.')
     if (!orderId) return setFormError('Beställningen är inte redo — ladda om sidan.')
 
+    inFlight.current = true
     setSubmitting(true)
     const res = await confirmOrder({
       orderId,
@@ -84,6 +100,7 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
       note: fields.note.trim() || undefined,
     })
     if (!res.ok) {
+      inFlight.current = false
       setSubmitting(false)
       setFormError(res.message)
       return
@@ -91,6 +108,8 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
     // Betalning krävs (Fas 3, bakom payments_enabled) → starta Stripe Checkout.
     // Misslyckas/otillgänglig → fall igenom till bekräftelsen (ordern står awaiting,
     // ärlig vy). Default (rälsen av) → requiresPayment=false → direkt bekräftelse.
+    // inFlight släpps ALDRIG här: vi navigerar bort, och knappen ska förbli låst
+    // under redirecten (annars kan kunden hinna klicka igen medan sidan byter).
     if (res.requiresPayment) {
       const co = await startShopCheckout(res.orderId)
       if (co.ok) {
@@ -105,46 +124,43 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
 
   // v1: total = delsumma (frakt/moms additivt senare). Full kostnad visas FÖRE köp.
   const totalCents = subtotalCents
+  const pending = submitting || reserving || !orderId
 
   return (
-    <div style={{ display: 'grid', gap: 28 }}>
+    <div className={s.wrap}>
       {/* Ordersammanfattning — synlig FÖRE köp-knappen (Baymard: full kostnad först). */}
-      <div
-        style={{
-          padding: 18,
-          background: 'color-mix(in srgb, var(--color-fg, #232520) 3%, transparent)',
-          border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 10%, transparent)',
-          borderRadius: 'calc(var(--radius, 4px) * 2)',
-        }}
-      >
-        <h2 style={{ margin: '0 0 12px', fontFamily: 'var(--font-ui)', fontSize: 15, fontWeight: 700 }}>Din beställning</h2>
+      <div className={s.summary}>
+        <h2 className={s.summaryTitle}>Din beställning</h2>
         {lines.map((l) => (
-          <div key={l.variantId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, padding: '4px 0' }}>
+          <div key={l.variantId} className={s.item}>
             <span>
               {l.productName}
               {l.variantName && l.variantName !== 'Standard' ? ` (${l.variantName})` : ''} × {l.quantity}
             </span>
-            <span>{formatShopPrice(l.priceCents * l.quantity, l.currency)}</span>
+            <span className={s.money}>{formatShopPrice(l.priceCents * l.quantity, l.currency)}</span>
           </div>
         ))}
-        <div style={{ marginTop: 10, borderTop: '1px solid color-mix(in srgb, var(--color-fg, #232520) 12%, transparent)', paddingTop: 10, fontSize: 14 }}>
+        <div className={s.rule}>
           <Row label="Delsumma" value={formatShopPrice(subtotalCents, currency)} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, fontWeight: 700, fontSize: 16 }}>
+        <div className={s.total}>
           <span>Att betala</span>
-          <span>{formatShopPrice(totalCents, currency)}</span>
+          <span className={s.money}>{formatShopPrice(totalCents, currency)}</span>
         </div>
-        <p style={{ margin: '6px 0 0', fontSize: 12, opacity: 0.6 }}>Betalas vid leverans/upphämtning.</p>
+        <p className={s.fine}>Betalas vid leverans/upphämtning.</p>
       </div>
 
       {reserveError ? (
-        <div role="alert" style={{ color: '#b00020', fontSize: 14 }}>
-          {reserveError} <Link href="/" style={{ color: 'var(--color-accent, #C8A24A)' }}>Tillbaka till butiken</Link>
-        </div>
+        <p role="alert" className={s.alert}>
+          {reserveError}{' '}
+          <Link href="/" className={s.alertLink}>
+            Tillbaka till butiken
+          </Link>
+        </p>
       ) : null}
 
       {/* Gäst-checkout (konto efter köp). ≤8 fält. */}
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 14 }} noValidate>
+      <form onSubmit={onSubmit} className={s.form} noValidate>
         <Field id="name" label="Namn" value={fields.name} onChange={(v) => setFields((f) => ({ ...f, name: v }))} autoComplete="name" required />
         <Field id="email" label="E-post" type="email" value={fields.email} onChange={(v) => setFields((f) => ({ ...f, email: v }))} autoComplete="email" required />
         <Field id="phone" label="Telefon" type="tel" value={fields.phone} onChange={(v) => setFields((f) => ({ ...f, phone: v }))} autoComplete="tel" required />
@@ -153,30 +169,28 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
         ) : null}
         <Field id="note" label="Meddelande (valfritt)" value={fields.note} onChange={(v) => setFields((f) => ({ ...f, note: v }))} />
 
-        {formError ? <div role="alert" style={{ color: '#b00020', fontSize: 14 }}>{formError}</div> : null}
+        {formError ? (
+          <p role="alert" className={s.alert}>
+            {formError}
+          </p>
+        ) : null}
 
-        <button
-          type="submit"
-          disabled={submitting || reserving || !orderId}
-          style={{
-            marginTop: 4,
-            padding: '14px 18px',
-            fontFamily: 'var(--font-ui)',
-            fontSize: 15,
-            fontWeight: 700,
-            color: 'var(--color-bg, #fff)',
-            background: 'var(--color-accent, #C8A24A)',
-            border: 'none',
-            borderRadius: 'var(--radius, 4px)',
-            cursor: submitting || reserving || !orderId ? 'wait' : 'pointer',
-            opacity: submitting || reserving || !orderId ? 0.7 : 1,
-          }}
-        >
-          {submitting ? 'Slutför…' : reserving ? 'Förbereder…' : 'Slutför beställning'}
+        <button type="submit" className={s.submit} disabled={pending} aria-busy={submitting || reserving}>
+          {submitting ? (
+            <>
+              <span className={s.spinner} aria-hidden="true" />
+              Slutför…
+            </>
+          ) : reserving ? (
+            <>
+              <span className={s.spinner} aria-hidden="true" />
+              Förbereder…
+            </>
+          ) : (
+            'Slutför beställning'
+          )}
         </button>
-        <p style={{ margin: 0, fontSize: 12, opacity: 0.6, textAlign: 'center' }}>
-          🔒 Dina uppgifter används bara för denna beställning.
-        </p>
+        <p className={s.trust}>🔒 Dina uppgifter används bara för denna beställning.</p>
       </form>
     </div>
   )
@@ -184,9 +198,9 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-      <span style={{ opacity: 0.75 }}>{label}</span>
-      <span>{value}</span>
+    <div className={s.row}>
+      <span className={s.rowLabel}>{label}</span>
+      <span className={s.money}>{value}</span>
     </div>
   )
 }
@@ -209,8 +223,8 @@ function Field({
   required?: boolean
 }) {
   return (
-    <label htmlFor={id} style={{ display: 'grid', gap: 5, fontFamily: 'var(--font-ui)', fontSize: 13 }}>
-      <span style={{ fontWeight: 600 }}>
+    <label htmlFor={id} className={s.label}>
+      <span className={s.labelText}>
         {label}
         {required ? ' *' : ''}
       </span>
@@ -221,15 +235,7 @@ function Field({
         required={required}
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        style={{
-          padding: '11px 12px',
-          fontSize: 15,
-          fontFamily: 'var(--font-body)',
-          color: 'var(--color-fg, #232520)',
-          background: 'var(--color-bg, #fff)',
-          border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 20%, transparent)',
-          borderRadius: 'var(--radius, 4px)',
-        }}
+        className={s.field}
       />
     </label>
   )

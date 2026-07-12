@@ -180,7 +180,10 @@
   letter-spacing: var(--sf-btn-ls, 0.01em);
   text-transform: var(--sf-btn-transform, none);
   cursor: pointer;
-  color: var(--sf-btn-ink, var(--color-bg, #fff));
+  /* Mörk fallback-ink, inte vit: vitt på plattformens default-guld är 2.41:1 (under
+   * golvet), mörk ink är 6.4:1. Mallens --sf-btn-ink vinner ändå — detta skyddar bara
+   * de teman som inte satt den. */
+  color: var(--sf-btn-ink, var(--color-fg, #232520));
   background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
   border: 1px solid var(--sf-btn-border, var(--color-accent, #c8a24a));
   border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));

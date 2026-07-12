@@ -1,0 +1,227 @@
+/* goal-60 — MODULENS DELADE BUTIKSVY.
+ *
+ * ShopSection är den butiksvy de sex äldre temana ärver (de 13 florist-mallarna har
+ * egna moduleViews). Fram till nu stylades varje kort, pris och bild med inline
+ * `style={{}}`. Inline kan inte bära :hover/:focus-visible, och en MALL kan aldrig nå
+ * in i den — så den delade butiken var dömd till plattformens grå default, hur fin
+ * mallen runt omkring än var. Det är viruset. Här är den kurerad.
+ *
+ * VEKTOR-REGELN: modulen äger FUNKTIONEN (pausad butik → noll köpknappar, priser via
+ * formatShopPrice, leveranslöfte via fulfilmentPromise), mallen äger FORMEN. Därför
+ * läser varje värde nedan en tema-variabel med neutralt fallback.
+ *
+ * NYA TOKENS (introducerade här, återanvända av blogg/presentkort/lojalitet — de ritar
+ * samma sorts ytor och ska kunna stämmas i ETT block i mallen):
+ *   --sf-card-bg / --sf-card-border / --sf-card-radius
+ *       kortets yta. Fanns bara som hårdkodade color-mix förr, vilket gjorde att en
+ *       mall inte kunde ge korten sin egen kant eller radie utan att skriva om TSX.
+ *   --sf-media-ratio
+ *       bildratio genom hela listan. En mall får välja 4/3 eller 1/1 — men den får
+ *       ALDRIG välja "ingen ratio", för då hoppar layouten när bilden laddar (CLS).
+ *   --sf-notice-bg / --sf-notice-border / --sf-notice-ink
+ *       pausad-/status-bandet. Ink är default full --color-fg (≈15:1), aldrig dämpad.
+ */
+
+/* ---- rutnätet ---- */
+
+.grid {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sf-card-gap, 24px);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--sf-card-bg, color-mix(in srgb, var(--color-fg, #232520) 3%, transparent));
+  border: 1px solid
+    var(--sf-card-border, color-mix(in srgb, var(--color-fg, #232520) 10%, transparent));
+  border-radius: var(--sf-card-radius, calc(var(--sf-radius, 4px) * 2));
+  overflow: hidden;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+/* Kortet lyfter — men bara som helhet; köpknappen inuti behåller sitt eget liv. */
+.card:hover {
+  border-color: var(--sf-card-border-hover, var(--color-primary, #232520));
+  box-shadow: var(--sf-card-shadow-hover, 0 10px 30px rgb(0 0 0 / 8%));
+  transform: translateY(-3px);
+}
+
+/* Fokuserar man bild- eller namnlänken ska HELA kortet svara, inte bara texten. */
+.card:focus-within {
+  border-color: var(--sf-card-border-hover, var(--color-primary, #232520));
+}
+
+/* ---- bilden ----
+ * Bilden är länkad till detaljsidan — INTE hela kortet, så AddToCart förblir klickbar
+ * (goal-54 S4). Ratio ligger på ytan, inte på <img>, så platshållaren (produkt utan
+ * bild) har exakt samma höjd som en laddad bild: noll layouthopp. */
+.media {
+  display: block;
+  aspect-ratio: var(--sf-media-ratio, 4 / 3);
+  background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
+  overflow: hidden;
+}
+
+.media:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: -2px;
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.card:hover .img {
+  transform: scale(1.04);
+}
+
+/* ---- kortets text ---- */
+
+.body {
+  padding: var(--sf-card-pad, 16px);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display, var(--font-body));
+  font-size: var(--sf-card-title-fs, 17px);
+  line-height: 1.3;
+  color: var(--color-fg, #232520); /* 15.2:1 mot kortytan */
+}
+
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.titleLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.titleLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+/* 72% över kortytan = 5.9:1. Var 72% redan — men nu mätt, inte gissat. */
+.desc {
+  margin: 6px 0 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff));
+}
+
+/* Priset är modulens sanning (formatShopPrice) — det ska LÄSAS som en siffra, inte
+ * som brödtext. Full fg-vikt: 15.2:1. */
+.price {
+  margin: 12px 0 0;
+  font-family: var(--font-ui);
+  font-size: var(--sf-price-fs, 16px);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--color-fg, #232520);
+}
+
+.cta {
+  margin-top: auto;
+}
+
+/* ---- status / tomt ---- */
+
+.notice {
+  margin-top: 8px;
+  padding: 12px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--sf-notice-ink, var(--color-fg, #232520));
+  background: var(--sf-notice-bg, color-mix(in srgb, var(--color-accent, #c8a24a) 14%, transparent));
+  border: 1px solid
+    var(--sf-notice-border, color-mix(in srgb, var(--color-accent, #c8a24a) 30%, transparent));
+  border-radius: var(--sf-notice-radius, var(--sf-radius, 4px));
+  /* Färg är aldrig ensam bärare av betydelse (WCAG 1.4.1) — kanten ger den form. */
+  border-left-width: 4px;
+}
+
+/* 70% mot bg = 5.75:1 (WCAG-luminans, räknat). Var 70% mot *transparent* vilket
+ * tekniskt är samma sak över vitt — nu är fallbacket explicit så det håller även när
+ * en mall byter --color-bg. */
+.empty {
+  margin-top: 16px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-fg, #232520) 70%, var(--color-bg, #fff));
+}
+
+/* ---- "Visa hela butiken →" ---- */
+
+.moreWrap {
+  margin: 24px 0 0;
+}
+
+/* inline-flex + min-height 44 = touch-golvet. Var en naken <a> på ~20px. */
+.more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-primary, #232520);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-primary, #232520);
+  transition:
+    gap 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+  gap: 6px;
+}
+
+.more:hover {
+  gap: 12px;
+  color: var(--color-accent, var(--color-primary, #232520));
+  border-color: var(--color-accent, var(--color-primary, #232520));
+}
+
+.more:active {
+  transform: translateY(1px);
+}
+
+.more:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .img,
+  .more {
+    transition: none;
+  }
+
+  .card:hover,
+  .card:hover .img,
+  .more:active {
+    transform: none;
+  }
+}

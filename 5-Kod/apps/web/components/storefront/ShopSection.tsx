@@ -27,6 +27,7 @@
 
 import { SectionHeader, SubpageHero } from './sections'
 import { AddToCart } from './shop/AddToCart'
+import s from './shop-section.module.css'
 import {
   fulfilmentPromise,
   formatShopPrice,
@@ -88,69 +89,24 @@ export async function ShopSection({
         ) : null}
 
         {paused ? (
-          <p
-            role="status"
-            style={{
-              marginTop: 8,
-              fontFamily: 'var(--font-ui)',
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--color-fg, #232520)',
-              background: 'color-mix(in srgb, var(--color-accent, #C8A24A) 14%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--color-accent, #C8A24A) 30%, transparent)',
-              borderRadius: 'var(--radius, 4px)',
-              padding: '10px 14px',
-            }}
-          >
+          <p role="status" className={s.notice}>
             Webshoppen är tillfälligt stängd för nya beställningar. Vi öppnar igen snart.
           </p>
         ) : null}
 
         {products.length === 0 ? (
-          <p
-            style={{
-              marginTop: 16,
-              fontFamily: 'var(--font-body)',
-              fontSize: 15,
-              color: 'color-mix(in srgb, var(--color-fg, #232520) 70%, transparent)',
-            }}
-          >
-            Produkter visas snart.
-          </p>
+          <p className={s.empty}>Produkter visas snart.</p>
         ) : (
-          <ul
-            style={{
-              listStyle: 'none',
-              margin: '28px 0 0',
-              padding: 0,
-              display: 'grid',
-              gap: 24,
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            }}
-          >
+          <ul className={s.grid}>
             {products.map((p) => {
               return (
-                <li
-                  key={p.id}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    background: 'color-mix(in srgb, var(--color-fg, #232520) 3%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 10%, transparent)',
-                    borderRadius: 'calc(var(--radius, 4px) * 2)',
-                    overflow: 'hidden',
-                  }}
-                >
+                <li key={p.id} className={s.card}>
                   {/* Länka bild + namn till produktdetaljsidan — INTE hela kortet,
                       så AddToCart-knappen nedanför förblir klickbar (goal-54 S4). */}
                   <a
                     href={`/shop/${p.id}`}
                     aria-label={`${p.name} — visa produkt`}
-                    style={{
-                      display: 'block',
-                      aspectRatio: '4 / 3',
-                      background: 'color-mix(in srgb, var(--color-fg, #232520) 6%, transparent)',
-                    }}
+                    className={s.media}
                   >
                     {p.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -158,54 +114,22 @@ export async function ShopSection({
                         src={p.imageUrl}
                         alt={p.imageAlt ?? p.name}
                         loading="lazy"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        className={s.img}
                       />
                     ) : null}
                   </a>
-                  <div style={{ padding: 16, display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <h3
-                      style={{
-                        margin: 0,
-                        fontFamily: 'var(--font-display, var(--font-body))',
-                        fontSize: 17,
-                        color: 'var(--color-fg, #232520)',
-                      }}
-                    >
-                      <a
-                        href={`/shop/${p.id}`}
-                        style={{ color: 'inherit', textDecoration: 'none' }}
-                      >
+                  <div className={s.body}>
+                    <h3 className={s.title}>
+                      <a href={`/shop/${p.id}`} className={s.titleLink}>
                         {p.name}
                       </a>
                     </h3>
-                    {p.description ? (
-                      <p
-                        style={{
-                          margin: '6px 0 0',
-                          fontFamily: 'var(--font-body)',
-                          fontSize: 14,
-                          lineHeight: 1.5,
-                          color: 'color-mix(in srgb, var(--color-fg, #232520) 72%, transparent)',
-                        }}
-                      >
-                        {p.description}
-                      </p>
-                    ) : null}
-                    <p
-                      style={{
-                        margin: '12px 0 0',
-                        fontFamily: 'var(--font-ui)',
-                        fontSize: 16,
-                        fontWeight: 700,
-                        color: 'var(--color-fg, #232520)',
-                      }}
-                    >
-                      {formatShopPrice(p.priceCents, p.currency)}
-                    </p>
+                    {p.description ? <p className={s.desc}>{p.description}</p> : null}
+                    <p className={s.price}>{formatShopPrice(p.priceCents, p.currency)}</p>
                     {/* Köp-räls (goal-49): live shop → variant-medveten add-to-cart;
                         'paused' utelämnar CTA helt (katalogen läses som stängd). */}
                     {paused ? null : (
-                      <div style={{ marginTop: 'auto' }}>
+                      <div className={s.cta}>
                         <AddToCart product={p} fulfilment={config.fulfilment} />
                       </div>
                     )}
@@ -217,20 +141,8 @@ export async function ShopSection({
         )}
 
         {moreHref && (clipped || typeof limit === 'number') && allProducts.length > 0 ? (
-          <p style={{ margin: '24px 0 0' }}>
-            <a
-              href={moreHref}
-              style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: 14,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                color: 'var(--color-primary, #232520)',
-                textDecoration: 'none',
-                borderBottom: '1px solid var(--color-primary, #232520)',
-                paddingBottom: 2,
-              }}
-            >
+          <p className={s.moreWrap}>
+            <a href={moreHref} className={s.more}>
               Visa hela butiken →
             </a>
           </p>

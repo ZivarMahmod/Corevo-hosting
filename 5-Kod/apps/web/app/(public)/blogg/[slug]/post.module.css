@@ -1,0 +1,134 @@
+/* goal-60 — ARTIKELN. Den enda ytan på sajten där någon LÄSER.
+ *
+ * Den var den fattigaste av alla: brödtext i 16px på hela spaltbredden, datum i samma
+ * grå som allt annat, rubrik utan luft, bild utan förhållande till texten. Allt i inline
+ * `style={{}}` — alltså omöjligt för en mall att nå, omöjligt att ge :hover.
+ *
+ * TYPOGRAFIN här är inte smak, den är läsbarhet:
+ *   RADLÄNGD 66ch (målet 60–75 tecken). Över ~75 tappar ögat raden på återhoppet.
+ *   Brödtext line-height 1.6 · rubriker 1.1 · styckeluft = en hel rad, inte 16px.
+ *   Datum = MIKROTEXT (12px, spärrad, versal) — metadata får aldrig rubrikvikt.
+ *   Ingressen (första stycket) bär: större, ljusare, kortare rad. Den ska dra in läsaren.
+ *
+ * KONTRAST (räknat mot #232520 på #fff): brödtext 88% = 10.4:1 · datum 65% = 4.9:1.
+ * Datumet låg tidigare på 55% = 3.64:1 — under golvet. Höjt.
+ */
+
+/* Spalten. `ch` är typsnittsberoende, därför en px-tak som skydd mot extremt breda fonter. */
+.inner {
+  max-width: min(66ch, 720px);
+}
+
+/* ---- tillbaka-länken ---- */
+
+.back {
+  margin: 0 0 28px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* touch-golv — var en naken textlänk */
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  color: var(--color-primary, #232520);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary, #232520) 35%, transparent);
+  transition:
+    border-color 160ms ease,
+    gap 160ms ease;
+}
+
+.backLink:hover {
+  border-bottom-color: var(--color-primary, #232520);
+  gap: 12px; /* pilen backar — riktningen blir kännbar */
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-primary, #232520));
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* ---- omslagsbilden ----
+ * aspect-ratio ligger PÅ ramen, så spalten aldrig hoppar medan bilden laddar. */
+.cover {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  margin-bottom: 32px;
+  background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
+  border-radius: var(--sf-media-radius, calc(var(--sf-radius, 4px) * 2));
+}
+
+.coverImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---- huvudet ---- */
+
+.date {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--sf-micro-fs, 12px);
+  font-weight: 600;
+  letter-spacing: var(--sf-micro-ls, 0.08em);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-fg, #232520) 65%, var(--color-bg, #fff)); /* 4.9:1 */
+}
+
+.title {
+  margin: 12px 0 0;
+  font-family: var(--font-display, var(--font-body));
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-fg, #232520);
+}
+
+/* En hårfin regel skiljer huvudet från texten — luft, inte en tjock linje. */
+.body {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid
+    var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 12%, transparent));
+}
+
+/* ---- brödtexten ---- */
+
+.para {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--sf-prose-fs, 17px);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-fg, #232520) 88%, var(--color-bg, #fff)); /* 10.4:1 */
+}
+
+/* Styckeluft = en hel rad. `+` betyder att första stycket aldrig får toppmarginal —
+ * ingen villkorad inline-margin behövs i JSX. */
+.para + .para {
+  margin-top: 1.6em;
+}
+
+/* INGRESSEN: första stycket bär in läsaren. Större, luftigare, aningen mildare. */
+.para:first-child {
+  font-size: var(--sf-lede-fs, 20px);
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-fg, #232520) 78%, var(--color-bg, #fff)); /* 7.3:1 */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backLink {
+    transition: none;
+  }
+
+  .backLink:hover {
+    gap: 8px;
+  }
+}

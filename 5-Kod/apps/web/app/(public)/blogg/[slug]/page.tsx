@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
 import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
 import { loadBlogPostBySlug } from '@/lib/storefront/blogg/load-blogg-post'
+import s from './post.module.css'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,84 +57,34 @@ export default async function BloggPostPage({
 
   return (
     <section className="section" data-module="blogg" data-view="post">
-      <div className="section-inner" style={{ maxWidth: 720 }}>
-        <p style={{ margin: '0 0 24px' }}>
-          <Link
-            href="/blogg"
-            style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: 14,
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              color: 'var(--color-primary, #232520)',
-              textDecoration: 'none',
-              borderBottom: '1px solid var(--color-primary, #232520)',
-              paddingBottom: 2,
-            }}
-          >
+      <div className={`section-inner ${s.inner}`}>
+        <p className={s.back}>
+          <Link href="/blogg" className={s.backLink}>
             ← Alla inlägg
           </Link>
         </p>
 
         {post.coverImageUrl ? (
-          <div
-            style={{
-              aspectRatio: '16 / 9',
-              borderRadius: 'calc(var(--radius, 4px) * 2)',
-              overflow: 'hidden',
-              background: 'color-mix(in srgb, var(--color-fg, #232520) 6%, transparent)',
-              marginBottom: 28,
-            }}
-          >
+          <div className={s.cover}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={post.coverImageUrl}
               alt={post.coverImageAlt ?? post.title}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              className={s.coverImg}
             />
           </div>
         ) : null}
 
-        {date ? (
-          <p
-            style={{
-              margin: 0,
-              fontFamily: 'var(--font-ui)',
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              color: 'color-mix(in srgb, var(--color-fg, #232520) 55%, transparent)',
-            }}
-          >
-            {date}
-          </p>
-        ) : null}
+        {date ? <p className={s.date}>{date}</p> : null}
 
-        <h1
-          style={{
-            margin: date ? '10px 0 0' : 0,
-            fontFamily: 'var(--font-display, var(--font-body))',
-            fontSize: 36,
-            lineHeight: 1.15,
-            color: 'var(--color-fg, #232520)',
-          }}
-        >
-          {post.title}
-        </h1>
+        {/* Titelns toppmarginal skiljer sig inte längre beroende på datum — .date äger
+            avståndet nedåt via .title's margin-top, som är samma i båda fallen. */}
+        <h1 className={s.title}>{post.title}</h1>
 
-        <div style={{ marginTop: 24 }}>
+        <div className={s.body}>
           {paragraphs.map((text, i) => (
-            <p
-              key={i}
-              style={{
-                margin: i === 0 ? 0 : '16px 0 0',
-                fontFamily: 'var(--font-body)',
-                fontSize: 16,
-                lineHeight: 1.7,
-                color: 'color-mix(in srgb, var(--color-fg, #232520) 82%, transparent)',
-              }}
-            >
+            // Första stycket = ingress (.para:first-child i CSS), ingen villkorad margin i JSX.
+            <p key={i} className={s.para}>
               {text}
             </p>
           ))}

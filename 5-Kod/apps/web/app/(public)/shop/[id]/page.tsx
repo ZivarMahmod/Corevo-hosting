@@ -6,6 +6,7 @@ import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenan
 import { AddToCart } from '@/components/storefront/shop/AddToCart'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import { loadShopProduct } from '@/lib/storefront/shop/load-shop'
+import s from './product.module.css'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,114 +44,46 @@ export default async function ShopProductPage({
 
   const paragraphs = (product.description ?? '')
     .split(/\n\s*\n/)
-    .map((s) => s.trim())
+    .map((p) => p.trim())
     .filter(Boolean)
 
   return (
     <section className="section" data-module="shop">
       <div className="section-inner">
-        <p style={{ margin: '0 0 24px' }}>
-          <Link
-            href="/shop"
-            style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: 14,
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              color: 'var(--color-primary, #232520)',
-              textDecoration: 'none',
-              borderBottom: '1px solid var(--color-primary, #232520)',
-              paddingBottom: 2,
-            }}
-          >
+        <p className={s.back}>
+          <Link href="/shop" className={s.backLink}>
             ← Hela butiken
           </Link>
         </p>
 
-        <div
-          style={{
-            display: 'grid',
-            gap: 32,
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            alignItems: 'start',
-          }}
-        >
-          <div
-            style={{
-              aspectRatio: '4 / 3',
-              background: 'color-mix(in srgb, var(--color-fg, #232520) 6%, transparent)',
-              borderRadius: 'calc(var(--radius, 4px) * 2)',
-              overflow: 'hidden',
-            }}
-          >
+        <div className={s.grid}>
+          <div className={s.media}>
             {product.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={product.imageUrl}
                 alt={product.imageAlt ?? product.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                className={s.mediaImg}
               />
             ) : null}
           </div>
 
           <div>
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: 'var(--font-display, var(--font-body))',
-                fontSize: 32,
-                lineHeight: 1.15,
-                color: 'var(--color-fg, #232520)',
-              }}
-            >
-              {product.name}
-            </h1>
-            <p
-              style={{
-                margin: '12px 0 0',
-                fontFamily: 'var(--font-ui)',
-                fontSize: 20,
-                fontWeight: 700,
-                color: 'var(--color-fg, #232520)',
-              }}
-            >
-              {formatShopPrice(product.priceCents, product.currency)}
-            </p>
+            <h1 className={s.title}>{product.name}</h1>
+            <p className={s.price}>{formatShopPrice(product.priceCents, product.currency)}</p>
 
             {paragraphs.map((text, i) => (
-              <p
-                key={i}
-                style={{
-                  margin: '16px 0 0',
-                  fontFamily: 'var(--font-body)',
-                  fontSize: 15,
-                  lineHeight: 1.6,
-                  color: 'color-mix(in srgb, var(--color-fg, #232520) 72%, transparent)',
-                }}
-              >
+              <p key={i} className={s.body}>
                 {text}
               </p>
             ))}
 
             {paused ? (
-              <p
-                role="status"
-                style={{
-                  marginTop: 20,
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: 'var(--color-fg, #232520)',
-                  background: 'color-mix(in srgb, var(--color-accent, #C8A24A) 14%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--color-accent, #C8A24A) 30%, transparent)',
-                  borderRadius: 'var(--radius, 4px)',
-                  padding: '10px 14px',
-                }}
-              >
+              <p role="status" className={s.paused}>
                 Webshoppen är tillfälligt stängd för nya beställningar. Vi öppnar igen snart.
               </p>
             ) : (
-              <div style={{ marginTop: 12 }}>
+              <div className={s.buy}>
                 <AddToCart product={product} fulfilment={config.fulfilment} />
               </div>
             )}

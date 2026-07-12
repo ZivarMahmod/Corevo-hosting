@@ -1,0 +1,79 @@
+/* goal-60 — KASSANS SKAL (sidan runt CheckoutForm).
+ *
+ * Var: 8 inline `style={{}}`. Sista steget före betalning renderades i plattformens
+ * neutrala default — resan började i en vacker mall och slutade i en grå blankett.
+ *
+ * Vektor-regeln: modulen äger funktionen (modul-gate, auth-seam), mallen äger formen.
+ * ÅTERANVÄNDA tokens: --sf-radius, --sf-focus, --color-fg/-bg/-primary.
+ * INGA nya tokens här — panelen och knappen bor i checkout-form.module.css.
+ *
+ * KONTRAST (mot default fg #232520 / bg #fff):
+ *   rubrik + brödtext ......... 15.5:1
+ *   dämpad meta-rad (68% mix) . 5.5:1  (var: opacity .75 ≈ 3.6:1 → FAIL)
+ */
+
+.shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.closed {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.closedTitle {
+  margin: 0 0 12px;
+  font-family: var(--font-display, var(--font-body));
+  font-size: 28px;
+  color: var(--color-fg, #232520);
+}
+
+.closedText {
+  margin: 0 0 24px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-fg, #232520) 78%, var(--color-bg, #fff));
+}
+
+/* Länk = klickyta: 44px hög trots att den ser ut som text. */
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 2px;
+  color: var(--color-primary, var(--color-fg, #232520));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+  border-radius: var(--sf-radius, var(--radius, 4px));
+}
+
+/* Konto-raden ovanför formuläret. */
+.account {
+  margin: -8px 0 20px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  /* 68% fg-mix = 5.5:1. Var `opacity: .75` → ca 3.6:1, under golvet. */
+  color: color-mix(in srgb, var(--color-fg, #232520) 68%, var(--color-bg, #fff));
+}
+
+/* Inline-länk i en dämpad rad ärver INTE dämpningen — den ska vara läsbar (15.5:1). */
+.accountLink {
+  min-height: 0;
+  color: var(--color-fg, #232520);
+  font-weight: 600;
+}

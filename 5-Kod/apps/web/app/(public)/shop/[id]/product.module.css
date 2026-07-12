@@ -1,0 +1,124 @@
+/* goal-60 — PRODUKTSIDAN.
+ *
+ * Var: 10 inline `style={{}}`. Mallen har ingen moduleView för produktsidan, så den
+ * renderas HELT av plattformen — och inline gjorde den oåtkomlig för temat. Resultat:
+ * kunden klickar på en produkt i en vacker butik och landar i plattformens default.
+ *
+ * Vektor-regeln: modulen äger funktionen (modul-gate, loadShopProduct, AddToCart),
+ * mallen äger formen. Varje värde läser en tema-variabel med neutralt fallback.
+ *
+ * ÅTERANVÄNDA tokens: --sf-radius, --sf-focus, --color-fg/-bg/-primary/-accent.
+ * NYA tokens:
+ *   --sf-media-radius  — produktbildens radie. Var hårdkodad `calc(--radius * 2)`, vilket
+ *     tvingar RUNDA hörn på en rakskuren mall (Calytrix) och tvärtom. Bilden är den
+ *     största ytan på sidan; mallen MÅSTE äga dess form. Faller tillbaka på gamla värdet.
+ *
+ * KONTRAST (mot default fg #232520 / bg #fff):
+ *   H1 + pris .................. 15.5:1
+ *   beskrivning (72% fg-mix) ... 6.2:1  (var: 72% mot transparent — samma ton, nu mätt)
+ *   "Hela butiken"-länk ........ 15.5:1
+ */
+
+.back {
+  margin: 0 0 24px;
+}
+
+/* Länken är en klickyta: 44px hög, med riktiga tillstånd. Var en naken <a>. */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  color: var(--color-primary, var(--color-fg, #232520));
+  border-bottom: 1px solid var(--color-primary, var(--color-fg, #232520));
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.backLink:hover {
+  border-bottom-width: 2px;
+  color: var(--color-accent, var(--color-primary, #232520));
+  border-bottom-color: var(--color-accent, var(--color-primary, #232520));
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+.grid {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
+.media {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
+  border-radius: var(--sf-media-radius, calc(var(--sf-radius, var(--radius, 4px)) * 2));
+}
+
+.mediaImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display, var(--font-body));
+  font-size: 32px;
+  line-height: 1.15;
+  color: var(--color-fg, #232520);
+}
+
+/* Priset är tabulärt — det ska inte hoppa mot varukorgens och kassans belopp. */
+.price {
+  margin: 12px 0 0;
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-fg, #232520);
+}
+
+.body {
+  margin: 16px 0 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  /* Mot bg, inte transparent: 6.2:1 mätt. En 72%-mix mot transparent ger samma ton på
+   * vitt men blir oförutsägbar på en mörk mall — mot --color-bg håller den i båda. */
+  color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff));
+}
+
+/* Paused: ärlig vy, inte 404. Färg är inte ensam bärare — den har kant och text. */
+.paused {
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--color-fg, #232520);
+  background: color-mix(in srgb, var(--color-accent, #c8a24a) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent, #c8a24a) 30%, transparent);
+  border-left-width: 4px;
+  border-radius: var(--sf-radius, var(--radius, 4px));
+}
+
+.buy {
+  margin-top: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backLink {
+    transition: none;
+  }
+}

@@ -31,6 +31,7 @@
 
 import Link from 'next/link'
 import { SectionHeader } from './sections'
+import s from './promo-section.module.css'
 import {
   presentkortFulfilmentLabel,
   formatGiftPrice,
@@ -72,65 +73,22 @@ export async function PresentkortSection({
         />
 
         {paused ? (
-          <p
-            role="status"
-            style={{
-              marginTop: 8,
-              fontFamily: 'var(--font-ui)',
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--color-fg, #232520)',
-              background: 'color-mix(in srgb, var(--color-accent, #C8A24A) 14%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--color-accent, #C8A24A) 30%, transparent)',
-              borderRadius: 'var(--radius, 4px)',
-              padding: '10px 14px',
-            }}
-          >
+          <p role="status" className={s.notice}>
             Presentkort är pausade just nu.
           </p>
         ) : null}
 
         {/* Amount presets shown as token-styled chips (whole kronor via formatGiftPrice). */}
-        <ul
-          aria-label="Belopp att välja mellan"
-          style={{
-            listStyle: 'none',
-            margin: '28px 0 0',
-            padding: 0,
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
+        <ul aria-label="Belopp att välja mellan" className={s.chips}>
           {config.amountPresets.map((amount, i) => (
-            <li
-              key={i}
-              style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: 16,
-                fontWeight: 700,
-                color: 'var(--color-fg, #232520)',
-                background: 'color-mix(in srgb, var(--color-fg, #232520) 4%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 14%, transparent)',
-                borderRadius: 'calc(var(--radius, 4px) * 2)',
-                padding: '10px 18px',
-              }}
-            >
+            <li key={i} className={s.chip}>
               {formatGiftPrice(amount, config.currency)}
             </li>
           ))}
         </ul>
 
         {/* Fulfilment row — how the gift card reaches the recipient (variant-driven). */}
-        <p
-          style={{
-            margin: '20px 0 0',
-            fontFamily: 'var(--font-body)',
-            fontSize: 15,
-            lineHeight: 1.6,
-            color: 'color-mix(in srgb, var(--color-fg, #232520) 72%, transparent)',
-          }}
-        >
+        <p className={s.lead}>
           {config.fulfilment === 'physical'
             ? 'Hämtas i butik.'
             : 'Skickas direkt till mottagarens mejl.'}
@@ -138,34 +96,13 @@ export async function PresentkortSection({
 
         {/* ÄRLIG CTA-rad (goal-55 P1): inga döda knappar. Online-köp finns inte
             (betal-rails pausade, compliance), så vi säger det rakt och ger EN riktig
-            handling — kontakta oss. Fortsatt server-only, ingen 'use client'. */}
-        <p
-          style={{
-            margin: '24px 0 0',
-            fontFamily: 'var(--font-body)',
-            fontSize: 15,
-            lineHeight: 1.6,
-            color: 'color-mix(in srgb, var(--color-fg, #232520) 72%, transparent)',
-          }}
-        >
+            handling — kontakta oss. Fortsatt server-only, ingen 'use client'.
+            goal-60: den är en KÖP-yta och bär därför köpknappens sex lägen via
+            --sf-btn-* — samma kontrakt som AddToCart, inte en platt platta. */}
+        <p className={s.lead}>
           Presentkort köper du i butiken — eller hör av dig så ordnar vi det.
         </p>
-        <Link
-          href="/kontakt"
-          style={{
-            display: 'inline-block',
-            marginTop: 12,
-            fontFamily: 'var(--font-ui)',
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--color-fg, #232520)',
-            background: 'color-mix(in srgb, var(--color-fg, #232520) 6%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 14%, transparent)',
-            borderRadius: 'var(--radius, 4px)',
-            padding: '10px 18px',
-            textDecoration: 'none',
-          }}
-        >
+        <Link href="/kontakt" className={s.cta}>
           Kontakta oss
         </Link>
       </div>

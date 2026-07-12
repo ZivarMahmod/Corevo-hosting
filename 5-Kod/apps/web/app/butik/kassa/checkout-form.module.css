@@ -1,0 +1,286 @@
+/* goal-60 — KASSANS FORMULÄR. Här BETALAR kunden.
+ *
+ * Var: inline `style={{}}` rakt igenom — fälten kunde inte bära :focus/:hover/:invalid,
+ * knappen kunde inte bära :hover/:active/:focus-visible, och ingen mall kunde nå in.
+ * Sista steget i köpet var strukturellt dömt att vara en grå blankett.
+ *
+ * Anatomin är EXAKT samma som storefront-form.module.css (--sf-field-*, --sf-btn-*) —
+ * kassan ska inte se ut som ett annat system än resten av mallens formulär.
+ *
+ * ÅTERANVÄNDA tokens: --sf-field-*, --sf-btn-*, --sf-radius, --sf-focus, --sf-danger,
+ * --color-fg/-bg/-surface/-line/-primary/-accent.
+ * NYA tokens: --sf-panel-* / --sf-total-* — samma som i cart.module.css (summeringspanelen
+ * och totalsumman är samma arketyp i varukorgen och i kassan; en mall stylar dem en gång).
+ *
+ * KONTRAST (mot default fg #232520 / bg #fff):
+ *   brödtext / radtext ......... 15.5:1
+ *   dämpad finstil (68% mix) ... 5.5:1  (var: opacity .6 = 4.2:1 → FAIL)
+ *   knapptext på accent-guld ... 6.4:1  (vitt på guld = 2.4:1 → FAIL)
+ *   fel/alert (--sf-danger) .... 7.3:1
+ *   pending-knapp (72%-blekt guld, samma mörka ink) 4.6:1 — ALDRIG opacity.
+ */
+
+.wrap {
+  display: grid;
+  gap: 28px;
+}
+
+/* ---- tom varukorg ---- */
+
+.emptyText {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--color-fg, #232520);
+}
+
+/* ---- ordersammanfattningen (samma panel-arketyp som varukorgen) ---- */
+
+.summary {
+  padding: var(--sf-panel-pad, 22px 24px);
+  background: var(--sf-panel-bg, color-mix(in srgb, var(--color-fg, #232520) 4%, transparent));
+  border: 1px solid
+    var(--sf-panel-border, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 12%, transparent)));
+  border-radius: var(--sf-panel-radius, var(--sf-radius, var(--radius, 4px)));
+}
+
+.summaryTitle {
+  margin: 0 0 14px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-fg, #232520);
+}
+
+/* Rader får LUFT (8px, var 4px) — en kvittolista, inte en Excel-tabell. */
+.item,
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-fg, #232520);
+}
+
+.rowLabel {
+  color: color-mix(in srgb, var(--color-fg, #232520) 78%, var(--color-bg, #fff));
+}
+
+/* Alla belopp är tabulära — kolumnen får inte hoppa. */
+.money {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rule {
+  margin-top: 10px;
+  padding-top: 6px;
+  border-top: 1px solid
+    var(--sf-row-line, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 12%, transparent)));
+}
+
+/* Totalsumman = sidans TYNGSTA typografi (Bloom & Wild-mönstret). */
+.total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid
+    var(--sf-row-line, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 16%, transparent)));
+  font-family: var(--font-ui);
+  font-size: var(--sf-total-fs, 19px);
+  font-weight: var(--sf-total-weight, 700);
+  color: var(--color-fg, #232520);
+}
+
+.fine {
+  margin: 10px 0 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--color-fg, #232520) 68%, var(--color-bg, #fff));
+}
+
+.trust {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: color-mix(in srgb, var(--color-fg, #232520) 68%, var(--color-bg, #fff));
+}
+
+/* ---- fel ---- */
+
+.alert {
+  margin: 0;
+  padding: 12px 14px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--color-fg, #232520);
+  background: color-mix(in srgb, var(--sf-danger, #b00020) 9%, transparent);
+  /* Färg är aldrig ensam bärare av betydelse (WCAG 1.4.1) → även en form: tjock kant. */
+  border-left: 4px solid var(--sf-danger, #b00020);
+  border-radius: var(--sf-radius, var(--radius, 4px));
+}
+
+.alertLink {
+  color: var(--sf-danger, #b00020);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- formuläret ---- */
+
+.form {
+  display: grid;
+  gap: var(--sf-field-gap, 16px);
+}
+
+.label {
+  display: grid;
+  gap: 7px;
+}
+
+.labelText {
+  font-family: var(--font-ui);
+  font-size: var(--sf-label-fs, 13px);
+  font-weight: var(--sf-label-weight, 600);
+  letter-spacing: var(--sf-label-ls, 0.01em);
+  text-transform: var(--sf-label-transform, none);
+  color: var(--sf-label-ink, color-mix(in srgb, var(--color-fg, #232520) 82%, transparent));
+}
+
+.field {
+  width: 100%;
+  min-height: var(--sf-field-h, 48px);
+  padding: var(--sf-field-pad, 12px 14px);
+  font-family: var(--font-body);
+  font-size: 15px; /* < 16px triggar iOS auto-zoom — därför aldrig lägre */
+  color: var(--color-fg, #232520);
+  background: var(--sf-field-bg, var(--color-surface, var(--color-bg, #fff)));
+  border: var(--sf-field-border-w, 1px) solid
+    var(--sf-field-border, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 20%, transparent)));
+  border-radius: var(--sf-field-radius, var(--sf-btn-radius, var(--sf-radius, var(--radius, 4px))));
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.field:hover:not(:disabled) {
+  border-color: var(--sf-field-border-hover, var(--color-primary, #232520));
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--sf-field-border-focus, var(--color-primary, #232520));
+  box-shadow: 0 0 0 3px
+    var(--sf-field-ring, color-mix(in srgb, var(--color-primary, #232520) 18%, transparent));
+}
+
+.field:disabled {
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--color-fg, #232520) 4%, transparent);
+  color: color-mix(in srgb, var(--color-fg, #232520) 70%, var(--color-bg, #fff));
+}
+
+/* Röd kant FÖRST när kunden lämnat fältet — aldrig medan hon skriver. Valideringen
+ * i sig är oförändrad (noValidate + onSubmit-kontrollen äger fortfarande sanningen). */
+.field:user-invalid {
+  border-color: var(--sf-danger, #b00020);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sf-danger, #b00020) 16%, transparent);
+}
+
+/* ---- betalknappen ---- */
+
+.submit {
+  margin-top: 4px;
+  width: 100%;
+  min-height: var(--sf-btn-h, 52px);
+  padding: var(--sf-btn-pad, 15px 24px);
+  font-family: var(--font-ui);
+  font-size: var(--sf-btn-fs, 15px);
+  font-weight: var(--sf-btn-weight, 700);
+  letter-spacing: var(--sf-btn-ls, 0.01em);
+  text-transform: var(--sf-btn-transform, none);
+  line-height: 1.2;
+  cursor: pointer;
+  /* Mörk ink som fallback: vitt på default-guldet mäter 2.4:1. Mallens --sf-btn-ink vinner. */
+  color: var(--sf-btn-ink, var(--color-fg, #232520));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border: 1px solid var(--sf-btn-border, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, var(--radius, 4px)));
+  transition:
+    background-color var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    transform var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--sf-btn-bg-hover, color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 88%, var(--color-fg, #232520)));
+  transform: translateY(-2px);
+}
+
+.submit:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 80ms;
+}
+
+.submit:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+/* PENDING/disabled: knappen behåller sin identitet (den flimrar inte till grått mitt i
+ * ett köp) men slutar ta klick. `pointer-events: none` är den visuella halvan av
+ * dubbelklick-skyddet — den riktiga halvan är submitting-vakten i onSubmit, för en
+ * dubbelbetalning är en riktig bugg och får inte hänga på CSS. opacity vore fel:
+ * det tar knapptexten under kontrastgolvet. */
+.submit:disabled {
+  cursor: progress;
+  pointer-events: none;
+  transform: none;
+  background: color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 72%, var(--color-bg, #fff));
+  border-color: color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 72%, var(--color-bg, #fff));
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 9px;
+  vertical-align: -2px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: sfCheckoutSpin 600ms linear infinite;
+}
+
+@keyframes sfCheckoutSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field,
+  .submit {
+    transition: none;
+  }
+
+  .submit:hover,
+  .submit:active {
+    transform: none;
+  }
+
+  /* Spinnern slutar snurra men FÖRSVINNER inte — den är kvittot på att något händer.
+   * Texten ("Slutför…") bär samma budskap, så inget tillstånd går förlorat. */
+  .spinner {
+    animation: none;
+  }
+}

@@ -1,0 +1,188 @@
+/* goal-60 — PRESENTKORTS- OCH LOJALITETSYTAN.
+ *
+ * Bägge är KÖP-ytor: de ber besökaren om ett beslut. Ändå var deras "knappar" platta
+ * plattor — inline `style={{}}` kan inte bära :hover/:active/:focus-visible, så de
+ * SÅG klickbara ut men gav noll återkoppling. Viruset. De två sektionerna delar en
+ * modul här därför att de ritar exakt samma anatomi (status-band → chips/stämplar →
+ * CTA); en mall ska stämma dem i ETT block, inte i två.
+ *
+ * VEKTOR-REGELN: modulen äger FUNKTIONEN — presentkortets CTA är en RIKTIG länk till
+ * /kontakt (betal-rails pausade → ärlig handling, inga döda knappar), lojalitetens
+ * "Bli medlem" är fortsatt ett INERT server-element (aria-disabled, ingen 'use
+ * client', inga signup-rails byggda). Formen ändras; funktionen inte.
+ *
+ * Tokens: återanvänder --sf-btn-*, --sf-radius, --sf-focus, --sf-notice-*,
+ * --sf-card-* från add-to-cart/shop-section. INGA nya tokens införs här.
+ */
+
+/* ---- status-band (identiskt kontrakt med shop/blogg) ---- */
+
+.notice {
+  margin-top: 8px;
+  padding: 12px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--sf-notice-ink, var(--color-fg, #232520));
+  background: var(--sf-notice-bg, color-mix(in srgb, var(--color-accent, #c8a24a) 14%, transparent));
+  border: 1px solid
+    var(--sf-notice-border, color-mix(in srgb, var(--color-accent, #c8a24a) 30%, transparent));
+  border-left-width: 4px;
+  border-radius: var(--sf-notice-radius, var(--sf-radius, 4px));
+}
+
+/* ---- belopps-chips (presentkort) ---- */
+
+.chips {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* min-height 44 = touch-golvet (chipsen är inte klickbara idag, men de får aldrig
+ * vara mindre än en yta som senare BLIR det). Full --color-fg = 15.2:1. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--color-fg, #232520);
+  background: var(--sf-card-bg, color-mix(in srgb, var(--color-fg, #232520) 4%, transparent));
+  border: 1px solid
+    var(--sf-card-border, color-mix(in srgb, var(--color-fg, #232520) 14%, transparent));
+  border-radius: var(--sf-chip-radius, calc(var(--sf-radius, 4px) * 2));
+}
+
+/* ---- stämpelkort (lojalitet) ---- */
+
+.stamps {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.stamp {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px dashed
+    var(--sf-card-border-strong, color-mix(in srgb, var(--color-fg, #232520) 34%, transparent));
+  background: var(--sf-card-bg, color-mix(in srgb, var(--color-fg, #232520) 4%, transparent));
+}
+
+/* ---- poäng-raden (lojalitet, points-varianten) ---- */
+
+.points {
+  margin: 28px 0 0;
+  font-family: var(--font-display, var(--font-body));
+  font-size: clamp(20px, 2.4vw, 24px);
+  line-height: 1.35;
+  color: var(--color-fg, #232520);
+}
+
+/* Accenten bär BARA emfas, aldrig betydelse ensam — siffran står i texten oavsett
+ * (WCAG 1.4.1). Understruken så den håller även när accenten är ljus. */
+.pointsFigure {
+  color: var(--color-accent, #c8a24a);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* ---- brödtext ---- */
+
+/* 72% ink = 5.9:1 mot --color-bg (WCAG-luminans, räknat). */
+.lead {
+  margin: 20px 0 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 56ch;
+  color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff));
+}
+
+/* ---- CTA: sex lägen, precis som köpknappen ----
+ * Samma --sf-btn-*-kontrakt som add-to-cart.module.css: sätter mallen sin köpknapp
+ * ärver presentkortets CTA den automatiskt. Det är hela poängen med vektor-regeln. */
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+  min-height: var(--sf-btn-h, 48px);
+  padding: var(--sf-btn-pad, 14px 24px);
+  font-family: var(--font-ui);
+  font-size: var(--sf-btn-fs, 14px);
+  font-weight: var(--sf-btn-weight, 600);
+  letter-spacing: var(--sf-btn-ls, 0.01em);
+  text-transform: var(--sf-btn-transform, none);
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  color: var(--sf-btn-ink, var(--color-bg, #fff));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border: 1px solid var(--sf-btn-border, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  transition:
+    background-color var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    transform var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+
+.cta:hover {
+  background: var(
+    --sf-btn-bg-hover,
+    color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 88%, var(--color-fg, #232520))
+  );
+  transform: translateY(-2px);
+}
+
+.cta:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+/* Lojalitetens "Bli medlem": rälsen finns inte, så ytan är ärligt otillgänglig.
+ * ALDRIG via opacity — det hade tagit texten till ~3:1. Egen, MÄTT ink i stället:
+ * fg 72% över en 6%-platta = 5.77:1 (WCAG-luminans, räknat). */
+.ctaInert {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff));
+  background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
+  border-color: var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 18%, transparent));
+  transform: none;
+}
+
+/* Ett inert element får inte låtsas svara på hover — det vore en lögn. */
+.ctaInert:hover,
+.ctaInert:active {
+  background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta {
+    transition: none;
+  }
+
+  .cta:hover,
+  .cta:active {
+    transform: none;
+  }
+}

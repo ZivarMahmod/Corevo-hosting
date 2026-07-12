@@ -1,0 +1,349 @@
+/* goal-60 — VARUKORGEN.
+ *
+ * Var: 24 inline `style={{}}`. Inline kan inte bära :hover, :active, :focus-visible —
+ * och en MALL kan aldrig nå in i den. Varukorgen var därför dömd att bli plattformens
+ * grå default, hur vacker mallen än var. Samma sjuka som köpknappen och formulären hade.
+ *
+ * Vektor-regeln: modulen äger FUNKTIONEN (useCart, setQty, removeLine, formatShopPrice),
+ * mallen äger FORMEN. Varje värde nedan läser en --sf-*-variabel med neutralt fallback.
+ * En mall som vill ge varukorgen sin egen själ sätter tokens i sitt [data-theme]-block.
+ *
+ * ÅTERANVÄNDA tokens: --sf-btn-*, --sf-radius, --sf-focus, --sf-danger,
+ * --color-fg/-bg/-surface/-line/-primary/-accent.
+ *
+ * NYA tokens (döpta --sf-<sak>-<egenskap>, inga synonymer för befintliga):
+ *   --sf-panel-bg / --sf-panel-border / --sf-panel-radius / --sf-panel-pad
+ *       Summeringspanelen är en egen arketyp — inte ett kort, inte ett fält, inte en knapp.
+ *       Den finns i varukorgen OCH i kassan, så den behöver ett eget namn för att kunna
+ *       stylas likadant på båda ställena av en mall.
+ *   --sf-row-line / --sf-row-pad
+ *       Radtabellen (en rad per varukorgsrad). Skiljelinjen och radluften är det som
+ *       skiljer en luftig e-handel från en Excel-tabell — mallen måste äga den.
+ *   --sf-total-fs / --sf-total-weight
+ *       Totalsumman ska vara sidans TYNGSTA typografi (Bloom & Wild-mönstret). Egen
+ *       token så en mall kan göra den ännu tyngre utan att röra radernas skala.
+ *
+ * KONTRAST (WCAG-relativ luminans, mätt mot default-tokens fg #232520 / bg #fff):
+ *   brödtext fg på bg .................. 15.5:1
+ *   dämpad text (68% fg-mix) ........... 5.5:1   (var: opacity .6/.7 = 4.2:1 → FAIL)
+ *   knapptext (fg-ink på accent-guld) ... 6.4:1   (vitt på guld hade varit 2.4:1)
+ *   "Ta bort" (--sf-danger #b00020) .... 7.3:1
+ *   disabled stepper-ink (70% fg-mix på 8%-tint) 5.0:1  — ALDRIG opacity, som tar
+ *       texten under golvet; egna mätta färger i stället.
+ */
+
+/* ---- tomt läge ---- */
+
+.empty {
+  text-align: center;
+  padding: 32px 0;
+}
+
+.emptyText {
+  margin: 0 0 20px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  /* 68% fg-mix mot bg = 5.5:1. Var `opacity: .7` → 4.2:1, under golvet. */
+  color: color-mix(in srgb, var(--color-fg, #232520) 68%, var(--color-bg, #fff));
+}
+
+/* ---- layout ---- */
+
+.wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.lines {
+  flex: 1 1 380px;
+  min-width: 0;
+}
+
+/* ---- en varukorgsrad ---- */
+
+.row {
+  display: flex;
+  gap: 16px;
+  padding: var(--sf-row-pad, 18px 0);
+  border-bottom: 1px solid
+    var(--sf-row-line, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 12%, transparent)));
+}
+
+.thumb {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--sf-radius, var(--radius, 4px));
+  background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-fg, #232520);
+}
+
+.variant,
+.unit {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: color-mix(in srgb, var(--color-fg, #232520) 68%, var(--color-bg, #fff));
+}
+
+.unit {
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Radtotalen: tabulära siffror så kolumnen inte hoppar när antalet ändras. */
+.lineTotal {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-fg, #232520);
+}
+
+/* ---- antals-stepper ---- */
+
+.qty {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 44×44 = touch-golvet. Var 32px — under golvet, och utan ett enda tillstånd. */
+.step {
+  width: 44px;
+  height: 44px;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-fg, #232520);
+  background: transparent;
+  border: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 18%, transparent));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, var(--radius, 4px)));
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 80ms ease;
+}
+
+.step:hover:not(:disabled) {
+  border-color: var(--color-primary, var(--color-fg, #232520));
+  background: var(--color-accent-soft, color-mix(in srgb, var(--color-fg, #232520) 5%, transparent));
+}
+
+.step:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.step:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+/* Disabled utan opacity: mätta färger. 70% fg-ink mot 8%-tinten = 5.0:1. */
+.step:disabled {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--color-fg, #232520) 70%, var(--color-bg, #fff));
+  background: color-mix(in srgb, var(--color-fg, #232520) 8%, transparent);
+  border-color: var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 14%, transparent));
+}
+
+.qtyValue {
+  min-width: 24px;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- "Ta bort" = DESTRUKTIV handling ----
+ * Den ligger på RADEN (vid det den tar bort), inte i panelen bredvid "Till kassan" —
+ * en destruktiv och en positiv knapp får aldrig stå axel mot axel. Den bär --sf-danger,
+ * inte accenten, och är 44px hög trots att den ser ut som en länk. */
+.remove {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--sf-btn-radius, var(--sf-radius, var(--radius, 4px)));
+  color: var(--sf-danger, #b00020); /* 7.3:1 mot vit bg */
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.remove:hover {
+  background: color-mix(in srgb, var(--sf-danger, #b00020) 8%, transparent);
+  border-color: color-mix(in srgb, var(--sf-danger, #b00020) 35%, transparent);
+  text-decoration: underline;
+}
+
+.remove:active {
+  background: color-mix(in srgb, var(--sf-danger, #b00020) 14%, transparent);
+}
+
+.remove:focus-visible {
+  outline: 2px solid var(--sf-danger, #b00020);
+  outline-offset: 2px;
+}
+
+/* ---- fortsätt handla ---- */
+
+.back {
+  margin: 18px 0 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: color-mix(in srgb, var(--color-fg, #232520) 82%, var(--color-bg, #fff));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.backLink:hover {
+  color: var(--color-primary, var(--color-fg, #232520));
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+/* ---- summeringspanelen ---- */
+
+.panel {
+  flex: 0 1 320px;
+  padding: var(--sf-panel-pad, 24px);
+  background: var(--sf-panel-bg, color-mix(in srgb, var(--color-fg, #232520) 4%, transparent));
+  border: 1px solid
+    var(--sf-panel-border, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 12%, transparent)));
+  border-radius: var(--sf-panel-radius, var(--sf-radius, var(--radius, 4px)));
+}
+
+.panelTitle {
+  margin: 0 0 16px;
+  font-family: var(--font-display, var(--font-body));
+  font-size: 20px;
+  color: var(--color-fg, #232520);
+}
+
+.sumRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--sf-total-fs, 17px);
+  font-weight: var(--sf-total-weight, 700);
+  color: var(--color-fg, #232520);
+}
+
+/* Priset är tabulärt — siffrorna ska inte hoppa när antalet ändras. */
+.sumValue {
+  font-variant-numeric: tabular-nums;
+}
+
+.fine {
+  margin: 8px 0 20px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  /* 68% = 5.5:1. Var 12px @ opacity .6 = 4.2:1 → FAIL. */
+  color: color-mix(in srgb, var(--color-fg, #232520) 68%, var(--color-bg, #fff));
+}
+
+/* ---- primär CTA (samma anatomi som köpknappen) ---- */
+
+.cta {
+  display: block;
+  width: 100%;
+  min-height: var(--sf-btn-h, 48px);
+  padding: var(--sf-btn-pad, 14px 24px);
+  text-align: center;
+  text-decoration: none;
+  font-family: var(--font-ui);
+  font-size: var(--sf-btn-fs, 14px);
+  font-weight: var(--sf-btn-weight, 600);
+  letter-spacing: var(--sf-btn-ls, 0.01em);
+  text-transform: var(--sf-btn-transform, none);
+  line-height: 1.2;
+  cursor: pointer;
+  /* Ink-fallback är fg, inte bg: vitt på default-guldet (#C8A24A) mäter 2.4:1 — under
+   * golvet. Mörk ink på samma guld mäter 6.4:1. En mall som sätter --sf-btn-ink vinner. */
+  color: var(--sf-btn-ink, var(--color-fg, #232520));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border: 1px solid var(--sf-btn-border, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, var(--radius, 4px)));
+  transition:
+    background-color var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    transform var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+
+/* Samma knapp, men i det tomma läget ska den hugga om sin text i stället för att
+ * spänna över hela sidan — den är ett erbjudande, inte en kassa-CTA. */
+.ctaInline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+}
+
+.cta:hover {
+  background: var(--sf-btn-bg-hover, color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 88%, var(--color-fg, #232520)));
+  transform: translateY(-2px);
+}
+
+.cta:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 80ms;
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step,
+  .remove,
+  .cta {
+    transition: none;
+  }
+
+  .step:active,
+  .cta:hover,
+  .cta:active {
+    transform: none;
+  }
+}

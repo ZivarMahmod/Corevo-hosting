@@ -27,6 +27,7 @@
 // aria-disabled) because the membership/signup rails are not built yet.
 
 import { SectionHeader } from './sections'
+import s from './promo-section.module.css'
 import { lojalitetVariantLabel, type LojalitetData } from '@/lib/storefront/lojalitet/types'
 import { loadLojalitetData } from '@/lib/storefront/lojalitet/load-lojalitet'
 
@@ -58,20 +59,7 @@ export async function LojalitetSection({
         />
 
         {paused ? (
-          <p
-            role="status"
-            style={{
-              marginTop: 8,
-              fontFamily: 'var(--font-ui)',
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--color-fg, #232520)',
-              background: 'color-mix(in srgb, var(--color-accent, #C8A24A) 14%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--color-accent, #C8A24A) 30%, transparent)',
-              borderRadius: 'var(--radius, 4px)',
-              padding: '10px 14px',
-            }}
-          >
+          <p role="status" className={s.notice}>
             Lojalitetsprogrammet är pausat just nu.
           </p>
         ) : null}
@@ -79,66 +67,25 @@ export async function LojalitetSection({
         {config.variant === 'stamp_card' ? (
           <ul
             aria-label={`Stämpelkort — samla ${config.stampGoal} stämplar`}
-            style={{
-              listStyle: 'none',
-              margin: '28px 0 0',
-              padding: 0,
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 12,
-            }}
+            className={s.stamps}
           >
             {Array.from({ length: config.stampGoal }).map((_, i) => (
-              <li
-                key={i}
-                aria-hidden="true"
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '50%',
-                  border: '2px dashed color-mix(in srgb, var(--color-fg, #232520) 28%, transparent)',
-                  background: 'color-mix(in srgb, var(--color-fg, #232520) 3%, transparent)',
-                }}
-              />
+              <li key={i} aria-hidden="true" className={s.stamp} />
             ))}
           </ul>
         ) : (
-          <p
-            style={{
-              marginTop: 28,
-              fontFamily: 'var(--font-display, var(--font-body))',
-              fontSize: 22,
-              lineHeight: 1.3,
-              color: 'var(--color-fg, #232520)',
-            }}
-          >
-            Tjäna{' '}
-            <strong style={{ color: 'var(--color-accent, #C8A24A)' }}>
-              {config.pointsPerVisit} poäng
-            </strong>{' '}
-            per besök.
+          <p className={s.points}>
+            Tjäna <strong className={s.pointsFigure}>{config.pointsPerVisit} poäng</strong> per
+            besök.
           </p>
         )}
 
         {/* STATIC, inert CTA — membership/signup rails are not built yet, so this is
             a non-interactive server element that merely looks disabled (no onClick,
-            no 'use client'). */}
-        <p
-          aria-disabled="true"
-          style={{
-            display: 'inline-block',
-            marginTop: 24,
-            fontFamily: 'var(--font-ui)',
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'color-mix(in srgb, var(--color-fg, #232520) 55%, transparent)',
-            background: 'color-mix(in srgb, var(--color-fg, #232520) 6%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--color-fg, #232520) 14%, transparent)',
-            borderRadius: 'var(--radius, 4px)',
-            padding: '10px 18px',
-            cursor: 'not-allowed',
-          }}
-        >
+            no 'use client'). goal-60: den bär köpknappens form (--sf-btn-*) i sitt
+            OTILLGÄNGLIGA läge — mätt ink, aldrig opacity — så den ser ut att höra
+            hemma i mallen utan att ljuga om att den går att klicka. */}
+        <p aria-disabled="true" className={`${s.cta} ${s.ctaInert}`}>
           Bli medlem
         </p>
       </div>

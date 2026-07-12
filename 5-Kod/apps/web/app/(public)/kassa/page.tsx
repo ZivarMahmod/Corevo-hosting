@@ -7,6 +7,7 @@ import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenan
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
 import { CheckoutForm } from '@/app/butik/kassa/CheckoutForm'
 import { SubpageHero } from '@/components/storefront/sections'
+import s from './kassa.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kassa' }
@@ -26,14 +27,14 @@ export default async function KassaPage() {
     // för 404 (kunden kan ha en varukorg kvar). off/draft → notFound som tidigare.
     if (!isModulePaused(states, 'shop')) notFound()
     return (
-      <section className="section" style={{ maxWidth: 720, margin: '0 auto', padding: '48px 20px', textAlign: 'center' }}>
-        <h1 style={{ fontFamily: 'var(--font-display, var(--font-body))', fontSize: 28, margin: '0 0 12px' }}>
-          Butiken är tillfälligt stängd
-        </h1>
-        <p style={{ color: 'var(--color-text-muted, inherit)', margin: '0 0 24px' }}>
+      <section className={`section ${s.closed}`}>
+        <h1 className={s.closedTitle}>Butiken är tillfälligt stängd</h1>
+        <p className={s.closedText}>
           Vi tar inte emot beställningar just nu. Din varukorg finns kvar — välkommen tillbaka snart.
         </p>
-        <Link href="/" style={{ textDecoration: 'underline' }}>Till startsidan</Link>
+        <Link href="/" className={s.link}>
+          Till startsidan
+        </Link>
       </section>
     )
   }
@@ -58,20 +59,18 @@ export default async function KassaPage() {
   return (
     <>
       <SubpageHero eyebrow="— Snart klart" title="Kassa" />
-    <section className="section" style={{ maxWidth: 720, margin: '0 auto', padding: '32px 20px' }}>
+    <section className={`section ${s.shell}`}>
       {accountsEnabled && !signedIn ? (
-        <p style={{ margin: '-12px 0 20px', fontSize: 14, opacity: 0.75 }}>
+        <p className={s.account}>
           Har du ett konto?{' '}
-          <Link href="/login?next=/kassa" style={{ textDecoration: 'underline' }}>
+          <Link href="/login?next=/kassa" className={`${s.link} ${s.accountLink}`}>
             Logga in
           </Link>{' '}
           så sparas din beställning på Mina sidor.
         </p>
       ) : null}
       {accountsEnabled && signedIn && signedInEmail ? (
-        <p style={{ margin: '-12px 0 20px', fontSize: 14, opacity: 0.75 }}>
-          Inloggad som {signedInEmail} — beställningen sparas på Mina sidor.
-        </p>
+        <p className={s.account}>Inloggad som {signedInEmail} — beställningen sparas på Mina sidor.</p>
       ) : null}
       <CheckoutForm fulfilment={fulfilment} />
     </section>
