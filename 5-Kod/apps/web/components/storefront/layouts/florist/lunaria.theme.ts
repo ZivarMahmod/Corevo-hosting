@@ -14,17 +14,17 @@ const u = (id: string, w = 1600) =>
 
 const IMG = {
   duskRoses: u('1516617442634-75371039cb3a'), // rosor + eukalyptus mot dov skiffer-blå botten — SIGNATUR
-  noirRoses: u('1494972308805-463bc619d34e'), // djupröda rosor mot nästan svart grönt
-  whiteRoseWood: u('1495231916356-a86217efff12'), // vit ros mot mörkt trä
-  eucalyptus: u('1533038590840-1cde6e668a91'), // silvergrön eukalyptuskvist, vit botten
-  wheatField: u('1500382017468-9049fed747ef'), // torkat vete-fält i skymningsljus
-  roseVaseMauve: u('1518895949257-7621c3c786d7'), // enstaka ros i glas, kvällsskugga
-  pastelBouquet: u('1591886960571-74d43a9d4166'), // vit/creme/rosa bukett i vas
-  shopStall: u('1487070183336-b863922373d4'), // blomsterstånd, verkstadskänsla
-  pinkLily: u('1502977249166-824b3a8a4d6d'), // rosa lilja i vas
-  p1: u('1494790108377-be9c29b29330', 700),
-  p2: u('1438761681033-6461ffad8d80', 700),
-  p3: u('1573497019940-1c28c88b4f3e', 700),
+  noirRoses: u('1766255081512-ff81e82f656c'), // djupröda rosor mot nästan svart grönt
+  whiteRoseWood: u('1766226763084-042674e06791'), // vit ros mot mörkt trä
+  eucalyptus: u('1723726649556-88dfed48723a'), // silvergrön eukalyptuskvist, vit botten
+  wheatField: u('1556216583-cb1ac9559189'), // torkat vete-fält i skymningsljus
+  roseVaseMauve: u('1648112832533-55f654d14bc7'), // enstaka ros i glas, kvällsskugga
+  pastelBouquet: u('1606645685534-67c8c5b13f10'), // vit/creme/rosa bukett i vas
+  shopStall: u('1596411753943-c760174f79f5'), // blomsterstånd, verkstadskänsla
+  pinkLily: u('1711919529153-aff395cb268d'), // rosa lilja i vas
+  p1: u('1765252629719-8c7466cb21e5', 700),
+  p2: u('1563266589-33a3065a6501', 700),
+  p3: u('1661768817921-cdf48ae45b4f', 700),
 } as const
 
 /**

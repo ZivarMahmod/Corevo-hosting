@@ -13,20 +13,20 @@ const u = (id: string, w = 1600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`
 
 const IMG = {
-  hero1: u('1519378058457-4c29a0a2efac'), // klarröda blommor, festligt
-  hero2: u('1596438459194-f275f413d6ff'), // aprikosfärgad bukett på kraftpapper
-  hero3: u('1465146344425-f00d5f5c8f07'), // vallmo/vetefält, luftigt
-  duo1: u('1494972308805-463bc619d34e'), // mörkröda rosor, mättat — portföljbild 1
-  duo2: u('1518895949257-7621c3c786d7'), // ros i vas, kvällsljus — portföljbild 2
-  g3: u('1502977249166-824b3a8a4d6d'), // rosa lilja i vas
-  g4: u('1470509037663-253afd7f0f51'), // solros/vetefält
-  g5: u('1487070183336-b863922373d4'), // blomsterstånd, varma toner
-  g6: u('1533616688419-b7a585564566'), // orange/röd bukett i glasburk
-  about: u('1466692476868-aef1dfb1e735'), // växthus, arbetsmiljö
-  closing: u('1490750967868-88aa4486c946'), // bukett
-  p1: u('1494790108377-be9c29b29330', 700),
-  p2: u('1500648767791-00dcc994a43e', 700),
-  p3: u('1438761681033-6461ffad8d80', 700),
+  hero1: u('1530533718754-001d2668365a'), // klarröda blommor, festligt
+  hero2: u('1711349171577-4d9bd1c219f8'), // aprikosfärgad bukett på kraftpapper
+  hero3: u('1516834474-48c0abc2a902'), // vallmo/vetefält, luftigt
+  duo1: u('1683667308908-894ed24f9ed8'), // mörkröda rosor, mättat — portföljbild 1
+  duo2: u('1654028615605-17e89d54b2ae'), // ros i vas, kvällsljus — portföljbild 2
+  g3: u('1518388711175-fc28d3f6ade5'), // rosa lilja i vas
+  g4: u('1736015476949-b9388d34519b'), // solros/vetefält
+  g5: u('1561903288-c74f3f721e61'), // blomsterstånd, varma toner
+  g6: u('1556648305-e5a457088e6a'), // orange/röd bukett i glasburk
+  about: u('1613512763626-abbbfc9268ff'), // växthus, arbetsmiljö
+  closing: u('1498930133386-33ee20e8e71b'), // bukett
+  p1: u('1605278613967-e098563bc55a', 700),
+  p2: u('1624285206817-0230db70d364', 700),
+  p3: u('1612690234316-27a35a059125', 700),
 } as const
 
 /**

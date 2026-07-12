@@ -15,18 +15,18 @@ const u = (id: string, w = 1600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`
 
 const IMG = {
-  heroWide: u('1465146344425-f00d5f5c8f07'), // vallmo i vetefält — vild, öppen
-  heroMoody: u('1533038590840-1cde6e668a91'), // mörk bukett: lila anemon, orange protea, röd ranunkel
-  heroGreen: u('1509587584298-0f3b3a3a1797', 1200), // eukalyptusgren, porträttformat — mossgrönt
-  g1: u('1490750967868-88aa4486c946', 900), // orange vallmo mot blå himmel
-  g2: u('1457089328109-e5d9bd499191', 900), // solrosor i närbild
-  g3: u('1519378058457-4c29a0a2efac', 900), // tätt fält av röda blommor
-  g4: u('1502977249166-824b3a8a4d6d', 900), // rosa ros i glasflaska
-  g5: u('1518895949257-7621c3c786d7', 900), // rosa ros mot rosa vägg
-  g6: u('1462275646964-a0e3386b89fa', 900), // körsbärsblom mot blå himmel
-  closing: u('1494972308805-463bc619d34e'), // mörkröda rosor mot svart — dramatisk
-  p1: u('1494790108377-be9c29b29330', 700),
-  p2: u('1500648767791-00dcc994a43e', 700),
+  heroWide: u('1721742534218-ffd5cd3e567d'), // vallmo i vetefält — vild, öppen
+  heroMoody: u('1720517667166-4ed9fe41e2b6'), // mörk bukett: lila anemon, orange protea, röd ranunkel
+  heroGreen: u('1755401679272-c2e026885af4', 1200), // eukalyptusgren, porträttformat — mossgrönt
+  g1: u('1653927833775-4b006f863d44', 900), // orange vallmo mot blå himmel
+  g2: u('1721742534218-ffd5cd3e567d', 900), // solrosor i närbild
+  g3: u('1646663263374-9864741d501b', 900), // tätt fält av röda blommor
+  g4: u('1612469114400-de5d1680715e', 900), // rosa ros i glasflaska
+  g5: u('1578546371939-5124eb382c82', 900), // rosa ros mot rosa vägg
+  g6: u('1646663262890-99e57ee68c14', 900), // körsbärsblom mot blå himmel
+  closing: u('1742240438400-470cd8a68b87'), // mörkröda rosor mot svart — dramatisk
+  p1: u('1664784707989-5043d1623013', 700),
+  p2: u('1646663263094-63204c4ff81f', 700),
 } as const
 
 /**

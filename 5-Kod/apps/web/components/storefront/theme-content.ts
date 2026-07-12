@@ -84,6 +84,77 @@ const IMG = {
   g6: u('1457972729786-0411a3b2b626', 900),
 } as const
 
+// goal-62 D2 — EGNA FOTON PER MALL. De fem äldre mallarna delade ETT bildmanifest
+// (IMG ovan): salvia, leander, linnea och edit ledde med samma salongsinteriör i olika
+// färg. En egen mall är en egen typ av branding — då kan den inte ha grannens bilder.
+// Foto-id:n är hämtade och HEAD-verifierade av scripts/foton-per-mall.mjs (kör
+// `node scripts/foton-per-mall.mjs --verify` för att kolla att de fortfarande lever).
+const SALVIA_IMG = {
+  hero1: u('1695527081728-e3a42f0ce261'),
+  hero2: u('1695527081793-91a2d4b5b103'),
+  hero3: u('1781450090585-1a511b7066d9'),
+  about: u('1695527081874-b674c46f40fb'),
+  closing: u('1626383137804-ff908d2753a2'),
+  g1: u('1626379501846-0df4067b8bb9', 900),
+  g2: u('1600948836101-f9ffda59d250', 900),
+  g3: u('1695527081848-1e46c06e6458', 900),
+  g4: u('1746723378067-83a345ff3160', 900),
+  g5: u('1695527081827-fdbc4e77be9b', 900),
+  g6: u('1746723391801-1a24f7a57730', 900),
+} as const
+const LEANDER_IMG = {
+  hero1: u('1712178435871-48d630f15969'),
+  hero2: u('1716203499461-5a1edb4b5e06'),
+  hero3: u('1711349172547-3246a21a4c0d'),
+  about: u('1725021119504-2cb1e9e4c082'),
+  closing: u('1597010107510-5f74525a5297'),
+  g1: u('1627716762987-d22098e86b3f', 900),
+  g2: u('1642775589620-ca13d73e00a6', 900),
+  g3: u('1694208115105-fec57298ea42', 900),
+  g4: u('1656231586368-3b6dc842a876', 900),
+  g5: u('1528756514091-dee5ecaa3278', 900),
+  g6: u('1640905423713-e8acfb33724e', 900),
+} as const
+const ZIGGE_IMG = {
+  hero1: u('1779524477261-12141ccbd8d9'),
+  hero2: u('1778409762668-cf893875d611'),
+  hero3: u('1708166210391-6822d91d2895'),
+  about: u('1781931298124-88833761114f'),
+  closing: u('1695632918735-c78986bf3b39'),
+  g1: u('1781226968695-9ce2d4c0271b', 900),
+  g2: u('1769734416095-30fbc03e7bb7', 900),
+  g3: u('1778784544843-712029254a98', 900),
+  g4: u('1775126454577-4846f3e55cc5', 900),
+  g5: u('1779556507342-7951f64a3b86', 900),
+  g6: u('1763081756934-ea920762e6ad', 900),
+} as const
+const LINNEA_IMG = {
+  hero1: u('1505576391880-b3f9d713dc4f'),
+  hero2: u('1646054346214-2c20bc25b86f'),
+  hero3: u('1762755647813-017e128a4ba0'),
+  about: u('1776211961209-468d71038aa1'),
+  closing: u('1776211961018-f15d43aefe9e'),
+  g1: u('1775769383410-06e6823e3afb', 900),
+  g2: u('1776211961042-500a2459caa0', 900),
+  g3: u('1733896781401-9518c71f7c72', 900),
+  g4: u('1748351970583-327f50884b5d', 900),
+  g5: u('1690397814893-b4c29217eb5b', 900),
+  g6: u('1768152859365-337f962fe1e3', 900),
+} as const
+const EDIT_IMG = {
+  hero1: u('1599332069800-fcf11ed035ff'),
+  hero2: u('1644978448908-fc907d2495b2'),
+  hero3: u('1662039352486-aeca40b40c39'),
+  about: u('1781925856343-c97d0d44f94c'),
+  closing: u('1596232168371-e4d32dd0aee3'),
+  g1: u('1616105996583-f9e3c00bb31f', 900),
+  g2: u('1510032518699-36e55fe15658', 900),
+  g3: u('1781455589910-d5bd2132d3dc', 900),
+  g4: u('1715407754988-4d617cdf0a4e', 900),
+  g5: u('1540163558217-3aa12d20edf6', 900),
+  g6: u('1700868329999-056910348977', 900),
+} as const
+
 // Flora-temats generiska blomster-foton (Unsplash, verifierade 200 OK 2026-07-11).
 const FLORA_IMG = {
   shop: u('1487530811176-3780de880c2d'),
@@ -119,10 +190,10 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     aboutTitle: 'Hantverk, kvalitet och personlig service',
     teamEyebrow: '— Vårt team',
     teamTitle: 'Människorna bakom hantverket',
-    heroImages: [IMG.salonInterior, IMG.styling, IMG.salonChairs],
-    galleryImages: [IMG.g1, IMG.g2, IMG.g3, IMG.g4, IMG.g5, IMG.g6],
-    aboutImage: IMG.washing,
-    closingImage: IMG.salonChairs,
+    heroImages: [SALVIA_IMG.hero1, SALVIA_IMG.hero2, SALVIA_IMG.hero3],
+    galleryImages: [SALVIA_IMG.g1, SALVIA_IMG.g2, SALVIA_IMG.g3, SALVIA_IMG.g4, SALVIA_IMG.g5, SALVIA_IMG.g6],
+    aboutImage: SALVIA_IMG.about,
+    closingImage: SALVIA_IMG.closing,
     team: [
       { name: 'Vårt team', role: 'Hantverk & omsorg', img: IMG.p1 },
       { name: 'Erfarenhet', role: 'Specialister', img: IMG.p3 },
@@ -149,10 +220,10 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     aboutTitle: 'Hantverk och värme i varje besök',
     teamEyebrow: '— Vårt team',
     teamTitle: 'Människorna i ateljén',
-    heroImages: [IMG.styling, IMG.color, IMG.salonInterior],
-    galleryImages: [IMG.g4, IMG.g5, IMG.g2, IMG.g6, IMG.g1, IMG.g3],
-    aboutImage: IMG.color,
-    closingImage: IMG.styling,
+    heroImages: [LEANDER_IMG.hero1, LEANDER_IMG.hero2, LEANDER_IMG.hero3],
+    galleryImages: [LEANDER_IMG.g1, LEANDER_IMG.g2, LEANDER_IMG.g3, LEANDER_IMG.g4, LEANDER_IMG.g5, LEANDER_IMG.g6],
+    aboutImage: LEANDER_IMG.about,
+    closingImage: LEANDER_IMG.closing,
     team: [
       { name: 'Ateljén', role: 'Hantverk & detaljer', img: IMG.p2 },
       { name: 'Erfarenhet', role: 'Form & finish', img: IMG.p4 },
@@ -179,10 +250,10 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     aboutTitle: 'RENT HANTVERK, INGEN KRÅNGEL',
     teamEyebrow: '— Teamet',
     teamTitle: 'KILLARNA & TJEJERNA SOM FIXAR DET',
-    heroImages: [IMG.barberShop, IMG.barberCut, IMG.barberTools],
-    galleryImages: [IMG.barberCut, IMG.beard, IMG.barberShop, IMG.barberTools, IMG.g6, IMG.cutting],
-    aboutImage: IMG.barberTools,
-    closingImage: IMG.barberShop,
+    heroImages: [ZIGGE_IMG.hero1, ZIGGE_IMG.hero2, ZIGGE_IMG.hero3],
+    galleryImages: [ZIGGE_IMG.g1, ZIGGE_IMG.g2, ZIGGE_IMG.g3, ZIGGE_IMG.g4, ZIGGE_IMG.g5, ZIGGE_IMG.g6],
+    aboutImage: ZIGGE_IMG.about,
+    closingImage: ZIGGE_IMG.closing,
     team: [
       { name: 'Teamet', role: 'Snabbt & vasst', img: IMG.p6 },
       { name: 'Teamet', role: 'Vardagens hantverk', img: IMG.p4 },
@@ -209,10 +280,10 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     aboutTitle: 'Naturlig omsorg med omtanke',
     teamEyebrow: '— Vårt team',
     teamTitle: 'Människorna bakom omsorgen',
-    heroImages: [IMG.washing, IMG.salonInterior, IMG.styling],
-    galleryImages: [IMG.g3, IMG.g1, IMG.g5, IMG.g2, IMG.g4, IMG.g6],
-    aboutImage: IMG.washing,
-    closingImage: IMG.salonInterior,
+    heroImages: [LINNEA_IMG.hero1, LINNEA_IMG.hero2, LINNEA_IMG.hero3],
+    galleryImages: [LINNEA_IMG.g1, LINNEA_IMG.g2, LINNEA_IMG.g3, LINNEA_IMG.g4, LINNEA_IMG.g5, LINNEA_IMG.g6],
+    aboutImage: LINNEA_IMG.about,
+    closingImage: LINNEA_IMG.closing,
     team: [
       { name: 'Naturligt', role: 'Skonsamma val', img: IMG.p5 },
       { name: 'Vårt team', role: 'Omsorg & vård', img: IMG.p1 },
@@ -239,10 +310,10 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     aboutTitle: 'Form, färg och finess',
     teamEyebrow: '— Studion',
     teamTitle: 'Människorna bakom formen',
-    heroImages: [IMG.cutting, IMG.color, IMG.salonChairs],
-    galleryImages: [IMG.g2, IMG.g4, IMG.g1, IMG.g3, IMG.g6, IMG.g5],
-    aboutImage: IMG.cutting,
-    closingImage: IMG.salonChairs,
+    heroImages: [EDIT_IMG.hero1, EDIT_IMG.hero2, EDIT_IMG.hero3],
+    galleryImages: [EDIT_IMG.g1, EDIT_IMG.g2, EDIT_IMG.g3, EDIT_IMG.g4, EDIT_IMG.g5, EDIT_IMG.g6],
+    aboutImage: EDIT_IMG.about,
+    closingImage: EDIT_IMG.closing,
     team: [
       { name: 'Studion', role: 'Precision & detalj', img: IMG.p2 },
       { name: 'Erfarenhet', role: 'Form & finish', img: IMG.p1 },

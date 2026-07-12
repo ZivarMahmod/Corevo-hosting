@@ -14,19 +14,19 @@ const u = (id: string, w = 1600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`
 
 const IMG = {
-  hero: u('1494972308805-463bc619d34e'), // mörka rosor uppifrån, tidningsomslag
+  hero: u('1589820546347-ec06b066b6ff'), // mörka rosor uppifrån, tidningsomslag
   celebrateMain: u('1560343090-f0409e92791a'), // aprikosfärgad pion-bukett, band
-  celebrateInset: u('1518895949257-7621c3c786d7'), // ensam rosa ros i glasvas
-  about: u('1533616688419-b7a585564566'), // levande orange bukett, ljus bakgrund
-  closing: u('1465146344425-f00d5f5c8f07'), // rosa vallmo i vetefält
+  celebrateInset: u('1739760720090-985b03ef7b37'), // ensam rosa ros i glasvas
+  about: u('1566259067581-a8a95ddc9f73'), // levande orange bukett, ljus bakgrund
+  closing: u('1781779573791-24777e2ec391'), // rosa vallmo i vetefält
   g1: u('1563241527-3004b7be0ffd', 900), // rosa/creme/vinröda rosor i vas
-  g2: u('1596438459194-f275f413d6ff', 900), // aprikosfärgad bukett, kraftpapper
-  g3: u('1520763185298-1b434c919102', 900), // rosa tulpan, rosa bakgrund
-  g4: u('1502977249166-824b3a8a4d6d', 900), // rosa lilja i glasflaska
-  g5: u('1470509037663-253afd7f0f51', 900), // solrosfält
-  g6: u('1490750967868-88aa4486c946', 900), // orange vallmofält
-  p1: u('1494790108377-be9c29b29330', 700),
-  p2: u('1500648767791-00dcc994a43e', 700),
+  g2: u('1659276605844-faabebcb5f2f', 900), // aprikosfärgad bukett, kraftpapper
+  g3: u('1659276605824-52c31b611836', 900), // rosa tulpan, rosa bakgrund
+  g4: u('1746540883040-86f76a0fb1ad', 900), // rosa lilja i glasflaska
+  g5: u('1646826558416-488180f2ba5e', 900), // solrosfält
+  g6: u('1595106377875-6519590092e5', 900), // orange vallmofält
+  p1: u('1773486155782-c1d7d43ca90c', 700),
+  p2: u('1626119771805-cee51433df43', 700),
 } as const
 
 /**

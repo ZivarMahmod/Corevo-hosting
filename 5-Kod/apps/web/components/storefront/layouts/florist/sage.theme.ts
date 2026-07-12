@@ -12,20 +12,20 @@ const u = (id: string, w = 1600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`
 
 const IMG = {
-  shopStall: u('1487070183336-b863922373d4'), // blomsterstånd, varma toner
-  poppyField: u('1465146344425-f00d5f5c8f07'), // vallmo/vete, luftigt
-  pastelBouquet: u('1591886960571-74d43a9d4166'), // rosa/creme bukett i vas
-  bestsellers: u('1533616688419-b7a585564566'), // orange/röd bukett i glasburk
-  birthday: u('1519378058457-4c29a0a2efac'), // klarröda blommor, festligt
+  shopStall: u('1747773202639-b42dbd443f39'), // blomsterstånd, varma toner
+  poppyField: u('1772568364070-4bddd51d5b49'), // vallmo/vete, luftigt
+  pastelBouquet: u('1757912157342-febfe2c7b493'), // rosa/creme bukett i vas
+  bestsellers: u('1757912155863-6cfb50faba00'), // orange/röd bukett i glasburk
+  birthday: u('1757912157733-c8439a34997a'), // klarröda blommor, festligt
   wedding: u('1519225421980-715cb0215aed'), // dukat bröllopsbord m. blombuketter
-  whiteRose: u('1495231916356-a86217efff12'), // vit ros på trä, varmt ljus
-  pinkLily: u('1502977249166-824b3a8a4d6d'), // rosa lilja i vas
-  darkRoses: u('1494972308805-463bc619d34e'), // mörkröda rosor, mättat
-  roseVase: u('1518895949257-7621c3c786d7', 900), // enstaka ros i vas, kvällsljus
-  sunflower: u('1470509037663-253afd7f0f51', 1400), // solros
-  p1: u('1494790108377-be9c29b29330', 700),
-  p2: u('1438761681033-6461ffad8d80', 700),
-  p3: u('1573497019940-1c28c88b4f3e', 700),
+  whiteRose: u('1757912157304-82d55b678717'), // vit ros på trä, varmt ljus
+  pinkLily: u('1757912156332-9e2f309ca24b'), // rosa lilja i vas
+  darkRoses: u('1779632320430-4575b6a4a071'), // mörkröda rosor, mättat
+  roseVase: u('1780515989535-41754bcd092b', 900), // enstaka ros i vas, kvällsljus
+  sunflower: u('1765340330761-336cca2340f0', 1400), // solros
+  p1: u('1772712110646-fb36d29bc841', 700),
+  p2: u('1760123662232-6e339883de96', 700),
+  p3: u('1762931864316-38272225d8eb', 700),
 } as const
 
 /**

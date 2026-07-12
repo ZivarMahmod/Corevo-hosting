@@ -14,15 +14,15 @@ const u = (id: string, w = 1600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`
 
 const IMG = {
-  banner: u('1526047932273-341f2a7631f9'), // händer håller en hjärtformad bukett mot klarrosa botten
-  roseVase: u('1591886960571-74d43a9d4166'), // rosa/gräddvita rosor i glasvas
-  lily: u('1502977249166-824b3a8a4d6d'), // rosa lilja i glasflaska mot vit botten
-  roseSolo: u('1518895949257-7621c3c786d7'), // ensam rosa ros i glasvas, kvällsljus
-  blossom: u('1462275646964-a0e3386b89fa'), // klarrosa körsbärsblom mot blå himmel
-  florist: u('1487530811176-3780de880c2d'), // person håller upp en färdig bukett
-  cactusMug: u('1509587584298-0f3b3a3a1797'), // liten rosa kaktusblomma i vit mugg
-  p1: u('1494790108377-be9c29b29330', 700),
-  p2: u('1500648767791-00dcc994a43e', 700),
+  banner: u('1601121786206-43457758361b'), // händer håller en hjärtformad bukett mot klarrosa botten
+  roseVase: u('1776458883112-cfddcbb79695'), // rosa/gräddvita rosor i glasvas
+  lily: u('1775042459202-ef2070c79c6b'), // rosa lilja i glasflaska mot vit botten
+  roseSolo: u('1780664573804-ef9f0ff83288'), // ensam rosa ros i glasvas, kvällsljus
+  blossom: u('1721355683223-fe259c832172'), // klarrosa körsbärsblom mot blå himmel
+  florist: u('1721355683148-29d2a609e966'), // person håller upp en färdig bukett
+  cactusMug: u('1759332691549-fb0863bbb92c'), // liten rosa kaktusblomma i vit mugg
+  p1: u('1685430488211-fad03d987aac', 700),
+  p2: u('1686722653304-22b0e524ef1c', 700),
 } as const
 
 /**
