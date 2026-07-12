@@ -37,7 +37,7 @@ export async function addCustomDomain(_p: DomainActionState, fd: FormData): Prom
   const { user, supabase } = await platformCtx()
 
   const tenantId = String(fd.get('tenantId') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   const { domain, error: vErr } = validateDomainInput(String(fd.get('domain') ?? ''))
   if (vErr || !domain) return { error: vErr ?? 'Ogiltig domän.' }
 
@@ -48,8 +48,8 @@ export async function addCustomDomain(_p: DomainActionState, fd: FormData): Prom
     .select('id, status')
     .eq('id', tenantId)
     .maybeSingle()
-  if (!tenant) return { error: 'Salongen finns inte.' }
-  if (tenant.status !== 'active') return { error: 'Salongen är inte aktiv — kan inte lägga till domän.' }
+  if (!tenant) return { error: 'Kunden finns inte.' }
+  if (tenant.status !== 'active') return { error: 'Kunden är inte aktiv — kan inte lägga till domän.' }
 
   // Globally unique (tenant_domains.domain unique). Reject up front so we never create
   // an orphan CF hostname for a domain we then can't persist.
@@ -101,7 +101,7 @@ export async function verifyCustomDomain(_p: DomainActionState, fd: FormData): P
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const domain = validateDomainInput(String(fd.get('domain') ?? '')).domain
-  if (!tenantId || !domain) return { error: 'Saknar salong eller domän.' }
+  if (!tenantId || !domain) return { error: 'Saknar kund eller domän.' }
 
   const cf = await getCustomHostnameByName(domain)
   if (!cf.ok) return { error: cf.error }
@@ -154,7 +154,7 @@ export async function removeCustomDomain(_p: DomainActionState, fd: FormData): P
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const domain = validateDomainInput(String(fd.get('domain') ?? '')).domain
-  if (!tenantId || !domain) return { error: 'Saknar salong eller domän.' }
+  if (!tenantId || !domain) return { error: 'Saknar kund eller domän.' }
 
   const cf = await getCustomHostnameByName(domain)
   if (!cf.ok) return { error: cf.error }

@@ -17,7 +17,7 @@ import { requestOrigin } from '@/lib/url'
 
 export type StripeActionState = { error?: string; success?: string }
 
-const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
+const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 const NO_STRIPE = 'Stripe är inte konfigurerat ännu. Kontakta Corevo.'
 

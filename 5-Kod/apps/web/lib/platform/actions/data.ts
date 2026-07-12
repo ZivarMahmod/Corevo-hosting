@@ -43,7 +43,7 @@ function httpsUrlOrNull(raw: FormDataEntryValue | null): string | null | undefin
 export async function saveTenantData(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const name = String(fd.get('name') ?? '').trim()
   // Stad (#14): editable here too. Absent field → undefined = leave as-is; present but
@@ -57,13 +57,13 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
   // namn-spar utan radios nollade salongens val).
   const variantRaw = String(fd.get('booking_variant') ?? '')
 
-  if (!name) return { error: 'Ange ett salongsnamn.' }
+  if (!name) return { error: 'Ange ett företagsnamn.' }
   if (reviewUrl === undefined)
     return { error: 'Ogiltig recensionslänk. Använd en https-länk, t.ex. https://g.page/r/.../review.' }
   const bookingVariant: BookingVariant | null = isBookingVariant(variantRaw) ? variantRaw : null
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   // 1) tenant name (+ city when the field is present) — feeds the cached public bundle
   //    (same field M6 saveSettings edits). city omitted = untouched; '' = cleared.
@@ -107,7 +107,7 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
     actorId: user.id,
     meta: { name, booking_variant: bookingVariant, review_url: reviewUrl ? 'set' : 'cleared' },
   })
-  return { success: 'Salongsdata sparad. Publika sajten uppdaterad.' }
+  return { success: 'Kunddata sparad. Publika sajten uppdaterad.' }
 }
 
 /**
@@ -118,12 +118,12 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
  */
 export async function saveTenantName(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   const name = String(fd.get('name') ?? '').trim().slice(0, 120)
-  if (!name) return { error: 'Ange ett salongsnamn.' }
+  if (!name) return { error: 'Ange ett företagsnamn.' }
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { error } = await supabase.from('tenants').update({ name }).eq('id', tenantId)
   if (error) {
@@ -158,7 +158,7 @@ export async function saveTenantName(_p: ActionState, fd: FormData): Promise<Act
  */
 export async function updateBookingSettings(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const variantRaw = String(fd.get('booking_variant') ?? '')
   const pickerRaw = String(fd.get('picker_mode') ?? '')
@@ -174,7 +174,7 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
     : 'initialer'
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { data: existing } = await supabase
     .from('tenant_settings')

@@ -14,9 +14,9 @@ import { sendBookingCancellation, sendBookingRebook } from '@/lib/notifications/
 
 /** Best-effort tenant display name for notifications (RLS: own tenant readable). */
 async function tenantName(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string): Promise<string> {
-  if (!tenantId) return 'Salongen'
+  if (!tenantId) return 'Företaget'
   const { data } = await supabase.from('tenants').select('name').eq('id', tenantId).maybeSingle()
-  return data?.name ?? 'Salongen'
+  return data?.name ?? 'Företaget'
 }
 
 const ACTIVE_STATUSES = ['pending', 'confirmed']
@@ -55,7 +55,7 @@ export async function signUpCustomer(_prev: SignUpState, formData: FormData): Pr
 
   const tenant = await currentKundTenant()
   if (!tenant) {
-    return { error: 'Registrering sker via en salongs sida. Öppna salongens adress och försök igen.' }
+    return { error: 'Registrering sker via företagets egen sida. Öppna företagets adress och försök igen.' }
   }
 
   const admin = createAdminClient()
@@ -217,7 +217,7 @@ export async function rebookBooking(
   }
 
   const tenant = await currentKundTenant()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänt företag.' }
 
   // 1) Secure the new slot (reused RPC; lets the EXCLUDE raise 23P01 on a race).
   const { data: newId, error: createErr } = await supabase.rpc('create_public_booking', {

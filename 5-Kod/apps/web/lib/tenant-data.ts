@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getTenantFromHost } from '@/lib/tenant'
 import { readBookingVariant, type BookingVariant } from '@/lib/platform/booking-variant'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
+import { withBranschMedia } from '@/components/storefront/images'
 
 export type Tenant = Tables<'tenants'>
 // Base row + the 0046 merch columns (optional — generated types don't know them yet).
@@ -352,6 +353,12 @@ export async function getTenantBySlug(slug: string): Promise<TenantBundle | null
         .eq('tenant_id', tenant.id) // app-layer scope
         .maybeSingle()
       const settings = parseSettings(settingsRow ?? null)
+      // Branschens foton läggs UNDER ägarens egna (withBranschMedia rör bara tomma
+      // fält). EN inkoppling här räcker för hela ytan: publika storefronten, alla
+      // undersidor OCH salong-previewn läser sin bundle härifrån. Utan bransch, eller
+      // med ägar-uppladdade bilder, är detta en no-op — då gäller mallens default
+      // precis som förr.
+      settings.branding = withBranschMedia(settings.branding, tenant.vertical_id ?? null) ?? settings.branding
       // Team-sektionen härleds ur RIKTIGA staff-rader: listan vinner över den gamla
       // settings-listan (branding.team) när minst en synlig medlem finns — annars
       // lämnas settings-listan orörd (full regel i loadStaffTeam-docblocket).

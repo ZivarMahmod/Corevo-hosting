@@ -76,12 +76,12 @@ export function PersonalClient({
   // Honest aggregates over the REAL rows (never the mock's fabricated offsets).
   const stats = useMemo(() => {
     const aktiva = staff.filter((s) => s.status === 'Aktiv').length
-    const salonger = new Set(staff.map((s) => s.slug || s.tenant)).size
+    const foretag = new Set(staff.map((s) => s.slug || s.tenant)).size
     return {
       total: staff.length,
       aktiva,
       vantar: staff.length - aktiva,
-      salonger,
+      foretag,
     }
   }, [staff])
 
@@ -112,7 +112,7 @@ export function PersonalClient({
       <PageHead
         eyebrow="Insyn"
         title="Personal"
-        lede="Lägg till frisörer åt salonger som vill ha hjälp. Skapar en personalrad direkt på vald salong."
+        lede="Lägg till personal åt kunder som vill ha hjälp. Skapar en personalrad direkt på valt företag."
       >
         <Button variant="primary" icon="plus" onClick={() => setInviting(true)}>
           Lägg till personal
@@ -128,7 +128,7 @@ export function PersonalClient({
           deltaTone="muted"
           icon="mail"
         />
-        <Stat label="Salonger" value={stats.salonger} icon="building" />
+        <Stat label="Företag" value={stats.foretag} icon="building" />
       </div>
 
       {/* search + status-pills (mock control row — search + pills only) */}
@@ -158,7 +158,7 @@ export function PersonalClient({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Sök personal, salong…"
+            placeholder="Sök personal, företag…"
             aria-label="Sök personal"
             className={styles.search}
           />
@@ -188,7 +188,7 @@ export function PersonalClient({
       ) : (
         <Card pad={0}>
           <Table
-            cols={['Namn', 'Salong', 'Roll', 'Tjänster', 'Inbjuden', 'Status', '']}
+            cols={['Namn', 'Företag', 'Roll', 'Tjänster', 'Inbjuden', 'Status', '']}
             rows={list.map((s) => [
               <span key={`${s.id}-name`} className={styles.nameCell}>
                 <span className={styles.avatar} aria-hidden="true">
@@ -247,7 +247,7 @@ function EmptyState({ filtered }: { filtered: boolean }) {
         <>
           <p className={styles.emptyTitle}>Ingen personal ännu</p>
           <p className={styles.emptyText}>
-            När en salong onboardar frisörer dyker de upp här — tvärs alla salonger.
+            När ett företag onboardar personal dyker de upp här — tvärs alla företag.
             Lägg till den första med <b>Lägg till personal</b>.
           </p>
         </>
@@ -283,20 +283,20 @@ function InviteDrawer({
   return (
     <Drawer
       title="Lägg till personal"
-      sub="Skapar en personalrad direkt på vald salong."
+      sub="Skapar en personalrad direkt på valt företag."
       ariaLabel="Lägg till personal"
       onClose={onClose}
     >
       <form action={formAction} style={{ display: 'grid', gap: 14 }}>
         <label className={styles.field}>
           <span>Namn</span>
-          <input name="title" required placeholder="t.ex. Hilal — frisör" aria-label="Namn / titel" />
+          <input name="title" required placeholder="t.ex. Hilal — teamledare" aria-label="Namn / titel" />
         </label>
         <label className={styles.field}>
-          <span>Salong</span>
+          <span>Företag</span>
           <select name="tenantId" defaultValue={tenants[0]?.id ?? ''} required>
             {tenants.length === 0 ? (
-              <option value="">Ingen salong ännu</option>
+              <option value="">Inget företag ännu</option>
             ) : (
               tenants.map((t) => (
                 <option key={t.id} value={t.id}>

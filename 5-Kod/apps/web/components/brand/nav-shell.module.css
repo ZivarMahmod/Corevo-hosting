@@ -37,10 +37,18 @@
   padding: 1rem clamp(1.25rem, 4vw, 1.75rem);
 }
 
+/* goal-61 svep: wordmarket var en 40px hög länk — under 44px-golvet (WCAG 2.5.5 /
+   Apple). Träffytan växer till 44px och kvittas med `margin-block: -2px`, så
+   FLÖDESBOXEN är kvar på exakt 40px: navraden (som redan är 44px hög p.g.a.
+   .navAccount) rör sig inte en pixel. */
 .navWordmark {
   grid-column: 1;
   justify-self: start;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -2px;
 }
 /* Re-style the global .logo-text (the inner text node) to the editorial display
    wordmark; the global rule is sans/800/primary, we want display/600/fg. The
@@ -62,10 +70,20 @@
   font-size: 0.9rem;
   font-weight: 500;
 }
+/* goal-61 svep: de HÄR var de oklassade <a>-taggarna i mätningen (19–22px). De är
+   flex-items, alltså blockifierade — den inline-padding-trick som funkar på löpande
+   textlänkar biter inte. Samma mönster som wordmarket: 44px träffyta, kvittad med
+   `margin-block: -11px` så marginalboxen är kvar på 22px. Navraden är redan 44px
+   (.navAccount), så radhöjden är oförändrad. Texten är centrerad i båda fallen →
+   ingen synlig förflyttning. */
 .navLinks a {
   color: var(--color-fg);
   opacity: 0.82;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -11px;
   transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 .navLinks a:hover {

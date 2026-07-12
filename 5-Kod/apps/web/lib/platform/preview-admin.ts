@@ -69,7 +69,7 @@ export async function listTenantSlots(
   tenantId: string,
   templateKey: string,
 ): Promise<SlotListResult> {
-  if (!tenantId || !templateKey) return { ok: false, error: 'Saknar salong eller mall.' }
+  if (!tenantId || !templateKey) return { ok: false, error: 'Saknar kund eller mall.' }
   const { supabase } = await platformCtx()
 
   const [slotsRes, contentRes, assetsRes] = await Promise.all([
@@ -122,7 +122,7 @@ export async function listTenantSlots(
  * tenant_id (platform read; RLS admits it via platform_admin). Empty today.
  */
 export async function listTenantAssets(tenantId: string): Promise<AssetListResult> {
-  if (!tenantId) return { ok: false, error: 'Saknar salong.' }
+  if (!tenantId) return { ok: false, error: 'Saknar kund.' }
   const { supabase } = await platformCtx()
 
   const { data, error } = await supabase
@@ -231,7 +231,7 @@ export async function saveImageSlot(fd: FormData): Promise<SlotSaveResult> {
   const templateKey = String(fd.get('templateKey') ?? '').trim()
   const slotKey = String(fd.get('slotKey') ?? '').trim()
   if (!tenantId || !templateKey || !slotKey) {
-    return { ok: false, error: 'Saknar salong, mall eller slot.' }
+    return { ok: false, error: 'Saknar kund, mall eller slot.' }
   }
   if (!(STOREFRONT_THEMES as readonly string[]).includes(templateKey)) {
     return { ok: false, error: 'Okänd mall.' }
@@ -336,7 +336,7 @@ export async function saveTextSlot(fd: FormData): Promise<TextSaveResult> {
   const templateKey = String(fd.get('templateKey') ?? '').trim()
   const slotKey = String(fd.get('slotKey') ?? '').trim()
   if (!tenantId || !templateKey || !slotKey) {
-    return { ok: false, error: 'Saknar salong, mall eller slot.' }
+    return { ok: false, error: 'Saknar kund, mall eller slot.' }
   }
   if (!(STOREFRONT_THEMES as readonly string[]).includes(templateKey)) {
     return { ok: false, error: 'Okänd mall.' }

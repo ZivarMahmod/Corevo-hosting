@@ -108,7 +108,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
           <div className={styles.sfWide}>
             <Reveal className={sv.center}>
               <p className="sf-eyebrow">— Ur butiken</p>
-              <h2 className={`sf-h1 ${sv.secTitle}`}>Ta med dig salongen hem</h2>
+              <h2 className={`sf-h1 ${sv.secTitle}`}>Ta med dig känslan hem</h2>
             </Reveal>
             <ul className={styles.sfTeamGrid}>
               {shopTeasers.map((p, i) => (

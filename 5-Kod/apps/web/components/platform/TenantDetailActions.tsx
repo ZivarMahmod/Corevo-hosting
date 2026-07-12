@@ -36,7 +36,7 @@ export function TenantHeaderActions({
 
   function resetPassword() {
     if (!salonAdminEmail) {
-      notify('Ingen salongsadmin inbjuden ännu — bjud in en ägare först.', 'warning')
+      notify('Ingen administratör inbjuden ännu — bjud in en ägare först.', 'warning')
       return
     }
     if (!serviceRoleAvailable) {
@@ -92,7 +92,7 @@ export function TenantDangerCard({ tenantId, tenantName }: { tenantId: string; t
       const res = await setTenantStatus({}, fd)
       if (res.error) notify(res.error, 'warning')
       else {
-        notify(res.success ?? 'Salongen är borttagen.', 'success')
+        notify(res.success ?? 'Kunden är borttagen.', 'success')
         router.push('/salonger')
       }
     })
@@ -107,7 +107,7 @@ export function TenantDangerCard({ tenantId, tenantName }: { tenantId: string; t
         onClick={() => setConfirming(true)}
       >
         <Icon name="trash" size={17} />
-        Ta bort salong
+        Ta bort kund
       </button>
     )
   }

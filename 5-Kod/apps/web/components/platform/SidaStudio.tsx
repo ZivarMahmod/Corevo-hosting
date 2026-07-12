@@ -367,7 +367,7 @@ export function SidaStudio({
     },
     {
       name: 'aboutCopy',
-      label: 'Om salongen',
+      label: 'Om företaget',
       rows: 5,
       hint: 'Berättelsen på Om oss-sidan. Startsidans om-sektion följer den här texten tills du sätter en egen under Hem-fliken.',
     },
@@ -420,7 +420,7 @@ export function SidaStudio({
             ) : null}
 
             <section className={styles.card}>
-              <h3 className={styles.cardHead}>Salongsnamn</h3>
+              <h3 className={styles.cardHead}>Företagsnamn</h3>
               <TenantNameCard tenantId={tenantId} name={name} onSaved={reload} onFlash={pushFlash} />
             </section>
 
@@ -647,7 +647,7 @@ export function SidaStudio({
             <section className={styles.card}>
               <h3 className={styles.cardHead}>Teamet</h3>
               <p className={styles.note}>
-                Team-sektionen på sidan hämtas från salongens <strong>riktiga personal</strong> —
+                Team-sektionen på sidan hämtas från företagets <strong>riktiga personal</strong> —
                 lägger du in en bokningsbar medarbetare i <strong>Personal</strong>-fliken dyker
                 hen upp här och på sidan. Här styr du bara <strong>foto</strong> och om en
                 medarbetare <strong>syns</strong>; det tekniska (tjänster, schema,
@@ -846,7 +846,7 @@ export function SidaStudio({
                 {/* Drift-fliken finns bara i plattformens kundkort — kundens egen
                     studio (canChangeTemplate=false) hänvisas till Corevo i stället. */}
                 {canChangeTemplate
-                  ? 'Salongen är inte aktiv, så den publika sidan är blockerad. Återaktivera salongen i Drift för att förhandsvisa den.'
+                  ? 'Kunden är inte aktiv, så den publika sidan är blockerad. Återaktivera kunden i Drift för att förhandsvisa den.'
                   : 'Din sida är inte aktiv just nu, så förhandsvisningen är blockerad. Kontakta Corevo så aktiverar vi den igen.'}
               </p>
             </div>

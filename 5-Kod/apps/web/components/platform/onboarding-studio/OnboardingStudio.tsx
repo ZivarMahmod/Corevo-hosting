@@ -320,7 +320,7 @@ export function ResultView({
             <Icon name="sliders" size={18} />
           </span>
           <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ ...cardTitle, display: 'block' }}>Öppna &amp; hantera salongen</span>
+            <span style={{ ...cardTitle, display: 'block' }}>Öppna &amp; hantera kunden</span>
             <span style={{ ...cardSub, display: 'block' }}>Bokningar, tjänster, personal och branding i plattformen.</span>
           </span>
           <Icon name="arrowRight" size={16} />
@@ -350,7 +350,7 @@ export function ResultView({
             <span style={{ ...cardTitle, display: 'block' }}>Ägarens admin</span>
             <span style={{ ...cardSub, display: 'block' }}>
               Ägaren loggar in på <b style={{ color: 'var(--c-ink-2)' }}>booking.{ROOT}</b> via magic-link-inbjudan (se
-              status ovan) och styr bara sin egen salong.
+              status ovan) och styr bara sin egen verksamhet.
             </span>
           </span>
         </div>

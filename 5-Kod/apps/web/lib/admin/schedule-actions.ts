@@ -9,7 +9,7 @@ import { addDays } from '@/lib/personal/format'
 
 export type ActionState = { error?: string; success?: string }
 
-const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
+const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 

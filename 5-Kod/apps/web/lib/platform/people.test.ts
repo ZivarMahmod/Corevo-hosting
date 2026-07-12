@@ -44,9 +44,9 @@ describe('customer derivation', () => {
 
 describe('staff derivation', () => {
   it('maps seeded role enum → Swedish label', () => {
-    expect(staffRoleLabel('salon_admin')).toBe('Salongschef')
-    expect(staffRoleLabel('staff')).toBe('Frisör')
-    expect(staffRoleLabel(null)).toBe('Frisör')
+    expect(staffRoleLabel('salon_admin')).toBe('Ägare')
+    expect(staffRoleLabel('staff')).toBe('Personal')
+    expect(staffRoleLabel(null)).toBe('Personal')
     expect(staffRoleLabel('barber')).toBe('barber') // unknown passes through
   })
   it('invite status: no user → väntar, inactive → inbjuden, active → aktiv', () => {

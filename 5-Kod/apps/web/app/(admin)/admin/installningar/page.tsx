@@ -9,7 +9,7 @@ import { PageHead, Card, Badge, Callout } from '@/components/portal/ui'
 import styles from '@/components/admin/admin.module.css'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Inställningar · Salongsadmin' }
+export const metadata: Metadata = { title: 'Inställningar · Adminpanel' }
 
 const ROOT_DOMAIN = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se').replace(/:\d+$/, '')
 
@@ -23,8 +23,8 @@ export default async function SettingsPage({
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salong-admin" title="Inställningar" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Inställningar" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -59,7 +59,7 @@ export default async function SettingsPage({
       <PageHead
         eyebrow={tenant.name}
         title="Inställningar"
-        lede="Varje reglage är på riktigt kopplat. Slår du på något funkar funktionen — annars finns den inte här. Salongens namn, kontakt, tidszon, betalning och avbokningsregel styrs härifrån."
+        lede="Varje reglage är på riktigt kopplat. Slår du på något funkar funktionen — annars finns den inte här. Företagets namn, kontakt, tidszon, betalning och avbokningsregel styrs härifrån."
       />
 
       <SettingsForm
@@ -140,7 +140,7 @@ export default async function SettingsPage({
                 <>
                   <span className="num">{verifiedDomains}</span> av{' '}
                   <span className="num">{domains.length}</span> domän
-                  {domains.length === 1 ? '' : 'er'} är verifierad och pekar mot din salong —
+                  {domains.length === 1 ? '' : 'er'} är verifierad och pekar mot ditt företag —
                   kunder kan nå sajten på din egna adress.
                 </>
               ) : (

@@ -17,7 +17,7 @@ export default function NotFound() {
           Sidan kunde inte hittas
         </h1>
         <p style={{ opacity: 0.7 }}>
-          Adressen finns inte, eller så är salongen inte tillgänglig.
+          Adressen finns inte, eller så är företaget inte tillgängligt.
         </p>
       </div>
     </main>

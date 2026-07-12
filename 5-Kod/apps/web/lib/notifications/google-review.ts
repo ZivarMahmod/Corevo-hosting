@@ -163,7 +163,7 @@ export async function sendReviewNudgeForBooking(
     }
     if (!to) return
 
-    const tenantName = b.tenants?.name ?? 'Salongen'
+    const tenantName = b.tenants?.name ?? 'Företaget'
     const brand = await loadEmailBrand(supabase, b.tenant_id, tenantName)
     await sendGoogleReviewNudge(to, {
       tenantName,

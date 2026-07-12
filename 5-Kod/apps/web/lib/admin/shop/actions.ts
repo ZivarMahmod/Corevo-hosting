@@ -10,7 +10,7 @@ import { refundShopOrder } from '@/lib/stripe/refund'
 import { SHOP_ORDER_STATUSES, isShopOrderTransitionAllowed, type ShopOrderStatus } from './types'
 import { sendOrderStatusEmail } from '@/lib/notifications/shop'
 
-const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
+const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 
 /**

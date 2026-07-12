@@ -128,7 +128,7 @@ export function KunderView({
           icon="user"
           hint="stabil gäst-nyckel"
         />
-        <Stat label="Salonger" value={<span className="num">{salons}</span>} icon="building" />
+        <Stat label="Företag" value={<span className="num">{salons}</span>} icon="building" />
       </div>
 
       {/* Search + salong filter — a real cross-tenant query (server re-reads). */}
@@ -147,7 +147,7 @@ export function KunderView({
             className={styles.search}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Sök namn, e-post, salong…"
+            placeholder="Sök namn, e-post, företag…"
             autoCapitalize="none"
             aria-label="Sök kund"
           />
@@ -156,9 +156,9 @@ export function KunderView({
           className={styles.select}
           value={tenant}
           onChange={(e) => navigate(query, e.target.value)}
-          aria-label="Filtrera på salong"
+          aria-label="Filtrera på företag"
         >
-          <option value="all">Alla salonger</option>
+          <option value="all">Alla företag</option>
           {tenants.map((t) => (
             <option key={t.id} value={t.id}>
               {t.name}
@@ -181,8 +181,8 @@ export function KunderView({
             </p>
             <p className={styles.emptyText}>
               {isFiltered
-                ? 'Prova en bredare sökning eller välj en annan salong. Sökningen täcker namn, e-post och salong.'
-                : 'När en salong tar emot sin första bokning dyker kunden upp här — tvärs alla salonger.'}
+                ? 'Prova en bredare sökning eller välj ett annat företag. Sökningen täcker namn, e-post och företag.'
+                : 'När ett företag tar emot sin första bokning dyker kunden upp här — tvärs alla företag.'}
             </p>
             {isFiltered ? (
               <Button
@@ -208,7 +208,7 @@ export function KunderView({
               <thead>
                 <tr>
                   <th>Namn</th>
-                  <th>Salong</th>
+                  <th>Företag</th>
                   <th>Roll</th>
                   <th>Auth</th>
                   <th>Senast inloggad</th>
@@ -300,7 +300,7 @@ export function KunderView({
                 <KV label="Telefon" value={selected.phone ?? '—'} mono />
                 <KV label="Auth-metod" value={selected.auth} />
                 <KV label="Besök" value={<span className="num">{selected.visits}</span>} />
-                <KV label="Salong" value={selected.tenant} />
+                <KV label="Företag" value={selected.tenant} />
                 <KV label="Senast inloggad" value={formatLastLogin(selected.lastLogin)} />
               </div>
             </section>
@@ -355,7 +355,7 @@ export function KunderView({
         <Drawer
           onClose={closeAdd}
           title="Lägg till kund"
-          sub="Skapar en riktig kund-rad på vald salong."
+          sub="Skapar en riktig kund-rad på valt företag."
           footer={
             <>
               <Button
@@ -382,7 +382,7 @@ export function KunderView({
             <div className={styles.calloutInfo}>
               <Icon name="info" size={16} />
               <span>
-                En stabil kund-rad skapas oftast automatiskt när salongen tar emot kundens första
+                En stabil kund-rad skapas oftast automatiskt när företaget tar emot kundens första
                 bokning. Vill du lägga till en kund i förväg gör du det här — raden får eget kund-id
                 men ingen inloggning (kopplas till ett konto först när kunden själv loggar in).
               </span>
@@ -396,16 +396,16 @@ export function KunderView({
               }}
             >
               <label className={styles.field}>
-                <span className={styles.fieldLabel}>Salong</span>
+                <span className={styles.fieldLabel}>Företag</span>
                 <select
                   className={styles.fieldControl}
                   value={addTenant}
                   onChange={(e) => setAddTenant(e.target.value)}
-                  aria-label="Välj salong"
+                  aria-label="Välj företag"
                   disabled={pending}
                   required
                 >
-                  <option value="">Välj salong…</option>
+                  <option value="">Välj företag…</option>
                   {activeTenants.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}
@@ -464,7 +464,7 @@ export function KunderView({
               <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
             </form>
 
-            <span className={styles.chip}>customers · {activeTenants.length} aktiva salonger</span>
+            <span className={styles.chip}>customers · {activeTenants.length} aktiva företag</span>
           </div>
         </Drawer>
       )}
@@ -483,7 +483,7 @@ export function KunderView({
     }
     const tenantId = tenantIdBySlug.get(c.slug)
     if (!tenantId) {
-      notify('Kunde inte koppla kunden till en salong.', 'warning')
+      notify('Kunde inte koppla kunden till ett företag.', 'warning')
       return
     }
     const fd = new FormData()
@@ -532,7 +532,7 @@ export function KunderView({
     // two identical rows (no contact_hash → no unique-index backstop → permanent dup).
     const name = addName.trim()
     if (!addTenant) {
-      setAddError('Välj en salong.')
+      setAddError('Välj ett företag.')
       return
     }
     if (!name) {
@@ -563,7 +563,7 @@ export function KunderView({
   // mock's "Exportera" affordance without inventing data it can't back.
   function exportCsv(rows: CustomerListItem[]) {
     if (rows.length === 0) return
-    const header = ['Namn', 'E-post', 'Telefon', 'Salong', 'Roll', 'Auth', 'Senast inloggad', 'Status']
+    const header = ['Namn', 'E-post', 'Telefon', 'Företag', 'Roll', 'Auth', 'Senast inloggad', 'Status']
     const cell = (v: string | number | null) => {
       const s = v == null ? '' : String(v)
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s

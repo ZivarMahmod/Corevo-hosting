@@ -457,7 +457,7 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
           <input
             form="create-service"
             name="category"
-            placeholder="t.ex. Klippning"
+            placeholder="t.ex. Populärt"
             style={inputStyle}
           />
         </Field>
@@ -592,7 +592,7 @@ function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => 
           <input
             name="category"
             defaultValue={service.category ?? ''}
-            placeholder="t.ex. Klippning"
+            placeholder="t.ex. Populärt"
             style={inputStyle}
           />
         </Field>

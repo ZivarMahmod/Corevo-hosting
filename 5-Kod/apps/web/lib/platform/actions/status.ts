@@ -12,7 +12,7 @@ export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<Ac
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
   const status = String(fd.get('status') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   // 'deleted' = soft delete: flip tenants.status (NEVER .delete() — keep the history).
   if (status !== 'active' && status !== 'suspended' && status !== 'deleted')
     return { error: 'Ogiltig status.' }
@@ -48,9 +48,9 @@ export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<Ac
   return {
     success:
       status === 'deleted'
-        ? 'Salongen är borttagen — publika sajten och admin blockeras.'
+        ? 'Kunden är borttagen — publika sajten och admin blockeras.'
         : status === 'suspended'
-          ? 'Salongen är pausad — publika sajten blockeras.'
-          : 'Salongen är aktiv igen — publika sajten öppen.',
+          ? 'Kunden är pausad — publika sajten blockeras.'
+          : 'Kunden är aktiv igen — publika sajten öppen.',
   }
 }

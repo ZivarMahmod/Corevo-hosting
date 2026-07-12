@@ -113,7 +113,7 @@ export async function sendDueReminders(): Promise<ReminderRun> {
       skipped++
       continue
     }
-    const tenantName = b.tenants?.name ?? 'Salongen'
+    const tenantName = b.tenants?.name ?? 'Företaget'
     const serviceName = b.services?.name ?? 'Behandling'
     const timeZone = b.locations?.timezone ?? 'Europe/Stockholm'
     await sendBookingReminder(

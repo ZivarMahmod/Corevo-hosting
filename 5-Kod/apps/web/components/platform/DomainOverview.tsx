@@ -45,10 +45,10 @@ export function DomainOverview({ overview }: { overview: Overview }) {
 
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2>Salong-domäner ({rows.length})</h2>
+          <h2>Kunddomäner ({rows.length})</h2>
         </div>
         {rows.length === 0 ? (
-          <p className={styles.muted}>Inga aktiva salonger ännu.</p>
+          <p className={styles.muted}>Inga aktiva kunder ännu.</p>
         ) : (
           <ul className={styles.domainList}>
             {rows.map((r) => (

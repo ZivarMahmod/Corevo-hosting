@@ -24,7 +24,7 @@ export default async function DomanerPage() {
       <PageHead
         eyebrow="Plattform"
         title="Domäner"
-        lede="Varje salongs subdomän kopplas automatiskt och re-asserteras vid varje deploy — en deploy kan aldrig ta ner en kundsida. Bara manuell radering tar bort en domän."
+        lede="Varje kunds subdomän kopplas automatiskt och re-asserteras vid varje deploy — en deploy kan aldrig ta ner en kundsida. Bara manuell radering tar bort en domän."
       />
       <DomainOverview overview={overview} />
     </section>

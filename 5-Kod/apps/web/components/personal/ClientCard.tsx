@@ -279,7 +279,7 @@ function CardBody({
           <p className="small" style={{ margin: 0 }}>
             {card.loyalty.points === 0
               ? 'Inga poäng än. Poäng tjänas vid genomförda besök.'
-              : `${card.loyalty.points.toLocaleString('sv-SE')} poäng. Nivåer är inte aktiverade för salongen.`}
+              : `${card.loyalty.points.toLocaleString('sv-SE')} poäng. Nivåer är inte aktiverade för verksamheten.`}
           </p>
         )}
       </section>
@@ -341,7 +341,7 @@ function CardBody({
           Klientkort · internt
         </div>
         <p className="small" style={{ margin: '0 0 4px' }}>
-          Endast för dig och salongen. Visas aldrig för kunden.
+          Endast för dig och verksamheten. Visas aldrig för kunden.
         </p>
         <CustomerNotesForm customerId={customerId} notes={notes} />
       </section>

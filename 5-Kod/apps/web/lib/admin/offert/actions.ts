@@ -10,7 +10,7 @@ import { sendOffertReplyEmail } from '@/lib/notifications/offert'
 import { logger } from '@/lib/observability'
 import { OFFERT_STATUSES, offertTransitionAllowed, type OffertStatus } from './types'
 
-const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
+const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 
 export async function updateOffertRequest(

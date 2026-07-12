@@ -21,8 +21,8 @@ export function StatusControl({ tenantId, status }: { tenantId: string; status: 
         {pending
           ? 'Uppdaterar…'
           : suspend
-            ? 'Pausa salong (blockera publika sajten)'
-            : 'Aktivera salong igen'}
+            ? 'Pausa kund (blockera publika sajten)'
+            : 'Aktivera kund igen'}
       </button>
       {state.error ? (
         <span className={`${styles.feedback} auth-error`} role="alert">

@@ -219,8 +219,8 @@ export function TenantPreviewFrame({
           <div className={styles.blocked}>
             <strong>Storefronten är pausad</strong>
             <p>
-              Salongen är inte aktiv, så den publika sidan är blockerad (RLS). Återaktivera
-              salongen i Drift för att förhandsvisa och redigera innehållet.
+              Kunden är inte aktiv, så den publika sidan är blockerad (RLS). Återaktivera
+              kunden i Drift för att förhandsvisa och redigera innehållet.
             </p>
           </div>
         )}
@@ -543,7 +543,7 @@ function SlotEditor({
       ) : null}
 
       <p className={styles.editorFootnote}>
-        Bilden sparas på salongens skarpa sida direkt (cache-bustas). PNG/JPG/WEBP/SVG/GIF, max 8 MB.
+        Bilden sparas på företagets skarpa sida direkt (cache-bustas). PNG/JPG/WEBP/SVG/GIF, max 8 MB.
       </p>
     </div>
   )
@@ -641,7 +641,7 @@ function TextSlotEditor({
       ) : null}
 
       <p className={styles.editorFootnote}>
-        Texten sparas på salongens skarpa sida direkt.
+        Texten sparas på företagets skarpa sida direkt.
       </p>
     </div>
   )

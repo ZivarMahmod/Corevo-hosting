@@ -18,7 +18,7 @@ import { CustomerContactCard } from '@/components/admin/CustomerContactCard'
 import { CustomerPrivacyForm } from '@/components/admin/CustomerPrivacyForm'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Kund · Salongsadmin' }
+export const metadata: Metadata = { title: 'Kund · Adminpanel' }
 
 /** Härledd nivå → svensk etikett (samma mappning som listan; LoyaltyBlock/Badge
  *  vill ha versal-initial-etiketten). */
@@ -50,8 +50,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salong-admin" title="Kund" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Kund" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -109,7 +109,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             <Detail label="Visningsnamn" value={customer.shownName} />
             <Detail label="Återkommande" value={`${customer.visits} besök`} num />
             <Detail
-              label={`Favorit${resolveTerm(tenant.terminology, 'staff', 'Frisör').toLowerCase()}`}
+              label={`Favorit${resolveTerm(tenant.terminology, 'staff', 'Personal').toLowerCase()}`}
               value={favStaff}
             />
             <Detail label="Konto" value={customer.isLinkedAccount ? 'Inloggad kund' : 'Gäst'} />

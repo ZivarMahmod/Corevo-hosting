@@ -93,7 +93,7 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
   const tenantId = String(fd.get('tenantId') ?? '')
   const moduleKey = String(fd.get('moduleKey') ?? '').trim()
   const state = String(fd.get('state') ?? '')
-  if (!tenantId || !moduleKey) return { error: 'Saknar salong eller modul.' }
+  if (!tenantId || !moduleKey) return { error: 'Saknar kund eller modul.' }
   if (!isState(state)) return { error: 'Ogiltigt modul-läge.' }
 
   // Fence the key to the real catalog so a stale/typo'd key can never 23503 the insert.

@@ -251,7 +251,7 @@ export function PlatformBrandingForm({
       {/* ── Logotyp ── */}
       <div style={secHead}>
         <span style={secTitle}>Logotyp</span>
-        <span style={secSub}>Visas i sidhuvudet — utan logotyp visas salongsnamnet</span>
+        <span style={secSub}>Visas i sidhuvudet — utan logotyp visas företagsnamnet</span>
       </div>
       <div className={styles.field}>
         {branding.logo_url ? (
@@ -264,7 +264,7 @@ export function PlatformBrandingForm({
             </label>
           </span>
         ) : (
-          <span className={styles.muted}>Ingen logotyp uppladdad — salongsnamnet visas i sidhuvudet.</span>
+          <span className={styles.muted}>Ingen logotyp uppladdad — företagsnamnet visas i sidhuvudet.</span>
         )}
         <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" />
         <span className={styles.hint}>PNG/JPG/WEBP/SVG/GIF.</span>

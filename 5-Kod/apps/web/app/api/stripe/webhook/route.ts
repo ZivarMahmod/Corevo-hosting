@@ -204,7 +204,7 @@ export async function POST(req: Request): Promise<Response> {
                 await sendPaymentReceipt(
                   to,
                   {
-                    tenantName: rel.tenants?.name ?? 'Salongen',
+                    tenantName: rel.tenants?.name ?? 'Företaget',
                     serviceName: rel.services?.name ?? 'Behandling',
                     startISO: rel.start_ts,
                     timeZone: rel.locations?.timezone ?? 'Europe/Stockholm',

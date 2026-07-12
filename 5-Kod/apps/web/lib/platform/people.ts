@@ -137,11 +137,11 @@ export type StaffFilters = { q?: string; status?: string }
 
 /** Map the seeded role enum → the Swedish label the mock shows. */
 const STAFF_ROLE_LABEL: Record<string, string> = {
-  salon_admin: 'Salongschef',
-  staff: 'Frisör',
+  salon_admin: 'Ägare',
+  staff: 'Personal',
 }
 export function staffRoleLabel(roleName: string | null): string {
-  if (!roleName) return 'Frisör'
+  if (!roleName) return 'Personal'
   return STAFF_ROLE_LABEL[roleName] ?? roleName
 }
 

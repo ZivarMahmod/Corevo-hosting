@@ -24,7 +24,7 @@ export type DropInState = { success?: string; error?: string }
 export async function createDropInBooking(_p: DropInState, fd: FormData): Promise<DropInState> {
   const user = await requirePortal('admin')
   const tenant = await getAdminTenant(user)
-  if (!tenant) return { error: 'Ingen salong är kopplad till ditt konto.' }
+  if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
 
   const staffId = String(fd.get('staff') ?? '')
   const serviceId = String(fd.get('service') ?? '')

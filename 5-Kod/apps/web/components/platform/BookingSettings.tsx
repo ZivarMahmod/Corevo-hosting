@@ -154,7 +154,7 @@ export function BookingPanel({
       <section className={studio.card}>
         <h3 className={studio.cardHead}>Bokningssätt</h3>
         <p className={studio.note}>
-          Hur bokningen öppnar sig på salongens sida. Alla fyra ger samma steg och
+          Hur bokningen öppnar sig på kundens sida. Alla fyra ger samma steg och
           bekräftelse — bara presentationen skiljer. Gäller alla &quot;Boka tid&quot;-knappar.
         </p>
         <div className={pform.templateGrid} role="radiogroup" aria-label="Bokningssätt">
@@ -211,9 +211,9 @@ export function BookingPanel({
       </section>
 
       <section className={studio.card}>
-        <h3 className={studio.cardHead}>Barberarbilder</h3>
+        <h3 className={studio.cardHead}>Personalbilder</h3>
         <p className={studio.note}>Hur medarbetarna visas i steget &quot;Hos vem?&quot;.</p>
-        <div style={segRail} role="radiogroup" aria-label="Barberarbilder">
+        <div style={segRail} role="radiogroup" aria-label="Personalbilder">
           {AVATAR_OPTIONS.map((o) => {
             const disabled = o.id === 'foto' && !hasStaffPhoto
             const on = sel.avatars === o.id

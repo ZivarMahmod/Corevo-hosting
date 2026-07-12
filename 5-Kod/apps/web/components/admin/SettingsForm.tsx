@@ -134,7 +134,7 @@ export function SettingsForm({
         </h2>
 
         <label className={styles.field}>
-          <span>Salongsnamn</span>
+          <span>Företagsnamn</span>
           <input name="name" defaultValue={props.name} required />
         </label>
 
@@ -256,7 +256,7 @@ export function SettingsForm({
             defaultValue={googleReviewUrl}
           />
           <span className={styles.muted}>
-            Klistra in salongens Google-recensionslänk. Lämna tomt för att stänga av.
+            Klistra in företagets Google-recensionslänk. Lämna tomt för att stänga av.
           </span>
         </label>
 

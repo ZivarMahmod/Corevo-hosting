@@ -7,7 +7,7 @@ import { revalidateTenant } from '@/lib/admin/tenant'
 import type { ActionState } from '@/lib/admin/actions'
 import { BLOG_STATUSES, slugify } from './types'
 
-const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
+const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 
 /**

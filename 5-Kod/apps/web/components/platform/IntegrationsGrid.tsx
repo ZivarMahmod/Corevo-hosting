@@ -23,7 +23,7 @@ import styles from './IntegrationsGrid.module.css'
 function tenantsLine(it: IntegrationWithCount) {
   if (it.connected === null) {
     // No per-tenant backing column — never fabricate a count.
-    return <span className={styles.tenants}>Plattformsbred · ingen per-salong-status</span>
+    return <span className={styles.tenants}>Plattformsbred · ingen per-kund-status</span>
   }
   return (
     <span className={styles.tenants}>

@@ -21,8 +21,8 @@ export default async function FranvaroPage() {
         <div className={styles.empty}>
           <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
           <p className={styles.emptyHint}>
-            Kontakta salongsadmin för att kopplas till en personalrad — sedan kan du registrera din
-            frånvaro här.
+            Kontakta din administratör för att kopplas till en personalrad — sedan kan du registrera
+            din frånvaro här.
           </p>
         </div>
       </section>

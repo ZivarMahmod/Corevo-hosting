@@ -34,7 +34,7 @@ export function CustomerExport({ rows }: { rows: ExportRow[] }) {
       notify('Inga kunder att exportera.', 'info')
       return
     }
-    const header = ['Kund', 'Nivå', 'Besök', 'Senaste besök', 'Frisör', 'Lojalitetspoäng']
+    const header = ['Kund', 'Nivå', 'Besök', 'Senaste besök', 'Personal', 'Lojalitetspoäng']
     const lines = [
       header.join(','),
       ...rows.map((r) =>

@@ -60,7 +60,7 @@ export const NAV: Record<PortalRole, NavConfig> = {
     ],
   },
   admin: {
-    sub: 'Salong-admin',
+    sub: 'Adminpanel',
     items: [
       { group: 'Din dag' },
       { href: '/admin', label: 'Översikt', icon: 'home' },

@@ -122,7 +122,7 @@ export function BookingsClient({
   weekAnchor,
   tz,
   weekTemplate,
-  staffNoun = 'Frisör',
+  staffNoun = 'Personal',
   staffOptions = [],
   staffFilter = '',
   locationOptions = [],
@@ -138,7 +138,7 @@ export function BookingsClient({
   tz: string
   weekTemplate: WeekTemplate
   /** Bransch-noun for the staff column/label (resolved server-side). Default
-   *  'Frisör' so an unwired mount renders exactly today's text (DIFF-0). */
+   *  'Personal' so an unwired mount renders exactly today's text (DIFF-0). */
   staffNoun?: string
   staffOptions?: { id: string; name: string }[]
   /** Aktivt serverfilter ('' = Alla) — URL:en är sanningen, selecten speglar den. */

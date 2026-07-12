@@ -39,6 +39,11 @@ function isTemplateCopyFile(rel) {
   );
 }
 
+// Filer där bransch-ord är HELA POÄNGEN — branschens egen copy. Ett bransch-ord
+// här är inte en hårdkodning, det är innehållet: frisör-branschens text SKA säga
+// frisör. Vakten skulle annars flagga den enda fil som gör det rätt.
+const BRANSCH_ÄGDA = new Set(['components/storefront/bransch-copy.ts']);
+
 function* walk(dir) {
   const entries = fs.readdirSync(dir, { recursive: true, withFileTypes: true });
   for (const e of entries) {
@@ -47,6 +52,7 @@ function* walk(dir) {
     if (full.includes(`${path.sep}node_modules${path.sep}`)) continue;
     if (!/\.tsx?$/.test(e.name)) continue;
     if (/\.test\./.test(e.name)) continue;
+    if (BRANSCH_ÄGDA.has(path.relative(WEB_ROOT, full).split(path.sep).join('/'))) continue;
     yield full;
   }
 }

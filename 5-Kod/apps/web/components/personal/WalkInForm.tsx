@@ -23,8 +23,8 @@ export function WalkInForm({
   if (services.length === 0) {
     return (
       <p className={styles.muted}>
-        Inga tjänster är kopplade till dig än — be salongsadmin koppla dina tjänster så kan du logga
-        walk-ins.
+        Inga tjänster är kopplade till dig än — be din administratör koppla dina tjänster så kan du
+        logga walk-ins.
       </p>
     )
   }

@@ -441,10 +441,20 @@
   gap: 0.85rem;
   margin-top: 1.25rem;
 }
+/* goal-61 svep: ikonlänk, 20px hög. Flex-item → inline-padding-tricket biter inte;
+   44px träffyta kvittad med `margin-block: -12px` → marginalboxen kvar på 20px, raden
+   rör sig inte. Bredden lämnas på ikonens 20px (som .heroDot): 44px breda boxar hade
+   ätit in i 0.85rem-mellanrummet och överlappat grannikonens träffyta.
+   `align-items: center` är inte kosmetik — utan den sträcker flex-stretch ikonen till
+   hela den nya 44px-höjden. */
 .fullSocial {
   color: var(--color-fg);
   opacity: 0.7;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-block: -12px;
 }
 .fullHead {
   font-family: var(--font-body);
@@ -462,13 +472,21 @@
   margin: 0 0 0.4rem;
   line-height: 1.6;
 }
+/* goal-61 svep: 22px hög. Löpande inline-länk i ett <p> (telefon/mejl i footern) →
+   lodrät padding växer träffytan till ≥44px utan att röra radboxen eller layouten
+   (samma mönster som .locContactLink). Understrykningen → text-decoration, som följer
+   TEXTEN; en border-bottom hade ritats i botten av padding-boxen, 13px under. */
 .fullLink {
   color: var(--color-primary);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
-  transition: border-color var(--dur-fast) var(--ease-out);
+  padding-block: 13px;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
 }
 .fullLink:hover {
-  border-bottom-color: var(--color-primary);
+  text-decoration-color: var(--color-primary);
 }
 .fullHoursRow {
   display: flex;

@@ -11,7 +11,7 @@ import { reportActionError } from './observe'
 export async function saveBilling(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   const billingModel = String(fd.get('billing_model') ?? 'per_booking')
   if (!isBillingModel(billingModel)) return { error: 'Ogiltig prismodell.' }
   const setupFee = kronorToCents(String(fd.get('setup_fee') ?? '')) ?? 0

@@ -6,7 +6,7 @@ import { LocationsManager } from '@/components/admin/LocationsManager'
 import { PageHead } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Platser · Salongsadmin' }
+export const metadata: Metadata = { title: 'Platser · Adminpanel' }
 
 export default async function LocationsPage() {
   const user = await requirePortal('admin')
@@ -28,8 +28,8 @@ export default async function LocationsPage() {
 function NoTenant() {
   return (
     <section className="portal-section">
-      <PageHead eyebrow="Salong-admin" title="Platser" />
-      <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+      <PageHead eyebrow="Adminpanel" title="Platser" />
+      <p className="prose">Inget företag är kopplat till ditt konto.</p>
     </section>
   )
 }

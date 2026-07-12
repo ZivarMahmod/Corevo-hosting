@@ -7,7 +7,7 @@ import { PresentkortAdmin } from '@/components/admin/PresentkortAdmin'
 import { PageHead, Callout } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Presentkort · Salongsadmin' }
+export const metadata: Metadata = { title: 'Presentkort · Adminpanel' }
 
 export default async function PresentkortPage() {
   const user = await requirePortal('admin')
@@ -15,8 +15,8 @@ export default async function PresentkortPage() {
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salongsadmin" title="Presentkort" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Presentkort" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -28,7 +28,7 @@ export default async function PresentkortPage() {
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Presentkort" />
         <Callout tone="info" icon="info">
-          Presentkort är inte aktiverat för din salong. Be plattformsadmin aktivera modulen.
+          Presentkort är inte aktiverat för ditt företag. Be plattformsadmin aktivera modulen.
         </Callout>
       </section>
     )

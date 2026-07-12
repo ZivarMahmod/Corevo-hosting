@@ -18,7 +18,7 @@ import {
 import { Icon } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Bokningsvy · Salongsadmin' }
+export const metadata: Metadata = { title: 'Bokningsvy · Adminpanel' }
 
 /**
  * BOKNINGSVY — helskärms-kiosken (Zivar 2026-07-10): dagens bokningar OCH lediga
@@ -48,7 +48,7 @@ export default async function BookingsKioskPage({
     return (
       <section className="portal-section">
         <h1>Bokningsvy</h1>
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -183,7 +183,7 @@ export default async function BookingsKioskPage({
     return `/admin/bokningar/vy?${q.toString()}`
   }
 
-  const staffNoun = resolveTerm(tenant.terminology, 'staff', 'Frisör')
+  const staffNoun = resolveTerm(tenant.terminology, 'staff', 'Personal')
 
   return (
     <section className="admin-kiosk">

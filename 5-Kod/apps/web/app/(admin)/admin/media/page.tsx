@@ -7,7 +7,7 @@ import { MediaLibrary } from '@/components/admin/MediaLibrary'
 import { PageHead, Callout } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Bildbibliotek · Salongsadmin' }
+export const metadata: Metadata = { title: 'Bildbibliotek · Adminpanel' }
 
 export default async function MediaPage() {
   const user = await requirePortal('admin')
@@ -15,8 +15,8 @@ export default async function MediaPage() {
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salongsadmin" title="Bildbibliotek" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Bildbibliotek" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -28,7 +28,7 @@ export default async function MediaPage() {
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Bildbibliotek" />
         <Callout tone="info" icon="info">
-          Bildbibliotek är inte aktiverat för din salong. Be plattformsadmin aktivera modulen.
+          Bildbibliotek är inte aktiverat för ditt företag. Be plattformsadmin aktivera modulen.
         </Callout>
       </section>
     )

@@ -373,7 +373,7 @@ function AltDrawer({ asset, onClose }: { asset: MediaAssetRow; onClose: () => vo
             form={formId}
             name="alt"
             defaultValue={asset.alt ?? ''}
-            placeholder="t.ex. Frisör klipper en kund"
+            placeholder="t.ex. Medarbetare hjälper en kund"
             style={inputStyle}
           />
         </Field>

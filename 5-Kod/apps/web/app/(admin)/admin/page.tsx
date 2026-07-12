@@ -15,7 +15,7 @@ import { QuickActions, QuickAction } from './QuickActions'
 import styles from './dashboard.module.css'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Salongsadmin' }
+export const metadata: Metadata = { title: 'Adminpanel' }
 
 const STATUS_TONE: Record<string, BadgeTone> = {
   pending: 'gold',
@@ -41,8 +41,8 @@ export default async function AdminPage() {
   if (!tenant) {
     return (
       <section className="portal-section">
-        <h1>Salongsadmin</h1>
-        <p className="prose">Ingen salong är kopplad till ditt konto. Kontakta Corevo.</p>
+        <h1>Adminpanel</h1>
+        <p className="prose">Inget företag är kopplat till ditt konto. Kontakta Corevo.</p>
       </section>
     )
   }

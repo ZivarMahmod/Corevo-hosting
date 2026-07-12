@@ -54,7 +54,7 @@ export function TenantCustomers({ data }: { data: TenantCustomersData }) {
 
       {customers.length === 0 ? (
         <p className={styles.hint}>
-          Inga kunder ännu — en stabil kund-rad skapas automatiskt när salongen tar emot sin första
+          Inga kunder ännu — en stabil kund-rad skapas automatiskt när företaget tar emot sin första
           bokning (inloggad kund eller gäst).
         </p>
       ) : (

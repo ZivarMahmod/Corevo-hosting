@@ -55,7 +55,7 @@ export const DEFAULT_ROLE_CATALOG: DefaultRole[] = [
   {
     roleName: 'salon_admin',
     dbRoleNames: ['salon_admin'],
-    name: 'Salongsägare',
+    name: 'Företagsägare',
     who: 'Ägare',
     tone: 'success',
     note: 'Leksakslådan: full kontroll i egen tenant, ser aldrig andras.',
@@ -64,7 +64,7 @@ export const DEFAULT_ROLE_CATALOG: DefaultRole[] = [
   {
     roleName: 'staff',
     dbRoleNames: ['staff'],
-    name: 'Frisör',
+    name: 'Personal',
     who: 'Personal',
     tone: 'info',
     note: 'Egen dag + egna kunder. PII tidsbunden.',

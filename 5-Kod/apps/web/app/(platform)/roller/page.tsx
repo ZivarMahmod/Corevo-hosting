@@ -27,7 +27,7 @@ export default async function RollerPage() {
       <PageHead
         eyebrow="Plattform"
         title="Roller & behörighet"
-        lede="Minsta möjliga behörighet (least privilege). private.tenant_id() isolerar tenant-data — ägaren ser aldrig en annan salongs rader."
+        lede="Minsta möjliga behörighet (least privilege). private.tenant_id() isolerar tenant-data — ägaren ser aldrig en annan kunds rader."
       />
       <RolesMatrix roles={roles} />
     </section>

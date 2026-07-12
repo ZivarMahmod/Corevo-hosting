@@ -14,11 +14,11 @@ import { THEME_CONTENT } from '@/components/storefront/theme-content'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 
 /** Mallväljarens flikar. En mall kan bara ligga i EN kategori (annars är den inte ett val). */
-export type ThemeCategory = 'florist' | 'salong' | 'kund'
+export type ThemeCategory = 'florist' | 'bokning' | 'kund'
 
 export const THEME_CATEGORIES: { key: ThemeCategory; label: string; hint: string }[] = [
   { key: 'florist', label: 'Blomsterhandel', hint: 'Butik, buketter, bröllop & begravning' },
-  { key: 'salong', label: 'Salong & barber', hint: 'Bokning, stolar, behandlingar' },
+  { key: 'bokning', label: 'Bokning & behandling', hint: 'Tidsbokning, personal, behandlingar' },
   { key: 'kund', label: 'Kundegna', hint: 'Byggda åt en specifik kund — erbjuds inte nya' },
 ]
 
@@ -65,7 +65,7 @@ function tagsFor(key: string, desc: string, bg: string, extra: string[] = []): s
 const LEGACY: Omit<ThemePalette, 'category' | 'tags' | 'hero'>[] = [
   { key: 'salvia', name: 'Salvia', desc: 'Sage · luftig, minimal', primary: '#5E7361', bg: '#F6F4EE', fg: '#232520', accent: '#5E7361' },
   { key: 'leander', name: 'Leander', desc: 'Lavendel · romantisk editorial', primary: '#7E6E92', bg: '#FBFAF8', fg: '#2A2630', accent: '#7E6E92' },
-  { key: 'zigge', name: 'Zigge', desc: 'Mörk · djärv barber', primary: '#C8743C', bg: '#14120E', fg: '#F2ECE2', accent: '#C8743C' },
+  { key: 'zigge', name: 'Zigge', desc: 'Mörk · djärv och rå', primary: '#C8743C', bg: '#14120E', fg: '#F2ECE2', accent: '#C8743C' },
   { key: 'linnea', name: 'Linnea', desc: 'Terrakotta · varm skandinavisk', primary: '#B0693F', bg: '#F4EDE1', fg: '#2E2820', accent: '#B0693F' },
   { key: 'edit', name: 'Edit', desc: 'Charcoal på ivory · stram', primary: '#3A3733', bg: '#F8F6F1', fg: '#232220', accent: '#3A3733' },
 ]
@@ -92,14 +92,14 @@ export const THEME_PALETTES: ThemePalette[] = [
   },
   ...LEGACY.map((p) => ({
     ...p,
-    category: 'salong' as const,
+    category: 'bokning' as const,
     tags: tagsFor(p.key, p.desc, p.bg),
     hero: hero(p.key),
   })),
   {
     key: 'freshcut',
     name: 'FreshCut',
-    desc: 'Barbershop · vit & guld, skarp',
+    desc: 'Vit & guld · skarp och ljus',
     primary: '#B59775',
     bg: '#FFFFFF',
     fg: '#252525',
@@ -107,7 +107,7 @@ export const THEME_PALETTES: ThemePalette[] = [
     // Kundens EGEN mall (freshcut.se-kopian) — erbjuds aldrig nya kunder. Ligger i en egen
     // kategori istället för att filtreras bort i fem olika listor.
     category: 'kund',
-    tags: ['Ljus', 'Barbershop'],
+    tags: ['Ljus', 'Skarp'],
     hero: hero('freshcut'),
   },
 ]

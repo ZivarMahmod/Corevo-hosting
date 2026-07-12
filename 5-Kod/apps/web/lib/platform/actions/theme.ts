@@ -14,7 +14,7 @@ import { reportActionError } from './observe'
 // render-bron-look överrider temat i publika rendern, så ett mall-byte ska landa på temat.
 export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   // Mall-byte är ett plattformsbeslut (Zivar hjälper kunden) — salon_admin har inte
   // ens kontrollen i sin studio, men staketet ska sitta server-side också.
   if (!user.platformAdmin) return { error: 'Mallen byts av Corevo — hör av dig så hjälper vi dig.' }
@@ -23,7 +23,7 @@ export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<Act
   if (!STOREFRONT_THEMES.includes(theme)) return { error: 'Okänd mall.' }
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { data: existing } = await supabase
     .from('tenant_settings')

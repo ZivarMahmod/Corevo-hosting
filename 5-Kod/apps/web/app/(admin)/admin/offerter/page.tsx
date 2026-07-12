@@ -7,7 +7,7 @@ import { OffertInbox } from '@/components/admin/OffertInbox'
 import { PageHead, Callout } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Offertförfrågningar · Salongsadmin' }
+export const metadata: Metadata = { title: 'Offertförfrågningar · Adminpanel' }
 
 export default async function OfferterPage() {
   const user = await requirePortal('admin')
@@ -15,8 +15,8 @@ export default async function OfferterPage() {
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salong-admin" title="Offertförfrågningar" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Offertförfrågningar" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -28,7 +28,7 @@ export default async function OfferterPage() {
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Offertförfrågningar" />
         <Callout tone="info" icon="info">
-          Offert är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
+          Offert är inte aktiverad för ditt företag. Be plattformsadmin aktivera modulen.
         </Callout>
       </section>
     )

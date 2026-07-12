@@ -49,8 +49,8 @@ export default async function ArbetstiderPage() {
         <div className={styles.empty}>
           <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
           <p className={styles.emptyHint}>
-            Kontakta salongsadmin för att kopplas till en personalrad — sedan visas dina arbetstider
-            här.
+            Kontakta din administratör för att kopplas till en personalrad — sedan visas dina
+            arbetstider här.
           </p>
         </div>
       </section>

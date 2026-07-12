@@ -25,8 +25,8 @@ export function SajtbyggareControl({ tenantId, enabled }: { tenantId: string; en
         {pending
           ? 'Uppdaterar…'
           : enabled
-            ? 'Stäng av sajtbyggaren för salongen'
-            : 'Aktivera sajtbyggaren för salongen'}
+            ? 'Stäng av sajtbyggaren för kunden'
+            : 'Aktivera sajtbyggaren för kunden'}
       </button>
       {state.error ? (
         <span className={`${styles.feedback} auth-error`} role="alert">

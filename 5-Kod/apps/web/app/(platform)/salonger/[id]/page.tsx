@@ -238,7 +238,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
               {launchReady && isActive
                 ? `Tjänster, personal och öppettider på plats. Storefronten är live på ${tenant.slug}.${ROOT}.`
                 : launchReady
-                  ? 'Aktivera salongen i Drift för att gå publik.'
+                  ? 'Aktivera kunden i Drift för att gå publik.'
                   : 'Fyll i det som saknas i respektive flik, aktivera sedan i Drift.'}
             </p>
           </div>
@@ -351,20 +351,20 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
                   <div>
                     {/* #10 — owner name from users.full_name; honest "Salongsägare"
                         label when no name was captured (never a fabricated name). */}
-                    <div className={styles.ownerName}>{salonAdmin.fullName || 'Salongsägare'}</div>
+                    <div className={styles.ownerName}>{salonAdmin.fullName || 'Företagsägare'}</div>
                     <div className={styles.ownerRole}>{salonAdmin.status === 'active' ? 'Aktivt konto' : 'Inbjuden'}</div>
                   </div>
                 </div>
                 <div className={styles.kvList}>
                   {/* #11 — the owner's role is always salon_admin; show it whenever an
                       owner exists (not gated on a captured name). */}
-                  <KV label="Roll" value="Salongsadmin (ägare)" />
+                  <KV label="Roll" value="Administratör (ägare)" />
                   <KV label="E-post" value={salonAdmin.email} />
                 </div>
               </>
             ) : (
               <p className={styles.noteText}>
-                Ingen salongsadmin inbjuden ännu. Bjud in en ägare via Onboarda salong, eller skapa
+                Ingen administratör inbjuden ännu. Bjud in en ägare via Onboarda kund, eller skapa
                 personal i Personal-fliken.
               </p>
             )}
@@ -393,7 +393,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             <span className={styles.chip}>services · pris/längd</span>
           </div>
           <p className={styles.noteText} style={{ marginBottom: 14 }}>
-            Hantera salongens tjänster direkt härifrån — lägg till, redigera pris/längd,
+            Hantera kundens tjänster direkt härifrån — lägg till, redigera pris/längd,
             aktivera/inaktivera eller ta bort. Ändringen slår igenom på bokningen direkt.
           </p>
           <ServicesCard tenantId={tenant.id} services={services} staff={staffList} storefrontUrl={storefrontUrl} />
@@ -415,7 +415,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             <span className={styles.chip}>staff · schema</span>
           </div>
           <p className={styles.noteText} style={{ marginBottom: 14 }}>
-            Hantera salongens personal direkt härifrån — redigera namn/titel, aktivera/inaktivera,
+            Hantera kundens personal direkt härifrån — redigera namn/titel, aktivera/inaktivera,
             och sätt varje medarbetares veckoschema. Öppettiderna på storefronten härleds från
             schemat. Ändringar slår igenom på bokningen direkt.
           </p>
@@ -635,7 +635,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             <span className={styles.chip}>sajtbyggare</span>
           </div>
           <p className={styles.noteText} style={{ marginBottom: 8 }}>
-            Slår på/av den kund-egna sid-editorn i salongens admin. Påverkar bara kundens
+            Slår på/av den kund-egna sid-editorn i kundens admin. Påverkar bara kundens
             editor — aldrig den publika sidan.
           </p>
           <SajtbyggareControl tenantId={tenant.id} enabled={siteEditorEnabled} />

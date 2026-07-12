@@ -1,126 +1,4 @@
 
-app/(admin)/admin/blogg/page.tsx (4 träffar)
-app/(admin)/admin/blogg/page.tsx:11: Salongsadmin — export const metadata: Metadata = { title: 'Blogg · Salongsadmin' }
-app/(admin)/admin/blogg/page.tsx:25: salong — Blogg är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
-app/(admin)/admin/blogg/page.tsx:53: Salongsadmin — <PageHead eyebrow="Salongsadmin" title="Blogg" />
-app/(admin)/admin/blogg/page.tsx:54: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-
-app/(admin)/admin/bokningar/page.tsx (4 träffar)
-app/(admin)/admin/bokningar/page.tsx:21: Salongsadmin — export const metadata: Metadata = { title: 'Bokningar · Salongsadmin' }
-app/(admin)/admin/bokningar/page.tsx:34: Salong — <PageHead eyebrow="Salong-admin" title="Bokningar" />
-app/(admin)/admin/bokningar/page.tsx:35: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/bokningar/page.tsx:223: Frisör — staffNoun={resolveTerm(tenant.terminology, 'staff', 'Frisör')}
-
-app/(admin)/admin/bokningar/vy/page.tsx (3 träffar)
-app/(admin)/admin/bokningar/vy/page.tsx:21: Salongsadmin — export const metadata: Metadata = { title: 'Bokningsvy · Salongsadmin' }
-app/(admin)/admin/bokningar/vy/page.tsx:51: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/bokningar/vy/page.tsx:186: Frisör — const staffNoun = resolveTerm(tenant.terminology, 'staff', 'Frisör')
-
-app/(admin)/admin/installningar/page.tsx (4 träffar)
-app/(admin)/admin/installningar/page.tsx:12: Salongsadmin — export const metadata: Metadata = { title: 'Inställningar · Salongsadmin' }
-app/(admin)/admin/installningar/page.tsx:26: Salong — <PageHead eyebrow="Salong-admin" title="Inställningar" />
-app/(admin)/admin/installningar/page.tsx:27: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/installningar/page.tsx:62: Salongens — lede="Varje reglage är på riktigt kopplat. Slår du på något funkar funktionen —…
-
-app/(admin)/admin/kunder/[id]/page.tsx (4 träffar)
-app/(admin)/admin/kunder/[id]/page.tsx:21: Salongsadmin — export const metadata: Metadata = { title: 'Kund · Salongsadmin' }
-app/(admin)/admin/kunder/[id]/page.tsx:53: Salong — <PageHead eyebrow="Salong-admin" title="Kund" />
-app/(admin)/admin/kunder/[id]/page.tsx:54: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/kunder/[id]/page.tsx:112: Frisör — label={`Favorit${resolveTerm(tenant.terminology, 'staff', 'Frisör').toLowerCase…
-
-app/(admin)/admin/kunder/CustomerExport.tsx (1 träffar)
-app/(admin)/admin/kunder/CustomerExport.tsx:37: Frisör — const header = ['Kund', 'Nivå', 'Besök', 'Senaste besök', 'Frisör', 'Lojalitets…
-
-app/(admin)/admin/kunder/page.tsx (5 träffar)
-app/(admin)/admin/kunder/page.tsx:14: Salongsadmin — export const metadata: Metadata = { title: 'Kunder · Salongsadmin' }
-app/(admin)/admin/kunder/page.tsx:42: Salong — <PageHead eyebrow="Salong-admin" title="Kunder" />
-app/(admin)/admin/kunder/page.tsx:43: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/kunder/page.tsx:79: Frisören — lede="Frisören känner igen återkommande kunder år efter år — utan att kundens p…
-app/(admin)/admin/kunder/page.tsx:136: Frisör — <th>{resolveTerm(tenant.terminology, 'staff', 'Frisör')}</th>
-
-app/(admin)/admin/kurser/page.tsx (4 träffar)
-app/(admin)/admin/kurser/page.tsx:10: Salongsadmin — export const metadata: Metadata = { title: 'Kurser & event · Salongsadmin' }
-app/(admin)/admin/kurser/page.tsx:24: salong — Kurser &amp; event är inte aktiverad för din salong. Be plattformsadmin aktiver…
-app/(admin)/admin/kurser/page.tsx:45: Salongsadmin — <PageHead eyebrow="Salongsadmin" title="Kurser & event" />
-app/(admin)/admin/kurser/page.tsx:46: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-
-app/(admin)/admin/lojalitet/page.tsx (4 träffar)
-app/(admin)/admin/lojalitet/page.tsx:11: Salongsadmin — export const metadata: Metadata = { title: 'Lojalitet · Salongsadmin' }
-app/(admin)/admin/lojalitet/page.tsx:19: Salong — <PageHead eyebrow="Salong-admin" title="Lojalitet" />
-app/(admin)/admin/lojalitet/page.tsx:20: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/lojalitet/page.tsx:32: salong — Lojalitet är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
-
-app/(admin)/admin/media/page.tsx (4 träffar)
-app/(admin)/admin/media/page.tsx:10: Salongsadmin — export const metadata: Metadata = { title: 'Bildbibliotek · Salongsadmin' }
-app/(admin)/admin/media/page.tsx:18: Salongsadmin — <PageHead eyebrow="Salongsadmin" title="Bildbibliotek" />
-app/(admin)/admin/media/page.tsx:19: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/media/page.tsx:31: salong — Bildbibliotek är inte aktiverat för din salong. Be plattformsadmin aktivera mod…
-
-app/(admin)/admin/offerter/page.tsx (4 träffar)
-app/(admin)/admin/offerter/page.tsx:10: Salongsadmin — export const metadata: Metadata = { title: 'Offertförfrågningar · Salongsadmin'…
-app/(admin)/admin/offerter/page.tsx:18: Salong — <PageHead eyebrow="Salong-admin" title="Offertförfrågningar" />
-app/(admin)/admin/offerter/page.tsx:19: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/offerter/page.tsx:31: salong — Offert är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
-
-app/(admin)/admin/page.tsx (3 träffar)
-app/(admin)/admin/page.tsx:18: Salongsadmin — export const metadata: Metadata = { title: 'Salongsadmin' }
-app/(admin)/admin/page.tsx:44: Salongsadmin — <h1>Salongsadmin</h1>
-app/(admin)/admin/page.tsx:45: salong — <p className="prose">Ingen salong är kopplad till ditt konto. Kontakta Corevo.<…
-
-app/(admin)/admin/personal/page.tsx (3 träffar)
-app/(admin)/admin/personal/page.tsx:18: Salongsadmin — export const metadata: Metadata = { title: 'Personal · Salongsadmin' }
-app/(admin)/admin/personal/page.tsx:26: Salong — <PageHead eyebrow="Salong-admin" title="Personal" />
-app/(admin)/admin/personal/page.tsx:27: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-
-app/(admin)/admin/platser/page.tsx (3 träffar)
-app/(admin)/admin/platser/page.tsx:9: Salongsadmin — export const metadata: Metadata = { title: 'Platser · Salongsadmin' }
-app/(admin)/admin/platser/page.tsx:31: Salong — <PageHead eyebrow="Salong-admin" title="Platser" />
-app/(admin)/admin/platser/page.tsx:32: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-
-app/(admin)/admin/presentkort/page.tsx (4 träffar)
-app/(admin)/admin/presentkort/page.tsx:10: Salongsadmin — export const metadata: Metadata = { title: 'Presentkort · Salongsadmin' }
-app/(admin)/admin/presentkort/page.tsx:18: Salongsadmin — <PageHead eyebrow="Salongsadmin" title="Presentkort" />
-app/(admin)/admin/presentkort/page.tsx:19: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/presentkort/page.tsx:31: salong — Presentkort är inte aktiverat för din salong. Be plattformsadmin aktivera modul…
-
-app/(admin)/admin/sajtbyggare/page.tsx (3 träffar)
-app/(admin)/admin/sajtbyggare/page.tsx:18: Salongsadmin — export const metadata: Metadata = { title: 'Sajtbyggare · Salongsadmin' }
-app/(admin)/admin/sajtbyggare/page.tsx:64: Salongsadmin — <PageHead eyebrow="Salongsadmin" title="Sajtbyggare" />
-app/(admin)/admin/sajtbyggare/page.tsx:65: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-
-app/(admin)/admin/scheman/page.tsx (3 träffar)
-app/(admin)/admin/scheman/page.tsx:25: Salongsadmin — export const metadata: Metadata = { title: 'Schema · Salongsadmin' }
-app/(admin)/admin/scheman/page.tsx:55: Salong — <PageHead eyebrow="Salong-admin" title="Schema" />
-app/(admin)/admin/scheman/page.tsx:56: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-
-app/(admin)/admin/sida/page.tsx (3 träffar)
-app/(admin)/admin/sida/page.tsx:16: Salongsadmin — export const metadata: Metadata = { title: 'Redigera sidan · Salongsadmin' }
-app/(admin)/admin/sida/page.tsx:37: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/sida/page.tsx:50: salongens — <p className="prose">Kunde inte läsa salongens data. Försök igen.</p>
-
-app/(admin)/admin/tjanster/page.tsx (3 träffar)
-app/(admin)/admin/tjanster/page.tsx:9: Salongsadmin — export const metadata: Metadata = { title: 'Tjänster · Salongsadmin' }
-app/(admin)/admin/tjanster/page.tsx:31: Salong — <PageHead eyebrow="Salong-admin" title="Tjänster" />
-app/(admin)/admin/tjanster/page.tsx:32: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-
-app/(admin)/admin/webshop/page.tsx (4 träffar)
-app/(admin)/admin/webshop/page.tsx:11: Salongsadmin — export const metadata: Metadata = { title: 'Webshop · Salongsadmin' }
-app/(admin)/admin/webshop/page.tsx:19: Salongsadmin — <PageHead eyebrow="Salongsadmin" title="Webshop" />
-app/(admin)/admin/webshop/page.tsx:20: salong — <p className="prose">Ingen salong är kopplad till ditt konto.</p>
-app/(admin)/admin/webshop/page.tsx:32: salong — Webshop är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
-
-app/(admin)/layout.tsx (1 träffar)
-app/(admin)/layout.tsx:14: Salongsadmin — <PortalShell user={user} title="Salongsadmin" world="backoffice" portal="admin">
-
-app/(personal)/personal/arbetstider/page.tsx (1 träffar)
-app/(personal)/personal/arbetstider/page.tsx:52: salongsadmin — Kontakta salongsadmin för att kopplas till en personalrad — sedan visas dina ar…
-
-app/(personal)/personal/franvaro/page.tsx (1 träffar)
-app/(personal)/personal/franvaro/page.tsx:24: salongsadmin — Kontakta salongsadmin för att kopplas till en personalrad — sedan kan du regist…
-
-app/(personal)/personal/page.tsx (1 träffar)
-app/(personal)/personal/page.tsx:33: salongsadmin — Ditt konto är inte kopplat till en personalrad ännu. Kontakta salongsadmin så k…
-
 app/(platform)/domaner/page.tsx (1 träffar)
 app/(platform)/domaner/page.tsx:27: salongs — lede="Varje salongs subdomän kopplas automatiskt och re-asserteras vid varje de…
 
@@ -178,73 +56,10 @@ app/(platform)/salonger/error.tsx (2 träffar)
 app/(platform)/salonger/error.tsx:8: salongerna — title="Kunde inte ladda salongerna"
 app/(platform)/salonger/error.tsx:9: Salongslistan — message="Salongslistan gick inte att hämta just nu. Försök igen."
 
-app/api/stripe/webhook/route.ts (1 träffar)
-app/api/stripe/webhook/route.ts:207: Salongen — tenantName: rel.tenants?.name ?? 'Salongen',
-
-app/not-found.tsx (1 träffar)
-app/not-found.tsx:20: salongen — Adressen finns inte, eller så är salongen inte tillgänglig.
-
-components/admin/BloggAdmin.tsx (1 träffar)
-components/admin/BloggAdmin.tsx:118: salong — lede="Skapa och hantera blogginlägg för din salong. Ändringar slår igenom utan …
-
-components/admin/BookingsClient.tsx (1 träffar)
-components/admin/BookingsClient.tsx:125: Frisör — staffNoun = 'Frisör',
-
-components/admin/BrandingForm.tsx (1 träffar)
-components/admin/BrandingForm.tsx:458: Klippning — <div className={styles.serviceName}>Klippning &amp; styling</div>
-
-components/admin/LocationsManager.tsx (4 träffar)
-components/admin/LocationsManager.tsx:83: Salongens — lede="Salongens platser (filialer). Den primära platsen är den bokningar och de…
-components/admin/LocationsManager.tsx:83: salong — lede="Salongens platser (filialer). Den primära platsen är den bokningar och de…
-components/admin/LocationsManager.tsx:239: Salongen — placeholder="t.ex. Salongen Söder"
-components/admin/LocationsManager.tsx:403: salongens — Detta är salongens primära plats — bokningar och den publika sajten utgår härif…
-
-components/admin/MediaLibrary.tsx (1 träffar)
-components/admin/MediaLibrary.tsx:376: Frisör — placeholder="t.ex. Frisör klipper en kund"
-
-components/admin/ServicesManager.tsx (2 träffar)
-components/admin/ServicesManager.tsx:460: Klippning — placeholder="t.ex. Klippning"
-components/admin/ServicesManager.tsx:595: Klippning — placeholder="t.ex. Klippning"
-
-components/admin/SettingsForm.tsx (2 träffar)
-components/admin/SettingsForm.tsx:137: Salongsnamn — <span>Salongsnamn</span>
-components/admin/SettingsForm.tsx:259: salongens — Klistra in salongens Google-recensionslänk. Lämna tomt för att stänga av.
-
-components/admin/SlotManager.tsx (2 träffar)
-components/admin/SlotManager.tsx:105: salongens — Upplägget är förinställt från salongens nuvarande mönster. Justera per dag — mi…
-components/admin/SlotManager.tsx:150: Frisör — Frisör:
-
-components/admin/StaffRoster.tsx (5 träffar)
-components/admin/StaffRoster.tsx:384: salongens — sub={member.hasAccount ? 'Eget konto · egen vy' : 'Hanteras i salongens sida'}
-components/admin/StaffRoster.tsx:456: salonger — salonger per vecka kommer — bokningarna får aldrig krocka.
-components/admin/StaffRoster.tsx:999: salongens — Hanteras i salongens sida just nu. Bjud in med en engångslänk för att ge ett eg…
-components/admin/StaffRoster.tsx:1067: salongen — Lägg till i salongen
-components/admin/StaffRoster.tsx:1077: frisör — placeholder="t.ex. Hilal — frisör"
-
-components/admin/StorefrontMediaForm.tsx (2 träffar)
-components/admin/StorefrontMediaForm.tsx:70: salongen — hint="Bilden bredvid texten ”Om salongen”."
-components/admin/StorefrontMediaForm.tsx:352: Frisör — placeholder="Roll (t.ex. Frisör)"
-
-components/admin/StripeConnectCard.tsx (2 träffar)
-components/admin/StripeConnectCard.tsx:108: salong — ? 'Kunden betalar online när tiden bokas — pengarna går rakt till din salong.'
-components/admin/StripeConnectCard.tsx:164: salong — ? 'Ansluten · utbetalning till din salong'
-
 components/kund/StylistCard.tsx (3 träffar)
 components/kund/StylistCard.tsx:67: stylistName — <div className={styles.stylistName}>{name}</div>
 components/kund/StylistCard.tsx:68: stylistRel — <div className={styles.stylistRel}>{rel}</div>
 components/kund/StylistCard.tsx:103: stylistName — <div className={styles.stylistName}>Välj din {staffLc}</div>
-
-components/personal/ClientCard.tsx (2 träffar)
-components/personal/ClientCard.tsx:282: salongen — : `${card.loyalty.points.toLocaleString('sv-SE')} poäng. Nivåer är inte aktiver…
-components/personal/ClientCard.tsx:344: salongen — Endast för dig och salongen. Visas aldrig för kunden.
-
-components/personal/WalkInForm.tsx (1 träffar)
-components/personal/WalkInForm.tsx:26: salongsadmin — Inga tjänster är kopplade till dig än — be salongsadmin koppla dina tjänster så…
-
-components/platform/BookingSettings.tsx (3 träffar)
-components/platform/BookingSettings.tsx:157: salongens — Hur bokningen öppnar sig på salongens sida. Alla fyra ger samma steg och
-components/platform/BookingSettings.tsx:214: Barberarbilder — <h3 className={studio.cardHead}>Barberarbilder</h3>
-components/platform/BookingSettings.tsx:216: Barberarbilder — <div style={segRail} role="radiogroup" aria-label="Barberarbilder">
 
 components/platform/CreateTenantForm.tsx (19 träffar)
 components/platform/CreateTenantForm.tsx:110: Frisörsalong — eyebrow: 'Frisörsalong', hero: 'Skarpt klippt. Skönt mottagen.',
@@ -266,20 +81,6 @@ components/platform/CreateTenantForm.tsx:834: Salongsadmin — <Badge tone="gold
 components/platform/CreateTenantForm.tsx:836: salongspanel — Full åtkomst till sin egen salongspanel.
 components/platform/CreateTenantForm.tsx:848: salongsadmin — Ägaren bjuds in som salongsadmin.
 components/platform/CreateTenantForm.tsx:966: Klippning — const chips = serviceLabel ? [serviceLabel, 'Färg', 'Styling'] : ['Klippning', …
-
-components/platform/DomainManager.tsx (2 träffar)
-components/platform/DomainManager.tsx:110: Salongen — Salongen körs på <code className={styles.code}>{slug}.corevo.se</code>. Lägg ti…
-components/platform/DomainManager.tsx:125: salongnamn — placeholder="boka.salongnamn.se"
-
-components/platform/DomainOverview.tsx (2 träffar)
-components/platform/DomainOverview.tsx:48: Salong — <h2>Salong-domäner ({rows.length})</h2>
-components/platform/DomainOverview.tsx:51: salonger — <p className={styles.muted}>Inga aktiva salonger ännu.</p>
-
-components/platform/DomainPanel.tsx (1 träffar)
-components/platform/DomainPanel.tsx:31: salongnamn — (t.ex. <code className={styles.code}>boka.salongnamn.se</code> via CNAME) är et…
-
-components/platform/IntegrationsGrid.tsx (1 träffar)
-components/platform/IntegrationsGrid.tsx:26: salong — return <span className={styles.tenants}>Plattformsbred · ingen per-salong-statu…
 
 components/platform/kunder/KunderView.tsx (19 träffar)
 components/platform/kunder/KunderView.tsx:131: Salonger — <Stat label="Salonger" value={<span className="num">{salons}</span>} icon="buil…
@@ -317,95 +118,16 @@ components/platform/onboarding-studio/StudioPanels.tsx:134: barbershop — barbe
 components/platform/onboarding-studio/StudioPanels.tsx:296: salongs — <Icon name="alert" size={14} /> &quot;{cfg.slug}&quot; är reserverad — kan inte…
 components/platform/onboarding-studio/StudioPanels.tsx:645: salongsnamn — Kräver: salongsnamn, en giltig subdomän, ett tema och minst en tjänst. Komplett…
 
-components/platform/PersonalCard.tsx (5 träffar)
-components/platform/PersonalCard.tsx:88: Frisör — <input name="title" placeholder="t.ex. Anna – Frisör" required />
-components/platform/PersonalCard.tsx:108: Frisör — <input name="title" placeholder="t.ex. Anna – Frisör" />
-components/platform/PersonalCard.tsx:112: salongen — <input name="email" type="email" inputMode="email" placeholder="anna@salongen.s…
-components/platform/PersonalCard.tsx:213: Salongen — Salongen har inga tjänster än — lägg till i Tjänster-fliken först.
-components/platform/PersonalCard.tsx:286: salongen — <input name="email" type="email" inputMode="email" placeholder="anna@salongen.s…
-
-components/platform/PersonalClient.tsx (15 träffar)
+components/platform/PersonalClient.tsx (5 träffar)
 components/platform/PersonalClient.tsx:84: salonger — salonger,
-components/platform/PersonalClient.tsx:115: frisörer — lede="Lägg till frisörer åt salonger som vill ha hjälp. Skapar en personalrad d…
-components/platform/PersonalClient.tsx:115: salonger — lede="Lägg till frisörer åt salonger som vill ha hjälp. Skapar en personalrad d…
-components/platform/PersonalClient.tsx:115: salong — lede="Lägg till frisörer åt salonger som vill ha hjälp. Skapar en personalrad d…
-components/platform/PersonalClient.tsx:131: Salonger — <Stat label="Salonger" value={stats.salonger} icon="building" />
-components/platform/PersonalClient.tsx:131: salonger — <Stat label="Salonger" value={stats.salonger} icon="building" />
-components/platform/PersonalClient.tsx:161: salong — placeholder="Sök personal, salong…"
-components/platform/PersonalClient.tsx:191: Salong — cols={['Namn', 'Salong', 'Roll', 'Tjänster', 'Inbjuden', 'Status', '']}
-components/platform/PersonalClient.tsx:250: salong — När en salong onboardar frisörer dyker de upp här — tvärs alla salonger.
-components/platform/PersonalClient.tsx:250: frisörer — När en salong onboardar frisörer dyker de upp här — tvärs alla salonger.
-components/platform/PersonalClient.tsx:250: salonger — När en salong onboardar frisörer dyker de upp här — tvärs alla salonger.
-components/platform/PersonalClient.tsx:286: salong — sub="Skapar en personalrad direkt på vald salong."
+components/platform/PersonalClient.tsx:131: salonger [NY] — <Stat label="Företag" value={stats.salonger} icon="building" />
 components/platform/PersonalClient.tsx:293: frisör — <input name="title" required placeholder="t.ex. Hilal — frisör" aria-label="Nam…
 components/platform/PersonalClient.tsx:296: Salong — <span>Salong</span>
 components/platform/PersonalClient.tsx:299: salong — <option value="">Ingen salong ännu</option>
 
-components/platform/PlatformBrandingForm.tsx (2 träffar)
-components/platform/PlatformBrandingForm.tsx:254: salongsnamnet — <span style={secSub}>Visas i sidhuvudet — utan logotyp visas salongsnamnet</spa…
-components/platform/PlatformBrandingForm.tsx:267: salongsnamnet — <span className={styles.muted}>Ingen logotyp uppladdad — salongsnamnet visas i …
-
-components/platform/SajtbyggareControl.tsx (2 träffar)
-components/platform/SajtbyggareControl.tsx:28: salongen — ? 'Stäng av sajtbyggaren för salongen'
-components/platform/SajtbyggareControl.tsx:29: salongen — : 'Aktivera sajtbyggaren för salongen'}
-
 components/platform/SalongerClient.tsx (2 träffar)
 components/platform/SalongerClient.tsx:80: salonger — const [view, setView] = usePersistentView<'kort' | 'lista'>('salonger:view', ['…
 components/platform/SalongerClient.tsx:114: salonger — a.download = 'salonger.csv'
-
-components/platform/ServicesCard.tsx (3 träffar)
-components/platform/ServicesCard.tsx:86: salongens — Inga tjänster ännu — lägg till salongens första ovan. Bokningsmotorn kräver min…
-components/platform/ServicesCard.tsx:117: Klippning — <input name="name" placeholder="t.ex. Klippning" required />
-components/platform/ServicesCard.tsx:216: Klippning — <input name="category" placeholder="t.ex. Klippning" defaultValue={service.cate…
-
-components/platform/SidaStudio.tsx (5 träffar)
-components/platform/SidaStudio.tsx:370: salongen — label: 'Om salongen',
-components/platform/SidaStudio.tsx:423: Salongsnamn — <h3 className={styles.cardHead}>Salongsnamn</h3>
-components/platform/SidaStudio.tsx:650: salongens — Team-sektionen på sidan hämtas från salongens <strong>riktiga personal</strong>…
-components/platform/SidaStudio.tsx:849: Salongen — ? 'Salongen är inte aktiv, så den publika sidan är blockerad. Återaktivera salo…
-components/platform/SidaStudio.tsx:849: salongen — ? 'Salongen är inte aktiv, så den publika sidan är blockerad. Återaktivera salo…
-
-components/platform/StatusControl.tsx (2 träffar)
-components/platform/StatusControl.tsx:24: salong — ? 'Pausa salong (blockera publika sajten)'
-components/platform/StatusControl.tsx:25: salong — : 'Aktivera salong igen'}
-
-components/platform/TeamCard.tsx (1 träffar)
-components/platform/TeamCard.tsx:124: Barberare — <input name="role" defaultValue={member.role} maxLength={300} placeholder="Barb…
-
-components/platform/TenantContactForm.tsx (2 träffar)
-components/platform/TenantContactForm.tsx:59: salong — <input name="email" type="email" defaultValue={email ?? ''} placeholder="salong…
-components/platform/TenantContactForm.tsx:92: salongen — <input name="tiktok" defaultValue={social?.tiktok ?? ''} placeholder="tiktok.co…
-
-components/platform/TenantCustomers.tsx (1 träffar)
-components/platform/TenantCustomers.tsx:57: salongen — Inga kunder ännu — en stabil kund-rad skapas automatiskt när salongen tar emot …
-
-components/platform/TenantDetailActions.tsx (3 träffar)
-components/platform/TenantDetailActions.tsx:39: salongsadmin — notify('Ingen salongsadmin inbjuden ännu — bjud in en ägare först.', 'warning')
-components/platform/TenantDetailActions.tsx:95: Salongen — notify(res.success ?? 'Salongen är borttagen.', 'success')
-components/platform/TenantDetailActions.tsx:110: salong — Ta bort salong
-
-components/platform/TenantNameCard.tsx (1 träffar)
-components/platform/TenantNameCard.tsx:39: Salongsnamn — Salongsnamn
-
-components/platform/TenantPreviewFrame.tsx (4 träffar)
-components/platform/TenantPreviewFrame.tsx:222: Salongen — Salongen är inte aktiv, så den publika sidan är blockerad (RLS). Återaktivera
-components/platform/TenantPreviewFrame.tsx:223: salongen — salongen i Drift för att förhandsvisa och redigera innehållet.
-components/platform/TenantPreviewFrame.tsx:546: salongens — Bilden sparas på salongens skarpa sida direkt (cache-bustas). PNG/JPG/WEBP/SVG/…
-components/platform/TenantPreviewFrame.tsx:644: salongens — Texten sparas på salongens skarpa sida direkt.
-
-components/platform/VerticalEditor.tsx (2 träffar)
-components/platform/VerticalEditor.tsx:25: Salong — { key: 'business', label: 'Verksamhetsord (t.ex. Salong/Restaurang)', ph: 'Salo…
-components/platform/VerticalEditor.tsx:25: Salong — { key: 'business', label: 'Verksamhetsord (t.ex. Salong/Restaurang)', ph: 'Salo…
-
-components/portal/nav-items.ts (1 träffar)
-components/portal/nav-items.ts:63: Salong — sub: 'Salong-admin',
-
-components/portal/PortalShell.tsx (2 träffar)
-components/portal/PortalShell.tsx:115: Frisör — staff: resolveTerm(terminology, 'staff', 'Frisör'),
-components/portal/PortalShell.tsx:170: salong — ? 'Sök salong, kund, personal, åtgärd…'
-
-components/portal/ui/NotesThread.tsx (1 träffar)
-components/portal/ui/NotesThread.tsx:15: frisör — from: 'kund' | 'frisör' | 'staff' | 'system'
 
 components/storefront/images.ts (15 träffar)
 components/storefront/images.ts:16: Frisör — { src: u('1600948836101-f9ffda59d250'), alt: 'Frisör som stylar håret på en kun…
@@ -446,20 +168,7 @@ components/storefront/seo.tsx (2 träffar)
 components/storefront/seo.tsx:176: frisör — 'frisör': 'HairSalon',
 components/storefront/seo.tsx:177: barbershop — barbershop: 'HairSalon',
 
-components/storefront/theme-content.ts (44 träffar)
-components/storefront/theme-content.ts:108: Frisörsalong — heroEyebrow: '— Frisörsalong',
-components/storefront/theme-content.ts:111: salong — 'En stilla salong där varje klippning får ta sin tid. Boka en stund som är helt…
-components/storefront/theme-content.ts:111: klippning — 'En stilla salong där varje klippning får ta sin tid. Boka en stund som är helt…
-components/storefront/theme-content.ts:112: Hårvård — tagline: 'Hårvård med lugn hand',
-components/storefront/theme-content.ts:116: frisörbesök — 'Hos oss ska ett frisörbesök kännas som en paus, inte ett ärende. Vi är ett lit…
-components/storefront/theme-content.ts:120: frisörer — teamEyebrow: '— Våra frisörer',
-components/storefront/theme-content.ts:127: Frisörer — { name: 'Vårt team', role: 'Frisörer & stylister', img: IMG.p1 },
-components/storefront/theme-content.ts:127: stylister — { name: 'Vårt team', role: 'Frisörer & stylister', img: IMG.p1 },
-components/storefront/theme-content.ts:129: Klippning — { name: 'Klippning', role: 'Klipp & form', img: IMG.p5 },
-components/storefront/theme-content.ts:138: Salong — heroEyebrow: '— Salong & färgateljé',
-components/storefront/theme-content.ts:139: frisör — heroTitle: 'Din frisör\ni lugn och ro',
-components/storefront/theme-content.ts:158: frisör — { name: 'Senior frisör', role: 'Klipp & form', img: IMG.p4 },
-components/storefront/theme-content.ts:159: Frisör — { name: 'Frisör', role: 'Färg & slingor', img: IMG.p1 },
+components/storefront/theme-content.ts (31 träffar)
 components/storefront/theme-content.ts:168: Frisör — heroEyebrow: '— Frisör & barberare',
 components/storefront/theme-content.ts:168: barberare — heroEyebrow: '— Frisör & barberare',
 components/storefront/theme-content.ts:171: Klippning — 'Klippning och skäggvård för alla. Drop in eller boka online — du sitter i stol…
@@ -492,161 +201,36 @@ components/storefront/theme-content.ts:301: klippning — 'I våra fräscha loka
 components/storefront/theme-content.ts:305: barberare — teamEyebrow: '— Våra barberare',
 components/storefront/theme-content.ts:306: barberare — teamTitle: 'Våra barberare.',
 
-lib/admin/actions.ts (2 träffar)
-lib/admin/actions.ts:23: salong — const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
-lib/admin/actions.ts:1277: salongsnamn — if (!name) return { error: 'Ange ett salongsnamn.' }
-
-lib/admin/blogg/actions.ts (1 träffar)
-lib/admin/blogg/actions.ts:10: salong — const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
-
-lib/admin/dropin-actions.ts (1 träffar)
-lib/admin/dropin-actions.ts:27: salong — if (!tenant) return { error: 'Ingen salong är kopplad till ditt konto.' }
-
-lib/admin/events/actions.ts (1 träffar)
-lib/admin/events/actions.ts:11: salong — const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
-
-lib/admin/media/actions.ts (1 träffar)
-lib/admin/media/actions.ts:9: salong — const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
-
-lib/admin/offert/actions.ts (1 träffar)
-lib/admin/offert/actions.ts:13: salong — const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
-
-lib/admin/presentkort/actions.ts (1 träffar)
-lib/admin/presentkort/actions.ts:10: salong — const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
-
-lib/admin/schedule-actions.ts (1 träffar)
-lib/admin/schedule-actions.ts:12: salong — const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
-
-lib/admin/shop/actions.ts (1 träffar)
-lib/admin/shop/actions.ts:13: salong — const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
-
-lib/admin/stripe.ts (1 träffar)
-lib/admin/stripe.ts:20: salong — const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
-
-lib/gdpr/actions.ts (2 träffar)
-lib/gdpr/actions.ts:21: salongen — return { error: 'Kunde inte radera kontot. Kontakta salongen.' }
-lib/gdpr/actions.ts:29: salongen — ? 'Radering är inte tillgänglig just nu. Kontakta salongen så hjälper de dig.'
-
-lib/kund/actions.ts (5 träffar)
-lib/kund/actions.ts:17: Salongen — if (!tenantId) return 'Salongen'
-lib/kund/actions.ts:19: Salongen — return data?.name ?? 'Salongen'
-lib/kund/actions.ts:58: salongs — return { error: 'Registrering sker via en salongs sida. Öppna salongens adress …
-lib/kund/actions.ts:58: salongens — return { error: 'Registrering sker via en salongs sida. Öppna salongens adress …
-lib/kund/actions.ts:220: salong — if (!tenant) return { error: 'Okänd salong.' }
-
-lib/kund/favorites-actions.ts (2 träffar)
-lib/kund/favorites-actions.ts:36: salong — if (!tenantId) return { error: 'Okänd salong.' }
-lib/kund/favorites-actions.ts:51: Frisören — if (!data) return { error: 'Frisören hittades inte.' }
-
-lib/kund/favorites.ts (1 träffar)
-lib/kund/favorites.ts:55: Frisör — ? (r.staff?.title?.trim() || 'Frisör')
-
-lib/notifications/google-review.ts (1 träffar)
-lib/notifications/google-review.ts:166: Salongen — const tenantName = b.tenants?.name ?? 'Salongen'
-
-lib/notifications/reminders.ts (1 träffar)
-lib/notifications/reminders.ts:116: Salongen — const tenantName = b.tenants?.name ?? 'Salongen'
-
-lib/personal/actions.ts (2 träffar)
-lib/personal/actions.ts:14: salongsadmin — const NO_PROFILE = 'Ingen personalprofil är kopplad till ditt konto. Kontakta s…
-lib/personal/actions.ts:83: salongen — if (!me.locationId) return { error: 'Din profil saknar en kopplad plats. Kontak…
-
-lib/platform/actions/billing.ts (1 träffar)
-lib/platform/actions/billing.ts:14: salong — if (!tenantId) return { error: 'Saknar salong.' }
-
-lib/platform/actions/branding.ts (2 träffar)
-lib/platform/actions/branding.ts:23: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/branding.ts:42: salong — if (!tenant) return { error: 'Okänd salong.' }
-
-lib/platform/actions/contact.ts (5 träffar)
-lib/platform/actions/contact.ts:58: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/contact.ts:75: salong — if (!tenant) return { error: 'Okänd salong.' }
+lib/platform/actions/contact.ts (1 träffar)
 lib/platform/actions/contact.ts:130: Salong — name: tenant.name ?? 'Salong',
-lib/platform/actions/contact.ts:162: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/contact.ts:171: salong — if (!tenant) return { error: 'Okänd salong.' }
 
-lib/platform/actions/data.ts (9 träffar)
-lib/platform/actions/data.ts:46: salong — if (!tenantId) return { error: 'Saknar salong.' }
+lib/platform/actions/data.ts (3 träffar)
 lib/platform/actions/data.ts:60: salongsnamn — if (!name) return { error: 'Ange ett salongsnamn.' }
-lib/platform/actions/data.ts:66: salong — if (!tenant) return { error: 'Okänd salong.' }
 lib/platform/actions/data.ts:110: Salongsdata — return { success: 'Salongsdata sparad. Publika sajten uppdaterad.' }
-lib/platform/actions/data.ts:121: salong — if (!tenantId) return { error: 'Saknar salong.' }
 lib/platform/actions/data.ts:123: salongsnamn — if (!name) return { error: 'Ange ett salongsnamn.' }
-lib/platform/actions/data.ts:126: salong — if (!tenant) return { error: 'Okänd salong.' }
-lib/platform/actions/data.ts:161: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/data.ts:177: salong — if (!tenant) return { error: 'Okänd salong.' }
 
-lib/platform/actions/domains.ts (5 träffar)
-lib/platform/actions/domains.ts:40: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/domains.ts:51: Salongen — if (!tenant) return { error: 'Salongen finns inte.' }
+lib/platform/actions/domains.ts (1 träffar)
 lib/platform/actions/domains.ts:52: Salongen — if (tenant.status !== 'active') return { error: 'Salongen är inte aktiv — kan i…
-lib/platform/actions/domains.ts:104: salong — if (!tenantId || !domain) return { error: 'Saknar salong eller domän.' }
-lib/platform/actions/domains.ts:157: salong — if (!tenantId || !domain) return { error: 'Saknar salong eller domän.' }
 
-lib/platform/actions/features.ts (4 träffar)
-lib/platform/actions/features.ts:21: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/features.ts:25: salong — if (!tenant) return { error: 'Okänd salong.' }
+lib/platform/actions/features.ts (2 träffar)
 lib/platform/actions/features.ts:56: salongen — ? 'Sajtbyggaren aktiverad för salongen.'
 lib/platform/actions/features.ts:57: salongen — : 'Sajtbyggaren avstängd för salongen.',
 
-lib/platform/actions/people.ts (13 träffar)
-lib/platform/actions/people.ts:22: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/people.ts:57: salong — if (!tenantId) return { error: 'Saknar salong.' }
+lib/platform/actions/people.ts (4 träffar)
 lib/platform/actions/people.ts:90: salongen — return { success: `Medarbetare "${title}" tillagd hos salongen.` }
-lib/platform/actions/people.ts:109: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/people.ts:118: Salongen — if (!tenant) return { error: 'Salongen finns inte.' }
-lib/platform/actions/people.ts:200: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/people.ts:238: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/people.ts:303: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/people.ts:350: salong — if (!tenantId) return { error: 'Saknar salong.' }
 lib/platform/actions/people.ts:361: salongen — if (!staffRow) return { error: 'Medarbetaren finns inte hos den här salongen.' }
 lib/platform/actions/people.ts:448: salong — if (!tenantId) return { error: 'Välj en salong.' }
-lib/platform/actions/people.ts:460: Salongen — if (!tenant) return { error: 'Salongen finns inte.' }
 lib/platform/actions/people.ts:462: Salongen — return { error: 'Salongen är inte aktiv — kan inte lägga till kund.' }
 
-lib/platform/actions/services.ts (7 träffar)
-lib/platform/actions/services.ts:73: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/services.ts:78: Salongen — if (!tenant) return { error: 'Salongen finns inte.' }
-lib/platform/actions/services.ts:124: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/services.ts:183: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/services.ts:228: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/services.ts:290: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/services.ts:347: salong — if (!tenantId) return { error: 'Saknar salong.' }
-
-lib/platform/actions/status.ts (4 träffar)
-lib/platform/actions/status.ts:15: salong — if (!tenantId) return { error: 'Saknar salong.' }
+lib/platform/actions/status.ts (3 träffar)
 lib/platform/actions/status.ts:51: Salongen — ? 'Salongen är borttagen — publika sajten och admin blockeras.'
 lib/platform/actions/status.ts:53: Salongen — ? 'Salongen är pausad — publika sajten blockeras.'
 lib/platform/actions/status.ts:54: Salongen — : 'Salongen är aktiv igen — publika sajten öppen.',
-
-lib/platform/actions/storefront-content.ts (6 träffar)
-lib/platform/actions/storefront-content.ts:56: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/storefront-content.ts:60: salong — if (!tenant) return { error: 'Okänd salong.' }
-lib/platform/actions/storefront-content.ts:137: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/storefront-content.ts:147: salong — if (!tenant) return { error: 'Okänd salong.' }
-lib/platform/actions/storefront-content.ts:197: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/storefront-content.ts:207: salong — if (!tenant) return { error: 'Okänd salong.' }
-
-lib/platform/actions/storefront-extras.ts (10 träffar)
-lib/platform/actions/storefront-extras.ts:33: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/storefront-extras.ts:41: salong — if (!tenant) return { error: 'Okänd salong.' }
-lib/platform/actions/storefront-extras.ts:100: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/storefront-extras.ts:112: salong — if (!tenant) return { error: 'Okänd salong.' }
-lib/platform/actions/storefront-extras.ts:147: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/storefront-extras.ts:155: salong — if (!tenant) return { error: 'Okänd salong.' }
-lib/platform/actions/storefront-extras.ts:242: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/storefront-extras.ts:249: salong — if (!tenant) return { error: 'Okänd salong.' }
-lib/platform/actions/storefront-extras.ts:320: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/storefront-extras.ts:327: salong — if (!tenant) return { error: 'Okänd salong.' }
 
 lib/platform/actions/tenants.ts (3 träffar)
 lib/platform/actions/tenants.ts:300: salongen — 'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops) — eller skapa salonge…
 lib/platform/actions/tenants.ts:360: Salongen — return { error: `Salongen skapades inte: ${ownerFailed}. Försök igen.` }
 lib/platform/actions/tenants.ts:392: Salong — success: `Salong "${name}" skapad (${slug}.corevo.se).${inviteNote}`,
-
-lib/platform/actions/theme.ts (2 träffar)
-lib/platform/actions/theme.ts:17: salong — if (!tenantId) return { error: 'Saknar salong.' }
-lib/platform/actions/theme.ts:26: salong — if (!tenant) return { error: 'Okänd salong.' }
 
 lib/platform/catalog.ts (3 träffar)
 lib/platform/catalog.ts:77: salongen — flow: 'Flöde 1 (kund betalar salongen direkt)',
@@ -662,18 +246,9 @@ lib/platform/people.ts:140: Salongschef — salon_admin: 'Salongschef',
 lib/platform/people.ts:141: Frisör — staff: 'Frisör',
 lib/platform/people.ts:144: Frisör — if (!roleName) return 'Frisör'
 
-lib/platform/preview-admin.ts (4 träffar)
-lib/platform/preview-admin.ts:72: salong — if (!tenantId || !templateKey) return { ok: false, error: 'Saknar salong eller …
-lib/platform/preview-admin.ts:125: salong — if (!tenantId) return { ok: false, error: 'Saknar salong.' }
-lib/platform/preview-admin.ts:234: salong — return { ok: false, error: 'Saknar salong, mall eller slot.' }
-lib/platform/preview-admin.ts:339: salong — return { ok: false, error: 'Saknar salong, mall eller slot.' }
-
 lib/platform/roles-permissions.ts (2 träffar)
 lib/platform/roles-permissions.ts:58: Salongsägare — name: 'Salongsägare',
 lib/platform/roles-permissions.ts:67: Frisör — name: 'Frisör',
-
-lib/platform/tenant-modules-admin.ts (1 träffar)
-lib/platform/tenant-modules-admin.ts:96: salong — if (!tenantId || !moduleKey) return { error: 'Saknar salong eller modul.' }
 
 lib/platform/tenants.ts (3 träffar)
 lib/platform/tenants.ts:299: salong — label: 'Skapa salong',
@@ -697,11 +272,8 @@ lib/platform/theme-palettes.ts:95: salong — category: 'salong' as const,
 lib/platform/theme-palettes.ts:102: Barbershop — desc: 'Barbershop · vit & guld, skarp',
 lib/platform/theme-palettes.ts:110: Barbershop — tags: ['Ljus', 'Barbershop'],
 
-lib/sajtbyggare/save-site-content.ts (2 träffar)
-lib/sajtbyggare/save-site-content.ts:53: salong — if (!tenant) return { ok: false, error: 'Ingen salong är kopplad till ditt kont…
-lib/sajtbyggare/save-site-content.ts:74: salongen — return { ok: false, error: 'Sajtbyggaren är inte aktiverad för den här salongen…
-
 lib/storefront/offert/intake.ts (1 träffar)
 lib/storefront/offert/intake.ts:49: salong — if (!ctx) return { phase: 'error', message: 'Okänd salong.' }
 
-Summering: 0 nya, 457 i baseline (607 filer skannade).
+Summering: 1 nya, 199 i baseline (607 filer skannade).
+Nya bransch-ord i user-facing strängar — använd terminologi-systemet (resolveTerm/theme-content) istället.

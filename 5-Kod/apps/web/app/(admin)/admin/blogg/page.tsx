@@ -8,7 +8,7 @@ import { BloggAdmin } from '@/components/admin/BloggAdmin'
 import { Callout, PageHead } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Blogg · Salongsadmin' }
+export const metadata: Metadata = { title: 'Blogg · Adminpanel' }
 
 export default async function BloggPage() {
   const user = await requirePortal('admin')
@@ -22,7 +22,7 @@ export default async function BloggPage() {
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Blogg" />
         <Callout tone="info" icon="info">
-          Blogg är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
+          Blogg är inte aktiverad för ditt företag. Be plattformsadmin aktivera modulen.
         </Callout>
       </section>
     )
@@ -50,8 +50,8 @@ export default async function BloggPage() {
 function NoTenant() {
   return (
     <section className="portal-section">
-      <PageHead eyebrow="Salongsadmin" title="Blogg" />
-      <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+      <PageHead eyebrow="Adminpanel" title="Blogg" />
+      <p className="prose">Inget företag är kopplat till ditt konto.</p>
     </section>
   )
 }

@@ -36,7 +36,7 @@ export function TenantNameCard({
       <input type="hidden" name="tenantId" value={tenantId} />
       <label className={styles.field}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          Salongsnamn
+          Företagsnamn
           {onFlash ? (
             <button
               type="button"

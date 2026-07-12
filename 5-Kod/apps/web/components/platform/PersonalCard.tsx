@@ -85,7 +85,7 @@ function AddStaff({ tenantId, serviceRoleAvailable }: { tenantId: string; servic
         <div className={styles.fieldRow}>
           <label className={styles.field} style={{ flex: 1 }}>
             <span>Namn / titel</span>
-            <input name="title" placeholder="t.ex. Anna – Frisör" required />
+            <input name="title" placeholder="t.ex. Anna – teamledare" required />
           </label>
         </div>
         <div className={styles.actions}>
@@ -105,11 +105,11 @@ function AddStaff({ tenantId, serviceRoleAvailable }: { tenantId: string; servic
         <div className={styles.fieldRow}>
           <label className={styles.field}>
             <span>Namn / titel</span>
-            <input name="title" placeholder="t.ex. Anna – Frisör" />
+            <input name="title" placeholder="t.ex. Anna – teamledare" />
           </label>
           <label className={styles.field}>
             <span>E-post</span>
-            <input name="email" type="email" inputMode="email" placeholder="anna@salongen.se" required />
+            <input name="email" type="email" inputMode="email" placeholder="anna@exempel.se" required />
           </label>
         </div>
         <div className={styles.actions}>
@@ -210,7 +210,7 @@ function StaffRow({
           <p className={styles.svcSubTitle}>Tjänster medarbetaren utför</p>
           {services.length === 0 ? (
             <p className={styles.hint} style={{ margin: 0 }}>
-              Salongen har inga tjänster än — lägg till i Tjänster-fliken först.
+              Företaget har inga tjänster än — lägg till i Tjänster-fliken först.
             </p>
           ) : (
             <>
@@ -283,7 +283,7 @@ function StaffRow({
             <div className={styles.fieldRow}>
               <label className={styles.field} style={{ flex: 1 }}>
                 <span>E-post</span>
-                <input name="email" type="email" inputMode="email" placeholder="anna@salongen.se" required />
+                <input name="email" type="email" inputMode="email" placeholder="anna@exempel.se" required />
               </label>
             </div>
             <div className={styles.actions}>

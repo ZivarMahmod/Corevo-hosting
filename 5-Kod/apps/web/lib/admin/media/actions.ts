@@ -6,7 +6,7 @@ import { moduleCtx } from '@/lib/admin/module-ctx'
 import type { ActionState } from '@/lib/admin/actions'
 import { uploadImage, deleteByPublicUrl, uploadErrorMessage } from '@/lib/r2/upload'
 
-const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
+const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 
 /** Hex sha-256 of a file's bytes — the dubblett-nyckel (content-addressed, the

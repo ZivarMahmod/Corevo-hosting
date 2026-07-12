@@ -8,7 +8,7 @@ import { ShopAdmin } from '@/components/admin/ShopAdmin'
 import { PageHead, Callout } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Webshop · Salongsadmin' }
+export const metadata: Metadata = { title: 'Webshop · Adminpanel' }
 
 export default async function WebshopPage() {
   const user = await requirePortal('admin')
@@ -16,8 +16,8 @@ export default async function WebshopPage() {
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salongsadmin" title="Webshop" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Webshop" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -29,7 +29,7 @@ export default async function WebshopPage() {
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Webshop" />
         <Callout tone="info" icon="info">
-          Webshop är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
+          Webshop är inte aktiverad för ditt företag. Be plattformsadmin aktivera modulen.
         </Callout>
       </section>
     )

@@ -18,11 +18,11 @@ import { reportActionError } from './observe'
 export async function setSajtbyggareEnabled(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   const enabled = String(fd.get('enabled') ?? '') === 'true'
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   // MERGE prev settings (B1/§3 settings-krock guard) — read, spread ...prev, write OUR key.
   const { data: existing } = await supabase
@@ -53,7 +53,7 @@ export async function setSajtbyggareEnabled(_p: ActionState, fd: FormData): Prom
   })
   return {
     success: enabled
-      ? 'Sajtbyggaren aktiverad för salongen.'
-      : 'Sajtbyggaren avstängd för salongen.',
+      ? 'Sajtbyggaren aktiverad för kunden.'
+      : 'Sajtbyggaren avstängd för kunden.',
   }
 }

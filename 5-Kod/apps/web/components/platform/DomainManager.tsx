@@ -107,7 +107,7 @@ export function DomainManager({
   return (
     <div>
       <p className={styles.muted} style={{ marginTop: 0 }}>
-        Salongen körs på <code className={styles.code}>{slug}.corevo.se</code>. Lägg till kundens egna
+        Sidan körs på <code className={styles.code}>{slug}.corevo.se</code>. Lägg till kundens egna
         domän — den provisioneras som custom hostname och blir live när DNS-posterna är på plats.
       </p>
 
@@ -122,7 +122,7 @@ export function DomainManager({
           <span>Kundens domän</span>
           <input
             name="domain"
-            placeholder="boka.salongnamn.se"
+            placeholder="boka.exempel.se"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={pending}

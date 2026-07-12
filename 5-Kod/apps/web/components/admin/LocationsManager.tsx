@@ -80,7 +80,7 @@ export function LocationsManager({
       <PageHead
         eyebrow={tenantName}
         title="Platser"
-        lede="Salongens platser (filialer). Den primära platsen är den bokningar och den publika sajten utgår från — varje salong har exakt en."
+        lede="Företagets platser (filialer). Den primära platsen är den bokningar och den publika sajten utgår från — varje företag har exakt en."
       >
         <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
           Ny plats
@@ -236,7 +236,7 @@ function CreateLocationDrawer({
             form={formId}
             name="name"
             required
-            placeholder="t.ex. Salongen Söder"
+            placeholder="t.ex. Filialen Söder"
             style={inputStyle}
           />
         </Field>
@@ -400,7 +400,7 @@ function PrimarySection({ location, onDone }: { location: LocationRow; onDone: (
       </div>
       {location.is_primary ? (
         <p style={{ fontSize: 13, color: 'var(--c-ink-2)', margin: 0, lineHeight: 1.55 }}>
-          Detta är salongens primära plats — bokningar och den publika sajten utgår härifrån. Vill
+          Detta är företagets primära plats — bokningar och den publika sajten utgår härifrån. Vill
           du byta: gör en annan plats till primär, så flyttas rollen dit.
         </p>
       ) : (

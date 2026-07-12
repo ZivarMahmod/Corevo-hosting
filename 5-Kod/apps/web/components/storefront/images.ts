@@ -5,6 +5,15 @@
 //
 // These are real salon / hair / interior shots from Unsplash, chosen to lead
 // every section with a photo (the single biggest gap vs the old flat hero).
+//
+// ⚠️ SALONGSFOTON ÄR INTE EN PLATTFORMS-DEFAULT. Konstanterna nedan är frisör-
+// bilder och gäller BARA frisör-branschen. Att låta dem vara "default för alla" är
+// precis buggen Zivar pekar på — floristen ärvde salongsbilder. Bransch-riktiga
+// foton bor i bransch-copy.ts (BRANSCH_IMAGES) och kopplas in via
+// {@link withBranschMedia} nedan.
+
+import type { TenantBranding } from '@corevo/ui'
+import { branschMedia } from './bransch-copy'
 
 export type StorePhoto = { src: string; alt: string }
 
@@ -45,4 +54,44 @@ export const STYLIST_PHOTOS: StorePhoto[] = [
 export const CLOSING_PHOTO: StorePhoto = {
   src: u('1503951914875-452162b0f3f1'),
   alt: 'Inbjudande salongsmiljö redo att ta emot dig',
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BRANSCH-FOTON → branding-kanalen
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Lägg branschens foton UNDER tenantens egna, i `branding`-formen.
+ *
+ * Varför branding-kanalen: `resolveThemeContent(theme, branding, copy)` behandlar
+ * redan `branding.{hero_images,gallery_images,about_image,closing_image}` som
+ * HÖGSTA precedens och faller annars till mallens default. Matar vi in branschens
+ * foton som branding-värden får vi exakt rätt kedja UTAN att röra theme-content.ts:
+ *
+ *     ägarens uppladdade bild  >  BRANSCH_IMAGES  >  mallens default
+ *
+ * Ägaren vinner ALLTID: ett fält som tenanten faktiskt fyllt (icke-tom array /
+ * icke-tom sträng) lämnas orört. Bara de fält ägaren INTE laddat upp fylls med
+ * branschens foto. Har branschen inga verifierade foton (BRANSCH_IMAGES är medvetet
+ * gles) returneras `branding` oförändrat → mallens default gäller, precis som idag.
+ *
+ * PURE — muterar inte sitt argument. Övriga branding-fält (färger, logo, team,
+ * stats) kopieras rakt igenom orörda.
+ */
+export function withBranschMedia(
+  branding: TenantBranding | null | undefined,
+  verticalId: string | null | undefined,
+): TenantBranding | null | undefined {
+  const media = branschMedia(verticalId)
+  if (!media) return branding // ingen bransch-media → oförändrat (mallens default)
+  const b = branding ?? {}
+  const hasList = (v: unknown): boolean => Array.isArray(v) && v.length > 0
+  const hasStr = (v: unknown): boolean => typeof v === 'string' && v.trim().length > 0
+  return {
+    ...b,
+    hero_images: hasList(b.hero_images) ? b.hero_images : media.heroImages,
+    gallery_images: hasList(b.gallery_images) ? b.gallery_images : media.galleryImages,
+    about_image: hasStr(b.about_image) ? b.about_image : media.aboutImage,
+    closing_image: hasStr(b.closing_image) ? b.closing_image : media.closingImage,
+  }
 }

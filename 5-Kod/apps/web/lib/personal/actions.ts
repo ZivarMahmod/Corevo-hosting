@@ -11,7 +11,7 @@ import { getCustomerCard, getCustomerNotes, type CustomerCard, type CustomerNote
 
 export type ActionState = { error?: string; success?: string }
 
-const NO_PROFILE = 'Ingen personalprofil är kopplad till ditt konto. Kontakta salongsadmin.'
+const NO_PROFILE = 'Ingen personalprofil är kopplad till ditt konto. Kontakta din administratör.'
 const ACTIVE_STATUSES = ['pending', 'confirmed'] as const
 
 // Allowed enum values for the structured client-card fields. Kept in lock-step with
@@ -80,7 +80,7 @@ export async function createWalkIn(_prev: ActionState, formData: FormData): Prom
   // bookings.location_id is NOT NULL — a walk-in is anchored to the staff's own
   // location (the public booking RPC sets this for normal bookings). No location
   // link → can't place the row, so surface it rather than insert a bad row.
-  if (!me.locationId) return { error: 'Din profil saknar en kopplad plats. Kontakta salongen.' }
+  if (!me.locationId) return { error: 'Din profil saknar en kopplad plats. Kontakta din administratör.' }
 
   const supabase = await createClient()
 

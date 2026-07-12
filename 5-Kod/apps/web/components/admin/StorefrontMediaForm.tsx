@@ -67,7 +67,7 @@ export function StorefrontMediaForm(props: MediaProps) {
       <SingleImageSection
         key={`about-${savedNonce}`}
         label="Om oss-bild"
-        hint="Bilden bredvid texten ”Om salongen”."
+        hint="Bilden bredvid texten ”Om oss”."
         prefix="about"
         initial={props.aboutImage}
       />
@@ -349,7 +349,7 @@ function TeamRow({
         <input
           name={`team_role_${index}`}
           defaultValue={member.role}
-          placeholder="Roll (t.ex. Frisör)"
+          placeholder="Roll (t.ex. Grundare)"
           aria-label="Roll"
         />
         {/* Keep the saved photo URL unless a new file is chosen. */}

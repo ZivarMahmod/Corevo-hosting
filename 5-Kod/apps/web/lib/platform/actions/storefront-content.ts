@@ -53,11 +53,11 @@ function copyMax(field: CopyField): number {
  */
 export async function saveTenantStorefrontCopy(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   // Existence check + slug for the cache-bust (server-side tenant validation).
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { data: existing } = await supabase
     .from('tenant_settings')
@@ -134,7 +134,7 @@ function photoUploadError(reason: string): string {
  */
 export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const slotRaw = String(fd.get('slot') ?? '')
   if (!isSlot(slotRaw)) return { error: 'Ogiltig bild-slot.' }
@@ -144,7 +144,7 @@ export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData)
   if (!(image instanceof File) || image.size === 0) return { error: 'Välj en bild att ladda upp.' }
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const res = await uploadImage(image, `tenants/${tenantId}/storefront`)
   if (!res.ok) return { error: photoUploadError(res.reason) }
@@ -194,7 +194,7 @@ export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData)
  */
 export async function removeTenantStorefrontImage(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const slotRaw = String(fd.get('slot') ?? '')
   if (!isSlot(slotRaw)) return { error: 'Ogiltig bild-slot.' }
@@ -204,7 +204,7 @@ export async function removeTenantStorefrontImage(_p: ActionState, fd: FormData)
   if (!url) return { error: 'Saknar bild.' }
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { data: existing } = await supabase
     .from('tenant_settings')

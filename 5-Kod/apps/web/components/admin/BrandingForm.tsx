@@ -455,7 +455,7 @@ function BrandingPreview({
 
           <div className={styles.serviceRow} style={hl('color_bg')}>
             <div>
-              <div className={styles.serviceName}>Klippning &amp; styling</div>
+              <div className={styles.serviceName}>Exempeltjänst</div>
               <div className={styles.serviceMeta}>45 min</div>
             </div>
             <div className={styles.servicePrice} style={{ color: primary, ...hl('color_primary') }}>

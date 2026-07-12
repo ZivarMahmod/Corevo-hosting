@@ -50,7 +50,7 @@ export async function saveSiteContent(
 
   const user = await requirePortal('admin')
   const tenant = await getAdminTenant(user)
-  if (!tenant) return { ok: false, error: 'Ingen salong är kopplad till ditt konto.' }
+  if (!tenant) return { ok: false, error: 'Inget företag är kopplat till ditt konto.' }
 
   // goal-21 RBAC: vägen skriver branding → kräv Branding-write (additiv-restriktiv,
   // narrow-only; default salon_admin/super_admin behåller skriv → ingen regression).
@@ -71,7 +71,7 @@ export async function saveSiteContent(
   // redan, men en server-action kan anropas direkt. Återbrukar `existing`-läsningen
   // ovan (ingen extra query). Av → vägra spara.
   if (!tenantSiteEditorEnabled(existing?.settings))
-    return { ok: false, error: 'Sajtbyggaren är inte aktiverad för den här salongen.' }
+    return { ok: false, error: 'Sajtbyggaren är inte aktiverad för det här företaget.' }
 
   const applied = applySiteContentEdits(
     manifest,

@@ -6,7 +6,7 @@ import { ServicesManager } from '@/components/admin/ServicesManager'
 import { PageHead } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Tjänster · Salongsadmin' }
+export const metadata: Metadata = { title: 'Tjänster · Adminpanel' }
 
 export default async function ServicesPage() {
   const user = await requirePortal('admin')
@@ -28,8 +28,8 @@ export default async function ServicesPage() {
 function NoTenant() {
   return (
     <section className="portal-section">
-      <PageHead eyebrow="Salong-admin" title="Tjänster" />
-      <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+      <PageHead eyebrow="Adminpanel" title="Tjänster" />
+      <p className="prose">Inget företag är kopplat till ditt konto.</p>
     </section>
   )
 }

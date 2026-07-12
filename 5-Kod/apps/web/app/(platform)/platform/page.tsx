@@ -53,14 +53,14 @@ const AUDIT_ICON: Record<AuditTone, IconName> = {
 
 // Humanize a dotted audit action key into a calm one-liner for the activity feed.
 const ACTION_LABEL: Record<string, string> = {
-  'tenant.create': 'Salong skapad',
-  'tenant.suspend': 'Salong pausad',
-  'tenant.activate': 'Salong aktiverad',
-  'tenant.delete': 'Salong borttagen',
+  'tenant.create': 'Kund skapad',
+  'tenant.suspend': 'Kund pausad',
+  'tenant.activate': 'Kund aktiverad',
+  'tenant.delete': 'Kund borttagen',
   'tenant.branding': 'Varumärke uppdaterat',
   'tenant.billing': 'Prismodell ändrad',
   'tenant.invite': 'Ägare inbjuden',
-  'tenant.update': 'Salongsdata uppdaterad',
+  'tenant.update': 'Kunddata uppdaterad',
   'tenant.password_reset': 'Lösenordsreset skickad',
   'tenant.staff_create': 'Personal tillagd',
   'platform.help_mode_open': 'Hjälp-läge öppnat',
@@ -125,10 +125,10 @@ export default async function PlatformOverviewPage() {
       <PageHead
         eyebrow="Plattform · Zivar"
         title="Översikt"
-        lede="Din insyn över alla salonger — klicka in på vilken som helst och styr allt utan kod."
+        lede="Din insyn över alla kunder — klicka in på vilken som helst och styr allt utan kod."
       >
         <Button href="/salonger/ny" variant="primary" icon="plus">
-          Onboarda salong
+          Onboarda kund
         </Button>
       </PageHead>
 
@@ -150,7 +150,7 @@ export default async function PlatformOverviewPage() {
       {/* 4 KPI cards — all LIVE cross-tenant aggregates (platformOverview). */}
       <div className="bo-stat-grid" style={{ marginBottom: 18 }}>
         <Stat
-          label="Salonger"
+          label="Kunder"
           value={overview.tenantsTotal}
           delta={`${overview.tenantsActive} aktiva`}
           deltaTone={overview.tenantsActive > 0 ? 'success' : 'muted'}
@@ -159,7 +159,7 @@ export default async function PlatformOverviewPage() {
         <Stat
           label="Aktiva"
           value={overview.tenantsActive}
-          hint={`av ${overview.tenantsTotal} salonger`}
+          hint={`av ${overview.tenantsTotal} kunder`}
           icon="checkCircle"
         />
         {/* Bokningar — custom KPI card (mock SuperOverview): forest big number +
@@ -211,7 +211,7 @@ export default async function PlatformOverviewPage() {
         {/* ── Alla salonger ──────────────────────────────────────────────── */}
         <Card pad={0}>
           <div className={styles.cardHead}>
-            <h2 className="h2">Alla salonger</h2>
+            <h2 className="h2">Alla kunder</h2>
             <Link href="/salonger" className={styles.linkBtn}>
               Hantera <Icon name="arrowRight" size={15} />
             </Link>
@@ -219,18 +219,18 @@ export default async function PlatformOverviewPage() {
 
           {tenants.length === 0 ? (
             <div className={styles.tableEmpty}>
-              <p className={`h2 ${styles.tableEmptyTitle}`}>Inga salonger ännu</p>
+              <p className={`h2 ${styles.tableEmptyTitle}`}>Inga kunder ännu</p>
               <p className={styles.tableEmptyText}>
-                Onboarda din första kund — skapa salong, välj temamall och färger, så
+                Onboarda din första kund — skapa kontot, välj temamall och färger, så
                 är den live på en egen subdomän direkt.
               </p>
               <Button href="/salonger/ny" variant="primary" icon="plus">
-                Skapa den första salongen
+                Skapa den första kunden
               </Button>
             </div>
           ) : (
             <Table
-              cols={['Salong', 'Subdomän', 'Stad', 'Skapad', 'Bokningar', 'Status']}
+              cols={['Kund', 'Subdomän', 'Stad', 'Skapad', 'Bokningar', 'Status']}
               rows={tenants.slice(0, 8).map((t) => [
                 <Link
                   key={`${t.id}-name`}

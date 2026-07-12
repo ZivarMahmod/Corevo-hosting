@@ -30,8 +30,8 @@ export default async function PersonalPage({
         <div className={styles.empty}>
           <p className={styles.emptyTitle}>Ingen personalprofil kopplad</p>
           <p className={styles.emptyHint}>
-            Ditt konto är inte kopplat till en personalrad ännu. Kontakta salongsadmin så kopplas du
-            till din profil — sedan dyker dina bokningar och tider upp här.
+            Ditt konto är inte kopplat till en personalrad ännu. Kontakta din administratör så
+            kopplas du till din profil — sedan dyker dina bokningar och tider upp här.
           </p>
         </div>
       </section>

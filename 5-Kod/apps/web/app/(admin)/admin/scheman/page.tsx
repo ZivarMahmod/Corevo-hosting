@@ -22,7 +22,7 @@ import { StaffBookability } from '@/components/admin/StaffBookability'
 import { PageHead, Card } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Schema · Salongsadmin' }
+export const metadata: Metadata = { title: 'Schema · Adminpanel' }
 
 /** Frånvaro-intervall i tenantens tz. Heldagar (00:00 → nästa dag 00:00) visas
  *  som inklusiva dagar; udda tider (personal-anmäld frånvaro) behåller klockslag
@@ -52,8 +52,8 @@ export default async function SchedulesPage({
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salong-admin" title="Schema" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Schema" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }

@@ -8,7 +8,7 @@ import { LojalitetAdmin } from '@/components/admin/LojalitetAdmin'
 import { PageHead, Callout } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Lojalitet · Salongsadmin' }
+export const metadata: Metadata = { title: 'Lojalitet · Adminpanel' }
 
 export default async function LojalitetPage() {
   const user = await requirePortal('admin')
@@ -16,8 +16,8 @@ export default async function LojalitetPage() {
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salong-admin" title="Lojalitet" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Lojalitet" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -29,7 +29,7 @@ export default async function LojalitetPage() {
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Lojalitet" />
         <Callout tone="info" icon="info">
-          Lojalitet är inte aktiverad för din salong. Be plattformsadmin aktivera modulen.
+          Lojalitet är inte aktiverad för ditt företag. Be plattformsadmin aktivera modulen.
         </Callout>
       </section>
     )

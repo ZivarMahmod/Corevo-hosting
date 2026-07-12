@@ -33,7 +33,7 @@ export async function addFavorite(
 ): Promise<FavoriteActionState> {
   const user = await requirePortal('kund')
   const tenantId = user.tenantId ?? ''
-  if (!tenantId) return { error: 'Okänd salong.' }
+  if (!tenantId) return { error: 'Okänt företag.' }
 
   const input = parseAdd(formData)
   if (!input) return { error: 'Ogiltigt favoritval.' }
@@ -48,7 +48,7 @@ export async function addFavorite(
       .eq('id', input.targetId)
       .eq('tenant_id', tenantId)
       .maybeSingle()
-    if (!data) return { error: 'Frisören hittades inte.' }
+    if (!data) return { error: 'Personalen hittades inte.' }
   } else {
     const { data } = await supabase
       .from('services')

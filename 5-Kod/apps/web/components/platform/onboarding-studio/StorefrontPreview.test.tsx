@@ -27,7 +27,7 @@ describe('W2 StorefrontPreview', () => {
     expect(html).toContain('data-world="storefront"')
     expect(html).toContain('data-theme="salvia"')
     // hero copy comes from the theme content (Salvia default), not the operator
-    expect(html).toContain('Skarpt klippt')
+    expect(html).toContain('Varsamt utfört')
   })
 
   it('theme guard falls back to the default on an unknown key (no crash)', () => {

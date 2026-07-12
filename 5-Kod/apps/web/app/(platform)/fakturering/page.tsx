@@ -38,7 +38,7 @@ export default async function FaktureringPage({
     <section className="portal-section">
       <PageHead eyebrow="Plattform" title="Faktureringsunderlag" />
       <p className="prose">
-        FLÖDE 2 — läs-vy som Corevo fakturerar manuellt från. Per salong per kalendermånad:
+        FLÖDE 2 — läs-vy som Corevo fakturerar manuellt från. Per kund per kalendermånad:
         genomförda bokningar (exkl. avbokade/uteblivna) × avgift, eller fast månadsbelopp. Ingen
         Stripe-koppling.
       </p>
@@ -57,7 +57,7 @@ export default async function FaktureringPage({
         <table className="portal-table">
           <thead>
             <tr>
-              <th>Salong</th>
+              <th>Kund</th>
               <th>Prismodell</th>
               <th className={styles.right}>Genomförda</th>
               <th className={styles.right}>Avgift</th>
@@ -88,8 +88,8 @@ export default async function FaktureringPage({
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={5} className={styles.muted}>
-                  Inga salonger att fakturera för {label}.{' '}
-                  <Link href="/salonger/ny">Skapa en salong →</Link>
+                  Inga kunder att fakturera för {label}.{' '}
+                  <Link href="/salonger/ny">Skapa en kund →</Link>
                 </td>
               </tr>
             ) : null}
@@ -107,7 +107,7 @@ export default async function FaktureringPage({
         </table>
       </div>
       <p className={styles.hint}>
-        Startavgift (engångs) faktureras separat per salong och ingår inte i månadsunderlaget ovan.
+        Startavgift (engångs) faktureras separat per kund och ingår inte i månadsunderlaget ovan.
       </p>
     </section>
   )

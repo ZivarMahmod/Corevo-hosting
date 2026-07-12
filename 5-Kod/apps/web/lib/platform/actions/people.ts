@@ -19,7 +19,7 @@ export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
   const email = String(fd.get('email') ?? '').trim().toLowerCase()
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!email || !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
 
   if (!hasServiceRole())
@@ -54,7 +54,7 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
   const title = String(fd.get('title') ?? '').trim()
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!title) return { error: 'Ange ett namn/en titel.' }
 
   // Primary location (load-bearing for staff↔location, but optional in the schema).
@@ -87,7 +87,7 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
     actorId: user.id,
     meta: { title },
   })
-  return { success: `Medarbetare "${title}" tillagd hos salongen.` }
+  return { success: `Medarbetare "${title}" tillagd hos kunden.` }
 }
 
 /**
@@ -106,7 +106,7 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
   const email = String(fd.get('email') ?? '').trim().toLowerCase()
   const title = String(fd.get('title') ?? '').trim()
   const staffId = String(fd.get('staffId') ?? '').trim() // optional: link an existing staff row
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!email || !EMAIL_RE.test(email)) return { error: 'Ange en giltig e-postadress.' }
 
   if (!hasServiceRole())
@@ -115,7 +115,7 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
   if (!svc) return { error: 'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
 
   const { data: tenant } = await supabase.from('tenants').select('id').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Salongen finns inte.' }
+  if (!tenant) return { error: 'Kunden finns inte.' }
 
   // 1) Tenant-scoped `staff` role (level 3), idempotent. Platform bypass admits it.
   await supabase
@@ -197,7 +197,7 @@ export async function updateTenantStaff(_p: ActionState, fd: FormData): Promise<
   const title = String(fd.get('title') ?? '').trim().slice(0, 120)
   const active = fd.get('active') === 'on'
 
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!staffId) return { error: 'Saknar medarbetare.' }
   if (!title) return { error: 'Ange ett namn/en titel.' }
 
@@ -235,7 +235,7 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
   const staffId = String(fd.get('staffId') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!staffId) return { error: 'Saknar medarbetare.' }
 
   const { data: st } = await supabase
@@ -300,7 +300,7 @@ export async function removeTenantStaff(_p: ActionState, fd: FormData): Promise<
   const tenantId = String(fd.get('tenantId') ?? '')
   const staffId = String(fd.get('staffId') ?? '')
 
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!staffId) return { error: 'Saknar medarbetare.' }
 
   const { error } = await supabase
@@ -347,7 +347,7 @@ export async function setStaffSchedule(_p: ActionState, fd: FormData): Promise<A
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const staffId = String(fd.get('staffId') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!staffId) return { error: 'Saknar medarbetare.' }
 
   // Security + location source in one read: a staffId from another tenant fails the
@@ -358,7 +358,7 @@ export async function setStaffSchedule(_p: ActionState, fd: FormData): Promise<A
     .eq('id', staffId)
     .eq('tenant_id', tenantId)
     .maybeSingle()
-  if (!staffRow) return { error: 'Medarbetaren finns inte hos den här salongen.' }
+  if (!staffRow) return { error: 'Medarbetaren finns inte hos den här kunden.' }
 
   const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
   // Front-load ALL validation before any DB write (no half-wiped schedule).
@@ -445,7 +445,7 @@ export async function createPlatformCustomer(_p: ActionState, fd: FormData): Pro
   const email = String(fd.get('email') ?? '').trim().toLowerCase().slice(0, 254) // RFC max
   const phone = String(fd.get('phone') ?? '').trim().slice(0, 40)
 
-  if (!tenantId) return { error: 'Välj en salong.' }
+  if (!tenantId) return { error: 'Välj ett företag.' }
   if (!fullName) return { error: 'Ange kundens namn.' }
   if (email && !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
 
@@ -457,9 +457,9 @@ export async function createPlatformCustomer(_p: ActionState, fd: FormData): Pro
     .select('id, status')
     .eq('id', tenantId)
     .maybeSingle()
-  if (!tenant) return { error: 'Salongen finns inte.' }
+  if (!tenant) return { error: 'Företaget finns inte.' }
   if (tenant.status !== 'active')
-    return { error: 'Salongen är inte aktiv — kan inte lägga till kund.' }
+    return { error: 'Företaget är inte aktivt — kan inte lägga till kund.' }
 
   const { data: created, error } = await supabase
     .from('customers')

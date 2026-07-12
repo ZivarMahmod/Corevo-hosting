@@ -18,7 +18,7 @@ import { PageHead, Button, Icon } from '@/components/portal/ui'
 import { BookingsClient, type BookingRow, type WeekTemplate } from '@/components/admin/BookingsClient'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Bokningar · Salongsadmin' }
+export const metadata: Metadata = { title: 'Bokningar · Adminpanel' }
 
 export default async function BookingsPage({
   searchParams,
@@ -31,8 +31,8 @@ export default async function BookingsPage({
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salong-admin" title="Bokningar" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Bokningar" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -220,7 +220,7 @@ export default async function BookingsPage({
         weekAnchor={weekAnchor}
         tz={tz}
         weekTemplate={weekTemplate}
-        staffNoun={resolveTerm(tenant.terminology, 'staff', 'Frisör')}
+        staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
         staffOptions={staff.map((s) => ({ id: s.id, name: s.displayName }))}
         staffFilter={staffFilter}
         locationOptions={locations.map((l) => ({ id: l.id, name: l.name }))}

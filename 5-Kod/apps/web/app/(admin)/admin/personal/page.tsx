@@ -15,7 +15,7 @@ import {
 import { PageHead, Card } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Personal · Salongsadmin' }
+export const metadata: Metadata = { title: 'Personal · Adminpanel' }
 
 export default async function StaffPage() {
   const user = await requirePortal('admin')
@@ -23,8 +23,8 @@ export default async function StaffPage() {
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salong-admin" title="Personal" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Personal" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }

@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Nav now lives in the back-office sidebar (PortalShell → PortalSidebar,
   // role="admin"). The old in-content <AdminNav> is removed to avoid double nav.
   return (
-    <PortalShell user={user} title="Salongsadmin" world="backoffice" portal="admin">
+    <PortalShell user={user} title="Adminpanel" world="backoffice" portal="admin">
       {/* Live-refresh bookings views on any write to this tenant's bookings.
           tenantId is the server-resolved JWT tenant; RLS fences the channel. */}
       <RealtimeBookings tenantId={user.tenantId ?? undefined} />

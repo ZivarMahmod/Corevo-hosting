@@ -11,8 +11,8 @@ import { Button } from './Button'
 export type ThreadNote = {
   /** Stable key (e.g. note row id, or index when ids are absent). */
   id: string | number
-  /** Who wrote it. 'kund' = gold bubble; 'frisör'/'staff'/'system' = neutral. */
-  from: 'kund' | 'frisör' | 'staff' | 'system'
+  /** Who wrote it. 'kund' = gold bubble; 'personal'/'staff'/'system' = neutral. */
+  from: 'kund' | 'personal' | 'staff' | 'system'
   text: string
   /** Already-formatted author + time label (e.g. "Sara · nyss" / "System · 14:02"). */
   meta?: string

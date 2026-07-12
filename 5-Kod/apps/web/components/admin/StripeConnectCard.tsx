@@ -105,7 +105,7 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
             </span>
             <span style={{ opacity: 0.72, fontSize: '0.9rem' }}>
               {canToggle
-                ? 'Kunden betalar online när tiden bokas — pengarna går rakt till din salong.'
+                ? 'Kunden betalar online när tiden bokas — pengarna går rakt till ditt företag.'
                 : 'Koppla Stripe och slutför onboarding nedan för att kunna ta betalt vid bokning.'}
             </span>
           </span>
@@ -161,7 +161,7 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
             <span style={{ display: 'block', fontWeight: 600, fontSize: '0.92rem' }}>Stripe</span>
             <span style={{ display: 'block', fontSize: '0.82rem', opacity: 0.72 }}>
               {props.chargesEnabled
-                ? 'Ansluten · utbetalning till din salong'
+                ? 'Ansluten · utbetalning till ditt företag'
                 : props.hasAccount
                   ? 'Konto kopplat · slutför onboarding'
                   : 'Inget konto kopplat ännu'}

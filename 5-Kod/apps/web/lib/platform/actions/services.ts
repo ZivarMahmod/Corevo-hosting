@@ -70,12 +70,12 @@ export async function createTenantService(_p: ActionState, fd: FormData): Promis
   const priceCents = priceCentsFrom(fd)
   const durationMin = parseDuration(fd.get('duration_min')) ?? 30
 
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!name) return { error: 'Ange ett namn på tjänsten.' }
   if (priceCents === null) return { error: 'Ange ett giltigt pris (kr).' }
 
   const { data: tenant } = await supabase.from('tenants').select('id').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Salongen finns inte.' }
+  if (!tenant) return { error: 'Kunden finns inte.' }
 
   const { data: created, error } = await supabase
     .from('services')
@@ -121,7 +121,7 @@ export async function updateTenantService(_p: ActionState, fd: FormData): Promis
   const badge = optionalText(fd, 'badge', 40)
   const sortOrder = parseSort(fd.get('sort_order'))
 
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!serviceId) return { error: 'Saknar tjänst.' }
   if (!name) return { error: 'Ange ett namn på tjänsten.' }
   if (priceCents === null) return { error: 'Ange ett giltigt pris (kr).' }
@@ -180,7 +180,7 @@ export async function deleteTenantService(_p: ActionState, fd: FormData): Promis
   const tenantId = String(fd.get('tenantId') ?? '')
   const serviceId = String(fd.get('serviceId') ?? '')
 
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!serviceId) return { error: 'Saknar tjänst.' }
 
   const { count } = await supabase
@@ -225,7 +225,7 @@ export async function setServiceStaff(_p: ActionState, fd: FormData): Promise<Ac
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const serviceId = String(fd.get('serviceId') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!serviceId) return { error: 'Saknar tjänst.' }
 
   // Service must belong to the tenant (never trust the client ids).
@@ -287,7 +287,7 @@ export async function uploadServiceImage(_p: ActionState, fd: FormData): Promise
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const serviceId = String(fd.get('serviceId') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!serviceId) return { error: 'Saknar tjänst.' }
 
   const image = fd.get('image')
@@ -344,7 +344,7 @@ export async function removeServiceImage(_p: ActionState, fd: FormData): Promise
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const serviceId = String(fd.get('serviceId') ?? '')
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
   if (!serviceId) return { error: 'Saknar tjänst.' }
 
   const { data: svc } = await supabase

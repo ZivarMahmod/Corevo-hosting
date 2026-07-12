@@ -85,11 +85,17 @@
 
 /* Amber → bone vid hovring: på en mörk mall är det LJUSARE som läser som "aktiv",
    aldrig mörkare. --color-fg (#F2ECE2) mot --color-bg (#14120E) = 15.9:1.
-   Dubblad även här: .sfMoreLink:hover (0,2,0) sätter border-color och skulle annars
-   taja med en enkel .moreLink:hover. */
+   Dubblad även här: .sfMoreLink:hover (0,2,0) sätter understrykningen och skulle
+   annars taja med en enkel .moreLink:hover.
+   goal-61: understrykningen bor inte längre på border-bottom (den ritades i botten av
+   den 44px-box som raden ovan gav länken — alltså långt under texten). Den delade
+   .sfMoreLink ritar den nu med ::after, strax under textens underkant; Zigges
+   bone-färg måste följa med dit, annars försvinner hovringens streck helt. */
 .moreLink.moreLink:hover {
   color: var(--color-fg);
-  border-bottom-color: var(--color-fg);
+}
+.moreLink.moreLink:hover::after {
+  background: var(--color-fg);
 }
 
 .moreLink.moreLink:focus-visible {

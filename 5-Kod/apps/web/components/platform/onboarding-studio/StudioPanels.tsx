@@ -293,7 +293,7 @@ function PanelNamn({ cfg, dispatch }: PanelProps) {
                 alignItems: 'center',
               }}
             >
-              <Icon name="alert" size={14} /> &quot;{cfg.slug}&quot; är reserverad — kan inte bli en salongs-slug.
+              <Icon name="alert" size={14} /> &quot;{cfg.slug}&quot; är reserverad — kan inte bli en subdomän.
             </div>
           ) : taken ? (
             <div
@@ -642,7 +642,7 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
             <span style={{ flex: 'none', marginTop: 1 }}>
               <Icon name="alert" size={14} />
             </span>
-            Kräver: salongsnamn, en giltig subdomän, ett tema och minst en tjänst. Komplettera i
+            Kräver: företagsnamn, en giltig subdomän, ett tema och minst en tjänst. Komplettera i
             stegen ovan.
           </div>
         ) : null}

@@ -102,7 +102,7 @@ export function SlotManager({
           "info" (mock-CODE sätter --c-info-bg + --c-info, dvs tone="info"). */}
       <div style={{ marginBottom: 16 }}>
         <Callout tone="info" icon="info">
-          Upplägget är förinställt från salongens nuvarande mönster. Justera per dag — minimalt
+          Upplägget är förinställt från verksamhetens nuvarande mönster. Justera per dag — minimalt
           manuellt arbete, alltid rätt tider uppe.
         </Callout>
       </div>
@@ -147,7 +147,7 @@ function StaffChips({ staff, selectedId }: { staff: StaffChip[]; selectedId: str
       }}
     >
       <span className="small" style={{ marginRight: 4 }}>
-        Frisör:
+        Personal:
       </span>
       {staff.map((s, i) => {
         const sel = s.id === selectedId

@@ -280,11 +280,18 @@
 }
 /* WCAG 2.5.8 — the TAP TARGET is the full 24×24px button; the smaller visible dot
    is drawn with ::before so the dot stays petite while the hit area is ≥24px. */
+/* goal-61 svep: träffytan var 24px hög. Den växer till 44px LODRÄTT och kvittas med
+   `margin-block: -10px` → marginalboxen är kvar på 24px, prickraden rör sig inte.
+   BREDDEN lämnas på 24px med flit: prickarna står med 0.15rem (2.4px) mellanrum, så
+   44px BREDA träffytor hade överlappat varandra med ~18px — högerhalvan av prick 1
+   hade aktiverat prick 2. Det vore en sämre bugg än den vi fixar. Prickens synliga
+   storlek (::before) är oförändrad. */
 .heroDot {
   width: 24px;
-  height: 24px;
+  height: 44px;
   min-width: 24px;
-  min-height: 24px;
+  min-height: 44px;
+  margin-block: -10px;
   padding: 0;
   border: 0;
   background: none;
@@ -310,19 +317,24 @@
   width: 1.6rem;
   border-radius: 999px;
 }
-/* Pause/play toggle — same petite footprint as the dots, ≥24px tap target. */
+/* Pause/play toggle — samma lodräta 44px-träffyta som prickarna (se .heroDot).
+   Skillnaden: knappen RITADE sin synliga cirkel med sin EGEN border/bakgrund, så en
+   44px hög box hade gjort cirkeln till en 24×44-kapsel. Därför flyttar det visuella
+   till ::before (24×24, centrerad) medan knappen blir en osynlig 24×44 träffyta.
+   `isolation: isolate` gör knappen till en stacking context så att ::before med
+   z-index:-1 hamnar UNDER glyfen men ALDRIG under hero-fotot. */
 .heroPause {
+  position: relative;
+  isolation: isolate;
   width: 24px;
-  height: 24px;
+  height: 44px;
   min-width: 24px;
-  min-height: 24px;
+  min-height: 44px;
   margin-left: 0.35rem;
+  margin-block: -10px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.25);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  border: 0;
+  background: none;
   color: #fff;
   font-size: 0.62rem;
   line-height: 1;
@@ -330,11 +342,28 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+.heroPause::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   transition: background var(--dur-base) var(--ease-out);
 }
-.heroPause:hover { background: rgba(0, 0, 0, 0.45); }
-.heroPause:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-:global([data-template='B']) .heroPause { border-radius: 0; }
+.heroPause:hover::before { background: rgba(0, 0, 0, 0.45); }
+/* Fokusringen ska rita runt den SYNLIGA cirkeln, inte runt den osynliga 24×44-boxen. */
+.heroPause:focus-visible { outline: none; }
+.heroPause:focus-visible::before { outline: 2px solid #fff; outline-offset: 2px; }
+:global([data-template='B']) .heroPause::before { border-radius: 0; }
 .heroArrow {
   width: 2.6rem;
   height: 2.6rem;
@@ -494,17 +523,36 @@
 .menuEmptyText { margin: 0 auto; max-width: 30rem; opacity: 0.75; line-height: 1.6; }
 .menuEmptyCta { margin-top: 1.5rem; }
 
+/* goal-61 svep: 28px hög länk (kontakt-sidan, alla 7 mallar) → 44px träffyta,
+   kvittad med `margin-block: -8px` så marginalboxen är kvar på exakt 28px och
+   inget nedanför flyttar sig. Den här länken bär ALDRIG en mall-klass (mätt), så
+   kvittningen är säker.
+   Understrykningen kan inte längre vara `border-bottom`: den hade ritats i botten
+   av den nya 44px-boxen, ~11px under texten. Den flyttar till ::after, som sitter
+   strax under textens underkant (em-baserad → följer mallens fontstorlek). */
 .moreLink {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 44px;
+  margin-block: -8px;
   font-weight: 600;
   color: var(--color-primary);
-  border-bottom: 2px solid transparent;
-  padding-bottom: 2px;
-  transition: border-color var(--dur-fast) var(--ease-out), gap var(--dur-fast) var(--ease-out);
+  transition: gap var(--dur-fast) var(--ease-out);
 }
-.moreLink:hover { border-color: var(--color-accent); gap: 0.65rem; }
+.moreLink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 0.7em);
+  height: 2px;
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.moreLink:hover { gap: 0.65rem; }
+.moreLink:hover::after { background: var(--color-accent); }
 
 /* ===========================================================================
    5. Italic accent-phrase band
@@ -765,13 +813,24 @@
 }
 .locValue { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--color-primary); }
 .locContactValue { margin: 0.35rem 0 0; font-size: 1.02rem; }
+/* goal-61 svep: 20–30px (telefon/mejl/sociala på kontakt-sidan, alla 7 mallar).
+   Den här är en LÖPANDE inline-länk i ett <p> — inte ett flex-item. På en inline-box
+   påverkar lodrät padding VARKEN radboxens höjd ELLER omgivande layout, men den ingår
+   i elementets border-box → getBoundingClientRect (och träffytan) växer till ≥44px.
+   Alltså: ingen negativ marginal behövs, och layouten kan per konstruktion inte flytta
+   sig. Ett inline-flex hade däremot blivit en atomär inline och rubbat baslinjen.
+   Understrykningen kan inte vara border-bottom (den hade hamnat 13px under texten,
+   i botten av padding-boxen) → text-decoration, som följer TEXTEN. */
 .locContactLink {
   color: var(--color-primary);
-  text-decoration: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
-  transition: border-color var(--dur-fast) var(--ease-out);
+  padding-block: 13px;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
 }
-.locContactLink:hover { border-bottom-color: var(--color-primary); }
+.locContactLink:hover { text-decoration-color: var(--color-primary); }
 .locContactLink:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .locHint { margin: 0.25rem 0 0; font-size: 0.92rem; opacity: 0.7; line-height: 1.5; }
 .hoursTable { width: 100%; max-width: 22rem; border-collapse: collapse; margin: 0.25rem 0; }
@@ -860,18 +919,43 @@
 .sfWide { max-width: 1180px; margin: 0 auto; padding-left: clamp(1.25rem, 4vw, 1.75rem); padding-right: clamp(1.25rem, 4vw, 1.75rem); }
 .sfNarrow { max-width: 1080px; margin: 0 auto; padding-left: clamp(1.25rem, 4vw, 1.75rem); padding-right: clamp(1.25rem, 4vw, 1.75rem); }
 
+/* goal-61 svep: 28px hög på leander/edit. På salvia/linnea/zigge bär samma element
+   ÄVEN mallens egen `.moreLink` (goal-60) som redan satt min-height:44px — de äger
+   alltså redan sitt flöde (44px). En DELAD negativ marginal hade krympt de tre med
+   16px, dvs rivit upp redan levererad layout. Därför: träffytan här (skadar ingen),
+   flödes-kvittningen bara på de två mallar som faktiskt växer.
+   Understrykningen → ::after (se .moreLink). Det botar samtidigt en LEVANDE bugg på
+   salvia/linnea/zigge, där border-bottom redan ritades i botten av deras 44px-box
+   istället för under texten. */
 .sfMoreLink {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 44px;
   margin-top: 2rem;
   font-weight: 600;
   color: var(--color-primary);
-  border-bottom: 2px solid transparent;
-  padding-bottom: 2px;
-  transition: border-color var(--dur-fast) var(--ease-out), gap var(--dur-fast) var(--ease-out);
+  transition: gap var(--dur-fast) var(--ease-out);
 }
-.sfMoreLink:hover { border-color: var(--color-accent); gap: 0.65rem; }
+.sfMoreLink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 0.7em);
+  height: 2px;
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.sfMoreLink:hover { gap: 0.65rem; }
+.sfMoreLink:hover::after { background: var(--color-accent); }
+/* Kvitta flödet ENDAST där mallen inte redan gett länken 44px. */
+:global([data-theme='leander']) .sfMoreLink,
+:global([data-theme='edit']) .sfMoreLink {
+  margin-top: calc(2rem - 8px);
+  margin-bottom: -8px;
+}
 
 /* shared stat primitives */
 .sfStatValue { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 2.4rem); color: var(--color-primary); line-height: 1; }
@@ -929,8 +1013,12 @@
 .sfHoursRow { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--color-line); font-family: var(--font-body); font-size: 0.95rem; color: var(--color-fg); }
 .sfHoursRow span:first-child { color: var(--color-fg-2); }
 .sfMap { height: 320px; border-radius: var(--sf-radius); overflow: hidden; border: 1px solid var(--color-line); background: var(--color-accent-soft); display: grid; place-items: center; padding: 1.5rem; text-align: center; }
-.sfMapLink { display: inline-flex; align-items: center; gap: 0.45rem; font-family: var(--font-body); font-weight: 600; color: var(--color-primary); border-bottom: 2px solid transparent; padding-bottom: 2px; transition: border-color var(--dur-fast) var(--ease-out), gap var(--dur-fast) var(--ease-out); }
-.sfMapLink:hover { border-color: var(--color-accent); gap: 0.7rem; }
+/* goal-61 svep: 28px (salvia, flora) → 44px träffyta, kvittad till 28px flöde.
+   Bär aldrig en mall-klass (mätt) → kvittningen är säker. Understrykning → ::after. */
+.sfMapLink { position: relative; display: inline-flex; align-items: center; gap: 0.45rem; min-height: 44px; margin-block: -8px; font-family: var(--font-body); font-weight: 600; color: var(--color-primary); transition: gap var(--dur-fast) var(--ease-out); }
+.sfMapLink::after { content: ''; position: absolute; left: 0; right: 0; top: calc(50% + 0.7em); height: 2px; background: transparent; transition: background var(--dur-fast) var(--ease-out); }
+.sfMapLink:hover { gap: 0.7rem; }
+.sfMapLink:hover::after { background: var(--color-accent); }
 .sfMapLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 .sfMapHint { font-family: var(--font-body); font-size: 0.92rem; color: var(--color-fg-2); }
 @media (max-width: 760px) { .sfLocGrid { grid-template-columns: 1fr; } }
@@ -959,8 +1047,16 @@
 
 /* ── ZIGGE (split dark barber) ──────────────────────────────────────────── */
 .sfSplitHero { display: grid; grid-template-columns: 1fr 1fr; min-height: clamp(30rem, 70vh, 44rem); }
-.sfSplitPanel { background: var(--color-surface); display: flex; flex-direction: column; justify-content: center; padding: clamp(2.5rem, 5vw, 4.5rem) clamp(1.75rem, 5vw, 4.5rem); }
-.sfSplitTitle { font-family: var(--font-display); font-weight: 400; color: var(--color-fg); text-transform: uppercase; line-height: 0.92; letter-spacing: 0.01em; font-size: clamp(3rem, 7vw, 6.5rem); margin: 1.1rem 0 0; }
+/* goal-61: HÄR satt zigges 7px-overflow — inte i .sfBandMain som mätningen pekade ut
+   (den var en äkta men INSTÄNGD 16px-overflow; sidans 7px kom härifrån).
+   Titeln är ett clamp(3rem …)-displaytypsnitt: vid 390px behöver mallens långa namn
+   341px men panelen ger 334px innanför sin padding. Ett `1fr`-spår kan inte krympa
+   under sitt innehålls min-content → SPÅRET växte till 397px och tog med sig hela
+   sidan. `min-width: 0` låter spåret krympa till sin andel; `overflow-wrap: anywhere`
+   låter ordet brytas när det ändå inte får plats (och krymper min-content-bidraget).
+   Rör inga px, färger eller fontstorlekar — bara brytbarheten. */
+.sfSplitPanel { background: var(--color-surface); display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: clamp(2.5rem, 5vw, 4.5rem) clamp(1.75rem, 5vw, 4.5rem); }
+.sfSplitTitle { font-family: var(--font-display); font-weight: 400; color: var(--color-fg); text-transform: uppercase; line-height: 0.92; letter-spacing: 0.01em; font-size: clamp(3rem, 7vw, 6.5rem); margin: 1.1rem 0 0; overflow-wrap: anywhere; }
 .sfSplitActions { display: flex; gap: 0.9rem; margin-top: 2rem; align-items: center; flex-wrap: wrap; }
 .sfSplitNote { font-family: var(--font-body); font-size: 0.8rem; color: var(--color-fg-2); letter-spacing: 0.08em; text-transform: uppercase; }
 .sfSplitPhoto { background-color: var(--color-accent-soft); background-size: cover; background-position: center; min-height: 22rem; filter: saturate(0.9); }
@@ -972,7 +1068,13 @@
 .sfBand:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
 .sfBandNum { font-family: var(--font-display); font-size: 1.9rem; color: var(--color-primary); }
 .sfBandMain { min-width: 0; }
-.sfBandName { display: block; font-family: var(--font-display); font-size: clamp(1.3rem, 2.6vw, 1.65rem); color: var(--color-fg); text-transform: uppercase; letter-spacing: 0.02em; }
+/* goal-61 svep: 7px horisontell overflow på zigge/ vid 390px. Boven var ett enda
+   obrytbart ord — "Bröllopskonsultation" blir 278px versalt i en 262px-box, och en
+   rad utan brytpunkt kan inte krympas av `min-width: 0` på föräldern. `anywhere`
+   låter ordet brytas när (och bara när) det inte får plats, och krymper dessutom
+   min-content-bidraget så grid-kolumnen faktiskt kan bli smalare. Ligger på den
+   DELADE klassen, inte i zigge: vilken mall som helst kan få ett långt tjänstenamn. */
+.sfBandName { display: block; font-family: var(--font-display); font-size: clamp(1.3rem, 2.6vw, 1.65rem); color: var(--color-fg); text-transform: uppercase; letter-spacing: 0.02em; overflow-wrap: anywhere; }
 .sfBandDesc { display: block; font-family: var(--font-body); font-size: 0.9rem; color: var(--color-fg-2); margin-top: 0.2rem; }
 .sfBandMeta { text-align: right; white-space: nowrap; }
 .sfBandPrice { display: block; font-family: var(--font-body); font-weight: 600; font-size: 1.05rem; color: var(--color-fg); }

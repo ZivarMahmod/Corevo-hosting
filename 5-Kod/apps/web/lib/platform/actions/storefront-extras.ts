@@ -30,7 +30,7 @@ function singleKey(s: SingleSlot): 'about_image' | 'closing_image' {
  */
 export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const slotRaw = String(fd.get('slot') ?? '')
   if (!isSingleSlot(slotRaw)) return { error: 'Ogiltig bild-slot.' }
@@ -38,7 +38,7 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
   const remove = String(fd.get('remove') ?? '') === 'true'
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { data: existing } = await supabase
     .from('tenant_settings')
@@ -97,7 +97,7 @@ const STAT_ROWS = 4 // enough for the richest theme's stat strip
  */
 export async function saveTenantStats(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const stats: [string, string][] = []
   for (let i = 0; i < STAT_ROWS; i++) {
@@ -109,7 +109,7 @@ export async function saveTenantStats(_p: ActionState, fd: FormData): Promise<Ac
   }
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { data: existing } = await supabase
     .from('tenant_settings')
@@ -144,7 +144,7 @@ type TeamMember = { name: string; role: string; img: string }
  */
 export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const idxRaw = String(fd.get('index') ?? '')
   const index = idxRaw === '' ? null : Number(idxRaw)
@@ -152,7 +152,7 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
   const remove = String(fd.get('remove') ?? '') === 'true'
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { data: existing } = await supabase
     .from('tenant_settings')
@@ -239,14 +239,14 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
  */
 export async function saveTenantStaffPhoto(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const staffId = String(fd.get('staffId') ?? '')
   if (!staffId) return { error: 'Saknar medarbetare.' }
   const remove = String(fd.get('remove') ?? '') === 'true'
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   // Medlemskontroll: staffId är klient-input — bekräfta att raden är TENANTENS
   // innan write/städning (samma lucka som setStaffServices vaktar; RLS isolerar
@@ -317,14 +317,14 @@ export async function saveTenantStaffPhoto(_p: ActionState, fd: FormData): Promi
  */
 export async function setTenantStaffOnSite(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const staffId = String(fd.get('staffId') ?? '')
   if (!staffId) return { error: 'Saknar medarbetare.' }
   const show = String(fd.get('show') ?? '') === 'true'
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   // Samma medlemsfence som saveTenantStaffPhoto (staffId är klient-input).
   const { data: member } = await supabase

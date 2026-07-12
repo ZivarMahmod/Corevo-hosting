@@ -296,11 +296,11 @@ export function deriveOnboarding(f: OnboardingFacts): OnboardingStep[] {
     {
       key: 'create',
       step: 1,
-      label: 'Skapa salong',
+      label: 'Skapa kund',
       status: done(f.hasSettings),
       detail: f.salonAdminInvited
-        ? `${f.slug}.corevo.se · salongsadmin inbjuden`
-        : `${f.slug}.corevo.se · ingen salongsadmin ännu`,
+        ? `${f.slug}.corevo.se · administratör inbjuden`
+        : `${f.slug}.corevo.se · ingen administratör ännu`,
     },
     {
       key: 'branding',

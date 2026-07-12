@@ -55,7 +55,7 @@ async function geocode(address: string): Promise<{ lat: number; lon: number } | 
 
 export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const email = emailOrNull(fd.get('email'))
   if (email === undefined) return { error: 'Ogiltig e-postadress.' }
@@ -72,7 +72,7 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
     .select('slug, name')
     .eq('id', tenantId)
     .maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   // 1) contact (email/phone) → settings.contact. MERGE: spread prev, sätt bara contact.
   const { data: existing } = await supabase
@@ -127,7 +127,7 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
   } else if (address) {
     const { error: lErr } = await supabase.from('locations').insert({
       tenant_id: tenantId,
-      name: tenant.name ?? 'Salong',
+      name: tenant.name ?? 'Huvudadress',
       address,
       timezone: 'Europe/Stockholm',
       is_primary: true,
@@ -159,7 +159,7 @@ const OH_DAYS = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 
  */
 export async function saveTenantOpeningHours(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const rows: { day: string; time: string }[] = []
   OH_DAYS.forEach((day, i) => {
@@ -168,7 +168,7 @@ export async function saveTenantOpeningHours(_p: ActionState, fd: FormData): Pro
   })
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { data: existing } = await supabase
     .from('tenant_settings')

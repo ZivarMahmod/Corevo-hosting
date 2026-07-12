@@ -11,7 +11,7 @@ import { CustomerSearch } from '@/components/admin/CustomerSearch'
 import { CustomerExport, type ExportRow } from './CustomerExport'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Kunder · Salongsadmin' }
+export const metadata: Metadata = { title: 'Kunder · Adminpanel' }
 
 /** Lojalitetsnivå → Badge-ton + svensk etikett (§4.6: Guld→gold, Silver→info,
  *  Ny→success, annars neutral). Nivån är härledd från riktiga ledger-poäng. */
@@ -39,8 +39,8 @@ export default async function CustomersPage({
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salong-admin" title="Kunder" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Kunder" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -76,7 +76,7 @@ export default async function CustomersPage({
       <PageHead
         eyebrow={tenant.name}
         title="Kunder"
-        lede="Frisören känner igen återkommande kunder år efter år — utan att kundens personuppgifter ligger exponerade."
+        lede="Personalen känner igen återkommande kunder år efter år — utan att kundens personuppgifter ligger exponerade."
       >
         <CustomerExport rows={exportRows} />
       </PageHead>
@@ -133,7 +133,7 @@ export default async function CustomersPage({
                   <th>Nivå</th>
                   <th>Besök</th>
                   <th>Senaste</th>
-                  <th>{resolveTerm(tenant.terminology, 'staff', 'Frisör')}</th>
+                  <th>{resolveTerm(tenant.terminology, 'staff', 'Personal')}</th>
                   <th data-last="">Lojalitet</th>
                 </tr>
               </thead>

@@ -381,7 +381,7 @@ function StaffDrawer({
   return (
     <Drawer
       title={member.displayName}
-      sub={member.hasAccount ? 'Eget konto · egen vy' : 'Hanteras i salongens sida'}
+      sub={member.hasAccount ? 'Eget konto · egen vy' : 'Hanteras i företagets sida'}
       accent={
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
           <Badge tone={member.active ? 'success' : 'neutral'}>
@@ -453,7 +453,7 @@ function StaffDrawer({
               {member.locationName ? (
                 <>
                   Den här veckan på <b>{member.locationName}</b>. Att dela en medarbetare mellan två
-                  salonger per vecka kommer — bokningarna får aldrig krocka.
+                  platser per vecka kommer — bokningarna får aldrig krocka.
                 </>
               ) : (
                 <>
@@ -996,7 +996,7 @@ function EgetKontoSection({ member, onInvited }: { member: StaffCard; onInvited:
         Eget konto · egen vy
       </div>
       <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '6px 0 12px', lineHeight: 1.5 }}>
-        Hanteras i salongens sida just nu. Bjud in med en engångslänk för att ge ett eget konto med
+        Hanteras i företagets sida just nu. Bjud in med en engångslänk för att ge ett eget konto med
         egen kalender — medarbetaren sätter lösenord och loggar in själv.
       </p>
       <form
@@ -1064,7 +1064,7 @@ function AddStaffDrawer({ onClose }: { onClose: () => void }) {
       <div style={{ display: 'grid', gap: 24 }}>
         <section>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
-            Lägg till i salongen
+            Lägg till i företaget
           </div>
           <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
             Skapa en medarbetarrad som du hanterar härifrån. Koppla tjänster och schema efteråt — ge
@@ -1074,7 +1074,7 @@ function AddStaffDrawer({ onClose }: { onClose: () => void }) {
             <input
               name="title"
               required
-              placeholder="t.ex. Hilal — frisör"
+              placeholder="t.ex. Hilal — medarbetare"
               aria-label="Namn / titel"
               style={{ ...fieldStyle, flex: '1 1 14rem' }}
             />

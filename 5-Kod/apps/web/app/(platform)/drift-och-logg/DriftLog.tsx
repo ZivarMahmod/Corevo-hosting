@@ -43,14 +43,14 @@ const BOOKING_STATUS_SV: Record<string, string> = {
 }
 
 const ACTION_LABELS: Record<string, string> = {
-  'tenant.create': 'Salong skapad (atomiskt)',
-  'tenant.suspend': 'Salong suspenderad',
-  'tenant.activate': 'Salong återaktiverad',
-  'tenant.delete': 'Salong raderad (mjuk)',
+  'tenant.create': 'Kund skapad (atomiskt)',
+  'tenant.suspend': 'Kund suspenderad',
+  'tenant.activate': 'Kund återaktiverad',
+  'tenant.delete': 'Kund raderad (mjuk)',
   'tenant.branding': 'Varumärke uppdaterat',
   'tenant.billing': 'Prismodell ändrad',
   'tenant.invite': 'Personal inbjuden (magic-link)',
-  'tenant.update': 'Salongsdata redigerad',
+  'tenant.update': 'Kunddata redigerad',
   'tenant.password_reset': 'Lösenordsreset skickad',
   'tenant.staff_create': 'Personal tillagd',
 }
@@ -89,7 +89,7 @@ function actionIcon(action: string): IconName {
 
 /** Target line under the label: tenant name + the entity it touched (no meta). */
 function targetLine(e: PlatformAuditEntry): string {
-  const tenant = e.tenant && e.tenant !== '—' ? e.tenant : 'okänd salong'
+  const tenant = e.tenant && e.tenant !== '—' ? e.tenant : 'okänd kund'
   const entity = e.entity ? `${e.entity} · ` : ''
   return `${entity}${tenant}`
 }
@@ -149,7 +149,7 @@ export function DriftLog({
       <PageHead
         eyebrow="Plattform"
         title="Drift & logg"
-        lede="Vem gjorde vad, och när. Din svarta låda — tvärs över alla salonger via platform_admin."
+        lede="Vem gjorde vad, och när. Din svarta låda — tvärs över alla kunder via platform_admin."
       >
         <Button
           variant="ghost"
@@ -234,7 +234,7 @@ export function DriftLog({
           {filtered.length === 0 && (
             <div className={styles.empty}>
               {entries.length === 0
-                ? 'Ingen aktivitet loggad ännu. Operativa åtgärder (skapa salong, suspendera, lösenordsreset) och systemhändelser dyker upp här.'
+                ? 'Ingen aktivitet loggad ännu. Operativa åtgärder (skapa kund, suspendera, lösenordsreset) och systemhändelser dyker upp här.'
                 : 'Inget matchar.'}
             </div>
           )}

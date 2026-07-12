@@ -112,7 +112,7 @@ export async function PortalShell({
     const roleLabel: Record<string, string> = {
       salon_admin: 'Ägare',
       owner: 'Ägare',
-      staff: resolveTerm(terminology, 'staff', 'Frisör'),
+      staff: resolveTerm(terminology, 'staff', 'Personal'),
       platform_admin: 'Plattform',
     }
     const userSub = user.platformAdmin
@@ -167,7 +167,7 @@ export async function PortalShell({
           <PortalTopbar
             placeholder={
               portal === 'platform'
-                ? 'Sök salong, kund, personal, åtgärd…'
+                ? 'Sök företag, kund, personal, åtgärd…'
                 : 'Sök bokning, kund, tjänst…'
             }
             paletteItems={paletteItems}

@@ -82,7 +82,7 @@ export function PaisleyTjanster({ tenant, content, services }: ThemePageProps) {
           <h1 className={styles.paPageTitle}>{content.servicesTitle}</h1>
           <p className={styles.paIngress}>
             {content.servicesIntro ??
-              `Alla priser inkl. moms. Klicka en rad för att boka tid hos ${tenant.name}.`}
+              `Alla priser inkl. moms. Klicka en rad för att boka hos ${tenant.name}.`}
           </p>
         </Reveal>
       </div>

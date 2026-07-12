@@ -121,7 +121,7 @@ function MemberForm({
             </label>
             <label className={styles.field}>
               <span>Roll / kort presentation</span>
-              <input name="role" defaultValue={member.role} maxLength={300} placeholder="Barberare · fade-specialist" />
+              <input name="role" defaultValue={member.role} maxLength={300} placeholder="Teamledare · specialist" />
             </label>
           </div>
           <label className={styles.field}>

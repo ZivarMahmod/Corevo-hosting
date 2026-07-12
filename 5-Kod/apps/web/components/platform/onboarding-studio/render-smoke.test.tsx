@@ -168,7 +168,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
       <PanelHost cfg={branched} step="tema" dispatch={noopDispatch} presets={presets} onPrev={noop} onNext={noop} onLaunch={noop} />,
     )
     expect(html).toContain('Blomsterhandel') // kategori-fliken
-    expect(html).toContain('Salong &amp; barber')
+    expect(html).toContain('Bokning &amp; behandling')
     expect(html).toContain('Sök mall') // fritextsöket
   })
 

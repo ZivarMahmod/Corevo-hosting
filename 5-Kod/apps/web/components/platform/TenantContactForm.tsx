@@ -56,7 +56,7 @@ export function TenantContactForm({
       <div className={styles.fieldRow}>
         <label className={styles.field}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>E-post {flashBtn(email)}</span>
-          <input name="email" type="email" defaultValue={email ?? ''} placeholder="salong@exempel.se" />
+          <input name="email" type="email" defaultValue={email ?? ''} placeholder="kontakt@exempel.se" />
         </label>
         <label className={styles.field}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>Telefon {flashBtn(phone)}</span>
@@ -81,15 +81,15 @@ export function TenantContactForm({
       <div className={styles.fieldRow}>
         <label className={styles.field}>
           <span>Instagram</span>
-          <input name="instagram" defaultValue={social?.instagram ?? ''} placeholder="instagram.com/salongen" autoCapitalize="none" spellCheck={false} />
+          <input name="instagram" defaultValue={social?.instagram ?? ''} placeholder="instagram.com/foretaget" autoCapitalize="none" spellCheck={false} />
         </label>
         <label className={styles.field}>
           <span>Facebook</span>
-          <input name="facebook" defaultValue={social?.facebook ?? ''} placeholder="facebook.com/salongen" autoCapitalize="none" spellCheck={false} />
+          <input name="facebook" defaultValue={social?.facebook ?? ''} placeholder="facebook.com/foretaget" autoCapitalize="none" spellCheck={false} />
         </label>
         <label className={styles.field}>
           <span>TikTok</span>
-          <input name="tiktok" defaultValue={social?.tiktok ?? ''} placeholder="tiktok.com/@salongen" autoCapitalize="none" spellCheck={false} />
+          <input name="tiktok" defaultValue={social?.tiktok ?? ''} placeholder="tiktok.com/@foretaget" autoCapitalize="none" spellCheck={false} />
         </label>
       </div>
 

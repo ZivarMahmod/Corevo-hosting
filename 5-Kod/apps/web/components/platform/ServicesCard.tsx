@@ -83,7 +83,7 @@ export function ServicesCard({
 
       {services.length === 0 ? (
         <p className={styles.hint} style={{ marginTop: 12 }}>
-          Inga tjänster ännu — lägg till salongens första ovan. Bokningsmotorn kräver minst en
+          Inga tjänster ännu — lägg till företagets första ovan. Bokningsmotorn kräver minst en
           aktiv tjänst för att ta emot bokningar.
         </p>
       ) : (
@@ -114,7 +114,7 @@ function AddServiceForm({ tenantId }: { tenantId: string }) {
       <div className={styles.fieldRow}>
         <label className={styles.field}>
           <span>Namn</span>
-          <input name="name" placeholder="t.ex. Klippning" required />
+          <input name="name" placeholder="t.ex. Behandling" required />
         </label>
         <label className={styles.field}>
           <span>Pris (kr)</span>
@@ -213,7 +213,7 @@ function ServiceRow({ tenantId, service, staff }: { tenantId: string; service: S
             </label>
             <label className={styles.field}>
               <span>Kategori</span>
-              <input name="category" placeholder="t.ex. Klippning" defaultValue={service.category ?? ''} />
+              <input name="category" placeholder="t.ex. Behandling" defaultValue={service.category ?? ''} />
             </label>
             <label className={styles.field}>
               <span>Badge (t.ex. Populär)</span>

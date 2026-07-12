@@ -139,9 +139,13 @@
   color: var(--color-fg, #232520); /* 15.2:1 mot kortytan */
 }
 
+/* goal-61 svep: produkttiteln var en 22px hög länk. Löpande inline-länk i <h3> →
+   lodrät padding ger ≥44px träffyta utan att röra radboxen eller kortets layout.
+   Understrykningen låg redan på text-decoration (hover) → inget att flytta. */
 .titleLink {
   color: inherit;
   text-decoration: none;
+  padding-block: 13px;
 }
 
 .titleLink:hover {

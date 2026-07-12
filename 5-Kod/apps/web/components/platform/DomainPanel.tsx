@@ -28,7 +28,7 @@ export async function DomainPanel({ slug, tenantId }: { slug: string; tenantId: 
       <p className={styles.bannerTitle}>Egen domän — inte påkopplat ännu</p>
       <p className={styles.muted} style={{ margin: 0 }}>
         Kunden körs live på <code className={styles.code}>{slug}.corevo.se</code>. Egen domän
-        (t.ex. <code className={styles.code}>boka.salongnamn.se</code> via CNAME) är ett parkerat
+        (t.ex. <code className={styles.code}>boka.exempel.se</code> via CNAME) är ett parkerat
         spår och slås på av drift (flagga{' '}
         <code className={styles.code}>DOMAIN_PROVISIONING_ENABLED</code>) — då dyker
         domänhanteraren upp här.

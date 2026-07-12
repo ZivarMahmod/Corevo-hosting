@@ -20,7 +20,7 @@ function hexOrNull(raw: FormDataEntryValue | null): string | null | undefined {
 
 export async function savePlatformBranding(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
-  if (!tenantId) return { error: 'Saknar salong.' }
+  if (!tenantId) return { error: 'Saknar kund.' }
 
   const colorPrimary = hexOrNull(fd.get('color_primary'))
   const colorBg = hexOrNull(fd.get('color_bg'))
@@ -39,7 +39,7 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
   const logo = fd.get('logo')
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
-  if (!tenant) return { error: 'Okänd salong.' }
+  if (!tenant) return { error: 'Okänd kund.' }
 
   const { data: existing } = await supabase
     .from('tenant_settings')

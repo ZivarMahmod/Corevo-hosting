@@ -18,7 +18,7 @@ export async function eraseMyAccount(_prev: EraseState, formData: FormData): Pro
     return { error: 'Skriv RADERA (versaler) för att bekräfta.' }
   }
   if (!user.tenantId) {
-    return { error: 'Kunde inte radera kontot. Kontakta salongen.' }
+    return { error: 'Kunde inte radera kontot. Kontakta företaget.' }
   }
 
   const result = await eraseCustomerData({ userId: user.id, tenantId: user.tenantId, actorId: user.id })
@@ -26,7 +26,7 @@ export async function eraseMyAccount(_prev: EraseState, formData: FormData): Pro
     return {
       error:
         result.reason === 'unavailable'
-          ? 'Radering är inte tillgänglig just nu. Kontakta salongen så hjälper de dig.'
+          ? 'Radering är inte tillgänglig just nu. Kontakta företaget så hjälper de dig.'
           : 'Kunde inte radera kontot. Försök igen.',
     }
   }

@@ -13,7 +13,7 @@ import { PageHead } from '@/components/portal/ui'
 import type { TenantBranding } from '@corevo/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Redigera sidan · Salongsadmin' }
+export const metadata: Metadata = { title: 'Redigera sidan · Adminpanel' }
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
@@ -34,7 +34,7 @@ export default async function AdminSidaPage() {
     return (
       <section className="portal-section">
         <h1>Redigera sidan</h1>
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
@@ -47,7 +47,7 @@ export default async function AdminSidaPage() {
     return (
       <section className="portal-section">
         <h1>Redigera sidan</h1>
-        <p className="prose">Kunde inte läsa salongens data. Försök igen.</p>
+        <p className="prose">Kunde inte läsa företagets data. Försök igen.</p>
       </section>
     )
   }

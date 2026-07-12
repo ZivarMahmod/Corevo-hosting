@@ -297,7 +297,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
       // leave an un-ownable salon behind; roll back below. Survivable: onboard WITHOUT
       // an owner email and invite later, or ops sets SUPABASE_SERVICE_ROLE_KEY.
       ownerFailed =
-        'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops) — eller skapa salongen utan ägar-epost och bjud in ägaren senare'
+        'inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops) — eller skapa kunden utan ägar-epost och bjud in ägaren senare'
     } else {
       // Carry the salon name into invite user_metadata so the Supabase invite
       // template can greet with the salon's name ({{ .Data.tenant_name }}) instead
@@ -357,7 +357,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
     // settings/location/role/modules/services. The operator gets an actionable error.
     if (ownerFailed) {
       await rollback()
-      return { error: `Salongen skapades inte: ${ownerFailed}. Försök igen.` }
+      return { error: `Kunden skapades inte: ${ownerFailed}. Försök igen.` }
     }
   }
 
@@ -389,7 +389,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // auto-attach is dormant + the next-deploy path was retired in fix-35 → connecting the
   // domain is a separate add-domain.mjs step). So don't claim it's "live på <slug>" here.
   return {
-    success: `Salong "${name}" skapad (${slug}.corevo.se).${inviteNote}`,
+    success: `Kund "${name}" skapad (${slug}.corevo.se).${inviteNote}`,
     tenant: { id: tenantId, slug },
   }
 }

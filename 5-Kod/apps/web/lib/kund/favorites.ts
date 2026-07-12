@@ -52,7 +52,7 @@ export async function getMyFavorites(customerId: string | null): Promise<Favorit
     const kind: FavoriteKind = r.kind === 'service' ? 'service' : 'staff'
     const name =
       kind === 'staff'
-        ? (r.staff?.title?.trim() || 'Frisör')
+        ? (r.staff?.title?.trim() || 'Personal')
         : (r.services?.name?.trim() || 'Tjänst')
     return {
       id: r.id,

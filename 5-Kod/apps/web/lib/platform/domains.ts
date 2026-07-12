@@ -44,7 +44,7 @@ export function isReservedDomain(domain: string): boolean {
 export function validateDomainInput(raw: string): { domain?: string; error?: string } {
   const domain = normalizeDomain(raw)
   if (!domain) return { error: 'Ange en domän.' }
-  if (!isValidDomain(domain)) return { error: 'Ogiltigt domänformat (t.ex. boka.salongnamn.se).' }
+  if (!isValidDomain(domain)) return { error: 'Ogiltigt domänformat (t.ex. boka.foretagsnamn.se).' }
   if (isReservedDomain(domain))
     return { error: `${ROOT_DOMAIN}-domäner hanteras av plattformen och kan inte läggas till här.` }
   return { domain }

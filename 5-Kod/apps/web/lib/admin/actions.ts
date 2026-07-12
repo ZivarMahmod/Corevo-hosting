@@ -20,7 +20,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export type ActionState = { error?: string; success?: string }
 
-const NO_TENANT = 'Ingen salong är kopplad till ditt konto.'
+const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 
 /**
@@ -1274,7 +1274,7 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const cookieBannerEnabled = String(fd.get('cookie_banner_enabled') ?? '') === 'true'
   const googleReviewUrl = httpsUrlOrNull(fd.get('google_review_url'))
 
-  if (!name) return { error: 'Ange ett salongsnamn.' }
+  if (!name) return { error: 'Ange ett företagsnamn.' }
   if (!PAYMENT_MODES.includes(paymentMode as (typeof PAYMENT_MODES)[number]))
     return { error: 'Ogiltigt betalningsläge.' }
   const cancelHours = cancelRaw === '' ? 24 : Number(cancelRaw)

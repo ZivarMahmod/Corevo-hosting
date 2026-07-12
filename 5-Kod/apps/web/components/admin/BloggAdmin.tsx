@@ -115,7 +115,7 @@ export function BloggAdmin({
       <PageHead
         eyebrow={tenantName}
         title="Blogg"
-        lede="Skapa och hantera blogginlägg för din salong. Ändringar slår igenom utan kod eller deploy."
+        lede="Skapa och hantera blogginlägg för ditt företag. Ändringar slår igenom utan kod eller deploy."
       >
         <Button variant="primary" icon="plus" onClick={() => setCreating(true)}>
           Nytt inlägg

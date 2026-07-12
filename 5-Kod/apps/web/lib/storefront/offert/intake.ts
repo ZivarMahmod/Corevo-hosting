@@ -46,7 +46,7 @@ export async function submitOffertRequest(
 ): Promise<OffertSubmitState> {
   // a. Tenant from the middleware header (never the client).
   const ctx = await getTenantContext()
-  if (!ctx) return { phase: 'error', message: 'Okänd salong.' }
+  if (!ctx) return { phase: 'error', message: 'Okänt företag.' }
 
   // b. Rate-limit the anon write per IP+tenant (same shape as booking; G10). Fails
   //    open on DB error.

@@ -15,7 +15,7 @@ import {
 import { PageHead, Callout } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Sajtbyggare · Salongsadmin' }
+export const metadata: Metadata = { title: 'Sajtbyggare · Adminpanel' }
 
 /**
  * Svenska etiketter per region-nyckel (manifest/salvia → 15 regioner). Etiketten
@@ -61,8 +61,8 @@ export default async function SajtbyggarePage() {
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Salongsadmin" title="Sajtbyggare" />
-        <p className="prose">Ingen salong är kopplad till ditt konto.</p>
+        <PageHead eyebrow="Adminpanel" title="Sajtbyggare" />
+        <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }

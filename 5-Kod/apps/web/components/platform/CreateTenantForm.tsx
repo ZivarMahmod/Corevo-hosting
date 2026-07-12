@@ -107,13 +107,13 @@ const WIZARD_THEMES: Record<ThemeKey, ThemeDef> = {
   salvia: {
     name: 'Salvia', primary: '#5E7361', bg: '#F6F4EE', fg: '#232520', fg2: '#5C5F55', line: '#E2DED2',
     display: "'Cormorant Garamond', Georgia, serif", radius: 10, caps: false, vibe: 'Lugn & minimal',
-    eyebrow: 'Frisörsalong', hero: 'Skarpt klippt. Skönt mottagen.',
-    lede: 'En stilla salong där varje klippning får ta sin tid.', img: uns('1521590832167-7bcbfaa6381f'),
+    eyebrow: 'Boka online', hero: 'Lugnt bemött. Skickligt utfört.',
+    lede: 'En stillsam plats där varje besök får ta sin tid.', img: uns('1521590832167-7bcbfaa6381f'),
   },
   leander: {
     name: 'Leander', primary: '#7E6E92', bg: '#FBFAF8', fg: '#2A2630', fg2: '#6A6472', line: '#ECE7EF',
     display: "'Playfair Display', Georgia, serif", radius: 14, caps: false, vibe: 'Romantisk editorial',
-    eyebrow: 'Salong & studio', hero: 'Din stund av lugn.',
+    eyebrow: 'Studio & mottagning', hero: 'Din stund av lugn.',
     lede: 'Mjuka toner och varsam hand i en romantisk miljö.', img: uns('1633681926035-ec1ac984418a'),
   },
   zigge: {
@@ -125,8 +125,8 @@ const WIZARD_THEMES: Record<ThemeKey, ThemeDef> = {
   linnea: {
     name: 'Linnea', primary: '#B0693F', bg: '#F4EDE1', fg: '#2E2820', fg2: '#6E6452', line: '#E3D9C8',
     display: "'DM Serif Display', Georgia, serif", radius: 12, caps: false, vibe: 'Varm skandinavisk',
-    eyebrow: 'Hår & välmående', hero: 'Naturligt vacker.',
-    lede: 'Varma jordnära toner i en avslappnad salong.', img: uns('1595476108010-b4d1f102b1b1'),
+    eyebrow: 'Kropp & välmående', hero: 'Naturligt vacker.',
+    lede: 'Varma jordnära toner i en avslappnad miljö.', img: uns('1595476108010-b4d1f102b1b1'),
   },
   edit: {
     name: 'Edit', primary: '#3A3733', bg: '#F8F6F1', fg: '#232220', fg2: '#6B675F', line: '#E5E0D6',
@@ -604,7 +604,7 @@ export function CreateTenantForm({
                 <>
                   <p className="body" style={{ marginTop: 0, marginBottom: 14 }}>
                     Designa kundens startsida — ändra texter, bilder och färger. Allt sparas
-                    tillsammans med salongen när du skapar den. (Förhandsvisning visas när kunden
+                    tillsammans med kunden när du skapar den. (Förhandsvisning visas när kunden
                     har skapats.)
                   </p>
                   <SiteEditor
@@ -623,7 +623,7 @@ export function CreateTenantForm({
                     Full sajt-redigering finns för mallen ”salvia”. Den här mallen designas efter
                     skapande.
                   </Callout>
-                  <Field label="Tagline" ph="Hårvård med lugn hand" value={tagline} onChange={setTagline} />
+                  <Field label="Tagline" ph="Hantverk med lugn hand" value={tagline} onChange={setTagline} />
                   <div>
                     <label style={fieldLabel}>Accentfärg</label>
                     <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
@@ -781,7 +781,7 @@ export function CreateTenantForm({
                   </span>
                 </span>
               </button>
-              <Field label="Tagline" ph="Hårvård med lugn hand" value={tagline} onChange={setTagline} />
+              <Field label="Tagline" ph="Hantverk med lugn hand" value={tagline} onChange={setTagline} />
               <div>
                 <label style={fieldLabel}>Accentfärg</label>
                 <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
@@ -831,9 +831,9 @@ export function CreateTenantForm({
                     border: '1px solid var(--c-line)', borderRadius: 10, background: 'var(--c-paper-2)',
                   }}
                 >
-                  <Badge tone="gold" dot={false}>Salongsadmin (ägare)</Badge>
+                  <Badge tone="gold" dot={false}>Administratör (ägare)</Badge>
                   <span style={{ fontSize: 12.5, color: 'var(--c-ink-2)', lineHeight: 1.5 }}>
-                    Full åtkomst till sin egen salongspanel.
+                    Full åtkomst till sin egen adminpanel.
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--c-ink-3)', marginTop: 6 }}>
@@ -845,7 +845,7 @@ export function CreateTenantForm({
                 <b>{(slug || 'subdomän')}.{ROOT}</b>
                 {vertical ? <> i branschen <b>{vertical.name}</b></> : null} med tema <b>{t.name}</b>.
                 Moduler: <b>{liveModuleSummary(moduleOptions, stateFor) || 'Bokning (Live)'}</b>.
-                Ägaren bjuds in som salongsadmin.
+                Ägaren bjuds in som administratör.
               </Callout>
               <InfoLine icon="link">
                 Egen domän är parkerat — subdomän räcker tills vidare.
@@ -963,7 +963,7 @@ function ThemePreview({
   const slug = (salon || 'sida').toLowerCase().replace(/[^a-z0-9]/g, '') || 'sida'
   // Lead the example chips with the bransch's own service word when it has one, so a
   // non-frisör bransch doesn't preview "Klippning". Falls back to the generic set.
-  const chips = serviceLabel ? [serviceLabel, 'Färg', 'Styling'] : ['Klippning', 'Färg', 'Styling']
+  const chips = [serviceLabel || 'Tjänst', 'Paket', 'Konsultation']
   const dot = (bg: string) => <span style={{ width: 10, height: 10, borderRadius: 999, background: bg }} />
   return (
     <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--c-line)', boxShadow: 'var(--shadow-md)' }}>

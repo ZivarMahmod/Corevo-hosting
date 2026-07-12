@@ -102,7 +102,7 @@ export function StylistCard({
           <div className={styles.sectionEyebrow}>Din {staffLc}</div>
           <div className={styles.stylistName}>Välj din {staffLc}</div>
           <div className={styles.stylistRel}>
-            Spara din favoritfrisör så samlar vi din relation och dina bokningar på ett ställe.
+            Spara din favorit så samlar vi din relation och dina bokningar på ett ställe.
           </div>
         </div>
       </div>
