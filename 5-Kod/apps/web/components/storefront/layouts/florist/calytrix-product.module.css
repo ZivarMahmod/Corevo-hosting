@@ -1,0 +1,347 @@
+/* ═══════════ CALYTRIX PRODUKTSIDA — SKYLTFÖNSTRET ═══════════
+   Mallen äger sidan. En enda vara i plommondramatik: fotot störst, på en lutad
+   vinröd platta mot ett mörkt plommonbord (packbordets gest, se calytrix-cart
+   — samma butik). Ingen annan mall får de här klasserna.
+
+   FÄRGPAR (WCAG 2.x relativ luminans, mätt mot calytrix.theme.ts palett):
+     #fff  på primaryD #4a0e2e … 15.07:1  (≥ 4.5 ✓, mallens redan mätta par)
+     #fff  på primary  #7d1f46 …  9.74:1  (≥ 4.5 ✓)
+     fg    #241019 på bg #fbf6f4 … 16.84:1 (≥ 4.5 ✓)
+     fg2   #6e4f5c på bg          …  6.67:1 (≥ 4.5 ✓)
+     fg    på accentSoft #e8d9de … ~13.2:1 (≥ 4.5 ✓)
+     primary på accentSoft        …  7.15:1 (≥ 4.5 ✓, temats egen mätning)
+     vit 75 % på primaryD (blend #d2c2ca-ish) … ~8.9:1 (≥ 4.5 ✓)
+   Radie 0 överallt — calytrix är RAK. */
+
+.scene {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.back {
+  margin: 0 0 18px;
+}
+.backLink {
+  display: inline-block;
+  padding: 12px 0; /* 44px-golvet via padding — länken är liten men träffytan inte */
+  font-size: 13.5px;
+  letter-spacing: 0.04em;
+  color: var(--color-fg); /* fg på bg 16.84:1 */
+  text-decoration: none;
+}
+.backLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.backLink:focus-visible {
+  outline: 2px solid var(--color-primary-d);
+  outline-offset: 2px;
+}
+
+/* ── SKYLTFÖNSTRET: mörk scen + ljus marginalanteckning ── */
+.window {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 0; /* scenen och marginalen ska SITTA IHOP — ett fönster, inte två kort */
+  align-items: stretch;
+}
+
+/* Bordet: plommon som YTA (som packbordets .board) — varan är hjälten på det. */
+.stage {
+  background: var(--color-primary-d);
+  color: var(--color-surface, #fff);
+  padding: clamp(1.75rem, 4vw, 3.5rem);
+  display: grid;
+  align-content: start;
+  gap: clamp(1.25rem, 3vw, 2rem);
+}
+.stageKicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75; /* vit 75 % på plommon ≈ 8.9:1 — läsbar, men tydligt sekundär */
+}
+
+.plateWrap {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+}
+
+/* Plattan: packbordets lutade vinröda platta, i JÄTTEFORMAT (rad 8214-anatomin:
+   bildkort med överlagrad lapp; deras hörn-rörelse, vårt raka uttryck).
+   4:5 är mallens enda ratio (samma som korgens 92×115). */
+.plate {
+  position: relative;
+  width: min(100%, 520px);
+  aspect-ratio: 4 / 5;
+  background: var(--color-primary);
+  transform: rotate(-2deg);
+  box-shadow: 0 26px 60px -22px rgb(0 0 0 / 60%);
+  transition: transform 240ms ease;
+  overflow: hidden;
+}
+/* Varan lyfter när man närmar sig — samma gest som korgens foto-platta. */
+.plateWrap:hover .plate,
+.plateWrap:focus-within .plate {
+  transform: rotate(0deg) translateY(-4px);
+}
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photoEmpty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--color-surface, #fff); /* vit på primary 9.74:1 — men detta är grafik (≥3:1 räcker) */
+  opacity: 0.55;
+}
+
+/* Hälsningslappen: ALLTID läsbar (hover-only affordance förbjudet) — vit lapp i
+   bildens nedre hörn, motlutad, som glider med när plattan rätar sig. */
+.greet {
+  position: absolute;
+  left: -6px; /* sticker ut en aning över kanten — en lapp, inte en badge */
+  bottom: 18px;
+  padding: 10px 18px 10px 22px;
+  background: var(--color-surface, #fff);
+  color: var(--color-primary-d); /* plommon på vitt = 15.07:1 (inversen av mallens mätta par) */
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(2deg);
+  box-shadow: 0 8px 18px -8px rgb(0 0 0 / 45%);
+  transition: transform 240ms ease;
+}
+.plateWrap:hover .greet,
+.plateWrap:focus-within .greet {
+  transform: rotate(0deg) translateY(-2px);
+}
+
+/* ── MARGINALANTECKNINGEN: ljus spalt, plommonregel i toppen (korgens .note-släkting) ── */
+.margin {
+  background: var(--color-bg);
+  border-top: 6px solid var(--color-primary-d);
+  padding: clamp(1.5rem, 3.5vw, 2.75rem);
+  display: grid;
+  align-content: start;
+  gap: 0;
+}
+.kicker {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary-d); /* primaryD på bg — mörkare än primarys 9.08:1 ✓ */
+}
+.title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 400; /* DM Serif finns BARA i 400 — allt annat blir syntetisk fetstil */
+  font-size: clamp(2rem, 4.5vw, 3.1rem);
+  line-height: 1.05;
+  color: var(--color-fg); /* 16.84:1 på bg */
+}
+.price {
+  margin: 0 0 22px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+  color: var(--color-primary); /* primary på bg 9.08:1 (temats egen mätning) */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Leveranslöftet som IFYLLD checklista (rad 5170-anatomin: box + bock).
+   Rutorna är statiska löftesmarkörer, inte formulär — därför span, inte input. */
+.checks {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.checkRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--color-fg); /* 16.84:1 på bg */
+}
+.checkBox {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  background: var(--color-primary); /* bocken: vit på vinröd 9.74:1 — grafik, ≥3:1 ✓ */
+  color: var(--color-surface, #fff);
+  /* radie 0 — calytrix är rak; uiverse-boxens 8px hörn stannar hos uiverse */
+}
+
+.paused {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--color-accent-soft);
+  border-left: 4px solid var(--color-primary);
+  color: var(--color-fg); /* fg på accentSoft ~13.2:1 */
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.buy {
+  /* AddToCart (delad funktion) får luft men styrs inte om — dess knappar bär
+     mallens --sf-btn-* från temats data-theme-block. */
+  display: grid;
+  gap: 10px;
+}
+
+/* ── DOSSIERN: flikarna (rad 4972-anatomin: fyllt val i en rad — men RAKT,
+   understruket av samma plommonyta som scenen, ingen pill). ── */
+.dossier {
+  margin-top: clamp(1.75rem, 4vw, 3rem);
+}
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--color-line);
+}
+.tab {
+  min-height: 48px; /* 44px-golvet med marginal */
+  padding: 0 clamp(16px, 3vw, 28px);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-fg2); /* fg2 på bg 6.67:1 */
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.tab:hover {
+  color: var(--color-fg);
+}
+/* Vald flik = FYLLD (cir-tabs-anatomin: valet byter yta, inte bara färg) —
+   plommon under texten binder ihop dossiern med scenen ovanför. */
+.tab[aria-selected='true'] {
+  background: var(--color-primary-d);
+  color: var(--color-surface, #fff); /* 15.07:1 */
+}
+.tab:focus-visible {
+  outline: 2px solid var(--color-primary-d);
+  outline-offset: -4px; /* inåt — fliken kan ligga kant i kant med grannen */
+}
+.tab[aria-selected='true']:focus-visible {
+  outline-color: var(--color-surface, #fff);
+}
+
+.panel {
+  padding: clamp(1.25rem, 3vw, 2rem) 0 0;
+}
+.body {
+  margin: 0 0 1em;
+  max-width: 62ch;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--color-fg); /* 16.84:1 */
+}
+.body:last-child {
+  margin-bottom: 0;
+}
+.deliverLabel {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary-d);
+}
+
+/* ── VÅRD-KORTET: skötselråden som URKLIPPT lapp (rad 14857-anatomin: kupongen
+   ur klipparen). Saxklippt överkant via clip-path (raka tänder — calytrix
+   klipper inte vågigt), lätt lutning som plattan, skugga som lyfter den från
+   sidan. Ingen rörelse — lappen LIGGER där, den hoppar inte. ── */
+.careCard {
+  max-width: 460px;
+  padding: calc(14px + clamp(1.1rem, 2.5vw, 1.6rem)) clamp(1.25rem, 3vw, 1.75rem)
+    clamp(1.1rem, 2.5vw, 1.6rem);
+  background: var(--color-accent-soft);
+  transform: rotate(-0.6deg);
+  box-shadow: 0 16px 34px -18px rgb(0 0 0 / 35%);
+  /* Sax-tänderna: 14px djupa, 10 % breda — klippt med rak sax ur floristens block. */
+  clip-path: polygon(
+    0 14px, 5% 0, 10% 14px, 15% 0, 20% 14px, 25% 0, 30% 14px, 35% 0, 40% 14px,
+    45% 0, 50% 14px, 55% 0, 60% 14px, 65% 0, 70% 14px, 75% 0, 80% 14px, 85% 0,
+    90% 14px, 95% 0, 100% 14px, 100% 100%, 0 100%
+  );
+}
+.careKicker {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary); /* primary på accentSoft 7.15:1 (temats mätning) */
+}
+.careList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.careList li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-fg); /* fg på accentSoft ~13.2:1 */
+}
+/* Punkt som penndrag — ett kort streck, inte en rund prick (calytrix är rak). */
+.careList li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.72em;
+  width: 10px;
+  height: 2px;
+  background: var(--color-primary); /* dekor mot accentSoft 7.15:1 — långt över 3:1 */
+}
+
+/* ── RESPONSIVT: under 900px staplas fönstret — scenen först (varan störst). ── */
+@media (max-width: 900px) {
+  .window {
+    grid-template-columns: 1fr;
+  }
+  .plate {
+    width: min(100%, 440px);
+  }
+}
+
+/* Rörelse är krydda, aldrig krav: utan motion står plattan kvar i sin lutning. */
+@media (prefers-reduced-motion: reduce) {
+  .plate,
+  .greet,
+  .tab {
+    transition: none;
+  }
+  .plateWrap:hover .plate,
+  .plateWrap:focus-within .plate {
+    transform: rotate(-2deg);
+  }
+  .plateWrap:hover .greet,
+  .plateWrap:focus-within .greet {
+    transform: rotate(2deg);
+  }
+}

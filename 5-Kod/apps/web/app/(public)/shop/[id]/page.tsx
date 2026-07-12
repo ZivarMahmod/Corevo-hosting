@@ -6,7 +6,21 @@ import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenan
 import { AddToCart } from '@/components/storefront/shop/AddToCart'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import { loadShopProduct } from '@/lib/storefront/shop/load-shop'
+import {
+  CalytrixProduct,
+  type CalytrixProductProps,
+} from '@/components/storefront/layouts/florist/calytrix.product'
+import type { ComponentType } from 'react'
 import s from './product.module.css'
+
+// ZIVARS LAG (goal-62): MALLEN ÄGER SIDAN — samma mönster som CART_VIEWS i
+// /varukorg. En mall som vill ha sitt eget skyltfönster bygger sin EGEN komponent
+// och registrerar den här; den delade vyn nedan är bara fallback tills varje mall
+// byggt sin. Funktionen är fortfarande en (loadShopProduct, AddToCart, samma
+// modul-gate) — bara scenen byts.
+const PRODUCT_VIEWS: Partial<Record<string, ComponentType<CalytrixProductProps>>> = {
+  calytrix: CalytrixProduct,
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -33,7 +47,7 @@ export default async function ShopProductPage({
   const { id } = await params
   const bundle = await currentTenant()
   if (!bundle) notFound()
-  const { tenant } = bundle
+  const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const paused = isModulePaused(states, 'shop')
   if (!isModuleLive(states, 'shop') && !paused) notFound()
@@ -41,6 +55,12 @@ export default async function ShopProductPage({
   const data = await loadShopProduct(tenant.id, tenant.slug, id)
   if (!data) notFound()
   const { config, product } = data
+
+  // Mallens eget skyltfönster vinner; den delade vyn är bara fallback.
+  const OwnProduct = PRODUCT_VIEWS[settings.theme]
+  if (OwnProduct) {
+    return <OwnProduct config={config} product={product} paused={paused} />
+  }
 
   const paragraphs = (product.description ?? '')
     .split(/\n\s*\n/)

@@ -183,16 +183,27 @@
 /* ═══════════ NAV — annonsrad + split (länkar · wordmark · ikoner) ═══════════
    shell.navThemed är ett 3-kolumners grid (0,1,0). Mallens .calNav dubblas (0,2,0)
    och skriver om formen till två VÅNINGAR utan att röra den delade filen — NavShells
-   sticky/scroll hänger kvar på shell.navThemed. */
+   sticky/scroll hänger kvar på shell.navThemed.
+
+   SOLID PLOMMON (ombyggnaden): navet är samma mörka bord som packbordet
+   (calytrix-cart) — vit text (15.07:1), guld som enda glimt. Annonsraden byter
+   till VINRÖTT så våningarna läses som två olika ytor, inte en tjock. */
 .calNav.calNav {
   display: block;
   max-width: none;
   padding: 0;
   gap: 0;
+  background: var(--color-primary-d);
+  color: #fff;
+}
+/* NavShells burger är headerns SYSKON (bor i navRow, color: inherit från roten =
+   mörk ink → osynlig på plommon). Enda button-syskonet efter headern ÄR burgaren. */
+.calNav ~ button {
+  color: #fff;
 }
 .calNavAnnounce {
-  background: var(--color-primary-d);
-  color: #fff; /* 15.07:1 mot --color-primary-d */
+  background: var(--color-primary); /* vinröd — vit text 7.64:1 (mätt mot #A31449) */
+  color: #fff;
   text-align: center;
   padding: 10px 24px;
 }
@@ -228,7 +239,7 @@
   flex-wrap: nowrap;
 }
 .calNavLinks a {
-  color: var(--color-fg); /* 16.84:1 */
+  color: #fff; /* 15.07:1 mot plommon-baren */
   white-space: nowrap;
   /* 44px = touch-golvet. Länken var ~19px hög (12px text + 2px kant) — en klickyta
      man missar med tummen. Boxen växer, INTE fonten; navet mäter sin höjd dynamiskt.
@@ -248,11 +259,13 @@
   height: 2px;
   background: transparent;
 }
+/* Guld vid hover — den enda glimten på det mörka bordet (6.15:1 mot plommon,
+   räknat #cf9d3f mot #4A0E2E — över 4.5:1-golvet för 12px-text). */
 .calNavLinks a:hover {
-  color: var(--color-primary);
+  color: var(--cal-gold);
 }
 .calNavLinks a:hover::after {
-  background: var(--color-primary);
+  background: var(--cal-gold);
 }
 .calNavWordmark {
   justify-self: center;
@@ -269,7 +282,7 @@
   font-size: var(--cal-fs-sub);
   line-height: var(--cal-lh-sub);
   letter-spacing: var(--cal-ls-head);
-  color: var(--color-fg);
+  color: #fff; /* 15.07:1 mot plommon */
   text-transform: uppercase;
 }
 .calNavCluster {
@@ -286,6 +299,22 @@
 .calNavCluster button {
   min-width: 44px;
   min-height: 44px;
+}
+/* Korg/konto på mörkt: shell.navAccount har --color-line-kant (osynlig på plommon)
+   och ink-färg. Mallens klass läggs BREDVID (onyx-mönstret) — dubblad för att slå
+   den delade modulens specificitet oavsett källordning. */
+.calNavIcon.calNavIcon {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+  background: transparent;
+}
+.calNavIcon.calNavIcon:hover {
+  border-color: var(--cal-gold);
+  color: var(--cal-gold); /* ikon = grafik, 6.15:1 mot plommon (>3:1-golvet) */
+}
+.calNavIcon.calNavIcon:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 .calNavCta {
   font-family: var(--font-body);
@@ -382,6 +411,161 @@
   --color-accent-fg: var(--cal-gold-ink);
 }
 
+/* ── CIR-BTN (Zivars element, rad 4888) — hero-/closing-CTA:n "Beställ blommor".
+   ANATOMIN porterad: text + pil-ikon, pilen GLIDER ↗ vid hover, knappen trycks
+   1px ned vid klick, egen fokusring. UTTRYCKET är calytrix: rakt guldblock
+   (radie 0 — deras pill förkastad) och pilen bor i en plommon-CIRKEL, mallens
+   medvetna cirkelundantag (som badge-pillen). Ink på guld = 7.35:1 (etablerat). */
+.calCirBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px; /* > 44px-touch-golvet */
+  padding: 8px 8px 8px 28px;
+  background: var(--cal-gold);
+  color: var(--cal-gold-ink);
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 0;
+  transition:
+    background-color var(--sf-btn-dur) var(--sf-btn-ease),
+    transform var(--sf-btn-dur) var(--sf-btn-ease);
+}
+.calCirBtnPuck {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px; /* cirkeln elementet kräver */
+  background: var(--color-primary-d);
+  color: #fff; /* pil = grafik, 15.07:1 mot plommon */
+}
+.calCirBtnPuck svg {
+  transition: transform 220ms var(--sf-btn-ease);
+}
+/* Hover ljusnar guldet en aning (mix mot vitt HÖJER inkens kontrast, aldrig sänker)
+   och pilen glider diagonalt — två saker, aldrig fler. */
+.calCirBtn:hover {
+  background: color-mix(in srgb, var(--cal-gold) 86%, #fff);
+}
+.calCirBtn:hover .calCirBtnPuck svg {
+  transform: translate(2px, -2px);
+}
+.calCirBtn:active {
+  transform: translateY(1px);
+}
+/* Knappen står alltid på mörkt (hero-scrim eller closing-plommon) → vit ring. */
+.calCirBtn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* ── HINT-PRICKEN (Zivars element, rad 4637 .item-hints) — pulserande prick över
+   hero-fotot som pekar in i butiken. ANATOMIN: dot + ring som pulserar utåt +
+   linje/text som växer fram vid hover/fokus. Länken är ett KOMPLEMENT (hero-CTA:n
+   bär funktionen) — därför är hover-avslöjandet okej här, och den har alltid
+   aria-label + fokusring för tangentbord/skärmläsare. */
+.calHint {
+  position: absolute;
+  right: clamp(24px, 12vw, 160px);
+  bottom: clamp(48px, 14vh, 110px);
+  z-index: 1;
+  display: flex;
+  flex-direction: row-reverse; /* etiketten växer ut åt VÄNSTER, in mot rubriken */
+  align-items: center;
+  gap: 12px;
+  min-width: 44px;
+  min-height: 44px;
+  text-decoration: none;
+}
+.calHintDot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px; /* touch-golvet bärs av pricken själv */
+  height: 44px;
+}
+.calHintDot::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--cal-gold);
+}
+.calHintDot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  animation: calHintPulse 2.2s ease-out infinite;
+}
+@keyframes calHintPulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+/* Etiketten: vit mikrotext på scrimmen (scrim-golvet 0.66 → ≥7.2:1 även mot en
+   utbränd vit fotopixel). Linjen ritas i ::after och VÄXER från noll — samma gest
+   som originalets hint-linje. */
+.calHintLabel {
+  position: relative;
+  padding-bottom: 6px;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+.calHintLabel::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 0;
+  background: #fff;
+  transition: width 400ms ease;
+}
+.calHint:hover .calHintLabel,
+.calHint:focus-visible .calHintLabel {
+  opacity: 1;
+  transform: none;
+}
+.calHint:hover .calHintLabel::after,
+.calHint:focus-visible .calHintLabel::after {
+  width: 100%;
+}
+.calHint:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
+@media (max-width: 720px) {
+  /* Mobil: pricken skulle krocka med den centrerade hero-texten — CTA:n bär vägen
+     in i butiken, pricken är ren desktop-dramatik. */
+  .calHint {
+    display: none;
+  }
+}
+
 /* ── KNAPPENS HOVER — den ÄRVDA skugg-bloomen nollas.
    .btn-accent (globals.css) bär `box-shadow: var(--shadow-gold)` och byter till
    `var(--glow-gold)` vid hover. På storefronten pekar de om till
@@ -420,6 +604,149 @@
   color: #fff; /* 15.07:1 */
 }
 
+/* ═══════════ BUTIKEN SOM HJÄLTE — 3D-RINGEN (Zivars element, rad 1349) ═══════════
+   ANATOMIN porterad rakt av: preserve-3d-behållare som roterar oändligt kring Y,
+   korten står i cirkeln via rotateY((360/n)·i) + translateZ(radien). UTTRYCKET är
+   calytrix: 4:5-kort på surface med guldkant, scenen är det mörka plommonbordet
+   (samma dramatik som packbordet). Ringen PAUSAR vid hover/fokus (ett kort ska gå
+   att sikta på och tabba till); reduced-motion fryser den till en stilla solfjäder. */
+.calStage {
+  background: var(--color-primary-d);
+  padding: var(--cal-sec) 0;
+  overflow: hidden; /* perspektivförstoringen får ALDRIG ge sidled-scroll */
+}
+.calStageHead {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 var(--cal-gutter);
+  text-align: center;
+}
+.calStageEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--cal-gold); /* 6.15:1 mot plommon (#cf9d3f mot #4A0E2E) */
+}
+.calStageTitle {
+  margin: var(--cal-step-eyebrow) auto 0;
+  max-width: 40rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-h2);
+  line-height: var(--cal-lh-head);
+  letter-spacing: var(--cal-ls-head);
+  color: #fff; /* 15.07:1 */
+}
+.calRingScene {
+  position: relative;
+  height: clamp(300px, 44vw, 400px);
+  margin-top: 32px;
+}
+.calRing {
+  /* Radien (translateZ) skalar med kortbredden: kordan mellan grannkort =
+     2·tz·sin(180°/6) = 2·1.45w·0.5 = 1.45w > w → korten överlappar aldrig,
+     ens på mobil (allt skalar med samma w). */
+  --cal-ring-w: clamp(120px, 16vw, 176px);
+  --cal-ring-tz: calc(var(--cal-ring-w) * 1.45);
+  position: absolute;
+  width: var(--cal-ring-w);
+  aspect-ratio: 3 / 4; /* kortets YTTERMÅTT (bild 4:5 + textfot) */
+  top: 50%;
+  left: 50%;
+  margin-top: calc(var(--cal-ring-w) * -0.6667);
+  margin-left: calc(var(--cal-ring-w) / -2);
+  transform-style: preserve-3d;
+  transform: perspective(1200px) rotateX(-8deg);
+  animation: calRingSpin 48s linear infinite;
+}
+@keyframes calRingSpin {
+  from {
+    transform: perspective(1200px) rotateX(-8deg) rotateY(0turn);
+  }
+  to {
+    transform: perspective(1200px) rotateX(-8deg) rotateY(1turn);
+  }
+}
+/* Pausen är en AFFORDANCE, inte dekor: utan den jagar pekaren/fokus ett rullande mål. */
+.calRingScene:hover .calRing,
+.calRingScene:focus-within .calRing {
+  animation-play-state: paused;
+}
+.calRingCard {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--cal-gold) 60%, transparent);
+  text-decoration: none;
+  transform: rotateY(calc((360deg / var(--cal-ring-n, 6)) * var(--cal-ring-i, 0)))
+    translateZ(var(--cal-ring-tz));
+}
+.calRingCard:focus-visible {
+  outline: 2px solid var(--cal-gold);
+  outline-offset: 3px;
+}
+.calRingImg {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  background-color: var(--cal-plate); /* rummet motivet står i — mallens platta */
+  background-size: cover;
+  background-position: center;
+}
+.calRingName {
+  padding: 10px 12px 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-fg); /* 16.84:1 på surface */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calRingPrice {
+  padding: 4px 12px 12px;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  color: var(--color-primary); /* ≥9:1 på surface (etablerat 9.08 mot bg) */
+}
+.calStageCtaRow {
+  margin-top: 40px;
+  text-align: center;
+}
+/* Som .calSecCta men för mörk botten: vit text, guldlinje. */
+.calStageCta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--cal-fs-micro);
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: #fff; /* 15.07:1 */
+  border-bottom: 2px solid var(--cal-gold);
+  padding-bottom: 2px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: opacity var(--sf-btn-dur) var(--sf-btn-ease);
+}
+.calStageCta:hover {
+  opacity: 0.75;
+}
+.calStageCta:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
+
 /* ---------- Sektionsrubrik (delas av "Mest sålda" + "Från bloggen") ---------- */
 .calSecHead {
   max-width: 1180px;
@@ -452,9 +779,13 @@
 .calSecCta:hover { opacity: 0.7; }
 .calSecCta:active { opacity: 0.5; }
 .calSecCta:focus-visible,
-.calNavLinks a:focus-visible,
 .calCard:focus-visible {
   outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+/* Navlänkarnas ring bor på mörkt plommon → vit (vinröd-på-plommon ≈ 2:1 syns ej). */
+.calNavLinks a:focus-visible {
+  outline: 2px solid #fff;
   outline-offset: 4px;
 }
 
@@ -622,48 +953,122 @@
 /* Om-fotot ligger redan i 4/5 (delad .sfAboutPhoto) och blir radie-0 av
    --sf-radius: '0px'. Ingen override behövs — hela mallen är därmed 4:5 rakt av. */
 
-/* ---------- Presentkort-rad (smal, aldrig egen sektion) ---------- */
-.calGiftRow {
-  padding: var(--cal-band) 24px;
+/* ═══════════ PRESENTKORTET SOM URKLIPPT KUPONG (Zivars element, rad 14857) ═══════
+   ANATOMIN: en papperslapp KLIPPT ur ett ark — perforerad tandkant upptill och
+   nedtill (mask av koniska kilar, exakt tanddjup = halva tandbredden så raden
+   sluter tätt). UTTRYCKET: papper (surface) på det mörka plommonbordet. Formen
+   ljuger inte: presentkortet ÄR en kupong. Ingen påhittad rabattkod — texten är
+   ägarens egen gift-copy. */
+.calCouponBand {
+  background: var(--color-primary-d);
+  padding: var(--cal-band) var(--cal-gutter);
   text-align: center;
-  background: var(--color-accent-soft);
 }
-.calGiftInner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: center;
-  gap: 12px 24px;
+.calCoupon {
+  --cal-cut: 18px;
+  width: min(44rem, 100%);
+  margin: 0 auto;
+  padding: calc(var(--cal-cut) + 24px) clamp(24px, 6vw, 56px) calc(var(--cal-cut) + 40px);
+  background: var(--color-surface);
+  /* Tandkanten: två konisk-kil-remsor (upp/ned) + en fyllnad däremellan.
+     Kilarna är 90° → djupet = tandbredden/2, därav calc(var(--cal-cut)/2). */
+  -webkit-mask:
+    conic-gradient(from 135deg at top, #0000 90deg, #000 0) top / var(--cal-cut)
+      calc(var(--cal-cut) / 2) repeat-x,
+    conic-gradient(from -45deg at bottom, #0000 90deg, #000 0) bottom / var(--cal-cut)
+      calc(var(--cal-cut) / 2) repeat-x,
+    linear-gradient(#000 0 0) 50% calc(var(--cal-cut) / 2) / 100% calc(100% - var(--cal-cut))
+      no-repeat;
+  mask:
+    conic-gradient(from 135deg at top, #0000 90deg, #000 0) top / var(--cal-cut)
+      calc(var(--cal-cut) / 2) repeat-x,
+    conic-gradient(from -45deg at bottom, #0000 90deg, #000 0) bottom / var(--cal-cut)
+      calc(var(--cal-cut) / 2) repeat-x,
+    linear-gradient(#000 0 0) 50% calc(var(--cal-cut) / 2) / 100% calc(100% - var(--cal-cut))
+      no-repeat;
 }
-.calGiftCta {
+.calCouponKicker {
+  margin: 0;
   font-family: var(--font-body);
-  font-weight: 600;
   font-size: var(--cal-fs-micro);
+  font-weight: 600;
   letter-spacing: var(--cal-ls-micro);
   text-transform: uppercase;
-  color: var(--color-primary); /* 7.15:1 mot --color-accent-soft */
-  /* 44px = touch-golvet. Länken mätte 22px — klickboxen växer via padding och
-     negativ margin kvittar exakt lika mycket, så gift-radens rytm är pixeldensamma.
-     Den permanenta underlinjen bor i ::after tätt under texten (samma mönster som
-     navlänkarnas hover-linje) — en border-bottom hade legat vid 44px-boxens botten. */
+  color: var(--color-primary); /* 9.08:1 (etablerat mot ljusa ytan) */
+}
+.calCouponText {
+  margin: var(--cal-step-eyebrow) auto 0;
+  max-width: 30rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--cal-fs-sub);
+  line-height: var(--cal-lh-sub);
+  color: var(--color-fg); /* 16.84:1 */
+}
+
+/* ── PUSHABLE (Zivars element, rad 5779) — kupongens knapp TRYCKS ner fysiskt.
+   ANATOMIN: tre lager — skugga (blurrad, ligger kvar), kant (mörk sockel), front
+   (lyft -4px). Hover lyfter fronten till -6px med overshoot-fjäder; klick slår
+   den till -2px på 34ms. UTTRYCKET: vinröd front (vit text 7.64:1), plommonkant,
+   skugga ur mallens ink — inga lånade hexar, radie 0. */
+.calPush {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding-block: 13px;
-  margin-block: -13px;
-  transition: opacity var(--cal-dur) ease;
+  display: inline-block;
+  margin-top: var(--cal-step-cta);
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
 }
-.calGiftCta::after {
-  content: '';
+.calPushShadow {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(50% - 1em);
-  height: 2px;
-  background: var(--color-primary);
+  inset: 0;
+  background: color-mix(in srgb, var(--color-fg) 32%, transparent);
+  filter: blur(3px);
+  will-change: transform;
+  transform: translateY(2px);
+  transition: transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1);
 }
-.calGiftCta:hover { opacity: 0.7; }
+.calPushEdge {
+  position: absolute;
+  inset: 0;
+  background: var(--color-primary-d);
+}
+.calPushFront {
+  display: block;
+  position: relative;
+  padding: 15px 32px; /* 15+15+~17px text ≈ 47px hög → över touch-golvet */
+  background: var(--color-primary);
+  color: #fff; /* 7.64:1 mot vinrött */
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  transform: translateY(-4px);
+  transition: transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+.calPush:hover .calPushFront {
+  transform: translateY(-6px);
+  transition: transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5);
+}
+.calPush:active .calPushFront {
+  transform: translateY(-2px);
+  transition: transform 34ms;
+}
+.calPush:hover .calPushShadow {
+  transform: translateY(4px);
+  transition: transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5);
+}
+.calPush:active .calPushShadow {
+  transform: translateY(1px);
+  transition: transform 34ms;
+}
+.calPush:focus-visible {
+  outline: 2px solid var(--color-fg);
+  outline-offset: 4px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .calCard,
@@ -766,14 +1171,6 @@
   max-width: 1180px;
   margin: 0 auto;
   padding: 48px var(--cal-gutter) 0;
-}
-
-.calGiftText {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg);
 }
 
 /* ---------- OM som brett bildband med text i overlay ---------- */
@@ -906,13 +1303,36 @@
   line-height: var(--cal-lh-body);
   color: #fff;
 }
-.calClosingActions { margin-top: var(--cal-step-cta); }
+.calClosingActions {
+  margin-top: var(--cal-step-cta);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px 20px;
+}
+/* Sekundär-CTA:n (boknings-drawern) när butiken är primär: vinröd i stället för
+   guld — samma familj, ett steg bak i hierarkin. Vit text på vinrött = 7.64:1. */
+.calClosingBook {
+  --color-accent: var(--color-primary);
+  --color-accent-fg: #fff;
+}
 
-/* ═══════════ FOOTER — mörk platta, tre kolumner, stort wordmark ═══════════ */
+/* ═══════════ FOOTER — SOLID PLOMMON, tre kolumner, stort wordmark ═══════════
+   Ombyggnaden: sidfoten byter från ink-svart till mallens plommonbord — samma yta
+   som navet och packbordet, så butiken börjar och slutar på samma bord. All vit
+   text ligger på #4A0E2E → 15.07:1 (0.82-opacity-raderna ≈ 12.5:1, mätt som
+   blandfärg). SocialButtons-komponentens tokens pekas om här: vita ikoner, guld-
+   fyllning vid hover (ink på guld 7.35:1), rak radie (mallen är rak). */
 .calFooter {
-  background: var(--color-fg);
+  background: var(--color-primary-d);
   color: #fff;
   padding: var(--cal-sec) var(--cal-gutter) 24px;
+  --sf-social-ink: #fff;
+  --sf-social-bg-hover: var(--cal-gold);
+  --sf-social-ink-hover: var(--cal-gold-ink);
+  --sf-social-radius: 0px;
+  --sf-focus: #fff;
 }
 .calFooterGrid {
   max-width: 1180px;
@@ -945,13 +1365,10 @@
   color: #fff;
   opacity: 0.82;
 }
+/* Klassen läggs på SocialButtons-komponentens <ul> (dess .row bär flex+gap). */
 .calFooterSocials {
   margin-top: var(--cal-step-cta);
-  display: flex;
-  gap: 24px;
 }
-.calFooterSocial,
-.calFooterLinks a,
 .calFooterLink {
   font-family: var(--font-body);
   font-size: var(--cal-fs-micro);
@@ -961,8 +1378,8 @@
   color: #fff;
   /* 44px = touch-golvet. Länkarna mätte 19-22px i sidfotens täta listor — klickboxen
      växer via padding och negativ margin kvittar exakt lika mycket, så listrytmen är
-     pixeldensamma. Hover-guldlinjen flyttar till ::after tätt under texten (navets
-     mönster) — en border-bottom hade legat vid 44px-boxens botten, långt under orden. */
+     pixeldensamma. Hover-guldlinjen bor i ::after tätt under texten (navets mönster)
+     — en border-bottom hade legat vid 44px-boxens botten, långt under orden. */
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -970,8 +1387,6 @@
   padding-block: 13px;
   margin-block: -13px;
 }
-.calFooterSocial::after,
-.calFooterLinks a::after,
 .calFooterLink::after {
   content: '';
   position: absolute;
@@ -982,10 +1397,146 @@
   background: transparent;
   transition: background-color var(--cal-dur) ease;
 }
-.calFooterSocial:hover::after,
-.calFooterLinks a:hover::after,
 .calFooterLink:hover::after {
   background: var(--cal-gold);
+}
+
+/* ── MENYLÄNKARNA (Zivars element, rad 12105 .menu) — fast ikon + platta som
+   GLIDER IN bakom länken vid hover/fokus. ANATOMIN porterad: ikonen står still
+   till vänster, ::before-plattan reser in från höger (transform-origin höger),
+   pilen nudgar framåt. MEDVETEN AVVIKELSE: originalet gömmer texten tills hover
+   — hover-only affordance på en navlänk är förbjudet, så etiketten är ALLTID
+   synlig; plattan och pil-nudgen är belöningen, inte informationen. */
+.calFootLink {
+  position: relative;
+  z-index: 0; /* egen stapelkontext så ::before(z:-1) aldrig faller bakom sidfoten */
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px; /* touch-golvet */
+  padding: 0 12px;
+  margin-left: -12px; /* plattans luft kvittas → listens vänsterkant står still */
+  overflow: hidden; /* plattan börjar utanför och får inte synas förrän den glider */
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: #fff; /* 15.07:1 på plommon · 7.64:1 på den vinröda plattan */
+  text-decoration: none;
+}
+.calFootLink::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-primary);
+  transform: translateX(101%);
+  transform-origin: center right;
+  transition: transform 200ms ease-in;
+}
+.calFootLink:hover::before,
+.calFootLink:focus-visible::before {
+  transform: translateX(0);
+}
+.calFootIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 18px;
+  color: var(--cal-gold); /* ikon = grafik: 6.15:1 mot plommon, 3.1:1 mot plattan */
+}
+.calFootIcon svg {
+  transition: transform 200ms ease-in;
+}
+.calFootLink:hover .calFootIcon,
+.calFootLink:focus-visible .calFootIcon {
+  color: #fff; /* på den vinröda plattan vinner vitt (7.64:1) */
+}
+.calFootLink:hover .calFootIcon svg,
+.calFootLink:focus-visible .calFootIcon svg {
+  transform: translateX(3px);
+}
+.calFootLink:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.calFootLinkText {
+  white-space: nowrap;
+}
+
+/* ── MEJLKORTET (Zivars element, rad 16190 .subscribe) — papperskortet med knappen
+   HÄNGANDE ut över kanten + vikt hörn under överhänget. ANATOMIN porterad (kort,
+   understruken rad, offset-knapp med skugga, ::after-vikning). MEDVETEN AVVIKELSE:
+   inget inputfält — det finns ingen nyhetsbrevs-motor, och ett fält som inte gör
+   något ljuger. Raden visar ägarens mejl och knappen öppnar mailto. */
+.calMailCard {
+  position: relative;
+  margin-top: 32px;
+  margin-bottom: 26px; /* rum för knappen som hänger 18px under kortet */
+  max-width: 22rem;
+  padding: 20px 20px 28px;
+  background: var(--color-surface);
+  color: var(--color-fg);
+}
+.calMailKicker {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  color: var(--color-primary); /* 9.08:1 på papperet */
+}
+.calMailAddr {
+  display: block;
+  margin-top: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-line);
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-body);
+  line-height: var(--cal-lh-body);
+  color: var(--color-fg); /* 16.84:1 */
+  overflow-wrap: anywhere;
+}
+.calMailBtn {
+  position: absolute;
+  right: -10px;
+  bottom: -18px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* touch-golvet */
+  padding: 12px 22px;
+  background: var(--cal-gold);
+  color: var(--cal-gold-ink); /* 7.35:1 */
+  font-family: var(--font-body);
+  font-size: var(--cal-fs-micro);
+  font-weight: 600;
+  letter-spacing: var(--cal-ls-micro);
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--color-fg) 45%, transparent);
+  transition: transform var(--sf-btn-dur) var(--sf-btn-ease);
+}
+/* Vikningen: hörnet som "böjs in" under det utstickande överhänget — mörkare guld
+   (mix mot ink) så det läses som skuggsidan av samma papper. Ren dekor. */
+.calMailBtn::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 100%;
+  border-top: 8px solid color-mix(in srgb, var(--cal-gold) 55%, var(--color-fg));
+  border-right: 10px solid transparent;
+}
+.calMailBtn:hover {
+  transform: translateY(-2px);
+}
+.calMailBtn:active {
+  transform: translateY(0);
+}
+.calMailBtn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 .calFooterHead {
   margin: 0 0 var(--cal-step-head);
@@ -1001,7 +1552,9 @@
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 12px;
+  /* Raderna bär redan 44px höjd var (touch-golvet i .calFootLink) — 2px gap
+     räcker för att listan inte ska bli en trappa av luft. */
+  gap: 2px;
 }
 .calFooterText {
   margin: 0 0 12px;
@@ -1484,6 +2037,38 @@
   .calPage :global(.btn-accent):hover { transform: none; }
 }
 
+
+/* ── REDUCED MOTION för de nya uiverse-elementen: ringen står stilla (en fryst
+   solfjäder är fortfarande scenen), hint-pulsen slutar pulsera (pricken + etiketten
+   vid fokus finns kvar), pushable/cir-btn/menylänkar slutar animera men behåller
+   alla tillstånd (fronten ligger kvar lyft, plattan hoppar in utan glid). */
+@media (prefers-reduced-motion: reduce) {
+  .calRing {
+    animation: none;
+  }
+  .calHintDot::after {
+    animation: none;
+  }
+  .calHintLabel,
+  .calHintLabel::after,
+  .calCirBtn,
+  .calCirBtnPuck svg,
+  .calPushShadow,
+  .calPushFront,
+  .calFootLink::before,
+  .calFootIcon svg,
+  .calMailBtn,
+  .calStageCta {
+    transition: none;
+  }
+  .calCirBtn:hover .calCirBtnPuck svg,
+  .calCirBtn:active,
+  .calFootLink:hover .calFootIcon svg,
+  .calFootLink:focus-visible .calFootIcon svg,
+  .calMailBtn:hover {
+    transform: none;
+  }
+}
 
 /* goal-62 C3 — KNAPPFORMEN, sista ordet.
    Mallens knappar bar fortfarande den GLOBALA .btn-accent-pillen: klasserna har samma

@@ -1,27 +1,40 @@
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
 import { Reveal } from '../../Reveal'
 import { Gallery } from '../../Gallery'
 import { Bookable } from '../../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
+import { BRANSCH_BOKNING } from '../../bransch-copy'
 import { formatPrice, formatDuration, serviceDesc } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './calytrix.module.css'
 
 /**
- * CALYTRIX — plommon/vinröd e-handelsflorist (tema-paket, goal-59). NOLL delade
- * .sf*-sektioner: hemmet är mallens EGET från hero till closing (det var i den
- * delade nedre halvan alla 20 mallar blev samma sida).
+ * CALYTRIX — plommon/vinröd e-handelsflorist, ombyggd från grunden (Zivars order:
+ * "mallen äger ALLT som syns"). Scenen är ny; MOTORN är exakt densamma: samma
+ * modul-gating (shopReachable/teasers/presentkortLive), samma Bookable/BookCta,
+ * samma dataflöden. Zivars uiverse-element bär sidan — ANATOMIN är porterad
+ * (struktur, rörelse, tillstånd), uttrycket kommer ur calytrix egna tokens:
  *
- * Ordning: (1) fullbredds foto-hero med rubriken I bilden → (2) mörkt marknadsband
- * → (3) produkt-karusell (horisontell scroll + "Populär"-pill) → (4) priser som
- * RUTNÄT av kort (varje kort = <Bookable>) → (5) blogg-rad → (6) presentkort-rad
- * → (7) galleri → (8) OM som brett bildband med texten i overlay → (9) plats-rad
- * → (10) closing. Annonsraden bor numera i navet (calytrix.chrome.tsx) så den
- * finns på varje sida, som i en riktig butik.
+ *   · cir-btn (rad 4888)      → hero- och closing-CTA:n "Beställ blommor":
+ *                                guldblock + pil i plommon-cirkel som glider ↗
+ *   · item-hints (rad 4637)   → pulserande prick på hero-fotot som pekar in i butiken
+ *   · 3D-karusellen (rad 1349)→ "BUTIKEN SOM HJÄLTE": bästsäljarna roterar som en
+ *                                ring av produktkort på mörkt plommon — signaturen
+ *   · cutout-kupongen (14857) → presentkortsraden som URKLIPPT kupong (perforerad
+ *                                papperslapp på plommonbordet)
+ *   · pushable (rad 5779)     → kupongens knapp TRYCKS ner fysiskt (3 lager:
+ *                                skugga/kant/front)
  *
- * Modul-gatingen är oförändrad: shopReachable gatar butikslänkar, teasers-sektioner
- * ritas bara när teasers finns, presentkort = smal rad. Layouten är SYNKRON.
+ * Ordning: (1) foto-hero med cir-btn + hint-prick → (2) plommonband (tagline) →
+ * (3) 3D-karusellen → (4) priser som kortrutnät → (5) blogg-rad → (6) presentkorts-
+ * kupongen → (7) galleri → (8) OM-bildband → (9) plats-rad → (10) closing.
+ *
+ * Modul-gating (LAG, testad i florist-suite.test.tsx): av modul = NOLL länkar till
+ * dess sida. Hero-CTA:n länkar bara till /shop när shopReachable; annars faller den
+ * tillbaka på boknings-drawern med floristens verb (aldrig "boka tid" — bransch-
+ * copy äger orden). Layouten är SYNKRON (previewn kan inte rendera async).
  */
 export function CalytrixLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 6)
@@ -34,60 +47,115 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
 
   const heroImg = content.heroImages[0] ?? ''
 
+  // Ringen behöver 6 kort för att läsas som en RING (3 kort = en gles triangel).
+  // Teasers är max 3 (LayoutModuleTeasers) → de repeteras cykliskt. Dubbletterna
+  // är mus-klickbara men tas UR tabb-ordningen (tabIndex -1 + aria-hidden):
+  // en skärmläsare ska höra varje produkt EN gång, inte tre.
+  const RING_SLOTS = 6
+  const ringSlots =
+    shopTeasers.length > 0
+      ? Array.from({ length: RING_SLOTS }, (_, i) => ({
+          p: shopTeasers[i % shopTeasers.length]!,
+          dup: i >= shopTeasers.length,
+        }))
+      : []
+
+  // Pilen i cir-btn-knappen (ritad inline — CSP tillåter inga fjärr-assets).
+  const cirArrow = (
+    <span className={styles.calCirBtnPuck} aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 18 18 6" />
+        <path d="M8 6h10v10" />
+      </svg>
+    </span>
+  )
+
   return (
     <div className={styles.calRoot}>
-      {/* 1 — FULLBREDDS FOTO-HERO: rubriken ligger I bilden */}
+      {/* 1 — FULLBREDDS FOTO-HERO. CTA:n är cir-btn-anatomin: guldblock + pil i
+          plommon-cirkel (cirkeln är mallens medvetna undantag från radie 0 — som
+          badge-pillen). Hint-pricken (item-hints) pulserar över fotot och pekar
+          in i butiken — bara när butiken faktiskt går att nå. */}
       <section className={styles.calHero} style={{ backgroundImage: `url(${heroImg})` }}>
         <div className={styles.calHeroScrim} aria-hidden="true" />
         <div className={styles.calHeroInner}>
           <h1 className={styles.calHeroTitle}>{content.heroTitle}</h1>
           <p className={styles.calHeroLede}>{content.heroLede}</p>
           <div className={styles.calHeroCtaRow}>
-            <BookCta className={styles.calHeroCta} />
+            {shopReachable ? (
+              <Link href="/shop" className={styles.calCirBtn}>
+                Beställ blommor
+                {cirArrow}
+              </Link>
+            ) : (
+              /* Butiken av → boknings-drawern, med FLORISTENS verb ur bransch-
+                 lagret (en florist bokar en konsultation, aldrig en "tid"). */
+              <BookCta className={styles.calHeroCta} label={BRANSCH_BOKNING.florist!.cta} />
+            )}
           </div>
         </div>
+        {shopReachable ? (
+          <Link href="/shop" className={styles.calHint} aria-label="In i butiken — se buketterna">
+            <span className={styles.calHintDot} aria-hidden="true" />
+            <span className={styles.calHintLabel} aria-hidden="true">
+              In i butiken
+            </span>
+          </Link>
+        ) : null}
       </section>
 
-      {/* 2 — MÖRKT MARKNADSFÖRINGS-BAND */}
+      {/* 2 — MÖRKT MARKNADSFÖRINGS-BAND (lyft platta, oförändrad gest) */}
       <section className={styles.calBand}>
         <p className={styles.calBandText}>{content.tagline}</p>
       </section>
 
-      {/* 3 — PRODUKT-KARUSELL (webshop-modulen invävd) */}
-      {shopTeasers.length > 0 ? (
-        <section className={styles.calSection}>
-          <Reveal className={styles.calSecHead} as="div">
-            <div>
-              <p className="sf-eyebrow">{content.shopEyebrow ?? '— Mest sålda'}</p>
-              <h2 className={styles.calSecTitle}>{content.shopTitle ?? 'Beställ det alla vill ha'}</h2>
+      {/* 3 — BUTIKEN SOM HJÄLTE: bästsäljarna som ROTERANDE 3D-RING på mörkt
+          plommon. Anatomin ur uiverse-karusellen (preserve-3d, rotateY per index,
+          translateZ ut till ringens radie, oändlig rotation) — uttrycket ur mallens
+          tokens (4:5-kort på surface, guldkant, plommonrum). Ringen PAUSAR vid
+          hover/fokus så ett kort går att sikta på; reduced-motion fryser den helt
+          (en stillastående solfjäder är fortfarande scenen). */}
+      {ringSlots.length > 0 ? (
+        <section className={styles.calStage}>
+          <Reveal className={styles.calStageHead} as="div">
+            <p className={styles.calStageEyebrow}>{content.shopEyebrow ?? '— Mest sålda'}</p>
+            <h2 className={styles.calStageTitle}>{content.shopTitle ?? 'Beställ det alla vill ha'}</h2>
+          </Reveal>
+          <div className={styles.calRingScene}>
+            <div
+              className={styles.calRing}
+              style={{ '--cal-ring-n': String(RING_SLOTS) } as CSSProperties}
+            >
+              {ringSlots.map(({ p, dup }, i) => (
+                <Link
+                  key={`${p.id}-${i}`}
+                  href={`/shop/${p.id}`}
+                  className={styles.calRingCard}
+                  style={{ '--cal-ring-i': String(i) } as CSSProperties}
+                  tabIndex={dup ? -1 : undefined}
+                  aria-hidden={dup ? true : undefined}
+                >
+                  <span
+                    className={styles.calRingImg}
+                    style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
+                  />
+                  <span className={styles.calRingName}>{p.name}</span>
+                  <span className={styles.calRingPrice}>{formatShopPrice(p.priceCents, p.currency)}</span>
+                </Link>
+              ))}
             </div>
-            {shopReachable ? (
-              <Link href="/shop" className={styles.calSecCta}>
+          </div>
+          {shopReachable ? (
+            <div className={styles.calStageCtaRow}>
+              <Link href="/shop" className={styles.calStageCta}>
                 {content.shopCta ?? 'Visa hela butiken'}
               </Link>
-            ) : null}
-          </Reveal>
-          <div className={styles.calScrollRow}>
-            {shopTeasers.map((p, i) => (
-              <Reveal key={p.id} as="div" delay={i * 70} className={styles.calCardSlot}>
-                <Link href={`/shop/${p.id}`} className={styles.calCard}>
-                  <div className={styles.calCardImgWrap}>
-                    <span className={styles.calBadge}>Populär</span>
-                    <div
-                      className={styles.calCardImg}
-                      style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
-                    />
-                  </div>
-                  <h3 className={styles.calCardName}>{p.name}</h3>
-                  <p className={styles.calCardPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
-      {/* 4 — PRISER SOM RUTNÄT AV KORT (mallens egna, inte den delade radlistan) */}
+      {/* 4 — PRISER SOM RUTNÄT AV KORT (varje kort = <Bookable> — funktionen orörd) */}
       {rows.length > 0 ? (
         <section className={styles.calSection}>
           <Reveal className={styles.calSecHead} as="div">
@@ -149,19 +217,22 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
         </section>
       ) : null}
 
-      {/* 6 — PRESENTKORT: smal rad, aldrig en hel sektion */}
+      {/* 6 — PRESENTKORTET SOM URKLIPPT KUPONG (cutout-anatomin): en perforerad
+          papperslapp på det mörka plommonbordet — presentkortet ÄR ju en kupong,
+          så formen ljuger inte. Knappen är pushable-anatomin: tre lager
+          (skugga/kant/front) och fronten TRYCKS ner fysiskt vid klick. */}
       {presentkortLive ? (
-        <div className={styles.calGiftRow}>
-          <Reveal className={styles.calGiftInner} as="div">
-            <p className="sf-eyebrow" style={{ margin: 0 }}>
-              {content.giftEyebrow ?? '— Presentkort'}
-            </p>
-            <p className={styles.calGiftText}>{content.giftLede ?? 'Ge bort något som blommar.'}</p>
-            <Link href="/presentkort" className={styles.calGiftCta}>
-              {content.giftCta ?? 'Till presentkorten'}
+        <section className={styles.calCouponBand}>
+          <Reveal className={styles.calCoupon} as="div">
+            <p className={styles.calCouponKicker}>{content.giftEyebrow ?? '— Presentkort'}</p>
+            <p className={styles.calCouponText}>{content.giftLede ?? 'Ge bort något som blommar.'}</p>
+            <Link href="/presentkort" className={styles.calPush}>
+              <span className={styles.calPushShadow} aria-hidden="true" />
+              <span className={styles.calPushEdge} aria-hidden="true" />
+              <span className={styles.calPushFront}>{content.giftCta ?? 'Till presentkorten'}</span>
             </Link>
           </Reveal>
-        </div>
+        </section>
       ) : null}
 
       {/* 7 — GALLERI (mallens 4:5-ratio + raka hörn via .calGallery-wrappern) */}
@@ -194,7 +265,7 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
         </Reveal>
       </section>
 
-      {/* 9 — PLATS: en rad med adress · tider · karta-länk (butikens fot, inte en split) */}
+      {/* 9 — PLATS: en rad med adress · tider · karta-länk (butikens fot) */}
       <section className={styles.calLocRow}>
         <div className={styles.calLocInner}>
           <div>
@@ -224,7 +295,9 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
         </div>
       </section>
 
-      {/* 10 — CLOSING: mörk plommonplatta (ingen parallax, inget foto) */}
+      {/* 10 — CLOSING: mörk plommonplatta. Primär = cir-btn in i butiken (gatad),
+           sekundär = boknings-drawern i vinrött (funktionen får aldrig tappas —
+           konsultationen ska gå att boka även från sidfotens granne). */}
       <section className={styles.calClosing}>
         <Reveal>
           <h2 className={styles.calClosingTitle}>{content.closingTitle ?? 'Redo att beställa?'}</h2>
@@ -232,7 +305,16 @@ export function CalytrixLayout({ tenant, content, services, location, modules }:
             {content.closingLede ?? 'Handla i butiken, boka en tjänst eller hör av dig — vi finns här.'}
           </p>
           <div className={styles.calClosingActions}>
-            <BookCta className={styles.calHeroCta} />
+            {shopReachable ? (
+              <Link href="/shop" className={styles.calCirBtn}>
+                Beställ blommor
+                {cirArrow}
+              </Link>
+            ) : null}
+            <BookCta
+              className={`${styles.calHeroCta} ${shopReachable ? styles.calClosingBook : ''}`}
+              label={BRANSCH_BOKNING.florist!.cta}
+            />
           </div>
         </Reveal>
       </section>

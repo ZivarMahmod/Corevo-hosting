@@ -5,29 +5,39 @@ import {
   formatShopPrice,
   fulfilmentPromise,
   SHOP_FULFILMENT_LABELS,
+  type ShopProduct,
 } from '@/lib/storefront/shop/types'
 import type { BloggPost } from '@/lib/storefront/blogg/types'
 import type { ThemeShopViewProps, ThemeBloggViewProps } from './types'
-import styles from './calytrix.module.css'
+import styles from './calytrix-modules.module.css'
 
 /**
- * CALYTRIX — MODUL-VYER (goal-59, Zivars vektor-regel).
+ * CALYTRIX — MODUL-VYER, ombyggda från grunden (Zivars order: "mallen äger ALLT som
+ * syns; modulen äger bara funktionen").
  *
- *   "mallens vektor är apex för modulens vektor, men komponenten och modulens
- *    funktion är densamma"
+ * BUTIKEN = SKYLTBORDET — packbordets syskon (calytrix-cart.tsx är facit): varorna
+ * ligger numrerade på ett mörkt plommonbord, lutade på vinröda plattor, och LYFTER
+ * när man rör dem. BLOGGEN = BREV FRÅN FLORISTEN: ljusa pappersark med kronbladsrader
+ * bakom texten (uiverse-biljettens ♪♪♪-anatomi, rad 14590, med kronblad i stället).
  *
- * Butiken är Calytrix HJÄLTE — hemmets sektion 3 är redan en produkt-karusell med
- * "Populär"-pill. Modulens EGNA sida är därför inte en ny värld utan samma värld i
- * full skala: samma mörka plommonband, samma 4:5-bild, samma pill, samma raka hörn,
- * samma typskala (96/50/28/21/16/12). Enda skillnaden mot hemmet är att korten här
- * bär köp-rälsen (<AddToCart>), som hemmets teaser aldrig gör.
+ * Zivars element (uiverse-komponentbiblioteket) — ANATOMIN porterad, aldrig koden:
+ *   rad 8375       → produktkortet (bild lyfter+zoomar, svep underifrån, pris+köp-rad)
+ *   rad 7807/8483  → badge-språket (Populär/Slutsåld) + spökordet i heron
+ *   rad 2720 .Btn  → snabb-köpet: kompakt knapp som växer vid hover/fokus
+ *   rad 9884/9896  → skelett-shimmer under produktfoton medan de laddar
+ *   rad 14590      → brevkortet (kronbladsrader, symbol i hörnet, stämpel-datum)
+ *   rad 11077      → HOPPAD ÖVER: ingen betygsdata finns — inga påhittade stjärnor.
  *
  * FUNKTIONEN ägs av modulen och tappas ALDRIG:
- *   · <AddToCart> per produkt — utom vid `paused`, då köp-CTA:erna INTE renderas.
+ *   · <AddToCart compact> per produkt — utom vid `paused`, då köp-CTA:erna INTE
+ *     renderas. `compact` är modulens egen grid-form (goal-62 E3: ett klick = 1 st;
+ *     flera varianter → knappen leder till produktsidan där valet hör hemma).
  *   · `paused` → tydlig stängt-notis (role="status").
  *   · Priser via formatShopPrice, leveranslöfte via fulfilmentPromise + labeln.
  *   · Produktlänk /shop/{id} · blogglänk /blogg/{slug} (utan slug → olänkad).
- *   · limit → teaser-läge (karusell + "Visa hela butiken"), tom + limit → null.
+ *   · limit → teaser-läge (rad + "Visa hela butiken"), tom + limit → null.
+ *   · content.*-fallbackar är VERBATIM oförändrade (goal-61: editorns extraHome-fält
+ *     måste matcha layoutens inbyggda strängar).
  *
  * SYNKRONA server-komponenter: all I/O är redan gjord (ingen async, ingen 'use client').
  */
@@ -41,34 +51,82 @@ function formatPostDate(iso: string | null): string | null {
 }
 
 /**
- * Media-läget (goal-60). Mallen äger kortets FORM — men bara bilden vet om den är
- * frilagd. En transparent PNG/WebP kan svävA på plattan med en skugga som följer
- * motivets silhuett; ett vanligt JPG-foto måste fylla plattan, annars blir skuggan
- * en fyrkant och illusionen dör.
- *
- * Vi kan inte läsa alfakanalen i renderingen (det vore I/O i en synkron komponent),
- * så vi går på filändelsen — den är den enda ärliga signalen vi har vid render.
- * När frilägning görs vid uppladdning (egen goal) skrivs resultatet som .png/.webp
- * och kortet byter läge av sig självt. Tills dess: kundens foton beter sig som förr.
+ * Media-läget (goal-60, oförändrad funktion): bara en frilagd bild (png/webp/avif)
+ * får sväva på plattan med silhuett-skugga — ett JPG-foto fyller plattan, annars blir
+ * skuggan en fyrkant och illusionen dör. Filändelsen är den enda ärliga signalen vi
+ * har vid render (ingen I/O i en synkron komponent).
  */
-function mediaClass(imageUrl: string | null): string {
-  const base = styles.calCardImg ?? ''
-  if (!imageUrl) return base
+function mediaClass(imageUrl: string): string {
   const cutout = /\.(png|webp|avif)(\?|$)/i.test(imageUrl)
-  return cutout ? `${base} ${styles.calCardImgFloat ?? ''}`.trim() : base
+  const base = styles.img ?? ''
+  return cutout ? `${base} ${styles.imgFloat ?? ''}`.trim() : base
+}
+
+/**
+ * Slutsåld = ALLA varianter har available === 0. Samma sanning som AddToCart:s egen
+ * allSoldOut-gren (den ritar sin disabled-knapp) — etiketten här är bara skyltningen
+ * av samma data, aldrig en egen lagerlogik. null = ospårat lager = köpbart.
+ */
+function isSoldOut(p: ShopProduct): boolean {
+  return p.variants.length > 0 && p.variants.every((v) => v.available === 0)
+}
+
+/**
+ * Kronbladet — ETT ritat inline-SVG-blad (vesica-form) som återanvänds av brevets
+ * rader, hörnsymbolen och det tomma produktmonogrammet. currentColor → färgen sätts
+ * av CSS-tokens, aldrig av SVG:n själv.
+ */
+const PETAL_D = 'M10 0 C3.5 8.5 3.5 19 10 28 C16.5 19 16.5 8.5 10 0 Z'
+
+/**
+ * Kronbladsraderna — biljettens ♪♪♪-lager (uiverse rad 14590) som blomsterspråk.
+ * Tre staplade rader, varannan förskjuten; ETT <path> per rad (subpaths) så DOM:en
+ * inte sväller med 15 noder per brev. Ren dekor: aria-hidden.
+ */
+function LetterPetals() {
+  const rows = [30, 110, 190]
+  const d = rows
+    .map((y, r) =>
+      Array.from({ length: 6 }, (_, i) => {
+        const x = 12 + i * 62 + (r % 2) * 31
+        // Translatera vesica-formen till (x, y) — samma blad, ny plats.
+        return `M${x + 10} ${y} C${x + 3.5} ${y + 8.5} ${x + 3.5} ${y + 19} ${x + 10} ${y + 28} C${x + 16.5} ${y + 19} ${x + 16.5} ${y + 8.5} ${x + 10} ${y} Z`
+      }).join(' '),
+    )
+    .join(' ')
+  return (
+    <svg
+      className={styles.petals}
+      viewBox="0 0 380 240"
+      preserveAspectRatio="xMidYMax slice"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d={d} fill="currentColor" />
+    </svg>
+  )
+}
+
+/** Ett ensamt kronblad (hörnsymbol + tomt produktmonogram). Dekor: aria-hidden. */
+function Petal({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 28" aria-hidden="true" focusable="false">
+      <path d={PETAL_D} fill="currentColor" />
+    </svg>
+  )
 }
 
 /** Inlägg utan slug renderas OLÄNKADE (legacy-rader) — annars länk till /blogg/{slug}. */
 function PostShell({ post, children }: { post: BloggPost; children: React.ReactNode }) {
-  if (!post.slug) return <div className={styles.calCard}>{children}</div>
+  if (!post.slug) return <div className={styles.letter}>{children}</div>
   return (
-    <Link href={`/blogg/${post.slug}`} className={styles.calCard}>
+    <Link href={`/blogg/${post.slug}`} className={styles.letter}>
       {children}
     </Link>
   )
 }
 
-/* ═══════════════════════════ BUTIKEN ═══════════════════════════ */
+/* ═══════════════════════════ SKYLTBORDET (butiken) ═══════════════════════════ */
 
 export function CalytrixShop({ data, paused, limit, moreHref, content, tenantName }: ThemeShopViewProps) {
   const { config, products: all } = data
@@ -82,91 +140,122 @@ export function CalytrixShop({ data, paused, limit, moreHref, content, tenantNam
   const promise = fulfilmentPromise(config)
   const label = SHOP_FULFILMENT_LABELS[config.fulfilment]
 
-  const cards = products.map((p, i) => (
-    <div key={p.id} className={teaser ? styles.calCardSlot : undefined}>
-      <article className={styles.calShopCard}>
-        {/* Bild + namn länkar till produktsidan — INTE hela kortet, så köpknappen
-            nedanför förblir klickbar. */}
-        <Link
-          href={`/shop/${p.id}`}
-          className={styles.calShopMedia}
-          aria-label={`${p.name} — visa produkt`}
-        >
-          <div className={styles.calCardImgWrap}>
-            {i < 3 ? <span className={styles.calBadge}>Populär</span> : null}
-            {/* imageUrl kan vara null → färgplattan (--color-accent-soft) bär kortet. */}
-            <div
-              className={mediaClass(p.imageUrl)}
-              style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
-              role="img"
-              aria-label={p.imageAlt ?? p.name}
-            />
-          </div>
-        </Link>
-        <div className={styles.calShopBody}>
-          <h3 className={styles.calCardName}>
-            <Link href={`/shop/${p.id}`} className={styles.calShopNameLink}>
-              {p.name}
-            </Link>
-          </h3>
-          {p.description ? <p className={styles.calCardMeta}>{p.description}</p> : null}
-          <p className={styles.calCardPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
-          {/* Köp-rälsen: pausad butik renderar INGEN CTA (stängt är stängt). */}
-          {paused ? null : (
-            <div className={styles.calShopBuy}>
-              <AddToCart product={p} fulfilment={config.fulfilment} />
+  const cards = products.map((p, i) => {
+    const soldOut = isSoldOut(p)
+    return (
+      <div key={p.id} className={teaser ? styles.slot : undefined}>
+        <article className={styles.plate}>
+          {/* Radnumret — packbordets ordersblock-siffra. Dekor: aria-hidden. */}
+          <span className={styles.plateNo} aria-hidden="true">
+            {String(i + 1).padStart(2, '0')}
+          </span>
+
+          {/* Bild + namn länkar till produktsidan — INTE hela kortet, så köpknappen
+              nedanför förblir klickbar. */}
+          <Link href={`/shop/${p.id}`} className={styles.mediaLink} aria-label={`${p.name} — visa produkt`}>
+            <span className={styles.tilt}>
+              <span className={styles.well}>
+                {/* Badge-språket (rad 7807/8483): Slutsåld vinner över Populär —
+                    skyltningen ljuger aldrig om lagret. */}
+                {soldOut ? (
+                  <span className={`${styles.tag} ${styles.tagSoldOut}`}>Slutsåld</span>
+                ) : i < 3 ? (
+                  <span className={styles.tag}>Populär</span>
+                ) : null}
+                {p.imageUrl ? (
+                  // Shimret (rad 9884/9896) ligger i brunnen UNDER bilden: syns medan
+                  // fotot laddar, täcks när det landat.
+                  <span
+                    className={mediaClass(p.imageUrl)}
+                    style={{ backgroundImage: `url(${p.imageUrl})` }}
+                    role="img"
+                    aria-label={p.imageAlt ?? p.name}
+                  />
+                ) : (
+                  // Utan bild bär vinplattan kortet själv (täcker shimret — ingen
+                  // evig puls för något som aldrig kommer).
+                  <span className={styles.bare} role="img" aria-label={p.imageAlt ?? p.name}>
+                    <Petal />
+                  </span>
+                )}
+              </span>
+            </span>
+          </Link>
+
+          <div className={styles.body}>
+            <h3 className={styles.name}>
+              <Link href={`/shop/${p.id}`} className={styles.nameLink}>
+                {p.name}
+              </Link>
+            </h3>
+            {p.description ? <p className={styles.meta}>{p.description}</p> : null}
+
+            {/* Foten (rad 8375: ordernow-raden): pris vänster, snabb-köp höger.
+                Köp-rälsen: pausad butik renderar INGEN CTA (stängt är stängt). */}
+            <div className={styles.foot}>
+              <p className={styles.price}>{formatShopPrice(p.priceCents, p.currency)}</p>
+              {paused ? null : (
+                <div className={styles.buyDock}>
+                  <AddToCart product={p} fulfilment={config.fulfilment} compact />
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </article>
-    </div>
-  ))
+          </div>
+        </article>
+      </div>
+    )
+  })
 
   return (
-    <section className={styles.calShopRoot} data-module="shop" data-fulfilment={config.fulfilment}>
+    <section
+      className={styles.root}
+      data-module="shop"
+      data-fulfilment={config.fulfilment}
+      data-scene="skyltbordet"
+    >
       {teaser ? (
-        <div className={styles.calSection}>
-          <Reveal className={styles.calSecHead} as="div">
+        /* Teaser = samma plommonbord som ett BAND över hemmet. */
+        <div className={`${styles.band} ${styles.section}`}>
+          <Reveal className={styles.head} as="div">
             <div>
-              <p className={styles.calEyebrow}>{content.shopEyebrow ?? `— Webshop · ${label}`}</p>
-              <h2 className={styles.calSecTitle}>{content.shopTitle ?? 'Beställ det alla vill ha'}</h2>
+              <p className={styles.eyebrowDark}>{content.shopEyebrow ?? `— Webshop · ${label}`}</p>
+              <h2 className={styles.titleDark}>{content.shopTitle ?? 'Beställ det alla vill ha'}</h2>
               {/* Leveranslöftet står direkt under rubriken, även i teaser-läget. */}
-              <p className={styles.calShopPromise}>{promise}</p>
+              <p className={styles.promiseDark}>{promise}</p>
             </div>
             {moreHref ? (
-              <Link href={moreHref} className={styles.calSecCta}>
+              <Link href={moreHref} className={styles.ctaDark}>
                 {content.shopCta ?? 'Visa hela butiken'}
               </Link>
             ) : null}
           </Reveal>
 
           {paused ? (
-            <div className={styles.calShopNoticeWrap}>
-              <p role="status" className={styles.calShopClosed}>
+            <div className={styles.noticeWrap}>
+              <p role="status" className={styles.closed}>
                 Webshoppen är tillfälligt stängd för nya beställningar. Vi öppnar igen snart.
               </p>
             </div>
           ) : null}
 
-          {products.length > 0 ? <div className={styles.calScrollRow}>{cards}</div> : null}
+          {products.length > 0 ? <div className={styles.row}>{cards}</div> : null}
         </div>
       ) : (
         <>
-          {/* Modulens EGEN sida: mallens fullbredds-plommonband som sidhuvud —
-              samma mörka platta som hemmets marknadsband och closing. */}
-          <header className={styles.calShopHero}>
-            <p className={styles.calShopHeroEyebrow}>— Webshop · {label}</p>
-            <h1 className={styles.calShopHeroTitle}>
-              {content.shopTitle ?? `Handla hos ${tenantName}`}
-            </h1>
+          {/* Modulens EGEN sida: plommonplattan med SPÖKORDET bakom rubriken
+              (rad 7807/8483 — den dubblerade texten, uppskalad till sidhuvud). */}
+          <header className={styles.hero} data-ghost={content.shopTitle ?? `Handla hos ${tenantName}`}>
+            <p className={styles.heroEyebrow}>— Webshop · {label}</p>
+            <h1 className={styles.heroTitle}>{content.shopTitle ?? `Handla hos ${tenantName}`}</h1>
             {/* Leveranslöftet: sidhuvudets lede — det första besökaren läser. */}
-            <p className={styles.calShopHeroLede}>{promise}</p>
+            <p className={styles.heroLede}>{promise}</p>
           </header>
 
-          <div className={styles.calSection}>
+          {/* Bordet i full skala — heron och bordet är EN sammanhängande mörk yta. */}
+          <div className={styles.board}>
             {paused ? (
-              <div className={styles.calShopNoticeWrap}>
-                <p role="status" className={styles.calShopClosed}>
+              <div className={styles.noticeWrap}>
+                <p role="status" className={styles.closed}>
                   Webshoppen är tillfälligt stängd för nya beställningar. Du kan se hela
                   sortimentet, men det går inte att beställa just nu. Vi öppnar igen snart.
                 </p>
@@ -174,14 +263,14 @@ export function CalytrixShop({ data, paused, limit, moreHref, content, tenantNam
             ) : null}
 
             {products.length === 0 ? (
-              <div className={styles.calShopNoticeWrap}>
-                <p className={styles.calEmpty}>
+              <div className={styles.noticeWrap}>
+                <p className={styles.emptyDark}>
                   Sortimentet är tomt just nu. Hör gärna av dig — vi binder gärna något på
                   beställning.
                 </p>
               </div>
             ) : (
-              <div className={styles.calShopGrid}>{cards}</div>
+              <div className={styles.grid}>{cards}</div>
             )}
           </div>
         </>
@@ -190,7 +279,7 @@ export function CalytrixShop({ data, paused, limit, moreHref, content, tenantNam
   )
 }
 
-/* ═══════════════════════════ BLOGGEN ═══════════════════════════ */
+/* ═══════════════════════════ BREVEN (bloggen) ═══════════════════════════ */
 
 export function CalytrixBlogg({ posts: all, limit, moreHref, content, tenantName }: ThemeBloggViewProps) {
   const posts = typeof limit === 'number' ? all.slice(0, limit) : all
@@ -201,58 +290,68 @@ export function CalytrixBlogg({ posts: all, limit, moreHref, content, tenantName
   const cards = posts.map((p) => {
     const date = formatPostDate(p.publishedAt)
     return (
-      <div key={p.id} className={teaser ? styles.calCardSlot : undefined}>
+      <div key={p.id} className={teaser ? styles.slot : undefined}>
         <PostShell post={p}>
-          <div className={styles.calCardImgWrap}>
-            <div
-              className={styles.calCardImg}
-              style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
-              role="img"
-              aria-label={p.coverImageAlt ?? p.title}
-            />
+          <LetterPetals />
+          <div className={styles.letterHead}>
+            <span className={styles.letterKicker}>Brev från floristen</span>
+            {/* Pressat kronblad i hörnet — biljettens ✁-symbol, i blomsterspråk. */}
+            <Petal className={styles.letterSymbol} />
           </div>
-          {date ? <p className={styles.calPostDate}>{date}</p> : null}
-          <h3 className={styles.calCardName}>{p.title}</h3>
-          {p.excerpt ? <p className={styles.calCardMeta}>{p.excerpt}</p> : null}
+          {p.coverImageUrl ? (
+            <span className={styles.photoPlate}>
+              <span
+                className={styles.photo}
+                style={{ backgroundImage: `url(${p.coverImageUrl})` }}
+                role="img"
+                aria-label={p.coverImageAlt ?? p.title}
+              />
+            </span>
+          ) : null}
+          {date ? <p className={styles.letterDate}>{date}</p> : null}
+          <h3 className={styles.letterTitle}>{p.title}</h3>
+          {p.excerpt ? <p className={styles.letterExcerpt}>{p.excerpt}</p> : null}
+          {/* Riktningen i brevets fot — bara när kortet faktiskt är en länk. */}
+          {p.slug ? <span className={styles.letterFoot}>Läs brevet</span> : null}
         </PostShell>
       </div>
     )
   })
 
   return (
-    <section className={styles.calShopRoot} data-module="blogg">
+    <section className={styles.root} data-module="blogg" data-scene="breven">
       {teaser ? (
-        <div className={styles.calSection}>
-          <Reveal className={styles.calSecHead} as="div">
+        <div className={`${styles.paper} ${styles.section}`}>
+          <Reveal className={styles.head} as="div">
             <div>
-              <p className={styles.calEyebrow}>{content.blogEyebrow ?? '— Från bloggen'}</p>
-              <h2 className={styles.calSecTitle}>{content.blogTitle ?? 'Nytt från floristen'}</h2>
+              <p className={styles.eyebrowLight}>{content.blogEyebrow ?? '— Från bloggen'}</p>
+              <h2 className={styles.titleLight}>{content.blogTitle ?? 'Nytt från floristen'}</h2>
             </div>
             {moreHref ? (
-              <Link href={moreHref} className={styles.calSecCta}>
+              <Link href={moreHref} className={styles.ctaLight}>
                 {content.blogCta ?? 'Läs hela bloggen'}
               </Link>
             ) : null}
           </Reveal>
-          {posts.length > 0 ? <div className={styles.calScrollRow}>{cards}</div> : null}
+          {posts.length > 0 ? <div className={styles.row}>{cards}</div> : null}
         </div>
       ) : (
         <>
-          <header className={styles.calShopHero}>
-            <p className={styles.calShopHeroEyebrow}>— Blogg</p>
-            <h1 className={styles.calShopHeroTitle}>
-              {content.blogTitle ?? `Nytt från ${tenantName}`}
-            </h1>
-            <p className={styles.calShopHeroLede}>Nyheter, tips och inspiration från butiken.</p>
+          {/* Samma hero-anatomi som butiken (spökord + plommonplatta) — en butik,
+              två rum. */}
+          <header className={styles.hero} data-ghost={content.blogTitle ?? `Nytt från ${tenantName}`}>
+            <p className={styles.heroEyebrow}>— Blogg</p>
+            <h1 className={styles.heroTitle}>{content.blogTitle ?? `Nytt från ${tenantName}`}</h1>
+            <p className={styles.heroLede}>Nyheter, tips och inspiration från butiken.</p>
           </header>
 
-          <div className={styles.calSection}>
+          <div className={`${styles.paper} ${styles.paperBody}`}>
             {posts.length === 0 ? (
-              <div className={styles.calShopNoticeWrap}>
-                <p className={styles.calEmpty}>Inga inlägg är publicerade ännu.</p>
+              <div className={styles.noticeWrap}>
+                <p className={styles.emptyLight}>Inga inlägg är publicerade ännu.</p>
               </div>
             ) : (
-              <div className={styles.calShopGrid}>{cards}</div>
+              <div className={styles.letters}>{cards}</div>
             )}
           </div>
         </>

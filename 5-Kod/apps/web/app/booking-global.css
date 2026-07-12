@@ -509,3 +509,259 @@
 .confirm-summary span { opacity: 0.7; }
 .confirm-note { opacity: 0.8; margin: 0 0 1.5rem; }
 .confirm-paid { opacity: 1; font-weight: 600; color: #15803d; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CALYTRIX — BOKNINGSFLÖDET I MALLENS KOSTYM (scoped [data-theme='calytrix'])
+   Mallen äger scenen, modulen äger motorn: ALLT nedanför är ren CSS ovanpå
+   wizardens stabila klasser (.wizard-*, .fc-*) — ingen annan mall träffas
+   (varje selektor bär [data-theme='calytrix']). Tonen = PACKBORDET
+   (calytrix-cart.module.css): plommon & vinrött, rak geometri (radie 0),
+   varan/valet LYFTER på skuggor. Zivars element (uiverse-komponentbibliotek.md),
+   anatomin lånad — aldrig koden:
+     · rad 10917 .pill-radio-container → valmarkeringen är en vinröd platta
+       som GLIDER in på valt kort (transform, aldrig layout-egenskaper)
+     · rad 5779  .pushable → "Bekräfta bokning" trycks ner FYSISKT (kant-
+       skugga + translateY; active = 34ms ner, release = långsam fjäder upp)
+     · rad 11995 .radio-inputs radio-tile → personalvalet som stående tiles
+       (dold radio + tile med avatar överst och etikett under)
+   Alla kulörer är mallens tokens (--color-*), aldrig lånade hexar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. TOKEN-VÄXELN: fc-lagret läser calytrix egna tokens ──────────────────
+   fc-tokens är byggda som fallback-kedjor (accent→primary), men typsnitten och
+   linjerna pekade på plattformens Caslon/PlexMono + ink-mixar. Här får hela
+   wizarden mallens röst i ETT svep — DM Serif på rubrikerna, Inter i brödet.
+   Linjerna byts till mallens MÄTTA kanter: goal-60-läxan var att en osynlig
+   kort-kant (ink-22 % ≈ 1,5:1) fick korten att flyta ihop med sidan; calytrix
+   --color-line (#a98d97) är 3,02:1 mot surface — en riktig UI-gräns
+   (WCAG 1.4.11 ≥ 3:1, mätt i calytrix.theme.ts). Småtext-tonen ink-3 (38 %-mix,
+   under 4,5:1) ersätts med mallens fg-2: 7,15:1 på surface, 5,25:1 på tonen. */
+[data-theme='calytrix'] .fc-scope {
+  --fc-rust: var(--color-primary); /* vinröd — vit text 9,74:1 (mätt) */
+  --fc-rust-fg: var(--color-primary-fg, #fff);
+  --fc-rust-deep: var(--color-primary-d); /* plommon — vit text 15,07:1 (mätt) */
+  --fc-rust-soft: var(--color-accent-soft);
+  --fc-ink: var(--color-fg); /* 16,84:1 på bg, 18,05:1 på surface (mätt) */
+  --fc-ink-2: var(--color-fg-2); /* 7,15:1 på surface (mätt) */
+  --fc-ink-3: var(--color-fg-2);
+  --fc-paper: var(--color-bg);
+  --fc-paper-2: var(--color-accent-soft); /* fg på tonen ≥ 12:1 (mörkare än bg-paret 16,84:1) */
+  --fc-surface: var(--color-surface);
+  --fc-line: var(--color-accent-soft);
+  --fc-line-2: var(--color-line); /* 3,02:1 mot surface — kanten SYNS (mätt) */
+  --fc-font-display: var(--font-display);
+  --fc-font-body: var(--font-body);
+  --fc-font-mono: var(--font-body); /* calytrix har ingen mono-röst — etiketterna bär spärrningen själva */
+}
+
+/* Calytrix är RAK: stämpelns 2px-hörn är plattformens, inte mallens. Cirklar
+   (avatar, bock-disc) lämnas — där kräver elementet cirkel. */
+[data-theme='calytrix'] .fc-scope .fc-stamp {
+  border-radius: 0;
+}
+
+/* DM Serif Display finns BARA i vikt 400 (app/layout.tsx + calytrix.theme.ts).
+   En global h2-regel trycker 700 på stegrubrikerna (uppmätt, gäller alla
+   mallar) → på calytrix blev det SYNTETISK fetstil. Mallens lag: 400 rakt
+   igenom på display-typsnittet. */
+[data-theme='calytrix'] .fc-scope .wizard-q,
+[data-theme='calytrix'] .fc-scope .ckompakt-title,
+[data-theme='calytrix'] .fc-scope .fc-ticket-title,
+[data-theme='calytrix'] .fc-scope .fc-inline-title,
+[data-theme='calytrix'] .fc-scope .fc-cal-title,
+[data-theme='calytrix'] .fc-scope .fc-ticket-brand,
+[data-theme='calytrix'] .fc-scope .fc-panel-brand-name {
+  font-weight: 400;
+}
+
+/* ── 2. STEG-INDIKATORN SOM VINRÖD REGEL ────────────────────────────────────
+   Tunna raka linjaler i mallens mjuka rosa yta; passerade steg fylls vinröda.
+   Dekorativ (aria-hidden i DOM) — räknaren "n / 5" bär informationen. */
+[data-theme='calytrix'] .fc-scope .wizard-progress-seg {
+  height: 3px;
+  background: var(--color-accent-soft);
+}
+[data-theme='calytrix'] .fc-scope .wizard-progress-seg.on {
+  background: var(--color-primary);
+}
+
+/* ── 3. VALPLATTAN SOM GLIDER (pill-radio-anatomin, rad 10917) ──────────────
+   Uiverse-originalet flyttar EN indikator mellan radio-labels med translateX.
+   Wizardens DOM monterar markören (.fc-ring) bara på valt kort, så plattan
+   kan inte fysiskt resa mellan korten — men GESTEN behålls: plattan anländer
+   med ren transform (glider in från vänster), aldrig via layout-egenskaper.
+   .fc-ring görs om från tunn ram till HEL vinröd platta bakom kortets innehåll
+   (packbordets "varan står på en platta"), och kortet lyfter på skuggan. */
+@keyframes calyGlide {
+  from {
+    transform: translateX(-14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+[data-theme='calytrix'] .fc-scope .fc-ring {
+  inset: 0;
+  border: 0;
+  background: var(--color-primary);
+  animation: calyGlide 240ms cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+/* Innehållet ovanpå plattan (fc-ring ritas sist i DOM → skulle annars täcka).
+   fc-check undantas: dess absolute-position (bock-discen uppe till höger)
+   får inte slås om till relative. */
+[data-theme='calytrix'] .fc-scope .wizard-card > :not(.fc-ring):not(.fc-check) {
+  position: relative;
+  z-index: 1;
+}
+[data-theme='calytrix'] .fc-scope .wizard-card .fc-check {
+  z-index: 2;
+}
+[data-theme='calytrix'] .fc-scope .wizard-card {
+  transition:
+    transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 120ms ease;
+}
+/* Valt kort = vinröd platta som LYFTER (packbordets gest: skugga, inte kant).
+   KONTRAST på plattan: vit på vinröd 9,74:1 (mätt i calytrix.theme.ts);
+   sekundärtext = 82 % vit ≈ 6,97:1 på vinröd (mätt) — båda ≥ 4,5:1. */
+[data-theme='calytrix'] .fc-scope .wizard-card[aria-pressed='true'] {
+  color: var(--color-surface, #fff);
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px -14px rgb(0 0 0 / 50%);
+}
+[data-theme='calytrix'] .fc-scope .wizard-card[aria-pressed='true'] .wizard-card-sub,
+[data-theme='calytrix'] .fc-scope .wizard-card[aria-pressed='true'] .fc-role,
+[data-theme='calytrix'] .fc-scope .wizard-card[aria-pressed='true'] .fc-dur {
+  color: color-mix(in srgb, var(--color-surface, #fff) 82%, transparent);
+}
+[data-theme='calytrix'] .fc-scope .wizard-card[aria-pressed='true'] .fc-price,
+[data-theme='calytrix'] .fc-scope .wizard-card[aria-pressed='true'] .fc-meta-any {
+  color: var(--color-surface, #fff);
+}
+[data-theme='calytrix'] .fc-scope .wizard-card[aria-pressed='true'] .fc-tag {
+  color: var(--color-surface, #fff);
+  border-color: var(--color-surface, #fff);
+}
+
+/* ── 4. TID-CHIPSEN SOM SMÅ PLOMMONPLATTOR ──────────────────────────────────
+   Vald tid ställer sig på plommonbordet och LYFTER — samma skugg-gest som
+   packbordets lutade fotoplattor. Vit på plommon 15,07:1 (mätt). Ytan är
+   redan ≥ 44 px (basreglernas min-höjd rörs inte). */
+[data-theme='calytrix'] .fc-scope .wizard-time,
+[data-theme='calytrix'] .fc-scope .wizard-day,
+[data-theme='calytrix'] .fc-scope .ckompakt-chip {
+  transition:
+    transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 120ms ease,
+    background 120ms ease;
+}
+[data-theme='calytrix'] .fc-scope .wizard-time.selected,
+[data-theme='calytrix'] .fc-scope .wizard-day.selected,
+[data-theme='calytrix'] .fc-scope .ckompakt-chip.selected {
+  background: var(--color-primary-d);
+  border-color: var(--color-primary-d);
+  color: var(--color-surface, #fff);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 18px -8px rgb(0 0 0 / 45%);
+}
+/* Kalendercellen väljs med plommon-fyllning men lyfter INTE — ett rutnät där
+   en cell hoppar ur sin rad läser som trasigt, inte som en gest. */
+[data-theme='calytrix'] .fc-scope .fc-cal-cell.selected {
+  background: var(--color-primary-d);
+  border-color: var(--color-primary-d);
+  color: var(--color-surface, #fff);
+}
+
+/* ── 5. PERSONALVALET SOM TILES (radio-tile-anatomin, rad 11995) ────────────
+   Uiverse-originalet: dolda radios + stående tiles med ikon överst och etikett
+   under, kant som svarar på hover/val. Här är "ikonen" wizardens avatar-disc
+   och valet bär redan aria-pressed — bara SCENEN byter form: listan blir ett
+   rutnät, kortet ställer sig upp. :has() saknas → listan förblir en kolumn
+   (graciös degradering, inget går sönder). */
+[data-theme='calytrix'] .fc-scope .wizard-list:has(.wizard-card--staff) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 10px;
+}
+[data-theme='calytrix'] .fc-scope .wizard-list:has(.wizard-card--staff) > li {
+  display: flex;
+}
+[data-theme='calytrix'] .fc-scope .wizard-card--staff {
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  min-height: 138px;
+  padding: 18px 12px 14px;
+}
+[data-theme='calytrix'] .fc-scope .wizard-card--staff .wizard-card-main {
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+/* ── 6. "BEKRÄFTA BOKNING" TRYCKS NER FYSISKT (pushable-anatomin, rad 5779) ──
+   Originalets tre lager (shadow/edge/front) återges med ETT element: fronten
+   vilar 4 px UPPE på en plommon-kant (andra skuggan är packbordets mjuka
+   fallskugga). Hover reser knappen, active trycker ner den på 34 ms och
+   släppet fjädrar långsamt tillbaka — exakt originalets rytm, mallens färger.
+   Vit text på vinröd 9,74:1; kanten plommon-mot-vinröd är dekor, inte
+   information (statet bärs av knappens text + disabled-läget). */
+[data-theme='calytrix'] .fc-scope .wizard-cta {
+  background: var(--color-primary);
+  transform: translateY(-4px);
+  box-shadow:
+    0 4px 0 0 var(--color-primary-d),
+    0 14px 22px -10px rgb(0 0 0 / 40%);
+  transition:
+    transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1),
+    box-shadow 600ms cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+[data-theme='calytrix'] .fc-scope .wizard-cta:hover:not(:disabled) {
+  background: var(--color-primary); /* pressgesten ÄR effekten — ingen färgväxling ovanpå */
+  transform: translateY(-6px);
+  box-shadow:
+    0 6px 0 0 var(--color-primary-d),
+    0 18px 26px -12px rgb(0 0 0 / 40%);
+  transition:
+    transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5),
+    box-shadow 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5);
+}
+[data-theme='calytrix'] .fc-scope .wizard-cta:active:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 0 var(--color-primary-d),
+    0 6px 10px -6px rgb(0 0 0 / 40%);
+  transition:
+    transform 34ms linear,
+    box-shadow 34ms linear;
+}
+/* Låst CTA ligger PLATT på bordet — en knapp som inte går att trycka ska inte
+   se upphöjd ut. Text: fg på accent-soft ≥ 12:1 (basregeln, tokens växlade). */
+[data-theme='calytrix'] .fc-scope .wizard-cta:disabled {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── 7. REDUCED MOTION: gesterna stannar, tillstånden består ────────────────
+   Plattan står redan framme (ingen glid), knappen ligger stilla på sin kant,
+   valda plattor behåller lyft-läget statiskt — informationen försvinner aldrig
+   med rörelsen. */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme='calytrix'] .fc-scope .fc-ring {
+    animation: none;
+  }
+  [data-theme='calytrix'] .fc-scope .wizard-card,
+  [data-theme='calytrix'] .fc-scope .wizard-time,
+  [data-theme='calytrix'] .fc-scope .wizard-day,
+  [data-theme='calytrix'] .fc-scope .ckompakt-chip,
+  [data-theme='calytrix'] .fc-scope .wizard-cta {
+    transition: none;
+  }
+}
