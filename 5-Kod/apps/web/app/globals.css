@@ -70,6 +70,12 @@ h3 {
 }
 .btn-accent:hover { transform: translateY(-1px); box-shadow: var(--glow-gold); }
 
+/* goal-62 I3 — freshcut: knappen ska vara FYRKANTIG.
+   Mallen bad aldrig om en pill (--sf-btn-radius: 0px i tokens.css), men den globala
+   guld-pillen ovan körde över tokenet: 4 CTA:er renderade 9999px. Bara radien kopplas
+   in — freshcut är en levande kund, så storlek/färg/versalisering rörs inte. */
+.tenant-root[data-theme='freshcut'] .btn-accent { border-radius: var(--sf-btn-radius); }
+
 /* goal-62 B2a — KNAPPTEXTEN SOM FÖRSVANN.
    `.tenant-root a { color: inherit }` (raden ovan) har specificitet 0-1-1 och slår
    därför ut `.btn-accent`/`.btn-primary` (0-1-0) för varje CTA som är en LÄNK: knappen
@@ -87,7 +93,15 @@ h3 {
    och tog den globala guld-pillen rakt av. Formen låg alltså i mallen men nådde
    aldrig knappen. Här kopplas den in — mallen äger FORMEN (vektor-regeln).
    :where() håller specificiteten på 0-1-0 så en malls egen knappregel fortfarande
-   vinner, och varje token faller tillbaka på det gamla utseendet om mallen tiger. */
+   vinner, och varje token faller tillbaka på det gamla utseendet om mallen tiger.
+
+   ⚠️ DEN HÄR KOMMENTAREN VAR TRASIG (upptäckt av verify-agenten 2026-07-12): en extra
+   kommentar-stängare mitt i blocket stängde kommentaren för tidigt, tre rader text
+   hamnade utanför, och CSS-parsern slukade DÄRMED HELA regeln nedanför. Död kod —
+   zigge deklarerar --sf-btn-radius: 4px men renderade 9999px. Mallarna som såg raka ut
+   gjorde det bara för att deras EGEN module.css satte radien. En trasig kommentar
+   dödar nästa regel i CSS; den syns inte i tsc, lint eller tester.
+
    flora och freshcut är UNDANTAGNA: båda är levande kunder, och mätningen visar att
    inkopplingen hade ändrat deras knapp (freshcut pill/gemener → rak/versal, flora
    h48 → h50). Skyddade mallar får inte forma om sig av en generell fix. */

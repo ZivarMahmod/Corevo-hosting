@@ -19,6 +19,7 @@ import {
   Drawer,
   Icon,
   PageHead,
+  PillToggle,
   Table,
   useToast,
 } from '@/components/portal/ui'
@@ -179,9 +180,15 @@ function StorefrontCell({ service }: { service: ServiceRow }) {
   )
 }
 
-/** Online toggle — a real wired switch over toggleServiceActive. Forest when on,
- *  line-strong when off (mock track styling), with an AKTIV/AV pill + a Swedish
- *  consequence toast on every change. No dead toggle (§6). */
+/** Online-växeln över toggleServiceActive — kopplad, med konsekvens-toast (aldrig en
+ *  död toggle, §6).
+ *
+ *  goal-62 G3: här bodde en handbyggd 42×24-switch. Butik har EXAKT samma semantik
+ *  (boolean `active`, verben Dölj/Visa, samma konsekvens-toast, samma server-action-form)
+ *  men renderade en PillToggle. Två uttryck för en betydelse — skillnaden var historisk,
+ *  inte betydelsebärande. Switchen är riven; alla fyra ytorna (Tjänster · Butik · Blogg ·
+ *  Kurser) delar nu PillToggle-primitiven, som också bär 44px-golvet och fokusringen som
+ *  inline-switchen aldrig kunde få. Endast växeln byttes — toggleServiceActive är orörd. */
 function OnlineToggle({ service }: { service: ServiceRow }) {
   const { notify } = useToast()
   const router = useRouter()
@@ -209,54 +216,16 @@ function OnlineToggle({ service }: { service: ServiceRow }) {
       <form action={formAction} style={{ display: 'inline-flex' }}>
         <input type="hidden" name="id" value={service.id} />
         <input type="hidden" name="active" value={String(!service.active)} />
-        {/* goal-62 G1: reglaget MÄTTE 42×24 — under 44px-golvet. Spåret behåller sin form
-            (42×24, det ska LÄSAS som en switch), men det bor nu i ett inre <span> så att
-            själva knappen kan bära en 44×44 träffyta utan att svälla visuellt. Kvittad
-            marginal håller radens höjd. */}
-        <button
+        <PillToggle
           type="submit"
+          active={service.active}
           disabled={pending}
-          aria-label={service.active ? `Dölj ${service.name}` : `Visa ${service.name}`}
-          aria-pressed={service.active}
-          style={{
-            width: 44,
-            height: 44,
-            margin: '-10px -1px',
-            display: 'inline-grid',
-            placeItems: 'center',
-            border: 'none',
-            background: 'transparent',
-            cursor: pending ? 'default' : 'pointer',
-            flex: 'none',
-            opacity: pending ? 0.6 : 1,
-          }}
+          ariaLabel={service.active ? `Dölj ${service.name}` : `Visa ${service.name}`}
         >
-          <span
-            style={{
-              width: 42,
-              height: 24,
-              borderRadius: 999,
-              background: service.active ? 'var(--c-forest)' : 'var(--c-line-strong)',
-              position: 'relative',
-              display: 'block',
-              transition: 'background var(--dur-fast)',
-            }}
-          >
-            <span
-              style={{
-                position: 'absolute',
-                top: 3,
-                left: service.active ? 21 : 3,
-                width: 18,
-                height: 18,
-                borderRadius: 999,
-                background: '#fff',
-                transition: 'left var(--dur-fast)',
-              }}
-            />
-          </span>
-        </button>
+          {pending ? '…' : service.active ? 'Dölj' : 'Visa'}
+        </PillToggle>
       </form>
+      {/* Boolean aktiv-flagga (ingen status-sträng) — statusTone gäller ej här. */}
       <Badge tone={service.active ? 'success' : 'neutral'}>
         {service.active ? 'Aktiv' : 'Av'}
       </Badge>

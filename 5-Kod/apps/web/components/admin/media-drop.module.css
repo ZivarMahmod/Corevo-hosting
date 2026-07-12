@@ -1,0 +1,121 @@
+/* goal-62 G4 — drop-kortet för bilduppladdning.
+   Anatomin (streckad ram som "lever" vid drag-over) är lånad ur uiverse-mönstret, men
+   INGEN av deras kod: alla färger är husets --c-*-tokens, ingen transition:all, och
+   inget tillstånd som bara existerar på :hover (drag-over och fokus måste synas lika
+   tydligt för den som aldrig rör musen). Ren stil — uppladdnings-logiken är orörd. */
+
+.drop {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  /* Kortet är själva klick-ytan (en <label>) — den är per definition långt över
+     44×44-golvet, till skillnad från den nakna file-inputens lilla "Välj fil"-knapp. */
+  min-height: 160px;
+  padding: 24px 18px;
+  border: 2px dashed var(--c-line);
+  border-radius: 12px;
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.drop:hover {
+  border-color: var(--c-forest);
+  background: color-mix(in srgb, var(--c-forest) 4%, var(--c-paper));
+}
+
+/* Tangentbordet kommer aldrig åt hover — fokus måste ge samma signal.
+   Ringen sitter på KORTET fast fokus tekniskt ligger på den dolda inputen. */
+.drop:focus-within {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 2px;
+  border-color: var(--c-forest);
+}
+
+/* Drag-over: samma språk som hover men starkare — ramen blir hel och fylld,
+   så det syns att släppet kommer att landa här. */
+.dragging {
+  border-style: solid;
+  border-color: var(--c-forest);
+  background: color-mix(in srgb, var(--c-forest) 8%, var(--c-paper));
+  color: var(--c-ink);
+}
+
+/* Under uppladdning får kortet inte se ut som en klickbar yta. Dämpat via FÄRG,
+   aldrig bara opacity (kontrast-disciplinen — texten måste hålla 4.5:1). */
+.busy {
+  cursor: default;
+  border-color: var(--c-line);
+  background: var(--c-paper-2);
+  color: var(--c-ink-2);
+}
+
+/* Inputen ligger kvar i DOM:en, fokuserbar, med form/name/accept intakta — den är
+   bara osynlig. display:none hade dödat tangentbords-vägen in. */
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: inherit;
+}
+.input:disabled {
+  cursor: default;
+}
+
+.icon {
+  color: var(--c-ink-2);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+
+.hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-ink-2);
+  margin: 0;
+}
+
+/* Vald-fil-återkoppling: namn + storlek, så man ser VAD som är på väg upp. */
+.files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.file {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--c-ink-2);
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--c-paper);
+}
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fileSize {
+  flex: none;
+  color: var(--c-ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop {
+    transition: none;
+  }
+}

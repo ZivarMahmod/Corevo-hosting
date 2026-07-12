@@ -13,11 +13,23 @@ import styles from './brand.module.css'
  * Salvia's home page uses the richer 3-column FooterFull instead (chosen in
  * app/(public)/layout.tsx, where the full bundle incl. location is available).
  */
-export function Footer({ tenant }: { tenant: { name: string } }) {
+export function Footer({
+  tenant,
+  bokaOnline = 'Boka online',
+}: {
+  tenant: { name: string }
+  /** Branschens boknings-tagline (bransch-copy.ts → branschBokning().online):
+   *  "Boka bord online" hos en restaurang, "Boka konsultation online" hos en
+   *  florist. OPTIONAL — utelämnad → det bransch-NEUTRALA "Boka online" (aldrig
+   *  frisörens "Boka tid online", som stod hårdkodat här förr). */
+  bokaOnline?: string
+}) {
   return (
     <footer className={`footer ${styles.miniFooter}`}>
       <div className={styles.miniWordmark}>{tenant.name}</div>
-      <div className={styles.miniTagline}>Boka tid online · {tenant.name}</div>
+      <div className={styles.miniTagline}>
+        {bokaOnline} · {tenant.name}
+      </div>
       <div className={styles.miniSign}>Designad med omsorg</div>
       <p className={styles.miniLegal}>
         © {new Date().getFullYear()} {tenant.name}

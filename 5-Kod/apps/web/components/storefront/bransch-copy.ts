@@ -409,6 +409,98 @@ export const BRANSCH_IMAGES: Record<string, BranschMedia> = {
 BRANSCH_IMAGES.frisor = BRANSCH_IMAGES['frisör']!
 BRANSCH_IMAGES.barberare = BRANSCH_IMAGES.barbershop!
 
+// ─────────────────────────────────────────────────────────────────────────────
+// BOKNINGSFLÖDETS ORD (goal-62)
+// ─────────────────────────────────────────────────────────────────────────────
+// Bokningen hårdkodade "Boka tid hos X" / "Boka tid online" / aria "Boka tid hos …"
+// på fem ställen. En florist bokar inte "tid" — hen bokar en KONSULTATION; en
+// restaurang bokar BORD; en klinik ett BESÖK. Verben fanns redan i copy-lagret
+// (closingEyebrow), men bokningsflödet läste dem aldrig. Här bor de som EGNA
+// nycklar så flödet kan slå upp dem direkt.
+//
+// SUBSTANTIVET för personalen kommer INTE härifrån — det ägs av
+// `verticals.terminology` ('staff', se staff-noun.ts) och resolvas separat.
+export type BranschBokning = {
+  /** Knapp/CTA-verbet: "Boka tid", "Boka bord", "Boka konsultation". */
+  cta: string
+  /** Rubrik-prefixet före tenantens namn: `${hosPrefix} ${tenant.name}`. */
+  hosPrefix: string
+  /** Underrubriken på /boka. */
+  lede: string
+  /** Footerns tagline-prefix: `${online} · ${tenant.name}`. */
+  online: string
+}
+
+/** Bransch-neutral fallback — en kund UTAN bransch ska inte få frisör-orden. */
+export const DEFAULT_BOKNING: BranschBokning = {
+  cta: 'Boka tid',
+  hosPrefix: 'Boka tid hos',
+  lede: 'Välj tjänst, personal och tid — klart på under en minut.',
+  online: 'Boka online',
+}
+
+const BOKNING_TID: BranschBokning = {
+  cta: 'Boka tid',
+  hosPrefix: 'Boka tid hos',
+  lede: 'Välj tjänst, personal och tid — klart på under en minut.',
+  online: 'Boka tid online',
+}
+
+export const BRANSCH_BOKNING: Record<string, BranschBokning> = {
+  'frisör': BOKNING_TID,
+  frisor: BOKNING_TID,
+  barbershop: BOKNING_TID,
+  barberare: BOKNING_TID,
+  nagelstudio: BOKNING_TID,
+  massage: BOKNING_TID,
+  hudvard: BOKNING_TID,
+  'hudvård': BOKNING_TID,
+  klinik: {
+    cta: 'Boka besök',
+    hosPrefix: 'Boka besök hos',
+    lede: 'Välj behandling, vårdgivare och tid — bokat på under en minut.',
+    online: 'Boka besök online',
+  },
+  restaurang: {
+    cta: 'Boka bord',
+    hosPrefix: 'Boka bord hos',
+    lede: 'Välj sittning och tid — vi dukar för er.',
+    online: 'Boka bord online',
+  },
+  florist: {
+    cta: 'Boka konsultation',
+    hosPrefix: 'Boka konsultation hos',
+    lede: 'Välj vad du vill ha bundet, florist och tid — vi hör av oss om något behöver stämmas av.',
+    online: 'Boka konsultation online',
+  },
+  tatuering: {
+    cta: 'Boka konsultation',
+    hosPrefix: 'Boka konsultation hos',
+    lede: 'Välj vad du vill göra, tatuerare och tid — konsultationen är kostnadsfri.',
+    online: 'Boka konsultation online',
+  },
+  tatuerare: {
+    cta: 'Boka konsultation',
+    hosPrefix: 'Boka konsultation hos',
+    lede: 'Välj vad du vill göra, tatuerare och tid — konsultationen är kostnadsfri.',
+    online: 'Boka konsultation online',
+  },
+  tattoo: {
+    cta: 'Boka konsultation',
+    hosPrefix: 'Boka konsultation hos',
+    lede: 'Välj vad du vill göra, tatuerare och tid — konsultationen är kostnadsfri.',
+    online: 'Boka konsultation online',
+  },
+  generell: DEFAULT_BOKNING,
+}
+
+/** Bokningsflödets ord för en bransch. PURE. Okänd/null → neutrala DEFAULT_BOKNING
+ *  (aldrig frisör-orden — det är hela poängen med lagret). */
+export function branschBokning(verticalId: string | null | undefined): BranschBokning {
+  if (!verticalId) return DEFAULT_BOKNING
+  return BRANSCH_BOKNING[verticalId] ?? DEFAULT_BOKNING
+}
+
 /** Branschens copy-default för en vertical. PURE. Okänd/null bransch → {} (=
  *  lagret är transparent, temat bestämmer som förr). */
 export function branschCopy(verticalId: string | null | undefined): CopyOverride {

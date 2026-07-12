@@ -12,8 +12,14 @@
    för prislist-meta. ALLA färger re-uttrycks ovanpå kontrakts-tokens
    (--color-accent/-fg/-bg/-surface) så varje salongs tema styr paletten;
    FreshCut-hexen ur README-tabellen ligger kvar som sista fallback.
-   Radius = 0 överallt (undantag: avatar-discs 50%, bottom-sheet-toppkanter
-   20px, stämpeln 2px). Borders: 1.5px line-2 interaktivt / 1px line strukturellt.
+   Radius: VEKTOR-REGELN (goal-62) — MALLEN äger formen. Radien läses ur
+   `var(--sf-radius, 0)`, precis som köp-rälsen (varukorg/kassa/product/kurser)
+   redan gör, i stället för en hårdkodad 0. Fallbacken 0 gör att en mall som inte
+   sätter --sf-radius (flora + freshcut, levande kunder) renderar EXAKT som förr;
+   en mall som sätter den får bokningen i SIN form i stället för en kantig
+   token-ö. Undantag som bokningen själv äger (aldrig mallens): avatar-discs 50%,
+   bottom-sheet-toppkanter 20px, stämpeln 2px.
+   Borders: 1.5px line-2 interaktivt / 1px line strukturellt.
    =========================================================================== */
 
 /* ---- boka route chrome (unchanged) ---- */
@@ -101,7 +107,7 @@
 .wizard-card {
   position: relative; width: 100%; text-align: left;
   background: var(--fc-surface); color: inherit;
-  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0);
   padding: 15px 17px;
   display: flex; justify-content: space-between; align-items: center; gap: 14px;
   cursor: pointer; font: inherit; font-family: inherit;
@@ -146,7 +152,7 @@
 .wizard-day {
   flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 1px;
   width: 60px; padding: 0.5rem 0; min-height: 48px;
-  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0);
   background: var(--fc-surface); color: var(--fc-ink);
   cursor: pointer; font: inherit; font-family: inherit;
   transition: all 0.12s ease; scroll-snap-align: start;
@@ -159,22 +165,30 @@
 .ckompakt .fc-day-dom { font-size: 18px; }
 .fc-day-mon { font-family: var(--fc-font-mono); font-size: 9px; opacity: 0.6; }
 
-/* månadskalender */
-.fc-cal { border: 1.5px solid var(--fc-line-2); background: var(--fc-surface); padding: 14px; margin-bottom: 14px; }
-.fc-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+/* månadskalender.
+   44px-GOLVET (goal-62): dag-cellen och månadspilarna är flödets MEST klickade
+   ytor och låg på 36x36 / 30x30 — under WCAG:s 44px-golv. Cellen får därför
+   min-height/min-width 44px. Sju 44px-spår + gap ryms inte i alla panelbredder
+   (bottom-sheet på 360px), så gridden bär sin egen overflow-x i stället för att
+   krympa spåren tillbaka under golvet — sidan får ALDRIG scrolla i sidled. */
+.fc-cal { border: 1.5px solid var(--fc-line-2); background: var(--fc-surface); padding: 14px 8px; margin-bottom: 14px; }
+.fc-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 0 6px; }
 .fc-cal-title { font-family: var(--fc-font-display); font-size: 17px; }
-.fc-cal-nav { width: 30px; height: 30px; border: 1.5px solid var(--fc-line-2); border-radius: 0; background: transparent; color: var(--fc-ink); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-.fc-cal-nav:disabled { color: var(--fc-ink-3); cursor: not-allowed; opacity: 0.4; }
+.fc-cal-nav { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0); background: transparent; color: var(--fc-ink); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+/* Disabled-tillståndet måste fortfarande GÅ ATT LÄSA (4.5:1) — ink-3 + opacity
+   0.4 gav 2.67:1, dvs pilen försvann precis när kunden behövde se att det inte
+   finns fler månader. ink-2 utan opacity håller kontrasten och läses ändå som av. */
+.fc-cal-nav:disabled { color: var(--fc-ink-2); cursor: not-allowed; }
 .fc-cal-nav:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
-.fc-cal-dows { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; font-family: var(--fc-font-mono); font-size: 9.5px; color: var(--fc-ink-3); text-align: center; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
-.fc-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.fc-cal-dows { display: grid; grid-template-columns: repeat(7, minmax(44px, 1fr)); gap: 2px; font-family: var(--fc-font-mono); font-size: 9.5px; color: var(--fc-ink-2); text-align: center; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; overflow-x: auto; }
+.fc-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(44px, 1fr)); gap: 2px; overflow-x: auto; }
 .fc-cal-cell {
-  position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-  border: 1.5px solid transparent; border-radius: 0; background: transparent; color: var(--fc-ink);
+  position: relative; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid transparent; border-radius: var(--sf-radius, 0); background: transparent; color: var(--fc-ink);
   font-family: var(--fc-font-mono); font-size: 13px; font-weight: 500; cursor: pointer; padding: 0;
   transition: all 0.12s ease;
 }
-.fc-cal-cell:disabled { color: var(--fc-ink-3); cursor: not-allowed; opacity: 0.4; }
+.fc-cal-cell:disabled { color: var(--fc-ink-2); cursor: not-allowed; }
 .fc-cal-cell.is-today { border-color: var(--fc-ink-2); }
 .fc-cal-cell.selected { background: var(--fc-rust); color: var(--fc-rust-fg); border-color: var(--fc-rust); }
 .fc-cal-cell:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 1px; }
@@ -186,7 +200,7 @@
 .wizard-time {
   position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   padding: 0.5rem 0.2rem; min-height: 50px;
-  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0);
   background: var(--fc-surface); color: var(--fc-ink);
   font-family: var(--fc-font-mono); cursor: pointer;
   transition: all 0.12s ease;
@@ -205,7 +219,7 @@
 
 /* skeleton-chips medan slots hämtas (radius 0 — modulens rundade används ej här) */
 .fc-skel-chip {
-  min-height: 50px; border-radius: 0;
+  min-height: 50px; border-radius: var(--sf-radius, 0);
   background: linear-gradient(100deg,
     color-mix(in srgb, var(--fc-ink) 5%, transparent) 30%,
     color-mix(in srgb, var(--fc-ink) 11%, transparent) 50%,
@@ -216,7 +230,7 @@
 
 /* fel + retry */
 .fc-alert { margin: 0 0 10px; padding: 10px 12px; font-size: 13.5px; color: #B00020; background: color-mix(in srgb, #B00020 8%, var(--fc-surface)); border-left: 3px solid #B00020; }
-.fc-retry { margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1.5px solid var(--fc-line-2); border-radius: 0; color: var(--fc-ink); padding: 9px 15px; font: inherit; font-family: var(--fc-font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: border-color 0.12s ease; }
+.fc-retry { margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0); color: var(--fc-ink); padding: 9px 15px; font: inherit; font-family: var(--fc-font-mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; transition: border-color 0.12s ease; }
 .fc-retry:hover { border-color: var(--fc-ink); }
 .fc-retry:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
 
@@ -234,7 +248,7 @@
 .fc-field > span { font-family: var(--fc-font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fc-ink-2); }
 .fc-field .fc-optional { text-transform: none; letter-spacing: 0; color: var(--fc-ink-3); }
 .fc-field input {
-  padding: 12px 14px; border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  padding: 12px 14px; border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0);
   background: var(--fc-surface); font-size: 15px; font-family: inherit; color: var(--fc-ink); outline: none;
   width: 100%; min-width: 0;
   transition: border-color 0.12s ease;
@@ -257,7 +271,7 @@
 }
 .wizard-back-btn {
   flex: 0 0 auto; width: 52px;
-  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0);
   background: transparent; color: var(--fc-ink);
   font-size: 18px; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
@@ -267,7 +281,7 @@
 .wizard-back-btn:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
 .wizard-cta {
   flex: 1 1 auto; min-height: 50px;
-  padding: 15px; border: none; border-radius: 0;
+  padding: 15px; border: none; border-radius: var(--sf-radius, 0);
   background: var(--fc-rust); color: var(--fc-rust-fg);
   font: inherit; font-family: inherit; font-weight: 600; font-size: 15px; letter-spacing: 0.02em;
   cursor: pointer;
@@ -276,7 +290,12 @@
   transition: background 0.15s ease;
 }
 .wizard-cta:hover:not(:disabled) { background: var(--fc-rust-deep); }
-.wizard-cta:disabled { background: var(--fc-paper-2); color: var(--fc-ink-3); cursor: not-allowed; }
+/* Disabled-CTA:n låg på 1.0–1.35:1 (ink-3 på paper-2) → knappen SYNTES INTE
+   alls precis när kunden behöver läsa vad som saknas. Full ink på paper-2 ger
+   4.5:1+; "av"-signalen bärs av den saknade rust-fyllningen + ramen, inte av
+   osynlig text. Sub-raden (wizard-cta-sub) säger dessutom vad som fattas. */
+.wizard-cta:disabled { background: var(--fc-paper-2); color: var(--fc-ink); border: 1.5px solid var(--fc-line-2); cursor: not-allowed; }
+.wizard-cta:disabled .wizard-cta-sub { opacity: 1; color: var(--fc-ink-2); }
 .wizard-cta:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
 .wizard-cta-label { font-size: 15px; }
 .wizard-cta-sub { font-family: var(--fc-font-mono); font-size: 10px; font-weight: 500; opacity: 0.85; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -285,6 +304,20 @@
    STEG 5 — BILJETTEN: ✓ BOKAT, "Vi ses, {firstName}!", stub m. BEKRÄFTAD-stämpel
    =========================================================================== */
 .fc-ticket-wrap { padding: 26px 22px 30px; display: flex; flex-direction: column; align-items: center; text-align: center; animation: fcFadeUp 0.3s ease; }
+/* H4: bocken RITAS, som köp-rälsens kvitto — payoffen ska vara samma i båda
+   flödena. Samma geometri/kurva som order-confirmation.module.css .mark. */
+@keyframes fcDraw { to { stroke-dashoffset: 0; } }
+@keyframes fcMark { from { opacity: 0; transform: scale(0.86); } }
+.fc-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; margin-bottom: 14px;
+  color: var(--fc-forest);
+  background: color-mix(in srgb, var(--fc-forest) 14%, var(--fc-paper));
+  border: 1px solid color-mix(in srgb, var(--fc-forest) 45%, transparent);
+  border-radius: var(--sf-mark-radius, 999px);
+  animation: fcMark 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.fc-mark-path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: fcDraw 440ms cubic-bezier(0.2, 0.8, 0.2, 1) 260ms both; }
 .fc-ticket-booked { font-family: var(--fc-font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.16em; color: var(--fc-forest); margin-bottom: 20px; }
 .fc-ticket-title { margin: 0 0 4px; font-family: var(--fc-font-display); font-weight: 400; font-size: 30px; line-height: 1.02; }
 .fc-ticket-sub { margin: 0 0 22px; font-size: 14px; color: var(--fc-ink-2); max-width: 34ch; }
@@ -310,13 +343,13 @@
 .fc-ticket-price { font-family: var(--fc-font-mono); font-size: 16px; font-weight: 600; color: var(--fc-rust); }
 
 .fc-ticket-actions { display: flex; flex-direction: column; gap: 9px; width: 100%; max-width: 330px; margin-top: 22px; }
-.fc-btn-ink { width: 100%; padding: 13px; background: var(--fc-ink); color: var(--fc-paper); border: none; border-radius: 0; font: inherit; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; letter-spacing: 0.02em; text-align: center; text-decoration: none; display: block; transition: filter 0.15s ease; }
+.fc-btn-ink { width: 100%; padding: 13px; background: var(--fc-ink); color: var(--fc-paper); border: none; border-radius: var(--sf-radius, 0); font: inherit; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; letter-spacing: 0.02em; text-align: center; text-decoration: none; display: block; transition: filter 0.15s ease; }
 /* .tenant-root a { color: inherit } (globals.css) vinner annars över klassen på
    storefront-sidor → svart text på svart knapp ("svarta rutan"-buggen). */
 .fc-scope a.fc-btn-ink { color: var(--fc-paper); }
 .fc-btn-ink:hover { filter: brightness(0.85); }
 .fc-btn-ink:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
-.fc-btn-outline { width: 100%; padding: 13px; background: transparent; color: var(--fc-ink-2); border: 1.5px solid var(--fc-line-2); border-radius: 0; font: inherit; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; transition: border-color 0.12s ease; }
+.fc-btn-outline { width: 100%; padding: 13px; background: transparent; color: var(--fc-ink-2); border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0); font: inherit; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; transition: border-color 0.12s ease; }
 .fc-btn-outline:hover { border-color: var(--fc-ink); }
 .fc-btn-outline:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
 .fc-linkbtn { width: 100%; padding: 6px; background: none; border: none; color: var(--fc-ink-2); font: inherit; font-family: inherit; font-size: 12.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; margin-top: 2px; }
@@ -336,7 +369,7 @@
   flex: 0 0 auto;
   display: inline-flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
   padding: 0.55rem 0.9rem; min-height: 46px;
-  border: 1.5px solid var(--fc-line-2); border-radius: 0;
+  border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0);
   background: var(--fc-surface); color: var(--fc-ink);
   font: inherit; font-family: inherit; font-weight: 600; font-size: 13px; white-space: nowrap; cursor: pointer;
   transition: all 0.12s ease;
@@ -357,7 +390,7 @@
 .fc-panel-brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .fc-panel-brand-name { font-family: var(--fc-font-display); font-size: 19px; color: var(--fc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fc-panel-brand-label { font-family: var(--fc-font-mono); font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fc-ink-3); flex: 0 0 auto; }
-.fc-panel-close { width: 32px; height: 32px; flex: 0 0 auto; padding: 0; border: 1.5px solid var(--fc-line-2); border-radius: 0; background: transparent; color: var(--fc-ink-2); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.12s ease; }
+.fc-panel-close { width: 32px; height: 32px; flex: 0 0 auto; padding: 0; border: 1.5px solid var(--fc-line-2); border-radius: var(--sf-radius, 0); background: transparent; color: var(--fc-ink-2); font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.12s ease; }
 .fc-panel-close:hover { border-color: var(--fc-ink); color: var(--fc-ink); }
 .fc-panel-close:focus-visible { outline: 2px solid var(--fc-rust); outline-offset: 2px; }
 
@@ -456,6 +489,9 @@
 @media (prefers-reduced-motion: reduce) {
   .fc-step, .fc-ticket-wrap, .fc-inline-panel { animation: none; }
   .fc-stamp { animation: none; opacity: 1; }
+  /* Utan animation måste bocken vara FÄRDIGRITAD — annars osynlig. */
+  .fc-mark { animation: none; }
+  .fc-mark-path { animation: none; stroke-dashoffset: 0; }
   .fc-skel-chip { animation: none; }
   .bk-panel--center, .bk-panel--right, .bk-panel--right.bk-sheet { transition: none !important; }
   .wizard-progress-seg, .wizard-cta, .wizard-card, .wizard-day, .wizard-time, .ckompakt-chip, .fc-cal-cell { transition: none; }

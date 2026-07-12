@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState, type CSSProperties } from 'react'
+import { useActionState, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import type { MediaAssetRow, StorageUsage } from '@/lib/admin/media/types'
 import { MEDIA_ACCEPT, formatBytes, usagePercent } from '@/lib/admin/media/types'
@@ -18,6 +18,7 @@ import {
   inputStyle,
   useToast,
 } from '@/components/portal/ui'
+import drop from './media-drop.module.css'
 
 // useActionState wants a (prevState, formData) reducer, but the server actions are
 // single-arg administrative writes (take only FormData). Thin adapters bridge the
@@ -395,11 +396,16 @@ function AltDrawer({ asset, onClose }: { asset: MediaAssetRow; onClose: () => vo
 
 // ── Upload drawer ───────────────────────────────────────────────────────────
 
+/** Namn + storlek behövs för återkopplingen ("vad är på väg upp?"), inte bara preview-URL:en. */
+type PickedFile = { url: string; name: string; size: number }
+
 function UploadDrawer({ onClose }: { onClose: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(uploadAction, {})
-  const [previews, setPreviews] = useState<string[]>([])
+  const [picked, setPicked] = useState<PickedFile[]>([])
+  const [dragging, setDragging] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (state.success) {
@@ -416,14 +422,27 @@ function UploadDrawer({ onClose }: { onClose: () => void }) {
   // Revoke any local object-URLs when the drawer unmounts (leak-free previews).
   useEffect(() => {
     return () => {
-      previews.forEach((u) => URL.revokeObjectURL(u))
+      picked.forEach((p) => URL.revokeObjectURL(p.url))
     }
-  }, [previews])
+  }, [picked])
 
-  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
-    previews.forEach((u) => URL.revokeObjectURL(u))
-    const files = Array.from(e.target.files ?? [])
-    setPreviews(files.map((f) => URL.createObjectURL(f)))
+  function take(list: FileList | null) {
+    picked.forEach((p) => URL.revokeObjectURL(p.url))
+    const files = Array.from(list ?? [])
+    setPicked(files.map((f) => ({ url: URL.createObjectURL(f), name: f.name, size: f.size })))
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDragging(false)
+    if (pending) return
+    const input = inputRef.current
+    if (!input) return
+    // Släppet måste landa i SAMMA <input name="files"> som knappen fyller — server-actionen
+    // läser FormData-nyckeln, inte vårt state. DataTransfer.files är direkt tilldelningsbar
+    // till input.files, så uppladdnings-vägen förblir exakt densamma som förut.
+    input.files = e.dataTransfer.files
+    take(input.files)
   }
 
   const formId = 'upload-media'
@@ -451,46 +470,84 @@ function UploadDrawer({ onClose }: { onClose: () => void }) {
       }
     >
       <div style={{ display: 'grid', gap: 14 }}>
-        <Field label="Bilder">
-          <input
-            form={formId}
-            name="files"
-            type="file"
-            multiple
-            accept={MEDIA_ACCEPT}
-            onChange={onPick}
-            style={inputStyle}
-          />
-        </Field>
-
-        {previews.length > 0 && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))',
-              gap: 8,
+        {/* Field är själv en <label> — drop-kortet MÅSTE vara labeln (annars tappar det
+            klick-ytan), och nästlade <label> är ogiltig HTML. Därför eyebrow + kort direkt. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span className="eyebrow">Bilder</span>
+          {/* <label> = klick-ytan gratis, och den dolda inputen inuti behåller Tab+Enter.
+              Drop-zonen är därför aldrig ENDA vägen in — den är ett tillägg, inte ett krav. */}
+          <label
+            className={`${drop.drop} ${dragging ? drop.dragging : ''} ${pending ? drop.busy : ''}`}
+            onDragOver={(e) => {
+              e.preventDefault()
+              if (!pending) setDragging(true)
             }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
           >
-            {previews.map((src) => (
-              <div
-                key={src}
-                style={{
-                  aspectRatio: '1 / 1',
-                  borderRadius: 8,
-                  overflow: 'hidden',
-                  border: '1px solid var(--c-line)',
-                  background: 'var(--c-cream)',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={src}
-                  alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-              </div>
-            ))}
-          </div>
+            <input
+              ref={inputRef}
+              className={drop.input}
+              form={formId}
+              name="files"
+              type="file"
+              multiple
+              accept={MEDIA_ACCEPT}
+              disabled={pending}
+              onChange={(e) => take(e.target.files)}
+            />
+            <Icon name="upload" size={22} className={drop.icon} />
+            <span className={drop.title}>
+              {pending
+                ? 'Laddar upp…'
+                : dragging
+                  ? 'Släpp bilderna här'
+                  : 'Dra hit bilder eller klicka för att välja'}
+            </span>
+            <p className={drop.hint}>PNG, JPG, WEBP, SVG eller GIF · max 8 MB per bild</p>
+          </label>
+        </div>
+
+        {picked.length > 0 && (
+          <>
+            <ul className={drop.files}>
+              {picked.map((p) => (
+                <li key={p.url} className={drop.file}>
+                  <span className={drop.fileName} title={p.name}>
+                    {p.name}
+                  </span>
+                  <span className={`num ${drop.fileSize}`}>{formatBytes(p.size)}</span>
+                </li>
+              ))}
+            </ul>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))',
+                gap: 8,
+              }}
+            >
+              {picked.map((p) => (
+                <div
+                  key={p.url}
+                  style={{
+                    aspectRatio: '1 / 1',
+                    borderRadius: 8,
+                    overflow: 'hidden',
+                    border: '1px solid var(--c-line)',
+                    background: 'var(--c-cream)',
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.url}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {state.error && (

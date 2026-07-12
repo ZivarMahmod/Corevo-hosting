@@ -116,9 +116,9 @@ export function KursAdmin({
               <span key="price" className="num" style={{ fontSize: 12.5, color: 'var(--c-ink-2)' }}>
                 {e.price_cents > 0 ? formatPrice(e.price_cents) : 'Gratis'}
               </span>,
-              <Badge key="status" tone={statusTone(e.status)}>
-                {EVENT_STATUS_LABELS[e.status as keyof typeof EVENT_STATUS_LABELS] ?? e.status}
-              </Badge>,
+              // Badgen är borta här: den sa exakt samma sak som det valda segmentet
+              // och blev ren redundans. Den lever kvar som accent i edit-drawern.
+              <StatusSegments key="status" event={e} />,
               <RowEditButton key="edit" onClick={() => setEditing(e)} ariaLabel={`Redigera ${e.title}`} />,
             ])}
           />
@@ -320,7 +320,15 @@ function RegistrationItem({ reg }: { reg: RegistrationRow }) {
   )
 }
 
-// ── Status buttons (inside edit drawer) ───────────────────────────────────────
+// ── Status: segmenterad grupp (listrad + edit-drawer) ─────────────────────────
+/** goal-62 G3: statusbytet bodde BARA i edit-drawern — listvyn visade en read-only
+ *  Badge, så det tog två klick att ställa in ett tillfälle som redan syns i listan.
+ *  Kontrollen är lyft hit och renderas på båda ställena.
+ *
+ *  Varför INTE en toggle: kurs-status är tre lägen (open|cancelled|done), inte en
+ *  boolean. En binär pill kan inte uttrycka tre lägen — därför en segmenterad grupp
+ *  där varje segments etikett ÄR sitt tillstånd. Då (och bara då) är aria-pressed
+ *  korrekt → mode="state". Se regeln i PillToggle.tsx. */
 function StatusButton({ event, status }: { event: EventRow; status: (typeof EVENT_STATUSES)[number] }) {
   const { notify } = useToast()
   const router = useRouter()
@@ -343,10 +351,32 @@ function StatusButton({ event, status }: { event: EventRow; status: (typeof EVEN
       <TenantField />
       <input type="hidden" name="id" value={event.id} />
       <input type="hidden" name="status" value={status} />
-      <PillToggle type="submit" active={active} disabled={pending || active}>
+      <PillToggle
+        type="submit"
+        mode="state"
+        active={active}
+        disabled={pending || active}
+        ariaLabel={`${EVENT_STATUS_LABELS[status]}: ${event.title}`}
+      >
         {pending ? '…' : EVENT_STATUS_LABELS[status]}
       </PillToggle>
     </form>
+  )
+}
+
+/** Segmenten sitter i en role="group" så skärmläsaren hör att de tre pillarna hör ihop
+ *  och vad gruppen styr — annars låter de som tre lösryckta knappar mitt i en tabellrad. */
+function StatusSegments({ event }: { event: EventRow }) {
+  return (
+    <div
+      role="group"
+      aria-label={`Status för ${event.title}`}
+      style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}
+    >
+      {EVENT_STATUSES.map((s) => (
+        <StatusButton key={s} event={event} status={s} />
+      ))}
+    </div>
   )
 }
 
@@ -450,11 +480,7 @@ function EditDrawer({
         <p className="eyebrow" style={{ marginBottom: 6 }}>
           Status
         </p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {EVENT_STATUSES.map((s) => (
-            <StatusButton key={s} event={event} status={s} />
-          ))}
-        </div>
+        <StatusSegments event={event} />
       </div>
 
       <div style={{ marginTop: 18 }}>

@@ -57,6 +57,7 @@ export function BookingProvider({
   locations = [],
   tenantName,
   staffNoun = 'Personal',
+  bokaCta = 'Boka tid',
   variant = 'wizard',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
@@ -65,6 +66,10 @@ export function BookingProvider({
   services: WizardService[]
   locations?: WizardLocation[]
   tenantName: string
+  /** BRANSCH-REGELN: bokningens verb ur bransch-lagret (branschBokning().cta),
+   *  resolvat på servern (layouten) och trådat ner som ren sträng. Utelämnad →
+   *  'Boka tid' (det som stod hårdkodat i drawern förr → byte-identiskt). */
+  bokaCta?: string
   /** Bransch-resolved staff noun (singular) for the embedded wizard. Resolved on
    *  the server (layout) and threaded down as a plain string. OPTIONAL — defaults
    *  to 'Frisör' so any caller that omits it is byte-identical to today. */
@@ -170,6 +175,7 @@ export function BookingProvider({
           locations={locations}
           tenantName={tenantName}
           staffNoun={staffNoun}
+          bokaCta={bokaCta}
           mode={mode}
           presentation={presentation}
           pickerMode={pickerMode}

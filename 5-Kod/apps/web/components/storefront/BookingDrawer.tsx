@@ -38,6 +38,7 @@ export function BookingDrawer({
   locations = [],
   tenantName,
   staffNoun = 'Personal',
+  bokaCta = 'Boka tid',
   mode = 'wizard',
   presentation = 'drawer',
   pickerMode = 'calendar',
@@ -48,6 +49,10 @@ export function BookingDrawer({
   services: WizardService[]
   locations?: WizardLocation[]
   tenantName: string
+  /** Branschens boknings-verb (bransch-copy.ts → branschBokning().cta): "Boka
+   *  bord" hos en restaurang, "Boka konsultation" hos en florist. Bär dialogens
+   *  aria-label + panelens mono-etikett, som förr hårdkodade "Boka tid". */
+  bokaCta?: string
   /** Bransch-resolved staff noun (singular) for the embedded wizard. OPTIONAL —
    *  defaults to 'Frisör' so any caller that omits it is byte-identical to today. */
   staffNoun?: string
@@ -143,7 +148,7 @@ export function BookingDrawer({
         className={`${styles.drawerPanel} fc-scope bk-panel ${isModal ? 'bk-panel--center' : 'bk-panel--right bk-sheet'}`}
         role="dialog"
         aria-modal="true"
-        aria-label={`Boka tid hos ${tenantName}`}
+        aria-label={`${bokaCta} hos ${tenantName}`}
       >
         {/* Mobile-only drag grabber (bara bottom-sheeten): signals "swipe down /
             tap scrim to close". Hidden on desktop + modal via booking-global.css. */}
@@ -156,7 +161,7 @@ export function BookingDrawer({
         <header className="fc-panel-head">
           <span className="fc-panel-brand">
             <span className="fc-panel-brand-name">{tenantName}</span>
-            <span className="fc-panel-brand-label">BOKA TID</span>
+            <span className="fc-panel-brand-label">{bokaCta.toUpperCase()}</span>
           </span>
           <button
             ref={closeBtnRef}
@@ -181,6 +186,7 @@ export function BookingDrawer({
             onClose={onClose}
             mode={mode}
             staffNoun={staffNoun}
+            bokaCta={bokaCta}
             pickerMode={pickerMode}
             staffAvatarMode={staffAvatarMode}
             brandName={tenantName}

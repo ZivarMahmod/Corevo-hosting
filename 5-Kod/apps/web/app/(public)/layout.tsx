@@ -18,6 +18,7 @@ import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
 import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
 import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
+import { branschBokning } from '@/components/storefront/bransch-copy'
 import { resolvePrimaryCta } from '@/components/storefront/primary-cta'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
@@ -109,6 +110,10 @@ export default async function PublicLayout({ children }: { children: React.React
   // Bransch-resolved staff noun (default 'Frisör') for the embedded booking wizard,
   // so a non-frisör tenant's drawer reads e.g. "Barberare"/"Nagelteknolog".
   const staffNoun = await resolveStaffNoun(tenant.vertical_id)
+  // BRANSCH-REGELN: bokningens VERB (drawer-etikett, aria, footer-tagline, inline-
+  // rubrik) kommer ur bransch-lagret — "Boka bord" hos en restaurang, "Boka
+  // konsultation" hos en florist. Låg hårdkodat som "Boka tid" på fem ställen.
+  const bokning = branschBokning(tenant.vertical_id)
 
   // goal-55 8A: bransch-styrd huvud-CTA i naven (config-first, aldrig if(bransch)).
   // Modul-gaten bor HÄR (layouten har moduleStates): pekar branschens CTA på en
@@ -198,6 +203,7 @@ export default async function PublicLayout({ children }: { children: React.React
         locations={wizardLocations}
         tenantName={tenant.name}
         staffNoun={staffNoun}
+        bokaCta={bokning.cta}
         variant={settings.bookingVariant}
         pickerMode={bookingPrefs.pickerMode}
         staffAvatarMode={bookingPrefs.staffAvatarMode}
@@ -255,6 +261,8 @@ export default async function PublicLayout({ children }: { children: React.React
             locations={wizardLocations}
             tenantName={tenant.name}
             staffNoun={staffNoun}
+            bokaCta={bokning.cta}
+            bokaOnline={bokning.online}
             pickerMode={bookingPrefs.pickerMode}
             staffAvatarMode={bookingPrefs.staffAvatarMode}
           />
@@ -277,7 +285,7 @@ export default async function PublicLayout({ children }: { children: React.React
             social={settings.social}
           />
         ) : (
-          <Footer tenant={{ name: tenant.name }} />
+          <Footer tenant={{ name: tenant.name }} bokaOnline={bokning.online} />
         )}
         {settings.cookieBannerEnabled ? <CookieConsent /> : null}
         </CartProvider>

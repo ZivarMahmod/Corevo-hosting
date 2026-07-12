@@ -4,6 +4,7 @@ import { injectTenantTokens } from '@corevo/ui'
 import { currentTenant } from '@/lib/tenant-data'
 import { pickNav, pickTemplate } from '@/components/brand/variants'
 import { Footer } from '@/components/brand/Footer'
+import { branschBokning } from '@/components/storefront/bransch-copy'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
 import storefront from '@/components/storefront/storefront.module.css'
 
@@ -29,6 +30,8 @@ export default async function BokaLayout({ children }: { children: React.ReactNo
     branding: settings.branding,
   }
   const overrideCss = settings.customOverride?.css
+  // BRANSCH-REGELN: footerns tagline kommer ur bransch-lagret, aldrig hardkodad.
+  const bokning = branschBokning(tenant.vertical_id)
 
   return (
     <div
@@ -52,7 +55,7 @@ export default async function BokaLayout({ children }: { children: React.ReactNo
       {/* `.shellMain` reserves space for the fixed top cluster (--nav-h). Safe on
           these non-hero pages — only adds whitespace below the fixed nav. */}
       <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
-      <Footer tenant={{ name: tenant.name }} />
+      <Footer tenant={{ name: tenant.name }} bokaOnline={bokning.online} />
       {settings.cookieBannerEnabled ? <CookieConsent /> : null}
     </div>
   )

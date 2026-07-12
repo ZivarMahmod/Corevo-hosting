@@ -106,6 +106,7 @@ export function BookingWizard({
   onClose,
   mode = 'wizard',
   staffNoun = 'Personal',
+  bokaCta = 'Boka tid',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
   brandName,
@@ -133,6 +134,11 @@ export function BookingWizard({
    *  'staff', DEFAULT_STAFF_NOUN) — NEVER pass the raw terminology object to this
    *  client component. */
   staffNoun?: string
+  /** BRANSCH-REGELN: bokningens VERB, resolvat på servern ur bransch-lagret
+   *  (bransch-copy.ts → branschBokning().cta) och nedskickat som ren sträng —
+   *  "Boka bord" hos en restaurang, "Boka konsultation" hos en florist. Utelämnad
+   *  → 'Boka tid' (samma ord som stod hårdkodat förr → byte-identisk). */
+  bokaCta?: string
   /** Tid-väljaren (settings.booking.pickerMode): månadskalender eller dag-remsa. */
   pickerMode?: PickerMode
   /** Barberarbild-läget (settings.booking.staffAvatars): foto/initialer/namn. */
@@ -461,6 +467,17 @@ export function BookingWizard({
             ? !!(form.name && form.email && form.phone)
             : true
 
+  // Vad SAKNAS för att gå vidare? Bärs av den låsta CTA:ns sub-rad. Steg 2 kan
+  // aldrig blockera (staffChoice är alltid satt → 'any'), därför ingen text där.
+  const blockedHint =
+    step === 1
+      ? 'Välj en tjänst'
+      : step === 3
+        ? 'Välj en tid'
+        : step === 4
+          ? 'Fyll i namn, e-post och telefon'
+          : ''
+
   function goNext() {
     if (step === 4) {
       // Trigger native form validation + submit (keeps required + types).
@@ -770,7 +787,7 @@ export function BookingWizard({
               disabled={!compactReady || pending}
               onClick={submitCompact}
             >
-              <span className="wizard-cta-label">{pending ? 'Bokar…' : 'Boka tid'}</span>
+              <span className="wizard-cta-label">{pending ? 'Bokar…' : bokaCta}</span>
               {compactReady && slot && service ? (
                 <span className="wizard-cta-sub">
                   {service.name} · {fmtTime(slot.start)}
@@ -1145,6 +1162,10 @@ export function BookingWizard({
                 submit()
               }}
             >
+              {/* Steg 4 var fyra NAKNA fält i rad — kassan grupperar sina, det här
+                  gjorde det inte. Två grupper (kontakt / meddelande) ger samma
+                  läsbara hierarki: vad vi MÅSTE ha, och vad du får lägga till. */}
+              <div className="fc-label">Dina kontaktuppgifter</div>
               <label className="fc-field">
                 <span>Namn</span>
                 <input
@@ -1177,6 +1198,9 @@ export function BookingWizard({
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 />
               </label>
+              <div className="fc-label" style={{ marginTop: 4 }}>
+                Något vi bör veta?
+              </div>
               <label className="fc-field">
                 <span>
                   Meddelande <span className="fc-optional">(valfritt)</span>
@@ -1206,7 +1230,22 @@ export function BookingWizard({
             Datan finns redan i wizarden (tjänst, tid, personal, pris, boknings-id). */}
         {step === 5 && service && slot && (
           <div className="fc-ticket-wrap">
-            <div className="fc-ticket-booked">✓ BOKAT</div>
+            {/* H4: ritad bock (samma payoff som köp-rälsens kvitto). */}
+            <span className="fc-mark" aria-hidden>
+              <svg
+                viewBox="0 0 24 24"
+                width="26"
+                height="26"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path className="fc-mark-path" d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+            </span>
+            <div className="fc-ticket-booked">BOKAT</div>
             <h2 className="fc-ticket-title">
               Vi ses{form.name.trim() ? `, ${form.name.trim().split(/\s+/)[0]}` : ''}!
             </h2>
@@ -1284,6 +1323,12 @@ export function BookingWizard({
             <span className="wizard-cta-label">
               {step === 4 ? (pending ? 'Bokar…' : 'Bekräfta bokning') : 'Fortsätt'}
             </span>
+            {/* Den låsta knappen SÄGER vad som fattas i stället för att bara vara
+                grå — compact-läget gjorde redan det, stegläget lämnade kunden i
+                tystnad precis när hen behövde veta varför det inte går vidare. */}
+            {!canAdvance && !pending ? (
+              <span className="wizard-cta-sub">{blockedHint}</span>
+            ) : null}
           </button>
         </div>
       )}

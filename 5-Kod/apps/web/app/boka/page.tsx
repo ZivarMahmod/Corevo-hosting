@@ -9,6 +9,7 @@ import {
   type WizardLocation,
 } from '@/components/booking/BookingWizard'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
+import { branschBokning } from '@/components/storefront/bransch-copy'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Boka tid' }
@@ -102,16 +103,23 @@ export default async function BokaPage() {
     staff: staffByService[s.id] ?? [],
   }))
 
+  // BRANSCH-REGELN: verbet kommer ur bransch-lagret, aldrig hårdkodat. En florist
+  // bokar konsultation, en restaurang bokar bord — inte "tid".
+  const bokning = branschBokning(tenant.vertical_id)
+
   return (
     <section className="section">
       <div className="section-inner">
-        <h1>Boka tid hos {tenant.name}</h1>
-        <p className="prose">Välj tjänst, personal och tid — klart på under en minut.</p>
+        <h1>
+          {bokning.hosPrefix} {tenant.name}
+        </h1>
+        <p className="prose">{bokning.lede}</p>
         <BookingWizard
           services={wizardServices}
           locations={locations}
           mode={mode}
           staffNoun={staffNoun}
+          bokaCta={bokning.cta}
           pickerMode={pickerMode}
           staffAvatarMode={staffAvatarMode}
           brandName={tenant.name}

@@ -58,7 +58,10 @@
   color: var(--c-forest);
   transition: background 140ms ease, border-color 140ms ease, transform 120ms ease;
 }
-.pill[aria-pressed='true'] {
+/* mode="action": etiketten är VERBET. Är nuläget aktivt heter verbet "Dölj"/"Avpublicera"
+   — en nedtoning, inte den uppmuntrade handlingen → dämpad ink-2. Är nuläget av heter det
+   "Visa"/"Publicera" → forest. Färgen (inte aria-pressed) bär signalen här; se PillToggle.tsx. */
+.pill[data-mode='action'][data-active='true'] {
   color: var(--c-ink-2);
 }
 .pill:hover {
@@ -79,6 +82,23 @@
   background: var(--c-paper-2);
   cursor: default;
   transform: none;
+}
+
+/* mode="state": segmenterad grupp (kurs-status). Etiketten ÄR tillståndet, så det VALDA
+   läget måste läsa som valt — inte som utgråat. Det valda segmentet är dessutom alltid
+   disabled (man kan inte välja det man redan har), därför MÅSTE den här regeln stå efter
+   :disabled ovan, annars vinner grå-tonen och "Öppen" ser avstängd ut. */
+.pill[data-mode='state'][aria-pressed='true'],
+.pill[data-mode='state'][aria-pressed='true']:disabled {
+  background: var(--c-forest);
+  border-color: var(--c-forest);
+  color: #fff;
+  cursor: default;
+}
+/* Segmenten sitter tätt i en grupp — hover får inte antyda att det valda går att klicka. */
+.pill[data-mode='state'][aria-pressed='true']:hover {
+  background: var(--c-forest);
+  border-color: var(--c-forest);
 }
 
 @media (prefers-reduced-motion: reduce) {

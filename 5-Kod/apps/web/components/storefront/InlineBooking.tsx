@@ -15,6 +15,8 @@ export function InlineBooking({
   locations = [],
   tenantName,
   staffNoun = 'Personal',
+  bokaCta = 'Boka tid',
+  bokaOnline = 'Boka online',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
 }: {
@@ -22,14 +24,22 @@ export function InlineBooking({
   locations?: WizardLocation[]
   tenantName: string
   staffNoun?: string
+  /** Branschens boknings-verb + tagline (bransch-copy.ts → branschBokning()).
+   *  Låg hårdkodat som "Boka tid" här förr — en restaurang bokar bord. */
+  bokaCta?: string
+  bokaOnline?: string
   pickerMode?: PickerMode
   staffAvatarMode?: StaffAvatarMode
 }) {
   return (
-    <section id="boka-inline" className="fc-scope fc-inline" aria-label={`Boka tid hos ${tenantName}`}>
+    <section
+      id="boka-inline"
+      className="fc-scope fc-inline"
+      aria-label={`${bokaCta} hos ${tenantName}`}
+    >
       <div className="fc-inline-band">
-        <div className="fc-inline-eyebrow">Boka online</div>
-        <h2 className="fc-inline-title">Hitta din tid</h2>
+        <div className="fc-inline-eyebrow">{bokaOnline}</div>
+        <h2 className="fc-inline-title">{bokaCta}</h2>
       </div>
       <div className="fc-inline-panel">
         <BookingWizard
@@ -37,6 +47,7 @@ export function InlineBooking({
           locations={locations}
           mode="compact"
           staffNoun={staffNoun}
+          bokaCta={bokaCta}
           pickerMode={pickerMode}
           staffAvatarMode={staffAvatarMode}
           brandName={tenantName}

@@ -66,7 +66,52 @@
   color: var(--tkt-ink);
 }
 
-/* ── Bekräftelse-huvud: ✓ BOKAT + display-rubrik + lede ── */
+/* ── Bekräftelse-huvud: RITAD bock + BOKAT + display-rubrik + lede ──
+   goal-62 (H4): bekräftelsen mötte kunden med en textrad ("✓ BOKAT") medan
+   köp-rälsens kvitto RITAR sin bock (stroke-dashoffset). Payoff-ögonblicket ska
+   vara samma i båda flödena — samma geometri och samma kurva som
+   order-confirmation.module.css .mark/.markPath, uttryckt i tkt-tokens.
+   Radien läses ur mallen (--sf-mark-radius) precis som köpets gör. */
+.tkt-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  color: var(--tkt-forest);
+  background: color-mix(in srgb, var(--tkt-forest) 14%, var(--tkt-paper));
+  border: 1px solid color-mix(in srgb, var(--tkt-forest) 45%, transparent);
+  border-radius: var(--sf-mark-radius, 999px);
+  animation: tktMark 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes tktMark {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+}
+.tkt-mark-path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: tktDraw 440ms cubic-bezier(0.2, 0.8, 0.2, 1) 260ms both;
+}
+@keyframes tktDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tkt-mark,
+  .tkt-mark-path {
+    animation: none;
+  }
+  /* Utan animation MÅSTE bocken ändå vara färdigritad — annars är den osynlig. */
+  .tkt-mark-path {
+    stroke-dashoffset: 0;
+  }
+}
+
 .tkt-ok {
   font-family: var(--tkt-font-mono);
   font-size: 11px;

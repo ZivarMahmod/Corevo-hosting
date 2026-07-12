@@ -15,6 +15,7 @@ import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
 import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
+import { branschBokning } from '@/components/storefront/bransch-copy'
 import { resolvePrimaryCta } from '@/components/storefront/primary-cta'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
@@ -106,6 +107,8 @@ export async function PreviewShell({
 
   // Footer-taglinen ärar ägarens copy-override (temats standard annars) — samma
   // kontrakt som (public)/layout.
+  // BRANSCH-REGELN: bokningens verb ur bransch-lagret (se (public)/layout.tsx).
+  const bokning = branschBokning(tenant.vertical_id)
   const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const tagline = resolveTenantCopy(theme, copy).tagline
 
@@ -170,6 +173,7 @@ export async function PreviewShell({
         locations={wizardLocations}
         tenantName={tenant.name}
         staffNoun={staffNoun}
+        bokaCta={bokning.cta}
         variant={settings.bookingVariant}
       >
         {/* CartProvider omsluter nav+main+footer (navens korg-knapp använder useCart) —
@@ -212,6 +216,8 @@ export async function PreviewShell({
             locations={wizardLocations}
             tenantName={tenant.name}
             staffNoun={staffNoun}
+            bokaCta={bokning.cta}
+            bokaOnline={bokning.online}
           />
         ) : null}
         {chrome.Footer ? (
@@ -232,7 +238,7 @@ export async function PreviewShell({
             social={settings.social}
           />
         ) : (
-          <Footer tenant={{ name: tenant.name }} />
+          <Footer tenant={{ name: tenant.name }} bokaOnline={bokning.online} />
         )}
         </CartProvider>
       </BookingProvider>
