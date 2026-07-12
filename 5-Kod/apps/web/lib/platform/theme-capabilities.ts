@@ -14,6 +14,7 @@
  * ligger kvar i tenant_settings och återanvänds när mallen väljs igen.
  */
 import { FLORIST_CAPS, FLORIST_EXTRA_HOME } from '@/components/storefront/layouts/florist/registry'
+import { EKONOMI_CAPS } from '@/components/storefront/layouts/ekonomi/registry'
 
 export type ThemeCaps = {
   heroEyebrow: boolean
@@ -30,6 +31,7 @@ export const THEME_CAPS: Record<string, ThemeCaps> = {
   // <key>.theme.ts — ingen mall kan hamna på DEFAULT_CAPS av glömska (floras
   // saknade rad göme dess galleri-kontroll i editorn i månader, se raden nedan).
   ...FLORIST_CAPS,
+  ...EKONOMI_CAPS,
   freshcut: { heroEyebrow: false, homeStats: false, homeGallery: true, homeAbout: true },
   salvia: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
   leander: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: false },

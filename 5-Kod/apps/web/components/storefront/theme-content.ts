@@ -15,6 +15,7 @@
 import type { TenantBranding } from '@corevo/ui'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 import { FLORIST_CONTENT } from './layouts/florist/registry'
+import { EKONOMI_CONTENT } from './layouts/ekonomi/registry'
 
 export type ThemeTeamMember = { name: string; role: string; img: string }
 export type ThemeStat = [value: string, label: string]
@@ -175,6 +176,7 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
   // egna <key>.theme.ts (florist/registry.ts). Spridda först — nycklarna nedan är
   // disjunkta, så ordningen skuggar ingenting.
   ...(FLORIST_CONTENT as Record<StorefrontTheme, ThemeContent>),
+  ...(EKONOMI_CONTENT as Record<StorefrontTheme, ThemeContent>),
   salvia: {
     heroEyebrow: '— Välkommen in',
     heroTitle: 'Varsamt utfört.\nSkönt mottagen.',

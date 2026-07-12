@@ -10,15 +10,17 @@
  * (mallväljarens flikar), TAGGAR (filter: Mörk/Ljus/Minimal…) och HERO (kortets foto).
  */
 import { FLORIST_PALETTES } from '@/components/storefront/layouts/florist/registry'
+import { EKONOMI_PALETTES } from '@/components/storefront/layouts/ekonomi/registry'
 import { THEME_CONTENT } from '@/components/storefront/theme-content'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 
 /** Mallväljarens flikar. En mall kan bara ligga i EN kategori (annars är den inte ett val). */
-export type ThemeCategory = 'florist' | 'bokning' | 'kund'
+export type ThemeCategory = 'florist' | 'bokning' | 'ekonomi' | 'kund'
 
 export const THEME_CATEGORIES: { key: ThemeCategory; label: string; hint: string }[] = [
   { key: 'florist', label: 'Blomsterhandel', hint: 'Butik, buketter, bröllop & begravning' },
   { key: 'bokning', label: 'Bokning & behandling', hint: 'Tidsbokning, personal, behandlingar' },
+  { key: 'ekonomi', label: 'Ekonomi & redovisning', hint: 'Redovisningsbyrå, rådgivning, bokslut' },
   { key: 'kund', label: 'Kundegna', hint: 'Byggda åt en specifik kund — erbjuds inte nya' },
 ]
 
@@ -90,6 +92,13 @@ export const THEME_PALETTES: ThemePalette[] = [
     tags: tagsFor('flora', 'Mossgrönt på linne · bohemisk florist', '#F7F3EA'),
     hero: hero('flora'),
   },
+  // EKONOMI-SVITEN (goal-63) — härledd ur ekonomi/registry.ts.
+  ...EKONOMI_PALETTES.map((p) => ({
+    ...p,
+    category: 'ekonomi' as const,
+    tags: tagsFor(p.key, p.desc, p.bg),
+    hero: hero(p.key),
+  })),
   ...LEGACY.map((p) => ({
     ...p,
     category: 'bokning' as const,

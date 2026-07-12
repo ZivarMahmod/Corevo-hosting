@@ -1,0 +1,83 @@
+/* ZENTUM CHROME — overlay-header + blackish footer.
+   Värden portade ur public/mallar/zentum/style.css (header-style-4). */
+
+.nav{
+  --c-global:   #212c40;
+  --c-blackish: #111926;
+  --c-accent:   #a5cbe3;
+  --c-muted:    #9da5b5;
+
+  position:absolute; top:0; left:0; width:100%; z-index:999;
+  background:transparent;
+  border-bottom:1px solid rgba(255,255,255,.2);
+  font-family: Inter, Arial, Helvetica, sans-serif;
+}
+.navInner{
+  margin:0 60px; height:90px;
+  display:flex; align-items:center; justify-content:space-between; gap:24px;
+}
+.navLogo{ color:#fff; display:flex; align-items:center; }
+.navLinks{ display:flex; align-items:center; }
+.navLinks a{
+  display:block; margin:0 35px; line-height:90px;
+  font-size:13px; font-weight:500; letter-spacing:.5px; text-transform:uppercase;
+  color:#fff; text-decoration:none; transition:color .25s ease; white-space:nowrap;
+}
+.navLinks a:hover{ color:rgba(255,255,255,.7); }
+
+.navRight{ display:flex; align-items:center; gap:20px; }
+.navIcon{ color:#fff; }
+.navIcon:hover{ color:rgba(255,255,255,.7); }
+
+/* Outline-pill: 2px ram, 12px/600/VERSALER/LS 1px, hård växling vid hover */
+.navCta{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:12px 25px; border-radius:50px;
+  background:transparent; color:#fff; border:2px solid #fff;
+  font-size:12px; font-weight:600; letter-spacing:1px; text-transform:uppercase;
+  line-height:24px; text-decoration:none; white-space:nowrap;
+  transition:all 350ms ease;
+}
+.navCta:hover{ background:#fff; border-color:#fff; color:#111926; }
+
+@media (max-width:1600px){
+  .navInner{ margin:0 50px; }
+  .navLinks a{ margin:0 30px; }
+}
+@media (max-width:1200px){
+  .navLinks{ display:none; }
+  .navCta{ display:none; }
+  .navInner{ margin:0 24px; }
+}
+
+/* ---------- FOOTER (blackish) ---------- */
+.footer{
+  background:#111926; color:#9da5b5;
+  font-family: Inter, Arial, Helvetica, sans-serif;
+}
+.footerMain{ padding:100px 0 60px; }
+.footerGrid{
+  max-width:1140px; margin:0 auto; padding:0 12px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:40px;
+}
+.footerHead{
+  color:#fff; font-size:20px; line-height:30px; font-weight:600; margin-bottom:20px;
+}
+.footerText{ margin-bottom:10px; }
+.footerLinks li{ margin-bottom:10px; list-style:none; }
+.footerLinks a{ color:#9da5b5; text-decoration:none; transition:color .25s ease; }
+.footerLinks a:hover{ color:#fff; }
+.footerLink{ color:#9da5b5; text-decoration:none; }
+.footerLink:hover{ color:#fff; }
+.footerMail{ color:#a5cbe3; text-decoration:none; }
+.footerMail:hover{ color:#fff; }
+.footerBottom{
+  border-top:1px solid rgba(255,255,255,.1);
+  max-width:1140px; margin:0 auto; padding:25px 12px;
+  font-size:14px;
+}
+
+@media (max-width:767px){
+  .footerMain{ padding:60px 0 40px; }
+  .footerGrid{ grid-template-columns:1fr; }
+}

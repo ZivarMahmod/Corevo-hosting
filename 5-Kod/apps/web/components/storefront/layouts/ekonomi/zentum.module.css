@@ -1,0 +1,292 @@
+/* ============================================================
+   ZENTUM — ekonomi-svitens hemsida. Portad EXAKT ur den verifierade
+   statiska kopian (public/mallar/zentum/style.css, fidelity-probe 63/63).
+   Spec: 4-Dokument-Underlag/zentum-mall-spec.md.
+
+   Färgerna kommer ur mallens [data-theme="zentum"]-block (florist/types
+   floristThemeBlock) men skrivs här som lokala alias så CSS:en är läsbar
+   mot specen:
+     --c-global #212c40 · --c-blackish #111926 · --c-display #0c3c60
+     --c-surface #fff · --c-surface2 #f2f4f8 · --c-accent #a5cbe3
+     --c-body #666 · --c-muted #9da5b5
+   ============================================================ */
+
+.root{
+  --c-global:   #212c40;
+  --c-blackish: #111926;
+  --c-display:  #0c3c60;
+  --c-surface:  #ffffff;
+  --c-surface2: #f2f4f8;
+  --c-accent:   #a5cbe3;
+  --c-body:     #666666;
+  --c-muted:    #9da5b5;
+  --white-rgb:  255,255,255;
+
+  --fs-display: 110px; --lh-display: 120px;
+  --fs-h2: 54px;       --lh-h2: 60px;
+  --fs-card: 28px;     --lh-card: 34px;
+  --fs-lead: 18px;     --lh-lead: 28px;
+
+  --container: 1140px;
+  --measure: 800px;
+  --dur: 500ms;
+  --reveal-ease: cubic-bezier(.22,.61,.36,1);
+
+  /* Originalets faktiska rendering: Inter deklareras men laddas aldrig →
+     systemets sans. Vi deklarerar samma stack och laddar inte Inter. */
+  font-family: Inter, Arial, Helvetica, sans-serif;
+  font-size: 16px; line-height: 1.6; font-weight: 400;
+  color: var(--c-body); background: var(--c-surface);
+}
+.root img{ max-width:100%; display:block; }
+.root h1,.root h2,.root h3,.root h4{ color:var(--c-global); }
+
+.container{ max-width:var(--container); margin:0 auto; padding:0 12px; }
+
+/* ---------- Knapp: exakt pill (radie = halva höjden) ---------- */
+.btn{
+  display:inline-block; height:50px; line-height:50px; padding:0 30px;
+  border-radius:25px; border:0; cursor:pointer;
+  font-family:inherit; font-size:12px; font-weight:600;
+  letter-spacing:1px; text-transform:uppercase;
+  background:var(--c-global); color:#fff; text-decoration:none;
+  transition:all 350ms ease;
+}
+.btn:hover{ background:var(--c-blackish); color:#fff; }
+.btnArrow{ margin-left:8px; vertical-align:middle; }
+
+.eyebrow{
+  display:inline-block;
+  font-size:11px; line-height:22px; font-weight:600;
+  letter-spacing:1px; text-transform:uppercase;
+  color:var(--c-global); margin-bottom:5px;
+}
+
+/* ============================================================
+   HERO — 950px, bg-foto + exakt 270deg-gradient + lagerintro
+   ============================================================ */
+.hero{ position:relative; height:950px; overflow:hidden; background:var(--c-global); }
+.heroBg{ position:absolute; inset:0; opacity:0; transition:opacity .8s ease; }
+.heroBg img{ width:100%; height:100%; object-fit:cover; }
+.isLoaded .heroBg{ opacity:1; }
+/* EXAKT ur SR7-JSON (horisontellt) */
+.heroShade{
+  position:absolute; inset:0;
+  background:linear-gradient(270deg, rgba(44,56,63,.77) 0%, rgba(33,44,64,0) 100%);
+}
+/* Källbildens mörka toppband låg bakat i fotot (ger vita headern kontrast) —
+   vårt ersättningsfoto saknar det, så bandet ritas som eget lager. */
+.heroTopShade{
+  position:absolute; top:0; left:0; right:0; height:22%;
+  background:linear-gradient(180deg, rgba(17,25,38,.6) 0%, rgba(17,25,38,0) 100%);
+}
+.heroContent{
+  position:relative; z-index:2;
+  max-width:var(--container); margin:0 auto; padding:0 12px;
+  height:100%; display:flex; flex-direction:column; justify-content:center;
+}
+.heroEyebrow{
+  display:inline-block; align-self:flex-start;
+  font-family:var(--font-wixmadefor), sans-serif;
+  font-size:13px; line-height:24px; font-weight:500; letter-spacing:2px;
+  text-transform:uppercase; color:#fff;
+  border:1px solid rgba(var(--white-rgb),.5); border-radius:50px;
+  padding:2px 20px; margin-bottom:30px;
+}
+.heroTitle{
+  font-family:var(--font-wixmadefor), sans-serif;
+  font-size:var(--fs-display); line-height:var(--lh-display);
+  font-weight:500; letter-spacing:0; color:var(--c-display);
+  max-width:820px;
+}
+.heroText{
+  font-family:var(--font-dmsans), sans-serif;
+  font-size:17px; line-height:24px; font-weight:400; color:#fff;
+  max-width:520px; margin-top:30px;
+}
+.heroCta{ margin-top:35px; }
+
+/* Sekventiell lagerintro (eyebrow → H1 → text → CTA) */
+.heroLayer{ opacity:0; transform:translateY(40px); }
+.isLoaded .heroLayer{ animation:heroIn 1s cubic-bezier(.215,.61,.355,1) forwards; }
+.isLoaded .heroEyebrow{ animation-delay:.3s; }
+.isLoaded .heroTitle{   animation-delay:.5s; }
+.isLoaded .heroText{    animation-delay:.8s; }
+.isLoaded .heroCta{     animation-delay:1.05s; }
+@keyframes heroIn{ to{ opacity:1; transform:translateY(0); } }
+
+/* ============================================================
+   SEKTION 1 — intro-statement (Merriweather 26px)
+   ============================================================ */
+.secIntro{ padding:80px 30px 0; }
+.introStatement{
+  font-family:var(--font-merriweather), serif;
+  font-size:26px; font-weight:400; line-height:1.6;
+  color:var(--c-global); text-align:center;
+  max-width:980px; margin:0 auto;
+}
+
+/* ============================================================
+   SEKTION 2 — Våra tjänster (6 kort, 3 kolumner)
+   ============================================================ */
+.secServices{ padding:50px 0 100px; }
+.sectionHead{ margin-bottom:50px; }
+.sectionTitle{
+  font-size:var(--fs-h2); line-height:var(--lh-h2); font-weight:500;
+  letter-spacing:0; color:var(--c-global);
+}
+.sectionDesc{
+  margin-top:30px; max-width:var(--measure);
+  font-size:var(--fs-lead); line-height:var(--lh-lead); color:var(--c-body);
+}
+.servicesGrid{
+  display:grid; grid-template-columns:repeat(3,1fr);
+  column-gap:24px; row-gap:24px;
+}
+.serviceCard{ transform:translateY(0); transition:all var(--dur) ease; }
+.serviceCard:hover{ transform:translateY(-5px); }
+.serviceMedia{ position:relative; margin-bottom:30px; }
+.serviceMedia img{
+  width:100%; aspect-ratio:900/1000; object-fit:cover; border-radius:0;
+}
+.serviceArrow{
+  position:absolute; right:0; bottom:0;
+  width:60px; height:60px; background:#fff; color:var(--c-global);
+  display:flex; align-items:center; justify-content:center;
+}
+.serviceArrow svg{ width:15px; height:15px; }
+.serviceTitle{ font-size:var(--fs-card); line-height:var(--lh-card); font-weight:600; }
+
+/* ============================================================
+   SEKTION 3 — full-bleed split på navy
+   ============================================================ */
+.secSplit{ display:grid; grid-template-columns:1fr 1fr; background:var(--c-global); padding:0; }
+.splitMedia{
+  background-position:center center; background-repeat:no-repeat; background-size:cover;
+  min-height:100%;
+}
+.splitBody{ padding:110px 0 110px 110px; }
+.splitBodyInner{ padding-left:145px; padding-right:0; }
+.splitTitle{ font-size:var(--fs-h2); line-height:var(--lh-h2); font-weight:500; color:#fff; white-space:pre-line; }
+.splitLead{ margin-top:30px; font-size:var(--fs-lead); line-height:var(--lh-lead); color:rgba(var(--white-rgb),.7); }
+.splitSpacer{ height:50px; }
+/* ihbox-style-2: flex, ikon 90px vit, mr 35px, titel 24/30, desc pt10 */
+.ihbox{ display:flex; align-items:flex-start; }
+.ihbox + .ihbox{ margin-top:50px; }
+.ihboxFirst{ margin-top:60px; }
+.ihboxIcon{
+  display:inline-block; margin-right:35px; color:#fff;
+  transition:all var(--dur) ease; transform:translateY(0);
+}
+.ihboxIcon svg{ width:90px; height:90px; fill:none; stroke:#fff; stroke-width:1.1; }
+.ihbox:hover .ihboxIcon{ transform:translateY(-5px); }
+.ihboxTitle{ font-size:24px; line-height:30px; font-weight:600; color:#fff; margin-bottom:0; }
+.ihboxDesc{ padding-top:10px; color:rgba(var(--white-rgb),.7); }
+
+/* ============================================================
+   SEKTION 4 — Referenser: rubrik vänster (25 %), slider höger (75 %)
+   ============================================================ */
+.secTestimonials{ padding:100px 0; background:#fff; }
+.testiRow{ display:grid; grid-template-columns:1fr 3fr; column-gap:24px; }
+.testiHead{ text-align:left; }
+.testiMain{ padding:0 12px; }
+.testiViewport{ position:relative; overflow:hidden; }
+.testiTrack{ display:flex; transition:transform .6s var(--reveal-ease); }
+.testiSlide{ min-width:100%; text-align:left; }
+.testiQuote{ font-size:var(--fs-lead); line-height:1.7; color:var(--c-body); max-width:var(--measure); }
+.testiAuthor{ display:flex; align-items:center; margin-top:40px; }
+.testiLogo{
+  width:80px; height:80px; border-radius:50%; margin-right:15px; flex-shrink:0;
+  background:var(--c-surface2); color:var(--c-global);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:600; font-size:14px; letter-spacing:1px;
+}
+.testiName{ font-size:18px; line-height:24px; font-weight:600; color:var(--c-global); }
+.testiCompany{ margin-top:5px; color:var(--c-muted); font-size:14px; }
+.testiDots{ display:flex; justify-content:flex-start; gap:10px; margin-top:40px; }
+.testiDot{
+  width:7px; height:7px; border-radius:50%; border:0; padding:0; cursor:pointer;
+  background:rgba(33,44,64,.2); transition:all .25s ease;
+}
+.testiDotActive{ background:var(--c-accent); transform:scale(1.4); }
+
+/* ============================================================
+   SEKTION 5 — partner-logotyper (4 synliga)
+   ============================================================ */
+.secLogos{ margin:50px 0; }
+.logosViewport{ overflow:hidden; }
+.logosTrack{ display:flex; align-items:center; transition:transform .6s ease; }
+.logoItem{
+  min-width:25%; min-height:150px;
+  display:flex; align-items:center; justify-content:center; padding:20px 12px;
+}
+.logoItem span{
+  font-size:22px; font-weight:600; letter-spacing:2px; text-transform:uppercase;
+  color:var(--c-muted); opacity:.7; transition:all .25s ease; white-space:nowrap;
+}
+.logoItem:hover span{ opacity:1; color:var(--c-global); }
+
+/* ============================================================
+   Rubrik-reveal: split-line-uppglidning
+   ============================================================ */
+.revealLines .line{ display:block; overflow:hidden; }
+.revealLines .line > span{
+  display:block; transform:translateY(110%);
+  transition:transform .9s var(--reveal-ease);
+}
+.revealLines.isInview .line > span{ transform:translateY(0); }
+.revealLines.isInview .line:nth-child(2) > span{ transition-delay:.12s; }
+.revealFade{ opacity:0; transform:translateY(30px); transition:all .9s var(--reveal-ease); }
+.revealFade.isInview{ opacity:1; transform:translateY(0); }
+
+@media (prefers-reduced-motion:reduce){
+  .heroLayer,.revealLines .line > span,.revealFade,.heroBg,.testiTrack,.logosTrack{
+    animation:none!important; transition:none!important; transform:none!important; opacity:1!important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVT — brytpunkter exakt ur post-73/responsive
+   ============================================================ */
+@media (max-width:1366px){
+  .heroTitle{ font-size:80px; line-height:90px; }
+  .secServices{ padding:100px 0 70px; }
+  .splitBody{ padding:80px 30px 80px 40px; }
+  .splitBodyInner{ padding-left:0; }
+  .ihboxFirst{ margin-top:40px; }
+  .ihbox + .ihbox{ margin-top:40px; }
+  .secTestimonials{ padding:100px 0 450px; }
+  .testiMain{ padding:0 30px; }
+}
+@media (max-width:1024px){
+  .hero{ height:800px; }
+  .heroTitle{ font-size:70px; line-height:80px; }
+  .secServices{ padding:80px 0 50px; }
+  .servicesGrid{ grid-template-columns:repeat(2,1fr); }
+  .secSplit{ grid-template-columns:1fr; }
+  .splitMedia{ padding:230px 0; }
+  .splitBody{ padding:60px 30px 80px; }
+  .secTestimonials{ padding:80px 0 330px; }
+  .testiRow{ grid-template-columns:1fr; row-gap:40px; }
+  .sectionTitle{ font-size:44px; line-height:50px; }
+  .splitTitle{ font-size:44px; line-height:50px; }
+}
+@media (max-width:767px){
+  .hero{ height:700px; }
+  .heroTitle{ font-size:50px; line-height:58px; }
+  .secIntro{ padding:60px 30px 0; }
+  .introStatement{ font-size:21px; }
+  .secServices{ padding:60px 0 30px; }
+  .servicesGrid{ grid-template-columns:1fr; }
+  .sectionTitle{ font-size:36px; line-height:42px; }
+  .splitTitle{ font-size:36px; line-height:42px; }
+  .splitMedia{ padding:150px 0; }
+  .splitBody{ padding:40px 30px 60px; }
+  .secTestimonials{ padding:60px 0; }
+  .logoItem{ min-width:50%; }
+}
+@media (max-width:500px){
+  .hero{ height:550px; }
+  .ihbox{ display:block; }
+  .ihboxIcon{ margin:0 0 10px; }
+}

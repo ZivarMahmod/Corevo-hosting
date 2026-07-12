@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type { StorefrontLayoutProps } from '../types'
 import type { ThemeChrome, ThemePages, ThemeModuleViews } from './types'
 import { FLORIST_THEMES } from './registry'
+import { EKONOMI_THEMES } from '../ekonomi/registry'
 import { CalytrixLayout } from './CalytrixLayout'
 import { AuroraLayout } from './AuroraLayout'
 import { SageLayout } from './SageLayout'
@@ -40,12 +41,23 @@ export const FLORIST_LAYOUTS: Record<string, ComponentType<StorefrontLayoutProps
  * `undefined` och renderar exakt som förr.
  */
 export function themeChrome(key: string): ThemeChrome {
-  return FLORIST_THEMES.find((t) => t.key === key)?.chrome ?? {}
+  return findTheme(key)?.chrome ?? {}
 }
 
 /** Mallens EGNA undersidor (/om, /tjanster, /kontakt). Saknas → delade sektioner. */
 export function themePages(key: string): ThemePages {
-  return FLORIST_THEMES.find((t) => t.key === key)?.pages ?? {}
+  return findTheme(key)?.pages ?? {}
+}
+
+/**
+ * Uppslaget spänner ALLA tema-sviter (florist + ekonomi …), inte bara florist —
+ * de tre funktionerna nedan är plattformens enda väg till en malls chrome/pages/
+ * modul-vyer (app/(public)/layout.tsx m.fl. importerar härifrån). En ny svit som
+ * inte läggs till här får tyst plattformens delade nav/footer i stället för sitt
+ * eget. Filen ligger kvar under florist/ av import-stabilitet.
+ */
+function findTheme(key: string) {
+  return [...FLORIST_THEMES, ...EKONOMI_THEMES].find((t) => t.key === key)
 }
 
 /**
@@ -55,5 +67,5 @@ export function themePages(key: string): ThemePages {
  * apex för modulens, men modulens funktion är alltid densamma.
  */
 export function themeModuleViews(key: string): ThemeModuleViews {
-  return FLORIST_THEMES.find((t) => t.key === key)?.moduleViews ?? {}
+  return findTheme(key)?.moduleViews ?? {}
 }

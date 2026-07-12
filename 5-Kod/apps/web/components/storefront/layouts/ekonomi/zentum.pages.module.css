@@ -1,0 +1,105 @@
+/* ZENTUM UNDERSIDOR — samma formspråk som hemsidan.
+   Title-bar: padding-top 140px (headern är overlay). */
+
+.root{
+  --c-global:   #212c40;
+  --c-blackish: #111926;
+  --c-display:  #0c3c60;
+  --c-surface2: #f2f4f8;
+  --c-accent:   #a5cbe3;
+  --c-body:     #666666;
+  --c-muted:    #9da5b5;
+
+  font-family: Inter, Arial, Helvetica, sans-serif;
+  font-size:16px; line-height:1.6; color:var(--c-body); background:#fff;
+}
+.root img{ max-width:100%; display:block; }
+
+.container{ max-width:1140px; margin:0 auto; padding:0 12px; }
+
+.titleBar{
+  background:var(--c-global);
+  padding:140px 0 80px; /* overlay-headern äter de första 90px */
+}
+.eyebrow{
+  display:inline-block;
+  font-size:11px; line-height:22px; font-weight:600;
+  letter-spacing:1px; text-transform:uppercase;
+  color:var(--c-accent); margin-bottom:5px;
+}
+.pageTitle{
+  font-family:var(--font-wixmadefor), sans-serif;
+  font-size:54px; line-height:60px; font-weight:500; color:#fff;
+}
+
+.secIntro{ padding:80px 30px 0; }
+.introStatement{
+  font-family:var(--font-merriweather), serif;
+  font-size:26px; font-weight:400; line-height:1.6;
+  color:var(--c-global); text-align:center; max-width:980px; margin:0 auto;
+}
+
+.sectionTitle{ font-size:54px; line-height:60px; font-weight:500; color:var(--c-global); }
+.sectionDesc{ margin-top:30px; max-width:800px; font-size:18px; line-height:28px; color:var(--c-body); }
+
+/* Tjänster */
+.secServices{ padding:100px 0; }
+.servicesGrid{ display:grid; grid-template-columns:repeat(3,1fr); column-gap:24px; row-gap:24px; }
+.serviceCard{ transform:translateY(0); transition:all 500ms ease; }
+.serviceCard:hover{ transform:translateY(-5px); }
+.serviceMedia{ margin-bottom:30px; }
+.serviceMedia img{ width:100%; aspect-ratio:900/1000; object-fit:cover; border-radius:0; }
+.serviceTitle{ font-size:28px; line-height:34px; font-weight:600; color:var(--c-global); }
+.servicePrice{ margin-top:5px; color:var(--c-muted); font-size:14px; }
+
+/* Om — split */
+.secSplit{ display:grid; grid-template-columns:1fr 1fr; background:var(--c-global); margin-top:100px; }
+.splitMedia{ background-position:center; background-size:cover; background-repeat:no-repeat; min-height:100%; }
+.splitBody{ padding:110px 0 110px 110px; }
+.splitBodyInner{ padding-left:145px; }
+.splitTitle{ font-size:54px; line-height:60px; font-weight:500; color:#fff; white-space:pre-line; }
+.splitLead{ margin-top:30px; font-size:18px; line-height:28px; color:rgba(255,255,255,.7); }
+
+/* Kontakt */
+.secContact{ padding:100px 0; }
+.contactGrid{ display:grid; grid-template-columns:1fr 1fr; gap:60px; }
+.contactList{ margin-top:40px; list-style:none; }
+.contactList li{ display:flex; flex-direction:column; gap:4px; margin-bottom:25px; }
+.contactList a{ color:var(--c-global); text-decoration:none; font-size:18px; }
+.contactList a:hover{ color:var(--c-display); }
+.contactLabel{
+  font-size:11px; line-height:22px; font-weight:600;
+  letter-spacing:1px; text-transform:uppercase; color:var(--c-muted);
+}
+.contactForm{ display:flex; flex-direction:column; gap:20px; }
+.field{ display:flex; flex-direction:column; gap:6px; }
+.field input, .field textarea{
+  border:1px solid var(--c-muted); border-radius:0; padding:14px 16px;
+  font-family:inherit; font-size:16px; color:var(--c-global); background:#fff;
+}
+.field input:focus, .field textarea:focus{ outline:2px solid var(--c-global); outline-offset:1px; }
+.btn{
+  align-self:flex-start; height:50px; line-height:50px; padding:0 30px;
+  border:0; border-radius:25px; cursor:pointer;
+  font-family:inherit; font-size:12px; font-weight:600;
+  letter-spacing:1px; text-transform:uppercase;
+  background:var(--c-global); color:#fff; transition:all 350ms ease;
+}
+.btn:hover{ background:var(--c-blackish); }
+
+@media (max-width:1024px){
+  .pageTitle, .sectionTitle, .splitTitle{ font-size:44px; line-height:50px; }
+  .servicesGrid{ grid-template-columns:repeat(2,1fr); }
+  .secSplit{ grid-template-columns:1fr; }
+  .splitMedia{ padding:230px 0; }
+  .splitBody{ padding:60px 30px 80px; }
+  .splitBodyInner{ padding-left:0; }
+  .contactGrid{ grid-template-columns:1fr; }
+}
+@media (max-width:767px){
+  .titleBar{ padding:120px 0 60px; }
+  .pageTitle, .sectionTitle, .splitTitle{ font-size:36px; line-height:42px; }
+  .servicesGrid{ grid-template-columns:1fr; }
+  .secServices, .secContact{ padding:60px 0; }
+  .introStatement{ font-size:21px; }
+}

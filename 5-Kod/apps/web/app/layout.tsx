@@ -13,8 +13,12 @@ import {
   Italiana,
   Fraunces,
   Dancing_Script,
+  Wix_Madefor_Display,
+  DM_Sans,
+  Merriweather,
 } from 'next/font/google'
 import { FLORIST_THEME_CSS } from '@/components/storefront/layouts/florist/registry'
+import { EKONOMI_THEME_CSS } from '@/components/storefront/layouts/ekonomi/registry'
 import '@corevo/ui/tokens.css'
 import './globals.css'
 import './booking-global.css'
@@ -119,6 +123,32 @@ const dancingScript = Dancing_Script({
   preload: false,
 })
 
+// EKONOMI-SVITEN (goal-63, zentum): hero-displayen (Wix Madefor Display 500/600),
+// hero-brödtexten (DM Sans 400) och intro-statementet (Merriweather 400). Exakt de
+// tre familjer källdesignen FAKTISKT laddar — dess deklarerade Inter laddas aldrig
+// (renderas i systemets sans), och det är medvetet replikerat i mallens CSS.
+const wixMadefor = Wix_Madefor_Display({
+  subsets: ['latin'],
+  weight: ['500', '600'],
+  variable: '--font-wixmadefor',
+  display: 'swap',
+  preload: false,
+})
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-dmsans',
+  display: 'swap',
+  preload: false,
+})
+const merriweather = Merriweather({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-merriweather',
+  display: 'swap',
+  preload: false,
+})
+
 export const metadata: Metadata = {
   title: 'Corevo',
   description: 'Corevo Booking Platform',
@@ -130,7 +160,7 @@ export default function RootLayout({
   return (
     <html
       lang="sv"
-      className={`${playfair.variable} ${inter.variable} ${sourceSans.variable} ${libreCaslon.variable} ${libreFranklin.variable} ${plexMono.variable} ${cormorant.variable} ${dmSerif.variable} ${jost.variable} ${marcellus.variable} ${italiana.variable} ${fraunces.variable} ${dancingScript.variable}`}
+      className={`${playfair.variable} ${inter.variable} ${sourceSans.variable} ${libreCaslon.variable} ${libreFranklin.variable} ${plexMono.variable} ${cormorant.variable} ${dmSerif.variable} ${jost.variable} ${marcellus.variable} ${italiana.variable} ${fraunces.variable} ${dancingScript.variable} ${wixMadefor.variable} ${dmSans.variable} ${merriweather.variable}`}
     >
       <head>
         {/* No-flash för back-office-temat: sätt data-bo-theme FÖRE första paint så ett
@@ -149,6 +179,8 @@ export default function RootLayout({
             att ALLA sex rötter som sätter data-theme ska få färgerna: storefront,
             salong-preview, /boka, /avboka, /konto och onboarding-studions preview. */}
         <style dangerouslySetInnerHTML={{ __html: FLORIST_THEME_CSS }} />
+        {/* EKONOMI-SVITENS palettblock (goal-63) — samma mekanik som florist ovan. */}
+        <style dangerouslySetInnerHTML={{ __html: EKONOMI_THEME_CSS }} />
       </head>
       <body>{children}</body>
     </html>

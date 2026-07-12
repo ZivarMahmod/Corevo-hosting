@@ -10,6 +10,7 @@ import { FloraLayout } from './FloraLayout'
 import { FreshCutLayout } from './FreshCutLayout'
 import { FLORIST_LAYOUTS } from './florist/layouts'
 import { FLORIST_KEYS } from './florist/registry'
+import { EKONOMI_LAYOUTS } from './ekonomi/layouts'
 
 export type { StorefrontLayoutProps } from './types'
 
@@ -28,6 +29,7 @@ export const STOREFRONT_LAYOUTS = {
   flora: FloraLayout,
   freshcut: FreshCutLayout,
   ...FLORIST_LAYOUTS,
+  ...EKONOMI_LAYOUTS,
 } as Record<StorefrontTheme, ComponentType<StorefrontLayoutProps>>
 
 /**

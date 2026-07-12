@@ -40,6 +40,8 @@ export const STOREFRONT_THEMES = [
   // en florist-mall syns utanför sitt registry.
   'calytrix', 'aurora', 'sage', 'oliviathyme', 'paisley', 'onyx', 'viora',
   'isalara', 'seraphina', 'wildthistle', 'mina', 'lunaria', 'eloria',
+  // EKONOMI-SVITEN (goal-63) — allt om dem bor i layouts/ekonomi/registry.ts.
+  'zentum',
 ] as const
 export type StorefrontTheme = (typeof STOREFRONT_THEMES)[number]
 export const DEFAULT_STOREFRONT_THEME: StorefrontTheme = 'leander'
