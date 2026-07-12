@@ -113,6 +113,9 @@ export async function refreshStripeStatus(
     .eq('id', tenant.id)
   if (error) return { error: GENERIC }
 
+  // goal-61 preview-parity: charges_enabled bor på cachade tenants-raden — utan
+  // tag-bust ser betalnings-gaten gammal Stripe-status i upp till 300 s.
+  revalidateTenant(tenant.slug)
   revalidatePath('/admin/installningar')
   revalidatePath(`/salonger/${tenant.id}`)
   return {

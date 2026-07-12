@@ -7,6 +7,7 @@ import { logPlatformAction } from '../audit'
 import { type ActionState, GENERIC, EMAIL_RE } from './shared'
 import { reportActionError } from './observe'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
+import { revalidateTenantById } from '@/lib/admin/tenant'
 
 /**
  * Trigger a password reset for the salon's admin. Generates a recovery link via
@@ -77,6 +78,8 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
     return { error: GENERIC }
   }
 
+  // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_create',
@@ -168,6 +171,8 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
     if (insErr) return { error: GENERIC }
   }
 
+  // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_invite',
@@ -206,6 +211,8 @@ export async function updateTenantStaff(_p: ActionState, fd: FormData): Promise<
     return { error: GENERIC }
   }
 
+  // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_update',
@@ -262,6 +269,8 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
     }
   }
 
+  // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_staff_set',
@@ -304,6 +313,8 @@ export async function removeTenantStaff(_p: ActionState, fd: FormData): Promise<
     return { error: GENERIC }
   }
 
+  // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_remove',
@@ -397,6 +408,8 @@ export async function setStaffSchedule(_p: ActionState, fd: FormData): Promise<A
     }
   }
 
+  // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_schedule',

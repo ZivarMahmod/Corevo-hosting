@@ -222,6 +222,8 @@ export async function createLocation(_p: ActionState, fd: FormData): Promise<Act
   }
 
   revalidateLocations(ctx.tenant.slug)
+  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
+  revalidateTenant(ctx.tenant.slug)
   return { success: 'Plats skapad.' }
 }
 
@@ -251,6 +253,8 @@ export async function updateLocation(_p: ActionState, fd: FormData): Promise<Act
   if (error) return { error: GENERIC }
 
   revalidateLocations(ctx.tenant.slug)
+  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
+  revalidateTenant(ctx.tenant.slug)
   return { success: 'Plats uppdaterad.' }
 }
 
@@ -354,6 +358,8 @@ export async function createStaff(_p: ActionState, fd: FormData): Promise<Action
   if (error) return { error: GENERIC }
 
   revalidateStaff(ctx.tenant.slug)
+  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
+  revalidateTenant(ctx.tenant.slug)
   return { success: 'Medarbetare tillagd.' }
 }
 
@@ -451,6 +457,8 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
   if (removedAvatar && removedAvatar !== patch.avatar_url) await deleteByPublicUrl(removedAvatar)
 
   revalidateStaff(ctx.tenant.slug)
+  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
+  revalidateTenant(ctx.tenant.slug)
   return { success: 'Sparad.' }
 }
 
@@ -471,6 +479,8 @@ export async function toggleStaffActive(_p: ActionState, fd: FormData): Promise<
   if (error) return { error: GENERIC }
 
   revalidateStaff(ctx.tenant.slug)
+  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
+  revalidateTenant(ctx.tenant.slug)
   return { success: active ? 'Medarbetare aktiverad.' : 'Medarbetare inaktiverad.' }
 }
 
@@ -490,6 +500,8 @@ export async function deleteStaff(_p: ActionState, fd: FormData): Promise<Action
   }
 
   revalidateStaff(ctx.tenant.slug)
+  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
+  revalidateTenant(ctx.tenant.slug)
   return { success: 'Medarbetare borttagen.' }
 }
 
@@ -543,6 +555,8 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   }
 
   revalidateStaff(ctx.tenant.slug)
+  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
+  revalidateTenant(ctx.tenant.slug)
   return { success: 'Tjänster kopplade.' }
 }
 
@@ -638,6 +652,8 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   }
 
   revalidateStaff(ctx.tenant.slug)
+  // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
+  revalidateTenant(ctx.tenant.slug)
   return { success: `Inbjudan skickad till ${email}. Medarbetaren skapar lösenord via länken.` }
 }
 

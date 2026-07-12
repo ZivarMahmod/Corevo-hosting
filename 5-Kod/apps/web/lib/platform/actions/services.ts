@@ -7,6 +7,7 @@ import { logPlatformAction } from '../audit'
 import { uploadImage, deleteByPublicUrl } from '@/lib/r2/upload'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
+import { revalidateTenantById } from '@/lib/admin/tenant'
 
 // Ongoing super-admin services management for a CHOSEN salon (goal: manage a tenant's
 // services from the platform tenant-detail page). Every action goes through
@@ -86,6 +87,9 @@ export async function createTenantService(_p: ActionState, fd: FormData): Promis
     return { error: GENERIC }
   }
 
+  // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
+  // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_create',
@@ -150,6 +154,9 @@ export async function updateTenantService(_p: ActionState, fd: FormData): Promis
     return { error: GENERIC }
   }
 
+  // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
+  // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_update',
@@ -194,6 +201,9 @@ export async function deleteTenantService(_p: ActionState, fd: FormData): Promis
     return { error: GENERIC }
   }
 
+  // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
+  // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_delete',
@@ -252,6 +262,9 @@ export async function setServiceStaff(_p: ActionState, fd: FormData): Promise<Ac
     }
   }
 
+  // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
+  // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_staff_set',
@@ -312,6 +325,9 @@ export async function uploadServiceImage(_p: ActionState, fd: FormData): Promise
     return { error: GENERIC }
   }
 
+  // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
+  // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_image_add',
@@ -352,6 +368,9 @@ export async function removeServiceImage(_p: ActionState, fd: FormData): Promise
 
   if (url) await deleteByPublicUrl(url)
 
+  // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
+  // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
+  await revalidateTenantById(supabase, tenantId)
   revalidatePath(`/salonger/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_image_remove',

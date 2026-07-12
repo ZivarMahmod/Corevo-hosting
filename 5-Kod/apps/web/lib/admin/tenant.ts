@@ -96,6 +96,21 @@ export function revalidateTenant(slug: string): void {
 }
 
 /**
+ * Samma sak, men från ett tenantId (plattform-actions har id, inte slug i scope).
+ * goal-61 preview-parity: tjänste-/personal-/Stripe-actions skrev tenant-synlig data
+ * utan att någonsin busta `tenant:<slug>`-taggen — previewn OCH publika sajten visade
+ * gammalt i upp till 300 s (unstable_cache-TTL:n) trots att iframen laddade om.
+ * Best-effort: hittas ingen slug (raderad tenant) händer inget — TTL:n tar det då.
+ */
+export async function revalidateTenantById(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tenantId: string,
+): Promise<void> {
+  const { data } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (data?.slug) revalidateTenant(data.slug)
+}
+
+/**
  * Absolute URL of a tenant's PUBLIC storefront, e.g. `https://demo.corevo.se`.
  * The back-office lives on `booking.corevo.se`, so we build the storefront origin
  * from the tenant slug + the configured root domain (NEXT_PUBLIC_ROOT_DOMAIN).
