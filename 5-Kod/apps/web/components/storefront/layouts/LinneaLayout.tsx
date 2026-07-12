@@ -56,7 +56,7 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
       </section>
 
       {/* 3-col service cards + stat chips */}
-      <section className={styles.sfCardBand}>
+      <section className={`${styles.sfCardBand} ${ln.liftedPlate}`}>
         <Reveal className={ln.center}>
           <p className="sf-eyebrow">— Behandlingar</p>
           <h2 className={`sf-h1 ${ln.secTitle}`}>Våra behandlingar</h2>

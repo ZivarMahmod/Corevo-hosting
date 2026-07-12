@@ -110,7 +110,7 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
       ) : null}
 
       {/* stat strip */}
-      <section className={styles.sfStatStrip}>
+      <section className={`${styles.sfStatStrip} ${zg.blockSeam}`}>
         {content.stats.map(([n, l]) => (
           <div key={l} className={styles.sfStatStripCell}>
             <span className={styles.sfStatValueLg}>{n}</span>

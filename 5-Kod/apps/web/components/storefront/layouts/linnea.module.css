@@ -93,3 +93,19 @@
     transform: none;
   }
 }
+
+/* SEKTIONSÖVERGÅNG (goal-62 C4): ÖVERLAPPET. Behandlingarna glider upp ÖVER heron på
+   en egen lerplatta med mallens mjuka radie och skugga — sidan har ingen rak söm där.
+   Linneas språk är varmt och mjukt; plattan lyfter, den delar inte. */
+.liftedPlate {
+  position: relative;
+  z-index: 1;
+  margin-top: -56px;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 1200px;
+  width: calc(100% - 3rem);
+  border-radius: 24px;
+  background: var(--color-bg);
+  box-shadow: 0 -2px 40px -12px color-mix(in srgb, var(--color-fg) 22%, transparent);
+}

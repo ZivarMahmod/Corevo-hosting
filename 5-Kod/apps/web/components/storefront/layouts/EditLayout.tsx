@@ -116,7 +116,7 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
       ) : null}
 
       {/* about split + inline stats */}
-      <section className={styles.sfEditAbout}>
+      <section className={`${styles.sfEditAbout} ${ed.foldedCorner}`}>
         <div className={`${styles.sfWide} ${styles.sfEditAboutGrid}`}>
           <Reveal>
             {/* Genuint dynamisk bild-URL; formen (ratio, cover) ägs av .sfEditAboutPhoto. */}

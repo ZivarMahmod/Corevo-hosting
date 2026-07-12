@@ -618,9 +618,16 @@
 .wtCourseActions { margin-top: var(--wt-s3); }
 
 /* ── Presentkort — smal rad mellan blogg och galleri, aldrig en egen sektion ── */
+/* SEKTIONSÖVERGÅNG (goal-62 C4): presentkortsbandet rivs loss ur sidan med SAMMA
+   tandning som bilderna — mallens vokabulär, inte en ny gest. Extra padding så
+   texten aldrig hamnar i rivningen. */
 .wtGift {
   background: var(--color-accent-soft);
-  padding: var(--wt-s3) var(--wt-gut);
+  padding: calc(var(--wt-s3) + 2rem) var(--wt-gut);
+  clip-path: polygon(
+    0 4.5%, 18% 0, 32% 4%, 46% 0, 60% 4.5%, 74% 0, 88% 4%, 100% 0,
+    100% 95.5%, 88% 100%, 74% 96%, 60% 100%, 46% 95.5%, 32% 100%, 18% 96%, 0 100%
+  );
 }
 .wtGiftInner {
   max-width: 1360px;
@@ -1538,4 +1545,16 @@
   .wtCardSection :global(.btn-accent):active {
     transform: none;
   }
+}
+
+/* SEKTIONSÖVERGÅNG (goal-62 C4): butikssektionen RIVS loss ur sidan med samma tandning
+   som bilderna och presentkortsbandet. Mallens vokabulär, skalat till en hel sektion. */
+.wtPriceBand.wtPriceBand {
+  background-color: var(--color-accent-soft);
+  padding-top: calc(var(--wt-sec) + 2rem);
+  padding-bottom: calc(var(--wt-sec) + 2rem);
+  clip-path: polygon(
+    0 3%, 18% 0, 32% 2.5%, 46% 0, 60% 3%, 74% 0, 88% 2.5%, 100% 0,
+    100% 97%, 88% 100%, 74% 97.5%, 60% 100%, 46% 97%, 32% 100%, 18% 97.5%, 0 100%
+  );
 }

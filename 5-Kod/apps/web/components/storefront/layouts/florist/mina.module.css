@@ -436,7 +436,14 @@
 
 /* ── 6 — PRESENTKORT: smal rad, aldrig en egen sektion ────────────────────────
    Gatas av presentkortLive i MinaLayout.tsx. */
-.miGift { background: var(--color-accent-soft); padding: var(--mi-sp-text) var(--mi-gutter-x); }
+/* SEKTIONSÖVERGÅNG (goal-62 C4): mina har inga kurvor — allt är rakt. Bandet blir
+   därför en FÄRGPLATTA som är smalare än sidan (indragen i båda kanterna), samma
+   grepp som produkten på sin platta. Rak kant, men inte sidans kant. */
+.miGift {
+  background: var(--color-accent-soft);
+  padding: var(--mi-sp-text) var(--mi-gutter-x);
+  clip-path: inset(0 6%);
+}
 .miGiftInner {
   max-width: 1180px;
   margin: 0 auto;
@@ -1436,4 +1443,14 @@
     transform: none;
   }
   .miMore:hover { gap: 8px; }
+}
+
+/* SEKTIONSÖVERGÅNG (goal-62 C4): mina har inga kurvor — allt är rakt. Butiken ligger
+   därför på en FÄRGPLATTA som är smalare än sidan (indragen i båda kanterna), samma
+   grepp som produkten på sin platta. Rak kant, men aldrig sidans kant. */
+.miShopSection.miShopSection {
+  background: var(--color-accent-soft);
+  padding-top: var(--mi-sp-sec, 5rem);
+  padding-bottom: var(--mi-sp-sec, 5rem);
+  clip-path: inset(0 5%);
 }

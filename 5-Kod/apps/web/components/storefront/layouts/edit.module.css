@@ -112,3 +112,12 @@
     transition: none;
   }
 }
+
+/* SEKTIONSÖVERGÅNG (goal-62 C4): DET VIKTA HÖRNET. Edit är redaktionell — sidan är
+   papper. Om-sektionen ligger på en egen platta vars övre högra hörn är avvikt, som
+   ett uppslag någon har vikt ner för att komma tillbaka till. Rak kant överallt
+   annars: mallen har radie 2, inte kurvor. */
+.foldedCorner {
+  background: var(--color-accent-soft);
+  clip-path: polygon(0 0, calc(100% - 72px) 0, 100% 72px, 100% 100%, 0 100%);
+}

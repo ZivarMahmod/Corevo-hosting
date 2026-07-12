@@ -636,11 +636,15 @@
 }
 
 /* ── 3. CITAT-BAND ─────────────────────────────────────────────────────────────────── */
+/* SEKTIONSÖVERGÅNG (goal-62 C4): citatbandet är en TONPLATTA som skjuts in i sidan —
+   indragen i kanterna och rundad med mallens egna 8px. Den ligger i sidan, den delar
+   den inte i två. Samma 8px som knappen och korten: en radie, tre ytor. */
 .vioQuoteBand {
   position: relative;
   background: var(--color-accent-soft);
   padding: var(--vio-sec) 1.5rem;
   text-align: center;
+  clip-path: inset(0 4% round 8px);
 }
 .vioQuoteMark {
   font-family: var(--font-display);

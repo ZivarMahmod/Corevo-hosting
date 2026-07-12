@@ -73,8 +73,12 @@ const PROBE = () => {
     : null
 
   // ── sektioner + övergångar
-  const sections = [...document.querySelectorAll('main > section, main > div > section, main > *')].filter(
-    (el) => el.getBoundingClientRect().height > 180,
+  // goal-62 C4: tröskeln var 180px och urvalet bara DIREKTA barn — då räknades inte
+  // presentkortsbanden och citatremsorna, som är just de ytor mallarna formar sin
+  // sektionssöm i. En 120px hög färgplatta med en riven kant ÄR en sektionsövergång;
+  // mätaren såg den inte och rapporterade "bara raka kanter" om en sida som hade sex.
+  const sections = [...document.querySelectorAll('main section, main > *')].filter(
+    (el) => el.getBoundingClientRect().height > 120,
   )
   let shaped = 0
   for (const el of sections) {

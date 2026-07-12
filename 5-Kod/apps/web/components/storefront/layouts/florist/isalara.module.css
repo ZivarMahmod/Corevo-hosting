@@ -445,10 +445,14 @@ a.islShortcut:hover {
 }
 
 /* ══════════════════════  3. MARINBLÅTT BAND  ══════════════════════ */
+/* SEKTIONSÖVERGÅNG (goal-62 C4): bandet är FÖRSKJUTET, precis som ramen runt bilderna
+   — vänsterkanten dras in, högerkanten går ut i bleed. Sidan tappar sin symmetri
+   exakt där mallens signatur säger att den ska. */
 .islBand {
   background: var(--color-primary-d);
   padding: var(--isl-band) var(--isl-gutter);
   text-align: center;
+  clip-path: polygon(6% 0, 100% 0, 100% 100%, 0 100%);
 }
 .islBandText {
   max-width: 44rem;

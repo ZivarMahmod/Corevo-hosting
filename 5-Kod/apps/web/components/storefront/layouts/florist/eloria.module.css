@@ -591,7 +591,14 @@
 .elGallery.elGallery li button:hover img { transform: none; }
 
 /* ── 9. PRESENTKORT — smal rad, aldrig en hel sektion ──────────────────────────────── */
-.elGiftRow { background: var(--color-accent-soft); padding: var(--el-s3) var(--el-gut); }
+/* SEKTIONSÖVERGÅNG (goal-62 C4): ROMBEN, i stort format. Guldregelns romb sitter i
+   varje sektionssöm — presentkortsbandet gör samma gest i sin egen kant: spetsen
+   skjuter upp i mitten och ned i botten. Mallens vokabulär, skalat. */
+.elGiftRow {
+  background: var(--color-accent-soft);
+  padding: calc(var(--el-s3) + 1rem) var(--el-gut);
+  clip-path: polygon(0 3%, 50% 0, 100% 3%, 100% 97%, 50% 100%, 0 97%);
+}
 .elGiftInner {
   display: flex;
   flex-wrap: wrap;

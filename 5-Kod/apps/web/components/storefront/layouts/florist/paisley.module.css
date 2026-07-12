@@ -796,9 +796,16 @@
 }
 
 /* PRESENTKORT — smal rad */
+/* SEKTIONSÖVERGÅNG (goal-62 C4): TRAPPAN. Tidningens spalter slutar inte jämnt —
+   bandet trappas av i spaltbredder, som en sida där texten tar slut olika långt ned
+   i varje spalt. Mallens egen logik (spalten), inte en generisk våg. */
 .paGift {
   background: var(--color-accent-soft);
-  padding: var(--pa-sp-gutter) 0;
+  padding: calc(var(--pa-sp-gutter) + 1.5rem) 0;
+  clip-path: polygon(
+    0 0, 25% 0, 25% 3%, 50% 3%, 50% 0, 75% 0, 75% 3%, 100% 3%,
+    100% 97%, 75% 97%, 75% 100%, 50% 100%, 50% 97%, 25% 97%, 25% 100%, 0 100%
+  );
 }
 .paGiftInner {
   display: flex;
@@ -1554,4 +1561,19 @@ a.paArtTitle:hover {
   .paFootCols {
     grid-template-columns: 1fr;
   }
+}
+
+/* SEKTIONSÖVERGÅNG (goal-62 C4): TRAPPAN, på leveransbandet. Tidningens spalter slutar
+   inte jämnt — bandets över- och underkant trappas av i spaltbredder, som en sida där
+   texten tar slut olika långt ned i varje spalt. Mallens egen logik (spalten), aldrig
+   en generisk våg. Presentkortsbandet (.paGift) bär samma gest.
+   Bandet behåller SIN egen mörka fyllning: en ljus bakgrund här gav 8 kontrastbrott
+   (den ljusa texten satt kvar). Gesten är kanten, inte färgen. */
+.paDelivery.paDelivery {
+  padding-top: calc(var(--pa-sp-text) + 1.5rem);
+  padding-bottom: calc(var(--pa-sp-text) + 1.5rem);
+  clip-path: polygon(
+    0 0, 25% 0, 25% 2.5%, 50% 2.5%, 50% 0, 75% 0, 75% 2.5%, 100% 2.5%,
+    100% 97.5%, 75% 97.5%, 75% 100%, 50% 100%, 50% 97.5%, 25% 97.5%, 25% 100%, 0 100%
+  );
 }

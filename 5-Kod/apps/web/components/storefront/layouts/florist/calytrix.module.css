@@ -401,10 +401,14 @@
 }
 
 /* ---------- 3. Mörkt marknadsförings-band ---------- */
+/* SEKTIONSÖVERGÅNG (goal-62 C4): plommonbandet är en LYFT PLATTA — samma språk som
+   korten (skuggan som lyfter). Stora rundade överhörn + skugga uppåt gör att bandet
+   ligger PÅ sidan i stället för att vara en rak avdelare. */
 .calBand {
   background: var(--color-primary-d);
   padding: var(--cal-band) 24px;
   text-align: center;
+  clip-path: inset(0 round 72px 72px 0 0);
 }
 .calBandText {
   max-width: 44rem;

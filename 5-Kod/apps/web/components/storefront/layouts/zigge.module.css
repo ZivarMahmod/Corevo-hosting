@@ -116,3 +116,15 @@
     transition: none;
   }
 }
+
+/* SEKTIONSÖVERGÅNG (goal-62 C4): den HÅRDA FÄRGBLOCKS-KANTEN. Zigge har inga kurvor
+   och inga mjuka toningar — sifferremsan hugger in i sidan med raka trappsteg, som
+   ett tryckt färgblock som ligger snett på arket. Klippmaskinens språk. */
+.blockSeam {
+  clip-path: polygon(
+    0 0, 33% 0, 33% 8%, 66% 8%, 66% 0, 100% 0,
+    100% 100%, 66% 100%, 66% 92%, 33% 92%, 33% 100%, 0 100%
+  );
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
