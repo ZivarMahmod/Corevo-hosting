@@ -1,0 +1,83 @@
+/* goal-61 fas 2 — RowEditButton + PillToggle flyttar ur inline style={{}}.
+   Inline kunde inte bära :hover/:focus-visible/:active — knapparna var dömda att
+   vara döda ytor. Anatomin (tint-hover, fokusring, tryck-skala) lånad ur
+   uiverse-biblioteket; färgerna är husets --c-*-tokens. Ren stil, noll logik. */
+
+/* ── RowEditButton: ikon-knapp i tabellernas sista kolumn ── */
+.rowBtn {
+  display: inline-grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--c-ink-3);
+  cursor: pointer;
+  /* 17px-ikon + 8px padding = 33px visuell yta; träffytan växer med raden. */
+  padding: 8px;
+  margin: -4px;
+  transition: background 140ms ease, color 140ms ease, transform 120ms ease;
+}
+.rowBtn:hover {
+  background: var(--c-paper-2);
+  color: var(--c-ink);
+}
+.rowBtn:active {
+  transform: scale(0.94);
+}
+.rowBtn:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 1px;
+}
+.rowBtn:disabled {
+  color: var(--c-line);
+  cursor: default;
+  background: transparent;
+  transform: none;
+}
+
+/* ── PillToggle: status-pill i tabellrader ── */
+.pill {
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--c-forest);
+  transition: background 140ms ease, border-color 140ms ease, transform 120ms ease;
+}
+.pill[aria-pressed='true'] {
+  color: var(--c-ink-2);
+}
+.pill:hover {
+  border-color: var(--c-forest);
+  background: color-mix(in srgb, var(--c-forest) 6%, var(--c-paper));
+}
+.pill:active {
+  transform: scale(0.96);
+}
+.pill:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 1px;
+}
+/* Disabled via färg, aldrig bara opacity (kontrast-disciplinen). */
+.pill:disabled {
+  color: var(--c-ink-3);
+  border-color: var(--c-line);
+  background: var(--c-paper-2);
+  cursor: default;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rowBtn,
+  .pill {
+    transition: none;
+  }
+  .rowBtn:active,
+  .pill:active {
+    transform: none;
+  }
+}

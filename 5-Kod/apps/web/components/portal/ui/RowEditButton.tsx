@@ -1,7 +1,10 @@
 import { Icon, type IconName } from './Icon'
+import s from './portal-ui.module.css'
 
 /** Transparent ikon-knapp för tabellernas sista kolumn (KursAdmin-mönstret,
- *  goal-55 steg 1). Alltid med aria-label — ikonen ensam bär ingen text. */
+ *  goal-55 steg 1). Alltid med aria-label — ikonen ensam bär ingen text.
+ *  goal-61: stil i portal-ui.module.css (hover/fokus/tryck var omöjliga inline);
+ *  aria-label blir också synlig tooltip via data-tip (portal-global.css). */
 export function RowEditButton({
   onClick,
   ariaLabel,
@@ -19,16 +22,8 @@ export function RowEditButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      style={{
-        border: 'none',
-        background: 'transparent',
-        color: 'var(--c-ink-3)',
-        cursor: disabled ? 'default' : 'pointer',
-        padding: 4,
-        display: 'inline-grid',
-        placeItems: 'center',
-        opacity: disabled ? 0.5 : 1,
-      }}
+      data-tip={disabled ? undefined : ariaLabel}
+      className={s.rowBtn}
     >
       <Icon name={icon} size={17} />
     </button>

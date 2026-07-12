@@ -361,6 +361,7 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
             type="button"
             className={styles.kebab}
             aria-label="Fler åtgärder"
+            data-tip="Fler åtgärder"
             onClick={(e) => {
               e.stopPropagation()
               setMenuOpen((o) => !o)

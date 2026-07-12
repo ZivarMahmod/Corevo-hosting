@@ -31,6 +31,13 @@
   background: var(--c-paper-2);
   color: var(--c-ink);
 }
+.kebab:active {
+  transform: scale(0.94);
+}
+.kebab:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 1px;
+}
 
 /* invisible click-catcher so an outside click closes the menu */
 .menuScrim {
@@ -50,6 +57,15 @@
   border: 1px solid var(--c-line);
   border-radius: 10px;
   box-shadow: var(--shadow-md);
+  /* goal-61: menyn växer ur sin utlösare (uiverse-anatomin) — inte en snäpp. */
+  transform-origin: top right;
+  animation: menuIn 140ms ease-out;
+}
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-3px);
+  }
 }
 
 .menuItem {
@@ -70,4 +86,22 @@
 }
 .menuItem:hover {
   background: var(--c-danger-bg);
+}
+.menuItem:focus-visible {
+  outline: 2px solid var(--c-danger);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .kebab {
+    transition: none;
+  }
+  .card:hover,
+  .kebab:active {
+    transform: none;
+  }
+  .menu {
+    animation: none;
+  }
 }
