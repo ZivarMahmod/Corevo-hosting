@@ -65,9 +65,17 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       "Bjud in med inlogg" → skriv e-postadressen → medarbetaren får magic-link och sätter eget
       lösenord. Kräver att SUPABASE_SERVICE_ROLE_KEY är satt i prod (annars säger knappen till).
       Skriv in kontot i `5-Kod/docs/ops/INLOGGNINGAR.md` (lokal fil) när det är gjort.
-- [~] **A6. Verifiera fas 2-admin på superbooking — VÄNTAR PÅ SUPERKONTOT** (fyll i det i
-      `INLOGGNINGAR.md`, lokal fil). Då mäts kebab-menyn + mall-galleriet med Playwright och
-      goal-61 fas 2 kan bockas helt.
+- [x] **A6. Fas 2-admin verifierad på super-admin** ✅ Mätt med Playwright (inloggad som superkontot):
+      | Yta | Mätt |
+      |---|---|
+      | Kebab-knappen | tooltip syns på hover ("Fler åtgärder") · fokusring 2px · **44×44 träffyta** (var 30×30 → fixat i denna körning) |
+      | Kebab-menyn | destruktiv färg, egen fokusring, växer ur utlösaren (`menuIn`) |
+      | Mall-galleriet | 14 kort · hover-lyft + bildzoom · **fokusring 2px vid tangentbordsnavigering** |
+      **Mätfälla (dokumenterad):** programmatisk `focus()` utlöser INTE `:focus-visible` — en fullt
+      synlig fokusring/tooltip mäts då som "INGEN". Mät med riktig `Tab`/hover, annars ljuger sveppet.
+      **Bifynd:** superbooking.localhost fungerar inte i dev — back-office körs på EN dörr lokalt
+      (`booking.localhost`), 3-dörrs-splitten är prod-only (`!previewHost` i middleware). Inte en bugg;
+      prod är verifierat friskt (login + F5 + /salonger, se nedan).
 
 ## FAS B — FÄRGERNA SKA VARA EXAKTA (texter göms av paletter idag)
 
@@ -227,7 +235,8 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 | 2026-07-12 | B2 + I1 sista brotten | c7d3e88 | **npm run kontrast: 0 FAIL i alla 20 mallar** |
 | 2026-07-12 | A5 florist-inlogg | — | admin@florist.corevo.se loggar in (Playwright) |
 | 2026-07-12 | B3 kontrast-vakten | 1a4f2b9 | i CI; negativt test failar, friska paletter passerar |
-| 2026-07-12 | C1 divergens-mätningen | (denna) | 13/20 mallar har 0 sektionsövergångar; 16/20 pill; 15/20 flata kort |
+| 2026-07-12 | A6 fas 2-admin verifierad | (denna) | kebab 44px + tooltip + galleriets fokusring, allt mätt |
+| 2026-07-12 | C1 divergens-mätningen | 5e8c3d2 | 13/20 mallar har 0 sektionsövergångar; 16/20 pill; 15/20 flata kort |
 
 ---
 

@@ -15,11 +15,15 @@
   outline-offset: 2px;
 }
 
+/* goal-62 A6: knappen MÄTTE 30×30 — under 44px-golvet, samma brist som svepet rensade
+   ur mallarna. Träffytan blir 44×44; kvittningen (-7px) håller den visuella rutan och
+   radens höjd exakt som förut, så inget hoppar i kortet. */
 .kebab {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
+  margin: -7px;
   border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
