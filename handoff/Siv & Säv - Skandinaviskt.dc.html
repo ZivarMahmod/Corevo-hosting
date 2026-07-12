@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>Siv &amp; Säv — blomsteratelje</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #F4F1EA; }
+    body { font-family: 'Hanken Grotesk', system-ui, sans-serif; color: #33352E; -webkit-font-smoothing: antialiased; }
+    a { color: #7C8B6B; text-decoration: none; }
+    a:hover { color: #33352E; }
+    ::selection { background: #DDE3D0; }
+    input, textarea { background: #FFFFFF; color: #33352E; }
+    input::placeholder, textarea::placeholder { color: #A7A594; }
+
+    /* Corevo-tillägg: fokus, knappsemantik, mobil ≤760px */
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #7C8B6B !important; outline-offset: 2px; }
+    button { font: inherit; cursor: pointer; }
+    @media (max-width: 760px) {
+      [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+      h1 { font-size: clamp(32px, 9vw, 46px) !important; line-height: 1.1 !important; }
+      h2 { font-size: clamp(24px, 7vw, 34px) !important; }
+      a[style*="cursor:pointer"], button { min-height: 44px; }
+      nav a { padding-top: 10px !important; padding-bottom: 10px !important; }
+      section, footer > div, header > div { padding-left: 20px !important; padding-right: 20px !important; }
+    }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#F4F1EA; overflow-x:hidden">
+
+  <!-- NAV -->
+  <header style="position:sticky; top:0; z-index:50; background:rgba(244,241,234,0.92); backdrop-filter:blur(10px)">
+    <div style="max-width:1200px; margin:0 auto; padding:26px 40px; display:flex; align-items:center; gap:24px">
+      <a onClick="{{ goHem }}" style="cursor:pointer; white-space:nowrap; flex-shrink:0; font-family:'Fraunces'; font-weight:500; font-size:23px; letter-spacing:0.01em; color:#33352E">Siv &amp; Säv</a>
+      <nav style="flex:1; min-width:0; display:flex; justify-content:center; align-items:center; gap:28px; flex-wrap:wrap">
+        <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="6">
+          <a onClick="{{ item.go }}" style="cursor:pointer; white-space:nowrap; font-weight:{{ item.weight }}; font-size:14.5px; color:{{ item.color }}" style-hover="color:#33352E">{{ item.label }}</a>
+        </sc-for>
+      </nav>
+      <a onClick="{{ goKorg }}" style="cursor:pointer; white-space:nowrap; flex-shrink:0; font-weight:600; font-size:14px; color:#33352E; border:1px solid #C9C6B4; border-radius:999px; padding:9px 18px" style-hover="background:#33352E; color:#F4F1EA; border-color:#33352E">Korg · {{ cartCount }}</a>
+    </div>
+  </header>
+
+  <!-- ============ HEM ============ -->
+  <sc-if value="{{ showHem }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <!-- HERO -->
+      <section style="max-width:1200px; margin:0 auto; padding:64px 40px 0; display:grid; grid-template-columns:1fr 1fr; gap:72px; align-items:center">
+        <div>
+          <p style="margin:0 0 22px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Blomsterateljé · Stockholm</p>
+          <h1 style="margin:0 0 26px; font-family:'Fraunces'; font-weight:400; font-size:60px; line-height:1.08; letter-spacing:-0.01em; color:#33352E">Stilla blomster för vardagsrum och stora dagar.</h1>
+          <p style="margin:0 0 38px; font-size:17px; line-height:1.8; color:#6B6D60; max-width:400px">Vi binder sparsmakat och naturligt — säsongens grenar, gräs och blad, samlade med lugn hand.</p>
+          <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap">
+            <a onClick="{{ goButik }}" style="cursor:pointer; background:#33352E; color:#F4F1EA; font-weight:600; font-size:15px; border-radius:999px; padding:15px 32px" style-hover="background:#7C8B6B">Se buketterna</a>
+            <a onClick="{{ goBoka }}" style="cursor:pointer; font-weight:600; font-size:15px; color:#7C8B6B; border-bottom:1px solid #7C8B6B; padding-bottom:3px" style-hover="color:#33352E; border-color:#33352E">Boka en tid →</a>
+          </div>
+        </div>
+        <div>
+          <div style="aspect-ratio:4/5; background:url('https://images.unsplash.com/photo-1454262041357-5d96f50a2f27?w=1200&q=80&auto=format&fit=crop') center/cover; border-radius:200px 200px 24px 24px"></div>
+        </div>
+      </section>
+
+      <!-- TRE LÖFTEN -->
+      <section style="max-width:1200px; margin:72px auto 0; padding:0 40px">
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:48px; border-top:1px solid #DAD7C8; border-bottom:1px solid #DAD7C8; padding:36px 0">
+          <sc-for list="{{ promises }}" as="pr" hint-placeholder-count="3">
+            <div>
+              <p style="margin:0 0 8px; font-family:'Fraunces'; font-weight:500; font-size:19px; color:#33352E">{{ pr.title }}</p>
+              <p style="margin:0; font-size:14.5px; line-height:1.65; color:#6B6D60">{{ pr.desc }}</p>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <!-- VÄCKANS BUKETTER -->
+      <section style="max-width:1200px; margin:80px auto 0; padding:0 40px">
+        <div style="display:flex; justify-content:space-between; align-items:end; margin-bottom:40px; flex-wrap:wrap; gap:12px">
+          <div>
+            <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Just nu</p>
+            <h2 style="margin:0; font-family:'Fraunces'; font-weight:400; font-size:38px; letter-spacing:-0.01em">Veckans buketter</h2>
+          </div>
+          <a onClick="{{ goButik }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14.5px; color:#7C8B6B; border-bottom:1px solid #7C8B6B; padding-bottom:3px" style-hover="color:#33352E; border-color:#33352E">Hela sortimentet →</a>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:36px">
+          <sc-for list="{{ homeProducts }}" as="p" hint-placeholder-count="3">
+            <div>
+              <div style="aspect-ratio:4/5; background:url('{{ p.img }}') center/cover; border-radius:24px; margin-bottom:16px"></div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px">
+                <h3 style="margin:0; font-family:'Fraunces'; font-weight:500; font-size:20px; color:#33352E">{{ p.name }}</h3>
+                <span style="font-weight:600; font-size:15px; color:#7C8B6B; white-space:nowrap">{{ p.price }}</span>
+              </div>
+              <p style="margin:6px 0 14px; font-size:14px; line-height:1.55; color:#6B6D60">{{ p.desc }}</p>
+              <button onClick="{{ p.add }}" style="cursor:pointer; display:inline-block; font-weight:600; font-size:13.5px; color:#33352E; border:1px solid #C9C6B4; border-radius:999px; padding:9px 20px" style-hover="background:#33352E; color:#F4F1EA; border-color:#33352E">Lägg i korg</button>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <!-- OM-BAND -->
+      <section style="max-width:1200px; margin:88px auto 0; padding:0 40px">
+        <div style="background:#E4E7DA; border-radius:32px; padding:64px 56px; display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center">
+          <div>
+            <p style="margin:0 0 14px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Ateljén</p>
+            <h2 style="margin:0 0 18px; font-family:'Fraunces'; font-weight:400; font-size:34px; line-height:1.2; color:#33352E">Mindre är mer — men aldrig kallt</h2>
+            <p style="margin:0 0 16px; font-size:16px; line-height:1.8; color:#585A4E">Siv &amp; Säv drivs av två florister med en förkärlek för det ovala, det gräsiga och det som får ta plats i tystnad. Vi binder få buketter om dagen, för hand, med säsongen som enda regel.</p>
+            <a onClick="{{ goOm }}" style="cursor:pointer; font-weight:600; font-size:15px; color:#7C8B6B; border-bottom:1px solid #7C8B6B; padding-bottom:3px" style-hover="color:#33352E; border-color:#33352E">Läs mer om oss →</a>
+          </div>
+          <div style="aspect-ratio:1/1; background:url('https://images.unsplash.com/photo-1563241527-3004b7be0ffd?w=1200&q=80&auto=format&fit=crop') center/cover; border-radius:24px"></div>
+        </div>
+      </section>
+
+      <!-- JOURNAL -->
+      <section style="max-width:1200px; margin:88px auto 0; padding:0 40px 20px">
+        <div style="display:flex; justify-content:space-between; align-items:end; margin-bottom:40px; flex-wrap:wrap; gap:12px">
+          <h2 style="margin:0; font-family:'Fraunces'; font-weight:400; font-size:38px; letter-spacing:-0.01em">Journalen</h2>
+          <a onClick="{{ goBlogg }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14.5px; color:#7C8B6B; border-bottom:1px solid #7C8B6B; padding-bottom:3px" style-hover="color:#33352E; border-color:#33352E">Alla inlägg →</a>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:36px">
+          <sc-for list="{{ homeBlog }}" as="b" hint-placeholder-count="3">
+            <a onClick="{{ goBlogg }}" style="cursor:pointer; display:block">
+              <div style="aspect-ratio:16/11; background:url('{{ b.img }}') center/cover; border-radius:20px; margin-bottom:14px"></div>
+              <p style="margin:0 0 6px; font-weight:600; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#7C8B6B">{{ b.date }}</p>
+              <h3 style="margin:0; font-family:'Fraunces'; font-weight:500; font-size:20px; line-height:1.25; color:#33352E">{{ b.title }}</h3>
+            </a>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <!-- ============ BUTIK ============ -->
+  <sc-if value="{{ showButik }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1200px; margin:0 auto; padding:64px 40px 0">
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Sortiment</p>
+      <h1 style="margin:0 0 36px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Buketterna</h1>
+      <div style="display:flex; gap:10px; margin-bottom:44px; flex-wrap:wrap">
+        <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+          <a onClick="{{ f.go }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14px; color:{{ f.color }}; background:{{ f.bg }}; border:1px solid {{ f.border }}; border-radius:999px; padding:9px 20px" style-hover="border-color:#7C8B6B">{{ f.label }}</a>
+        </sc-for>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:44px 36px">
+        <sc-for list="{{ shopProducts }}" as="p" hint-placeholder-count="6">
+          <div>
+            <div style="aspect-ratio:4/5; background:url('{{ p.img }}') center/cover; border-radius:24px; margin-bottom:16px"></div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px">
+              <h3 style="margin:0; font-family:'Fraunces'; font-weight:500; font-size:21px; color:#33352E">{{ p.name }}</h3>
+              <span style="font-weight:600; font-size:15px; color:#7C8B6B; white-space:nowrap">{{ p.price }}</span>
+            </div>
+            <p style="margin:6px 0 14px; font-size:14px; line-height:1.6; color:#6B6D60">{{ p.desc }}</p>
+            <button onClick="{{ p.add }}" style="cursor:pointer; display:inline-block; font-weight:600; font-size:13.5px; color:#33352E; border:1px solid #C9C6B4; border-radius:999px; padding:9px 20px" style-hover="background:#33352E; color:#F4F1EA; border-color:#33352E">Lägg i korg</button>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ KORG ============ -->
+  <sc-if value="{{ showKorg }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:760px; margin:0 auto; padding:64px 40px 0">
+      <h1 style="margin:0 0 40px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Din korg</h1>
+      <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff; border-radius:24px; padding:64px 40px; text-align:center">
+          <p style="margin:0 0 8px; font-family:'Fraunces'; font-size:22px; color:#33352E">Korgen är tom.</p>
+          <p style="margin:0 0 26px; font-size:15px; color:#6B6D60">Låt oss fylla den med något grönt.</p>
+          <a onClick="{{ goButik }}" style="cursor:pointer; display:inline-block; background:#33352E; color:#F4F1EA; font-weight:600; font-size:15px; border-radius:999px; padding:13px 28px" style-hover="background:#7C8B6B">Till buketterna</a>
+        </div>
+      </sc-if>
+      <sc-if value="{{ cartHasItems }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="background:#fff; border-radius:24px; padding:8px 28px">
+            <sc-for list="{{ cartItems }}" as="ci" hint-placeholder-count="0">
+              <div style="display:flex; gap:20px; align-items:center; border-bottom:1px solid #ECE9DE; padding:18px 0">
+                <div style="width:64px; height:80px; background:url('{{ ci.img }}') center/cover; border-radius:12px; flex-shrink:0"></div>
+                <div style="flex:1">
+                  <p style="margin:0 0 3px; font-family:'Fraunces'; font-weight:500; font-size:18px; color:#33352E">{{ ci.name }}</p>
+                  <p style="margin:0; font-size:13.5px; color:#8A8B7C">{{ ci.unit }} / st</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:14px">
+                  <button onClick="{{ ci.dec }}" style="background:transparent; border:none; cursor:pointer; font-size:18px; color:#7C8B6B" style-hover="color:#33352E">−</button>
+                  <span style="font-weight:600; font-size:14px; min-width:18px; text-align:center">{{ ci.qty }}</span>
+                  <button onClick="{{ ci.inc }}" style="background:transparent; border:none; cursor:pointer; font-size:18px; color:#7C8B6B" style-hover="color:#33352E">+</button>
+                </div>
+                <span style="font-weight:600; font-size:15px; color:#33352E; min-width:82px; text-align:right; white-space:nowrap">{{ ci.lineTotal }}</span>
+                <button onClick="{{ ci.remove }}" style="background:transparent; border:none; cursor:pointer; font-size:13px; color:#A7A594; white-space:nowrap" style-hover="color:#7C8B6B">Ta bort</button>
+              </div>
+            </sc-for>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; padding:20px 0">
+              <span style="font-family:'Fraunces'; font-size:20px; color:#33352E">Summa</span>
+              <span style="font-weight:700; font-size:20px; color:#33352E; white-space:nowrap">{{ cartSubtotal }}</span>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:26px; flex-wrap:wrap; gap:14px">
+            <a onClick="{{ goButik }}" style="cursor:pointer; font-weight:600; font-size:14.5px; color:#7C8B6B; border-bottom:1px solid #7C8B6B; padding-bottom:3px" style-hover="color:#33352E; border-color:#33352E">← Fortsätt handla</a>
+            <a onClick="{{ goKassa }}" style="cursor:pointer; white-space:nowrap; background:#33352E; color:#F4F1EA; font-weight:600; font-size:15px; border-radius:999px; padding:15px 38px" style-hover="background:#7C8B6B">Till kassan</a>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+  </sc-if>
+
+  <!-- ============ KASSA ============ -->
+  <sc-if value="{{ showKassa }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:680px; margin:0 auto; padding:64px 40px 0">
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Kassa · {{ cartCount }} varor · {{ kassaTotal }}</p>
+      <h1 style="margin:0 0 40px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Nästan klart</h1>
+
+      <div style="background:#fff; border-radius:24px; padding:32px; margin-bottom:20px">
+        <h2 style="margin:0 0 22px; font-family:'Fraunces'; font-weight:500; font-size:22px">Leverans</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
+          <input placeholder="Mottagare" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+          <input placeholder="Telefon" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+        </div>
+        <input placeholder="Adress, postnummer, ort" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+      </div>
+
+      <div style="background:#fff; border-radius:24px; padding:32px; margin-bottom:20px">
+        <h2 style="margin:0 0 20px; font-family:'Fraunces'; font-weight:500; font-size:22px">Leveranssätt</h2>
+        <div style="display:flex; flex-direction:column; gap:12px">
+          <sc-for list="{{ deliveryOpts }}" as="d" hint-placeholder-count="3">
+            <button onClick="{{ d.pick }}" style="cursor:pointer; display:flex; align-items:center; gap:14px; border:1px solid {{ d.border }}; background:{{ d.bg }}; border-radius:14px; padding:15px 18px" style-hover="border-color:#7C8B6B">
+              <span style="width:18px; height:18px; border-radius:999px; border:1px solid {{ d.ring }}; background:{{ d.fill }}; box-sizing:border-box; flex-shrink:0"></span>
+              <span style="flex:1; font-weight:600; font-size:15px; color:#33352E">{{ d.name }}</span>
+              <span style="font-weight:600; font-size:14.5px; color:#7C8B6B; white-space:nowrap">{{ d.price }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#fff; border-radius:24px; padding:32px; margin-bottom:28px">
+        <h2 style="margin:0 0 20px; font-family:'Fraunces'; font-weight:500; font-size:22px">Betalning</h2>
+        <div style="display:flex; flex-wrap:wrap; gap:12px">
+          <sc-for list="{{ payMethods }}" as="m" hint-placeholder-count="5">
+            <button onClick="{{ m.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14px; color:{{ m.color }}; background:{{ m.bg }}; border:1px solid {{ m.border }}; border-radius:999px; padding:11px 20px" style-hover="border-color:#7C8B6B">{{ m.name }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:16px 0 0; font-size:13.5px; color:#8A8B7C; line-height:1.6">{{ payHint }}</p>
+      </div>
+
+      <button onClick="{{ placeOrder }}" style="border:none; cursor:pointer; display:block; text-align:center; background:#33352E; color:#F4F1EA; font-weight:600; font-size:16px; border-radius:999px; padding:17px 0" style-hover="background:#7C8B6B">Betala {{ kassaTotal }}</button>
+      <p style="margin:14px 0 0; text-align:center; font-size:12.5px; color:#A7A594">Trygg betalning · Färskhetsgaranti i 7 dagar</p>
+    </section>
+  </sc-if>
+
+  <!-- ============ BEKRÄFTELSE ============ -->
+  <sc-if value="{{ showBekraftelse }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:560px; margin:0 auto; padding:100px 40px 0; text-align:center">
+      <p style="margin:0 0 18px; font-family:'Fraunces'; font-style:italic; font-size:22px; color:#7C8B6B">tack</p>
+      <h1 style="margin:0 0 14px; font-family:'Fraunces'; font-weight:400; font-size:44px; letter-spacing:-0.01em">Nu binder vi din bukett</h1>
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:#7C8B6B">Order {{ orderNo }}</p>
+      <p style="margin:0 auto 36px; max-width:400px; font-size:16px; line-height:1.8; color:#6B6D60">Du får ett sms när den är på väg. Kvittot ligger redan i din inkorg.</p>
+      <a onClick="{{ goHem }}" style="cursor:pointer; display:inline-block; font-weight:600; font-size:14.5px; color:#33352E; border:1px solid #C9C6B4; border-radius:999px; padding:13px 30px; white-space:nowrap" style-hover="background:#33352E; color:#F4F1EA; border-color:#33352E">Till startsidan</a>
+    </section>
+  </sc-if>
+
+  <!-- ============ BOKA ============ -->
+  <sc-if value="{{ showBoka }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:680px; margin:0 auto; padding:64px 40px 0">
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Bokning</p>
+      <h1 style="margin:0 0 14px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Boka en tid</h1>
+      <p style="margin:0 0 40px; font-size:16px; line-height:1.8; color:#6B6D60; max-width:460px">Konsultation för bröllop, större beställning eller bara hjälp att välja. Vi ses i ateljén eller på video.</p>
+      <div style="background:#fff; border-radius:24px; padding:32px">
+        <p style="margin:0 0 14px; font-weight:600; font-size:13px; color:#33352E">Ärende</p>
+        <div style="display:flex; gap:12px; margin-bottom:30px; flex-wrap:wrap">
+          <sc-for list="{{ bookServices }}" as="s" hint-placeholder-count="3">
+            <button onClick="{{ s.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14px; color:{{ s.color }}; background:{{ s.bg }}; border:1px solid {{ s.border }}; border-radius:999px; padding:10px 20px" style-hover="border-color:#7C8B6B">{{ s.name }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:0 0 14px; font-weight:600; font-size:13px; color:#33352E">Dag</p>
+        <div style="display:flex; gap:12px; margin-bottom:30px; flex-wrap:wrap">
+          <sc-for list="{{ bookDays }}" as="d" hint-placeholder-count="5">
+            <button onClick="{{ d.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14px; color:{{ d.color }}; background:{{ d.bg }}; border:1px solid {{ d.border }}; border-radius:999px; padding:10px 18px" style-hover="border-color:#7C8B6B">{{ d.name }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:0 0 14px; font-weight:600; font-size:13px; color:#33352E">Tid</p>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:30px">
+          <sc-for list="{{ bookTimes }}" as="t" hint-placeholder-count="4">
+            <button onClick="{{ t.pick }}" style="cursor:pointer; text-align:center; font-weight:600; font-size:14px; color:{{ t.color }}; background:{{ t.bg }}; border:1px solid {{ t.border }}; border-radius:12px; padding:11px 0" style-hover="border-color:#7C8B6B">{{ t.name }}</button>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:26px">
+          <input placeholder="Namn" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+          <input placeholder="Telefon" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+        </div>
+        <button onClick="{{ confirmBooking }}" style="border:none; cursor:pointer; display:block; text-align:center; background:#33352E; color:#F4F1EA; font-weight:600; font-size:15px; border-radius:999px; padding:15px 0" style-hover="background:#7C8B6B">{{ bookCta }}</button>
+        <sc-if value="{{ bookedMsg }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:16px 0 0; text-align:center; font-family:'Fraunces'; font-style:italic; font-size:16px; color:#7C8B6B">Tack! Vi ses {{ bookedSummary }} — bekräftelse via sms.</p>
+        </sc-if>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ KURSER ============ -->
+  <sc-if value="{{ showKurser }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1200px; margin:0 auto; padding:64px 40px 0">
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Ateljékvällar</p>
+      <h1 style="margin:0 0 14px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Kurser &amp; event</h1>
+      <p style="margin:0 0 44px; font-size:16px; line-height:1.8; color:#6B6D60; max-width:480px">Små grupper, säsongens material och te i pausen. Platsen läggs i korgen.</p>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:36px">
+        <sc-for list="{{ courses }}" as="k" hint-placeholder-count="3">
+          <div style="background:#fff; border-radius:24px; overflow:hidden">
+            <div style="aspect-ratio:16/11; background:url('{{ k.img }}') center/cover"></div>
+            <div style="padding:22px 24px 24px">
+              <p style="margin:0 0 8px; font-weight:600; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#7C8B6B">{{ k.date }}</p>
+              <h3 style="margin:0 0 8px; font-family:'Fraunces'; font-weight:500; font-size:22px; color:#33352E">{{ k.name }}</h3>
+              <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#6B6D60">{{ k.desc }}</p>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px">
+                <span style="font-weight:700; font-size:16px; color:#33352E">{{ k.price }}</span>
+                <span style="font-size:13px; color:#8A8B7C">{{ k.seats }}</span>
+              </div>
+              <button onClick="{{ k.add }}" style="cursor:pointer; display:block; text-align:center; font-weight:600; font-size:14px; color:#33352E; border:1px solid #C9C6B4; border-radius:999px; padding:11px 0" style-hover="background:#33352E; color:#F4F1EA; border-color:#33352E">Boka plats</button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin:40px 0 0; font-size:16px; color:#6B6D60">Privat sällskap? <a onClick="{{ goOffert }}" style="cursor:pointer; color:#7C8B6B; border-bottom:1px solid #7C8B6B" style-hover="color:#33352E; border-color:#33352E">Be om en offert →</a></p>
+    </section>
+  </sc-if>
+
+  <!-- ============ GALLERI ============ -->
+  <sc-if value="{{ showGalleri }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1200px; margin:0 auto; padding:64px 40px 0">
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Portfolio</p>
+      <h1 style="margin:0 0 44px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Galleri</h1>
+      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:24px">
+        <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="6">
+          <div style="aspect-ratio:{{ g.ratio }}; background:url('{{ g.img }}') center/cover; border-radius:24px"></div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ JOURNALEN (blogg) ============ -->
+  <sc-if value="{{ showBlogg }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:900px; margin:0 auto; padding:64px 40px 0">
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Journalen</p>
+      <h1 style="margin:0 0 48px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Ord om blomster</h1>
+      <div style="display:flex; flex-direction:column; gap:24px">
+        <sc-for list="{{ blog }}" as="b" hint-placeholder-count="4">
+          <a style="cursor:pointer; display:grid; grid-template-columns:260px 1fr; gap:32px; align-items:center; background:#fff; border-radius:24px; overflow:hidden">
+            <div style="aspect-ratio:4/3; background:url('{{ b.img }}') center/cover"></div>
+            <div style="padding:24px 28px 24px 0">
+              <p style="margin:0 0 8px; font-weight:600; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#7C8B6B">{{ b.tag }} · {{ b.date }}</p>
+              <h2 style="margin:0 0 10px; font-family:'Fraunces'; font-weight:500; font-size:26px; line-height:1.2; color:#33352E">{{ b.title }}</h2>
+              <p style="margin:0; font-size:15px; line-height:1.7; color:#6B6D60">{{ b.excerpt }}</p>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ KLUBBEN (lojalitet) ============ -->
+  <sc-if value="{{ showKlubb }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:820px; margin:0 auto; padding:64px 40px 0">
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Medlemskap</p>
+      <h1 style="margin:0 0 14px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Söndagsklubben</h1>
+      <p style="margin:0 0 40px; font-size:16px; line-height:1.8; color:#6B6D60; max-width:480px">Färska blommor hem varje eller varannan vecka. Pausa när du vill, avsluta när du vill.</p>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; margin-bottom:36px">
+        <sc-for list="{{ plans }}" as="pl" hint-placeholder-count="3">
+          <div style="background:{{ pl.bg }}; border:1px solid {{ pl.border }}; border-radius:24px; padding:28px 26px">
+            <p style="margin:0 0 6px; font-weight:600; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#7C8B6B">{{ pl.tag }}</p>
+            <p style="margin:0 0 4px; font-family:'Fraunces'; font-weight:500; font-size:30px; color:#33352E">{{ pl.price }}</p>
+            <p style="margin:0 0 16px; font-size:13.5px; color:#8A8B7C">{{ pl.per }}</p>
+            <p style="margin:0; font-size:14px; line-height:1.65; color:#585A4E">{{ pl.desc }}</p>
+          </div>
+        </sc-for>
+      </div>
+      <div style="background:#E4E7DA; border-radius:24px; padding:32px 36px; display:flex; gap:16px; align-items:end; flex-wrap:wrap">
+        <div style="flex:1; min-width:220px">
+          <label style="display:block; font-weight:600; font-size:13px; margin-bottom:8px; color:#33352E">Din e-post</label>
+          <input placeholder="namn@mejl.se" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #C9C6B4; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+        </div>
+        <button onClick="{{ joinClub }}" style="border:none; cursor:pointer; white-space:nowrap; background:#33352E; color:#F4F1EA; font-weight:600; font-size:15px; border-radius:999px; padding:14px 30px" style-hover="background:#7C8B6B">{{ clubCta }}</button>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ OFFERT ============ -->
+  <sc-if value="{{ showOffert }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:680px; margin:0 auto; padding:64px 40px 0">
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Offert</p>
+      <h1 style="margin:0 0 14px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Större uppdrag</h1>
+      <p style="margin:0 0 40px; font-size:16px; line-height:1.8; color:#6B6D60; max-width:460px">Bröllop, event eller återkommande leveranser till kontoret. Beskriv behovet så återkommer vi inom en arbetsdag.</p>
+      <div style="background:#fff; border-radius:24px; padding:32px">
+        <p style="margin:0 0 14px; font-weight:600; font-size:13px; color:#33352E">Typ av uppdrag</p>
+        <div style="display:flex; gap:12px; margin-bottom:26px; flex-wrap:wrap">
+          <sc-for list="{{ quoteTypes }}" as="q" hint-placeholder-count="4">
+            <button onClick="{{ q.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14px; color:{{ q.color }}; background:{{ q.bg }}; border:1px solid {{ q.border }}; border-radius:999px; padding:10px 20px" style-hover="border-color:#7C8B6B">{{ q.name }}</button>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
+          <input placeholder="Namn / företag" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+          <input placeholder="E-post" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+        </div>
+        <textarea placeholder="Berätta om uppdraget — plats, datum, budget…" rows="4" style="width:100%; box-sizing:border-box; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B; resize:vertical; margin-bottom:22px"></textarea>
+        <button onClick="{{ sendQuote }}" style="border:none; cursor:pointer; display:block; text-align:center; background:#33352E; color:#F4F1EA; font-weight:600; font-size:15px; border-radius:999px; padding:15px 0" style-hover="background:#7C8B6B">{{ quoteCta }}</button>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ PRESENTKORT ============ -->
+  <sc-if value="{{ showPresentkort }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:940px; margin:0 auto; padding:64px 40px 0">
+      <p style="margin:0 0 8px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Presentkort</p>
+      <h1 style="margin:0 0 40px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Ge bort blomster</h1>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center">
+        <div style="background:#E4E7DA; border-radius:24px; padding:48px 36px; text-align:center">
+          <p style="margin:0 0 6px; font-family:'Fraunces'; font-weight:500; font-size:26px; color:#33352E">Siv &amp; Säv</p>
+          <p style="margin:0 0 30px; font-weight:600; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#7C8B6B">Presentkort</p>
+          <p style="margin:0; font-family:'Fraunces'; font-weight:500; font-size:46px; color:#33352E">{{ giftAmount }}</p>
+          <p style="margin:20px 0 0; font-size:12.5px; color:#8A8B7C">Giltigt 12 månader · skickas digitalt</p>
+        </div>
+        <div>
+          <p style="margin:0 0 14px; font-weight:600; font-size:13px; color:#33352E">Välj belopp</p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:26px">
+            <sc-for list="{{ giftOptions }}" as="g" hint-placeholder-count="4">
+              <button onClick="{{ g.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:15px; color:{{ g.color }}; background:{{ g.bg }}; border:1px solid {{ g.border }}; border-radius:999px; padding:12px 22px" style-hover="border-color:#7C8B6B">{{ g.label }}</button>
+            </sc-for>
+          </div>
+          <button onClick="{{ addGift }}" style="border:none; cursor:pointer; display:inline-block; white-space:nowrap; background:#33352E; color:#F4F1EA; font-weight:600; font-size:15px; border-radius:999px; padding:14px 30px" style-hover="background:#7C8B6B">Lägg i korg — {{ giftAmount }}</button>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ OM ============ -->
+  <sc-if value="{{ showOm }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1000px; margin:0 auto; padding:64px 40px 0">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; margin-bottom:56px">
+        <div>
+          <p style="margin:0 0 12px; font-weight:600; font-size:13px; letter-spacing:0.16em; text-transform:uppercase; color:#7C8B6B">Om oss</p>
+          <h1 style="margin:0 0 20px; font-family:'Fraunces'; font-weight:400; font-size:44px; line-height:1.1; letter-spacing:-0.01em">Två händer, ett fönster mot norr</h1>
+          <p style="margin:0 0 16px; font-size:16px; line-height:1.85; color:#585A4E">Siv &amp; Säv är en liten ateljé på Kungsholmen. Vi tror på det sparsmakade — ett fång gräs, en gren i knopp, en enda ranunkel. Blomster som får andas.</p>
+          <p style="margin:0; font-size:16px; line-height:1.85; color:#585A4E">Allt binds för hand, i säsong, i den takt som känns rätt. Kom förbi på en kopp te — vi är oftast här.</p>
+        </div>
+        <div style="aspect-ratio:4/5; background:url('https://images.unsplash.com/photo-1563241527-3004b7be0ffd?w=1200&q=80&auto=format&fit=crop') center/cover; border-radius:200px 200px 24px 24px"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; border-top:1px solid #DAD7C8; padding-top:36px">
+        <div><p style="margin:0; font-family:'Fraunces'; font-size:30px; color:#33352E">Säsong</p><p style="margin:6px 0 0; font-size:14px; color:#6B6D60">som enda regel</p></div>
+        <div><p style="margin:0; font-family:'Fraunces'; font-size:30px; color:#33352E">För hand</p><p style="margin:6px 0 0; font-size:14px; color:#6B6D60">varje bukett, varje dag</p></div>
+        <div><p style="margin:0; font-family:'Fraunces'; font-size:30px; color:#33352E">Lugnt</p><p style="margin:6px 0 0; font-size:14px; color:#6B6D60">få buketter om dagen</p></div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ KONTAKT ============ -->
+  <sc-if value="{{ showKontakt }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1000px; margin:0 auto; padding:64px 40px 0">
+      <h1 style="margin:0 0 44px; font-family:'Fraunces'; font-weight:400; font-size:52px; letter-spacing:-0.01em">Hör av dig</h1>
+      <div style="display:grid; grid-template-columns:1fr 1.3fr; gap:48px">
+        <div>
+          <p style="margin:0 0 10px; font-weight:600; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#7C8B6B">Ateljén</p>
+          <p style="margin:0 0 22px; font-size:16px; line-height:1.7; color:#33352E">Norr Mälarstrand 18<br>112 20 Stockholm</p>
+          <p style="margin:0 0 10px; font-weight:600; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#7C8B6B">Kontakt</p>
+          <p style="margin:0 0 22px; font-size:16px; line-height:1.7; color:#33352E">hej@sivochsav.se<br>08-556 210 90</p>
+          <p style="margin:0 0 10px; font-weight:600; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#7C8B6B">Öppet</p>
+          <p style="margin:0; font-size:16px; line-height:1.7; color:#33352E">Ons–fre 11–18 · Lör 11–15</p>
+        </div>
+        <div style="background:#fff; border-radius:24px; padding:32px">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
+            <input placeholder="Namn" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+            <input placeholder="E-post" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B">
+          </div>
+          <textarea placeholder="Vad kan vi hjälpa till med?" rows="5" style="width:100%; box-sizing:border-box; border:1px solid #DAD7C8; border-radius:12px; padding:13px 15px; font-family:'Hanken Grotesk'; font-size:15px; outline-color:#7C8B6B; resize:vertical; margin-bottom:18px"></textarea>
+          <a style="cursor:pointer; display:block; text-align:center; background:#33352E; color:#F4F1EA; font-weight:600; font-size:15px; border-radius:999px; padding:14px 0" style-hover="background:#7C8B6B">Skicka</a>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- FOOTER -->
+  <footer style="margin-top:96px; border-top:1px solid #DAD7C8; padding:56px 40px 40px">
+    <div style="max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap">
+      <div>
+        <p style="margin:0 0 4px; font-family:'Fraunces'; font-weight:500; font-size:24px; color:#33352E">Siv &amp; Säv</p>
+        <p style="margin:0; font-size:13.5px; color:#8A8B7C">Blomsterateljé · Norr Mälarstrand 18, Stockholm</p>
+      </div>
+      <nav style="display:flex; gap:22px; flex-wrap:wrap">
+        <a onClick="{{ goKlubb }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14px; color:#7C8B6B" style-hover="color:#33352E">Söndagsklubben</a>
+        <a onClick="{{ goPresentkort }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14px; color:#7C8B6B" style-hover="color:#33352E">Presentkort</a>
+        <a onClick="{{ goOffert }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14px; color:#7C8B6B" style-hover="color:#33352E">Offert</a>
+        <a onClick="{{ goKontakt }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:14px; color:#7C8B6B" style-hover="color:#33352E">Kontakt</a>
+      </nav>
+      <p style="margin:0; font-size:12.5px; color:#A7A594">© 2026 Siv &amp; Säv · Byggd med Corevo</p>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = {
+    page: 'hem', filter: 'Allt', cart: {}, orderNo: '',
+    delivery: 'bud', pay: 'Kort',
+    bookService: 'Konsultation', bookDay: 'Ons 15/7', bookTime: '13:00', booked: false,
+    giftAmount: 500, clubJoined: false, quoteType: 'Bröllop', quoteSent: false,
+  };
+
+  go(page) {
+    this.setState({ page });
+    try { document.scrollingElement.scrollTop = 0; } catch (e) {}
+  }
+
+  addToCart(item) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const prev = cart[item.id] || { ...item, qty: 0 };
+      cart[item.id] = { ...prev, qty: prev.qty + 1 };
+      return { cart };
+    });
+    this.go('korg');
+  }
+
+  setQty(id, delta) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const it = cart[id];
+      if (!it) return {};
+      const qty = it.qty + delta;
+      if (qty <= 0) delete cart[id]; else cart[id] = { ...it, qty };
+      return { cart };
+    });
+  }
+
+  renderVals() {
+    const st = this.state;
+    const page = st.page;
+    const kr = (n) => n.toLocaleString('sv-SE') + ' kr';
+    const img = (id, w = 900) => `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`;
+    const pill = (on) => ({ bg: on ? '#33352E' : '#F4F1EA', color: on ? '#F4F1EA' : '#33352E', border: on ? '#33352E' : '#C9C6B4' });
+
+    const navLabels = [['butik', 'Buketter'], ['kurser', 'Kurser'], ['galleri', 'Galleri'], ['blogg', 'Journalen'], ['om', 'Om oss'], ['kontakt', 'Kontakt']];
+    const navItems = navLabels.map(([key, label]) => ({
+      key, label,
+      go: () => this.go(key),
+      color: page === key ? '#33352E' : '#7C8B6B',
+      weight: page === key ? '700' : '500',
+    }));
+
+    const promises = [
+      { title: 'Bundet i säsong', desc: 'Vi arbetar med det som växer just nu — därför ser buketten olika ut vecka till vecka.' },
+      { title: 'Samma dag', desc: 'Beställ före kl 13 så levererar vårt bud inom Stockholm samma eftermiddag.' },
+      { title: 'Håller en vecka', desc: 'Skötselråd följer med varje bukett. Håller den inte sju dagar binder vi en ny.' },
+    ];
+
+    const rawProducts = [
+      { id: 'p1', name: 'Säv', price: 495, cat: 'Buketter', desc: 'Gräs, säv och ett fång vitt — luftigt och stilla.', img: img('1454262041357-5d96f50a2f27') },
+      { id: 'p2', name: 'Salvia', price: 545, cat: 'Buketter', desc: 'Dovt gröngrått med enstaka dammrosa.', img: img('1563241527-3004b7be0ffd') },
+      { id: 'p3', name: 'Ranunkel, ensam sort', price: 445, cat: 'Enkla', desc: 'Sju ranunkler i persika, inget mer.', img: img('1747226757800-6d8f87cfc0fe') },
+      { id: 'p4', name: 'Lin', price: 395, cat: 'Enkla', desc: 'Späda blå linblommor i liten knippa.', img: img('1522748906645-95d8adfd52c7') },
+      { id: 'p5', name: 'Höstmånad', price: 645, cat: 'Stora', desc: 'Grenar, nypon och torkat — vår största.', img: img('1598453055371-0f5e37113bea') },
+      { id: 'p6', name: 'Floristens fång', price: 349, cat: 'Enkla', desc: 'Vi väljer dagens finaste. Alltid en överraskning.', img: img('1602934585418-f588bea4215c') },
+    ];
+    const products = rawProducts.map((p) => ({
+      ...p, price: kr(p.price),
+      add: () => this.addToCart({ id: p.id, name: p.name, priceNum: p.price, img: p.img }),
+    }));
+
+    const blog = [
+      { tag: 'Skötsel', date: '4 juli', title: 'Så får du gräset att hålla', excerpt: 'Torkat eller färskt — sävens och gräsens knep skiljer sig. Vi reder ut.', img: img('1602934585418-f588bea4215c', 700) },
+      { tag: 'Säsong', date: '20 juni', title: 'Det tysta i en sommaräng', excerpt: 'Om konsten att låta blygsamma blommor bära en hel bukett.', img: img('1454262041357-5d96f50a2f27', 700) },
+      { tag: 'Ateljén', date: '6 juni', title: 'En dag vid norrfönstret', excerpt: 'Ljuset som aldrig ljuger, och varför vi binder just här.', img: img('1563241527-3004b7be0ffd', 700) },
+      { tag: 'Guide', date: '22 maj', title: 'Välj vas efter bukett', excerpt: 'Låg och vid, hög och smal — så matchar du kärl och blomster.', img: img('1522748906645-95d8adfd52c7', 700) },
+    ];
+
+    const sections = [
+      { no: '01', title: 'Prenumeration', desc: 'Färska blommor hem varje vecka — pausa när du vill.', cta: 'Söndagsklubben', go: () => this.go('klubb') },
+      { no: '02', title: 'Ateljékvällar', desc: 'Bind din egen bukett i lugn takt, te ingår.', cta: 'Se kurser', go: () => this.go('kurser') },
+      { no: '03', title: 'Bröllop &amp; event', desc: 'Vi tar ett fåtal uppdrag per helg. Hör av dig i tid.', cta: 'Be om offert', go: () => this.go('offert') },
+    ];
+
+    const courses = [
+      { id: 'k1', name: 'Grunder i bindning', date: 'Tors 23 juli · 18:00', desc: 'Spiralbindning från början. Du går hem med din bukett.', priceNum: 650, seats: '4 platser kvar', img: img('1454262041357-5d96f50a2f27', 700) },
+      { id: 'k2', name: 'Torkat &amp; evigt', date: 'Lör 1 aug · 10:00', desc: 'Bind en krans av gräs och torkat som håller året ut.', priceNum: 750, seats: '6 platser kvar', img: img('1602934585418-f588bea4215c', 700) },
+      { id: 'k3', name: 'Vasen &amp; fånget', date: 'Fre 14 aug · 17:30', desc: 'Lär dig komponera löst i vas — te och kaka ingår.', priceNum: 700, seats: '8 platser kvar', img: img('1563241527-3004b7be0ffd', 700) },
+    ].map((k) => ({ ...k, price: kr(k.priceNum), add: () => this.addToCart({ id: k.id, name: k.name + ' (kursplats)', priceNum: k.priceNum, img: k.img }) }));
+
+    const galleryItems = [
+      { ratio: '4/3', img: img('1454262041357-5d96f50a2f27', 1200) },
+      { ratio: '4/3', img: img('1563241527-3004b7be0ffd', 1200) },
+      { ratio: '4/3', img: img('1747226757800-6d8f87cfc0fe', 1200) },
+      { ratio: '4/3', img: img('1598453055371-0f5e37113bea', 1200) },
+      { ratio: '4/3', img: img('1522748906645-95d8adfd52c7', 1200) },
+      { ratio: '4/3', img: img('1602934585418-f588bea4215c', 1200) },
+    ];
+
+    const plans = [
+      { tag: 'Litet', price: kr(295), per: 'per leverans', desc: 'En mindre bukett, varannan vecka.', bg: '#fff', border: '#E4E1D4' },
+      { tag: 'Mellan', price: kr(445), per: 'per leverans', desc: 'Vår vanligaste — varje vecka.', bg: '#E4E7DA', border: '#CBD2BC' },
+      { tag: 'Stort', price: kr(645), per: 'per leverans', desc: 'Generöst fång, varje vecka.', bg: '#fff', border: '#E4E1D4' },
+    ];
+
+    // — korg & kassa —
+    const entries = Object.values(st.cart).filter((it) => it && it.qty > 0);
+    const cartItems = entries.map((it) => ({
+      name: it.name, img: it.img, qty: it.qty,
+      unit: kr(it.priceNum),
+      lineTotal: kr(it.priceNum * it.qty),
+      inc: () => this.setQty(it.id, 1),
+      dec: () => this.setQty(it.id, -1),
+      remove: () => this.setQty(it.id, -it.qty),
+    }));
+    const cartCount = entries.reduce((n, it) => n + it.qty, 0);
+    const subtotal = entries.reduce((n, it) => n + it.priceNum * it.qty, 0);
+
+    const cats = ['Allt', 'Buketter', 'Enkla', 'Stora'];
+    const filters = cats.map((label) => ({
+      label,
+      go: () => { this.setState({ page: 'butik', filter: label }); try { document.scrollingElement.scrollTop = 0; } catch (e) {} },
+      bg: st.filter === label ? '#33352E' : '#F4F1EA',
+      color: st.filter === label ? '#F4F1EA' : '#33352E',
+      border: st.filter === label ? '#33352E' : '#C9C6B4',
+    }));
+    const shopProducts = st.filter === 'Allt' ? products : products.filter((p) => p.cat === st.filter);
+
+    const delOpts = [
+      { id: 'bud', name: 'Bud samma dag', cost: 79 },
+      { id: 'imorgon', name: 'Leverans imorgon', cost: 49 },
+      { id: 'hamta', name: 'Hämta i ateljén', cost: 0 },
+    ];
+    const deliveryOpts = delOpts.map((d) => ({
+      name: d.name, price: d.cost === 0 ? 'Fritt' : kr(d.cost),
+      pick: () => this.setState({ delivery: d.id }),
+      border: st.delivery === d.id ? '#7C8B6B' : '#E4E1D4',
+      bg: st.delivery === d.id ? '#EEF0E7' : '#fff',
+      ring: st.delivery === d.id ? '#7C8B6B' : '#C9C6B4',
+      fill: st.delivery === d.id ? '#7C8B6B' : 'transparent',
+    }));
+    const shipCost = (delOpts.find((d) => d.id === st.delivery) || delOpts[0]).cost;
+
+    const payHints = {
+      Kort: 'Visa, Mastercard och Amex. Betalningen dras direkt.',
+      Swish: 'Du får en förfrågan i Swish-appen när du bekräftar.',
+      Klarna: 'Faktura eller delbetalning — du väljer hos Klarna efter köpet.',
+      PayPal: 'Du skickas till PayPal för att slutföra betalningen.',
+      'Apple Pay': 'Bekräfta snabbt med Touch eller Face ID.',
+    };
+    const payMethods = ['Kort', 'Swish', 'Klarna', 'PayPal', 'Apple Pay'].map((name) => ({
+      name,
+      pick: () => this.setState({ pay: name }),
+      bg: st.pay === name ? '#33352E' : '#F4F1EA',
+      color: st.pay === name ? '#F4F1EA' : '#33352E',
+      border: st.pay === name ? '#33352E' : '#C9C6B4',
+    }));
+
+    const bookServices = ['Konsultation', 'Bröllop', 'Företag'].map((name) => ({
+      name, pick: () => this.setState({ bookService: name, booked: false }), ...pill(st.bookService === name),
+    }));
+    const bookDays = ['Ons 15/7', 'Tors 16/7', 'Fre 17/7', 'Lör 18/7', 'Ons 22/7'].map((name) => ({
+      name, pick: () => this.setState({ bookDay: name, booked: false }), ...pill(st.bookDay === name),
+    }));
+    const bookTimes = ['11:00', '13:00', '15:00', '17:00'].map((name) => ({
+      name, pick: () => this.setState({ bookTime: name, booked: false }), ...pill(st.bookTime === name),
+    }));
+
+    const giftOptions = [300, 500, 800, 1200].map((v) => ({
+      label: kr(v), pick: () => this.setState({ giftAmount: v }), ...pill(st.giftAmount === v),
+    }));
+
+    const quoteTypes = ['Bröllop', 'Event', 'Företag', 'Prenumeration'].map((name) => ({
+      name, pick: () => this.setState({ quoteType: name, quoteSent: false }), ...pill(st.quoteType === name),
+    }));
+
+    return {
+      navItems, promises, sections, blog, courses, galleryItems, plans, filters, shopProducts,
+      homeProducts: products.slice(0, 3),
+      homeBlog: blog.slice(0, 3),
+      goHem: () => this.go('hem'),
+      goButik: () => this.go('butik'),
+      goKorg: () => this.go('korg'),
+      goKassa: () => this.go('kassa'),
+      goBoka: () => this.go('boka'),
+      goKurser: () => this.go('kurser'),
+      goGalleri: () => this.go('galleri'),
+      goBlogg: () => this.go('blogg'),
+      goKlubb: () => this.go('klubb'),
+      goOffert: () => this.go('offert'),
+      goPresentkort: () => this.go('presentkort'),
+      goOm: () => this.go('om'),
+      goKontakt: () => this.go('kontakt'),
+      showHem: page === 'hem',
+      showButik: page === 'butik',
+      showKorg: page === 'korg',
+      showKassa: page === 'kassa',
+      showBekraftelse: page === 'bekraftelse',
+      showBoka: page === 'boka',
+      showKurser: page === 'kurser',
+      showGalleri: page === 'galleri',
+      showBlogg: page === 'blogg',
+      showKlubb: page === 'klubb',
+      showOffert: page === 'offert',
+      showPresentkort: page === 'presentkort',
+      showOm: page === 'om',
+      showKontakt: page === 'kontakt',
+      cartItems, cartCount,
+      cartEmpty: cartCount === 0,
+      cartHasItems: cartCount > 0,
+      cartSubtotal: kr(subtotal),
+      kassaTotal: kr(subtotal + (cartCount > 0 ? shipCost : 0)),
+      deliveryOpts, payMethods,
+      payHint: payHints[st.pay],
+      orderNo: st.orderNo,
+      placeOrder: () => {
+        if (cartCount === 0) { this.go('butik'); return; }
+        this.setState({ orderNo: '#SS-' + String(Math.floor(1000 + Math.random() * 9000)), cart: {} });
+        this.go('bekraftelse');
+      },
+      bookServices, bookDays, bookTimes,
+      bookCta: st.booked ? 'Bokat ✓' : 'Bekräfta bokning',
+      bookedMsg: st.booked,
+      bookedSummary: `${st.bookDay.toLowerCase()} kl ${st.bookTime}`,
+      confirmBooking: () => this.setState({ booked: true }),
+      giftOptions,
+      giftAmount: kr(st.giftAmount),
+      addGift: () => this.addToCart({ id: 'gift' + st.giftAmount, name: `Presentkort ${kr(st.giftAmount)}`, priceNum: st.giftAmount, img: img('1522748906645-95d8adfd52c7', 700) }),
+      clubCta: st.clubJoined ? 'Välkommen ✓' : 'Starta prenumeration',
+      joinClub: () => this.setState({ clubJoined: true }),
+      quoteTypes,
+      quoteCta: st.quoteSent ? 'Skickat — svar inom en dag ✓' : 'Skicka förfrågan',
+      sendQuote: () => this.setState({ quoteSent: true }),
+    };
+  }
+}
+</script>
+<script type="application/json" id="corevo-manifest">
+{
+  "key": "sivsav",
+  "name": "Siv & Säv",
+  "desc": "Skandinaviskt ljust — varmvitt, salvia och pill-knappar.",
+  "bransch": "florist",
+  "palette": {
+    "primary": "#7C8B6B",
+    "primaryD": "#647253",
+    "bg": "#F4F1EA",
+    "surface": "#FFFFFF",
+    "fg": "#33352E",
+    "fg2": "#6B6D60",
+    "line": "#DAD7C8",
+    "accentSoft": "#E4E7DA"
+  },
+  "fonts": {
+    "heading": "Fraunces",
+    "body": "Hanken Grotesk"
+  },
+  "radius": "24px",
+  "navHeight": {
+    "desktop": "68px",
+    "mobile": "56px"
+  },
+  "caps": {
+    "heroEyebrow": true,
+    "homeStats": false,
+    "homeGallery": false,
+    "homeAbout": true
+  },
+  "pages": {
+    "hem": {
+      "module": null,
+      "route": "/"
+    },
+    "butik": {
+      "module": "shop",
+      "route": "/shop"
+    },
+    "korg": {
+      "module": "shop",
+      "route": "/varukorg"
+    },
+    "kassa": {
+      "module": "shop",
+      "route": "/kassa"
+    },
+    "bekraftelse": {
+      "module": "shop",
+      "route": "/kassa/tack"
+    },
+    "boka": {
+      "module": "booking",
+      "route": "/boka"
+    },
+    "kurser": {
+      "module": "kurser",
+      "route": "/kurser"
+    },
+    "galleri": {
+      "module": null,
+      "route": "/galleri"
+    },
+    "blogg": {
+      "module": "blogg",
+      "route": "/blogg"
+    },
+    "klubb": {
+      "module": "lojalitet",
+      "route": "/klubb"
+    },
+    "offert": {
+      "module": "offert",
+      "route": "/offert"
+    },
+    "presentkort": {
+      "module": "presentkort",
+      "route": "/presentkort"
+    },
+    "om": {
+      "module": null,
+      "route": "/om"
+    },
+    "kontakt": {
+      "module": null,
+      "route": "/kontakt"
+    }
+  },
+  "mock": [
+    "rawProducts",
+    "products",
+    "courses",
+    "galleryItems",
+    "blog",
+    "delOpts",
+    "payHints",
+    "bookDays",
+    "bookTimes",
+    "bookServices",
+    "giftOptions",
+    "quoteTypes"
+  ],
+  "verbatim": [
+    "navLabels",
+    "payHints (betalsätts-texterna)",
+    "alla rubriker och all brödtext"
+  ]
+}
+</script>
+</body>
+</html>

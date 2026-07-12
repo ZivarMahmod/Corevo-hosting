@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>Blomstertorget — Färska priser varje dag</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #F5F1E8; }
+    body { font-family: 'Newsreader', Georgia, serif; color: #191714; -webkit-font-smoothing: antialiased; }
+    a { color: #C1272D; text-decoration: none; }
+    a:hover { color: #191714; }
+    ::selection { background: #C1272D; color: #F5F1E8; }
+    input, textarea { background: #F5F1E8; color: #191714; }
+    input::placeholder, textarea::placeholder { color: #A8A296; font-style: italic; }
+
+    /* Corevo-tillägg: fokus, knappsemantik, mobil ≤760px */
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #C1272D !important; outline-offset: 2px; }
+    button { font: inherit; cursor: pointer; }
+    @media (max-width: 760px) {
+      [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+      h1 { font-size: clamp(32px, 9vw, 46px) !important; line-height: 1.1 !important; }
+      h2 { font-size: clamp(24px, 7vw, 34px) !important; }
+      a[style*="cursor:pointer"], button { min-height: 44px; }
+      nav a { padding-top: 10px !important; padding-bottom: 10px !important; }
+      section, footer > div, header > div { padding-left: 20px !important; padding-right: 20px !important; }
+    }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#F5F1E8; overflow-x:hidden">
+
+  <!-- MASTHEAD -->
+  <header style="max-width:1140px; margin:0 auto; padding:28px 28px 0">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:1px solid #191714; padding-bottom:8px; gap:16px">
+      <p style="margin:0; white-space:nowrap; font-family:'Archivo'; font-weight:600; font-size:10px; letter-spacing:0.08em; text-transform:uppercase">Grundad 1962 · Hötorget</p>
+      <p style="margin:0; white-space:nowrap; font-family:'Archivo'; font-weight:600; font-size:10px; letter-spacing:0.08em; text-transform:uppercase">12 juli 2026 · Nr 173</p>
+      <a onClick="{{ goKorg }}" style="cursor:pointer; white-space:nowrap; font-family:'Archivo'; font-weight:800; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:#C1272D" style-hover="color:#191714">Korg ({{ cartCount }})</a>
+    </div>
+    <a onClick="{{ goHem }}" style="cursor:pointer; display:block; text-align:center; padding:22px 0 14px">
+      <h1 style="margin:0; font-family:'Archivo'; font-weight:900; font-size:72px; letter-spacing:-0.02em; line-height:0.95; color:#191714; text-transform:uppercase">Blomstertorget</h1>
+      <p style="margin:10px 0 0; font-style:italic; font-size:16px; color:#6E6A61">”Färska priser varje dag — sedan sextiotvå”</p>
+    </a>
+    <div style="border-top:3px solid #191714; border-bottom:1px solid #191714; padding:9px 0; display:flex; justify-content:center; gap:6px; flex-wrap:wrap">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="8">
+        <span style="display:flex; align-items:center; gap:6px">
+          <a onClick="{{ item.go }}" style="cursor:pointer; white-space:nowrap; font-family:'Archivo'; font-weight:{{ item.weight }}; font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; color:{{ item.color }}; padding:2px 10px" style-hover="color:#C1272D">{{ item.label }}</a>
+          <span style="color:#A8A296; font-size:11px">{{ item.sep }}</span>
+        </span>
+      </sc-for>
+    </div>
+  </header>
+
+  <!-- ============ FÖRSTASIDAN ============ -->
+  <sc-if value="{{ showHem }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width:1140px; margin:0 auto; padding:32px 28px 0">
+      <section style="display:grid; grid-template-columns:2fr 1fr; gap:32px; border-bottom:3px solid #191714; padding-bottom:36px">
+        <article>
+          <p style="margin:0 0 10px; font-family:'Archivo'; font-weight:800; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:#C1272D">Dagens huvudnyhet</p>
+          <h2 style="margin:0 0 16px; font-family:'Archivo'; font-weight:900; font-size:42px; line-height:1.0; letter-spacing:-0.01em; text-transform:uppercase">Pionerna har landat — torget öppnar 07:00</h2>
+          <div style="aspect-ratio:16/9; background:url('https://images.unsplash.com/photo-1598453055371-0f5e37113bea?w=1600&q=80&auto=format&fit=crop') center/cover; margin-bottom:8px"></div>
+          <p style="margin:0 0 18px; font-family:'Archivo'; font-weight:600; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:#6E6A61">Foto: Torgets egen — morgonens leverans, gång 3</p>
+          <p style="margin:0 0 18px; font-size:17px; line-height:1.65; column-count:2; column-gap:28px"><span style="font-family:'Archivo'; font-weight:800; text-transform:uppercase; font-size:14px">Hötorget.</span> Årets pionleverans är den största i torgets historia. Fyrahundra buntar går ut i stånden i gryningen och erfarenheten säger att de är slut före lunch. Torgmästaren råder: kom tidigt, och pruta inte på pioner — det har aldrig fungerat och kommer aldrig att fungera. Den som inte hinner kan beställa här i tidningen; utkörning sker med cykelbud inom tullarna före klockan sex på kvällen.</p>
+          <a onClick="{{ goButik }}" style="cursor:pointer; display:inline-block; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; padding:13px 26px" style-hover="background:#191714; color:#F5F1E8">Till torgpriserna →</a>
+        </article>
+        <aside style="border-left:1px solid #191714; padding-left:32px">
+          <p style="margin:0 0 4px; font-family:'Archivo'; font-weight:900; font-size:17px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:3px solid #191714; padding-bottom:8px">Dagens priser</p>
+          <sc-for list="{{ tickerRows }}" as="r" hint-placeholder-count="6">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px; border-bottom:1px dotted #A8A296; padding:10px 0">
+              <span style="white-space:nowrap; font-size:14.5px">{{ r.name }}</span>
+              <span style="font-family:'Archivo'; font-weight:800; font-size:13px; white-space:nowrap; color:{{ r.color }}">{{ r.price }} {{ r.arrow }}</span>
+            </div>
+          </sc-for>
+          <p style="margin:14px 0 0; font-style:italic; font-size:13.5px; color:#6E6A61">Priserna sätts 06:45 varje morgon efter nattens inköp i Årsta.</p>
+          <div style="border:2px dashed #C1272D; padding:18px; margin-top:24px; text-align:center">
+            <p style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:13px; letter-spacing:0.08em; text-transform:uppercase; color:#C1272D">✂ Stamkundskupong</p>
+            <p style="margin:0 0 12px; font-size:14px; line-height:1.5">Var 8:e bunt gratis för registrerade stamkunder.</p>
+            <a onClick="{{ goStamkund }}" style="cursor:pointer; font-family:'Archivo'; font-weight:800; font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:#C1272D; border-bottom:2px solid #C1272D" style-hover="color:#191714">Registrera dig →</a>
+          </div>
+        </aside>
+      </section>
+
+      <section style="display:grid; grid-template-columns:repeat(3, 1fr); gap:32px; padding:32px 0; border-bottom:1px solid #191714">
+        <sc-for list="{{ homeNotiser }}" as="n" hint-placeholder-count="3">
+          <article style="border-right:1px dotted #A8A296; padding-right:32px">
+            <p style="margin:0 0 8px; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase; color:#C1272D">{{ n.tag }}</p>
+            <h3 style="margin:0 0 8px; font-family:'Archivo'; font-weight:800; font-size:20px; line-height:1.15; text-transform:uppercase">{{ n.title }}</h3>
+            <p style="margin:0 0 12px; font-size:15px; line-height:1.6">{{ n.excerpt }}</p>
+            <a onClick="{{ n.go }}" style="cursor:pointer; font-style:italic; font-size:14.5px; color:#C1272D" style-hover="color:#191714">läs mer →</a>
+          </article>
+        </sc-for>
+      </section>
+
+      <section style="display:grid; grid-template-columns:1fr 1fr; gap:32px; padding:32px 0 48px">
+        <div>
+          <p style="margin:0 0 14px; font-family:'Archivo'; font-weight:900; font-size:17px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:3px solid #191714; padding-bottom:8px">Kungörelser</p>
+          <sc-for list="{{ homeCourses }}" as="k" hint-placeholder-count="3">
+            <div style="display:flex; gap:16px; align-items:baseline; border-bottom:1px dotted #A8A296; padding:12px 0">
+              <span style="font-family:'Archivo'; font-weight:800; font-size:12px; color:#C1272D; min-width:76px; text-transform:uppercase">{{ k.date }}</span>
+              <span style="flex:1; font-size:16px"><strong style="font-family:'Archivo'; font-weight:800; font-size:14px; text-transform:uppercase">{{ k.name }}.</strong> {{ k.desc }}</span>
+            </div>
+          </sc-for>
+          <a onClick="{{ goKurser }}" style="cursor:pointer; display:inline-block; margin-top:16px; font-style:italic; font-size:14.5px; color:#C1272D" style-hover="color:#191714">alla kungörelser →</a>
+        </div>
+        <div>
+          <p style="margin:0 0 14px; font-family:'Archivo'; font-weight:900; font-size:17px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:3px solid #191714; padding-bottom:8px">Bildsidan</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+            <div style="aspect-ratio:1/1; background:url('https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=700&q=80&auto=format&fit=crop') center/cover"></div>
+            <div style="aspect-ratio:1/1; background:url('https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=700&q=80&auto=format&fit=crop') center/cover"></div>
+          </div>
+          <p style="margin:10px 0 0; font-family:'Archivo'; font-weight:600; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:#6E6A61">Ur veckans arkiv — tulpanlasset &amp; lördagens hjärtbukett</p>
+          <a onClick="{{ goGalleri }}" style="cursor:pointer; display:inline-block; margin-top:12px; font-style:italic; font-size:14.5px; color:#C1272D" style-hover="color:#191714">hela bildsidan →</a>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <!-- ============ TORGPRISER (butik) ============ -->
+  <sc-if value="{{ showButik }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1140px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; letter-spacing:-0.01em; text-transform:uppercase">Torgpriser</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Satta 06:45 i morse. Beställ här eller kom till ståndet — samma pris, ingen skillnad.</p>
+      <div style="border-top:3px solid #191714">
+        <sc-for list="{{ allProducts }}" as="p" hint-placeholder-count="7">
+          <div style="display:grid; grid-template-columns:96px 1fr auto auto; gap:24px; align-items:center; border-bottom:1px solid #191714; padding:16px 0">
+            <div style="width:96px; height:96px; background:url('{{ p.img }}') center/cover"></div>
+            <div>
+              <p style="margin:0 0 3px; font-family:'Archivo'; font-weight:800; font-size:17px; text-transform:uppercase">{{ p.name }} <span style="font-family:'Archivo'; font-weight:600; font-size:10.5px; letter-spacing:0.1em; color:#C1272D; border:1px solid #C1272D; padding:2px 7px; margin-left:8px; white-space:nowrap; vertical-align:2px">{{ p.tag }}</span></p>
+              <p style="margin:0; font-size:15px; font-style:italic; color:#6E6A61">{{ p.desc }}</p>
+            </div>
+            <p style="margin:0; font-family:'Archivo'; font-weight:900; font-size:20px; white-space:nowrap">{{ p.price }}</p>
+            <button onClick="{{ p.add }}" style="border:none; cursor:pointer; white-space:nowrap; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; padding:11px 20px" style-hover="background:#191714; color:#F5F1E8">Lägg i korg</button>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin:20px 0 0; font-family:'Archivo'; font-weight:600; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#6E6A61">Bunt = torgets standardmått · Utkörning inom tullarna 49 kr · Beställ före 14:00</p>
+    </section>
+  </sc-if>
+
+  <!-- ============ KORG ============ -->
+  <sc-if value="{{ showKorg }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:820px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Din korg</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">{{ cartCount }} buntar noterade på kvittot.</p>
+      <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="border:3px solid #191714; padding:56px 40px; text-align:center">
+          <p style="margin:0 0 8px; font-family:'Archivo'; font-weight:900; font-size:22px; text-transform:uppercase">Tom korg!</p>
+          <p style="margin:0 0 24px; font-style:italic; font-size:16px; color:#6E6A61">Torget stänger inte förrän 18:00 — det finns tid.</p>
+          <a onClick="{{ goButik }}" style="cursor:pointer; display:inline-block; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; padding:13px 28px" style-hover="background:#191714; color:#F5F1E8">Till torgpriserna</a>
+        </div>
+      </sc-if>
+      <sc-if value="{{ cartHasItems }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="border-top:3px solid #191714">
+            <sc-for list="{{ cartItems }}" as="ci" hint-placeholder-count="0">
+              <div style="display:grid; grid-template-columns:64px 1fr auto auto auto; gap:20px; align-items:center; border-bottom:1px solid #191714; padding:14px 0">
+                <div style="width:64px; height:64px; background:url('{{ ci.img }}') center/cover"></div>
+                <div>
+                  <p style="margin:0; font-family:'Archivo'; font-weight:800; font-size:15px; text-transform:uppercase">{{ ci.name }}</p>
+                  <p style="margin:2px 0 0; font-style:italic; font-size:13.5px; color:#6E6A61">{{ ci.unit }} per bunt</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px">
+                  <button onClick="{{ ci.dec }}" style="background:transparent; border:none; cursor:pointer; font-family:'Archivo'; font-weight:900; font-size:18px; color:#C1272D" style-hover="color:#191714">−</button>
+                  <span style="font-family:'Archivo'; font-weight:800; font-size:14px; min-width:18px; text-align:center">{{ ci.qty }}</span>
+                  <button onClick="{{ ci.inc }}" style="background:transparent; border:none; cursor:pointer; font-family:'Archivo'; font-weight:900; font-size:18px; color:#C1272D" style-hover="color:#191714">+</button>
+                </div>
+                <p style="margin:0; font-family:'Archivo'; font-weight:900; font-size:16px; white-space:nowrap; min-width:80px; text-align:right">{{ ci.lineTotal }}</p>
+                <button onClick="{{ ci.remove }}" style="background:transparent; border:none; cursor:pointer; font-style:italic; font-size:13.5px; color:#A8A296; white-space:nowrap" style-hover="color:#C1272D">stryk</button>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:3px solid #191714; padding:16px 0">
+            <p style="margin:0; white-space:nowrap; font-family:'Archivo'; font-weight:900; font-size:16px; text-transform:uppercase">Att betala</p>
+            <p style="margin:0; font-family:'Archivo'; font-weight:900; font-size:24px; white-space:nowrap">{{ cartSubtotal }}</p>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px">
+            <a onClick="{{ goButik }}" style="cursor:pointer; font-style:italic; font-size:15px; color:#C1272D" style-hover="color:#191714">← tillbaka till priserna</a>
+            <a onClick="{{ goKassa }}" style="cursor:pointer; white-space:nowrap; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; padding:15px 36px" style-hover="background:#191714; color:#F5F1E8">Till kassan →</a>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+  </sc-if>
+
+  <!-- ============ KASSA ============ -->
+  <sc-if value="{{ showKassa }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:820px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Kassan</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">{{ cartCount }} buntar · {{ kassaTotal }} inkl. utkörning. Fyll i blanketten — vi sköter resten.</p>
+
+      <div style="border:3px solid #191714; padding:32px; margin-bottom:22px">
+        <p style="margin:0 0 20px; font-family:'Archivo'; font-weight:900; font-size:15px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:1px solid #191714; padding-bottom:8px">Blankett A — Mottagare</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px">
+          <div><label style="display:block; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px">Namn</label><input placeholder="texta tydligt" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none"></div>
+          <div><label style="display:block; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px">Telefon</label><input placeholder="07x-xxx xx xx" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none"></div>
+        </div>
+        <div><label style="display:block; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px">Utkörningsadress</label><input placeholder="gata, postnummer, ort" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none"></div>
+      </div>
+
+      <div style="border:3px solid #191714; padding:32px; margin-bottom:22px">
+        <p style="margin:0 0 20px; font-family:'Archivo'; font-weight:900; font-size:15px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:1px solid #191714; padding-bottom:8px">Blankett B — Utkörning</p>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px">
+          <sc-for list="{{ deliveryOpts }}" as="d" hint-placeholder-count="3">
+            <button onClick="{{ d.pick }}" style="cursor:pointer; display:flex; align-items:center; gap:12px; border:2px solid #191714; background:{{ d.bg }}; padding:14px 16px" style-hover="background:#EDE7D8">
+              <span style="width:16px; height:16px; border:2px solid #191714; display:inline-flex; align-items:center; justify-content:center; font-family:'Archivo'; font-weight:900; font-size:11px; color:#C1272D; flex-shrink:0">{{ d.x }}</span>
+              <span style="flex:1">
+                <span style="display:block; font-family:'Archivo'; font-weight:800; font-size:12.5px; text-transform:uppercase">{{ d.name }}</span>
+                <span style="display:block; font-size:13.5px; font-style:italic; color:#6E6A61">{{ d.price }}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="border:3px solid #191714; padding:32px; margin-bottom:28px">
+        <p style="margin:0 0 20px; font-family:'Archivo'; font-weight:900; font-size:15px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:1px solid #191714; padding-bottom:8px">Blankett C — Betalning</p>
+        <div style="display:flex; flex-direction:column">
+          <sc-for list="{{ payMethods }}" as="m" hint-placeholder-count="5">
+            <button onClick="{{ m.pick }}" style="border:none; cursor:pointer; display:flex; align-items:center; gap:14px; border-bottom:1px dotted #A8A296; padding:12px 4px" style-hover="background:#EDE7D8">
+              <span style="width:16px; height:16px; border:2px solid #191714; display:inline-flex; align-items:center; justify-content:center; font-family:'Archivo'; font-weight:900; font-size:11px; color:#C1272D; flex-shrink:0">{{ m.x }}</span>
+              <span style="flex:1; font-family:'Archivo'; font-weight:700; font-size:14px; text-transform:uppercase">{{ m.name }}</span>
+              <span style="font-style:italic; font-size:13.5px; color:#6E6A61">{{ m.note }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ payKort }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:16px; margin-top:20px">
+            <input placeholder="kortnummer" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:16px; outline:none">
+            <input placeholder="MM/ÅÅ" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:16px; outline:none">
+            <input placeholder="CVC" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:16px; outline:none">
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#191714; padding:20px 28px; gap:16px; flex-wrap:wrap">
+        <p style="margin:0; color:#F5F1E8; font-family:'Archivo'; font-weight:900; font-size:19px; white-space:nowrap">SUMMA: {{ kassaTotal }}</p>
+        <button onClick="{{ placeOrder }}" style="border:none; cursor:pointer; white-space:nowrap; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; padding:14px 34px" style-hover="background:#F5F1E8; color:#191714">Skicka beställningen</button>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ BEKRÄFTELSE ============ -->
+  <sc-if value="{{ showBekraftelse }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:640px; margin:0 auto; padding:64px 28px 0; text-align:center">
+      <p style="margin:0 0 10px; font-family:'Archivo'; font-weight:800; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#C1272D">Kvitto {{ orderNo }}</p>
+      <h1 style="margin:0 0 16px; font-family:'Archivo'; font-weight:900; font-size:48px; text-transform:uppercase; line-height:1.0">Noterat i boken!</h1>
+      <p style="margin:0 auto 36px; max-width:420px; font-size:17px; line-height:1.7; font-style:italic; color:#6E6A61">Buntarna packas vid ståndet och cykelbudet ger sig av inom timmen. Kvittot är skickat till din e-post — spara det, stamkundsstämpeln räknas.</p>
+      <a onClick="{{ goHem }}" style="cursor:pointer; display:inline-block; white-space:nowrap; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; padding:14px 30px" style-hover="background:#191714; color:#F5F1E8">Till förstasidan</a>
+    </section>
+  </sc-if>
+
+  <!-- ============ KUNGÖRELSER (kurser & event) ============ -->
+  <sc-if value="{{ showKurser }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:820px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Kungörelser</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Kurser, visningar och evenemang vid torget. Platser bokas här och betalas i kassan.</p>
+      <div style="border-top:3px solid #191714">
+        <sc-for list="{{ courses }}" as="k" hint-placeholder-count="4">
+          <div style="display:grid; grid-template-columns:1fr auto; gap:24px; align-items:center; border-bottom:1px solid #191714; padding:20px 0">
+            <div>
+              <p style="margin:0 0 4px; font-family:'Archivo'; font-weight:800; font-size:11.5px; letter-spacing:0.1em; text-transform:uppercase; color:#C1272D">{{ k.date }} · {{ k.seats }}</p>
+              <h3 style="margin:0 0 6px; font-family:'Archivo'; font-weight:800; font-size:22px; text-transform:uppercase">{{ k.name }}</h3>
+              <p style="margin:0; font-size:15.5px; font-style:italic; color:#6E6A61">{{ k.desc }}</p>
+            </div>
+            <div style="text-align:right">
+              <p style="margin:0 0 10px; font-family:'Archivo'; font-weight:900; font-size:19px; white-space:nowrap">{{ k.price }}</p>
+              <button onClick="{{ k.add }}" style="border:none; cursor:pointer; white-space:nowrap; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; padding:10px 18px" style-hover="background:#191714; color:#F5F1E8">Boka plats</button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin:24px 0 0; font-size:15px; font-style:italic; color:#6E6A61">Eget sällskap? <a onClick="{{ goOffert }}" style="cursor:pointer; color:#C1272D" style-hover="color:#191714">Annonsera efter offert</a> så räknar torgmästaren på det.</p>
+    </section>
+  </sc-if>
+
+  <!-- ============ BILDSIDAN (galleri) ============ -->
+  <sc-if value="{{ showGalleri }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1140px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Bildsidan</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Veckans bilder från torget — insända av kunder och tagna av ståndets egna.</p>
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; border-top:3px solid #191714; padding-top:24px">
+        <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="8">
+          <figure style="margin:0">
+            <div style="aspect-ratio:1/1; background:url('{{ g.img }}') center/cover"></div>
+            <figcaption style="margin-top:6px; font-family:'Archivo'; font-weight:600; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:#6E6A61">{{ g.caption }}</figcaption>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ NOTISER (blogg) ============ -->
+  <sc-if value="{{ showBlogg }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:900px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Notiser</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Smått och gott från torget, i kronologisk oordning.</p>
+      <div style="border-top:3px solid #191714; column-count:2; column-gap:40px; padding-top:8px">
+        <sc-for list="{{ blog }}" as="b" hint-placeholder-count="4">
+          <article style="break-inside:avoid; border-bottom:1px dotted #A8A296; padding:18px 0">
+            <p style="margin:0 0 6px; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase; color:#C1272D">{{ b.tag }} · {{ b.date }}</p>
+            <h3 style="margin:0 0 8px; font-family:'Archivo'; font-weight:800; font-size:19px; line-height:1.15; text-transform:uppercase">{{ b.title }}</h3>
+            <p style="margin:0; font-size:15px; line-height:1.6">{{ b.excerpt }}</p>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ STAMKUND (lojalitet) ============ -->
+  <sc-if value="{{ showStamkund }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:720px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Stamkund</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Torgets trognaste förtjänar torgets bästa. Registreringen är gratis och gäller för alltid.</p>
+      <div style="border:2px dashed #C1272D; padding:36px; margin-bottom:30px">
+        <p style="margin:0 0 20px; font-family:'Archivo'; font-weight:900; font-size:16px; letter-spacing:0.06em; text-transform:uppercase; color:#C1272D; text-align:center">✂ Klipp ut och spara — stamkundens förmåner</p>
+        <div style="display:flex; flex-direction:column; gap:0">
+          <div style="display:flex; gap:16px; align-items:baseline; border-bottom:1px dotted #A8A296; padding:12px 0"><span style="font-family:'Archivo'; font-weight:900; font-size:15px; color:#C1272D; min-width:32px">§1</span><p style="margin:0; font-size:16px; line-height:1.6">Var åttonde bunt är gratis. Stämplas på kvittot, räknas automatiskt vid beställning här i tidningen.</p></div>
+          <div style="display:flex; gap:16px; align-items:baseline; border-bottom:1px dotted #A8A296; padding:12px 0"><span style="font-family:'Archivo'; font-weight:900; font-size:15px; color:#C1272D; min-width:32px">§2</span><p style="margin:0; font-size:16px; line-height:1.6">Morgonpriserna skickas per SMS 06:50 — tio minuter före alla andra.</p></div>
+          <div style="display:flex; gap:16px; align-items:baseline; border-bottom:1px dotted #A8A296; padding:12px 0"><span style="font-family:'Archivo'; font-weight:900; font-size:15px; color:#C1272D; min-width:32px">§3</span><p style="margin:0; font-size:16px; line-height:1.6">Fri utkörning på födelsedagen, plus en extra bunt av torgmästarens val.</p></div>
+          <div style="display:flex; gap:16px; align-items:baseline; padding:12px 0"><span style="font-family:'Archivo'; font-weight:900; font-size:15px; color:#C1272D; min-width:32px">§4</span><p style="margin:0; font-size:16px; line-height:1.6">Förtur till kungörelsernas kurser, alltid.</p></div>
+        </div>
+      </div>
+      <div style="border:3px solid #191714; padding:28px; display:flex; gap:18px; align-items:end; flex-wrap:wrap">
+        <div style="flex:1; min-width:220px"><label style="display:block; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px">Din e-post</label><input placeholder="texta tydligt" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none"></div>
+        <button onClick="{{ joinClub }}" style="border:none; cursor:pointer; white-space:nowrap; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:12px; letter-spacing:0.1em; text-transform:uppercase; padding:13px 26px" style-hover="background:#191714; color:#F5F1E8">{{ clubCta }}</button>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ OFFERT ============ -->
+  <sc-if value="{{ showOffert }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:720px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Efterlysning: offert</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Bröllop, firmafest eller krans — annonsera ditt behov så räknar torgmästaren på det inom en arbetsdag.</p>
+      <div style="border:3px solid #191714; padding:32px">
+        <p style="margin:0 0 14px; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase">Gäller</p>
+        <div style="display:flex; gap:10px; margin-bottom:26px; flex-wrap:wrap">
+          <sc-for list="{{ quoteTypes }}" as="q" hint-placeholder-count="4">
+            <button onClick="{{ q.pick }}" style="cursor:pointer; white-space:nowrap; border:2px solid #191714; background:{{ q.bg }}; color:{{ q.color }}; font-family:'Archivo'; font-weight:800; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; padding:10px 18px" style-hover="background:#EDE7D8; color:#191714">{{ q.name }}</button>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px">
+          <div><label style="display:block; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px">Namn</label><input placeholder="texta tydligt" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none"></div>
+          <div><label style="display:block; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px">Telefon eller e-post</label><input placeholder="hur når vi dig?" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none"></div>
+        </div>
+        <div style="margin-bottom:24px"><label style="display:block; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px">Annonstext</label><textarea placeholder="datum, plats, omfattning, budget…" rows="5" style="width:100%; box-sizing:border-box; border:2px solid #191714; padding:12px 14px; font-family:'Newsreader'; font-size:16px; outline:none; resize:vertical"></textarea></div>
+        <button onClick="{{ sendQuote }}" style="border:none; cursor:pointer; display:block; text-align:center; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; padding:15px 0" style-hover="background:#191714; color:#F5F1E8">{{ quoteCta }}</button>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ PRESENTKORT ============ -->
+  <sc-if value="{{ showPresentkort }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:720px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Presentkort</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Ett värdebevis, gott som kontanter vid ståndet. Gäller i tolv månader.</p>
+      <div style="border:3px solid #191714; padding:8px; margin-bottom:30px">
+        <div style="border:1px solid #191714; padding:36px; text-align:center">
+          <p style="margin:0 0 4px; font-family:'Archivo'; font-weight:900; font-size:26px; letter-spacing:-0.01em; text-transform:uppercase">Blomstertorget</p>
+          <p style="margin:0 0 24px; font-style:italic; font-size:14px; color:#6E6A61">värdebevis · nr {{ giftSerial }}</p>
+          <p style="margin:0; font-family:'Archivo'; font-weight:900; font-size:52px; color:#C1272D">{{ giftAmount }}</p>
+          <p style="margin:22px 0 0; font-family:'Archivo'; font-weight:600; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:#6E6A61">Inlöses vid ståndet eller i tidningens kassa · giltigt t.o.m. juli 2027</p>
+        </div>
+      </div>
+      <p style="margin:0 0 12px; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase">Valör</p>
+      <div style="display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap">
+        <sc-for list="{{ giftOptions }}" as="g" hint-placeholder-count="4">
+          <button onClick="{{ g.pick }}" style="cursor:pointer; white-space:nowrap; border:2px solid #191714; background:{{ g.bg }}; color:{{ g.color }}; font-family:'Archivo'; font-weight:800; font-size:13px; padding:11px 22px" style-hover="background:#EDE7D8; color:#191714">{{ g.label }}</button>
+        </sc-for>
+      </div>
+      <button onClick="{{ addGift }}" style="border:none; cursor:pointer; display:inline-block; white-space:nowrap; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; padding:14px 28px" style-hover="background:#191714; color:#F5F1E8">Lägg i korg — {{ giftAmount }}</button>
+    </section>
+  </sc-if>
+
+  <!-- ============ BESTÄLLNINGSDISKEN (bokning) ============ -->
+  <sc-if value="{{ showBoka }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:720px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Beställningsdisken</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Boka tid med torgmästaren — kransar, bröllop eller bara ett gott råd över disk.</p>
+      <div style="border:3px solid #191714; padding:32px">
+        <p style="margin:0 0 14px; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase">Ärende</p>
+        <div style="display:flex; gap:10px; margin-bottom:26px; flex-wrap:wrap">
+          <sc-for list="{{ bookServices }}" as="s" hint-placeholder-count="3">
+            <button onClick="{{ s.pick }}" style="cursor:pointer; white-space:nowrap; border:2px solid #191714; background:{{ s.bg }}; color:{{ s.color }}; font-family:'Archivo'; font-weight:800; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; padding:10px 18px" style-hover="background:#EDE7D8; color:#191714">{{ s.name }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:0 0 14px; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase">Dag vid disken</p>
+        <div style="display:flex; gap:10px; margin-bottom:26px; flex-wrap:wrap">
+          <sc-for list="{{ bookDays }}" as="d" hint-placeholder-count="5">
+            <button onClick="{{ d.pick }}" style="cursor:pointer; white-space:nowrap; border:2px solid #191714; background:{{ d.bg }}; color:{{ d.color }}; font-family:'Archivo'; font-weight:800; font-size:12px; padding:10px 16px" style-hover="background:#EDE7D8; color:#191714">{{ d.name }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:0 0 14px; font-family:'Archivo'; font-weight:800; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase">Tid</p>
+        <div style="display:flex; gap:10px; margin-bottom:26px; flex-wrap:wrap">
+          <sc-for list="{{ bookTimes }}" as="t" hint-placeholder-count="5">
+            <button onClick="{{ t.pick }}" style="cursor:pointer; white-space:nowrap; border:2px solid #191714; background:{{ t.bg }}; color:{{ t.color }}; font-family:'Archivo'; font-weight:800; font-size:12px; padding:10px 16px" style-hover="background:#EDE7D8; color:#191714">{{ t.name }}</button>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:26px">
+          <input placeholder="namn — texta tydligt" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none">
+          <input placeholder="telefon" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none">
+        </div>
+        <button onClick="{{ confirmBooking }}" style="border:none; cursor:pointer; display:block; text-align:center; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; padding:15px 0" style-hover="background:#191714; color:#F5F1E8">{{ bookCta }}</button>
+        <sc-if value="{{ bookedMsg }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:16px 0 0; text-align:center; font-style:italic; font-size:15.5px; color:#C1272D">Antecknat i boken — {{ bookedSummary }}. Torgmästaren väntar vid disken.</p>
+        </sc-if>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ OM TORGET ============ -->
+  <sc-if value="{{ showOm }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:900px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Om torget</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Tre generationer, ett stånd, samma regel: färskt eller ingenting.</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px; border-top:3px solid #191714; padding-top:28px">
+        <div style="aspect-ratio:4/3; background:url('https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=1200&q=80&auto=format&fit=crop') center/cover"></div>
+        <div>
+          <p style="margin:0 0 14px; font-size:16.5px; line-height:1.7"><span style="font-family:'Archivo'; font-weight:800; text-transform:uppercase; font-size:14px">Hötorget.</span> Farfar Gösta ställde upp ståndet 1962 med en skottkärra tulpaner och en griffeltavla. Griffeltavlan finns kvar — priserna skrivs fortfarande för hand varje morgon, numera även här i tidningen.</p>
+          <p style="margin:0 0 14px; font-size:16.5px; line-height:1.7">Vi köper på Årsta partihallar mellan fyra och sex, sätter priserna kvart i sju och står vid disken tills det tar slut eller klockan slår sex. Det som inte säljs skänks till äldreboendet på Norrtullsgatan — blommor ska stå i vas, inte i kyl.</p>
+          <p style="margin:0; font-size:16.5px; line-height:1.7">Tredje generationen driver nu både stånd och tidning. Fjärde generationen sorterar gummiband.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0; border:3px solid #191714; margin-top:32px">
+        <div style="padding:22px; border-right:1px solid #191714; text-align:center"><p style="margin:0; font-family:'Archivo'; font-weight:900; font-size:28px; color:#C1272D">64</p><p style="margin:4px 0 0; font-family:'Archivo'; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase">år vid samma torg</p></div>
+        <div style="padding:22px; border-right:1px solid #191714; text-align:center"><p style="margin:0; font-family:'Archivo'; font-weight:900; font-size:28px; color:#C1272D">06:45</p><p style="margin:4px 0 0; font-family:'Archivo'; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase">priserna sätts, varje dag</p></div>
+        <div style="padding:22px; text-align:center"><p style="margin:0; font-family:'Archivo'; font-weight:900; font-size:28px; color:#C1272D">0 kr</p><p style="margin:4px 0 0; font-family:'Archivo'; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase">slängt — resten skänks</p></div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ KONTAKT ============ -->
+  <sc-if value="{{ showKontakt }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:900px; margin:0 auto; padding:36px 28px 0">
+      <h1 style="margin:0 0 6px; font-family:'Archivo'; font-weight:900; font-size:44px; text-transform:uppercase">Till redaktionen</h1>
+      <p style="margin:0 0 30px; font-style:italic; font-size:16px; color:#6E6A61">Frågor, beröm eller klagomål — allt läses, det mesta besvaras.</p>
+      <div style="display:grid; grid-template-columns:1fr 1.4fr; gap:32px; border-top:3px solid #191714; padding-top:28px">
+        <div>
+          <p style="margin:0 0 12px; font-family:'Archivo'; font-weight:900; font-size:14px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:1px solid #191714; padding-bottom:6px">Ståndet</p>
+          <p style="margin:0 0 18px; font-size:16px; line-height:1.7">Hötorget, plats 14<br>111 57 Stockholm</p>
+          <p style="margin:0 0 12px; font-family:'Archivo'; font-weight:900; font-size:14px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:1px solid #191714; padding-bottom:6px">Telefon &amp; post</p>
+          <p style="margin:0 0 18px; font-size:16px; line-height:1.7">08-20 62 19<br>red@blomstertorget.se</p>
+          <p style="margin:0 0 12px; font-family:'Archivo'; font-weight:900; font-size:14px; letter-spacing:0.04em; text-transform:uppercase; border-bottom:1px solid #191714; padding-bottom:6px">Öppet</p>
+          <p style="margin:0; font-size:16px; line-height:1.7">Mån–lör 07–18<br>Söndag: tidningen sover</p>
+        </div>
+        <div style="border:3px solid #191714; padding:28px">
+          <p style="margin:0 0 18px; font-family:'Archivo'; font-weight:900; font-size:14px; letter-spacing:0.04em; text-transform:uppercase">Insändare</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px">
+            <input placeholder="namn" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none">
+            <input placeholder="e-post" style="width:100%; box-sizing:border-box; min-width:0; border:none; border-bottom:2px solid #191714; padding:8px 2px; font-family:'Newsreader'; font-size:17px; outline:none">
+          </div>
+          <textarea placeholder="skriv kort och kärnfullt — redaktionen förkortar ändå" rows="6" style="width:100%; box-sizing:border-box; border:2px solid #191714; padding:12px 14px; font-family:'Newsreader'; font-size:16px; outline:none; resize:vertical; margin-bottom:20px"></textarea>
+          <a style="cursor:pointer; display:block; text-align:center; background:#C1272D; color:#F5F1E8; font-family:'Archivo'; font-weight:800; font-size:13px; letter-spacing:0.1em; text-transform:uppercase; padding:14px 0" style-hover="background:#191714; color:#F5F1E8">Skicka insändaren</a>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- FOOTER -->
+  <footer style="max-width:1140px; margin:56px auto 0; padding:0 28px 36px">
+    <div style="border-top:3px solid #191714; padding-top:16px; display:flex; justify-content:space-between; align-items:baseline; gap:20px; flex-wrap:wrap">
+      <p style="margin:0; font-family:'Archivo'; font-weight:900; font-size:16px; text-transform:uppercase">Blomstertorget</p>
+      <nav style="display:flex; gap:16px; flex-wrap:wrap">
+        <a onClick="{{ goBoka }}" style="cursor:pointer; white-space:nowrap; font-family:'Archivo'; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#6E6A61" style-hover="color:#C1272D">Beställningsdisken</a>
+        <a onClick="{{ goPresentkort }}" style="cursor:pointer; white-space:nowrap; font-family:'Archivo'; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#6E6A61" style-hover="color:#C1272D">Presentkort</a>
+        <a onClick="{{ goOffert }}" style="cursor:pointer; white-space:nowrap; font-family:'Archivo'; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#6E6A61" style-hover="color:#C1272D">Offert</a>
+        <a onClick="{{ goStamkund }}" style="cursor:pointer; white-space:nowrap; font-family:'Archivo'; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#6E6A61" style-hover="color:#C1272D">Stamkund</a>
+      </nav>
+      <p style="margin:0; font-family:'Archivo'; font-weight:600; font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:#6E6A61">© 2026 · Hötorget plats 14 · Byggd med Corevo</p>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = {
+    page: 'hem', cart: {}, orderNo: '',
+    delivery: 'cykel', pay: 'Kort',
+    bookService: 'Kransbeställning', bookDay: 'Mån 13/7', bookTime: '09:00', booked: false,
+    giftAmount: 300, clubJoined: false, quoteType: 'Bröllop', quoteSent: false,
+  };
+
+  go(page) {
+    this.setState({ page });
+    try { document.scrollingElement.scrollTop = 0; } catch (e) {}
+  }
+
+  addToCart(item) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const prev = cart[item.id] || { ...item, qty: 0 };
+      cart[item.id] = { ...prev, qty: prev.qty + 1 };
+      return { cart };
+    });
+    this.go('korg');
+  }
+
+  setQty(id, delta) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const it = cart[id];
+      if (!it) return {};
+      const qty = it.qty + delta;
+      if (qty <= 0) delete cart[id]; else cart[id] = { ...it, qty };
+      return { cart };
+    });
+  }
+
+  renderVals() {
+    const st = this.state;
+    const page = st.page;
+    const kr = (n) => n.toLocaleString('sv-SE') + ' kr';
+    const img = (id, w = 900) => `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`;
+    const box = (on) => ({
+      bg: on ? '#191714' : 'transparent',
+      color: on ? '#F5F1E8' : '#191714',
+      x: on ? '✕' : '',
+    });
+
+    const labels = [
+      ['hem', 'Förstasidan'], ['butik', 'Torgpriser'], ['kurser', 'Kungörelser'], ['galleri', 'Bildsidan'],
+      ['blogg', 'Notiser'], ['stamkund', 'Stamkund'], ['om', 'Om torget'], ['kontakt', 'Kontakt'],
+    ];
+    const navItems = labels.map(([key, label], i) => ({
+      key, label,
+      go: () => this.go(key),
+      color: page === key ? '#C1272D' : '#191714',
+      weight: page === key ? '900' : '700',
+      sep: i < labels.length - 1 ? '•' : '',
+    }));
+
+    const rawProducts = [
+      { id: 'p1', name: 'Pioner, 5 st', price: 149, tag: 'Nyss inkommet', desc: 'Sarah Bernhardt, knopp — spricker på två dagar.', img: img('1598453055371-0f5e37113bea') },
+      { id: 'p2', name: 'Tulpaner, 20 st', price: 89, tag: 'Dagens klipp', desc: 'Blandade färger, holländska.', img: img('1490750967868-88aa4486c946') },
+      { id: 'p3', name: 'Rosor, 10 st', price: 119, tag: 'Standard', desc: 'Rosa spray, långa stjälkar.', img: img('1596309322315-da9e713cbb22') },
+      { id: 'p4', name: 'Sommarbunt', price: 99, tag: 'Ständigt pris', desc: 'Det bästa från morgonens lass, blandat.', img: img('1602934585418-f588bea4215c') },
+      { id: 'p5', name: 'Solrosor, 7 st', price: 109, tag: 'Säsong', desc: 'Stora huvuden, håller en vecka.', img: img('1455659817273-f96807779a8a') },
+      { id: 'p6', name: 'Bondbukett', price: 159, tag: 'Lördagsfavorit', desc: 'Bunden vid disken medan du väntar.', img: img('1487530811176-3780de880c2d') },
+      { id: 'p7', name: 'Krukväxt, pelargon', price: 79, tag: 'Torgklassiker', desc: 'Röd eller rosa — som hos mormor.', img: img('1444930694458-01babf71870c') },
+    ];
+    const products = rawProducts.map((p) => ({
+      ...p, price: kr(p.price),
+      add: () => this.addToCart({ id: p.id, name: p.name, priceNum: p.price, img: p.img }),
+    }));
+
+    const tickerRows = [
+      { name: 'Pioner', price: '149 kr', arrow: '▲', color: '#C1272D' },
+      { name: 'Tulpaner 20 st', price: '89 kr', arrow: '▼', color: '#191714' },
+      { name: 'Rosor 10 st', price: '119 kr', arrow: '—', color: '#191714' },
+      { name: 'Sommarbunt', price: '99 kr', arrow: '—', color: '#191714' },
+      { name: 'Solrosor 7 st', price: '109 kr', arrow: '▲', color: '#C1272D' },
+      { name: 'Pelargon', price: '79 kr', arrow: '▼', color: '#191714' },
+    ];
+
+    const courses = [
+      { id: 'k1', name: 'Bind din egen bondbukett', date: 'Lör 25/7', desc: 'Vid ståndet efter stängning. Gummiband ingår, skratt garanteras.', priceNum: 295, seats: '10 platser', img: img('1487530811176-3780de880c2d', 700) },
+      { id: 'k2', name: 'Kransbindning inför midsommar… nästa år', date: 'Sön 9/8', desc: 'Öva i god tid, säger torgmästaren. Björkris och sommarblommor.', priceNum: 345, seats: '8 platser', img: img('1602934585418-f588bea4215c', 700) },
+      { id: 'k3', name: 'Barnens blomsterskola', date: 'Lör 15/8', desc: 'För torgets minsta kunder. En vuxen per barn, alla går hem med bukett.', priceNum: 95, seats: '12 platser', img: img('1490750967868-88aa4486c946', 700) },
+      { id: 'k4', name: 'Kvällsvisning: Årsta partihallar', date: 'Ons 26/8', desc: 'Följ med på inköpsrundan kl 04:30. Kaffe och smörgås i lastbilen.', priceNum: 195, seats: '6 platser', img: img('1598453055371-0f5e37113bea', 700) },
+    ].map((k) => ({ ...k, price: kr(k.priceNum), add: () => this.addToCart({ id: k.id, name: k.name + ' (plats)', priceNum: k.priceNum, img: k.img }) }));
+
+    const blog = [
+      { tag: 'Torgliv', date: '11 juli', title: 'Duvan Ragnar har fått konkurrens', excerpt: 'En skata har upptäckt ståndets smulor. Ragnar är inte road. Utvecklingen följs.' },
+      { tag: 'Skötselråd', date: '9 juli', title: 'Sluta klippa stjälkarna rakt', excerpt: 'Snett snitt, rent vatten, inget solljus direkt. Tre regler — resten är vidskepelse.' },
+      { tag: 'Från disken', date: '5 juli', title: 'Veckans vanligaste fråga', excerpt: '”Håller pionerna till lördag?” Svar: ja, om du köper dem i knopp. Nej, om du frågar på fredag.' },
+      { tag: 'Historia', date: '28 juni', title: 'Griffeltavlan fyller 64', excerpt: 'Samma tavla sedan 1962. Krittexten byts dagligen, ramen aldrig.' },
+    ];
+
+    const homeNotiser = [
+      { tag: 'Kungörelse', title: 'Barnens blomsterskola 15 augusti', excerpt: 'Tolv platser, en vuxen per barn. Bokas under Kungörelser.', go: () => this.go('kurser') },
+      { tag: 'Stamkund', title: 'Var 8:e bunt gratis — nu digitalt', excerpt: 'Stämpelkortet flyttar in i tidningen. Gamla papperskort byts vid disken.', go: () => this.go('stamkund') },
+      { tag: 'Notis', title: 'Duvan Ragnar har fått konkurrens', excerpt: 'En skata har upptäckt ståndets smulor. Ragnar är inte road.', go: () => this.go('blogg') },
+    ];
+
+    const galleryItems = [
+      { caption: 'Morgonlasset, gång 3', img: img('1598453055371-0f5e37113bea', 700) },
+      { caption: 'Tulpanlasset, tisdag', img: img('1490750967868-88aa4486c946', 700) },
+      { caption: 'Lördagens hjärtbukett', img: img('1526047932273-341f2a7631f9', 700) },
+      { caption: 'Insänt: fru Bergs vas', img: img('1561181286-d3fee7d55364', 700) },
+      { caption: 'Sommarbunt nr 214', img: img('1602934585418-f588bea4215c', 700) },
+      { caption: 'Brudbukett, beställd tors', img: img('1487530811176-3780de880c2d', 700) },
+      { caption: 'Solrosor i regn', img: img('1455659817273-f96807779a8a', 700) },
+      { caption: 'Rosor före sju', img: img('1596309322315-da9e713cbb22', 700) },
+    ];
+
+    // — korg & kassa —
+    const entries = Object.values(st.cart).filter((it) => it && it.qty > 0);
+    const cartItems = entries.map((it) => ({
+      name: it.name, img: it.img, qty: it.qty,
+      unit: kr(it.priceNum),
+      lineTotal: kr(it.priceNum * it.qty),
+      inc: () => this.setQty(it.id, 1),
+      dec: () => this.setQty(it.id, -1),
+      remove: () => this.setQty(it.id, -it.qty),
+    }));
+    const cartCount = entries.reduce((n, it) => n + it.qty, 0);
+    const subtotal = entries.reduce((n, it) => n + it.priceNum * it.qty, 0);
+
+    const delOpts = [
+      { id: 'cykel', name: 'Cykelbud idag', cost: 49, note: 'inom tullarna, före 18' },
+      { id: 'imorgon', name: 'Bud imorgon', cost: 39, note: 'hela stan' },
+      { id: 'stand', name: 'Hämta vid ståndet', cost: 0, note: 'plats 14, säg ditt namn' },
+    ];
+    const deliveryOpts = delOpts.map((d) => ({
+      name: d.name,
+      price: d.cost === 0 ? d.note : kr(d.cost) + ' · ' + d.note,
+      pick: () => this.setState({ delivery: d.id }),
+      bg: st.delivery === d.id ? '#EDE7D8' : 'transparent',
+      x: st.delivery === d.id ? '✕' : '',
+    }));
+    const shipCost = (delOpts.find((d) => d.id === st.delivery) || delOpts[0]).cost;
+
+    const payDefs = [
+      { name: 'Kort', note: 'Visa, Mastercard' },
+      { name: 'Swish', note: 'som vid disken' },
+      { name: 'Klarna', note: 'faktura, 30 dagar' },
+      { name: 'PayPal', note: 'för utlandet' },
+      { name: 'Apple Pay', note: 'det nymodiga' },
+    ];
+    const payMethods = payDefs.map((m) => ({
+      name: m.name, note: m.note,
+      pick: () => this.setState({ pay: m.name }),
+      x: st.pay === m.name ? '✕' : '',
+    }));
+
+    const bookServices = ['Kransbeställning', 'Bröllopsråd', 'Bara ett gott råd'].map((name) => ({
+      name, pick: () => this.setState({ bookService: name, booked: false }), ...box(st.bookService === name),
+    }));
+    const bookDays = ['Mån 13/7', 'Tis 14/7', 'Ons 15/7', 'Tors 16/7', 'Fre 17/7'].map((name) => ({
+      name, pick: () => this.setState({ bookDay: name, booked: false }), ...box(st.bookDay === name),
+    }));
+    const bookTimes = ['08:00', '09:00', '10:00', '15:00', '16:00'].map((name) => ({
+      name, pick: () => this.setState({ bookTime: name, booked: false }), ...box(st.bookTime === name),
+    }));
+
+    const giftOptions = [200, 300, 500, 800].map((v) => ({
+      label: kr(v), pick: () => this.setState({ giftAmount: v }), ...box(st.giftAmount === v),
+    }));
+
+    const quoteTypes = ['Bröllop', 'Begravning', 'Firmafest', 'Annat'].map((name) => ({
+      name, pick: () => this.setState({ quoteType: name, quoteSent: false }), ...box(st.quoteType === name),
+    }));
+
+    return {
+      navItems, tickerRows, blog, courses, galleryItems, homeNotiser,
+      homeCourses: courses.slice(0, 3),
+      allProducts: products,
+      goHem: () => this.go('hem'),
+      goButik: () => this.go('butik'),
+      goKorg: () => this.go('korg'),
+      goKassa: () => this.go('kassa'),
+      goKurser: () => this.go('kurser'),
+      goGalleri: () => this.go('galleri'),
+      goBlogg: () => this.go('blogg'),
+      goStamkund: () => this.go('stamkund'),
+      goOffert: () => this.go('offert'),
+      goPresentkort: () => this.go('presentkort'),
+      goBoka: () => this.go('boka'),
+      showHem: page === 'hem',
+      showButik: page === 'butik',
+      showKorg: page === 'korg',
+      showKassa: page === 'kassa',
+      showBekraftelse: page === 'bekraftelse',
+      showKurser: page === 'kurser',
+      showGalleri: page === 'galleri',
+      showBlogg: page === 'blogg',
+      showStamkund: page === 'stamkund',
+      showOffert: page === 'offert',
+      showPresentkort: page === 'presentkort',
+      showBoka: page === 'boka',
+      showOm: page === 'om',
+      showKontakt: page === 'kontakt',
+      cartItems, cartCount,
+      cartEmpty: cartCount === 0,
+      cartHasItems: cartCount > 0,
+      cartSubtotal: kr(subtotal),
+      kassaTotal: kr(subtotal + (cartCount > 0 ? shipCost : 0)),
+      deliveryOpts, payMethods,
+      payKort: st.pay === 'Kort',
+      orderNo: 'Nr ' + (st.orderNo || '—'),
+      placeOrder: () => {
+        if (cartCount === 0) { this.go('butik'); return; }
+        this.setState({ orderNo: String(Math.floor(10000 + Math.random() * 90000)), cart: {} });
+        this.go('bekraftelse');
+      },
+      bookServices, bookDays, bookTimes,
+      bookCta: st.booked ? 'Antecknat ✓' : 'Boka vid disken',
+      bookedMsg: st.booked,
+      bookedSummary: `${st.bookDay.toLowerCase()} kl ${st.bookTime}`,
+      confirmBooking: () => this.setState({ booked: true }),
+      giftOptions,
+      giftAmount: kr(st.giftAmount),
+      giftSerial: '1962-' + String(1000 + (st.giftAmount % 997)),
+      addGift: () => this.addToCart({ id: 'gift' + st.giftAmount, name: `Värdebevis ${kr(st.giftAmount)}`, priceNum: st.giftAmount, img: img('1526047932273-341f2a7631f9', 700) }),
+      clubCta: st.clubJoined ? 'Registrerad ✓' : 'Registrera mig',
+      joinClub: () => this.setState({ clubJoined: true }),
+      quoteTypes,
+      quoteCta: st.quoteSent ? 'Införd — svar inom en arbetsdag ✓' : 'Lämna in annonsen',
+      sendQuote: () => this.setState({ quoteSent: true }),
+    };
+  }
+}
+</script>
+<script type="application/json" id="corevo-manifest">
+{
+  "key": "blomstertorget",
+  "name": "Blomstertorget",
+  "desc": "Dagstidning och torghandel — newsprint och blanketter.",
+  "bransch": "florist",
+  "palette": {
+    "primary": "#C1272D",
+    "primaryD": "#9E1F24",
+    "bg": "#F5F1E8",
+    "surface": "#EDE7D8",
+    "fg": "#191714",
+    "fg2": "#6E6A61",
+    "line": "#A8A296",
+    "accentSoft": "#EDE7D8"
+  },
+  "fonts": {
+    "heading": "Archivo",
+    "body": "Newsreader"
+  },
+  "radius": "0px",
+  "navHeight": {
+    "desktop": "68px",
+    "mobile": "56px"
+  },
+  "caps": {
+    "heroEyebrow": true,
+    "homeStats": false,
+    "homeGallery": false,
+    "homeAbout": true
+  },
+  "pages": {
+    "hem": {
+      "module": null,
+      "route": "/"
+    },
+    "butik": {
+      "module": "shop",
+      "route": "/shop"
+    },
+    "korg": {
+      "module": "shop",
+      "route": "/varukorg"
+    },
+    "kassa": {
+      "module": "shop",
+      "route": "/kassa"
+    },
+    "bekraftelse": {
+      "module": "shop",
+      "route": "/kassa/tack"
+    },
+    "kurser": {
+      "module": "kurser",
+      "route": "/kurser"
+    },
+    "galleri": {
+      "module": null,
+      "route": "/galleri"
+    },
+    "blogg": {
+      "module": "blogg",
+      "route": "/blogg"
+    },
+    "stamkund": {
+      "module": "lojalitet",
+      "route": "/stamkund"
+    },
+    "offert": {
+      "module": "offert",
+      "route": "/offert"
+    },
+    "presentkort": {
+      "module": "presentkort",
+      "route": "/presentkort"
+    },
+    "boka": {
+      "module": "booking",
+      "route": "/boka"
+    },
+    "om": {
+      "module": null,
+      "route": "/om"
+    },
+    "kontakt": {
+      "module": null,
+      "route": "/kontakt"
+    }
+  },
+  "mock": [
+    "rawProducts",
+    "products",
+    "courses",
+    "galleryItems",
+    "blog",
+    "delOpts",
+    "payDefs",
+    "bookDays",
+    "bookTimes",
+    "bookServices",
+    "giftOptions",
+    "quoteTypes"
+  ],
+  "verbatim": [
+    "navLabels",
+    "payHints (betalsätts-texterna)",
+    "alla rubriker och all brödtext"
+  ]
+}
+</script>
+</body>
+</html>

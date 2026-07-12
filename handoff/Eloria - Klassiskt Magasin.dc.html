@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>Eloria — Klassisk blomsterhandel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Mulish:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #FBF3EE; }
+    body { font-family: 'Mulish', system-ui, sans-serif; color: #182A20; -webkit-font-smoothing: antialiased; }
+    a { color: #7A5D1E; text-decoration: none; }
+    a:hover { color: #5E4715; }
+    ::selection { background: #F5E4DC; }
+    input, textarea { background: transparent; }
+    input::placeholder, textarea::placeholder { color: #B5A28F; font-style: italic; }
+
+    /* Corevo-tillägg: fokus, knappsemantik, mobil ≤760px */
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #7A5D1E !important; outline-offset: 2px; }
+    button { font: inherit; cursor: pointer; }
+    @media (max-width: 760px) {
+      [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+      h1 { font-size: clamp(32px, 9vw, 46px) !important; line-height: 1.1 !important; }
+      h2 { font-size: clamp(24px, 7vw, 34px) !important; }
+      a[style*="cursor:pointer"], button { min-height: 44px; }
+      nav a { padding-top: 10px !important; padding-bottom: 10px !important; }
+      section, footer > div, header > div { padding-left: 20px !important; padding-right: 20px !important; }
+    }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#FBF3EE; overflow-x:hidden">
+
+  <!-- GULD-UTILITY -->
+  <div style="background:#182A20; text-align:center; padding:9px 20px">
+    <p style="margin:0; color:#D9BE7B; font-size:12px; letter-spacing:0.16em; text-transform:uppercase">Leverans samma dag vid beställning innan kl 14 · Handbundet i butik</p>
+  </div>
+
+  <!-- CENTRERAD KRÖN-HEADER -->
+  <header style="text-align:center; padding:46px 28px 0">
+    <a onClick="{{ goHem }}" style="cursor:pointer; display:inline-block">
+      <p style="margin:0; font-family:'Cormorant Garamond'; font-weight:500; font-size:46px; letter-spacing:0.3em; color:#182A20; text-transform:uppercase; padding-left:0.3em">Eloria</p>
+      <p style="margin:6px 0 0; font-family:'Cormorant Garamond'; font-style:italic; font-size:19px; color:#7A5D1E">blomsterhandel i klassisk stil</p>
+    </a>
+    <nav style="max-width:900px; margin:32px auto 0; border-top:1px solid #E8D9C9; border-bottom:1px solid #E8D9C9; padding:16px 0; display:flex; justify-content:center; align-items:center">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="8">
+        <span style="display:flex; align-items:center">
+          <a onClick="{{ item.go }}" style="cursor:pointer; white-space:nowrap; font-size:12.5px; font-weight:{{ item.weight }}; letter-spacing:0.22em; text-transform:uppercase; color:{{ item.color }}; padding:0 16px">{{ item.label }}</a>
+          <span style="color:#E8D9C9; font-size:13px">{{ item.sep }}</span>
+        </span>
+      </sc-for>
+    </nav>
+    <p style="margin:16px 0 0">
+      <a onClick="{{ goBestallning }}" style="cursor:pointer; font-family:'Cormorant Garamond'; font-style:italic; font-size:17px; color:#7A5D1E; border-bottom:1px solid #D9BE7B; padding-bottom:2px" style-hover="color:#182A20">Er beställning ({{ cartCount }})</a>
+    </p>
+  </header>
+
+  <!-- ============ HEM ============ -->
+  <sc-if value="{{ showHem }}" hint-placeholder-val="{{ true }}">
+    <div>
+
+      <!-- TEXTLÖST UPPSLAG — två foton i förskjuten rytm -->
+      <section style="max-width:1200px; margin:56px auto 0; padding:0 28px; display:grid; grid-template-columns:1.5fr 1fr; gap:28px">
+        <div style="height:620px; background:url('https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?w=1600&q=80&auto=format&fit=crop') center/cover"></div>
+        <div style="margin-top:80px; height:540px; background:url('https://images.unsplash.com/photo-1454262041357-5d96f50a2f27?w=1600&q=80&auto=format&fit=crop') center/cover"></div>
+      </section>
+
+      <!-- CITAT-BLOCK med linjer -->
+      <section style="max-width:760px; margin:92px auto 0; padding:0 28px; text-align:center">
+        <div style="border-top:2px solid #182A20; width:64px; margin:0 auto 34px"></div>
+        <p style="margin:0; font-family:'Cormorant Garamond'; font-weight:500; font-size:34px; line-height:1.35; letter-spacing:0.06em; color:#182A20; text-transform:uppercase">”Det bästa av säsongen, komponerat med omsorg.”</p>
+        <p style="margin:22px 0 0; font-family:'Cormorant Garamond'; font-style:italic; font-size:19px; color:#7A5D1E">— huset Eloria</p>
+        <div style="border-top:2px solid #182A20; width:64px; margin:34px auto 0"></div>
+      </section>
+
+      <!-- TRE KLICKBARA BILDBRICKOR -->
+      <section style="max-width:1200px; margin:92px auto 0; padding:0 28px; display:grid; grid-template-columns:repeat(3, 1fr); gap:28px">
+        <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="3">
+          <a onClick="{{ t.go }}" style="cursor:pointer; display:block; text-align:center">
+            <div style="border:1px solid #E8D9C9; padding:10px" style-hover="border-color:#7A5D1E">
+              <div style="aspect-ratio:4/5; background:url('{{ t.img }}') center/cover"></div>
+            </div>
+            <p style="margin:18px 0 4px; font-family:'Cormorant Garamond'; font-size:26px; font-weight:500; color:#182A20; letter-spacing:0.06em">{{ t.title }}</p>
+            <p style="margin:0; font-size:11.5px; letter-spacing:0.24em; text-transform:uppercase; color:#7A5D1E">{{ t.cta }}</p>
+          </a>
+        </sc-for>
+      </section>
+
+      <!-- MÖRKGRÖN PLATTA MED GULDRAM — bröllop -->
+      <section style="max-width:1200px; margin:100px auto 0; padding:0 28px">
+        <div style="background:#182A20; padding:14px">
+          <div style="border:1px solid #D9BE7B; padding:76px 48px; text-align:center">
+            <p style="margin:0 0 14px; color:#D9BE7B; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Livets stora stunder</p>
+            <h2 style="margin:0 auto 18px; max-width:640px; font-family:'Cormorant Garamond'; font-weight:500; font-size:46px; line-height:1.15; color:#FBF3EE">Blommor för bröllop, fest och avsked</h2>
+            <p style="margin:0 auto 34px; max-width:520px; color:rgba(251,243,238,0.82); font-size:16px; line-height:1.75">Varje arrangemang komponeras personligen, efter samtal med er. Vi tar emot ett begränsat antal uppdrag per helg — förfrågan kostar ingenting.</p>
+            <a onClick="{{ goBrollop }}" style="cursor:pointer; display:inline-block; border:1px solid #D9BE7B; color:#D9BE7B; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:17px 42px" style-hover="background:#D9BE7B; color:#182A20">Läs om bröllop</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- KATALOG-UTDRAG: galleri med bildtexter, inte kort -->
+      <section style="max-width:1200px; margin:100px auto 0; padding:0 28px">
+        <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Ur katalogen</p>
+        <h2 style="margin:0 0 52px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:40px; color:#182A20">Säsongens kompositioner</h2>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:44px 28px">
+          <sc-for list="{{ homeCatalog }}" as="k" hint-placeholder-count="3">
+            <a onClick="{{ goKatalog }}" style="cursor:pointer; display:block; text-align:center">
+              <div style="aspect-ratio:1/1; background:url('{{ k.img }}') center/cover"></div>
+              <p style="margin:20px 0 8px; font-family:'Cormorant Garamond'; font-size:24px; font-weight:500; color:#182A20">{{ k.name }}</p>
+              <div style="width:36px; height:1px; background:#D9BE7B; margin:0 auto 8px"></div>
+              <p style="margin:0; font-size:13px; letter-spacing:0.1em; color:#7A5D1E">{{ k.price }}</p>
+            </a>
+          </sc-for>
+        </div>
+        <p style="text-align:center; margin:52px 0 0">
+          <a onClick="{{ goKatalog }}" style="cursor:pointer; display:inline-block; border:1px solid #182A20; color:#182A20; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:16px 40px" style-hover="background:#182A20; color:#FBF3EE">Se hela katalogen</a>
+        </p>
+      </section>
+
+      <!-- JOURNAL-UTDRAG -->
+      <section style="max-width:820px; margin:100px auto 0; padding:0 28px">
+        <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Journalen</p>
+        <h2 style="margin:0 0 40px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:40px; color:#182A20">Ord om blommor</h2>
+        <div>
+          <sc-for list="{{ homeJournal }}" as="j" hint-placeholder-count="3">
+            <a onClick="{{ goJournal }}" style="cursor:pointer; display:flex; align-items:baseline; gap:28px; border-top:1px solid #E8D9C9; padding:24px 6px" style-hover="background:#F5E4DC">
+              <span style="font-family:'Cormorant Garamond'; font-style:italic; font-size:17px; color:#7A5D1E; min-width:110px">{{ j.date }}</span>
+              <span style="flex:1; font-family:'Cormorant Garamond'; font-size:25px; font-weight:500; color:#182A20">{{ j.title }}</span>
+              <span style="font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E">Läs →</span>
+            </a>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <!-- ============ KATALOG ============ -->
+  <sc-if value="{{ showKatalog }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1200px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Katalogen</p>
+      <h1 style="margin:0 0 16px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Kompositioner efter säsong</h1>
+      <p style="margin:0 auto 60px; max-width:540px; text-align:center; color:#6B5548; font-size:15.5px; line-height:1.75">Katalogen är vägledande — varje komposition binds efter dagens bästa snitt. Beställ genom en förfrågan, så återkommer vi inom en timme under öppettid.</p>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:56px 28px">
+        <sc-for list="{{ catalog }}" as="k" hint-placeholder-count="6">
+          <div style="text-align:center">
+            <div style="aspect-ratio:4/5; background:url('{{ k.img }}') center/cover"></div>
+            <p style="margin:22px 0 8px; font-family:'Cormorant Garamond'; font-size:25px; font-weight:500; color:#182A20">{{ k.name }}</p>
+            <div style="width:36px; height:1px; background:#D9BE7B; margin:0 auto 10px"></div>
+            <p style="margin:0 0 6px; color:#6B5548; font-size:14px; line-height:1.6">{{ k.desc }}</p>
+            <p style="margin:0 0 16px; font-size:13px; letter-spacing:0.1em; color:#7A5D1E">{{ k.price }}</p>
+            <button onClick="{{ k.add }}" style="background:transparent; border:none; cursor:pointer; display:inline-block; border-bottom:1px solid #7A5D1E; color:#7A5D1E; font-size:11.5px; font-weight:600; letter-spacing:0.24em; text-transform:uppercase; padding-bottom:4px" style-hover="color:#182A20; border-color:#182A20">Lägg till beställning</button>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ BRÖLLOP ============ -->
+  <sc-if value="{{ showBrollop }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <section style="max-width:1200px; margin:64px auto 0; padding:0 28px">
+        <div style="height:520px; background:url('https://images.unsplash.com/photo-1524835391568-32c8f7016d73?w=1600&q=80&auto=format&fit=crop') center/cover"></div>
+      </section>
+      <section style="max-width:680px; margin:72px auto 0; padding:0 28px; text-align:center">
+        <p style="margin:0 0 8px; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Bröllop &amp; högtid</p>
+        <h1 style="margin:0 0 24px; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Er dag, våra blommor</h1>
+        <p style="margin:0 0 18px; color:#6B5548; font-size:16px; line-height:1.85">Vi börjar alltid med ett samtal — om platsen, ljuset, klänningen och det ni drömmer om. Sedan komponerar vi ett förslag med säsongens blommor: brudbukett, borddekor, ceremoni och det lilla extra.</p>
+        <p style="margin:0; color:#6B5548; font-size:16px; line-height:1.85">Vi tar emot ett begränsat antal bröllop per helg för att kunna vara närvarande hela vägen. Förfrågan är alltid kostnadsfri.</p>
+      </section>
+      <section style="max-width:900px; margin:72px auto 0; padding:0 28px">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:28px">
+          <div style="aspect-ratio:4/5; background:url('https://images.unsplash.com/photo-1596309322315-da9e713cbb22?w=900&q=80&auto=format&fit=crop') center/cover"></div>
+          <div style="aspect-ratio:4/5; margin-top:56px; background:url('https://images.unsplash.com/photo-1598453055371-0f5e37113bea?w=900&q=80&auto=format&fit=crop') center/cover"></div>
+        </div>
+      </section>
+      <section style="max-width:680px; margin:80px auto 0; padding:0 28px">
+        <div style="border-top:1px solid #E8D9C9; padding-top:36px">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; gap:20px; padding:14px 0; border-bottom:1px dotted #D9BE7B"><span style="font-family:'Cormorant Garamond'; font-size:22px; color:#182A20">Brudbukett</span><span style="font-size:13.5px; letter-spacing:0.08em; color:#7A5D1E">från 1 800 kr</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; gap:20px; padding:14px 0; border-bottom:1px dotted #D9BE7B"><span style="font-family:'Cormorant Garamond'; font-size:22px; color:#182A20">Borddekor, per bord</span><span style="font-size:13.5px; letter-spacing:0.08em; color:#7A5D1E">från 450 kr</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; gap:20px; padding:14px 0; border-bottom:1px dotted #D9BE7B"><span style="font-family:'Cormorant Garamond'; font-size:22px; color:#182A20">Ceremonibåge</span><span style="font-size:13.5px; letter-spacing:0.08em; color:#7A5D1E">från 3 200 kr</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; gap:20px; padding:14px 0; border-bottom:1px dotted #D9BE7B"><span style="font-family:'Cormorant Garamond'; font-size:22px; color:#182A20">Helhetsuppdrag, heldag</span><span style="font-size:13.5px; letter-spacing:0.08em; color:#7A5D1E">enligt offert</span></div>
+        </div>
+        <p style="text-align:center; margin:44px 0 0">
+          <a onClick="{{ goKonsultation }}" style="cursor:pointer; display:inline-block; background:#182A20; color:#FBF3EE; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:17px 44px" style-hover="background:#7A5D1E; color:#FBF3EE">Boka konsultation</a>
+        </p>
+      </section>
+    </div>
+  </sc-if>
+
+  <!-- ============ JOURNAL ============ -->
+  <sc-if value="{{ showJournal }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:820px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Journalen</p>
+      <h1 style="margin:0 0 60px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Ord om blommor</h1>
+      <div style="display:flex; flex-direction:column; gap:64px">
+        <sc-for list="{{ journal }}" as="j" hint-placeholder-count="3">
+          <article>
+            <div style="aspect-ratio:2/1; background:url('{{ j.img }}') center/cover; margin-bottom:26px"></div>
+            <p style="margin:0 0 8px; font-family:'Cormorant Garamond'; font-style:italic; font-size:17px; color:#7A5D1E">{{ j.date }}</p>
+            <h2 style="margin:0 0 12px; font-family:'Cormorant Garamond'; font-weight:500; font-size:32px; color:#182A20; line-height:1.2">{{ j.title }}</h2>
+            <p style="margin:0 0 16px; color:#6B5548; font-size:15.5px; line-height:1.8">{{ j.excerpt }}</p>
+            <a style="cursor:pointer; display:inline-block; border-bottom:1px solid #7A5D1E; color:#7A5D1E; font-size:11.5px; font-weight:600; letter-spacing:0.24em; text-transform:uppercase; padding-bottom:4px" style-hover="color:#182A20; border-color:#182A20">Läs vidare</a>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ OM ============ -->
+  <sc-if value="{{ showOm }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <section style="max-width:1000px; margin:64px auto 0; padding:0 28px; display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center">
+        <div style="aspect-ratio:4/5; background:url('https://images.unsplash.com/photo-1727520327526-4b435667860a?w=1600&q=80&auto=format&fit=crop') center/cover"></div>
+        <div>
+          <p style="margin:0 0 8px; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Om oss</p>
+          <h1 style="margin:0 0 22px; font-family:'Cormorant Garamond'; font-weight:500; font-size:48px; color:#182A20; line-height:1.1">Det tidlösa hantverket</h1>
+          <p style="margin:0 0 16px; color:#6B5548; font-size:16px; line-height:1.85">Vi är en blomsterhandel som tror på det tidlösa — klassiska snitt, ärligt hantverk och buketter som håller vad de lovar. Varje beställning binds för hand av någon som kan sitt hantverk.</p>
+          <p style="margin:0; font-family:'Cormorant Garamond'; font-style:italic; font-size:20px; color:#7A5D1E">”Det bästa av säsongen, komponerat med omsorg.”</p>
+        </div>
+      </section>
+      <section style="max-width:1000px; margin:80px auto 0; padding:0 28px">
+        <div style="border-top:1px solid #E8D9C9; border-bottom:1px solid #E8D9C9; padding:36px 0; display:grid; grid-template-columns:repeat(3, 1fr); text-align:center">
+          <div><p style="margin:0; font-family:'Cormorant Garamond'; font-size:32px; color:#182A20">100%</p><p style="margin:6px 0 0; font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#7A5D1E">handbundet</p></div>
+          <div style="border-left:1px solid #E8D9C9; border-right:1px solid #E8D9C9"><p style="margin:0; font-family:'Cormorant Garamond'; font-size:32px; color:#182A20">Samma dag</p><p style="margin:6px 0 0; font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#7A5D1E">leverans</p></div>
+          <div><p style="margin:0; font-family:'Cormorant Garamond'; font-size:32px; color:#182A20">Klassisk</p><p style="margin:6px 0 0; font-size:12px; letter-spacing:0.2em; text-transform:uppercase; color:#7A5D1E">stil</p></div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <!-- ============ KONTAKT ============ -->
+  <sc-if value="{{ showKontakt }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:680px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Kontakt &amp; förfrågan</p>
+      <h1 style="margin:0 0 20px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Skriv till oss</h1>
+      <p style="margin:0 auto 52px; max-width:460px; text-align:center; color:#6B5548; font-size:15.5px; line-height:1.75">Berätta kort om tillfället, datumet och era önskemål — vi återkommer inom en timme under öppettid.</p>
+      <div style="display:flex; flex-direction:column; gap:34px">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:34px">
+          <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Namn</label><input placeholder="för- och efternamn" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+          <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">E-post</label><input placeholder="namn@adress.se" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+        </div>
+        <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Tillfälle &amp; datum</label><input placeholder="t.ex. bröllop, 14 juni" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+        <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Ert meddelande</label><textarea placeholder="berätta gärna om plats, färger och känsla…" rows="5" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none; resize:vertical"></textarea></div>
+        <p style="text-align:center; margin:14px 0 0">
+          <a style="cursor:pointer; display:inline-block; background:#182A20; color:#FBF3EE; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:17px 48px" style-hover="background:#7A5D1E; color:#FBF3EE">Skicka förfrågan</a>
+        </p>
+      </div>
+      <div style="margin-top:72px; border-top:1px solid #E8D9C9; padding-top:36px; display:grid; grid-template-columns:repeat(3, 1fr); text-align:center; gap:20px">
+        <div><p style="margin:0 0 6px; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E">Telefon</p><p style="margin:0; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20">08-24 68 10 12</p></div>
+        <div><p style="margin:0 0 6px; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E">Butik</p><p style="margin:0; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20">Lindengatan 7, Stockholm</p></div>
+        <div><p style="margin:0 0 6px; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E">Öppet</p><p style="margin:0; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20">vard 10–18 · lör 10–15</p></div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ ER BESTÄLLNING (varukorg) ============ -->
+  <sc-if value="{{ showBestallning }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:680px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Er beställning</p>
+      <h1 style="margin:0 0 48px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Det ni har valt</h1>
+      <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="text-align:center; border:1px solid #E8D9C9; padding:64px 40px">
+          <p style="margin:0 0 10px; font-family:'Cormorant Garamond'; font-style:italic; font-size:24px; color:#7A5D1E">Beställningen är ännu tom.</p>
+          <p style="margin:0 0 30px; color:#6B5548; font-size:15px">Katalogen väntar — säsongens kompositioner finns där.</p>
+          <a onClick="{{ goKatalog }}" style="cursor:pointer; display:inline-block; border:1px solid #182A20; color:#182A20; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:16px 40px" style-hover="background:#182A20; color:#FBF3EE">Till katalogen</a>
+        </div>
+      </sc-if>
+      <sc-if value="{{ cartHasItems }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="border-top:1px solid #E8D9C9">
+            <sc-for list="{{ cartItems }}" as="ci" hint-placeholder-count="0">
+              <div style="display:flex; gap:22px; align-items:center; border-bottom:1px solid #E8D9C9; padding:22px 0">
+                <div style="width:80px; height:100px; background:url('{{ ci.img }}') center/cover; flex-shrink:0"></div>
+                <div style="flex:1">
+                  <p style="margin:0 0 4px; font-family:'Cormorant Garamond'; font-weight:500; font-size:22px; color:#182A20">{{ ci.name }}</p>
+                  <p style="margin:0; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#7A5D1E">{{ ci.unit }} per styck</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:16px">
+                  <button onClick="{{ ci.dec }}" style="background:transparent; border:none; cursor:pointer; font-family:'Cormorant Garamond'; font-size:22px; color:#7A5D1E" style-hover="color:#182A20">−</button>
+                  <span style="font-family:'Cormorant Garamond'; font-size:19px; min-width:18px; text-align:center; color:#182A20">{{ ci.qty }}</span>
+                  <button onClick="{{ ci.inc }}" style="background:transparent; border:none; cursor:pointer; font-family:'Cormorant Garamond'; font-size:22px; color:#7A5D1E" style-hover="color:#182A20">+</button>
+                </div>
+                <p style="margin:0; font-family:'Cormorant Garamond'; font-size:20px; color:#182A20; min-width:90px; text-align:right">{{ ci.lineTotal }}</p>
+                <button onClick="{{ ci.remove }}" style="background:transparent; border:none; cursor:pointer; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:#B5A28F" style-hover="color:#7A5D1E">Ta bort</button>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; padding:26px 0; border-bottom:2px solid #182A20">
+            <p style="margin:0; font-size:12px; letter-spacing:0.24em; text-transform:uppercase; color:#7A5D1E">Summa</p>
+            <p style="margin:0; font-family:'Cormorant Garamond'; font-weight:500; font-size:30px; color:#182A20">{{ cartSubtotal }}</p>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:34px">
+            <a onClick="{{ goKatalog }}" style="cursor:pointer; font-family:'Cormorant Garamond'; font-style:italic; font-size:17px; color:#7A5D1E; border-bottom:1px solid #D9BE7B; padding-bottom:2px" style-hover="color:#182A20">fortsätt i katalogen</a>
+            <a onClick="{{ goKassa }}" style="cursor:pointer; display:inline-block; background:#182A20; color:#FBF3EE; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:17px 44px" style-hover="background:#7A5D1E; color:#FBF3EE">Till kassan</a>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+  </sc-if>
+
+  <!-- ============ KASSA — formell enkel kolumn ============ -->
+  <sc-if value="{{ showKassa }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:620px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Kassan</p>
+      <h1 style="margin:0 0 14px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Slutför beställningen</h1>
+      <p style="margin:0 0 52px; text-align:center; font-family:'Cormorant Garamond'; font-style:italic; font-size:18px; color:#7A5D1E">{{ cartCount }} kompositioner · {{ kassaTotal }}</p>
+
+      <p style="margin:0 0 22px; font-size:12px; letter-spacing:0.24em; text-transform:uppercase; color:#7A5D1E; border-bottom:1px solid #E8D9C9; padding-bottom:10px">I · Leverans</p>
+      <div style="display:flex; flex-direction:column; gap:30px; margin-bottom:52px">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px">
+          <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Mottagare</label><input placeholder="för- och efternamn" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+          <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Telefon</label><input placeholder="07x-xxx xx xx" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+        </div>
+        <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Leveransadress</label><input placeholder="gata, postnummer och ort" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+        <div style="display:flex; flex-direction:column; gap:0">
+          <sc-for list="{{ deliveryOpts }}" as="d" hint-placeholder-count="3">
+            <button onClick="{{ d.pick }}" style="border:none; cursor:pointer; display:flex; align-items:baseline; gap:16px; border-bottom:1px dotted #D9BE7B; padding:14px 4px" style-hover="background:#F5E4DC">
+              <span style="width:9px; height:9px; border-radius:999px; border:1px solid #7A5D1E; background:{{ d.dot }}; flex-shrink:0; align-self:center"></span>
+              <span style="flex:1; font-family:'Cormorant Garamond'; font-size:20px; color:#182A20">{{ d.name }}</span>
+              <span style="font-size:12.5px; letter-spacing:0.1em; color:#7A5D1E">{{ d.price }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <p style="margin:0 0 10px; font-size:12px; letter-spacing:0.24em; text-transform:uppercase; color:#7A5D1E; border-bottom:1px solid #E8D9C9; padding-bottom:10px">II · Betalning</p>
+      <div style="display:flex; flex-direction:column; margin-bottom:20px">
+        <sc-for list="{{ payMethods }}" as="m" hint-placeholder-count="5">
+          <button onClick="{{ m.pick }}" style="border:none; cursor:pointer; display:flex; align-items:baseline; gap:16px; border-bottom:1px dotted #D9BE7B; padding:14px 4px" style-hover="background:#F5E4DC">
+            <span style="width:9px; height:9px; border-radius:999px; border:1px solid #7A5D1E; background:{{ m.dot }}; flex-shrink:0; align-self:center"></span>
+            <span style="flex:1; font-family:'Cormorant Garamond'; font-size:20px; color:#182A20">{{ m.name }}</span>
+            <span style="font-size:12px; letter-spacing:0.1em; color:#B5A28F">{{ m.note }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <p style="margin:0 0 44px; font-family:'Cormorant Garamond'; font-style:italic; font-size:16px; color:#7A5D1E; text-align:center">{{ payHint }}</p>
+
+      <p style="text-align:center; margin:0">
+        <button onClick="{{ placeOrder }}" style="border:none; cursor:pointer; display:inline-block; background:#182A20; color:#FBF3EE; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:18px 56px" style-hover="background:#7A5D1E; color:#FBF3EE">Bekräfta &amp; betala {{ kassaTotal }}</button>
+      </p>
+      <p style="margin:16px 0 0; text-align:center; color:#6B5548; font-size:12.5px">Krypterad betalning · Levereras med vård</p>
+    </section>
+  </sc-if>
+
+  <!-- ============ BEKRÄFTELSE ============ -->
+  <sc-if value="{{ showBekraftelse }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:560px; margin:80px auto 0; padding:0 28px; text-align:center">
+      <div style="border-top:2px solid #182A20; width:64px; margin:0 auto 36px"></div>
+      <h1 style="margin:0 0 16px; font-family:'Cormorant Garamond'; font-weight:500; font-size:50px; color:#182A20">Vi tackar er</h1>
+      <p style="margin:0 0 8px; font-size:12px; letter-spacing:0.24em; text-transform:uppercase; color:#7A5D1E">Beställning {{ orderNo }}</p>
+      <p style="margin:0 auto 40px; max-width:420px; color:#6B5548; font-size:15.5px; line-height:1.85">Er beställning binds för hand och lämnar butiken med bud. En bekräftelse är skickad till er e-post.</p>
+      <div style="border-top:2px solid #182A20; width:64px; margin:0 auto 40px"></div>
+      <a onClick="{{ goHem }}" style="cursor:pointer; display:inline-block; border:1px solid #182A20; color:#182A20; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:16px 40px" style-hover="background:#182A20; color:#FBF3EE">Till förstasidan</a>
+    </section>
+  </sc-if>
+
+  <!-- ============ KONSULTATION (bokning) ============ -->
+  <sc-if value="{{ showKonsultation }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:620px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Konsultation</p>
+      <h1 style="margin:0 0 20px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Boka ett möte</h1>
+      <p style="margin:0 auto 52px; max-width:440px; text-align:center; color:#6B5548; font-size:15.5px; line-height:1.75">Trettio minuter med vår mästerflorist — i butiken eller per telefon. Vi bjuder på kaffet.</p>
+
+      <p style="margin:0 0 18px; font-size:12px; letter-spacing:0.24em; text-transform:uppercase; color:#7A5D1E; border-bottom:1px solid #E8D9C9; padding-bottom:10px">Ärende</p>
+      <div style="display:flex; flex-direction:column; margin-bottom:44px">
+        <sc-for list="{{ consultTopics }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.pick }}" style="border:none; cursor:pointer; display:flex; align-items:baseline; gap:16px; border-bottom:1px dotted #D9BE7B; padding:13px 4px" style-hover="background:#F5E4DC">
+            <span style="width:9px; height:9px; border-radius:999px; border:1px solid #7A5D1E; background:{{ t.dot }}; flex-shrink:0; align-self:center"></span>
+            <span style="flex:1; font-family:'Cormorant Garamond'; font-size:20px; color:#182A20">{{ t.name }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <p style="margin:0 0 22px; font-size:12px; letter-spacing:0.24em; text-transform:uppercase; color:#7A5D1E; border-bottom:1px solid #E8D9C9; padding-bottom:10px">Önskad tid</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-bottom:44px">
+        <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Dag</label><input placeholder="t.ex. onsdag 15 juli" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+        <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Tid</label><input placeholder="t.ex. eftermiddag" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+        <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Namn</label><input placeholder="för- och efternamn" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+        <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Telefon</label><input placeholder="07x-xxx xx xx" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+      </div>
+      <p style="text-align:center; margin:0">
+        <a onClick="{{ confirmConsult }}" style="cursor:pointer; display:inline-block; background:#182A20; color:#FBF3EE; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:17px 48px" style-hover="background:#7A5D1E; color:#FBF3EE">{{ consultCta }}</a>
+      </p>
+      <sc-if value="{{ consultMsg }}" hint-placeholder-val="{{ false }}">
+        <p style="margin:20px 0 0; text-align:center; font-family:'Cormorant Garamond'; font-style:italic; font-size:17px; color:#7A5D1E">Tack — vi ringer upp inom en timme under öppettid och bekräftar tiden.</p>
+      </sc-if>
+    </section>
+  </sc-if>
+
+  <!-- ============ KURSER — Skolan ============ -->
+  <sc-if value="{{ showKurser }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:820px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Skolan</p>
+      <h1 style="margin:0 0 20px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Binderikurser</h1>
+      <p style="margin:0 auto 56px; max-width:460px; text-align:center; color:#6B5548; font-size:15.5px; line-height:1.75">Hantverket förtjänar att föras vidare. Små klasser, klassiska tekniker och det bästa ur kylrummet.</p>
+      <div style="display:flex; flex-direction:column">
+        <sc-for list="{{ courses }}" as="k" hint-placeholder-count="3">
+          <div style="display:grid; grid-template-columns:200px 1fr auto; gap:36px; align-items:center; border-top:1px solid #E8D9C9; padding:32px 0">
+            <div style="aspect-ratio:1/1; background:url('{{ k.img }}') center/cover"></div>
+            <div>
+              <p style="margin:0 0 4px; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E">{{ k.num }} · {{ k.date }}</p>
+              <h3 style="margin:0 0 10px; font-family:'Cormorant Garamond'; font-weight:500; font-size:29px; color:#182A20">{{ k.name }}</h3>
+              <p style="margin:0; color:#6B5548; font-size:14.5px; line-height:1.7">{{ k.desc }}</p>
+            </div>
+            <div style="text-align:right">
+              <p style="margin:0 0 4px; font-family:'Cormorant Garamond'; font-size:24px; color:#182A20">{{ k.price }}</p>
+              <p style="margin:0 0 16px; font-size:11.5px; letter-spacing:0.14em; text-transform:uppercase; color:#B5A28F">{{ k.seats }}</p>
+              <button onClick="{{ k.add }}" style="background:transparent; border:none; cursor:pointer; display:inline-block; border-bottom:1px solid #7A5D1E; color:#7A5D1E; font-size:11.5px; font-weight:600; letter-spacing:0.24em; text-transform:uppercase; padding-bottom:4px" style-hover="color:#182A20; border-color:#182A20">Boka plats</button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="border-top:1px solid #E8D9C9"></div>
+    </section>
+  </sc-if>
+
+  <!-- ============ GALLERI ============ -->
+  <sc-if value="{{ showGalleri }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1100px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Galleri</p>
+      <h1 style="margin:0 0 56px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Ur vår hand</h1>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:44px 36px">
+        <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="6">
+          <div style="text-align:center">
+            <div style="border:1px solid #E8D9C9; padding:12px" style-hover="border-color:#7A5D1E">
+              <div style="aspect-ratio:4/3; background:url('{{ g.img }}') center/cover"></div>
+            </div>
+            <p style="margin:16px 0 0; font-family:'Cormorant Garamond'; font-style:italic; font-size:17px; color:#7A5D1E">{{ g.caption }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ PRESENTKORT ============ -->
+  <sc-if value="{{ showPresentkort }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:620px; margin:64px auto 0; padding:0 28px; text-align:center">
+      <p style="margin:0 0 8px; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Presentkort</p>
+      <h1 style="margin:0 0 20px; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">En gåva med värdighet</h1>
+      <p style="margin:0 auto 48px; max-width:420px; color:#6B5548; font-size:15.5px; line-height:1.75">Tryckt på bomullspapper, lackat med vårt sigill och skickat i kuvert — eller digitalt, om tiden är knapp.</p>
+      <div style="background:#182A20; padding:12px; margin-bottom:44px">
+        <div style="border:1px solid #D9BE7B; padding:52px 32px">
+          <p style="margin:0; font-family:'Cormorant Garamond'; font-weight:500; font-size:26px; letter-spacing:0.3em; color:#FBF3EE; text-transform:uppercase; padding-left:0.3em">Eloria</p>
+          <p style="margin:8px 0 30px; font-family:'Cormorant Garamond'; font-style:italic; font-size:15px; color:#D9BE7B">presentkort</p>
+          <p style="margin:0; font-family:'Cormorant Garamond'; font-size:48px; color:#FBF3EE">{{ giftAmount }}</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:0; margin-bottom:40px; border-top:1px solid #E8D9C9; border-bottom:1px solid #E8D9C9">
+        <sc-for list="{{ giftOptions }}" as="g" hint-placeholder-count="4">
+          <button onClick="{{ g.pick }}" style="background:transparent; border:none; cursor:pointer; white-space:nowrap; font-family:'Cormorant Garamond'; font-size:{{ g.size }}; font-style:{{ g.italic }}; color:{{ g.color }}; padding:16px 26px">{{ g.label }}</button>
+        </sc-for>
+      </div>
+      <button onClick="{{ addGift }}" style="border:none; cursor:pointer; display:inline-block; background:#182A20; color:#FBF3EE; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:17px 44px" style-hover="background:#7A5D1E; color:#FBF3EE">Lägg till beställning</button>
+    </section>
+  </sc-if>
+
+  <!-- ============ VÄNNER AV HUSET (lojalitet) ============ -->
+  <sc-if value="{{ showVanner }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:620px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Lojalitet</p>
+      <h1 style="margin:0 0 48px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Vänner av huset</h1>
+      <div style="border:1px solid #E8D9C9; padding:52px 48px">
+        <p style="margin:0 0 24px; font-family:'Cormorant Garamond'; font-style:italic; font-size:21px; line-height:1.7; color:#182A20">Kära blomstervän,</p>
+        <p style="margin:0 0 18px; color:#6B5548; font-size:15.5px; line-height:1.85">Somliga kommer tillbaka, år efter år. Er vill vi tacka särskilt. Som vän av huset får ni vårt säsongsbrev före alla andra, tio procent på alla binderikurser och en ros på er födelsedag — hämtas i butiken, med våra gratulationer.</p>
+        <p style="margin:0 0 34px; color:#6B5548; font-size:15.5px; line-height:1.85">Medlemskapet kostar ingenting. Det är vårt sätt att säga tack.</p>
+        <p style="margin:0 0 44px; font-family:'Cormorant Garamond'; font-style:italic; font-size:19px; color:#7A5D1E">— huset Eloria</p>
+        <div style="display:flex; gap:24px; align-items:end; flex-wrap:wrap">
+          <div style="flex:1; min-width:220px"><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Er e-post</label><input placeholder="namn@adress.se" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+          <button onClick="{{ joinClub }}" style="border:none; cursor:pointer; display:inline-block; background:#182A20; color:#FBF3EE; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:15px 36px; white-space:nowrap" style-hover="background:#7A5D1E; color:#FBF3EE">{{ clubCta }}</button>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ OFFERT ============ -->
+  <sc-if value="{{ showOffert }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:620px; margin:64px auto 0; padding:0 28px">
+      <p style="margin:0 0 8px; text-align:center; color:#7A5D1E; font-size:12px; letter-spacing:0.26em; text-transform:uppercase">Offert</p>
+      <h1 style="margin:0 0 20px; text-align:center; font-family:'Cormorant Garamond'; font-weight:500; font-size:52px; color:#182A20">Ett förslag, utan förpliktelse</h1>
+      <p style="margin:0 auto 52px; max-width:440px; text-align:center; color:#6B5548; font-size:15.5px; line-height:1.75">För bröllop, högtider och företag. Beskriv tillfället — vi återkommer med ett genomarbetat förslag inom två arbetsdagar.</p>
+      <p style="margin:0 0 18px; font-size:12px; letter-spacing:0.24em; text-transform:uppercase; color:#7A5D1E; border-bottom:1px solid #E8D9C9; padding-bottom:10px">Tillfälle</p>
+      <div style="display:flex; flex-direction:column; margin-bottom:44px">
+        <sc-for list="{{ quoteTypes }}" as="q" hint-placeholder-count="4">
+          <button onClick="{{ q.pick }}" style="border:none; cursor:pointer; display:flex; align-items:baseline; gap:16px; border-bottom:1px dotted #D9BE7B; padding:13px 4px" style-hover="background:#F5E4DC">
+            <span style="width:9px; height:9px; border-radius:999px; border:1px solid #7A5D1E; background:{{ q.dot }}; flex-shrink:0; align-self:center"></span>
+            <span style="flex:1; font-family:'Cormorant Garamond'; font-size:20px; color:#182A20">{{ q.name }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:30px; margin-bottom:44px">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px">
+          <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Namn</label><input placeholder="för- och efternamn" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+          <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Datum</label><input placeholder="t.ex. 14 juni 2027" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+        </div>
+        <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">E-post</label><input placeholder="namn@adress.se" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none"></div>
+        <div><label style="display:block; font-size:11.5px; font-weight:600; letter-spacing:0.22em; text-transform:uppercase; color:#7A5D1E; margin-bottom:10px">Ert tillfälle, med era ord</label><textarea placeholder="plats, antal gäster, färger, känsla…" rows="4" style="width:100%; box-sizing:border-box; border:none; border-bottom:1px solid #182A20; padding:8px 2px; font-family:'Cormorant Garamond'; font-size:19px; color:#182A20; outline:none; resize:vertical"></textarea></div>
+      </div>
+      <p style="text-align:center; margin:0">
+        <button onClick="{{ sendQuote }}" style="border:none; cursor:pointer; display:inline-block; background:#182A20; color:#FBF3EE; font-size:12px; font-weight:600; letter-spacing:0.26em; text-transform:uppercase; padding:17px 48px" style-hover="background:#7A5D1E; color:#FBF3EE">{{ quoteCta }}</button>
+      </p>
+    </section>
+  </sc-if>
+
+  <!-- FOOTER — mörkgrön, tre guldlinjerade kolumner -->
+  <footer style="background:#182A20; margin-top:110px; padding:70px 28px 40px">
+    <div style="max-width:1000px; margin:0 auto; text-align:center">
+      <p style="margin:0; font-family:'Cormorant Garamond'; font-weight:500; font-size:34px; letter-spacing:0.3em; color:#FBF3EE; text-transform:uppercase; padding-left:0.3em">Eloria</p>
+      <div style="margin:40px 0; border-top:1px solid rgba(217,190,123,0.35); border-bottom:1px solid rgba(217,190,123,0.35); padding:30px 0; display:grid; grid-template-columns:repeat(3, 1fr); gap:20px">
+        <div><p style="margin:0 0 8px; color:#D9BE7B; font-size:11px; letter-spacing:0.24em; text-transform:uppercase">Besök</p><p style="margin:0; color:rgba(251,243,238,0.8); font-size:14.5px; line-height:1.7">Lindengatan 7<br>111 22 Stockholm</p></div>
+        <div style="border-left:1px solid rgba(217,190,123,0.35); border-right:1px solid rgba(217,190,123,0.35)"><p style="margin:0 0 8px; color:#D9BE7B; font-size:11px; letter-spacing:0.24em; text-transform:uppercase">Kontakt</p><p style="margin:0; color:rgba(251,243,238,0.8); font-size:14.5px; line-height:1.7">08-24 68 10 12<br>bud@eloria.se</p></div>
+        <div><p style="margin:0 0 8px; color:#D9BE7B; font-size:11px; letter-spacing:0.24em; text-transform:uppercase">Öppettider</p><p style="margin:0; color:rgba(251,243,238,0.8); font-size:14.5px; line-height:1.7">Vardagar 10–18<br>Lördag 10–15</p></div>
+      </div>
+      <nav style="display:flex; justify-content:center; gap:26px; margin-bottom:20px; flex-wrap:wrap">
+        <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="8">
+          <a onClick="{{ item.go }}" style="cursor:pointer; color:rgba(251,243,238,0.7); font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase" style-hover="color:#D9BE7B">{{ item.label }}</a>
+        </sc-for>
+      </nav>
+      <nav style="display:flex; justify-content:center; gap:26px; margin-bottom:28px; flex-wrap:wrap">
+        <a onClick="{{ goKonsultation }}" style="cursor:pointer; color:rgba(251,243,238,0.7); font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase" style-hover="color:#D9BE7B">Konsultation</a>
+        <a onClick="{{ goPresentkort }}" style="cursor:pointer; color:rgba(251,243,238,0.7); font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase" style-hover="color:#D9BE7B">Presentkort</a>
+        <a onClick="{{ goVanner }}" style="cursor:pointer; color:rgba(251,243,238,0.7); font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase" style-hover="color:#D9BE7B">Vänner av huset</a>
+        <a onClick="{{ goOffert }}" style="cursor:pointer; color:rgba(251,243,238,0.7); font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase" style-hover="color:#D9BE7B">Offert</a>
+        <a onClick="{{ goBestallning }}" style="cursor:pointer; color:rgba(251,243,238,0.7); font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase" style-hover="color:#D9BE7B">Er beställning</a>
+      </nav>
+      <p style="margin:0; color:rgba(251,243,238,0.4); font-size:12.5px">© 2026 Eloria Blomsterhandel · Byggd med Corevo</p>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;showUtility&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Sektioner&quot; }
+}">
+class Component extends DCLogic {
+  state = {
+    page: 'hem', cart: {}, orderNo: '',
+    delivery: 'bud', pay: 'Kort',
+    consultTopic: 'Bröllop & högtid', consulted: false,
+    giftAmount: 750, clubJoined: false,
+    quoteType: 'Bröllop', quoteSent: false,
+  };
+
+  go(page) {
+    this.setState({ page });
+    try { document.scrollingElement.scrollTop = 0; } catch (e) {}
+  }
+
+  addToCart(item) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const prev = cart[item.id] || { ...item, qty: 0 };
+      cart[item.id] = { ...prev, qty: prev.qty + 1 };
+      return { cart };
+    });
+    this.go('bestallning');
+  }
+
+  setQty(id, delta) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const it = cart[id];
+      if (!it) return {};
+      const qty = it.qty + delta;
+      if (qty <= 0) delete cart[id]; else cart[id] = { ...it, qty };
+      return { cart };
+    });
+  }
+
+  renderVals() {
+    const page = this.state.page;
+    const img = (id, w = 900) => `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`;
+
+    const labels = [['hem', 'Hem'], ['katalog', 'Katalog'], ['brollop', 'Bröllop'], ['kurser', 'Skolan'], ['galleri', 'Galleri'], ['journal', 'Journal'], ['om', 'Om oss'], ['kontakt', 'Kontakt']];
+    const navItems = labels.map(([key, label], i) => ({
+      key, label,
+      go: () => this.go(key),
+      color: page === key ? '#7A5D1E' : '#182A20',
+      weight: page === key ? '700' : '500',
+      sep: i < labels.length - 1 ? '|' : '',
+    }));
+
+    const catalogRaw = [
+      { id: 'c1', name: 'No. I — Trädgårdsros', priceNum: 895, price: '895 kr', desc: 'Rosor i gammaldags sorter med säsongsgrönt.', img: img('1524835391568-32c8f7016d73') },
+      { id: 'c2', name: 'No. II — Vit ceremoni', priceNum: 1150, price: '1 150 kr', desc: 'Vitt och krämigt för högtidliga tillfällen.', img: img('1522748906645-95d8adfd52c7') },
+      { id: 'c3', name: 'No. III — Sommaräng', priceNum: 695, price: '695 kr', desc: 'Luftig komposition av ängens blommor.', img: img('1582874576091-26fa231ce87c') },
+      { id: 'c4', name: 'No. IV — Aftonljus', priceNum: 795, price: '795 kr', desc: 'Djupa toner för middag och fest.', img: img('1598453055371-0f5e37113bea') },
+      { id: 'c5', name: 'No. V — Stilla farväl', priceNum: 950, price: 'från 950 kr', desc: 'Kransar och binderi med värdighet.', img: img('1596309322315-da9e713cbb22') },
+      { id: 'c6', name: 'No. VI — Månadens val', priceNum: 595, price: '595 kr', desc: 'Mästarens egen komposition, ny varje månad.', img: img('1716982360804-b0bfdb28103e') },
+    ];
+    const catalog = catalogRaw.map((k) => ({ ...k, add: () => this.addToCart({ id: k.id, name: k.name, priceNum: k.priceNum, img: k.img }) }));
+
+    const journal = [
+      { date: 'Juni 2026', title: 'Pionens korta, storslagna säsong', excerpt: 'Några veckor om året får vi in dem — sedan är de borta. Så tar du vara på pionerna medan de varar, och så väljer du rätt sort för vasen därhemma.', img: img('1524835391568-32c8f7016d73', 1200) },
+      { date: 'Maj 2026', title: 'Konsten att binda en brudbukett', excerpt: 'Bakom varje brudbukett ligger timmar av hantverk. Vi följer en bukett från första samtalet till att den lämnar butiken på bröllopsdagens morgon.', img: img('1582794543139-8ac9cb0f7b11', 1200) },
+      { date: 'April 2026', title: 'Säsongens snitt: vad vi väljer och varför', excerpt: 'Att arbeta med säsongen är inte en begränsning utan en rikedom. Om varför en aprilbukett aldrig ska se ut som en oktoberbukett.', img: img('1582874576091-26fa231ce87c', 1200) },
+    ];
+
+    const tiles = [
+      { title: 'Katalogen', cta: 'Se kompositionerna', img: img('1582874576091-26fa231ce87c'), go: () => this.go('katalog') },
+      { title: 'Bröllop', cta: 'Er stora dag', img: img('1524835391568-32c8f7016d73'), go: () => this.go('brollop') },
+      { title: 'Journalen', cta: 'Ord om blommor', img: img('1716982360804-b0bfdb28103e'), go: () => this.go('journal') },
+    ];
+
+    const st = this.state;
+    const kr = (n) => n.toLocaleString('sv-SE') + ' kr';
+
+    // — beställning & kassa —
+    const entries = Object.values(st.cart).filter((it) => it && it.qty > 0);
+    const cartItems = entries.map((it) => ({
+      name: it.name, img: it.img, qty: it.qty,
+      unit: kr(it.priceNum),
+      lineTotal: kr(it.priceNum * it.qty),
+      inc: () => this.setQty(it.id, 1),
+      dec: () => this.setQty(it.id, -1),
+      remove: () => this.setQty(it.id, -it.qty),
+    }));
+    const cartCount = entries.reduce((n, it) => n + it.qty, 0);
+    const subtotal = entries.reduce((n, it) => n + it.priceNum * it.qty, 0);
+
+    const delOpts = [
+      { id: 'bud', name: 'Bud inom staden, samma dag', cost: 95 },
+      { id: 'morgon', name: 'Morgonleverans, före kl 10', cost: 145 },
+      { id: 'butik', name: 'Avhämtning i butiken', cost: 0 },
+    ];
+    const deliveryOpts = delOpts.map((d) => ({
+      name: d.name,
+      price: d.cost === 0 ? 'utan kostnad' : kr(d.cost),
+      pick: () => this.setState({ delivery: d.id }),
+      dot: st.delivery === d.id ? '#7A5D1E' : 'transparent',
+    }));
+    const shipCost = (delOpts.find((d) => d.id === st.delivery) || delOpts[0]).cost;
+
+    const payDefs = [
+      { name: 'Kort', note: 'Visa · Mastercard · Amex', hint: 'Betalningen dras direkt — kvitto via e-post.' },
+      { name: 'Swish', note: 'direkt i appen', hint: 'En förfrågan skickas till er Swish-app vid bekräftelse.' },
+      { name: 'Klarna', note: 'faktura · delbetalning', hint: 'Ni väljer faktura eller delbetalning hos Klarna efter köpet.' },
+      { name: 'PayPal', note: 'internationellt', hint: 'Ni förs vidare till PayPal för att slutföra betalningen.' },
+      { name: 'Apple Pay', note: 'Touch / Face ID', hint: 'Bekräfta med Touch ID eller Face ID — klart på ett ögonblick.' },
+    ];
+    const payMethods = payDefs.map((m) => ({
+      name: m.name, note: m.note,
+      pick: () => this.setState({ pay: m.name }),
+      dot: st.pay === m.name ? '#7A5D1E' : 'transparent',
+    }));
+    const payHint = (payDefs.find((m) => m.name === st.pay) || payDefs[0]).hint;
+
+    // — kurser —
+    const courses = [
+      { id: 'k1', num: 'Lektion I', name: 'Den klassiska buketten', date: '23 juli', desc: 'Spiralbindning från grunden — tekniken bakom varje handbunden bukett.', priceNum: 795, seats: '4 platser', img: img('1582874576091-26fa231ce87c', 700) },
+      { id: 'k2', num: 'Lektion II', name: 'Kransens hantverk', date: '6 augusti', desc: 'Bind en krans enligt konstens alla regler, med säsongens grönt.', priceNum: 895, seats: '6 platser', img: img('1596309322315-da9e713cbb22', 700) },
+      { id: 'k3', num: 'Lektion III', name: 'Bordets blommor', date: '20 augusti', desc: 'Låga arrangemang för det dukade bordet — proportion, doft och ljus.', priceNum: 845, seats: '5 platser', img: img('1598453055371-0f5e37113bea', 700) },
+    ].map((k) => ({ ...k, price: kr(k.priceNum), add: () => this.addToCart({ id: k.id, name: `${k.name} (${k.num.toLowerCase()})`, priceNum: k.priceNum, img: k.img }) }));
+
+    // — galleri —
+    const galleryItems = [
+      { img: img('1524835391568-32c8f7016d73', 1000), caption: 'trädgårdsros, bunden i juni' },
+      { img: img('1522748906645-95d8adfd52c7', 1000), caption: 'körsbärsblom mot morgonhimmel' },
+      { img: img('1582794543139-8ac9cb0f7b11', 1000), caption: 'brudbukett, midsommar' },
+      { img: img('1454262041357-5d96f50a2f27', 1000), caption: 'orkidé i vitt' },
+      { img: img('1598453055371-0f5e37113bea', 1000), caption: 'aftonljus, komposition nr IV' },
+      { img: img('1716982360804-b0bfdb28103e', 1000), caption: 'månadens val, juli' },
+    ];
+
+    // — konsultation, presentkort, vänner, offert —
+    const consultTopics = ['Bröllop & högtid', 'Begravning', 'Företag', 'Annat ärende'].map((name) => ({
+      name, pick: () => this.setState({ consultTopic: name, consulted: false }),
+      dot: st.consultTopic === name ? '#7A5D1E' : 'transparent',
+    }));
+    const giftOptions = [500, 750, 1000, 1500].map((v) => ({
+      label: kr(v),
+      pick: () => this.setState({ giftAmount: v }),
+      color: st.giftAmount === v ? '#182A20' : '#B5A28F',
+      size: st.giftAmount === v ? '24px' : '19px',
+      italic: st.giftAmount === v ? 'normal' : 'italic',
+    }));
+    const quoteTypes = ['Bröllop', 'Högtid & fest', 'Begravning', 'Företag'].map((name) => ({
+      name, pick: () => this.setState({ quoteType: name, quoteSent: false }),
+      dot: st.quoteType === name ? '#7A5D1E' : 'transparent',
+    }));
+
+    return {
+      navItems, tiles, catalog, journal,
+      homeCatalog: catalog.slice(0, 3),
+      homeJournal: journal,
+      goHem: () => this.go('hem'),
+      goKatalog: () => this.go('katalog'),
+      goBrollop: () => this.go('brollop'),
+      goJournal: () => this.go('journal'),
+      goKontakt: () => this.go('kontakt'),
+      goBestallning: () => this.go('bestallning'),
+      goKassa: () => this.go('kassa'),
+      goKurser: () => this.go('kurser'),
+      goGalleri: () => this.go('galleri'),
+      goPresentkort: () => this.go('presentkort'),
+      goVanner: () => this.go('vanner'),
+      goOffert: () => this.go('offert'),
+      goKonsultation: () => this.go('konsultation'),
+      showHem: page === 'hem',
+      showKatalog: page === 'katalog',
+      showBrollop: page === 'brollop',
+      showJournal: page === 'journal',
+      showOm: page === 'om',
+      showKontakt: page === 'kontakt',
+      showBestallning: page === 'bestallning',
+      showKassa: page === 'kassa',
+      showBekraftelse: page === 'bekraftelse',
+      showKonsultation: page === 'konsultation',
+      showKurser: page === 'kurser',
+      showGalleri: page === 'galleri',
+      showPresentkort: page === 'presentkort',
+      showVanner: page === 'vanner',
+      showOffert: page === 'offert',
+      showUtility: this.props.showUtility ?? true,
+      cartItems, cartCount,
+      cartEmpty: cartCount === 0,
+      cartHasItems: cartCount > 0,
+      cartSubtotal: kr(subtotal),
+      kassaTotal: kr(subtotal + (cartCount > 0 ? shipCost : 0)),
+      deliveryOpts, payMethods, payHint,
+      orderNo: st.orderNo,
+      placeOrder: () => {
+        if (cartCount === 0) { this.go('katalog'); return; }
+        this.setState({ orderNo: 'No. E-' + String(Math.floor(1000 + Math.random() * 9000)), cart: {} });
+        this.go('bekraftelse');
+      },
+      courses, galleryItems, consultTopics,
+      consultCta: st.consulted ? 'Mottaget — vi ringer er' : 'Skicka önskemål',
+      consultMsg: st.consulted,
+      confirmConsult: () => this.setState({ consulted: true }),
+      giftOptions,
+      giftAmount: kr(st.giftAmount),
+      addGift: () => this.addToCart({ id: 'gift' + st.giftAmount, name: `Presentkort ${kr(st.giftAmount)}`, priceNum: st.giftAmount, img: img('1522748906645-95d8adfd52c7', 700) }),
+      clubCta: st.clubJoined ? 'Välkommen' : 'Bli vän av huset',
+      joinClub: () => this.setState({ clubJoined: true }),
+      quoteTypes,
+      quoteCta: st.quoteSent ? 'Mottaget — svar inom två dagar' : 'Skicka förfrågan',
+      sendQuote: () => this.setState({ quoteSent: true }),
+    };
+  }
+}
+</script>
+<script type="application/json" id="corevo-manifest">
+{
+  "key": "eloria",
+  "name": "Eloria",
+  "desc": "Klassiskt premium — mörkgrönt, guld och romerska siffror.",
+  "bransch": "florist",
+  "palette": {
+    "primary": "#7A5D1E",
+    "primaryD": "#5E4715",
+    "bg": "#FBF3EE",
+    "surface": "#FFFFFF",
+    "fg": "#182A20",
+    "fg2": "#6B5548",
+    "line": "#E8D9C9",
+    "accentSoft": "#D9BE7B"
+  },
+  "fonts": {
+    "heading": "Cormorant Garamond",
+    "body": "Mulish"
+  },
+  "radius": "0px",
+  "navHeight": {
+    "desktop": "68px",
+    "mobile": "56px"
+  },
+  "caps": {
+    "heroEyebrow": true,
+    "homeStats": false,
+    "homeGallery": false,
+    "homeAbout": true
+  },
+  "pages": {
+    "hem": {
+      "module": null,
+      "route": "/"
+    },
+    "katalog": {
+      "module": "shop",
+      "route": "/katalog"
+    },
+    "brollop": {
+      "module": "offert",
+      "route": "/brollop"
+    },
+    "journal": {
+      "module": "blogg",
+      "route": "/journal"
+    },
+    "om": {
+      "module": null,
+      "route": "/om"
+    },
+    "kontakt": {
+      "module": null,
+      "route": "/kontakt"
+    },
+    "bestallning": {
+      "module": "offert",
+      "route": "/bestallning"
+    },
+    "kassa": {
+      "module": "shop",
+      "route": "/kassa"
+    },
+    "bekraftelse": {
+      "module": "shop",
+      "route": "/kassa/tack"
+    },
+    "konsultation": {
+      "module": "booking",
+      "route": "/konsultation"
+    },
+    "kurser": {
+      "module": "kurser",
+      "route": "/kurser"
+    },
+    "galleri": {
+      "module": null,
+      "route": "/galleri"
+    },
+    "presentkort": {
+      "module": "presentkort",
+      "route": "/presentkort"
+    },
+    "vanner": {
+      "module": "lojalitet",
+      "route": "/vanner"
+    },
+    "offert": {
+      "module": "offert",
+      "route": "/offert"
+    }
+  },
+  "mock": [
+    "courses",
+    "galleryItems",
+    "tiles",
+    "delOpts",
+    "payDefs",
+    "giftOptions",
+    "quoteTypes"
+  ],
+  "verbatim": [
+    "navLabels",
+    "payHints (betalsätts-texterna)",
+    "alla rubriker och all brödtext"
+  ]
+}
+</script>
+</body>
+</html>

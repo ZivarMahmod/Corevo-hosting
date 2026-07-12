@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>ONYX — Blommor efter mörkrets inbrott</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #121212; }
+    body { font-family: 'Space Grotesk', system-ui, sans-serif; color: #F2EFEA; -webkit-font-smoothing: antialiased; }
+    a { color: #C9973F; text-decoration: none; }
+    a:hover { color: #F2EFEA; }
+    ::selection { background: #C9973F; color: #121212; }
+    input, textarea { background: #1C1C1C; color: #F2EFEA; }
+    input::placeholder, textarea::placeholder { color: #6B655B; }
+
+    /* Corevo-tillägg: fokus, knappsemantik, mobil ≤760px */
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #C9973F !important; outline-offset: 2px; }
+    button { font: inherit; cursor: pointer; }
+    @media (max-width: 760px) {
+      [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+      h1 { font-size: clamp(32px, 9vw, 46px) !important; line-height: 1.1 !important; }
+      h2 { font-size: clamp(24px, 7vw, 34px) !important; }
+      a[style*="cursor:pointer"], button { min-height: 44px; }
+      nav a { padding-top: 10px !important; padding-bottom: 10px !important; }
+      section, footer > div, header > div { padding-left: 20px !important; padding-right: 20px !important; }
+    }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#121212; display:flex; align-items:stretch">
+
+  <!-- VÄNSTER RAIL -->
+  <aside style="width:224px; flex-shrink:0; border-right:1px solid #2E2E2E; position:sticky; top:0; height:100vh; overflow-y:auto; display:flex; flex-direction:column; padding:32px 28px; box-sizing:border-box">
+    <a onClick="{{ goHem }}" style="cursor:pointer; font-weight:700; font-size:24px; letter-spacing:0.12em; color:#F2EFEA">ONYX<span style="color:#C9973F">.</span></a>
+    <p style="margin:8px 0 0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.08em; color:#9C968C">BLOMMOR EFTER<br>MÖRKRETS INBROTT</p>
+    <nav style="display:flex; flex-direction:column; gap:2px; margin-top:44px">
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="9">
+        <a onClick="{{ item.go }}" style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:9px 10px; margin:0 -10px; font-size:14.5px; font-weight:500; color:{{ item.color }}; background:{{ item.bg }}" style-hover="color:#F2EFEA; background:#1C1C1C">
+          <span style="font-family:'IBM Plex Mono'; font-size:10px; color:#C9973F">{{ item.num }}</span>{{ item.label }}
+        </a>
+      </sc-for>
+    </nav>
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:14px">
+      <a onClick="{{ goKorg }}" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; border:1px solid #C9973F; padding:12px 14px; color:#C9973F; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.06em" style-hover="background:#C9973F; color:#121212">
+        <span>KASSE</span><span>[{{ cartCount }}]</span>
+      </a>
+      <p style="margin:0; font-family:'IBM Plex Mono'; font-size:10.5px; color:#6B655B; line-height:1.7">ÖPPET TIS–LÖR 12–22<br>KATARINA BANGATA 9</p>
+    </div>
+  </aside>
+
+  <!-- INNEHÅLL -->
+  <main style="flex:1; min-width:0">
+
+    <!-- ============ HEM ============ -->
+    <sc-if value="{{ showHem }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <!-- HERO -->
+        <section style="border-bottom:1px solid #2E2E2E; display:grid; grid-template-columns:1.1fr 1fr">
+          <div style="padding:88px 56px; display:flex; flex-direction:column; justify-content:center">
+            <p style="margin:0 0 20px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">EST. 2019 — SÖDERMALM</p>
+            <h1 style="margin:0 0 24px; font-weight:700; font-size:64px; line-height:0.98; letter-spacing:-0.02em; color:#F2EFEA">Blommor är inte alltid söta.</h1>
+            <p style="margin:0 0 36px; color:#9C968C; font-size:16.5px; line-height:1.7; max-width:420px">Mörka sorter, skulpturala stjälkar och arrangemang med attityd. Bundna sent, levererade samma kväll — när blommor behövs som mest.</p>
+            <div style="display:flex; gap:16px; align-items:center">
+              <a onClick="{{ goButik }}" style="cursor:pointer; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:16px 32px" style-hover="background:#F2EFEA; color:#121212">SE DROPPET</a>
+              <a onClick="{{ goBoka }}" style="cursor:pointer; border:1px solid #2E2E2E; color:#F2EFEA; font-weight:500; font-size:14px; letter-spacing:0.06em; padding:15px 28px" style-hover="border-color:#C9973F; color:#C9973F">BOKA STUDION</a>
+            </div>
+            <p style="margin:44px 0 0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#6B655B; letter-spacing:0.06em">KVÄLLSLEVERANS 18–23 · BESTÄLL FÖRE 20:00</p>
+          </div>
+          <div style="position:relative; min-height:560px; background:url('https://images.unsplash.com/photo-1518343161123-c7e9ab4dc4da?w=1600&q=80&auto=format&fit=crop') center/cover; border-left:1px solid #2E2E2E">
+            <span style="position:absolute; bottom:20px; right:20px; font-family:'IBM Plex Mono'; font-size:10.5px; color:#F2EFEA; background:rgba(18,18,18,0.75); padding:6px 10px; letter-spacing:0.08em">FIG. 01 — MAGNOLIA NOIR</span>
+          </div>
+        </section>
+
+        <!-- VECKANS DROP -->
+        <section style="padding:72px 56px; border-bottom:1px solid #2E2E2E">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:40px">
+            <h2 style="margin:0; font-weight:700; font-size:36px; letter-spacing:-0.01em">Veckans drop</h2>
+            <a onClick="{{ goButik }}" style="cursor:pointer; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.1em; color:#C9973F" style-hover="color:#F2EFEA">SE ALLT →</a>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1px; background:#2E2E2E; border:1px solid #2E2E2E">
+            <sc-for list="{{ homeProducts }}" as="p" hint-placeholder-count="3">
+              <div style="background:#121212; padding:20px" style-hover="background:#1C1C1C">
+                <div style="aspect-ratio:1/1; background:url('{{ p.img }}') center/cover; margin-bottom:18px"></div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:6px">
+                  <h3 style="margin:0; font-weight:600; font-size:18px; color:#F2EFEA">{{ p.name }}</h3>
+                  <span style="font-family:'IBM Plex Mono'; font-size:13px; color:#C9973F; white-space:nowrap">{{ p.price }}</span>
+                </div>
+                <p style="margin:0 0 16px; color:#9C968C; font-size:13.5px; line-height:1.6">{{ p.desc }}</p>
+                <button onClick="{{ p.add }}" style="cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.1em; padding:10px 18px" style-hover="background:#C9973F; color:#121212">+ LÄGG I KASSE</button>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <!-- MANIFEST-BAND -->
+        <section style="padding:88px 56px; border-bottom:1px solid #2E2E2E; text-align:center">
+          <p style="margin:0 auto; max-width:720px; font-weight:600; font-size:34px; line-height:1.25; letter-spacing:-0.01em; color:#F2EFEA">Vi jobbar när staden vaknar på riktigt. <span style="color:#C9973F">Sista buketten binds 21:45.</span></p>
+        </section>
+
+        <!-- TRE VÄGAR -->
+        <section style="display:grid; grid-template-columns:repeat(3, 1fr); border-bottom:1px solid #2E2E2E">
+          <sc-for list="{{ paths }}" as="t" hint-placeholder-count="3">
+            <a onClick="{{ t.go }}" style="cursor:pointer; display:block; padding:44px 40px; border-right:1px solid #2E2E2E" style-hover="background:#1C1C1C">
+              <p style="margin:0 0 14px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.14em; color:#C9973F">{{ t.num }}</p>
+              <h3 style="margin:0 0 10px; font-weight:600; font-size:22px; color:#F2EFEA">{{ t.title }}</h3>
+              <p style="margin:0; color:#9C968C; font-size:14px; line-height:1.65">{{ t.desc }}</p>
+            </a>
+          </sc-for>
+        </section>
+
+        <!-- JOURNAL-UTDRAG -->
+        <section style="padding:72px 56px; border-bottom:1px solid #2E2E2E">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:34px">
+            <h2 style="margin:0; font-weight:700; font-size:36px">Journal</h2>
+            <a onClick="{{ goBlogg }}" style="cursor:pointer; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.1em; color:#C9973F" style-hover="color:#F2EFEA">ALLA INLÄGG →</a>
+          </div>
+          <div>
+            <sc-for list="{{ homeBlog }}" as="b" hint-placeholder-count="2">
+              <a onClick="{{ goBlogg }}" style="cursor:pointer; display:grid; grid-template-columns:140px 1fr auto; gap:32px; align-items:baseline; border-top:1px solid #2E2E2E; padding:22px 4px" style-hover="background:#1C1C1C">
+                <span style="font-family:'IBM Plex Mono'; font-size:12px; color:#6B655B">{{ b.date }}</span>
+                <span style="font-weight:600; font-size:19px; color:#F2EFEA">{{ b.title }}</span>
+                <span style="font-family:'IBM Plex Mono'; font-size:12px; color:#C9973F">LÄS →</span>
+              </a>
+            </sc-for>
+          </div>
+        </section>
+
+        <!-- CLOSING -->
+        <section style="position:relative; padding:120px 56px; background:url('https://images.unsplash.com/photo-1442458017215-285b83f65851?w=1600&q=80&auto=format&fit=crop') center/cover">
+          <div style="position:absolute; inset:0; background:rgba(18,18,18,0.78)"></div>
+          <div style="position:relative; text-align:center">
+            <h2 style="margin:0 0 16px; font-weight:700; font-size:44px; letter-spacing:-0.01em; color:#F2EFEA">Ikväll, före 23:00.</h2>
+            <p style="margin:0 auto 34px; max-width:400px; color:#9C968C; font-size:16px; line-height:1.7">Beställ före 20:00 så cyklar budet ut buketten samma kväll.</p>
+            <a onClick="{{ goButik }}" style="cursor:pointer; display:inline-block; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:16px 36px" style-hover="background:#F2EFEA; color:#121212">BESTÄLL NU</a>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <!-- ============ BUTIK ============ -->
+    <sc-if value="{{ showButik }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">DROP 27 — VECKA 28</p>
+        <h1 style="margin:0 0 12px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Butiken</h1>
+        <p style="margin:0 0 44px; color:#9C968C; font-size:16px; max-width:460px; line-height:1.7">Begränsade antal per vecka. När droppet är slut är det slut — nästa måndag kommer nya sorter.</p>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1px; background:#2E2E2E; border:1px solid #2E2E2E">
+          <sc-for list="{{ allProducts }}" as="p" hint-placeholder-count="6">
+            <div style="background:#121212; padding:20px" style-hover="background:#1C1C1C">
+              <div style="position:relative; margin-bottom:18px">
+                <div style="aspect-ratio:1/1; background:url('{{ p.img }}') center/cover"></div>
+                <span style="position:absolute; top:10px; left:10px; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:0.1em; background:rgba(18,18,18,0.8); color:#C9973F; padding:5px 9px">{{ p.tag }}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:6px">
+                <h3 style="margin:0; font-weight:600; font-size:18px">{{ p.name }}</h3>
+                <span style="font-family:'IBM Plex Mono'; font-size:13px; color:#C9973F; white-space:nowrap">{{ p.price }}</span>
+              </div>
+              <p style="margin:0 0 16px; color:#9C968C; font-size:13.5px; line-height:1.6">{{ p.desc }}</p>
+              <button onClick="{{ p.add }}" style="cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.1em; padding:10px 18px" style-hover="background:#C9973F; color:#121212">+ LÄGG I KASSE</button>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ============ KASSE ============ -->
+    <sc-if value="{{ showKorg }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px; max-width:820px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">KASSE [{{ cartCount }}]</p>
+        <h1 style="margin:0 0 44px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Din kasse</h1>
+        <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
+          <div style="border:1px solid #2E2E2E; padding:64px 40px; text-align:center">
+            <p style="margin:0 0 8px; font-family:'IBM Plex Mono'; font-size:13px; letter-spacing:0.1em; color:#6B655B">[ TOM ]</p>
+            <p style="margin:0 0 28px; color:#9C968C; font-size:15px">Droppet väntar inte på någon.</p>
+            <a onClick="{{ goButik }}" style="cursor:pointer; display:inline-block; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:15px 32px" style-hover="background:#F2EFEA; color:#121212">TILL BUTIKEN</a>
+          </div>
+        </sc-if>
+        <sc-if value="{{ cartHasItems }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="border:1px solid #2E2E2E">
+              <sc-for list="{{ cartItems }}" as="ci" hint-placeholder-count="0">
+                <div style="display:flex; gap:20px; align-items:center; border-bottom:1px solid #2E2E2E; padding:18px 22px">
+                  <div style="width:72px; height:72px; background:url('{{ ci.img }}') center/cover; flex-shrink:0"></div>
+                  <div style="flex:1">
+                    <p style="margin:0 0 3px; font-weight:600; font-size:16px">{{ ci.name }}</p>
+                    <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#6B655B">{{ ci.unit }} / ST</p>
+                  </div>
+                  <div style="display:flex; align-items:center; border:1px solid #2E2E2E">
+                    <button onClick="{{ ci.dec }}" style="border:none; cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; color:#C9973F; font-weight:700" style-hover="background:#1C1C1C">−</button>
+                    <span style="width:36px; text-align:center; font-family:'IBM Plex Mono'; font-size:13px">{{ ci.qty }}</span>
+                    <button onClick="{{ ci.inc }}" style="border:none; cursor:pointer; width:32px; height:32px; display:flex; align-items:center; justify-content:center; color:#C9973F; font-weight:700" style-hover="background:#1C1C1C">+</button>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono'; font-size:14px; color:#C9973F; min-width:90px; text-align:right; white-space:nowrap">{{ ci.lineTotal }}</span>
+                  <button onClick="{{ ci.remove }}" style="background:transparent; border:none; cursor:pointer; font-family:'IBM Plex Mono'; font-size:11px; color:#6B655B; white-space:nowrap" style-hover="color:#C9973F">[X]</button>
+                </div>
+              </sc-for>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:20px 22px">
+                <span style="font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.1em; color:#9C968C">SUMMA</span>
+                <span style="font-family:'IBM Plex Mono'; font-size:18px; color:#C9973F; white-space:nowrap">{{ cartSubtotal }}</span>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:28px">
+              <a onClick="{{ goButik }}" style="cursor:pointer; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.1em; color:#9C968C" style-hover="color:#C9973F">← FORTSÄTT HANDLA</a>
+              <a onClick="{{ goKassa }}" style="cursor:pointer; white-space:nowrap; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:16px 40px" style-hover="background:#F2EFEA; color:#121212">TILL KASSAN →</a>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <!-- ============ KASSA ============ -->
+    <sc-if value="{{ showKassa }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px; max-width:820px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">CHECKOUT — {{ cartCount }} VAROR — {{ kassaTotal }}</p>
+        <h1 style="margin:0 0 44px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Kassan</h1>
+
+        <div style="border:1px solid #2E2E2E; padding:36px; margin-bottom:20px">
+          <p style="margin:0 0 24px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">01 / LEVERANS</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
+            <div><label style="display:block; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.12em; color:#9C968C; margin-bottom:8px">MOTTAGARE</label><input placeholder="Namn" style="width:100%; box-sizing:border-box; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F"></div>
+            <div><label style="display:block; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.12em; color:#9C968C; margin-bottom:8px">TELEFON</label><input placeholder="07x-xxx xx xx" style="width:100%; box-sizing:border-box; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F"></div>
+          </div>
+          <div style="margin-bottom:20px"><label style="display:block; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.12em; color:#9C968C; margin-bottom:8px">ADRESS</label><input placeholder="Gata, postnummer, ort" style="width:100%; box-sizing:border-box; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F"></div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px">
+            <sc-for list="{{ deliveryOpts }}" as="d" hint-placeholder-count="3">
+              <button onClick="{{ d.pick }}" style="cursor:pointer; border:1px solid {{ d.border }}; background:{{ d.bg }}; padding:16px 14px" style-hover="border-color:#C9973F">
+                <span style="display:block; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.1em; color:{{ d.numColor }}; margin-bottom:6px">{{ d.tag }}</span>
+                <span style="display:block; font-weight:600; font-size:14px; color:#F2EFEA; margin-bottom:2px">{{ d.name }}</span>
+                <span style="display:block; font-family:'IBM Plex Mono'; font-size:12px; color:#C9973F">{{ d.price }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="border:1px solid #2E2E2E; padding:36px; margin-bottom:20px">
+          <p style="margin:0 0 24px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">02 / BETALNING</p>
+          <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:20px">
+            <sc-for list="{{ payMethods }}" as="m" hint-placeholder-count="5">
+              <button onClick="{{ m.pick }}" style="cursor:pointer; text-align:center; border:1px solid {{ m.border }}; background:{{ m.bg }}; color:{{ m.color }}; padding:14px 6px; font-weight:600; font-size:13px; white-space:nowrap" style-hover="border-color:#C9973F">{{ m.name }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ payKort }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px">
+              <input placeholder="KORTNUMMER" style="border:1px solid #2E2E2E; padding:13px 14px; font-family:'IBM Plex Mono'; font-size:12.5px; outline-color:#C9973F">
+              <input placeholder="MM/ÅÅ" style="border:1px solid #2E2E2E; padding:13px 14px; font-family:'IBM Plex Mono'; font-size:12.5px; outline-color:#C9973F">
+              <input placeholder="CVC" style="border:1px solid #2E2E2E; padding:13px 14px; font-family:'IBM Plex Mono'; font-size:12.5px; outline-color:#C9973F">
+            </div>
+          </sc-if>
+          <p style="margin:18px 0 0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#6B655B; line-height:1.7">{{ payHint }}</p>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; border:1px solid #C9973F; padding:22px 28px">
+          <div>
+            <p style="margin:0 0 2px; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.12em; color:#9C968C">TOTALT INKL. LEVERANS</p>
+            <p style="margin:0; font-family:'IBM Plex Mono'; font-size:22px; color:#C9973F">{{ kassaTotal }}</p>
+          </div>
+          <button onClick="{{ placeOrder }}" style="border:none; cursor:pointer; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:17px 40px; white-space:nowrap" style-hover="background:#F2EFEA; color:#121212">SLUTFÖR KÖP</button>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ============ BEKRÄFTELSE ============ -->
+    <sc-if value="{{ showBekraftelse }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:110px 56px; max-width:640px">
+        <p style="margin:0 0 14px; font-family:'IBM Plex Mono'; font-size:13px; letter-spacing:0.14em; color:#C9973F">ORDER {{ orderNo }} — BEKRÄFTAD ✓</p>
+        <h1 style="margin:0 0 18px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Vi binder. Budet cyklar.</h1>
+        <p style="margin:0 0 40px; color:#9C968C; font-size:16px; line-height:1.75; max-width:440px">Du får ett sms när kassen lämnar studion. Kvittot ligger i inkorgen. Blommorna klarar natten — det är liksom grejen.</p>
+        <a onClick="{{ goHem }}" style="cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; font-weight:600; font-size:14px; letter-spacing:0.06em; padding:15px 32px; white-space:nowrap" style-hover="background:#C9973F; color:#121212">TILL STARTEN</a>
+      </section>
+    </sc-if>
+
+    <!-- ============ BOKA STUDION ============ -->
+    <sc-if value="{{ showBoka }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px; max-width:820px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">BOKNING</p>
+        <h1 style="margin:0 0 12px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Boka studion</h1>
+        <p style="margin:0 0 44px; color:#9C968C; font-size:16px; max-width:480px; line-height:1.7">Konsultation, plåtning eller privat bindning efter stängning. Studion är din i en timme.</p>
+        <div style="border:1px solid #2E2E2E; padding:36px">
+          <p style="margin:0 0 16px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.14em; color:#9C968C">VAD GÄLLER DET?</p>
+          <div style="display:flex; gap:12px; margin-bottom:32px; flex-wrap:wrap">
+            <sc-for list="{{ bookServices }}" as="s" hint-placeholder-count="3">
+              <button onClick="{{ s.pick }}" style="cursor:pointer; white-space:nowrap; border:1px solid {{ s.border }}; background:{{ s.bg }}; color:{{ s.color }}; padding:12px 20px; font-weight:600; font-size:13.5px" style-hover="border-color:#C9973F">{{ s.name }}</button>
+            </sc-for>
+          </div>
+          <p style="margin:0 0 16px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.14em; color:#9C968C">KVÄLL</p>
+          <div style="display:flex; gap:12px; margin-bottom:32px; flex-wrap:wrap">
+            <sc-for list="{{ bookDays }}" as="d" hint-placeholder-count="5">
+              <button onClick="{{ d.pick }}" style="cursor:pointer; white-space:nowrap; border:1px solid {{ d.border }}; background:{{ d.bg }}; color:{{ d.color }}; padding:12px 18px; font-family:'IBM Plex Mono'; font-size:12px" style-hover="border-color:#C9973F">{{ d.name }}</button>
+            </sc-for>
+          </div>
+          <p style="margin:0 0 16px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.14em; color:#9C968C">TID</p>
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:32px">
+            <sc-for list="{{ bookTimes }}" as="t" hint-placeholder-count="4">
+              <button onClick="{{ t.pick }}" style="cursor:pointer; text-align:center; border:1px solid {{ t.border }}; background:{{ t.bg }}; color:{{ t.color }}; padding:13px 0; font-family:'IBM Plex Mono'; font-size:13px" style-hover="border-color:#C9973F">{{ t.name }}</button>
+            </sc-for>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px">
+            <input placeholder="Namn" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F">
+            <input placeholder="Telefon" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F">
+          </div>
+          <button onClick="{{ confirmBooking }}" style="border:none; cursor:pointer; display:block; text-align:center; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:16px 0" style-hover="background:#F2EFEA; color:#121212">{{ bookCta }}</button>
+          <sc-if value="{{ bookedMsg }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:18px 0 0; text-align:center; font-family:'IBM Plex Mono'; font-size:12.5px; color:#C9973F">BOKAT — {{ bookedSummary }}. SMS-BEKRÄFTELSE PÅ VÄG.</p>
+          </sc-if>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ============ KURSER ============ -->
+    <sc-if value="{{ showKurser }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">NIGHT CLASSES</p>
+        <h1 style="margin:0 0 12px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Kurser &amp; event</h1>
+        <p style="margin:0 0 44px; color:#9C968C; font-size:16px; max-width:480px; line-height:1.7">Kvällskurser i studion. Mörka sorter, hög musik, inga förkunskaper. Platsen läggs i kassen.</p>
+        <div style="border:1px solid #2E2E2E">
+          <sc-for list="{{ courses }}" as="k" hint-placeholder-count="3">
+            <div style="display:grid; grid-template-columns:110px 1fr auto; gap:28px; align-items:center; border-bottom:1px solid #2E2E2E; padding:24px 28px" style-hover="background:#1C1C1C">
+              <div style="width:110px; height:110px; background:url('{{ k.img }}') center/cover"></div>
+              <div>
+                <p style="margin:0 0 6px; font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.08em; color:#C9973F">{{ k.date }}</p>
+                <h3 style="margin:0 0 6px; font-weight:600; font-size:20px">{{ k.name }}</h3>
+                <p style="margin:0; color:#9C968C; font-size:14px; line-height:1.6">{{ k.desc }}</p>
+              </div>
+              <div style="text-align:right">
+                <p style="margin:0 0 4px; font-family:'IBM Plex Mono'; font-size:14px; color:#C9973F; white-space:nowrap">{{ k.price }}</p>
+                <p style="margin:0 0 12px; font-family:'IBM Plex Mono'; font-size:10.5px; color:#6B655B; white-space:nowrap">{{ k.seats }}</p>
+                <button onClick="{{ k.add }}" style="cursor:pointer; display:inline-block; border:1px solid #C9973F; color:#C9973F; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.1em; padding:9px 16px; white-space:nowrap" style-hover="background:#C9973F; color:#121212">+ BOKA</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:36px 0 0; font-family:'IBM Plex Mono'; font-size:12px; color:#6B655B">PRIVAT GRUPP EFTER STÄNGNING? <a onClick="{{ goOffert }}" style="cursor:pointer; color:#C9973F" style-hover="color:#F2EFEA">BEGÄR OFFERT →</a></p>
+      </section>
+    </sc-if>
+
+    <!-- ============ GALLERI ============ -->
+    <sc-if value="{{ showGalleri }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">ARKIV</p>
+        <h1 style="margin:0 0 44px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Galleri</h1>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1px; background:#2E2E2E; border:1px solid #2E2E2E">
+          <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="6">
+            <div style="position:relative; background:#121212">
+              <div style="aspect-ratio:4/5; background:url('{{ g.img }}') center/cover"></div>
+              <span style="position:absolute; bottom:12px; left:12px; font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:0.1em; background:rgba(18,18,18,0.8); color:#C9973F; padding:5px 9px">{{ g.fig }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ============ JOURNAL (blogg) ============ -->
+    <sc-if value="{{ showBlogg }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px; max-width:920px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">JOURNAL</p>
+        <h1 style="margin:0 0 44px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Från studion</h1>
+        <div style="display:flex; flex-direction:column">
+          <sc-for list="{{ blog }}" as="b" hint-placeholder-count="4">
+            <a style="cursor:pointer; display:grid; grid-template-columns:180px 1fr; gap:36px; border-top:1px solid #2E2E2E; padding:32px 4px" style-hover="background:#1C1C1C">
+              <div>
+                <p style="margin:0 0 6px; font-family:'IBM Plex Mono'; font-size:12px; color:#C9973F">{{ b.date }}</p>
+                <p style="margin:0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.1em; color:#6B655B">{{ b.tag }}</p>
+              </div>
+              <div>
+                <h2 style="margin:0 0 10px; font-weight:600; font-size:24px; line-height:1.25">{{ b.title }}</h2>
+                <p style="margin:0; color:#9C968C; font-size:14.5px; line-height:1.7">{{ b.excerpt }}</p>
+              </div>
+            </a>
+          </sc-for>
+        </div>
+        <div style="border-top:1px solid #2E2E2E"></div>
+      </section>
+    </sc-if>
+
+    <!-- ============ KRETSEN (lojalitet) ============ -->
+    <sc-if value="{{ showKrets }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px; max-width:820px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">MEDLEMSKAP</p>
+        <h1 style="margin:0 0 12px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Kretsen</h1>
+        <p style="margin:0 0 44px; color:#9C968C; font-size:16px; max-width:480px; line-height:1.7">Onyx inre cirkel. Gratis att gå med — men droppen släpps till Kretsen 24 timmar före alla andra.</p>
+        <div style="border:1px solid #C9973F; padding:40px; margin-bottom:36px; background:#1C1C1C">
+          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:44px">
+            <p style="margin:0; font-weight:700; font-size:20px; letter-spacing:0.12em">ONYX<span style="color:#C9973F">.</span> KRETSEN</p>
+            <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11px; color:#C9973F">NO. 0847</p>
+          </div>
+          <p style="margin:0 0 6px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.12em; color:#6B655B">MEDLEM</p>
+          <p style="margin:0; font-family:'IBM Plex Mono'; font-size:15px; color:#F2EFEA">DITT NAMN HÄR</p>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1px; background:#2E2E2E; border:1px solid #2E2E2E; margin-bottom:36px">
+          <div style="background:#121212; padding:26px"><p style="margin:0 0 8px; font-family:'IBM Plex Mono'; font-size:11px; color:#C9973F">01</p><p style="margin:0; font-size:14.5px; line-height:1.6; color:#9C968C"><span style="color:#F2EFEA; font-weight:600">Tidig access.</span> Droppet 24h före alla.</p></div>
+          <div style="background:#121212; padding:26px"><p style="margin:0 0 8px; font-family:'IBM Plex Mono'; font-size:11px; color:#C9973F">02</p><p style="margin:0; font-size:14.5px; line-height:1.6; color:#9C968C"><span style="color:#F2EFEA; font-weight:600">Var 10:e kasse</span> på huset.</p></div>
+          <div style="background:#121212; padding:26px"><p style="margin:0 0 8px; font-family:'IBM Plex Mono'; font-size:11px; color:#C9973F">03</p><p style="margin:0; font-size:14.5px; line-height:1.6; color:#9C968C"><span style="color:#F2EFEA; font-weight:600">Kretskvällar.</span> Stängda events i studion.</p></div>
+        </div>
+        <div style="display:flex; gap:12px">
+          <input placeholder="din@mejl.se" style="flex:1; border:1px solid #2E2E2E; padding:14px 16px; font-family:'IBM Plex Mono'; font-size:13px; outline-color:#C9973F">
+          <button onClick="{{ joinClub }}" style="border:none; cursor:pointer; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:14px 30px; white-space:nowrap; display:flex; align-items:center" style-hover="background:#F2EFEA; color:#121212">{{ clubCta }}</button>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ============ OFFERT ============ -->
+    <sc-if value="{{ showOffert }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px; max-width:820px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">OFFERT</p>
+        <h1 style="margin:0 0 12px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Större jobb</h1>
+        <p style="margin:0 0 44px; color:#9C968C; font-size:16px; max-width:480px; line-height:1.7">Klubbkvällar, lanseringar, plåtningar, restauranger. Beskriv jobbet — svar inom 24 timmar.</p>
+        <div style="border:1px solid #2E2E2E; padding:36px">
+          <p style="margin:0 0 16px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.14em; color:#9C968C">TYP AV JOBB</p>
+          <div style="display:flex; gap:12px; margin-bottom:28px; flex-wrap:wrap">
+            <sc-for list="{{ quoteTypes }}" as="q" hint-placeholder-count="4">
+              <button onClick="{{ q.pick }}" style="cursor:pointer; white-space:nowrap; border:1px solid {{ q.border }}; background:{{ q.bg }}; color:{{ q.color }}; padding:12px 20px; font-weight:600; font-size:13.5px" style-hover="border-color:#C9973F">{{ q.name }}</button>
+            </sc-for>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
+            <input placeholder="Namn / företag" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F">
+            <input placeholder="Mejl" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F">
+          </div>
+          <textarea placeholder="Beskriv jobbet — plats, datum, budget…" rows="5" style="width:100%; box-sizing:border-box; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F; resize:vertical; margin-bottom:24px"></textarea>
+          <button onClick="{{ sendQuote }}" style="border:none; cursor:pointer; display:block; text-align:center; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:16px 0" style-hover="background:#F2EFEA; color:#121212">{{ quoteCta }}</button>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ============ PRESENTKORT ============ -->
+    <sc-if value="{{ showPresentkort }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px; max-width:920px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">GIFT CARD</p>
+        <h1 style="margin:0 0 12px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Presentkort</h1>
+        <p style="margin:0 0 44px; color:#9C968C; font-size:16px; max-width:480px; line-height:1.7">Svart kort, guldtryck, valfritt belopp. För den som hellre väljer själv.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center">
+          <div style="border:1px solid #C9973F; background:#1C1C1C; padding:44px 36px">
+            <div style="display:flex; justify-content:space-between; margin-bottom:52px">
+              <p style="margin:0; font-weight:700; font-size:18px; letter-spacing:0.12em">ONYX<span style="color:#C9973F">.</span></p>
+              <p style="margin:0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.12em; color:#6B655B">GIFT CARD</p>
+            </div>
+            <p style="margin:0; font-family:'IBM Plex Mono'; font-size:40px; color:#C9973F">{{ giftAmount }}</p>
+            <p style="margin:16px 0 0; font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.1em; color:#6B655B">GILTIGT 12 MÅN · KOD VIA MEJL</p>
+          </div>
+          <div>
+            <p style="margin:0 0 16px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.14em; color:#9C968C">BELOPP</p>
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:28px">
+              <sc-for list="{{ giftOptions }}" as="g" hint-placeholder-count="4">
+                <button onClick="{{ g.pick }}" style="cursor:pointer; text-align:center; white-space:nowrap; border:1px solid {{ g.border }}; background:{{ g.bg }}; color:{{ g.color }}; padding:13px 0; font-family:'IBM Plex Mono'; font-size:12.5px" style-hover="border-color:#C9973F">{{ g.label }}</button>
+              </sc-for>
+            </div>
+            <button onClick="{{ addGift }}" style="border:none; cursor:pointer; display:inline-block; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:16px 32px; white-space:nowrap" style-hover="background:#F2EFEA; color:#121212">+ LÄGG I KASSE — {{ giftAmount }}</button>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ============ OM ============ -->
+    <sc-if value="{{ showOm }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center; margin-bottom:64px">
+          <div>
+            <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">OM ONYX</p>
+            <h1 style="margin:0 0 20px; font-weight:700; font-size:52px; letter-spacing:-0.02em; line-height:1.02">Floristen som aldrig sover.</h1>
+            <p style="margin:0 0 16px; color:#9C968C; font-size:16px; line-height:1.75">Onyx startade som ett nattöppet blomsterstånd utanför en klubb på Södermalm. Idén var enkel: blommor behövs mest efter klockan sju — när middagen glömts, bråket ska sonas eller kvällen ska bli speciell.</p>
+            <p style="margin:0; color:#9C968C; font-size:16px; line-height:1.75">Idag är vi en studio med eget kylrum, egna odlare och en kundkrets som vet vad de vill ha. Mörka sorter. Skulpturala former. Inga babyrosa ursäkter.</p>
+          </div>
+          <div style="aspect-ratio:4/5; background:url('https://images.unsplash.com/photo-1557982780-d68d843c32ab?w=1600&q=80&auto=format&fit=crop') center/cover; border:1px solid #2E2E2E"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1px; background:#2E2E2E; border:1px solid #2E2E2E">
+          <div style="background:#121212; padding:28px"><p style="margin:0; font-family:'IBM Plex Mono'; font-size:26px; color:#C9973F">21:45</p><p style="margin:6px 0 0; font-size:13.5px; color:#9C968C">sista bindningen, varje kväll</p></div>
+          <div style="background:#121212; padding:28px"><p style="margin:0; font-family:'IBM Plex Mono'; font-size:26px; color:#C9973F">7 dgr</p><p style="margin:6px 0 0; font-size:13.5px; color:#9C968C">hållbarhetsgaranti, annars ny kasse</p></div>
+          <div style="background:#121212; padding:28px"><p style="margin:0; font-family:'IBM Plex Mono'; font-size:26px; color:#C9973F">0 st</p><p style="margin:6px 0 0; font-size:13.5px; color:#9C968C">babyrosa ursäkter sedan 2019</p></div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- ============ KONTAKT ============ -->
+    <sc-if value="{{ showKontakt }}" hint-placeholder-val="{{ false }}">
+      <section style="padding:72px 56px; max-width:920px">
+        <p style="margin:0 0 10px; font-family:'IBM Plex Mono'; font-size:12px; letter-spacing:0.14em; color:#C9973F">KONTAKT</p>
+        <h1 style="margin:0 0 44px; font-weight:700; font-size:52px; letter-spacing:-0.02em">Hör av dig</h1>
+        <div style="display:grid; grid-template-columns:1fr 1.3fr; gap:48px">
+          <div style="border:1px solid #2E2E2E; padding:32px">
+            <p style="margin:0 0 20px; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.14em; color:#9C968C">STUDION</p>
+            <p style="margin:0 0 14px; font-size:15px; line-height:1.7; color:#F2EFEA">Katarina Bangata 9<br>116 39 Stockholm</p>
+            <p style="margin:0 0 14px; font-family:'IBM Plex Mono'; font-size:13px; color:#C9973F">08-640 22 19<br>natt@onyx.flowers</p>
+            <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11.5px; color:#6B655B; line-height:1.8">TIS–FRE 12–22<br>LÖR 12–23 · SÖN–MÅN STÄNGT</p>
+          </div>
+          <div style="border:1px solid #2E2E2E; padding:32px">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
+              <input placeholder="Namn" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F">
+              <input placeholder="Mejl" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F">
+            </div>
+            <textarea placeholder="Vad behöver du?" rows="5" style="width:100%; box-sizing:border-box; border:1px solid #2E2E2E; padding:13px 14px; font-family:'Space Grotesk'; font-size:14.5px; outline-color:#C9973F; resize:vertical; margin-bottom:20px"></textarea>
+            <a style="cursor:pointer; display:block; text-align:center; background:#C9973F; color:#121212; font-weight:700; font-size:14px; letter-spacing:0.06em; padding:15px 0" style-hover="background:#F2EFEA; color:#121212">SKICKA</a>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- FOOTER -->
+    <footer style="border-top:1px solid #2E2E2E; padding:44px 56px; display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap">
+      <p style="margin:0; font-weight:700; font-size:18px; letter-spacing:0.12em">ONYX<span style="color:#C9973F">.</span></p>
+      <p style="margin:0; font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:0.08em; color:#6B655B">© 2026 ONYX FLOWERS · KATARINA BANGATA 9 · BYGGD MED COREVO</p>
+      <a onClick="{{ goKrets }}" style="cursor:pointer; white-space:nowrap; font-family:'IBM Plex Mono'; font-size:11.5px; letter-spacing:0.1em; color:#C9973F" style-hover="color:#F2EFEA">GÅ MED I KRETSEN →</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = {
+    page: 'hem', cart: {}, orderNo: '',
+    delivery: 'kvall', pay: 'Kort',
+    bookService: 'Konsultation', bookDay: 'TIS 14/7', bookTime: '18:00', booked: false,
+    giftAmount: 500, clubJoined: false, quoteType: 'Event', quoteSent: false,
+  };
+
+  go(page) {
+    this.setState({ page });
+    try { document.scrollingElement.scrollTop = 0; } catch (e) {}
+  }
+
+  addToCart(item) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const prev = cart[item.id] || { ...item, qty: 0 };
+      cart[item.id] = { ...prev, qty: prev.qty + 1 };
+      return { cart };
+    });
+    this.go('korg');
+  }
+
+  setQty(id, delta) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const it = cart[id];
+      if (!it) return {};
+      const qty = it.qty + delta;
+      if (qty <= 0) delete cart[id]; else cart[id] = { ...it, qty };
+      return { cart };
+    });
+  }
+
+  renderVals() {
+    const st = this.state;
+    const page = st.page;
+    const kr = (n) => n.toLocaleString('sv-SE') + ' KR';
+    const img = (id, w = 900) => `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`;
+    const sel = (on) => ({
+      border: on ? '#C9973F' : '#2E2E2E',
+      bg: on ? '#1C1C1C' : 'transparent',
+      color: on ? '#C9973F' : '#F2EFEA',
+    });
+
+    const navLabels = [
+      ['hem', 'Start'], ['butik', 'Butik'], ['kurser', 'Kurser & event'], ['galleri', 'Galleri'],
+      ['blogg', 'Journal'], ['boka', 'Boka studion'], ['presentkort', 'Presentkort'],
+      ['krets', 'Kretsen'], ['offert', 'Offert'], ['om', 'Om Onyx'], ['kontakt', 'Kontakt'],
+    ];
+    const navItems = navLabels.map(([key, label], i) => ({
+      key, label,
+      num: String(i + 1).padStart(2, '0'),
+      go: () => this.go(key),
+      color: page === key ? '#C9973F' : '#9C968C',
+      bg: page === key ? '#1C1C1C' : 'transparent',
+    }));
+
+    const rawProducts = [
+      { id: 'p1', name: 'Noir No. 5', price: 645, tag: 'DROP 27', desc: 'Svarta tulpaner, mörk skabiosa och brons-grönt.', img: img('1518343161123-c7e9ab4dc4da') },
+      { id: 'p2', name: 'Bränd rosa', price: 545, tag: 'DROP 27', desc: 'Rökt rosa i tre nyanser mot nästan svart.', img: img('1557982780-d68d843c32ab') },
+      { id: 'p3', name: 'Glöd', price: 595, tag: 'FÅ KVAR', desc: 'Orange lågor på svart botten. Kvällens signatur.', img: img('1442458017215-285b83f65851') },
+      { id: 'p4', name: 'Vinmörk', price: 695, tag: 'DROP 27', desc: 'Djupa vinröda rosor i tung glasvas.', img: img('1612351641432-20a0f196086c') },
+      { id: 'p5', name: 'Askros', price: 495, tag: 'NY SORT', desc: 'Dammrosa rosor med silvrigt grönt.', img: img('1520179737749-b7752f6f56fb') },
+      { id: 'p6', name: 'Studions val', price: 445, tag: 'ALLTID', desc: 'Kvällens bindning — floristen bestämmer.', img: img('1469259943454-aa100abba749') },
+    ];
+    const products = rawProducts.map((p) => ({
+      ...p, price: kr(p.price),
+      add: () => this.addToCart({ id: p.id, name: p.name, priceNum: p.price, img: p.img }),
+    }));
+
+    const paths = [
+      { num: '02', title: 'Veckans drop', desc: 'Begränsade buketter, nya varje måndag.', go: () => this.go('butik') },
+      { num: '03', title: 'Night classes', desc: 'Kvällskurser i studion — bind till hög musik.', go: () => this.go('kurser') },
+      { num: '08', title: 'Kretsen', desc: 'Inre cirkeln. Tidig access och stängda kvällar.', go: () => this.go('krets') },
+    ];
+
+    const blog = [
+      { date: '2026-07-04', tag: 'SORTER', title: 'Svarta tulpaner finns inte — nästan', excerpt: 'Queen of Night är så nära svart en tulpan kommer. Vi odlar tre sorter till som lurar ögat i kvällsljus.', },
+      { date: '2026-06-19', tag: 'STUDION', title: 'En natt i kylrummet', excerpt: 'Klockan 03:00 händer det saker med snittblommor. Vi satt vaket och antecknade.', },
+      { date: '2026-06-02', tag: 'GUIDE', title: 'Blommor till någon som "inte gillar blommor"', excerpt: 'De finns. De ljuger. Här är fem buketter som knäcker även den hårdaste.', },
+      { date: '2026-05-21', tag: 'EVENT', title: 'Så byggde vi väggen till Berns', excerpt: '1 200 nejlikor, sex timmar, en saxlift. Dokumentation från insidan.', },
+    ];
+
+    const courses = [
+      { id: 'k1', name: 'Mörk bindning 101', date: 'TORS 23/7 · 19:00–21:30', desc: 'Grunderna i spiralbindning med veckans mörka sorter. Vin ingår.', priceNum: 895, seats: '5 PLATSER', img: img('1518343161123-c7e9ab4dc4da', 700) },
+      { id: 'k2', name: 'Skulptural ikebana', date: 'ONS 5/8 · 19:00–22:00', desc: 'Mindre är mer. Japansk stramhet möter Onyx mörker.', priceNum: 1095, seats: '4 PLATSER', img: img('1520179737749-b7752f6f56fb', 700) },
+      { id: 'k3', name: 'After midnight', date: 'FRE 21/8 · 22:00–01:00', desc: 'Stängd studio, hög musik, fri bindning ur kylrummet.', priceNum: 1295, seats: '8 PLATSER', img: img('1442458017215-285b83f65851', 700) },
+    ].map((k) => ({ ...k, price: kr(k.priceNum), add: () => this.addToCart({ id: k.id, name: k.name + ' (kursplats)', priceNum: k.priceNum, img: k.img }) }));
+
+    const galleryItems = [
+      { fig: 'FIG. 01 — MAGNOLIA NOIR', img: img('1518343161123-c7e9ab4dc4da', 1000) },
+      { fig: 'FIG. 02 — BRÄND ROSA', img: img('1557982780-d68d843c32ab', 1000) },
+      { fig: 'FIG. 03 — GLÖD', img: img('1442458017215-285b83f65851', 1000) },
+      { fig: 'FIG. 04 — VINMÖRK', img: img('1612351641432-20a0f196086c', 1000) },
+      { fig: 'FIG. 05 — ASKROS', img: img('1520179737749-b7752f6f56fb', 1000) },
+      { fig: 'FIG. 06 — CALLA', img: img('1469259943454-aa100abba749', 1000) },
+    ];
+
+    // — kasse & kassa —
+    const entries = Object.values(st.cart).filter((it) => it && it.qty > 0);
+    const cartItems = entries.map((it) => ({
+      name: it.name, img: it.img, qty: it.qty,
+      unit: kr(it.priceNum),
+      lineTotal: kr(it.priceNum * it.qty),
+      inc: () => this.setQty(it.id, 1),
+      dec: () => this.setQty(it.id, -1),
+      remove: () => this.setQty(it.id, -it.qty),
+    }));
+    const cartCount = entries.reduce((n, it) => n + it.qty, 0);
+    const subtotal = entries.reduce((n, it) => n + it.priceNum * it.qty, 0);
+
+    const delOpts = [
+      { id: 'kvall', tag: 'A', name: 'Ikväll 18–23', cost: 99 },
+      { id: 'express', tag: 'B', name: 'Express 90 min', cost: 179 },
+      { id: 'hamta', tag: 'C', name: 'Hämta i studion', cost: 0 },
+    ];
+    const deliveryOpts = delOpts.map((d) => ({
+      tag: d.tag, name: d.name,
+      price: d.cost === 0 ? 'FRITT' : kr(d.cost),
+      pick: () => this.setState({ delivery: d.id }),
+      border: st.delivery === d.id ? '#C9973F' : '#2E2E2E',
+      bg: st.delivery === d.id ? '#1C1C1C' : 'transparent',
+      numColor: st.delivery === d.id ? '#C9973F' : '#6B655B',
+    }));
+    const shipCost = (delOpts.find((d) => d.id === st.delivery) || delOpts[0]).cost;
+
+    const payHints = {
+      Kort: 'VISA / MASTERCARD / AMEX. DRAS DIREKT.',
+      Swish: 'FÖRFRÅGAN SKICKAS TILL DIN SWISH-APP VID KÖP.',
+      Klarna: 'FAKTURA ELLER DELBETALNING — VÄLJS HOS KLARNA.',
+      PayPal: 'DU SKICKAS TILL PAYPAL FÖR ATT SLUTFÖRA.',
+      'Apple Pay': 'BEKRÄFTA MED FACE ID. KLART.',
+    };
+    const payMethods = ['Kort', 'Swish', 'Klarna', 'PayPal', 'Apple Pay'].map((name) => ({
+      name,
+      pick: () => this.setState({ pay: name }),
+      ...sel(st.pay === name),
+    }));
+
+    const bookServices = ['Konsultation', 'Privat bindning', 'Plåtning'].map((name) => ({
+      name, pick: () => this.setState({ bookService: name, booked: false }), ...sel(st.bookService === name),
+    }));
+    const bookDays = ['TIS 14/7', 'ONS 15/7', 'TORS 16/7', 'FRE 17/7', 'LÖR 18/7'].map((name) => ({
+      name, pick: () => this.setState({ bookDay: name, booked: false }), ...sel(st.bookDay === name),
+    }));
+    const bookTimes = ['18:00', '19:00', '20:00', '21:00'].map((name) => ({
+      name, pick: () => this.setState({ bookTime: name, booked: false }), ...sel(st.bookTime === name),
+    }));
+
+    const giftOptions = [500, 750, 1000, 1500].map((v) => ({
+      label: kr(v), pick: () => this.setState({ giftAmount: v }), ...sel(st.giftAmount === v),
+    }));
+
+    const quoteTypes = ['Event', 'Restaurang', 'Plåtning', 'Löpande avtal'].map((name) => ({
+      name, pick: () => this.setState({ quoteType: name, quoteSent: false }), ...sel(st.quoteType === name),
+    }));
+
+    return {
+      navItems, paths, blog, courses, galleryItems,
+      homeProducts: products.slice(0, 3),
+      homeBlog: blog.slice(0, 2),
+      allProducts: products,
+      goHem: () => this.go('hem'),
+      goButik: () => this.go('butik'),
+      goBoka: () => this.go('boka'),
+      goBlogg: () => this.go('blogg'),
+      goKorg: () => this.go('korg'),
+      goKassa: () => this.go('kassa'),
+      goKrets: () => this.go('krets'),
+      goOffert: () => this.go('offert'),
+      showHem: page === 'hem',
+      showButik: page === 'butik',
+      showKorg: page === 'korg',
+      showKassa: page === 'kassa',
+      showBekraftelse: page === 'bekraftelse',
+      showBoka: page === 'boka',
+      showKurser: page === 'kurser',
+      showGalleri: page === 'galleri',
+      showBlogg: page === 'blogg',
+      showKrets: page === 'krets',
+      showOffert: page === 'offert',
+      showPresentkort: page === 'presentkort',
+      showOm: page === 'om',
+      showKontakt: page === 'kontakt',
+      cartItems, cartCount,
+      cartEmpty: cartCount === 0,
+      cartHasItems: cartCount > 0,
+      cartSubtotal: kr(subtotal),
+      kassaTotal: kr(subtotal + (cartCount > 0 ? shipCost : 0)),
+      deliveryOpts, payMethods,
+      payKort: st.pay === 'Kort',
+      payHint: payHints[st.pay],
+      orderNo: st.orderNo,
+      placeOrder: () => {
+        if (cartCount === 0) { this.go('butik'); return; }
+        this.setState({ orderNo: '#OX-' + String(Math.floor(1000 + Math.random() * 9000)), cart: {} });
+        this.go('bekraftelse');
+      },
+      bookServices, bookDays, bookTimes,
+      bookCta: st.booked ? 'BOKAT ✓' : 'BOKA — KOSTNADSFRITT',
+      bookedMsg: st.booked,
+      bookedSummary: `${st.bookDay} KL ${st.bookTime}`,
+      confirmBooking: () => this.setState({ booked: true }),
+      giftOptions,
+      giftAmount: kr(st.giftAmount),
+      addGift: () => this.addToCart({ id: 'gift' + st.giftAmount, name: `Presentkort ${kr(st.giftAmount)}`, priceNum: st.giftAmount, img: img('1518343161123-c7e9ab4dc4da', 700) }),
+      clubCta: st.clubJoined ? 'INNE ✓' : 'GÅ MED',
+      joinClub: () => this.setState({ clubJoined: true }),
+      quoteTypes,
+      quoteCta: st.quoteSent ? 'SKICKAT — SVAR INOM 24H ✓' : 'SKICKA FÖRFRÅGAN',
+      sendQuote: () => this.setState({ quoteSent: true }),
+    };
+  }
+}
+</script>
+<script type="application/json" id="corevo-manifest">
+{
+  "key": "onyx",
+  "name": "Onyx",
+  "desc": "Nattflorist i svart och mässing.",
+  "bransch": "florist",
+  "palette": {
+    "primary": "#C9973F",
+    "primaryD": "#B08434",
+    "bg": "#121212",
+    "surface": "#1C1C1C",
+    "fg": "#F2EFEA",
+    "fg2": "#9C968C",
+    "line": "#2E2E2E",
+    "accentSoft": "#6B655B"
+  },
+  "fonts": {
+    "heading": "Space Grotesk",
+    "body": "IBM Plex Mono"
+  },
+  "radius": "0px",
+  "navHeight": {
+    "desktop": "68px",
+    "mobile": "56px"
+  },
+  "caps": {
+    "heroEyebrow": true,
+    "homeStats": false,
+    "homeGallery": false,
+    "homeAbout": true
+  },
+  "pages": {
+    "hem": {
+      "module": null,
+      "route": "/"
+    },
+    "butik": {
+      "module": "shop",
+      "route": "/shop"
+    },
+    "korg": {
+      "module": "shop",
+      "route": "/varukorg"
+    },
+    "kassa": {
+      "module": "shop",
+      "route": "/kassa"
+    },
+    "bekraftelse": {
+      "module": "shop",
+      "route": "/kassa/tack"
+    },
+    "boka": {
+      "module": "booking",
+      "route": "/boka"
+    },
+    "kurser": {
+      "module": "kurser",
+      "route": "/kurser"
+    },
+    "galleri": {
+      "module": null,
+      "route": "/galleri"
+    },
+    "blogg": {
+      "module": "blogg",
+      "route": "/blogg"
+    },
+    "krets": {
+      "module": "lojalitet",
+      "route": "/krets"
+    },
+    "offert": {
+      "module": "offert",
+      "route": "/offert"
+    },
+    "presentkort": {
+      "module": "presentkort",
+      "route": "/presentkort"
+    },
+    "om": {
+      "module": null,
+      "route": "/om"
+    },
+    "kontakt": {
+      "module": null,
+      "route": "/kontakt"
+    }
+  },
+  "mock": [
+    "rawProducts",
+    "products",
+    "courses",
+    "galleryItems",
+    "blog",
+    "delOpts",
+    "payHints",
+    "bookDays",
+    "bookTimes",
+    "bookServices",
+    "giftOptions",
+    "quoteTypes"
+  ],
+  "verbatim": [
+    "navLabels",
+    "payHints (betalsätts-texterna)",
+    "alla rubriker och all brödtext"
+  ]
+}
+</script>
+</body>
+</html>

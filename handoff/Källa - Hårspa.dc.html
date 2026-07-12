@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>Källa — hårspa &amp; frisör</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #F3EFE7; }
+    body { font-family: 'Karla', system-ui, sans-serif; color: #22302B; -webkit-font-smoothing: antialiased; }
+    a { color: #1D5E54; text-decoration: none; }
+    a:hover { color: #143F39; }
+    ::selection { background: #E4EAE3; color: #143F39; }
+    input, textarea { background: #FBFAF5; color: #22302B; }
+    input::placeholder, textarea::placeholder { color: #93998C; }
+
+    /* Corevo-tillägg: fokus, knappsemantik, mobil ≤760px */
+    a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #1D5E54 !important; outline-offset: 2px; }
+    button { font: inherit; cursor: pointer; }
+    @media (max-width: 760px) {
+      [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+      h1 { font-size: clamp(32px, 9vw, 46px) !important; line-height: 1.1 !important; }
+      h2 { font-size: clamp(24px, 7vw, 34px) !important; }
+      a[style*="cursor:pointer"], button { min-height: 44px; }
+      nav a { padding-top: 10px !important; padding-bottom: 10px !important; }
+      section, footer > div, header > div { padding-left: 20px !important; padding-right: 20px !important; }
+    }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:#F3EFE7; overflow-x:hidden">
+
+  <!-- NAV -->
+  <header style="position:sticky; top:0; z-index:50; background:#F3EFE7; border-bottom:1px solid #DAD3C2">
+    <div style="max-width:1200px; margin:0 auto; padding:18px 32px; display:flex; align-items:center; gap:24px">
+      <a onClick="{{ goHem }}" style="cursor:pointer; white-space:nowrap; flex-shrink:0; font-family:'Marcellus'; font-size:24px; letter-spacing:0.32em; text-transform:uppercase; color:#1D5E54">Källa</a>
+      <nav style="flex:1; min-width:0; display:flex; justify-content:center; align-items:center; gap:24px; flex-wrap:wrap">
+        <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="7">
+          <a onClick="{{ item.go }}" style="cursor:pointer; white-space:nowrap; font-weight:{{ item.weight }}; font-size:12px; letter-spacing:0.16em; text-transform:uppercase; color:{{ item.color }}" style-hover="color:#1D5E54">{{ item.label }}</a>
+        </sc-for>
+      </nav>
+      <a onClick="{{ goKorg }}" style="cursor:pointer; white-space:nowrap; flex-shrink:0; font-weight:700; font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:10px 16px" style-hover="background:#143F39">Varukorg ({{ cartCount }})</a>
+    </div>
+  </header>
+
+  <!-- ============ HEM ============ -->
+  <sc-if value="{{ showHem }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Hem">
+      <section style="max-width:860px; margin:0 auto; padding:72px 32px 0; text-align:center">
+        <p style="margin:0 0 18px; font-weight:700; font-size:12px; letter-spacing:0.3em; text-transform:uppercase; color:#1D5E54">Hårspa · Södermalm · Sedan 2021</p>
+        <h1 style="margin:0 0 22px; font-family:'Marcellus'; font-size:62px; line-height:1.05; color:#22302B">Ett andrum<br>för ditt hår.</h1>
+        <p style="margin:0 auto 36px; max-width:480px; font-size:17px; line-height:1.75; color:#5F6B60">Vi börjar där håret börjar — i hårbotten. Rening, behandling och klippning i ett rum där ingen har bråttom.</p>
+        <div style="display:flex; gap:14px; justify-content:center; align-items:center; flex-wrap:wrap">
+          <a onClick="{{ goBoka }}" style="cursor:pointer; white-space:nowrap; font-weight:700; font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:15px 30px" style-hover="background:#143F39">Boka en ritual</a>
+          <a onClick="{{ goBehandlingar }}" style="cursor:pointer; white-space:nowrap; font-weight:700; font-size:13px; letter-spacing:0.12em; text-transform:uppercase; color:#1D5E54; border:1px solid #1D5E54; border-radius:6px; padding:14px 28px" style-hover="background:#E4EAE3">Behandlingar</a>
+        </div>
+      </section>
+
+      <section style="max-width:1200px; margin:52px auto 0; padding:0 32px">
+        <div style="aspect-ratio:21/9; background:url('https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=1600&q=80&auto=format&fit=crop') center/cover; border-radius:8px"></div>
+        <p style="margin:12px 0 0; text-align:center; font-weight:600; font-size:11px; letter-spacing:0.24em; text-transform:uppercase; color:#93998C">Behandlingsrummet · Bondegatan 11</p>
+      </section>
+
+      <section style="max-width:1000px; margin:64px auto 0; padding:0 32px">
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:32px">
+          <sc-for list="{{ ritualSteps }}" as="r" hint-placeholder-count="3">
+            <div style="text-align:center">
+              <span style="display:inline-flex; align-items:center; justify-content:center; width:56px; height:56px; border:1px solid #1D5E54; border-radius:999px; font-family:'Marcellus'; font-size:18px; color:#1D5E54; margin-bottom:16px">{{ r.no }}</span>
+              <h3 style="margin:0 0 8px; font-family:'Marcellus'; font-size:23px; color:#22302B">{{ r.name }}</h3>
+              <p style="margin:0; font-size:14.5px; line-height:1.65; color:#5F6B60">{{ r.desc }}</p>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="max-width:1200px; margin:68px auto 0; padding:0 32px">
+        <div style="text-align:center; margin-bottom:34px">
+          <p style="margin:0 0 8px; font-weight:700; font-size:12px; letter-spacing:0.28em; text-transform:uppercase; color:#1D5E54">Signaturer</p>
+          <h2 style="margin:0; font-family:'Marcellus'; font-size:40px; color:#22302B">Tre ritualer</h2>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:24px">
+          <sc-for list="{{ homeServices }}" as="s" hint-placeholder-count="3">
+            <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:32px 28px; text-align:center">
+              <p style="margin:0 0 14px; font-weight:600; font-size:11px; letter-spacing:0.24em; text-transform:uppercase; color:#93998C">{{ s.tid }}</p>
+              <h3 style="margin:0 0 12px; font-family:'Marcellus'; font-size:26px; color:#22302B">{{ s.name }}</h3>
+              <p style="margin:0 0 20px; font-size:14.5px; line-height:1.65; color:#5F6B60">{{ s.desc }}</p>
+              <p style="margin:0 0 18px; font-family:'Marcellus'; font-size:22px; color:#1D5E54">{{ s.price }}</p>
+              <a onClick="{{ s.book }}" style="cursor:pointer; display:inline-block; font-weight:700; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#1D5E54; border:1px solid #1D5E54; border-radius:6px; padding:11px 24px" style-hover="background:#1D5E54; color:#EDF2EC">Boka</a>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="max-width:1200px; margin:68px auto 0; padding:0 32px">
+        <div style="background:#E4EAE3; border-radius:8px; padding:56px 48px; display:grid; grid-template-columns:1fr 1fr; gap:52px; align-items:center">
+          <div>
+            <p style="margin:0 0 12px; font-weight:700; font-size:12px; letter-spacing:0.28em; text-transform:uppercase; color:#1D5E54">Om Källa</p>
+            <h2 style="margin:0 0 16px; font-family:'Marcellus'; font-size:34px; line-height:1.15; color:#22302B">Frisören som tänker som ett spa</h2>
+            <p style="margin:0 0 20px; font-size:16px; line-height:1.8; color:#5F6B60">Källa öppnade när vi tröttnat på att håret behandlades som en yta. Friskt hår växer ur en frisk hårbotten — därför börjar varje besök med rening och massage, och slutar med ett klipp som håller.</p>
+            <a onClick="{{ goOm }}" style="cursor:pointer; font-weight:700; font-size:12.5px; letter-spacing:0.12em; text-transform:uppercase; color:#1D5E54" style-hover="color:#143F39">Läs mer →</a>
+          </div>
+          <div style="aspect-ratio:5/4; background:url('https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&q=80&auto=format&fit=crop') center/cover; border-radius:8px"></div>
+        </div>
+      </section>
+
+      <section style="max-width:1000px; margin:68px auto 0; padding:0 32px">
+        <div style="text-align:center; margin-bottom:34px">
+          <h2 style="margin:0; font-family:'Marcellus'; font-size:40px; color:#22302B">Våra händer</h2>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:32px">
+          <sc-for list="{{ stylists }}" as="st" hint-placeholder-count="3">
+            <div style="text-align:center">
+              <div style="width:140px; height:140px; margin:0 auto 16px; background:url('{{ st.img }}') center/cover; border-radius:999px"></div>
+              <h3 style="margin:0 0 4px; font-family:'Marcellus'; font-size:23px; color:#22302B">{{ st.name }}</h3>
+              <p style="margin:0 0 10px; font-weight:600; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#93998C">{{ st.roll }}</p>
+              <a onClick="{{ st.book }}" style="cursor:pointer; font-weight:700; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#1D5E54" style-hover="color:#143F39">Boka {{ st.name }} →</a>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="max-width:1000px; margin:68px auto 0; padding:0 32px 20px">
+        <div style="border-top:1px solid #DAD3C2; padding-top:30px; display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px">
+          <h2 style="margin:0; font-family:'Marcellus'; font-size:34px; color:#22302B">Anteckningar</h2>
+          <a onClick="{{ goJournal }}" style="cursor:pointer; white-space:nowrap; font-weight:700; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#1D5E54" style-hover="color:#143F39">Alla →</a>
+        </div>
+        <sc-for list="{{ homeBlog }}" as="b" hint-placeholder-count="3">
+          <a onClick="{{ goJournal }}" style="cursor:pointer; display:flex; justify-content:space-between; align-items:baseline; gap:24px; border-bottom:1px solid #DAD3C2; padding:18px 0">
+            <h3 style="margin:0; font-family:'Marcellus'; font-size:21px; color:#22302B">{{ b.title }}</h3>
+            <span style="white-space:nowrap; font-weight:600; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#93998C">{{ b.date }}</span>
+          </a>
+        </sc-for>
+      </section>
+    </div>
+  </sc-if>
+
+  <!-- ============ BEHANDLINGAR ============ -->
+  <sc-if value="{{ showBehandlingar }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Behandlingar" style="max-width:860px; margin:0 auto; padding:56px 32px 0">
+      <div style="text-align:center; margin-bottom:44px">
+        <p style="margin:0 0 10px; font-weight:700; font-size:12px; letter-spacing:0.3em; text-transform:uppercase; color:#1D5E54">Rening · Behandling · Finish</p>
+        <h1 style="margin:0; font-family:'Marcellus'; font-size:52px; color:#22302B">Behandlingar</h1>
+      </div>
+      <sc-for list="{{ priceGroups }}" as="g" hint-placeholder-count="3">
+        <div style="margin-bottom:42px">
+          <div style="display:flex; align-items:center; gap:16px; margin-bottom:8px">
+            <span style="flex:1; height:1px; background:#DAD3C2"></span>
+            <p style="margin:0; font-weight:700; font-size:12px; letter-spacing:0.28em; text-transform:uppercase; color:#1D5E54">{{ g.name }}</p>
+            <span style="flex:1; height:1px; background:#DAD3C2"></span>
+          </div>
+          <sc-for list="{{ g.items }}" as="row" hint-placeholder-count="3">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; gap:22px; border-bottom:1px solid #E7E1D3; padding:18px 0">
+              <div style="flex:1; min-width:0">
+                <h3 style="margin:0; font-family:'Marcellus'; font-size:22px; color:#22302B">{{ row.name }}</h3>
+                <p style="margin:4px 0 0; font-size:14px; line-height:1.55; color:#5F6B60">{{ row.desc }}</p>
+              </div>
+              <span style="white-space:nowrap; font-weight:600; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:#93998C">{{ row.tid }}</span>
+              <span style="white-space:nowrap; font-family:'Marcellus'; font-size:19px; color:#22302B; min-width:80px; text-align:right">{{ row.price }}</span>
+              <a onClick="{{ row.book }}" style="cursor:pointer; white-space:nowrap; font-weight:700; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:#1D5E54" style-hover="color:#143F39">Boka →</a>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </section>
+  </sc-if>
+
+  <!-- ============ BOKA ============ -->
+  <sc-if value="{{ showBoka }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Boka" style="max-width:720px; margin:0 auto; padding:56px 32px 0">
+      <div style="text-align:center; margin-bottom:38px">
+        <h1 style="margin:0 0 12px; font-family:'Marcellus'; font-size:52px; color:#22302B">Boka</h1>
+        <p style="margin:0 auto; max-width:440px; font-size:16px; line-height:1.7; color:#5F6B60">Varje besök inleds med en kort konsultation över en kopp te. Räkna med att vara hos oss hela den bokade tiden.</p>
+      </div>
+      <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:36px">
+        <p style="margin:0 0 14px; font-weight:700; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#22302B">Ritual</p>
+        <div style="display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap">
+          <sc-for list="{{ bookServices }}" as="s" hint-placeholder-count="6">
+            <button onClick="{{ s.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:13.5px; color:{{ s.fg }}; background:{{ s.bg }}; border:1px solid {{ s.border }}; border-radius:6px; padding:10px 18px" style-hover="border-color:#1D5E54">{{ s.name }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:0 0 14px; font-weight:700; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#22302B">Terapeut</p>
+        <div style="display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap">
+          <sc-for list="{{ bookWhoOpts }}" as="w" hint-placeholder-count="4">
+            <button onClick="{{ w.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:13.5px; color:{{ w.fg }}; background:{{ w.bg }}; border:1px solid {{ w.border }}; border-radius:6px; padding:10px 18px" style-hover="border-color:#1D5E54">{{ w.name }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:0 0 14px; font-weight:700; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#22302B">Dag</p>
+        <div style="display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap">
+          <sc-for list="{{ bookDays }}" as="d" hint-placeholder-count="5">
+            <button onClick="{{ d.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:13.5px; color:{{ d.fg }}; background:{{ d.bg }}; border:1px solid {{ d.border }}; border-radius:6px; padding:10px 16px" style-hover="border-color:#1D5E54">{{ d.name }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:0 0 14px; font-weight:700; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#22302B">Tid</p>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:28px">
+          <sc-for list="{{ bookTimes }}" as="t" hint-placeholder-count="4">
+            <button onClick="{{ t.pick }}" style="cursor:pointer; text-align:center; font-weight:600; font-size:13.5px; color:{{ t.fg }}; background:{{ t.bg }}; border:1px solid {{ t.border }}; border-radius:6px; padding:11px 0" style-hover="border-color:#1D5E54">{{ t.name }}</button>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:24px">
+          <input placeholder="Namn" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54">
+          <input placeholder="Telefon" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54">
+        </div>
+        <button onClick="{{ confirmBooking }}" style="border:none; cursor:pointer; display:block; text-align:center; font-weight:700; font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:15px 0" style-hover="background:#143F39">{{ bookCta }}</button>
+        <sc-if value="{{ bookedMsg }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:16px 0 0; text-align:center; font-weight:600; font-size:14.5px; color:#1D5E54">Bokat — {{ bookedSummary }}. Välkommen in i lugnet.</p>
+        </sc-if>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ TERAPEUTER ============ -->
+  <sc-if value="{{ showTeam }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Terapeuter" style="max-width:1000px; margin:0 auto; padding:56px 32px 0">
+      <div style="text-align:center; margin-bottom:44px">
+        <p style="margin:0 0 10px; font-weight:700; font-size:12px; letter-spacing:0.3em; text-transform:uppercase; color:#1D5E54">Tre par händer</p>
+        <h1 style="margin:0; font-family:'Marcellus'; font-size:52px; color:#22302B">Terapeuter</h1>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:28px">
+        <sc-for list="{{ teamFull }}" as="st" hint-placeholder-count="3">
+          <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:36px 28px; text-align:center">
+            <div style="width:150px; height:150px; margin:0 auto 18px; background:url('{{ st.img }}') center/cover; border-radius:999px"></div>
+            <h2 style="margin:0 0 4px; font-family:'Marcellus'; font-size:26px; color:#22302B">{{ st.name }}</h2>
+            <p style="margin:0 0 14px; font-weight:600; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#1D5E54">{{ st.roll }}</p>
+            <p style="margin:0 0 16px; font-size:14.5px; line-height:1.65; color:#5F6B60">{{ st.bio }}</p>
+            <p style="margin:0 0 20px; font-weight:600; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:#93998C">{{ st.spec }}</p>
+            <a onClick="{{ st.book }}" style="cursor:pointer; display:inline-block; font-weight:700; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#1D5E54; border:1px solid #1D5E54; border-radius:6px; padding:11px 24px" style-hover="background:#1D5E54; color:#EDF2EC">Boka {{ st.name }}</a>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ APOTEKET ============ -->
+  <sc-if value="{{ showButik }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Apoteket" style="max-width:1200px; margin:0 auto; padding:56px 32px 0">
+      <div style="text-align:center; margin-bottom:36px">
+        <p style="margin:0 0 10px; font-weight:700; font-size:12px; letter-spacing:0.3em; text-transform:uppercase; color:#1D5E54">Det vi använder i behandlingarna</p>
+        <h1 style="margin:0; font-family:'Marcellus'; font-size:52px; color:#22302B">Apoteket</h1>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:center; margin-bottom:40px; flex-wrap:wrap">
+        <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5">
+          <a onClick="{{ f.go }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:12.5px; letter-spacing:0.1em; text-transform:uppercase; color:{{ f.color }}; background:{{ f.bg }}; border:1px solid {{ f.border }}; border-radius:6px; padding:9px 18px" style-hover="border-color:#1D5E54">{{ f.label }}</a>
+        </sc-for>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:24px">
+        <sc-for list="{{ shopProducts }}" as="p" hint-placeholder-count="6">
+          <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; overflow:hidden">
+            <div style="aspect-ratio:1/1; background:url('{{ p.img }}') center/cover"></div>
+            <div style="padding:20px 22px 22px; text-align:center">
+              <p style="margin:0 0 6px; font-weight:600; font-size:10.5px; letter-spacing:0.22em; text-transform:uppercase; color:#93998C">{{ p.cat }}</p>
+              <h3 style="margin:0 0 6px; font-family:'Marcellus'; font-size:22px; color:#22302B">{{ p.name }}</h3>
+              <p style="margin:0 0 14px; font-size:14px; line-height:1.55; color:#5F6B60">{{ p.desc }}</p>
+              <p style="margin:0 0 16px; font-family:'Marcellus'; font-size:19px; color:#1D5E54">{{ p.price }}</p>
+              <button onClick="{{ p.add }}" style="cursor:pointer; display:block; text-align:center; font-weight:700; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:#1D5E54; border:1px solid #1D5E54; border-radius:6px; padding:11px 0" style-hover="background:#1D5E54; color:#EDF2EC">Lägg i varukorg</button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ VARUKORG ============ -->
+  <sc-if value="{{ showKorg }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Varukorg" style="max-width:760px; margin:0 auto; padding:56px 32px 0">
+      <h1 style="margin:0 0 34px; text-align:center; font-family:'Marcellus'; font-size:52px; color:#22302B">Varukorg</h1>
+      <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:60px 40px; text-align:center">
+          <p style="margin:0 0 8px; font-family:'Marcellus'; font-size:26px; color:#22302B">Varukorgen är tom</p>
+          <p style="margin:0 0 26px; font-size:15px; color:#5F6B60">Apoteket är litet men noga utvalt.</p>
+          <a onClick="{{ goButik }}" style="cursor:pointer; display:inline-block; font-weight:700; font-size:12.5px; letter-spacing:0.12em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:14px 28px" style-hover="background:#143F39">Till apoteket</a>
+        </div>
+      </sc-if>
+      <sc-if value="{{ cartHasItems }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:8px 28px">
+            <sc-for list="{{ cartItems }}" as="ci" hint-placeholder-count="0">
+              <div style="display:flex; gap:18px; align-items:center; border-bottom:1px solid #E7E1D3; padding:16px 0">
+                <div style="width:58px; height:58px; background:url('{{ ci.img }}') center/cover; border-radius:6px; flex-shrink:0"></div>
+                <div style="flex:1">
+                  <p style="margin:0 0 2px; font-family:'Marcellus'; font-size:18px; color:#22302B">{{ ci.name }}</p>
+                  <p style="margin:0; font-size:13px; color:#93998C">{{ ci.unit }} / st</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; border:1px solid #DAD3C2; border-radius:6px; padding:5px 12px">
+                  <button onClick="{{ ci.dec }}" style="background:transparent; border:none; cursor:pointer; font-weight:700; font-size:16px; color:#1D5E54" style-hover="color:#143F39">−</button>
+                  <span style="font-weight:700; font-size:14px; min-width:16px; text-align:center">{{ ci.qty }}</span>
+                  <button onClick="{{ ci.inc }}" style="background:transparent; border:none; cursor:pointer; font-weight:700; font-size:16px; color:#1D5E54" style-hover="color:#143F39">+</button>
+                </div>
+                <span style="font-weight:700; font-size:15px; color:#22302B; min-width:82px; text-align:right; white-space:nowrap">{{ ci.lineTotal }}</span>
+                <button onClick="{{ ci.remove }}" style="background:transparent; border:none; cursor:pointer; font-size:13px; color:#93998C; white-space:nowrap" style-hover="color:#1D5E54">Ta bort</button>
+              </div>
+            </sc-for>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; padding:20px 0">
+              <span style="font-family:'Marcellus'; font-size:22px; color:#22302B">Summa</span>
+              <span style="font-family:'Marcellus'; font-size:21px; color:#1D5E54; white-space:nowrap">{{ cartSubtotal }}</span>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:26px; flex-wrap:wrap; gap:14px">
+            <a onClick="{{ goButik }}" style="cursor:pointer; font-weight:700; font-size:12.5px; letter-spacing:0.12em; text-transform:uppercase; color:#1D5E54" style-hover="color:#143F39">← Fortsätt handla</a>
+            <a onClick="{{ goKassa }}" style="cursor:pointer; white-space:nowrap; font-weight:700; font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:15px 36px" style-hover="background:#143F39">Till kassan →</a>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+  </sc-if>
+
+  <!-- ============ KASSA ============ -->
+  <sc-if value="{{ showKassa }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Kassa" style="max-width:680px; margin:0 auto; padding:56px 32px 0">
+      <div style="text-align:center; margin-bottom:36px">
+        <p style="margin:0 0 8px; font-weight:700; font-size:12px; letter-spacing:0.28em; text-transform:uppercase; color:#1D5E54">Kassa · {{ cartCount }} varor · {{ kassaTotal }}</p>
+        <h1 style="margin:0; font-family:'Marcellus'; font-size:52px; color:#22302B">Nästan framme</h1>
+      </div>
+
+      <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:30px; margin-bottom:16px">
+        <h2 style="margin:0 0 20px; font-family:'Marcellus'; font-size:22px; color:#22302B">Leverans</h2>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px">
+          <input placeholder="Mottagare" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54">
+          <input placeholder="Telefon" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54">
+        </div>
+        <input placeholder="Adress, postnummer, ort" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54">
+      </div>
+
+      <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:30px; margin-bottom:16px">
+        <h2 style="margin:0 0 18px; font-family:'Marcellus'; font-size:22px; color:#22302B">Leveranssätt</h2>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px">
+          <sc-for list="{{ deliveryOpts }}" as="d" hint-placeholder-count="3">
+            <button onClick="{{ d.pick }}" style="cursor:pointer; text-align:center; border:1px solid {{ d.border }}; background:{{ d.bg }}; border-radius:6px; padding:16px 12px" style-hover="border-color:#1D5E54">
+              <span style="display:block; font-weight:700; font-size:13.5px; color:{{ d.fg }}">{{ d.name }}</span>
+              <span style="display:block; font-weight:600; font-size:12.5px; margin-top:5px; color:{{ d.priceColor }}">{{ d.price }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:30px; margin-bottom:24px">
+        <h2 style="margin:0 0 18px; font-family:'Marcellus'; font-size:22px; color:#22302B">Betalning</h2>
+        <div style="display:flex; flex-wrap:wrap; gap:12px">
+          <sc-for list="{{ payMethods }}" as="m" hint-placeholder-count="5">
+            <button onClick="{{ m.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:13.5px; color:{{ m.fg }}; background:{{ m.bg }}; border:1px solid {{ m.border }}; border-radius:6px; padding:11px 20px" style-hover="border-color:#1D5E54">{{ m.name }}</button>
+          </sc-for>
+        </div>
+        <p style="margin:16px 0 0; font-size:13.5px; color:#93998C; line-height:1.6">{{ payHint }}</p>
+      </div>
+
+      <button onClick="{{ placeOrder }}" style="border:none; cursor:pointer; display:block; text-align:center; font-weight:700; font-size:13.5px; letter-spacing:0.14em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:17px 0" style-hover="background:#143F39">Betala {{ kassaTotal }}</button>
+      <p style="margin:14px 0 0; text-align:center; font-size:12.5px; color:#93998C">Trygg betalning · Vi packar i silkespapper, alltid</p>
+    </section>
+  </sc-if>
+
+  <!-- ============ BEKRÄFTELSE ============ -->
+  <sc-if value="{{ showBekraftelse }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Bekräftelse" style="max-width:560px; margin:0 auto; padding:100px 32px 0; text-align:center">
+      <span style="display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; border:1px solid #1D5E54; border-radius:999px; font-family:'Marcellus'; font-size:24px; color:#1D5E54; margin-bottom:22px">✓</span>
+      <p style="margin:0 0 14px; font-weight:700; font-size:12px; letter-spacing:0.28em; text-transform:uppercase; color:#1D5E54">Order {{ orderNo }}</p>
+      <h1 style="margin:0 0 16px; font-family:'Marcellus'; font-size:48px; color:#22302B">Tack — vi hörs snart.</h1>
+      <p style="margin:0 auto 36px; max-width:400px; font-size:16px; line-height:1.75; color:#5F6B60">Paketet lämnar oss inom en arbetsdag, inslaget i silkespapper. Kvittot ligger i din inkorg.</p>
+      <a onClick="{{ goHem }}" style="cursor:pointer; display:inline-block; white-space:nowrap; font-weight:700; font-size:12.5px; letter-spacing:0.12em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:14px 30px" style-hover="background:#143F39">Till startsidan</a>
+    </section>
+  </sc-if>
+
+  <!-- ============ RUMMET ============ -->
+  <sc-if value="{{ showGalleri }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Rummet" style="max-width:1200px; margin:0 auto; padding:56px 32px 0">
+      <div style="text-align:center; margin-bottom:44px">
+        <p style="margin:0 0 10px; font-weight:700; font-size:12px; letter-spacing:0.3em; text-transform:uppercase; color:#1D5E54">Bondegatan 11</p>
+        <h1 style="margin:0; font-family:'Marcellus'; font-size:52px; color:#22302B">Rummet</h1>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:22px">
+        <sc-for list="{{ galleryItems }}" as="g" hint-placeholder-count="6">
+          <div>
+            <div style="aspect-ratio:4/5; background:url('{{ g.img }}') center/cover; border-radius:8px"></div>
+            <p style="margin:10px 0 0; text-align:center; font-weight:600; font-size:11px; letter-spacing:0.22em; text-transform:uppercase; color:#93998C">{{ g.caption }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ ANTECKNINGAR ============ -->
+  <sc-if value="{{ showJournal }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Anteckningar" style="max-width:860px; margin:0 auto; padding:56px 32px 0">
+      <h1 style="margin:0 0 40px; text-align:center; font-family:'Marcellus'; font-size:52px; color:#22302B">Anteckningar</h1>
+      <div style="display:flex; flex-direction:column; gap:22px">
+        <sc-for list="{{ blog }}" as="b" hint-placeholder-count="4">
+          <a style="cursor:pointer; display:grid; grid-template-columns:220px 1fr; gap:26px; align-items:center; background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; overflow:hidden">
+            <div style="aspect-ratio:4/3; background:url('{{ b.img }}') center/cover"></div>
+            <div style="padding:22px 26px 22px 0">
+              <p style="margin:0 0 8px; font-weight:600; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#1D5E54">{{ b.tag }} · {{ b.date }}</p>
+              <h2 style="margin:0 0 8px; font-family:'Marcellus'; font-size:24px; line-height:1.25; color:#22302B">{{ b.title }}</h2>
+              <p style="margin:0; font-size:14.5px; line-height:1.65; color:#5F6B60">{{ b.excerpt }}</p>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ RITUALKLUBBEN ============ -->
+  <sc-if value="{{ showKlubb }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Ritualklubben" style="max-width:1000px; margin:0 auto; padding:56px 32px 0">
+      <div style="text-align:center; margin-bottom:44px">
+        <p style="margin:0 0 10px; font-weight:700; font-size:12px; letter-spacing:0.3em; text-transform:uppercase; color:#1D5E54">Månadsvis · Ingen bindningstid</p>
+        <h1 style="margin:0 0 14px; font-family:'Marcellus'; font-size:52px; color:#22302B">Ritualklubben</h1>
+        <p style="margin:0 auto; max-width:460px; font-size:16px; line-height:1.7; color:#5F6B60">Håret mår bäst av regelbundenhet. Välj en rytm — pausa när livet vill annat.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:24px; align-items:stretch">
+        <sc-for list="{{ clubPlans }}" as="pl" hint-placeholder-count="3">
+          <div style="background:{{ pl.bg }}; border:1px solid {{ pl.border }}; border-radius:8px; padding:36px 28px; text-align:center; display:flex; flex-direction:column">
+            <p style="margin:0 0 16px; font-weight:700; font-size:10.5px; letter-spacing:0.24em; text-transform:uppercase; color:{{ pl.tagColor }}">{{ pl.tag }}</p>
+            <h3 style="margin:0 0 6px; font-family:'Marcellus'; font-size:28px; color:{{ pl.fg }}">{{ pl.name }}</h3>
+            <p style="margin:0 0 22px; font-family:'Marcellus'; font-size:21px; color:{{ pl.accent }}">{{ pl.price }}</p>
+            <div style="flex:1">
+              <sc-for list="{{ pl.perks }}" as="perk" hint-placeholder-count="3">
+                <p style="margin:0 0 12px; font-size:14px; line-height:1.55; color:{{ pl.sub }}">{{ perk.text }}</p>
+              </sc-for>
+            </div>
+            <button onClick="{{ pl.join }}" style="cursor:pointer; display:block; margin-top:20px; text-align:center; font-weight:700; font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:{{ pl.btnFg }}; background:{{ pl.btnBg }}; border:1px solid {{ pl.btnBorder }}; border-radius:6px; padding:12px 0" style-hover="opacity:0.9">{{ pl.cta }}</button>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ PRESENTKORT ============ -->
+  <sc-if value="{{ showPresentkort }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Presentkort" style="max-width:940px; margin:0 auto; padding:56px 32px 0">
+      <h1 style="margin:0 0 40px; text-align:center; font-family:'Marcellus'; font-size:52px; color:#22302B">Presentkort</h1>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:44px; align-items:center">
+        <div style="background:#1D5E54; border-radius:8px; padding:48px 32px; text-align:center">
+          <p style="margin:0 0 6px; font-family:'Marcellus'; font-size:22px; letter-spacing:0.3em; text-transform:uppercase; color:#EDF2EC">Källa</p>
+          <p style="margin:0 0 32px; font-weight:700; font-size:10.5px; letter-spacing:0.3em; text-transform:uppercase; color:#A9C4B8">Ett andrum i present</p>
+          <p style="margin:0; font-family:'Marcellus'; font-size:52px; color:#EDF2EC">{{ giftAmount }}</p>
+          <p style="margin:26px 0 0; font-size:12.5px; color:#A9C4B8">Giltigt 12 månader · Gäller behandlingar &amp; apotek</p>
+        </div>
+        <div>
+          <p style="margin:0 0 14px; font-weight:700; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#22302B">Välj belopp</p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:26px">
+            <sc-for list="{{ giftOptions }}" as="g" hint-placeholder-count="4">
+              <button onClick="{{ g.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:700; font-size:14.5px; color:{{ g.fg }}; background:{{ g.bg }}; border:1px solid {{ g.border }}; border-radius:6px; padding:12px 22px" style-hover="border-color:#1D5E54">{{ g.label }}</button>
+            </sc-for>
+          </div>
+          <p style="margin:0 0 26px; font-size:14.5px; line-height:1.7; color:#5F6B60">900 kr räcker till Källritualen — vår vanligaste gåva. Kortet skickas digitalt eller hämtas i ett kuvert av gräspapper.</p>
+          <button onClick="{{ addGift }}" style="border:none; cursor:pointer; display:inline-block; white-space:nowrap; font-weight:700; font-size:12.5px; letter-spacing:0.12em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:15px 28px" style-hover="background:#143F39">Lägg i varukorg — {{ giftAmount }}</button>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ PRIVAT & GRUPP ============ -->
+  <sc-if value="{{ showEvent }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Privat och grupp" style="max-width:680px; margin:0 auto; padding:56px 32px 0">
+      <div style="text-align:center; margin-bottom:36px">
+        <h1 style="margin:0 0 12px; font-family:'Marcellus'; font-size:52px; color:#22302B">Privat &amp; grupp</h1>
+        <p style="margin:0 auto; max-width:460px; font-size:16px; line-height:1.7; color:#5F6B60">Boka hela rummet — bröllopsmorgon, möhippa eller en lugn timme för teamet. Vi svarar med förslag inom en dag.</p>
+      </div>
+      <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:32px">
+        <p style="margin:0 0 14px; font-weight:700; font-size:11.5px; letter-spacing:0.22em; text-transform:uppercase; color:#22302B">Tillfälle</p>
+        <div style="display:flex; gap:10px; margin-bottom:26px; flex-wrap:wrap">
+          <sc-for list="{{ quoteTypes }}" as="q" hint-placeholder-count="4">
+            <button onClick="{{ q.pick }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:13.5px; color:{{ q.fg }}; background:{{ q.bg }}; border:1px solid {{ q.border }}; border-radius:6px; padding:10px 18px" style-hover="border-color:#1D5E54">{{ q.name }}</button>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px">
+          <input placeholder="Namn" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54">
+          <input placeholder="E-post" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54">
+        </div>
+        <textarea placeholder="Berätta — datum, antal personer, önskad stämning…" rows="4" style="width:100%; box-sizing:border-box; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54; resize:vertical; margin-bottom:22px"></textarea>
+        <button onClick="{{ sendQuote }}" style="border:none; cursor:pointer; display:block; text-align:center; font-weight:700; font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:14px 0" style-hover="background:#143F39">{{ quoteCta }}</button>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ OM ============ -->
+  <sc-if value="{{ showOm }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Om" style="max-width:1000px; margin:0 auto; padding:56px 32px 0">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:52px; align-items:center; margin-bottom:52px">
+        <div style="aspect-ratio:4/5; background:url('https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=1200&q=80&auto=format&fit=crop') center/cover; border-radius:8px"></div>
+        <div>
+          <p style="margin:0 0 12px; font-weight:700; font-size:12px; letter-spacing:0.28em; text-transform:uppercase; color:#1D5E54">Om Källa</p>
+          <h1 style="margin:0 0 18px; font-family:'Marcellus'; font-size:42px; line-height:1.1; color:#22302B">Långsamt är det nya snabbt</h1>
+          <p style="margin:0 0 16px; font-size:16px; line-height:1.8; color:#5F6B60">Källa startades 2021 av hårterapeuten Ester Lindqvist, efter tio år i salonger där allt mättes i minuter. Här mäts besöken i hur håret mår när du kommer tillbaka.</p>
+          <p style="margin:0; font-size:16px; line-height:1.8; color:#5F6B60">Vi arbetar med rena, doftlåga produkter, tar emot en gäst i taget per terapeut och serverar alltid te från Österlen. Telefonen lämnar du gärna i en låda vid dörren.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px">
+        <div style="background:#E4EAE3; border-radius:8px; padding:26px; text-align:center"><p style="margin:0; font-family:'Marcellus'; font-size:32px; color:#1D5E54">1 gäst</p><p style="margin:6px 0 0; font-weight:600; font-size:13px; color:#5F6B60">i taget, per terapeut</p></div>
+        <div style="background:#1D5E54; border-radius:8px; padding:26px; text-align:center"><p style="margin:0; font-family:'Marcellus'; font-size:32px; color:#EDF2EC">90 min</p><p style="margin:6px 0 0; font-weight:600; font-size:13px; color:#A9C4B8">är vårt normala besök</p></div>
+        <div style="background:#E4EAE3; border-radius:8px; padding:26px; text-align:center"><p style="margin:0; font-family:'Marcellus'; font-size:32px; color:#1D5E54">0 klockor</p><p style="margin:6px 0 0; font-weight:600; font-size:13px; color:#5F6B60">på väggarna. Medvetet.</p></div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ============ KONTAKT ============ -->
+  <sc-if value="{{ showKontakt }}" hint-placeholder-val="{{ false }}">
+    <section data-screen-label="Kontakt" style="max-width:1000px; margin:0 auto; padding:56px 32px 0">
+      <h1 style="margin:0 0 40px; text-align:center; font-family:'Marcellus'; font-size:52px; color:#22302B">Kontakt</h1>
+      <div style="display:grid; grid-template-columns:1fr 1.3fr; gap:44px">
+        <div style="background:#1D5E54; border-radius:8px; padding:32px 30px">
+          <p style="margin:0 0 8px; font-weight:700; font-size:10.5px; letter-spacing:0.24em; text-transform:uppercase; color:#A9C4B8">Rummet</p>
+          <p style="margin:0 0 22px; font-size:15.5px; line-height:1.7; color:#EDF2EC">Bondegatan 11<br>116 23 Stockholm</p>
+          <p style="margin:0 0 8px; font-weight:700; font-size:10.5px; letter-spacing:0.24em; text-transform:uppercase; color:#A9C4B8">Nås på</p>
+          <p style="margin:0 0 22px; font-size:15.5px; line-height:1.7; color:#EDF2EC">hej@kallahalsospa.se<br>08-640 22 60</p>
+          <p style="margin:0 0 8px; font-weight:700; font-size:10.5px; letter-spacing:0.24em; text-transform:uppercase; color:#A9C4B8">Öppet</p>
+          <p style="margin:0; font-size:15.5px; line-height:1.7; color:#EDF2EC">Ons–Fre 10–19<br>Lör–Sön 10–16</p>
+        </div>
+        <div style="background:#FBFAF5; border:1px solid #DAD3C2; border-radius:8px; padding:30px">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px">
+            <input placeholder="Namn" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54">
+            <input placeholder="E-post" style="width:100%; box-sizing:border-box; min-width:0; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54">
+          </div>
+          <textarea placeholder="Vad kan vi hjälpa till med?" rows="5" style="width:100%; box-sizing:border-box; border:1px solid #DAD3C2; border-radius:6px; padding:13px 15px; font-family:'Karla'; font-size:15px; outline-color:#1D5E54; resize:vertical; margin-bottom:18px"></textarea>
+          <a style="cursor:pointer; display:block; text-align:center; font-weight:700; font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase; color:#EDF2EC; background:#1D5E54; border-radius:6px; padding:14px 0" style-hover="background:#143F39">Skicka</a>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- FOOTER -->
+  <footer style="margin-top:88px; background:#1D5E54; padding:48px 32px">
+    <div style="max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap">
+      <div>
+        <p style="margin:0 0 4px; font-family:'Marcellus'; font-size:22px; letter-spacing:0.3em; text-transform:uppercase; color:#EDF2EC">Källa</p>
+        <p style="margin:0; font-size:13.5px; color:#A9C4B8">Hårspa &amp; frisör · Bondegatan 11, Stockholm</p>
+      </div>
+      <nav style="display:flex; gap:10px; flex-wrap:wrap">
+        <a onClick="{{ goKlubb }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:#1D5E54; background:#EDF2EC; border-radius:6px; padding:8px 14px" style-hover="background:#E4EAE3">Ritualklubben</a>
+        <a onClick="{{ goPresentkort }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:#EDF2EC; border:1px solid #4E837B; border-radius:6px; padding:7px 13px" style-hover="border-color:#EDF2EC">Presentkort</a>
+        <a onClick="{{ goEvent }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:#EDF2EC; border:1px solid #4E837B; border-radius:6px; padding:7px 13px" style-hover="border-color:#EDF2EC">Privat &amp; grupp</a>
+        <a onClick="{{ goKontakt }}" style="cursor:pointer; white-space:nowrap; font-weight:600; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:#EDF2EC; border:1px solid #4E837B; border-radius:6px; padding:7px 13px" style-hover="border-color:#EDF2EC">Kontakt</a>
+      </nav>
+      <p style="margin:0; font-size:12px; color:#7FA79E">© 2026 Källa · Byggd med Corevo</p>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = {
+    page: 'hem', filter: 'Allt', cart: {}, orderNo: '',
+    delivery: 'hamta', pay: 'Kort',
+    bookService: 'Källritualen', bookWho: 'Första lediga', bookDay: 'Ons 15/7', bookTime: '10:00', booked: false,
+    giftAmount: 900, clubPlan: '', quoteType: 'Bröllopsmorgon', quoteSent: false,
+  };
+
+  go(page) {
+    this.setState({ page });
+    try { document.scrollingElement.scrollTop = 0; } catch (e) {}
+  }
+
+  addToCart(item) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const prev = cart[item.id] || { ...item, qty: 0 };
+      cart[item.id] = { ...prev, qty: prev.qty + 1 };
+      return { cart };
+    });
+    this.go('korg');
+  }
+
+  setQty(id, delta) {
+    this.setState((s) => {
+      const cart = { ...s.cart };
+      const it = cart[id];
+      if (!it) return {};
+      const qty = it.qty + delta;
+      if (qty <= 0) delete cart[id]; else cart[id] = { ...it, qty };
+      return { cart };
+    });
+  }
+
+  bookAs(service, who) {
+    this.setState({ bookService: service, bookWho: who || 'Första lediga', booked: false });
+    this.go('boka');
+  }
+
+  renderVals() {
+    const st = this.state;
+    const page = st.page;
+    const kr = (n) => n.toLocaleString('sv-SE') + ' kr';
+    const img = (id, w = 900) => `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`;
+    const chip = (on) => ({ bg: on ? '#1D5E54' : '#FBFAF5', fg: on ? '#EDF2EC' : '#22302B', border: on ? '#1D5E54' : '#DAD3C2' });
+
+    const navLabels = [['behandlingar', 'Behandlingar'], ['boka', 'Boka'], ['team', 'Terapeuter'], ['butik', 'Apoteket'], ['galleri', 'Rummet'], ['journal', 'Anteckningar'], ['om', 'Om']];
+    const navItems = navLabels.map(([key, label]) => ({
+      key, label,
+      go: () => this.go(key),
+      color: page === key ? '#1D5E54' : '#5F6B60',
+      weight: page === key ? 700 : 500,
+    }));
+
+    const ritualSteps = [
+      { no: '01', name: 'Rening', desc: 'Hårbottenanalys, peeling och massage. Grunden i varje besök.' },
+      { no: '02', name: 'Behandling', desc: 'Fukt eller protein — håret får det håret saknar, aldrig mer.' },
+      { no: '03', name: 'Finish', desc: 'Klipp, fön eller bara luft. Du väljer tempot ut.' },
+    ];
+
+    const priceData = [
+      { name: 'Hårspa-ritualer', items: [
+        { name: 'Källritualen', desc: 'Rening, massage, djupbehandling och fön. Vår helhet.', tid: '90 min', priceNum: 1295, bookAs: 'Källritualen' },
+        { name: 'Hårbottenterapi', desc: 'Peeling, serum och 20 minuters massage.', tid: '45 min', priceNum: 695, bookAs: 'Hårbottenterapi' },
+        { name: 'Djupfukt', desc: 'Ångbehandling och mask för törstiga längder.', tid: '60 min', priceNum: 895, bookAs: 'Djupfukt' },
+      ]},
+      { name: 'Klippning', items: [
+        { name: 'Klippning', desc: 'Konsultation, klipp och lätt styling.', tid: '60 min', priceNum: 795, bookAs: 'Klippning' },
+        { name: 'Klipp + ritual', desc: 'Källritualen med klippning som finish.', tid: '2 h', priceNum: 1595, bookAs: 'Klipp + ritual' },
+        { name: 'Uppsättning', desc: 'Lugn festfrisyr, gärna med prova-på-tid.', tid: '60 min', priceNum: 995, bookAs: 'Uppsättning' },
+      ]},
+      { name: 'Färg', items: [
+        { name: 'Färg & gloss', desc: 'Skonsam färg i din egen skala, gloss som finish.', tid: '2 h', priceNum: 1395, bookAs: 'Färg & gloss' },
+        { name: 'Balayage', desc: 'Handmålad, med vårdande behandling inbakad.', tid: '3 h', priceNum: 2495, bookAs: 'Balayage' },
+        { name: 'Konsultation färg', desc: 'En kvart om vad ditt hår tål. Alltid kostnadsfri.', tid: '15 min', priceNum: 0, bookAs: 'Konsultation' },
+      ]},
+    ];
+    const priceGroups = priceData.map((g) => ({
+      name: g.name,
+      items: g.items.map((row) => ({ ...row, price: row.priceNum === 0 ? 'Fritt' : kr(row.priceNum), book: () => this.bookAs(row.bookAs) })),
+    }));
+
+    const homeServices = [
+      { name: 'Källritualen', desc: 'Rening, massage, djupbehandling och fön. Nittio minuter utan telefon.', tid: '90 min', priceNum: 1295, bookAs: 'Källritualen' },
+      { name: 'Klipp + ritual', desc: 'Hela ritualen, avslutad med ett klipp i hårets eget fall.', tid: '2 timmar', priceNum: 1595, bookAs: 'Klipp + ritual' },
+      { name: 'Hårbottenterapi', desc: 'För kliande, stressad eller trött hårbotten. Märks i en vecka.', tid: '45 min', priceNum: 695, bookAs: 'Hårbottenterapi' },
+    ].map((s) => ({ ...s, price: kr(s.priceNum), book: () => this.bookAs(s.bookAs) }));
+
+    const teamData = [
+      { name: 'Ester', roll: 'Hårterapeut & grundare', spec: 'Hårbotten · Ritualer · Klipp', bio: 'Tio år i temposalonger räckte. Byggde Källa kring övertygelsen att håret hör ihop med resten av kroppen.', img: img('1438761681033-6461ffad8d80') },
+      { name: 'Nour', roll: 'Colorist', spec: 'Skonsam färg · Balayage', bio: 'Färgar med minsta möjliga kemi och största möjliga tålamod. Bokas för färg som ska hålla i åratal, inte veckor.', img: img('1508214751196-bcfd4ca60f91') },
+      { name: 'Vilgot', roll: 'Frisör', spec: 'Klippning · Långt hår', bio: 'Klipper långsamt och torrt. Hans gäster somnar oftare än de scrollar.', img: img('1500648767791-00dcc994a43e') },
+    ];
+    const mkStylist = (t) => ({ ...t, book: () => this.bookAs(st.bookService, t.name) });
+    const stylists = teamData.map(mkStylist);
+    const teamFull = teamData.map(mkStylist);
+
+    const rawProducts = [
+      { id: 'p1', name: 'Hårbottenserum', price: 425, cat: 'Serum', desc: 'Lugnar och balanserar. Några droppar, varje kväll.', img: img('1620916566398-39f1143ab7be') },
+      { id: 'p2', name: 'Mild rening', price: 285, cat: 'Rengöring', desc: 'Schampot utan sulfater som tvättar utan att strippa.', img: img('1556228720-195a672e8a03') },
+      { id: 'p3', name: 'Djupfuktmasken', price: 345, cat: 'Behandling', desc: 'Ritualens mask, för hemmabruk en gång i veckan.', img: img('1608248543803-ba4f8c70ae0b') },
+      { id: 'p4', name: 'Hårolja N°3', price: 395, cat: 'Behandling', desc: 'Kallpressad jojoba och havtorn. Doftlåg.', img: img('1526947425960-945c6e72858f') },
+      { id: 'p5', name: 'Massageborste', price: 195, cat: 'Verktyg', desc: 'Mjuka piggar för hårbotten, i duschen eller soffan.', img: img('1522335789203-aabd1fc54bc9') },
+      { id: 'p6', name: 'Silkesörngott', price: 495, cat: 'Verktyg', desc: 'Nattens friktion, borttrollad. Mullbärssilke 22 momme.', img: img('1618221195710-dd6b41faaea6') },
+    ];
+    const products = rawProducts.map((p) => ({
+      ...p, price: kr(p.price),
+      add: () => this.addToCart({ id: p.id, name: p.name, priceNum: p.price, img: p.img }),
+    }));
+
+    const blog = [
+      { tag: 'Hårbotten', date: '8 juli', title: 'Hårbotten är hud — behandla den så', excerpt: 'Den åldras, stressas och torkar precis som ansiktet. Esters grundrutin i tre steg.', img: img('1544161515-4ab6ce6db874', 700) },
+      { tag: 'Ritual', date: '21 juni', title: 'Varför vi alltid börjar med rening', excerpt: 'Behandlingar fäster inte i ett igensatt underlag. Om ordningen som gör skillnaden.', img: img('1540555700478-4be289fbecef', 700) },
+      { tag: 'Sömn', date: '4 juni', title: 'Silke, bomull och nattens friktion', excerpt: 'Åtta timmar mot örngottet sliter mer än fönen. Litet material-labb.', img: img('1618221195710-dd6b41faaea6', 700) },
+      { tag: 'Vatten', date: '18 maj', title: 'Är ditt vatten för hårt för ditt hår?', excerpt: 'Kalk gör färg matt och längder sträva. Så testar du — och så kompenserar du.', img: img('1508214751196-bcfd4ca60f91', 700) },
+    ];
+
+    const galleryItems = [
+      { caption: 'Behandlingsrummet', img: img('1544161515-4ab6ce6db874') },
+      { caption: 'Stora rummet', img: img('1560066984-138dadb4c035') },
+      { caption: 'Vilan', img: img('1540555700478-4be289fbecef') },
+      { caption: 'Väntrummet', img: img('1618221195710-dd6b41faaea6') },
+      { caption: 'Detalj — ek & lin', img: img('1616486338812-3dadae4b4ace') },
+      { caption: 'Ritualhyllan', img: img('1586023492125-27b2c045efd7') },
+    ];
+
+    const entries = Object.values(st.cart).filter((it) => it && it.qty > 0);
+    const cartItems = entries.map((it) => ({
+      name: it.name, img: it.img, qty: it.qty,
+      unit: kr(it.priceNum),
+      lineTotal: kr(it.priceNum * it.qty),
+      inc: () => this.setQty(it.id, 1),
+      dec: () => this.setQty(it.id, -1),
+      remove: () => this.setQty(it.id, -it.qty),
+    }));
+    const cartCount = entries.reduce((n, it) => n + it.qty, 0);
+    const subtotal = entries.reduce((n, it) => n + it.priceNum * it.qty, 0);
+
+    const cats = ['Allt', 'Rengöring', 'Behandling', 'Serum', 'Verktyg'];
+    const filters = cats.map((label) => {
+      const on = st.filter === label;
+      return {
+        label,
+        go: () => { this.setState({ page: 'butik', filter: label }); try { document.scrollingElement.scrollTop = 0; } catch (e) {} },
+        bg: on ? '#1D5E54' : '#FBFAF5',
+        color: on ? '#EDF2EC' : '#22302B',
+        border: on ? '#1D5E54' : '#DAD3C2',
+      };
+    });
+    const shopProducts = st.filter === 'Allt' ? products : products.filter((p) => p.cat === st.filter);
+
+    const delOpts = [
+      { id: 'hamta', name: 'Hämta i rummet', cost: 0 },
+      { id: 'bud', name: 'Bud i stan', cost: 79 },
+      { id: 'post', name: 'Spårbar post', cost: 49 },
+    ];
+    const deliveryOpts = delOpts.map((d) => ({
+      name: d.name, price: d.cost === 0 ? 'Fritt' : kr(d.cost),
+      pick: () => this.setState({ delivery: d.id }),
+      border: st.delivery === d.id ? '#1D5E54' : '#DAD3C2',
+      bg: st.delivery === d.id ? '#E4EAE3' : 'transparent',
+      fg: '#22302B',
+      priceColor: st.delivery === d.id ? '#1D5E54' : '#93998C',
+    }));
+    const shipCost = (delOpts.find((d) => d.id === st.delivery) || delOpts[0]).cost;
+
+    const payHints = {
+      Kort: 'Visa, Mastercard och Amex. Dras direkt.',
+      Swish: 'Du får en förfrågan i Swish-appen.',
+      Klarna: 'Faktura eller delbetalning — du väljer hos Klarna.',
+      PayPal: 'Du skickas till PayPal för att slutföra.',
+      'Apple Pay': 'Bekräfta med Face ID.',
+    };
+    const payMethods = ['Kort', 'Swish', 'Klarna', 'PayPal', 'Apple Pay'].map((name) => ({
+      name,
+      pick: () => this.setState({ pay: name }),
+      ...chip(st.pay === name),
+    }));
+
+    const bookServices = ['Källritualen', 'Hårbottenterapi', 'Djupfukt', 'Klippning', 'Klipp + ritual', 'Färg & gloss', 'Balayage'].map((name) => ({
+      name, pick: () => this.setState({ bookService: name, booked: false }), ...chip(st.bookService === name),
+    }));
+    const bookWhoOpts = ['Första lediga', 'Ester', 'Nour', 'Vilgot'].map((name) => ({
+      name, pick: () => this.setState({ bookWho: name, booked: false }), ...chip(st.bookWho === name),
+    }));
+    const bookDays = ['Ons 15/7', 'Tor 16/7', 'Fre 17/7', 'Lör 18/7', 'Sön 19/7'].map((name) => ({
+      name, pick: () => this.setState({ bookDay: name, booked: false }), ...chip(st.bookDay === name),
+    }));
+    const bookTimes = ['10:00', '12:00', '14:30', '17:00'].map((name) => ({
+      name, pick: () => this.setState({ bookTime: name, booked: false }), ...chip(st.bookTime === name),
+    }));
+
+    const planData = [
+      { name: 'Droppe', priceNum: 195, perks: ['En hårbottenterapi per kvartal', '10 % i apoteket', 'Medlemspris på extra besök'], tagged: false },
+      { name: 'Källa', priceNum: 445, perks: ['En hårspa-ritual varje månad', '10 % i apoteket', 'Förtur på helgtider'], tagged: true },
+      { name: 'Flod', priceNum: 745, perks: ['Ritual + klipp varje månad', '15 % i apoteket', 'Alltid förtur, även akut'], tagged: false },
+    ];
+    const clubPlans = planData.map((p) => {
+      const dark = p.tagged;
+      const joined = st.clubPlan === p.name;
+      return {
+        name: p.name,
+        price: kr(p.priceNum) + ' / mån',
+        perks: p.perks.map((text) => ({ text })),
+        tag: dark ? 'Vanligast' : ' ',
+        tagColor: dark ? '#A9C4B8' : 'transparent',
+        bg: dark ? '#1D5E54' : '#FBFAF5',
+        border: dark ? '#1D5E54' : '#DAD3C2',
+        fg: dark ? '#EDF2EC' : '#22302B',
+        accent: dark ? '#A9C4B8' : '#1D5E54',
+        sub: dark ? '#CDDFD6' : '#5F6B60',
+        btnBg: joined ? (dark ? '#EDF2EC' : '#E4EAE3') : (dark ? '#EDF2EC' : 'transparent'),
+        btnFg: dark ? '#1D5E54' : '#1D5E54',
+        btnBorder: dark ? '#EDF2EC' : '#1D5E54',
+        cta: joined ? 'Vald ✓' : 'Välj ' + p.name,
+        join: () => this.setState({ clubPlan: p.name }),
+      };
+    });
+
+    const giftOptions = [500, 900, 1500, 2500].map((v) => ({
+      label: kr(v), pick: () => this.setState({ giftAmount: v }), ...chip(st.giftAmount === v),
+    }));
+
+    const quoteTypes = ['Bröllopsmorgon', 'Möhippa', 'Företag', 'Privat kväll'].map((name) => ({
+      name, pick: () => this.setState({ quoteType: name, quoteSent: false }), ...chip(st.quoteType === name),
+    }));
+
+    return {
+      navItems, ritualSteps, priceGroups, homeServices, stylists, teamFull, blog, galleryItems, filters, shopProducts, clubPlans,
+      homeBlog: blog.slice(0, 3),
+      goHem: () => this.go('hem'),
+      goBehandlingar: () => this.go('behandlingar'),
+      goBoka: () => this.go('boka'),
+      goTeam: () => this.go('team'),
+      goButik: () => this.go('butik'),
+      goKorg: () => this.go('korg'),
+      goKassa: () => this.go('kassa'),
+      goGalleri: () => this.go('galleri'),
+      goJournal: () => this.go('journal'),
+      goKlubb: () => this.go('klubb'),
+      goPresentkort: () => this.go('presentkort'),
+      goEvent: () => this.go('event'),
+      goOm: () => this.go('om'),
+      goKontakt: () => this.go('kontakt'),
+      showHem: page === 'hem',
+      showBehandlingar: page === 'behandlingar',
+      showBoka: page === 'boka',
+      showTeam: page === 'team',
+      showButik: page === 'butik',
+      showKorg: page === 'korg',
+      showKassa: page === 'kassa',
+      showBekraftelse: page === 'bekraftelse',
+      showGalleri: page === 'galleri',
+      showJournal: page === 'journal',
+      showKlubb: page === 'klubb',
+      showPresentkort: page === 'presentkort',
+      showEvent: page === 'event',
+      showOm: page === 'om',
+      showKontakt: page === 'kontakt',
+      cartItems, cartCount,
+      cartEmpty: cartCount === 0,
+      cartHasItems: cartCount > 0,
+      cartSubtotal: kr(subtotal),
+      kassaTotal: kr(subtotal + (cartCount > 0 ? shipCost : 0)),
+      deliveryOpts, payMethods,
+      payHint: payHints[st.pay],
+      orderNo: st.orderNo,
+      placeOrder: () => {
+        if (cartCount === 0) { this.go('butik'); return; }
+        this.setState({ orderNo: 'K-' + String(Math.floor(1000 + Math.random() * 9000)), cart: {} });
+        this.go('bekraftelse');
+      },
+      bookServices, bookWhoOpts, bookDays, bookTimes,
+      bookCta: st.booked ? 'Bokat ✓' : 'Bekräfta bokning',
+      bookedMsg: st.booked,
+      bookedSummary: `${st.bookService.toLowerCase()} hos ${st.bookWho === 'Första lediga' ? 'första lediga terapeut' : st.bookWho}, ${st.bookDay.toLowerCase()} kl ${st.bookTime}`,
+      confirmBooking: () => this.setState({ booked: true }),
+      giftOptions,
+      giftAmount: kr(st.giftAmount),
+      addGift: () => this.addToCart({ id: 'gift' + st.giftAmount, name: `Presentkort ${kr(st.giftAmount)}`, priceNum: st.giftAmount, img: img('1544161515-4ab6ce6db874', 700) }),
+      quoteTypes,
+      quoteCta: st.quoteSent ? 'Skickat — svar inom en dag ✓' : 'Skicka förfrågan',
+      sendQuote: () => this.setState({ quoteSent: true }),
+    };
+  }
+}
+</script>
+<script type="application/json" id="corevo-manifest">
+{
+  "key": "kalla",
+  "name": "Källa",
+  "desc": "Hårspa — sand, djup teal och ritualer i lugnt tempo.",
+  "bransch": "salong",
+  "palette": {
+    "primary": "#1D5E54",
+    "primaryD": "#143F39",
+    "bg": "#F3EFE7",
+    "surface": "#FBFAF5",
+    "fg": "#22302B",
+    "fg2": "#5F6B60",
+    "line": "#DAD3C2",
+    "accentSoft": "#E4EAE3"
+  },
+  "fonts": {
+    "heading": "Marcellus",
+    "body": "Karla"
+  },
+  "radius": "8px",
+  "navHeight": {
+    "desktop": "68px",
+    "mobile": "56px"
+  },
+  "caps": {
+    "heroEyebrow": true,
+    "homeStats": false,
+    "homeGallery": false,
+    "homeAbout": true
+  },
+  "pages": {
+    "hem": {
+      "module": null,
+      "route": "/"
+    },
+    "behandlingar": {
+      "module": null,
+      "route": "/behandlingar"
+    },
+    "boka": {
+      "module": "booking",
+      "route": "/boka"
+    },
+    "team": {
+      "module": null,
+      "route": "/team"
+    },
+    "butik": {
+      "module": "shop",
+      "route": "/shop"
+    },
+    "korg": {
+      "module": "shop",
+      "route": "/varukorg"
+    },
+    "kassa": {
+      "module": "shop",
+      "route": "/kassa"
+    },
+    "bekraftelse": {
+      "module": "shop",
+      "route": "/kassa/tack"
+    },
+    "galleri": {
+      "module": null,
+      "route": "/galleri"
+    },
+    "journal": {
+      "module": "blogg",
+      "route": "/journal"
+    },
+    "klubb": {
+      "module": "lojalitet",
+      "route": "/klubb"
+    },
+    "presentkort": {
+      "module": "presentkort",
+      "route": "/presentkort"
+    },
+    "event": {
+      "module": "offert",
+      "route": "/event"
+    },
+    "om": {
+      "module": null,
+      "route": "/om"
+    },
+    "kontakt": {
+      "module": null,
+      "route": "/kontakt"
+    }
+  },
+  "mock": [
+    "rawProducts",
+    "products",
+    "priceData",
+    "galleryItems",
+    "blog",
+    "teamData",
+    "planData",
+    "ritualSteps",
+    "delOpts",
+    "payHints",
+    "bookDays",
+    "bookTimes",
+    "bookServices",
+    "bookWhoOpts",
+    "giftOptions",
+    "quoteTypes"
+  ],
+  "verbatim": [
+    "navLabels",
+    "payHints (betalsätts-texterna)",
+    "tjänsternas signaturnamn",
+    "alla rubriker och all brödtext"
+  ]
+}
+</script>
+</body>
+</html>
