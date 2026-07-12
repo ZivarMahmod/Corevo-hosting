@@ -3,54 +3,24 @@
 // Flytande kundvagns-knapp (köp-räls, goal-49) — numera BARA look-vägens korg
 // ((public)/layout look-grenen). Sedan goal-57 körning 11 en ren LÄNK till
 // /varukorg (drawern borttagen). Visas bara när varukorgen har rader.
+//
+// goal-60: formen bor i cart-chrome.module.css (var 2 inline style={{}}) — knappen kan
+// nu bära :hover/:active/:focus-visible och nås av mallen. Etiketten bär mörk ink:
+// vit ink på default-guldet mätte 2.4:1, mörk mäter 6.4:1. Räknar-pillret vändes
+// (accent-ink på vitt = 2.4:1 → nu fg på bg = 15.5:1).
 
 import Link from 'next/link'
 import { useCart } from './CartProvider'
+import styles from './cart-chrome.module.css'
 
 export function CartButton() {
   const { count } = useCart()
   if (count === 0) return null
 
   return (
-    <Link
-      href="/varukorg"
-      aria-label={`Varukorg (${count} varor)`}
-      style={{
-        position: 'fixed',
-        right: 20,
-        bottom: 20,
-        zIndex: 60,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '12px 18px',
-        fontFamily: 'var(--font-ui)',
-        fontSize: 14,
-        fontWeight: 600,
-        color: 'var(--color-bg, #fff)',
-        background: 'var(--color-accent, #C8A24A)',
-        border: 'none',
-        borderRadius: 999,
-        boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
-        textDecoration: 'none',
-      }}
-    >
+    <Link href="/varukorg" aria-label={`Varukorg (${count} varor)`} className={styles.float}>
       Varukorg
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minWidth: 22,
-          height: 22,
-          padding: '0 6px',
-          fontSize: 12,
-          fontWeight: 700,
-          color: 'var(--color-accent, #C8A24A)',
-          background: 'var(--color-bg, #fff)',
-          borderRadius: 999,
-        }}
-      >
+      <span aria-hidden="true" className={styles.floatCount}>
         {count}
       </span>
     </Link>

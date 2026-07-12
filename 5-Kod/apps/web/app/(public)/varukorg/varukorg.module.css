@@ -1,0 +1,80 @@
+/* goal-60 — VARUKORGS-SIDANS SKAL.
+ *
+ * Var: 5 inline `style={{}}` — sidans bredd, det stängda lägets rubrik och den nakna
+ * "Till startsidan"-länken. Innehållet (CartPageContents) var redan kurerat i
+ * cart.module.css; skalet runt det var det inte.
+ *
+ * FUNKTIONEN OFÖRÄNDRAD: samma modulgate (LIVE → korgen, PAUSED → ärlig stängd-vy,
+ * off/draft → notFound), samma localStorage-korg bakom kulisserna.
+ *
+ * ÅTERANVÄNDA tokens: --sf-notice-bg/-border/-ink (samma stängt-anatomi som
+ *   ModulePausedBanner + ShopSection), --sf-focus, --sf-radius,
+ *   --color-fg/-bg/-primary/-accent.
+ * NYA tokens: inga.
+ *
+ * KONTRAST (räknad): stängd-lydelsen = 72% fg-mix på bg = 6.2:1. Var
+ * `--color-text-muted` utan fallback → ärvde `inherit`, dvs. odefinierad kontrast.
+ */
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+/* ---- butiken tillfälligt stängd ---- */
+
+.closed {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.closedTitle {
+  margin: 0 0 12px;
+  font-family: var(--font-display, var(--font-body));
+  font-size: clamp(24px, 3.4vw, 30px);
+  line-height: 1.15;
+  color: var(--color-fg, #232520);
+}
+
+.closedText {
+  max-width: 34rem;
+  margin: 0 auto 24px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff)); /* 6.2:1 */
+}
+
+/* 44px klickyta — en "Till startsidan" som är enda vägen ut ur en stängd butik får
+ * inte vara en 16px-hög textrad. */
+.closedLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 6px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary, var(--color-fg, #232520));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 160ms ease;
+}
+
+.closedLink:hover {
+  color: var(--color-accent, var(--color-primary, #232520));
+}
+
+.closedLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .closedLink {
+    transition: none;
+  }
+}

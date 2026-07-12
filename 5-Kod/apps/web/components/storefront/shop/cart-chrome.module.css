@@ -1,0 +1,179 @@
+/* goal-60 — KORGEN I NAVET (CartNavButton) + DEN FLYTANDE KORGEN (CartButton).
+ *
+ * Var: 3 + 2 inline `style={{}}`. De sitter i NAVET — den yta varenda mall och varenda
+ * bransch renderar på varje sida. En rund korg-cirkel i en rakskuren mall är dekor utan
+ * mening; en badge som ingen kan läsa är en siffra som inte finns.
+ *
+ * ÅTERANVÄNDA tokens: --sf-navicon-radius (nav-shell.module.css äger anatomin — den här
+ *   filen lägger BARA till badge + position, den slåss inte om ram/bakgrund/hover),
+ *   knapp-varsen (--sf-btn-ink/-bg/-radius), --sf-focus, --sf-radius,
+ *   --color-fg/-bg/-line/-primary/-accent.
+ *
+ * NYA tokens (döpta --sf-<sak>-<egenskap>):
+ *   --sf-badge-bg / --sf-badge-ink
+ *       Antals-badgen är en egen arketyp — varken knapp, kort eller fält. Den finns i
+ *       naven OCH på den flytande korgen, så en mall måste kunna stämma den på ETT
+ *       ställe. Default-inken är MÖRK, aldrig vit (se kontrast nedan).
+ *
+ * KONTRAST (WCAG-relativ luminans, räknad):
+ *   badge: vit ink på default-guld (#c8a24a) ......... 2.4:1  → FAIL (var så förut)
+ *   badge: mörk ink (#232520) på samma guld .......... 6.4:1  → default nu
+ *   flytande korgens etikett, mörk ink på guld ....... 6.4:1  (var vit = 2.4:1 → FAIL)
+ *   räknar-pillret på den flytande korgen: fg på bg .. 15.5:1
+ *
+ * TOUCH: 44px klickyta överallt — badgen är `pointer-events: none` så den aldrig äter
+ * ett klick som var menat för korgen.
+ */
+
+/* ---- nav-varianten (ikon + badge) ----
+ * Geometrin dubblerar nav-shell .navAccount (44px, --sf-navicon-radius) så knappen
+ * håller golvet ÄVEN om en mall renderar den utan .navAccount. Samma variabel → samma
+ * värde → ingen kamp om vem som vinner. */
+.navBtn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--sf-navicon-radius, 999px);
+}
+
+.navBtn:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-primary, var(--color-fg, #232520)));
+  outline-offset: 3px;
+}
+
+/* 18px yta / 11px siffra: badgen ska gå att LÄSA, inte anas. Tabulär så tvåsiffriga
+ * antal inte får en bredare siffra att skena. aria-hidden — antalet står i knappens
+ * aria-label, så skärmläsaren hör det en gång, inte två. */
+.badge {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--sf-badge-ink, var(--sf-btn-ink, var(--color-fg, #232520))); /* 6.4:1 på guld */
+  background: var(--sf-badge-bg, var(--sf-btn-bg, var(--color-accent, #c8a24a)));
+  border-radius: var(--sf-badge-radius, 999px);
+}
+
+/* ---- overlay-varianten (mobilmenyns korg-rad) ----
+ * Speglar .overlayLinks a — men som klass, så den kan bära hover/focus. */
+.overlayLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.25rem 1rem;
+  font-family: inherit;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-fg);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.overlayLink:hover {
+  color: var(--color-primary, var(--color-fg));
+}
+
+.overlayLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg));
+  outline-offset: 4px;
+}
+
+/* ---- den flytande korgen (look-vägen) ---- */
+
+.float {
+  position: fixed;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 18px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: var(--sf-btn-weight, 600);
+  text-decoration: none;
+  cursor: pointer;
+  /* Mörk fallback-ink: vitt på plattformens default-guld är 2.4:1 — under golvet. */
+  color: var(--sf-btn-ink, var(--color-fg, #232520));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border: 1px solid var(--sf-btn-border, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-float-radius, 999px);
+  box-shadow: var(--sf-shadow-card, 0 6px 20px rgb(0 0 0 / 18%));
+  transition:
+    background-color 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 160ms ease;
+  animation: sfFloatIn 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes sfFloatIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.float:hover {
+  background: var(--sf-btn-bg-hover, color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 88%, var(--color-fg, #232520)));
+  transform: translateY(-2px);
+  box-shadow: var(--sf-shadow-card-hover, 0 10px 28px rgb(0 0 0 / 22%));
+}
+
+.float:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+
+.float:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+/* Räknar-pillret sitter PÅ den fyllda knappen: bakgrunden är sidans bg, inken full fg
+ * = 15.5:1. Var tvärtom (accent-ink på vitt = 2.4:1) → oläsbart. */
+.floatCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-fg, #232520);
+  background: var(--color-bg, #fff);
+  border-radius: var(--sf-badge-radius, 999px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .overlayLink {
+    transition: none;
+    animation: none;
+  }
+
+  .float:hover,
+  .float:active {
+    transform: none;
+  }
+}

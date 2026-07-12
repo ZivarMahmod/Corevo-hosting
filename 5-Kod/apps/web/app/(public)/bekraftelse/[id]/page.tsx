@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { OrderConfirmation } from '@/app/butik/bekraftelse/[id]/OrderConfirmation'
 import { currentTenant } from '@/lib/tenant-data'
 import { createClient } from '@/lib/supabase/server'
+import styles from '@/components/storefront/order-confirmation.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Tack för din beställning' }
@@ -11,6 +12,9 @@ export const metadata: Metadata = { title: 'Tack för din beställning' }
 // nav/footer som resten av storefronten (kassan slutar byta värld). Token-gatad:
 // client-delen läser session-token ur localStorage och anropar get_public_shop_order
 // (PII-gräns — ordern bär leveransadress, exponeras aldrig fritt by-id).
+//
+// goal-60: skalet + kontoerbjudandet bär nu order-confirmation.module.css (var 3 inline
+// style={{}}). Gaten och auth-logiken är oförändrade.
 export default async function BekraftelsePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
@@ -26,11 +30,11 @@ export default async function BekraftelsePage({ params }: { params: Promise<{ id
   }
 
   return (
-    <section className="section" style={{ maxWidth: 640, margin: '0 auto', padding: '40px 20px' }}>
+    <section className={`section ${styles.page}`}>
       <OrderConfirmation orderId={id} />
       {offerAccount ? (
-        <p style={{ marginTop: 24, textAlign: 'center', fontSize: 14, opacity: 0.75 }}>
-          <Link href="/registrera" style={{ textDecoration: 'underline' }}>
+        <p className={styles.accountNote}>
+          <Link href="/registrera" className={styles.accountLink}>
             Skapa konto
           </Link>{' '}
           för att följa din beställning på Mina sidor.

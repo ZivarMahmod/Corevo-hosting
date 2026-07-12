@@ -191,6 +191,14 @@
 .skeletonBar:last-child { margin-bottom: 0; }
 .skeletonShort { width: 55%; }
 .skeletonTiny { width: 35%; }
+/* goal-60 — skelettets två sista inline style={{}} (app/(public)/loading.tsx).
+   Skelettet är DELAT: det ritas för varje mall och varje bransch medan tenant +
+   tjänster resolvas. Måtten är en del av dess FORM, inte av dess logik — de hör hemma
+   här, där en mall kan nå dem, inte i en style-prop där ingen kan.
+   Höjden är densamma som den riktiga rubriken/knappen får → noll layouthopp när
+   sidan väl landar. */
+.skeletonHeadline { height: 2.5rem; width: 60%; }
+.skeletonCta { height: 2.5rem; width: 8rem; }
 .heroSkeleton {
   max-width: 1080px;
   margin: 0 auto;

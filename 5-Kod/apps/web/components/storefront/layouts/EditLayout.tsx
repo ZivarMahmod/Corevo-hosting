@@ -6,6 +6,7 @@ import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../service
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
+import ed from './edit.module.css'
 
 /**
  * EDIT — editorial minimal (handoff Edit.jsx). Distinct shape:
@@ -21,6 +22,13 @@ import styles from '../storefront.module.css'
  * som `modules`-prop så layouten förblir SYNKRON (studions klient-preview
  * renderar samma komponent). Modulernas EGNA sidor är fortfarande hemmet
  * (/shop, /blogg, /presentkort).
+ *
+ * goal-60 — VIRUSET BOTAT: mallen bar 13 inline `style={{}}`. Journalens rader var
+ * <Link>-kort vars enda styling var `textDecoration: 'none'` — de kunde inte bära
+ * :hover/:focus/:active fastän grannklassen (tjänsterna) hade alla tre. All styling
+ * bor nu i edit.module.css; Edits röst-tokens (knapp, fält, chip, fokus, danger) i
+ * packages/ui/tokens.css under [data-theme="edit"] — den enda rot som når nav,
+ * sidfot, undersidor OCH modul-rötter. Kvar: 3 bild-URL:er (genuint dynamiska).
  */
 export function EditLayout({ tenant, content, services, modules }: StorefrontLayoutProps) {
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
@@ -31,22 +39,17 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
     <>
       {/* asymmetric hero: big image + overlapping card */}
       <section className={styles.sfEditHero}>
+        {/* Genuint dynamisk: bild-URL:en kommer ur tenantens innehåll och kan inte bo
+            i en statisk CSS-fil. Formen (höjd, cover, gråskala) ägs av .sfEditHeroImg. */}
         <div
           className={styles.sfEditHeroImg}
           style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}
         />
         <div className={styles.sfEditCard}>
           <p className="sf-eyebrow">{content.heroEyebrow}</p>
-          <h1
-            className={styles.heroTitle}
-            style={{ whiteSpace: 'pre-line', color: 'var(--color-fg)', fontSize: 'clamp(34px,4vw,56px)' }}
-          >
-            {content.heroTitle}
-          </h1>
-          <p className="sf-lede" style={{ marginTop: 16 }}>
-            {content.heroLede}
-          </p>
-          <div style={{ marginTop: 26 }}>
+          <h1 className={`${styles.heroTitle} ${ed.heroTitle}`}>{content.heroTitle}</h1>
+          <p className={`sf-lede ${ed.heroLede}`}>{content.heroLede}</p>
+          <div className={ed.heroActions}>
             <BookCta className={styles.sfSquareCta} />
           </div>
         </div>
@@ -84,13 +87,15 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
       {/* UR BUTIKEN — webshop-modulen invävd i edit-grammatiken (hairline-band,
           gråskala-foton, namn/pris-huvud). Smakprov; hela sortimentet bor på /shop. */}
       {shopTeasers.length > 0 ? (
-        <section className={styles.sfEditServices} style={{ paddingBottom: 'clamp(2.5rem, 5vw, 4rem)' }}>
+        <section className={`${styles.sfEditServices} ${ed.sectionTight}`}>
           <div className={styles.sfWide}>
             <div className={styles.sfBandLabelInline}>Ur butiken</div>
             <div className={styles.sfEdTeaserGrid}>
               {shopTeasers.map((p, i) => (
                 <Reveal as="div" key={p.id} delay={i * 60}>
                   <Link href={`/shop/${p.id}`} className={styles.sfEdTeaserCard}>
+                    {/* Genuint dynamisk bild-URL (villkorad: utan foto ska plattan
+                        behålla sin accent-soft-yta, inte få `url(undefined)`). */}
                     <div
                       className={styles.sfEdTeaserImg}
                       style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
@@ -114,6 +119,7 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
       <section className={styles.sfEditAbout}>
         <div className={`${styles.sfWide} ${styles.sfEditAboutGrid}`}>
           <Reveal>
+            {/* Genuint dynamisk bild-URL; formen (ratio, cover) ägs av .sfEditAboutPhoto. */}
             <div
               className={styles.sfEditAboutPhoto}
               style={{ backgroundImage: `url(${content.aboutImage})` }}
@@ -122,9 +128,7 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
           <Reveal delay={100}>
             <p className="sf-eyebrow">— Om {tenant.name}</p>
             <p className={`sf-italic ${styles.sfEditQuote}`}>&ldquo;{content.italic}&rdquo;</p>
-            <p className="sf-body" style={{ fontSize: 16 }}>
-              {content.aboutCopyHome}
-            </p>
+            <p className={`sf-body ${ed.aboutBody}`}>{content.aboutCopyHome}</p>
             <ul className={styles.sfStatInline}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
@@ -139,23 +143,25 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
 
       {/* JOURNALEN — blogg-modulen invävd som numrerade editorial-rader (3 senaste) */}
       {bloggTeasers.length > 0 ? (
-        <section className={styles.sfEditServices} style={{ paddingBottom: 'clamp(2.5rem, 5vw, 4rem)' }}>
+        <section className={`${styles.sfEditServices} ${ed.sectionTight}`}>
           <div className={styles.sfWide}>
             <div className={styles.sfBandLabelInline}>Journalen</div>
             <div className={styles.sfEditGrid}>
               {bloggTeasers.map((p, i) => (
+                // Var: `style={{ textDecoration: 'none' }}` — en klickyta som inte
+                // kunde bära ett tillstånd. .rowLink bär nu hover, focus-visible
+                // och active, ovanpå .sfEditRow:s delade bakgrundsskifte.
                 <Link
                   key={p.id}
                   href={p.slug ? `/blogg/${p.slug}` : '/blogg'}
-                  className={styles.sfEditRow}
-                  style={{ textDecoration: 'none' }}
+                  className={`${styles.sfEditRow} ${ed.rowLink}`}
                 >
                   <span className={styles.sfEditNum} aria-hidden="true">
                     {serviceNum(i)}
                   </span>
                   <span className={styles.sfEditRowMain}>
                     <span className={styles.sfEditRowHead}>
-                      <span className={styles.sfEditRowName}>{p.title}</span>
+                      <span className={`${styles.sfEditRowName} ${ed.rowName}`}>{p.title}</span>
                     </span>
                     {p.excerpt ? <span className={styles.sfEditRowDesc}>{p.excerpt}</span> : null}
                   </span>
@@ -171,13 +177,13 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
 
       {/* PRESENTKORT — en hairline-rad i temats ton, inte en hel stapel-sektion */}
       {presentkortLive ? (
-        <section className={styles.sfEditServices} style={{ paddingBottom: 'clamp(2.5rem, 5vw, 4rem)' }}>
+        <section className={`${styles.sfEditServices} ${ed.sectionTight}`}>
           <div className={styles.sfWide}>
             <div className={styles.sfBandLabelInline}>Presentkort</div>
-            <p className={`sf-italic ${styles.sfEditQuote}`} style={{ marginTop: 0 }}>
+            <p className={`sf-italic ${styles.sfEditQuote} ${ed.quoteFlush}`}>
               Ge bort ett besök värt att minnas.
             </p>
-            <div style={{ marginTop: 8 }}>
+            <div className={ed.giftActions}>
               <Link href="/presentkort" className={`btn-accent ${styles.sfSquareCta}`}>
                 Till presentkorten
               </Link>

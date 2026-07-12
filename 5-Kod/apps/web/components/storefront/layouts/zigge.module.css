@@ -1,0 +1,112 @@
+/* ═══════════ ZIGGE — mörk barber, bandad, lekfull (goal-60) ═══════════
+   VIRUSET: allt nedan låg i inline `style={{}}` i ZiggeLayout.tsx. Fyra av tio var
+   `borderTop: 'none'` på .sfBandLabel och två var `marginTop: 0` på .sfMoreLink —
+   plåster på en delad klass som inte var byggd för att stå sist i en sektion. Ingen
+   av dem kunde bära ett tillstånd, och "Visa hela butiken"-länken satt i en 1.35rem-
+   padding-rad utan egen klickyta.
+
+   VEKTOR-REGELN: modulen äger FUNKTIONEN, mallen äger FORMEN. Zigges röst-tokens
+   (knapp-varsen, fält-varsen, chip/fokus/danger) bor i packages/ui/tokens.css under
+   [data-world="storefront"][data-theme="zigge"] — Zigge äger varken nav, sidfot eller
+   undersidor, så .tenant-root[data-theme="zigge"] i (public)/layout.tsx är den ENDA
+   rot som når nav + main + footer + undersidor + modul-rötter. En modul som bara
+   ZiggeLayout importerar laddas bara på "/". Se rapporten.
+
+   RÖSTEN: rustik amber på nära-svart, VERSALER, hårda kanter, snabb och rappt
+   svarande rörelse (120ms). Zigge ska kännas som en klippmaskin, inte som siden. */
+
+/* ---------- hero ---------- */
+
+/* ⚠️ SPECIFICITET — varför klasserna här är DUBBLADE (.x.x) eller TRIPPLADE (.x.x.x).
+   Inline vann alltid; en vanlig klass gör det inte. Skriver klassen om en deklaration
+   i en DELAD modulklass (0,1,0) räcker (0,2,0) — vid lika vikt avgör annars
+   källordningen mellan två CSS-filer, och den styr vi inte. Är konkurrenten en GLOBAL
+   roll ([data-world="storefront"] .sf-eyebrow = (0,2,0)) krävs (0,3,0).
+
+   Ögonbrynet mot den mörka panelen: .sf-eyebrow sätter REDAN color OCH letter-spacing
+   (var(--tracking-wide)) med vikt (0,2,0). Zigges hero-eyebrow satt inline med samma
+   färg — en no-op som såg ut som en avsikt. Färgen behålls (den ÄR --color-primary,
+   4.92:1 mot --color-surface #1E1B16), men spärren är Zigges egen: bredare än
+   plattformens, för att matcha band-etiketternas 0.26em. */
+.heroEyebrow.heroEyebrow.heroEyebrow {
+  color: var(--color-primary);
+  letter-spacing: 0.24em;
+}
+
+/* pre-line: rubriken bär ägarens EGNA radbrytningar (content.heroTitle är flerradig). */
+.heroTitle {
+  white-space: pre-line;
+}
+
+.heroLede {
+  max-width: 26rem;
+  margin-top: 22px;
+}
+
+/* ---------- band-etiketter ----------
+   .sfBandLabel (delad) ritar kant både över OCH under sig. Den fungerar när den är
+   en sektions FÖRSTA rad — men Zigge använder den också som sektionens SISTA rad
+   (raden som bär "Visa hela butiken"-länken) och som rubrik direkt efter en avslutad
+   bandrad. Där dubblerades kanten: två hairlines 1px från varandra. Inline-plåstret
+   var `borderTop: 'none'`. Här får de i stället ett eget namn, så avsikten går att
+   läsa och tillståndet går att bära. */
+
+/* Etikett som följer PÅ en föregående bandrad — den raden bar redan kanten.
+   Dubblad: slår .sfBandLabel:s egen border-top (0,1,0). */
+.bandLabelSeam.bandLabelSeam {
+  border-top: none;
+}
+
+/* Sektionens fot: etikett-raden vars enda innehåll är vidare-länken.
+   Etikettens egen padding (1.35rem) behålls — den bär radens luft. Bara den
+   dubblerade kanten faller. Raden blir ~20px högre än förut, och det är avsiktligt:
+   länken inuti är numera 44px (touch-golvet) i stället för 24px. */
+.bandFoot.bandFoot {
+  border-top: none;
+}
+
+/* ---------- vidare-länken ----------
+   .sfMoreLink har `margin-top: 2rem` — rätt när den står under ett textblock, fel när
+   den ÄR raden. Inline nollade marginalen; klassen gör det med en klickyta som når
+   44px-golvet (den delade länken var 24px hög) och med Zigges egna lägen. */
+.moreLink.moreLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 0; /* slår .sfMoreLink:s `margin-top: 2rem` */
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  transition:
+    color 120ms var(--ease-out),
+    border-color 120ms var(--ease-out),
+    gap 120ms var(--ease-out);
+}
+
+/* Amber → bone vid hovring: på en mörk mall är det LJUSARE som läser som "aktiv",
+   aldrig mörkare. --color-fg (#F2ECE2) mot --color-bg (#14120E) = 15.9:1.
+   Dubblad även här: .sfMoreLink:hover (0,2,0) sätter border-color och skulle annars
+   taja med en enkel .moreLink:hover. */
+.moreLink.moreLink:hover {
+  color: var(--color-fg);
+  border-bottom-color: var(--color-fg);
+}
+
+.moreLink.moreLink:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+
+.moreLink.moreLink:active {
+  color: var(--color-primary-d);
+}
+
+/* Rörelsen mallen FAKTISKT har (grep `transform:`): ingen. Zigges hover-språk är
+   bakgrund (.sfBand), färg och kant — inga lyft, ingen skala. Reduced-motion behöver
+   därför bara stänga av övergångarna, inte återställa någon transform: det hade varit
+   en `transform: none` mot ingenting. */
+@media (prefers-reduced-motion: reduce) {
+  .moreLink {
+    transition: none;
+  }
+}

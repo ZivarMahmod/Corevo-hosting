@@ -1,0 +1,88 @@
+/* ═══════════ FRESHCUT — riktig kunds mall, LIVE (goal-60) ═══════════
+   ⚠️ FreshCut är en EXAKT kopia av freshcut.se och tillhör en riktig, levande kund.
+   Det här passet flyttar styling från inline `style={{}}` till CSS — det ÄNDRAR
+   INGEN FORM. Varje värde nedan är ordagrant det som stod inline: samma px, samma
+   hex, samma clamp. Inget har "förbättrats" på vägen. Det som SER ut som en bugg
+   är rapporterat, inte fixat (se rapporten — kontrasten i avslutningsbandet).
+
+   VIRUSET: de åtta inline-stilarna kunde inte bära ett enda tillstånd. FreshCut har
+   inga egna klickytor bland dem (CTA:erna är <BookCta>, som ärver .btn-accent), så
+   här handlar viruset inte om en död hover — det handlar om att mallen inte KUNDE
+   säga något om sina formulär eller sin köpknapp. De ytorna föll på plattformens
+   neutrala default: grå kant, 4px radie, platt knapp — mitt i en mall vars hela
+   identitet är raka hörn.
+
+   VEKTOR-REGELN: modulen äger FUNKTIONEN, mallen äger FORMEN. FreshCuts röst-tokens
+   (knapp-varsen, fält-varsen, chip/fokus/danger) bor i packages/ui/tokens.css under
+   [data-world="storefront"][data-theme="freshcut"] — FreshCut äger varken nav, sidfot
+   eller undersidor (den använder plattformens Nav + FooterFull), så
+   .tenant-root[data-theme="freshcut"] i (public)/layout.tsx är den ENDA rot som når
+   nav + main + footer + undersidor + modul-rötter. En modul som bara FreshCutLayout
+   importerar laddas bara på "/". Se rapporten.
+
+   RÖSTEN: kundens egen — vit, guld (#B59775), Playfair-rubriker, RAKA hörn
+   (--sf-radius: 0px, satt i temat: "freshcut.se buttons are square"). */
+
+/* ---------- "Mer än bara en frisörsalong." — centrerad redaktionell intro ---------- */
+
+/* ⚠️ SPECIFICITET — vissa klasser här är DUBBLADE (.x.x). Inline vann alltid; en vanlig
+   klass gör det inte. .sfWide sätter `margin: 0 auto` (0,1,0) — ett shorthand som
+   INNEHÅLLER margin-top: 0. En enkel .galleryWrap { margin-top: 40px } hade tajat med
+   den, och utfallet hade avgjorts av källordningen mellan två CSS-filer (som vi inte
+   styr). På en levande kunds sida är "ibland 40px, ibland 0" inte ett alternativ.
+   Samma sak för .closingBody mot .sfClosingLead:s `margin-top: 0.9rem`. */
+
+.introWrap {
+  text-align: center;
+}
+
+.introEyebrow {
+  margin-top: 16px;
+}
+
+.introBody {
+  margin-top: 20px;
+  max-width: 46rem;
+  margin-inline: auto;
+}
+
+.galleryWrap.galleryWrap {
+  margin-top: 40px;
+}
+
+/* ---------- "Varför Oss?" — avslutningsband ----------
+   Färgerna är källsajtens och rörs INTE. #fff på .sfClosing (bakgrund
+   --color-primary = #B59775) mäter 2.73:1 — under WCAG-golvet 4.5:1. Det är en
+   BEFINTLIG egenskap hos den delade .sfClosing-klassen (som även Salvia m.fl. använder),
+   inte något det här passet infört, och .sfClosing ägs inte av den här mallen.
+   Rapporterat till Zivar, medvetet ORÖRT: att mörka ner rubriken hade ändrat en
+   levande kunds sida utan att kunden bett om det. */
+.closingTitle {
+  max-width: 40rem;
+  margin: 0 auto;
+  color: #fff;
+}
+
+.closingLeadStrong {
+  font-weight: 600;
+}
+
+.closingBody.closingBody {
+  max-width: 48rem;
+  margin: 18px auto 0;
+}
+
+.closingActions {
+  margin-top: 30px;
+}
+
+/* Rörelsen mallen FAKTISKT har (grep `transform:`): FreshCuts egna sektioner har
+   INGEN transform. De två som finns i dess vy ärvs och är redan täckta där de bor:
+   Reveal (translateY 24px → 0) nollas av storefront.module.css egen reduced-motion-
+   regel, och .galleryBtn:hover .galleryImg (scale 1.05) likaså. Kvar i FreshCuts EGEN
+   yta finns inget att nolla — därför ingen prefers-reduced-motion-regel i den här
+   filen. En tom sådan hade varit ett alibi, inte ett skydd.
+
+   Bilderna har aspect-ratio: hero-fotona går genom <HeroCarousel> och galleriet genom
+   <Gallery> (.galleryItem, 1/1) — båda äger sina egna ratios, ingen av dem sätts av
+   den här mallen, och ingen av dem kan därför hoppa i höjd när bilden laddar. */

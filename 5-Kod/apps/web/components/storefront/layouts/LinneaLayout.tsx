@@ -7,6 +7,7 @@ import { formatPrice, formatDuration, serviceDesc } from '../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
+import ln from './linnea.module.css'
 
 /**
  * LINNEA — warm Scandinavian natural (handoff Linnea.jsx). Distinct shape:
@@ -20,6 +21,11 @@ import styles from '../storefront.module.css'
  * förladdar teasers (loadLayoutModuleTeasers) som `modules`-prop så layouten
  * förblir SYNKRON (studions klient-preview renderar samma komponent).
  * Modulernas EGNA sidor är fortfarande hemmet (/shop, /blogg, /presentkort).
+ *
+ * goal-60: all inline-styling (19 st) flyttad till linnea.module.css — inline kan inte
+ * bära :hover/:focus/:active. Kvar inline: BARA backgroundImage (bild-URL = dynamisk
+ * data). Mallens knapp-/fält-/etikett-varsen bor i tokens.css under [data-theme="linnea"],
+ * så de även når nav, sidfot och undersidorna (som inte laddar den här modulen).
  */
 export function LinneaLayout({ tenant, content, services, modules }: StorefrontLayoutProps) {
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
@@ -32,12 +38,8 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
       <section className={styles.sfSideHero}>
         <div className={styles.sfSideText}>
           <span className={styles.sfPillEyebrow}>{content.heroEyebrow}</span>
-          <h1 className={styles.heroTitle} style={{ whiteSpace: 'pre-line', color: 'var(--color-fg)' }}>
-            {content.heroTitle}
-          </h1>
-          <p className="sf-lede" style={{ maxWidth: '28rem', marginTop: 20 }}>
-            {content.heroLede}
-          </p>
+          <h1 className={`${styles.heroTitle} ${ln.heroTitle}`}>{content.heroTitle}</h1>
+          <p className={`sf-lede ${ln.heroLede}`}>{content.heroLede}</p>
           <div className={styles.sfSideActions}>
             <BookCta className={styles.heroCta} />
             <span className={styles.sfSideNote}>eller drop in →</span>
@@ -45,6 +47,7 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
         </div>
         <div className={styles.sfSideMedia}>
           <span className={styles.sfBlob} aria-hidden="true" />
+          {/* backgroundImage = enda kvarvarande inline: bild-URL:en är dynamisk data. */}
           <div
             className={styles.sfSidePhoto}
             style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}
@@ -54,24 +57,20 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
 
       {/* 3-col service cards + stat chips */}
       <section className={styles.sfCardBand}>
-        <Reveal style={{ textAlign: 'center' }}>
+        <Reveal className={ln.center}>
           <p className="sf-eyebrow">— Behandlingar</p>
-          <h2 className="sf-h1" style={{ marginTop: 10 }}>
-            Våra behandlingar
-          </h2>
+          <h2 className={`sf-h1 ${ln.secTitle}`}>Våra behandlingar</h2>
         </Reveal>
         {services.length > 0 ? (
           <div className={styles.sfCardGrid}>
             {services.map((s, i) => (
               <Reveal as="div" key={s.id} delay={i * 60}>
-                <Bookable className={styles.sfCard} label={`Boka — ${s.name}`}>
+                <Bookable className={`${styles.sfCard} ${ln.card}`} label={`Boka — ${s.name}`}>
                   <span className={styles.sfCardIcon}>
                     <StorefrontIcon name="scissors" size={20} />
                   </span>
                   <h3 className={styles.sfCardName}>{s.name}</h3>
-                  <p className="sf-body" style={{ fontSize: 14, marginTop: 6 }}>
-                    {serviceDesc(s)}
-                  </p>
+                  <p className={`sf-body ${ln.cardDesc}`}>{serviceDesc(s)}</p>
                   <div className={styles.sfCardMeta}>
                     <span className={styles.sfCardPrice}>{formatPrice(s)}</span>
                     <span className={styles.sfCardTime}>{formatDuration(s)}</span>
@@ -81,9 +80,7 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
             ))}
           </div>
         ) : (
-          <p className="sf-body" style={{ textAlign: 'center' }}>
-            Behandlingar läggs upp inom kort.
-          </p>
+          <p className={`sf-body ${ln.emptyNote}`}>Behandlingar läggs upp inom kort.</p>
         )}
 
         <ul className={styles.sfChips}>
@@ -99,19 +96,17 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
       {/* UR BUTIKEN — webshop-modulen invävd i linnea-formspråket (rundade kort
           med mjuk fotoyta). Bara ett smakprov; hela sortimentet bor på /shop. */}
       {shopTeasers.length > 0 ? (
-        <section className={styles.sfCardBand} style={{ paddingTop: 0 }}>
-          <Reveal style={{ textAlign: 'center' }}>
+        <section className={`${styles.sfCardBand} ${ln.sectionTight}`}>
+          <Reveal className={ln.center}>
             <p className="sf-eyebrow">— Ur butiken</p>
-            <h2 className="sf-h1" style={{ marginTop: 10 }}>
-              Ta med något hem
-            </h2>
+            <h2 className={`sf-h1 ${ln.secTitle}`}>Ta med något hem</h2>
           </Reveal>
           <div className={styles.sfCardGrid}>
             {shopTeasers.map((p, i) => (
               <Reveal as="div" key={p.id} delay={i * 60}>
-                <Link href={`/shop/${p.id}`} className={styles.sfCard}>
+                <Link href={`/shop/${p.id}`} className={`${styles.sfCard} ${ln.card}`}>
                   <div
-                    className={styles.sfLnCardPhoto}
+                    className={`${styles.sfLnCardPhoto} ${ln.cardPhoto}`}
                     style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                   />
                   <h3 className={styles.sfCardName}>{p.name}</h3>
@@ -122,8 +117,8 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
               </Reveal>
             ))}
           </div>
-          <Reveal style={{ textAlign: 'center' }}>
-            <Link href="/shop" className={styles.sfMoreLink}>
+          <Reveal className={ln.center}>
+            <Link href="/shop" className={`${styles.sfMoreLink} ${ln.moreLink}`}>
               Visa hela butiken <span aria-hidden="true">→</span>
             </Link>
           </Reveal>
@@ -132,33 +127,27 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
 
       {/* FRÅN BLOGGEN — blogg-modulen invävd (3 senaste som rundade kort) */}
       {bloggTeasers.length > 0 ? (
-        <section className={styles.sfCardBand} style={{ paddingTop: 0 }}>
-          <Reveal style={{ textAlign: 'center' }}>
+        <section className={`${styles.sfCardBand} ${ln.sectionTight}`}>
+          <Reveal className={ln.center}>
             <p className="sf-eyebrow">— Från bloggen</p>
-            <h2 className="sf-h1" style={{ marginTop: 10 }}>
-              Tips & inspiration
-            </h2>
+            <h2 className={`sf-h1 ${ln.secTitle}`}>Tips & inspiration</h2>
           </Reveal>
           <div className={styles.sfCardGrid}>
             {bloggTeasers.map((p, i) => (
               <Reveal as="div" key={p.id} delay={i * 60}>
-                <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.sfCard}>
+                <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={`${styles.sfCard} ${ln.card}`}>
                   <div
-                    className={styles.sfLnCardPhoto}
+                    className={`${styles.sfLnCardPhoto} ${ln.cardPhoto}`}
                     style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
                   />
                   <h3 className={styles.sfCardName}>{p.title}</h3>
-                  {p.excerpt ? (
-                    <p className="sf-body" style={{ fontSize: 14, marginTop: 6 }}>
-                      {p.excerpt}
-                    </p>
-                  ) : null}
+                  {p.excerpt ? <p className={`sf-body ${ln.cardDesc}`}>{p.excerpt}</p> : null}
                 </Link>
               </Reveal>
             ))}
           </div>
-          <Reveal style={{ textAlign: 'center' }}>
-            <Link href="/blogg" className={styles.sfMoreLink}>
+          <Reveal className={ln.center}>
+            <Link href="/blogg" className={`${styles.sfMoreLink} ${ln.moreLink}`}>
               Läs hela bloggen <span aria-hidden="true">→</span>
             </Link>
           </Reveal>
@@ -167,19 +156,11 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
 
       {/* PRESENTKORT — ett mjukt band i temats ton, inte en hel stapel-sektion */}
       {presentkortLive ? (
-        <section
-          style={{
-            padding: 'clamp(3rem, 6vw, 4.5rem) 1.5rem',
-            textAlign: 'center',
-            background: 'var(--color-accent-soft)',
-          }}
-        >
+        <section className={ln.giftBand}>
           <Reveal>
             <p className="sf-eyebrow">— Presentkort</p>
-            <h2 className="sf-h2" style={{ marginTop: 10 }}>
-              Ge bort en stund att längta till
-            </h2>
-            <div style={{ marginTop: 22 }}>
+            <h2 className={`sf-h2 ${ln.secTitle}`}>Ge bort en stund att längta till</h2>
+            <div className={ln.giftActions}>
               <Link href="/presentkort" className={`btn-accent ${styles.heroCta}`}>
                 Till presentkorten
               </Link>

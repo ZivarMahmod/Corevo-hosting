@@ -6,10 +6,20 @@
 // synlig när shop-modulen är på (count 0 = ikon utan badge). Två varianter:
 // 'nav' (ikon + antal-badge i desktop-klustret) och 'overlay' (textrad
 // "Varukorg (N)" i mobil-overlayn).
+//
+// goal-60: formen bor i cart-chrome.module.css (var 3 inline style={{}}). Knappen
+// sitter i NAVET — den yta varje mall och varje bransch renderar på varje sida — så den
+// måste bära mallens --sf-navicon-radius (en rund cirkel i en rakskuren mall är dekor
+// utan mening) och ha 44px klickyta. Badgen bär mörk ink på accenten: vit ink mätte
+// 2.4:1 mot default-guldet, mörk mäter 6.4:1.
+//
+// className från mallens chrome (t.ex. shell.navAccount) läggs till, ersätts aldrig —
+// nav-shell äger fortfarande ram/bakgrund/hover, den här filen bara position + badge.
 
 import Link from 'next/link'
 import { useCart } from './CartProvider'
 import { StorefrontIcon } from '@/components/storefront/StorefrontIcon'
+import styles from './cart-chrome.module.css'
 
 export function CartNavButton({
   variant = 'nav',
@@ -29,24 +39,10 @@ export function CartNavButton({
     return (
       <Link
         href="/varukorg"
-        className={className}
+        className={[styles.overlayLink, className].filter(Boolean).join(' ')}
         tabIndex={tabIndex}
         onClick={onOpen}
         aria-label={`Varukorg (${count} varor)`}
-        style={{
-          // Speglar .overlayLinks a (nav-shell.module.css) så korg-raden ser ut
-          // som en menylänk, inkl. 44px-tap-target.
-          fontFamily: 'inherit',
-          fontSize: '1.5rem',
-          fontWeight: 600,
-          color: 'var(--color-fg)',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '2.75rem',
-          padding: '0.25rem 1rem',
-          textDecoration: 'none',
-        }}
       >
         Varukorg{count > 0 ? ` (${count})` : ''}
       </Link>
@@ -56,35 +52,15 @@ export function CartNavButton({
   return (
     <Link
       href="/varukorg"
-      className={className}
+      className={[styles.navBtn, className].filter(Boolean).join(' ')}
       tabIndex={tabIndex}
       onClick={onOpen}
       aria-label={`Varukorg (${count} varor)`}
-      style={{ position: 'relative', cursor: 'pointer', display: 'inline-flex', color: 'inherit' }}
     >
       <StorefrontIcon name="bag" size={18} />
+      {/* aria-hidden: antalet står redan i aria-label, skärmläsaren ska höra det EN gång. */}
       {count > 0 ? (
-        <span
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: -4,
-            right: -4,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minWidth: 17,
-            height: 17,
-            padding: '0 4px',
-            fontFamily: 'var(--font-ui)',
-            fontSize: 11,
-            fontWeight: 700,
-            lineHeight: 1,
-            color: 'var(--color-bg, #fff)',
-            background: 'var(--color-accent, #C8A24A)',
-            borderRadius: 999,
-          }}
-        >
+        <span aria-hidden="true" className={styles.badge}>
           {count}
         </span>
       ) : null}

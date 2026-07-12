@@ -4,6 +4,7 @@ import { Gallery } from '../Gallery'
 import { BookCta } from '@/components/brand/BookCta'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
+import fc from './freshcut.module.css'
 
 /**
  * FRESHCUT — an EXACT copy of freshcut.se (barbershop, Linköping), rebuilt on the live
@@ -17,6 +18,13 @@ import styles from '../storefront.module.css'
  * comes from tenant_settings (content fields + location); sektionstexterna nedan är källsajtens
  * fasta prosa som DEFAULT — ägaren kan skriva över dem via settings.copy
  * (homeSecondTitle/whyTitle/whySub/whyBody, redigeras i Sida-flikens Hem).
+ *
+ * goal-60 — VIRUSET BOTAT, FORMEN ORÖRD. ⚠️ RIKTIG KUND, LIVE. De 8 inline `style={{}}`
+ * är flyttade till freshcut.module.css med ORDAGRANT samma värden — samma px, samma hex,
+ * samma clamp. Inget har "förbättrats" på vägen. Mallens röst-tokens (knapp, fält, chip,
+ * fokus, danger) bor i packages/ui/tokens.css under [data-theme="freshcut"]: de ger form
+ * åt de ytor som saknade den helt (köpknapp, formulärfält) och rör ingen befintlig yta.
+ * Det som SER ut som en bugg är rapporterat, inte fixat — se rapporten.
  */
 const SEC1_TITLE = 'Mer än bara en frisörsalong.'
 const SEC2_TITLE = 'Varför Oss?'
@@ -38,18 +46,14 @@ export function FreshCutLayout({ content }: StorefrontLayoutProps) {
 
       {/* "Mer än bara en frisörsalong." — centered editorial + 4-photo gallery */}
       <section className={styles.sfServices}>
-        <div className={styles.sfNarrow} style={{ textAlign: 'center' }}>
+        <div className={`${styles.sfNarrow} ${fc.introWrap}`}>
           <Reveal>
             <h2 className="sf-h1">{content.homeSecondTitle ?? SEC1_TITLE}</h2>
-            <p className="sf-eyebrow" style={{ marginTop: 16 }}>
-              {content.aboutTitle}
-            </p>
-            <p className="sf-body" style={{ marginTop: 20, maxWidth: '46rem', marginInline: 'auto' }}>
-              {content.aboutCopyHome}
-            </p>
+            <p className={`sf-eyebrow ${fc.introEyebrow}`}>{content.aboutTitle}</p>
+            <p className={`sf-body ${fc.introBody}`}>{content.aboutCopyHome}</p>
           </Reveal>
         </div>
-        <div className={styles.sfWide} style={{ marginTop: 40 }}>
+        <div className={`${styles.sfWide} ${fc.galleryWrap}`}>
           <Reveal>
             <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
           </Reveal>
@@ -59,19 +63,14 @@ export function FreshCutLayout({ content }: StorefrontLayoutProps) {
       {/* "Varför Oss?" — text + closing booking CTA */}
       <section className={styles.sfClosing}>
         <Reveal>
-          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto' }}>
-            {content.whyTitle ?? SEC2_TITLE}
-          </h2>
-          <p className={styles.sfClosingLead} style={{ fontWeight: 600 }}>
+          <h2 className={`sf-h1 ${fc.closingTitle}`}>{content.whyTitle ?? SEC2_TITLE}</h2>
+          <p className={`${styles.sfClosingLead} ${fc.closingLeadStrong}`}>
             {content.whySub ?? SEC2_SUB}
           </p>
-          <p
-            className={styles.sfClosingLead}
-            style={{ maxWidth: '48rem', margin: '18px auto 0' }}
-          >
+          <p className={`${styles.sfClosingLead} ${fc.closingBody}`}>
             {content.whyBody ?? SEC2_BODY}
           </p>
-          <div style={{ marginTop: 30 }}>
+          <div className={fc.closingActions}>
             <BookCta className={styles.sfClosingCta} />
           </div>
         </Reveal>

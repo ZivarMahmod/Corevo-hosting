@@ -48,7 +48,7 @@ export function SubpageHero({
 }) {
   return (
     <header className={styles.subHero}>
-      <p className={styles.eyebrow} style={{ margin: 0 }}>{eyebrow}</p>
+      <p className={`${styles.eyebrow} ${styles.subHeroEyebrow}`}>{eyebrow}</p>
       <h1 className={styles.subHeroTitle}>{title}</h1>
       {lede ? <p className={styles.subHeroLead}>{lede}</p> : null}
     </header>
@@ -95,23 +95,7 @@ export function StylistSpotlights({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={s.img} alt={s.name} loading="lazy" />
                 ) : (
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      display: 'flex',
-                      width: '100%',
-                      height: '100%',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '3.2rem',
-                      fontWeight: 700,
-                      color: 'var(--color-primary)',
-                      background:
-                        'color-mix(in srgb, var(--color-primary) 9%, var(--color-bg))',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
+                  <span aria-hidden="true" className={styles.monogram}>
                     {s.name
                       .split(/\s+/)
                       .slice(0, 2)
@@ -254,7 +238,7 @@ export async function LocationHours({
             {hasSocial ? (
               <div className={styles.locBlock}>
                 <p className={styles.locLabel}>Följ oss</p>
-                <p className={styles.locContactValue} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <p className={`${styles.locContactValue} ${styles.locSocialRow}`}>
                   {social.instagram ? (
                     <a href={social.instagram} className={styles.locContactLink} target="_blank" rel="noreferrer noopener">
                       Instagram
@@ -304,7 +288,7 @@ export async function LocationHours({
               <iframe
                 src={mapEmbed}
                 title={`Karta till ${salonName}`}
-                style={{ width: '100%', height: 320, border: '1px solid rgba(0,0,0,.12)', borderRadius: 12 }}
+                className={styles.locMap}
                 loading="lazy"
               />
             </Reveal>

@@ -13,9 +13,9 @@ export default function PublicLoading() {
       <section className="section" aria-hidden="true">
         <div className={styles.heroSkeleton}>
           <div className={`${styles.skeletonBar} ${styles.skeletonTiny}`} />
-          <div className={styles.skeletonBar} style={{ height: '2.5rem', width: '60%' }} />
+          <div className={`${styles.skeletonBar} ${styles.skeletonHeadline}`} />
           <div className={`${styles.skeletonBar} ${styles.skeletonShort}`} />
-          <div className={styles.skeletonBar} style={{ width: '8rem', height: '2.5rem' }} />
+          <div className={`${styles.skeletonBar} ${styles.skeletonCta}`} />
         </div>
       </section>
 

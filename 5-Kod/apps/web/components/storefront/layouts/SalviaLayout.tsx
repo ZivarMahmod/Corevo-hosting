@@ -8,6 +8,7 @@ import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../service
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
+import sv from './salvia.module.css'
 
 /**
  * SALVIA — the full editorial base (handoff Home.jsx). Distinct shape:
@@ -19,6 +20,12 @@ import styles from '../storefront.module.css'
  * carries the global `.hero` sentinel (NavShell goes transparent) and the hashed
  * `.heroSection` (whose negative margin cancels the reserved --nav-h so the photo
  * meets the viewport top under the nav).
+ *
+ * goal-60: all inline-styling (28 st) flyttad till salvia.module.css — inline kan inte
+ * bära :hover/:focus/:active, så varje inline-stylad yta föll tillbaka på plattformens
+ * neutrala form. Kvar inline: BARA backgroundImage (bild-URL = dynamisk data). Mallens
+ * knapp-/fält-/etikett-varsen bor i tokens.css under [data-theme="salvia"], så de även
+ * når nav, sidfot och undersidorna (som inte laddar den här modulen).
  */
 export function SalviaLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
   const rows = services.slice(0, 5)
@@ -43,9 +50,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
           align="left"
         >
           <p className={styles.heroEyebrow}>{content.heroEyebrow}</p>
-          <h1 className={styles.heroTitle} style={{ whiteSpace: 'pre-line' }}>
-            {content.heroTitle}
-          </h1>
+          <h1 className={`${styles.heroTitle} ${sv.heroTitle}`}>{content.heroTitle}</h1>
           <p className={styles.heroLead}>{content.heroLede}</p>
           <div className={styles.heroActions}>
             <BookCta className={styles.heroCta} />
@@ -58,9 +63,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
         <div className={styles.sfNarrow}>
           <Reveal>
             <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-            <h2 className="sf-h1" style={{ marginTop: 12, maxWidth: '38rem' }}>
-              {content.servicesTitle}
-            </h2>
+            <h2 className={`sf-h1 ${sv.srvTitle}`}>{content.servicesTitle}</h2>
           </Reveal>
           {rows.length > 0 ? (
             <div className={styles.sfRowList}>
@@ -83,13 +86,13 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
               ))}
             </div>
           ) : (
-            <p className="sf-body" style={{ marginTop: 32 }}>
+            <p className={`sf-body ${sv.emptyNote}`}>
               Tjänster läggs upp inom kort. Du är ändå varmt välkommen att boka eller höra av dig.
             </p>
           )}
           {hasMore ? (
             <Reveal>
-              <a href="/tjanster" className={styles.sfMoreLink}>
+              <a href="/tjanster" className={`${styles.sfMoreLink} ${sv.moreLink}`}>
                 Se alla tjänster <span aria-hidden="true">→</span>
               </a>
             </Reveal>
@@ -103,30 +106,29 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
       {shopTeasers.length > 0 ? (
         <section className={styles.sfTeam}>
           <div className={styles.sfWide}>
-            <Reveal style={{ textAlign: 'center' }}>
+            <Reveal className={sv.center}>
               <p className="sf-eyebrow">— Ur butiken</p>
-              <h2 className="sf-h1" style={{ marginTop: 12 }}>
-                Ta med dig salongen hem
-              </h2>
+              <h2 className={`sf-h1 ${sv.secTitle}`}>Ta med dig salongen hem</h2>
             </Reveal>
             <ul className={styles.sfTeamGrid}>
               {shopTeasers.map((p, i) => (
                 <Reveal as="li" key={p.id} delay={i * 90} className={styles.sfTeamCard}>
-                  <Link href={`/shop/${p.id}`} style={{ display: 'block' }}>
+                  <Link href={`/shop/${p.id}`} className={sv.cardLink}>
+                    {/* backgroundImage = enda kvarvarande inline: bild-URL:en är dynamisk data. */}
                     <div
                       className={styles.sfTeamPhoto}
                       style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                     />
                     <h3 className={styles.sfTeamName}>{p.name}</h3>
-                    <p className="sf-body" style={{ fontSize: 14 }}>
+                    <p className={`sf-body ${sv.cardMeta}`}>
                       {formatShopPrice(p.priceCents, p.currency)}
                     </p>
                   </Link>
                 </Reveal>
               ))}
             </ul>
-            <Reveal style={{ textAlign: 'center' }}>
-              <Link href="/shop" className={styles.sfMoreLink}>
+            <Reveal className={sv.center}>
+              <Link href="/shop" className={`${styles.sfMoreLink} ${sv.moreLink}`}>
                 Visa hela butiken <span aria-hidden="true">→</span>
               </Link>
             </Reveal>
@@ -146,9 +148,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
           <Reveal delay={120}>
             <p className="sf-eyebrow">— Om {tenant.name}</p>
             <p className={`sf-italic ${styles.sfAboutItalic}`}>{content.italic}</p>
-            <p className="sf-body" style={{ fontSize: 17 }}>
-              {content.aboutCopyHome}
-            </p>
+            <p className={`sf-body ${sv.aboutBody}`}>{content.aboutCopyHome}</p>
             <ul className={styles.sfStatTrio}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
@@ -167,11 +167,9 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
       {content.team.length > 0 ? (
         <section className={styles.sfTeam}>
           <div className={styles.sfWide}>
-            <Reveal style={{ textAlign: 'center' }}>
+            <Reveal className={sv.center}>
               <p className="sf-eyebrow">{content.teamEyebrow}</p>
-              <h2 className="sf-h1" style={{ marginTop: 12 }}>
-                {content.teamTitle}
-              </h2>
+              <h2 className={`sf-h1 ${sv.secTitle}`}>{content.teamTitle}</h2>
             </Reveal>
             <ul className={styles.sfTeamGrid}>
               {content.team.map((m, i) => (
@@ -183,9 +181,8 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
                     <div className={styles.sfTeamPhoto} style={{ backgroundImage: `url(${m.img})` }} />
                   ) : (
                     <div
-                      className={styles.sfTeamPhoto}
+                      className={`${styles.sfTeamPhoto} ${sv.avatarFallback}`}
                       aria-hidden="true"
-                      style={{ display: 'grid', placeItems: 'center' }}
                     >
                       <svg viewBox="0 0 96 96" width="46%" role="presentation" focusable="false">
                         <g fill="var(--color-primary)" opacity="0.32">
@@ -196,9 +193,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
                     </div>
                   )}
                   <h3 className={styles.sfTeamName}>{m.name}</h3>
-                  <p className="sf-body" style={{ fontSize: 14 }}>
-                    {m.role}
-                  </p>
+                  <p className={`sf-body ${sv.cardMeta}`}>{m.role}</p>
                 </Reveal>
               ))}
             </ul>
@@ -221,34 +216,28 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
       {/* FRÅN BLOGGEN — blogg-modulen invävd (3 senaste i samma 3-up-form → /blogg).
           Tom modul → ingen sektion. */}
       {bloggTeasers.length > 0 ? (
-        <section className={styles.sfTeam} style={{ paddingTop: 0 }}>
+        <section className={`${styles.sfTeam} ${sv.sectionTight}`}>
           <div className={styles.sfWide}>
-            <Reveal style={{ textAlign: 'center' }}>
+            <Reveal className={sv.center}>
               <p className="sf-eyebrow">— Från bloggen</p>
-              <h2 className="sf-h1" style={{ marginTop: 12 }}>
-                Senaste från oss
-              </h2>
+              <h2 className={`sf-h1 ${sv.secTitle}`}>Senaste från oss</h2>
             </Reveal>
             <ul className={styles.sfTeamGrid}>
               {bloggTeasers.map((p, i) => (
                 <Reveal as="li" key={p.id} delay={i * 90} className={styles.sfTeamCard}>
-                  <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} style={{ display: 'block' }}>
+                  <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={sv.cardLink}>
                     <div
                       className={styles.sfTeamPhoto}
                       style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
                     />
                     <h3 className={styles.sfTeamName}>{p.title}</h3>
-                    {p.excerpt ? (
-                      <p className="sf-body" style={{ fontSize: 14 }}>
-                        {p.excerpt}
-                      </p>
-                    ) : null}
+                    {p.excerpt ? <p className={`sf-body ${sv.cardMeta}`}>{p.excerpt}</p> : null}
                   </Link>
                 </Reveal>
               ))}
             </ul>
-            <Reveal style={{ textAlign: 'center' }}>
-              <Link href="/blogg" className={styles.sfMoreLink}>
+            <Reveal className={sv.center}>
+              <Link href="/blogg" className={`${styles.sfMoreLink} ${sv.moreLink}`}>
                 Läs hela bloggen <span aria-hidden="true">→</span>
               </Link>
             </Reveal>
@@ -259,13 +248,13 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
       {/* PRESENTKORT — smal band-rad i accent-soft-ytan (samma yta som Om-bandet),
           inte en hel stapel-sektion. */}
       {presentkortLive ? (
-        <section className={styles.sfAboutBand} style={{ padding: 'clamp(40px, 6vw, 64px) 24px', textAlign: 'center' }}>
+        <section className={`${styles.sfAboutBand} ${sv.giftBand}`}>
           <Reveal>
             <p className="sf-eyebrow">— Presentkort</p>
-            <p className={`sf-italic ${styles.sfAboutItalic}`} style={{ maxWidth: '32rem', margin: '12px auto 0' }}>
+            <p className={`sf-italic ${styles.sfAboutItalic} ${sv.giftLede}`}>
               Ge bort en stund att se fram emot.
             </p>
-            <Link href="/presentkort" className={styles.sfMoreLink}>
+            <Link href="/presentkort" className={`${styles.sfMoreLink} ${sv.moreLink}`}>
               Till presentkorten <span aria-hidden="true">→</span>
             </Link>
           </Reveal>
@@ -277,17 +266,13 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
         <div className={`${styles.sfWide} ${styles.sfLocGrid}`}>
           <Reveal>
             <p className="sf-eyebrow">— Hitta hit</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
+            <h2 className={`sf-h2 ${sv.secTitle}`}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                {location.address}
-              </p>
+              <p className={`sf-body ${sv.locBody}`}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                Adress visas snart.
-              </p>
+              <p className={`sf-body ${sv.locBody}`}>Adress visas snart.</p>
             )}
             {location?.hours ? (
               <div className={styles.sfHours}>
@@ -326,11 +311,9 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
 
       <section className={styles.sfClosing}>
         <Reveal>
-          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto' }}>
-            Redo för en ny stil?
-          </h2>
+          <h2 className={`sf-h1 ${sv.closingTitle}`}>Redo för en ny stil?</h2>
           <p className={styles.sfClosingLead}>Boka din tid på under en minut.</p>
-          <div style={{ marginTop: 30 }}>
+          <div className={sv.closingActions}>
             <BookCta className={styles.sfClosingCta} />
           </div>
         </Reveal>

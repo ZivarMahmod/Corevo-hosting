@@ -7,6 +7,7 @@ import { formatPrice, serviceDesc, serviceNum } from '../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
+import fl from './flora.module.css'
 
 /**
  * FLORA — bohemisk blomsterbutik (florist-branschens tema; modulärt, aldrig låst).
@@ -15,6 +16,12 @@ import styles from '../storefront.module.css'
  * verksamhets-ben (Beställ/Bröllop & avsked/Kurser), numrerade prisrader utan
  * duration, valv-porträtt i om-sektionen, galleri, plats och closing. Webshop/
  * blogg/presentkort vävs in i layouten via `modules`-propen (S10).
+ *
+ * goal-60: all inline-styling (32 st) flyttad till flora.module.css — inline kan inte
+ * bära :hover/:focus/:active, så varje inline-stylad yta var dömd till plattformens
+ * neutrala form. Kvar inline: BARA backgroundImage (bild-URL = dynamisk data).
+ * Mallens knapp-/fält-/etikett-varsen bor i tokens.css under [data-theme="flora"], så
+ * de även når nav, sidfot och modulernas EGNA sidor (som inte laddar den här modulen).
  */
 
 /** Stiliserad blomstjälk — ornamentet som skiljer sektionerna åt. */
@@ -66,14 +73,13 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
         <div className={styles.flHeroInner}>
           <span className={styles.sfPillEyebrow}>{content.heroEyebrow}</span>
           <h1 className={styles.flHeroTitle}>{content.heroTitle}</h1>
-          <p className="sf-lede" style={{ maxWidth: '30rem', margin: '22px auto 0' }}>
-            {content.heroLede}
-          </p>
-          <div style={{ marginTop: 26, display: 'flex', justifyContent: 'center', gap: 14 }}>
+          <p className={`sf-lede ${fl.heroLede}`}>{content.heroLede}</p>
+          <div className={fl.heroCtaRow}>
             <BookCta className={styles.heroCta} />
           </div>
         </div>
         <div className={styles.flArches}>
+          {/* backgroundImage = enda kvarvarande inline: bild-URL:en är dynamisk data. */}
           <Reveal className={styles.flArch} style={{ backgroundImage: `url(${arch2})` }}>
             <span />
           </Reveal>
@@ -89,12 +95,15 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       <Ornament />
 
       {/* VERKSAMHETS-BEN — det floristen faktiskt gör, tre vägar in */}
-      <section style={{ paddingBottom: 'clamp(40px, 6vw, 80px)' }}>
+      <section className={fl.section}>
         <div className={styles.flPillars}>
           {shopReachable ? (
             <Reveal>
-              <Link href="/shop" className={styles.flPillar}>
-                <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[0] ?? arch1})` }} />
+              <Link href="/shop" className={`${styles.flPillar} ${fl.pillar}`}>
+                <div
+                  className={`${styles.flPillarImg} ${fl.pillarImg}`}
+                  style={{ backgroundImage: `url(${content.galleryImages[0] ?? arch1})` }}
+                />
                 <h3 className={styles.flPillarName}>{content.pillar1Title ?? 'Beställ blommor'}</h3>
                 <p className={styles.flPillarText}>{content.pillar1Body ?? 'Buketter i säsong — floristen väljer det finaste. Hämta i butik eller skicka bud.'}</p>
                 <span className={styles.flPillarLink}>{content.pillar1Link ?? 'Till butiken'}</span>
@@ -103,8 +112,11 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
           ) : null}
           {offertReachable ? (
             <Reveal delay={100}>
-              <a href="/offert" className={styles.flPillar}>
-                <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[1] ?? arch2})` }} />
+              <a href="/offert" className={`${styles.flPillar} ${fl.pillar}`}>
+                <div
+                  className={`${styles.flPillarImg} ${fl.pillarImg}`}
+                  style={{ backgroundImage: `url(${content.galleryImages[1] ?? arch2})` }}
+                />
                 <h3 className={styles.flPillarName}>{content.pillar2Title ?? 'Bröllop & avsked'}</h3>
                 <p className={styles.flPillarText}>{content.pillar2Body ?? 'Handbundna brudbuketter, corsage och binderier — eller ett personligt, vackert farväl.'}</p>
                 <span className={styles.flPillarLink}>{content.pillar2Link ?? 'Begär offert'}</span>
@@ -112,8 +124,11 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
             </Reveal>
           ) : null}
           <Reveal delay={200}>
-            <Link href="/kurser" className={styles.flPillar}>
-              <div className={styles.flPillarImg} style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }} />
+            <Link href="/kurser" className={`${styles.flPillar} ${fl.pillar}`}>
+              <div
+                className={`${styles.flPillarImg} ${fl.pillarImg}`}
+                style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }}
+              />
               <h3 className={styles.flPillarName}>{content.pillar3Title ?? 'Kurser & kvällar'}</h3>
               <p className={styles.flPillarText}>{content.pillar3Body ?? 'Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.'}</p>
               <span className={styles.flPillarLink}>{content.pillar3Link ?? 'Boka kurs'}</span>
@@ -125,17 +140,17 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       {/* UR BUTIKEN — webshop-modulen invävd i flora-formspråket (valv-kort).
           Bara ett smakprov; hela sortimentet bor på /shop. */}
       {shopTeasers.length > 0 ? (
-        <section style={{ paddingBottom: 'clamp(40px, 6vw, 80px)' }}>
+        <section className={fl.section}>
           <Reveal className={styles.flSecHead}>
             <p className="sf-eyebrow">{content.shopEyebrow ?? '— Ur butiken'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 10, fontStyle: 'italic' }}>{content.shopTitle ?? 'Beställ något vackert'}</h2>
+            <h2 className={`sf-h2 ${fl.secTitle}`}>{content.shopTitle ?? 'Beställ något vackert'}</h2>
           </Reveal>
           <div className={styles.flCardGrid}>
             {shopTeasers.map((p, i) => (
               <Reveal key={p.id} delay={i * 90}>
-                <Link href={`/shop/${p.id}`} className={styles.flCard}>
+                <Link href={`/shop/${p.id}`} className={`${styles.flCard} ${fl.card}`}>
                   <div
-                    className={styles.flCardImg}
+                    className={`${styles.flCardImg} ${fl.cardImg}`}
                     style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                   />
                   <h3 className={styles.flCardName}>{p.name}</h3>
@@ -145,17 +160,17 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
             ))}
           </div>
           <Reveal className={styles.flSecHead}>
-            <Link href="/shop" className={styles.flBandCta}>{content.shopCta ?? 'Visa hela butiken'}</Link>
+            <Link href="/shop" className={`${styles.flBandCta} ${fl.bandCta}`}>
+              {content.shopCta ?? 'Visa hela butiken'}
+            </Link>
           </Reveal>
         </section>
       ) : null}
 
       {/* CITAT — andhämtning i accent-ytan */}
-      <section style={{ padding: 'clamp(48px, 7vw, 84px) 24px', textAlign: 'center', background: 'var(--color-accent-soft)' }}>
+      <section className={fl.quoteBand}>
         <Reveal>
-          <p className="sf-italic" style={{ fontSize: 'clamp(24px, 3vw, 38px)', maxWidth: '38rem', margin: '0 auto', color: 'var(--color-primary)', lineHeight: 1.3 }}>
-            ”{content.italic}”
-          </p>
+          <p className={`sf-italic ${fl.quote}`}>”{content.italic}”</p>
         </Reveal>
       </section>
 
@@ -166,11 +181,9 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
         <>
           <section className={styles.sfServices}>
             <div className={styles.sfNarrow}>
-              <Reveal style={{ textAlign: 'center' }}>
+              <Reveal className={fl.center}>
                 <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-                <h2 className="sf-h1" style={{ marginTop: 12 }}>
-                  {content.servicesTitle}
-                </h2>
+                <h2 className={`sf-h1 ${fl.srvTitle}`}>{content.servicesTitle}</h2>
               </Reveal>
               <div className={styles.sfRowList}>
                 {rows.map((s, i) => (
@@ -191,7 +204,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
                 ))}
               </div>
               {hasMore ? (
-                <Reveal style={{ textAlign: 'center' }}>
+                <Reveal className={fl.center}>
                   <a href="/tjanster" className={styles.sfMoreLink}>
                     Se allt vi gör <span aria-hidden="true">→</span>
                   </a>
@@ -205,17 +218,15 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       ) : null}
 
       {/* OM — valv-porträtt + berättelsen */}
-      <section style={{ paddingBottom: 'clamp(48px, 7vw, 90px)' }}>
+      <section className={fl.section}>
         <div className={`${styles.sfWide} ${styles.sfAboutGrid}`}>
           <Reveal>
             <div className={styles.flPortrait} style={{ backgroundImage: `url(${content.aboutImage})` }} />
           </Reveal>
           <Reveal delay={120}>
             <p className="sf-eyebrow">— Om {tenant.name}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12, fontStyle: 'italic' }}>{content.aboutTitle}</h2>
-            <p className="sf-body" style={{ fontSize: 17, marginTop: 16 }}>
-              {content.aboutCopyHome}
-            </p>
+            <h2 className={`sf-h2 ${fl.secTitle}`}>{content.aboutTitle}</h2>
+            <p className={`sf-body ${fl.aboutBody}`}>{content.aboutCopyHome}</p>
             <ul className={styles.sfStatTrio}>
               {content.stats.map(([n, l]) => (
                 <li key={l}>
@@ -232,17 +243,17 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       {bloggTeasers.length > 0 ? (
         <>
           <Ornament />
-          <section style={{ paddingBottom: 'clamp(40px, 6vw, 80px)' }}>
+          <section className={fl.section}>
             <Reveal className={styles.flSecHead}>
               <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
-              <h2 className="sf-h2" style={{ marginTop: 10, fontStyle: 'italic' }}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
+              <h2 className={`sf-h2 ${fl.secTitle}`}>{content.blogTitle ?? 'Säsong, tips & inspiration'}</h2>
             </Reveal>
             <div className={styles.flCardGrid}>
               {bloggTeasers.map((p, i) => (
                 <Reveal key={p.id} delay={i * 90}>
-                  <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.flCard}>
+                  <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={`${styles.flCard} ${fl.card}`}>
                     <div
-                      className={styles.flCardImg}
+                      className={`${styles.flCardImg} ${fl.cardImg}`}
                       style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
                     />
                     <h3 className={styles.flCardName}>{p.title}</h3>
@@ -252,7 +263,9 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
               ))}
             </div>
             <Reveal className={styles.flSecHead}>
-              <Link href="/blogg" className={styles.flBandCta}>{content.blogCta ?? 'Läs hela bloggen'}</Link>
+              <Link href="/blogg" className={`${styles.flBandCta} ${fl.bandCta}`}>
+                {content.blogCta ?? 'Läs hela bloggen'}
+              </Link>
             </Reveal>
           </section>
         </>
@@ -260,13 +273,15 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
 
       {/* PRESENTKORT — en rad i temats ton, inte en hel stapel-sektion */}
       {presentkortLive ? (
-        <section style={{ padding: 'clamp(20px, 3vw, 36px) 24px', textAlign: 'center', background: 'var(--color-accent-soft)' }}>
-          <Reveal style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'center', gap: '8px 16px' }}>
-            <p className="sf-eyebrow" style={{ margin: 0 }}>{content.giftEyebrow ?? '— Presentkort'}</p>
-            <p className="sf-italic" style={{ fontSize: 'clamp(17px, 1.8vw, 20px)', margin: 0, color: 'var(--color-primary)' }}>
+        <section className={fl.giftBand}>
+          <Reveal className={fl.giftInner}>
+            <p className={`sf-eyebrow ${fl.giftEyebrow}`}>{content.giftEyebrow ?? '— Presentkort'}</p>
+            <p className={`sf-italic ${fl.giftLede}`}>
               {content.giftLede ?? 'Ge bort en blomstrande stund.'}
             </p>
-            <a href="/presentkort" className={styles.flBandCta} style={{ marginTop: 0 }}>{content.giftCta ?? 'Till presentkorten'}</a>
+            <a href="/presentkort" className={`${styles.flBandCta} ${fl.bandCta} ${fl.giftCta}`}>
+              {content.giftCta ?? 'Till presentkorten'}
+            </a>
           </Reveal>
         </section>
       ) : null}
@@ -288,17 +303,13 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
         <div className={`${styles.sfWide} ${styles.sfLocGrid}`}>
           <Reveal>
             <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta till butiken'}</p>
-            <h2 className="sf-h2" style={{ marginTop: 12 }}>
+            <h2 className={`sf-h2 ${fl.locTitle}`}>
               {location?.address ? location.address.split(',')[0] : tenant.name}
             </h2>
             {location?.address ? (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                {location.address}
-              </p>
+              <p className={`sf-body ${fl.locBody}`}>{location.address}</p>
             ) : (
-              <p className="sf-body" style={{ fontSize: 16, marginTop: 6 }}>
-                Adress visas snart.
-              </p>
+              <p className={`sf-body ${fl.locBody}`}>Adress visas snart.</p>
             )}
             {location?.hours ? (
               <div className={styles.sfHours}>
@@ -332,11 +343,11 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
 
       <section className={styles.sfClosing}>
         <Reveal>
-          <h2 className="sf-h1" style={{ color: '#fff', maxWidth: '40rem', margin: '0 auto', fontStyle: 'italic' }}>
+          <h2 className={`sf-h1 ${fl.closingTitle}`}>
             {content.closingTitle ?? 'Blommor för din dag?'}
           </h2>
           <p className={styles.sfClosingLead}>{content.closingLede ?? 'Beställ, boka en kurs eller hör av dig — vi hjälper dig gärna.'}</p>
-          <div style={{ marginTop: 30 }}>
+          <div className={fl.closingActions}>
             <BookCta className={styles.sfClosingCta} />
           </div>
         </Reveal>

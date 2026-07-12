@@ -1,0 +1,154 @@
+/* ═══════════ LEANDER — elegant, centrerad, romantisk (goal-60) ═══════════
+   VIRUSET: allt nedan låg i inline `style={{}}` i LeanderLayout.tsx. En inline-yta
+   kan inte bära :hover, :focus-visible eller :active — blogg-teaserns länk var en
+   ren block-länk med en hairline under sig och INGEN respons alls under pekaren,
+   och ingen mall kunde nå in i den. Det är strukturellt, inte slarv.
+
+   VEKTOR-REGELN: modulen äger FUNKTIONEN, mallen äger FORMEN. Leanders röst-tokens
+   (knapp-varsen, fält-varsen, chip/fokus/danger) bor INTE här utan i
+   packages/ui/tokens.css under [data-world="storefront"][data-theme="leander"].
+   Skälet är hårt: Leander äger — till skillnad från florist-paketen (calytrix) —
+   varken nav, sidfot eller undersidor. Den ENDA rot som omsluter nav + main + footer
+   + undersidor + modul-rötter är .tenant-root[data-theme="leander"] i
+   (public)/layout.tsx. En CSS-modul som bara LeanderLayout importerar laddas bara
+   på "/" — tokens satta här hade tystnat på /shop, /kontakt, /blogg. Se rapporten.
+
+   RÖSTEN: centrerad, luftig, lavendel. Rundade former (pill), generös spärr,
+   långsam och mjuk rörelse (240ms) — aldrig ett ryck. */
+
+/* ⚠️ SPECIFICITET — varför klasserna nedan är DUBBLADE (.x.x).
+   Inline vann alltid; en vanlig klass gör det inte. Varje klass här skriver om en
+   deklaration som redan finns i en DELAD klass med samma vikt (0,1,0) — t.ex.
+   .heroLead sätter `max-width: 38rem` och .heroEyebrow sätter `letter-spacing: 0.2em`.
+   Vid lika vikt avgör KÄLLORDNINGEN mellan två CSS-filer, och ordningen mellan
+   storefront.module.css och den här modulen är inget vi styr. Dubblad klass = (0,2,0)
+   och vinner deterministiskt. Där konkurrenten i stället är en global roll
+   ([data-world="storefront"] .sf-body = (0,2,0)) krävs (0,3,0) — se .postExcerpt. */
+
+/* ---------- hero ---------- */
+
+/* Leanders eyebrow spärras vidare än plattformens 0.2em — en romantisk mall andas
+   i mikrotexten. Slår .heroEyebrow (0.2em). */
+.heroEyebrowWide.heroEyebrowWide {
+  letter-spacing: 0.28em;
+}
+
+/* pre-line: rubriken bär ägarens EGNA radbrytningar (content.heroTitle är flerradig). */
+.heroTitleCentered.heroTitleCentered {
+  white-space: pre-line;
+  max-width: 52rem;
+}
+
+/* Slår .heroLead (max-width: 38rem) — den centrerade heron håller en smalare spalt. */
+.heroLeadNarrow.heroLeadNarrow {
+  max-width: 34rem;
+}
+
+/* ---------- sektionshuvuden (delas av prislista, butik, blogg) ---------- */
+
+.centered {
+  text-align: center;
+}
+
+.secTitle {
+  margin: 12px 0 44px;
+}
+
+/* Blogg-rubriken står närmare sin lista än prislistan gör (rader utan pris behöver
+   mindre luft under rubriken för att läsas som EN grupp). */
+.secTitleTight {
+  margin: 12px 0 32px;
+}
+
+.emptyCentered {
+  text-align: center;
+}
+
+/* Butiken följer DIREKT på prislistan — två sektioners toppadding i rad hade blivit
+   ett hål. Bandets egen bottenpadding bär avståndet. Slår .sfPriceBand:s padding. */
+.bandFlush.bandFlush {
+  padding-top: 0;
+}
+
+/* ---------- blogg-teaser: raderna som INTE kunde hovras ---------- */
+
+.postList {
+  max-width: 38rem;
+  margin: 0 auto;
+}
+
+/* Var: `style={{ display:'block', padding:'18px 0', borderBottom:'1px solid …' }}`.
+   En klickyta utan hover, utan fokusring, utan aktivt läge — och 36px hög på en rad
+   utan utdrag (under 44px-golvet). Nu: riktig yta med alla fyra lägen.
+   Rörelsen är Leanders: ingen transform, bara färg + kant. En centrerad, återhållsam
+   mall ska inte hoppa till under fingret — den ska LYSA UPP. */
+.postLink {
+  display: block;
+  min-height: 44px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-line);
+  text-decoration: none;
+  transition:
+    border-color 240ms var(--ease-out),
+    color 240ms var(--ease-out);
+}
+
+.postLink:hover,
+.postLink:focus-visible {
+  border-bottom-color: var(--color-primary);
+}
+
+/* Rubriken inuti länken ärver .sfPriceName, som redan har en färgövergång på
+   :hover — men BARA via .sfPriceRow. Här är föräldern .postLink, så färgskiftet
+   måste deklareras om, annars var titeln död vid hovring. */
+.postTitle {
+  display: block;
+}
+.postLink:hover .postTitle,
+.postLink:focus-visible .postTitle {
+  color: var(--color-primary);
+}
+
+.postLink:focus-visible {
+  outline: 2px solid var(--color-primary-d); /* 7.62:1 mot --color-bg */
+  outline-offset: 4px;
+}
+
+.postLink:active {
+  border-bottom-color: var(--color-primary-d);
+}
+
+/* Utdraget: 14px, luft 6px under titeln.
+   TRIPPLAD (0,3,0): konkurrenten är den GLOBALA rollen
+   [data-world="storefront"] .sf-body, som är (0,2,0) och sätter font-size: 16px.
+   En dubblad klass hade bara TAJAT med den och åter lämnat utfallet åt källordningen. */
+.postExcerpt.postExcerpt.postExcerpt {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+/* ---------- presentkort — smalt band, inte en hel sektion ---------- */
+
+/* Slår .sfQuoteBand:s padding. */
+.giftBand.giftBand {
+  padding: clamp(40px, 6vw, 64px) 24px;
+}
+
+/* Slår .sfQuote:s font-size — presentkortsraden är en NOTIS, inte ett citat, och
+   ska inte väga lika mycket som mallens stora kursiverade uttalande. */
+.giftQuote.giftQuote {
+  margin-top: 12px;
+  font-size: clamp(20px, 2.4vw, 28px);
+}
+
+/* Rörelsen mallen FAKTISKT har (grep `transform:`): .postLink har ingen transform —
+   den animerar bara kant och färg. Reveal-wrappern (translateY) nollas redan i
+   storefront.module.css egen reduced-motion-regel. Kvar att täcka här är alltså
+   övergångarna, så att en användare som bett om stillhet får ett OMEDELBART
+   färgskifte i stället för ett 240ms-svep. */
+@media (prefers-reduced-motion: reduce) {
+  .postLink {
+    transition: none;
+  }
+}

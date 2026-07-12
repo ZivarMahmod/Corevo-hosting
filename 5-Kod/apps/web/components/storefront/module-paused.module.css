@@ -1,0 +1,32 @@
+/* goal-60 — PAUSAD-BANDET (ModulePausedBanner).
+ *
+ * Var: 1 inline `style={{}}` högst upp på VARJE sida i VARJE mall när en modul står i
+ * 'paused'. Ett band som ingen mall kan nå är ett band som alltid skär mot sin sida.
+ *
+ * FUNKTIONEN OFÖRÄNDRAD: villkoret ligger kvar i anroparen — 'draft'/'off' renderar
+ * ingenting publikt och når aldrig hit; bara 'paused' gör det.
+ *
+ * ÅTERANVÄNDA tokens: --sf-notice-bg / --sf-notice-border / --sf-notice-ink
+ *   (samma trio som shop-section.module.css). Ett pausat läge ser LIKADANT ut var det
+ *   än dyker upp — det är hela poängen med att de heter samma sak.
+ * NYA tokens: inga.
+ *
+ * KONTRAST: ink = full --color-fg på 16%-accent-tint över bg = 12.6:1 (räknad).
+ * Aldrig dämpad — ett "stängt"-besked som är svårt att läsa är värre än inget besked.
+ * Färg är inte ensam bärare (WCAG 1.4.1): texten SÄGER att det är stängt.
+ */
+
+.banner {
+  width: 100%;
+  text-align: center;
+  padding: 11px 16px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.45;
+  color: var(--sf-notice-ink, var(--color-fg, #232520));
+  background: var(--sf-notice-bg, color-mix(in srgb, var(--color-accent, #c8a24a) 16%, transparent));
+  border-bottom: 1px solid
+    var(--sf-notice-border, color-mix(in srgb, var(--color-accent, #c8a24a) 32%, transparent));
+}

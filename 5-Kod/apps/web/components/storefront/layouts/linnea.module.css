@@ -1,0 +1,95 @@
+/* ═══════════ LINNEA — hemmets egna klasser (goal-60: viruset borta) ═══════════
+ *
+ * VIRUSET: 19 inline `style={{ }}`. Inline kan inte bära :hover, :focus-visible eller
+ * :active, och ingen mall kan nå in i den — ytan faller alltid tillbaka på plattformens
+ * neutrala default (grå kant, 4px radie, platt knapp). Formen bor nu i CSS.
+ *
+ * VEKTOR-REGELN: modulen äger funktionen, mallen äger formen. Linneas knapp-varsen
+ * (och fält-, etikett-, chip-varsen) bor i packages/ui/tokens.css under
+ * [data-world="storefront"][data-theme="linnea"] — INTE här. Linnea har ingen egen chrome
+ * (nav, sidfot, undersidor är plattformens delade komponenter), så en modul som bara
+ * laddas av hemmet hade lämnat nav, footer, /om, /kontakt, /shop och /offert på
+ * plattformens neutrala form. Tema-roten bär data-world+data-theme och omsluter HELA
+ * skalet → varsen når varenda yta mallen har.
+ *
+ * Kvar inline i LinneaLayout.tsx: BARA backgroundImage (bild-URL = dynamisk data).
+ */
+
+.heroTitle {
+  white-space: pre-line;
+  color: var(--color-fg); /* #2E2820 på sanden #F4EDE1 = 12.53:1 (räknat) */
+}
+.heroLede {
+  max-width: 28rem;
+  margin-top: 20px;
+}
+
+.center {
+  text-align: center;
+}
+.secTitle {
+  margin-top: 10px;
+}
+.cardDesc {
+  font-size: 14px;
+  margin-top: 6px;
+}
+.emptyNote {
+  text-align: center;
+}
+/* Butik/blogg följer direkt på behandlingsbandet — ingen dubbel toppluft. */
+.sectionTight {
+  padding-top: 0;
+}
+
+/* ---------- presentkort-bandet ---------- */
+.giftBand {
+  padding: clamp(3rem, 6vw, 4.5rem) 1.5rem;
+  text-align: center;
+  background: var(--color-accent-soft);
+}
+.giftActions {
+  margin-top: 22px;
+}
+
+/* ═══════════ GOLVEN ═══════════ */
+
+/* Kortfotot hade en gissad px-höjd (10rem) → rutnätet hoppade när bilden laddade och
+   motivet beskars olika på olika skärmar. Ett förhållande i stället. Dubblad klass
+   (0,2,0) så den delade filens ordning aldrig kan slå ut det. */
+.cardPhoto.cardPhoto {
+  aspect-ratio: 4 / 3;
+  height: auto;
+}
+
+/* .sfMoreLink (delad) var en textlänk utan tryckyta och utan fokusring. */
+.moreLink.moreLink {
+  min-height: 44px;
+  align-items: center;
+}
+.moreLink.moreLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-primary-d));
+  outline-offset: 4px;
+}
+.moreLink.moreLink:active {
+  opacity: 0.6;
+}
+
+/* Kortet lyftes vid hover men SJÖNK aldrig vid tryck — ingen kvittens under fingret.
+   (0,3,0) för att slå den delade `.sfCard:hover` (0,2,0) utan att röra den filen.) */
+.card.card.card:active {
+  transform: translateY(-1px);
+}
+
+/* prefers-reduced-motion: mallens FAKTISKA rörelse är .sfCard:hover translateY(-4px)
+   (delad fil). `transition: none` ensamt hade bara gjort lyftet ögonblickligt —
+   transformen måste nollas. Skuggan får vara kvar: den rör sig inte. */
+@media (prefers-reduced-motion: reduce) {
+  .card.card.card {
+    transition: none;
+  }
+  .card.card.card:hover,
+  .card.card.card:active {
+    transform: none;
+  }
+}

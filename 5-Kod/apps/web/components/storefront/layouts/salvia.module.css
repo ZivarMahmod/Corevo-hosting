@@ -1,0 +1,132 @@
+/* ═══════════ SALVIA — hemmets egna klasser (goal-60: viruset borta) ═══════════
+ *
+ * VIRUSET: 28 inline `style={{ }}` på hemmets ytor. Inline kan inte bära :hover,
+ * :focus-visible, :active eller :invalid, och ingen mall kan nå in i den — ytan faller
+ * alltid tillbaka på plattformens neutrala default. Formen bor nu här, där tillstånd får
+ * plats.
+ *
+ * VEKTOR-REGELN: modulen äger funktionen, mallen äger formen. Salvias knapp-varsen
+ * (och fält-, etikett-, chip-varsen) bor i packages/ui/tokens.css under
+ * [data-world="storefront"][data-theme="salvia"] — INTE här. Salvia har ingen egen chrome
+ * (nav, sidfot och undersidor är plattformens delade komponenter), så en modul som bara
+ * laddas av hemmet hade lämnat nav, footer, /om, /kontakt, /offert och /shop på
+ * plattformens grå kant och 4px-radie. Tema-roten bär data-world+data-theme och omsluter
+ * HELA skalet → varsen når varenda yta mallen har.
+ *
+ * Kvar inline i SalviaLayout.tsx: BARA backgroundImage (bild-URL = dynamisk data).
+ */
+
+/* Hero-rubriken bryter på riktiga radbrytningar i innehållet (pre-line). */
+.heroTitle {
+  white-space: pre-line;
+}
+
+/* ---------- sektionsrubriker ---------- */
+.secTitle {
+  margin-top: 12px;
+}
+.srvTitle {
+  margin-top: 12px;
+  max-width: 38rem;
+}
+.center {
+  text-align: center;
+}
+.emptyNote {
+  margin-top: 32px;
+}
+
+/* ---------- 3-up-korten (butik, team, blogg) ---------- */
+/* Länken fyller hela kortet: klickytan är kortet, inte bara rubriken. */
+.cardLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.cardLink:hover {
+  transform: translateY(-4px);
+}
+.cardLink:active {
+  transform: translateY(-1px);
+}
+.cardLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg));
+  outline-offset: 6px;
+  border-radius: var(--sf-radius, 10px);
+}
+.cardMeta {
+  font-size: 14px;
+}
+/* Silhuett-fallbacken när en medarbetare saknar foto (aldrig en trasig url()). */
+.avatarFallback {
+  display: grid;
+  place-items: center;
+}
+
+/* ---------- om ---------- */
+.aboutBody {
+  font-size: 17px;
+}
+
+/* ---------- presentkort-bandet ---------- */
+.giftBand {
+  padding: clamp(40px, 6vw, 64px) 24px;
+  text-align: center;
+}
+.giftLede {
+  max-width: 32rem;
+  margin: 12px auto 0;
+}
+
+/* ---------- plats ---------- */
+.locBody {
+  font-size: 16px;
+  margin-top: 6px;
+}
+
+/* ---------- closing ---------- */
+.closingTitle {
+  max-width: 40rem;
+  margin: 0 auto;
+  color: #fff; /* på --color-primary (sage #5E7361) = 5.12:1 (räknat) */
+}
+.closingActions {
+  margin-top: 30px;
+}
+
+/* Blogg-sektionen följer direkt på galleriet — ingen dubbel toppluft. */
+.sectionTight {
+  padding-top: 0;
+}
+
+/* ═══════════ GOLVEN ═══════════
+   .sfMoreLink (delad) var en ren textlänk utan tryckyta och utan fokusring: en
+   tangentbordsanvändare såg inte var hon var, och på mobil var den svår att träffa.
+   Dubblad klass (0,2,0) så den delade filens ordning aldrig kan slå ut den. */
+.moreLink.moreLink {
+  min-height: 44px;
+  align-items: center;
+}
+.moreLink.moreLink:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg));
+  outline-offset: 4px;
+}
+.moreLink.moreLink:active {
+  opacity: 0.6;
+}
+
+/* prefers-reduced-motion: mallens FAKTISKA rörelse på hemmet är kortets translateY
+   (ovan) — `transition: none` ensamt hade bara gjort lyftet ögonblickligt, så
+   transformen nollas också. .sfRow rör sig inte (den byter bakgrund + padding). */
+@media (prefers-reduced-motion: reduce) {
+  .cardLink {
+    transition: none;
+  }
+  .cardLink:hover,
+  .cardLink:active {
+    transform: none;
+  }
+}

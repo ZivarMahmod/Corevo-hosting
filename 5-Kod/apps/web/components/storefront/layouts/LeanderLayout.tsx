@@ -7,6 +7,7 @@ import { formatPrice } from '../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
+import ld from './leander.module.css'
 
 /**
  * LEANDER — centered, symmetric, romantic (handoff Leander.jsx). Distinct shape:
@@ -16,6 +17,12 @@ import styles from '../storefront.module.css'
  *
  * The hero sits in normal flow BELOW a solid centered nav (no `.hero` sentinel,
  * so the nav stays solid), inside the reserved --nav-h.
+ *
+ * goal-60 — VIRUSET BOTAT: mallen bar 18 inline `style={{}}`. En inline-yta kan inte
+ * bära :hover/:focus/:active, så blogg-teaserns länk var en klickyta utan ett enda
+ * tillstånd. All styling bor nu i leander.module.css; Leanders röst-tokens (knapp,
+ * fält, chip, fokus, danger) i packages/ui/tokens.css under [data-theme="leander"] —
+ * den enda rot som når nav, sidfot, undersidor OCH modul-rötter.
  */
 export function LeanderLayout({ content, services, modules }: StorefrontLayoutProps) {
   // LEANDER ÄGER SINA MODULER (S10): butik/blogg/presentkort vävs in i temats
@@ -37,15 +44,9 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
           images={content.heroImages.map((src) => ({ src, alt: '' }))}
           align="center"
         >
-          <p className={styles.heroEyebrow} style={{ letterSpacing: '0.28em' }}>
-            {content.heroEyebrow}
-          </p>
-          <h1 className={styles.heroTitle} style={{ whiteSpace: 'pre-line', maxWidth: '52rem' }}>
-            {content.heroTitle}
-          </h1>
-          <p className={styles.heroLead} style={{ maxWidth: '34rem' }}>
-            {content.heroLede}
-          </p>
+          <p className={`${styles.heroEyebrow} ${ld.heroEyebrowWide}`}>{content.heroEyebrow}</p>
+          <h1 className={`${styles.heroTitle} ${ld.heroTitleCentered}`}>{content.heroTitle}</h1>
+          <p className={`${styles.heroLead} ${ld.heroLeadNarrow}`}>{content.heroLede}</p>
           <div className={styles.heroActions}>
             <BookCta className={styles.heroCta} />
           </div>
@@ -54,11 +55,9 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
 
       {/* centered 2-col dotted price list */}
       <section className={styles.sfPriceBand}>
-        <Reveal style={{ textAlign: 'center' }}>
+        <Reveal className={ld.centered}>
           <p className="sf-eyebrow">— Behandlingar</p>
-          <h2 className="sf-h1" style={{ margin: '12px 0 44px' }}>
-            Prislista
-          </h2>
+          <h2 className={`sf-h1 ${ld.secTitle}`}>Prislista</h2>
         </Reveal>
         {services.length > 0 ? (
           <div className={styles.sfPriceGrid}>
@@ -71,9 +70,7 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
             ))}
           </div>
         ) : (
-          <p className="sf-body" style={{ textAlign: 'center' }}>
-            Prislistan publiceras inom kort.
-          </p>
+          <p className={`sf-body ${ld.emptyCentered}`}>Prislistan publiceras inom kort.</p>
         )}
       </section>
 
@@ -81,12 +78,10 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
           punktade rader som prislistan (inga bilder — återhållsamheten ÄR temat).
           Bara ett smakprov; hela sortimentet bor på /shop. Tom modul → ingen sektion. */}
       {shopTeasers.length > 0 ? (
-        <section className={styles.sfPriceBand} style={{ paddingTop: 0 }}>
-          <Reveal style={{ textAlign: 'center' }}>
+        <section className={`${styles.sfPriceBand} ${ld.bandFlush}`}>
+          <Reveal className={ld.centered}>
             <p className="sf-eyebrow">— Ur butiken</p>
-            <h2 className="sf-h1" style={{ margin: '12px 0 44px' }}>
-              Att ta med hem
-            </h2>
+            <h2 className={`sf-h1 ${ld.secTitle}`}>Att ta med hem</h2>
           </Reveal>
           <div className={styles.sfPriceGrid}>
             {shopTeasers.map((p) => (
@@ -97,7 +92,7 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
               </Link>
             ))}
           </div>
-          <Reveal style={{ textAlign: 'center' }}>
+          <Reveal className={ld.centered}>
             <Link href="/shop" className={styles.sfMoreLink}>
               Visa hela butiken <span aria-hidden="true">→</span>
             </Link>
@@ -124,30 +119,25 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
           återhållsamma ton (inga kort, inga bilder). Tom modul → ingen sektion. */}
       {bloggTeasers.length > 0 ? (
         <section className={styles.sfPriceBand}>
-          <Reveal style={{ textAlign: 'center' }}>
+          <Reveal className={ld.centered}>
             <p className="sf-eyebrow">— Från bloggen</p>
-            <h2 className="sf-h1" style={{ margin: '12px 0 32px' }}>
-              Senaste inläggen
-            </h2>
+            <h2 className={`sf-h1 ${ld.secTitleTight}`}>Senaste inläggen</h2>
           </Reveal>
-          <div style={{ maxWidth: '38rem', margin: '0 auto' }}>
+          <div className={ld.postList}>
             {bloggTeasers.map((p) => (
               <Reveal key={p.id}>
-                <Link
-                  href={p.slug ? `/blogg/${p.slug}` : '/blogg'}
-                  style={{ display: 'block', padding: '18px 0', borderBottom: '1px solid var(--color-line)' }}
-                >
-                  <span className={styles.sfPriceName}>{p.title}</span>
+                {/* Var en inline-stylad block-länk utan ett enda tillstånd. .postLink
+                    bär nu hover, focus-visible, active och 44px klickyta. */}
+                <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={ld.postLink}>
+                  <span className={`${styles.sfPriceName} ${ld.postTitle}`}>{p.title}</span>
                   {p.excerpt ? (
-                    <span className="sf-body" style={{ display: 'block', fontSize: 14, marginTop: 6 }}>
-                      {p.excerpt}
-                    </span>
+                    <span className={`sf-body ${ld.postExcerpt}`}>{p.excerpt}</span>
                   ) : null}
                 </Link>
               </Reveal>
             ))}
           </div>
-          <Reveal style={{ textAlign: 'center' }}>
+          <Reveal className={ld.centered}>
             <Link href="/blogg" className={styles.sfMoreLink}>
               Läs hela bloggen <span aria-hidden="true">→</span>
             </Link>
@@ -157,10 +147,10 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
 
       {/* PRESENTKORT — smal band-rad i quote-bandets accent-soft-yta. */}
       {presentkortLive ? (
-        <section className={styles.sfQuoteBand} style={{ padding: 'clamp(40px, 6vw, 64px) 24px' }}>
+        <section className={`${styles.sfQuoteBand} ${ld.giftBand}`}>
           <Reveal>
             <p className="sf-eyebrow">— Presentkort</p>
-            <p className={`sf-italic ${styles.sfQuote}`} style={{ fontSize: 'clamp(20px, 2.4vw, 28px)', marginTop: 12 }}>
+            <p className={`sf-italic ${styles.sfQuote} ${ld.giftQuote}`}>
               Ge bort en stund av omtanke.
             </p>
             <Link href="/presentkort" className={styles.sfMoreLink}>

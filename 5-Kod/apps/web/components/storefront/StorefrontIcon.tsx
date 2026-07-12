@@ -1,9 +1,14 @@
 import type { CSSProperties, ReactElement } from 'react'
+import styles from './storefront-icon.module.css'
 
 /**
  * Tiny inline icon set for the storefront layouts (Lucide-derived, MIT).
  * Thin stroke, currentColor — so each icon takes the theme's text/accent colour.
  * Kept local to the storefront so we don't reach into the back-office portal Icon.
+ *
+ * goal-60: the static base (display/flex) moved to storefront-icon.module.css — it was
+ * the same for every icon in every template and had no business being inline. The
+ * `style` prop still exists and still wins (spread last), so no caller changes.
  */
 const PATHS: Record<string, ReactElement> = {
   scissors: (
@@ -52,7 +57,7 @@ export function StorefrontIcon({
 }) {
   return (
     <svg
-      className={className}
+      className={[styles.icon, className].filter(Boolean).join(' ')}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -61,7 +66,7 @@ export function StorefrontIcon({
       strokeWidth={stroke}
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{ display: 'block', flex: 'none', ...style }}
+      style={style}
       aria-hidden="true"
     >
       {PATHS[name] ?? null}

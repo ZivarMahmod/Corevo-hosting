@@ -5,6 +5,7 @@ import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../service
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
+import zg from './zigge.module.css'
 
 /**
  * ZIGGE — dark barber + frisör (handoff Zigge.jsx). Distinct shape:
@@ -14,6 +15,12 @@ import styles from '../storefront.module.css'
  *
  * No `.hero` sentinel: the nav stays solid; the split hero sits below --nav-h.
  * The dark surface comes entirely from the zigge theme tokens (near-black warm).
+ *
+ * goal-60 — VIRUSET BOTAT: mallen bar 10 inline `style={{}}`, varav sex var plåster
+ * (`borderTop: 'none'`, `marginTop: 0`) på delade klasser som inte var byggda för att
+ * stå sist i en sektion. All styling bor nu i zigge.module.css; Zigges röst-tokens
+ * (knapp, fält, chip, fokus, danger) i packages/ui/tokens.css under
+ * [data-theme="zigge"] — den enda rot som når nav, sidfot, undersidor OCH modul-rötter.
  */
 export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProps) {
   // ZIGGE ÄGER SINA MODULER (S10): butik/blogg/presentkort vävs in i temats
@@ -32,20 +39,17 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
       {/* split hero: color panel + photo */}
       <section className={styles.sfSplitHero}>
         <div className={styles.sfSplitPanel}>
-          <p className="sf-eyebrow" style={{ color: 'var(--color-primary)' }}>
-            {content.heroEyebrow}
-          </p>
-          <h1 className={styles.sfSplitTitle} style={{ whiteSpace: 'pre-line' }}>
-            {content.heroTitle}
-          </h1>
-          <p className="sf-lede" style={{ maxWidth: '26rem', marginTop: 22 }}>
-            {content.heroLede}
-          </p>
+          <p className={`sf-eyebrow ${zg.heroEyebrow}`}>{content.heroEyebrow}</p>
+          <h1 className={`${styles.sfSplitTitle} ${zg.heroTitle}`}>{content.heroTitle}</h1>
+          <p className={`sf-lede ${zg.heroLede}`}>{content.heroLede}</p>
           <div className={styles.sfSplitActions}>
             <BookCta className={styles.sfSquareCta} />
             <span className={styles.sfSplitNote}>eller drop in</span>
           </div>
         </div>
+        {/* Enda kvarvarande inline-stilen i mallen, och den är genuint dynamisk:
+            bild-URL:en kommer ur tenantens innehåll och kan inte bo i en statisk
+            CSS-fil. Formen (ratio, cover, mättnad) ägs av .sfSplitPhoto. */}
         <div
           className={styles.sfSplitPhoto}
           style={{ backgroundImage: `url(${content.heroImages[0] ?? ''})` }}
@@ -97,8 +101,8 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
               </span>
             </Link>
           ))}
-          <div className={styles.sfBandLabel} style={{ borderTop: 'none' }}>
-            <Link href="/shop" className={styles.sfMoreLink} style={{ marginTop: 0 }}>
+          <div className={`${styles.sfBandLabel} ${zg.bandFoot}`}>
+            <Link href="/shop" className={`${styles.sfMoreLink} ${zg.moreLink}`}>
               Visa hela butiken <span aria-hidden="true">→</span>
             </Link>
           </div>
@@ -119,7 +123,7 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
           Tom modul → ingen sektion. */}
       {bloggTeasers.length > 0 ? (
         <section>
-          <div className={styles.sfBandLabel} style={{ borderTop: 'none' }}>Bloggen</div>
+          <div className={`${styles.sfBandLabel} ${zg.bandLabelSeam}`}>Bloggen</div>
           {bloggTeasers.map((p, i) => (
             <Link key={p.id} href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.sfBand}>
               <span className={styles.sfBandNum} aria-hidden="true">
@@ -134,8 +138,8 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
               </span>
             </Link>
           ))}
-          <div className={styles.sfBandLabel} style={{ borderTop: 'none' }}>
-            <Link href="/blogg" className={styles.sfMoreLink} style={{ marginTop: 0 }}>
+          <div className={`${styles.sfBandLabel} ${zg.bandFoot}`}>
+            <Link href="/blogg" className={`${styles.sfMoreLink} ${zg.moreLink}`}>
               Läs hela bloggen <span aria-hidden="true">→</span>
             </Link>
           </div>
@@ -145,7 +149,7 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
       {/* PRESENTKORT — smal band-rad i temats grammatik: en enda sfBand-rad → /presentkort. */}
       {presentkortLive ? (
         <section>
-          <div className={styles.sfBandLabel} style={{ borderTop: 'none' }}>Presentkort</div>
+          <div className={`${styles.sfBandLabel} ${zg.bandLabelSeam}`}>Presentkort</div>
           <Link href="/presentkort" className={styles.sfBand}>
             <span className={styles.sfBandNum} aria-hidden="true">
               —

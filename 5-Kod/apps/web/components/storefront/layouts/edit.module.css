@@ -1,0 +1,114 @@
+/* ═══════════ EDIT — redaktionell, skarp, tidskrift (goal-60) ═══════════
+   VIRUSET: allt nedan låg i inline `style={{}}` i EditLayout.tsx. Värst var
+   `style={{ textDecoration: 'none' }}` på journalens rader: en <Link> som ÄR ett
+   klickbart kort men som fick sin enda styling av en inline-strykning — den kunde
+   varken bära :hover, :focus-visible eller :active, trots att grannklassen
+   .sfEditRow (som tjänsterna använder) har alla tre. Två rader som ser lika ut,
+   men bara den ena svarar. Det är exakt viruset.
+
+   VEKTOR-REGELN: modulen äger FUNKTIONEN, mallen äger FORMEN. Edits röst-tokens
+   (knapp-varsen, fält-varsen, chip/fokus/danger) bor i packages/ui/tokens.css under
+   [data-world="storefront"][data-theme="edit"] — Edit äger varken nav, sidfot eller
+   undersidor, så .tenant-root[data-theme="edit"] i (public)/layout.tsx är den ENDA
+   rot som når nav + main + footer + undersidor + modul-rötter. En modul som bara
+   EditLayout importerar laddas bara på "/". Se rapporten.
+
+   RÖSTEN: kol på elfenben, hårfina linjer, nästan noll radie (2px), tight spärr.
+   Ingen rundning, ingen skugga, ingen bloom — en tidskriftssida, inte en salong. */
+
+/* ---------- hero: bild + överlappande kort ---------- */
+
+/* ⚠️ SPECIFICITET — varför klasserna här är DUBBLADE (.x.x) eller TRIPPLADE (.x.x.x).
+   Inline vann alltid; en vanlig klass gör det inte. Skriver klassen om en deklaration
+   i en DELAD modulklass (0,1,0) räcker (0,2,0) — vid lika vikt avgör annars
+   källordningen mellan två CSS-filer, och den styr vi inte. Är konkurrenten en GLOBAL
+   roll ([data-world="storefront"] .sf-body = (0,2,0)) krävs (0,3,0).
+
+   Hero-rubriken bor i ett OPAKT kort (.sfEditCard), inte på ett foto — därför bryts
+   den delade .heroTitle (VIT text + text-shadow, byggd för fotohjältar) här: kol-ink
+   på elfenben = 10.99:1. Utan dubblingen kunde .heroTitle:s `color: #fff` vinna och
+   rubriken bli VIT PÅ VITT KORT — osynlig. Skalan är också mindre: kortet är 35rem
+   brett, en 5.4rem-rubrik hade svämmat över. */
+.heroTitle.heroTitle {
+  white-space: pre-line; /* ägarens EGNA radbrytningar i content.heroTitle */
+  color: var(--color-fg);
+  font-size: clamp(34px, 4vw, 56px);
+  text-shadow: none;
+}
+
+.heroLede {
+  margin-top: 16px;
+}
+
+.heroActions {
+  margin-top: 26px;
+}
+
+/* ---------- sektioner ---------- */
+
+/* Modul-sektionerna (butik, journal, presentkort) andas mindre i foten än
+   tjänste-sektionen: de är smakprov, inte huvudnummer.
+   Dubblad: slår .sfEditServices padding-shorthand. */
+.sectionTight.sectionTight {
+  padding-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+
+/* Om-texten körs i brödtextens grad. TRIPPLAD (0,3,0): konkurrenten är den globala
+   rollen [data-world="storefront"] .sf-body (0,2,0), som redan sätter font-size: 16px.
+   Samma värde — så den här klassen är i praktiken en no-op, exakt som inline-stilen
+   den ersätter var. Den behålls därför att den gör AVSIKTEN läsbar: om Edit någon gång
+   vill bryta brödtextens grad i om-spalten är det HÄR det görs, inte i en inline-stil. */
+.aboutBody.aboutBody.aboutBody {
+  font-size: 16px;
+}
+
+/* ---------- journalens rader: länken som inte kunde hovras ----------
+   Var: `className={styles.sfEditRow} style={{ textDecoration: 'none' }}`.
+   .sfEditRow bär redan :hover (bakgrund) och :focus-visible (outline) — men på en
+   <Link> lade webbläsarens default-understrykning sig ovanpå, och inline-strykningen
+   var det enda mallen kunde säga. Nu bär raden Edits egna lägen OCH ärver den delade
+   klassens bakgrundsskifte, utan en enda inline-deklaration. */
+.rowLink {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Redaktionell respons: rubriken skiftar till primärfärgen. Ingen transform —
+   Edit är en trycksak, den lyfter inte. */
+.rowName {
+  transition: color 160ms var(--ease-out);
+}
+.rowLink:hover .rowName,
+.rowLink:focus-visible .rowName {
+  color: var(--color-primary);
+}
+
+.rowLink:active {
+  background: var(--color-line);
+}
+
+/* ---------- presentkort ---------- */
+
+/* Dubblad: slår .sfEditQuote:s `margin: 1rem 0 1.25rem`. Presentkortsraden följer
+   direkt på sin etikett och behöver ingen toppluft. */
+.quoteFlush.quoteFlush {
+  margin-top: 0;
+}
+
+.giftActions {
+  margin-top: 8px;
+}
+
+/* Rörelsen mallen FAKTISKT har (grep `transform:`): .sfEditRow och .sfEdTeaserCard
+   animerar `background` respektive `filter: grayscale()` — ingen av dem har en
+   transform. Mina egna tillägg ovan har inte heller någon. Reduced-motion har därför
+   ingen transform att nolla; det som ska stå still är gråskale-svepet på teaser-fotot
+   (400ms filter-övergång = tydlig rörelse i periferin, även om inget flyttar sig) och
+   radens bakgrundsskifte. Att skriva `transform: none` här hade varit teater mot en
+   transform som inte finns. */
+@media (prefers-reduced-motion: reduce) {
+  .rowLink,
+  .rowName {
+    transition: none;
+  }
+}

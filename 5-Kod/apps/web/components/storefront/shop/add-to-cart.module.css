@@ -70,6 +70,13 @@
   border-color: var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 22%, transparent));
 }
 
+/* Samma knapp, utan .wrap runt sig (ShopCta — den parkerade, inerta CTA:n som sitter
+ * ensam i ett produktkort). Anatomin är IDENTISK, så den återanvänder .buy i stället för
+ * att få en egen fil med en egen, snart divergerande, uppsättning tillstånd. */
+.buySolo {
+  margin-top: 12px;
+}
+
 /* Ingen loading-spinner: addLine skriver till klient-varukorgen synkront, så det
  * finns ingen väntan att visa. "Tillagd ✓" + flyouten ÄR kvittot. En spinner här
  * hade varit teater. */

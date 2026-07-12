@@ -1,0 +1,19 @@
+/* goal-60 — STOREFRONT-IKONEN.
+ *
+ * Var: 1 inline `style={{ display:'block', flex:'none', ...style }}`. Basen (display +
+ * flex) hörde aldrig hemma inline — den är statisk och gällde varje ikon i varje mall.
+ * Nu är den en klass; `style`-proppen finns kvar för det som VERKLIGEN är per-anrop
+ * (den spreadas efter, så en anropare kan fortfarande skriva över).
+ *
+ * Storleken sätts som attribut (width/height) — inte här — så en ikon aldrig kan
+ * hamna i fel skala för att en mall glömt en variabel.
+ *
+ * ÅTERANVÄNDA tokens: inga (ikonen ärver currentColor från sin knapp/länk, precis som
+ * förut — det är HELA dess tema-koppling och den fungerar).
+ * NYA tokens: inga.
+ */
+
+.icon {
+  display: block;
+  flex: none;
+}

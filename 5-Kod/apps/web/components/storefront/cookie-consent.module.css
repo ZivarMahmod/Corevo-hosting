@@ -1,0 +1,145 @@
+/* goal-60 — COOKIE-SAMTYCKET. Det FÖRSTA en besökare ser.
+ *
+ * Var: 5 inline `style={{}}` ovanpå mallens hero. Inline kan inte bära :hover/:active/
+ * :focus-visible, och en MALL kan aldrig nå in i den — så den grå plattan låg som ett
+ * plåster över första intrycket, i varje mall, i varje bransch. Det är viruset i sin
+ * mest smittsamma form: den här ytan ses av ALLA, före allt annat.
+ *
+ * Nu bär den mallens form: knapp-varsen (--sf-btn-…) och fält-radien. En rakskuren mall
+ * får en rakskuren banner, en mjuk mall en mjuk.
+ *
+ * FUNKTIONEN ÄR OFÖRÄNDRAD: "Endast nödvändiga" sätter fortfarande INGA analytics-cookies
+ * — den skriver bara valet till localStorage, precis som förut.
+ *
+ * INGET MÖRKT MÖNSTER (medvetet val, inte en slump):
+ *   Båda knapparna är LIKVÄRDIGA — samma `flex: 1 1 0`, samma min-höjd (48px, över
+ *   touch-golvet 44), samma padding, samma typsnitt, samma vikt, samma radie, samma
+ *   uppsättning tillstånd. Skillnaden är enbart fylld vs. rammad yta, vilket är
+ *   hierarki — inte hinder. Att avböja är exakt lika lätt som att acceptera, och båda
+ *   knapparna klarar kontrastgolvet. Ändra ALDRIG detta till "avböj som liten textlänk".
+ *
+ * ÅTERANVÄNDA tokens: knapp-varsen (--sf-btn-h/-pad/-fs/-weight/-ls/-transform/-ink/
+ *   -bg/-border/-radius/-bg-hover/-dur/-ease), --sf-field-radius, --sf-radius,
+ *   --sf-focus, --sf-panel-bg/-border, --color-surface/-fg/-fg-2/-line/-primary.
+ * NYA tokens: inga.
+ *
+ * KONTRAST (WCAG-relativ luminans, räknad):
+ *   brödtext --color-fg-2 (#5c5f55) på surface #fff .............. 6.5:1
+ *   fallback för brödtexten (72% fg-mix på bg) .................. 6.2:1
+ *   "Acceptera alla": vit ink på --color-primary (#5e7361) ....... 5.1:1
+ *   "Endast nödvändiga": --color-fg (#232520) på surface ......... 15.5:1
+ *   → avböj-knappen är alltså den TYDLIGASTE av de två, aldrig den svagaste.
+ */
+
+.banner {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  margin: 0 auto;
+  max-width: 560px;
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  font-family: var(--font-body, system-ui, sans-serif);
+  color: var(--color-fg, #232520);
+  background: var(--sf-panel-bg, var(--color-surface, #fff));
+  border: 1px solid
+    var(--sf-panel-border, var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 14%, transparent)));
+  border-radius: var(--sf-panel-radius, var(--sf-radius, 12px));
+  box-shadow: var(--sf-shadow-card, 0 24px 60px rgb(0 0 0 / 12%));
+  animation: sfConsentRise 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes sfConsentRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--color-fg-2, color-mix(in srgb, var(--color-fg, #232520) 72%, var(--color-bg, #fff)));
+}
+
+/* `1 1 0` (inte `1 1 auto`): båda knapparna får EXAKT samma bredd oavsett hur långa
+ * etiketterna är — "Endast nödvändiga" är ett längre ord än "Acceptera alla" och skulle
+ * annars bli den bredare, eller vid ombrytning den smalare. Lika yta = lika val. */
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  flex: 1 1 0;
+  min-width: 11rem;
+  min-height: var(--sf-btn-h, 48px);
+  padding: var(--sf-btn-pad, 0.7rem 1.1rem);
+  font-family: var(--font-ui, inherit);
+  font-size: var(--sf-btn-fs, 0.9rem);
+  font-weight: var(--sf-btn-weight, 600);
+  letter-spacing: var(--sf-btn-ls, 0.01em);
+  text-transform: var(--sf-btn-transform, none);
+  line-height: 1.2;
+  cursor: pointer;
+  border-radius: var(--sf-btn-radius, var(--sf-field-radius, var(--sf-radius, 12px)));
+  transition:
+    background-color var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    border-color var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    transform var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+
+.btn:active {
+  transform: scale(0.98);
+  transition-duration: 80ms;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-primary, #232520));
+  outline-offset: 3px;
+}
+
+/* Fylld yta. Ink och botten hör ihop som PAR — sätter en mall den ena sätter den andra,
+ * annars gäller default-paret (vitt på #5e7361 = 5.1:1). */
+.accept {
+  color: var(--sf-btn-ink, var(--color-primary-fg, var(--color-surface, #fff)));
+  background: var(--sf-btn-bg, var(--color-primary, #5e7361));
+  border: 1px solid var(--sf-btn-border, var(--color-primary, #5e7361));
+}
+
+.accept:hover {
+  background: var(--sf-btn-bg-hover, color-mix(in srgb, var(--sf-btn-bg, var(--color-primary, #5e7361)) 86%, var(--color-fg, #232520)));
+}
+
+/* Rammad yta — samma storlek, samma vikt, samma tillstånd. Ink är FULL --color-fg
+ * (15.5:1), aldrig dämpad: att avböja får aldrig se ut som en inaktiverad knapp. */
+.necessary {
+  color: var(--color-fg, #232520);
+  background: transparent;
+  border: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 22%, transparent));
+}
+
+.necessary:hover {
+  border-color: var(--color-primary, var(--color-fg, #232520));
+  background: color-mix(in srgb, var(--color-fg, #232520) 5%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner {
+    animation: none;
+  }
+
+  .btn {
+    transition: none;
+  }
+
+  .btn:active {
+    transform: none;
+  }
+}

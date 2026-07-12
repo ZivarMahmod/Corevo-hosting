@@ -14,8 +14,15 @@
 // onAdd hook is intentionally a no-op placeholder (logs in dev) so the storefront
 // renders a complete, honest shop surface without any money flow.
 
+// goal-60: formen bor nu i shop/add-to-cart.module.css — ANATOMIN ÄR DENSAMMA som den
+// riktiga köpknappens (full bredd, sex lägen), så den återanvänder .buy i stället för att
+// få en egen fil som snart divergerar. Var 1 inline style={{}} med `opacity: soldOut ?
+// .6 : 1` — vilket tog knapptexten under kontrastgolvet i exakt det läge där den behövde
+// vara läsbar. .buy:disabled löser slutsåld med MÄTTA färger i stället.
+
 import { useState } from 'react'
 import { shopCtaLabel, type ShopFulfilment } from '@/lib/storefront/shop/types'
+import styles from './shop/add-to-cart.module.css'
 
 export function ShopCta({
   fulfilment,
@@ -48,24 +55,7 @@ export function ShopCta({
       onClick={onClick}
       disabled={soldOut}
       aria-label={soldOut ? `${productName} — slutsåld` : `${label} — ${productName}`}
-      style={{
-        marginTop: 12,
-        width: '100%',
-        padding: '10px 16px',
-        fontFamily: 'var(--font-ui)',
-        fontSize: 13,
-        fontWeight: 600,
-        letterSpacing: '0.01em',
-        cursor: soldOut ? 'not-allowed' : 'pointer',
-        color: soldOut ? 'var(--color-fg, #232520)' : 'var(--color-bg, #fff)',
-        background: soldOut
-          ? 'color-mix(in srgb, var(--color-fg, #232520) 8%, transparent)'
-          : 'var(--color-accent, #C8A24A)',
-        border: '1px solid var(--color-accent, #C8A24A)',
-        borderRadius: 'var(--radius, 4px)',
-        opacity: soldOut ? 0.6 : 1,
-        transition: 'opacity 120ms ease',
-      }}
+      className={`${styles.buy} ${styles.buySolo}`}
     >
       {soldOut ? 'Slutsåld' : added ? 'Tillagd ✓' : label}
     </button>

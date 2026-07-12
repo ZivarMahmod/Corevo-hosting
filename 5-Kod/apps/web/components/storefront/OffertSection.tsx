@@ -26,7 +26,14 @@
 // payment. The form (now the OffertForm 'use client' island) inserts an
 // offert_requests row via the submitOffertRequest action; no money flow, no pay step.
 
+// goal-60: teaser-länken och pausad-lappen bar 3 inline style={{}} — de kunde inte ha
+// :hover/:focus-visible och ingen mall kunde nå in i dem. De ÅTERANVÄNDER nu
+// shop-section.module.css: "Begär offert →" har exakt samma anatomi som "Visa hela
+// butiken →" (.moreWrap/.more, 44px klickyta), och pausad-lappen samma som butikens
+// (.notice, --sf-notice-*). Samma sorts yta ska aldrig ha två uppsättningar regler.
+
 import { SectionHeader, SubpageHero } from './sections'
+import shop from './shop-section.module.css'
 import {
   offertPromise,
   OFFERT_MODE_LABELS,
@@ -68,21 +75,9 @@ export async function OffertSection({
             title="Större jobb? Få en offert"
             lead={offertPromise(config)}
           />
-          <p style={{ margin: '18px 0 0' }}>
-            <a
-              href="/offert"
-              style={{
-                fontFamily: 'var(--font-ui)',
-                fontSize: 14,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                color: 'var(--color-primary, #232520)',
-                textDecoration: 'none',
-                borderBottom: '1px solid var(--color-primary, #232520)',
-                paddingBottom: 2,
-              }}
-            >
-              Begär offert →
+          <p className={shop.moreWrap}>
+            <a href="/offert" className={shop.more}>
+              Begär offert <span aria-hidden="true">→</span>
             </a>
           </p>
         </div>
@@ -110,20 +105,7 @@ export async function OffertSection({
         ) : null}
 
         {paused ? (
-          <p
-            role="status"
-            style={{
-              marginTop: 8,
-              fontFamily: 'var(--font-ui)',
-              fontSize: 14,
-              fontWeight: 600,
-              color: 'var(--color-fg, #232520)',
-              background: 'color-mix(in srgb, var(--color-accent, #C8A24A) 14%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--color-accent, #C8A24A) 30%, transparent)',
-              borderRadius: 'var(--radius, 4px)',
-              padding: '10px 14px',
-            }}
-          >
+          <p role="status" className={shop.notice}>
             Vi tar tillfälligt inte emot nya offertförfrågningar. Hör av dig igen snart.
           </p>
         ) : null}
