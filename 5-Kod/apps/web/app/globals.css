@@ -62,6 +62,16 @@ h3 {
 }
 .btn-accent:hover { transform: translateY(-1px); box-shadow: var(--glow-gold); }
 
+/* goal-62 B2a — KNAPPTEXTEN SOM FÖRSVANN.
+   `.tenant-root a { color: inherit }` (raden ovan) har specificitet 0-1-1 och slår
+   därför ut `.btn-accent`/`.btn-primary` (0-1-0) för varje CTA som är en LÄNK: knappen
+   fick sidans brödtextfärg i stället för sin egen ink. Mörk ink på mörk fyllning =
+   1.2–1.7:1, mätt i 12 mallar ("Beställ blommor", "Boka tid", "Lägg i kundvagn").
+   Knappar (<button>) drabbades aldrig — därför såg det slumpmässigt ut.
+   Samma specificitet tillbaka, inget !important: knappen äger sin egen text igen. */
+.tenant-root a.btn-accent { color: var(--color-accent-fg); }
+.tenant-root a.btn-primary { color: #fff; }
+
 /* ---- nav (shared) ---- */
 .nav { border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent); }
 .nav-inner { max-width: 1080px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1.5rem; }

@@ -5,6 +5,7 @@ import type { Service, TenantLocation, TenantContact } from '@/lib/tenant-data'
 import type { ShopData } from '@/lib/storefront/shop/types'
 import type { BloggPost } from '@/lib/storefront/blogg/types'
 import type { TenantBranding } from '@corevo/ui'
+import { accentForeground } from '@corevo/ui'
 
 /**
  * FLORIST-SVITEN — 13 mall-syskon (goal-58). Varje mall bor i EN egen fil-trio
@@ -217,5 +218,11 @@ export function floristThemeBlock(t: FloristTheme): string {
     ? `[data-world="storefront"][data-theme="${t.key}"]{--nav-h:${t.navHeight.desktop};}` +
       `@media(max-width:720px){[data-world="storefront"][data-theme="${t.key}"]{--nav-h:${t.navHeight.mobile};}}`
     : ''
-  return nav + `[data-world="storefront"][data-theme="${t.key}"]{--color-primary:${t.palette.primary};--color-primary-d:${t.palette.primaryD};--color-bg:${t.palette.bg};--color-surface:${t.palette.surface};--color-fg:${t.palette.fg};--color-fg-2:${t.palette.fg2};--color-line:${t.palette.line};--color-accent-soft:${t.palette.accentSoft};--font-display:${t.fonts.display};--font-body:${t.fonts.body};--sf-radius:${t.radius};}`
+  // goal-62 B2a: accenten ÄR mallens primary på storefronten (tokens.css), men
+  // --color-accent-fg låg kvar som ett globalt #ffffff — vit text på en LJUS accent
+  // (onyx korall: 2.83:1, mätt). Textfärgen räknas nu ur mallens egen primary:
+  // den av ink/vit som ger högst WCAG-kontrast vinner. Ingen mall kan längre ärva
+  // en knapptext som inte syns.
+  const accentFg = accentForeground(t.palette.primary) ?? '#ffffff'
+  return nav + `[data-world="storefront"][data-theme="${t.key}"]{--color-primary:${t.palette.primary};--color-primary-d:${t.palette.primaryD};--color-bg:${t.palette.bg};--color-surface:${t.palette.surface};--color-fg:${t.palette.fg};--color-fg-2:${t.palette.fg2};--color-line:${t.palette.line};--color-accent-soft:${t.palette.accentSoft};--color-accent-fg:${accentFg};--color-primary-fg:${accentFg};--font-display:${t.fonts.display};--font-body:${t.fonts.body};--sf-radius:${t.radius};}`
 }

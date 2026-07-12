@@ -79,8 +79,17 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       2. **Accentguldet (#b59775) används som TEXT på ljus botten** — eyebrows, priser, sifferled,
          "Besök oss": 2.38–2.75:1 i 4+ mallar. Accentfärg ≠ textfärg.
       Övrigt: freshcut 39, linnea 31, leander 23 brott (egna körningar i B2).
-- [ ] **B2a. SYSTEMFEL 1: knapptexten följer accentens ljushet** (12 mallar, samma syfte → EN körning).
-      Knappens textfärg härleds ur accentens luminans i stället för att antas mörk.
+- [x] **B2a. SYSTEMFEL 1: knapptexten** ✅ **0 btn-accent-brott kvar i alla 20 mallar** (151 → 95 totalt).
+      TRE rotorsaker, alla mekaniskt bevisade:
+      1. `.tenant-root a { color: inherit }` (specificitet 0-1-1) slog ut `.btn-accent` (0-1-0) →
+         varje CTA som är en LÄNK fick sidans brödtextfärg. Knappar (`<button>`) drabbades aldrig —
+         därför såg felet slumpmässigt ut. Fix: `.tenant-root a.btn-accent` tar tillbaka sin ink.
+      2. `accentForeground()` GISSADE på upplevd ljushet (tröskel 0.6) → onyx korall fick vit text
+         (2.83:1) fast mörk ink ger 5.4:1. Nu MÄTS båda kandidaterna med WCAG och bästa vinner.
+      3. Florist-mallarnas genererade CSS satte aldrig `--color-accent-fg` → alla 13 ärvde ett
+         globalt vitt. Nu räknas den ur mallens egen primary. FreshCut fick sin (guld → mörk ink,
+         2.75 → 5.64:1). Linneas lera kunde ingen textfärg rädda (vit 4.25, ink 3.64) → fyllningen
+         fördjupades minimalt (#B0693F → #A9653C) → 4.55:1.
 - [ ] **B2b. SYSTEMFEL 2: accent-som-text får en egen mörkare ink-ton** (eyebrows/priser/siffror).
       Accentfärgen behålls för YTOR; texten får en läsbar syskonton per mall.
 - [ ] **B2. Resten av FAIL-listan mall för mall** — EN mall per körning (kör `npm run kontrast <mall>`
@@ -190,4 +199,5 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 | 2026-07-12 | A2 kundkonto-toggel | 0d0c1b0 | tsc 0, vitest 778/778 |
 | 2026-07-12 | A3 sajtbyggar-rest | — | grep = 0 rester; live-rutter 404/307 = död |
 | 2026-07-12 | A4 prestanda | — | live 0.08–0.98 s alla ytor; dev-kompilering var "segheten" |
-| 2026-07-12 | B1 kontrast-roboten | (denna) | 20 mallar × 5 sidor uppmätta → 151 riktiga brott, 2 systemfel |
+| 2026-07-12 | B1 kontrast-roboten | 6a1f7ae | 20 mallar × 5 sidor uppmätta → 151 riktiga brott, 2 systemfel |
+| 2026-07-12 | B2a knapptexten | (denna) | npm run kontrast: 0 btn-accent-brott i alla 20 mallar (151→95) |

@@ -364,7 +364,10 @@
 
 /* ---- TEMPLATE D — "Salong Linnea" : warm Scandinavian natural (clay + sand) */
 [data-world="storefront"][data-theme="linnea"] {
-  --color-primary:   #B0693F;  /* terracotta / clay */
+  /* goal-62 B2a: leran var #B0693F — vit CTA-text mätte 4.25:1, under WCAG-golvet 4.5,
+     och mörk ink är ännu sämre (3.64). Ingen textfärg kunde rädda den fyllningen, så
+     fyllningen fick vika: en aning djupare lera (samma kulör) → vit text 4.55:1. */
+  --color-primary:   #A9653C;  /* terracotta / clay */
   --color-primary-d: #8E5230;
   --color-bg:        #F4EDE1;  /* warm sand */
   --color-surface:   #FFFFFF;
@@ -536,6 +539,10 @@
   --color-fg-2:      #555555;  /* body grey */
   --color-line:      #E7E2DA;
   --color-accent-soft:#F3EEE7;
+  /* goal-62 B2a: accenten ÄR guldet (#B59775). Global accent-fg var vit → 2.75:1 på
+     guld (mätt) — det brott Zivar såg på nav-CTA:n och closing-bandet. Mörk ink ger
+     5.64:1 på samma guld. Räknat, inte tyckt. */
+  --color-accent-fg: #15281f;
   --font-display: var(--font-playfair), 'Playfair Display', Georgia, serif;
   --font-body:    var(--font-source-sans), 'Source Sans 3', var(--font-inter), 'Inter', sans-serif;
   --sf-radius: 0px;  /* freshcut.se buttons are square */
