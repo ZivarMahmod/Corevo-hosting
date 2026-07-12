@@ -12,6 +12,7 @@
     "test": "vitest run",
     "vakt": "node scripts/vakt-bransch.mjs",
     "kontrast": "node scripts/kontrast.mjs",
+    "vakt:kontrast": "node scripts/vakt-kontrast.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && node scripts/deploy-prod.mjs"
   },

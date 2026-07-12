@@ -57,7 +57,10 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       0.4–2.7 s — det är Next dev-kompilering, inte appen. Slutsats: segheten Zivar känner är
       antingen dev-servern eller en enskild SPARA-action → återkommer som egen punkt när vi kan
       peka ut vilken yta. Bifynd: **/butik = 404, rätt rutt är /shop** (svensk rutt saknas → E-fasen).
-- [~] **A5. Florist-admin-kontot — VÄNTAR PÅ ZIVAR** (jag skapar aldrig konton/lösenord åt någon).
+- [x] **A5. Florist-admin-kontot** ✅ Kontot fanns redan: `admin@florist.corevo.se`. Verifierat med
+      RIKTIG inloggning (Playwright) → landar på /admin. Alla konton står i `5-Kod/docs/ops/INLOGGNINGAR.md`
+      (lokal, gitignorad). ⚠️ Superkontots och testkontots lösenord i den filen NEKAS av servern —
+      återställ dem via "Glömt lösenord". Gamla instruktionen nedan behålls som referens:
       Ytan FINNS: superbooking → kundkortet (Hantverksfloristerna) → **Personal-fliken** →
       "Bjud in med inlogg" → skriv e-postadressen → medarbetaren får magic-link och sätter eget
       lösenord. Kräver att SUPABASE_SERVICE_ROLE_KEY är satt i prod (annars säger knappen till).
@@ -104,8 +107,11 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       klass som säger något om färg vinner alltid. Köpknappens fallback går via den räknade
       `--color-accent-fg` (lunarias mörkblå knapp: 1.2 → godkänd). Mallarnas bock-lista nedan är
       därmed avklarad i klump — inget per-mall-arbete återstod.
-- [ ] **B3. Kontrast-roboten in i ritualen**: körs efter varje mall-ändring framåt
-      (samma roll som `npm run vakt` för bransch-ord).
+- [x] **B3. Kontrast-vakten i CI** ✅ `pnpm --filter web vakt:kontrast` körs i ci.yml bredvid
+      bransch-vakten. Räknar PÅ TOKENS (ingen browser, inget bygge): knapptext måste klara sin egen
+      fyllning, brödtext måste klara mallens ytor. En ny mall kan inte längre födas med osynlig text.
+      Negativt test: en omöjlig palett (#8A8A8A) failar bygget; friska paletter släpps igenom.
+      Det FULLA sveppet (20 mallar × 5 sidor i riktig webbläsare) körs lokalt: `npm run kontrast`.
 
 ## FAS C — MALLARNA SKA KÄNNAS SOM OLIKA BRANDINGS (inte samma mall återanvänd)
 
@@ -208,7 +214,9 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 | 2026-07-12 | B1 kontrast-roboten | 6a1f7ae | 20 mallar × 5 sidor uppmätta → 151 riktiga brott, 2 systemfel |
 | 2026-07-12 | B2a knapptexten | 8f2e0c1 | npm run kontrast: 0 btn-accent-brott i alla 20 mallar (151→95) |
 | 2026-07-12 | B2b accent-som-text | 4c9a2f1 | npm run kontrast: 95 → 9 brott; 16 av 20 mallar rena |
-| 2026-07-12 | B2 + I1 sista brotten | (denna) | **npm run kontrast: 0 FAIL i alla 20 mallar** |
+| 2026-07-12 | B2 + I1 sista brotten | c7d3e88 | **npm run kontrast: 0 FAIL i alla 20 mallar** |
+| 2026-07-12 | A5 florist-inlogg | — | admin@florist.corevo.se loggar in (Playwright) |
+| 2026-07-12 | B3 kontrast-vakten | (denna) | i CI; negativt test failar, friska paletter passerar |
 
 ---
 

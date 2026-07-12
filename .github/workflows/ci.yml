@@ -48,6 +48,12 @@ jobs:
       # Baseline = scripts/vakt-bransch-baseline.json (58 kända, sanna träffar).
       - run: pnpm --filter web vakt
         if: ${{ !cancelled() }}
+      # Kontrast-vakten (goal-62 B3): failar när en malls palett ger osynlig text —
+      # knapptext som inte klarar sin egen fyllning, eller brödtext som inte klarar
+      # mallens ytor (WCAG 4.5:1). Räknar på tokens, ingen browser. Det fulla sveppet
+      # (20 mallar × 5 sidor i riktig webbläsare) körs lokalt: pnpm --filter web kontrast.
+      - run: pnpm --filter web vakt:kontrast
+        if: ${{ !cancelled() }}
       # next build inlines NEXT_PUBLIC_* at BUILD time (live-blocker #1) — set the
       # production-shaped values so a wrong-host default ("salongen inte tillgänglig")
       # can never ship. Supabase publishable values are safe to expose to the client.
