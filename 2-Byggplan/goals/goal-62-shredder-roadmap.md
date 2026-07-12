@@ -258,8 +258,14 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
   - [ ] viora · [ ] isalara · [ ] seraphina · [ ] wildthistle · [ ] mina · [ ] lunaria
   - [ ] eloria · [ ] flora · [ ] salvia · [ ] leander · [ ] zigge · [ ] linnea
   - [ ] edit · [ ] freshcut
-- [ ] **D3. Mall-galleriets kort visar mallens EGEN hero** (finns delvis) — verifiera att
-      ingen mall lånar en annans foto, byt de som gör.
+- [x] **D3. Mall-galleriets kort visar mallens EGEN hero** ✅ Mekaniken var redan rätt (kortet
+      renderar `THEME_CONTENT[key].heroImages[0]`), men **fotosvepet i D2 missade tre mallar**:
+      aurora, oliviathyme och seraphina skriver ut hela URL:en i klartext i stället för att gå
+      via `u('id')` — regexen såg dem inte. 20 delade foton kvar där + 3 krockar mot floras
+      bilder (flora bor i theme-content.ts, inte i registryt). 23 foton till utbytta → **0 delade
+      i hela sviten**.
+      **VAKT:** `components/storefront/foton.test.tsx` failar bygget om en mall delar ett foto
+      med en annan ELLER om ett galleri-kort lånar en annan malls hero. Körs av `pnpm test` (CI).
 
 ## FAS E — WEBSHOPPEN: BORT FRÅN POST-IT-KÄNSLAN
 
