@@ -543,6 +543,18 @@
   padding: var(--pa-sp-section) 0;
   border-top: 1px solid var(--color-line);
 }
+/* goal-62 C3 — SPALTBRYTNINGEN: sektionsbytet är en tryckt regel, inte en osynlig söm.
+   Tjock linje + tunn linje under (tidningens dubbelregel) tvärs hela sidan. Mätaren
+   räknar den inte som "formad kant" — och det är rätt: paisley är PLAN, dess drama är
+   typografiskt. Att ge den en våg hade varit att ge tidningen en sminkspegel. */
+.paGridSection::before {
+  content: '';
+  display: block;
+  height: 3px;
+  margin: 0 0 calc(var(--pa-sp-section) / 2);
+  border-top: 1px solid var(--color-fg);
+  border-bottom: 1px solid var(--color-fg);
+}
 .paSecHead {
   display: flex;
   align-items: baseline;
@@ -563,6 +575,25 @@
   grid-template-columns: repeat(3, 1fr);
   gap: var(--pa-sp-gutter);
   margin-top: var(--pa-sp-block);
+}
+/* goal-62 C3 — PAISLEYS SIGNATUR: SPALTEN.
+   Mallen är den redaktionella (tegel, tidningskänsla) men saknade tidningens mest
+   grundläggande drag: spaltlinjen. Planscherna stod som fristående kort i ett rutnät —
+   samma rutnät som alla andra mallar. Nu skiljs de av en hårlinje, precis som spalter i
+   en tryckt sida. Ingen box, ingen skugga: linjen ÄR strukturen.
+   Regeln träffar bara mellanrummen (inte första kolumnen), så kanterna förblir rena. */
+.paPlateGrid > * + * {
+  border-left: 1px solid var(--color-line);
+  padding-left: var(--pa-sp-gutter);
+}
+@media (max-width: 720px) {
+  .paPlateGrid > * + * {
+    border-left: none;
+    padding-left: 0;
+    /* i en spalt staplar tidningen — linjen lägger sig över, inte bredvid */
+    border-top: 1px solid var(--color-line);
+    padding-top: var(--pa-sp-gutter);
+  }
 }
 .paPlateCard {
   display: block;

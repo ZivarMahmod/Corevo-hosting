@@ -180,7 +180,9 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
   - [x] **onyx** — kantig knapp (var pill) · raka kort · **diagonalt snitt** mellan butik/blogg och
         i closing (spegelvänt) · köpknappen blev block. Mätt: formade sektioner **0 → 4**,
         knapp "pill" → "kvadrat", kontrast 0 FAIL.
-  - [ ] calytrix · [ ] aurora · [ ] sage · [ ] oliviathyme · [ ] paisley · [ ] viora
+  - [x] **paisley** — spaltlinjer mellan planscherna (hårlinje, ingen box) + dubbelregel som
+        sektionsbrytning. Tidningens vokabulär, inte en våg: paisley är PLAN, dess drama är typografiskt.
+  - [ ] calytrix · [ ] aurora · [ ] sage · [ ] oliviathyme · [ ] viora
   - [ ] isalara · [ ] seraphina · [ ] wildthistle · [ ] mina · [ ] lunaria · [ ] eloria
   - [ ] salvia · [ ] leander · [ ] zigge · [ ] linnea · [ ] edit
   - [~] flora (skyddad — valv-språket finns) · [~] freshcut (levande kund — rörs ej)
