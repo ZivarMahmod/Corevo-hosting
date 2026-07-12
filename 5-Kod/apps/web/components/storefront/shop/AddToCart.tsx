@@ -24,9 +24,18 @@ import styles from './add-to-cart.module.css'
 export function AddToCart({
   product,
   fulfilment,
+  /** goal-62 E3 — GRIDEN ÄR ETT SKYLTFÖNSTER, INTE ETT FORMULÄR.
+   *  I butiksgriden dolde vi inget: varje kort bar variantväljare + qty-stepper (−/1/+)
+   *  + knapp. Fyra kontroller per vara × tolv varor = en vägg av formulär, och exakt det
+   *  Zivar kallar post-it-lappen. `compact` lämnar KNAPPEN kvar (ett klick = 1 st i
+   *  korgen, precis som hos Interflora) och flyttar antal/variant till produktsidan, där
+   *  valet faktiskt hör hemma. Har varan flera varianter leder knappen dit i stället för
+   *  att lägga i korgen — man ska aldrig råka köpa fel variant. */
+  compact = false,
 }: {
   product: ShopProduct
   fulfilment: ShopFulfilment
+  compact?: boolean
 }) {
   const { addLine } = useCart()
   const variants = product.variants
@@ -86,6 +95,22 @@ export function AddToCart({
     setAdded(true)
     if (addedTimer.current != null) window.clearTimeout(addedTimer.current)
     addedTimer.current = window.setTimeout(() => setAdded(false), 4000)
+  }
+
+  // Kompakt (butiksgriden): EN knapp. Flera varianter → knappen leder till produktsidan,
+  // där valet görs; en variant → ett klick lägger 1 st i korgen.
+  if (compact) {
+    return variants.length > 1 ? (
+      <a href={`/shop/${product.id}`} className={styles.buy}>
+        Välj variant
+      </a>
+    ) : (
+      <div className={styles.wrap}>
+        <button type="button" className={styles.buy} onClick={add}>
+          {added ? 'Tillagd ✓' : 'Lägg i kundvagn'}
+        </button>
+      </div>
+    )
   }
 
   return (

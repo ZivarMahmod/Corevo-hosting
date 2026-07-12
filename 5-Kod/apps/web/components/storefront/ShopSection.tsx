@@ -129,13 +129,16 @@ export async function ShopSection({
                         {p.name}
                       </a>
                     </h3>
-                    {p.description ? <p className={s.desc}>{p.description}</p> : null}
+                    {/* goal-62 E3: BESKRIVNINGEN ÄR BORTA UR GRIDEN. Mätt: den låg som
+                        14px brödtext i varje kort och gjorde kortet till en lapp med text
+                        på. Griden är ett skyltfönster — namn och pris. Beskrivningen bor
+                        på produktsidan, där man faktiskt läser den. */}
                     <p className={s.price}>{formatShopPrice(p.priceCents, p.currency)}</p>
                     {/* Köp-räls (goal-49): live shop → variant-medveten add-to-cart;
                         'paused' utelämnar CTA helt (katalogen läses som stängd). */}
                     {paused ? null : (
                       <div className={s.cta}>
-                        <AddToCart product={p} fulfilment={config.fulfilment} />
+                        <AddToCart product={p} fulfilment={config.fulfilment} compact />
                       </div>
                     )}
                   </div>

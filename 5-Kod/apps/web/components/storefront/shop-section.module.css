@@ -63,10 +63,15 @@
  * Bilden är länkad till detaljsidan — INTE hela kortet, så AddToCart förblir klickbar
  * (goal-54 S4). Ratio ligger på ytan, inte på <img>, så platshållaren (produkt utan
  * bild) har exakt samma höjd som en laddad bild: noll layouthopp. */
+/* goal-62 E2 — BILDEN BÄR KORTET. Mätt före: bilden var 250×188 (4:3 liggande) och tog
+   bara 37% av kortets 508px höjd — resten var text, räknare och knapp. Det är därför en
+   vara såg ut som en lapp med en liten bild på. Nu 4:5 stående (som varje riktig
+   floristbutik): bilden blir ~64% av kortet och varan är det man ser först. En mall får
+   fortfarande välja sin egen ratio via --sf-media-ratio, men aldrig "ingen" (CLS). */
 .media {
   position: relative; /* ankare för hover-hinten */
   display: block;
-  aspect-ratio: var(--sf-media-ratio, 4 / 3);
+  aspect-ratio: var(--sf-media-ratio, 4 / 5);
   background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
   overflow: hidden;
 }
@@ -168,11 +173,15 @@
 }
 
 /* Priset är modulens sanning (formatShopPrice) — det ska LÄSAS som en siffra, inte
- * som brödtext. Full fg-vikt: 15.2:1. */
+ * som brödtext. Full fg-vikt: 15.2:1.
+ * goal-62 E3: priset MÄTTE 16px — mindre än produktnamnet (17px) och samma grad som
+ * brödtexten. I ett skyltfönster är priset varans näst starkaste röst, inte en fotnot.
+ * 21px slår namnet med ×1.24; mallen kan fortfarande sätta sin egen grad via
+ * --sf-price-fs. */
 .price {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   font-family: var(--font-ui);
-  font-size: var(--sf-price-fs, 16px);
+  font-size: var(--sf-price-fs, 21px);
   font-weight: 700;
   letter-spacing: 0.01em;
   color: var(--color-fg, #232520);
