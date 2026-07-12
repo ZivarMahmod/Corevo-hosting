@@ -1032,8 +1032,12 @@
 .sfMapHint { font-family: var(--font-body); font-size: 0.92rem; color: var(--color-fg-2); }
 @media (max-width: 760px) { .sfLocGrid { grid-template-columns: 1fr; } }
 
-.sfClosing { background: var(--color-primary); text-align: center; padding: clamp(4.5rem, 9vw, 6.5rem) 1.5rem; color: #fff; }
-.sfClosingLead { font-family: var(--font-body); font-size: 1.05rem; color: rgba(255, 255, 255, 0.9); margin-top: 0.9rem; }
+/* goal-62 (fas I1): bandet ligger på --color-primary och hade HÅRDKODAT vit text. På en
+   ljus primär (FreshCuts guld) blev det 2.75:1 — Zivars "closing band". Texten läser nu
+   --color-primary-fg / --color-accent-fg, som RÄKNAS per mall ur primärfärgens ljushet:
+   mörka mallar behåller sin vita text, ljusa får mörk ink. Bandets färg är orörd. */
+.sfClosing { background: var(--color-primary); text-align: center; padding: clamp(4.5rem, 9vw, 6.5rem) 1.5rem; color: var(--color-primary-fg, var(--color-accent-fg, #fff)); }
+.sfClosingLead { font-family: var(--font-body); font-size: 1.05rem; color: var(--color-primary-fg, var(--color-accent-fg, #fff)); opacity: 0.92; margin-top: 0.9rem; }
 .sfClosing :global(.btn-accent).sfClosingCta { background: #fff; color: var(--color-primary-ink, var(--color-primary)); }
 .sfClosing :global(.btn-accent).sfClosingCta:hover { background: rgba(255, 255, 255, 0.92); }
 

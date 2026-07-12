@@ -35,7 +35,10 @@
    * 2.41:1 — långt under golvet 4.5. Mörk ink på samma guld: 6.4:1. En mall som sätter
    * --sf-btn-ink vinner ändå; det här skyddar bara de teman som INTE gjort det, så att
    * en ny mall aldrig kan födas med en oläslig köpknapp. */
-  color: var(--sf-btn-ink, var(--color-fg, #232520));
+  /* goal-62 B2b: fallbacken går via --color-accent-fg — den RÄKNAS numera per mall ur
+   * accentens ljushet (ink eller vit, den som mäter bäst). Den gamla fallbacken
+   * (--color-fg) var mallens brödtextfärg: mörk ink på lunarias mörkblå knapp = 1.2:1. */
+  color: var(--sf-btn-ink, var(--color-accent-fg, var(--color-fg, #232520)));
   background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
   border: 1px solid var(--sf-btn-border, var(--color-accent, #c8a24a));
   border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));

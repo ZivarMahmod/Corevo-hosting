@@ -51,16 +51,14 @@
 }
 
 /* ---------- "Varför Oss?" — avslutningsband ----------
-   Färgerna är källsajtens och rörs INTE. #fff på .sfClosing (bakgrund
-   --color-primary = #B59775) mäter 2.73:1 — under WCAG-golvet 4.5:1. Det är en
-   BEFINTLIG egenskap hos den delade .sfClosing-klassen (som även Salvia m.fl. använder),
-   inte något det här passet infört, och .sfClosing ägs inte av den här mallen.
-   Rapporterat till Zivar, medvetet ORÖRT: att mörka ner rubriken hade ändrat en
-   levande kunds sida utan att kunden bett om det. */
+   goal-62 (fas I1, Zivars order): vit rubrik på guldbandet mätte 2.75:1 — under golvet.
+   Den var medvetet orörd förut ("levande kund"), men Zivar har nu bett om fixen.
+   Rubriken läser samma räknade ton som resten av bandet (--color-primary-fg = mörk ink
+   på freshcuts ljusa guld). Guldet, typsnittet och de raka hörnen är oförändrade. */
 .closingTitle {
   max-width: 40rem;
   margin: 0 auto;
-  color: #fff;
+  color: var(--color-primary-fg, var(--color-accent-fg, #fff));
 }
 
 .closingLeadStrong {

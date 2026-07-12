@@ -32,7 +32,15 @@ h3 {
   font-family: var(--font-body);
 }
 .tenant-main { flex: 1 1 auto; }
-.tenant-root a { color: inherit; text-decoration: none; }
+/* goal-62 B2b — ROTORSAKEN till "texten syns inte i knappen".
+   Regeln var `.tenant-root a` (specificitet 0-1-1) och slog därför ut VARJE knappklass
+   (0-1-0) som råkade sitta på en länk: CTA:n fick sidans brödtextfärg i stället för sin
+   egen ink. Mätt i mall efter mall — seraphinas "Begär offert" 2.24:1, wildthistles
+   band-CTA 2.21:1, elorias offert-CTA 2.45:1 — medan samma knapp som <button> var perfekt.
+   :where() nollar specificiteten: en OKLASSAD länk ärver fortfarande sin färg (det regeln
+   fanns för), men så fort en klass säger något om färgen vinner klassen. */
+:where(.tenant-root) :where(a) { color: inherit; }
+.tenant-root a { text-decoration: none; }
 
 .btn-primary {
   display: inline-block;

@@ -96,12 +96,14 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       Räknas i florist-generatorn, inskriven i de 7 fasta mallarna. 44 delade regler (eyebrow,
       pris, sifferled, adress, telefon, subhero-rubrik) läser den nu i stället för `--color-primary`.
       **Ytorna behåller sin färg** — bara texten flyttade. FreshCuts guld: 2.38 → 4.67:1.
-- [ ] **B2. Resten av FAIL-listan mall för mall** — EN mall per körning (kör `npm run kontrast <mall>`
-      efteråt: 0 FAIL = bock). Bocka per mall:
-  - [ ] calytrix · [ ] aurora · [ ] sage · [ ] oliviathyme · [ ] paisley · [ ] onyx
-  - [ ] viora · [ ] isalara · [ ] seraphina · [ ] wildthistle · [ ] mina · [ ] lunaria
-  - [ ] eloria · [ ] flora · [ ] salvia · [ ] leander · [ ] zigge · [ ] linnea
-  - [ ] edit · [ ] freshcut
+- [x] **B2. Resten av FAIL-listan** ✅ **0 KONTRASTBROTT I ALLA 20 MALLAR** (`npm run kontrast`).
+      Sista rotorsaken var samma regel en gång till: `.tenant-root a { color: inherit }` (0-1-1)
+      slog ut ALLA knappklasser som satt på en länk — seraphinas "Begär offert" 2.24:1, wildthistles
+      band-CTA 2.21:1, elorias 2.45:1 — medan samma knapp som `<button>` var perfekt. Nu
+      `:where(.tenant-root) :where(a)` (specificitet 0): oklassade länkar ärver som förut, men en
+      klass som säger något om färg vinner alltid. Köpknappens fallback går via den räknade
+      `--color-accent-fg` (lunarias mörkblå knapp: 1.2 → godkänd). Mallarnas bock-lista nedan är
+      därmed avklarad i klump — inget per-mall-arbete återstod.
 - [ ] **B3. Kontrast-roboten in i ritualen**: körs efter varje mall-ändring framåt
       (samma roll som `npm run vakt` för bransch-ord).
 
@@ -205,4 +207,5 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 | 2026-07-12 | A4 prestanda | — | live 0.08–0.98 s alla ytor; dev-kompilering var "segheten" |
 | 2026-07-12 | B1 kontrast-roboten | 6a1f7ae | 20 mallar × 5 sidor uppmätta → 151 riktiga brott, 2 systemfel |
 | 2026-07-12 | B2a knapptexten | 8f2e0c1 | npm run kontrast: 0 btn-accent-brott i alla 20 mallar (151→95) |
-| 2026-07-12 | B2b accent-som-text | (denna) | npm run kontrast: 95 → 9 brott; 16 av 20 mallar helt rena |
+| 2026-07-12 | B2b accent-som-text | 4c9a2f1 | npm run kontrast: 95 → 9 brott; 16 av 20 mallar rena |
+| 2026-07-12 | B2 + I1 sista brotten | (denna) | **npm run kontrast: 0 FAIL i alla 20 mallar** |
