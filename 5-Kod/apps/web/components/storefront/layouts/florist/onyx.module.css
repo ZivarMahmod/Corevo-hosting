@@ -216,9 +216,11 @@
   align-items: center;
   gap: 12px;
 }
-/* Nav-CTA:n är kompaktare än sidans stora pillar (samma roll, mindre yta). */
+/* Nav-CTA:n är kompaktare än sidans stora pillar (samma roll, mindre yta).
+   goal-61 runda 2: 40px låg 4px under 44px-touch-golvet — 44 är det kompaktaste
+   som klarar golvet. Raden växer INTE: menylänkarna bär redan 44px-höjden. */
 .onxNav .onxBtn.onxBtn {
-  height: 40px;
+  height: 44px;
   padding: 0 22px;
 }
 @media (max-width: 720px) {
@@ -358,12 +360,20 @@
   transition-duration: 80ms;
 }
 
-/* Läs-mer-länk — mikrotext, inte brödtext (en signal, ingen viskning) */
+/* Läs-mer-länk — mikrotext, inte brödtext (en signal, ingen viskning).
+   goal-61 runda 2: 44px touch-golv — länken mätte 23px (18px textrad + 4px padding
+   + 1px kantlinje). Texten flexcentreras i en 44px-box och marginalerna kvittar
+   tillväxten exakt: toppen minskar med textens nya offset (13px), botten tar resten
+   (8px = 44 minus 23 minus 13) → textens läge och flödet under är pixelidentiska.
+   Hover-strecket flyttar från border-bottom (hade legat vid 44-boxens botten, ~10px
+   under texten) till text-decoration med offset — linjen ligger kvar tätt under
+   versalerna, precis som förut. */
 .onxMoreLink {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: var(--onx-gap-cta);
+  min-height: 44px;
+  margin: calc(var(--onx-gap-cta) - 13px) 0 -8px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--onx-fs-micro);
@@ -371,11 +381,14 @@
   text-transform: uppercase;
   text-decoration: none;
   color: var(--color-primary);
-  border-bottom: 1px solid transparent;
-  padding-bottom: 4px;
-  transition: border-color var(--onx-dur) var(--onx-ease), gap var(--onx-dur) var(--onx-ease);
+  transition: gap var(--onx-dur) var(--onx-ease);
 }
-.onxMoreLink:hover { border-color: var(--color-primary); gap: 0.75rem; }
+.onxMoreLink:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+  gap: 0.75rem;
+}
 
 /* Eyebrow-ENDA sektionshuvuden: avståndet ner ska vara head-gapet, inte 48+12. */
 .onxTrioHead .onxEyebrow,
@@ -826,7 +839,10 @@
   line-height: 1.15;
   color: var(--color-fg);
 }
-.onxGiftLink { margin-top: 0; }
+/* Gift-radens länk är ett flex-item i .onxGiftInner (centrerad rad): kvitta HELA
+   44-boxens tillväxt (13 upp, 8 ner) så marginalboxen förblir 23px — raden behåller
+   sin höjd och texten sitt läge; klickytan växer utåt över radens luft. */
+.onxGiftLink { margin: -13px 0 -8px; }
 
 /* 9 — GALLERI — samma 4/5-ratio, raka hörn, inget scale-hover. Gallery-komponentens
    klasser är hashade i en annan modul → vi når dem via element-selektorer INUTI vår
@@ -1121,6 +1137,23 @@
   transition: color var(--onx-dur) var(--onx-ease), border-color var(--onx-dur) var(--onx-ease);
 }
 .onxFooterLink:hover { color: var(--color-primary); border-color: var(--color-primary); }
+/* goal-61 runda 2: tel/mejl i "Besök oss" mätte 24px — under touch-golvet. Länken
+   flexcentreras i en 44px-box; symmetriska negativa marginaler (10+10 = 44 minus 24)
+   kvittar tillväxten så paragrafens radrytm är pixelidentisk (basline-align håller
+   glyferna kvar på stråkets baslinje). Hover-strecket byter från border-bottom
+   (hade legat vid 44-boxens botten) till text-decoration med offset. */
+.onxFooterText .onxFooterLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -10px 0;
+  border-bottom: none;
+}
+.onxFooterText .onxFooterLink:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+}
 .onxFooterNav {
   display: flex;
   flex-direction: column;
@@ -1165,7 +1198,16 @@
   gap: var(--onx-gap-title);
   margin-top: var(--onx-gap-title);
 }
+/* goal-61 runda 2: social-länkarna mätte 22px (18px textrad + 3px padding + 1px
+   kantlinje). Flexcentrerad text i en 44px-box; marginalerna kvittar tillväxten
+   (13 upp där texten flyttar ner, 9 ner tar resten) → marginalboxen är kvar på
+   22px och social-raden behåller exakt sin höjd och sitt läge. Hover-strecket
+   flyttar från border-bottom till text-decoration med offset. */
 .onxFooterSocial {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -13px 0 -9px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--onx-fs-micro);
@@ -1173,11 +1215,13 @@
   text-transform: uppercase;
   text-decoration: none;
   color: var(--color-primary);
-  border-bottom: 1px solid transparent;
-  padding-bottom: 3px;
-  transition: border-color var(--onx-dur) var(--onx-ease);
+  transition: color var(--onx-dur) var(--onx-ease);
 }
-.onxFooterSocial:hover { border-color: var(--color-primary); }
+.onxFooterSocial:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
 .onxFooterBottom {
   max-width: var(--onx-wide);
   margin: var(--onx-section) auto 0;

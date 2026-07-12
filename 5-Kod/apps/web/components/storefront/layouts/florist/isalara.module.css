@@ -178,8 +178,19 @@
   letter-spacing: var(--isl-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary);
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 2px;
+  /* Touch-golv (goal-61, runda 2): sektions-CTA:erna mätte 22px. Klickboxen lyfts
+     till 44px via flex och de extra pixlarna kvittas med negativ margin, så både
+     baseline-raden i sektionshuvudet och styckerytmen är pixelidentiska. Under-
+     strykningen flyttar från border-bottom (som på 44px-boxen hamnat långt under
+     texten) till text-decoration som följer textraden. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -13px -9px; /* kvittar 44 − 22; asymmetriskt så baslinjens över/
+     underdel matchar gamla boxen exakt (18px text + 2px luft + 2px linje under) */
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
   white-space: nowrap;
   transition: opacity var(--isl-dur) ease;
 }
@@ -796,6 +807,23 @@ a.islShortcut:hover {
   transition: border-color var(--isl-dur) ease;
 }
 .islFooterLink:hover { border-bottom-color: var(--color-line); }
+/* Touch-golv (goal-61, runda 2): kontaktlänkarna (telefon/mejl) mätte 21px. Samma
+   grepp som menylänkarna nedan — 44px flexbox + text-decoration istället för
+   border-bottom — men här är styckerytmen tight, så de extra pixlarna kvittas med
+   negativ margin och kolumnen ligger kvar pixelidentiskt. */
+.islFooterText .islFooterLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -11.5px; /* (44 − 21) / 2 — radens fotavtryck = 21px som förr */
+  border-bottom: 0;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: color-mix(in srgb, var(--color-line) 60%, transparent);
+  transition: text-decoration-color var(--isl-dur) ease;
+}
+.islFooterText .islFooterLink:hover { text-decoration-color: var(--color-line); }
 .islFooterNav {
   display: flex;
   flex-direction: column;
@@ -837,17 +865,32 @@ a.islShortcut:hover {
   gap: var(--isl-grid-gap);
   margin-top: var(--isl-step-head);
 }
+/* Touch-golv (goal-61, runda 2): ikon-länkarna mätte 38px. Ankaret växer till en
+   44px-klickbox, kvittad med negativ margin så radens fotavtryck är oförändrat,
+   medan den SYNLIGA cirkeln bor i ::before och behåller sina 2.4rem — pixel-
+   identisk mot förr. Kant-toningen på hover följer med in i pseudot. */
 .islFooterSocial {
+  position: relative;
   display: grid;
   place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: calc((2.4rem - 44px) / 2); /* negativ — fotavtrycket = 2.4rem som förr */
+  border-radius: var(--radius-pill);
+  color: var(--color-surface);
+}
+.islFooterSocial::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
   width: 2.4rem;
   height: 2.4rem;
   border-radius: var(--radius-pill);
   border: 1px solid color-mix(in srgb, var(--color-surface) 45%, transparent);
-  color: var(--color-surface);
   transition: border-color var(--isl-dur) ease;
 }
-.islFooterSocial:hover { border-color: var(--color-surface); }
+.islFooterSocial:hover::before { border-color: var(--color-surface); }
 .islFooterBottom {
   max-width: 1180px;
   margin: var(--isl-band) auto 0;
@@ -1168,16 +1211,18 @@ a.islShortcut:hover {
    rörelsen tas bort. */
 @media (prefers-reduced-motion: reduce) {
   .islBtn,
-  .islLink,
+  .islLink.islLink, /* matchar bas-regelns dubblade specificitet — annars vinner basens transition */
   .islCard,
   .islShortcut,
   .islPriceRow,
   .islPostRow,
-  .islNavLinks.islNavLinks a, /* matchar bas-regelns dubblade specificitet — annars vinner basens transition */
+  .islNavLinks.islNavLinks a, /* dito */
   .islNavIcon,
   .islFooterLink,
   .islFooterNav .islFooterLink, /* dito för 44px-boxarnas text-decoration-toning */
+  .islFooterText .islFooterLink, /* dito — kontaktlänkarna (telefon/mejl) */
   .islFooterSocial,
+  .islFooterSocial::before, /* cirkelns kant-toning bor i pseudot sedan runda 2 */
   .islContactLink {
     transition: none;
   }

@@ -453,11 +453,25 @@ a.lnMoodCard:hover {
   line-height: var(--ln-lh-micro);
   color: var(--color-fg); /* 16.49:1 — priset är data, det ska skära */
 }
+/* goal-61 runda 2: touch-golvet på sektions-CTA:n. Radboxen är 18px (12px × 1.5)
+   och den gamla boxen 21px (18 + 2px padding + 1px linje) — långt under 44.
+   Boxen lyfts till 44px (flex, inte inline-flex: auto-marginalerna ska fortsätta
+   centrera den) och samma mängd kvittas i margin: texten hamnar 13px ned i boxen
+   → margin-top backar 13px; boxbotten hamnar 10px lägre än gamla linjekanten
+   → margin-bottom backar 10px. Marginboxen är därmed pixelidentisk med förut.
+   UNDERSTRYKNINGEN kan inte bo kvar på border-bottom (den hade ritats vid boxens
+   botten, 13px under texten) — den blir ett absolut ::after på exakt gamla läget:
+   textraden slutar 31px ned (13 + 18), linjen låg 2px under = 33px ned = 10px
+   från boxbotten. OBS: två instanser (presentkort, karta) bär inline-margin i
+   layouten som vinner över kvittningen — där växer boxen lodrätt i fri luft,
+   vilket är avsikten (flex-raden centrerar den). */
 .lnBandCta {
-  display: block;
+  position: relative;
+  display: flex;
+  align-items: center;
   width: fit-content;
-  margin: var(--ln-sp-block) auto 0;
-  padding-bottom: 2px;
+  min-height: 44px;
+  margin: calc(var(--ln-sp-block) - 13px) auto -10px;
   font-family: var(--font-body);
   font-size: var(--ln-fs-micro);
   font-weight: var(--ln-fw-micro);
@@ -465,8 +479,16 @@ a.lnMoodCard:hover {
   letter-spacing: var(--ln-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary);
-  border-bottom: 1px solid var(--color-primary);
   text-decoration: none;
+}
+.lnBandCta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  height: 1px;
+  background: var(--color-primary);
 }
 
 /* ── OM — cirkulärt porträtt + text + statistik-trio ─────────────────────── */
@@ -881,6 +903,18 @@ a.lnMoodCard:hover {
   line-height: var(--ln-lh-body);
   color: var(--color-surface);
 }
+/* goal-61 runda 2: touch-golvet på kontaktlänkarna (tel/mejl). Textraden är
+   25.28px (16px × 1.58) — boxen lyfts till 44px och 10px kvittas per sida:
+   marginboxen (24px) blir MINDRE än styckets strut (25.28px), så radhöjden
+   bestäms fortfarande av strutten → rytmen är pixelidentisk. Avståndet mellan
+   telefon och mejlrad (12px marginal + halvrader ≈ 21px) rymmer båda boxarnas
+   överhäng (2 × 9.4px = 18.7px) utan överlapp. */
+.lnFootText a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -10px 0;
+}
 .lnFootText a:hover {
   color: var(--color-accent-soft);
 }
@@ -931,6 +965,17 @@ a.lnMoodCard:hover {
 .lnFootSocial {
   display: flex;
   gap: var(--ln-sp-gutter);
+}
+/* goal-61 runda 2: touch-golvet på social-länkarna. Radboxen är 18px (12px × 1.5)
+   — samma utökade hit-area som nav-railen: boxen lyfts till 44px och exakt
+   (44 − 18) / 2 = 13px kvittas per sida → marginboxen förblir 18px och raden
+   ligger kvar exakt där den låg. Överhänget landar i sidfotens egna paddingar
+   (24px över, 48px under) — inget klickbart där. */
+.lnFootSocial a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -13px 0;
 }
 .lnFootSocial a:hover {
   color: var(--color-surface);

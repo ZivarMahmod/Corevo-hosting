@@ -181,11 +181,23 @@
   transform: none;
 }
 /* Mer-länkar ("Visa hela sortimentet", "Läs mer", "Se allt vi gör") — samma
-   mikro-register som knapparna. Minas EGEN primitiv (ingen sfMoreLink). */
+   mikro-register som knapparna. Minas EGEN primitiv (ingen sfMoreLink).
+   goal-61 touch-golv (runda 2): 21px-raden (18px text + 2px luft + 1px linje)
+   fick en 44px-klickbox. Negativa marginaler kvittar exakt (44 minus 13 minus
+   10 = 21) så layoututrymmet och flex-linjeringen (flex-end i .miSecHead,
+   baseline i .miGiftInner, center i .miMap) är pixelidentiska. Understrykningen
+   bodde på border-bottom — vid 44px hade linjen hamnat vid boxens botten, långt
+   under texten. Den ritas nu av ::after på EXAKT gamla platsen: texten (18px)
+   centreras i 44 → textbotten på 31; gamla linjen låg 2px under texten →
+   top = 33 = 50% + 11px. */
 .miMore {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  position: relative;
+  min-height: 44px;
+  margin-top: -13px;
+  margin-bottom: -10px;
   text-decoration: none;
   font-family: var(--font-body);
   font-size: var(--mi-fs-micro);
@@ -194,9 +206,16 @@
   letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary); /* 7.63:1 */
-  border-bottom: 1px solid var(--color-primary);
-  padding-bottom: 2px;
   transition: gap var(--mi-dur) var(--mi-ease);
+}
+.miMore::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 11px);
+  height: 1px;
+  background: var(--color-primary);
 }
 .miMore:hover { gap: 14px; }
 
@@ -696,6 +715,16 @@
   --mi-sp-gutter: 24px;
   --mi-sp-section: clamp(48px, 8vw, 96px);
   --mi-gutter-x: clamp(20px, 4vw, 28px);
+  /* goal-61 runda 2-fynd: sidfoten står UTANFÖR blocket som äger huvudvariablerna, och
+   * sex av dem saknades här → gap: var(--mi-sp-eyebrow) … blev invalid-at-computed-value-
+   * time och föll till gap 0 — kontakt/social-raden renderades IHOPKLISTRAD
+   * ("…GMAIL.COMINSTAGRAMFACEBOOK"). Samma värden som huvudblocket. */
+  --mi-sp-eyebrow: 12px;
+  --mi-fs-card: clamp(24px, 2.4vw, 28px);
+  --mi-lh-card: 1.15;
+  --mi-lh-body: 1.57;
+  --mi-ls-display: -0.01em;
+  --mi-fw-display: 500;
 
   background: var(--color-accent-soft);
   padding: var(--mi-sp-section) var(--mi-gutter-x) var(--mi-sp-text);
@@ -769,7 +798,23 @@
   text-transform: uppercase;
   color: var(--color-fg-2);
 }
-.miFootMeta a { color: var(--color-fg-2); text-decoration: none; }
+/* goal-61 touch-golv (runda 2): kontakt-/social-länkarna mätte 18px. Klickboxen
+   byggs av 44px min-höjd, lodrätt kvittad med negativa marginaler
+   (44 minus 13 minus 13 = 18) → varje rad tar samma utrymme som förr och texten
+   linjerar med spans intill (18px-innehållet centreras i 44-boxen). INGEN
+   vågrät padding här: metaradens gap är 0 i praktiken (--mi-sp-eyebrow och
+   --mi-sp-cta är odeklarerade i .miFoot-blocket → gap-deklarationen är ogiltig
+   och faller till 0; buggen fanns FÖRE touch-passet och lämnas åt eget pass) —
+   padding plus negativ margin på ITEMS hade lagt grannlänkarnas klickboxar
+   20px omlott. Bredd-golvet gäller bara ikon-länkar. */
+.miFootMeta a {
+  color: var(--color-fg-2);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -13px 0;
+}
 .miFootMeta a:hover { color: var(--color-primary); }
 .miFootCopy { margin-left: auto; }
 
@@ -849,20 +894,34 @@
   margin: 0 0 var(--mi-sp-text);
 }
 .miPageFoot { margin-top: var(--mi-sp-cta); text-align: center; }
-/* Text-CTA på undersidorna = samma mikro-register som .miMore. */
+/* Text-CTA på undersidorna = samma mikro-register som .miMore — och samma
+   goal-61 touch-golv + underlinje-flytt till ::after (geometrin förklarad vid
+   .miMore). line-height sätts explicit så 18px-textmåttet är deterministiskt. */
 .miTextCta {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  position: relative;
+  min-height: 44px;
+  margin-top: -13px;
+  margin-bottom: -10px;
   text-decoration: none;
   font-family: var(--font-body);
   font-size: var(--mi-fs-micro);
   font-weight: var(--mi-fw-micro);
+  line-height: var(--mi-lh-micro);
   letter-spacing: var(--mi-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary);
-  border-bottom: 1px solid var(--color-primary);
-  padding-bottom: 2px;
+}
+.miTextCta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 11px);
+  height: 1px;
+  background: var(--color-primary);
 }
 /* Pill-CTA på undersidorna (BookCta/submit bär .btn-accent globalt). */
 .miPlateCta {

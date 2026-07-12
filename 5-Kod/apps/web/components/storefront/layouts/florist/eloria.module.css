@@ -187,12 +187,24 @@
 }
 
 /* Mikro-länk ("Visa hela butiken", "Se allt vi gör", "Visa på karta") — 12/600/VERSALER/+1px.
-   Ersätter delade .sfMoreLink (600 i brödtextgrad, ingen versal, gap-studs på hover). */
+   Ersätter delade .sfMoreLink (600 i brödtextgrad, ingen versal, gap-studs på hover).
+
+   TOUCH-GOLV (goal-61 runda 2): textraden är 16.8px men klickytan måste vara ≥44px.
+   Boxen växer via min-height + centrering; marginalerna kvittar tillväxten exakt så
+   texten står pixelstilla: centreringen lyfter boxtoppen 13.6px över texten
+   ((44 − 16.8) / 2), alltså margin-top = s3 − 13.6, och boxbotten ligger 8.6px längre
+   ned än gamla botten (13.6 − gamla 3px luft − 2px linje), alltså margin-bottom −8.6.
+   Baslinjematematiken går jämnt ut: 18.4 + 13.6 = gamla 32 ovanför, 13.6 − 8.6 = gamla
+   5 nedanför. Strecket låg som border-bottom vid boxbotten — vid 44px-botten hade det
+   hamnat långt under texten, så det ritas nu som ::after på samma pixelrad som förr:
+   13.6 centrering + 16.8 text + 3 luft + 2 linje = 35.4 uppifrån, dvs 8.6px från botten. */
 .elMoreLink {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: var(--el-s3);
+  min-height: 44px;
+  margin: calc(var(--el-s3) - 13.6px) 0 -8.6px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--el-fs-micro);
@@ -201,11 +213,18 @@
   text-transform: uppercase;
   color: var(--color-primary);
   text-decoration: none;
-  border-bottom: 2px solid transparent;
-  padding-bottom: 3px;
-  transition: border-color var(--el-dur) ease;
 }
-.elMoreLink:hover { border-color: var(--color-primary); }
+.elMoreLink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8.6px;
+  height: 2px;
+  background: transparent;
+  transition: background var(--el-dur) ease;
+}
+.elMoreLink:hover::after { background: var(--color-primary); }
 .elMoreLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 
 /* KNAPPEN — full pill (radien kommer från .btn-accent → --radius-pill), 12/600/VERSALER/+1px.
@@ -558,7 +577,18 @@
   line-height: 1.55;
   color: var(--color-fg);
 }
+/* TOUCH-GOLV (goal-61 runda 2): samma 44px-geometri som .elMoreLink, men utan dess
+   s3-toppmarginal — länken står i presentkortsradens baseline-flexrad, så kvittningen
+   är ren: −13.6 upp (centreringens lyft) och −8.6 ner. Baslinjen ligger då exakt där
+   den gamla 21.8px-boxen lade den, och raden växer inte en pixel — inte heller när
+   länken wrappar till egen rad på smal skärm (radens tvärmått = 44 − 13.6 − 8.6 =
+   gamla 21.8). Strecket ritas som ::after på gamla pixelraden, se .elMoreLink. */
 .elGiftCta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -13.6px 0 -8.6px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--el-fs-micro);
@@ -567,11 +597,18 @@
   text-transform: uppercase;
   color: var(--color-primary);
   text-decoration: none;
-  border-bottom: 2px solid transparent;
-  padding-bottom: 3px;
-  transition: border-color var(--el-dur) ease;
 }
-.elGiftCta:hover { border-color: var(--color-primary); }
+.elGiftCta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8.6px;
+  height: 2px;
+  background: transparent;
+  transition: background var(--el-dur) ease;
+}
+.elGiftCta:hover::after { background: var(--color-primary); }
 .elGiftCta:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 
 /* ── 10. PLATS & ÖPPETTIDER — Elorias EGEN två-spalt (var delad .sfLocBand/.sfHours/.sfMap):
@@ -597,11 +634,15 @@
   .elLocGrid { grid-template-columns: 1fr; }
 }
 
-/* Mikro-länken i mallens ton (utan .elMoreLinks toppmarginal där den inte hör hemma). */
+/* Mikro-länken i mallens ton (utan .elMoreLinks toppmarginal där den inte hör hemma).
+   TOUCH-GOLV (goal-61 runda 2): samma 44px-box och ::after-streck som .elGiftCta. */
 .elMapLink {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  min-height: 44px;
+  margin: -13.6px 0 -8.6px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--el-fs-micro);
@@ -610,11 +651,18 @@
   text-transform: uppercase;
   color: var(--color-primary);
   text-decoration: none;
-  border-bottom: 2px solid transparent;
-  padding-bottom: 3px;
-  transition: border-color var(--el-dur) ease;
 }
-.elMapLink:hover { border-color: var(--color-primary); }
+.elMapLink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8.6px;
+  height: 2px;
+  background: transparent;
+  transition: background var(--el-dur) ease;
+}
+.elMapLink:hover::after { background: var(--color-primary); }
 .elMapLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 
 /* ── 11. CLOSING — foto + mörkgrön scrim, ekar heron (bokstavlig bracket kring sidan) ── */
@@ -776,14 +824,21 @@
 .elNavIcon.elNavIcon:hover { border-color: var(--eloria-gold); color: var(--eloria-ink); }
 .elNavIcon.elNavIcon:focus-visible { outline: 2px solid var(--eloria-gold); outline-offset: 3px; }
 .elNavIcon.elNavIcon:active { transform: scale(0.97); transition-duration: 80ms; }
-/* CTA:n — samma pill som resten av mallen, aldrig den globala glow-skuggan. */
+/* CTA:n — samma pill som resten av mallen, aldrig den globala glow-skuggan.
+   TOUCH-GOLV (goal-61 runda 2): 38px-raden + 2px-borden gav en 42px-pill, 2px under
+   golvet. Flex-centrering + min-height lyfter klickboxen till 44 (pillen växer 1px
+   per kant — navradens höjd styrs av det 50px höga guldramade wordmarket, så raden
+   rör sig inte). */
 :global(.btn-accent).elNavCta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--el-fs-micro);
   letter-spacing: 1px;
   text-transform: uppercase;
-  line-height: 38px;
+  line-height: 1.4;
   padding: 0 22px;
   box-shadow: none;
   transition: background var(--el-dur) ease;
@@ -836,23 +891,44 @@
   color: color-mix(in srgb, var(--eloria-ink) 82%, transparent);
 }
 .elFootSocials { display: flex; gap: 0.75rem; margin-top: var(--el-s2); align-items: center; }
+/* TOUCH-GOLV (goal-61 runda 2): ikonrutan mätte 38.4px (2.4rem) — klickytan måste
+   vara ≥44px i BÅDA led. Boxen växer till 44×44 och den negativa marginalen
+   ((2.4rem − 44px) / 2 = −2.8px runtom) kvittar tillväxten så flödet står stilla.
+   Den synliga guldrutan är mallens signatur och får INTE växa: ramen ritas som
+   ::before i exakt gamla 2.4rem-storleken, centrerad i klickboxen (inset 2.8px),
+   så ikonen och rutan är pixelidentiska med förr. */
 .elFootSocial {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 44px;
+  height: 44px;
+  margin: calc((2.4rem - 44px) / 2);
+  color: var(--eloria-gold);
+  transition: color var(--el-dur) ease;
+}
+.elFootSocial::before {
+  content: '';
+  position: absolute;
+  inset: calc((44px - 2.4rem) / 2);
   border: 1px solid color-mix(in srgb, var(--eloria-gold) 60%, transparent);
   border-radius: var(--sf-radius);
-  color: var(--eloria-gold);
-  transition: color var(--el-dur) ease, border-color var(--el-dur) ease;
+  transition: border-color var(--el-dur) ease;
 }
-.elFootSocial:hover { color: var(--eloria-ink); border-color: var(--eloria-gold); }
+.elFootSocial:hover { color: var(--eloria-ink); }
+.elFootSocial:hover::before { border-color: var(--eloria-gold); }
 .elFootSocial:focus-visible { outline: 2px solid var(--eloria-gold); outline-offset: 3px; }
 .elFootSocial:active { transform: scale(0.97); transition-duration: 80ms; }
+/* Samma golv för textvarianten (TikTok): 44px-box, kvittad så raden inte växer. */
 .elFootSocialText {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: calc((16.8px - 44px) / 2);
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--el-fs-micro);
+  line-height: 1.4;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--eloria-gold);
@@ -877,8 +953,34 @@
   line-height: 1.6;
   color: color-mix(in srgb, var(--eloria-ink) 82%, transparent);
 }
-.elFootLink { color: inherit; text-decoration: none; border-bottom: 1px solid transparent; }
-.elFootLink:hover { color: var(--eloria-gold); border-color: var(--eloria-gold); }
+/* TOUCH-GOLV (goal-61 runda 2): telefon- och mejllänkarna mätte 23px. Boxen växer
+   till 44px och margin-block kvittar symmetriskt mot styckets 25.6px-rad
+   ((25.6 − 44) / 2 = −9.2px per sida), så baslinjen och radrytmen står pixelstilla.
+   Hover-strecket satt som border-bottom vid textbotten — vid 44px-botten hade det
+   hamnat under klickytan, så det ritas nu som ::after på samma pixelrad som förr:
+   texten centreras 9.2 + 1.3 ned i boxen och är 23px hög → 33.5 uppifrån, dvs
+   strecket 10px från boxens botten. */
+.elFootLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: calc((25.6px - 44px) / 2);
+  color: inherit;
+  text-decoration: none;
+}
+.elFootLink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  height: 1px;
+  background: transparent;
+  transition: background var(--el-dur) ease;
+}
+.elFootLink:hover { color: var(--eloria-gold); }
+.elFootLink:hover::after { background: var(--eloria-gold); }
 .elFootLink:focus-visible { outline: 2px solid var(--eloria-gold); outline-offset: 3px; }
 /* Öppettiderna i sidfoten bär samma guld-ledare som prislistan — en dialekt i hela mallen. */
 .elFootHoursRow {
@@ -1280,6 +1382,11 @@
   .elNavLink,
   .elNavIcon.elNavIcon,
   .elFootSocial,
+  .elFootSocial::before,
+  .elMoreLink::after,
+  .elGiftCta::after,
+  .elMapLink::after,
+  .elFootLink::after,
   .elOfferCta,
   .elHero :global(.btn-accent).elHeroCta,
   .elClosing :global(.btn-accent).elClosingCta,

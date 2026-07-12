@@ -78,6 +78,18 @@ SidaPreviewBridge + `PAGES` i SidaStudio) — modulsidorna (butik/varukorg/kurse
 presentkort) saknar preview-tvillingar under /salong-preview/<slug>/. Zivar redigerar en butik
 han inte kan se. Egen körning: preview-tvillingar för modulsidor + flikar i SidaStudio.
 ⏳ **KVAR:** verticals-actions bustar ingen tenant (kräver bust av alla branschens tenants).
+⏳ **Rotorsak 3 — EDITOR-PARITET PER MALL (Zivar 2026-07-12):** *"varje mall har sina element på
+olika ställen … när de ska redigeras får sina element i underflikarna på redigera-sida-delen"* —
+Sida-editorns underflikar/fält är byggda kring EN mall-anatomi, men varje mall har egna sektioner
+(paisleys countdown-band, calytrix karusell, onyx split-hero …). Kravet: (a) redigera-fälten per
+flik ska spegla den AKTIVA mallens element — fält för sektioner mallen inte har ska bort, fält för
+mallens egna sektioner ska in; (b) "Visa var"-markeringen (flashText/flashImage i
+SidaPreviewBridge) ska fortsätta träffa rätt i varje mall (den matchar text/bild-URL generiskt —
+verifiera per mall, särskilt där copy transformeras till versaler via CSS); (c) mall-byte i
+editorn → underflikarna ritas om. Trolig väg: varje mall-registry-post (`FLORIST_THEMES` m.fl.)
+deklarerar sina redigerbara element (sektion → fält → content-nyckel) och SidaStudio genererar
+flikarnas fält ur registryt i stället för en hårdkodad uppsättning. EGEN KÖRNING — planeras efter
+runda 2.
 Mallarna får komponenterna som **opt-in-anatomi, inte en blank omstilning**: EN delad anatomi med
 `--sf-*`-hakar; var och en av de 13 `theme.ts` bestämmer uttrycket. En likformig uiverse-skin över
 13 mallar återskapar exakt den skelett-konvergens goal-58 slogs mot.

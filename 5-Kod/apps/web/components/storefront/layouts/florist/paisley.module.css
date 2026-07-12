@@ -151,10 +151,23 @@
   text-transform: uppercase;
   color: var(--color-fg-2);
 }
-/* Textlänk = tidningens "läs mer": versaler, understruken med en 2px-linjal. */
+/* Textlänk = tidningens "läs mer": versaler, understruken med en 2px-linjal.
+   Touch-golvet (goal-61): länken mätte 24px (18px rad + 4px luft + 2px linjal).
+   Klickboxen lyfts till 44px via inline-flex + centrering, och marginalerna
+   kvittar hela skillnaden (1lh = radens höjd) så texten ligger kvar på exakt
+   samma rad och flödet under är opåverkat. Linjalen flyttar från border-bottom
+   till ::after: en border hade annars hamnat vid 44px-boxens botten, långt under
+   texten. ::after ritas 4px under raden — precis där border-linjalen satt. */
 .paTextCta {
-  display: inline-block;
-  margin-top: var(--pa-sp-cta);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  /* flex sväljer mellanslaget före pil-spanen — column-gap återger exakt
+     samma lucka (mellanslag + letter-spacing = 0.38em, uppmätt 4.58px vid 12px). */
+  column-gap: 0.38em;
+  min-height: 44px;
+  margin-top: calc(var(--pa-sp-cta) + (1lh - 44px) / 2);
+  margin-bottom: calc((1lh - 32px) / 2);
   font-family: var(--font-body);
   font-size: var(--pa-fs-ui);
   font-weight: var(--pa-fw-micro);
@@ -162,9 +175,16 @@
   text-transform: uppercase;
   color: var(--color-primary);
   text-decoration: none;
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 4px;
   transition: transform var(--pa-dur) var(--pa-ease);
+}
+.paTextCta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 0.5lh + 4px);
+  height: 2px;
+  background: var(--color-primary);
 }
 .paTextCta:hover {
   transform: translateY(var(--pa-lift));
@@ -243,11 +263,15 @@
 }
 /* Touch-golvet (goal-61): logga-länken mätte 34px hög (logo-img-taket). Klickytan
    lyfts till 44px via flex-centrering — mastheadens min-height är redan 46px, så
-   raden växer inte och logotypen sitter kvar exakt där den satt. */
+   raden växer inte och logotypen sitter kvar exakt där den satt. Runda 2: bild-
+   loggan var också bara 41px BRED — min-width 44px + centrering ger full klickyta
+   utan att loggan flyttar sig (boxen är centrerad i mastheaden). */
 .paNavWordmark {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 44px;
+  min-width: 44px;
 }
 .paNavWordmark.paNavWordmark :global(.logo-text) {
   font-family: var(--font-script);
@@ -506,9 +530,12 @@
   line-height: var(--pa-lh-body);
   color: var(--color-fg-2);
 }
+/* Touch-golvet: prosa-länken ("Begär en offert") mätte 23px. Vertikal padding på
+   ett inline-element ändrar ALDRIG radhöjden — bara klickytan växer (23 → 45px). */
 .paSpreadNote a {
   color: var(--color-primary);
   font-weight: var(--pa-fw-micro);
+  padding-block: 11px;
 }
 
 /* 4 & 7 — REDAKTIONELLT RUTNÄT med bildtexter (shop + blogg) */
@@ -523,8 +550,10 @@
   gap: var(--pa-sp-text);
   flex-wrap: wrap;
 }
+/* Kvittningen följer med när margin-top nollställs: utan den skulle 44px-boxen
+   växa flex-raden nedåt. Med (1lh - 44px)/2 ligger baslinjen kvar som förr. */
 .paSecHead .paTextCta {
-  margin-top: 0;
+  margin-top: calc((1lh - 44px) / 2);
 }
 .paSecHeadCentered {
   text-align: center;
@@ -740,9 +769,12 @@
   gap: var(--pa-sp-eyebrow) var(--pa-sp-text);
   text-align: center;
 }
-.paGiftInner .paKicker,
-.paGiftInner .paTextCta {
+.paGiftInner .paKicker {
   margin: 0;
+}
+/* Samma kvittning som i .paSecHead: 44px-boxen får inte höja presentkortsraden. */
+.paGiftInner .paTextCta {
+  margin: calc((1lh - 44px) / 2) 0 calc((1lh - 32px) / 2);
 }
 .paGiftText {
   margin: 0;
@@ -1085,6 +1117,11 @@
   display: grid;
   gap: 6px;
 }
+/* Touch-golvet (goal-61): kolofonens länkar mätte 19px. De förblir inline och får
+   vertikal padding — den ändrar aldrig radhöjden i listan/prosan (kolofonens täta
+   rytm är pixelidentisk), bara klickytan växer (19 → 46px). Hover-linjen flyttar
+   från border-bottom till text-decoration: bordern hade annars ritats vid paddad
+   botten, 14px under texten. */
 .paFootLink {
   font-family: var(--font-body);
   font-size: var(--pa-fs-ui);
@@ -1092,12 +1129,15 @@
   letter-spacing: var(--pa-ls-ui);
   text-transform: uppercase;
   color: var(--pa-ink);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--pa-dur) var(--pa-ease);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  padding-block: 14px;
+  transition: text-decoration-color var(--pa-dur) var(--pa-ease);
 }
 .paFootLink:hover {
-  border-color: var(--pa-rule-on-dark);
+  text-decoration-color: var(--pa-rule-on-dark);
 }
 .paFootRule {
   max-width: 1180px;

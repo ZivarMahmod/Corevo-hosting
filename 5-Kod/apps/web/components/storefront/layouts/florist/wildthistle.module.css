@@ -167,8 +167,22 @@
 /* ═══ KNAPPAR — binär radie (0), mikrotyp, hård växling (ingen opacitet) ═══ */
 
 /* Text-CTA (understruken mikroetikett) */
+/* goal-61 runda 2: 44px touch-golv — klickboxen växer via inline-flex + min-height,
+   ALDRIG via större font. Marginalerna (13px upp, 7px ner) kvittar växten exakt:
+   flödesboxen är 24px som förut och glyferna landar på samma pixel i både
+   flex-end-rubrikraden, gift-radens center och kartrutans grid-center.
+   Underlinjen flyttar från border-bottom (som hamnat vid 44px-boxens botten,
+   långt från texten) till ::after på gamla platsen: glyfbotten + 4px-gapet.
+   column-gap återställer ordmellanrummet före pil-spannen ("Visa på karta →"):
+   flex slukar textnodens avslutande blanksteg, vars uppmätta bredd är 4.03px. */
 .wtLinkCta {
-  display: inline-block;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  column-gap: 4.03px;
+  min-height: 44px;
+  margin-top: -13px;
+  margin-bottom: -7px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--wt-fs-micro);
@@ -178,13 +192,23 @@
   text-decoration: none;
   white-space: nowrap;
   color: var(--color-primary);
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 4px;
-  transition: color var(--wt-dur-fast) ease, border-color var(--wt-dur-fast) ease;
+  transition: color var(--wt-dur-fast) ease;
+}
+.wtLinkCta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 13px); /* glyfbotten (centrum + 9px) + gamla 4px-paddingen */
+  height: 2px;
+  background: var(--color-primary);
+  transition: background-color var(--wt-dur-fast) ease;
 }
 .wtLinkCta:hover {
   color: var(--color-primary-d);
-  border-color: var(--color-primary-d);
+}
+.wtLinkCta:hover::after {
+  background: var(--color-primary-d);
 }
 .wtLinkCta:focus-visible {
   outline: 2px solid var(--color-primary);
@@ -863,6 +887,33 @@
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
 }
+/* goal-61 runda 2: 44px touch-golv för kontaktlänkarna (tel/mejl) — klickbox via
+   inline-flex + min-height, ALDRIG större font. Marginalerna (12px upp, 11px ner)
+   kvittar exakt: flödesboxen är 21px som förut och baslinjen i stycket orörd.
+   Punktlinjen flyttar från border-bottom (som hamnat vid 44px-boxens botten) till
+   ::after direkt under glyferna — samma 1px dotted på samma pixel. Gäller BARA
+   kontaktraderna: menyraderna (.wtFooterNav) behåller sin fältanteckningslinje
+   vid radens botten från runda 1. */
+.wtFooterText .wtFooterLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: -12px;
+  margin-bottom: -11px;
+  border-bottom: none;
+}
+.wtFooterText .wtFooterLink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 9.4px); /* glyfbotten (uppmätt) — där punktlinjen låg förut */
+  border-top: 1px dotted var(--color-fg-2);
+}
+.wtFooterText .wtFooterLink:hover::after {
+  border-top-color: var(--color-primary);
+}
 .wtFooterHoursRow {
   display: flex;
   justify-content: space-between;
@@ -898,7 +949,18 @@
   flex-wrap: wrap;
   gap: var(--wt-s2);
 }
+/* goal-61 runda 2: 44px touch-golv för de sociala TEXTLÄNKARNA — samma klickbox-
+   mönster (inline-flex + min-height, aldrig större font). Marginalerna (13px upp,
+   11px ner) kvittar exakt: flödesboxen är 20px som förut i socials-raden.
+   Underlinjen (2px solid) flyttar från border-bottom till ::after vid glyfboxens
+   botten — samma pixel som förut i stället för 44px-boxens botten. */
 .wtFooterSocial {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: -13px;
+  margin-bottom: -11px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--wt-fs-micro);
@@ -906,7 +968,15 @@
   text-transform: uppercase;
   text-decoration: none;
   color: var(--color-primary);
-  border-bottom: 2px solid var(--color-primary);
+}
+.wtFooterSocial::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 9px); /* glyfboxens botten (uppmätt) — gamla border-läget */
+  height: 2px;
+  background: var(--color-primary);
 }
 .wtFooterBottom {
   max-width: 1360px;
@@ -1433,6 +1503,7 @@
   .wtNavLinks a::after,
   .wtFooterLink,
   .wtLinkCta,
+  .wtLinkCta::after,
   .wtBandCta,
   .wtInkCta,
   .wtSquareCta,

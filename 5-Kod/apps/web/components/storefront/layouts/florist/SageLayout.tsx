@@ -253,7 +253,9 @@ export function SageLayout({ tenant, content, services, location, modules }: Sto
           <Reveal className={styles.sgGiftInner}>
             <p className={styles.sgEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
             <p className={styles.sgGiftLede}>{content.giftLede ?? 'Ge bort blommor, när som helst.'}</p>
-            <Link href="/presentkort" className={styles.sgBandCta} style={{ margin: 0 }}>
+            {/* Marginal-nollningen bor i CSS (.sgGiftInner .sgBandCta) — inline-stil
+                skulle blockera touch-golvets kvittning (goal-61 runda 2). */}
+            <Link href="/presentkort" className={styles.sgBandCta}>
               {content.giftCta ?? 'Till presentkorten'}
             </Link>
           </Reveal>

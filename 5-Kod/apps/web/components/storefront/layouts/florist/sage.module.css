@@ -420,20 +420,45 @@
   font-size: 18px;
   color: var(--color-primary);
 }
-/* Understruken mikro-länk — mallens enda sekundära CTA-form (aldrig en andra knapp). */
+/* Understruken mikro-länk — mallens enda sekundära CTA-form (aldrig en andra knapp).
+   Touch-golv (goal-61 runda 2): textraden är 18px men klickytan måste vara ≥44px.
+   Boxen växer via flex-centrering + min-height (display:flex, inte inline-flex, så
+   fit-content + auto-marginaler fortsätter centrera precis som förr). Marginalerna
+   kvittar tillväxten: 19 + 44 − 9 = gamla 32 + 22, så texten och nästa sektion står
+   exakt kvar. Strecket låg som border-bottom vid boxbotten (18px text + 3px luft +
+   1px linje) — vid 44px-botten hade det hamnat långt under texten, så det ritas nu
+   som ::after på samma pixelrad som förr: 13px centrering + 18 + 3 + 1 = 35 uppifrån,
+   dvs 9px från boxens botten. */
 .sgBandCta {
-  display: block;
+  position: relative;
+  display: flex;
+  align-items: center;
   width: fit-content;
-  margin: 32px auto 0;
+  min-height: 44px;
+  margin: 19px auto -9px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 12px;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-primary);
-  border-bottom: 1px solid var(--color-primary);
-  padding-bottom: 3px;
   text-decoration: none;
+}
+.sgBandCta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 9px;
+  height: 1px;
+  background: currentColor;
+}
+/* Presentkortsradens CTA står i en baseline-flexrad — där skulle auto-marginalerna
+   sluka radens fria yta och trycka isär lede och länk. Kvitta i stället 44px-boxens
+   tillväxt (22px) asymmetriskt: 13 upp + 9 ner lägger baselinen på gamla 11.4px från
+   yttre boxtoppen, så texten står stilla även när länken wrappat till egen rad. */
+.sgGiftInner .sgBandCta {
+  margin: -13px 0 -9px;
 }
 
 /* ═══ PRIS-TABELL — hårlinjer, tre spalter, hela raden bokar ══════════════ */
@@ -777,20 +802,62 @@
   line-height: 1.58;
   color: var(--color-fg-2);
 }
-.sgFootMeta > *:not(:last-child),
+/* Hårlinje-avdelarna: sgFootHours behåller border-right (raden är bara spans), men i
+   sgFootMeta växer länkarna till 44px-klickytor — en border-right hade växt med boxen.
+   Avdelaren ritas därför som en centrerad ::before i exakt gamla höjden (1.58em =
+   radens 28.4px) — för spansen är det pixelsamma läge som border-right var. */
 .sgFootHours > *:not(:last-child) {
   padding-right: 20px;
   border-right: 1px solid var(--color-line);
 }
+.sgFootMeta > *:not(:last-child) {
+  position: relative;
+  /* 21 = gamla 20px padding + borderns 1px layoutbredd — annars krymper den
+     centrerade raden 1px per avdelare och alla poster glider i sidled. */
+  padding-right: 21px;
+}
+.sgFootMeta > *:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 1.58em;
+  background: var(--color-line);
+}
+/* Touch-golv (goal-61 runda 2): telefon-, mejl- och social-länkarna mätte 29px.
+   Padding 8px lyfter boxen över 44px och marginalerna kvittar exakt (gamla boxen
+   var 28.4px text + 1px border → 8 upp, 7 ner) så baseline-raden inte rör sig en
+   pixel. Understrykningen satt som border-bottom vid textbotten — vid 44px-botten
+   hade den hamnat under klickytan, så den ritas nu som ::after på samma pixelrad
+   som förr: 8px padding + 28.4px text = 36.4 uppifrån, dvs 7px från boxens botten. */
 .sgFootMeta a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 0;
+  margin: -8px 0 -7px;
   color: var(--color-fg-2);
   text-decoration: none;
-  border-bottom: 1px solid var(--color-line);
-  transition: color 400ms ease, border-color 400ms ease;
+  transition: color 400ms ease;
+}
+.sgFootMeta a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7px;
+  height: 1px;
+  background: var(--color-line);
+  transition: background 400ms ease;
 }
 .sgFootMeta a:hover {
   color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+}
+.sgFootMeta a:hover::after {
+  background: var(--color-primary);
 }
 .sgFootHours b {
   font-weight: 600;
@@ -1165,6 +1232,7 @@ a.sgPostInner:hover .sgPostTitle { color: var(--color-primary); }
   .sgBandCta,
   .sgFootLinks a,
   .sgFootMeta a,
+  .sgFootMeta a::after,
   .sgGallery.sgGallery img {
     transition: none;
     animation: none;

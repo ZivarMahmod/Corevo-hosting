@@ -627,9 +627,26 @@
   letter-spacing: var(--cal-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary); /* 7.15:1 mot --color-accent-soft */
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 2px;
+  /* 44px = touch-golvet. Länken mätte 22px — klickboxen växer via padding och
+     negativ margin kvittar exakt lika mycket, så gift-radens rytm är pixeldensamma.
+     Den permanenta underlinjen bor i ::after tätt under texten (samma mönster som
+     navlänkarnas hover-linje) — en border-bottom hade legat vid 44px-boxens botten. */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-block: 13px;
+  margin-block: -13px;
   transition: opacity var(--cal-dur) ease;
+}
+.calGiftCta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(50% - 1em);
+  height: 2px;
+  background: var(--color-primary);
 }
 .calGiftCta:hover { opacity: 0.7; }
 
@@ -927,14 +944,33 @@
   letter-spacing: var(--cal-ls-micro);
   text-transform: uppercase;
   color: #fff;
-  border-bottom: 2px solid transparent;
-  padding-bottom: 2px;
-  transition: border-color var(--cal-dur) ease;
+  /* 44px = touch-golvet. Länkarna mätte 19-22px i sidfotens täta listor — klickboxen
+     växer via padding och negativ margin kvittar exakt lika mycket, så listrytmen är
+     pixeldensamma. Hover-guldlinjen flyttar till ::after tätt under texten (navets
+     mönster) — en border-bottom hade legat vid 44px-boxens botten, långt under orden. */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-block: 13px;
+  margin-block: -13px;
 }
-.calFooterSocial:hover,
-.calFooterLinks a:hover,
-.calFooterLink:hover {
-  border-bottom-color: var(--cal-gold);
+.calFooterSocial::after,
+.calFooterLinks a::after,
+.calFooterLink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(50% - 1em);
+  height: 2px;
+  background: transparent;
+  transition: background-color var(--cal-dur) ease;
+}
+.calFooterSocial:hover::after,
+.calFooterLinks a:hover::after,
+.calFooterLink:hover::after {
+  background: var(--cal-gold);
 }
 .calFooterHead {
   margin: 0 0 var(--cal-step-head);

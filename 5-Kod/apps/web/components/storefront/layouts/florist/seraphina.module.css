@@ -219,25 +219,34 @@
   margin-top: var(--sera-sp-cta);
 }
 
-/* Textlänk i knapp-register (12/600/VERSALER + 1px) — aldrig en 16px-viskning. */
+/* Textlänk i knapp-register (12/600/VERSALER + 1px) — aldrig en 16px-viskning.
+   goal-61 runda 2: 44px touch-golv. Länken mätte 24px (18px rad + 4px luft +
+   2px linje). Boxen växer till 44px via symmetrisk padding (13+13); margin-
+   kvittningen (13px upp, 7px ner) håller flödesbidraget på exakt samma 24px
+   som förr, så sektionsrytmen står still. Hover-understrykningen flyttar från
+   border-bottom (hade annars hamnat vid 44px-boxens botten, långt under
+   texten) till text-decoration med offset — linjen ligger kvar vid texten. */
 .seraMore {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: var(--sera-sp-cta);
-  padding-bottom: 4px;
+  min-height: 44px;
+  margin: calc(var(--sera-sp-cta) - 13px) 0 -7px;
+  padding: 13px 0;
   font-family: var(--font-body);
   font-size: var(--sera-fs-micro);
   font-weight: var(--sera-fw-micro);
   letter-spacing: var(--sera-ls-micro);
   text-transform: uppercase;
   color: var(--color-primary);
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  transition: border-color var(--sera-dur-ui) ease, gap var(--sera-dur-ui) ease;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  transition: text-decoration-color var(--sera-dur-ui) ease, gap var(--sera-dur-ui) ease;
 }
 .seraMore:hover {
-  border-color: var(--color-primary);
+  text-decoration-color: var(--color-primary);
   gap: 0.75rem;
 }
 .seraMore:focus-visible {
@@ -595,7 +604,9 @@
   color: var(--color-fg);
 }
 .seraGiftInner .seraMore {
-  margin-top: 0;
+  /* goal-61 runda 2: margin-boxen blir 44 minus 13 minus 7 = 24px — samma yttre
+     mått som förr, så flex-centreringen i guldbandet står exakt still. */
+  margin: -13px 0 -7px;
 }
 
 /* ── 9. PLATS & ÖPPETTIDER ────────────────────────────────────────────────── */
@@ -639,7 +650,9 @@
   border-radius: var(--sera-radius);
 }
 .seraMap .seraMore {
-  margin-top: 0;
+  /* goal-61 runda 2: samma kvittning som i guldbandet — kartrutans centrering
+     ser samma 24px-box som förr. */
+  margin: -13px 0 -7px;
 }
 .seraMapHint {
   font-family: var(--font-body);
@@ -842,15 +855,28 @@
   padding: 0 var(--sera-sp-eyebrow);
   color: var(--color-primary);
 }
+/* goal-61 runda 2: 44px touch-golv — tel/mejl mätte 21px inline i stycket.
+   Symmetrisk padding (10+10) lyfter boxen till minst 44px och kvittas med lika
+   stora negativa marginaler: margin-boxen är kvar på 16px-radens line-height,
+   så styckets radbrytning och baslinje rubbas inte med en pixel. Den ständiga
+   understrykningen flyttar från border-bottom till text-decoration — annars
+   hade linjen suttit vid 44px-boxens botten, långt under texten. */
 .seraFootLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 0;
+  margin: -10px 0;
   color: var(--color-fg-2);
-  text-decoration: none;
-  border-bottom: 1px solid var(--color-line);
-  transition: color var(--sera-dur-ui) ease, border-color var(--sera-dur-ui) ease;
+  text-decoration: underline;
+  text-decoration-color: var(--color-line);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: color var(--sera-dur-ui) ease, text-decoration-color var(--sera-dur-ui) ease;
 }
 .seraFootLink:hover {
   color: var(--color-primary);
-  border-color: var(--color-primary);
+  text-decoration-color: var(--color-primary);
 }
 .seraFootHours {
   max-width: 20rem;
@@ -901,6 +927,18 @@
 .seraFootNav a:hover,
 .seraFootSocials a:hover {
   color: var(--color-primary);
+}
+/* Social-länkarna bär BÅDA klasserna: .seraFootSocials a (44px-boxen ovan,
+   med text-decoration: none) OCH .seraFootLink (underlinjen). Före runda 2 låg
+   .seraFootLink-bordern vid 44px-boxens botten — 13px under texten. Kompound-
+   selektorn (0,2,1) vinner över none-regeln och lägger linjen vid texten. */
+.seraFootSocials a.seraFootLink {
+  text-decoration: underline;
+  text-decoration-color: var(--color-line);
+  text-decoration-thickness: 1px;
+}
+.seraFootSocials a.seraFootLink:hover {
+  text-decoration-color: var(--color-primary);
 }
 .seraFootBottom {
   margin: var(--sera-sp-head) 0 0;

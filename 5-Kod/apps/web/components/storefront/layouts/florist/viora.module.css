@@ -122,11 +122,19 @@
   margin: var(--vio-s2) 0 0;
   max-width: 34rem;
 }
-.vioMoreLink {
+/* goal-61 runda 2: läs-mer-länkarna mätte 22px — 44px-klickyta. Boxen växer symmetriskt
+   (11px upp + 11px ned) och kvittas med negativ margin så sektionsrytmen är oförändrad.
+   Underlinjen flyttar från border-bottom (som hade hamnat vid 44px-boxens botten, långt
+   under texten) till text-decoration som följer texten precis som förut.
+   Dubbelklassen (0,2,0) krävs: globala ".tenant-root a" (0,1,1) nollar annars både
+   text-decoration OCH color på alla enkelklass-länkar (booking-global.css:314-fällan). */
+.vioMoreLink.vioMoreLink {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: var(--vio-s3);
+  min-height: 44px;
+  margin-top: calc(var(--vio-s3) - 11px);
+  margin-bottom: -11px;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--vio-fs-micro);
@@ -134,11 +142,13 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-primary);
-  border-bottom: 2px solid transparent;
-  padding-bottom: 3px;
-  transition: border-color var(--vio-dur) ease;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  transition: text-decoration-color var(--vio-dur) ease;
 }
-.vioMoreLink:hover { border-color: var(--color-primary); }
+.vioMoreLink.vioMoreLink:hover { text-decoration-color: var(--color-primary); }
 .vioMoreLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 
 /* KNAPPEN — full pill (radien ärvs från .btn-accent/--radius-pill), 12/600/VERSALER.
@@ -344,18 +354,28 @@
   gap: var(--vio-s2);
   margin-top: var(--vio-s3);
 }
-.vioFooterSocial {
+/* goal-61 runda 2: Instagram/Facebook mätte 22px — 44px-klickyta, kvittad med negativ
+   margin så social-raden behåller exakt sin gamla höjd (marginboxen = 22px). Den synliga
+   underlinjen (krämvit 55%) → text-decoration i gamla läget under texten.
+   Dubbelklass mot ".tenant-root a"-fällan. */
+.vioFooterSocial.vioFooterSocial {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -11px 0;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--vio-fs-micro);
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-bg);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-bg) 55%, transparent);
-  padding-bottom: 3px;
-  transition: border-color var(--vio-dur) ease;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--color-bg) 55%, transparent);
+  text-underline-offset: 6px;
+  transition: text-decoration-color var(--vio-dur) ease;
 }
-.vioFooterSocial:hover { border-color: var(--color-bg); }
+.vioFooterSocial.vioFooterSocial:hover { text-decoration-color: var(--color-bg); }
 .vioFooterInfo { display: flex; flex-direction: column; gap: var(--vio-s4); }
 .vioFooterBlocks {
   display: grid;
@@ -385,6 +405,23 @@
   transition: border-color var(--vio-dur) ease;
 }
 .vioFooterLink:hover { border-color: var(--color-bg); }
+/* goal-61 runda 2: telefon+mejl i "Besök oss" mätte 21px — 44px-klickyta. Kvittningen
+   (44 minus 2×11 = 22px marginbox) håller sig under styckets radhöjd (25.6px), så
+   footern flyttar sig inte en pixel. Scopet .vioFooterText lämnar sidfotsmenyns
+   länkar (fixade i runda 1 via .vioFooterNav a) helt orörda. */
+.vioFooterText .vioFooterLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -11px 0;
+  border-bottom: none;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--vio-dur) ease;
+}
+.vioFooterText .vioFooterLink:hover { text-decoration-color: var(--color-bg); }
 .vioFooterHoursRow {
   display: flex;
   justify-content: space-between;
@@ -498,18 +535,30 @@
   margin-top: var(--vio-s3);
   flex-wrap: wrap;
 }
-.vioHeroSecondary {
+/* goal-61 runda 2: "Till butiken" mätte 23px — 44px-klickyta, kvittad med negativ margin
+   (pillen bredvid är 46px, så raden var redan hög nog). Den SYNLIGA underlinjen (krämvit
+   55%) flyttar från border-bottom till text-decoration med offset som återskapar det
+   gamla läget: nedre kant + 4px padding ≈ 6px under baslinjen. Gap ersätter ordmellan-
+   rummet som flexlayouten annars sväljer. Dubbelklass mot ".tenant-root a"-fällan. */
+.vioHeroSecondary.vioHeroSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  margin: -11px 0;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--vio-fs-micro);
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-bg);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-bg) 55%, transparent);
-  padding-bottom: 4px;
-  transition: border-color var(--vio-dur) ease;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--color-bg) 55%, transparent);
+  text-underline-offset: 6px;
+  transition: text-decoration-color var(--vio-dur) ease;
 }
-.vioHeroSecondary:hover { border-color: var(--color-bg); }
+.vioHeroSecondary.vioHeroSecondary:hover { text-decoration-color: var(--color-bg); }
 .vioHeroPhoto {
   background-color: var(--color-accent-soft);
   background-size: cover;
@@ -829,18 +878,28 @@
   color: var(--color-bg);
   margin: 0;
 }
-.vioGiftCta {
+/* goal-61 runda 2: "Till presentkorten" mätte 22px — 44px-klickyta, kvittad med negativ
+   margin så den smala presentkorts-raden behåller exakt sin höjd (baseline-justeringen i
+   .vioGiftInner räknar med marginboxen). Synlig underlinje → text-decoration.
+   Dubbelklass mot ".tenant-root a"-fällan. */
+.vioGiftCta.vioGiftCta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -11px 0;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--vio-fs-micro);
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-bg);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-bg) 55%, transparent);
-  padding-bottom: 3px;
-  transition: border-color var(--vio-dur) ease;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--color-bg) 55%, transparent);
+  text-underline-offset: 6px;
+  transition: text-decoration-color var(--vio-dur) ease;
 }
-.vioGiftCta:hover { border-color: var(--color-bg); }
+.vioGiftCta.vioGiftCta:hover { text-decoration-color: var(--color-bg); }
 
 /* ── 8. FRÅN BLOGGEN — mindre 3-kolumners kort-grid, SAMMA 4:5 ─────────────────────── */
 .vioTeaserSection { padding: var(--vio-sec) var(--vio-gut); }
@@ -932,10 +991,16 @@
   border-radius: var(--sf-radius);
   padding: var(--vio-s3);
 }
-.vioMapLink {
+/* goal-61 runda 2: "Visa på karta" mätte 22px — 44px-klickyta, kvittad med negativ
+   margin så länken sitter kvar på exakt samma plats i den centrerade kart-panelen.
+   Hover-underlinjen → text-decoration (border hade lagt sig vid boxens botten).
+   Dubbelklass mot ".tenant-root a"-fällan. */
+.vioMapLink.vioMapLink {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  min-height: 44px;
+  margin: -11px 0;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: var(--vio-fs-micro);
@@ -943,11 +1008,13 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--color-primary);
-  border-bottom: 2px solid transparent;
-  padding-bottom: 3px;
-  transition: border-color var(--vio-dur) ease;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  transition: text-decoration-color var(--vio-dur) ease;
 }
-.vioMapLink:hover { border-color: var(--color-primary); }
+.vioMapLink.vioMapLink:hover { text-decoration-color: var(--color-primary); }
 .vioMapLink:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
 .vioMapHint {
   font-family: var(--font-body);
@@ -1287,8 +1354,9 @@ a.vioPostSplit:focus-visible { outline: 2px solid var(--color-primary); outline-
   .vioClosingCta.vioClosingCta,
   .vioNavLinks a,
   .vioNavIcon,
-  .vioMoreLink,
-  .vioHeroSecondary,
+  .vioMoreLink.vioMoreLink,
+  .vioMapLink.vioMapLink,
+  .vioHeroSecondary.vioHeroSecondary,
   .vioLinkIcon,
   .vioShopImg,
   .vioTeaserImg,
@@ -1296,10 +1364,11 @@ a.vioPostSplit:focus-visible { outline: 2px solid var(--color-primary); outline-
   .vioSvcCard,
   .vioPostSplit,
   .vioShopNameLink,
-  .vioGiftCta,
+  .vioGiftCta.vioGiftCta,
   .vioFooterLink,
+  .vioFooterText .vioFooterLink,
   .vioFooterNav a,
-  .vioFooterSocial,
+  .vioFooterSocial.vioFooterSocial,
   .vioContactLink,
   .vioGallery li {
     transition: none;
