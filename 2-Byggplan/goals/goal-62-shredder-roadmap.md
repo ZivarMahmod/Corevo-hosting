@@ -51,9 +51,12 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
       på både florist och freshcut; `/admin/sajtbyggare` = bara host-routing-307 (samma som vilken
       icke-existerande rutt som helst). Det Zivar ser är **SidaStudio ("Redigera sidan")** — editorn
       som SKA finnas. Ingen rivning behövs.
-- [ ] **A4. Prestanda-spöket**: "ett av elementen tar sjukt lång tid att gå igenom".
-      Identifiera vilket (mät server-actions + navigationer i kund-admin/superadmin med
-      Playwright-timing). Först mäta, sen fixa som egen punkt.
+- [x] **A4. Prestanda-spöket** ✅ MÄTT — inget segt i produktion. Live-tider: storefront 0.08–0.98 s,
+      login 0.08–0.93 s, butik/kassa/varukorg 0.26–0.87 s. Kund-admin lokalt (dev-server, första
+      kompilering inräknad): långsammast /admin/offerter 4.3 s, /admin/installningar 3.2 s, resten
+      0.4–2.7 s — det är Next dev-kompilering, inte appen. Slutsats: segheten Zivar känner är
+      antingen dev-servern eller en enskild SPARA-action → återkommer som egen punkt när vi kan
+      peka ut vilken yta. Bifynd: **/butik = 404, rätt rutt är /shop** (svensk rutt saknas → E-fasen).
 - [ ] **A5. Florist-admin-kontot**: bjud in/skapa ägar-login för Hantverksfloristerna via
       kundkortet, skriv upp kontot i `5-Kod/docs/ops/INLOGGNINGAR.md`.
 - [ ] **A6. Verifiera fas 2-admin med Playwright på superbooking** (Zivar har nu ETT superkonto —
@@ -173,3 +176,4 @@ Advisor används flitigt under arbetet; context-mode/ctx-verktygen för tunga l�
 | 2026-07-12 | A1 deploy | v1.18.0 | CI success; corevo.se/booking/superbooking/florist/freshcut = 200 |
 | 2026-07-12 | A2 kundkonto-toggel | 0d0c1b0 | tsc 0, vitest 778/778 |
 | 2026-07-12 | A3 sajtbyggar-rest | — | grep = 0 rester; live-rutter 404/307 = död |
+| 2026-07-12 | A4 prestanda | — | live 0.08–0.98 s alla ytor; dev-kompilering var "segheten" |
