@@ -64,8 +64,51 @@ död kod i prod) renderar VILKEN mall som helst med riktig tenant-data på alla 
 calytrix 6) och nav-länkar 18–28px höga i ALLA 13 (touch-golv 44). Fix-rundan = 13 parallella
 agenter, disjunkta filer (wf_e3228ae9).
 **1c. Produktkortets hover-lager** (snabbvy — "hjärta" SKIPPAS: ingen wishlist-funktion finns,
-och vi klär aldrig en funktion som inte finns) — med focus-paritet. KVAR.
-**1d. Mobil-nav-mönster.** NYTT FYND: ingen mall har mobilmeny — länkarna radbryts. Egen runda.
+och vi klär aldrig en funktion som inte finns) — med focus-paritet. ✅ KLART (v1.14.0).
+**1d. Mobil-nav-mönster.** ✅ AVSKRIVEN 2026-07-12 — påståendet var FEL. Mätt med `_mobnav.mjs`
+(alla 20 mallar × 390px): hamburgaren + NavShells overlay finns överallt, exakt 1 synlig länk i
+headern (ordmärket) i 19 av 20. Calytrix visar 4 — och det är MEDVETET (korg + köp-CTA får inte
+försvinna på mobil, står i dess CSS). Ingen bugg. Läxan: mät innan du skriver upp en runda.
+
+**1e. Delade klickytor — de 7 äldre mallarna.** ✅ KLART 2026-07-12 (commit 040ff28).
+Florist-sviten var ren för att den äger sina EGNA komponenter; salvia/leander/zigge/linnea/edit/
+flora/freshcut använder de DELADE, och de fick aldrig 44px-behandlingen. Mätt (`_old7.mjs`,
+7 mallar × 4 sidor, transformer neutraliserade): `navWordmark` 40px · kontaktsidans länkar 20–30px
+· footerns sociala 20px · karusellens prickar/paus 24px · shop-titellänk 22px · zigge 7px
+mobil-overflow (ett obrytbart tjänstenamn i ett `1fr`-spår som inte kunde krympa).
+Fix i den DELADE CSS:en → alla 7 botade i en sväng. Understrykningar flyttade från `border-bottom`
+till `::after` (border ritas annars i botten av den nya 44px-boxen, långt under texten).
+Efter: **28/28 sida×mall = 0 FAIL**, och de 13 florist-mallarna fortsatt rena (13/13).
+
+**1f. BRANSCH-LAGRET** — Zivars huvudkrav, ✅ KLART 2026-07-12 (commit 040ff28).
+"När jag skapar en tatueringsstudio ska det inte stå välkommen till din salong. Branschen avgör
+mycket av vad som kommer stå."
+Kedjan fanns redan (kundens copy > branschens copy > mallens copy) men `verticals.default_copy`
+är TOM i DB → bransch-lagret levererade `{}` → mallens frisörtext läckte till alla branscher.
+`components/storefront/bransch-copy.ts` lägger en KOD-DEFAULT under DB-raden (DB vinner så fort
+Zivar skriver en rad — kod-defaulten är golvet, inte taket). Frisörtexten som låg hårdkodad i
+salvia/leander/zigge/linnea/edit flyttade HEM till frisör-branschen, ordagrant; mallarna är nu
+bransch-neutrala men har kvar sin röst. Foton följer samma väg (`BRANSCH_IMAGES`) — floristen
+ärver inte längre salongsbilder. Inkopplat på EN punkt (`getTenantBySlug`) → publik storefront
++ salong-preview på en gång.
+Städningen: **457 hårdkodade bransch-ord → 58**, och de 58 är sanna (FreshCuts egen text = riktig
+frisörkund, schema.org-mappningen `frisör → HairSalon`, CSS-klassnamn). Vakten (`npm run vakt`)
+låser nivån: 0 nya tillåtna. `bransch-copy.ts` är undantagen — där ÄR bransch-orden innehållet.
+
+**1g. Sajtbyggaren riven.** ✅ 2026-07-12 (commit 9902204, Zivar: "riv sajtbyggaren").
+Spåret var två delar och båda övergivna: look-/render-bron (LOOKS = [] sedan goal-51 → varje
+gren onåbar, men `/sajtbyggare-spike/look` svarade **200 PUBLIKT på kundernas domäner** med noll
+mallar) och site-content-editorn (flagga på i prod, men ingen meny-ingång, toggeln default av,
+bara salvia-mallen). Sida-studion gör allt den gjorde, för alla mallar.
+RÄDDAT FÖRST: `manifest/{types,salvia}.ts` → `lib/storefront/skin/` — publika startsidan
+importerar salvia-manifestet för content_slots-vägen (`applySkinOverlay`), som INTE är
+sajtbyggaren utan bara lånade manifestet. skin-testerna 62/62 gröna FÖRE någon rivning.
+RIVET: 4327 rader. `lib/sajtbyggare/**` · spike-rutterna · `/admin/sajtbyggare` · SiteEditor ·
+SajtbyggareControl (toggeln i kundkortet) · look-grenarna i `(public)/page+layout` ·
+`looks`/`lookKeys` genom hela onboarding-studion · "Designa sidan"-steget i CreateTenantForm ·
+`tenantSiteEditorEnabled` + `settings.look` · `SAJTBYGGARE_ENABLED` ur wrangler.
+KVAR (medvetet): `MediaRecordSource = 'branding' | 'sajtbyggare'` — ett DB-check-constraint-värde
+(migration 0053) som levande actions skriver. Att döpa om det kräver migration.
 
 ### Preview-parity (Zivar 2026-07-12: "previewn ska alltid matcha verkligheten")
 ✅ **Rotorsak 1 FIXAD** (commit ceef05f): tjänste-/personal-/location-/Stripe-actions skrev
