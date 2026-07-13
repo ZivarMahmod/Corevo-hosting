@@ -1,6 +1,8 @@
 import type { FloristTheme } from './types'
 import { AteljeVinterNav, AteljeVinterFooter } from './ateljevinter.chrome'
 import { AteljeVinterOm, AteljeVinterTjanster, AteljeVinterKontakt } from './ateljevinter.pages'
+import { AteljeVinterCart } from './ateljevinter.cart'
+import { AteljeVinterCheckout } from './ateljevinter.checkout'
 import {
   AteljeVinterShop,
   AteljeVinterBlogg,
@@ -106,6 +108,10 @@ export const ateljevinter: FloristTheme = {
     // goal-64 (regression): seminarie-listan äger sina rader + anmälan i stället för
     // den delade kurs-sidan (grått hero-band, boxade fält, grön "Anmäl").
     kurser: AteljeVinterKurser,
+    // goal-64 (regression): korgen + kassan äger sin form. useCart/useCheckout
+    // (reserve/confirm/betal-routing) rörs inte — bara markupen är mallens.
+    cart: AteljeVinterCart,
+    checkout: AteljeVinterCheckout,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

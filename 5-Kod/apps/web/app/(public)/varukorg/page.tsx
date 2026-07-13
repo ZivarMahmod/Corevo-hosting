@@ -48,16 +48,14 @@ export default async function VarukorgPage() {
   }
 
   // Mallens egen korg vinner; den delade är bara fallback tills varje mall byggt sin.
+  //
+  // goal-64 (regression): SubpageHero renderades HÄR OVANPÅ mallens egen vy oavsett —
+  // en mall som ritar sin egen rubrik ("dina förvärv") fick då ETT extra generiskt
+  // rubrikband stapla ovanpå den. En mall som äger sidan äger HELA sidan, inklusive
+  // rubriken — samma regel som offert/presentkort/kurser.
   const OwnCart = themeModuleViews(settings.theme).cart
   if (OwnCart) {
-    return (
-      <>
-        <SubpageHero eyebrow="— Din beställning" title="Varukorg" />
-        <section className={`section ${styles.page}`}>
-          <OwnCart />
-        </section>
-      </>
-    )
+    return <OwnCart />
   }
 
   return (

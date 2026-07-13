@@ -77,6 +77,35 @@ export default async function KassaPage() {
     signedInEmail = auth?.user?.email ?? null
   }
 
+  // goal-64 (regression): SubpageHero renderades tidigare ovanpå mallens EGEN kassa
+  // oavsett — en mall som ritar sin egen rubrik ("slutför") fick ett extra generiskt
+  // rubrikband staplat ovanpå. Kontoraden (login-erbjudandet) är däremot en RIKTIG
+  // funktion (ordern länkas till kundkontot) — den tas bort, inte bara det generiska
+  // bandet. Samma regel som varukorgen: mallen äger sidan, inte funktionen.
+  if (OwnCheckout) {
+    return (
+      <section className={`section ${s.shell}`}>
+        {accountsEnabled && !signedIn ? (
+          <p className={s.account}>
+            Har du ett konto?{' '}
+            <Link href="/login?next=/kassa" className={`${s.link} ${s.accountLink}`}>
+              Logga in
+            </Link>{' '}
+            så sparas din beställning på Mina sidor.
+          </p>
+        ) : null}
+        {accountsEnabled && signedIn && signedInEmail ? (
+          <p className={s.account}>Inloggad som {signedInEmail} — beställningen sparas på Mina sidor.</p>
+        ) : null}
+        <OwnCheckout
+          fulfilment={fulfilment}
+          shippingOptions={checkout.shippingOptions}
+          paymentMethods={checkout.paymentMethods}
+        />
+      </section>
+    )
+  }
+
   return (
     <>
       <SubpageHero eyebrow="— Snart klart" title="Kassa" />
@@ -93,19 +122,11 @@ export default async function KassaPage() {
       {accountsEnabled && signedIn && signedInEmail ? (
         <p className={s.account}>Inloggad som {signedInEmail} — beställningen sparas på Mina sidor.</p>
       ) : null}
-      {OwnCheckout ? (
-        <OwnCheckout
-          fulfilment={fulfilment}
-          shippingOptions={checkout.shippingOptions}
-          paymentMethods={checkout.paymentMethods}
-        />
-      ) : (
-        <CheckoutForm
-          fulfilment={fulfilment}
-          shippingOptions={checkout.shippingOptions}
-          paymentMethods={checkout.paymentMethods}
-        />
-      )}
+      <CheckoutForm
+        fulfilment={fulfilment}
+        shippingOptions={checkout.shippingOptions}
+        paymentMethods={checkout.paymentMethods}
+      />
     </section>
     </>
   )
