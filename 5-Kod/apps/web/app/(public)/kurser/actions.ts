@@ -45,17 +45,24 @@ export async function submitEventRegistration(
     return { phase: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
   }
 
-  // c. Re-gate SERVER-side: kurser rider på booking-modulen; only LIVE accepts
-  //    writes (paused shows the list read-only, draft/off is not public at all).
+  // c. Re-gate SERVER-side: bara LIVE tar emot anmälningar (paused visar listan
+  //    läsbar, draft/off är inte publik alls).
+  //
+  //    BUGG (goal-64): den här gaten läste `booking`, medan sidan och adminytan gatar
+  //    på `kurser` — modulen fick sin egen nyckel i migration 0056. En kund med
+  //    kurser=live men booking=off såg alltså kurslistan men kunde inte anmäla sig:
+  //    formuläret svarade "Anmälan är inte öppen just nu" utan att något var stängt.
+  //    En florist som säljer kurser men inte tidsbokning träffades av det direkt.
   const supabase = createPublicClient()
   const { data: moduleRow } = await supabase
     .from('tenant_modules')
     .select('state')
     .eq('tenant_id', ctx.id) // app-layer tenant isolation (anon RLS does NOT do this)
-    .eq('module_key', 'booking')
+    .eq('module_key', 'kurser')
     .maybeSingle()
-  // BACKWARD-COMPAT parity med moduleState(): ingen rad alls ⇒ booking 'live'.
-  if (moduleRow && moduleRow.state !== 'live') {
+  // Ingen rad alls ⇒ modulen är av (0056 backfillar bara kunder som FAKTISKT har
+  // kurser). Till skillnad från booking finns här ingen "ingen rad = live"-arv.
+  if (!moduleRow || moduleRow.state !== 'live') {
     return { phase: 'error', message: 'Anmälan är inte öppen just nu.' }
   }
 
