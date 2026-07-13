@@ -85,7 +85,10 @@ export const ateljevinter: FloristTheme = {
     stats: [],
   },
   caps: { heroEyebrow: true, homeStats: false, homeGallery: true, homeAbout: true },
-  chrome: { Nav: AteljeVinterNav, Footer: AteljeVinterFooter },
+  // ownsUtility: filens sidhuvud har INGEN mörk annonsrad — NavShell ritar annars alltid
+  // sin egen ovanför navet ("sex verk per månad…" i svart). Ateljé Vinters nav ritar ingen,
+  // så flaggan gör att remsan försvinner helt: hårlinjen under navet är sidans enda avgränsning.
+  chrome: { Nav: AteljeVinterNav, Footer: AteljeVinterFooter, ownsUtility: true },
   pages: { om: AteljeVinterOm, tjanster: AteljeVinterTjanster, kontakt: AteljeVinterKontakt },
   // goal-64: arkivet + vänkretsen. INGEN team-vy — Ateljé Vinter har inget team i sitt
   // paket (ateljén är EN person), och en påhittad team-sida vore en påhittad personal.

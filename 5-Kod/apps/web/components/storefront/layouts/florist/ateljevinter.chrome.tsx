@@ -22,6 +22,34 @@ import styles from './ateljevinter.module.css'
  * fokusfälla, scroll-skin — därav shell.navThemed/navLinks/navCluster), ALLA modul-gatade
  * `links` ritas, korgen när shopen är live, kontolänken när kundkonton är på.
  */
+/**
+ * Filens nav-etiketter (manifestets `verbatim`-lista): mallen döper om plattformens
+ * modul-gatade länkar till sin egen redaktionella röst — "samlingen" i stället för
+ * "Butik", "seminarier" i stället för "Kurser". VIKTIGT: vi döper bara OM de länkar
+ * plattformen redan gett oss (de är modul-gatade), vi hittar aldrig på nya — annars
+ * återuppstår 404-fällan (en länk till en modul som inte är live). Okänd href faller
+ * tillbaka på plattformens etikett i gemener, så mallens grammatik håller ändå.
+ */
+const AV_NAV_LABELS: Record<string, string> = {
+  '/': 'hem',
+  '/shop': 'samlingen',
+  '/boka': 'besök',
+  '/tjanster': 'tjänster',
+  '/kurser': 'seminarier',
+  '/galleri': 'arkivet',
+  '/blogg': 'anteckningar',
+  '/offert': 'beställningsverk',
+  '/presentkort': 'gåvobrev',
+  '/klubb': 'vänkretsen',
+  '/team': 'team',
+  '/om': 'ateljén',
+  '/kontakt': 'kontakt',
+}
+
+function avNavLabel(link: { href: string; label: string }): string {
+  return AV_NAV_LABELS[link.href] ?? link.label.toLowerCase()
+}
+
 export function AteljeVinterNav(p: ThemeNavProps) {
   return (
     <header className={`${shell.navThemed} ${styles.avNav}`}>
@@ -36,7 +64,7 @@ export function AteljeVinterNav(p: ThemeNavProps) {
       <nav className={`${shell.navLinks} ${styles.avNavLinks}`} aria-label="Huvudmeny">
         {p.links.map((l) => (
           <Link key={l.href} href={l.href}>
-            {l.label}
+            {avNavLabel(l)}
           </Link>
         ))}
       </nav>
@@ -73,7 +101,7 @@ export function AteljeVinterFooter(p: ThemeFooterProps) {
         <nav className={styles.avFootNav} aria-label="Sidfotsmeny">
           {p.links.map((l) => (
             <Link key={l.href} href={l.href}>
-              {l.label}
+              {avNavLabel(l)}
             </Link>
           ))}
         </nav>
