@@ -6,6 +6,7 @@ import {
   AteljeVinterBlogg,
   AteljeVinterGalleri,
   AteljeVinterLojalitet,
+  AteljeVinterOffert,
 } from './ateljevinter.modules'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/galleryItems) — inte utbytta, inte "liknande".
@@ -91,6 +92,9 @@ export const ateljevinter: FloristTheme = {
     blogg: AteljeVinterBlogg,
     galleri: AteljeVinterGalleri,
     lojalitet: AteljeVinterLojalitet,
+    // goal-64 (regression): beställningsverk-sidan äger nu sin form i stället för att
+    // falla till OffertSection (grått band, boxade fält, grön knapp).
+    offert: AteljeVinterOffert,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

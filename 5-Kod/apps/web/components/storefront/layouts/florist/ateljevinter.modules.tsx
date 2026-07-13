@@ -2,11 +2,13 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import { AteljeVinterOffertForm } from './ateljevinter.forms'
 import type {
   ThemeShopViewProps,
   ThemeBloggViewProps,
   ThemeGalleriViewProps,
   ThemeLojalitetViewProps,
+  ThemeOffertViewProps,
 } from './types'
 import styles from './ateljevinter.module.css'
 
@@ -238,6 +240,45 @@ export function AteljeVinterLojalitet({ config, plans, content }: ThemeLojalitet
       </div>
 
       {content.clubNote ? <p className={styles.avClubNote}>{content.clubNote}</p> : null}
+    </section>
+  )
+}
+
+/* ═══════════════════════════════ BESTÄLLNINGSVERK ═════════════════════════════ */
+
+/**
+ * Filens `showOffert`: 640px, eyebrow "på uppdrag", tunn rubrik "beställningsverk", en
+ * ledtext, sedan formuläret. Ingen grått rubrikband, ingen boxad ruta — bara filens luft.
+ *
+ * FUNKTIONEN är modulens: <AteljeVinterOffertForm> postar submitOffertRequest, och
+ * chipsen (uppdragets art) är config.subjects — kundens EGNA ämnen, aldrig filens
+ * mock-lista. Tom subjects → inga chips (fritext-läge), aldrig påhittade val.
+ *
+ * Ledtexten bär filens röst men det RIKTIGA svarslöftet (config.responseDays): filen
+ * skriver "inom tre dagar", men om kunden lovar en annan takt ska sidan säga sanningen.
+ */
+export function AteljeVinterOffert({ config, paused }: ThemeOffertViewProps) {
+  const days = `${config.responseDays} ${config.responseDays === 1 ? 'dag' : 'dagar'}`
+  return (
+    <section className={styles.avPageNarrow} data-module="offert" data-mode={config.mode}>
+      <p className={styles.avEyebrow}>på uppdrag</p>
+      <h1 className={styles.avPageTitle}>beställningsverk</h1>
+      <p className={styles.avPageLede}>
+        bröllop, scenografi, ett rum som behöver ett verk. beskriv uppdraget — ateljén
+        återkommer med skiss och pris inom {days}.
+      </p>
+
+      {paused ? (
+        <p role="status" className={styles.avNotice}>
+          vi tar tillfälligt inte emot nya uppdrag. hör av dig igen snart.
+        </p>
+      ) : (
+        <AteljeVinterOffertForm
+          mode={config.mode}
+          responseDays={config.responseDays}
+          subjects={config.subjects}
+        />
+      )}
     </section>
   )
 }

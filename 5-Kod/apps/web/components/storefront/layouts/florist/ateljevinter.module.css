@@ -482,6 +482,146 @@
   border-color: var(--color-fg);
 }
 
+/* ─────────────────────── formulär (filens fält, verbatim) ─────────────────────
+ * Filens fält är EN hårlinje: `border:none; border-bottom:1px solid #161616`,
+ * transparent, gemen etikett i 0.2em spärrad mikroversal. Ingen box, ingen fyllnad,
+ * ingen radie — samma grammatik som resten av mallen. Delas av beställningsverk,
+ * gåvobrev, seminarier och kontakt så varje formulär i mallen ser likadant ut. */
+
+.avForm {
+  max-width: 640px;
+}
+
+.avFieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Sektionsetikett över en hårlinje ("ärende", "uppdragets art", "i — leverans"). */
+.avSubLabel {
+  display: block;
+  margin: 0 0 22px;
+  padding: 0 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: var(--color-fg-2);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.avFormRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.avFormField {
+  margin-bottom: 48px;
+}
+
+.avFieldLabel {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--color-fg-2);
+}
+
+.avField {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  border: none;
+  border-bottom: 1px solid var(--color-fg);
+  border-radius: 0;
+  background: transparent;
+  padding: 8px 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--color-fg);
+  outline: none;
+}
+
+.avField::placeholder {
+  color: var(--color-accent-soft);
+}
+
+.avField:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.avTextarea {
+  composes: avField;
+  resize: vertical;
+  min-height: 96px;
+}
+
+/* Valchips ("ärende"/"uppdragets art"): filens ramade knapp, mörknar vald/hovrad.
+ * Radion ligger visuellt gömd men kvar i DOM:en (tangentbord, skärmläsare, formdata). */
+.avChipRow {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+}
+
+.avChip {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  padding: 11px 22px;
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  color: var(--color-fg-2);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.avChip:hover {
+  border-color: var(--color-fg);
+  color: var(--color-fg);
+}
+
+.avChipInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.avChip:has(.avChipInput:checked) {
+  border-color: var(--color-fg);
+  color: var(--color-fg);
+}
+
+.avChip:has(.avChipInput:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+/* Kvitton — filen har inget felband, men modulen kan neka (validering, rate-limit).
+ * Hålls i mallens röst: gemener, hårlinje, ingen färgplatta. */
+.avFormDone {
+  margin: 28px 0 0;
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  color: var(--color-primary);
+}
+
+.avFormError {
+  margin: 0 0 20px;
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  line-height: 1.7;
+  color: var(--color-fg);
+}
+
 /* ───────────────────────────── modul-vyer (butik) ─────────────────────────── */
 
 .avShop {

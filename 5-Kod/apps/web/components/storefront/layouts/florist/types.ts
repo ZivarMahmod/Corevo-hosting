@@ -13,6 +13,9 @@ import type {
 import type { BloggPost } from '@/lib/storefront/blogg/types'
 import type { LojalitetConfig, LoyaltyPlan } from '@/lib/storefront/lojalitet/types'
 import type { GalleryItem } from '@/lib/storefront/galleri/types'
+import type { OffertConfig } from '@/lib/storefront/offert/types'
+import type { PresentkortConfig } from '@/lib/storefront/presentkort/types'
+import type { UpcomingEvent, KurserConfig } from '@/lib/storefront/kurser/types'
 import type { TeamMember } from '@/lib/storefront/team/types'
 import type { TenantBranding } from '@corevo/ui'
 import { accentForeground, accentInk, contrastRatio } from '@corevo/ui'
@@ -249,9 +252,48 @@ export type ThemeTeamViewProps = {
   tenantName: string
 }
 
+/**
+ * goal-64 (regression) — INTAKE-MODULERNAS VYER IN I KONTRAKTET.
+ *
+ * offert (beställningsverk), presentkort (gåvobrev) och kurser (seminarier) var de tre
+ * sista modulsidorna som ALLTID renderade en delad, plattforms-generisk sektion oavsett
+ * mall — deras route-filer hårdkodade OffertSection/PresentkortSection/KursAnmalanForm
+ * och frågade aldrig mallen. Följden: en mall som var en exakt kopia av sitt paket föll
+ * ändå tillbaka till boxade fält, grått rubrikband och en fylld accent-knapp så fort
+ * kunden klickade in på /offert, /presentkort eller /kurser. Nu deklarerar mallen dem
+ * här, precis som shop/blogg.
+ *
+ * FUNKTIONEN är oförändrad och delad (vektor-regeln): samma loadOffertData/
+ * loadPresentkortData/loadUpcomingEvents, samma submitOffertRequest/useCart-giftcard/
+ * submitEventRegistration server-actions, samma modul-gate. Vyn får bara datan +
+ * paused-flaggan och äger FORMEN. Utelämnad vy → dagens delade sektion, byte-identiskt.
+ */
+export type ThemeOffertViewProps = {
+  config: OffertConfig
+  /** Modulen är pausad → formuläret visas stängt, ingen submit. */
+  paused: boolean
+}
+
+export type ThemePresentkortViewProps = {
+  config: PresentkortConfig
+  paused: boolean
+}
+
+export type ThemeKurserViewProps = {
+  events: UpcomingEvent[]
+  config: KurserConfig
+  paused: boolean
+}
+
 export type ThemeModuleViews = {
   shop?: ComponentType<ThemeShopViewProps>
   blogg?: ComponentType<ThemeBloggViewProps>
+  /** goal-64 (regression): beställningsverk (/offert). Utelämnad → OffertSection. */
+  offert?: ComponentType<ThemeOffertViewProps>
+  /** goal-64 (regression): gåvobrev (/presentkort). Utelämnad → PresentkortSection. */
+  presentkort?: ComponentType<ThemePresentkortViewProps>
+  /** goal-64 (regression): seminarier (/kurser). Utelämnad → den delade kurs-sidan. */
+  kurser?: ComponentType<ThemeKurserViewProps>
   /** goal-64: klubben (/klubb). Utelämnad → modulens delade sektion. */
   lojalitet?: ComponentType<ThemeLojalitetViewProps>
   /** goal-64: galleriet (/galleri). */
