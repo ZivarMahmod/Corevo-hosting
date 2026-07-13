@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant, getServices } from '@/lib/tenant-data'
-import { AboutSplit, StylistSpotlights, AccentPhrase, ClosingCta } from '@/components/storefront/sections'
+import { AboutSplit, AccentPhrase, ClosingCta } from '@/components/storefront/sections'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { pageMetadata } from '@/components/storefront/seo'
@@ -41,7 +41,7 @@ export default async function AboutPage() {
     <>
       <AboutSplit salonName={tenant.name} content={content} />
       <AccentPhrase text={content.italic} />
-      <StylistSpotlights salonName={tenant.name} content={content} />
+      {/* Personalen bor på /team — samma rad här gjorde Om-sidan till en dublett. */}
       <ClosingCta content={content} />
     </>
   )

@@ -102,7 +102,11 @@
 /* ===========================================================================
    HERO — full-bleed photo carousel
    =========================================================================== */
-.heroSection {
+/* DUBBLAD KLASS (.x.x) med flit: globals.css `.hero { padding: 4.5rem 1.5rem }` har
+   samma vikt (0,1,0) men laddas SENARE → den vann, och hero-fotot fick en 24px vit
+   ram runt hela bilden ("vita ringen"). Dubblingen (0,2,0) ger heron sin full-bleed
+   tillbaka utan !important. */
+.heroSection.heroSection {
   padding: 0;
   position: relative;
   /* Exact cancel of .shellMain's padding-top → the photo meets the viewport top
