@@ -978,7 +978,7 @@
   color: var(--color-fg-2);
 }
 
-/* ── MOBIL ≤760px — filens EGET /* Corevo-tillägg */-block, speglat ───────── */
+/* ── MOBIL ≤760px — speglar Corevo-tillägget i filens egen media query ────── */
 
 @media (max-width: 760px) {
   .siHero,
