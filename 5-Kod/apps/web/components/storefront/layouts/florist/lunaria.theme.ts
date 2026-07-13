@@ -118,7 +118,7 @@ export const lunaria: FloristTheme = {
     { name: 'pillar2Body', label: 'Salong II: text', rows: 2, default: 'Lär dig binda med balans och proportion.' },
     { name: 'pillar3Title', label: 'Salong III: rubrik', default: 'Cirkeln' },
     { name: 'pillar3Body', label: 'Salong III: text', rows: 2, default: 'Vår inre krets — förtur och privata kvällar.' },
-    { name: 'galleryEyebrow', label: 'Urvalet: guld-delarens text', default: '◆ Salongens urval ◆' },
+    { name: 'homeGalleryEyebrow', label: 'Urvalet: guld-delarens text', default: '◆ Salongens urval ◆' },
     { name: 'shopEyebrow', label: 'Salongen: eyebrow', default: 'Kollektion VII' },
     { name: 'shopTitle', label: 'Salongen: rubrik', default: 'Salongen' },
     { name: 'shopCta', label: 'Salongen: länktext', default: 'Hela samlingen →' },

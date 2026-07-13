@@ -1,6 +1,14 @@
 'use client'
 
-import { type CSSProperties, type ReactNode, useMemo, useState, useTransition } from 'react'
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -190,8 +198,8 @@ export function SalongerClient({ tenants }: { tenants: SalongCardVM[] }) {
                 fontFamily: 'var(--font-ui)',
                 fontSize: 13.5,
                 fontWeight: 600,
-                background: on ? 'var(--c-forest)' : 'var(--c-paper)',
-                color: on ? '#fff' : 'var(--c-ink-2)',
+                background: on ? 'var(--c-forest-fill, var(--c-forest))' : 'var(--c-paper)',
+                color: on ? 'var(--c-on-forest, #fff)' : 'var(--c-ink-2)',
               }}
             >
               {f.label}
@@ -280,10 +288,17 @@ export function SalongerClient({ tenants }: { tenants: SalongCardVM[] }) {
 function SalongCard({ vm }: { vm: SalongCardVM }) {
   const router = useRouter()
   const { notify } = useToast()
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const menuItemRef = useRef<HTMLButtonElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [pending, startTransition] = useTransition()
   const status = STATUS_META[vm.displayStatus]
+  const menuId = `tenant-actions-${vm.id}`
+
+  useEffect(() => {
+    if (menuOpen) menuItemRef.current?.focus()
+  }, [menuOpen])
 
   function remove() {
     const fd = new FormData()
@@ -303,11 +318,11 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
   return (
     <div
       className={styles.card}
-      role="link"
-      tabIndex={0}
-      onClick={() => router.push(`/salonger/${vm.id}`)}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') router.push(`/salonger/${vm.id}`)
+        if (e.key === 'Escape' && menuOpen) {
+          setMenuOpen(false)
+          menuButtonRef.current?.focus()
+        }
       }}
       style={{
         position: 'relative',
@@ -316,11 +331,10 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
         borderRadius: 16,
         padding: 22,
         boxShadow: 'var(--shadow-sm)',
-        cursor: 'pointer',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
+        <Link href={`/salonger/${vm.id}`} className={styles.cardIdentity}>
           <div
             aria-hidden="true"
             style={{
@@ -354,18 +368,19 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--c-ink-3)' }}>{vm.slug}.corevo.se</div>
           </div>
-        </div>
+        </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 'none' }}>
           <Badge tone={status.tone}>{status.label}</Badge>
           <button
+            ref={menuButtonRef}
             type="button"
             className={styles.kebab}
             aria-label="Fler åtgärder"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-controls={menuOpen ? menuId : undefined}
             data-tip="Fler åtgärder"
-            onClick={(e) => {
-              e.stopPropagation()
-              setMenuOpen((o) => !o)
-            }}
+            onClick={() => setMenuOpen((open) => !open)}
           >
             <Icon name="moreH" size={17} />
           </button>
@@ -374,13 +389,21 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
 
       {menuOpen && (
         <>
-          <div className={styles.menuScrim} onClick={(e) => { e.stopPropagation(); setMenuOpen(false) }} />
-          <div className={styles.menu} onClick={(e) => e.stopPropagation()}>
+          <div
+            className={styles.menuScrim}
+            aria-hidden="true"
+            onClick={() => {
+              setMenuOpen(false)
+              menuButtonRef.current?.focus()
+            }}
+          />
+          <div id={menuId} className={styles.menu} role="menu">
             <button
+              ref={menuItemRef}
               type="button"
               className={styles.menuItem}
-              onClick={(e) => {
-                e.stopPropagation()
+              role="menuitem"
+              onClick={() => {
                 setMenuOpen(false)
                 setConfirming(true)
               }}
@@ -432,7 +455,6 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
             background: 'var(--c-danger-bg)',
             borderRadius: 10,
           }}
-          onClick={(e) => e.stopPropagation()}
         >
           <span style={{ fontSize: 12.5, color: 'var(--c-ink)', flex: 1 }}>
             Ta bort <b>{vm.name}</b>? Mjuk — data + historik sparas.
@@ -441,10 +463,7 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
             type="button"
             className="pbtn pbtn--ghost pbtn--sm"
             disabled={pending}
-            onClick={(e) => {
-              e.stopPropagation()
-              setConfirming(false)
-            }}
+            onClick={() => setConfirming(false)}
           >
             Avbryt
           </button>
@@ -453,10 +472,7 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
             className="pbtn pbtn--sm"
             disabled={pending}
             style={{ background: 'var(--c-danger)', color: '#fff' }}
-            onClick={(e) => {
-              e.stopPropagation()
-              remove()
-            }}
+            onClick={remove}
           >
             {pending ? 'Tar bort…' : 'Bekräfta'}
           </button>
@@ -477,7 +493,6 @@ function SalongCard({ vm }: { vm: SalongCardVM }) {
             target="_blank"
             rel="noreferrer"
             className="pbtn pbtn--subtle pbtn--sm"
-            onClick={(e) => e.stopPropagation()}
           >
             <Icon name="external" size={15} />
             Storefront

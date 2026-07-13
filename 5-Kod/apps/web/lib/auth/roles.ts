@@ -1,3 +1,5 @@
+import { PLATFORM_ROUTE_PREFIXES } from './platform-routes'
+
 // Role → portal mapping. ADR 01 §4 sketched an 8-level ladder (publik → kund →
 // frisör → reception → manager → owner → Corevo admin → super admin), but only
 // FOUR levels are actually seeded in the DB. Thresholds below are pinned to those
@@ -37,20 +39,10 @@ export const PROTECTED_PREFIXES = [
   '/konto',
   '/personal',
   '/admin',
-  '/platform',
-  '/salonger',
-  '/branscher',
-  '/fakturering',
-  // goal-17 platform control-center surfaces (clean URLs on booking.corevo.se,
-  // siblings of /salonger + /fakturering). Each page ALSO self-gates with
-  // requirePlatformAdmin(); listing them here is the cheap auth gate (defence in
-  // depth) so an unauth hit bounces to /login before a server render.
-  '/kunder',
-  '/personal-plattform',
-  '/drift-och-logg',
-  '/integrationer',
-  '/roller',
-  '/installningar',
+  // Every app/(platform) route shares the same edge-safe contract as host
+  // routing and the tenant-host bounce. Each page also self-gates through the
+  // (platform) layout; this is the cheap defence-in-depth auth gate.
+  ...PLATFORM_ROUTE_PREFIXES,
 ] as const
 
 /**

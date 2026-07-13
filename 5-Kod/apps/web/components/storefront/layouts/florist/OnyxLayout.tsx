@@ -98,7 +98,7 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
           className={styles.onHeroPhoto}
           style={heroPhoto ? { backgroundImage: `url(${heroPhoto})` } : undefined}
         >
-          <span className={styles.onFig}>{content.galleryEyebrow ?? 'FIG. 01 — MAGNOLIA NOIR'}</span>
+          <span className={styles.onFig}>{content.homeGalleryEyebrow ?? 'FIG. 01 — MAGNOLIA NOIR'}</span>
         </div>
       </section>
 

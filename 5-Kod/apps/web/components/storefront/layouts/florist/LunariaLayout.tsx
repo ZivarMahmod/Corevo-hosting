@@ -106,7 +106,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
             <section className={styles.lnDivider}>
               <span className={styles.lnRuleGold} />
               <span className={styles.lnDividerLabel}>
-                {content.galleryEyebrow ?? '◆ Salongens urval ◆'}
+                {content.homeGalleryEyebrow ?? '◆ Salongens urval ◆'}
               </span>
               <span className={styles.lnRuleGold} />
             </section>

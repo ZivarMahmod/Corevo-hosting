@@ -112,7 +112,7 @@ export const blomstertorget: FloristTheme = {
   // (BlomstertorgetLayout.tsx / .modules.tsx / .pages.tsx) — fältet ska förifyllas ärligt.
   extraHome: [
     { name: 'findEyebrow', label: 'Huvudnyhet: ortsrad', default: 'Hötorget.' },
-    { name: 'galleryEyebrow', label: 'Huvudnyhet: fotobyline', default: 'Foto: Torgets egen — morgonens leverans, gång 3' },
+    { name: 'homeGalleryEyebrow', label: 'Huvudnyhet: fotobyline', default: 'Foto: Torgets egen — morgonens leverans, gång 3' },
     { name: 'pillar1Title', label: 'Kungörelser: rubrik', default: 'Kungörelser' },
     { name: 'pillar1Link', label: 'Kungörelser: länktext', default: 'alla kungörelser →' },
     { name: 'pillar2Title', label: 'Bildsidan: rubrik', default: 'Bildsidan' },

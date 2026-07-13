@@ -1,3 +1,5 @@
+import { PLATFORM_ROUTE_PREFIXES } from './platform-routes'
+
 // goal-27 — host-based 3-door back-office split (PRODUCTION hosts only). Pure +
 // dependency-free so it runs in middleware (edge) and a plain vitest.
 //
@@ -33,18 +35,7 @@ const DASHBOARD = '/platform'
 
 // app/(platform) clean surfaces (siblings served at the root on the superadmin
 // host). Mirrors the platform block of PROTECTED_PREFIXES + the dashboard route.
-const PLATFORM_GROUP = [
-  '/platform',
-  '/salonger',
-  '/branscher',
-  '/fakturering',
-  '/kunder',
-  '/roller',
-  '/installningar',
-  '/drift-och-logg',
-  '/integrationer',
-  '/personal-plattform',
-]
+const PLATFORM_GROUP = PLATFORM_ROUTE_PREFIXES
 const ADMIN_GROUP = ['/admin'] // app/(admin)
 const STAFF_GROUP = ['/personal'] // app/(personal)
 

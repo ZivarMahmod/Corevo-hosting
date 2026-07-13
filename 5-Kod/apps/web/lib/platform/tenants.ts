@@ -31,6 +31,20 @@ export type TenantListItem = {
 
 export type TenantFilters = { q?: string; status?: string }
 
+export type TenantNavOption = { id: string; name: string; slug: string }
+
+/** Lightweight customer index for the global superadmin command palette. */
+export async function listTenantNavOptions(): Promise<TenantNavOption[]> {
+  const { supabase } = await platformCtx()
+  const { data } = await supabase
+    .from('tenants')
+    .select('id, name, slug')
+    .order('name')
+    .limit(500)
+
+  return (data ?? []) as TenantNavOption[]
+}
+
 /**
  * All tenants (cross-tenant), filtered by free-text slug/name + status. The
  * per-tenant bookingsCount is a DB-side HEAD count(*) per tenant — never a read

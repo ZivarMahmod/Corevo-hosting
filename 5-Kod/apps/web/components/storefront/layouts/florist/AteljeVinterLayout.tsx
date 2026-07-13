@@ -127,7 +127,7 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
         <div className={styles.avRule} />
         <section className={styles.avStatement}>
           <Reveal>
-            <p className={styles.avEyebrow}>{content.galleryEyebrow ?? 'ateljéns hållning'}</p>
+            <p className={styles.avEyebrow}>{content.homeGalleryEyebrow ?? 'ateljéns hållning'}</p>
             <p className={styles.avStatementText}>{content.italic}</p>
           </Reveal>
         </section>

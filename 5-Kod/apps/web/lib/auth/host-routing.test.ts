@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { decideBackofficeRoute, type BackofficeHostKind } from './host-routing'
+import { PLATFORM_ROUTE_PREFIXES } from './platform-routes'
 
 // goal-27 — 3-door back-office grind. These lock the PRODUCTION host policy:
 // superbooking = platform surfaces, booking = salon admin, minbooking = staff.
@@ -21,18 +22,9 @@ describe('superadmin host (superbooking) — platform surfaces only', () => {
     expect(decide('superadmin', '/platform/x')).toEqual({ action: 'redirect', to: '/' })
   })
   it('passes every platform surface', () => {
-    for (const p of [
-      '/salonger',
-      '/salonger/abc',
-      '/fakturering',
-      '/kunder',
-      '/roller',
-      '/installningar',
-      '/drift-och-logg',
-      '/integrationer',
-      '/personal-plattform',
-    ]) {
+    for (const p of PLATFORM_ROUTE_PREFIXES.filter((path) => path !== '/platform')) {
       expect(decide('superadmin', p), p).toEqual({ action: 'pass' })
+      expect(decide('superadmin', `${p}/nested`), `${p}/nested`).toEqual({ action: 'pass' })
     }
   })
   it('redirects salon-admin + staff surfaces to their own hosts', () => {

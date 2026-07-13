@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icon, type IconName } from './Icon'
 
@@ -38,17 +38,22 @@ export function CommandPalette({
   const router = useRouter()
   const [q, setQ] = useState('')
   const [hi, setHi] = useState(0)
+  const dialogRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const returnFocusRef = useRef<HTMLElement | null>(null)
+  const listboxId = useId()
 
   // reset query + highlight whenever the palette opens, and focus the input
   useEffect(() => {
     if (open) {
+      returnFocusRef.current = document.activeElement as HTMLElement | null
       setQ('')
       setHi(0)
       // focus after the open paint so the autofocus lands reliably
       const t = window.setTimeout(() => inputRef.current?.focus(), 20)
       return () => window.clearTimeout(t)
     }
+    if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus()
   }, [open])
 
   const list = useMemo(() => {
@@ -82,6 +87,24 @@ export function CommandPalette({
         e.preventDefault()
         const it = list[hi]
         if (it) run(it)
+      } else if (e.key === 'Tab') {
+        const dialog = dialogRef.current
+        if (!dialog) return
+        const focusable = Array.from(
+          dialog.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+          ),
+        )
+        const first = focusable[0]
+        const last = focusable.at(-1)
+        if (!first || !last) return
+        if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
       }
     }
     window.addEventListener('keydown', onKey)
@@ -95,6 +118,7 @@ export function CommandPalette({
   return (
     <div className="bo-cmdk-overlay" role="presentation" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="bo-cmdk"
         role="dialog"
         aria-modal="true"
@@ -112,17 +136,25 @@ export function CommandPalette({
             }}
             placeholder="Sök sida eller åtgärd…"
             aria-label="Sök sida eller åtgärd"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded="true"
+            aria-controls={listboxId}
+            aria-activedescendant={list[hi] ? `${listboxId}-option-${hi}` : undefined}
           />
           <kbd>esc</kbd>
         </div>
-        <div className="bo-cmdk-list">
+        <div id={listboxId} className="bo-cmdk-list" role="listbox" aria-label="Sökresultat">
           {list.length === 0 && (
             <div className="bo-cmdk-empty">Inget matchar &ldquo;{q}&rdquo;.</div>
           )}
           {list.map((it, i) => (
             <button
               key={it.href}
+              id={`${listboxId}-option-${i}`}
               type="button"
+              role="option"
+              aria-selected={i === hi}
               className={`bo-cmdk-item${i === hi ? ' is-active' : ''}`}
               onMouseEnter={() => setHi(i)}
               onClick={() => run(it)}

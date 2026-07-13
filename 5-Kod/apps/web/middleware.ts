@@ -33,6 +33,7 @@ import {
 import { resolveCustomDomainSlug } from '@/lib/custom-domain'
 import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
 import { decideBackofficeRoute, type BackofficeHostKind } from '@/lib/auth/host-routing'
+import { PLATFORM_ROUTE_PREFIXES } from '@/lib/auth/platform-routes'
 
 // Internal dashboard route (file lives at app/(platform)/platform); served at `/`.
 const DASHBOARD_ROUTE = '/platform'
@@ -45,15 +46,7 @@ const DASHBOARD_ROUTE = '/platform'
 const BACKOFFICE_PREFIXES = [
   '/admin',
   '/personal',
-  '/platform',
-  '/salonger',
-  '/fakturering',
-  '/kunder',
-  '/personal-plattform',
-  '/drift-och-logg',
-  '/integrationer',
-  '/roller',
-  '/installningar',
+  ...PLATFORM_ROUTE_PREFIXES,
 ]
 // Tenant-SCOPED back-office surfaces: each resolves exactly one tenant from the
 // logged-in account. A platform_admin has no single tenant to scope to, so these

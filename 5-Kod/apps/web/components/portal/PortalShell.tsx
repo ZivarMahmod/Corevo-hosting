@@ -6,6 +6,7 @@ import { currentTenant, getTenantById } from '@/lib/tenant-data'
 import { tenantStorefrontUrl } from '@/lib/storefront-url'
 import { createClient } from '@/lib/supabase/server'
 import { cleanTerminology, resolveTerm } from '@/lib/platform/verticals-shared'
+import { listTenantNavOptions } from '@/lib/platform/tenants'
 import type { CurrentUser } from '@/lib/auth/session'
 import { SignOutButton } from './SignOutButton'
 import { PortalSidebar, type PortalRole } from './PortalSidebar'
@@ -14,6 +15,8 @@ import { getAdminModuleStates, isModuleActivated, isBookingActivated } from '@/l
 import { listLocations } from '@/lib/admin/data'
 import { PLATS_COOKIE } from '@/lib/admin/plats'
 import { PortalTopbar } from './PortalTopbar'
+import { PlatformTopnav } from './PlatformTopnav'
+import platformStyles from './PlatformTopnav.module.css'
 import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
@@ -30,9 +33,9 @@ import { ToastProvider } from './ui/Toast'
  * un-worlded and keeps the simple top-header layout it always had (its tokens
  * still resolve from injectTenantTokens/:root, unchanged).
  *
- * Back-office (World 2) renders the Corevo handoff chrome: a dark forest sidebar
- * (role-driven nav, in <PortalSidebar>) + a topbar (search + user + signout) +
- * a cream content area. EVERY back-office style is keyed off
+ * Back-office (World 2) renders role-specific Corevo chrome. Tenant admin and
+ * staff keep the role-driven sidebar; superadmin uses the 2026-07-13 five-area
+ * top navigation. EVERY back-office style is keyed off
  * [data-world="backoffice"] (see app/portal-global.css), so /konto is untouched.
  * The tenant tokens are still injected on this root, but the back-office chrome
  * reads only the fixed --c-* Corevo palette (not the tenant-overridable
@@ -88,7 +91,20 @@ export async function PortalShell({
         k === 'booking' ? isBookingActivated(states) : isModuleActivated(states, k),
       )
     }
-    const paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys)
+    let paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys)
+    if (portal === 'platform') {
+      const tenantOptions = await listTenantNavOptions()
+      paletteItems = [
+        ...paletteItems,
+        ...tenantOptions.map(({ id, name, slug }) => ({
+          href: `/salonger/${id}`,
+          label: name,
+          sub: `${slug}.corevo.se`,
+          icon: 'building' as const,
+          kind: 'Kund',
+        })),
+      ]
+    }
     // Bransch terminology overlay for the sidebar identity cell. Resolve the
     // tenant's vertical terminology on the server (mirrors getAdminTenant's
     // separate-read seam: a verticals shape/RLS change can never null the
@@ -148,10 +164,36 @@ export async function PortalShell({
       }
     }
 
+    // Superadmin has its own handoff shell: five top-level destinations instead
+    // of the tenant-admin sidebar. Only the chrome changes; children are the same
+    // route components and therefore keep every real read, action and guard.
+    if (portal === 'platform') {
+      return (
+        <div
+          className={`tenant-root portal-shell ${platformStyles.shell}`}
+          data-world={world}
+          data-portal="platform"
+          data-tenant={bundle?.tenant.id}
+          style={injectTenantTokens(branding) as CSSProperties}
+        >
+          <PlatformTopnav
+            paletteItems={paletteItems}
+            userLabel={userLabel}
+            email={email}
+            signOut={<SignOutButton />}
+          />
+          <main className={`portal-main ${platformStyles.main}`}>
+            <ToastProvider>{children}</ToastProvider>
+          </main>
+        </div>
+      )
+    }
+
     return (
       <div
         className="tenant-root portal-shell"
         data-world={world}
+        data-portal={portal}
         data-tenant={bundle?.tenant.id}
         style={injectTenantTokens(branding) as CSSProperties}
       >
@@ -165,11 +207,7 @@ export async function PortalShell({
         />
         <div className="portal-col">
           <PortalTopbar
-            placeholder={
-              portal === 'platform'
-                ? 'Sök företag, kund, personal, åtgärd…'
-                : 'Sök bokning, kund, tjänst…'
-            }
+            placeholder="Sök bokning, kund, tjänst…"
             paletteItems={paletteItems}
             contextLink={contextLink}
             extra={locationSwitcher}

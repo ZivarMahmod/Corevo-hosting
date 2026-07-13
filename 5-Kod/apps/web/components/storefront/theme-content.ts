@@ -464,6 +464,8 @@ export type CopyOverride = {
   giftEyebrow?: string
   giftLede?: string
   giftCta?: string
+  /** Startsidespecifik bild-/galleri-caption. Separat från gallerisidans eyebrow. */
+  homeGalleryEyebrow?: string
   galleryEyebrow?: string
   findEyebrow?: string
   /**
@@ -504,7 +506,7 @@ export const COPY_OVERRIDE_KEYS = [
   'shopEyebrow', 'shopTitle', 'shopCta',
   'blogEyebrow', 'blogTitle', 'blogCta',
   'giftEyebrow', 'giftLede', 'giftCta',
-  'galleryEyebrow', 'findEyebrow',
+  'homeGalleryEyebrow', 'galleryEyebrow', 'findEyebrow',
   // goal-64: klubben + galleriet (de tre nya sidorna)
   'clubEyebrow', 'clubTitle', 'clubLede', 'clubCta', 'clubNote',
   'galleryTitle', 'galleryLede',
@@ -621,6 +623,7 @@ export type ResolvedThemeContent = ThemeContent & {
   giftEyebrow?: string
   giftLede?: string
   giftCta?: string
+  homeGalleryEyebrow?: string
   galleryEyebrow?: string
   findEyebrow?: string
   /** goal-64: klubbens + galleriets rubriker (satta bara vid egen text — mall-vyn
@@ -708,6 +711,9 @@ export function resolveThemeContent(
     giftEyebrow: extra('giftEyebrow'),
     giftLede: extra('giftLede'),
     giftCta: extra('giftCta'),
+    // Bakåtkompatibelt: en gammal galleryEyebrow-override fortsätter styra hemmet
+    // tills ägaren sparar den nya, separata startsidesnyckeln.
+    homeGalleryEyebrow: extra('homeGalleryEyebrow') ?? extra('galleryEyebrow'),
     galleryEyebrow: extra('galleryEyebrow'),
     findEyebrow: extra('findEyebrow'),
     clubEyebrow: extra('clubEyebrow'),

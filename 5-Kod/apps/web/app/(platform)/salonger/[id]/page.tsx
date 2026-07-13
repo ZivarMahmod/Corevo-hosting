@@ -384,7 +384,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             {salonAdmin?.email ? (
               <>
                 <div className={styles.ownerHead}>
-                  <div className={styles.ownerAvatar} style={{ background: 'var(--c-forest)' }} aria-hidden="true">
+                  <div className={styles.ownerAvatar} style={{ background: 'var(--c-forest-fill, var(--c-forest))' }} aria-hidden="true">
                     {(salonAdmin.fullName || salonAdmin.email).charAt(0).toUpperCase()}
                   </div>
                   <div>
@@ -645,7 +645,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             bio: s.bio,
           }))}
           verticalCopy={await getVerticalCopy(verticalId)}
-          liveModules={['shop', 'kurser', 'blogg', 'offert', 'presentkort'].filter((k) =>
+          liveModules={['shop', 'kurser', 'blogg', 'offert', 'presentkort', 'lojalitet', 'galleri'].filter((k) =>
             isModuleActivated(moduleStates, k),
           )}
         />

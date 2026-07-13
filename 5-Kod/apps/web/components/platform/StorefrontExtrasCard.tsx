@@ -23,6 +23,7 @@ export function SingleImageSlot({
   url,
   defaultUrl,
   onFlashImage,
+  onPreviewImage,
   onSaved,
 }: {
   tenantId: string
@@ -36,6 +37,8 @@ export function SingleImageSlot({
    *  bild som är vilken"). */
   defaultUrl?: string | null
   onFlashImage?: (url: string) => void
+  /** Lokal, osparad fil → verklig storefront-preview. */
+  onPreviewImage?: (currentUrl: string, previewUrl: string) => void
   onSaved?: () => void
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(async (prev, fd) => {
@@ -125,7 +128,21 @@ export function SingleImageSlot({
         <input type="hidden" name="slot" value={slot} />
         <label className={styles.field}>
           <span>Ladda upp bild (PNG/JPG/WEBP, max 8 MB)</span>
-          <input type="file" name="image" accept="image/*" required />
+          <input
+            type="file"
+            name="image"
+            accept="image/*"
+            required
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0]
+              if (!file || !effective || !onPreviewImage) return
+              const reader = new FileReader()
+              reader.addEventListener('load', () => {
+                if (typeof reader.result === 'string') onPreviewImage(effective, reader.result)
+              })
+              reader.readAsDataURL(file)
+            }}
+          />
         </label>
         <div className={styles.actions}>
           <button type="submit" className={styles.btn} disabled={pending}>

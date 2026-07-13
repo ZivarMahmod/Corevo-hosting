@@ -133,4 +133,18 @@ describe('resolveThemeContent — copy override threaded through', () => {
     expect(out.heroTitle).toBe(base.heroTitle)
     expect(out.heroLede).toBe(base.heroLede)
   })
+
+  it('keeps the home image caption separate from the gallery-page eyebrow', () => {
+    const separated = resolveThemeContent('onyx', null, {
+      homeGalleryEyebrow: 'STARTSIDANS FIGURTEXT',
+      galleryEyebrow: 'GALLERISIDANS EYEBROW',
+    })
+    expect(separated.homeGalleryEyebrow).toBe('STARTSIDANS FIGURTEXT')
+    expect(separated.galleryEyebrow).toBe('GALLERISIDANS EYEBROW')
+
+    // Äldre sparningar hade bara galleryEyebrow. De fortsätter påverka hemmet tills
+    // ägaren sparar den nya startsidesnyckeln, så ändringen kräver ingen migration.
+    const legacy = resolveThemeContent('onyx', null, { galleryEyebrow: 'GAMMAL TEXT' })
+    expect(legacy.homeGalleryEyebrow).toBe('GAMMAL TEXT')
+  })
 })

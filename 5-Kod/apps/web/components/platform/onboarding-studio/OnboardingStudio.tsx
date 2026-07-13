@@ -139,21 +139,23 @@ function StudioMachine({
       <JourneyBar stage={stage} reachable={reachable} onNav={setStage} />
 
       {stage === 'studio' && (
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', position: 'relative' }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <StepRail cfg={cfg} step={step} onStep={setStep} presets={presets} />
-          <PanelHost
-            cfg={cfg}
-            step={step}
-            dispatch={dispatch}
-            presets={presets}
-            onPrev={onPrev}
-            onNext={onNext}
-            onLaunch={onLaunch}
-          />
-          {/* right — live preview (riktig StorefrontPreview-render) */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--c-paper-2)', minHeight: 0 }}>
-            <div style={{ flex: 1, minHeight: 0, padding: '18px' }}>
-              <PreviewPane cfg={cfg} device={device} onDevice={setDevice} branchName={branchName} />
+          <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+            <PanelHost
+              cfg={cfg}
+              step={step}
+              dispatch={dispatch}
+              presets={presets}
+              onPrev={onPrev}
+              onNext={onNext}
+              onLaunch={onLaunch}
+            />
+            {/* right — live preview (riktig StorefrontPreview-render) */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--c-paper-2)', minHeight: 0 }}>
+              <div style={{ flex: 1, minHeight: 0, padding: '18px' }}>
+                <PreviewPane cfg={cfg} device={device} onDevice={setDevice} branchName={branchName} />
+              </div>
             </div>
           </div>
 
@@ -245,8 +247,8 @@ export function ResultView({
           justifyContent: 'space-between',
           gap: 16,
           padding: '16px 24px',
-          background: 'var(--c-forest)',
-          color: '#fff',
+          background: 'var(--c-forest-fill, var(--c-forest))',
+          color: 'var(--c-on-forest, #fff)',
           flexWrap: 'wrap',
         }}
       >

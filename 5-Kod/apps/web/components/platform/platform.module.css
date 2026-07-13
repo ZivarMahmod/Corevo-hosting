@@ -1,44 +1,5 @@
 /* Platform-control-center-scoped styles (G08). CSS module → hashed names. */
 
-.nav {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-  padding: 0.3rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
-  background: color-mix(in srgb, var(--c-ink) 3%, transparent);
-  width: fit-content;
-  max-width: 100%;
-}
-.navLink {
-  text-decoration: none;
-  color: inherit;
-  padding: 0.42rem 0.95rem;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  font-size: 0.9rem;
-  transition:
-    background var(--dur-fast, 0.15s) var(--ease-out, ease),
-    color var(--dur-fast, 0.15s) var(--ease-out, ease);
-}
-.navLink:hover {
-  background: color-mix(in srgb, var(--c-ink) 7%, transparent);
-}
-.navLink:focus-visible {
-  outline: 2px solid var(--c-gold, #f5a623);
-  outline-offset: 2px;
-}
-.navLinkActive,
-.navLinkActive:hover {
-  background: var(--c-forest-fill, var(--c-forest));
-  color: #fff;
-  border-color: transparent;
-  font-weight: 600;
-  box-shadow: var(--shadow-soft, 0 2px 8px -3px rgba(20, 40, 30, 0.18));
-}
-
 .section {
   margin-bottom: 2rem;
 }
@@ -594,7 +555,8 @@
   font-size: 13px;
 }
 
-/* ── theme template picker ── */
+/* BookingSettings still uses this compact card selector for the four real
+   booking presentations. It is not the retired theme-preview wireframe. */
 .templateGrid {
   display: grid;
   gap: 0.85rem;
@@ -604,7 +566,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  text-align: left;
   padding: 0.7rem;
   border: 1.5px solid color-mix(in srgb, var(--c-ink) 16%, transparent);
   border-radius: var(--radius-lg, 0.625rem);
@@ -612,6 +573,7 @@
   color: inherit;
   cursor: pointer;
   font: inherit;
+  text-align: left;
   transition:
     border-color var(--dur-fast, 0.15s) var(--ease-out, ease),
     box-shadow var(--dur-fast, 0.15s) var(--ease-out, ease),
@@ -621,154 +583,18 @@
   border-color: color-mix(in srgb, var(--c-forest) 55%, transparent);
   transform: translateY(-1px);
 }
-.templateCard:focus-visible {
-  outline: 2px solid var(--c-gold, #f5a623);
+.templateCard:focus-within {
+  outline: 2px solid var(--c-forest);
   outline-offset: 2px;
 }
-.templateCardSel {
-  border-color: var(--c-gold, #f5a623);
-  box-shadow: var(--shadow-gold, 0 4px 20px -4px rgba(245, 166, 35, 0.25));
-}
 .templateName {
-  font-weight: 700;
   font-size: 0.92rem;
+  font-weight: 700;
 }
 .templateDesc {
   font-size: 0.78rem;
-  opacity: 0.7;
   line-height: 1.35;
-}
-.templateMeta {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.55;
-  margin-top: auto;
-}
-
-/* mini wireframe preview inside a template card */
-.tp {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  height: 84px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
-  padding: 6px;
-  overflow: hidden;
-}
-.tpNav {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.tpNavA {
-  flex-direction: column;
-  align-items: center;
-}
-.tpNavB {
-  justify-content: space-between;
-}
-.tpLogo {
-  width: 18px;
-  height: 6px;
-  border-radius: 2px;
-}
-.tpLinks {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.tpLink {
-  width: 10px;
-  height: 4px;
-  border-radius: 2px;
-  background: currentColor;
-  opacity: 0.4;
-}
-.tpCta {
-  width: 16px;
-  height: 7px;
-  border-radius: 999px;
-}
-.tpHero {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  justify-content: center;
-}
-.tpHero1 {
-  align-items: center;
-  text-align: center;
-}
-.tpHero2 {
-  align-items: flex-start;
-}
-.tpEyebrow {
-  width: 14px;
-  height: 3px;
-  border-radius: 2px;
-  opacity: 0.8;
-}
-.tpTitle {
-  width: 70%;
-  height: 7px;
-  border-radius: 2px;
-  opacity: 0.85;
-}
-.tpTitleShort {
-  width: 45%;
-  height: 7px;
-  border-radius: 2px;
-  opacity: 0.85;
-}
-.tpHeroCta {
-  width: 26px;
-  height: 8px;
-  border-radius: 999px;
-  margin-top: 2px;
-}
-
-/* ── palette swatch chooser ── */
-.paletteRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.swatch {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.6rem 0.35rem 0.4rem;
-  border: 1.5px solid color-mix(in srgb, var(--c-ink) 16%, transparent);
-  border-radius: 999px;
-  background: var(--c-paper, #fff);
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.8rem;
-  transition: border-color var(--dur-fast, 0.15s) var(--ease-out, ease);
-}
-.swatch:hover {
-  border-color: color-mix(in srgb, var(--c-forest) 50%, transparent);
-}
-.swatch:focus-visible {
-  outline: 2px solid var(--c-gold, #f5a623);
-  outline-offset: 2px;
-}
-.swatchSel {
-  border-color: var(--c-gold, #f5a623);
-  box-shadow: var(--shadow-gold, 0 4px 20px -4px rgba(245, 166, 35, 0.25));
-}
-.swatchDot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.swatchLabel {
-  white-space: nowrap;
+  opacity: 0.7;
 }
 
 /* ── loading skeletons ── */
@@ -870,22 +696,13 @@
   max-width: 28rem;
 }
 
-/* ── Touch targets (Våg 4): the platform control center is operated on a tablet
-   too, so its interactive controls — pill sub-nav, ghost buttons, the theme/
-   palette pickers — must clear the ~44px tap guideline. Gated on `pointer: coarse`
-   (touch devices only) so DESKTOP (fine pointer) stays byte-identical — no
-   padding/layout change there. Additive: only adds min-height (+ centers the
-   pill/button text); the picker cards already lay out their own content. */
+/* ── Touch targets (Våg 4): platform controls are also operated on tablets. */
 @media (pointer: coarse) {
-  .btn,
-  .navLink {
+  .btn {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
-  .swatch,
-  .templateCard {
-    min-height: 44px;
-  }
+  .templateCard { min-height: 44px; }
 }

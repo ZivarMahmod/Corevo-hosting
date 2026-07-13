@@ -3,49 +3,6 @@
    the [data-world="backoffice"] --c-* tokens (forest/gold on cream). View-only —
    does NOT touch portal-global.css. */
 
-/* ── health row → 4 honest pills (getPlatformHealth = no telemetry → "—") ──
-   Mirrors the mock SuperOps health row + the Översikt health pills exactly: 4
-   flex pills, muted dot, "—" value, "{label} · ej kopplad" caption. Never a
-   fabricated live number. */
-.healthRow {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-.healthPill {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--c-paper);
-  border: 1px solid var(--c-line);
-  border-radius: 12px;
-  flex: 1;
-  min-width: 168px;
-}
-.healthDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  flex: none;
-  background: var(--c-ink-3);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-ink-3) 16%, transparent);
-}
-.healthBody {
-  min-width: 0;
-}
-.healthValue {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--c-ink);
-  line-height: 1.2;
-}
-.healthLabel {
-  font-size: 11.5px;
-  color: var(--c-ink-3);
-}
-
 /* ── filter row: search + actor pills + export (SuperOps controls) ── */
 .controls {
   display: flex;
@@ -118,7 +75,7 @@
 .pillOn,
 .pillOn:hover {
   background: var(--c-forest-fill, var(--c-forest));
-  color: #fff;
+  color: var(--c-on-forest, #fff);
   border-color: transparent;
 }
 

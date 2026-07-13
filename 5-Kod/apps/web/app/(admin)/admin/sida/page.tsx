@@ -109,7 +109,7 @@ export default async function AdminSidaPage() {
         verticalCopy={await getVerticalCopy(
           (row as { vertical_id?: string | null }).vertical_id ?? null,
         )}
-        liveModules={['shop', 'kurser', 'blogg', 'offert', 'presentkort'].filter((k) =>
+        liveModules={['shop', 'kurser', 'blogg', 'offert', 'presentkort', 'lojalitet', 'galleri'].filter((k) =>
           isModuleActivated(adminModuleStates, k),
         )}
       />

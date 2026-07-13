@@ -1,12 +1,16 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { injectTenantTokens, type TenantBranding } from '@corevo/ui'
 import { Badge } from '@/components/portal/ui'
 import { PlatformBrandingForm } from './PlatformBrandingForm'
 import { ImageSlotManager } from './StorefrontContentCard'
-import { CopyFieldsCard, type CopyFieldDef } from './CopyFieldsCard'
+import {
+  CopyFieldsCard,
+  type CopyFieldDef,
+  type PreviewFieldRegistration,
+} from './CopyFieldsCard'
 import { TenantNameCard } from './TenantNameCard'
 import { ThemePicker } from './ThemePicker'
 import { BookingPanel } from './BookingSettings'
@@ -53,9 +57,8 @@ type Copy = {
  * typsnitt, boknings-vy — sådant som gäller HELA sidan). Väljer du en sida-flik
  * hoppar previewen till höger till just den sidan, så du redigerar och ser samma
  * sak. Färg/typsnitt speglas i previewen DIREKT medan du ändrar (postMessage →
- * iframen sätter CSS-vars); text/bilder syns när du sparat (previewen laddar om
- * automatiskt efter spar). Redigeringen skriver tenant_settings = det lagret sidan
- * faktiskt renderar.
+ * iframen sätter CSS-vars). Text och valda bilder speglas också direkt i samma
+ * storefront-DOM, men tenant_settings/R2 skrivs först när användaren sparar.
  */
 const MSG_SOURCE = 'corevo-sida'
 
@@ -71,6 +74,9 @@ type PageKey =
   | 'blogg'
   | 'offert'
   | 'presentkort'
+  | 'klubb'
+  | 'galleri'
+  | 'team'
 type PageDef = { key: PageKey; label: string; sub: string; path: string }
 const PAGES: PageDef[] = [
   { key: 'allmant', label: 'Allmänt', sub: 'Mall · färger · typsnitt', path: '' },
@@ -92,18 +98,10 @@ const MODULE_PAGES: PageDef[] = [
   { key: 'blogg', label: 'Blogg', sub: 'Bloggsidan · bandtexter', path: '/blogg' },
   { key: 'offert', label: 'Offert', sub: 'Offertsidan', path: '/offert' },
   { key: 'presentkort', label: 'Presentkort', sub: 'Presentkortssidan · bandtexter', path: '/presentkort' },
+  { key: 'klubb', label: 'Klubb', sub: 'Medlemskap · texter', path: '/klubb' },
+  { key: 'galleri', label: 'Galleri', sub: 'Gallerisidan · texter', path: '/galleri' },
+  { key: 'team', label: 'Team', sub: 'Teamsidan · rubriker', path: '/team' },
 ]
-/** Vilka THEME_EXTRA_HOME-fält som HÖR TILL en modulflik (namnprefix-kontraktet:
- *  prefixen shop/blog/gift — floras befintliga nycklar satte mönstret). Övriga
- *  extras stannar på Hem-fliken. */
-const MODULE_FIELD_PREFIX: Partial<Record<PageKey, RegExp>> = {
-  shop: /^shop/,
-  blogg: /^blog/,
-  presentkort: /^gift/,
-  kurser: /^kurs/,
-  offert: /^offert/,
-}
-
 export function SidaStudio({
   tenantId,
   previewPath,
@@ -178,6 +176,10 @@ export function SidaStudio({
   // Draft-mall: previewen kan visa en ANNAN mall (via ?theme=) utan att den skarpa
   // sidan ändras — publiceras separat. null = tenantens sparade mall.
   const [previewTheme, setPreviewTheme] = useState<string | null>(null)
+  const [registeredCards, setRegisteredCards] = useState<Record<string, PreviewFieldRegistration[]>>({})
+  const [visibleCopyFields, setVisibleCopyFields] = useState<ReadonlySet<string> | null>(null)
+  const draftCopyRef = useRef<Record<string, string>>({})
+  const scanRequestRef = useRef(0)
 
   // Kontrollerna följer mallen du TITTAR på (förhandsvisad mall om en är vald, annars
   // den sparade): varje mall visar bara sina egna ändringsalternativ (theme-capabilities).
@@ -260,7 +262,21 @@ export function SidaStudio({
   // Modulflikar visas BARA för moduler som är på — previewn matchar verkligheten.
   const pages = useMemo(() => {
     const on = new Set(liveModules)
-    const mod = (k: PageKey) => MODULE_PAGES.filter((p) => p.key === k && on.has(k))
+    const stateKey: Partial<Record<PageKey, string>> = {
+      shop: 'shop',
+      kurser: 'kurser',
+      blogg: 'blogg',
+      offert: 'offert',
+      presentkort: 'presentkort',
+      klubb: 'lojalitet',
+      galleri: 'galleri',
+    }
+    const mod = (k: PageKey) =>
+      MODULE_PAGES.filter((p) => {
+        if (p.key !== k) return false
+        if (k === 'team') return staffTeam.length > 0 || (branding.team ?? []).length > 0
+        return on.has(stateKey[k] ?? k)
+      })
     return [
       PAGES[0]!, // allmant
       PAGES[1]!, // hem
@@ -270,11 +286,14 @@ export function SidaStudio({
       ...mod('blogg'),
       ...mod('offert'),
       ...mod('presentkort'),
+      ...mod('klubb'),
+      ...mod('galleri'),
+      ...mod('team'),
       PAGES[3]!, // om
       PAGES[4]!, // kontakt
       PAGES[5]!, // bokning
     ]
-  }, [liveModules])
+  }, [branding.team, liveModules, staffTeam.length])
 
   const activePage = pages.find((p) => p.key === page) ?? pages[0]!
   const src = useMemo(() => {
@@ -287,10 +306,53 @@ export function SidaStudio({
 
   const reload = useCallback(() => setReloadToken((t) => t + 1), [])
 
+  const registerCopyFields = useCallback((cardId: string, fields: PreviewFieldRegistration[]) => {
+    setRegisteredCards((current) => {
+      const before = current[cardId]
+      const beforeSignature = before?.map((field) => `${field.name}=${field.value}`).join('\u001f')
+      const nextSignature = fields.map((field) => `${field.name}=${field.value}`).join('\u001f')
+      return beforeSignature === nextSignature ? current : { ...current, [cardId]: fields }
+    })
+  }, [])
+  const unregisterCopyFields = useCallback((cardId: string) => {
+    setRegisteredCards((current) => {
+      if (!(cardId in current)) return current
+      const next = { ...current }
+      delete next[cardId]
+      return next
+    })
+  }, [])
+  const copyFieldCandidates = useMemo(() => {
+    const fields = new Map<string, PreviewFieldRegistration>()
+    for (const cardFields of Object.values(registeredCards)) {
+      for (const field of cardFields) fields.set(field.name, field)
+    }
+    return [...fields.values()]
+  }, [registeredCards])
+
   // Push a live brand-token patch into the preview iframe (same-origin).
   const pushTokens = useCallback((tokens: Record<string, string>) => {
     iframeRef.current?.contentWindow?.postMessage(
       { source: MSG_SOURCE, type: 'brand-preview', tokens },
+      window.location.origin,
+    )
+  }, [])
+  const pushCopyDraft = useCallback((field: string, value: string) => {
+    draftCopyRef.current[field] = value
+    iframeRef.current?.contentWindow?.postMessage(
+      { source: MSG_SOURCE, type: 'copy-preview', field, value },
+      window.location.origin,
+    )
+  }, [])
+  const pushFieldFlash = useCallback((field: string) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { source: MSG_SOURCE, type: 'copy-flash-field', field },
+      window.location.origin,
+    )
+  }, [])
+  const pushImagePreview = useCallback((currentUrl: string, url: string) => {
+    iframeRef.current?.contentWindow?.postMessage(
+      { source: MSG_SOURCE, type: 'image-preview', currentUrl, url },
       window.location.origin,
     )
   }, [])
@@ -308,6 +370,51 @@ export function SidaStudio({
       window.location.origin,
     )
   }, [])
+
+  const scanPreview = useCallback(() => {
+    if (!isActive) return
+    const requestId = ++scanRequestRef.current
+    setVisibleCopyFields(null)
+    iframeRef.current?.contentWindow?.postMessage(
+      { source: MSG_SOURCE, type: 'editor-scan', requestId, fields: copyFieldCandidates },
+      window.location.origin,
+    )
+  }, [copyFieldCandidates, isActive])
+
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return
+      if (event.source !== iframeRef.current?.contentWindow) return
+      const data = event.data as {
+        source?: string
+        type?: string
+        requestId?: number
+        fields?: string[]
+      }
+      if (data?.source !== MSG_SOURCE || data.type !== 'editor-scan-result') return
+      if (data.requestId !== scanRequestRef.current || !Array.isArray(data.fields)) return
+      setVisibleCopyFields(new Set(data.fields))
+      for (const [field, value] of Object.entries(draftCopyRef.current)) {
+        iframeRef.current?.contentWindow?.postMessage(
+          { source: MSG_SOURCE, type: 'copy-preview', field, value },
+          window.location.origin,
+        )
+      }
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
+  useEffect(() => {
+    draftCopyRef.current = {}
+    setVisibleCopyFields(null)
+  }, [page, activeTheme])
+
+  useEffect(() => {
+    if (!isActive) return
+    const timer = window.setTimeout(scanPreview, 0)
+    return () => window.clearTimeout(timer)
+  }, [isActive, scanPreview, src])
   // "Visa var" för en CSS-var-yta (t.ex. FreshCuts mörka "Varför oss"-bakgrund =
   // Primärfärgen): pulsa markörfärgen ~1 s och återställ till sparade tokens.
   const flashVar = useCallback(
@@ -344,21 +451,31 @@ export function SidaStudio({
         ]
       : []),
   ]
-  // Mall-EGNA hem-sektioner (t.ex. FreshCuts "Varför Oss?") — fält + mallens inbyggda
-  // text som standard, så ALLT som står på sidan går att skriva om.
-  // goal-61: fält vars namn bär ett modulprefix (shop/blog/gift …) flyttar till SIN
-  // modulflik — Hem-fliken visar bara hemmets egna element (pelare, band utan modul).
+  // Mallens samlade copy-kontrakt. Vi routar INTE längre fält efter namn-prefix
+  // (shop*/blog*/gift*): det var den gamla hårdkodningen som gav fel rader när en
+  // mall placerade samma sorts innehåll på en annan sida. Samma kandidater skickas
+  // till aktuell route och den verkliga iframe-DOM:en väljer automatiskt vilka som
+  // faktiskt renderas där.
   const allExtra = THEME_EXTRA_HOME[activeTheme] ?? []
-  const isModuleField = (name: string) =>
-    Object.values(MODULE_FIELD_PREFIX).some((re) => re.test(name))
-  const extraHome = allExtra.filter((f) => !isModuleField(f.name))
-  const moduleFieldsFor = (key: PageKey) => {
-    const re = MODULE_FIELD_PREFIX[key]
-    return re ? allExtra.filter((f) => re.test(f.name)) : []
-  }
-  const extraHomeFields: CopyFieldDef[] = extraHome.map(({ name, label, hint, rows }) => ({ name, label, hint, rows }))
-  const extraHomeOverrides = Object.fromEntries(allExtra.map((f) => [f.name, (copy as unknown as Record<string, string>)[f.name] ?? '']))
-  const extraHomeDefaults = Object.fromEntries(allExtra.map((f) => [f.name, f.default]))
+  const extraHomeFields: CopyFieldDef[] = allExtra.map(({ name, label, hint, rows }) => ({ name, label, hint, rows }))
+  const rawCopy = copy as unknown as Record<string, string>
+  const extraHomeOverrides = Object.fromEntries(
+    allExtra.map((f) => [
+      f.name,
+      rawCopy[f.name] || (f.name === 'homeGalleryEyebrow' ? rawCopy.galleryEyebrow : '') || '',
+    ]),
+  )
+  const extraHomeDefaults = Object.fromEntries(
+    allExtra.map((f) => {
+      const verticalDefault = vc[f.name]
+      return [
+        f.name,
+        typeof verticalDefault === 'string' && verticalDefault.trim()
+          ? verticalDefault
+          : f.default,
+      ]
+    }),
+  )
   const omFields: CopyFieldDef[] = [
     {
       name: 'aboutTitle',
@@ -376,6 +493,27 @@ export function SidaStudio({
   const allmantFields: CopyFieldDef[] = [
     { name: 'tagline', label: 'Footer-tagline', hint: 'Den korta raden i sidfoten — syns på alla sidor.' },
   ]
+  const teamPageFields: CopyFieldDef[] = [
+    { name: 'teamEyebrow', label: 'Liten rubrik (eyebrow)' },
+    { name: 'teamTitle', label: 'Team-rubrik' },
+    { name: 'teamLead', label: 'Team-ingress', rows: 2 },
+  ]
+  const activeModuleFields = page === 'team'
+    ? [...teamPageFields, ...extraHomeFields]
+    : extraHomeFields
+  const activeModuleOverrides = page === 'team'
+    ? { ...extraHomeOverrides, teamEyebrow: copy.teamEyebrow, teamTitle: copy.teamTitle, teamLead: copy.teamLead }
+    : extraHomeOverrides
+  const activeModuleDefaults = page === 'team'
+    ? { ...extraHomeDefaults, teamEyebrow: copyDefaults.teamEyebrow, teamTitle: copyDefaults.teamTitle, teamLead: teamLeadDefault }
+    : extraHomeDefaults
+  const copyEditorProps = {
+    onRegister: registerCopyFields,
+    onUnregister: unregisterCopyFields,
+    visibleFields: isActive ? visibleCopyFields : undefined,
+    onDraftChange: isActive ? pushCopyDraft : undefined,
+    onFlashField: isActive ? pushFieldFlash : undefined,
+  }
 
   return (
     <div className={styles.grid}>
@@ -446,7 +584,7 @@ export function SidaStudio({
                 overrides={{ tagline: copy.tagline }}
                 defaults={{ tagline: copyDefaults.tagline }}
                 onSaved={reload}
-                onFlash={pushFlash}
+                {...copyEditorProps}
               />
             </section>
 
@@ -492,7 +630,7 @@ export function SidaStudio({
                   ...extraHomeDefaults,
                 }}
                 onSaved={reload}
-                onFlash={pushFlash}
+                {...copyEditorProps}
               />
             </section>
 
@@ -507,6 +645,8 @@ export function SidaStudio({
                   images={heroImages}
                   defaults={themeBase.heroImages}
                   onFlashImage={pushImgFlash}
+                  onPreviewImage={pushImagePreview}
+                  onSaved={reload}
                 />
                 {caps.homeGallery ? (
                   <ImageSlotManager
@@ -517,6 +657,8 @@ export function SidaStudio({
                     images={galleryImages}
                     defaults={themeBase.galleryImages}
                     onFlashImage={pushImgFlash}
+                    onPreviewImage={pushImagePreview}
+                    onSaved={reload}
                   />
                 ) : null}
               </div>
@@ -585,7 +727,7 @@ export function SidaStudio({
                   servicesIntro: servicesIntroDefault,
                 }}
                 onSaved={reload}
-                onFlash={pushFlash}
+                {...copyEditorProps}
               />
             </section>
 
@@ -610,7 +752,7 @@ export function SidaStudio({
                 overrides={{ aboutTitle: copy.aboutTitle, aboutCopy: copy.aboutCopy, italic: copy.italic }}
                 defaults={{ aboutTitle: copyDefaults.aboutTitle, aboutCopy: copyDefaults.aboutCopy, italic: copyDefaults.italic }}
                 onSaved={reload}
-                onFlash={pushFlash}
+                {...copyEditorProps}
               />
             </section>
 
@@ -629,6 +771,7 @@ export function SidaStudio({
                   url={branding.about_image ?? null}
                   defaultUrl={themeBase.aboutImage}
                   onFlashImage={pushImgFlash}
+                  onPreviewImage={pushImagePreview}
                   onSaved={reload}
                 />
                 <SingleImageSlot
@@ -639,6 +782,7 @@ export function SidaStudio({
                   url={branding.closing_image ?? null}
                   defaultUrl={themeBase.closingImage}
                   onFlashImage={pushImgFlash}
+                  onPreviewImage={pushImagePreview}
                   onSaved={reload}
                 />
               </div>
@@ -663,7 +807,7 @@ export function SidaStudio({
                 overrides={{ teamEyebrow: copy.teamEyebrow, teamTitle: copy.teamTitle, teamLead: copy.teamLead }}
                 defaults={{ teamEyebrow: copyDefaults.teamEyebrow, teamTitle: copyDefaults.teamTitle, teamLead: teamLeadDefault }}
                 onSaved={reload}
-                onFlash={pushFlash}
+                {...copyEditorProps}
               />
               {/* Riktiga medarbetare (staff) = sidans datakälla så fort minst en synlig
                   finns; den gamla manuella settings-listan (TeamCard) visas bara för
@@ -713,7 +857,7 @@ export function SidaStudio({
                 overrides={{ closingEyebrow: copy.closingEyebrow, closingTitle: copy.closingTitle, closingLede: copy.closingLede }}
                 defaults={closingDefaults}
                 onSaved={reload}
-                onFlash={pushFlash}
+                {...copyEditorProps}
               />
             </section>
           </>
@@ -732,7 +876,7 @@ export function SidaStudio({
                 overrides={{ contactEyebrow: copy.contactEyebrow, contactTitle: copy.contactTitle }}
                 defaults={contactHeadDefaults}
                 onSaved={reload}
-                onFlash={pushFlash}
+                {...copyEditorProps}
               />
             </section>
 
@@ -780,18 +924,24 @@ export function SidaStudio({
                   ? 'Inläggen skrivs i modulens egen Blogg-flik. Här äger du sidans och bloggbandets texter.'
                   : page === 'kurser'
                     ? 'Kurstillfällen (datum, pris, platser) skapas i modulens egen flik. Sidan visar alltid kommande tillfällen.'
-                    : page === 'offert'
+                  : page === 'offert'
                       ? 'Inkomna förfrågningar ligger i modulens egen Offert-flik. Formulärets ämnen styrs där.'
+                      : page === 'klubb'
+                        ? 'Medlemsnivåer och förmåner kommer från lojalitetsmodulen. Här ändrar du mallens egna rubriker, ingress och knapptext.'
+                        : page === 'galleri'
+                          ? 'Bilderna kommer från gallerimodulen. Här ändrar du mallens egna rubriker och bildsidans texter.'
+                          : page === 'team'
+                            ? 'Personerna kommer från riktig personaldata. Här ändrar du bara de rubriker som den valda team-sidan faktiskt visar.'
                       : 'Presentkortens belopp och giltighet hanteras i modulens egen flik. Här äger du presentkortsbandets texter.'}
             </p>
-            {moduleFieldsFor(page).length > 0 ? (
+            {activeModuleFields.length > 0 ? (
               <CopyFieldsCard
                 tenantId={tenantId}
-                fields={moduleFieldsFor(page).map(({ name, label, hint, rows }) => ({ name, label, hint, rows }))}
-                overrides={extraHomeOverrides}
-                defaults={extraHomeDefaults}
+                fields={activeModuleFields}
+                overrides={activeModuleOverrides}
+                defaults={activeModuleDefaults}
                 onSaved={reload}
-                onFlash={pushFlash}
+                {...copyEditorProps}
               />
             ) : (
               <p className={styles.note}>
@@ -838,6 +988,7 @@ export function SidaStudio({
               title={`Förhandsvisning av ${storefrontHost}${activePage.path}`}
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
               loading="lazy"
+              onLoad={scanPreview}
             />
           ) : (
             <div className={styles.blocked}>

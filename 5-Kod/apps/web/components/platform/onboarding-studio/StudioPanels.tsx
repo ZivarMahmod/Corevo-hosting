@@ -179,8 +179,8 @@ function PanelBranch({ cfg, dispatch, presets }: PanelProps) {
                   height: 38,
                   flex: 'none',
                   borderRadius: 10,
-                  background: on ? 'var(--c-forest)' : 'var(--c-paper-2)',
-                  color: on ? '#fff' : 'var(--c-forest)',
+                  background: on ? 'var(--c-forest-fill, var(--c-forest))' : 'var(--c-paper-2)',
+                  color: on ? 'var(--c-on-forest, #fff)' : 'var(--c-forest)',
                   display: 'grid',
                   placeItems: 'center',
                 }}
@@ -532,7 +532,7 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
         </div>
 
         {/* Vad kunden får */}
-        <Card pad={18} style={{ background: 'var(--c-forest)', color: '#fff', border: 'none' }}>
+        <Card pad={18} style={{ background: 'var(--c-forest-fill, var(--c-forest))', color: 'var(--c-on-forest, #fff)', border: 'none' }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--c-gold)' }}>
             Kunden får
           </div>
@@ -540,7 +540,7 @@ function PanelLive({ cfg, presets, onLaunch }: StudioPanelProps) {
             {cfg.slug || studioPlaceholderSlug(studioBranchName(presets.verticals, cfg.branch))}.{ROOT}
           </div>
           <div style={{ fontSize: 13, color: 'var(--c-on-forest-2)', lineHeight: 1.6 }}>
-            Tema <b style={{ color: '#fff' }}>{cfg.theme}</b> · {activeCount}{' '}
+            Tema <b style={{ color: 'var(--c-on-forest, #fff)' }}>{cfg.theme}</b> · {activeCount}{' '}
             {activeCount === 1 ? 'modul' : 'moduler'}:{' '}
             {activeModules.map((m) => m.name).join(', ') || '—'}
             <br />

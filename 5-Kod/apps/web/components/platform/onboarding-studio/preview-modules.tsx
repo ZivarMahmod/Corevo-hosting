@@ -25,7 +25,6 @@ import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { makeTerm } from '@/lib/platform/verticals-shared'
 import { BUILT_MAIN, ROADMAP_MAIN, KONTO_KEYS, ALL_PREVIEW_MODULES } from '@/lib/platform/onboarding-studio/module-keys'
-import { studioPlaceholderSlug } from './studio-placeholder'
 
 /** The visible, honest "this is a preview, not the built feature" marker on each mock. */
 export const MODULE_LABEL = 'Förhandsvisning · byggs vid lansering'
@@ -42,7 +41,6 @@ const NO_PRESETS: VerticalPresetData = { verticals: [], modules: [], templatesBy
 export function moduleState(cfg: StudioCfg, key: string) {
   return resolveModuleState(cfg, key, NO_PRESETS)
 }
-
 /** A module is shown in the preview when it is live (rendered) or paused (read-only). */
 export function isActive(state: ReturnType<typeof moduleState>): boolean {
   return state === 'live' || state === 'paused'
@@ -546,77 +544,5 @@ export function KontoPanel({ cfg }: { cfg: StudioCfg }) {
         </div>
       </div>
     </section>
-  )
-}
-
-// ── storefront chrome (preview-only nav + footer) ──────────────────────────────
-// The real Nav/FooterFull are server + currentTenant-bound ((public)/layout.tsx); the
-// preview uses these ported structural stand-ins. The nav is NORMAL-FLOW and exactly
-// --nav-h tall so Salvia's hero `margin-top: calc(-1*--nav-h)` tucks under it instead
-// of clipping (StorefrontPreview risk #1).
-
-export function PreviewNav({ cfg }: { cfg: StudioCfg }) {
-  const meta = branschMeta(cfg.branch)
-  const navKeys = BUILT_MAIN.filter((k) => isActive(moduleState(cfg, k))).slice(0, 4)
-  const hasKonto = KONTO_KEYS.some((k) => isActive(moduleState(cfg, k)))
-  const bookingActive = isActive(moduleState(cfg, 'booking'))
-  return (
-    <div
-      style={{
-        height: 'var(--nav-h)',
-        flex: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 20,
-        padding: '0 32px',
-        borderBottom: '1px solid var(--color-line)',
-        background: 'var(--color-bg)',
-        position: 'relative',
-        zIndex: 2,
-      }}
-    >
-      <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--color-fg)' }}>
-        {cfg.name || meta.name}
-      </span>
-      <nav style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        {navKeys.map((k) => (
-          <span key={k} style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-fg-2)' }}>
-            {SECTION_TITLES[k] ?? k}
-          </span>
-        ))}
-        {hasKonto ? (
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-fg-2)' }}>Mitt konto</span>
-        ) : null}
-        {bookingActive ? <span style={accentPill}>Boka tid</span> : null}
-      </nav>
-    </div>
-  )
-}
-
-export function PreviewFooter({ cfg, branchName }: { cfg: StudioCfg; branchName?: string | null }) {
-  const meta = branschMeta(cfg.branch)
-  const slug = cfg.slug || studioPlaceholderSlug(branchName)
-  return (
-    <footer
-      style={{
-        borderTop: '1px solid var(--color-line)',
-        background: 'var(--color-accent-soft)',
-        padding: '32px 40px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: 20,
-      }}
-    >
-      <div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--color-fg)' }}>{cfg.name || meta.name}</div>
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-fg-2)', marginTop: 6 }}>{slug}.corevo.se</div>
-      </div>
-      <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--color-fg-2)', lineHeight: 1.8, textAlign: 'right' }}>
-        <div>Kontakt &amp; öppettider</div>
-        <div>visas när de fyllts i</div>
-      </div>
-    </footer>
   )
 }

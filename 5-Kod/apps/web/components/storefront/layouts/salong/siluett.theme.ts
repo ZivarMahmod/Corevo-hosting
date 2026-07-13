@@ -105,7 +105,7 @@ export const siluett: SalongTheme = {
     { name: 'pillar1Body', label: 'Hero-bild: säsong', default: 'SS26' },
     { name: 'pillar2Title', label: 'Hero: adressrad', default: 'Drottninggatan 4 · Stockholm · Tis–Lör' },
     { name: 'pillar3Title', label: 'Remsan (ord separerade med ·)', default: 'Klipp · Färg · Balayage · Uppsättning · Vård' },
-    { name: 'galleryEyebrow', label: 'Salongen: eyebrow', default: 'Salongen' },
+    { name: 'homeGalleryEyebrow', label: 'Salongen: eyebrow', default: 'Salongen' },
     { name: 'shopEyebrow', label: 'Butiken: eyebrow', default: 'Det vi själva använder vid stolen' },
     { name: 'shopTitle', label: 'Butiken: rubrik', default: 'Butiken' },
     { name: 'shopCta', label: 'Butiken: länktext', default: 'Hela butiken →' },

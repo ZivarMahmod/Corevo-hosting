@@ -64,7 +64,7 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
                 aria-label={content.heroTitle}
               />
               <p className={styles.btCred}>
-                {content.galleryEyebrow ?? 'Foto: Torgets egen — morgonens leverans, gång 3'}
+                {content.homeGalleryEyebrow ?? 'Foto: Torgets egen — morgonens leverans, gång 3'}
               </p>
               <p className={styles.btLeadBody}>
                 <span className={styles.btDateline}>{content.findEyebrow ?? 'Hötorget.'}</span>{' '}

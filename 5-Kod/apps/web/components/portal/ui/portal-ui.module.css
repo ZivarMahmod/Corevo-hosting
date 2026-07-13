@@ -90,15 +90,15 @@
    :disabled ovan, annars vinner grå-tonen och "Öppen" ser avstängd ut. */
 .pill[data-mode='state'][aria-pressed='true'],
 .pill[data-mode='state'][aria-pressed='true']:disabled {
-  background: var(--c-forest);
-  border-color: var(--c-forest);
-  color: #fff;
+  background: var(--c-forest-fill, var(--c-forest));
+  border-color: var(--c-forest-fill, var(--c-forest));
+  color: var(--c-on-forest, #fff);
   cursor: default;
 }
 /* Segmenten sitter tätt i en grupp — hover får inte antyda att det valda går att klicka. */
 .pill[data-mode='state'][aria-pressed='true']:hover {
-  background: var(--c-forest);
-  border-color: var(--c-forest);
+  background: var(--c-forest-fill, var(--c-forest));
+  border-color: var(--c-forest-fill, var(--c-forest));
 }
 
 @media (prefers-reduced-motion: reduce) {

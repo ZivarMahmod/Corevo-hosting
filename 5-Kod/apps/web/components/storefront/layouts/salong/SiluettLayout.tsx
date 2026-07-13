@@ -136,7 +136,7 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
             />
           </Reveal>
           <Reveal delay={120}>
-            <p className={styles.siAboutEyebrow}>{content.galleryEyebrow ?? 'Salongen'}</p>
+            <p className={styles.siAboutEyebrow}>{content.homeGalleryEyebrow ?? 'Salongen'}</p>
             <h2 className={styles.siAboutTitle}>{content.aboutTitle}</h2>
             <p className={styles.siAboutBodyTight}>{content.aboutCopyHome}</p>
             <p className={styles.siAboutBody}>{content.italic}</p>

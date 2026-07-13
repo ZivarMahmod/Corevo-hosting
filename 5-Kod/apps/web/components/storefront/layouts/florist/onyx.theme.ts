@@ -105,7 +105,7 @@ export const onyx: FloristTheme = {
   // fallback-sträng VERBATIM (OnyxLayout/onyx.modules) — fältet ska förifyllas ärligt.
   extraHome: [
     { name: 'findEyebrow', label: 'Hero: fotnot', default: 'KVÄLLSLEVERANS 18–23 · BESTÄLL FÖRE 20:00' },
-    { name: 'galleryEyebrow', label: 'Hero: bildtext (FIG)', default: 'FIG. 01 — MAGNOLIA NOIR' },
+    { name: 'homeGalleryEyebrow', label: 'Hero: bildtext (FIG)', default: 'FIG. 01 — MAGNOLIA NOIR' },
     { name: 'shopEyebrow', label: 'Butiken: eyebrow', default: 'DROP 27 — VECKA 28' },
     { name: 'shopTitle', label: 'Veckans drop: rubrik', default: 'Veckans drop' },
     { name: 'shopCta', label: 'Veckans drop: länktext', default: 'SE ALLT →' },

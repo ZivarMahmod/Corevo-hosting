@@ -148,7 +148,7 @@ export const kalla: SalongTheme = {
       rows: 2,
       default: 'Klipp, fön eller bara luft. Du väljer tempot ut.',
     },
-    { name: 'galleryEyebrow', label: 'Bandbilden: bildtext', default: 'Behandlingsrummet' },
+    { name: 'homeGalleryEyebrow', label: 'Bandbilden: bildtext', default: 'Behandlingsrummet' },
     { name: 'shopEyebrow', label: 'Apoteket: eyebrow', default: 'Det vi använder i behandlingarna' },
     { name: 'shopTitle', label: 'Apoteket: rubrik', default: 'Apoteket' },
     { name: 'shopCta', label: 'Apoteket: länktext', default: 'Till apoteket' },

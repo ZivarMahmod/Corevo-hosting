@@ -85,7 +85,7 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
             className={styles.kaBandPhoto}
             style={bandPhoto ? { backgroundImage: `url(${bandPhoto})` } : undefined}
           />
-          <p className={styles.kaBandCaption}>{content.galleryEyebrow ?? 'Behandlingsrummet'}</p>
+          <p className={styles.kaBandCaption}>{content.homeGalleryEyebrow ?? 'Behandlingsrummet'}</p>
         </Reveal>
       </section>
 

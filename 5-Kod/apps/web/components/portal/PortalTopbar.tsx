@@ -7,15 +7,11 @@ import { CommandPalette, type CommandItem } from './ui/CommandPalette'
 
 /**
  * Back-office topbar (playbook §4.1 / handoff Shell.jsx Topbar 253–271). Replaces
- * the plain inert search input with a ⌘K command-palette trigger (kbd hint) + a
- * Bell icon-button carrying a gold unread dot. Owns the document-level ⌘K /
- * Ctrl+K shortcut and renders the CommandPalette overlay. Sign-out + the page
+ * the plain inert search input with a ⌘K command-palette trigger (kbd hint). Owns
+ * the document-level ⌘K/Ctrl+K shortcut and renders the CommandPalette overlay.
+ * Sign-out + the page
  * title/user meta are passed in from the (server) PortalShell so this client
  * island stays thin. CHROME — present on every back-office surface, never /konto.
- *
- * The bell is intentionally inert here (styled trigger + unread dot only): there
- * is no notifications feed in scope, so it does not open a panel — matching the
- * mock, which renders the dot but wires no feed.
  *
  * Styling in app/portal-global.css (.portal-topbar*, .bo-cmdk-trigger).
  */
@@ -81,10 +77,6 @@ export function PortalTopbar({
             {contextLink.label}
           </a>
         ) : null}
-        <button type="button" className="bo-bell" aria-label="Aviseringar">
-          <Icon name="bell" size={18} />
-          <span className="bo-bell-dot" aria-hidden="true" />
-        </button>
       </div>
       <CommandPalette open={open} onClose={() => setOpen(false)} items={paletteItems} />
     </header>

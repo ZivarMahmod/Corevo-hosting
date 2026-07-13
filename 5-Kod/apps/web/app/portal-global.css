@@ -959,35 +959,6 @@
   padding: 2px 7px;
 }
 
-/* ---- topbar: Bell icon-button + gold unread dot ---- */
-/* goal-62 G1: aviseringsklockan mätte 38×38. 44×44; kvittningen håller radens höjd. */
-[data-world="backoffice"] .bo-bell {
-  position: relative;
-  width: 44px;
-  height: 44px;
-  margin: -3px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  border-radius: 7px;
-  border: 1px solid var(--c-line);
-  background: var(--c-paper);
-  color: var(--c-ink-2);
-  cursor: pointer;
-  transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
-}
-[data-world="backoffice"] .bo-bell:hover { background: var(--c-paper-2); color: var(--c-forest-fill, var(--c-forest)); }
-[data-world="backoffice"] .bo-bell:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
-[data-world="backoffice"] .bo-bell-dot {
-  position: absolute;
-  top: 8px;
-  right: 9px;
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--c-gold); /* gold = accent-only: a dot, never a fill (T2) */
-}
-
 /* ---- command palette overlay (⌘K) ---- */
 [data-world="backoffice"] .bo-cmdk-overlay {
   position: fixed;

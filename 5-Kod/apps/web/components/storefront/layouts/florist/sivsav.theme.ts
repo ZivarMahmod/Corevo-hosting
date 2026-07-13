@@ -123,7 +123,7 @@ export const sivsav: FloristTheme = {
       rows: 2,
       default: 'Skötselråd följer med varje bukett. Håller den inte sju dagar binder vi en ny.',
     },
-    { name: 'galleryEyebrow', label: 'Om-bandet: eyebrow', default: 'Ateljén' },
+    { name: 'homeGalleryEyebrow', label: 'Om-bandet: eyebrow', default: 'Ateljén' },
     { name: 'shopEyebrow', label: 'Buketterna: eyebrow', default: 'Just nu' },
     { name: 'shopTitle', label: 'Buketterna: rubrik', default: 'Veckans buketter' },
     { name: 'shopCta', label: 'Buketterna: länktext', default: 'Hela sortimentet →' },

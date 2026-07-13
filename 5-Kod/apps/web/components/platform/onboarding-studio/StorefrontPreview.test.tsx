@@ -7,7 +7,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {} }) }))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: () => {} }),
+  usePathname: () => '/',
+}))
 
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import { initStudioCfg } from '@/lib/platform/onboarding-studio/model'
@@ -28,6 +31,14 @@ describe('W2 StorefrontPreview', () => {
     expect(html).toContain('data-theme="salvia"')
     // hero copy comes from the theme content (Salvia default), not the operator
     expect(html).toContain('Varsamt utfört')
+  })
+
+  it('uses the real shared storefront chrome, never the old onboarding stand-ins', () => {
+    const html = render(cfgWith({ theme: 'salvia', name: 'Klippoteket' }))
+    expect(html).toContain('aria-label="Huvudmeny"')
+    expect(html).toContain('Designad med omsorg')
+    expect(html).toContain('tenant-main')
+    expect(html).not.toContain('klippoteket.corevo.se')
   })
 
   it('theme guard falls back to the default on an unknown key (no crash)', () => {

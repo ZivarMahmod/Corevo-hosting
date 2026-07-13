@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { platformOverview, getPlatformHealth, bookingTrend } from '@/lib/platform/metrics'
+import { platformOverview, bookingTrend } from '@/lib/platform/metrics'
 import { listTenants } from '@/lib/platform/tenants'
 import { listAuditLogAllTenants, type AuditTone } from '@/lib/platform/audit'
 import { formatPrice } from '@/lib/platform/billing'
@@ -110,14 +110,13 @@ export default async function PlatformOverviewPage() {
   // platform_admin → RLS grants cross-tenant read (private.is_platform_admin()).
   // Every figure here aggregates ÖVER alla salonger; seeing more than one is the
   // proof that the platform reaches across. No fabricated numbers — bookings/
-  // underlag are LIVE month aggregates, health pills are honest empty (no telemetry).
+  // underlag are LIVE month aggregates. Unconnected telemetry is not rendered as UI.
   const [overview, tenants, audit, trend] = await Promise.all([
     platformOverview(),
     listTenants(),
     listAuditLogAllTenants({}, 6),
     bookingTrend(12),
   ])
-  const health = getPlatformHealth()
   const monthLabel = `${MONTHS_SV[overview.month - 1]}`
 
   return (
@@ -131,21 +130,6 @@ export default async function PlatformOverviewPage() {
           Onboarda kund
         </Button>
       </PageHead>
-
-      {/* Health-pill row (mock §2.3). NO telemetry source is wired, so we render the
-          honest empty-state — the same four insyn-slots the mock shows, but each
-          reads "—" / "Ej kopplad", never a fabricated live number. */}
-      <div className={styles.healthRow} title={health.reason}>
-        {HEALTH_LABELS.map((label) => (
-          <div key={label} className={styles.pill}>
-            <span className={styles.pillDot} />
-            <div className={styles.pillBody}>
-              <div className={`num ${styles.pillValue}`}>—</div>
-              <div className={styles.pillLabel}>{label} · ej kopplad</div>
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* 4 KPI cards — all LIVE cross-tenant aggregates (platformOverview). */}
       <div className="bo-stat-grid" style={{ marginBottom: 18 }}>
@@ -269,7 +253,7 @@ export default async function PlatformOverviewPage() {
           )}
         </Card>
 
-        {/* ── Sido-rail: Senaste händelser + Premium-kort ─────────────────── */}
+        {/* ── Sido-rail: verkliga, senaste händelser ─────────────────────── */}
         <div className={styles.rail}>
           <Card pad={0}>
             <div className={`${styles.cardHead} ${styles.cardHeadTight}`}>
@@ -305,34 +289,8 @@ export default async function PlatformOverviewPage() {
               </div>
             )}
           </Card>
-
-          {/* Inverted forest card — gold action buttons (the single accent). */}
-          <div className={styles.forestCard}>
-            <span className={`eyebrow ${styles.forestEyebrow}`}>Premium utan kod</span>
-            <h2 className={styles.forestTitle}>Supabase-kraft, ditt UI</h2>
-            <p className={styles.forestBody}>
-              Lägg till kund, skicka lösenordsreset, sätt recensionslänk — utan att
-              röra rå-databasen.
-            </p>
-            <div className={styles.forestActions}>
-              <Button href="/kunder" variant="gold" size="sm" icon="mail">
-                Lösenordsreset
-              </Button>
-              <Button
-                href="/personal-plattform"
-                variant="ghost"
-                size="sm"
-                icon="scissors"
-                style={{ color: '#fff', borderColor: 'var(--c-forest-300)' }}
-              >
-                Onboarda personal
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </section>
   )
 }
-
-const HEALTH_LABELS = ['API-uptid', 'Workers', 'DB-pool', 'Köade SMS'] as const

@@ -12,13 +12,14 @@ import { Footer } from '@/components/brand/Footer'
 import { FooterFull } from '@/components/brand/FooterFull'
 import { BookingProvider } from '@/components/storefront/BookingProvider'
 import { CartProvider } from '@/components/storefront/shop/CartProvider'
-import { getWizardServices, getWizardLocations } from '@/components/storefront/wizard-services'
+import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
 import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { branschBokning } from '@/components/storefront/bransch-copy'
 import { resolvePrimaryCta } from '@/components/storefront/primary-cta'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
+import { loadTeamMembers } from '@/lib/storefront/team/load-team'
 import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
 import { SidaPreviewBridge } from '@/components/platform/SidaPreviewBridge'
 import storefront from '@/components/storefront/storefront.module.css'
@@ -98,10 +99,12 @@ export async function PreviewShell({
   // bokningsmodul får riktiga tjänster; annars renderar CTA:erna inert.
   const moduleStates = await getTenantModuleStates(tenant.id, tenant.slug)
   const bookingLive = moduleState(moduleStates, 'booking') === 'live'
-  const [allWizardServices, wizardLocations, staffNoun] = await Promise.all([
+  const [allWizardServices, wizardLocations, staffNoun, bookingPrefs, teamMembers] = await Promise.all([
     getWizardServices(tenant.id, tenant.slug),
     getWizardLocations(tenant.id, tenant.slug),
     resolveStaffNoun(tenant.vertical_id),
+    getBookingPrefs(tenant.id, tenant.slug),
+    loadTeamMembers(tenant.id, tenant.slug),
   ])
   const wizardServices = bookingLive ? allWizardServices : []
 
@@ -144,6 +147,11 @@ export async function PreviewShell({
     moduleState(moduleStates, 'lojalitet') === 'paused'
       ? [{ href: '/klubb', label: 'Klubben' }]
       : []),
+    ...(moduleState(moduleStates, 'galleri') === 'live' ||
+    moduleState(moduleStates, 'galleri') === 'paused'
+      ? [{ href: '/galleri', label: 'Galleri' }]
+      : []),
+    ...(teamMembers.length > 0 ? [{ href: '/team', label: 'Team' }] : []),
     { href: '/om', label: 'Om oss' },
     { href: '/kontakt', label: 'Kontakt' },
   ]
@@ -181,6 +189,8 @@ export async function PreviewShell({
         staffNoun={staffNoun}
         bokaCta={bokning.cta}
         variant={settings.bookingVariant}
+        pickerMode={bookingPrefs.pickerMode}
+        staffAvatarMode={bookingPrefs.staffAvatarMode}
       >
         {/* CartProvider omsluter nav+main+footer (navens korg-knapp använder useCart) —
             samma ordning som (public)/layout. */}
@@ -224,6 +234,8 @@ export async function PreviewShell({
             staffNoun={staffNoun}
             bokaCta={bokning.cta}
             bokaOnline={bokning.online}
+            pickerMode={bookingPrefs.pickerMode}
+            staffAvatarMode={bookingPrefs.staffAvatarMode}
           />
         ) : null}
         {chrome.Footer ? (

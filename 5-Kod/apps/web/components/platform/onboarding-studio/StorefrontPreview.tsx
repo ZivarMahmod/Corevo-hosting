@@ -18,12 +18,17 @@ import { injectTenantTokens } from '@corevo/ui'
 import { STOREFRONT_LAYOUTS } from '@/components/storefront/layouts'
 import type { StorefrontLayoutProps } from '@/components/storefront/layouts'
 import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
+import { Nav } from '@/components/brand/Nav'
+import { NavShell } from '@/components/brand/NavShell'
+import { Footer } from '@/components/brand/Footer'
+import { FooterFull } from '@/components/brand/FooterFull'
+import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import type { StorefrontTheme, Service } from '@/lib/tenant-data'
 import type { StudioCfg } from '@/lib/platform/onboarding-studio/model'
 import { krToOre } from '@/lib/platform/onboarding-studio/services'
 import styles from '@/components/storefront/storefront.module.css'
-import { ModuleSections, KontoPanel, PreviewNav, PreviewFooter, activeModuleKeys } from './preview-modules'
+import { ModuleSections, KontoPanel, activeModuleKeys } from './preview-modules'
 import { studioPlaceholderName, studioPlaceholderSlug } from './studio-placeholder'
 
 // Platform default (DEFAULT_STOREFRONT_THEME, tenant-data.ts:28) — inlined as a literal
@@ -58,6 +63,9 @@ export function StorefrontPreview({
   // → undefined → attrapperna nedan, byte-identiskt med förr.
   const chrome = themeChrome(theme)
   const activeKeys = activeModuleKeys(cfg)
+  const cartEnabled = activeKeys.includes('webshop')
+  const customerAccountsEnabled = activeKeys.includes('kundkonton')
+  const fullFooter = theme === 'salvia' || theme === 'freshcut'
   // Modulstyrd meny, samma regel som (public)/layout: en modul som är av får ingen länk.
   // Kapad till 6 av mallens chrome självt (nio bryter till två rader).
   const previewNavLinks = [
@@ -125,48 +133,73 @@ export function StorefrontPreview({
     // [data-theme] palette block (tokens.css) → flipping cfg.theme recomputes the whole
     // palette; tplRoot supplies --nav-h/--sf-radius (required by Salvia's hero).
     <div data-world="storefront" data-theme={theme} className={styles.tplRoot} style={rootStyle}>
-      {/* goal-60: previewn visade tidigare ALLTID attrapp-navet/-footern, även för de
-          teman som äger sitt eget chrome (goal-59). Mallens sidhuvud och sidfot — hela
-          poängen med tema-paketen — syntes alltså aldrig i den yta ägaren väljer mall i.
-          Previewn halkade efter live. Nu renderas mallens EGET chrome när det finns;
-          bara teman utan eget chrome faller tillbaka på attrapperna. */}
-      {chrome?.Nav ? (
-        <chrome.Nav
-          tenant={props.tenant}
-          branding={{}}
-          links={previewNavLinks}
-          primaryCta={null}
-          cartEnabled={activeKeys.includes('webshop')}
-          customerAccountsEnabled={activeKeys.includes('kundkonton')}
-          utilityText={content.utility}
-        />
-      ) : (
-        // Attrapp-navet är exakt --nav-h högt och ligger i normalflödet, så Salvias hero
-        // (margin-top: calc(-1*--nav-h)) tuckar in under det i stället för att klippas.
-        <PreviewNav cfg={cfg} />
-      )}
+      <CartProvider>
+        {/* Samma chrome-rörledning som (public)/layout.tsx: mallens eget nav ligger
+            inuti NavShell; teman utan eget chrome använder den verkliga delade Nav.
+            Inga preview-attrapper får längre maskera hur mallen faktiskt ser ut. */}
+        {chrome?.Nav ? (
+          <NavShell
+            customerAccountsEnabled={customerAccountsEnabled}
+            cartEnabled={cartEnabled}
+            utilityText={content.utility}
+            hideUtility={chrome.ownsUtility}
+            links={previewNavLinks}
+            primaryCta={null}
+          >
+            <chrome.Nav
+              tenant={props.tenant}
+              branding={{}}
+              links={previewNavLinks}
+              primaryCta={null}
+              cartEnabled={cartEnabled}
+              customerAccountsEnabled={customerAccountsEnabled}
+              utilityText={content.utility}
+            />
+          </NavShell>
+        ) : (
+          <Nav
+            tenant={props.tenant}
+            branding={{}}
+            links={previewNavLinks}
+            primaryCta={null}
+            cartEnabled={cartEnabled}
+            customerAccountsEnabled={customerAccountsEnabled}
+            utilityText={content.utility}
+          />
+        )}
 
-      {/* The REAL per-theme layout (booking covered by its service rows + Boka CTAs). */}
-      <Layout {...props} />
+        <main className={`tenant-main ${styles.shellMain}`}>
+          {/* The REAL per-theme layout (booking covered by its service rows + Boka CTAs). */}
+          <Layout {...props} />
 
-      {/* Module sections appended below the layout — the REAL composition order. */}
-      <div style={{ display: 'grid', gap: 44, padding: '44px 40px' }}>
-        <ModuleSections cfg={cfg} />
-        <KontoPanel cfg={cfg} />
-      </div>
+          {/* Module sections appended below the layout — the REAL composition order. */}
+          <div style={{ display: 'grid', gap: 44, padding: '44px 40px' }}>
+            <ModuleSections cfg={cfg} />
+            <KontoPanel cfg={cfg} />
+          </div>
+        </main>
 
-      {chrome?.Footer ? (
-        <chrome.Footer
-          tenant={props.tenant}
-          tagline={content.tagline}
-          location={null}
-          contact={{ phone: null, email: null }}
-          social={{ instagram: null, facebook: null, tiktok: null }}
-          links={previewNavLinks}
-        />
-      ) : (
-        <PreviewFooter cfg={cfg} branchName={branchName} />
-      )}
+        {chrome?.Footer ? (
+          <chrome.Footer
+            tenant={props.tenant}
+            tagline={content.tagline}
+            location={null}
+            contact={{ phone: null, email: null }}
+            social={{ instagram: null, facebook: null, tiktok: null }}
+            links={previewNavLinks}
+          />
+        ) : fullFooter ? (
+          <FooterFull
+            tenant={{ name: props.tenant.name }}
+            tagline={content.tagline}
+            location={null}
+            contact={{ phone: null, email: null }}
+            social={{ instagram: null, facebook: null, tiktok: null }}
+          />
+        ) : (
+          <Footer tenant={{ name: props.tenant.name }} />
+        )}
+      </CartProvider>
     </div>
   )
 }

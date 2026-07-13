@@ -129,8 +129,9 @@ export const ateljevinter: FloristTheme = {
     { name: 'blogEyebrow', label: 'Anteckningar: eyebrow', default: 'rum iv' },
     { name: 'blogTitle', label: 'Anteckningar: rubrik', default: 'anteckningar' },
     { name: 'blogCta', label: 'Anteckningar: länktext', default: 'läs alla anteckningar →' },
-    { name: 'galleryEyebrow', label: 'Statement: eyebrow', default: 'ateljéns hållning' },
+    { name: 'homeGalleryEyebrow', label: 'Statement: eyebrow', default: 'ateljéns hållning' },
     // goal-64: arkivet + vänkretsen. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryEyebrow', label: 'Arkivet: eyebrow', default: 'rum iii' },
     { name: 'galleryTitle', label: 'Arkivet: rubrik', default: 'arkivet' },
     { name: 'clubEyebrow', label: 'Vänkretsen: eyebrow', default: 'vänkretsen' },
     { name: 'clubTitle', label: 'Vänkretsen: rubrik', default: 'först till samlingen' },

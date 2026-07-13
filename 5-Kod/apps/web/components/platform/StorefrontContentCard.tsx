@@ -22,6 +22,8 @@ export function ImageSlotManager({
   images,
   defaults = [],
   onFlashImage,
+  onPreviewImage,
+  onSaved,
 }: {
   tenantId: string
   slot: 'hero' | 'gallery'
@@ -33,12 +35,20 @@ export function ImageSlotManager({
   defaults?: string[]
   /** "Visa var": markera bilden i previewen (scrollar dit och blinkar). */
   onFlashImage?: (url: string) => void
+  /** Lokal, osparad fil → verklig storefront-preview. */
+  onPreviewImage?: (currentUrl: string, previewUrl: string) => void
+  onSaved?: () => void
 }) {
   const [upState, upAction, upPending] = useActionState<ActionState, FormData>(
-    uploadTenantStorefrontImage,
+    async (prev, formData) => {
+      const result = await uploadTenantStorefrontImage(prev, formData)
+      if (result.success) onSaved?.()
+      return result
+    },
     {},
   )
   const usingDefaults = images.length === 0 && defaults.length > 0
+  const effectiveFirst = images[0] ?? defaults[0] ?? ''
 
   return (
     <div className={styles.form}>
@@ -55,7 +65,7 @@ export function ImageSlotManager({
       {images.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginBottom: '0.6rem' }}>
           {images.map((url) => (
-            <ImageThumb key={url} tenantId={tenantId} slot={slot} url={url} onFlashImage={onFlashImage} />
+            <ImageThumb key={url} tenantId={tenantId} slot={slot} url={url} onFlashImage={onFlashImage} onSaved={onSaved} />
           ))}
         </div>
       )}
@@ -90,7 +100,13 @@ export function ImageSlotManager({
         <input type="hidden" name="slot" value={slot} />
         <label className={styles.field}>
           <span>Ladda upp bild (PNG/JPG/WEBP, max 8 MB)</span>
-          <input type="file" name="image" accept="image/*" required />
+          <input
+            type="file"
+            name="image"
+            accept="image/*"
+            required
+            onChange={(event) => previewLocalImage(event.currentTarget.files?.[0], effectiveFirst, onPreviewImage)}
+          />
         </label>
         <div className={styles.actions}>
           <button type="submit" className={styles.btn} disabled={upPending}>
@@ -108,14 +124,20 @@ function ImageThumb({
   slot,
   url,
   onFlashImage,
+  onSaved,
 }: {
   tenantId: string
   slot: 'hero' | 'gallery'
   url: string
   onFlashImage?: (url: string) => void
+  onSaved?: () => void
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(
-    removeTenantStorefrontImage,
+    async (prev, formData) => {
+      const result = await removeTenantStorefrontImage(prev, formData)
+      if (result.success) onSaved?.()
+      return result
+    },
     {},
   )
   // Tvåstegsbekräftelse (samma mönster som ServicesManager/StaffRoster): bilden låg ETT
@@ -189,6 +211,19 @@ function ImageThumb({
       <Feedback state={state} />
     </div>
   )
+}
+
+function previewLocalImage(
+  file: File | undefined,
+  currentUrl: string,
+  onPreviewImage?: (currentUrl: string, previewUrl: string) => void,
+) {
+  if (!file || !currentUrl || !onPreviewImage) return
+  const reader = new FileReader()
+  reader.addEventListener('load', () => {
+    if (typeof reader.result === 'string') onPreviewImage(currentUrl, reader.result)
+  })
+  reader.readAsDataURL(file)
 }
 
 const thumbChipDef = {

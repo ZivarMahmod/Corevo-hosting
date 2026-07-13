@@ -93,17 +93,3 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-.foot {
-  display: flex;
-  gap: 8px;
-  padding-top: 14px;
-  margin-top: auto;
-  border-top: 1px solid var(--c-line);
-}
-
-/* Push "Hantera" to fill, "Docs" stays auto-width (mock: flex:1 / auto). */
-.footPrimary {
-  flex: 1;
-  justify-content: center;
-}

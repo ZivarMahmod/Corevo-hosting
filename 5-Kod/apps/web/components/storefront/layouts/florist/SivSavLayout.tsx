@@ -146,7 +146,7 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
         <section className={styles.ssSectionWide}>
           <Reveal className={styles.ssAbout}>
             <div>
-              <p className={styles.ssAboutEyebrow}>{content.galleryEyebrow ?? 'Ateljén'}</p>
+              <p className={styles.ssAboutEyebrow}>{content.homeGalleryEyebrow ?? 'Ateljén'}</p>
               <h2 className={styles.ssAboutTitle}>
                 {content.aboutTitle ?? 'Mindre är mer — men aldrig kallt'}
               </h2>

@@ -14,13 +14,7 @@ import styles from './drift.module.css'
 
 const ACTORS: (AuditActor | 'Alla')[] = ['Alla', 'Zivar', 'System', 'Kund']
 
-// The four health slots the mock's SU_HEALTH row shows (API-uptid / Workers /
-// DB-pool / Köade SMS). No telemetry source is wired, so each renders an honest
-// "—" + "ej kopplad" — same composition as the mock's pill row + the Översikt
-// health pills, never a fabricated live number.
-const HEALTH_LABELS = ['API-uptid', 'Workers', 'DB-pool', 'Köade SMS'] as const
-
-// tone → swatch colour for the row icon-tile + health/empty accents. Mirrors the
+// tone → swatch colour for the row icon-tile + empty accents. Mirrors the
 // mock's SP_AUDIT_TONE (var(--c-*) muted status tokens), kept in this island.
 const TONE_COLOR: Record<AuditTone, string> = {
   info: 'var(--c-info)',
@@ -120,14 +114,7 @@ function downloadCsv(rows: PlatformAuditEntry[]) {
   URL.revokeObjectURL(url)
 }
 
-export function DriftLog({
-  entries,
-  healthReason,
-}: {
-  entries: PlatformAuditEntry[]
-  /** getPlatformHealth().reason when no telemetry is wired; null hides the band. */
-  healthReason: string | null
-}) {
+export function DriftLog({ entries }: { entries: PlatformAuditEntry[] }) {
   const [q, setQ] = useState('')
   const [actor, setActor] = useState<(typeof ACTORS)[number]>('Alla')
 
@@ -160,24 +147,6 @@ export function DriftLog({
           Exportera logg
         </Button>
       </PageHead>
-
-      {/* Plattformshälsa: the mock shows 4 live health pills, but no telemetry source
-          exists in this stack — so we render the SAME 4-pill row with an honest "—" /
-          "ej kopplad" in each slot (matching the Översikt health pills), NEVER a
-          fabricated live number. */}
-      {healthReason && (
-        <div className={styles.healthRow} title={healthReason}>
-          {HEALTH_LABELS.map((label) => (
-            <div key={label} className={styles.healthPill}>
-              <span className={styles.healthDot} />
-              <div className={styles.healthBody}>
-                <div className={`num ${styles.healthValue}`}>—</div>
-                <div className={styles.healthLabel}>{label} · ej kopplad</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* filter row — search + actor pills (mock: in-memory, instant) */}
       <div className={styles.controls}>

@@ -16,7 +16,10 @@ vi.mock('@/lib/platform/actions', () => ({ createTenant: async () => ({}) }))
 
 // W2: PreviewPane now mounts the REAL storefront layout; Bookable inside it calls
 // useRouter (next/navigation) — stub it so the node render env doesn't throw.
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {} }) }))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: () => {} }),
+  usePathname: () => '/',
+}))
 
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import type { TenantCardItem } from '@/lib/platform/tenants'
