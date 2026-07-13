@@ -4,7 +4,7 @@ import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { StorefrontIcon } from '../StorefrontIcon'
 import { formatPrice, formatDuration, serviceDesc } from '../service-format'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 import ln from './linnea.module.css'
@@ -111,7 +111,7 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
                   />
                   <h3 className={styles.sfCardName}>{p.name}</h3>
                   <div className={styles.sfCardMeta}>
-                    <span className={styles.sfCardPrice}>{formatShopPrice(p.priceCents, p.currency)}</span>
+                    <span className={styles.sfCardPrice}>{formatProductPrice(p)}</span>
                   </div>
                 </Link>
               </Reveal>

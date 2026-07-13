@@ -27,9 +27,12 @@ export type TenantTabKey =
   | 'Kunder'
   | 'Personal'
   | 'Kurser'
+  // goal-64: klubbens nivåer (lojalitet-modulen). Visas bara när modulen är på.
+  | 'Klubben'
   | 'Webshop'
   | 'Blogg'
   | 'Offerter'
+  | 'Meddelanden'
   | 'Bildbibliotek'
   | 'Sida'
   | 'Integrationer'
@@ -43,9 +46,12 @@ const TABS: { key: TenantTabKey; icon: IconName }[] = [
   { key: 'Kunder', icon: 'users' },
   { key: 'Personal', icon: 'scissors' },
   { key: 'Kurser', icon: 'calendar' },
+  { key: 'Klubben', icon: 'star' },
   { key: 'Webshop', icon: 'grid' },
   { key: 'Blogg', icon: 'edit' },
   { key: 'Offerter', icon: 'mail' },
+  // goal-64: kontaktformulärets inkorg. Alltid synlig — /kontakt är ingen modul.
+  { key: 'Meddelanden', icon: 'mail' },
   { key: 'Bildbibliotek', icon: 'upload' },
   { key: 'Sida', icon: 'palette' },
   { key: 'Integrationer', icon: 'link' },

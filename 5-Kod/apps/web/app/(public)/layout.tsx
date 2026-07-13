@@ -23,6 +23,7 @@ import { resolvePrimaryCta } from '@/components/storefront/primary-cta'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { LocalBusinessJsonLd } from '@/components/storefront/seo'
+import { loadTeamMembers } from '@/lib/storefront/team/load-team'
 import storefront from '@/components/storefront/storefront.module.css'
 
 // Per-request, host-resolved tenant → never prerender.
@@ -164,6 +165,24 @@ export default async function PublicLayout({ children }: { children: React.React
     ...(moduleState(moduleStates, 'presentkort') === 'live' ||
     moduleState(moduleStates, 'presentkort') === 'paused'
       ? [{ href: '/presentkort', label: 'Presentkort' }]
+      : []),
+    // goal-64 KLUBBEN: lojalitet-modulens publika sida (/klubb). Samma heliga gate —
+    // av/draft → sidan 404:ar, och då får den inte heller stå i menyn.
+    ...(moduleState(moduleStates, 'lojalitet') === 'live' ||
+    moduleState(moduleStates, 'lojalitet') === 'paused'
+      ? [{ href: '/klubb', label: 'Klubben' }]
+      : []),
+    // goal-64 GALLERIET: egen modul (0057). MODUL-GATEN ÄR HELIG — en modul som inte är
+    // live/paused ger NOLL länkar till sin sida (/galleri 404:ar med samma villkor).
+    ...(moduleState(moduleStates, 'galleri') === 'live' ||
+    moduleState(moduleStates, 'galleri') === 'paused'
+      ? [{ href: '/galleri', label: 'Galleri' }]
+      : []),
+    // goal-64 TEAMET: INGEN modul — det är kundens folk. Länken gatas därför på FÖREKOMST
+    // (minst en aktiv medarbetare som valt att synas). Utan folk finns ingen sida att
+    // länka till — samma render-on-present-regel som resten av storefronten.
+    ...((await loadTeamMembers(tenant.id, tenant.slug)).length > 0
+      ? [{ href: '/team', label: 'Team' }]
       : []),
     { href: '/om', label: 'Om oss' },
     { href: '/kontakt', label: 'Kontakt' },

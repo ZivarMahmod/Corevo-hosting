@@ -1,8 +1,19 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { AddToCart } from '../../shop/AddToCart'
-import { formatShopPrice, type ShopProduct } from '@/lib/storefront/shop/types'
-import type { ThemeShopViewProps, ThemeBloggViewProps } from './types'
+import {
+  formatProductPrice,
+  shopCategoryChips,
+  type ShopProduct,
+} from '@/lib/storefront/shop/types'
+import { JoinClubForm } from '../../lojalitet/JoinClubForm'
+import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import type {
+  ThemeShopViewProps,
+  ThemeBloggViewProps,
+  ThemeGalleriViewProps,
+  ThemeLojalitetViewProps,
+} from './types'
 import styles from './calytrix-modules.module.css'
 
 /**
@@ -19,10 +30,14 @@ import styles from './calytrix-modules.module.css'
  *   BLOGGEN (filens `showBlogg`) — tre vita kantade kort: 16:10-bild, versal tagg-rad i
  *   plommon, 23px serif-rubrik, utdrag. Ingen läs-mer-länk: hela kortet ÄR länken.
  *
- * Filens kategori-chips (Alla/Buketter/Rosor/Säsong/Under 500) är INTE byggda —
- * shop_products bär ingen kategori, och fem knappar som inte filtrerar något ljuger.
- * Filens badge-ord ("Bästsäljare", "Säsong" …) är mockdata utan fält i modellen; badgen
- * bär därför bara det vi VET: att varan är slutsåld.
+ * goal-64 (migration 0057) — DET SOM SAKNADES ÄR NU VERKLIGT:
+ *   • KATEGORI-CHIPSEN (filens `cats`/`filters`) byggdes inte tidigare, för shop_products bar
+ *     ingen kategori. Nu gör den det. Chipsen är <Link>-taggar mot `/shop?kategori=…` och
+ *     filtreringen sker server-side — de fungerar utan JS och kan indexeras. Kunden har INGA
+ *     kategorier → data.categories är tom → raden renderas inte alls (aldrig en påhittad chip).
+ *   • BADGEN ("Bästsäljare", "Säsong" …) var mockdata utan fält. Nu är den shop_products.badge.
+ *     Slutsåld VINNER ändå över badgen: att varan inte går att köpa är viktigare för besökaren
+ *     än att den är populär, och två märken i samma hörn ritar designen inte.
  *
  * SYNKRONA server-komponenter (ingen async, ingen 'use client').
  */
@@ -68,14 +83,23 @@ export function CalytrixShop({ data, paused, limit, moreHref, content }: ThemeSh
                 aria-label={p.imageAlt ?? p.name}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               />
-              {soldOut ? <span className={styles.cxCardBadge}>Slutsåld</span> : null}
+              {/* Ett märke, aldrig två (filen ritar EN span i hörnet). Slutsåld går före badgen:
+                  "kan inte köpas" är viktigare för besökaren än "populär". Ingen av delarna →
+                  inget märke alls. */}
+              {soldOut ? (
+                <span className={styles.cxCardBadge}>Slutsåld</span>
+              ) : p.badge ? (
+                <span className={styles.cxCardBadge}>{p.badge}</span>
+              ) : null}
             </Link>
             <div className={styles.cxCardBody}>
               <div className={styles.cxCardHead}>
                 <h3 className={styles.cxCardName}>
                   <Link href={`/shop/${p.id}`}>{p.name}</Link>
                 </h3>
-                <p className={styles.cxCardPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
+                {/* formatProductPrice, aldrig egen formatering: bär produkten price_from
+                    skrivs priset "fr. 349 kr" i ALLA mallar, inte bara i den som råkar minnas. */}
+                <p className={styles.cxCardPrice}>{formatProductPrice(p)}</p>
               </div>
               {p.description ? <p className={styles.cxCardDesc}>{p.description}</p> : null}
               {/* Pausad butik → INGEN köp-CTA. Stängt är stängt. */}
@@ -119,14 +143,39 @@ export function CalytrixShop({ data, paused, limit, moreHref, content }: ThemeSh
     )
   }
 
+  // Filens `filters` — mallens ord för det ofiltrerade urvalet är "Alla".
+  const chips = shopCategoryChips(data, 'Alla')
+
   return (
     <section className={styles.cxShop} data-module="shop" data-fulfilment={config.fulfilment}>
       <div className={styles.cxShopHead}>
         <h1 className={styles.cxShopTitle}>{content.shopTitle ?? 'Butiken'}</h1>
+        {/* Filens `filterInfo`: "8 produkter · Alla" — räknaren gäller det SYNLIGA urvalet. */}
         <p className={styles.cxShopCount}>
           {all.length} {all.length === 1 ? 'produkt' : 'produkter'}
+          {data.activeCategory ? ` · ${data.activeCategory}` : chips.length > 0 ? ' · Alla' : ''}
         </p>
       </div>
+
+      {/* KATEGORI-CHIPSEN — segmenterad rektangel i plommon (filen: inline-flex, 1px #241019).
+          Inga kategorier hos kunden → chips är tom → raden renderas inte. */}
+      {chips.length > 0 ? (
+        <div className={styles.cxFilterRow}>
+          <div className={styles.cxFilters}>
+            {chips.map((c) => (
+              <Link
+                key={c.href}
+                href={c.href}
+                className={styles.cxFilter}
+                data-active={c.active ? 'true' : undefined}
+                aria-current={c.active ? 'page' : undefined}
+              >
+                {c.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {paused ? (
         <p role="status" className={styles.cxNotice}>
@@ -136,7 +185,12 @@ export function CalytrixShop({ data, paused, limit, moreHref, content }: ThemeSh
       ) : null}
 
       {products.length === 0 ? (
-        <p className={styles.cxEmpty}>Sortimentet är tomt just nu.</p>
+        // Ärlig tomhet: en okänd/tom kategori säger så, den påstår inte att butiken är tom.
+        <p className={styles.cxEmpty}>
+          {data.activeCategory
+            ? `Inga produkter i ${data.activeCategory} just nu.`
+            : 'Sortimentet är tomt just nu.'}
+        </p>
       ) : (
         <ul className={styles.cxShopGrid}>{cards}</ul>
       )}
@@ -163,7 +217,13 @@ export function CalytrixBlogg({ posts: all, limit, moreHref, content }: ThemeBlo
           style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
         />
         <span className={styles.cxPostBody}>
-          {date ? <span className={styles.cxPostMeta}>{date}</span> : null}
+          {/* Filens metarad är "{{ b.tag }} · {{ b.date }}" — taggen är blog_posts.tag (0057).
+              Saknas taggen står bara datumet där; saknas båda renderas ingen rad alls. */}
+          {p.tag || date ? (
+            <span className={styles.cxPostMeta}>
+              {[p.tag, date].filter(Boolean).join(' · ')}
+            </span>
+          ) : null}
           <h2 className={styles.cxPostTitle}>{p.title}</h2>
           {p.excerpt ? <span className={styles.cxPostExcerpt}>{p.excerpt}</span> : null}
         </span>
@@ -213,6 +273,99 @@ export function CalytrixBlogg({ posts: all, limit, moreHref, content }: ThemeBlo
       ) : (
         <ul className={styles.cxPosts}>{cards}</ul>
       )}
+    </section>
+  )
+}
+
+/* ══════════════════════════════════ GALLERI ═══════════════════════════════ */
+
+/**
+ * Filens `showGalleri`: e-handelns galleri är ett RUTNÄT, inget museum — fyra spalter
+ * kvadrater med 1px vinröd ram (--color-line) och 14px mellanrum. Rubriken i Instrument
+ * Serif 56px, en rad underrubrik, sedan bara varor på rad.
+ */
+export function CalytrixGalleri({ items, content }: ThemeGalleriViewProps) {
+  return (
+    <section className={styles.cxGalleri} data-module="galleri">
+      <h1 className={styles.cxGalTitle}>{content.galleryTitle ?? 'Galleri'}</h1>
+      <p className={styles.cxGalLede}>
+        {content.galleryLede ?? 'Senaste leveranserna ur butiken — uppdateras varje vecka.'}
+      </p>
+
+      {items.length === 0 ? (
+        <p className={styles.cxGalEmpty}>Inga bilder är publicerade ännu.</p>
+      ) : (
+        <div className={styles.cxGalGrid}>
+          {items.map((g) =>
+            g.imageUrl ? (
+              <div
+                key={g.id}
+                className={styles.cxGalTile}
+                role="img"
+                aria-label={g.imageAlt ?? g.caption ?? ''}
+                style={{ backgroundImage: `url(${g.imageUrl})` }}
+              />
+            ) : null,
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ════════════════════════════════ CALYTRIX CLUB ═══════════════════════════ */
+
+/**
+ * Filens `showClub`: tre NIVÅKORT i rad (den mittersta mörk och utan ram — "Nivå 2" är
+ * den man ska välja), och under dem anmälan i en vit ruta med 2px svart fältram.
+ *
+ * AVVIKELSE (medveten, och den ÄRLIGA vägen): designens kort visar POÄNGINTERVALL
+ * ("0–2 000 poäng"). Klubbens datamodell (loyalty_plans, 0057) bär ett PRIS och ett
+ * intervall, inte poängtrappor — vi kan alltså inte visa "6 000+ poäng" utan att hitta på
+ * en trappa kunden aldrig satt upp. Kortet visar därför nivåns riktiga namn, dess riktiga
+ * pris och dess riktiga förmåner; formen (tre kort, mittersta mörk = `featured`) är filens.
+ * Inga nivåer i klubben → inga kort, aldrig tre tomma platshållare.
+ */
+export function CalytrixLojalitet({ config, plans, content }: ThemeLojalitetViewProps) {
+  return (
+    <section className={styles.cxClub} data-module="lojalitet" data-variant={config.variant}>
+      <h1 className={styles.cxGalTitle}>{content.clubTitle ?? 'Calytrix Club'}</h1>
+      <p className={styles.cxClubLede}>{content.clubLede ?? config.perkText}</p>
+
+      {plans.length > 0 ? (
+        <div className={styles.cxTiers}>
+          {plans.map((p, i) => (
+            <div
+              key={p.id}
+              className={styles.cxTier}
+              data-featured={p.featured ? 'true' : undefined}
+            >
+              <p className={styles.cxTierNo}>Nivå {i + 1}</p>
+              <p className={styles.cxTierName}>{p.name}</p>
+              <p className={styles.cxTierPrice}>
+                {formatPlanPrice(p.priceCents)} {loyaltyIntervalLabel(p.interval)}
+              </p>
+              {p.perks.length > 0 ? (
+                <p className={styles.cxTierPerks}>{p.perks.join(' · ')}</p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {plans.length === 0 && config.perks && config.perks.length > 0 ? (
+        <div className={styles.cxTiers}>
+          {config.perks.map((perk) => (
+            <div key={perk} className={styles.cxTier}>
+              <p className={styles.cxTierPerks}>{perk}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className={styles.cxClubJoin}>
+        <JoinClubForm cta={content.clubCta ?? 'GÅ MED GRATIS'} />
+      </div>
     </section>
   )
 }

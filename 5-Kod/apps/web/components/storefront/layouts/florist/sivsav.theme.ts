@@ -1,7 +1,7 @@
 import type { FloristTheme } from './types'
 import { SivSavNav, SivSavFooter } from './sivsav.chrome'
 import { SivSavOm, SivSavTjanster, SivSavKontakt } from './sivsav.pages'
-import { SivSavShop, SivSavBlogg } from './sivsav.modules'
+import { SivSavShop, SivSavBlogg, SivSavGalleri, SivSavLojalitet } from './sivsav.modules'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/galleryItems/blog) — inte utbytta, inte
 // "liknande". HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n."
@@ -87,7 +87,14 @@ export const sivsav: FloristTheme = {
   caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   chrome: { Nav: SivSavNav, Footer: SivSavFooter },
   pages: { om: SivSavOm, tjanster: SivSavTjanster, kontakt: SivSavKontakt },
-  moduleViews: { shop: SivSavShop, blogg: SivSavBlogg },
+  // goal-64: galleriet + Söndagsklubben (nivåerna kommer ur loyalty_plans, inte ur mallen).
+  // Ingen team-vy — paketet har ingen team-sida.
+  moduleViews: {
+    shop: SivSavShop,
+    blogg: SivSavBlogg,
+    galleri: SivSavGalleri,
+    lojalitet: SivSavLojalitet,
+  },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
   // (SivSavLayout.tsx / sivsav.modules.tsx) — fältet ska förifyllas ärligt.
@@ -121,5 +128,18 @@ export const sivsav: FloristTheme = {
     { name: 'blogEyebrow', label: 'Journalen: eyebrow', default: 'Journalen' },
     { name: 'blogTitle', label: 'Journalen: rubrik', default: 'Journalen' },
     { name: 'blogCta', label: 'Journalen: länktext', default: 'Alla inlägg →' },
+    // goal-64: galleriet + Söndagsklubben. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: 'Portfolio' },
+    { name: 'galleryTitle', label: 'Galleri: rubrik', default: 'Galleri' },
+    { name: 'clubEyebrow', label: 'Söndagsklubben: eyebrow', default: 'Medlemskap' },
+    { name: 'clubTitle', label: 'Söndagsklubben: rubrik', default: 'Söndagsklubben' },
+    {
+      name: 'clubLede',
+      label: 'Söndagsklubben: text',
+      rows: 2,
+      default:
+        'Färska blommor hem varje eller varannan vecka. Pausa när du vill, avsluta när du vill.',
+    },
+    { name: 'clubCta', label: 'Söndagsklubben: knapptext', default: 'Starta prenumeration' },
   ],
 }

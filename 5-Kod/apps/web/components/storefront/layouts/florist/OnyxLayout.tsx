@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { BookCta } from '@/components/brand/BookCta'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './onyx.module.css'
 
@@ -29,9 +29,11 @@ import styles from './onyx.module.css'
  * när butiken går att nå (annars boknings-drawern). `modules === undefined` (studions
  * statiska preview) → visa allt.
  *
- * AVVIKELSE (medveten): filens tredje väg "Kretsen" (lojalitet) har ingen route i Corevo
- * — /krets finns inte. Kortet renderas därför som TEXT UTAN LÄNK i stället för att peka
- * på en 404. Formen är filens; ingen länk till en modul som inte går att nå.
+ * AVVIKELSEN ÄR ÅTGÄRDAD (goal-64): filens tredje väg "Kretsen" (lojalitet) hade ingen
+ * route i Corevo, så kortet renderades som TEXT UTAN LÄNK — hellre olänkat än en 404.
+ * Klubben har nu en riktig sida (/klubb), och kortet länkar dit NÄR modulen går att nå.
+ * Lojalitet av/draft → ingen länk, precis som förr: modul-gaten är helig, en länk till en
+ * stängd modul är 404-fällan.
  *
  * SYNKRON komponent (ingen async, ingen 'use client') — onboarding-studions preview
  * renderar samma komponent.
@@ -42,6 +44,7 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
   const posts = (modules?.bloggTeasers ?? []).slice(0, 2)
   // modules === undefined (studions statiska preview) → visa allt.
   const shopReachable = modules ? modules.shopReachable : true
+  const klubbReachable = modules ? modules.lojalitetReachable : true
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const closingPhoto = content.closingImage ?? content.galleryImages[2] ?? ''
@@ -63,7 +66,8 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
       num: '08',
       title: content.pillar3Title ?? 'Kretsen',
       desc: content.pillar3Body ?? 'Inre cirkeln. Tidig access och stängda kvällar.',
-      href: null,
+      // goal-64: klubben har en sida nu. Lojalitet av → null → kortet står olänkat (som förr).
+      href: klubbReachable ? '/klubb' : null,
     },
   ]
 
@@ -126,7 +130,7 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
                       <Link href={`/shop/${p.id}`}>{p.name}</Link>
                     </h3>
                     <span className={styles.onCardPrice}>
-                      {formatShopPrice(p.priceCents, p.currency)}
+                      {formatProductPrice(p)}
                     </span>
                   </div>
                   {p.description ? <p className={styles.onCardDesc}>{p.description}</p> : null}

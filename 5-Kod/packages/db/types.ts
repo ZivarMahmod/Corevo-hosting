@@ -66,6 +66,7 @@ export type Database = {
           slug: string | null
           sort_order: number
           status: string
+          tag: string | null
           tenant_id: string
           title: string
           updated_at: string | null
@@ -80,6 +81,7 @@ export type Database = {
           slug?: string | null
           sort_order?: number
           status?: string
+          tag?: string | null
           tenant_id: string
           title: string
           updated_at?: string | null
@@ -94,6 +96,7 @@ export type Database = {
           slug?: string | null
           sort_order?: number
           status?: string
+          tag?: string | null
           tenant_id?: string
           title?: string
           updated_at?: string | null
@@ -448,6 +451,50 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          status: string
+          subject: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           auth_user_id: string | null
@@ -520,10 +567,15 @@ export type Database = {
           code: string
           created_at: string
           currency: string
+          delivery_mode: string | null
+          emailed_at: string | null
           expires_at: string | null
           id: string
           initial_amount_cents: number
+          issued_at: string | null
           message: string | null
+          order_id: string | null
+          order_item_id: string | null
           recipient_email: string | null
           recipient_name: string | null
           status: string
@@ -535,10 +587,15 @@ export type Database = {
           code: string
           created_at?: string
           currency?: string
+          delivery_mode?: string | null
+          emailed_at?: string | null
           expires_at?: string | null
           id?: string
           initial_amount_cents?: number
+          issued_at?: string | null
           message?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
           recipient_email?: string | null
           recipient_name?: string | null
           status?: string
@@ -550,9 +607,14 @@ export type Database = {
           code?: string
           created_at?: string
           currency?: string
+          delivery_mode?: string | null
+          emailed_at?: string | null
           expires_at?: string | null
           id?: string
           initial_amount_cents?: number
+          issued_at?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
           message?: string | null
           recipient_email?: string | null
           recipient_name?: string | null
@@ -669,6 +731,206 @@ export type Database = {
           },
         ]
       }
+      loyalty_members: {
+        Row: {
+          customer_id: string
+          id: string
+          joined_at: string
+          plan_id: string | null
+          source: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          customer_id: string
+          id?: string
+          joined_at?: string
+          plan_id?: string | null
+          source?: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          customer_id?: string
+          id?: string
+          joined_at?: string
+          plan_id?: string | null
+          source?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_members_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_members_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_members_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gallery_items: {
+        Row: {
+          active: boolean
+          asset_id: string | null
+          aspect_ratio: string | null
+          caption: string | null
+          created_at: string
+          id: string
+          sort_order: number
+          tag: string | null
+          tenant_id: string
+          year_label: string | null
+        }
+        Insert: {
+          active?: boolean
+          asset_id?: string | null
+          aspect_ratio?: string | null
+          caption?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          tag?: string | null
+          tenant_id: string
+          year_label?: string | null
+        }
+        Update: {
+          active?: boolean
+          asset_id?: string | null
+          aspect_ratio?: string | null
+          caption?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          tag?: string | null
+          tenant_id?: string
+          year_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_items_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          featured: boolean
+          id: string
+          interval: string
+          name: string
+          perks: Json
+          price_cents: number
+          sort_order: number
+          tenant_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          featured?: boolean
+          id?: string
+          interval?: string
+          name: string
+          perks?: Json
+          price_cents?: number
+          sort_order?: number
+          tenant_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          featured?: boolean
+          id?: string
+          interval?: string
+          name?: string
+          perks?: Json
+          price_cents?: number
+          sort_order?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_plans_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_shipping_options: {
+        Row: {
+          active: boolean
+          cost_cents: number
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          sort_order: number
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          cost_cents?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          sort_order?: number
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          cost_cents?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          sort_order?: number
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_shipping_options_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_assets: {
         Row: {
           alt: string | null
@@ -769,6 +1031,7 @@ export type Database = {
           id: string
           message: string | null
           name: string
+          order_item_id: string | null
           party_size: number
           phone: string | null
           status: string
@@ -781,6 +1044,7 @@ export type Database = {
           id?: string
           message?: string | null
           name: string
+          order_item_id?: string | null
           party_size?: number
           phone?: string | null
           status?: string
@@ -793,6 +1057,7 @@ export type Database = {
           id?: string
           message?: string | null
           name?: string
+          order_item_id?: string | null
           party_size?: number
           phone?: string | null
           status?: string
@@ -823,6 +1088,7 @@ export type Database = {
           duration_min: number
           id: string
           price_cents: number
+          reserved_qty: number
           starts_at: string
           status: string
           tenant_id: string
@@ -836,6 +1102,7 @@ export type Database = {
           duration_min?: number
           id?: string
           price_cents?: number
+          reserved_qty?: number
           starts_at: string
           status?: string
           tenant_id: string
@@ -849,6 +1116,7 @@ export type Database = {
           duration_min?: number
           id?: string
           price_cents?: number
+          reserved_qty?: number
           starts_at?: string
           status?: string
           tenant_id?: string
@@ -1189,7 +1457,15 @@ export type Database = {
       shop_order_items: {
         Row: {
           created_at: string
+          event_id: string | null
+          event_registration_id: string | null
+          gift_card_id: string | null
+          gift_delivery_mode: string | null
+          gift_message: string | null
+          gift_recipient_email: string | null
+          gift_recipient_name: string | null
           id: string
+          item_type: string
           order_id: string
           product_id: string | null
           product_name: string
@@ -1202,7 +1478,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          event_id?: string | null
+          event_registration_id?: string | null
+          gift_card_id?: string | null
+          gift_delivery_mode?: string | null
+          gift_message?: string | null
+          gift_recipient_email?: string | null
+          gift_recipient_name?: string | null
           id?: string
+          item_type?: string
           order_id: string
           product_id?: string | null
           product_name: string
@@ -1215,7 +1499,15 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          event_id?: string | null
+          event_registration_id?: string | null
+          gift_card_id?: string | null
+          gift_delivery_mode?: string | null
+          gift_message?: string | null
+          gift_recipient_email?: string | null
+          gift_recipient_name?: string | null
           id?: string
+          item_type?: string
           order_id?: string
           product_id?: string | null
           product_name?: string
@@ -1271,6 +1563,8 @@ export type Database = {
           fulfilment: string
           id: string
           note: string | null
+          order_no: string | null
+          payment_method: string | null
           payment_status: string
           pickup_by: string | null
           pickup_location_id: string | null
@@ -1279,6 +1573,7 @@ export type Database = {
           ship_address: string | null
           shipped_at: string | null
           shipping_cents: number
+          shipping_option_id: string | null
           status: string
           stock_committed: boolean
           subtotal_cents: number
@@ -1301,6 +1596,8 @@ export type Database = {
           fulfilment?: string
           id?: string
           note?: string | null
+          order_no?: string | null
+          payment_method?: string | null
           payment_status?: string
           pickup_by?: string | null
           pickup_location_id?: string | null
@@ -1309,6 +1606,7 @@ export type Database = {
           ship_address?: string | null
           shipped_at?: string | null
           shipping_cents?: number
+          shipping_option_id?: string | null
           status?: string
           stock_committed?: boolean
           subtotal_cents?: number
@@ -1331,6 +1629,8 @@ export type Database = {
           fulfilment?: string
           id?: string
           note?: string | null
+          order_no?: string | null
+          payment_method?: string | null
           payment_status?: string
           pickup_by?: string | null
           pickup_location_id?: string | null
@@ -1339,6 +1639,7 @@ export type Database = {
           ship_address?: string | null
           shipped_at?: string | null
           shipping_cents?: number
+          shipping_option_id?: string | null
           status?: string
           stock_committed?: boolean
           subtotal_cents?: number
@@ -1448,6 +1749,9 @@ export type Database = {
       shop_products: {
         Row: {
           active: boolean
+          badge: string | null
+          category: string | null
+          compare_at_price_cents: number | null
           created_at: string
           currency: string
           description: string | null
@@ -1455,6 +1759,7 @@ export type Database = {
           image_asset_id: string | null
           name: string
           price_cents: number
+          price_from: boolean
           slug: string | null
           sort_order: number
           stock: number | null
@@ -1463,6 +1768,9 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          badge?: string | null
+          category?: string | null
+          compare_at_price_cents?: number | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -1470,6 +1778,7 @@ export type Database = {
           image_asset_id?: string | null
           name: string
           price_cents?: number
+          price_from?: boolean
           slug?: string | null
           sort_order?: number
           stock?: number | null
@@ -1478,6 +1787,9 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          badge?: string | null
+          category?: string | null
+          compare_at_price_cents?: number | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -1485,6 +1797,7 @@ export type Database = {
           image_asset_id?: string | null
           name?: string
           price_cents?: number
+          price_from?: boolean
           slug?: string | null
           sort_order?: number
           stock?: number | null
@@ -1550,6 +1863,9 @@ export type Database = {
         Row: {
           avatar_url: string | null
           show_on_site: boolean
+          short_name: string | null
+          specialties: string | null
+          bio: string | null
           active: boolean
           buffer_min: number | null
           created_at: string
@@ -1564,6 +1880,9 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           show_on_site?: boolean
+          short_name?: string | null
+          specialties?: string | null
+          bio?: string | null
           active?: boolean
           buffer_min?: number | null
           created_at?: string
@@ -1578,6 +1897,9 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           show_on_site?: boolean
+          short_name?: string | null
+          specialties?: string | null
+          bio?: string | null
           active?: boolean
           buffer_min?: number | null
           created_at?: string
@@ -2227,6 +2549,15 @@ export type Database = {
           order_id: string
           requires_payment: boolean
         }[]
+      }
+      join_loyalty_club: {
+        Args: {
+          p_email: string
+          p_name?: string
+          p_plan?: string
+          p_tenant_slug: string
+        }
+        Returns: string
       }
       create_public_booking: {
         Args: {

@@ -1,6 +1,7 @@
 import { Reveal } from '../../Reveal'
 import { Bookable } from '../../Bookable'
 import { formatPrice, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { ThemePageProps } from './types'
 import styles from './aurora.module.css'
 
@@ -14,10 +15,10 @@ import styles from './aurora.module.css'
  *   /kontakt  → filens `showKontakt`: fakta-spalt (telefon/e-post/studio + öppettider) till
  *               vänster, vit platta till höger.
  *
- * Den vita plattan i filen är ett kontaktFORMULÄR. Formuläret är designens BILD av
- * kontakt-modulen; plattformen har ingen formulärs-endpoint på /kontakt, och en ruta som
- * inte skickar något är värre än ingen ruta. Plattan behåller därför sin form och sin text,
- * men handlingen går via mailto/tel — de kanaler som FAKTISKT når florristen.
+ * Den vita plattan i filen är ett kontaktFORMULÄR — och är det nu på riktigt. Motorn fick
+ * sin kontakt-räls i goal-64 (contact_messages + lib/storefront/kontakt/intake.ts +
+ * mejl till kunden), så plattan behöver inte längre amputeras till mailto/tel. Fälten är
+ * filens EXAKTA: Namn | Telefon på samma rad, sedan Meddelande, knapp "Skicka".
  *
  * SYNKRONA server-komponenter. Render-on-present: saknas adress/kontakt ritas blocket inte
  * alls — mallen hittar aldrig på en adress.
@@ -108,7 +109,7 @@ export function AuroraTjanster({ content, services }: ThemePageProps) {
   )
 }
 
-export function AuroraKontakt({ content, tenant, location, contact }: ThemePageProps) {
+export function AuroraKontakt({ content, location, contact }: ThemePageProps) {
   const hours = location?.hours ?? null
 
   return (
@@ -159,24 +160,32 @@ export function AuroraKontakt({ content, tenant, location, contact }: ThemePageP
           ) : null}
         </Reveal>
 
+        {/* Filens vita platta ÄR ett kontaktformulär (h2 "Skriv till oss" + Namn|Telefon
+            på samma rad + Meddelande + "Skicka"). Den låg som mailto/tel tills motorn
+            fick sin kontakt-räls — nu finns den (lib/storefront/kontakt/intake.ts), så
+            plattan är åter det designen sa att den var. Fälten är Auroras EXAKTA: namn
+            och TELEFON (inte e-post) sida vid sida, sedan meddelandet. */}
         <Reveal delay={140} className={styles.auContactCard}>
           <h2 className={styles.auContactCardTitle}>Skriv till oss</h2>
-          <p className={styles.auContactCardBody}>
-            Berätta gärna om färger, budget och leveransadress — så återkommer vi med ett
-            förslag. Vill du hellre prata? Ring, så tar vi det direkt.
-          </p>
-          <div className={styles.auContactActions}>
-            {contact.email ? (
-              <a href={`mailto:${contact.email}`} className={styles.auBtn}>
-                Skicka ett mejl
-              </a>
-            ) : null}
-            {contact.phone ? (
-              <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} className={styles.auLink}>
-                ring {tenant.name.toLowerCase()} →
-              </a>
-            ) : null}
-          </div>
+          <ContactForm
+            rows={[
+              [
+                { key: 'name', label: 'Namn', placeholder: 'Ditt namn', required: true },
+                { key: 'phone', label: 'Telefon', placeholder: '07x-…', required: true },
+              ],
+              [
+                {
+                  key: 'message',
+                  label: 'Meddelande',
+                  placeholder: 'Berätta gärna om färger, budget och leveransadress…',
+                  rows: 5,
+                  required: true,
+                },
+              ],
+            ]}
+            submitLabel="Skicka"
+            doneText="Tack! Vi hör av oss samma dag."
+          />
         </Reveal>
       </section>
     </div>

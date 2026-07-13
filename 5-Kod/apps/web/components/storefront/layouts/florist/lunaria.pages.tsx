@@ -1,5 +1,6 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { ThemePageProps } from './types'
 import styles from './lunaria.module.css'
 
@@ -132,13 +133,18 @@ export function LunariaKontakt({ content, location, contact }: ThemePageProps) {
 
         <div className={styles.lnContactBox}>
           <p className={styles.lnContactProse}>{content.closingLede ?? content.aboutCopy}</p>
-          {/* Filens "Sänd"-knapp: mallen bygger inget eget formulär — den lämnar över till
-              kundens riktiga mejladress när den finns, annars till boknings-rälsen. */}
-          {contact.email ? (
-            <a href={`mailto:${contact.email}`} className={styles.lnSolid}>
-              Sänd
-            </a>
-          ) : null}
+          {/* Filens formulär, nu kopplat till kontakt-rälsen (goal-64). Lunarias knapp
+              heter "Sänd" — inte "Skicka" — och meddelandefältet "Er hälsning". Art déco
+              tilltalar i ni-form; den rösten är designens, inte vår att normalisera. */}
+          <ContactForm
+            rows={[
+              [{ key: 'name', placeholder: 'Namn', required: true }],
+              [{ key: 'email', placeholder: 'E-post', required: true }],
+              [{ key: 'message', placeholder: 'Er hälsning', required: true }],
+            ]}
+            submitLabel="Sänd"
+            doneText="Tack — er hälsning är mottagen."
+          />
         </div>
       </div>
     </section>

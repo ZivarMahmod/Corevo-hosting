@@ -1,0 +1,175 @@
+/* KLUBBENS DELADE SEKTION (goal-64) — den mall som saknar egen lojalitet-vy får den här.
+   Ritar sig ENBART i storefrontens tokens (var(--color-*) / var(--font-*) / --sf-radius),
+   precis som ShopSection/BloggSection: ingen egen palett, så den ärver vilken mall kunden
+   än kör i stället för att slåss med den. */
+
+.plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius, 8px);
+  background: var(--color-surface);
+}
+
+/* Mallarnas markerade mittennivå (Källas "Källa", `tagged: true`). Skillnaden bärs av
+   ramen + en etikett, aldrig av enbart färg (den syns inte för alla). */
+.planFeatured {
+  border-color: var(--color-primary);
+  border-width: 2px;
+}
+
+.planTag {
+  align-self: flex-start;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink, var(--color-primary));
+}
+
+.planName {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0;
+  color: var(--color-fg);
+}
+
+.planPrice {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.planInterval {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-fg-2);
+}
+
+.perks {
+  margin: 0;
+  padding: 0 0 0 18px;
+  color: var(--color-fg-2);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.perksTop {
+  margin: 24px 0 0;
+}
+
+/* ── Gå med ─────────────────────────────────────────────────────────────────── */
+.joinForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.joinCompact {
+  padding-top: 0;
+}
+
+.joinInput {
+  flex: 1 1 200px;
+  min-height: 44px; /* 44px klickyta — samma golv som resten av storefronten. */
+  padding: 0 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--sf-radius, 8px);
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font: inherit;
+}
+
+.joinInput:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.joinBtn {
+  min-height: 44px;
+  padding: 0 24px;
+  border: none;
+  border-radius: var(--sf-radius, 8px);
+  background: var(--color-primary);
+  color: var(--color-primary-fg, #fff);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.joinBtn:hover {
+  background: var(--color-primary-d);
+}
+
+.joinBtn:focus-visible {
+  outline: 2px solid var(--color-fg);
+  outline-offset: 2px;
+}
+
+.joinBtn:disabled {
+  cursor: progress;
+}
+
+.joined {
+  margin: 12px 0 0;
+  color: var(--color-fg);
+  font-weight: 600;
+}
+
+.joinError {
+  flex-basis: 100%;
+  margin: 0;
+  color: #b3261e;
+  font-size: 14px;
+}
+
+.stamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stamp {
+  width: 38px;
+  height: 38px;
+  border: 1px dashed var(--color-line);
+  border-radius: 50%;
+}
+
+.points {
+  margin: 24px 0 0;
+  color: var(--color-fg-2);
+}
+
+.pointsFigure {
+  color: var(--color-primary-ink, var(--color-primary));
+}
+
+.notice {
+  margin: 16px 0 0;
+  color: var(--color-fg-2);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -377,6 +377,11 @@ export type TenantDetail = {
     avatar_url: string | null
     /** Syns i publika team-sektionen (staff.show_on_site, 0049) — rör ej bokningsbarhet. */
     show_on_site: boolean
+    /** goal-64 (0057): teamsidans presentationsfält. Ren presentation — rör varken
+     *  bokningsbarhet eller synlighet. null = fältet renderas inte publikt. */
+    short_name: string | null
+    specialties: string | null
+    bio: string | null
     hours: { weekday: number; start: string; end: string }[]
     /** Service ids this staff can perform (staff_services) — drives the booking's
      *  "Hos vem?" step + the per-staff tjänst-picker in the Personal tab. */
@@ -466,7 +471,8 @@ export async function getTenantDetail(
     // list is stable across revalidate.
     supabase
       .from('staff')
-      .select('id, title, active, avatar_url, show_on_site')
+      // short_name/specialties/bio (0057, goal-64): teamsidans presentationsfält.
+      .select('id, title, active, avatar_url, show_on_site, short_name, specialties, bio')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: true }),
     // Every working_hours row for the tenant (one read, bucketed by staff_id in JS —
@@ -606,6 +612,9 @@ export async function getTenantDetail(
       active: boolean
       avatar_url: string | null
       show_on_site: boolean
+      short_name: string | null
+      specialties: string | null
+      bio: string | null
     }[]
   ).map((s) => ({
     id: s.id,
@@ -614,6 +623,9 @@ export async function getTenantDetail(
     avatar_url: s.avatar_url ?? null,
     // Defensiv default (pre-0049-rad skulle sakna kolumnen): true = dagens beteende.
     show_on_site: s.show_on_site !== false,
+    short_name: s.short_name ?? null,
+    specialties: s.specialties ?? null,
+    bio: s.bio ?? null,
     hours: hoursByStaff.get(s.id) ?? [],
     serviceIds: servicesByStaff.get(s.id) ?? [],
   }))

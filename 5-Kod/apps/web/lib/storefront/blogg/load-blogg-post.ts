@@ -37,7 +37,9 @@ export async function loadBlogPostBySlug(
 
       const { data: r, error } = await supabase
         .from('blog_posts')
-        .select('id, title, slug, excerpt, body, cover_asset_id, published_at, media_assets(url, alt)')
+        .select(
+          'id, title, slug, excerpt, body, cover_asset_id, published_at, tag, media_assets(url, alt)',
+        )
         .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
         .eq('status', 'published')
         .eq('slug', post)
@@ -57,6 +59,8 @@ export async function loadBlogPostBySlug(
         publishedAt: r.published_at ?? null,
         coverImageUrl: asset?.url ?? null,
         coverImageAlt: asset?.alt ?? null,
+        // goal-64 (0057): etiketten följer med till inläggssidan, inte bara listan.
+        tag: r.tag?.trim() || null,
       }
     },
     ['blogg-post-by-slug', tenantId, norm, post],

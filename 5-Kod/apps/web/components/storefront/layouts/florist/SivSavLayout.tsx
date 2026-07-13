@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { BookCta } from '@/components/brand/BookCta'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './sivsav.module.css'
 
@@ -124,7 +124,7 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
                         <Link href={`/shop/${p.id}`}>{p.name}</Link>
                       </h3>
                       <span className={styles.ssProductPrice}>
-                        {formatShopPrice(p.priceCents, p.currency)}
+                        {formatProductPrice(p)}
                       </span>
                     </div>
                     {p.description ? <p className={styles.ssProductDesc}>{p.description}</p> : null}

@@ -1,5 +1,6 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { ThemePageProps } from './types'
 import styles from './solsalt.module.css'
 
@@ -135,16 +136,20 @@ export function SolSaltKontakt({ content, location, contact }: ThemePageProps) {
           ) : null}
         </div>
 
-        {/* Filens högra kort är ett kontaktformulär. Plattformen har ingen kontakt-endpoint
-            (offert-modulen äger formuläret), så kortet bär mallens form med en ÄRLIG handling:
-            mejl-CTA:n. Ett formulär som inte skickar någonstans är sämre än ingen ruta alls. */}
+        {/* Filens högra kort ÄR ett kontaktformulär (Namn · E-post · "Vad kan vi hjälpa
+            till med?" · Skicka) — utan etiketter, bara placeholders, precis som .dc.html.
+            Det låg som en mejl-CTA tills motorn fick sin kontakt-räls i goal-64; nu
+            skickar rutan på riktigt. */}
         <div className={styles.slKontaktForm}>
           <p className={styles.slKontaktIntro}>{content.closingLede ?? content.aboutCopy}</p>
-          {contact.email ? (
-            <a href={`mailto:${contact.email}`} className={styles.slKontaktCta}>
-              Skicka
-            </a>
-          ) : null}
+          <ContactForm
+            rows={[
+              [{ key: 'name', placeholder: 'Namn', required: true }],
+              [{ key: 'email', placeholder: 'E-post', required: true }],
+              [{ key: 'message', placeholder: 'Vad kan vi hjälpa till med?', required: true }],
+            ]}
+            submitLabel="Skicka"
+          />
         </div>
       </div>
     </section>

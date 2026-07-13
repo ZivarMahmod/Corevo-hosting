@@ -1,7 +1,13 @@
 import type { SalongTheme } from './types'
 import { SnittNav, SnittFooter } from './snitt.chrome'
 import { SnittOm, SnittTjanster, SnittKontakt } from './snitt.pages'
-import { SnittShop, SnittBlogg } from './snitt.modules'
+import {
+  SnittShop,
+  SnittBlogg,
+  SnittGalleri,
+  SnittLojalitet,
+  SnittTeam,
+} from './snitt.modules'
 
 // Foto-id:n LYFTA ur "Snitt - Svart Studio.dc.html" — inte utbytta, inte "liknande".
 // HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n mot slumpbilder."
@@ -89,7 +95,15 @@ export const snitt: SalongTheme = {
   caps: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: true },
   chrome: { Nav: SnittNav, Footer: SnittFooter, ownsUtility: true },
   pages: { om: SnittOm, tjanster: SnittTjanster, kontakt: SnittKontakt },
-  moduleViews: { shop: SnittShop, blogg: SnittBlogg },
+  // goal-64: Galleri, Insidan (lojalitet) och Stolarna (team). Tom personal-lista →
+  // team-vyn renderar ingenting (OWNER-ONLY).
+  moduleViews: {
+    shop: SnittShop,
+    blogg: SnittBlogg,
+    galleri: SnittGalleri,
+    lojalitet: SnittLojalitet,
+    team: SnittTeam,
+  },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
   // (SnittLayout.tsx / snitt.pages.tsx) — fältet ska förifyllas ärligt.
@@ -119,5 +133,19 @@ export const snitt: SalongTheme = {
     { name: 'blogEyebrow', label: 'Journal: eyebrow', default: 'Ur stolen' },
     { name: 'blogTitle', label: 'Journal: rubrik', default: 'Journal' },
     { name: 'blogCta', label: 'Journal: länktext', default: 'Hela journalen →' },
+    // goal-64: Galleri + Insidan. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: 'Arbeten ur stolen' },
+    { name: 'galleryTitle', label: 'Galleri: rubrik', default: 'Galleri' },
+    { name: 'clubEyebrow', label: 'Insidan: eyebrow', default: 'Stamkund' },
+    { name: 'clubTitle', label: 'Insidan: rubrik', default: 'Insidan' },
+    {
+      name: 'clubLede',
+      label: 'Insidan: text',
+      rows: 2,
+      default: 'Gratis att gå med. Byggd för dig som kommer tillbaka var sjätte vecka ändå.',
+    },
+    // Designens stamkort trycker salongens adress. Den är kundens fakta — tom default.
+    { name: 'clubNote', label: 'Insidan: kortets underrad', hint: 'T.ex. gata + stad. Visas bara om du fyller i den.', default: '' },
+    { name: 'clubCta', label: 'Insidan: knapptext', default: 'Gå med gratis' },
   ],
 }

@@ -22,16 +22,22 @@ const PRODUCTS = [
   {
     id: 'p1', name: 'Vårbukett', priceCents: 39900, currency: 'SEK', imageUrl: null,
     variants: [{ id: 'v1', name: 'Standard', priceCents: 39900, available: null }],
+    category: 'Buketter', badge: null, compareAtPriceCents: null, priceFrom: false,
   },
   {
     id: 'p2', name: 'Pioner i vas', priceCents: 64900, currency: 'SEK', imageUrl: null,
     variants: [{ id: 'v2', name: 'Standard', priceCents: 64900, available: null }],
+    category: 'Säsong', badge: null, compareAtPriceCents: null, priceFrom: false,
   },
 ] as unknown as ShopData['products']
 
+// goal-64: en kund UTAN kategorier är normalfallet (fälten är valfria) — därför bär bas-DATA
+// en TOM kategorilista, och testerna nedan bevisar att ingen mall då ritar en chip-rad.
 const DATA: ShopData = {
   config: { fulfilment: 'ship' },
   products: PRODUCTS,
+  categories: [],
+  activeCategory: null,
 } as unknown as ShopData
 
 const POSTS: BloggPost[] = [
@@ -46,6 +52,31 @@ describe('florist-svitens modul-vyer', () => {
   it('VARJE mall i sviten äger både butiks- och bloggvyn', () => {
     expect(WITH_VIEWS).toHaveLength(FLORIST_THEMES.length)
   })
+
+  /**
+   * goal-64: de fyra florist-mallar vars .dc.html RITAR en kategori-filterrad MÅSTE rendera
+   * den när kunden har kategorier. Utan det här testet kunde en refaktor tyst tappa chipsen
+   * igen — precis som agenterna en gång utelämnade dem ("plattformen har ingen kategorimodell").
+   */
+  it.each(['calytrix', 'solsalt', 'sivsav', 'lunaria'])(
+    '%s renderar kategori-chipsen när kunden har kategorier',
+    (key) => {
+      const theme = FLORIST_THEMES.find((t) => t.key === key)!
+      const Shop = theme.moduleViews!.shop!
+      const content = { ...theme.content, aboutCopyHome: theme.content.aboutCopy } as ResolvedThemeContent
+      const html = renderToStaticMarkup(
+        <CartProvider>
+          <Shop
+            data={{ ...DATA, categories: ['Buketter', 'Säsong'] } as ShopData}
+            paused={false}
+            content={content}
+            tenantName="Blomsterhandeln"
+          />
+        </CartProvider>,
+      )
+      expect(html).toContain('?kategori=Buketter')
+    },
+  )
 })
 
 describe.each(WITH_VIEWS.map((t) => [t.key, t] as const))('modul-vy: %s', (_key, theme) => {
@@ -96,6 +127,64 @@ describe.each(WITH_VIEWS.map((t) => [t.key, t] as const))('modul-vy: %s', (_key,
     const html = shopHtml(false, empty)
     expect(html).not.toContain('Vårbukett')
     expect(html.length).toBeGreaterThan(200) // en riktig sida, inte ett tomt skal
+  })
+
+  /* ─────────────── goal-64: kategori · badge · prisrörelse · "från"-pris ─────────────── */
+
+  it('TOM kategorilista → INGEN mall renderar en chip-rad (aldrig en påhittad kategori)', () => {
+    // Bas-DATA har categories: [] — de flesta kunder sätter aldrig en kategori.
+    const html = shopHtml(false)
+    expect(html).not.toContain('?kategori=')
+  })
+
+  it('kunden HAR kategorier → chipsen renderas som LÄNKAR (server-side filter, funkar utan JS)', () => {
+    const withCats = { ...DATA, categories: ['Buketter', 'Säsong'] } as ShopData
+    const html = shopHtml(false, withCats)
+    // Bara de mallar vars .dc.html RITAR en filterrad har chips (calytrix/solsalt/sivsav/
+    // lunaria). Övriga ska inte hitta på en — men den som HAR dem måste ha dem rätt.
+    if (html.includes('?kategori=')) {
+      expect(html).toContain('?kategori=Buketter')
+      expect(html).toContain('?kategori=S%C3%A4song') // encodeURIComponent — ä överlever länken
+      expect(html).toContain('href="/shop"') // "Alla/Allt"-chipen leder tillbaka till allt
+    }
+  })
+
+  it('okänd kategori i query → tom lista, ingen krasch (loadern filtrerar bort allt)', () => {
+    // Så här ser ShopData ut när /shop?kategori=Finnsinte träffar loadern.
+    const unknown = {
+      ...DATA,
+      products: [],
+      categories: ['Buketter', 'Säsong'],
+      activeCategory: 'Finnsinte',
+    } as ShopData
+    const html = shopHtml(false, unknown)
+    expect(html).not.toContain('Vårbukett')
+    expect(html.length).toBeGreaterThan(200) // en riktig sida, inte ett tomt skal
+    // Har mallen en chip-rad står den KVAR — annars kunde besökaren inte ta sig tillbaka.
+    if (html.includes('?kategori=')) expect(html).toContain('?kategori=Buketter')
+  })
+
+  it('badge renderas bara när produkten bär den (render-on-present)', () => {
+    const noBadge = shopHtml(false)
+    expect(noBadge).not.toContain('Bästsäljare')
+
+    const badged = {
+      ...DATA,
+      products: [{ ...PRODUCTS[0], badge: 'Bästsäljare' }],
+    } as unknown as ShopData
+    const html = shopHtml(false, badged)
+    // Bara de mallar vars .dc.html RITAR ett märke visar det — de andra ska inte krascha.
+    expect(html).toContain('Vårbukett')
+  })
+
+  it('priceFrom → priset skrivs "fr. " (formatProductPrice, aldrig mallens egen formatering)', () => {
+    const from = {
+      ...DATA,
+      products: [{ ...PRODUCTS[0], priceFrom: true }],
+    } as unknown as ShopData
+    expect(shopHtml(false, from)).toContain('fr. 399')
+    // …och utan flaggan står priset naket.
+    expect(shopHtml(false)).not.toContain('fr. 399')
   })
 
   it('bloggen länkar inlägg med slug — och lämnar inlägg UTAN slug olänkade (ingen 404-fälla)', () => {

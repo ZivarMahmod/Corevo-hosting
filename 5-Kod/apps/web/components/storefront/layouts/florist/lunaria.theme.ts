@@ -1,7 +1,7 @@
 import type { FloristTheme } from './types'
 import { LunariaNav, LunariaFooter } from './lunaria.chrome'
 import { LunariaOm, LunariaTjanster, LunariaKontakt } from './lunaria.pages'
-import { LunariaShop, LunariaBlogg } from './lunaria.modules'
+import { LunariaShop, LunariaBlogg, LunariaGalleri, LunariaLojalitet } from './lunaria.modules'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/blog/courses/galleryItems) — inte utbytta,
 // inte "liknande". HANDOFF.md §2 regel 4: byt aldrig ett Unsplash-ID mot en slumpbild.
@@ -99,7 +99,13 @@ export const lunaria: FloristTheme = {
   caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   chrome: { Nav: LunariaNav, Footer: LunariaFooter },
   pages: { om: LunariaOm, tjanster: LunariaTjanster, kontakt: LunariaKontakt },
-  moduleViews: { shop: LunariaShop, blogg: LunariaBlogg },
+  // goal-64: galleriet + Cirkeln. Ingen team-vy — Lunarias paket har ingen team-sida.
+  moduleViews: {
+    shop: LunariaShop,
+    blogg: LunariaBlogg,
+    galleri: LunariaGalleri,
+    lojalitet: LunariaLojalitet,
+  },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
   // (LunariaLayout.tsx) — fältet ska förifyllas ärligt.
@@ -116,5 +122,16 @@ export const lunaria: FloristTheme = {
     { name: 'shopCta', label: 'Salongen: länktext', default: 'Hela samlingen →' },
     { name: 'blogTitle', label: 'Krönikan: rubrik', default: 'Krönikan' },
     { name: 'blogCta', label: 'Krönikan: länktext', default: 'Hela krönikan →' },
+    // goal-64: galleriet + Cirkeln. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryTitle', label: 'Galleriet: rubrik', default: 'Galleriet' },
+    { name: 'clubTitle', label: 'Cirkeln: rubrik', default: 'Cirkeln' },
+    {
+      name: 'clubLede',
+      label: 'Cirkeln: text',
+      rows: 2,
+      default:
+        'Lunarias inre krets. Kostnadsfritt medlemskap med förtur, förmåner och salongens privata kvällar.',
+    },
+    { name: 'clubCta', label: 'Cirkeln: knapptext', default: 'Ansök om medlemskap' },
   ],
 }

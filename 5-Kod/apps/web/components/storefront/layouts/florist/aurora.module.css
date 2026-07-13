@@ -1145,3 +1145,255 @@
     padding-bottom: 56px;
   }
 }
+
+/* ══════════════ GALLERI + KLUBBEN (goal-64) ══════════════
+   Lyft ur "Aurora - Romantisk Studio.dc.html": murverk i tre spalter med bågar
+   (210px-radie), stämpelkort på vit yta, anmälan i det rosa fältet. */
+
+.auGalleri,
+.auClub {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 72px 28px 40px;
+}
+
+.auClub {
+  max-width: 900px;
+}
+
+.auGalHead {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.auGalEyebrow {
+  margin: 0 0 10px;
+  color: var(--color-primary-ink);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.auGalTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 48px;
+  color: var(--color-fg);
+}
+
+.auGalEmpty {
+  margin: 0;
+  text-align: center;
+  color: var(--color-fg-2);
+  font-size: 16px;
+}
+
+.auGalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.auGalCol {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Mittenspalten skjuts ner — murverkets förskjutning i filen. */
+.auGalCol:nth-child(2) {
+  margin-top: 56px;
+}
+
+/* Bågarna: filens rytm som cykel — båge upptill, rak, båge nedtill. */
+.auGalTile {
+  background-position: center;
+  background-size: cover;
+  height: 340px;
+}
+
+.auGalTile:nth-child(3n + 1) {
+  height: 420px;
+  border-radius: 210px 210px 0 0;
+}
+
+.auGalTile:nth-child(3n + 2) {
+  height: 280px;
+  border-radius: 0;
+}
+
+.auGalTile:nth-child(3n + 3) {
+  height: 340px;
+  border-radius: 0 0 170px 170px;
+}
+
+.auGalFoot {
+  margin: 52px 0 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--color-fg-2);
+}
+
+.auClubTitle {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 48px;
+  color: var(--color-fg);
+}
+
+.auClubLede {
+  margin: 0 auto;
+  max-width: 460px;
+  color: var(--color-fg-2);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.auStampCard {
+  background: #fff;
+  padding: 44px;
+  margin-bottom: 36px;
+  text-align: center;
+}
+
+.auStampLabel {
+  margin: 0 0 22px;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+.auStampRow {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.auStamp {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--color-primary);
+  background: #fff;
+  color: var(--color-fg-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 16px;
+}
+
+.auClubPerks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 44px;
+}
+
+.auClubPerk {
+  border-top: 1px solid var(--color-primary);
+  padding-top: 16px;
+}
+
+.auClubPerk p {
+  margin: 0;
+  color: var(--color-fg-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.auPlanName {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--color-fg);
+}
+
+.auPlanPrice {
+  margin: 0 0 6px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-primary-ink);
+}
+
+.auClubJoin {
+  background: var(--color-accent-soft);
+  padding: 36px 40px;
+}
+
+.auClubJoin form {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.auClubJoin input {
+  flex: 1;
+  min-width: 220px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  background: #fff;
+  padding: 13px 15px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  outline-color: var(--color-primary);
+}
+
+.auClubJoin button {
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 32px;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.auClubJoin button:hover {
+  background: var(--color-primary-d);
+}
+
+@media (max-width: 760px) {
+  .auGalleri,
+  .auClub {
+    padding: 48px 20px 24px;
+  }
+
+  .auGalGrid,
+  .auClubPerks {
+    grid-template-columns: 1fr;
+  }
+
+  .auGalCol:nth-child(2) {
+    margin-top: 0;
+  }
+
+  .auGalTitle,
+  .auClubTitle {
+    font-size: clamp(30px, 8vw, 48px);
+  }
+
+  .auStampCard {
+    padding: 28px 20px;
+  }
+
+  .auClubJoin {
+    padding: 24px 20px;
+  }
+}

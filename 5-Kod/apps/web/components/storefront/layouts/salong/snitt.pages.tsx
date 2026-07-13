@@ -1,5 +1,6 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, formatDuration, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { Service } from '@/lib/tenant-data'
 import type { ThemePageProps } from './types'
 import styles from './snitt.module.css'
@@ -180,6 +181,16 @@ export function SnittKontakt({ content, location, contact }: ThemePageProps) {
         <div>
           <p className={styles.snProse}>{content.closingLede ?? content.aboutCopy}</p>
           <p className={styles.snProse}>{content.italic}</p>
+          {/* Filens formulär (goal-64): Namn · E-post · "Vad kan vi hjälpa till med?" ·
+              Skicka. Svart studio — rutan var prosa, .dc.html ville ha en submit. */}
+          <ContactForm
+            rows={[
+              [{ key: 'name', placeholder: 'Namn', required: true }],
+              [{ key: 'email', placeholder: 'E-post', required: true }],
+              [{ key: 'message', placeholder: 'Vad kan vi hjälpa till med?', required: true }],
+            ]}
+            submitLabel="Skicka"
+          />
         </div>
       </div>
     </section>

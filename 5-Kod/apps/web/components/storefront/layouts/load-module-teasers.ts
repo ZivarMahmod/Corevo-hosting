@@ -26,7 +26,7 @@ export async function loadLayoutModuleTeasers(
   ])
   // Reachability (floras pelare, S9): en länk får bara visas dit en sida faktiskt
   // finns — live/paused renderar; av/draft → notFound (404-fälla).
-  const reachable = (key: 'shop' | 'offert') =>
+  const reachable = (key: 'shop' | 'offert' | 'lojalitet') =>
     isModuleLive(moduleStates, key) || isModulePaused(moduleStates, key)
   return {
     shopTeasers: (shopData?.products ?? []).slice(0, 3),
@@ -34,5 +34,7 @@ export async function loadLayoutModuleTeasers(
     presentkortLive,
     shopReachable: reachable('shop'),
     offertReachable: reachable('offert'),
+    // goal-64: klubben har en route nu (/klubb) — men bara när modulen går att nå.
+    lojalitetReachable: reachable('lojalitet'),
   }
 }

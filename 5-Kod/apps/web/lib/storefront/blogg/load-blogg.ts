@@ -54,7 +54,7 @@ export async function loadBloggData(tenantId: string, slug: string): Promise<Blo
       // for the image. Bounded by the configured posts_per_page.
       const { data: rows } = await supabase
         .from('blog_posts')
-        .select('id, title, slug, excerpt, body, cover_asset_id, published_at, media_assets(url, alt)')
+        .select('id, title, slug, excerpt, body, cover_asset_id, published_at, tag, media_assets(url, alt)')
         .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
         .eq('status', 'published')
         .order('published_at', { ascending: false })
@@ -74,6 +74,8 @@ export async function loadBloggData(tenantId: string, slug: string): Promise<Blo
           publishedAt: r.published_at ?? null,
           coverImageUrl: asset?.url ?? null,
           coverImageAlt: asset?.alt ?? null,
+          // goal-64 (0057): tom sträng blir null → mallen renderar aldrig en tom etikett.
+          tag: r.tag?.trim() || null,
         }
       })
 

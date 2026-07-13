@@ -160,6 +160,46 @@
   margin-top: 2px;
 }
 
+/* goal-64: valen är nu VALBARA (filen har tre leveranssätt och fem betalsätt, och kunden
+   klickar). Reglerna ovan är filens VALDA läge — här kommer det ovalda, med exakt filens
+   värden (border #e8d9de, vit botten, ihålig prick i #a98d97). Inget befintligt ändrat. */
+.cxOptionRow {
+  display: block;
+  cursor: pointer;
+}
+
+.cxOption[data-selected='false'] {
+  border-color: var(--color-line, #e8d9de);
+  background: var(--color-surface, #ffffff);
+}
+
+.cxOption[data-selected='false'] .cxDot {
+  background: var(--color-surface, #ffffff);
+  border-color: var(--color-line, #a98d97);
+}
+
+/* Radioknappen är den RIKTIGA kontrollen (tangentbord + skärmläsare); pricken är dess
+   bild. Visuellt dold, aldrig display:none — då försvinner den ur tabb-ordningen. */
+.cxRadio {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.cxRadio:focus-visible + .cxOption {
+  outline: 2px solid var(--color-primary, #7d1f46);
+  outline-offset: 2px;
+}
+
+/* Prisetiketten till höger i leveransraden ("79 kr" · "Fritt"). */
+.cxOptionPrice {
+  font-family: var(--font-display, 'Instrument Serif', Georgia, serif);
+  font-size: 20px;
+  color: var(--color-fg, #241019);
+  flex-shrink: 0;
+}
+
 /* ── Ordersammanfattningen ── */
 .cxSummary {
   background: var(--color-surface, #ffffff);

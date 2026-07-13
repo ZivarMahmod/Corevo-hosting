@@ -1,7 +1,12 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { saveTenantStaffPhoto, setTenantStaffOnSite, type ActionState } from '@/lib/platform/actions'
+import {
+  saveTenantStaffPhoto,
+  setTenantStaffOnSite,
+  saveTenantStaffProfile,
+  type ActionState,
+} from '@/lib/platform/actions'
 import styles from './platform.module.css'
 
 /** En RIKTIG medarbetare (staff-rad) som publika team-sektionen härleds ur. */
@@ -15,6 +20,11 @@ export type StaffTeamMember = {
   avatarUrl: string | null
   /** staff.show_on_site — styr ENDAST publika team-sektionen. */
   showOnSite: boolean
+  /** goal-64 (0057): teamsidans presentationsfält. Kortnamnet är det mallarnas teamkort
+   *  visar och det bokningens djuplänk hälsar med ("Boka tid hos Vera"). */
+  shortName?: string | null
+  specialties?: string | null
+  bio?: string | null
 }
 
 /**
@@ -83,6 +93,16 @@ function StaffMemberRow({
   const [visState, visAction, visPending] = useActionState<ActionState, FormData>(
     async (p, fd) => {
       const r = await setTenantStaffOnSite(p, fd)
+      if (r.success) onSaved?.()
+      return r
+    },
+    {},
+  )
+  // goal-64: teamsidans presentation (kortnamn · specialiteter · bio). Egen action, egen
+  // form — den rör ALDRIG bokningsbarhet eller synlighet, bara vad kortet SÄGER.
+  const [profState, profAction, profPending] = useActionState<ActionState, FormData>(
+    async (p, fd) => {
+      const r = await saveTenantStaffProfile(p, fd)
       if (r.success) onSaved?.()
       return r
     },
@@ -209,6 +229,64 @@ function StaffMemberRow({
               ) : null}
             </div>
           </form>
+
+          {/* TEAMSIDANS PRESENTATION (goal-64, 0057). Mallarnas teamkort visar kortnamn,
+              specialiteter och bio — utan de här fälten hade de korten fått amputeras.
+              Blankt fält = rensat (null) → renderas INTE publikt (render-on-present). */}
+          <details className={styles.form} style={{ gap: 6 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}>
+              Presentation på teamsidan
+            </summary>
+            <form action={profAction} className={styles.form} style={{ gap: 6, marginTop: 8 }}>
+              <input type="hidden" name="tenantId" value={tenantId} />
+              <input type="hidden" name="staffId" value={member.id} />
+              <label className={styles.field}>
+                <span>Kortnamn</span>
+                <input
+                  type="text"
+                  name="short_name"
+                  maxLength={40}
+                  defaultValue={member.shortName ?? ''}
+                  placeholder="Vera"
+                />
+                <span className={styles.hint}>
+                  Används på teamkortet och i bokningens förifyllnad. Blankt → fullständigt namn.
+                </span>
+              </label>
+              <label className={styles.field}>
+                <span>Specialiteter</span>
+                <input
+                  type="text"
+                  name="specialties"
+                  maxLength={200}
+                  defaultValue={member.specialties ?? ''}
+                  placeholder="Korta klipp · Siluetter · Konsultation"
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Bio</span>
+                <textarea name="bio" maxLength={1200} rows={3} defaultValue={member.bio ?? ''} />
+                <span className={styles.hint}>
+                  Blankt fält visas inte alls på sidan — hitta aldrig på en text åt personen.
+                </span>
+              </label>
+              <div className={styles.actions}>
+                <button type="submit" className="btn-primary" disabled={profPending}>
+                  {profPending ? 'Sparar…' : 'Spara presentation'}
+                </button>
+                {profState.error ? (
+                  <span className={`${styles.feedback} auth-error`} role="alert">
+                    {profState.error}
+                  </span>
+                ) : null}
+                {profState.success ? (
+                  <span className={`${styles.feedback} ${styles.feedbackOk}`} role="status">
+                    {profState.success}
+                  </span>
+                ) : null}
+              </div>
+            </form>
+          </details>
 
           {/* Visa/dölj på sidan (staff.show_on_site) — rör aldrig bokningsbarheten. */}
           <form action={visAction} className={styles.actions} style={{ marginTop: 0 }}>

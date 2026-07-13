@@ -3,6 +3,7 @@ import { getStripe, getWebhookSecret } from '@/lib/stripe/client'
 import { createServiceClient } from '@/lib/platform/service'
 import { sendPaymentReceipt, parseGuestEmail } from '@/lib/notifications/booking'
 import { refundBookingPayment, refundShopOrder } from '@/lib/stripe/refund'
+import { deliverIssuedGiftCards } from '@/lib/notifications/gift'
 import { captureException } from '@/lib/observability'
 
 // Stripe Connect webhook (G09 step 4).
@@ -130,6 +131,12 @@ export async function POST(req: Request): Promise<Response> {
             .eq('tenant_id', tenantId)
             .neq('status', 'refunded')
           await admin.rpc('mark_shop_order_paid', { p_order_id: orderId })
+          // goal-64: betalningen gick igenom → mark_shop_order_paid har UTFÄRDAT ordens
+          // presentkort (gift_cards med kod + saldo) och skapat dess kursanmälningar,
+          // exakt en gång (stock_committed-latchen + UNIQUE(order_item_id) i 0059). Kvar:
+          // leverera koden. deliverIssuedGiftCards är själv idempotent (villkorat UPDATE på
+          // emailed_at) → en omlevererad webhook mejlar ALDRIG samma kod två gånger.
+          await deliverIssuedGiftCards(admin, tenantId, orderId)
           // Auto-refund-nät (spegla booking cancelled→refund): om ordern inte kunde
           // committas (redan cancelled/expired pga abandon-release) men betalningen gick
           // igenom → återbetala. Annars money-taken-no-fulfilment vid decline→retry.

@@ -1,5 +1,6 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { ThemePageProps } from './types'
 import styles from './ateljevinter.module.css'
 
@@ -99,6 +100,26 @@ export function AteljeVinterKontakt({ content, location, contact }: ThemePagePro
       </div>
 
       <p className={styles.avProse}>{content.closingLede ?? content.aboutCopy}</p>
+
+      {/* Filens formulär (goal-64). Ateljé Vinter skriver ALLT i gemener — etiketterna
+          är "namn"/"e-post"/"meddelande" och knappen "skicka", aldrig versaliserade.
+          Placeholdern på meddelandet är mallens egen röst, verbatim ur .dc.html. */}
+      <ContactForm
+        rows={[
+          [{ key: 'name', label: 'namn', placeholder: 'för- och efternamn', required: true }],
+          [{ key: 'email', label: 'e-post', placeholder: 'namn@adress.se', required: true }],
+          [
+            {
+              key: 'message',
+              label: 'meddelande',
+              placeholder: 'vi läser allt, långsamt men noggrant',
+              required: true,
+            },
+          ],
+        ]}
+        submitLabel="skicka"
+        doneText="tack — vi läser och hör av oss."
+      />
     </section>
   )
 }

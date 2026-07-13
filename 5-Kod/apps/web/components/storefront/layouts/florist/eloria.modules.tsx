@@ -1,6 +1,16 @@
 import { AddToCart } from '../../shop/AddToCart'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
-import type { ThemeShopViewProps, ThemeBloggViewProps } from './types'
+// PRISET: filens `c5` ("No. V — Stilla farväl") skrivs "från 950 kr" — ett GOLVPRIS. Det är nu
+// shop_products.price_from (migration 0057), och prefixet sätts av formatProductPrice så att
+// ALLA mallar skriver det likadant. Mallen formaterar aldrig ett pris själv.
+import { JoinClubForm } from '../../lojalitet/JoinClubForm'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import type {
+  ThemeShopViewProps,
+  ThemeBloggViewProps,
+  ThemeGalleriViewProps,
+  ThemeLojalitetViewProps,
+} from './types'
 import styles from './eloria.module.css'
 
 /**
@@ -75,7 +85,7 @@ export function EloriaShop({ data, paused, limit, moreHref, content }: ThemeShop
               </p>
               <div className={styles.elCatalogHair} />
               {p.description ? <p className={styles.elCatalogDesc}>{p.description}</p> : null}
-              <p className={styles.elCatalogPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
+              <p className={styles.elCatalogPrice}>{formatProductPrice(p)}</p>
               {paused ? null : <AddToCart product={p} fulfilment={config.fulfilment} />}
             </li>
           ))}
@@ -145,6 +155,104 @@ export function EloriaBlogg({ posts: allPosts, limit, moreHref, content }: Theme
           </a>
         </p>
       ) : null}
+    </section>
+  )
+}
+
+/* ══════════════════════════════════ GALLERI ═══════════════════════════════ */
+
+/**
+ * Filens `showGalleri`: "Ur vår hand" — två spalter, varje bild PASSEPARTOUTERAD i en
+ * 1px ram med 12px luft (som ett inramat fotografi), 4:3, och bildtexten under i kursiv
+ * Cormorant i husets guld. Centrerad rubrik, 52px.
+ */
+export function EloriaGalleri({ items, content }: ThemeGalleriViewProps) {
+  return (
+    <section className={styles.elGalleri} data-module="galleri">
+      <p className={styles.elGalEyebrow}>{content.galleryEyebrow ?? 'Galleri'}</p>
+      <h1 className={styles.elGalTitle}>{content.galleryTitle ?? 'Ur vår hand'}</h1>
+
+      {items.length === 0 ? (
+        <p className={styles.elGalEmpty}>Inga bilder är publicerade ännu.</p>
+      ) : (
+        <div className={styles.elGalGrid}>
+          {items.map((g) => (
+            <div key={g.id} className={styles.elGalCell}>
+              {g.imageUrl ? (
+                <div className={styles.elGalFrame}>
+                  <div
+                    className={styles.elGalImg}
+                    role="img"
+                    aria-label={g.imageAlt ?? g.caption ?? ''}
+                    style={{ backgroundImage: `url(${g.imageUrl})` }}
+                  />
+                </div>
+              ) : null}
+              {g.caption ? <p className={styles.elGalCap}>{g.caption}</p> : null}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ═══════════════════════════ VÄNNER AV HUSET ══════════════════════════════ */
+
+/**
+ * Filens `showVanner`: klubben är ett BREV. Ram, tilltal ("Kära blomstervän,"), två
+ * stycken, en signatur i guld — och först därefter fältet. Huset ber inte om en anmälan,
+ * det bjuder in.
+ *
+ * Brevets stycken är redigerbara (clubLede + clubNote) med filens text VERBATIM som
+ * default. Signaturen är kundens namn, inte "Eloria": huset är tenantens, mallen är bara
+ * dess form.
+ *
+ * Har ägaren lagt nivåer i klubben listas de under brevet — men Elorias brev säger
+ * "medlemskapet kostar ingenting", så inga nivåer = inget prisord, precis som i filen.
+ */
+export function EloriaLojalitet({ config, plans, content, tenantName }: ThemeLojalitetViewProps) {
+  return (
+    <section className={styles.elClub} data-module="lojalitet" data-variant={config.variant}>
+      <p className={styles.elGalEyebrow}>{content.clubEyebrow ?? 'Lojalitet'}</p>
+      <h1 className={styles.elGalTitle}>{content.clubTitle ?? 'Vänner av huset'}</h1>
+
+      <div className={styles.elLetter}>
+        <p className={styles.elSalutation}>Kära blomstervän,</p>
+        <p className={styles.elLetterBody}>
+          {content.clubLede ??
+            'Somliga kommer tillbaka, år efter år. Er vill vi tacka särskilt. Som vän av huset får ni vårt säsongsbrev före alla andra, tio procent på alla binderikurser och en ros på er födelsedag — hämtas i butiken, med våra gratulationer.'}
+        </p>
+        <p className={styles.elLetterBody}>
+          {content.clubNote ?? 'Medlemskapet kostar ingenting. Det är vårt sätt att säga tack.'}
+        </p>
+
+        {config.perks && config.perks.length > 0 ? (
+          <ul className={styles.elPerks}>
+            {config.perks.map((perk) => (
+              <li key={perk}>{perk}</li>
+            ))}
+          </ul>
+        ) : null}
+
+        {plans.length > 0 ? (
+          <ul className={styles.elPerks}>
+            {plans.map((p) => (
+              <li key={p.id} data-featured={p.featured ? 'true' : undefined}>
+                <em>{p.name}</em> — {formatPlanPrice(p.priceCents)}{' '}
+                {loyaltyIntervalLabel(p.interval)}
+                {p.perks.length > 0 ? ` · ${p.perks.join(' · ')}` : ''}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <p className={styles.elSignature}>— huset {tenantName}</p>
+
+        <div className={styles.elClubJoin}>
+          <JoinClubForm cta={content.clubCta ?? 'Bli vän av huset'} />
+        </div>
+      </div>
     </section>
   )
 }

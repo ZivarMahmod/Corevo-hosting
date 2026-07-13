@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { BookCta } from '@/components/brand/BookCta'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './solsalt.module.css'
 
@@ -141,7 +141,7 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
                       <div className={styles.slCardHead}>
                         <h3 className={styles.slCardName}>{p.name}</h3>
                         <span className={styles.slCardPrice}>
-                          {formatShopPrice(p.priceCents, p.currency)}
+                          {formatProductPrice(p)}
                         </span>
                       </div>
                       {p.description ? <p className={styles.slCardDesc}>{p.description}</p> : null}

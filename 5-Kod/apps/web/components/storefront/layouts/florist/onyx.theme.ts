@@ -1,7 +1,7 @@
 import type { FloristTheme } from './types'
 import { OnyxNav, OnyxFooter } from './onyx.chrome'
 import { OnyxOm, OnyxTjanster, OnyxKontakt } from './onyx.pages'
-import { OnyxShop, OnyxBlogg } from './onyx.modules'
+import { OnyxShop, OnyxBlogg, OnyxGalleri, OnyxLojalitet } from './onyx.modules'
 
 // Foto-id:n LYFTA ur "Onyx - Mörk Studio.dc.html" (rawProducts/galleryItems/hero/om) —
 // inte utbytta, inte "liknande". HANDOFF.md §2 regel 4: byt aldrig ett Unsplash-ID.
@@ -90,7 +90,14 @@ export const onyx: FloristTheme = {
   chrome: { Nav: OnyxNav, Footer: OnyxFooter },
   pages: { om: OnyxOm, tjanster: OnyxTjanster, kontakt: OnyxKontakt },
   // Vektor-regeln: modulen äger funktionen (data, korg, kassa), mallen formen.
-  moduleViews: { shop: OnyxShop, blogg: OnyxBlogg },
+  // goal-64: arkivet + Kretsen. Onyx "Kretsen" tvingades förut rendera olänkad text —
+  // nu är den en riktig sida. Ingen team-vy: paketet har ingen team-sida.
+  moduleViews: {
+    shop: OnyxShop,
+    blogg: OnyxBlogg,
+    galleri: OnyxGalleri,
+    lojalitet: OnyxLojalitet,
+  },
   ownsCopy: true,
   // goal-61 editor-paritet: hemmets redigerbara element. default = layoutens inbyggda
   // fallback-sträng VERBATIM (OnyxLayout/onyx.modules) — fältet ska förifyllas ärligt.
@@ -116,5 +123,19 @@ export const onyx: FloristTheme = {
       rows: 2,
       default: 'Beställ före 20:00 så cyklar budet ut buketten samma kväll.',
     },
+    // goal-64: arkivet + Kretsen. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: 'ARKIV' },
+    { name: 'galleryTitle', label: 'Galleri: rubrik', default: 'Galleri' },
+    { name: 'clubEyebrow', label: 'Kretsen: eyebrow', default: 'MEDLEMSKAP' },
+    { name: 'clubTitle', label: 'Kretsen: rubrik', default: 'Kretsen' },
+    {
+      name: 'clubLede',
+      label: 'Kretsen: text',
+      rows: 2,
+      hint: 'Tom = klubbens egen "perkText" ur modulinställningarna.',
+      default:
+        'Onyx inre cirkel. Gratis att gå med — men droppen släpps till Kretsen 24 timmar före alla andra.',
+    },
+    { name: 'clubCta', label: 'Kretsen: knapptext', default: 'GÅ MED' },
   ],
 }

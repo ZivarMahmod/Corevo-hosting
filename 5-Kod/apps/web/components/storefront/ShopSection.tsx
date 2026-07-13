@@ -30,7 +30,7 @@ import { AddToCart } from './shop/AddToCart'
 import s from './shop-section.module.css'
 import {
   fulfilmentPromise,
-  formatShopPrice,
+  formatProductPrice,
   SHOP_FULFILMENT_LABELS,
   type ShopData,
 } from '@/lib/storefront/shop/types'
@@ -141,7 +141,7 @@ export async function ShopSection({
                         14px brödtext i varje kort och gjorde kortet till en lapp med text
                         på. Griden är ett skyltfönster — namn och pris. Beskrivningen bor
                         på produktsidan, där man faktiskt läser den. */}
-                    <p className={s.price}>{formatShopPrice(p.priceCents, p.currency)}</p>
+                    <p className={s.price}>{formatProductPrice(p)}</p>
                     {/* Köp-räls (goal-49): live shop → variant-medveten add-to-cart;
                         'paused' utelämnar CTA helt (katalogen läses som stängd). */}
                     {paused ? null : (

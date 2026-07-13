@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './calytrix.module.css'
 import card from './calytrix-modules.module.css'
@@ -123,7 +123,7 @@ export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
                           <Link href={`/shop/${p.id}`}>{p.name}</Link>
                         </h3>
                         <p className={card.cxCardPrice}>
-                          {formatShopPrice(p.priceCents, p.currency)}
+                          {formatProductPrice(p)}
                         </p>
                       </div>
                       {/* Filens "LÄGG I KORG" i mallens form. Teaser-propen bär INTE

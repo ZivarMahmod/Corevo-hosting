@@ -22,6 +22,15 @@ export type LayoutModuleTeasers = {
   shopReachable: boolean
   /** true när /offert går att nå (live ELLER paused) — floras pelar-gating (S9). */
   offertReachable: boolean
+  /**
+   * goal-64: true när /klubb går att nå (lojalitet live ELLER paused).
+   *
+   * Klubben fick ingen route förrän nu, så mallar som HAR den (Onyx "Kretsen", Auroras
+   * klubbband, Siluetts "Första raden") tvingades rendera den som olänkad text — en länk
+   * hade blivit en 404. Nu finns sidan, men gaten är fortfarande helig: lojalitet av →
+   * NOLL länkar dit. Flaggan är hela skillnaden mellan en länk och en 404-fälla.
+   */
+  lojalitetReachable: boolean
 }
 
 /** Shared props every storefront layout receives from app/(public)/page.tsx. */

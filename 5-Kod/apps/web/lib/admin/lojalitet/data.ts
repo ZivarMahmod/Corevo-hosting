@@ -1,5 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
+import { asStringList } from '@/lib/storefront/lojalitet/types'
 import type { LoyaltyMemberRow, LoyaltyActivityRow } from './types'
 
 // READ-ONLY loyalty data layer. Every read runs through the cookie-bound
@@ -107,6 +108,55 @@ export async function listLoyaltyMembers(tenantId: string): Promise<LoyaltyMembe
     }))
     members.sort((x, y) => y.pointsBalance - x.pointsBalance)
     return members
+  } catch {
+    return []
+  }
+}
+
+/** En loyalty_plans-rad som kundkortets LoyaltyPlansCard vill ha den (snake_case = formens
+ *  fältnamn; kortet skickar tillbaka exakt samma nycklar till server-actionen). */
+export type LoyaltyPlanAdminRow = {
+  id: string
+  name: string
+  price_cents: number
+  interval: string
+  perks: string[]
+  featured: boolean
+  sort_order: number
+  active: boolean
+}
+
+/**
+ * goal-64: kundens KLUBB-NIVÅER (loyalty_plans, 0057) för admin-ytan — ALLA rader, även
+ * avstängda (active=false), så en pausad nivå förblir synlig och återställbar för
+ * operatören. Den PUBLIKA loadern (lib/storefront/lojalitet/load-lojalitet.ts) filtrerar
+ * bort dem, så en avstängd nivå syns aldrig på klubbsidan.
+ *
+ * Tenant-scopad: den explicita .eq är den primära grinden (RLS = djupförsvar), samma söm
+ * som resten av admin-datalagret. [] vid fel — en läs-miss får aldrig krascha kundkortet.
+ */
+export async function listLoyaltyPlans(tenantId: string): Promise<LoyaltyPlanAdminRow[]> {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('loyalty_plans')
+      .select('id, name, price_cents, interval, perks, featured, sort_order, active')
+      .eq('tenant_id', tenantId)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+      .limit(50)
+    if (error || !data) return []
+
+    return data.map((r) => ({
+      id: r.id,
+      name: r.name,
+      price_cents: typeof r.price_cents === 'number' ? r.price_cents : 0,
+      interval: r.interval ?? 'month',
+      perks: asStringList(r.perks),
+      featured: r.featured === true,
+      sort_order: typeof r.sort_order === 'number' ? r.sort_order : 0,
+      active: r.active !== false,
+    }))
   } catch {
     return []
   }

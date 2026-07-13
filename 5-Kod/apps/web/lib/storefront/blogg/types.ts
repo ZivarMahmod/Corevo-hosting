@@ -50,6 +50,13 @@ export type BloggPost = {
   /** Resolved cover image (from the joined media_assets row), null when none. */
   coverImageUrl: string | null
   coverImageAlt: string | null
+  /**
+   * goal-64 (migration 0057) — INLÄGGETS ETIKETT. 8+ av de 12 Claude Design-mallarna ritar en
+   * liten versal etikett över rubriken ("Torgliv", "Skötselråd", "SORTER", "Bakom kulisserna")
+   * i metaraden `{{ b.tag }} · {{ b.date }}`. Den var mockdata; nu är den blog_posts.tag och
+   * kommer ur KUNDENS eget inlägg. null → mallen renderar ingen etikett (render-on-present).
+   */
+  tag: string | null
 }
 
 /** Everything the BloggSection needs after the loader runs. */

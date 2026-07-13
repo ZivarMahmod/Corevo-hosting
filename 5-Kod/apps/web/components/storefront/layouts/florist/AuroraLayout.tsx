@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './aurora.module.css'
 
@@ -40,6 +40,8 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
   const shopReachable = modules ? modules.shopReachable : true
   const offertReachable = modules ? modules.offertReachable : true
   const presentkortLive = modules ? modules.presentkortLive : true
+  // goal-64: klubben har en publik sida nu (/klubb). Modul av → ingen länk (404-fällan).
+  const klubbReachable = modules ? modules.lojalitetReachable : true
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const [pathBukett, pathBrollop, pathKurs] = content.galleryImages
@@ -169,7 +171,7 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
                   <div className={styles.auProdRow}>
                     <p className={styles.auProdName}>{p.name}</p>
                     <p className={styles.auProdPrice}>
-                      {formatShopPrice(p.priceCents, p.currency)}
+                      {formatProductPrice(p)}
                     </p>
                   </div>
                   {p.description ? <p className={styles.auProdDesc}>{p.description}</p> : null}
@@ -188,10 +190,11 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
         </section>
       ) : null}
 
-      {/* (5) PRESENTKORT + KURSER — bandet ritas bara när presentkort-modulen är live.
-          Filens andra band (Blomsterklubben) hör till lojalitet-modulen, som INTE har någon
-          publik sida i plattformen — det bandet hade bara lett till en 404, och bär därför
-          kurs-vägen i stället för en uppdiktad medlemssida. */}
+      {/* (5) PRESENTKORT + KLUBBEN — bandet ritas bara när presentkort-modulen är live.
+          goal-64: filens ANDRA band ÄR Blomsterklubben (lojalitet). Det hade ingen publik
+          sida i plattformen och pekade därför på kurs-vägen i stället. Klubben har nu en
+          riktig sida (/klubb) → bandet är filens igen, när modulen går att nå. Lojalitet
+          av → kurs-bandet som förr (aldrig en länk till en stängd modul). */}
       {presentkortLive ? (
         <section className={styles.auSection}>
           <div className={styles.auBands}>
@@ -211,18 +214,33 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
               </Link>
             </Reveal>
             <Reveal delay={90}>
-              <Link href="/kurser" className={styles.auBandWhite}>
-                <span className={styles.auEyebrow} style={{ display: 'block' }}>
-                  Kurser &amp; event
-                </span>
-                <span className={styles.auBandTitle} style={{ display: 'block' }}>
-                  Bind din egen bukett
-                </span>
-                <span className={styles.auBandText} style={{ display: 'block' }}>
-                  Små grupper, mycket blommor och fika i studion. Alla nivåer är välkomna.
-                </span>
-                <span className={styles.auLink}>se datum →</span>
-              </Link>
+              {klubbReachable ? (
+                <Link href="/klubb" className={styles.auBandWhite}>
+                  <span className={styles.auEyebrow} style={{ display: 'block' }}>
+                    Blomsterklubben
+                  </span>
+                  <span className={styles.auBandTitle} style={{ display: 'block' }}>
+                    Blommor hem varje månad
+                  </span>
+                  <span className={styles.auBandText} style={{ display: 'block' }}>
+                    Samla stämplar, få förmåner och gå med i klubben.
+                  </span>
+                  <span className={styles.auLink}>till klubben →</span>
+                </Link>
+              ) : (
+                <Link href="/kurser" className={styles.auBandWhite}>
+                  <span className={styles.auEyebrow} style={{ display: 'block' }}>
+                    Kurser &amp; event
+                  </span>
+                  <span className={styles.auBandTitle} style={{ display: 'block' }}>
+                    Bind din egen bukett
+                  </span>
+                  <span className={styles.auBandText} style={{ display: 'block' }}>
+                    Små grupper, mycket blommor och fika i studion. Alla nivåer är välkomna.
+                  </span>
+                  <span className={styles.auLink}>se datum →</span>
+                </Link>
+              )}
             </Reveal>
           </div>
         </section>

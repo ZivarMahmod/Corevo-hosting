@@ -12,7 +12,7 @@ export async function listBlogPosts(tenantId: string): Promise<BlogPostRow[]> {
   const { data } = await supabase
     .from('blog_posts')
     .select(
-      'id, title, slug, excerpt, body, cover_asset_id, status, published_at, sort_order, created_at, updated_at',
+      'id, title, slug, excerpt, body, cover_asset_id, status, published_at, sort_order, created_at, updated_at, tag',
     )
     .eq('tenant_id', tenantId)
     .order('sort_order', { ascending: true })

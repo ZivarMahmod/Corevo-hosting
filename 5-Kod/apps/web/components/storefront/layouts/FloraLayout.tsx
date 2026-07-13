@@ -4,7 +4,7 @@ import { Gallery } from '../Gallery'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc, serviceNum } from '../service-format'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 import fl from './flora.module.css'
@@ -154,7 +154,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
                     style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                   />
                   <h3 className={styles.flCardName}>{p.name}</h3>
-                  <p className={styles.flCardMeta}>{formatShopPrice(p.priceCents, p.currency)}</p>
+                  <p className={styles.flCardMeta}>{formatProductPrice(p)}</p>
                 </Link>
               </Reveal>
             ))}

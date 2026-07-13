@@ -7,7 +7,7 @@
 // versalknapp. Inga rundade hörn, ingen skugga, inget nytt formspråk.
 //
 // FUNKTIONEN är orörd och delad (vektor-regeln): samma loadShopProduct-data via props,
-// samma <AddToCart> (variantval + antal + kvitto-toast), samma priser via formatShopPrice.
+// samma <AddToCart> (variantval + antal + kvitto-toast), samma priser via formatProductPrice.
 // TEXTREGEL: leveranslöftet kommer ENBART ur fulfilmentPromise(config) +
 // SHOP_FULFILMENT_LABELS — vi hittar ALDRIG på egna löften om leverans eller lager.
 //
@@ -17,7 +17,7 @@
 import Link from 'next/link'
 import { AddToCart } from '@/components/storefront/shop/AddToCart'
 import {
-  formatShopPrice,
+  formatProductPrice,
   fulfilmentPromise,
   SHOP_FULFILMENT_LABELS,
 } from '@/lib/storefront/shop/types'
@@ -52,7 +52,7 @@ export function CalytrixProduct({ config, product, paused }: ThemeProductViewPro
         <div className={s.cxInfo}>
           <p className={s.cxEyebrow}>{label}</p>
           <h1 className={s.cxTitle}>{product.name}</h1>
-          <p className={s.cxPrice}>{formatShopPrice(product.priceCents, product.currency)}</p>
+          <p className={s.cxPrice}>{formatProductPrice(product)}</p>
 
           {paragraphs.length > 0 ? (
             <div className={s.cxDesc}>

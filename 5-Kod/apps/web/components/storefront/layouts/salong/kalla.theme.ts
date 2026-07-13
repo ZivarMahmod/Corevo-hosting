@@ -1,7 +1,13 @@
 import type { SalongTheme } from './types'
 import { KallaNav, KallaFooter } from './kalla.chrome'
 import { KallaOm, KallaTjanster, KallaKontakt } from './kalla.pages'
-import { KallaShop, KallaBlogg } from './kalla.modules'
+import {
+  KallaShop,
+  KallaBlogg,
+  KallaGalleri,
+  KallaLojalitet,
+  KallaTeam,
+} from './kalla.modules'
 
 // Foto-id:n LYFTA ur .dc.html (galleryItems/teamData/blog/hero) — inte utbytta, inte
 // "liknande". HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n."
@@ -105,7 +111,16 @@ export const kalla: SalongTheme = {
   caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   chrome: { Nav: KallaNav, Footer: KallaFooter },
   pages: { om: KallaOm, tjanster: KallaTjanster, kontakt: KallaKontakt },
-  moduleViews: { shop: KallaShop, blogg: KallaBlogg },
+  // goal-64: Rummet (galleri), Ritualklubben (lojalitet) och Terapeuterna (team).
+  // Team-vyn renderar INGENTING när kunden inte lagt upp någon personal — aldrig
+  // stock-ansikten som om de vore salongens folk.
+  moduleViews: {
+    shop: KallaShop,
+    blogg: KallaBlogg,
+    galleri: KallaGalleri,
+    lojalitet: KallaLojalitet,
+    team: KallaTeam,
+  },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
   // (KallaLayout.tsx) — fältet ska förifyllas ärligt.
@@ -137,5 +152,18 @@ export const kalla: SalongTheme = {
     { name: 'shopCta', label: 'Apoteket: länktext', default: 'Till apoteket' },
     { name: 'blogTitle', label: 'Anteckningar: rubrik', default: 'Anteckningar' },
     { name: 'blogCta', label: 'Anteckningar: länktext', default: 'Alla →' },
+    // goal-64: Rummet + Ritualklubben. default = vyns inbyggda fallback VERBATIM.
+    // Galleriets eyebrow är i filen salongens ADRESS ("Bondegatan 11") — den är kundens
+    // fakta, inte mallens, så defaulten är tom och raden visas bara när ägaren fyllt i den.
+    { name: 'galleryEyebrow', label: 'Rummet: eyebrow', hint: 'T.ex. gatuadressen. Visas bara om du fyller i den.', default: '' },
+    { name: 'galleryTitle', label: 'Rummet: rubrik', default: 'Rummet' },
+    { name: 'clubEyebrow', label: 'Ritualklubben: eyebrow', default: 'Månadsvis · Ingen bindningstid' },
+    { name: 'clubTitle', label: 'Ritualklubben: rubrik', default: 'Ritualklubben' },
+    {
+      name: 'clubLede',
+      label: 'Ritualklubben: text',
+      rows: 2,
+      default: 'Håret mår bäst av regelbundenhet. Välj en rytm — pausa när livet vill annat.',
+    },
   ],
 }

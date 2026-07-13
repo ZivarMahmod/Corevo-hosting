@@ -6,79 +6,65 @@
 // "Säker betalning · N artiklar", sedan 1.7fr/1fr — de tre vita kantade stegkorten till
 // vänster (1. Leveransuppgifter · 2. Leveranssätt · 3. Betalsätt, var och en med sin
 // plommonfärgade siffra i serif) och den STICKY ordersammanfattningen till höger
-// (kvittorader med 48×60-miniatyrer, delsumma, totalt, "SLUTFÖR KÖP — {total}").
+// (kvittorader med 48×60-miniatyrer, delsumma, LEVERANS, totalt, "SLUTFÖR KÖP — {total}").
 //
-// FUNKTIONEN ÄR ORÖRD OCH DELAD (vektor-regeln): exakt samma server actions
-// (reserveOrder / confirmOrder / cancelOrder / startShopCheckout), samma fält, samma
-// valideringar, samma reserve-vid-mount + cancel-vid-lämning, samma CheckoutLoader och
-// samma synkrona dubbelklick-vakt som app/butik/kassa/CheckoutForm.tsx.
+// FUNKTIONEN ÄR ORÖRD OCH DELAD (vektor-regeln): useCheckout äger reserve-vid-mount,
+// lager-hold-släppet vid lämning, den synkrona dubbelklick-vakten, den server-validerade
+// frakten/betalsättet och betal-routingen. Mallen äger FORMEN, aldrig funktionen — en ny
+// mall kan därför inte tappa köp-rälsen på vägen.
 //
-// AVVIKELSER (medvetna — formen är filens, löftena är motorns):
-//   · STEG 2: filen listar tre valbara leveranssätt (bud 79 kr / express 149 kr / hämta
-//     fritt). Motorn har EN fulfilment per butik (tenant_modules.config) och ingen
-//     frakt-modell — tre valbara priser hade varit påhittade. Steget behåller filens
-//     radform men visar butikens FAKTISKA leveranssätt, förvalt.
-//   · STEG 3: filen listar Kort/Swish/Klarna/PayPal/Apple Pay med kortfält. Betal-rälsen
-//     är Stripe (eller betalning vid leverans) — vi renderar aldrig kortfält vi inte tar
-//     emot, och listar aldrig betalsätt butiken inte har.
-// Ett steg som ljuger är värre än ett steg som saknas: det är i kassan kunden betalar.
+// AVVIKELSERNA ÄR BORTA — de var motorns luckor, aldrig designens fel:
+//   · STEG 2 visade förr EN förvald fulfilment-rad, för motorn hade ingen frakt-modell och
+//     shipping_cents var alltid 0 (totalen ljög så fort filen visade en fraktrad). Nu
+//     VÄLJER kunden bland butikens EGNA leveransval (shop_shipping_options) och totalen
+//     bär frakten. 0 kr skrivs "Fritt" — filens ord.
+//   · STEG 3 sade "betala vid leverans", för betal-rälsen var pausad. Nu renderas de
+//     betalsätt butiken FAKTISKT har (Kort · Swish · Klarna · PayPal · Apple Pay) med
+//     filens hinttexter VERBATIM (SHOP_PAYMENT_METHODS).
+//
+// Regeln som styrde avvikelserna står kvar och gäller fortfarande: ett steg som ljuger är
+// värre än ett steg som saknas. Har butiken inga leveransval / inga kopplade betalsätt
+// renderas de listorna inte alls — vi hittar aldrig på ett alternativ eller ett pris.
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/components/storefront/shop/CartProvider'
 import { CheckoutLoader } from '@/components/storefront/shop/CheckoutLoader'
-import { formatShopPrice, SHOP_FULFILMENT_LABELS } from '@/lib/storefront/shop/types'
-import { reserveOrder, confirmOrder, cancelOrder, startShopCheckout } from '@/app/butik/actions'
+import { useCheckout } from '@/components/storefront/shop/useCheckout'
+import {
+  formatShopPrice,
+  formatShippingPrice,
+  paymentMethodSpec,
+  SHOP_FULFILMENT_LABELS,
+} from '@/lib/storefront/shop/types'
 import type { ThemeCheckoutViewProps } from './types'
 import s from './calytrix-checkout.module.css'
 
-export function CalytrixCheckout({ fulfilment }: ThemeCheckoutViewProps) {
-  const { lines, token, subtotalCents, clear } = useCart()
-  const router = useRouter()
+export function CalytrixCheckout({
+  fulfilment,
+  shippingOptions,
+  paymentMethods,
+}: ThemeCheckoutViewProps) {
+  const { lines } = useCart()
 
-  const [orderId, setOrderId] = useState<string | null>(null)
-  const [reserving, setReserving] = useState(true)
-  const [reserveError, setReserveError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+  const {
+    orderId,
+    reserving,
+    reserveError,
+    submitting,
+    shippingId,
+    setShippingId,
+    paymentMethod,
+    setPaymentMethod,
+    totals,
+    currency,
+    placeOrder,
+  } = useCheckout({ shippingOptions, paymentMethods })
+
   const [formError, setFormError] = useState<string | null>(null)
   const [fields, setFields] = useState({ name: '', email: '', phone: '', address: '', note: '' })
-  const didReserve = useRef(false)
-  // Dubbelbetalnings-vakt: synkron ref (state är asynkront — två snabba klick kan annars
-  // skicka två confirmOrder). Dubbelbetalning = riktig bugg.
-  const inFlight = useRef(false)
 
-  const currency = lines[0]?.currency ?? 'SEK'
   const needsAddress = fulfilment === 'ship'
-  const label = SHOP_FULFILMENT_LABELS[fulfilment]
-
-  // Reservera ordern EN gång vid mount (håller lagret medan kunden fyller i).
-  useEffect(() => {
-    if (didReserve.current || !token || lines.length === 0) return
-    didReserve.current = true
-    setReserving(true)
-    reserveOrder({
-      items: lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
-      token,
-    })
-      .then((r) => {
-        if (r.ok) setOrderId(r.orderId)
-        else setReserveError(r.message)
-      })
-      .catch(() => setReserveError('Något gick fel. Försök igen.'))
-      .finally(() => setReserving(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
-
-  // Släpp lager-holdet om kunden lämnar kassan utan att slutföra.
-  useEffect(() => {
-    return () => {
-      if (orderId && token && !submitting) {
-        void cancelOrder(orderId, token)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId])
 
   if (lines.length === 0 && !orderId) {
     return (
@@ -97,7 +83,6 @@ export function CalytrixCheckout({ fulfilment }: ThemeCheckoutViewProps) {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (inFlight.current) return // dubbelklick-vakt (synkron, till skillnad från state)
     setFormError(null)
     const name = fields.name.trim()
     const email = fields.email.trim()
@@ -105,40 +90,17 @@ export function CalytrixCheckout({ fulfilment }: ThemeCheckoutViewProps) {
     if (!name || !email || !phone) return setFormError('Fyll i namn, e-post och telefon.')
     if (!/.+@.+\..+/.test(email)) return setFormError('Kontrollera e-postadressen.')
     if (needsAddress && !fields.address.trim()) return setFormError('Fyll i leveransadress.')
-    if (!orderId) return setFormError('Beställningen är inte redo — ladda om sidan.')
 
-    inFlight.current = true
-    setSubmitting(true)
-    const res = await confirmOrder({
-      orderId,
-      token,
+    const err = await placeOrder({
       name,
       email,
       phone,
       shipAddress: needsAddress ? fields.address.trim() : undefined,
       note: fields.note.trim() || undefined,
     })
-    if (!res.ok) {
-      inFlight.current = false
-      setSubmitting(false)
-      setFormError(res.message)
-      return
-    }
-    // Betalning krävs (bakom payments_enabled) → Stripe. inFlight släpps ALDRIG efter
-    // lyckat köp: knappen förblir låst under redirecten.
-    if (res.requiresPayment) {
-      const co = await startShopCheckout(res.orderId)
-      if (co.ok) {
-        clear()
-        window.location.href = co.url
-        return
-      }
-    }
-    clear()
-    router.push(`/bekraftelse/${res.orderId}`)
+    if (err) setFormError(err)
   }
 
-  // v1: total = delsumma (frakt/moms additivt senare). Full kostnad visas FÖRE köp.
   const pending = submitting || reserving || !orderId
   const itemCount = lines.reduce((a, l) => a + l.quantity, 0)
 
@@ -217,7 +179,7 @@ export function CalytrixCheckout({ fulfilment }: ThemeCheckoutViewProps) {
             </div>
           </fieldset>
 
-          {/* ── STEG 2 — LEVERANSSÄTT (butikens faktiska, förvalt) ── */}
+          {/* ── STEG 2 — LEVERANSSÄTT (butikens EGNA val, butikens EGNA priser) ── */}
           <div className={s.cxStep}>
             <p className={s.cxStepHead}>
               <span className={s.cxStepNo} aria-hidden="true">
@@ -225,20 +187,56 @@ export function CalytrixCheckout({ fulfilment }: ThemeCheckoutViewProps) {
               </span>
               <span className={s.cxStepTitle}>Leveranssätt</span>
             </p>
-            <div className={s.cxOption} data-selected="">
-              <span className={s.cxDot} aria-hidden="true" />
-              <span className={s.cxOptionBody}>
-                <span className={s.cxOptionName}>{label}</span>
-                <span className={s.cxOptionDesc}>
-                  {needsAddress
-                    ? 'Vi skickar beställningen till adressen du fyllt i ovan.'
-                    : 'Vi hör av oss när beställningen är redo att hämtas i butiken.'}
+            {shippingOptions.length > 0 ? (
+              <div role="radiogroup" aria-label="Leveranssätt">
+                {shippingOptions.map((o) => {
+                  const selected = shippingId === o.id
+                  return (
+                    <label key={o.id} className={s.cxOptionRow}>
+                      {/* Radion är den RIKTIGA kontrollen (tangentbord/skärmläsare);
+                          pricken nedan är dess bild. */}
+                      <input
+                        type="radio"
+                        name="cx-shipping"
+                        className={s.cxRadio}
+                        value={o.id}
+                        checked={selected}
+                        onChange={() => setShippingId(o.id)}
+                      />
+                      <span className={s.cxOption} data-selected={selected ? '' : 'false'}>
+                        <span className={s.cxDot} aria-hidden="true" />
+                        <span className={s.cxOptionBody}>
+                          <span className={s.cxOptionName}>{o.name}</span>
+                          {o.description ? (
+                            <span className={s.cxOptionDesc}>{o.description}</span>
+                          ) : null}
+                        </span>
+                        <span className={s.cxOptionPrice}>
+                          {formatShippingPrice(o.costCents, currency)}
+                        </span>
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            ) : (
+              // Butiken har inga leveransval → visa dess fulfilment-löfte i stället för
+              // att hitta på tre alternativ. Frakten är då 0 och totalen är fortfarande sann.
+              <div className={s.cxOption} data-selected="">
+                <span className={s.cxDot} aria-hidden="true" />
+                <span className={s.cxOptionBody}>
+                  <span className={s.cxOptionName}>{SHOP_FULFILMENT_LABELS[fulfilment]}</span>
+                  <span className={s.cxOptionDesc}>
+                    {needsAddress
+                      ? 'Vi skickar beställningen till adressen du fyllt i ovan.'
+                      : 'Vi hör av oss när beställningen är redo att hämtas i butiken.'}
+                  </span>
                 </span>
-              </span>
-            </div>
+              </div>
+            )}
           </div>
 
-          {/* ── STEG 3 — BETALSÄTT ── */}
+          {/* ── STEG 3 — BETALSÄTT (bara de butiken FAKTISKT har) ── */}
           <div className={s.cxStep}>
             <p className={s.cxStepHead}>
               <span className={s.cxStepNo} aria-hidden="true">
@@ -246,16 +244,46 @@ export function CalytrixCheckout({ fulfilment }: ThemeCheckoutViewProps) {
               </span>
               <span className={s.cxStepTitle}>Betalsätt</span>
             </p>
-            <div className={s.cxOption} data-selected="">
-              <span className={s.cxDot} aria-hidden="true" />
-              <span className={s.cxOptionBody}>
-                <span className={s.cxOptionName}>Betala vid leverans eller upphämtning</span>
-                <span className={s.cxOptionDesc}>
-                  Kräver butiken förskottsbetalning skickas du vidare till den säkra
-                  betalsidan när du slutför köpet.
+            {paymentMethods.length > 0 ? (
+              <div role="radiogroup" aria-label="Betalsätt">
+                {paymentMethods.map((m) => {
+                  const spec = paymentMethodSpec(m)
+                  if (!spec) return null
+                  const selected = paymentMethod === m
+                  return (
+                    <label key={m} className={s.cxOptionRow}>
+                      <input
+                        type="radio"
+                        name="cx-payment"
+                        className={s.cxRadio}
+                        value={m}
+                        checked={selected}
+                        onChange={() => setPaymentMethod(m)}
+                      />
+                      <span className={s.cxOption} data-selected={selected ? '' : 'false'}>
+                        <span className={s.cxDot} aria-hidden="true" />
+                        <span className={s.cxOptionBody}>
+                          <span className={s.cxOptionName}>{spec.label}</span>
+                          {/* Hinttexten är designens, verbatim ur alla 12 manifest. */}
+                          <span className={s.cxOptionDesc}>{spec.hint}</span>
+                        </span>
+                        <span className={s.cxOptionPrice}>{spec.mark}</span>
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className={s.cxOption} data-selected="">
+                <span className={s.cxDot} aria-hidden="true" />
+                <span className={s.cxOptionBody}>
+                  <span className={s.cxOptionName}>Betala vid leverans eller upphämtning</span>
+                  <span className={s.cxOptionDesc}>
+                    Butiken tar inte emot betalning online än.
+                  </span>
                 </span>
-              </span>
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -282,13 +310,37 @@ export function CalytrixCheckout({ fulfilment }: ThemeCheckoutViewProps) {
             ))}
           </ul>
 
+          {/* Filens summering: Delsumma · Leverans · Totalt. Fraktraden fanns i designen
+              men kunde inte renderas förrän motorn hade en frakt-modell (goal-64). */}
           <div className={s.cxSumRow}>
             <span className={s.cxSumLabel}>Delsumma</span>
-            <span className={s.cxSumValue}>{formatShopPrice(subtotalCents, currency)}</span>
+            <span className={s.cxSumValue}>{formatShopPrice(totals.subtotalCents, currency)}</span>
           </div>
+          {shippingOptions.length > 0 ? (
+            <div className={s.cxSumRow}>
+              <span className={s.cxSumLabel}>Leverans</span>
+              <span className={s.cxSumValue}>
+                {formatShippingPrice(totals.shippingCents, currency)}
+              </span>
+            </div>
+          ) : null}
+          {totals.discountCents > 0 ? (
+            <div className={s.cxSumRow}>
+              <span className={s.cxSumLabel}>Rabatt</span>
+              <span className={s.cxSumValue}>
+                −{formatShopPrice(totals.discountCents, currency)}
+              </span>
+            </div>
+          ) : null}
+          {totals.taxCents > 0 ? (
+            <div className={s.cxSumRow}>
+              <span className={s.cxSumLabel}>Moms</span>
+              <span className={s.cxSumValue}>{formatShopPrice(totals.taxCents, currency)}</span>
+            </div>
+          ) : null}
           <div className={s.cxSumTotal}>
             <span>Totalt</span>
-            <span className={s.cxSumTotalValue}>{formatShopPrice(subtotalCents, currency)}</span>
+            <span className={s.cxSumTotalValue}>{formatShopPrice(totals.totalCents, currency)}</span>
           </div>
 
           {reserveError ? (
@@ -317,7 +369,7 @@ export function CalytrixCheckout({ fulfilment }: ThemeCheckoutViewProps) {
               ? 'Slutför…'
               : reserving
                 ? 'Förbereder…'
-                : `Slutför köp — ${formatShopPrice(subtotalCents, currency)}`}
+                : `Slutför köp — ${formatShopPrice(totals.totalCents, currency)}`}
           </button>
           <p className={s.cxFine}>🔒 Dina uppgifter används bara för denna beställning.</p>
         </aside>

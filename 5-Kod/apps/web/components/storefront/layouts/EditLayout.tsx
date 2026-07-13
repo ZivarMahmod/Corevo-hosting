@@ -3,7 +3,7 @@ import { Reveal } from '../Reveal'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../service-format'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 import ed from './edit.module.css'
@@ -102,7 +102,7 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
                     />
                     <span className={styles.sfEditRowHead}>
                       <span className={styles.sfEditRowName}>{p.name}</span>
-                      <span className={styles.sfEditRowPrice}>{formatShopPrice(p.priceCents, p.currency)}</span>
+                      <span className={styles.sfEditRowPrice}>{formatProductPrice(p)}</span>
                     </span>
                   </Link>
                 </Reveal>

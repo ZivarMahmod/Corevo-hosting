@@ -1,7 +1,12 @@
 import type { FloristTheme } from './types'
 import { BlomstertorgetNav, BlomstertorgetFooter } from './blomstertorget.chrome'
 import { BlomstertorgetOm, BlomstertorgetTjanster, BlomstertorgetKontakt } from './blomstertorget.pages'
-import { BlomstertorgetShop, BlomstertorgetBlogg } from './blomstertorget.modules'
+import {
+  BlomstertorgetShop,
+  BlomstertorgetBlogg,
+  BlomstertorgetGalleri,
+  BlomstertorgetLojalitet,
+} from './blomstertorget.modules'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/galleryItems/om-fotot) — inte utbytta, inte
 // "liknande". HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n
@@ -93,7 +98,13 @@ export const blomstertorget: FloristTheme = {
   caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   chrome: { Nav: BlomstertorgetNav, Footer: BlomstertorgetFooter, ownsUtility: true },
   pages: { om: BlomstertorgetOm, tjanster: BlomstertorgetTjanster, kontakt: BlomstertorgetKontakt },
-  moduleViews: { shop: BlomstertorgetShop, blogg: BlomstertorgetBlogg },
+  // goal-64: bildsidan + stamkund. Ingen team-vy — torgets paket har ingen team-sida.
+  moduleViews: {
+    shop: BlomstertorgetShop,
+    blogg: BlomstertorgetBlogg,
+    galleri: BlomstertorgetGalleri,
+    lojalitet: BlomstertorgetLojalitet,
+  },
   ownsCopy: true,
   // Redigerbara element. default = layoutens/vyernas inbyggda fallback VERBATIM
   // (BlomstertorgetLayout.tsx / .modules.tsx / .pages.tsx) — fältet ska förifyllas ärligt.
@@ -118,5 +129,22 @@ export const blomstertorget: FloristTheme = {
     { name: 'blogCta', label: 'Notiser: länktext', default: 'läs mer →' },
     { name: 'contactTitle', label: 'Kontakt: rubrik', default: 'Till redaktionen' },
     { name: 'contactEyebrow', label: 'Kontakt: ingress', default: 'Frågor, beröm eller klagomål — allt läses, det mesta besvaras.' },
+    // goal-64: bildsidan + stamkund. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryTitle', label: 'Bildsidan: rubrik', default: 'Bildsidan' },
+    {
+      name: 'galleryLede',
+      label: 'Bildsidan: ingress',
+      rows: 2,
+      default: 'Veckans bilder från torget — insända av kunder och tagna av ståndets egna.',
+    },
+    { name: 'clubTitle', label: 'Stamkund: rubrik', default: 'Stamkund' },
+    {
+      name: 'clubLede',
+      label: 'Stamkund: ingress',
+      rows: 2,
+      default: 'Torgets trognaste förtjänar torgets bästa. Registreringen är gratis och gäller för alltid.',
+    },
+    { name: 'clubEyebrow', label: 'Stamkund: kupongrubrik', default: '✂ Klipp ut och spara — stamkundens förmåner' },
+    { name: 'clubCta', label: 'Stamkund: knapptext', default: 'Registrera mig' },
   ],
 }

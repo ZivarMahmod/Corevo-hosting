@@ -138,6 +138,12 @@ export async function PreviewShell({
     moduleState(moduleStates, 'presentkort') === 'paused'
       ? [{ href: '/presentkort', label: 'Presentkort' }]
       : []),
+    // goal-64: klubben (/klubb) — samma modul-gate som publika layouten, annars visar
+    // previewn en meny som inte är kundens.
+    ...(moduleState(moduleStates, 'lojalitet') === 'live' ||
+    moduleState(moduleStates, 'lojalitet') === 'paused'
+      ? [{ href: '/klubb', label: 'Klubben' }]
+      : []),
     { href: '/om', label: 'Om oss' },
     { href: '/kontakt', label: 'Kontakt' },
   ]

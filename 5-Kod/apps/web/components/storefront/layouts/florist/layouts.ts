@@ -63,3 +63,15 @@ function findTheme(key: string) {
 export function themeModuleViews(key: string): ThemeModuleViews {
   return findTheme(key)?.moduleViews ?? {}
 }
+
+/**
+ * goal-64: ORDERNUMRETS PREFIX — mallens form på plattformens nummer.
+ *
+ * Bekräftelsen visade en uuid; designen visar "#OX-4821" / "No. E-1204" / "N°…". NUMRET
+ * kommer ur shop_orders.order_no (per-tenant löpnummer, 0058); PREFIXET är mallens och
+ * lagras aldrig på ordern — byter kunden mall ska även gamla ordrar skrivas i den nya
+ * mallens form. Okänt/prefixlöst tema → "#" (neutralt, aldrig påhittat).
+ */
+export function themeOrderPrefix(key: string): string {
+  return findTheme(key)?.orderPrefix ?? '#'
+}

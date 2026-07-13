@@ -148,6 +148,50 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
   }
 }
 
+// ── Kontakt-INKORGEN: markera läst / arkivera (goal-64) ────────────────────────
+// Kontaktformuläret skriver rader i contact_messages och mejlar dem till kunden. Men
+// mejl försvinner i en inkorg — kunden måste också kunna LÄSA och beta av dem här.
+// Status-FSM:n är avsiktligt trivial: new → read → archived (och tillbaka), inget mer.
+
+const CONTACT_STATUSES = ['new', 'read', 'archived'] as const
+type ContactStatus = (typeof CONTACT_STATUSES)[number]
+
+/**
+ * Sätt status på ETT kontaktmeddelande. tenant_id tas ur sidaCtx (super-admin ur
+ * formuläret, salongsadmin tvingat ur JWT) och läggs som .eq-filter på UPDATE:n —
+ * så en kund kan aldrig röra en annan kunds meddelande, oavsett vilket id klienten
+ * skickar in.
+ */
+export async function setContactMessageStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase, tenantId } = await sidaCtx(fd)
+  if (!tenantId) return { error: 'Saknar kund.' }
+
+  const id = String(fd.get('id') ?? '').trim()
+  const status = String(fd.get('status') ?? '').trim() as ContactStatus
+  if (!id) return { error: 'Saknar meddelande.' }
+  if (!CONTACT_STATUSES.includes(status)) return { error: 'Ogiltig status.' }
+
+  const { error } = await supabase
+    .from('contact_messages')
+    .update({ status })
+    .eq('id', id)
+    .eq('tenant_id', tenantId) // tenant-fencen — aldrig klientens ord
+  if (error) {
+    await reportActionError('setContactMessageStatus', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/meddelanden')
+  await logPlatformAction(supabase, {
+    action: 'tenant.contact',
+    tenantId,
+    actorId: user.id,
+    meta: { contact_message: status }, // ALDRIG PII i loggen — bara den nya statusen
+  })
+  return { success: status === 'archived' ? 'Meddelandet arkiverat.' : 'Meddelandet markerat som läst.' }
+}
+
 // Fasta dag-etiketter (mån→sön) för de manuella öppettiderna.
 const OH_DAYS = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'] as const
 

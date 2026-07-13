@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './eloria.module.css'
 
@@ -158,7 +158,7 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
                     <span className={styles.elHomeCatalogName}>{p.name}</span>
                     <span className={styles.elHair} />
                     <span className={styles.elHomeCatalogPrice}>
-                      {formatShopPrice(p.priceCents, p.currency)}
+                      {formatProductPrice(p)}
                     </span>
                   </Link>
                 </Reveal>

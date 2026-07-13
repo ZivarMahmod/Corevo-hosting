@@ -1,6 +1,13 @@
 import { AddToCart } from '../../shop/AddToCart'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
-import type { ThemeShopViewProps, ThemeBloggViewProps } from './types'
+import { JoinClubForm } from '../../lojalitet/JoinClubForm'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import type {
+  ThemeShopViewProps,
+  ThemeBloggViewProps,
+  ThemeGalleriViewProps,
+  ThemeLojalitetViewProps,
+} from './types'
 import styles from './onyx.module.css'
 
 /**
@@ -12,6 +19,9 @@ import styles from './onyx.module.css'
  *   BUTIKEN (`showButik`) — "DROP 27 — VECKA 28" över "Butiken", tre kolumner i
  *   hårlinje-rastret (1px gap på #2E2E2E), kvadratiska bilder, "+ LÄGG I KASSE" som
  *   mässings-outline. Inga kort, inga skuggor, inga rundade hörn.
+ *   ETIKETTEN i bildens övre vänstra hörn (filens `{{ p.tag }}`: "DROP 27", "FÅ KVAR",
+ *   "NY SORT") stod tidigare som "mockdata utan fält" — FEL numera: shop_products.badge finns
+ *   sedan migration 0057. Den renderas nu, och bara när produkten faktiskt bär den.
  *
  *   JOURNAL (`showBlogg`) — "Från studion": rader med datum + etikett i en 180px-spalt
  *   till vänster och rubrik + ingress till höger, hårlinje mellan raderna.
@@ -61,14 +71,15 @@ export function OnyxShop({ data, paused, limit, moreHref, content }: ThemeShopVi
                 >
                   <span className={styles.onSrOnly}>{p.imageAlt ?? p.name}</span>
                 </a>
+                {/* Filens etikett i bildhörnet — render-on-present: ingen badge → ingen ruta. */}
+                {p.badge ? <span className={styles.onCardTag}>{p.badge}</span> : null}
               </div>
               <div className={styles.onCardRow}>
                 <h3 className={styles.onCardName}>
                   <a href={`/shop/${p.id}`}>{p.name}</a>
                 </h3>
-                <span className={styles.onCardPrice}>
-                  {formatShopPrice(p.priceCents, p.currency)}
-                </span>
+                {/* formatProductPrice → "fr. X kr" när produkten bär price_from. */}
+                <span className={styles.onCardPrice}>{formatProductPrice(p)}</span>
               </div>
               {p.description ? <p className={styles.onCardDesc}>{p.description}</p> : null}
               {/* Pausad butik → NOLL köpknappar. Katalogen är fortfarande läsbar. */}
@@ -112,6 +123,9 @@ export function OnyxBlogg({ posts: allPosts, limit, moreHref, content }: ThemeBl
                 {p.publishedAt ? (
                   <p className={styles.onPostDate}>{p.publishedAt.slice(0, 10)}</p>
                 ) : null}
+                {/* Filens rad 369: etiketten UNDER datumet i 180px-spalten, dämpad mono-versal.
+                    Taggen = blog_posts.tag (0057). Ingen tagg → ingen rad. */}
+                {p.tag ? <p className={styles.onPostTag}>{p.tag}</p> : null}
               </div>
               <div>
                 <h2 className={styles.onPostTitle}>
@@ -136,6 +150,106 @@ export function OnyxBlogg({ posts: allPosts, limit, moreHref, content }: ThemeBl
           </a>
         </p>
       ) : null}
+    </section>
+  )
+}
+
+/* ══════════════════════════════════ ARKIV ═════════════════════════════════ */
+
+/**
+ * Filens `showGalleri`: kontaktkarta. Tre spalter med 1px SPRINGA (rutnätets bakgrund ÄR
+ * linjefärgen), 4:5-bilder, och figurnumret som en mono-etikett nedtill till vänster på
+ * bilden — "FIG. 01 — MAGNOLIA NOIR". Etiketten ligger i `tag` (galleri-kontraktet).
+ */
+export function OnyxGalleri({ items, content }: ThemeGalleriViewProps) {
+  return (
+    <section className={styles.onGalleri} data-module="galleri">
+      <p className={styles.onGalEyebrow}>{content.galleryEyebrow ?? 'ARKIV'}</p>
+      <h1 className={styles.onGalTitle}>{content.galleryTitle ?? 'Galleri'}</h1>
+
+      {items.length === 0 ? (
+        <p className={styles.onGalEmpty}>Inga bilder är publicerade ännu.</p>
+      ) : (
+        <div className={styles.onGalGrid}>
+          {items.map((g) => (
+            <div key={g.id} className={styles.onGalCell}>
+              {g.imageUrl ? (
+                <div
+                  className={styles.onGalImg}
+                  role="img"
+                  aria-label={g.imageAlt ?? g.caption ?? ''}
+                  style={{ backgroundImage: `url(${g.imageUrl})` }}
+                />
+              ) : null}
+              {g.tag ? <span className={styles.onGalFig}>{g.tag}</span> : null}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ═════════════════════════════════ KRETSEN ════════════════════════════════ */
+
+/**
+ * Filens `showKrets`: medlemskortet i guldram på #1C1C1C, förmånerna i ett tre-rutors
+ * rutnät med samma 1px-springa som arkivet, och anmälan som en rad: fält + guldknapp.
+ *
+ * AVVIKELSE (medveten): designens kort trycker "NO. 0847". Vi har inget medlemsnummer för
+ * en besökare som inte gått med — raden utelämnas hellre än fylls med ett påhittat nummer.
+ * "DITT NAMN HÄR" är designens tomma fält och står kvar.
+ */
+export function OnyxLojalitet({ config, plans, content, tenantName }: ThemeLojalitetViewProps) {
+  const perks = config.perks ?? []
+  const title = content.clubTitle ?? 'Kretsen'
+
+  return (
+    <section className={styles.onClub} data-module="lojalitet" data-variant={config.variant}>
+      <p className={styles.onGalEyebrow}>{content.clubEyebrow ?? 'MEDLEMSKAP'}</p>
+      <h1 className={styles.onGalTitle}>{title}</h1>
+      <p className={styles.onClubLede}>{content.clubLede ?? config.perkText}</p>
+
+      <div className={styles.onCard}>
+        <div className={styles.onCardTop}>
+          <p className={styles.onCardWordmark}>
+            {tenantName}
+            <span className={styles.onDot}>.</span> {title.toUpperCase()}
+          </p>
+        </div>
+        <p className={styles.onCardLabel}>MEDLEM</p>
+        <p className={styles.onCardName}>DITT NAMN HÄR</p>
+      </div>
+
+      {perks.length > 0 ? (
+        <div className={styles.onPerks}>
+          {perks.map((perk, i) => (
+            <div key={perk} className={styles.onPerk}>
+              <p className={styles.onPerkNo}>{String(i + 1).padStart(2, '0')}</p>
+              <p className={styles.onPerkText}>{perk}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {plans.length > 0 ? (
+        <div className={styles.onPerks}>
+          {plans.map((p) => (
+            <div key={p.id} className={styles.onPerk} data-featured={p.featured ? 'true' : undefined}>
+              <p className={styles.onPerkNo}>{formatPlanPrice(p.priceCents)}</p>
+              <p className={styles.onPerkText}>
+                <strong className={styles.onPlanName}>{p.name}</strong>{' '}
+                {loyaltyIntervalLabel(p.interval)}
+                {p.perks.length > 0 ? ` · ${p.perks.join(' · ')}` : ''}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className={styles.onClubJoin}>
+        <JoinClubForm cta={content.clubCta ?? 'GÅ MED'} />
+      </div>
     </section>
   )
 }

@@ -1,5 +1,6 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { ThemePageProps } from './types'
 import styles from './sivsav.module.css'
 
@@ -126,11 +127,16 @@ export function SivSavKontakt({ content, location, contact }: ThemePageProps) {
 
         <div className={styles.ssCard}>
           <p className={styles.ssCardProse}>{content.closingLede ?? content.aboutCopy}</p>
-          {contact.email ? (
-            <a href={`mailto:${contact.email}`} className={styles.ssSolid}>
-              Skicka
-            </a>
-          ) : null}
+          {/* Filens formulär (goal-64): bara placeholders, ingen etikett — skandinavisk
+              renhet. Mejl-CTA:n var en amputation; nu skickar rutan på riktigt. */}
+          <ContactForm
+            rows={[
+              [{ key: 'name', placeholder: 'Namn', required: true }],
+              [{ key: 'email', placeholder: 'E-post', required: true }],
+              [{ key: 'message', placeholder: 'Vad kan vi hjälpa till med?', required: true }],
+            ]}
+            submitLabel="Skicka"
+          />
         </div>
       </div>
     </section>

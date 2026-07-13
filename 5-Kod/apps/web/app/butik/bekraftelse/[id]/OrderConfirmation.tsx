@@ -12,7 +12,11 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getShopOrder, type PublicShopOrder } from '../../actions'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import {
+  formatShopPrice,
+  formatShippingPrice,
+  paymentMethodSpec,
+} from '@/lib/storefront/shop/types'
 import styles from '@/components/storefront/order-confirmation.module.css'
 
 const TOKEN_KEY = 'corevo-shop-token'
@@ -28,7 +32,15 @@ const STATUS_LABEL: Record<string, string> = {
   expired: 'Utgången',
 }
 
-export function OrderConfirmation({ orderId }: { orderId: string }) {
+export function OrderConfirmation({
+  orderId,
+  // goal-64: mallens prefix på ordernumret ("#OX-", "No. E-", "N°"). Numret är
+  // plattformens (shop_orders.order_no); formen är mallens. Utelämnat → "#".
+  orderPrefix = '#',
+}: {
+  orderId: string
+  orderPrefix?: string
+}) {
   const [order, setOrder] = useState<PublicShopOrder | null>(null)
   const [state, setState] = useState<'loading' | 'ok' | 'missing'>('loading')
 
@@ -90,8 +102,12 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
           </svg>
         </div>
         <h1 className={styles.title}>Tack för din beställning!</h1>
+        {/* goal-64: LÄSBART ordernummer. order_no är per-tenant-unikt (0058) och prefixet
+            är mallens. Ordrar lagda FÖRE 0058 saknar order_no → vi faller ärligt tillbaka
+            på id:ts första oktett i stället för att hitta på ett nummer. */}
         <p className={styles.meta}>
-          Beställning #{order.id.slice(0, 8)} · {STATUS_LABEL[order.status] ?? order.status}
+          Beställning {order.order_no ? `${orderPrefix}${order.order_no}` : `#${order.id.slice(0, 8)}`} ·{' '}
+          {STATUS_LABEL[order.status] ?? order.status}
         </p>
       </div>
 
@@ -106,6 +122,38 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
             </span>
           </div>
         ))}
+        {/* SUMMERINGEN (goal-64): delsumma + frakt − rabatt + moms = totalt. Raderna visas
+            bara när de bär ett värde — en fraktrad på en upphämtad order vore brus. */}
+        <div className={styles.line}>
+          <span>Delsumma</span>
+          <span className={styles.lineAmount}>
+            {formatShopPrice(order.subtotal_cents, order.currency)}
+          </span>
+        </div>
+        {order.shipping_cents > 0 || order.shipping_name ? (
+          <div className={styles.line}>
+            <span>{order.shipping_name ?? 'Leverans'}</span>
+            <span className={styles.lineAmount}>
+              {formatShippingPrice(order.shipping_cents, order.currency)}
+            </span>
+          </div>
+        ) : null}
+        {order.discount_cents > 0 ? (
+          <div className={styles.line}>
+            <span>Rabatt</span>
+            <span className={styles.lineAmount}>
+              −{formatShopPrice(order.discount_cents, order.currency)}
+            </span>
+          </div>
+        ) : null}
+        {order.tax_cents > 0 ? (
+          <div className={styles.line}>
+            <span>Moms</span>
+            <span className={styles.lineAmount}>
+              {formatShopPrice(order.tax_cents, order.currency)}
+            </span>
+          </div>
+        ) : null}
         <div className={styles.total}>
           <span>Totalt</span>
           <span className={styles.totalAmount}>{formatShopPrice(order.total_cents, order.currency)}</span>
@@ -116,8 +164,14 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
         {order.customer_name ? <div className={styles.detailsName}>{order.customer_name}</div> : null}
         {order.customer_email ? <div className={styles.detailsMuted}>{order.customer_email}</div> : null}
         {order.ship_address ? <div className={styles.detailsMuted}>{order.ship_address}</div> : null}
+        {/* Betal-raden säger VAD kunden valde när vi vet det — annars det gamla,
+            ärliga löftet. Aldrig "Betald" på en obetald order. */}
         <p className={styles.payment}>
-          {order.payment_status === 'paid' ? 'Betald.' : 'Betalas vid leverans/upphämtning.'}
+          {order.payment_status === 'paid'
+            ? `Betald${order.payment_method ? ` med ${paymentMethodSpec(order.payment_method)?.label ?? order.payment_method}` : ''}.`
+            : order.status === 'awaiting_payment'
+              ? 'Väntar på betalning.'
+              : 'Betalas vid leverans/upphämtning.'}
         </p>
       </div>
 

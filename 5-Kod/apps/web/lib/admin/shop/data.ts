@@ -1,6 +1,21 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import type { ShopProductRow, ShopOrderRow } from './types'
+import type { ShopProductRow, ShopOrderRow, ShippingOptionRow } from './types'
+
+/**
+ * Kundens leveransval (goal-64) — inklusive de AVSTÄNGDA (admin ska se allt hen äger;
+ * bara storefronten filtrerar på active). Tenant-scopat: .eq är den primära grinden,
+ * RLS är defense-in-depth.
+ */
+export async function listShippingOptions(tenantId: string): Promise<ShippingOptionRow[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('shop_shipping_options')
+    .select('id,key,name,description,cost_cents,sort_order,active')
+    .eq('tenant_id', tenantId)
+    .order('sort_order', { ascending: true })
+  return data ?? []
+}
 
 /**
  * Load all shop products for a tenant, ordered by sort_order then created_at.
@@ -12,7 +27,9 @@ export async function listShopProducts(tenantId: string): Promise<ShopProductRow
   const { data } = await supabase
     .from('shop_products')
     .select(
-      'id,name,slug,description,price_cents,currency,stock,image_asset_id,active,sort_order,created_at,updated_at',
+      // EN sträng-literal: Supabases typ-parser läser select-strängen statiskt, och en
+      // uppbruten (+-konkatenerad) sträng gör hela raden otypad (GenericStringError).
+      'id,name,slug,description,price_cents,currency,stock,image_asset_id,active,sort_order,created_at,updated_at,category,badge,compare_at_price_cents,price_from',
     )
     .eq('tenant_id', tenantId)
     .order('sort_order', { ascending: true })

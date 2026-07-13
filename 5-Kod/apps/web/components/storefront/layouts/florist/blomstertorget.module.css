@@ -310,6 +310,13 @@
   color: var(--color-fg);
 }
 
+/* KURSTAVLANS PIL (goal-64) — filens tickerRows: en stigande notering sätts i tidningens
+   rött (#C1272D = mallens primary), en fallande och en oförändrad står i svart (#191714 =
+   --color-fg, redan satt ovan). Färgen bärs alltså BARA av uppgången, precis som i filen. */
+.btTickerPrice[data-move='up'] {
+  color: var(--color-primary);
+}
+
 .btTickerNote {
   margin: 14px 0 0;
   font-style: italic;
@@ -501,6 +508,22 @@
 
 .btPriceName a:hover {
   color: var(--color-primary);
+}
+
+/* VARANS ETIKETT (goal-64) — Blomstertorget - Tidning.dc.html rad 135: inramad röd etikett
+   EFTER varunamnet. EXAKT: 10.5px/600, 0.1em spärr, 1px röd kant, padding 2px 7px, 8px
+   vänstermarginal, lyft 2px så den ligger i namnets baslinje. */
+.btPriceTag {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  padding: 2px 7px;
+  margin-left: 8px;
+  white-space: nowrap;
+  vertical-align: 2px;
 }
 
 .btPriceDesc {
@@ -948,5 +971,187 @@
   .btNavRow a {
     padding-top: 10px;
     padding-bottom: 10px;
+  }
+}
+
+/* ══════════════ BILDSIDAN + STAMKUND (goal-64) ══════════════
+   Lyft ur "Blomstertorget - Tidning.dc.html": fyra spalter kvadrater under en 3px
+   linjal, och kupongen med röd streckad ram + paragrafrader med prickad linje. */
+
+.btGalleri {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 36px 28px 0;
+}
+
+.btClub {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 36px 28px 0;
+}
+
+.btPageTitle {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 44px;
+  text-transform: uppercase;
+}
+
+.btPageLede {
+  margin: 0 0 30px;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--color-fg-2);
+}
+
+.btEmpty {
+  margin: 0;
+  border-top: 3px solid var(--color-fg);
+  padding-top: 24px;
+  font-size: 16px;
+  color: var(--color-fg-2);
+}
+
+.btGalGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  border-top: 3px solid var(--color-fg);
+  padding-top: 24px;
+}
+
+.btGalFig {
+  margin: 0;
+}
+
+.btGalImg {
+  aspect-ratio: 1 / 1;
+  background-position: center;
+  background-size: cover;
+}
+
+.btGalCap {
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+.btCoupon {
+  border: 2px dashed var(--color-primary);
+  padding: 36px;
+  margin-bottom: 30px;
+}
+
+.btCouponHead {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink);
+  text-align: center;
+}
+
+.btCouponList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.btCouponRow {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  border-bottom: 1px dotted var(--color-line);
+  padding: 12px 0;
+}
+
+.btCouponRow:last-child {
+  border-bottom: none;
+}
+
+.btCouponRow p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.btParagraf {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 15px;
+  color: var(--color-primary-ink);
+  min-width: 32px;
+}
+
+.btClubJoin {
+  border: 3px solid var(--color-fg);
+  padding: 28px;
+}
+
+.btClubJoin form {
+  display: flex;
+  gap: 18px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.btClubJoin input {
+  flex: 1;
+  min-width: 220px;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 2px solid var(--color-fg);
+  border-radius: 0;
+  background: transparent;
+  padding: 8px 2px;
+  font-family: var(--font-body);
+  font-size: 17px;
+  outline: none;
+}
+
+.btClubJoin button {
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--color-primary);
+  color: var(--color-bg);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 13px 26px;
+  min-height: 44px;
+}
+
+.btClubJoin button:hover {
+  background: var(--color-fg);
+}
+
+@media (max-width: 760px) {
+  .btGalleri,
+  .btClub {
+    padding: 24px 20px 0;
+  }
+
+  .btGalGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .btPageTitle {
+    font-size: clamp(28px, 8vw, 44px);
+  }
+
+  .btCoupon {
+    padding: 24px 18px;
   }
 }

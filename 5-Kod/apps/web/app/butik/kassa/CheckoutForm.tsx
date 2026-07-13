@@ -12,59 +12,54 @@
 // dubbelklick-vakt. FORMEN flyttade, FUNKTIONEN (validering, server actions,
 // felmeddelanden, lager-hold) står orörd.
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/components/storefront/shop/CartProvider'
 import { CheckoutLoader } from '@/components/storefront/shop/CheckoutLoader'
-import { formatShopPrice, type ShopFulfilment } from '@/lib/storefront/shop/types'
-import { reserveOrder, confirmOrder, cancelOrder, startShopCheckout } from '../actions'
+import { useCheckout } from '@/components/storefront/shop/useCheckout'
+import {
+  formatShopPrice,
+  formatShippingPrice,
+  paymentMethodSpec,
+  type ShippingOption,
+  type ShopFulfilment,
+  type ShopPaymentMethod,
+} from '@/lib/storefront/shop/types'
 import s from './checkout-form.module.css'
 
-export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
-  const { lines, token, subtotalCents, clear } = useCart()
-  const router = useRouter()
+export function CheckoutForm({
+  fulfilment,
+  // goal-64: kundens leveransval + de betalsätt som FAKTISKT är kopplade. Tomma listor
+  // = dagens beteende (inget val-steg, "betalas vid leverans/upphämtning").
+  shippingOptions = [],
+  paymentMethods = [],
+}: {
+  fulfilment: ShopFulfilment
+  shippingOptions?: ShippingOption[]
+  paymentMethods?: ShopPaymentMethod[]
+}) {
+  const { lines } = useCart()
 
-  const [orderId, setOrderId] = useState<string | null>(null)
-  const [reserving, setReserving] = useState(true)
-  const [reserveError, setReserveError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
+  // FUNKTIONEN är delad (useCheckout): reserve-vid-mount, lager-hold-släpp, dubbelklick-
+  // vakt, server-validerad frakt/betalsätt och betal-routingen. Formen är denna sidas.
+  const {
+    orderId,
+    reserving,
+    reserveError,
+    submitting,
+    shippingId,
+    setShippingId,
+    paymentMethod,
+    setPaymentMethod,
+    totals,
+    currency,
+    placeOrder,
+  } = useCheckout({ shippingOptions, paymentMethods })
+
   const [formError, setFormError] = useState<string | null>(null)
   const [fields, setFields] = useState({ name: '', email: '', phone: '', address: '', note: '' })
-  const didReserve = useRef(false)
-  // Dubbelbetalnings-vakt. `disabled` + pointer-events är den VISUELLA halvan; en ref
-  // som sätts synkront är den riktiga — state-uppdateringar är asynkrona, så två snabba
-  // klick (eller Enter + klick) kan annars hinna in i samma render och skicka två
-  // confirmOrder. En dubbelbetalning är en riktig bugg.
-  const inFlight = useRef(false)
 
-  const currency = lines[0]?.currency ?? 'SEK'
   const needsAddress = fulfilment === 'ship'
-
-  // Reservera ordern EN gång vid mount (håller lagret medan kunden fyller i).
-  useEffect(() => {
-    if (didReserve.current || !token || lines.length === 0) return
-    didReserve.current = true
-    setReserving(true)
-    reserveOrder({ items: lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })), token })
-      .then((r) => {
-        if (r.ok) setOrderId(r.orderId)
-        else setReserveError(r.message)
-      })
-      .catch(() => setReserveError('Något gick fel. Försök igen.'))
-      .finally(() => setReserving(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
-
-  // Släpp lager-holdet om kunden lämnar kassan utan att slutföra.
-  useEffect(() => {
-    return () => {
-      if (orderId && token && !submitting) {
-        void cancelOrder(orderId, token)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId])
 
   if (lines.length === 0 && !orderId) {
     return (
@@ -79,7 +74,6 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (inFlight.current) return // dubbelklick-vakt (synkron, till skillnad från state)
     setFormError(null)
     const name = fields.name.trim()
     const email = fields.email.trim()
@@ -87,44 +81,17 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
     if (!name || !email || !phone) return setFormError('Fyll i namn, e-post och telefon.')
     if (!/.+@.+\..+/.test(email)) return setFormError('Kontrollera e-postadressen.')
     if (needsAddress && !fields.address.trim()) return setFormError('Fyll i leveransadress.')
-    if (!orderId) return setFormError('Beställningen är inte redo — ladda om sidan.')
 
-    inFlight.current = true
-    setSubmitting(true)
-    const res = await confirmOrder({
-      orderId,
-      token,
+    const err = await placeOrder({
       name,
       email,
       phone,
       shipAddress: needsAddress ? fields.address.trim() : undefined,
       note: fields.note.trim() || undefined,
     })
-    if (!res.ok) {
-      inFlight.current = false
-      setSubmitting(false)
-      setFormError(res.message)
-      return
-    }
-    // Betalning krävs (Fas 3, bakom payments_enabled) → starta Stripe Checkout.
-    // Misslyckas/otillgänglig → fall igenom till bekräftelsen (ordern står awaiting,
-    // ärlig vy). Default (rälsen av) → requiresPayment=false → direkt bekräftelse.
-    // inFlight släpps ALDRIG här: vi navigerar bort, och knappen ska förbli låst
-    // under redirecten (annars kan kunden hinna klicka igen medan sidan byter).
-    if (res.requiresPayment) {
-      const co = await startShopCheckout(res.orderId)
-      if (co.ok) {
-        clear()
-        window.location.href = co.url
-        return
-      }
-    }
-    clear()
-    router.push(`/bekraftelse/${res.orderId}`)
+    if (err) setFormError(err)
   }
 
-  // v1: total = delsumma (frakt/moms additivt senare). Full kostnad visas FÖRE köp.
-  const totalCents = subtotalCents
   const pending = submitting || reserving || !orderId
 
   return (
@@ -141,14 +108,28 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
             <span className={s.money}>{formatShopPrice(l.priceCents * l.quantity, l.currency)}</span>
           </div>
         ))}
+        {/* SUMMERINGEN (goal-64): delsumma + frakt − rabatt + moms = totalt. Fraktraden
+            visas bara när butiken HAR leveransval — annars vore den en tom rad om ingenting.
+            Rabatt/moms visas bara när de är satta (rabattkoder byggs senare; fältet finns). */}
         <div className={s.rule}>
-          <Row label="Delsumma" value={formatShopPrice(subtotalCents, currency)} />
+          <Row label="Delsumma" value={formatShopPrice(totals.subtotalCents, currency)} />
+          {shippingOptions.length > 0 ? (
+            <Row label="Leverans" value={formatShippingPrice(totals.shippingCents, currency)} />
+          ) : null}
+          {totals.discountCents > 0 ? (
+            <Row label="Rabatt" value={`−${formatShopPrice(totals.discountCents, currency)}`} />
+          ) : null}
+          {totals.taxCents > 0 ? (
+            <Row label="Moms" value={formatShopPrice(totals.taxCents, currency)} />
+          ) : null}
         </div>
         <div className={s.total}>
           <span>Att betala</span>
-          <span className={s.money}>{formatShopPrice(totalCents, currency)}</span>
+          <span className={s.money}>{formatShopPrice(totals.totalCents, currency)}</span>
         </div>
-        <p className={s.fine}>Betalas vid leverans/upphämtning.</p>
+        {paymentMethods.length === 0 ? (
+          <p className={s.fine}>Betalas vid leverans/upphämtning.</p>
+        ) : null}
       </div>
 
       {reserveError ? (
@@ -180,6 +161,58 @@ export function CheckoutForm({ fulfilment }: { fulfilment: ShopFulfilment }) {
           ) : null}
           <Field id="note" label="Meddelande (valfritt)" value={fields.note} onChange={(v) => setFields((f) => ({ ...f, note: v }))} />
         </fieldset>
+
+        {/* LEVERANSSÄTT (goal-64) — kundens egna val, med kundens egna priser. Butiken
+            har inga val → hela steget uteblir (vi hittar aldrig på ett alternativ). */}
+        {shippingOptions.length > 0 ? (
+          <fieldset className={s.group}>
+            <legend className={s.legend}>Leveranssätt</legend>
+            {shippingOptions.map((o) => (
+              <label key={o.id} htmlFor={`ship-${o.id}`} className={s.label}>
+                <span className={s.labelText}>
+                  <input
+                    id={`ship-${o.id}`}
+                    type="radio"
+                    name="shipping"
+                    value={o.id}
+                    checked={shippingId === o.id}
+                    onChange={() => setShippingId(o.id)}
+                  />{' '}
+                  {o.name} — {formatShippingPrice(o.costCents, currency)}
+                  {o.description ? <span className={s.fine}> {o.description}</span> : null}
+                </span>
+              </label>
+            ))}
+          </fieldset>
+        ) : null}
+
+        {/* BETALSÄTT (goal-64) — BARA de som är påslagna OCH kopplade. Hinttexten är
+            designens, verbatim (SHOP_PAYMENT_METHODS). Inga betalsätt → inget steg. */}
+        {paymentMethods.length > 0 ? (
+          <fieldset className={s.group}>
+            <legend className={s.legend}>Betalsätt</legend>
+            {paymentMethods.map((m) => {
+              const spec = paymentMethodSpec(m)
+              if (!spec) return null
+              return (
+                <label key={m} htmlFor={`pay-${m}`} className={s.label}>
+                  <span className={s.labelText}>
+                    <input
+                      id={`pay-${m}`}
+                      type="radio"
+                      name="payment"
+                      value={m}
+                      checked={paymentMethod === m}
+                      onChange={() => setPaymentMethod(m)}
+                    />{' '}
+                    {spec.label}
+                    <span className={s.fine}> {spec.hint}</span>
+                  </span>
+                </label>
+              )
+            })}
+          </fieldset>
+        ) : null}
 
         {formError ? (
           <p role="alert" className={s.alert}>

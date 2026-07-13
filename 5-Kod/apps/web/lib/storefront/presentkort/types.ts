@@ -40,13 +40,62 @@ export const PRESENTKORT_FULFILMENT_LABELS: Record<PresentkortFulfilment, string
  *  renders a pay step (same shape as the shop's payment hook). */
 export type PresentkortConfig = {
   fulfilment: PresentkortFulfilment
-  /** Preset amounts shown as chips. WHOLE KRONOR (not cents) — see formatGiftPrice. */
+  /**
+   * Beloppsvalen — KUNDENS EGNA, aldrig hårdkodade (goal-64). Designen visar
+   * [300,500,750,1000] (calytrix), [600,800,1200,2000] (ateljevinter),
+   * [500,900,1500,2500] (kalla) — tre kunder, tre listor.
+   *
+   * HELA KRONOR (inte ören) — se formatGiftPrice. TOM LISTA = kunden har inga belopp
+   * konfigurerade → mallen visar inga belopp och ingen köpknapp. Det är ett giltigt
+   * läge, inte ett fel att "laga" med defaults: en knapp utan ett lagligt belopp bakom
+   * sig är en knapp som ljuger. Saknas nyckeln HELT faller vi tillbaka på 0036:s
+   * default (bakåtkompatibelt — befintliga kunder tappar inga belopp).
+   */
   amountPresets: number[]
   currency: string
   /** Promo headline shown in the section header. */
   headline: string
-  /** Betal-hook — PARKAD. false until rails open; there is no provider, no purchase. */
+  /**
+   * goal-64: kodserie-prefix. Blomstertorget: giftSerial: '1962-' + … → serien är
+   * kundens, inte plattformens. Tom sträng = ren kod utan prefix.
+   * Används av _generate_gift_code (0059) vid utfärdandet.
+   */
+  codePrefix: string
+  /**
+   * goal-64: leveransvalen köparen får se. Aurora ritar TVÅ
+   * (giftModes = ['Digitalt','Inslaget i butik']), de flesta mallar bara ett.
+   * Sätts av kunden (config.delivery_modes); utelämnad → härledd ur `fulfilment`,
+   * så befintliga kunder är oförändrade.
+   */
+  deliveryModes: GiftDeliveryMode[]
+  /** Betal-hook (legacy 0036). Betal-rälsen gatas numera av tenant_settings.payments_enabled
+   *  + stripe_charges_enabled i confirm_shop_order — samma gate som produkter. */
   paymentEnabled: boolean
+}
+
+/**
+ * Är beloppet ett av kundens EGNA? Ren spegling av vakten i reserve_shop_order (0059) —
+ * samma regel, två lager. Klient-lagret är bekvämlighet (ingen knapp för ett belopp som
+ * ändå skulle avvisas); SERVER-lagret är sanningen och kan inte förbigås.
+ * Tom lista = inga belopp konfigurerade = INGET belopp är giltigt (aldrig "då är allt ok").
+ */
+export function isAllowedGiftAmount(config: PresentkortConfig, amount: number): boolean {
+  if (!Number.isInteger(amount) || amount <= 0) return false
+  return config.amountPresets.includes(amount)
+}
+
+/** Auroras giftModes = ['Digitalt','Inslaget i butik'] → gift_cards.delivery_mode (0057). */
+export const GIFT_DELIVERY_MODES = ['digital', 'in_store'] as const
+export type GiftDeliveryMode = (typeof GIFT_DELIVERY_MODES)[number]
+export const GIFT_DELIVERY_LABELS: Record<GiftDeliveryMode, string> = {
+  digital: 'Digitalt',
+  in_store: 'Inslaget i butik',
+}
+
+/** Kundens leveransval, härlett ur den konfigurerade varianten (0036 fulfilment).
+ *  physical → kortet hämtas i butik; digital → det mejlas. Ingen bransch-if. */
+export function giftDeliveryModes(config: PresentkortConfig): GiftDeliveryMode[] {
+  return config.fulfilment === 'physical' ? ['in_store'] : ['digital']
 }
 
 /** Everything the PresentkortSection needs after the loader runs. Config only —
@@ -61,6 +110,8 @@ const DEFAULT_PRESENTKORT_CONFIG: PresentkortConfig = {
   amountPresets: [200, 500, 1000],
   currency: 'SEK',
   headline: 'Presentkort',
+  codePrefix: '',
+  deliveryModes: ['digital'],
   paymentEnabled: false,
 }
 
@@ -74,15 +125,21 @@ function asNonEmptyString(raw: unknown, fallback: string): string {
   return typeof raw === 'string' && raw ? raw : fallback
 }
 
-/** Coerce a raw jsonb value into a list of positive integer amounts (whole kronor).
- *  Drops anything that is not a finite positive number; falls back to the default
- *  presets when the result is empty or the input is not an array. */
+/**
+ * Coerce a raw jsonb value into a list of positive integer amounts (whole kronor).
+ * Drops anything that is not a finite positive number.
+ *
+ * goal-64 — VIKTIG ÄNDRING: en TOM lista respekteras nu (den föll förut tillbaka på
+ * defaulten). "Inga belopp" är kundens val och betyder att mallen inte visar några —
+ * att smyga in [200,500,1000] där skulle rendera en köpknapp för ett belopp kunden
+ * aldrig godkänt, och servern (0059) skulle ändå avvisa köpet. Bara en SAKNAD nyckel
+ * ger defaulten, så befintliga kunder är oförändrade.
+ */
 function asPositiveIntArray(raw: unknown, fallback: number[]): number[] {
   if (!Array.isArray(raw)) return [...fallback]
-  const out = raw
+  return raw
     .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0)
     .map((n) => Math.floor(n))
-  return out.length > 0 ? out : [...fallback]
 }
 
 /**
@@ -101,11 +158,23 @@ export function parsePresentkortConfig(raw: unknown): PresentkortConfig {
     string,
     unknown
   >
+  const fulfilment = asFulfilment(src.fulfilment)
+  // `amounts` = goal-64:s nyckel; `amount_presets` = 0036:s. Läs den nya först, fall
+  // tillbaka på den gamla — EXAKT samma prioritet som reserve_shop_order (0059), annars
+  // kan mallen visa ett belopp som servern sedan vägrar sälja.
+  const rawAmounts = src.amounts !== undefined ? src.amounts : src.amount_presets
+  const rawModes = Array.isArray(src.delivery_modes)
+    ? (src.delivery_modes as unknown[]).filter((m): m is GiftDeliveryMode =>
+        (GIFT_DELIVERY_MODES as readonly string[]).includes(m as string),
+      )
+    : []
   return {
-    fulfilment: asFulfilment(src.fulfilment),
-    amountPresets: asPositiveIntArray(src.amount_presets, DEFAULT_PRESENTKORT_CONFIG.amountPresets),
+    fulfilment,
+    amountPresets: asPositiveIntArray(rawAmounts, DEFAULT_PRESENTKORT_CONFIG.amountPresets),
     currency: typeof src.currency === 'string' && src.currency ? src.currency : 'SEK',
     headline: asNonEmptyString(src.headline, DEFAULT_PRESENTKORT_CONFIG.headline),
+    codePrefix: typeof src.code_prefix === 'string' ? src.code_prefix.trim() : '',
+    deliveryModes: rawModes.length > 0 ? rawModes : fulfilment === 'physical' ? ['in_store'] : ['digital'],
     paymentEnabled: pay.enabled === true,
   }
 }

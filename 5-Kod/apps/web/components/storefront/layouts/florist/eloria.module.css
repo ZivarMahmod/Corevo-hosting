@@ -1054,3 +1054,192 @@
     gap: 8px 20px;
   }
 }
+
+/* ══════════════ GALLERI + VÄNNER AV HUSET (goal-64) ══════════════
+   Lyft ur "Eloria - Klassiskt Magasin.dc.html": inramade fotografier i två spalter,
+   klubben som ett brev i en 1px ram. */
+
+.elGalleri {
+  max-width: 1100px;
+  margin: 64px auto 0;
+  padding: 0 28px;
+}
+
+.elClub {
+  max-width: 620px;
+  margin: 64px auto 0;
+  padding: 0 28px;
+}
+
+.elGalEyebrow {
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--color-primary-ink);
+  font-size: 12px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+.elGalTitle {
+  margin: 0 0 56px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 52px;
+  color: var(--color-fg);
+}
+
+.elClub .elGalTitle {
+  margin-bottom: 48px;
+}
+
+.elGalEmpty {
+  margin: 0;
+  text-align: center;
+  color: var(--color-fg-2);
+  font-size: 15.5px;
+}
+
+.elGalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 44px 36px;
+}
+
+.elGalCell {
+  text-align: center;
+}
+
+.elGalFrame {
+  border: 1px solid var(--color-line);
+  padding: 12px;
+}
+
+.elGalFrame:hover {
+  border-color: var(--color-primary);
+}
+
+.elGalImg {
+  aspect-ratio: 4 / 3;
+  background-position: center;
+  background-size: cover;
+}
+
+.elGalCap {
+  margin: 16px 0 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--color-primary-ink);
+}
+
+.elLetter {
+  border: 1px solid var(--color-line);
+  padding: 52px 48px;
+}
+
+.elSalutation {
+  margin: 0 0 24px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 21px;
+  line-height: 1.7;
+  color: var(--color-fg);
+}
+
+.elLetterBody {
+  margin: 0 0 18px;
+  color: var(--color-fg-2);
+  font-size: 15.5px;
+  line-height: 1.85;
+}
+
+.elPerks {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.elPerks li {
+  border-bottom: 1px solid var(--color-line);
+  padding: 12px 0;
+  color: var(--color-fg-2);
+  font-size: 15.5px;
+  line-height: 1.85;
+}
+
+.elPerks li[data-featured='true'] {
+  color: var(--color-fg);
+}
+
+.elSignature {
+  margin: 34px 0 44px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 19px;
+  color: var(--color-primary-ink);
+}
+
+.elClubJoin form {
+  display: flex;
+  gap: 24px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.elClubJoin input {
+  flex: 1;
+  min-width: 220px;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1px solid var(--color-fg);
+  border-radius: 0;
+  background: transparent;
+  padding: 8px 2px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--color-fg);
+  outline: none;
+}
+
+.elClubJoin button {
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  padding: 15px 36px;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+.elClubJoin button:hover {
+  background: var(--color-primary);
+}
+
+@media (max-width: 760px) {
+  .elGalleri,
+  .elClub {
+    margin-top: 40px;
+    padding: 0 20px;
+  }
+
+  .elGalGrid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .elGalTitle {
+    font-size: clamp(30px, 9vw, 52px);
+    margin-bottom: 32px;
+  }
+
+  .elLetter {
+    padding: 28px 20px;
+  }
+}

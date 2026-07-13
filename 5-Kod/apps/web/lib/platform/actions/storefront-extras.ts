@@ -362,3 +362,68 @@ export async function setTenantStaffOnSite(_p: ActionState, fd: FormData): Promi
       : 'Medarbetaren döljs från sidan (fortfarande bokningsbar). Publika sajten uppdaterad.',
   }
 }
+
+/**
+ * TEAM-PRESENTATIONEN (goal-64, kolumnerna i 0057): kortnamn · specialiteter · bio.
+ *
+ * De tre salong-mallarna har `team` som egen nav-punkt och deras teamkort visar just de
+ * här tre fälten. Utan skrivväg hade sidan bara kunnat visa namn + foto — dvs. mallen
+ * hade amputerats, vilket är förbjudet. Fälten är REN PRESENTATION: de rör aldrig
+ * bokningsbarheten (staff.active) eller synligheten (staff.show_on_site).
+ *
+ * BLANKT = RENSAT (null), aldrig tom sträng: storefronten är render-on-present, och ett
+ * fält med "" skulle rendera en tom rad i stället för att försvinna.
+ *
+ * short_name/specialties/bio ligger i 0057 → de generade Supabase-typerna känner dem inte
+ * än, därför `as never` på patchen (samma mönster som services.ts merch-kolumner).
+ */
+export async function saveTenantStaffProfile(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase, tenantId } = await sidaCtx(fd)
+  if (!tenantId) return { error: 'Saknar kund.' }
+
+  const staffId = String(fd.get('staffId') ?? '')
+  if (!staffId) return { error: 'Saknar medarbetare.' }
+
+  const trim = (field: string, max: number): string | null => {
+    const raw = String(fd.get(field) ?? '').trim()
+    return raw ? raw.slice(0, max) : null
+  }
+  const shortName = trim('short_name', 40)
+  const specialties = trim('specialties', 200)
+  const bio = trim('bio', 1200)
+
+  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Okänd kund.' }
+
+  // Samma medlemsfence som saveTenantStaffPhoto (staffId är klient-input).
+  const { data: member } = await supabase
+    .from('staff')
+    .select('id')
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (!member) return { error: 'Okänd medarbetare.' }
+
+  const { error } = await supabase
+    .from('staff')
+    .update({ short_name: shortName, specialties, bio } as never)
+    .eq('id', staffId)
+    .eq('tenant_id', tenantId)
+  if (error) {
+    await reportActionError('saveTenantStaffProfile.update', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidateTenant(tenant.slug)
+  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/admin/sida')
+  revalidatePath('/admin/personal')
+  await logPlatformAction(supabase, {
+    action: 'tenant.staff_update',
+    tenantId,
+    actorId: user.id,
+    entityId: staffId,
+    meta: { field: 'team_profile' },
+  })
+  return { success: 'Presentationen sparad. Syns på teamsidan.' }
+}

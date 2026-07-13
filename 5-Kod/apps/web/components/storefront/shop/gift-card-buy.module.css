@@ -1,0 +1,149 @@
+/* PRESENTKORTETS KÖPYTA (goal-64).
+ *
+ * Samma kontrakt som add-to-cart.module.css: varje värde läser en tema-variabel med ett
+ * neutralt fallback, så en mall klär knappen genom att sätta --sf-btn-* i sitt
+ * [data-theme]-block — aldrig genom att röra den här filen. Modulen äger funktionen,
+ * mallen äger formen.
+ *
+ * Touch-golvet (44px) gäller varje klickbar yta, inklusive beloppschipsen.
+ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.amounts,
+.modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  min-height: 44px;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1;
+  color: var(--color-fg, #232520);
+  background: transparent;
+  border: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 22%, transparent));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.chip:hover {
+  border-color: var(--color-primary, var(--color-fg, #232520));
+  background: var(--color-accent-soft, color-mix(in srgb, var(--color-fg, #232520) 5%, transparent));
+}
+
+/* Det valda beloppet får bära ytan — inte bara en tunn kant. Ett val man inte SER är
+ * inget val, och aria-pressed ensamt syns bara för skärmläsaren. */
+.chipOn {
+  color: var(--sf-btn-ink, var(--color-accent-fg, #fff));
+  background: var(--sf-btn-bg, var(--color-primary, #232520));
+  border-color: var(--sf-btn-bg, var(--color-primary, #232520));
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+.modeNote {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: color-mix(in srgb, var(--color-fg, #232520) 70%, var(--color-bg, #fff));
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--color-fg, #232520) 70%, var(--color-bg, #fff));
+}
+
+.input {
+  min-height: 44px;
+  padding: 11px 12px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--color-fg, #232520);
+  background: var(--color-bg, #fff);
+  border: 1px solid var(--color-line, color-mix(in srgb, var(--color-fg, #232520) 18%, transparent));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 2px;
+}
+
+.buy {
+  align-self: flex-start;
+  min-height: var(--sf-btn-h, 48px);
+  padding: var(--sf-btn-pad, 14px 32px);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--sf-btn-fs, 13px);
+  font-weight: var(--sf-btn-weight, 600);
+  letter-spacing: var(--sf-btn-ls, 0.01em);
+  text-transform: var(--sf-btn-transform, none);
+  line-height: 1;
+  color: var(--sf-btn-ink, var(--color-accent-fg, var(--color-fg, #232520)));
+  background: var(--sf-btn-bg, var(--color-accent, #c8a24a));
+  border: 1px solid var(--sf-btn-border, var(--color-accent, #c8a24a));
+  border-radius: var(--sf-btn-radius, var(--sf-radius, 4px));
+  transition:
+    background-color var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    transform var(--sf-btn-dur, 160ms) var(--sf-btn-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+
+.buy:hover {
+  background: var(--sf-btn-bg-hover, color-mix(in srgb, var(--sf-btn-bg, var(--color-accent, #c8a24a)) 88%, var(--color-fg, #232520)));
+  transform: translateY(-2px);
+}
+
+.buy:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 80ms;
+}
+
+.buy:focus-visible {
+  outline: 2px solid var(--sf-focus, var(--color-fg, #232520));
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buy,
+  .chip {
+    transition: none;
+  }
+
+  .buy:hover,
+  .buy:active {
+    transform: none;
+  }
+}

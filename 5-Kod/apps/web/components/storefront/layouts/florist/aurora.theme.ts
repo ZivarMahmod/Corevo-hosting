@@ -1,7 +1,7 @@
 import type { FloristTheme } from './types'
 import { AuroraNav, AuroraFooter } from './aurora.chrome'
 import { AuroraOm, AuroraTjanster, AuroraKontakt } from './aurora.pages'
-import { AuroraShop, AuroraBlogg } from './aurora.modules'
+import { AuroraShop, AuroraBlogg, AuroraGalleri, AuroraLojalitet } from './aurora.modules'
 
 // Foto-id:n LYFTA ur .dc.html — inte utbytta, inte "liknande".
 // HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n mot slumpbilder."
@@ -96,7 +96,13 @@ export const aurora: FloristTheme = {
   caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   chrome: { Nav: AuroraNav, Footer: AuroraFooter },
   pages: { om: AuroraOm, tjanster: AuroraTjanster, kontakt: AuroraKontakt },
-  moduleViews: { shop: AuroraShop, blogg: AuroraBlogg },
+  // goal-64: galleriet + Blomsterklubben. Ingen team-vy — Auroras paket har ingen team-sida.
+  moduleViews: {
+    shop: AuroraShop,
+    blogg: AuroraBlogg,
+    galleri: AuroraGalleri,
+    lojalitet: AuroraLojalitet,
+  },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
   // (AuroraLayout.tsx) — fältet ska förifyllas ärligt.
@@ -117,5 +123,21 @@ export const aurora: FloristTheme = {
     { name: 'blogCta', label: 'Bloggbandet: knapptext', default: 'Läs fler inlägg' },
     { name: 'contactEyebrow', label: 'Kontakt: eyebrow', default: 'Kontakt' },
     { name: 'contactTitle', label: 'Kontakt: rubrik', default: 'Säg hej!' },
+    // goal-64: galleriet + klubben. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: 'Galleri' },
+    { name: 'galleryTitle', label: 'Galleri: rubrik', default: 'Ur studions dagbok' },
+    // Designens rad är "följ oss gärna — @aurorastudio" (studions eget handtag). Tom
+    // default: vi hittar aldrig på ett Instagram-konto åt kunden.
+    { name: 'galleryLede', label: 'Galleri: fotnot', hint: 'Visas bara om du fyller i den.', default: '' },
+    { name: 'clubEyebrow', label: 'Klubben: eyebrow', default: 'Blomsterklubben' },
+    { name: 'clubTitle', label: 'Klubben: rubrik', default: 'Var nionde bukett bjuder vi på' },
+    {
+      name: 'clubLede',
+      label: 'Klubben: text',
+      rows: 2,
+      hint: 'Tom = klubbens egen "perkText" ur modulinställningarna.',
+      default: 'Gratis att gå med. Varje bukett ger en stämpel — den nionde väljer du fritt ur sortimentet.',
+    },
+    { name: 'clubCta', label: 'Klubben: knapptext', default: 'Gå med gratis' },
   ],
 }

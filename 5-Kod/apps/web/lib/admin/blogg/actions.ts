@@ -69,6 +69,8 @@ export async function createBlogPost(_p: ActionState, fd: FormData): Promise<Act
     slug,
     excerpt,
     body,
+    // goal-64 (0057): etiketten mallarna ritar över rubriken. Tom → null → ingen etikett.
+    tag: String(fd.get('tag') ?? '').trim() || null,
     status,
     sort_order: Number.isInteger(sort_order) ? sort_order : 0,
     published_at,
@@ -139,6 +141,8 @@ export async function updateBlogPost(_p: ActionState, fd: FormData): Promise<Act
       slug,
       excerpt,
       body,
+      // goal-64 (0057): måste gå att ÄNDRA och TA BORT, inte bara sättas en gång.
+      tag: String(fd.get('tag') ?? '').trim() || null,
       status,
       sort_order: Number.isInteger(sort_order) ? sort_order : 0,
       published_at,

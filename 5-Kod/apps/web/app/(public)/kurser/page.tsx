@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
 import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
-import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
+import { loadUpcomingEvents, loadKurserConfig } from '@/lib/storefront/kurser/load-kurser'
 import { formatEventPrice, formatEventStart } from '@/lib/storefront/kurser/types'
 import { KursAnmalanForm } from '@/components/storefront/KursAnmalanForm'
+import { EventSeatBuy } from '@/components/storefront/shop/EventSeatBuy'
 import { SubpageHero } from '@/components/storefront/sections'
 import { pageMetadata } from '@/components/storefront/seo'
 import s from './kurser.module.css'
@@ -29,14 +30,25 @@ export default async function KurserPage() {
   const paused = isModulePaused(states, 'kurser')
   if (!isModuleLive(states, 'kurser') && !paused) notFound()
 
-  const events = await loadUpcomingEvents(tenant.id, tenant.slug)
+  const [events, kurserConfig] = await Promise.all([
+    loadUpcomingEvents(tenant.id, tenant.slug),
+    loadKurserConfig(tenant.id, tenant.slug),
+  ])
+  const köpIKassan = kurserConfig.payment === 'checkout'
 
   return (
     <>
       <SubpageHero
         eyebrow="— Kurser & event"
         title="Kommande tillfällen"
-        lede="Anmäl dig och ditt sällskap — avgiften betalas på plats."
+        // Ledtexten måste säga SANNINGEN om hur den här kunden tar betalt. "Betalas på
+        // plats" ovanför en kassa-knapp är precis den sortens lilla lögn som gör att
+        // ingen litar på resten av sidan.
+        lede={
+          köpIKassan
+            ? 'Boka din plats direkt — kursplatsen läggs i varukorgen och betalas i kassan.'
+            : 'Anmäl dig och ditt sällskap — avgiften betalas på plats.'
+        }
       />
     <section className="section" data-module="kurser">
       <div className="section-inner">
@@ -83,8 +95,22 @@ export default async function KurserPage() {
                     </p>
                   ) : null}
 
+                  {/* goal-64: TVÅ VÄGAR IN, kundens val (config.payment) avgör vilken.
+                      'checkout' → kursplatsen är ett KÖP: den läggs i varukorgen (håller
+                      en plats i capacity) och betalas i kassan. Anmälan skapas när ordern
+                      är betald. 'onsite' (default) → anmälningsformuläret, ORÖRT: avgiften
+                      visas och betalas på plats, precis som förut. */}
                   {!paused && !full ? (
-                    <KursAnmalanForm eventId={ev.id} maxParty={left != null ? Math.min(8, left) : 8} />
+                    kurserConfig.payment === 'checkout' ? (
+                      <EventSeatBuy
+                        eventId={ev.id}
+                        title={ev.title}
+                        priceCents={ev.priceCents}
+                        seatsLeft={seatsLeft}
+                      />
+                    ) : (
+                      <KursAnmalanForm eventId={ev.id} maxParty={left != null ? Math.min(8, left) : 8} />
+                    )
                   ) : null}
                 </li>
               )

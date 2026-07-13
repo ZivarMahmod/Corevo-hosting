@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../service-format'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 import zg from './zigge.module.css'
@@ -97,7 +97,7 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
                 <span className={styles.sfBandName}>{p.name}</span>
               </span>
               <span className={styles.sfBandMeta}>
-                <span className={styles.sfBandPrice}>{formatShopPrice(p.priceCents, p.currency)}</span>
+                <span className={styles.sfBandPrice}>{formatProductPrice(p)}</span>
               </span>
             </Link>
           ))}

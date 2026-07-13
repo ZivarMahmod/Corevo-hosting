@@ -2,8 +2,18 @@ import type { ComponentType } from 'react'
 import type { ThemeContentDefaults, ResolvedThemeContent } from '../../theme-content'
 import type { ThemeCaps, ExtraField } from '@/lib/platform/theme-capabilities'
 import type { Service, TenantLocation, TenantContact } from '@/lib/tenant-data'
-import type { ShopData, ShopConfig, ShopProduct, ShopFulfilment } from '@/lib/storefront/shop/types'
+import type {
+  ShopData,
+  ShopConfig,
+  ShopProduct,
+  ShopFulfilment,
+  ShippingOption,
+  ShopPaymentMethod,
+} from '@/lib/storefront/shop/types'
 import type { BloggPost } from '@/lib/storefront/blogg/types'
+import type { LojalitetConfig, LoyaltyPlan } from '@/lib/storefront/lojalitet/types'
+import type { GalleryItem } from '@/lib/storefront/galleri/types'
+import type { TeamMember } from '@/lib/storefront/team/types'
 import type { TenantBranding } from '@corevo/ui'
 import { accentForeground, accentInk, contrastRatio } from '@corevo/ui'
 
@@ -183,11 +193,71 @@ export type ThemeCartViewProps = Record<string, never>
 
 export type ThemeCheckoutViewProps = {
   fulfilment: ShopFulfilment
+  /**
+   * goal-64 — KASSAN BLIR SANN.
+   *
+   * Kundens leveransval (shop_shipping_options). ALLA 12 mallar har ett leveranssteg
+   * med pris; motorn hade EN fulfilment-variant och shipping_cents = 0, så totalen ljög
+   * så fort designen visade en fraktrad. Nu VÄLJER kunden, och priset kommer ur DB.
+   *
+   * TOM lista = butiken har inte lagt upp några val → mallen ritar inget val-steg och
+   * frakten är 0 (oförändrat för alla befintliga butiker). Vyn får ALDRIG hitta på ett
+   * alternativ, och aldrig ett pris.
+   */
+  shippingOptions: ShippingOption[]
+  /**
+   * Betalsätt som är BÅDE påslagna av kunden OCH har en kopplad räls (Stripe godkänd /
+   * PayPal-nycklar satta). Hinttexten till varje sätt hämtas ur SHOP_PAYMENT_METHODS —
+   * de står som `verbatim` i alla 12 manifest och är alltså en del av designen.
+   *
+   * TOM lista = butiken tar inte betalt online → mallen visar "betala vid leverans/
+   * upphämtning". Ett betalsätt som inte står här får ALDRIG renderas: hellre färre val
+   * än en knapp som ljuger.
+   */
+  paymentMethods: ShopPaymentMethod[]
+}
+
+/**
+ * goal-64 — DE TRE SIDOR MALLARNA HADE OCH MOTORN SAKNADE.
+ *
+ * Kartläggningen av de 12 .dc.html-paketen visade tre sidor som ALLA mallar har i sitt
+ * manifest men som plattformen aldrig byggt: klubben (lojalitet), galleriet och teamet.
+ * Ateljé Vinters nav länkade redan till /galleri → 404, och Onyx "Kretsen" tvingades
+ * rendera olänkad text. Zivar: "inget får gå mista — dessa filer exakt som de är ska
+ * kunna vara verkliga i plattformen". Alltså: sidorna byggs, med riktig data (migration
+ * 0057), och mallen äger formen precis som för butik och blogg.
+ */
+export type ThemeLojalitetViewProps = {
+  config: LojalitetConfig
+  /** Klubbens prisbärande nivåer (loyalty_plans) — Källas Droppe/Källa/Flod. Tom = inga nivåer. */
+  plans: LoyaltyPlan[]
+  content: ResolvedThemeContent
+  tenantName: string
+}
+
+export type ThemeGalleriViewProps = {
+  items: GalleryItem[]
+  content: ResolvedThemeContent
+  tenantName: string
+}
+
+export type ThemeTeamViewProps = {
+  /** Kundens EGEN personal (staff, show_on_site). Tom lista → mallen renderar inget team —
+   *  aldrig stock-ansikten presenterade som salongens folk. */
+  members: TeamMember[]
+  content: ResolvedThemeContent
+  tenantName: string
 }
 
 export type ThemeModuleViews = {
   shop?: ComponentType<ThemeShopViewProps>
   blogg?: ComponentType<ThemeBloggViewProps>
+  /** goal-64: klubben (/klubb). Utelämnad → modulens delade sektion. */
+  lojalitet?: ComponentType<ThemeLojalitetViewProps>
+  /** goal-64: galleriet (/galleri). */
+  galleri?: ComponentType<ThemeGalleriViewProps>
+  /** goal-64: teamet (/team). Salong-mallarnas egen nav-punkt. */
+  team?: ComponentType<ThemeTeamViewProps>
   /** goal-64: mallens EGEN produktsida (/shop/[id]). Ersätter PRODUCT_VIEWS. */
   product?: ComponentType<ThemeProductViewProps>
   /** goal-64: mallens EGEN varukorg (/varukorg). Ersätter CART_VIEWS. */
@@ -225,6 +295,19 @@ export type FloristTheme = {
   content: ThemeContentDefaults
   /** Vilka Sida-fält som är meningsfulla för mallen (super-admins redigering). */
   caps: ThemeCaps
+  /**
+   * goal-64: ORDERNUMRETS PREFIX — mallens, inte databasens.
+   *
+   * Bekräftelsen visade en uuid; designen visar "#OX-4821" (onyx), "No. E-1204" (eloria),
+   * "N°…" (lunaria). Själva NUMRET är plattformens (shop_orders.order_no, ett per-tenant
+   * löpnummer ur 0058) — prefixet är mallens FORM, precis som allt annat en mall äger.
+   * Det lagras därför aldrig på ordern: byter kunden mall imorgon ska de gamla ordrarna
+   * skrivas i den NYA mallens form, inte frysa den gamlas.
+   *
+   * Utelämnat → "#" (neutralt). Ordrar lagda före 0058 saknar order_no → bekräftelsen
+   * faller tillbaka på id:t, ärligt, i stället för att hitta på ett nummer.
+   */
+  orderPrefix?: string
   /** Mallens EGET sidhuvud/sidfot. Utelämnat → plattformens delade Nav/Footer. */
   chrome?: ThemeChrome
   /** Mallens EGNA undersidor. Utelämnad sida → de delade sektionerna. */

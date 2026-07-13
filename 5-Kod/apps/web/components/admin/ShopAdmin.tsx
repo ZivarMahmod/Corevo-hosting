@@ -2,7 +2,9 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { ShopProductRow, ShopOrderRow } from '@/lib/admin/shop/types'
+import type { ShopProductRow, ShopOrderRow, ShippingOptionRow } from '@/lib/admin/shop/types'
+import { SHOP_PAYMENT_METHODS, type ShopPaymentMethod } from '@/lib/storefront/shop/types'
+import { centsToKronorInput } from '@/lib/admin/format'
 import {
   SHOP_ORDER_STATUSES,
   SHOP_ORDER_STATUS_LABELS,
@@ -16,6 +18,10 @@ import {
   setShopOrderStatus,
   setShopOrderTracking,
   refundShopOrderAction,
+  createShippingOption,
+  updateShippingOption,
+  deleteShippingOption,
+  setShopPaymentMethods,
 } from '@/lib/admin/shop/actions'
 import type { ActionState } from '@/lib/admin/actions'
 import type { MediaAssetRow } from '@/lib/admin/media/types'
@@ -54,6 +60,15 @@ export function ShopAdmin({
   tenantName,
   assets,
   tenantId,
+  // goal-64 — KASSAN. Kunden äger sina leveransval och sina betalsätt. Default [] så
+  // varje befintlig anropare fortsätter fungera oförändrat.
+  shippingOptions = [],
+  paymentMethods = [],
+  /** Tar kundens Stripe FAKTISKT emot pengar? Styr bara HJÄLPTEXTEN här (kassan gatar
+   *  på riktigt) — men en toggle utan besked om varför den inte syns är en fälla. */
+  stripeReady = false,
+  /** Finns PAYPAL_CLIENT_ID/SECRET i miljön? Saknas → PayPal går inte att visa i kassan. */
+  paypalReady = false,
 }: {
   products: ShopProductRow[]
   orders: ShopOrderRow[]
@@ -62,6 +77,10 @@ export function ShopAdmin({
   assets: MediaAssetRow[]
   /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
   tenantId?: string
+  shippingOptions?: ShippingOptionRow[]
+  paymentMethods?: ShopPaymentMethod[]
+  stripeReady?: boolean
+  paypalReady?: boolean
 }) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<ShopProductRow | null>(null)
@@ -125,6 +144,14 @@ export function ShopAdmin({
         </Card>
       </div>
 
+      {/* ── Leverans & betalning (goal-64) ── */}
+      <ShippingSection options={shippingOptions} />
+      <PaymentSection
+        selected={paymentMethods}
+        stripeReady={stripeReady}
+        paypalReady={paypalReady}
+      />
+
       {/* ── Översikt (lean analytics) ── */}
       {orders.length > 0 ? <ShopAnalytics orders={orders} /> : null}
 
@@ -154,6 +181,255 @@ export function ShopAdmin({
 }
 
 // ── Lean analytics + kund-översikt (härledd ur orders, ingen ny tabell) ──────
+/**
+ * LEVERANSVALEN (goal-64). Kunden lägger upp sina egna leveranssätt — namn, beskrivning,
+ * pris, ordning, av/på — och kassan visar EXAKT dem. Före det här kunde motorn bara visa
+ * en förvald fulfilment-rad och shipping_cents var alltid 0, så en mall som ritade en
+ * fraktrad ljög om totalen.
+ *
+ * Priset skrivs i kronor; servern lagrar öre och slår upp det på nytt när ordern läggs —
+ * det som står här ÄR det kunden betalar. 0 kr visas som "Fritt" på sajten.
+ */
+function ShippingSection({ options }: { options: ShippingOptionRow[] }) {
+  const [creating, setCreating] = useState(false)
+  const [editing, setEditing] = useState<ShippingOptionRow | null>(null)
+
+  return (
+    <div style={{ marginTop: 32 }}>
+      <h2 className="h2" style={{ marginBottom: 4 }}>
+        Leveranssätt
+      </h2>
+      <p className="muted" style={{ marginBottom: 12 }}>
+        Det kunden får välja mellan i kassan. Priset läggs på ordersumman. 0 kr visas som
+        &quot;Fritt&quot;. Inga leveranssätt → kassan hoppar över steget och frakten är 0.
+      </p>
+      <Card pad={0}>
+        {options.length === 0 ? (
+          <EmptyState
+            title="Inga leveranssätt ännu"
+            text={
+              <>
+                Lägg till t.ex. <strong>Bud samma dag (79 kr)</strong> och{' '}
+                <strong>Hämta i butik (0 kr)</strong>.
+              </>
+            }
+          />
+        ) : (
+          <Table
+            cols={['Leveranssätt', 'Pris', 'Status', '']}
+            rows={options.map((o) => [
+              <div key="namn">
+                <div style={{ fontWeight: 600 }}>{o.name}</div>
+                {o.description ? <div className="muted">{o.description}</div> : null}
+              </div>,
+              <span key="pris" className="num" style={{ fontWeight: 600 }}>
+                {o.cost_cents === 0 ? 'Fritt' : formatCents(o.cost_cents)}
+              </span>,
+              <Badge key="status" tone={o.active ? statusTone('active') : undefined}>
+                {o.active ? 'Aktiv' : 'Avstängd'}
+              </Badge>,
+              <RowEditButton
+                key="edit"
+                onClick={() => setEditing(o)}
+                ariaLabel={`Redigera ${o.name}`}
+              />,
+            ])}
+          />
+        )}
+      </Card>
+      <div style={{ marginTop: 12 }}>
+        <Button icon="plus" onClick={() => setCreating(true)}>
+          Nytt leveranssätt
+        </Button>
+      </div>
+
+      {creating ? (
+        <ShippingDrawer option={null} onClose={() => setCreating(false)} />
+      ) : null}
+      {editing ? (
+        <ShippingDrawer option={editing} onClose={() => setEditing(null)} />
+      ) : null}
+    </div>
+  )
+}
+
+/** Ett leveransval: skapa ELLER redigera (samma fält — bara action:en skiljer). */
+function ShippingDrawer({
+  option,
+  onClose,
+}: {
+  option: ShippingOptionRow | null
+  onClose: () => void
+}) {
+  const { notify } = useToast()
+  const [createState, createAction, creating] = useActionState(createShippingOption, {} as ActionState)
+  const [updateState, updateAction, updating] = useActionState(updateShippingOption, {} as ActionState)
+  const [deleteState, deleteAction] = useActionState(deleteShippingOption, {} as ActionState)
+  const state = option ? updateState : createState
+  const busy = option ? updating : creating
+
+  useEffect(() => {
+    const msg = state.success ?? deleteState.success
+    if (msg) {
+      notify(msg)
+      onClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success, deleteState.success])
+
+  return (
+    <Drawer
+      onClose={onClose}
+      title={option ? 'Redigera leveranssätt' : 'Nytt leveranssätt'}
+      sub="Det kunden väljer mellan i kassan. Priset läggs på ordersumman."
+      ariaLabel={option ? 'Redigera leveranssätt' : 'Nytt leveranssätt'}
+    >
+      <form action={option ? updateAction : createAction}>
+        <TenantField />
+        {option ? <input type="hidden" name="id" value={option.id} /> : null}
+
+        <Field label="Namn">
+          <input
+            name="name"
+            defaultValue={option?.name ?? ''}
+            required
+            maxLength={120}
+            placeholder="Bud samma dag (före kl 14)"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Beskrivning (valfritt)">
+          <input
+            name="description"
+            defaultValue={option?.description ?? ''}
+            maxLength={240}
+            placeholder="Beställ före kl 14, levereras 16–21"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Pris (kr) — 0 = Fritt">
+          <input
+            name="cost"
+            type="text"
+            inputMode="decimal"
+            defaultValue={option ? centsToKronorInput(option.cost_cents) : '0'}
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Sortering">
+          <input
+            name="sort_order"
+            type="number"
+            min={0}
+            defaultValue={option?.sort_order ?? 0}
+            style={inputStyle}
+          />
+        </Field>
+        {option ? (
+          <Field label="Aktiv">
+            <input type="checkbox" name="active" defaultChecked={option.active} />
+          </Field>
+        ) : null}
+
+        {state.error ? <Callout tone="warning">{state.error}</Callout> : null}
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <Button type="submit" variant="primary" disabled={busy}>
+            {busy ? 'Sparar…' : 'Spara'}
+          </Button>
+        </div>
+      </form>
+
+      {option ? (
+        // Radering är säker: shop_orders.shipping_option_id är ON DELETE SET NULL och
+        // beloppet står kvar på ordern — ett lagt kvitto ändrar sig aldrig i efterhand.
+        <form action={deleteAction} style={{ marginTop: 24 }}>
+          <TenantField />
+          <input type="hidden" name="id" value={option.id} />
+          <Button type="submit" variant="ghost" icon="trash">
+            Ta bort
+          </Button>
+          {deleteState.error ? <Callout tone="warning">{deleteState.error}</Callout> : null}
+        </form>
+      ) : null}
+    </Drawer>
+  )
+}
+
+/**
+ * BETALSÄTTEN (goal-64). Kunden väljer vad butiken tar emot; kassan visar bara det som
+ * ALLTID också har en kopplad räls. En påslagen toggle utan koppling är ett önskemål, och
+ * vi säger det rakt ut i stället för att visa en knapp i kassan som inte fungerar.
+ */
+function PaymentSection({
+  selected,
+  stripeReady,
+  paypalReady,
+}: {
+  selected: ShopPaymentMethod[]
+  stripeReady: boolean
+  paypalReady: boolean
+}) {
+  const { notify } = useToast()
+  const [state, action, pending] = useActionState(setShopPaymentMethods, {} as ActionState)
+
+  useEffect(() => {
+    if (state.success) notify(state.success)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  return (
+    <div style={{ marginTop: 32 }}>
+      <h2 className="h2" style={{ marginBottom: 4 }}>
+        Betalsätt
+      </h2>
+      <p className="muted" style={{ marginBottom: 12 }}>
+        Kassan visar bara betalsätt som är påslagna OCH kopplade. Inget påslaget → kunden
+        betalar vid leverans/upphämtning.
+      </p>
+      <Card>
+        <form action={action}>
+          <TenantField />
+          {SHOP_PAYMENT_METHODS.map((m) => {
+            // Kort/Swish/Klarna/Apple Pay går via kundens Stripe; PayPal via plattformens.
+            const connected = m.id === 'paypal' ? paypalReady : stripeReady
+            return (
+              <label
+                key={m.id}
+                style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12 }}
+              >
+                <input
+                  type="checkbox"
+                  name="method"
+                  value={m.id}
+                  defaultChecked={selected.includes(m.id)}
+                  style={{ marginTop: 4 }}
+                />
+                <span>
+                  <strong>{m.label}</strong>{' '}
+                  {connected ? null : (
+                    <Badge>
+                      {m.id === 'paypal' ? 'PayPal-nycklar saknas' : 'Stripe ej kopplad'}
+                    </Badge>
+                  )}
+                  <br />
+                  <span className="muted">{m.hint}</span>
+                </span>
+              </label>
+            )
+          })}
+
+          {state.error ? <Callout tone="warning">{state.error}</Callout> : null}
+
+          <Button type="submit" variant="primary" disabled={pending}>
+            {pending ? 'Sparar…' : 'Spara betalsätt'}
+          </Button>
+        </form>
+      </Card>
+    </div>
+  )
+}
+
 function ShopAnalytics({ orders }: { orders: ShopOrderRow[] }) {
   const real = orders.filter((o) => o.status !== 'cancelled')
   const revenue = real.reduce((s, o) => s + o.total_cents, 0)
@@ -626,6 +902,42 @@ function CreateDrawer({
             style={inputStyle}
           />
         </Field>
+        {/* goal-64: fälten mallarna renderar. Tomma → mallen ritar dem inte alls. */}
+        <Field label="Kategori (blir butikens filterknappar)">
+          <input
+            form={formId}
+            name="category"
+            type="text"
+            placeholder="t.ex. Buketter, Serum, Styling"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Märke (visas över bilden)">
+          <input
+            form={formId}
+            name="badge"
+            type="text"
+            placeholder="t.ex. Bästsäljare, Få kvar"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Jämförelsepris (kr) — tidigare pris, styr prispilen">
+          <input
+            form={formId}
+            name="compare_at_price"
+            type="text"
+            inputMode="decimal"
+            placeholder="—"
+            className="num"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Från-pris">
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
+            <input form={formId} name="price_from" type="checkbox" />
+            Priset är ett startpris — visas som &quot;fr. 349 kr&quot;
+          </label>
+        </Field>
         <ImagePicker name="image_asset_id" assets={assets} formId={formId} label="Produktbild" />
         {state.error && (
           <p className="auth-error" role="alert" style={{ margin: 0 }}>
@@ -778,6 +1090,45 @@ function EditDrawer({
             className="num"
             style={inputStyle}
           />
+        </Field>
+        {/* goal-64: samma fyra fält som i skapa-formuläret — annars gick de bara att sätta
+            en gång och aldrig ändra (eller ta bort igen). Tomt fält → null → mallen tiger. */}
+        <Field label="Kategori (blir butikens filterknappar)">
+          <input
+            name="category"
+            type="text"
+            defaultValue={product.category ?? ''}
+            placeholder="t.ex. Buketter, Serum, Styling"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Märke (visas över bilden)">
+          <input
+            name="badge"
+            type="text"
+            defaultValue={product.badge ?? ''}
+            placeholder="t.ex. Bästsäljare, Få kvar"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Jämförelsepris (kr) — tidigare pris, styr prispilen">
+          <input
+            name="compare_at_price"
+            type="text"
+            inputMode="decimal"
+            defaultValue={
+              product.compare_at_price_cents == null ? '' : product.compare_at_price_cents / 100
+            }
+            placeholder="—"
+            className="num"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Från-pris">
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5 }}>
+            <input name="price_from" type="checkbox" defaultChecked={product.price_from} />
+            Priset är ett startpris — visas som &quot;fr. 349 kr&quot;
+          </label>
         </Field>
         <ImagePicker
           name="image_asset_id"

@@ -4,7 +4,7 @@ import { Reveal } from '../Reveal'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice } from '../service-format'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 import ld from './leander.module.css'
@@ -88,7 +88,7 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
               <Link key={p.id} href={`/shop/${p.id}`} className={styles.sfPriceRow}>
                 <span className={styles.sfPriceName}>{p.name}</span>
                 <span className={styles.sfPriceDots} aria-hidden="true" />
-                <span className={styles.sfPriceVal}>{formatShopPrice(p.priceCents, p.currency)}</span>
+                <span className={styles.sfPriceVal}>{formatProductPrice(p)}</span>
               </Link>
             ))}
           </div>

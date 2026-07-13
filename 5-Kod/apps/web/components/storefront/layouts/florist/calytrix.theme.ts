@@ -1,7 +1,12 @@
 import type { FloristTheme } from './types'
 import { CalytrixNav, CalytrixFooter } from './calytrix.chrome'
 import { CalytrixOm, CalytrixTjanster, CalytrixKontakt } from './calytrix.pages'
-import { CalytrixShop, CalytrixBlogg } from './calytrix.modules'
+import {
+  CalytrixShop,
+  CalytrixBlogg,
+  CalytrixGalleri,
+  CalytrixLojalitet,
+} from './calytrix.modules'
 import { CalytrixProduct } from './calytrix.product'
 import { CalytrixCart } from './calytrix.cart'
 import { CalytrixCheckout } from './calytrix.checkout'
@@ -107,6 +112,9 @@ export const calytrix: FloristTheme = {
   },
   // Manifestets `caps`, oförändrade.
   caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
+  // goal-64: filens bekräftelse skriver ordernumret som "#C48213" (`'#C' + siffror`).
+  // Siffrorna är plattformens löpnummer; prefixet är mallens.
+  orderPrefix: '#C',
   // Mallen äger sitt sidhuvud (annonsrad + split-nav), sin mörka sidfot och sina
   // undersidor. ownsUtility: CalytrixNav ritar sin EGEN annonsrad ur utilityText —
   // utan flaggan renderar NavShell OCKSÅ plattformens remsa (två staplade rader).
@@ -118,6 +126,9 @@ export const calytrix: FloristTheme = {
   moduleViews: {
     shop: CalytrixShop,
     blogg: CalytrixBlogg,
+    // goal-64: galleriet + Calytrix Club. Ingen team-vy — e-handelspaketet har ingen team-sida.
+    galleri: CalytrixGalleri,
+    lojalitet: CalytrixLojalitet,
     product: CalytrixProduct,
     cart: CalytrixCart,
     checkout: CalytrixCheckout,
@@ -161,5 +172,22 @@ export const calytrix: FloristTheme = {
       rows: 2,
       default: 'Eget bud i stan, kyld transport i resten av landet.',
     },
+    // goal-64: galleriet + klubben. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryTitle', label: 'Galleri: rubrik', default: 'Galleri' },
+    {
+      name: 'galleryLede',
+      label: 'Galleri: underrubrik',
+      rows: 2,
+      default: 'Senaste leveranserna ur butiken — uppdateras varje vecka.',
+    },
+    { name: 'clubTitle', label: 'Club: rubrik', default: 'Calytrix Club' },
+    {
+      name: 'clubLede',
+      label: 'Club: text',
+      rows: 2,
+      hint: 'Tom = klubbens egen "perkText" ur modulinställningarna.',
+      default: '1 krona = 1 poäng på allt du handlar. Poängen blir rabatt — och nivåerna ger mer.',
+    },
+    { name: 'clubCta', label: 'Club: knapptext', default: 'GÅ MED GRATIS' },
   ],
 }

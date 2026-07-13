@@ -1,7 +1,12 @@
 import type { FloristTheme } from './types'
 import { AteljeVinterNav, AteljeVinterFooter } from './ateljevinter.chrome'
 import { AteljeVinterOm, AteljeVinterTjanster, AteljeVinterKontakt } from './ateljevinter.pages'
-import { AteljeVinterShop, AteljeVinterBlogg } from './ateljevinter.modules'
+import {
+  AteljeVinterShop,
+  AteljeVinterBlogg,
+  AteljeVinterGalleri,
+  AteljeVinterLojalitet,
+} from './ateljevinter.modules'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/galleryItems) — inte utbytta, inte "liknande".
 // HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n mot slumpbilder."
@@ -79,7 +84,14 @@ export const ateljevinter: FloristTheme = {
   caps: { heroEyebrow: true, homeStats: false, homeGallery: true, homeAbout: true },
   chrome: { Nav: AteljeVinterNav, Footer: AteljeVinterFooter },
   pages: { om: AteljeVinterOm, tjanster: AteljeVinterTjanster, kontakt: AteljeVinterKontakt },
-  moduleViews: { shop: AteljeVinterShop, blogg: AteljeVinterBlogg },
+  // goal-64: arkivet + vänkretsen. INGEN team-vy — Ateljé Vinter har inget team i sitt
+  // paket (ateljén är EN person), och en påhittad team-sida vore en påhittad personal.
+  moduleViews: {
+    shop: AteljeVinterShop,
+    blogg: AteljeVinterBlogg,
+    galleri: AteljeVinterGalleri,
+    lojalitet: AteljeVinterLojalitet,
+  },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
   // (AteljeVinterLayout.tsx) — fältet ska förifyllas ärligt.
@@ -97,5 +109,20 @@ export const ateljevinter: FloristTheme = {
     { name: 'blogTitle', label: 'Anteckningar: rubrik', default: 'anteckningar' },
     { name: 'blogCta', label: 'Anteckningar: länktext', default: 'läs alla anteckningar →' },
     { name: 'galleryEyebrow', label: 'Statement: eyebrow', default: 'ateljéns hållning' },
+    // goal-64: arkivet + vänkretsen. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryTitle', label: 'Arkivet: rubrik', default: 'arkivet' },
+    { name: 'clubEyebrow', label: 'Vänkretsen: eyebrow', default: 'vänkretsen' },
+    { name: 'clubTitle', label: 'Vänkretsen: rubrik', default: 'först till samlingen' },
+    {
+      name: 'clubLede',
+      label: 'Vänkretsen: text',
+      rows: 3,
+      default:
+        'varje månadssamling släpps till vänkretsen två dagar före alla andra. medlemmar bjuds dessutom till visningskvällen där samlingen presenteras — ett glas, sex verk, inga säljpitchar. kostnadsfritt, alltid.',
+    },
+    { name: 'clubCta', label: 'Vänkretsen: knapptext', default: 'gå med' },
+    // Designens rad är "184 medlemmar · nästa visning 3 augusti" — ett medlemsantal och
+    // ett datum vi INTE har. Tom default: raden visas först när ägaren skrivit sin egen.
+    { name: 'clubNote', label: 'Vänkretsen: fotnot', hint: 'Visas bara om du fyller i den.', default: '' },
   ],
 }

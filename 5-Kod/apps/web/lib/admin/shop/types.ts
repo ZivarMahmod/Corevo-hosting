@@ -2,6 +2,24 @@
 // no 'use server'. Safe to import from client components (import type only) and
 // server loaders/actions alike.
 
+/**
+ * Ett leveransval kunden äger (goal-64, shop_shipping_options i 0057). ALLA 12 mallar har
+ * ett leveranssteg med pris; utan den här tabellen kunde motorn bara visa EN förvald
+ * fulfilment-rad och shipping_cents var alltid 0 — dvs. totalen ljög. Kunden lägger upp
+ * sina egna val (namn/beskrivning/pris/ordning/aktiv), och kassan visar exakt dem.
+ *
+ * cost_cents = 0 → storefronten skriver "Fritt" (designens ord, aldrig "0 kr").
+ */
+export type ShippingOptionRow = {
+  id: string
+  key: string
+  name: string
+  description: string | null
+  cost_cents: number
+  sort_order: number
+  active: boolean
+}
+
 export type ShopProductRow = {
   id: string
   name: string
@@ -15,6 +33,15 @@ export type ShopProductRow = {
   sort_order: number
   created_at: string
   updated_at: string | null
+  /**
+   * goal-64 (migration 0057) — fälten mallarna renderar. De är MENINGSLÖSA om kunden inte kan
+   * fylla dem, därför bor de i produktformuläret: kategorin driver butikens filterchips, badgen
+   * märket över bilden, jämförelsepriset kurstavlans pil och price_from "fr."-prefixet.
+   */
+  category: string | null
+  badge: string | null
+  compare_at_price_cents: number | null
+  price_from: boolean
 }
 
 export type ShopOrderItemRow = {

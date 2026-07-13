@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './ateljevinter.module.css'
 
@@ -78,7 +78,7 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
               <div className={styles.avHeroCaption}>
                 <p className={styles.avMeta}>{heroWork.name}</p>
                 <p className={styles.avMetaPrice}>
-                  {formatShopPrice(heroWork.priceCents, heroWork.currency)}
+                  {formatProductPrice(heroWork)}
                 </p>
               </div>
             ) : null}
@@ -109,7 +109,7 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
                       <div className={styles.avWorkRow}>
                         <p className={styles.avWorkName}>{p.name}</p>
                         <p className={styles.avWorkPrice}>
-                          {formatShopPrice(p.priceCents, p.currency)}
+                          {formatProductPrice(p)}
                         </p>
                       </div>
                       <Link href={`/shop/${p.id}`} className={`${styles.avUnderline} ${styles.avWorkBuy}`}>

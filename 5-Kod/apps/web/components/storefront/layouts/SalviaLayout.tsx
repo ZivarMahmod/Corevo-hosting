@@ -5,7 +5,7 @@ import { Gallery } from '../Gallery'
 import { Bookable } from '../Bookable'
 import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../service-format'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from './types'
 import styles from '../storefront.module.css'
 import sv from './salvia.module.css'
@@ -121,7 +121,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
                     />
                     <h3 className={styles.sfTeamName}>{p.name}</h3>
                     <p className={`sf-body ${sv.cardMeta}`}>
-                      {formatShopPrice(p.priceCents, p.currency)}
+                      {formatProductPrice(p)}
                     </p>
                   </Link>
                 </Reveal>

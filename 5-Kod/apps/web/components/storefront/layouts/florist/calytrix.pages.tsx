@@ -1,5 +1,6 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { ThemePageProps } from './types'
 import styles from './calytrix.module.css'
 
@@ -14,9 +15,9 @@ import styles from './calytrix.module.css'
  *               ruta är en <Bookable> — funktionen är plattformens (samma boknings-
  *               drawer), formen är mallens.
  *   /kontakt  → filens `showKontakt`: faktaraden (telefon/e-post/butik) + öppettider till
- *               vänster, den vita plattan till höger. Filens kontaktformulär är INTE byggt
- *               — motorn har ingen kontakt-mejlräls, och en submit som inte skickar något
- *               ljuger (goal-62). Samma platta, ärlig handling.
+ *               vänster, den vita plattan till höger. Plattan ÄR filens kontaktformulär
+ *               (Namn · E-post · Meddelande · SKICKA) och skickar nu på riktigt: motorn
+ *               fick sin kontakt-räls i goal-64 (contact_messages + mejl till kunden).
  *
  * SYNKRONA server-komponenter (ingen async, ingen 'use client').
  * Render-on-present: saknas adress/telefon/mejl ritas raden inte alls — mallen hittar
@@ -99,12 +100,6 @@ export function CalytrixTjanster({ content, services }: ThemePageProps) {
 export function CalytrixKontakt({ content, location, contact }: ThemePageProps) {
   const hours = location?.hours ?? null
   const address = location?.address ?? null
-  // Ärlig handling i stället för filens döda submit: mejl först, telefon som reserv.
-  const cta = contact.email
-    ? { href: `mailto:${contact.email}`, text: 'Skriv till oss' }
-    : contact.phone
-      ? { href: `tel:${contact.phone.replace(/\s+/g, '')}`, text: 'Ring oss' }
-      : null
 
   return (
     <section className={styles.cxPage}>
@@ -159,11 +154,26 @@ export function CalytrixKontakt({ content, location, contact }: ThemePageProps) 
           <p className={styles.cxContactCardText}>
             {content.closingLede ?? 'Vi svarar vardagar 9–18.'}
           </p>
-          {cta ? (
-            <a className={styles.cxContactCta} href={cta.href}>
-              {cta.text}
-            </a>
-          ) : null}
+          {/* Filens vita platta = kontaktformuläret (Namn · E-post · Meddelande · SKICKA).
+              Den var amputerad till en mailto tills motorn fick sin kontakt-räls; nu
+              skickar den på riktigt. Etiketter, placeholders och VERSALERNA i knappen
+              är lyfta verbatim ur .dc.html. */}
+          <ContactForm
+            rows={[
+              [{ key: 'name', label: 'Namn', placeholder: 'Ditt namn', required: true }],
+              [{ key: 'email', label: 'E-post', placeholder: 'namn@mail.se', required: true }],
+              [
+                {
+                  key: 'message',
+                  label: 'Meddelande',
+                  placeholder: 'Skriv ditt ärende…',
+                  required: true,
+                },
+              ],
+            ]}
+            submitLabel="SKICKA"
+            doneText="Tack! Vi svarar vardagar 9–18."
+          />
         </aside>
       </div>
     </section>

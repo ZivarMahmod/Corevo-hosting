@@ -1,7 +1,7 @@
 import type { FloristTheme } from './types'
 import { SolSaltNav, SolSaltFooter } from './solsalt.chrome'
 import { SolSaltOm, SolSaltTjanster, SolSaltKontakt } from './solsalt.pages'
-import { SolSaltShop, SolSaltBlogg } from './solsalt.modules'
+import { SolSaltShop, SolSaltBlogg, SolSaltGalleri, SolSaltLojalitet } from './solsalt.modules'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/blog/galleryItems) — inte utbytta, inte "liknande".
 // HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n mot slumpbilder."
@@ -84,7 +84,13 @@ export const solsalt: FloristTheme = {
   caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   chrome: { Nav: SolSaltNav, Footer: SolSaltFooter, ownsUtility: true },
   pages: { om: SolSaltOm, tjanster: SolSaltTjanster, kontakt: SolSaltKontakt },
-  moduleViews: { shop: SolSaltShop, blogg: SolSaltBlogg },
+  // goal-64: galleriet + Solklubben. Ingen team-vy — paketet har ingen team-sida.
+  moduleViews: {
+    shop: SolSaltShop,
+    blogg: SolSaltBlogg,
+    galleri: SolSaltGalleri,
+    lojalitet: SolSaltLojalitet,
+  },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens/vyernas inbyggda fallback VERBATIM —
   // fältet ska förifyllas ärligt, aldrig med en påhittad platshållare.
@@ -101,5 +107,16 @@ export const solsalt: FloristTheme = {
     { name: 'shopCta', label: 'Veckans favoriter: länktext', default: 'Hela sortimentet →' },
     { name: 'blogTitle', label: 'Från boden: rubrik', default: 'Från boden' },
     { name: 'blogCta', label: 'Från boden: länktext', default: 'Läs allt från boden →' },
+    // goal-64: galleriet + Solklubben. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryTitle', label: 'Galleri: rubrik', default: 'Galleri' },
+    { name: 'clubTitle', label: 'Solklubben: rubrik', default: 'Solklubben' },
+    {
+      name: 'clubLede',
+      label: 'Solklubben: text',
+      rows: 2,
+      hint: 'Tom = klubbens egen "perkText" ur modulinställningarna.',
+      default: 'Gratis att gå med. Samla solar på ditt kort — var tionde bukett bjuder boden på.',
+    },
+    { name: 'clubCta', label: 'Solklubben: knapptext', default: 'Gå med gratis' },
   ],
 }

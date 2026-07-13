@@ -25,9 +25,15 @@
 // shop + offert + blogg gate). A draft/off/paused lojalitet never reaches
 // loadLojalitetData.
 
+// goal-64 TILLÄGG: loadern läser numera OCKSÅ kundens klubb-nivåer (loyalty_plans,
+// migration 0057) — Källas Droppe/Källa/Flod. Samma cache-nyckel, samma `tenant:<slug>`-
+// tag och samma app-lager-fence (.eq('tenant_id')) som configen; nivåerna är publikt
+// läsbara (loyalty_plans_public_read, active=true) exakt som shop_products, men RLS
+// isolerar INTE anon mellan tenants — .eq:t nedan är den enda isoleringen.
+
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import { parseLojalitetConfig, type LojalitetConfig, type LojalitetData } from './types'
+import { parseLojalitetConfig, toLoyaltyPlan, type LojalitetConfig, type LojalitetData } from './types'
 
 /**
  * Load the tenant's lojalitet config. Cached per-tenant and tagged with the SAME
@@ -54,7 +60,18 @@ export async function loadLojalitetData(tenantId: string, slug: string): Promise
 
       const config: LojalitetConfig = parseLojalitetConfig(moduleRow.config)
 
-      return { config }
+      // Klubbens nivåer. Fel/tom → [] (aldrig påhittade nivåer): en klubb utan
+      // prisnivåer är en giltig klubb (stämpelkort/poäng), och vyn ritar då ingen
+      // pristavla i stället för en tom platshållare.
+      const { data: planRows } = await supabase
+        .from('loyalty_plans')
+        .select('id, name, price_cents, interval, perks, featured')
+        .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+        .eq('active', true)
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true })
+
+      return { config, plans: (planRows ?? []).map(toLoyaltyPlan) }
     },
     ['lojalitet-data-by-tenant', tenantId, norm],
     { tags: [`tenant:${norm}`], revalidate: 300 },

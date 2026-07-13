@@ -1,6 +1,7 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, serviceDesc } from '../../service-format'
 import { BookCta } from '@/components/brand/BookCta'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { ThemePageProps } from './types'
 import styles from './eloria.module.css'
 
@@ -101,9 +102,36 @@ export function EloriaKontakt({ content, location, contact }: ThemePageProps) {
           'Berätta kort om tillfället, datumet och era önskemål — vi återkommer inom en timme under öppettid.'}
       </p>
 
-      <p className={styles.elContactFoot}>
-        <BookCta className={styles.elBtnDark} label="Skicka förfrågan" />
-      </p>
+      {/* Filens kontaktformulär, återställt (goal-64). Eloria är den ENDA mallen med ett
+          fjärde fält: "Tillfälle & datum" — det landar i contact_messages.subject, så
+          florristen ser direkt vad förfrågan gäller. Knappen heter "Skicka förfrågan"
+          (inte "Skicka") precis som i .dc.html. Tidigare låg här en BookCta som skickade
+          besökaren till bokningen — men filen ber om ett formulär, inte en bokning. */}
+      <div className={styles.elContactFoot}>
+        <ContactForm
+          rows={[
+            [{ key: 'name', label: 'Namn', placeholder: 'för- och efternamn', required: true }],
+            [{ key: 'email', label: 'E-post', placeholder: 'namn@adress.se', required: true }],
+            [
+              {
+                key: 'subject',
+                label: 'Tillfälle & datum',
+                placeholder: 't.ex. bröllop, 14 juni',
+              },
+            ],
+            [
+              {
+                key: 'message',
+                label: 'Ert meddelande',
+                placeholder: 'berätta gärna om plats, färger och känsla…',
+                required: true,
+              },
+            ],
+          ]}
+          submitLabel="Skicka förfrågan"
+          doneText="Tack! Vi återkommer inom en timme under öppettid."
+        />
+      </div>
 
       <div className={styles.elContactFacts}>
         {contact.phone ? (

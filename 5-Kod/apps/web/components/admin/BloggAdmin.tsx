@@ -268,6 +268,17 @@ function CreateDrawer({ assets, onClose }: { assets: MediaAssetRow[]; onClose: (
             style={inputStyle}
           />
         </Field>
+        {/* goal-64: etiketten mallarna ritar över rubriken ("Skötselråd" · "Torgliv").
+            Lämnas den tom renderas ingen etikett — aldrig en påhittad. */}
+        <Field label="Etikett (visas över rubriken)">
+          <input
+            form="create-blog-post"
+            name="tag"
+            type="text"
+            placeholder="t.ex. Skötselråd, Bakom kulisserna"
+            style={inputStyle}
+          />
+        </Field>
         <Field label="Ingress">
           <textarea form="create-blog-post" name="excerpt" style={textareaStyle} />
         </Field>
@@ -403,6 +414,16 @@ function EditDrawer({
             name="slug"
             defaultValue={post.slug ?? ''}
             placeholder="auto från rubrik"
+            style={inputStyle}
+          />
+        </Field>
+        {/* goal-64: samma etikett-fält som i skapa-formuläret — måste gå att ändra och tömma. */}
+        <Field label="Etikett (visas över rubriken)">
+          <input
+            name="tag"
+            type="text"
+            defaultValue={post.tag ?? ''}
+            placeholder="t.ex. Skötselråd, Bakom kulisserna"
             style={inputStyle}
           />
         </Field>

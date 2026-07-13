@@ -110,6 +110,8 @@ export function BookingWizard({
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
   brandName,
+  preselectServiceId = null,
+  preselectStaffId = null,
 }: {
   services: WizardService[]
   /** Bokningsbara platser (VÅG 4b). OPTIONAL — utelämnad/tom/en post → ingen
@@ -146,6 +148,12 @@ export function BookingWizard({
   /** Salongens wordmark på biljettens huvudrad (steg 5). OPTIONAL — mounts som
    *  inte skickar den får den neutrala fallbacken 'Bokning'. */
   brandName?: string
+  /** goal-64: förvald tjänst ur /boka?tjanst=<serviceId> (prisraden vet sin tjänst).
+   *  Okänt id ignoreras tyst. */
+  preselectServiceId?: string | null
+  /** goal-64: förvald personal ur /boka?personal=<staffId> (teamkortets djuplänk).
+   *  Okänt id — eller personal som inte kan utföra den valda tjänsten — ignoreras tyst. */
+  preselectStaffId?: string | null
 }) {
   const compact = mode === 'compact'
   const router = useRouter()
@@ -172,9 +180,32 @@ export function BookingWizard({
   // är vald. ≤1 plats eller compact → alltid false → ingen grind.
   const needsLocationPick = multiLocation && !compact && !locationId
 
-  const [step, setStep] = useState(1)
-  const [service, setService] = useState<WizardService | null>(null)
-  const [staffChoice, setStaffChoice] = useState<string>('any') // 'any' | staffId
+  // ── FÖRVAL UR DJUPLÄNKEN (goal-64, HANDOFF §4) ──────────────────────────────
+  // Teamkorten och prisraderna länkar till /boka?personal=<staffId>&tjanst=<serviceId>.
+  // /boka läser query-parametrarna och skickar dem hit. Kopplingen MÅSTE finnas: ett
+  // teamkort som bara dumpar besökaren på ett tomt bokningsformulär har tappat exakt
+  // det som gjorde kortet meningsfullt ("boka hos VERA").
+  //
+  // FAIL-SAFE, alltid: ett id som inte finns (gammal länk, manipulerad url, personal
+  // som slutat) IGNORERAS tyst → wizarden startar som vanligt. En djuplänk kan alltså
+  // aldrig låsa eller krascha bokningen. Servern validerar ändå allt igen vid submit;
+  // detta är ren UI-förifyllnad.
+  const preService = useMemo(
+    () => services.find((s) => s.id === preselectServiceId) ?? null,
+    [services, preselectServiceId],
+  )
+  // Personalen förväljs bara när hen FAKTISKT kan utföra den valda tjänsten. Utan
+  // tjänst i länken hålls valet kvar och appliceras när kunden väljer tjänst (se
+  // effekten nedan) — annars vore "?personal=" utan "?tjanst=" en död parameter.
+  const preStaffValid = (svc: WizardService | null, staffId: string | null) =>
+    staffId && svc?.staff.some((m) => m.id === staffId) ? staffId : 'any'
+
+  // Med tjänst i länken hoppar vi förbi steg 1 (kunden har redan valt den).
+  const [step, setStep] = useState(preService ? 2 : 1)
+  const [service, setService] = useState<WizardService | null>(preService)
+  const [staffChoice, setStaffChoice] = useState<string>(() =>
+    preStaffValid(preService, preselectStaffId ?? null),
+  ) // 'any' | staffId
   const [date, setDate] = useState<string | null>(null)
   const [slots, setSlots] = useState<SlotOption[]>([])
   const [timeZone, setTimeZone] = useState('Europe/Stockholm')
@@ -277,7 +308,9 @@ export function BookingWizard({
   // advances. Selecting a service/staff still RESETS downstream choices.
   function pickService(s: WizardService) {
     setService(s)
-    setStaffChoice('any')
+    // goal-64: kom besökaren via /boka?personal=… utan tjänst i länken, appliceras
+    // personal-förvalet nu — men BARA om hen kan utföra just den valda tjänsten.
+    setStaffChoice(preStaffValid(s, preselectStaffId ?? null))
     setDate(null)
     setSlots([])
     setSlot(null)

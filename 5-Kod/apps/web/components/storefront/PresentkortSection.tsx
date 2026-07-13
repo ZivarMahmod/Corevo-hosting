@@ -31,10 +31,10 @@
 
 import Link from 'next/link'
 import { SectionHeader } from './sections'
+import { GiftCardBuy } from './shop/GiftCardBuy'
 import s from './promo-section.module.css'
 import {
   presentkortFulfilmentLabel,
-  formatGiftPrice,
   type PresentkortData,
 } from '@/lib/storefront/presentkort/types'
 import { loadPresentkortData } from '@/lib/storefront/presentkort/load-presentkort'
@@ -78,33 +78,29 @@ export async function PresentkortSection({
           </p>
         ) : null}
 
-        {/* Amount presets shown as token-styled chips (whole kronor via formatGiftPrice). */}
-        <ul aria-label="Belopp att välja mellan" className={s.chips}>
-          {config.amountPresets.map((amount, i) => (
-            <li key={i} className={s.chip}>
-              {formatGiftPrice(amount, config.currency)}
-            </li>
-          ))}
-        </ul>
+        {/* goal-64 — KNAPPEN ÄR TILLBAKA, OCH DEN KÖPER PÅ RIKTIGT.
+            Här stod tidigare en INERT platta ("Presentkort köper du i butiken — eller hör
+            av dig"), för korgen kunde inte bära ett presentkort och en köpknapp utan köp
+            hade varit en lögn. Korgen bär radtypen 'giftcard' nu (0059), så mockens
+            addGift blir sann: belopp (kundens EGNA, aldrig hårdkodade) + leveransval →
+            varukorgen → kassan → betald order → utfärdat kort med kod och saldo.
 
-        {/* Fulfilment row — how the gift card reaches the recipient (variant-driven). */}
-        <p className={s.lead}>
-          {config.fulfilment === 'physical'
-            ? 'Hämtas i butik.'
-            : 'Skickas direkt till mottagarens mejl.'}
-        </p>
-
-        {/* ÄRLIG CTA-rad (goal-55 P1): inga döda knappar. Online-köp finns inte
-            (betal-rails pausade, compliance), så vi säger det rakt och ger EN riktig
-            handling — kontakta oss. Fortsatt server-only, ingen 'use client'.
-            goal-60: den är en KÖP-yta och bär därför köpknappens sex lägen via
-            --sf-btn-* — samma kontrakt som AddToCart, inte en platt platta. */}
-        <p className={s.lead}>
-          Presentkort köper du i butiken — eller hör av dig så ordnar vi det.
-        </p>
-        <Link href="/kontakt" className={s.cta}>
-          Kontakta oss
-        </Link>
+            PAUSAD modul → ingen köpyta. Stängt är stängt (samma regel som pausad butik).
+            Inga konfigurerade belopp → GiftCardBuy renderar ingenting alls (den vägrar
+            visa en knapp för ett belopp kunden inte godkänt), och vi faller tillbaka på
+            det ärliga beskedet: hör av dig. */}
+        {!paused && config.amountPresets.length > 0 ? (
+          <GiftCardBuy config={config} />
+        ) : (
+          <>
+            <p className={s.lead}>
+              Presentkort köper du i butiken — eller hör av dig så ordnar vi det.
+            </p>
+            <Link href="/kontakt" className={s.cta}>
+              Kontakta oss
+            </Link>
+          </>
+        )}
       </div>
     </section>
   )

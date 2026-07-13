@@ -1,5 +1,6 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { ThemePageProps } from './types'
 import styles from './blomstertorget.module.css'
 
@@ -129,18 +130,28 @@ export function BlomstertorgetKontakt({ content, location, contact }: ThemePageP
           </div>
         ) : null}
 
-        {/* Insändarrutan. Tidningens formulär i .dc.html postar ingenstans (dess "Skicka"
-            är en ren <a> utan handler) — plattformen har ingen insändar-endpoint, och en
-            död textruta i produktion är värre än ingen. Rutan behåller formen och lämnar
-            över till redaktionens riktiga brevlåda när den finns. */}
+        {/* INSÄNDAREN. Tidningens formulär postar nu på riktigt — motorn fick sin kontakt-
+            räls i goal-64, så den döda <a>-knappen är ersatt av en riktig submit. Fälten
+            är .dc.html:s exakta: bara placeholders (ingen etikett), gemener, och knappen
+            heter "Skicka insändaren" — inte "Skicka". Redaktionens röst, inte vår. */}
         <div className={styles.btBox}>
           <p className={styles.btBoxHead}>Insändare</p>
           <p className={styles.btBoxText}>{content.closingLede ?? content.aboutCopy}</p>
-          {contact.email ? (
-            <a href={`mailto:${contact.email}`} className={styles.btBtnWide}>
-              Skicka insändaren
-            </a>
-          ) : null}
+          <ContactForm
+            rows={[
+              [{ key: 'name', placeholder: 'namn', required: true }],
+              [{ key: 'email', placeholder: 'e-post', required: true }],
+              [
+                {
+                  key: 'message',
+                  placeholder: 'skriv kort och kärnfullt — redaktionen förkortar ändå',
+                  required: true,
+                },
+              ],
+            ]}
+            submitLabel="Skicka insändaren"
+            doneText="Tack! Insändaren är hos redaktionen."
+          />
         </div>
       </div>
     </section>

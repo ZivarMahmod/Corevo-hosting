@@ -1,5 +1,6 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, formatDuration, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { Service } from '@/lib/tenant-data'
 import type { ThemePageProps } from './types'
 import styles from './siluett.module.css'
@@ -162,7 +163,19 @@ export function SiluettKontakt({ content, location, contact }: ThemePageProps) {
           ) : null}
         </div>
 
-        <p className={styles.siKontaktProse}>{content.closingLede ?? content.aboutCopy}</p>
+        <div>
+          <p className={styles.siKontaktProse}>{content.closingLede ?? content.aboutCopy}</p>
+          {/* Filens formulär (goal-64): Namn · E-post · "Vad kan vi hjälpa till med?" ·
+              Skicka — placeholders utan etiketter, modemagasinets rena rutnät. */}
+          <ContactForm
+            rows={[
+              [{ key: 'name', placeholder: 'Namn', required: true }],
+              [{ key: 'email', placeholder: 'E-post', required: true }],
+              [{ key: 'message', placeholder: 'Vad kan vi hjälpa till med?', required: true }],
+            ]}
+            submitLabel="Skicka"
+          />
+        </div>
       </div>
     </section>
   )

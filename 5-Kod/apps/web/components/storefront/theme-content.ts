@@ -466,6 +466,24 @@ export type CopyOverride = {
   giftCta?: string
   galleryEyebrow?: string
   findEyebrow?: string
+  /**
+   * goal-64: KLUBBENS + GALLERIETS rubriker (de tre nya sidorna).
+   *
+   * Varje mall döper sin klubb själv — "Vänkretsen", "Kretsen", "Söndagsklubben",
+   * "Första raden", "Insidan" — och den texten ÄR mallen. Fälten finns här så ägaren
+   * kan skriva om dem utan att röra koden; mall-vyn bär designens sträng verbatim som
+   * inbyggd fallback (samma mönster som shopTitle/blogTitle, K13).
+   *
+   * clubNote = den lilla raden UNDER klubbens kort/formulär (Ateljé Vinters
+   * "184 medlemmar · nästa visning 3 augusti", Elorias andra brevstycke).
+   */
+  clubEyebrow?: string
+  clubTitle?: string
+  clubLede?: string
+  clubCta?: string
+  clubNote?: string
+  galleryTitle?: string
+  galleryLede?: string
 }
 
 /** The six theme-content fields the owner may override via `settings.copy`. */
@@ -487,6 +505,9 @@ export const COPY_OVERRIDE_KEYS = [
   'blogEyebrow', 'blogTitle', 'blogCta',
   'giftEyebrow', 'giftLede', 'giftCta',
   'galleryEyebrow', 'findEyebrow',
+  // goal-64: klubben + galleriet (de tre nya sidorna)
+  'clubEyebrow', 'clubTitle', 'clubLede', 'clubCta', 'clubNote',
+  'galleryTitle', 'galleryLede',
 ] as const
 
 /** Sanera en rå jsonb till en ren CopyOverride: bara kända nycklar, bara icke-tomma
@@ -602,6 +623,15 @@ export type ResolvedThemeContent = ThemeContent & {
   giftCta?: string
   galleryEyebrow?: string
   findEyebrow?: string
+  /** goal-64: klubbens + galleriets rubriker (satta bara vid egen text — mall-vyn
+   *  faller annars tillbaka på designens sträng verbatim). */
+  clubEyebrow?: string
+  clubTitle?: string
+  clubLede?: string
+  clubCta?: string
+  clubNote?: string
+  galleryTitle?: string
+  galleryLede?: string
 }
 
 /**
@@ -680,6 +710,13 @@ export function resolveThemeContent(
     giftCta: extra('giftCta'),
     galleryEyebrow: extra('galleryEyebrow'),
     findEyebrow: extra('findEyebrow'),
+    clubEyebrow: extra('clubEyebrow'),
+    clubTitle: extra('clubTitle'),
+    clubLede: extra('clubLede'),
+    clubCta: extra('clubCta'),
+    clubNote: extra('clubNote'),
+    galleryTitle: extra('galleryTitle'),
+    galleryLede: extra('galleryLede'),
     heroImages,
     galleryImages,
     aboutImage: typeof b.about_image === 'string' && b.about_image ? b.about_image : base.aboutImage,

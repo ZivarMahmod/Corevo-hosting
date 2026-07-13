@@ -20,7 +20,31 @@
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createServiceClient, hasServiceRole } from '@/lib/platform/service'
-import type { UpcomingEvent } from './types'
+import { parseKurserConfig, type KurserConfig, type UpcomingEvent } from './types'
+
+/**
+ * goal-64: kundens kurs-config (betalas kursen på plats eller i kassan?). Egen loader —
+ * /kurser behöver den för att välja mellan anmälningsformuläret och köpknappen, och
+ * ingen annan yta ska behöva ladda hela kurslistan för att få veta det.
+ */
+export async function loadKurserConfig(tenantId: string, slug: string): Promise<KurserConfig> {
+  const norm = slug.trim().toLowerCase()
+  const load = unstable_cache(
+    async (): Promise<KurserConfig> => {
+      const supabase = createPublicClient()
+      const { data } = await supabase
+        .from('tenant_modules')
+        .select('config')
+        .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+        .eq('module_key', 'kurser')
+        .maybeSingle()
+      return parseKurserConfig(data?.config)
+    },
+    ['kurser-config-by-tenant', tenantId, norm],
+    { tags: [`tenant:${norm}`], revalidate: 300 },
+  )
+  return load()
+}
 
 /**
  * Load the tenant's upcoming open events (starts_at >= now, ascending), each

@@ -5,6 +5,7 @@ import { currentTenant } from '@/lib/tenant-data'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenant-modules'
 import { loadShopData } from '@/lib/storefront/shop/load-shop'
+import { loadCheckoutOptions } from '@/lib/storefront/shop/checkout-options'
 import { CheckoutForm } from '@/app/butik/kassa/CheckoutForm'
 import { SubpageHero } from '@/components/storefront/sections'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
@@ -50,6 +51,15 @@ export default async function KassaPage() {
   const shop = await loadShopData(tenant.id, tenant.slug)
   const fulfilment = shop?.config.fulfilment ?? 'ship'
 
+  // goal-64 — KASSANS VAL, server-side. Leveransvalen kommer ur kundens egna
+  // shop_shipping_options; betalsätten är snittet av vad kunden slagit på och vad som
+  // FAKTISKT är kopplat (Stripe godkänd / PayPal-nycklar satta). Vyn får dem som props
+  // och räknar aldrig ut dem själv — ett betalsätt som inte är konfigurerat får inte
+  // ens kunna renderas.
+  const checkout = shop
+    ? await loadCheckoutOptions(tenant.id, tenant.slug, shop.config)
+    : { shippingOptions: [], paymentMethods: [] }
+
   // Mallens egen kassa vinner; den delade är bara fallback (samma mönster som korgen).
   const OwnCheckout = themeModuleViews(bundle.settings.theme).checkout
 
@@ -83,7 +93,19 @@ export default async function KassaPage() {
       {accountsEnabled && signedIn && signedInEmail ? (
         <p className={s.account}>Inloggad som {signedInEmail} — beställningen sparas på Mina sidor.</p>
       ) : null}
-      {OwnCheckout ? <OwnCheckout fulfilment={fulfilment} /> : <CheckoutForm fulfilment={fulfilment} />}
+      {OwnCheckout ? (
+        <OwnCheckout
+          fulfilment={fulfilment}
+          shippingOptions={checkout.shippingOptions}
+          paymentMethods={checkout.paymentMethods}
+        />
+      ) : (
+        <CheckoutForm
+          fulfilment={fulfilment}
+          shippingOptions={checkout.shippingOptions}
+          paymentMethods={checkout.paymentMethods}
+        />
+      )}
     </section>
     </>
   )

@@ -19,6 +19,38 @@ export type UpcomingEvent = {
   taken: number | null
 }
 
+/**
+ * goal-64 — BETALAS KURSEN PÅ PLATS ELLER I KASSAN?
+ *
+ * 0052 byggde anmälan UTAN betalning ("avgiften visas och bekräftas, betalas på plats").
+ * Calytrix designar kursen som ett KÖP: "Boka din plats direkt — kursplatsen läggs i
+ * varukorgen och betalas i kassan som allt annat."
+ *
+ * Båda är sanna, för olika kunder. Alltså: ett val per kund
+ * (tenant_modules.config.payment), inte ett bransch-if och inte ett byte som tvingar
+ * någon att ändra sitt sätt att ta betalt.
+ *
+ *   'onsite'   — DEFAULT. KursAnmalanForm, oförändrad. Ingen kassa, ingen korg.
+ *   'checkout' — kursplatsen läggs i varukorgen (radtyp 'event', 0059), håller en plats
+ *                i capacity precis som en produkt håller lager, och betalas i kassan.
+ *                Anmälan (event_registrations) skapas när ordern är BETALD.
+ */
+export const KURS_PAYMENTS = ['onsite', 'checkout'] as const
+export type KursPayment = (typeof KURS_PAYMENTS)[number]
+
+export type KurserConfig = {
+  payment: KursPayment
+}
+
+/** Defensiv coercion av tenant_modules.config för kurser-modulen (0056 seedar {}).
+ *  Okänt/saknat värde → 'onsite': ingen kund börjar plötsligt ta betalt i kassan för
+ *  att en config-rad var trasig. */
+export function parseKurserConfig(raw: unknown): KurserConfig {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { payment: 'onsite' }
+  const p = (raw as Record<string, unknown>).payment
+  return { payment: p === 'checkout' ? 'checkout' : 'onsite' }
+}
+
 export type KursSubmitState =
   | { phase: 'idle' }
   | { phase: 'done' }

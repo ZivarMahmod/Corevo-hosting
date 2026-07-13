@@ -13,6 +13,9 @@ export type BlogPostRow = {
   sort_order: number
   created_at: string
   updated_at: string | null
+  /** goal-64 (0057): inläggets etikett ("Skötselråd", "Torgliv") — den lilla versalen mallarna
+   *  ritar över rubriken. null = ingen etikett renderas. */
+  tag: string | null
 }
 
 export const BLOG_STATUSES = ['draft', 'published', 'archived'] as const

@@ -1,0 +1,87 @@
+/* Galleri — den DELADE sektionens form (goal-64).
+ *
+ * Återanvänder butikens/bloggens tokens (--sf-card-*, --sf-media-ratio, --sf-notice-*):
+ * inga nya tokens införs, så en mall som redan stämt sina kort stämmer galleriet i samma
+ * block. INGA inline-styles utom aspect-ratio (som är RADENS data, inte sektionens form).
+ *
+ * RYTMEN: ett auto-fill-rutnät där varje bild bär sin egen ratio (gallery_items.aspect_ratio).
+ * Osatt ratio → --sf-media-ratio, samma som butikens kort — då blir rutnätet jämnt i stället
+ * för trasigt.
+ */
+
+.grid {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sf-card-gap, 24px);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.item {
+  display: flex;
+}
+
+.figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.media {
+  width: 100%;
+  aspect-ratio: var(--sf-media-ratio, 4 / 3);
+  overflow: hidden;
+  border-radius: var(--sf-radius, 4px);
+  background: color-mix(in srgb, var(--color-fg, #232520) 6%, transparent);
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Taggen är metadata — mikrotext, versaler, spärrad. Bär aldrig bildtextens vikt. */
+.tag {
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-fg, #232520) 70%, transparent);
+}
+
+.text {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--color-fg, #232520);
+}
+
+.year {
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--color-fg, #232520) 62%, transparent);
+}
+
+.notice {
+  margin: 18px 0 0;
+  padding: var(--sf-notice-pad, 12px 14px);
+  border: 1px solid var(--sf-notice-border, color-mix(in srgb, var(--color-fg, #232520) 16%, transparent));
+  border-radius: var(--sf-radius, 4px);
+  background: var(--sf-notice-bg, color-mix(in srgb, var(--color-fg, #232520) 4%, transparent));
+  font-size: 14px;
+  color: var(--color-fg-2, #5a5c55);
+}
+
+.empty {
+  margin: 24px 0 0;
+  font-size: 15px;
+  color: var(--color-fg-2, #5a5c55);
+}

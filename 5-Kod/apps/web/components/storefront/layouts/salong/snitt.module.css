@@ -856,6 +856,36 @@
   color: var(--color-fg);
 }
 
+/* KATEGORI-FILTER (goal-64) — Snitt - Svart Studio.dc.html rad 278-281.
+   EXAKT: 10px gap, chip 12px/600 versal 0.12em spärr, padding 9px 18px, 1px kant, INGEN radie
+   (studion är rätvinklig). Vald chip = limeplattan med svart text; hover = limekant. */
+.snFilters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 38px;
+  flex-wrap: wrap;
+}
+.snFilter {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  padding: 9px 18px;
+  text-decoration: none;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+.snFilter:hover {
+  border-color: var(--color-primary);
+}
+.snFilter[data-active='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+  border-color: var(--color-primary);
+}
 .snShopGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1183,5 +1213,295 @@
 
   .snRow {
     flex-wrap: wrap;
+  }
+}
+
+/* ══════════════ STOLARNA + GALLERI + INSIDAN (goal-64) ══════════════
+   Lyft ur "Snitt - Svart Studio.dc.html": Anton 64px + limepunkt på varje sidrubrik,
+   mörka kort med 1px kant, limeplattan i klubben. */
+
+.snTeamPage,
+.snGalleri {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+}
+
+.snClub {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+}
+
+.snPageEyebrow {
+  margin: 0 0 10px;
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+.snDash,
+.snDot,
+.snSlash {
+  color: var(--color-primary);
+}
+
+.snPageTitle {
+  margin: 0 0 42px;
+  font-family: var(--font-display);
+  font-size: 64px;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.snClub .snPageTitle {
+  margin-bottom: 12px;
+}
+
+.snEmptyLine {
+  margin: 0;
+  color: var(--color-fg-2);
+  font-size: 15.5px;
+}
+
+.snTeamGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.snTeamCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+}
+
+.snTeamPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+
+.snTeamBody {
+  padding: 22px 24px 26px;
+}
+
+.snTeamName {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.snTeamRoll {
+  margin: 0 0 12px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.snTeamBio {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-fg-2);
+}
+
+.snTeamSpec {
+  margin: 0 0 18px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent-soft);
+}
+
+.snTeamBook {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  background: var(--color-primary);
+  padding: 11px 20px;
+  min-height: 44px;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.snTeamBook:hover {
+  background: var(--color-fg);
+}
+
+.snGalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.snGalImg {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+}
+
+.snGalTag {
+  margin: 10px 0 0;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-accent-soft);
+}
+
+.snClubLede {
+  margin: 0 0 40px;
+  max-width: 480px;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+.snClubGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.snCard {
+  background: var(--color-primary);
+  padding: 40px 36px;
+}
+
+.snCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 38px;
+}
+
+.snCardWordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+}
+
+.snCardBig {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 40px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+}
+
+.snCardSub {
+  margin: 0;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #3b3b10;
+}
+
+.snPerkRow {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  border-bottom: 1px solid var(--color-line);
+  padding: 15px 0;
+}
+
+.snPerkRow p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--color-fg);
+}
+
+.snPerkNo {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--color-primary);
+}
+
+.snClubJoin {
+  margin-top: 24px;
+}
+
+.snClubJoin form {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.snClubJoin input {
+  flex: 1;
+  min-width: 200px;
+  box-sizing: border-box;
+  border: 1px solid #3a3a33;
+  border-radius: 0;
+  background: var(--color-surface);
+  color: var(--color-fg);
+  padding: 13px 15px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  outline-color: var(--color-primary);
+}
+
+.snClubJoin button {
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  background: var(--color-primary);
+  padding: 0 22px;
+  min-height: 44px;
+}
+
+.snClubJoin button:hover {
+  background: var(--color-fg);
+}
+
+@media (max-width: 760px) {
+  .snTeamPage,
+  .snGalleri,
+  .snClub {
+    padding: 36px 20px 0;
+  }
+
+  .snTeamGrid,
+  .snGalGrid,
+  .snClubGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .snPageTitle {
+    font-size: clamp(36px, 12vw, 64px);
+  }
+
+  .snCard {
+    padding: 28px 20px;
   }
 }

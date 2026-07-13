@@ -20,7 +20,21 @@ import { createPublicClient } from '@/lib/supabase/public'
  */
 
 /** Pages that get per-tenant metadata. The home page is handled by the layout. */
-type StorefrontPage = 'om' | 'kontakt' | 'tjanster' | 'shop' | 'blogg' | 'offert' | 'presentkort' | 'kurser'
+type StorefrontPage =
+  | 'om'
+  | 'kontakt'
+  | 'tjanster'
+  | 'shop'
+  | 'blogg'
+  | 'offert'
+  | 'presentkort'
+  | 'kurser'
+  // goal-64: de tre sidor ALLA 12 Claude Design-paket har i sitt manifest men som motorn
+  // saknade. /galleri låg redan i Ateljé Vinters nav och 404:ade; klubben tvingade Onyx
+  // att rendera "Kretsen" som olänkad text.
+  | 'galleri'
+  | 'team'
+  | 'klubb'
 
 const PAGE_META: Record<StorefrontPage, { title: string; describe: (name: string) => string }> = {
   om: {
@@ -54,6 +68,18 @@ const PAGE_META: Record<StorefrontPage, { title: string; describe: (name: string
   kurser: {
     title: 'Kurser & event',
     describe: (name) => `Kommande kurser och event hos ${name} — anmäl dig online.`,
+  },
+  galleri: {
+    title: 'Galleri',
+    describe: (name) => `Ett urval av arbeten från ${name}.`,
+  },
+  team: {
+    title: 'Vårt team',
+    describe: (name) => `Möt människorna bakom ${name}.`,
+  },
+  klubb: {
+    title: 'Klubben',
+    describe: (name) => `Bli medlem hos ${name} — förmåner för dig som återkommer.`,
   },
 }
 

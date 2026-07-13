@@ -1,7 +1,7 @@
 import type { FloristTheme } from './types'
 import { EloriaNav, EloriaFooter } from './eloria.chrome'
 import { EloriaOm, EloriaTjanster, EloriaKontakt } from './eloria.pages'
-import { EloriaShop, EloriaBlogg } from './eloria.modules'
+import { EloriaShop, EloriaBlogg, EloriaGalleri, EloriaLojalitet } from './eloria.modules'
 
 // Foto-id:n LYFTA ur .dc.html (catalog/journal/tiles/galleryItems) — inte utbytta, inte
 // "liknande". HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n."
@@ -95,7 +95,13 @@ export const eloria: FloristTheme = {
   caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   chrome: { Nav: EloriaNav, Footer: EloriaFooter, ownsUtility: true },
   pages: { om: EloriaOm, tjanster: EloriaTjanster, kontakt: EloriaKontakt },
-  moduleViews: { shop: EloriaShop, blogg: EloriaBlogg },
+  // goal-64: galleriet + Vänner av huset. Ingen team-vy — Elorias paket har ingen team-sida.
+  moduleViews: {
+    shop: EloriaShop,
+    blogg: EloriaBlogg,
+    galleri: EloriaGalleri,
+    lojalitet: EloriaLojalitet,
+  },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
   // (EloriaLayout.tsx / eloria.modules.tsx) — fältet ska förifyllas ärligt.
@@ -119,5 +125,24 @@ export const eloria: FloristTheme = {
     { name: 'blogEyebrow', label: 'Journal-bandet: eyebrow', default: 'Journalen' },
     { name: 'blogTitle', label: 'Journal-bandet: rubrik', default: 'Ord om blommor' },
     { name: 'blogCta', label: 'Journal-bandet: knapptext', default: 'Läs hela journalen' },
+    // goal-64: galleriet + brevet. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: 'Galleri' },
+    { name: 'galleryTitle', label: 'Galleri: rubrik', default: 'Ur vår hand' },
+    { name: 'clubEyebrow', label: 'Vänner av huset: eyebrow', default: 'Lojalitet' },
+    { name: 'clubTitle', label: 'Vänner av huset: rubrik', default: 'Vänner av huset' },
+    {
+      name: 'clubLede',
+      label: 'Vänner av huset: brevets första stycke',
+      rows: 4,
+      default:
+        'Somliga kommer tillbaka, år efter år. Er vill vi tacka särskilt. Som vän av huset får ni vårt säsongsbrev före alla andra, tio procent på alla binderikurser och en ros på er födelsedag — hämtas i butiken, med våra gratulationer.',
+    },
+    {
+      name: 'clubNote',
+      label: 'Vänner av huset: brevets andra stycke',
+      rows: 2,
+      default: 'Medlemskapet kostar ingenting. Det är vårt sätt att säga tack.',
+    },
+    { name: 'clubCta', label: 'Vänner av huset: knapptext', default: 'Bli vän av huset' },
   ],
 }

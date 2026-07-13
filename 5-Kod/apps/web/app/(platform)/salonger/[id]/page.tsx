@@ -18,11 +18,22 @@ import { ModulesCard } from '@/components/platform/ModulesCard'
 import { CustomerAccountsCard } from '@/components/platform/CustomerAccountsCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
-import { listShopProducts, listShopOrders } from '@/lib/admin/shop/data'
+import { listShopProducts, listShopOrders, listShippingOptions } from '@/lib/admin/shop/data'
+import { shopRailsStatus } from '@/lib/storefront/shop/checkout-options'
+import { parsePaymentMethods } from '@/lib/storefront/shop/types'
 import { listBlogPosts } from '@/lib/admin/blogg/data'
 import { listTenantEvents, listEventRegistrations } from '@/lib/admin/events/data'
 import { listMediaAssets, getStorageUsage } from '@/lib/admin/media/data'
+import { listGalleryItems } from '@/lib/admin/galleri/data'
+import { GalleriCard } from '@/components/platform/GalleriCard'
+import { listLoyaltyPlans } from '@/lib/admin/lojalitet/data'
+import { LoyaltyPlansCard } from '@/components/platform/LoyaltyPlansCard'
 import { listOffertRequests } from '@/lib/admin/offert/data'
+// goal-64: kontakt-inkorgen + offertens förfrågningstyper (chipsen mallarna ritar).
+import { listContactMessages } from '@/lib/admin/kontakt/data'
+import { ContactInboxCard } from '@/components/platform/ContactInboxCard'
+import { OffertSubjectsCard } from '@/components/platform/OffertSubjectsCard'
+import { parseOffertConfig } from '@/lib/storefront/offert/types'
 import { ShopAdmin } from '@/components/admin/ShopAdmin'
 import { BloggAdmin } from '@/components/admin/BloggAdmin'
 import { KursAdmin } from '@/components/admin/KursAdmin'
@@ -97,10 +108,13 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // Cross-tenant reads, scoped to THIS salon. listCustomersAllTenants takes a tenant
   // id filter; listStaffAllTenants has no tenant filter (foundation), so we filter
   // by the salon's slug in-page (volume is tiny).
-  const [audit, customerData, modules] = await Promise.all([
+  const [audit, customerData, modules, contactMessages] = await Promise.all([
     getTenantAudit(id),
     getTenantCustomers(id),
     listTenantModules(id),
+    // goal-64: kontakt-inkorgen laddas ALLTID — /kontakt är ingen modul (sidan finns i
+    // varje mall och kan inte stängas av), så det finns ingen gate att hänga den på.
+    listContactMessages(id),
   ])
 
   // MODUL-KONTROLLRUMMET (goal-54 §1): för varje modul som är PÅ (activated =
@@ -116,12 +130,28 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const mediaOn = isModuleActivated(moduleStates, 'media_library')
   // Kurser = egen opt-in-modul sedan 0056 — fliken visas bara när modulen är på.
   const kurserOn = isModuleActivated(moduleStates, 'kurser')
-  const needAssets = shopOn || bloggOn || mediaOn
+  // Galleri = egen opt-in-modul sedan 0057 (goal-64). Fliken visas bara när modulen är
+  // på — och galleriet väljer BILDER ur bildbiblioteket, så assets behövs då också.
+  const galleriOn = isModuleActivated(moduleStates, 'galleri')
+  // Lojalitet (goal-64): klubbens nivåer fylls här. Fliken visas bara när modulen är på —
+  // och /klubb finns bara då, så en nivå utan modul vore en rad ingen kan se.
+  const lojalitetOn = isModuleActivated(moduleStates, 'lojalitet')
+  const needAssets = shopOn || bloggOn || mediaOn || galleriOn
   const mediaQuotaCfg = moduleAdminConfig(moduleStates, 'media_library')
   const mediaQuota =
     typeof mediaQuotaCfg.quota_bytes === 'number' ? mediaQuotaCfg.quota_bytes : 500 * 1024 * 1024
-  const [shopProducts, shopOrders, blogPosts, offertRequests, mediaAssets, mediaUsage, tenantEvents, eventRegistrations] =
-    await Promise.all([
+  const [
+    shopProducts,
+    shopOrders,
+    blogPosts,
+    offertRequests,
+    mediaAssets,
+    mediaUsage,
+    tenantEvents,
+    eventRegistrations,
+    galleryItems,
+    loyaltyPlans,
+  ] = await Promise.all([
       shopOn ? listShopProducts(id) : Promise.resolve([]),
       shopOn ? listShopOrders(id) : Promise.resolve([]),
       bloggOn ? listBlogPosts(id) : Promise.resolve([]),
@@ -130,12 +160,24 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       mediaOn ? getStorageUsage(id, mediaQuota) : Promise.resolve(null),
       kurserOn ? listTenantEvents(id) : Promise.resolve([]),
       kurserOn ? listEventRegistrations(id) : Promise.resolve([]),
+      galleriOn ? listGalleryItems(id) : Promise.resolve([]),
+      lojalitetOn ? listLoyaltyPlans(id) : Promise.resolve([]),
     ])
   const shopFulfilmentCfg = moduleAdminConfig(moduleStates, 'shop')
   const shopFulfilment =
     typeof shopFulfilmentCfg.fulfilment === 'string' ? shopFulfilmentCfg.fulfilment : 'ship'
+  // goal-64 — KASSAN: kundens leveransval + betalsätt, och om rälsen faktiskt är kopplad
+  // (Stripe godkänd / PayPal-nycklar satta). Laddas bara när webshopen är på.
+  const shopPaymentMethods = parsePaymentMethods(shopFulfilmentCfg.payment_methods)
+  const [shopShippingOptions, shopRails] = await Promise.all([
+    shopOn ? listShippingOptions(id) : Promise.resolve([]),
+    shopOn ? shopRailsStatus(id) : Promise.resolve({ stripeReady: false, paypalReady: false }),
+  ])
   const bloggLayoutCfg = moduleAdminConfig(moduleStates, 'blogg')
   const bloggLayout = typeof bloggLayoutCfg.layout === 'string' ? bloggLayoutCfg.layout : null
+  // goal-64: offertens förfrågningstyper. Samma parser som storefronten använder, så
+  // admin och publik sida kan aldrig få olika bild av listan.
+  const offertSubjects = parseOffertConfig(moduleAdminConfig(moduleStates, 'offert')).subjects
 
   // Foto-läget i Bokningsflöde-ytan (Sida-fliken) kräver minst en AKTIV medarbetare
   // med profilbild (staff.avatar_url, migr 0049) — annars visas valet avstängt med
@@ -450,6 +492,37 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         </div>
       ),
     }),
+    // goal-64 KLUBBEN: alla 12 Claude Design-paket har en klubbsida (Kretsen, Söndagsklubben,
+    // Första raden …). Här fylls dess NIVÅER — Källas Droppe/Källa/Flod. Utan den här ytan
+    // vore priserna på klubbsidan omöjliga att sätta, och mallen fick ljuga eller amputeras.
+    ...(lojalitetOn && {
+      Klubben: (
+        <div className={styles.maxCol}>
+          <p className={styles.noteText}>
+            Kundens klubb — nivåerna som visas på /klubb. Namn, pris, intervall och förmåner.
+            Inga nivåer är helt OK: klubben visar då bara programmet (poäng eller stämpelkort).
+          </p>
+          <Card>
+            <LoyaltyPlansCard tenantId={tenant.id} plans={loyaltyPlans} />
+          </Card>
+        </div>
+      ),
+    }),
+    // goal-64 GALLERIET: alla 12 Claude Design-paket har en galleri-sida. Här fylls den —
+    // med kundens EGNA bilder ur bildbiblioteket, aldrig stock.
+    ...(galleriOn && {
+      Galleri: (
+        <div className={styles.maxCol}>
+          <p className={styles.noteText}>
+            Kundens galleri — bilderna på /galleri. Välj foton ur kundens bildbibliotek och
+            sätt bildtext, tagg, år och bildformat. Ordningen styr rutnätet.
+          </p>
+          <Card>
+            <GalleriCard tenantId={tenant.id} items={galleryItems} assets={mediaAssets} />
+          </Card>
+        </div>
+      ),
+    }),
     ...(shopOn && {
       Webshop: (
         <div className={styles.maxCol}>
@@ -464,6 +537,10 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             fulfilment={shopFulfilment}
             tenantName={tenant.name}
             assets={mediaAssets}
+            shippingOptions={shopShippingOptions}
+            paymentMethods={shopPaymentMethods}
+            stripeReady={shopRails.stripeReady}
+            paypalReady={shopRails.paypalReady}
           />
         </div>
       ),
@@ -490,10 +567,27 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <p className={styles.noteText}>
             Kundens inkomna offertförfrågningar — status, anteckning och prisuppskattning.
           </p>
+          {/* goal-64: förfrågningstyperna (chipsen mallen ritar överst i formuläret).
+              Storefronten läste redan config.subjects — men ingen yta kunde SKRIVA
+              listan. Här äger kunden sina egna typer. */}
+          <Card>
+            <OffertSubjectsCard tenantId={tenant.id} subjects={offertSubjects} />
+          </Card>
           <OffertInbox tenantId={tenant.id} tenantName={tenant.name} requests={offertRequests} />
         </div>
       ),
     }),
+    // goal-64: KONTAKT-INKORGEN. Ingen modul-gate — /kontakt finns i varje mall och kan
+    // inte stängas av, så fliken finns alltid.
+    Meddelanden: (
+      <div className={styles.maxCol}>
+        <p className={styles.noteText}>
+          Meddelanden från kontaktformuläret på kundens sajt. Varje meddelande mejlas
+          också till kundens kontaktadress.
+        </p>
+        <ContactInboxCard tenantId={tenant.id} messages={contactMessages} />
+      </div>
+    ),
     ...(mediaOn && mediaUsage
       ? {
           Bildbibliotek: (
@@ -545,6 +639,10 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
             active: s.active,
             avatarUrl: s.avatar_url,
             showOnSite: s.show_on_site,
+            // goal-64: teamsidans presentationsfält (0057) — redigeras i samma rad.
+            shortName: s.short_name,
+            specialties: s.specialties,
+            bio: s.bio,
           }))}
           verticalCopy={await getVerticalCopy(verticalId)}
           liveModules={['shop', 'kurser', 'blogg', 'offert', 'presentkort'].filter((k) =>

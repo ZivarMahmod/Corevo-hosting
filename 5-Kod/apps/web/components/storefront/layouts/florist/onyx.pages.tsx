@@ -1,5 +1,6 @@
 import { Bookable } from '../../Bookable'
 import { formatPrice, serviceDesc } from '../../service-format'
+import { ContactForm } from '../../kontakt/ContactForm'
 import type { ThemePageProps } from './types'
 import styles from './onyx.module.css'
 
@@ -118,6 +119,16 @@ export function OnyxKontakt({ content, location, contact }: ThemePageProps) {
           <p className={styles.onBoxLabel}>VAD BEHÖVER DU?</p>
           <p className={styles.onBoxProse}>{content.closingLede ?? content.aboutCopy}</p>
           <p className={styles.onBoxProse}>{content.italic}</p>
+          {/* Filens formulär (goal-64). Onyx säger "Mejl", inte "E-post", och skriker
+              "SKICKA" i versaler — mörk studio-röst, verbatim ur .dc.html. */}
+          <ContactForm
+            rows={[
+              [{ key: 'name', placeholder: 'Namn', required: true }],
+              [{ key: 'email', placeholder: 'Mejl', required: true }],
+              [{ key: 'message', placeholder: 'Vad behöver du?', required: true }],
+            ]}
+            submitLabel="SKICKA"
+          />
         </div>
       </div>
     </section>

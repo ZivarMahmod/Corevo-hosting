@@ -1,7 +1,11 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
 import { formatPrice, serviceDesc } from '../../service-format'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import {
+  formatProductPrice,
+  priceMovement,
+  PRICE_MOVEMENT_ARROW,
+} from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './blomstertorget.module.css'
 
@@ -78,14 +82,22 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
               {ticker.length > 0 ? (
                 <>
                   <p className={styles.btAsideHead}>{content.shopEyebrow ?? 'Dagens priser'}</p>
-                  {ticker.map((p) => (
-                    <div key={p.id} className={styles.btTickerRow}>
-                      <span className={styles.btTickerName}>{p.name}</span>
-                      <span className={styles.btTickerPrice}>
-                        {formatShopPrice(p.priceCents, p.currency)}
-                      </span>
-                    </div>
-                  ))}
+                  {/* KURSTAVLAN (goal-64, migration 0057): filens `tickerRows` bar en HÅRDKODAD
+                      pil per rad. Nu HÄRLEDS den ur verkligheten — compare_at_price_cents mot
+                      dagens pris via den delade priceMovement(): dyrare än igår → ▲ (röd, filens
+                      #C1272D = mallens primary), billigare → ▼, oförändrat/inget jämförelsepris
+                      → — i vanlig text. Ingen mall räknar detta själv. */}
+                  {ticker.map((p) => {
+                    const move = priceMovement(p)
+                    return (
+                      <div key={p.id} className={styles.btTickerRow}>
+                        <span className={styles.btTickerName}>{p.name}</span>
+                        <span className={styles.btTickerPrice} data-move={move}>
+                          {formatProductPrice(p)} <span aria-hidden="true">{PRICE_MOVEMENT_ARROW[move]}</span>
+                        </span>
+                      </div>
+                    )
+                  })}
                   <p className={styles.btTickerNote}>{content.italic}</p>
                 </>
               ) : null}

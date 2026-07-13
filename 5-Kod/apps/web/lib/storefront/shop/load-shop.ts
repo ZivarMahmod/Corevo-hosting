@@ -34,7 +34,34 @@ const PRODUCT_LIMIT = 60
  * Returns a ShopData with an empty product list when the shop is configured but
  * has no products yet (the section then shows an honest "snart"-state).
  */
-export async function loadShopData(tenantId: string, slug: string): Promise<ShopData | null> {
+export async function loadShopData(
+  tenantId: string,
+  slug: string,
+  /**
+   * goal-64: vald kategori ur `/shop?kategori=Rosor`. Filtreringen sker SERVER-side (chipsen
+   * är <Link>-taggar, inte klient-state → de fungerar utan JS och kan indexeras).
+   * undefined/null/okänd kategori → hela sortimentet, aldrig en krasch.
+   */
+  category?: string | null,
+): Promise<ShopData | null> {
+  const all = await loadAllShopData(tenantId, slug)
+  if (!all) return null
+
+  // Ingen vald kategori → allt. En okänd kategori (t.ex. gammal länk eller manipulerad
+  // query) ger en TOM lista, inte ett fel: butiken visas, den är bara tom för det filtret.
+  const wanted = category?.trim() || null
+  if (!wanted) return all
+  return {
+    ...all,
+    // categories är MEDVETET hela sortimentets lista — chip-raden ska stå kvar när man filtrerar.
+    products: all.products.filter((p) => p.category === wanted),
+    activeCategory: wanted,
+  }
+}
+
+/** Hela sortimentet + configen, cachat per tenant. Filtret läggs ovanpå (utanför cachen) —
+ *  annars skulle varje kategori spränga en egen cache-post för samma data. */
+async function loadAllShopData(tenantId: string, slug: string): Promise<ShopData | null> {
   const norm = slug.trim().toLowerCase()
   const load = unstable_cache(
     async (): Promise<ShopData | null> => {
@@ -54,7 +81,11 @@ export async function loadShopData(tenantId: string, slug: string): Promise<Shop
       // Active products for this tenant, joined to their media asset for the image.
       const { data: rows } = await supabase
         .from('shop_products')
-        .select('id, name, description, price_cents, currency, stock, media_assets(url, alt)')
+        // OBS: EN sammanhängande sträng-literal. Supabases typ-parser läser select-strängen
+        // statiskt — bryts den upp med + faller hela raden tillbaka till GenericStringError.
+        .select(
+          'id, name, description, price_cents, currency, stock, category, badge, compare_at_price_cents, price_from, media_assets(url, alt)',
+        )
         .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
         .eq('active', true)
         .order('sort_order', { ascending: true })
@@ -102,10 +133,22 @@ export async function loadShopData(tenantId: string, slug: string): Promise<Shop
           imageUrl: asset?.url ?? null,
           imageAlt: asset?.alt ?? null,
           variants: variantsByProduct.get(r.id) ?? [],
+          // goal-64 (0057): render-on-present — tom sträng blir null, aldrig ett tomt märke.
+          category: r.category?.trim() || null,
+          badge: r.badge?.trim() || null,
+          compareAtPriceCents: r.compare_at_price_cents ?? null,
+          priceFrom: r.price_from === true,
         }
       })
 
-      return { config, products }
+      // Kategorierna HÄRLEDS ur kundens faktiska sortiment — de listas inte någonstans.
+      // Har ingen produkt en kategori blir listan tom → mallen renderar noll chips. Det är
+      // meningen: hellre ingen chip-rad än en påhittad ("Rosor" i en salong som säljer schampo).
+      const categories = [...new Set(products.map((p) => p.category).filter((c): c is string => !!c))].sort(
+        (a, b) => a.localeCompare(b, 'sv'),
+      )
+
+      return { config, products, categories, activeCategory: null }
     },
     ['shop-data-by-tenant', tenantId, norm],
     { tags: [`tenant:${norm}`], revalidate: 300 },
@@ -147,7 +190,11 @@ export async function loadShopProduct(
 
       const { data: r } = await supabase
         .from('shop_products')
-        .select('id, name, description, price_cents, currency, stock, media_assets(url, alt)')
+        // OBS: EN sammanhängande sträng-literal. Supabases typ-parser läser select-strängen
+        // statiskt — bryts den upp med + faller hela raden tillbaka till GenericStringError.
+        .select(
+          'id, name, description, price_cents, currency, stock, category, badge, compare_at_price_cents, price_from, media_assets(url, alt)',
+        )
         .eq('tenant_id', tenantId) // app-layer tenant isolation
         .eq('id', productId)
         .eq('active', true)
@@ -185,6 +232,11 @@ export async function loadShopProduct(
         imageUrl: asset?.url ?? null,
         imageAlt: asset?.alt ?? null,
         variants,
+        // goal-64 (0057): samma fält som list-loadern — produktsidan får inte tappa badgen.
+        category: r.category?.trim() || null,
+        badge: r.badge?.trim() || null,
+        compareAtPriceCents: r.compare_at_price_cents ?? null,
+        priceFrom: r.price_from === true,
       }
 
       return { config, product }

@@ -1,6 +1,13 @@
 import { AddToCart } from '../../shop/AddToCart'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
-import type { ThemeShopViewProps, ThemeBloggViewProps } from './types'
+import { JoinClubForm } from '../../lojalitet/JoinClubForm'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import type {
+  ThemeShopViewProps,
+  ThemeBloggViewProps,
+  ThemeGalleriViewProps,
+  ThemeLojalitetViewProps,
+} from './types'
 import styles from './ateljevinter.module.css'
 
 /**
@@ -66,7 +73,7 @@ export function AteljeVinterShop({ data, paused, limit, moreHref, content }: The
                 <p className={styles.avWorkName}>
                   <a href={`/shop/${p.id}`}>{p.name}</a>
                 </p>
-                <p className={styles.avWorkPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
+                <p className={styles.avWorkPrice}>{formatProductPrice(p)}</p>
               </div>
               <div className={styles.avShopFoot}>
                 {p.description ? <p className={styles.avShopDesc}>{p.description}</p> : <span />}
@@ -128,6 +135,109 @@ export function AteljeVinterBlogg({ posts: allPosts, limit, moreHref, content }:
           {content.blogCta ?? 'läs alla anteckningar →'}
         </a>
       ) : null}
+    </section>
+  )
+}
+
+/* ═════════════════════════════════ ARKIVET ════════════════════════════════ */
+
+/**
+ * Filens `showGalleri`: EN smal spalt (840px), verken under varandra med 80px luft,
+ * bildens proportion styrd per verk (3/2 eller 4/5 i filen — därav `aspectRatio` i
+ * kontraktet), och en bildtext som ligger som en hårlinjerad rad under: motivet till
+ * vänster, årtalet till höger. Inga kort, ingen ram, ingen skugga.
+ *
+ * Tomt arkiv → en ärlig rad, aldrig stock-foton som utges för att vara ateljéns arbeten.
+ */
+export function AteljeVinterGalleri({ items, content }: ThemeGalleriViewProps) {
+  return (
+    <section className={styles.avGalleri} data-module="galleri">
+      <p className={styles.avEyebrow}>{content.galleryEyebrow ?? 'rum iii'}</p>
+      <h1 className={styles.avPageTitle}>{content.galleryTitle ?? 'arkivet'}</h1>
+
+      {items.length === 0 ? (
+        <p className={styles.avEmpty}>arkivet är tomt just nu.</p>
+      ) : (
+        <div className={styles.avGalList}>
+          {items.map((g) => (
+            <figure key={g.id} className={styles.avGalFig}>
+              {g.imageUrl ? (
+                <div
+                  className={styles.avGalImg}
+                  role="img"
+                  aria-label={g.imageAlt ?? g.caption ?? ''}
+                  style={{
+                    backgroundImage: `url(${g.imageUrl})`,
+                    aspectRatio: g.aspectRatio ?? '3/2',
+                  }}
+                />
+              ) : null}
+              {g.caption || g.yearLabel ? (
+                <figcaption className={styles.avGalCap}>
+                  <span className={styles.avGalCaption}>{g.caption}</span>
+                  <span className={styles.avGalYear}>{g.yearLabel}</span>
+                </figcaption>
+              ) : null}
+            </figure>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ════════════════════════════════ VÄNKRETSEN ══════════════════════════════ */
+
+/**
+ * Filens `showVanner`: 560px, centrerat, och medlemskapet är EN mening + ett fält.
+ * Formuläret ligger inklämt mellan två hårlinjer (44px luft), knappen är mörk och fyrkantig.
+ *
+ * Funktionen är plattformens: <JoinClubForm> bär server-actionen (joinLoyaltyClub) och
+ * dess tack-läge. Formen är mallens — därför stylas formulärets element via .avClubJoin
+ * i mallens egen CSS i stället för att JoinClubForm får en mall-prop.
+ *
+ * Ateljé Vinters klubb har INGA nivåer i sitt paket (gratis, alltid) — men om ägaren har
+ * lagt upp nivåer i klubben renderas de som en hårlinjerad lista, aldrig som påhittade
+ * priskort. Tomt = ingenting.
+ */
+export function AteljeVinterLojalitet({ config, plans, content }: ThemeLojalitetViewProps) {
+  return (
+    <section className={styles.avClub} data-module="lojalitet" data-variant={config.variant}>
+      <p className={styles.avEyebrow}>{content.clubEyebrow ?? 'vänkretsen'}</p>
+      <h1 className={styles.avPageTitle}>{content.clubTitle ?? 'först till samlingen'}</h1>
+      <p className={styles.avClubLede}>{content.clubLede ?? config.perkText}</p>
+
+      {config.perks && config.perks.length > 0 ? (
+        <ul className={styles.avClubPerks}>
+          {config.perks.map((perk) => (
+            <li key={perk}>{perk}</li>
+          ))}
+        </ul>
+      ) : null}
+
+      {plans.length > 0 ? (
+        <ul className={styles.avClubPlans}>
+          {plans.map((p) => (
+            <li key={p.id} data-featured={p.featured ? 'true' : undefined}>
+              <span className={styles.avPlanName}>{p.name}</span>
+              <span className={styles.avPlanPrice}>
+                {formatPlanPrice(p.priceCents)} {loyaltyIntervalLabel(p.interval)}
+              </span>
+              {p.perks.length > 0 ? (
+                <span className={styles.avPlanPerks}>{p.perks.join(' · ')}</span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      <div className={styles.avClubBand}>
+        <div className={styles.avClubJoin}>
+          <JoinClubForm cta={content.clubCta ?? 'gå med'} />
+        </div>
+      </div>
+
+      {content.clubNote ? <p className={styles.avClubNote}>{content.clubNote}</p> : null}
     </section>
   )
 }

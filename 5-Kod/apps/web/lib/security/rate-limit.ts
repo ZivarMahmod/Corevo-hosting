@@ -20,6 +20,13 @@ export const LIMITS = {
   booking: { max: 12, windowSecs: 300 } as RateLimit, // 12 booking writes / 5 min per IP+tenant
   offert: { max: 12, windowSecs: 300 } as RateLimit, // 12 offert submissions / 5 min per IP+tenant
   event: { max: 12, windowSecs: 300 } as RateLimit, // 12 kurs-anmälningar / 5 min per IP+tenant
+  // goal-64: "GÅ MED" i klubben. Snålare än de andra — en riktig människa går med EN
+  // gång; ett högt tak här skulle bara låta någon pumpa in e-postadresser i kundregistret.
+  loyalty: { max: 6, windowSecs: 300 } as RateLimit, // 6 klubb-anmälningar / 5 min per IP+tenant
+  // goal-64: kontaktformuläret. Den enda anonyma skrivningen som finns på VARJE mall —
+  // /kontakt är ingen modul och kan därför aldrig stängas av. Snålt tak: en människa
+  // skriver ETT meddelande, medan varje rad här kostar kunden ett mejl i inkorgen.
+  kontakt: { max: 6, windowSecs: 300 } as RateLimit, // 6 kontaktmeddelanden / 5 min per IP+tenant
 } as const
 
 /** Best-guess client IP from Cloudflare / proxy headers (never trusted for auth). */

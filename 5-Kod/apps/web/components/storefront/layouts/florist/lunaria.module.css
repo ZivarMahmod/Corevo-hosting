@@ -303,6 +303,36 @@
   margin: 36px 0 0;
 }
 
+/* KATEGORI-CHIPS (goal-64) — Lunaria - Art Déco.dc.html rad 149-152.
+   EXAKT: centrerad rad, 10px gap, 11.5px versal med 0.16em spärr, padding 9px 20px,
+   1px GULDKANT på ALLA chips (även ovalda — art déco-ramen är konstant), ingen radie.
+   Ovald: genomskinlig botten + guldtext. Vald: guldplatta + nattblå text. */
+.lnFilters {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+.lnFilter {
+  white-space: nowrap;
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  padding: 9px 20px;
+  text-decoration: none;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.lnFilter:hover {
+  color: var(--color-fg);
+}
+.lnFilter[data-active='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+}
 .lnGrid3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -973,5 +1003,209 @@
   .lnNavCta,
   .lnServiceRow {
     min-height: 44px;
+  }
+}
+
+/* ══════════════ GALLERIET + CIRKELN (goal-64) ══════════════
+   Lyft ur "Lunaria - Art Déco.dc.html": guldram runt varje bild, medlemskort i
+   kort-i-kort, förmåner i romerska siffror. */
+
+.lnGalleri {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 52px 36px 0;
+}
+
+.lnClub {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 52px 36px 0;
+}
+
+.lnGalTitle {
+  margin: 0 0 40px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 52px;
+  letter-spacing: 0.08em;
+  color: var(--color-fg);
+}
+
+.lnClub .lnGalTitle {
+  margin-bottom: 12px;
+}
+
+.lnGalEmpty {
+  margin: 0;
+  text-align: center;
+  color: var(--color-fg-2);
+  font-size: 15px;
+  font-weight: 300;
+}
+
+.lnGalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.lnGalFrame {
+  border: 1px solid var(--color-primary);
+  padding: 8px;
+}
+
+.lnGalImg {
+  background-position: center;
+  background-size: cover;
+}
+
+.lnClubLede {
+  margin: 0 auto 40px;
+  max-width: 440px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+  font-weight: 300;
+}
+
+.lnCardOuter {
+  border: 1px solid var(--color-primary);
+  padding: 12px;
+  margin-bottom: 32px;
+}
+
+.lnCardInner {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  padding: 40px 36px;
+}
+
+.lnCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 44px;
+}
+
+.lnCardWordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.lnCardLabel {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-soft);
+}
+
+.lnCardName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  color: var(--color-fg);
+}
+
+.lnPerks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 34px;
+}
+
+.lnPerk {
+  border: 1px solid var(--color-line);
+  padding: 24px;
+  text-align: center;
+}
+
+.lnPerk[data-featured='true'] {
+  border-color: var(--color-primary);
+}
+
+.lnPerkNo {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--color-primary);
+}
+
+.lnPerkText {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+  font-weight: 300;
+}
+
+.lnClubJoin {
+  border: 1px solid var(--color-line);
+  padding: 28px;
+}
+
+.lnClubJoin form {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.lnClubJoin input {
+  flex: 1;
+  min-width: 220px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-fg);
+  padding: 13px 15px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  outline-color: var(--color-primary);
+}
+
+.lnClubJoin button {
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  background: var(--color-primary);
+  padding: 14px 28px;
+  min-height: 44px;
+}
+
+.lnClubJoin button:hover {
+  background: var(--color-fg);
+}
+
+@media (max-width: 760px) {
+  .lnGalleri,
+  .lnClub {
+    padding: 36px 20px 0;
+  }
+
+  .lnGalGrid,
+  .lnPerks {
+    grid-template-columns: 1fr;
+  }
+
+  .lnGalTitle {
+    font-size: clamp(30px, 9vw, 52px);
+  }
+
+  .lnCardInner {
+    padding: 28px 20px;
   }
 }

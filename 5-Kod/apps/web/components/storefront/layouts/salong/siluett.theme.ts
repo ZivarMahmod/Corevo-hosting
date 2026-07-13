@@ -1,7 +1,13 @@
 import type { SalongTheme } from './types'
 import { SiluettNav, SiluettFooter } from './siluett.chrome'
 import { SiluettOm, SiluettTjanster, SiluettKontakt } from './siluett.pages'
-import { SiluettShop, SiluettBlogg } from './siluett.modules'
+import {
+  SiluettShop,
+  SiluettBlogg,
+  SiluettGalleri,
+  SiluettLojalitet,
+  SiluettTeam,
+} from './siluett.modules'
 
 // Foto-id:n LYFTA ur .dc.html (hero, om-fotot, galleriet) — inte utbytta, inte "liknande".
 // HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n mot slumpbilder."
@@ -80,7 +86,15 @@ export const siluett: SalongTheme = {
   caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   chrome: { Nav: SiluettNav, Footer: SiluettFooter },
   pages: { om: SiluettOm, tjanster: SiluettTjanster, kontakt: SiluettKontakt },
-  moduleViews: { shop: SiluettShop, blogg: SiluettBlogg },
+  // goal-64: Arkivet (galleri), Första raden (lojalitet) och Teamet. Tom personal-lista →
+  // team-vyn renderar ingenting (OWNER-ONLY).
+  moduleViews: {
+    shop: SiluettShop,
+    blogg: SiluettBlogg,
+    galleri: SiluettGalleri,
+    lojalitet: SiluettLojalitet,
+    team: SiluettTeam,
+  },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
   // (SiluettLayout.tsx) — fältet ska förifyllas ärligt.
@@ -95,5 +109,18 @@ export const siluett: SalongTheme = {
     { name: 'shopCta', label: 'Butiken: länktext', default: 'Hela butiken →' },
     { name: 'blogTitle', label: 'Journal: rubrik', default: 'Journal' },
     { name: 'blogCta', label: 'Journal: länktext', default: 'Alla texter →' },
+    // goal-64: Arkivet + Första raden. default = vyns inbyggda fallback VERBATIM.
+    { name: 'galleryEyebrow', label: 'Arkivet: eyebrow', default: 'Utvalda arbeten · SS26' },
+    { name: 'galleryTitle', label: 'Arkivet: rubrik', default: 'Arkivet' },
+    { name: 'clubTitle', label: 'Första raden: rubrik', default: 'Första raden' },
+    {
+      name: 'clubLede',
+      label: 'Första raden: text',
+      rows: 2,
+      default: 'Vår kundkrets med plats längst fram. Gratis att stå med — men kön är verklig.',
+    },
+    // Designens kort trycker salongens adress. Den är kundens fakta — tom default.
+    { name: 'clubNote', label: 'Första raden: kortets underrad', hint: 'T.ex. salong + gata. Visas bara om du fyller i den.', default: '' },
+    { name: 'clubCta', label: 'Första raden: knapptext', default: 'Ställ mig på listan' },
   ],
 }

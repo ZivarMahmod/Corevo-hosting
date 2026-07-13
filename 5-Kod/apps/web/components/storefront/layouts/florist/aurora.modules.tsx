@@ -1,14 +1,26 @@
 import { AddToCart } from '../../shop/AddToCart'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
-import type { ThemeShopViewProps, ThemeBloggViewProps } from './types'
+import { JoinClubForm } from '../../lojalitet/JoinClubForm'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
+import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
+import type { GalleryItem } from '@/lib/storefront/galleri/types'
+import type {
+  ThemeShopViewProps,
+  ThemeBloggViewProps,
+  ThemeGalleriViewProps,
+  ThemeLojalitetViewProps,
+} from './types'
 import styles from './aurora.module.css'
 
 /**
  * AURORA — MODUL-VYER (goal-64, vektor-regeln).
  *
  * Modulen äger FUNKTIONEN: datan är laddad, livscykeln gatad, köp-rälsen är fortfarande
- * <AddToCart> och priset formateras alltid av formatShopPrice. Formen är mallens, exakt som
+ * <AddToCart> och priset formateras alltid av formatProductPrice. Formen är mallens, exakt som
  * .dc.html ritar den:
+ *
+ * PRISET: filens `p6` ("Floristens val") skrivs "fr. 349 kr" — ett GOLVPRIS, inte ett fast.
+ * Det är nu shop_products.price_from (migration 0057) och prefixet sätts av formatProductPrice,
+ * inte av mallen: bär produkten flaggan skriver ALLA mallar "fr.", aldrig bara den här.
  *
  *   BUTIKEN (showButik) — centrerat huvud ("Handbundet, varje morgon"), tre kolumner,
  *   4:5-bilder utan radie, namn + pris på samma baslinje, och en INRAMAD "Lägg i korgen"
@@ -76,7 +88,7 @@ export function AuroraShop({ data, paused, limit, moreHref, content }: ThemeShop
                 <p className={styles.auProdName}>
                   <a href={`/shop/${p.id}`}>{p.name}</a>
                 </p>
-                <p className={styles.auProdPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
+                <p className={styles.auProdPrice}>{formatProductPrice(p)}</p>
               </div>
               {p.description ? <p className={styles.auProdDesc}>{p.description}</p> : null}
               {paused ? null : (
@@ -163,6 +175,131 @@ export function AuroraBlogg({ posts: allPosts, limit, moreHref, content }: Theme
           </a>
         </p>
       ) : null}
+    </section>
+  )
+}
+
+/* ══════════════════════════════════ GALLERI ═══════════════════════════════ */
+
+/**
+ * Filens `showGalleri`: TRE spalter i murverk, mittenspalten nedskjuten 56px, och
+ * bågarna — 210px-radie upptill eller nedtill på var tredje bild — som är hela Auroras
+ * signatur. Rubriken är centrerad, Lora 48px.
+ *
+ * AVVIKELSE (medveten): designens nio brickor har HÅRDKODADE höjder och bågar, en per
+ * bild. Kundens galleri har N bilder, inte nio. Rytmen är därför lyft som en CYKEL
+ * (höjd + båge var tredje bricka, exakt filens värden i exakt filens ordning) — de nio
+ * första brickorna blir byte-identiska med paketet, och en tionde bild fortsätter i takt
+ * i stället för att spränga rutnätet.
+ */
+export function AuroraGalleri({ items, content }: ThemeGalleriViewProps) {
+  // Tre spalter, bilderna fördelade i tur och ordning (kolumn 0, 1, 2, 0 …) så murverket
+  // fylls uppifrån och ner precis som i filen.
+  const columns: GalleryItem[][] = [[], [], []]
+  items.forEach((it, i) => columns[i % 3]!.push(it))
+
+  return (
+    <section className={styles.auGalleri} data-module="galleri">
+      <div className={styles.auGalHead}>
+        <p className={styles.auGalEyebrow}>{content.galleryEyebrow ?? 'Galleri'}</p>
+        <h1 className={styles.auGalTitle}>{content.galleryTitle ?? 'Ur studions dagbok'}</h1>
+      </div>
+
+      {items.length === 0 ? (
+        <p className={styles.auGalEmpty}>Inga bilder är publicerade ännu.</p>
+      ) : (
+        <div className={styles.auGalGrid}>
+          {columns.map((col, ci) => (
+            <div key={ci} className={styles.auGalCol}>
+              {col.map((g) =>
+                g.imageUrl ? (
+                  <div
+                    key={g.id}
+                    className={styles.auGalTile}
+                    role="img"
+                    aria-label={g.imageAlt ?? g.caption ?? ''}
+                    style={{ backgroundImage: `url(${g.imageUrl})` }}
+                  />
+                ) : null,
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {content.galleryLede ? <p className={styles.auGalFoot}>{content.galleryLede}</p> : null}
+    </section>
+  )
+}
+
+/* ═════════════════════════════════ KLUBBEN ════════════════════════════════ */
+
+/**
+ * Filens `showKlubben`: stämpelkortet på vit yta, förmånerna i tre spalter med hårlinje
+ * ovanför, och anmälan i det rosa fältet (#F3DED4 = accent-soft).
+ *
+ * ÄRLIGHET FÖRE MOCK: designens kort visar "3 av 9" ifyllda stämplar. Vi vet inte vem som
+ * tittar — det finns ingen inloggad medlem i den publika vyn — så vi ritar kortets TOMMA
+ * rutor (config.stampGoal stycken) och påstår ingen progress. Förmånerna kommer ur
+ * klubbens config (`perks`); har ägaren inga → ingen förmånsrad, aldrig tre påhittade.
+ */
+export function AuroraLojalitet({ config, plans, content }: ThemeLojalitetViewProps) {
+  const stamps = config.variant === 'stamp_card' ? Array.from({ length: config.stampGoal }) : []
+
+  return (
+    <section className={styles.auClub} data-module="lojalitet" data-variant={config.variant}>
+      <div className={styles.auGalHead}>
+        <p className={styles.auGalEyebrow}>{content.clubEyebrow ?? 'Blomsterklubben'}</p>
+        <h1 className={styles.auClubTitle}>
+          {content.clubTitle ?? 'Var nionde bukett bjuder vi på'}
+        </h1>
+        <p className={styles.auClubLede}>{content.clubLede ?? config.perkText}</p>
+      </div>
+
+      {stamps.length > 0 ? (
+        <div className={styles.auStampCard}>
+          <p className={styles.auStampLabel}>Ditt stämpelkort</p>
+          <div className={styles.auStampRow}>
+            {stamps.map((_, i) => (
+              <span key={i} className={styles.auStamp}>
+                {i + 1}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {config.perks && config.perks.length > 0 ? (
+        <div className={styles.auClubPerks}>
+          {config.perks.map((perk) => (
+            <div key={perk} className={styles.auClubPerk}>
+              <p>{perk}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {plans.length > 0 ? (
+        <div className={styles.auClubPerks}>
+          {plans.map((p) => (
+            <div
+              key={p.id}
+              className={styles.auClubPerk}
+              data-featured={p.featured ? 'true' : undefined}
+            >
+              <p className={styles.auPlanName}>{p.name}</p>
+              <p className={styles.auPlanPrice}>
+                {formatPlanPrice(p.priceCents)} {loyaltyIntervalLabel(p.interval)}
+              </p>
+              {p.perks.length > 0 ? <p>{p.perks.join(' · ')}</p> : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className={styles.auClubJoin}>
+        <JoinClubForm cta={content.clubCta ?? 'Gå med gratis'} />
+      </div>
     </section>
   )
 }

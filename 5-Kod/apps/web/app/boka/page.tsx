@@ -14,10 +14,33 @@ import { branschBokning } from '@/components/storefront/bransch-copy'
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Boka tid' }
 
-export default async function BokaPage() {
+/**
+ * goal-64 — DJUPLÄNKEN IN I BOKNINGEN (HANDOFF §4: "teamkorten och prisraderna
+ * förifyller bokningen via bookAs() — behåll den kopplingen").
+ *
+ *   /boka?personal=<staffId>          → medarbetaren förvald i "Hos vem?"-steget
+ *   /boka?personal=<id>&tjanst=<id>   → + tjänsten förvald (wizarden startar på steg 2)
+ *   /boka?tjanst=<serviceId>          → bara tjänsten (prisradens länk)
+ *
+ * Parametrarna är REN UI-FÖRIFYLLNAD och valideras av wizarden mot den data den redan
+ * har (okänt id / personal som inte kan utföra tjänsten → tyst 'any'). Servern validerar
+ * ändå allt igen i createBooking, så en manipulerad url kan inte boka något otillåtet.
+ * Svenska parameternamn eftersom hela storefronten är svensk och länken syns i adressfältet.
+ */
+export default async function BokaPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant } = bundle
+
+  const sp = await searchParams
+  const one = (v: string | string[] | undefined): string | null =>
+    typeof v === 'string' && v.trim() ? v.trim() : null
+  const preselectStaffId = one(sp.personal)
+  const preselectServiceId = one(sp.tjanst)
 
   const services = await getServices(tenant.id, tenant.slug)
 
@@ -123,6 +146,8 @@ export default async function BokaPage() {
           pickerMode={pickerMode}
           staffAvatarMode={staffAvatarMode}
           brandName={tenant.name}
+          preselectServiceId={preselectServiceId}
+          preselectStaffId={preselectStaffId}
         />
       </div>
     </section>

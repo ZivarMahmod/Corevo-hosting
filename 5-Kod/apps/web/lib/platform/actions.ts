@@ -33,6 +33,8 @@ export {
   uploadServiceImage,
   removeServiceImage,
 } from './actions/services'
+// goal-64: klubbens nivåer (loyalty_plans) — kundkortets Lojalitet-yta.
+export { createLoyaltyPlan, updateLoyaltyPlan, deleteLoyaltyPlan } from './actions/loyalty'
 export {
   saveTenantStorefrontCopy,
   uploadTenantStorefrontImage,
@@ -40,13 +42,19 @@ export {
 } from './actions/storefront-content'
 export { saveRolePermissionsAction } from './actions/roles'
 export { setTenantTheme } from './actions/theme'
-export { saveTenantContact, saveTenantOpeningHours } from './actions/contact'
+export { saveTenantContact, saveTenantOpeningHours, setContactMessageStatus } from './actions/contact'
+// goal-64: offertens förfrågningstyper (tenant_modules.config.subjects) — chipsen mallen ritar.
+export { saveOffertSubjects } from './actions/offert'
 export {
   saveTenantSingleImage,
   saveTenantStats,
   saveTenantTeamMember,
   saveTenantStaffPhoto,
   setTenantStaffOnSite,
+  // goal-64: teamsidans presentationsfält (short_name/specialties/bio, 0057).
+  saveTenantStaffProfile,
 } from './actions/storefront-extras'
+// goal-64: galleriet (gallery_items, 0057) — kundens egna bilder ur bildbiblioteket.
+export { createGalleryItem, updateGalleryItem, deleteGalleryItem } from './actions/galleri'
 export { addCustomDomain, verifyCustomDomain, removeCustomDomain } from './actions/domains'
 export type { ActionState, DomainActionState } from './actions/shared'

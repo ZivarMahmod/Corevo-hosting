@@ -22,6 +22,12 @@ export type {
   ThemeProductViewProps,
   ThemeCartViewProps,
   ThemeCheckoutViewProps,
+  // goal-64: de tre nya sidorna. Teamet är salong-svitens egen nav-punkt (de tre
+  // paketen har alla en team-sida) — men typen delas, så en florist-mall som en dag
+  // vill ha ett team inte behöver ett nytt kontrakt.
+  ThemeLojalitetViewProps,
+  ThemeGalleriViewProps,
+  ThemeTeamViewProps,
   ThemeModuleViews,
 } from '../florist/types'
 export { floristThemeBlock as salongThemeBlock } from '../florist/types'

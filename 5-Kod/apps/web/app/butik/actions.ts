@@ -7,8 +7,16 @@ import { createServiceClient } from '@/lib/platform/service'
 import { getStripe } from '@/lib/stripe/client'
 import { requestOrigin } from '@/lib/url'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
-import { parseShopConfig } from '@/lib/storefront/shop/types'
+import {
+  parseShopConfig,
+  availablePaymentMethods,
+  STRIPE_PAYMENT_METHODS,
+  type ShopPaymentMethod,
+  type ReserveItem,
+} from '@/lib/storefront/shop/types'
+import { paypalReady, createPaypalOrder } from '@/lib/payments/paypal'
 import { sendOrderPlacedEmail } from '@/lib/notifications/shop'
+import { deliverIssuedGiftCards } from '@/lib/notifications/gift'
 import { logger } from '@/lib/observability'
 
 // Webshop köp-räls (goal-49). Runs as the anon role — the order INSERT goes
@@ -38,7 +46,9 @@ async function getTenantContext(): Promise<TenantCtx | null> {
 }
 
 export type ReserveInput = {
-  items: { variantId: string; quantity: number }[]
+  /** goal-64: raden kan vara en produkt, ett presentkort ELLER en kursplats.
+   *  `kind` utelämnad ⇒ 'product' ⇒ oförändrat beteende (gammal kassa, sparad korg). */
+  items: ReserveItem[]
   /** Opaque, client-generated session token (NOT auth) — gates this order for anon. */
   token: string
 }
@@ -58,7 +68,16 @@ export async function reserveOrder(input: ReserveInput): Promise<ReserveResult> 
     return { ok: false, reason: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
   }
 
-  const items = (input.items ?? []).filter((i) => i.variantId && i.quantity > 0)
+  // Släpp bara igenom rader som ÄR något: en produkt behöver sin variant, ett
+  // presentkort sitt belopps-VAL, en kursplats sitt tillfälle. Priset kommer aldrig
+  // härifrån — servern (0059) slår upp det. En manipulerad korg vinner ingenting.
+  const items = (input.items ?? []).filter((i) => {
+    if (i.quantity <= 0) return false
+    const kind = i.kind ?? 'product'
+    if (kind === 'giftcard') return typeof i.giftAmount === 'number' && i.giftAmount > 0
+    if (kind === 'event') return Boolean(i.eventId)
+    return Boolean(i.variantId)
+  })
   if (items.length === 0) return { ok: false, reason: 'invalid', message: 'Varukorgen är tom.' }
   if (!input.token) return { ok: false, reason: 'error', message: 'Sessionen saknas. Ladda om sidan.' }
 
@@ -74,18 +93,49 @@ export async function reserveOrder(input: ReserveInput): Promise<ReserveResult> 
 
   const { data: orderId, error } = await supabase.rpc('reserve_shop_order', {
     p_tenant_slug: ctx.slug,
-    p_items: items.map((i) => ({ variant_id: i.variantId, quantity: i.quantity })),
+    // Radens form per typ (0059). En produktrad ser EXAKT ut som förut — `kind`
+    // defaultar till 'product' i RPC:n, så gamla klienter/korgar är oförändrade.
+    p_items: items.map((i) => {
+      const kind = i.kind ?? 'product'
+      if (kind === 'giftcard') {
+        return {
+          kind,
+          amount: i.giftAmount, // VAL i hela kronor — valideras mot kundens lista server-side
+          delivery_mode: i.giftDeliveryMode ?? null,
+          recipient_name: i.giftRecipientName ?? null,
+          recipient_email: i.giftRecipientEmail ?? null,
+          message: i.giftMessage ?? null,
+        }
+      }
+      if (kind === 'event') {
+        return { kind, event_id: i.eventId, quantity: i.quantity }
+      }
+      return { kind: 'product', variant_id: i.variantId, quantity: i.quantity }
+    }),
     p_fulfilment: fulfilment,
     p_token: input.token,
     p_ttl_min: 30,
   })
 
   if (error) {
+    // 23P01 = slutsålt. Gäller BÅDE produktlager och kursplatser (0059 kastar samma
+    // kod när sista platsen tog slut) → köparen får rätt besked utan en ny gren.
     if (error.code === '23P01') {
       return { ok: false, reason: 'out_of_stock', message: 'Tyvärr, en vara tog precis slut. Justera varukorgen.' }
     }
     if (error.code === 'P0002') {
       return { ok: false, reason: 'invalid', message: 'En vara finns inte längre. Uppdatera varukorgen.' }
+    }
+    // P0001 = modulen är inte live / kursen betalas på plats / inga belopp konfigurerade.
+    // 22023 = ogiltigt val (t.ex. ett presentkortsbelopp som inte finns i kundens lista).
+    // Båda betyder: korgen bär något som inte får köpas här. Töm och börja om.
+    if (error.code === 'P0001' || error.code === '22023') {
+      logger.warn('shop.reserve.rejected_line', { tenantId: ctx.tenantId, code: error.code })
+      return {
+        ok: false,
+        reason: 'invalid',
+        message: 'Något i varukorgen går inte att köpa längre. Uppdatera varukorgen.',
+      }
     }
     return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
   }
@@ -102,6 +152,11 @@ export type ConfirmInput = {
   shipAddress?: string
   pickupLocationId?: string | null
   note?: string
+  /** goal-64: ID:t på det VALDA leveranssättet. Bara id:t — priset slår servern upp
+   *  ur shop_shipping_options (confirm_shop_order). Klienten kan inte sätta ett belopp. */
+  shippingOptionId?: string | null
+  /** goal-64: valt betalsätt ('card'|'swish'|'klarna'|'paypal'|'applepay'). */
+  paymentMethod?: ShopPaymentMethod | null
 }
 export type ConfirmResult =
   | { ok: true; orderId: string; requiresPayment: boolean }
@@ -123,6 +178,19 @@ export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> 
     return { ok: false, reason: 'error', message: 'Sessionen saknas. Börja om.' }
   }
 
+  // BETALSÄTTET VALIDERAS SERVER-SIDE (goal-64). Klienten skickar en sträng; vi
+  // godtar den BARA om butiken faktiskt har det betalsättet påslaget OCH rälsen är
+  // kopplad (Stripe godkänt / PayPal-nycklar satta). Ett manipulerat 'klarna' i en
+  // butik utan Stripe blir alltså null (= betala på plats), aldrig en falsk betalning.
+  let paymentMethod: ShopPaymentMethod | null = null
+  if (input.paymentMethod) {
+    const allowed = await allowedPaymentMethods(ctx.tenantId)
+    paymentMethod = allowed.includes(input.paymentMethod) ? input.paymentMethod : null
+    if (!paymentMethod) {
+      return { ok: false, reason: 'invalid', message: 'Det betalsättet är inte tillgängligt.' }
+    }
+  }
+
   // Session-medveten: en INLOGGAD kund bekräftar via den authenticated-klienten med
   // p_customer = auth.uid() (RPC-fence kräver p_customer = auth.uid()), så ordern
   // länkas till deras auth-customer_id och dyker upp i /konto. Utloggad gäst →
@@ -141,12 +209,21 @@ export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> 
     p_ship_address: input.shipAddress?.trim() || undefined,
     p_pickup_location: input.pickupLocationId ?? undefined,
     p_note: input.note?.trim() || undefined,
+    // goal-64: bara ID:t på leveransvalet — RPC:n slår upp priset ur DB och räknar om
+    // totalen (subtotal + frakt − rabatt + moms). Klienten får aldrig sätta ett belopp.
+    p_shipping_option: input.shippingOptionId ?? undefined,
+    p_payment_method: paymentMethod ?? undefined,
   })
 
   if (error) {
     // P0001 = order_not_reservable / order_expired (stale page, TTL passed).
     if (error.code === 'P0001') {
       return { ok: false, reason: 'expired', message: 'Beställningen gick ut — lägg den igen.' }
+    }
+    // P0002 = invalid_shipping_option / shipping_option_required (0058): kunden valde
+    // ett leveranssätt som inte finns/är avstängt, eller hoppade över steget.
+    if (error.code === 'P0002') {
+      return { ok: false, reason: 'invalid', message: 'Välj ett giltigt leveranssätt.' }
     }
     if (error.code === '42501') {
       return { ok: false, reason: 'invalid', message: 'Beställningen kunde inte bekräftas.' }
@@ -168,6 +245,16 @@ export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> 
       orderId: row.order_id,
       error: err instanceof Error ? err.message : String(err),
     })
+  }
+
+  // goal-64: tar kunden INTE betalt online committade confirm_shop_order just nu — och
+  // då utfärdades presentkorten (gift_cards med kod + saldo) i samma andetag. Koden ska
+  // fram till mottagaren. Kräver betalning → korten föds först i webhooken, och mejlet
+  // skickas därifrån i stället. Best-effort, exakt som orderbekräftelsen: ett mejlfel
+  // får aldrig sänka ett genomfört köp.
+  if (!row.requires_payment) {
+    const service = createServiceClient()
+    if (service) await deliverIssuedGiftCards(service, ctx.tenantId, row.order_id as string)
   }
 
   return { ok: true, orderId: row.order_id as string, requiresPayment: Boolean(row.requires_payment) }
@@ -204,6 +291,13 @@ export type PublicShopOrder = {
   payments_enabled: boolean
   stripe_charges_enabled: boolean
   requires_payment: boolean
+  /** goal-64: läsbart, per-tenant-unikt ordernummer ("4821"). Mallen sätter PREFIXET
+   *  (FloristTheme.orderPrefix → "#OX-"). null på ordrar lagda före 0058. */
+  order_no: string | null
+  /** goal-64: vad kunden valde att betala med. */
+  payment_method: string | null
+  /** goal-64: fraktens namn ("Bud samma dag") — så kvittoraden kan skriva ut den. */
+  shipping_name: string | null
 }
 
 /** Token-gated order read for the confirmation page (PII boundary: null token rejected). */
@@ -220,13 +314,71 @@ export type CheckoutResult =
   | { ok: false; reason: 'unavailable' | 'error'; message: string }
 
 /**
+ * Butikens FAKTISKT erbjudbara betalsätt (goal-64) — server-side sanning, samma
+ * korsning som lib/storefront/shop/checkout-options.ts men läst med service-klienten
+ * här inne i actionen (vi kör som anon och kommer inte åt tenant_settings annars).
+ *
+ * Används för att VALIDERA klientens val i confirmOrder. Sanningen får aldrig bo i
+ * klienten: en manipulerad POST kan annars sätta payment_method='klarna' på en order
+ * i en butik som inte har Klarna, och ordern skulle se betald ut utan att vara det.
+ */
+async function allowedPaymentMethods(tenantId: string): Promise<ShopPaymentMethod[]> {
+  const admin = createServiceClient()
+  const supabase = createPublicClient()
+  const { data: moduleRow } = await supabase
+    .from('tenant_modules')
+    .select('config')
+    .eq('tenant_id', tenantId)
+    .eq('module_key', 'shop')
+    .maybeSingle()
+  const configured = parseShopConfig(moduleRow?.config).paymentMethods
+
+  let stripeReady = false
+  if (admin) {
+    const [{ data: tenant }, { data: settings }] = await Promise.all([
+      admin.from('tenants').select('stripe_charges_enabled').eq('id', tenantId).maybeSingle(),
+      admin.from('tenant_settings').select('payments_enabled').eq('tenant_id', tenantId).maybeSingle(),
+    ])
+    stripeReady = (settings?.payments_enabled ?? false) && (tenant?.stripe_charges_enabled ?? false)
+  }
+  return availablePaymentMethods(configured, { stripeReady, paypalReady: paypalReady() })
+}
+
+/**
+ * Betalsätt → Stripes `payment_method_types` (goal-64).
+ *
+ * Apple Pay har INGEN egen typ i Checkout: plånboken tänds automatiskt på `card` när
+ * domänen är verifierad hos Stripe och köparen sitter i Safari/på en Apple-enhet.
+ * Den mappas därför till 'card' — kunden ser sitt val, Stripe ser rätt räls.
+ */
+function stripeMethodTypes(method: ShopPaymentMethod | null): ('card' | 'swish' | 'klarna')[] {
+  switch (method) {
+    case 'swish':
+      return ['swish']
+    case 'klarna':
+      return ['klarna']
+    case 'applepay': // Apple Pay = card + verifierad domän (Stripe tänder plånboken själv)
+    case 'card':
+      return ['card']
+    default:
+      // Inget (eller okänt) val → låt Stripe visa vad kontot stödjer, som tidigare.
+      return ['card']
+  }
+}
+
+/**
  * Start a Stripe Checkout Session for an awaiting_payment order (Fas 3). DIRECT
  * charge on the salong's connected account, application_fee OMITTED ⇒ fee = 0
  * (samma modell som booking, 0007). Service-role (RLS-bypass; connected account-id
  * stannar server-side). Gatad av payments_enabled AND stripe_charges_enabled →
  * degraderar till { unavailable } när rälsen är av (= dagens default, dormant).
  */
-export async function startShopCheckout(orderId: string): Promise<CheckoutResult> {
+export async function startShopCheckout(
+  orderId: string,
+  /** goal-64: kundens valda betalsätt → Stripes payment_method_types. Utelämnat = 'card'
+   *  (oförändrat beteende för den gamla kassan). */
+  method?: ShopPaymentMethod | null,
+): Promise<CheckoutResult> {
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'error', message: 'Okänd butik.' }
   if (!orderId) return { ok: false, reason: 'error', message: 'Saknar beställning.' }
@@ -247,7 +399,9 @@ export async function startShopCheckout(orderId: string): Promise<CheckoutResult
   // Ordern MÅSTE tillhöra denna tenant + vänta på betalning (orderId från klienten).
   const { data: order } = await admin
     .from('shop_orders')
-    .select('id, total_cents, currency, status, shop_order_items(product_name, unit_price_cents, quantity)')
+    // EN sträng-literal: Supabases typ-parser läser select-strängen statiskt, och en
+    // uppbruten (+-konkatenerad) sträng gör hela raden otypad (GenericStringError).
+    .select('id,total_cents,shipping_cents,currency,status,payment_method,shop_order_items(product_name,unit_price_cents,quantity)')
     .eq('id', orderId)
     .eq('tenant_id', ctx.tenantId)
     .maybeSingle()
@@ -272,6 +426,22 @@ export async function startShopCheckout(orderId: string): Promise<CheckoutResult
       }))
     : [{ quantity: 1, price_data: { currency: 'sek', unit_amount: amount, product_data: { name: 'Beställning' } } }]
 
+  // FRAKTEN MÅSTE MED SOM EGEN RAD (goal-64). Utan den summerar Stripes rader till
+  // DELSUMMAN medan vår order säger TOTAL — kunden hade betalat frakten på papperet
+  // men inte i verkligheten. Beloppet är order.shipping_cents (uppslaget ur DB i
+  // confirm_shop_order), aldrig något klienten skickat.
+  const shippingCents = order.shipping_cents ?? 0
+  if (shippingCents > 0) {
+    lineItems.push({
+      quantity: 1,
+      price_data: { currency: 'sek', unit_amount: shippingCents, product_data: { name: 'Leverans' } },
+    })
+  }
+
+  // Betalsättet: argumentet (kundens val i kassan) vinner, annars det som redan står på
+  // ordern (satt av confirm_shop_order — server-side validerat).
+  const chosen = (method ?? (order.payment_method as ShopPaymentMethod | null)) ?? null
+
   const origin = await requestOrigin()
   let session
   try {
@@ -279,6 +449,10 @@ export async function startShopCheckout(orderId: string): Promise<CheckoutResult
       {
         mode: 'payment',
         line_items: lineItems,
+        // goal-64: Kort · Swish · Klarna (Apple Pay rider på 'card'). Ett betalsätt som
+        // kundens Stripe-konto inte har aktiverat får Stripe att svara med ett fel →
+        // fångas nedan och blir "Kunde inte starta betalning" i stället för en trasig sida.
+        payment_method_types: stripeMethodTypes(chosen),
         // application_fee_amount UTELÄMNAS medvetet ⇒ fee = 0 (DIRECT charge).
         payment_intent_data: { metadata: { order_id: orderId, tenant_id: ctx.tenantId } },
         metadata: { order_id: orderId, tenant_id: ctx.tenantId },
@@ -295,4 +469,62 @@ export async function startShopCheckout(orderId: string): Promise<CheckoutResult
   if (!session.url) return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
   await admin.from('payments').update({ stripe_checkout_session_id: session.id }).eq('order_id', orderId)
   return { ok: true, url: session.url }
+}
+
+/**
+ * PAYPAL-kassan (goal-64). Skapar en PayPal-order på orderns SERVER-SIDE-total och
+ * returnerar approve-länken. Kunden godkänner hos PayPal → skickas till
+ * /api/paypal/retur → vi CAPTURE:ar → mark_shop_order_paid (idempotent).
+ *
+ * GATAD PÅ NYCKLARNA: utan PAYPAL_CLIENT_ID/SECRET → { unavailable }. Kassan visar
+ * ändå aldrig PayPal som val i det läget (availablePaymentMethods filtrerar bort det);
+ * den här grinden är andra linjen, för en klient som ändå försöker.
+ *
+ * Till skillnad från Stripe kräver den här rälsen INTE att kundens Stripe är kopplad —
+ * PayPal går (v1) via plattformens konto. Se lib/payments/paypal.ts + docs/ops/paypal.md.
+ */
+export async function startPaypalCheckout(orderId: string): Promise<CheckoutResult> {
+  const ctx = await getTenantContext()
+  if (!ctx) return { ok: false, reason: 'error', message: 'Okänd butik.' }
+  if (!orderId) return { ok: false, reason: 'error', message: 'Saknar beställning.' }
+  if (!paypalReady()) {
+    return { ok: false, reason: 'unavailable', message: 'PayPal är inte tillgängligt.' }
+  }
+
+  const admin = createServiceClient()
+  if (!admin) return { ok: false, reason: 'unavailable', message: 'PayPal är inte tillgängligt.' }
+
+  // Ordern MÅSTE tillhöra denna tenant. Beloppet läses UR ORDERN (server-side uppslaget
+  // i confirm_shop_order) — klienten skickar bara ett order-id.
+  const { data: order } = await admin
+    .from('shop_orders')
+    .select('id, total_cents, currency, status, payment_status')
+    .eq('id', orderId)
+    .eq('tenant_id', ctx.tenantId)
+    .maybeSingle()
+  if (!order) return { ok: false, reason: 'error', message: 'Beställningen hittades inte.' }
+  // 'awaiting_payment' = Stripe-gaten var på. 'pending' + obetald = butiken tar inte
+  // betalt via Stripe men kunden valde PayPal → betalning är fortfarande giltig.
+  if (!['awaiting_payment', 'pending'].includes(order.status) || order.payment_status === 'paid') {
+    return { ok: false, reason: 'error', message: 'Beställningen kan inte betalas nu.' }
+  }
+  const amount = order.total_cents ?? 0
+  if (amount <= 0) return { ok: false, reason: 'unavailable', message: 'Inget belopp att betala.' }
+
+  await admin.from('payments').upsert(
+    { tenant_id: ctx.tenantId, order_id: orderId, amount_cents: amount, currency: 'sek', status: 'pending' },
+    { onConflict: 'order_id' }, // UNIQUE(order_id) = idempotensgrunden, samma som Stripe
+  )
+
+  const origin = await requestOrigin()
+  const pp = await createPaypalOrder({
+    amountCents: amount,
+    currency: order.currency ?? 'SEK',
+    reference: orderId,
+    returnUrl: `${origin}/api/paypal/retur?order=${orderId}`,
+    cancelUrl: `${origin}/bekraftelse/${orderId}?avbruten=1`,
+  })
+  if (!pp) return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+
+  return { ok: true, url: pp.approveUrl }
 }

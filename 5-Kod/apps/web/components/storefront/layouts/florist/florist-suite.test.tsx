@@ -41,6 +41,7 @@ const ALL_LIVE: LayoutModuleTeasers = {
   presentkortLive: true,
   shopReachable: true,
   offertReachable: true,
+  lojalitetReachable: true,
 }
 const ALL_OFF: LayoutModuleTeasers = {
   shopTeasers: [],
@@ -48,6 +49,7 @@ const ALL_OFF: LayoutModuleTeasers = {
   presentkortLive: false,
   shopReachable: false,
   offertReachable: false,
+  lojalitetReachable: false,
 }
 
 function render(key: string, modules: LayoutModuleTeasers | undefined, services: Service[] = SERVICES) {

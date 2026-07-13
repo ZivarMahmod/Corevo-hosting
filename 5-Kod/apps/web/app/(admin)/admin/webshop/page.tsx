@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
-import { listShopProducts, listShopOrders } from '@/lib/admin/shop/data'
+import { listShopProducts, listShopOrders, listShippingOptions } from '@/lib/admin/shop/data'
+import { shopRailsStatus } from '@/lib/storefront/shop/checkout-options'
+import { parsePaymentMethods } from '@/lib/storefront/shop/types'
 import { listMediaAssets } from '@/lib/admin/media/data'
 import { ShopAdmin } from '@/components/admin/ShopAdmin'
 import { PageHead, Callout } from '@/components/portal/ui'
@@ -35,18 +37,32 @@ export default async function WebshopPage() {
     )
   }
 
-  const [products, orders, assets] = await Promise.all([
+  const [products, orders, assets, shippingOptions, rails] = await Promise.all([
     listShopProducts(tenant.id),
     listShopOrders(tenant.id),
     listMediaAssets(tenant.id),
+    listShippingOptions(tenant.id), // goal-64: kundens leveransval
+    shopRailsStatus(tenant.id), // goal-64: är Stripe/PayPal faktiskt kopplade?
   ])
 
   const config = moduleAdminConfig(states, 'shop')
   const fulfilment = typeof config.fulfilment === 'string' ? config.fulfilment : 'ship'
+  // Betalsätten bor i samma config-jsonb som fulfilment (payment_methods: string[]).
+  const paymentMethods = parsePaymentMethods(config.payment_methods)
 
   return (
     <section className="portal-section">
-      <ShopAdmin products={products} orders={orders} fulfilment={fulfilment} tenantName={tenant.name} assets={assets} />
+      <ShopAdmin
+        products={products}
+        orders={orders}
+        fulfilment={fulfilment}
+        tenantName={tenant.name}
+        assets={assets}
+        shippingOptions={shippingOptions}
+        paymentMethods={paymentMethods}
+        stripeReady={rails.stripeReady}
+        paypalReady={rails.paypalReady}
+      />
     </section>
   )
 }

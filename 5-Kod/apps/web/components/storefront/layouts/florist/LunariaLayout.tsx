@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
-import { formatShopPrice } from '@/lib/storefront/shop/types'
+import { formatProductPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './lunaria.module.css'
 
@@ -33,12 +33,16 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
   // modules === undefined (studions statiska preview) → visa allt.
   const shopReachable = modules ? modules.shopReachable : true
+  // goal-64: klubben (III Cirkeln) pekade på /klubb — en route som INTE FANNS. Varje
+  // besökare som klickade landade i en 404. Sidan finns nu, och länken är modul-gatad:
+  // lojalitet av/draft → kortet står kvar men olänkat (filens form utan 404-fällan).
+  const klubbReachable = modules ? modules.lojalitetReachable : true
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
 
   // Filens tre salonger: I Bröllop → /boka, II Salongskvällar → /kurser, III Cirkeln →
   // /klubb (manifestets `klubb` = lojalitetsmodulen).
-  const salons = [
+  const salons: { no: string; title: string; desc: string; cta: string; href: string | null }[] = [
     {
       no: 'I',
       title: content.pillar1Title ?? 'Bröllop',
@@ -58,7 +62,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
       title: content.pillar3Title ?? 'Cirkeln',
       desc: content.pillar3Body ?? 'Vår inre krets — förtur och privata kvällar.',
       cta: 'Bli medlem',
-      href: '/klubb',
+      href: klubbReachable ? '/klubb' : null,
     },
   ]
 
@@ -124,7 +128,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
                         <div className={styles.lnCardBody}>
                           <h3 className={styles.lnCardName}>{p.name}</h3>
                           <p className={styles.lnCardPrice}>
-                            {formatShopPrice(p.priceCents, p.currency)}
+                            {formatProductPrice(p)}
                           </p>
                           {/* Köp-rälsen bor i butiken: teaser-korten har ingen ShopConfig
                               (fulfilment) och får därför aldrig en egen korg-knapp — de
@@ -160,12 +164,22 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
         <section className={styles.lnSalons}>
           {salons.map((s, i) => (
             <Reveal key={s.no} delay={i * 90}>
-              <Link href={s.href} className={styles.lnSalon}>
-                <p className={styles.lnSalonNo}>{s.no}</p>
-                <h3 className={styles.lnSalonTitle}>{s.title}</h3>
-                <p className={styles.lnSalonDesc}>{s.desc}</p>
-                <span className={styles.lnSalonCta}>{s.cta} →</span>
-              </Link>
+              {/* Onåbar modul → samma kort, men som <div>: formen bevaras, länken (och
+                  därmed 404:an) försvinner. */}
+              {s.href ? (
+                <Link href={s.href} className={styles.lnSalon}>
+                  <p className={styles.lnSalonNo}>{s.no}</p>
+                  <h3 className={styles.lnSalonTitle}>{s.title}</h3>
+                  <p className={styles.lnSalonDesc}>{s.desc}</p>
+                  <span className={styles.lnSalonCta}>{s.cta} →</span>
+                </Link>
+              ) : (
+                <div className={styles.lnSalon}>
+                  <p className={styles.lnSalonNo}>{s.no}</p>
+                  <h3 className={styles.lnSalonTitle}>{s.title}</h3>
+                  <p className={styles.lnSalonDesc}>{s.desc}</p>
+                </div>
+              )}
             </Reveal>
           ))}
         </section>

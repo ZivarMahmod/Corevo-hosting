@@ -816,6 +816,52 @@
 
 /* ─────────────────────── modul-vy: apoteket (butiken) ─────────────────────── */
 
+/* KATEGORI-CHIPS (goal-64) — Källa - Hårspa.dc.html rad 247-250.
+   EXAKT: centrerad rad, 10px gap, chip 12.5px/600 versal 0.1em spärr, padding 9px 18px,
+   1px kant, 6px radie (rummets mjuka hörn). Vald = teal platta med ljus text. */
+.kaFilters {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.kaFilter {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  padding: 9px 18px;
+  text-decoration: none;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.kaFilter:hover {
+  border-color: var(--color-primary);
+}
+
+.kaFilter[data-active='true'] {
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
+  border-color: var(--color-primary);
+}
+
+/* Kategorin över produktnamnet — filens rad 257 (10.5px, 0.22em spärr, dämpad grågrön). */
+.kaShopCat {
+  margin: 0 0 6px;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
 .kaShopGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1111,5 +1157,297 @@
 
   .kaPriceRow {
     flex-wrap: wrap;
+  }
+}
+
+/* ══════════════ TERAPEUTER + RUMMET + RITUALKLUBBEN (goal-64) ══════════════
+   Lyft ur "Källa - Hårspa.dc.html": runda porträtt, 8px radie, den vanligaste
+   klubbnivån på den mörkgröna ytan. */
+
+.kaTeamPage,
+.kaClub {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+}
+
+.kaGalleri {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+}
+
+.kaPageHead {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.kaPageEyebrow {
+  margin: 0 0 10px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink);
+}
+
+.kaPageTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 52px;
+  color: var(--color-fg);
+}
+
+.kaEmptyLine {
+  margin: 0;
+  text-align: center;
+  color: var(--color-fg-2);
+  font-size: 16px;
+}
+
+.kaTeamGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+.kaTeamCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  padding: 36px 28px;
+  text-align: center;
+}
+
+.kaTeamPhoto {
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 18px;
+  background-position: center;
+  background-size: cover;
+  border-radius: 999px;
+}
+
+.kaTeamName {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--color-fg);
+}
+
+.kaTeamRoll {
+  margin: 0 0 14px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink);
+}
+
+.kaTeamBio {
+  margin: 0 0 16px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--color-fg-2);
+}
+
+.kaTeamSpec {
+  margin: 0 0 20px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #93998c;
+}
+
+.kaTeamBook {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink);
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 11px 24px;
+  min-height: 44px;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+.kaTeamBook:hover {
+  background: var(--color-primary);
+  color: var(--color-accent-soft);
+}
+
+.kaGalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.kaGalImg {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  border-radius: 8px;
+}
+
+.kaGalCap {
+  margin: 10px 0 0;
+  text-align: center;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #93998c;
+}
+
+.kaClubLede {
+  margin: 14px auto 0;
+  max-width: 460px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+.kaPlans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.kaPlan {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  padding: 36px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Den vanligaste nivån på den mörkgröna ytan — filens `tagged`. */
+.kaPlan[data-featured='true'] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.kaPlanTag {
+  margin: 0 0 16px;
+  min-height: 14px;
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: transparent;
+}
+
+.kaPlan[data-featured='true'] .kaPlanTag {
+  color: #a9c4b8;
+}
+
+.kaPlanName {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--color-fg);
+}
+
+.kaPlanPrice {
+  margin: 0 0 22px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  color: var(--color-primary-ink);
+}
+
+.kaPlanPerks {
+  flex: 1;
+}
+
+.kaPlanPerks p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+.kaPlan[data-featured='true'] .kaPlanName {
+  color: var(--color-accent-soft);
+}
+
+.kaPlan[data-featured='true'] .kaPlanPrice {
+  color: #a9c4b8;
+}
+
+.kaPlan[data-featured='true'] .kaPlanPerks p {
+  color: #cddfd6;
+}
+
+.kaPlanJoin {
+  margin-top: 20px;
+}
+
+.kaPlanJoin form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.kaPlanJoin input {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  padding: 11px 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: var(--color-bg);
+  outline-color: var(--color-primary);
+}
+
+.kaPlanJoin button {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 12px 0;
+  min-height: 44px;
+}
+
+.kaPlan[data-featured='true'] .kaPlanJoin button {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent-soft);
+}
+
+.kaPlanJoin button:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 760px) {
+  .kaTeamPage,
+  .kaGalleri,
+  .kaClub {
+    padding: 36px 20px 0;
+  }
+
+  .kaTeamGrid,
+  .kaGalGrid,
+  .kaPlans {
+    grid-template-columns: 1fr;
+  }
+
+  .kaPageTitle {
+    font-size: clamp(30px, 9vw, 52px);
   }
 }
