@@ -130,6 +130,8 @@
   flex-direction: column;
   gap: 3px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 /* area dividers in the rail (handoff Shell.jsx → group rows) */
 [data-world="backoffice"] .portal-aside-group {
