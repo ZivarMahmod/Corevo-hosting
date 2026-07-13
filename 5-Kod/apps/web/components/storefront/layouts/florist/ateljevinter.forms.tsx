@@ -13,7 +13,7 @@
 // lib/storefront/offert/types (ingen I/O); och server-actionen (RPC-gräns via
 // 'use server'). Lägg ALDRIG load-offert eller @/lib/supabase/* här.
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import {
   offertCtaLabel,
@@ -22,6 +22,15 @@ import {
   type OffertSubmitState,
 } from '@/lib/storefront/offert/types'
 import { submitOffertRequest } from '@/lib/storefront/offert/intake'
+import { KURS_SUBMIT_INITIAL, type KursSubmitState } from '@/lib/storefront/kurser/types'
+import { submitEventRegistration } from '@/app/(public)/kurser/actions'
+import { useCart } from '../../shop/CartProvider'
+import {
+  formatGiftPrice,
+  GIFT_DELIVERY_LABELS,
+  type GiftDeliveryMode,
+  type PresentkortConfig,
+} from '@/lib/storefront/presentkort/types'
 import styles from './ateljevinter.module.css'
 
 /** Submit-knappen, nästlad så useFormStatus läser DET HÄR formulärets pending-läge.
@@ -162,6 +171,215 @@ export function AteljeVinterOffertForm({
       ) : null}
 
       <OffertSubmit mode={mode} />
+    </form>
+  )
+}
+
+/**
+ * GÅVOBREV — filens `showPresentkort`. Det inramade "kortet" (butiksnamn · gåvobrev ·
+ * belopp · giltighet), beloppschipsen och den svarta "+ lägg i korgen"-knappen. Beloppet
+ * i kortet uppdateras live när ett chip väljs → hela ytan är en klient-ö.
+ *
+ * FUNKTIONEN är modulens: exakt samma korg-rad som GiftCardBuy (kind 'giftcard',
+ * variantId `gift:<belopp>:<läge>`), så reserve_shop_order slår upp beloppet mot kundens
+ * egen lista och kassan/utfärdandet är oförändrade. Inga belopp konfigurerade → ingen
+ * knapp (en knapp utan lagligt belopp bakom sig ljuger; servern skulle ändå avvisa köpet).
+ */
+export function AteljeVinterGiftForm({
+  config,
+  tenantName,
+}: {
+  config: PresentkortConfig
+  tenantName: string
+}) {
+  const { addLine } = useCart()
+  const amounts = config.amountPresets
+  const mode: GiftDeliveryMode = config.deliveryModes[0] ?? 'digital'
+  const [amount, setAmount] = useState<number | null>(amounts[0] ?? null)
+  const [added, setAdded] = useState(false)
+
+  if (amounts.length === 0 || amount == null) return null
+
+  const priceLabel = formatGiftPrice(amount, config.currency)
+
+  const add = () => {
+    addLine(
+      {
+        variantId: `gift:${amount}:${mode}`,
+        productId: 'giftcard',
+        productName: `Presentkort ${priceLabel}`,
+        variantName: GIFT_DELIVERY_LABELS[mode],
+        priceCents: amount * 100, // ENBART rendering i korgen; servern re-summerar
+        currency: config.currency,
+        imageUrl: null,
+        maxQty: null,
+        kind: 'giftcard',
+        giftAmount: amount,
+        giftDeliveryMode: mode,
+      },
+      1,
+    )
+    setAdded(true)
+  }
+
+  return (
+    <div className={styles.avGiftWrap}>
+      <div className={styles.avGiftCard}>
+        <p className={styles.avGiftMark}>{tenantName}</p>
+        <p className={styles.avGiftKind}>gåvobrev</p>
+        <p className={styles.avGiftAmount}>{priceLabel}</p>
+        <p className={styles.avGiftNote}>gäller tolv månader — inlöses mot valfritt verk</p>
+      </div>
+
+      <div className={styles.avGiftChips} role="group" aria-label="välj belopp">
+        {amounts.map((a) => (
+          <button
+            key={a}
+            type="button"
+            className={a === amount ? `${styles.avChip} ${styles.avChipOn}` : styles.avChip}
+            aria-pressed={a === amount}
+            onClick={() => {
+              setAmount(a)
+              setAdded(false)
+            }}
+          >
+            {formatGiftPrice(a, config.currency)}
+          </button>
+        ))}
+      </div>
+
+      <button type="button" className={styles.avGiftBuy} onClick={add}>
+        {added ? `i korgen ✓ — ${priceLabel}` : `+ lägg i korgen — ${priceLabel}`}
+      </button>
+    </div>
+  )
+}
+
+/** Anmälnings-submit, nästlad för useFormStatus. */
+function KursSubmit() {
+  const { pending } = useFormStatus()
+  return (
+    <button type="submit" className={styles.avSolidWide} disabled={pending}>
+      {pending ? 'anmäler…' : 'anmäl'}
+    </button>
+  )
+}
+
+/**
+ * SEMINARIE-ANMÄLAN (onsite) — filens seminarier antar korg-köp, men en kund som tar
+ * betalt PÅ PLATS (config.payment='onsite') behöver ett anmälningsformulär. Det renderas
+ * i mallens grammatik (hårlinjefält, gemener) i stället för de delade boxade fälten.
+ *
+ * FUNKTIONEN är modulens: submitEventRegistration, samma fältkontrakt som KursAnmalanForm
+ * (event_id, name, email, phone, party_size, message). Bara formen är mallens.
+ */
+export function AteljeVinterKursForm({ eventId, maxParty }: { eventId: string; maxParty: number }) {
+  const [state, formAction] = useActionState<KursSubmitState, FormData>(
+    submitEventRegistration,
+    KURS_SUBMIT_INITIAL,
+  )
+
+  if (state.phase === 'done') {
+    return (
+      <p role="status" className={styles.avFormDone}>
+        anmäld — en bekräftelse skickas till din e-post.
+      </p>
+    )
+  }
+
+  const seats = Array.from({ length: Math.max(1, Math.min(8, maxParty)) }, (_, i) => i + 1)
+
+  return (
+    <form action={formAction} className={styles.avKursForm}>
+      <input type="hidden" name="event_id" value={eventId} />
+
+      <div className={styles.avFormRow}>
+        <div>
+          <label className={styles.avFieldLabel} htmlFor={`av-kurs-name-${eventId}`}>
+            namn
+          </label>
+          <input
+            id={`av-kurs-name-${eventId}`}
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            maxLength={120}
+            placeholder="för- och efternamn"
+            className={styles.avField}
+          />
+        </div>
+        <div>
+          <label className={styles.avFieldLabel} htmlFor={`av-kurs-email-${eventId}`}>
+            e-post
+          </label>
+          <input
+            id={`av-kurs-email-${eventId}`}
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            maxLength={160}
+            placeholder="namn@adress.se"
+            className={styles.avField}
+          />
+        </div>
+      </div>
+
+      <div className={styles.avFormRow}>
+        <div>
+          <label className={styles.avFieldLabel} htmlFor={`av-kurs-phone-${eventId}`}>
+            telefon (valfritt)
+          </label>
+          <input
+            id={`av-kurs-phone-${eventId}`}
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            maxLength={40}
+            placeholder="07x…"
+            className={styles.avField}
+          />
+        </div>
+        <div>
+          <label className={styles.avFieldLabel} htmlFor={`av-kurs-party-${eventId}`}>
+            antal platser
+          </label>
+          <select
+            id={`av-kurs-party-${eventId}`}
+            name="party_size"
+            defaultValue="1"
+            className={styles.avField}
+          >
+            {seats.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className={styles.avFormField}>
+        <label className={styles.avFieldLabel} htmlFor={`av-kurs-message-${eventId}`}>
+          meddelande (valfritt)
+        </label>
+        <textarea
+          id={`av-kurs-message-${eventId}`}
+          name="message"
+          rows={3}
+          maxLength={2000}
+          className={styles.avTextarea}
+        />
+      </div>
+
+      {state.phase === 'error' ? (
+        <p role="alert" className={styles.avFormError}>
+          {state.message}
+        </p>
+      ) : null}
+
+      <KursSubmit />
     </form>
   )
 }

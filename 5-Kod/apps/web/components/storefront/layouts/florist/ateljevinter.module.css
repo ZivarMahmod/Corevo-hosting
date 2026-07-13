@@ -622,6 +622,150 @@
   color: var(--color-fg);
 }
 
+.avChipOn {
+  border-color: var(--color-fg);
+  color: var(--color-fg);
+}
+
+/* ───────────────────────────── gåvobrev (filens kort) ─────────────────────── */
+
+.avGiftPage {
+  composes: avPage;
+  max-width: 560px;
+  text-align: center;
+}
+
+.avGiftPage .avPageTitle {
+  margin-bottom: 30px;
+}
+
+.avGiftLede {
+  margin: 0 0 56px;
+  color: var(--color-fg-2);
+  font-size: 14.5px;
+  line-height: 1.9;
+}
+
+.avGiftCard {
+  border: 1px solid var(--color-fg);
+  padding: 56px 40px;
+  margin-bottom: 48px;
+}
+
+.avGiftMark {
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.24em;
+  color: var(--color-fg);
+}
+
+.avGiftKind {
+  margin: 0 0 36px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--color-fg-2);
+}
+
+.avGiftAmount {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 44px;
+  letter-spacing: 0.02em;
+  color: var(--color-fg);
+}
+
+.avGiftNote {
+  margin: 36px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--color-accent-soft);
+}
+
+.avGiftChips {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+}
+
+.avGiftBuy {
+  composes: avSolid;
+  white-space: nowrap;
+  letter-spacing: 0.22em;
+  padding: 17px 44px;
+}
+
+/* ─────────────────────────── seminarier (hårlinje-lista) ─────────────────── */
+
+.avKurser {
+  composes: avPage;
+}
+
+.avKursList {
+  border-top: 1px solid var(--color-line);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.avKursRow {
+  border-bottom: 1px solid var(--color-line);
+  padding: 40px 0;
+}
+
+.avKursDate {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--color-primary);
+}
+
+.avKursTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--color-fg);
+}
+
+.avKursDesc {
+  margin: 0 0 18px;
+  color: var(--color-fg-2);
+  font-size: 13.5px;
+  line-height: 1.8;
+  max-width: 520px;
+}
+
+.avKursFacts {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--color-fg-2);
+}
+
+.avKursPrice {
+  color: var(--color-fg);
+}
+
+.avKursFull {
+  margin: 22px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--color-fg-2);
+}
+
+.avKursForm {
+  margin-top: 26px;
+  max-width: 560px;
+}
+
 /* ───────────────────────────── modul-vyer (butik) ─────────────────────────── */
 
 .avShop {

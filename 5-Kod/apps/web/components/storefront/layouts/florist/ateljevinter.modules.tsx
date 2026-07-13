@@ -2,13 +2,21 @@ import { AddToCart } from '../../shop/AddToCart'
 import { JoinClubForm } from '../../lojalitet/JoinClubForm'
 import { formatProductPrice } from '@/lib/storefront/shop/types'
 import { formatPlanPrice, loyaltyIntervalLabel } from '@/lib/storefront/lojalitet/types'
-import { AteljeVinterOffertForm } from './ateljevinter.forms'
+import { EventSeatBuy } from '../../shop/EventSeatBuy'
+import { formatEventPrice, formatEventStart } from '@/lib/storefront/kurser/types'
+import {
+  AteljeVinterOffertForm,
+  AteljeVinterGiftForm,
+  AteljeVinterKursForm,
+} from './ateljevinter.forms'
 import type {
   ThemeShopViewProps,
   ThemeBloggViewProps,
   ThemeGalleriViewProps,
   ThemeLojalitetViewProps,
   ThemeOffertViewProps,
+  ThemePresentkortViewProps,
+  ThemeKurserViewProps,
 } from './types'
 import styles from './ateljevinter.module.css'
 
@@ -278,6 +286,124 @@ export function AteljeVinterOffert({ config, paused }: ThemeOffertViewProps) {
           responseDays={config.responseDays}
           subjects={config.subjects}
         />
+      )}
+    </section>
+  )
+}
+
+/* ════════════════════════════════════ GÅVOBREV ═══════════════════════════════ */
+
+/**
+ * Filens `showPresentkort`: 560px, centrerat. eyebrow "gåvobrev", rubrik "ge bort ett
+ * verk", en ledtext, sedan det inramade gåvobrevs-kortet + beloppschips + köpknapp
+ * (klient-ön, eftersom kortets belopp uppdateras live).
+ *
+ * Inga belopp konfigurerade → ingen köpyta, bara ett ärligt besked. Pausad → stängt.
+ */
+export function AteljeVinterPresentkort({ config, paused, tenantName }: ThemePresentkortViewProps) {
+  return (
+    <section
+      className={styles.avGiftPage}
+      data-module="presentkort"
+      data-fulfilment={config.fulfilment}
+    >
+      <p className={styles.avEyebrow}>gåvobrev</p>
+      <h1 className={styles.avPageTitle}>ge bort ett verk</h1>
+      <p className={styles.avGiftLede}>
+        ett gåvobrev ur ateljén — mottagaren väljer själv sitt verk ur en kommande samling.
+        tryckt på obestruket papper, levererat i kuvert.
+      </p>
+
+      {paused ? (
+        <p role="status" className={styles.avNotice}>
+          gåvobrev är pausade just nu.
+        </p>
+      ) : config.amountPresets.length > 0 ? (
+        <AteljeVinterGiftForm config={config} tenantName={tenantName} />
+      ) : (
+        <p className={styles.avEmpty}>gåvobrev bokas i ateljén — hör av dig så ordnar vi det.</p>
+      )}
+    </section>
+  )
+}
+
+/* ═══════════════════════════════════ SEMINARIER ══════════════════════════════ */
+
+/**
+ * Filens `showKurser`: 840px, eyebrow "rum ii", rubrik "seminarier", en hårlinjerad
+ * lista av tillfällen. Filens rad har en foto-spalt (mock) — motorns event bär ingen
+ * bild, så mallen ritar ingen (aldrig ett stock-foto som utges för att vara kursen).
+ *
+ * FUNKTIONEN är modulens (config.payment):
+ *   'checkout' → platsen läggs i korgen (EventSeatBuy), filens "läggs i korgen"-modell.
+ *   'onsite'   → anmälan på plats (AteljeVinterKursForm) i mallens hårlinjefält.
+ * Ledtexten säger SANNINGEN om vilket det är — "betalas i kassan" över en plats-avgift
+ * vore precis den lilla lögn som får en sida att kännas billig.
+ */
+export function AteljeVinterKurser({ events, config, paused }: ThemeKurserViewProps) {
+  const checkout = config.payment === 'checkout'
+  return (
+    <section className={styles.avKurser} data-module="kurser">
+      <p className={styles.avEyebrow}>rum ii</p>
+      <h1 className={styles.avPageTitle}>seminarier</h1>
+      <p className={styles.avPageLede}>
+        fyra deltagare per tillfälle. ett bord, ett tema, två timmar.{' '}
+        {checkout ? 'platsen läggs i korgen och betalas i kassan.' : 'avgiften betalas på plats.'}
+      </p>
+
+      {paused ? (
+        <p role="status" className={styles.avNotice}>
+          anmälan är stängd just nu — kommande tillfällen visas, men det går inte att anmäla sig.
+        </p>
+      ) : null}
+
+      {events.length === 0 ? (
+        <p className={styles.avEmpty}>inga kommande tillfällen just nu — titta in igen snart.</p>
+      ) : (
+        <ul className={styles.avKursList}>
+          {events.map((ev) => {
+            const left = ev.taken != null ? ev.capacity - ev.taken : null
+            const full = left != null && left <= 0
+            const seatsLeft = left != null ? Math.max(0, left) : null
+            return (
+              <li key={ev.id} className={styles.avKursRow}>
+                <p className={styles.avKursDate}>{formatEventStart(ev.startsAt)}</p>
+                <h2 className={styles.avKursTitle}>{ev.title}</h2>
+                {ev.description ? <p className={styles.avKursDesc}>{ev.description}</p> : null}
+                <p className={styles.avKursFacts}>
+                  <span className={styles.avKursPrice}>{formatEventPrice(ev.priceCents)}</span>
+                  <span>{ev.durationMin} min</span>
+                  <span>
+                    {seatsLeft != null
+                      ? `${seatsLeft} ${seatsLeft === 1 ? 'plats' : 'platser'} kvar`
+                      : `max ${ev.capacity} platser`}
+                  </span>
+                  {full ? <span>fullbokat</span> : null}
+                </p>
+
+                {paused || full ? (
+                  full ? (
+                    <p className={styles.avKursFull}>
+                      fullbokat — vi lägger ut fler datum löpande.
+                    </p>
+                  ) : null
+                ) : checkout ? (
+                  <EventSeatBuy
+                    eventId={ev.id}
+                    title={ev.title}
+                    priceCents={ev.priceCents}
+                    seatsLeft={seatsLeft}
+                  />
+                ) : (
+                  <AteljeVinterKursForm
+                    eventId={ev.id}
+                    maxParty={left != null ? Math.min(8, left) : 8}
+                  />
+                )}
+              </li>
+            )
+          })}
+        </ul>
       )}
     </section>
   )

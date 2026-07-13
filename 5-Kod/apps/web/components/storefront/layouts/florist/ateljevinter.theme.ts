@@ -7,6 +7,8 @@ import {
   AteljeVinterGalleri,
   AteljeVinterLojalitet,
   AteljeVinterOffert,
+  AteljeVinterPresentkort,
+  AteljeVinterKurser,
 } from './ateljevinter.modules'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/galleryItems) — inte utbytta, inte "liknande".
@@ -95,6 +97,12 @@ export const ateljevinter: FloristTheme = {
     // goal-64 (regression): beställningsverk-sidan äger nu sin form i stället för att
     // falla till OffertSection (grått band, boxade fält, grön knapp).
     offert: AteljeVinterOffert,
+    // goal-64 (regression): gåvobrev-sidan äger sitt kort + köpknapp i stället för
+    // PresentkortSection.
+    presentkort: AteljeVinterPresentkort,
+    // goal-64 (regression): seminarie-listan äger sina rader + anmälan i stället för
+    // den delade kurs-sidan (grått hero-band, boxade fält, grön "Anmäl").
+    kurser: AteljeVinterKurser,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

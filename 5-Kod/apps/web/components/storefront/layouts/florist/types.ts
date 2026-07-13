@@ -277,6 +277,8 @@ export type ThemeOffertViewProps = {
 export type ThemePresentkortViewProps = {
   config: PresentkortConfig
   paused: boolean
+  /** Gåvobrevets "kort" bär butikens namn (filen: "ateljé vinter" över "gåvobrev"). */
+  tenantName: string
 }
 
 export type ThemeKurserViewProps = {

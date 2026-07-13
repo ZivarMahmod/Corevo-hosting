@@ -7,6 +7,7 @@ import { formatEventPrice, formatEventStart } from '@/lib/storefront/kurser/type
 import { KursAnmalanForm } from '@/components/storefront/KursAnmalanForm'
 import { EventSeatBuy } from '@/components/storefront/shop/EventSeatBuy'
 import { SubpageHero } from '@/components/storefront/sections'
+import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import { pageMetadata } from '@/components/storefront/seo'
 import s from './kurser.module.css'
 
@@ -25,7 +26,7 @@ export function generateMetadata(): Promise<Metadata> {
 export default async function KurserPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
-  const { tenant } = bundle
+  const { tenant, settings } = bundle
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const paused = isModulePaused(states, 'kurser')
   if (!isModuleLive(states, 'kurser') && !paused) notFound()
@@ -35,6 +36,14 @@ export default async function KurserPage() {
     loadKurserConfig(tenant.id, tenant.slug),
   ])
   const köpIKassan = kurserConfig.payment === 'checkout'
+
+  // goal-64 (regression): mallens egen seminarie-vy när den finns (filens hårlinje-lista
+  // + anmälan i mallens fält). Modulen äger datan (loadUpcomingEvents) + anmälan/korg;
+  // formen är mallens. Ingen vy → den delade sidan nedan, byte-identiskt.
+  const View = themeModuleViews(settings.theme).kurser
+  if (View) {
+    return <View events={events} config={kurserConfig} paused={paused} />
+  }
 
   return (
     <>
