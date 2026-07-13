@@ -2,6 +2,7 @@ import type { FloristTheme } from './types'
 import { SivSavNav, SivSavFooter } from './sivsav.chrome'
 import { SivSavOm, SivSavTjanster, SivSavKontakt } from './sivsav.pages'
 import { SivSavShop, SivSavBlogg, SivSavGalleri, SivSavLojalitet } from './sivsav.modules'
+import { SivSavPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/galleryItems/blog) — inte utbytta, inte
 // "liknande". HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n."
@@ -94,6 +95,7 @@ export const sivsav: FloristTheme = {
     blogg: SivSavBlogg,
     galleri: SivSavGalleri,
     lojalitet: SivSavLojalitet,
+    presentkort: SivSavPresentkort,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

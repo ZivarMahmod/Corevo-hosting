@@ -2,6 +2,7 @@ import type { FloristTheme } from './types'
 import { OnyxNav, OnyxFooter } from './onyx.chrome'
 import { OnyxOm, OnyxTjanster, OnyxKontakt } from './onyx.pages'
 import { OnyxShop, OnyxBlogg, OnyxGalleri, OnyxLojalitet } from './onyx.modules'
+import { OnyxPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur "Onyx - Mörk Studio.dc.html" (rawProducts/galleryItems/hero/om) —
 // inte utbytta, inte "liknande". HANDOFF.md §2 regel 4: byt aldrig ett Unsplash-ID.
@@ -97,6 +98,7 @@ export const onyx: FloristTheme = {
     blogg: OnyxBlogg,
     galleri: OnyxGalleri,
     lojalitet: OnyxLojalitet,
+    presentkort: OnyxPresentkort,
   },
   ownsCopy: true,
   // goal-61 editor-paritet: hemmets redigerbara element. default = layoutens inbyggda

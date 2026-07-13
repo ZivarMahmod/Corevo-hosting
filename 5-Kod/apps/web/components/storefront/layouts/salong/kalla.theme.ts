@@ -8,6 +8,7 @@ import {
   KallaLojalitet,
   KallaTeam,
 } from './kalla.modules'
+import { KallaPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur .dc.html (galleryItems/teamData/blog/hero) — inte utbytta, inte
 // "liknande". HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n."
@@ -120,6 +121,7 @@ export const kalla: SalongTheme = {
     galleri: KallaGalleri,
     lojalitet: KallaLojalitet,
     team: KallaTeam,
+    presentkort: KallaPresentkort,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

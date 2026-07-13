@@ -2,6 +2,7 @@ import type { FloristTheme } from './types'
 import { AuroraNav, AuroraFooter } from './aurora.chrome'
 import { AuroraOm, AuroraTjanster, AuroraKontakt } from './aurora.pages'
 import { AuroraShop, AuroraBlogg, AuroraGalleri, AuroraLojalitet } from './aurora.modules'
+import { AuroraPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur .dc.html — inte utbytta, inte "liknande".
 // HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n mot slumpbilder."
@@ -102,6 +103,7 @@ export const aurora: FloristTheme = {
     blogg: AuroraBlogg,
     galleri: AuroraGalleri,
     lojalitet: AuroraLojalitet,
+    presentkort: AuroraPresentkort,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

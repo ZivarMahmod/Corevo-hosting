@@ -27,7 +27,6 @@ export default async function PreviewPresentkortPage({
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const paused = isModulePaused(states, 'presentkort')
   const off = !isModuleLive(states, 'presentkort') && !paused
-
   const View = themeModuleViews(theme).presentkort
   const data = View && !off ? await loadPresentkortData(tenant.id, tenant.slug) : null
 

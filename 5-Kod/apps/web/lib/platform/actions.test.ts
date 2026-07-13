@@ -115,6 +115,7 @@ function fakeSvcInviteFails() {
 
 function fd(entries: Record<string, string>): FormData {
   const f = new FormData()
+  f.set('theme', 'ateljevinter')
   for (const [k, v] of Object.entries(entries)) f.set(k, v)
   return f
 }
@@ -156,6 +157,12 @@ describe('createTenant writes the goal-20 columns', () => {
     )
     return captured
   }
+
+  it('rejects a template outside the 12 approved handoff themes', async () => {
+    seedCtx()
+    const res = await createTenant({}, fd({ name: 'K', slug: 'kx', theme: 'leander' }))
+    expect(res.error).toBe('Välj en av de 12 godkända mallarna.')
+  })
 
   it('includes city in the tenants insert (#14)', async () => {
     const captured = seedCtx()

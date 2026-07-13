@@ -2,6 +2,7 @@ import type { FloristTheme } from './types'
 import { LunariaNav, LunariaFooter } from './lunaria.chrome'
 import { LunariaOm, LunariaTjanster, LunariaKontakt } from './lunaria.pages'
 import { LunariaShop, LunariaBlogg, LunariaGalleri, LunariaLojalitet } from './lunaria.modules'
+import { LunariaPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/blog/courses/galleryItems) — inte utbytta,
 // inte "liknande". HANDOFF.md §2 regel 4: byt aldrig ett Unsplash-ID mot en slumpbild.
@@ -105,6 +106,7 @@ export const lunaria: FloristTheme = {
     blogg: LunariaBlogg,
     galleri: LunariaGalleri,
     lojalitet: LunariaLojalitet,
+    presentkort: LunariaPresentkort,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

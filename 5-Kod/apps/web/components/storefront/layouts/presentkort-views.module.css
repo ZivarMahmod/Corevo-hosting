@@ -1,0 +1,68 @@
+.section {
+  box-sizing: border-box;
+}
+
+.grid {
+  display: grid;
+}
+
+.button {
+  min-height: 44px;
+}
+
+.button:focus-visible,
+.input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.notice {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid currentColor;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.aurora:hover { border-color: #b85c48 !important; }
+.auroraBuy:hover { background: #8a3e2e !important; }
+.torget:hover { background: #ede7d8 !important; color: #191714 !important; }
+.torgetBuy:hover { background: #191714 !important; }
+.calytrix:hover { color: #7d1f46 !important; }
+.calytrixBuy:hover { background: #7d1f46 !important; border-color: #7d1f46 !important; color: #fff !important; }
+.eloriaBuy:hover { background: #7a5d1e !important; }
+.lunaria:hover { color: #ece6d6 !important; }
+.lunariaBuy:hover { background: #ece6d6 !important; }
+.onyx:hover { border-color: #c9973f !important; }
+.onyxBuy:hover { background: #f2efea !important; }
+.kalla:hover { border-color: #1d5e54 !important; }
+.kallaBuy:hover { background: #143f39 !important; }
+.siluett:hover { border-color: #6741d9 !important; }
+.siluettBuy:hover { background: #6741d9 !important; }
+.snitt:hover { border-color: #d6f344 !important; }
+.snittBuy:hover { background: #efede6 !important; }
+.sivsav:hover { border-color: #7c8b6b !important; }
+.sivsavBuy:hover { background: #7c8b6b !important; }
+.solsalt:hover { border-color: #1f4f9c !important; }
+.solsaltBuy:hover { background: #c2512e !important; }
+
+@media (max-width: 760px) {
+  .section {
+    width: 100% !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  .grid {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+  }
+
+  .title {
+    font-size: clamp(36px, 12vw, 48px) !important;
+  }
+
+  .button {
+    min-height: 44px;
+  }
+}

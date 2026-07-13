@@ -9,7 +9,8 @@ import { isBookingVariant, DEFAULT_BOOKING_VARIANT, type BookingVariant } from '
 import { resolveOwnerRole } from '../owner-role'
 import { parseModuleSelections, writeTenantVerticalAndModules } from '../tenant-modules-write'
 import { parseServiceInputs } from '../onboarding-studio/services'
-import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME, type StorefrontTheme } from '@/lib/tenant-data'
+import type { StorefrontTheme } from '@/lib/tenant-data'
+import { isSelectableTheme } from '@/lib/platform/theme-palettes'
 import { uploadImage } from '@/lib/r2/upload'
 import { attachWorkerSubdomain } from '@/lib/cloudflare/worker-domains'
 import type { Json } from '@corevo/db'
@@ -36,11 +37,11 @@ const DEFAULT_TZ = 'Europe/Stockholm'
 // which the public layout reads → [data-theme] on the storefront root. The old A/B
 // nav + 1/2 hero system is RETIRED (components/brand/variants.ts); `theme` is now the
 // single look-axis, so each onboarded salon gets a DISTINCT storefront, never a clone.
-function pickTheme(raw: FormDataEntryValue | null): StorefrontTheme {
+function pickTheme(raw: FormDataEntryValue | null): StorefrontTheme | null {
   const v = String(raw ?? '').trim().toLowerCase()
-  return (STOREFRONT_THEMES as readonly string[]).includes(v)
+  return isSelectableTheme(v)
     ? (v as StorefrontTheme)
-    : DEFAULT_STOREFRONT_THEME
+    : null
 }
 
 /** Create-time colour: return a valid hex, else null (skip — keep neutral default). */
@@ -122,6 +123,7 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   if (!name) return { error: 'Ange ett namn.' }
   if (!slugCheck.ok) return { error: slugCheck.reason }
   if (ownerEmail && !EMAIL_RE.test(ownerEmail)) return { error: 'Ogiltig e-postadress för ägaren.' }
+  if (!theme) return { error: 'Välj en av de 12 godkända mallarna.' }
   const slug = slugCheck.slug
 
   // Accent-only branding: the theme owns the palette, so we never write

@@ -2,6 +2,7 @@ import type { FloristTheme } from './types'
 import { SolSaltNav, SolSaltFooter } from './solsalt.chrome'
 import { SolSaltOm, SolSaltTjanster, SolSaltKontakt } from './solsalt.pages'
 import { SolSaltShop, SolSaltBlogg, SolSaltGalleri, SolSaltLojalitet } from './solsalt.modules'
+import { SolSaltPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/blog/galleryItems) — inte utbytta, inte "liknande".
 // HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n mot slumpbilder."
@@ -90,6 +91,7 @@ export const solsalt: FloristTheme = {
     blogg: SolSaltBlogg,
     galleri: SolSaltGalleri,
     lojalitet: SolSaltLojalitet,
+    presentkort: SolSaltPresentkort,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens/vyernas inbyggda fallback VERBATIM —

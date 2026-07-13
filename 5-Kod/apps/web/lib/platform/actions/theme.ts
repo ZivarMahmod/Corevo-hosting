@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { sidaCtx } from '../guard'
 import { logPlatformAction } from '../audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
-import { STOREFRONT_THEMES, type StorefrontTheme } from '@/lib/tenant-data'
+import type { StorefrontTheme } from '@/lib/tenant-data'
+import { isSelectableTheme } from '@/lib/platform/theme-palettes'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
 
@@ -19,7 +20,7 @@ export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<Act
   if (!user.platformAdmin) return { error: 'Mallen byts av Corevo — hör av dig så hjälper vi dig.' }
 
   const theme = String(fd.get('theme') ?? '') as StorefrontTheme
-  if (!STOREFRONT_THEMES.includes(theme)) return { error: 'Okänd mall.' }
+  if (!isSelectableTheme(theme)) return { error: 'Mallen ingår inte i de 12 godkända handoff-mallarna.' }
 
   const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
   if (!tenant) return { error: 'Okänd kund.' }

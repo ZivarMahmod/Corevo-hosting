@@ -8,6 +8,7 @@ import {
   SiluettLojalitet,
   SiluettTeam,
 } from './siluett.modules'
+import { SiluettPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur .dc.html (hero, om-fotot, galleriet) — inte utbytta, inte "liknande".
 // HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n mot slumpbilder."
@@ -94,6 +95,7 @@ export const siluett: SalongTheme = {
     galleri: SiluettGalleri,
     lojalitet: SiluettLojalitet,
     team: SiluettTeam,
+    presentkort: SiluettPresentkort,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

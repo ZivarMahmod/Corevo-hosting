@@ -40,6 +40,27 @@ export type ThemePalette = {
   hero: string
 }
 
+/** De enda mallar som handoff-paketet definierar och som därför får erbjudas
+ * när en kund skapas eller byter mall. Äldre/kundegna teman förblir renderbara. */
+export const COREVO_12_THEME_KEYS = [
+  'ateljevinter',
+  'aurora',
+  'blomstertorget',
+  'calytrix',
+  'eloria',
+  'lunaria',
+  'onyx',
+  'sivsav',
+  'solsalt',
+  'kalla',
+  'siluett',
+  'snitt',
+] as const satisfies readonly StorefrontTheme[]
+
+export function isSelectableTheme(key: string): key is (typeof COREVO_12_THEME_KEYS)[number] {
+  return (COREVO_12_THEME_KEYS as readonly string[]).includes(key)
+}
+
 /** Ljus eller mörk mall? Relativ luminans på bakgrunden (samma formel som WCAG). */
 function isDark(bg: string): boolean {
   const c = parseInt(bg.replace('#', ''), 16)
@@ -134,5 +155,5 @@ export function themePalette(key: string): ThemePalette {
   return THEME_PALETTES.find((t) => t.key === key) ?? (THEME_PALETTES[0] as ThemePalette)
 }
 
-/** Mallar en NY kund kan välja bland (allt utom kundegna). */
-export const SELECTABLE_THEMES: ThemePalette[] = THEME_PALETTES.filter((t) => t.category !== 'kund')
+/** Exakt handoffens 12 mallar. Legacy finns kvar i registret för befintliga kunder. */
+export const SELECTABLE_THEMES: ThemePalette[] = THEME_PALETTES.filter((t) => isSelectableTheme(t.key))

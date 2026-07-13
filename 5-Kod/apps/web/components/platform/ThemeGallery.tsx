@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import {
   THEME_PALETTES,
+  SELECTABLE_THEMES,
   THEME_CATEGORIES,
   type ThemeCategory,
   type ThemePalette,
@@ -43,14 +44,22 @@ export function ThemeGallery({
   const [tag, setTag] = useState<string | null>(null)
 
   const valueTheme = THEME_PALETTES.find((t) => t.key === value)
-  // "Kundegna" är inte ett val — fliken finns bara för den kund som REDAN kör en sådan.
-  const categories = useMemo(
-    () => THEME_CATEGORIES.filter((c) => c.key !== 'kund' || valueTheme?.category === 'kund'),
+  const availableThemes = useMemo(
+    () =>
+      valueTheme && !SELECTABLE_THEMES.some((t) => t.key === valueTheme.key)
+        ? [...SELECTABLE_THEMES, valueTheme]
+        : SELECTABLE_THEMES,
     [valueTheme],
+  )
+  // Visa bara kategorier som faktiskt innehåller någon av handoffens 12 mallar.
+  // En legacy-/kundegen kategori följer bara med när kunden redan kör den mallen.
+  const categories = useMemo(
+    () => THEME_CATEGORIES.filter((c) => availableThemes.some((t) => t.category === c.key)),
+    [availableThemes],
   )
   const [cat, setCat] = useState<ThemeCategory>(valueTheme?.category ?? 'florist')
 
-  const inCategory = useMemo(() => THEME_PALETTES.filter((t) => t.category === cat), [cat])
+  const inCategory = useMemo(() => availableThemes.filter((t) => t.category === cat), [availableThemes, cat])
   // Bara taggar som ger träff i kategorin (aldrig en chip som ger 0 resultat).
   const tags = useMemo(() => [...new Set(inCategory.flatMap((t) => t.tags))].sort(), [inCategory])
   const shown = useMemo(() => {
@@ -67,7 +76,7 @@ export function ThemeGallery({
       <div role="tablist" aria-label="Mallkategori" className={s.tabRow}>
         {categories.map((c) => {
           const active = c.key === cat
-          const count = THEME_PALETTES.filter((t) => t.category === c.key).length
+          const count = availableThemes.filter((t) => t.category === c.key).length
           return (
             <button
               key={c.key}

@@ -7,6 +7,7 @@ import {
   BlomstertorgetGalleri,
   BlomstertorgetLojalitet,
 } from './blomstertorget.modules'
+import { BlomstertorgetPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur .dc.html (rawProducts/galleryItems/om-fotot) — inte utbytta, inte
 // "liknande". HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n
@@ -104,6 +105,7 @@ export const blomstertorget: FloristTheme = {
     blogg: BlomstertorgetBlogg,
     galleri: BlomstertorgetGalleri,
     lojalitet: BlomstertorgetLojalitet,
+    presentkort: BlomstertorgetPresentkort,
   },
   ownsCopy: true,
   // Redigerbara element. default = layoutens/vyernas inbyggda fallback VERBATIM

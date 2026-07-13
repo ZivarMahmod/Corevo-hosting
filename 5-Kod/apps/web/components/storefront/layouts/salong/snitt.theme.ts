@@ -8,6 +8,7 @@ import {
   SnittLojalitet,
   SnittTeam,
 } from './snitt.modules'
+import { SnittPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur "Snitt - Svart Studio.dc.html" — inte utbytta, inte "liknande".
 // HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n mot slumpbilder."
@@ -103,6 +104,7 @@ export const snitt: SalongTheme = {
     galleri: SnittGalleri,
     lojalitet: SnittLojalitet,
     team: SnittTeam,
+    presentkort: SnittPresentkort,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

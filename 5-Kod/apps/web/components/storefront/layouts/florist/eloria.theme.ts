@@ -2,6 +2,7 @@ import type { FloristTheme } from './types'
 import { EloriaNav, EloriaFooter } from './eloria.chrome'
 import { EloriaOm, EloriaTjanster, EloriaKontakt } from './eloria.pages'
 import { EloriaShop, EloriaBlogg, EloriaGalleri, EloriaLojalitet } from './eloria.modules'
+import { EloriaPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur .dc.html (catalog/journal/tiles/galleryItems) — inte utbytta, inte
 // "liknande". HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n."
@@ -101,6 +102,7 @@ export const eloria: FloristTheme = {
     blogg: EloriaBlogg,
     galleri: EloriaGalleri,
     lojalitet: EloriaLojalitet,
+    presentkort: EloriaPresentkort,
   },
   ownsCopy: true,
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM

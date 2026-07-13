@@ -10,6 +10,7 @@ import {
 import { CalytrixProduct } from './calytrix.product'
 import { CalytrixCart } from './calytrix.cart'
 import { CalytrixCheckout } from './calytrix.checkout'
+import { CalytrixPresentkort } from '../presentkort-views'
 
 // Foto-id:n LYFTA ur .dc.html — INTE utbytta, inte "liknande". Lokal u() (ingen
 // värde-import från theme-content.ts: den importerar registry.ts som importerar
@@ -129,6 +130,7 @@ export const calytrix: FloristTheme = {
     // goal-64: galleriet + Calytrix Club. Ingen team-vy — e-handelspaketet har ingen team-sida.
     galleri: CalytrixGalleri,
     lojalitet: CalytrixLojalitet,
+    presentkort: CalytrixPresentkort,
     product: CalytrixProduct,
     cart: CalytrixCart,
     checkout: CalytrixCheckout,
