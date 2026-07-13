@@ -16,9 +16,27 @@ import {
   Wix_Madefor_Display,
   DM_Sans,
   Merriweather,
+  Manrope,
+  Lora,
+  Nunito_Sans,
+  Archivo,
+  Newsreader,
+  Instrument_Serif,
+  Instrument_Sans,
+  Mulish,
+  Karla,
+  Poiret_One,
+  Space_Grotesk,
+  Bodoni_Moda,
+  Schibsted_Grotesk,
+  Hanken_Grotesk,
+  Anton,
+  Work_Sans,
+  Figtree,
 } from 'next/font/google'
 import { FLORIST_THEME_CSS } from '@/components/storefront/layouts/florist/registry'
 import { EKONOMI_THEME_CSS } from '@/components/storefront/layouts/ekonomi/registry'
+import { SALONG_THEME_CSS } from '@/components/storefront/layouts/salong/registry'
 import '@corevo/ui/tokens.css'
 import './globals.css'
 import './booking-global.css'
@@ -149,6 +167,40 @@ const merriweather = Merriweather({
   preload: false,
 })
 
+// CLAUDE DESIGN-SVITEN (goal-64, 12 mallar). Varje mall deklarerar sina två familjer i
+// sitt levererade manifest (`fonts.heading`/`fonts.body`) — de laddas här och exponeras
+// som råa familje-vars, precis som florist-/ekonomi-typsnitten ovan. En familj som INTE
+// laddas faller tyst till Georgia och gör två "olika" mallar typografiskt identiska;
+// därför är listan uttömmande mot manifesten. preload:false → inga extra preload-taggar
+// på ytor som inte renderar en storefront.
+// next/font är en BYGG-TIDS-transform: varje anrop måste ha ett literalt objekt (ingen
+// spread, inga variabler) — annars kan swc-pluginet inte läsa det och familjen laddas
+// aldrig. Därför upprepas subsets/display/preload på varje rad; det är avsiktligt.
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', display: 'swap', preload: false }) // ateljevinter (display + brödtext)
+const lora = Lora({ subsets: ['latin'], variable: '--font-lora', display: 'swap', preload: false }) // aurora display
+const nunitoSans = Nunito_Sans({ subsets: ['latin'], variable: '--font-nunito', display: 'swap', preload: false }) // aurora brödtext
+const archivo = Archivo({ subsets: ['latin'], variable: '--font-archivo', display: 'swap', preload: false }) // blomstertorget masthead
+const newsreader = Newsreader({ subsets: ['latin'], variable: '--font-newsreader', display: 'swap', preload: false }) // blomstertorget brödtext
+const instrumentSerif = Instrument_Serif({ subsets: ['latin'], weight: '400', variable: '--font-instrumentserif', display: 'swap', preload: false }) // calytrix display
+const instrumentSans = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrumentsans', display: 'swap', preload: false }) // calytrix brödtext
+const mulish = Mulish({ subsets: ['latin'], variable: '--font-mulish', display: 'swap', preload: false }) // eloria brödtext
+const karla = Karla({ subsets: ['latin'], variable: '--font-karla', display: 'swap', preload: false }) // kalla brödtext
+const poiret = Poiret_One({ subsets: ['latin'], weight: '400', variable: '--font-poiret', display: 'swap', preload: false }) // lunaria display
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-spacegrotesk', display: 'swap', preload: false }) // onyx display
+const bodoni = Bodoni_Moda({ subsets: ['latin'], variable: '--font-bodoni', display: 'swap', preload: false }) // siluett display
+const schibsted = Schibsted_Grotesk({ subsets: ['latin'], variable: '--font-schibsted', display: 'swap', preload: false }) // siluett brödtext
+const hanken = Hanken_Grotesk({ subsets: ['latin'], variable: '--font-hanken', display: 'swap', preload: false }) // sivsav brödtext
+const anton = Anton({ subsets: ['latin'], weight: '400', variable: '--font-anton', display: 'swap', preload: false }) // snitt poster-display
+const workSans = Work_Sans({ subsets: ['latin'], variable: '--font-worksans', display: 'swap', preload: false }) // snitt brödtext
+const figtree = Figtree({ subsets: ['latin'], variable: '--font-figtree', display: 'swap', preload: false }) // solsalt brödtext
+
+const DC_FONT_VARS = [
+  manrope, lora, nunitoSans, archivo, newsreader, instrumentSerif, instrumentSans,
+  mulish, karla, poiret, spaceGrotesk, bodoni, schibsted, hanken, anton, workSans, figtree,
+]
+  .map((f) => f.variable)
+  .join(' ')
+
 export const metadata: Metadata = {
   title: 'Corevo',
   description: 'Corevo Booking Platform',
@@ -160,7 +212,7 @@ export default function RootLayout({
   return (
     <html
       lang="sv"
-      className={`${playfair.variable} ${inter.variable} ${sourceSans.variable} ${libreCaslon.variable} ${libreFranklin.variable} ${plexMono.variable} ${cormorant.variable} ${dmSerif.variable} ${jost.variable} ${marcellus.variable} ${italiana.variable} ${fraunces.variable} ${dancingScript.variable} ${wixMadefor.variable} ${dmSans.variable} ${merriweather.variable}`}
+      className={`${playfair.variable} ${inter.variable} ${sourceSans.variable} ${libreCaslon.variable} ${libreFranklin.variable} ${plexMono.variable} ${cormorant.variable} ${dmSerif.variable} ${jost.variable} ${marcellus.variable} ${italiana.variable} ${fraunces.variable} ${dancingScript.variable} ${wixMadefor.variable} ${dmSans.variable} ${merriweather.variable} ${DC_FONT_VARS}`}
     >
       <head>
         {/* No-flash för back-office-temat: sätt data-bo-theme FÖRE första paint så ett
@@ -181,6 +233,8 @@ export default function RootLayout({
         <style dangerouslySetInnerHTML={{ __html: FLORIST_THEME_CSS }} />
         {/* EKONOMI-SVITENS palettblock (goal-63) — samma mekanik som florist ovan. */}
         <style dangerouslySetInnerHTML={{ __html: EKONOMI_THEME_CSS }} />
+        {/* SALONG-SVITENS palettblock (goal-64) — samma mekanik. */}
+        <style dangerouslySetInnerHTML={{ __html: SALONG_THEME_CSS }} />
       </head>
       <body>{children}</body>
     </html>

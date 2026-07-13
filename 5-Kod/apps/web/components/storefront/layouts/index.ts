@@ -11,6 +11,8 @@ import { FreshCutLayout } from './FreshCutLayout'
 import { FLORIST_LAYOUTS } from './florist/layouts'
 import { FLORIST_KEYS } from './florist/registry'
 import { EKONOMI_LAYOUTS } from './ekonomi/layouts'
+import { SALONG_LAYOUTS } from './salong/layouts'
+import { SALONG_KEYS } from './salong/registry'
 
 export type { StorefrontLayoutProps } from './types'
 
@@ -30,6 +32,7 @@ export const STOREFRONT_LAYOUTS = {
   freshcut: FreshCutLayout,
   ...FLORIST_LAYOUTS,
   ...EKONOMI_LAYOUTS,
+  ...SALONG_LAYOUTS,
 } as Record<StorefrontTheme, ComponentType<StorefrontLayoutProps>>
 
 /**
@@ -43,4 +46,6 @@ export const STOREFRONT_LAYOUTS = {
 export const THEME_OWNS_MODULES: ReadonlySet<StorefrontTheme> = new Set<StorefrontTheme>([
   'flora', 'salvia', 'leander', 'zigge', 'linnea', 'edit',
   ...(FLORIST_KEYS as StorefrontTheme[]),
+  // Salong-sviten (goal-64) väver in butik/blogg i sitt eget formspråk.
+  ...(SALONG_KEYS as StorefrontTheme[]),
 ])

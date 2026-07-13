@@ -1,0 +1,1115 @@
+/**
+ * KÄLLA — hårspa & frisör (goal-64, Claude Design-paketet).
+ *
+ * EXAKT KOPIA av "Källa - Hårspa.dc.html". Varje px, hex, letter-spacing och line-height är
+ * LYFT ur filen — inget är re-härlett, inget är "nästan". Mallens grammatik: sand (#F3EFE7)
+ * som grund, djup teal (#1D5E54) som enda accent, Marcellus i allt som är rubrik och pris,
+ * Karla i allt som är text, radie 6px på knappar och 8px på ytor, och ett tempo där luften
+ * mellan sektionerna (68px) är lika mycket design som innehållet.
+ *
+ * OFF-PALETT-TONER: filen använder fyra hexar som INTE finns i manifestets 8 palett-nycklar
+ * (#93998C dämpad meta, #E7E1D3 mjukare radlinje, #EDF2EC text på teal, #A9C4B8 dämpad text
+ * på teal, #4E837B/#7FA79E sidfotens linjer). De står som literaler här, precis som i filen —
+ * att tvinga in dem i var(--color-*) hade ändrat designen.
+ *
+ * Mobil (≤760px) speglar filens egna /* Corevo-tillägg *​/-block: grid → en kolumn, H1/H2
+ * clampas, sektionspadding 20px, tap-targets ≥44px.
+ */
+
+.kaRoot {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+/* ─────────────────────────── knappar & mikrotypografi ─────────────────────── */
+
+/* Filens fyllda teal-knapp ("Boka en ritual", "Till kassan", nav-korgen). */
+.kaSolid {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #edf2ec;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 6px;
+  padding: 15px 30px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.kaSolid:hover {
+  background: var(--color-primary-d);
+  color: #edf2ec;
+}
+
+/* Filens konturknapp ("Behandlingar", "Boka" på ritualkorten). */
+.kaGhost {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 14px 28px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.kaGhost:hover {
+  background: var(--color-accent-soft);
+}
+
+/* Filens textlänk ("Läs mer →", "Alla →", "Boka Ester →"). */
+.kaTextLink {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  transition: color 0.2s;
+}
+
+.kaTextLink:hover {
+  color: var(--color-primary-d);
+}
+
+/* Spärrad mikroversal — filens eyebrow (0.3em / 0.28em / 0.24em beroende på plats). */
+.kaEyebrow {
+  margin: 0 0 18px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.kaMeta {
+  margin: 0;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #93998c;
+}
+
+.kaSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ───────────────────────────────── sidhuvud ───────────────────────────────── */
+
+.kaNav {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-line);
+  gap: 24px;
+  padding: 18px 32px;
+}
+
+.kaNavWordmark {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.kaNavLinks {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.kaNavLinks a {
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+  transition: color 0.2s;
+}
+
+.kaNavLinks a:hover {
+  color: var(--color-primary);
+}
+
+.kaNavCluster {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Filens "Varukorg (0)" — fylld teal, 0.14em, 10px 16px. */
+.kaNavCta {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #edf2ec;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.kaNavCta:hover {
+  background: var(--color-primary-d);
+  color: #edf2ec;
+}
+
+/* ────────────────────────────────── hero ──────────────────────────────────── */
+
+.kaHero {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 72px 32px 0;
+  text-align: center;
+}
+
+.kaHeroTitle {
+  margin: 0 0 22px;
+  font-family: var(--font-display);
+  font-size: 62px;
+  line-height: 1.05;
+  color: var(--color-fg);
+  white-space: pre-line;
+}
+
+.kaHeroLede {
+  margin: 0 auto 36px;
+  max-width: 480px;
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--color-fg-2);
+}
+
+.kaHeroCtas {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ───────────────────── bandbilden (21:9) + dess bildtext ──────────────────── */
+
+.kaBand {
+  max-width: 1200px;
+  margin: 52px auto 0;
+  padding: 0 32px;
+}
+
+.kaBandPhoto {
+  aspect-ratio: 21 / 9;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  border-radius: 8px;
+}
+
+.kaBandCaption {
+  margin: 12px 0 0;
+  text-align: center;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #93998c;
+}
+
+/* ──────────────────────────── ritualen 01 · 02 · 03 ───────────────────────── */
+
+.kaRitual {
+  max-width: 1000px;
+  margin: 64px auto 0;
+  padding: 0 32px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.kaStep {
+  text-align: center;
+}
+
+.kaStepNo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--color-primary);
+  margin-bottom: 16px;
+}
+
+.kaStepName {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 23px;
+  color: var(--color-fg);
+}
+
+.kaStepDesc {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--color-fg-2);
+}
+
+/* ─────────────────────── signaturer — tre ritualer (kort) ─────────────────── */
+
+.kaSection {
+  max-width: 1200px;
+  margin: 68px auto 0;
+  padding: 0 32px;
+}
+
+.kaSectionNarrow {
+  composes: kaSection;
+  max-width: 1000px;
+}
+
+.kaSecHead {
+  text-align: center;
+  margin-bottom: 34px;
+}
+
+.kaSecEyebrow {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.kaSecTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  color: var(--color-fg);
+}
+
+.kaCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kaCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  padding: 32px 28px;
+  text-align: center;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.kaCardTid {
+  margin: 0 0 14px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #93998c;
+}
+
+.kaCardName {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--color-fg);
+}
+
+.kaCardDesc {
+  margin: 0 0 20px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--color-fg-2);
+}
+
+.kaCardPrice {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--color-primary);
+}
+
+/* "Boka"-knappen på kortet: kontur som fylls teal vid hover (filen). */
+.kaCardBook {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 11px 24px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.kaCardBook:hover {
+  background: var(--color-primary);
+  color: #edf2ec;
+}
+
+/* ─────────────────────────── om källa (tonad platta) ──────────────────────── */
+
+.kaAbout {
+  background: var(--color-accent-soft);
+  border-radius: 8px;
+  padding: 56px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 52px;
+  align-items: center;
+}
+
+.kaAboutTitle {
+  margin: 0 0 16px;
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 1.15;
+  color: var(--color-fg);
+}
+
+.kaAboutBody {
+  margin: 0 0 20px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+
+.kaAboutPhoto {
+  aspect-ratio: 5 / 4;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  border-radius: 8px;
+}
+
+/* ───────────────────────────── våra händer (team) ─────────────────────────── */
+
+.kaTeamGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kaTeamMember {
+  text-align: center;
+}
+
+.kaTeamPhoto {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 16px;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  border-radius: 999px;
+}
+
+.kaTeamName {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 23px;
+  color: var(--color-fg);
+}
+
+.kaTeamRoll {
+  margin: 0 0 10px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #93998c;
+}
+
+/* ────────────────────── anteckningar (hemmets rad-lista) ──────────────────── */
+
+.kaNotes {
+  max-width: 1000px;
+  margin: 68px auto 0;
+  padding: 0 32px 20px;
+}
+
+.kaNotesHead {
+  border-top: 1px solid var(--color-line);
+  padding-top: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.kaNotesTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 34px;
+  color: var(--color-fg);
+}
+
+.kaNoteList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kaNoteRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 18px 0;
+}
+
+.kaNoteRowTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  color: var(--color-fg);
+}
+
+.kaNoteRowDate {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #93998c;
+}
+
+/* ──────────────────────────── undersidor (skal) ───────────────────────────── */
+
+.kaPage {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+  color: var(--color-fg);
+  font-family: var(--font-body);
+}
+
+.kaPageWide {
+  composes: kaPage;
+  max-width: 1000px;
+}
+
+.kaPageShop {
+  composes: kaPage;
+  max-width: 1200px;
+}
+
+.kaPageHead {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.kaPageTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 52px;
+  color: var(--color-fg);
+}
+
+.kaPageLede {
+  margin: 14px auto 0;
+  max-width: 460px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+.kaEmpty {
+  margin: 0;
+  padding: 60px 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  text-align: center;
+  font-size: 15px;
+  color: var(--color-fg-2);
+}
+
+.kaNotice {
+  margin: 0 0 32px;
+  background: var(--color-accent-soft);
+  border-radius: 8px;
+  padding: 18px 24px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-primary-ink);
+}
+
+/* ─────────────────── prislistan (/behandlingar → /tjanster) ───────────────── */
+
+.kaPriceGroup {
+  margin-bottom: 42px;
+}
+
+.kaPriceGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.kaPriceGroupHead span {
+  flex: 1;
+  height: 1px;
+  background: var(--color-line);
+}
+
+.kaPriceGroupName {
+  margin: 0;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.kaPriceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 22px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #e7e1d3;
+  padding: 18px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.kaPriceRow:hover {
+  background: var(--color-surface);
+}
+
+.kaPriceMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.kaPriceName {
+  display: block;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--color-fg);
+}
+
+.kaPriceDesc {
+  display: block;
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+.kaPriceTid {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #93998c;
+}
+
+.kaPriceValue {
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--color-fg);
+  min-width: 80px;
+  text-align: right;
+}
+
+.kaPriceBook {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+/* ─────────────────────────────── om-sidan ─────────────────────────────────── */
+
+.kaOmSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 52px;
+  align-items: center;
+  margin-bottom: 52px;
+}
+
+.kaOmPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  border-radius: 8px;
+}
+
+.kaOmTitle {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: 42px;
+  line-height: 1.1;
+  color: var(--color-fg);
+}
+
+.kaOmBody {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+
+.kaOmBody:last-child {
+  margin-bottom: 0;
+}
+
+.kaStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kaStat {
+  background: var(--color-accent-soft);
+  border-radius: 8px;
+  padding: 26px;
+  text-align: center;
+}
+
+/* Filens mittersta ruta är TEAL med ljus text — vartannat-mönstret ÄR designen. */
+.kaStatDark {
+  composes: kaStat;
+  background: var(--color-primary);
+}
+
+.kaStatValue {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--color-primary);
+}
+
+.kaStatDark .kaStatValue {
+  color: #edf2ec;
+}
+
+.kaStatLabel {
+  margin: 6px 0 0;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-fg-2);
+}
+
+.kaStatDark .kaStatLabel {
+  color: #a9c4b8;
+}
+
+/* ───────────────────────────── kontakt-sidan ──────────────────────────────── */
+
+.kaKontakt {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 44px;
+}
+
+.kaKontaktCard {
+  background: var(--color-primary);
+  border-radius: 8px;
+  padding: 32px 30px;
+}
+
+.kaKontaktLabel {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #a9c4b8;
+}
+
+.kaKontaktValue {
+  margin: 0 0 22px;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: #edf2ec;
+}
+
+.kaKontaktValue:last-child {
+  margin-bottom: 0;
+}
+
+.kaKontaktValue a {
+  color: #edf2ec;
+}
+
+.kaKontaktValue a:hover {
+  color: #a9c4b8;
+}
+
+.kaKontaktProse {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  padding: 30px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+
+/* ─────────────────────── modul-vy: apoteket (butiken) ─────────────────────── */
+
+.kaShopGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kaShopCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.kaShopImg {
+  aspect-ratio: 1 / 1;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-accent-soft);
+  display: block;
+}
+
+.kaShopBody {
+  padding: 20px 22px 22px;
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.kaShopCat {
+  margin: 0 0 6px;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #93998c;
+}
+
+.kaShopName {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--color-fg);
+}
+
+.kaShopName a {
+  color: inherit;
+}
+
+.kaShopDesc {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+.kaShopPrice {
+  margin: 0 0 16px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--color-primary);
+}
+
+.kaShopBuy {
+  margin-top: auto;
+}
+
+.kaShopMore {
+  display: block;
+  margin: 40px auto 0;
+  width: fit-content;
+}
+
+/* ────────────────── modul-vy: anteckningar (bloggen, listan) ──────────────── */
+
+.kaBloggList {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kaBloggCard {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 26px;
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.kaBloggCard:hover {
+  border-color: var(--color-primary);
+}
+
+.kaBloggImg {
+  aspect-ratio: 4 / 3;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-accent-soft);
+}
+
+.kaBloggBody {
+  padding: 22px 26px 22px 0;
+}
+
+.kaBloggDate {
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.kaBloggTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.25;
+  color: var(--color-fg);
+}
+
+.kaBloggExcerpt {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--color-fg-2);
+}
+
+/* ───────────────────────────────── sidfot ─────────────────────────────────── */
+
+.kaFoot {
+  margin-top: 88px;
+  background: var(--color-primary);
+  padding: 48px 32px;
+}
+
+.kaFootRow {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.kaFootMark {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #edf2ec;
+}
+
+.kaFootTagline {
+  margin: 0;
+  font-size: 13.5px;
+  color: #a9c4b8;
+}
+
+.kaFootNav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Filens sidfotslänkar: konturade "pillerlänkar" i teal-rutan. */
+.kaFootNav a {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #edf2ec;
+  border: 1px solid #4e837b;
+  border-radius: 6px;
+  padding: 7px 13px;
+  transition: border-color 0.2s;
+}
+
+.kaFootNav a:hover {
+  border-color: #edf2ec;
+  color: #edf2ec;
+}
+
+/* Den FÖRSTA sidfotslänken är fylld ljus i filen (Ritualklubben). */
+.kaFootNav a:first-child {
+  color: var(--color-primary);
+  background: #edf2ec;
+  border-color: #edf2ec;
+  padding: 8px 14px;
+  transition: background 0.2s;
+}
+
+.kaFootNav a:first-child:hover {
+  background: var(--color-accent-soft);
+  color: var(--color-primary);
+}
+
+.kaFootMeta {
+  margin: 0;
+  font-size: 12px;
+  color: #7fa79e;
+}
+
+/* ───────────────────── mobil — speglar filens egen media query ────────────── */
+
+@media (max-width: 760px) {
+  .kaHero,
+  .kaBand,
+  .kaSection,
+  .kaSectionNarrow,
+  .kaRitual,
+  .kaNotes,
+  .kaPage,
+  .kaPageWide,
+  .kaPageShop {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .kaFoot {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .kaRitual,
+  .kaCardGrid,
+  .kaTeamGrid,
+  .kaAbout,
+  .kaOmSplit,
+  .kaStats,
+  .kaKontakt,
+  .kaShopGrid,
+  .kaBloggCard {
+    grid-template-columns: 1fr;
+  }
+
+  .kaAbout {
+    padding: 32px 24px;
+    gap: 32px;
+  }
+
+  .kaHeroTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+
+  .kaPageTitle,
+  .kaSecTitle,
+  .kaNotesTitle,
+  .kaOmTitle,
+  .kaAboutTitle {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .kaBloggBody {
+    padding: 0 22px 22px;
+  }
+
+  .kaNavLinks a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .kaNav {
+    padding: 14px 20px;
+  }
+
+  /* Tap-targets ≥44px (filens Corevo-tillägg). */
+  .kaSolid,
+  .kaGhost,
+  .kaTextLink,
+  .kaNavCta,
+  .kaCardBook,
+  .kaPriceRow {
+    min-height: 44px;
+  }
+
+  .kaPriceRow {
+    flex-wrap: wrap;
+  }
+}

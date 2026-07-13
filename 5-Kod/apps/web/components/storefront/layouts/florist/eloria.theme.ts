@@ -3,155 +3,121 @@ import { EloriaNav, EloriaFooter } from './eloria.chrome'
 import { EloriaOm, EloriaTjanster, EloriaKontakt } from './eloria.pages'
 import { EloriaShop, EloriaBlogg } from './eloria.modules'
 
-/** Unsplash photo manifest — every id below verified `curl -sI` → 200 (2026-07-11). */
+// Foto-id:n LYFTA ur .dc.html (catalog/journal/tiles/galleryItems) — inte utbytta, inte
+// "liknande". HANDOFF.md §2 regel 4: "Bildbanken är verifierad. Byt inte Unsplash-ID:n."
 const u = (id: string, w = 1600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`
 
 const IMG = {
-  heroL: u('1582794543139-8ac9cb0f7b11'),
-  heroR: u('1589458456444-f7158a7e8a4f'),
-  heroSpare: u('1593069369643-a6d42e2e3cb4'),
-  g1: u('1524835391568-32c8f7016d73', 900),
-  g2: u('1582794543139-8ac9cb0f7b11', 900),
-  g3: u('1582874576091-26fa231ce87c', 900),
-  g4: u('1598453055371-0f5e37113bea', 900),
-  g5: u('1596309322315-da9e713cbb22', 900),
-  g6: u('1716982360804-b0bfdb28103e', 900),
-  about: u('1727520327526-4b435667860a'),
-  closing: u('1782038522623-f2d1b419d5f9'),
-  p1: u('1782038522334-94a51783e4a1', 700),
-  p2: u('1707089174472-3fe57719f46b', 700),
-  p3: u('1552268889-4ddad0d04c0a', 700),
+  spreadL: u('1582794543139-8ac9cb0f7b11'), // uppslagets vänstra foto (620px)
+  spreadR: u('1454262041357-5d96f50a2f27'), // uppslagets högra foto (540px, 80px nedskjutet)
+  tradgardsros: u('1524835391568-32c8f7016d73', 900), // No. I — trädgårdsros
+  vitCeremoni: u('1522748906645-95d8adfd52c7', 900), // No. II — vit ceremoni
+  sommarang: u('1582874576091-26fa231ce87c', 900), // No. III — sommaräng
+  aftonljus: u('1598453055371-0f5e37113bea', 900), // No. IV — aftonljus
+  stillaFarval: u('1596309322315-da9e713cbb22', 900), // No. V — stilla farväl
+  manadensVal: u('1716982360804-b0bfdb28103e', 900), // No. VI — månadens val
+  om: u('1727520327526-4b435667860a'), // om-uppslagets foto
 } as const
 
 /**
- * ELORIA — blush, mörkgrön och guld i klassisk premium-stil (florist-sviten,
- * goal-58). Motsatsen till Mina: en mörkgrön guldramad "platta" mitt i heron,
- * tunna guld-löftesikoner, eleganta höga shop/blogg-kort (4:5), en klassisk
- * prislista med guld-dotterade linjer och en mörkgrön scrim-closing som ekar
- * heron. Se EloriaLayout.tsx för den fullständiga sektionssignaturen.
+ * ELORIA — klassiskt magasin (goal-64, Claude Design-paketet).
  *
- * SKÄRPE-PASS (design-skarpa-zentum.md) — färgfamiljen är ORÖRD (samma blush,
- * samma mörkgröna, samma guld-kulör ~41°); bara LJUSHETEN i guldet är justerad.
+ * EXAKT KOPIA av "Eloria - Klassiskt Magasin.dc.html". Palett, typsnitt, radie och navHeight
+ * är LYFTA ur filens `#corevo-manifest`-block — inget är re-härlett, inget är "nästan".
+ * Mörkgrönt bläck (#182A20) mot blush (#FBF3EE), guld (#7A5D1E) som enda accent och en
+ * ljusare guldton (#D9BE7B) som bara får finnas på de mörkgröna ytorna: guldramen, remsan,
+ * sidfoten. Romerska siffror i katalogen, hårlinjer i stället för kort, radie 0.
  *
- * RADIE — binär. `radius: '0px'` (var '3px') driver --sf-radius, alltså ALL
- * struktur: heroplattan, butikskort, bloggkort, galleribrickor, om-fotot, kartan.
- * Knappen är enda undantaget och är en FULL pill (--radius-pill). 0 eller pill,
- * inget däremellan — 3px var varken en kant att linjera mot eller en medveten
- * kapsel, alltså precis den mjuka moroten.
- *
- * FÄRG — 8 hex: EXAKT de 8 tokens nedan, noll dekorfärger utöver dem. Mallens
- * mörkgröna (#182A20) ÄR temats bläck: `fg` bär den, och eloria.module.css läser
- * den som `--eloria-green: var(--color-fg)`. Samma grepp som zentum, där #111926
- * är BÅDE textfärg och mörk yta — den mörka färgen gör dubbel tjänst i stället för
- * att kosta en nionde hex. (Bläcket var #241B15, en varm nästan-svart; plattan och
- * scrimmen har oförändrad kulör.) Guldet är den enda accenten och sitter bara på
- * småytor. Kontrasten är RÄKNAD (WCAG), inte gissad:
- *
- *   fg #182A20 på bg #FBF3EE (rubrik) ................ 13.77:1  (krav ≥7, mål 11)
- *   fg #182A20 på surface #FFFFFF .................... 15.10:1
- *   fg #182A20 på accentSoft #F5E4DC ................. 12.23:1
- *   fg2 #6B5548 på bg (brödtext) ...................... 6.35:1  (krav ≥4.5)
- *   fg2 #6B5548 på surface ............................ 6.96:1
- *   #FFFFFF på primary #7A5D1E (knapptext) ............ 6.15:1  (krav ≥4.5; var 4.98)
- *   #FFFFFF på primaryD (knapp-hover) ................. 8.79:1
- *   primary på bg (eyebrow/pris/linjer) ............... 5.61:1  (var 4.55)
- *   primary på accentSoft (presentkortsraden) ......... 4.99:1  (VAR 4.04 = FAIL)
- *   bg på --eloria-green (heroplattans rubrik) ....... 13.77:1
- *   bg @82% på --eloria-green (lede/brödtext) ......... 9.71:1
- *   guld-ljus på --eloria-green (eyebrow + guldram) ... 5.99:1  (VAR 3.03 = FAIL)
- *
- * Guldet mörkades ett steg (#8A6B27 → #7A5D1E) för att lyfta knapptexten och
- * presentkortsradens eyebrow över 4.5:1. På de mörkgröna ytorna gick det åt andra
- * hållet: temats guld läser bara 3.03:1 mot grönt, så där används ett LJUSARE guld
- * (--eloria-gold) som är en color-mix av två BEFINTLIGA tokens — noll nya hex.
+ * ownsCopy: true — bransch-lagret hoppas över. Utan flaggan hade BRANSCH_COPY lagt
+ * florist-branschens generiska hero-text ovanpå husets egen röst ("Det bästa av säsongen,
+ * komponerat med omsorg."), och paketet varit osynligt för varje florist-tenant. Ägarens
+ * egen settings.copy vinner fortfarande — det ÄR redigeraren.
  */
 export const eloria: FloristTheme = {
   key: 'eloria',
   name: 'Eloria',
-  desc: 'Blush · mörkgrön · guld — klassisk premium',
+  desc: 'Klassiskt premium — mörkgrönt, guld och romerska siffror.',
+  // Manifestets `palette`, alla 8 nycklar, oförändrade.
   palette: {
     primary: '#7A5D1E',
     primaryD: '#5E4715',
     bg: '#FBF3EE',
     surface: '#FFFFFF',
-    // Bläcket ÄR mallens mörkgröna (heroplattan, offertbannern, closing-scrimmen
-    // läser den som --eloria-green). Dubbel tjänst = 8 hex i stället för 9.
     fg: '#182A20',
     fg2: '#6B5548',
     line: '#E8D9C9',
-    accentSoft: '#F5E4DC',
+    accentSoft: '#D9BE7B',
   },
+  // Manifestets `fonts`: Cormorant Garamond i displayen (ofta kursiv), Mulish i brödtexten.
   fonts: {
-    display: 'var(--font-playfair), Georgia, serif',
-    body: 'var(--font-source-sans), system-ui, sans-serif',
+    display: 'var(--font-cormorant), Georgia, serif',
+    body: 'var(--font-mulish), system-ui, sans-serif',
   },
   radius: '0px',
+  navHeight: { desktop: '68px', mobile: '56px' },
   content: {
-    heroEyebrow: '— Klassisk blomsterhandel',
-    heroTitle: 'Blommor för\nlivets stora stunder.',
+    heroEyebrow: 'Livets stora stunder',
+    heroTitle: 'Blommor för bröllop, fest och avsked',
     heroLede:
-      'Handbundna buketter i tidlös stil — snittade i säsong, komponerade med omsorg och levererade med värdighet.',
-    tagline: 'Blomsterhandel i klassisk stil',
+      'Varje arrangemang komponeras personligen, efter samtal med er. Vi tar emot ett begränsat antal uppdrag per helg — förfrågan kostar ingenting.',
+    tagline: 'blomsterhandel i klassisk stil',
     utility: 'Leverans samma dag vid beställning innan kl 14 · Handbundet i butik',
+    // Filens devis — citat-blocket på hemmet och signaturen i /om.
     italic: 'Det bästa av säsongen, komponerat med omsorg.',
+    aboutTitle: 'Det tidlösa hantverket',
     aboutCopy:
       'Vi är en blomsterhandel som tror på det tidlösa — klassiska snitt, ärligt hantverk och buketter som håller vad de lovar. Varje beställning binds för hand av någon som kan sitt hantverk.',
-    servicesEyebrow: '— Våra tjänster',
-    servicesTitle: 'Tjänster',
-    aboutTitle: 'Om oss',
-    teamEyebrow: '— Teamet',
-    teamTitle: 'Händerna bakom varje bukett',
-    heroImages: [IMG.heroL, IMG.heroR, IMG.heroSpare],
-    galleryImages: [IMG.g1, IMG.g2, IMG.g3, IMG.g4, IMG.g5, IMG.g6],
-    aboutImage: IMG.about,
-    closingImage: IMG.closing,
-    team: [
-      { name: 'Vårt team', role: 'Florister', img: IMG.p1 },
-      { name: 'Beställning & bud', role: 'Butik & leverans', img: IMG.p2 },
-      { name: 'Bindning', role: 'Buketter & binderi', img: IMG.p3 },
+    servicesEyebrow: 'Bröllop & högtid',
+    servicesTitle: 'Er dag, våra blommor',
+    teamEyebrow: 'Om oss',
+    teamTitle: 'Det tidlösa hantverket',
+    heroImages: [IMG.spreadL, IMG.spreadR, IMG.tradgardsros],
+    galleryImages: [
+      IMG.tradgardsros,
+      IMG.vitCeremoni,
+      IMG.sommarang,
+      IMG.aftonljus,
+      IMG.stillaFarval,
+      IMG.manadensVal,
     ],
+    aboutImage: IMG.om,
+    closingImage: IMG.stillaFarval,
+    team: [],
+    // Filens siffer-rad i /om — verbatim.
     stats: [
       ['100%', 'handbundet'],
       ['Samma dag', 'leverans'],
       ['Klassisk', 'stil'],
     ],
   },
-  caps: {
-    heroEyebrow: true,
-    homeStats: true,
-    homeGallery: true,
-    homeAbout: true,
-  },
-  // goal-61 editor-paritet: mallens EGNA redigerbara element (Sida-editorn). Defaults =
-  // layoutens inbyggda fallback-strängar VERBATIM (EloriaLayout.tsx = hemmets band).
-  // OBS: eloria.modules.tsx har EGNA fallbacks på modulsidorna för shopEyebrow
-  // (dynamisk fulfilment-etikett), shopTitle ('Ur butiken') och blogTitle
-  // ('Ord om blommor') — ett sparat värde styr BÅDA ytorna, tomt fält låter varje
-  // yta behålla sin egen inbyggda text. hero/about/services/closing/contact-nycklarna
-  // har redan egna redigeringskort och deklareras inte här.
-  extraHome: [
-    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
-    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Beställ något klassiskt' },
-    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Visa hela butiken' },
-    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från bloggen' },
-    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Säsong, tips & inspiration' },
-    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs hela bloggen' },
-    { name: 'galleryEyebrow', label: 'Galleri: eyebrow', default: '— Galleri' },
-    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
-    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort något tidlöst.' },
-    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
-    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta till butiken' },
-  ],
-  /* TEMA-PAKET (goal-59): Eloria äger sitt SIDHUVUD, sin SIDFOT och sina UNDERSIDOR.
-     Nav = mörkgrön platta med guldramat, centrerat wordmark och menyn i två grupper;
-     footer = samma platta i tre guldlinjerade kolumner; /om = guldramat uppslag,
-     /tjanster = prislista med guld-ledare, /kontakt = ett guldramat kort. */
-  // ownsUtility: EloriaNav ritar sin egen guldremsa ur utilityText (se ThemeChrome).
+  // Manifestets `caps`.
+  caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
   chrome: { Nav: EloriaNav, Footer: EloriaFooter, ownsUtility: true },
   pages: { om: EloriaOm, tjanster: EloriaTjanster, kontakt: EloriaKontakt },
-  /* MODUL-VYER (goal-59, vektor-regeln): butiken och bloggen renderas i Elorias form —
-     höga 4:5-kort med guldlinjen under namnet, bloggen som guldramat uppslag. Modulen
-     äger fortfarande funktionen (AddToCart, priser, livscykel, korg). */
   moduleViews: { shop: EloriaShop, blogg: EloriaBlogg },
+  ownsCopy: true,
+  // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
+  // (EloriaLayout.tsx / eloria.modules.tsx) — fältet ska förifyllas ärligt.
+  extraHome: [
+    { name: 'closingEyebrow', label: 'Bröllops-plattan: eyebrow', default: 'Livets stora stunder' },
+    {
+      name: 'pillar1Title',
+      label: 'Bröllops-plattan: rubrik',
+      default: 'Blommor för bröllop, fest och avsked',
+    },
+    {
+      name: 'pillar1Body',
+      label: 'Bröllops-plattan: text',
+      rows: 3,
+      default:
+        'Varje arrangemang komponeras personligen, efter samtal med er. Vi tar emot ett begränsat antal uppdrag per helg — förfrågan kostar ingenting.',
+    },
+    { name: 'shopEyebrow', label: 'Katalog-bandet: eyebrow', default: 'Ur katalogen' },
+    { name: 'shopTitle', label: 'Katalog-bandet: rubrik', default: 'Säsongens kompositioner' },
+    { name: 'shopCta', label: 'Katalog-bandet: knapptext', default: 'Se hela katalogen' },
+    { name: 'blogEyebrow', label: 'Journal-bandet: eyebrow', default: 'Journalen' },
+    { name: 'blogTitle', label: 'Journal-bandet: rubrik', default: 'Ord om blommor' },
+    { name: 'blogCta', label: 'Journal-bandet: knapptext', default: 'Läs hela journalen' },
+  ],
 }

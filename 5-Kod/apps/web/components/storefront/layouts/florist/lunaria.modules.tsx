@@ -1,46 +1,34 @@
 import { AddToCart } from '../../shop/AddToCart'
-import {
-  formatShopPrice,
-  fulfilmentPromise,
-  SHOP_FULFILMENT_LABELS,
-} from '@/lib/storefront/shop/types'
-import type { BloggPost } from '@/lib/storefront/blogg/types'
+import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { ThemeShopViewProps, ThemeBloggViewProps } from './types'
 import styles from './lunaria.module.css'
 
 /**
- * LUNARIA — MODUL-VYER (goal-59, vektor-regeln).
+ * LUNARIA — MODUL-VYER (goal-64, vektor-regeln).
  *
- *   "mallens vektor är apex för modulens vektor, men komponenten och modulens
- *    funktion är densamma"
+ * Modulen äger FUNKTIONEN: datan är laddad, livscykeln gatad, köp-rälsen är fortfarande
+ * <AddToCart>. Formen är mallens, exakt som .dc.html ritar den:
  *
- * Modulen äger FUNKTIONEN: datan är redan laddad, livscykeln redan gatad, köp-rälsen
- * är fortfarande <AddToCart> (klientkomponenten, variant + qty + korg). Ingenting av
- * det rörs här. Det som är Lunarias är FORMEN:
+ *   SALONGEN (butik) — filens `showButik`: centrerad eyebrow ("Kollektion VII") + 52px
+ *   Poiret One-rubrik, sedan TRE kolumner med inramade kort (silverram som guldnar vid
+ *   hover), 4:5-bild, namn i display, beskrivning i tunn grotesk, pris i guld och den
+ *   INRAMADE guldknappen. Inga skuggor, inga rundade hörn.
  *
- *   BUTIKEN — samma OFFSET-GRID som hemmets "Ur butiken" (.lnOffsetGrid: kort 2 sänks
- *   ett helt sektionssteg, kort 3 ett halvt), samma 1:1-bildratio, samma 0-radie och
- *   1px --color-line-kant. Priset är däremot inte hemmets lilla mikrotal utan en STOR
- *   display-siffra i Italiana — samma gest som tjänstelistans .lnPriceValue. Kortet
- *   får en hårlinje mellan text och köp-räls så knappen läser som en egen zon.
+ *   KRÖNIKAN (blogg) — filens `showBlogg`: en 900px-spalt med inlägg under varandra,
+ *   240px-bild i 4:3 till vänster och texten till höger, allt i en silverram som guldnar.
  *
- *   BLOGGEN — Lunarias överlappande textplatta (samma grammatik som .lnHeroCard och
- *   /kontakt-kortet): fotot ligger i en 16:10-panorama-remsa och textplattan skjuter
- *   ut över dess nedre kant, växelvis från vänster och höger. Inlägg utan omslag blir
- *   en ren platta på vetefärgad botten — ingen tom bildruta.
- *
- * SYNKRONA server-komponenter. Ingen async, ingen 'use client'.
+ * PAUSAD BUTIK: katalogen är läsbar, men NOLL köpknappar (annars kan en kund handla i en
+ * stängd butik). SYNKRONA server-komponenter — ingen async, ingen 'use client'.
  */
 
-/** Samma sv-SE-datum som modulens delade vy (formatPostDate-mönstret). */
 function formatPostDate(iso: string | null): string | null {
   if (!iso) return null
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
+  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
 }
 
-/* ══════════════════════════════ BUTIKEN ═══════════════════════════════════ */
+/* ════════════════════════════════ SALONGEN ════════════════════════════════ */
 
 export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
@@ -48,145 +36,109 @@ export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeSho
   const clipped = products.length < allProducts.length
   const teaser = typeof limit === 'number'
 
-  // Startsidans teaser + tom (och inte pausad) butik → rendera ingenting alls.
-  // Inga "visas snart"-löften till en besökare (S12).
+  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
   if (teaser && allProducts.length === 0 && !paused) return null
 
   return (
-    <section
-      className={styles.lnCardSection}
-      data-module="shop"
-      data-fulfilment={config.fulfilment}
-    >
-      <div className={styles.lnSecHead}>
-        <p className={styles.lnEyebrow}>
-          {content.shopEyebrow ?? `— Ur butiken · ${SHOP_FULFILMENT_LABELS[config.fulfilment]}`}
-        </p>
-        <h2 className={styles.lnSecTitle}>{content.shopTitle ?? 'Handla hos oss'}</h2>
-        {/* LEVERANSLÖFTET — direkt under rubriken, i mallens ingress-roll. Kunden ska
-            veta hur hen får blommorna innan hen tittar på första kortet. */}
-        <p className={styles.lnModuleLede}>{fulfilmentPromise(config)}</p>
-      </div>
+    <section className={styles.lnShop} data-module="shop" data-fulfilment={config.fulfilment}>
+      <p className={styles.lnPageEyebrow}>{content.shopEyebrow ?? 'Kollektion VII'}</p>
+      <h1 className={styles.lnPageTitle}>{content.shopTitle ?? 'Salongen'}</h1>
 
       {paused ? (
-        <p role="status" className={styles.lnClosedNotice}>
-          Webshoppen är tillfälligt stängd för nya beställningar. Vi öppnar igen snart.
+        <p role="status" className={styles.lnNotice}>
+          Salongen tar för närvarande inte emot nya beställningar. Vi öppnar snart igen.
         </p>
       ) : null}
 
       {products.length === 0 ? (
-        <p className={styles.lnEmpty}>
-          Sortimentet är tomt just nu — hör gärna av dig, vi binder gärna något för hand åt dig.
-        </p>
+        <p className={styles.lnEmpty}>Salongen är tom just nu.</p>
       ) : (
-        <ul className={styles.lnOffsetGrid}>
+        <ul className={styles.lnGrid3}>
           {products.map((p) => (
-            <li key={p.id} className={styles.lnOffsetCell}>
-              <article className={styles.lnShopCard}>
-                {/* Bild + namn länkar till produktsidan — INTE hela kortet, så
-                    AddToCart-knappen nedanför förblir klickbar. */}
+            <li key={p.id}>
+              <div className={styles.lnCard}>
                 <a
                   href={`/shop/${p.id}`}
-                  className={styles.lnShopMedia}
-                  aria-label={`${p.name} — visa produkt`}
+                  className={styles.lnCardImg}
+                  aria-label={`${p.name} — visa verket`}
                   style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
                 >
-                  {/* p.imageUrl === null → .lnShopMedia:s vetefärgade platta står kvar. */}
                   <span className={styles.lnSrOnly}>{p.imageAlt ?? p.name}</span>
                 </a>
-                <div className={styles.lnShopBody}>
+                <div className={styles.lnCardBody}>
                   <h3 className={styles.lnCardName}>
-                    <a href={`/shop/${p.id}`} className={styles.lnPlainLink}>
-                      {p.name}
-                    </a>
+                    <a href={`/shop/${p.id}`}>{p.name}</a>
                   </h3>
-                  {p.description ? <p className={styles.lnCardMeta}>{p.description}</p> : null}
-                  {/* STORT PRIS — display-siffran, samma gest som tjänstelistan. */}
-                  <p className={styles.lnShopPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
-                  {paused ? null : (
-                    <div className={styles.lnShopBuy}>
-                      <AddToCart product={p} fulfilment={config.fulfilment} />
-                    </div>
-                  )}
+                  {p.description ? <p className={styles.lnCardDesc}>{p.description}</p> : null}
+                  <p className={styles.lnCardPrice}>
+                    {formatShopPrice(p.priceCents, p.currency)}
+                  </p>
+                  {paused ? null : <AddToCart product={p} fulfilment={config.fulfilment} compact />}
                 </div>
-              </article>
+              </div>
             </li>
           ))}
         </ul>
       )}
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
-        <a href={moreHref} className={styles.lnBandCta}>
-          {content.shopCta ?? 'Visa hela butiken'}
-        </a>
+        <p className={styles.lnMore}>
+          <a href={moreHref} className={styles.lnUnderline}>
+            {content.shopCta ?? 'Hela samlingen →'}
+          </a>
+        </p>
       ) : null}
     </section>
   )
 }
 
-/* ══════════════════════════════ BLOGGEN ═══════════════════════════════════ */
-
-/** Ett inlägg: 16:10-panorama + överlappande textplatta (växelvis sida). Inlägg
- *  UTAN slug renderas OLÄNKADE (legacy-rader) — exakt som modulens delade vy. */
-function LunariaPost({ post, flip }: { post: BloggPost; flip: boolean }) {
-  const date = formatPostDate(post.publishedAt)
-  const body = (
-    <>
-      {date ? <p className={styles.lnPostDate}>{date}</p> : null}
-      <h3 className={styles.lnPostTitle}>{post.title}</h3>
-      {post.excerpt ? <p className={styles.lnCardMeta}>{post.excerpt}</p> : null}
-      {post.slug ? <span className={styles.lnPostMore}>Läs inlägget</span> : null}
-    </>
-  )
-
-  return (
-    <li className={`${styles.lnPostSpread} ${flip ? styles.lnPostFlip : ''}`}>
-      <div
-        className={styles.lnPostPhoto}
-        style={post.coverImageUrl ? { backgroundImage: `url(${post.coverImageUrl})` } : undefined}
-        role={post.coverImageUrl ? 'img' : undefined}
-        aria-label={post.coverImageUrl ? (post.coverImageAlt ?? post.title) : undefined}
-      />
-      {post.slug ? (
-        <a href={`/blogg/${post.slug}`} className={styles.lnPostCard}>
-          {body}
-        </a>
-      ) : (
-        <div className={styles.lnPostCard}>{body}</div>
-      )}
-    </li>
-  )
-}
+/* ════════════════════════════════ KRÖNIKAN ════════════════════════════════ */
 
 export function LunariaBlogg({ posts: allPosts, limit, moreHref, content }: ThemeBloggViewProps) {
   const teaser = typeof limit === 'number'
   const posts = teaser ? allPosts.slice(0, limit) : allPosts
 
-  // Teaser + noll publicerade inlägg → rendera ingenting (S12).
   if (teaser && allPosts.length === 0) return null
 
   return (
-    <section className={styles.lnCardSection} data-module="blogg">
-      <div className={styles.lnSecHead}>
-        <p className={styles.lnEyebrow}>{content.blogEyebrow ?? '— Från bloggen'}</p>
-        <h2 className={styles.lnSecTitle}>{content.blogTitle ?? 'Tankar & säsong'}</h2>
-        <p className={styles.lnModuleLede}>Nyheter, tips och inspiration från oss.</p>
-      </div>
+    <section className={styles.lnBlogg} data-module="blogg">
+      <h1 className={styles.lnPageTitle}>{content.blogTitle ?? 'Krönikan'}</h1>
 
       {posts.length === 0 ? (
-        <p className={styles.lnEmpty}>Inga inlägg är publicerade ännu.</p>
+        <p className={styles.lnEmpty}>Inga krönikor är publicerade ännu.</p>
       ) : (
         <ul className={styles.lnPostList}>
-          {posts.map((p, i) => (
-            <LunariaPost key={p.id} post={p} flip={i % 2 === 1} />
-          ))}
+          {posts.map((p) => {
+            const date = formatPostDate(p.publishedAt)
+            return (
+              <li key={p.id}>
+                <a className={styles.lnPost} href={p.slug ? `/blogg/${p.slug}` : '/blogg'}>
+                  <span
+                    className={styles.lnPostImg}
+                    style={
+                      p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined
+                    }
+                  >
+                    <span className={styles.lnSrOnly}>{p.coverImageAlt ?? p.title}</span>
+                  </span>
+                  <span className={styles.lnPostBody}>
+                    {date ? <span className={styles.lnPostMeta}>{date}</span> : null}
+                    <span className={styles.lnPostTitle}>{p.title}</span>
+                    {p.excerpt ? <span className={styles.lnPostExcerpt}>{p.excerpt}</span> : null}
+                  </span>
+                </a>
+              </li>
+            )
+          })}
         </ul>
       )}
 
       {moreHref && teaser && allPosts.length > 0 ? (
-        <a href={moreHref} className={styles.lnBandCta}>
-          {content.blogCta ?? 'Läs hela bloggen'}
-        </a>
+        <p className={styles.lnMore}>
+          <a href={moreHref} className={styles.lnUnderline}>
+            {content.blogCta ?? 'Hela krönikan →'}
+          </a>
+        </p>
       ) : null}
     </section>
   )

@@ -1,43 +1,39 @@
 'use client'
 
-// CALYTRIX ÄGER SIN KASSA (goal-62, Zivars lag: mallen äger ALLT som syns).
+// CALYTRIX — KASSAN (goal-64). 3-STEGSKASSAN ÄR MALLENS IDENTITET.
 //
-// FLORISTENS ORDERBLOCK: kassan är inte en grå blankett — det är butikens eget
-// ordersblock som ligger på det mörka plommonbordet (samma bord som varukorgens
-// packlista i calytrix.cart.tsx). Varorna står som kvittorader överst, summeringen
-// prickas av som en plocklista, och fälten är blanketter med etiketten TRYCKT på
-// fältkanten. Onyx, mina eller zigge får ALDRIG den här scenen.
-//
-// Uiverse-anatomier (4-Dokument-Underlag/uiverse-komponentbibliotek.md) — ANATOMIN
-// lånad, ALDRIG koden/hexarna:
-//   · rad 15416 ".container" (Checkout-kort med glidande kort) → huvudscenen:
-//     ett lyft "dokument" på en mörk yta, skuggan gör kortet till hjälte.
-//   · rad 15908 ".add-card" (betalkortsblankett) → fältens anatomi: etiketten
-//     sitter PÅ inputens överkant och färgskiftar vid fokus. Corevo tar INTE
-//     kortnummer i detta steg (betalning vid leverans/upphämtning) — bara
-//     blankett-gesten är lånad, aldrig kortfälten.
-//   · rad 5170 ".cir-checks" → summeringens rader som avprickad plocklista:
-//     fyrkantig ruta (calytrix radie = 0) med ritad bock.
-//   · rad 15785 ".order-wrapper" (lastbilen kör → "Order Delivered") → submit-
-//     knappens resa: efter lyckad beställning kör budbilen över knappen innan
-//     redirecten. prefers-reduced-motion → resan hoppas över helt.
+// EXAKT KOPIA av `showKassa` i "Calytrix - E-handel.dc.html": "Kassan" i 56px serif,
+// "Säker betalning · N artiklar", sedan 1.7fr/1fr — de tre vita kantade stegkorten till
+// vänster (1. Leveransuppgifter · 2. Leveranssätt · 3. Betalsätt, var och en med sin
+// plommonfärgade siffra i serif) och den STICKY ordersammanfattningen till höger
+// (kvittorader med 48×60-miniatyrer, delsumma, totalt, "SLUTFÖR KÖP — {total}").
 //
 // FUNKTIONEN ÄR ORÖRD OCH DELAD (vektor-regeln): exakt samma server actions
-// (reserveOrder/confirmOrder/cancelOrder/startShopCheckout), samma fält, samma
-// valideringar, samma reserve-vid-mount + cancel-vid-lämning, samma
-// CheckoutLoader-overlay och samma dubbelklick-vakt som app/butik/kassa/
-// CheckoutForm.tsx. Byter kunden mall imorgon följer köpet med — bara scenen byts.
+// (reserveOrder / confirmOrder / cancelOrder / startShopCheckout), samma fält, samma
+// valideringar, samma reserve-vid-mount + cancel-vid-lämning, samma CheckoutLoader och
+// samma synkrona dubbelklick-vakt som app/butik/kassa/CheckoutForm.tsx.
+//
+// AVVIKELSER (medvetna — formen är filens, löftena är motorns):
+//   · STEG 2: filen listar tre valbara leveranssätt (bud 79 kr / express 149 kr / hämta
+//     fritt). Motorn har EN fulfilment per butik (tenant_modules.config) och ingen
+//     frakt-modell — tre valbara priser hade varit påhittade. Steget behåller filens
+//     radform men visar butikens FAKTISKA leveranssätt, förvalt.
+//   · STEG 3: filen listar Kort/Swish/Klarna/PayPal/Apple Pay med kortfält. Betal-rälsen
+//     är Stripe (eller betalning vid leverans) — vi renderar aldrig kortfält vi inte tar
+//     emot, och listar aldrig betalsätt butiken inte har.
+// Ett steg som ljuger är värre än ett steg som saknas: det är i kassan kunden betalar.
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/components/storefront/shop/CartProvider'
 import { CheckoutLoader } from '@/components/storefront/shop/CheckoutLoader'
-import { formatShopPrice, type ShopFulfilment } from '@/lib/storefront/shop/types'
+import { formatShopPrice, SHOP_FULFILMENT_LABELS } from '@/lib/storefront/shop/types'
 import { reserveOrder, confirmOrder, cancelOrder, startShopCheckout } from '@/app/butik/actions'
+import type { ThemeCheckoutViewProps } from './types'
 import s from './calytrix-checkout.module.css'
 
-export function CalytrixCheckout({ fulfilment }: { fulfilment: ShopFulfilment }) {
+export function CalytrixCheckout({ fulfilment }: ThemeCheckoutViewProps) {
   const { lines, token, subtotalCents, clear } = useCart()
   const router = useRouter()
 
@@ -45,26 +41,26 @@ export function CalytrixCheckout({ fulfilment }: { fulfilment: ShopFulfilment })
   const [reserving, setReserving] = useState(true)
   const [reserveError, setReserveError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  // "sent" = beställningen ÄR bekräftad, budbilen kör över knappen innan redirect.
-  // submitting förblir true under resan — cleanup-effekten nedan cancel:ar annars
-  // en redan BEKRÄFTAD order när sidan navigerar bort (villkoret !submitting).
-  const [sent, setSent] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [fields, setFields] = useState({ name: '', email: '', phone: '', address: '', note: '' })
   const didReserve = useRef(false)
-  // Dubbelbetalnings-vakt: samma synkrona ref som delade kassan — state är asynkront,
-  // två snabba klick kan annars skicka två confirmOrder. Dubbelbetalning = riktig bugg.
+  // Dubbelbetalnings-vakt: synkron ref (state är asynkront — två snabba klick kan annars
+  // skicka två confirmOrder). Dubbelbetalning = riktig bugg.
   const inFlight = useRef(false)
 
   const currency = lines[0]?.currency ?? 'SEK'
   const needsAddress = fulfilment === 'ship'
+  const label = SHOP_FULFILMENT_LABELS[fulfilment]
 
   // Reservera ordern EN gång vid mount (håller lagret medan kunden fyller i).
   useEffect(() => {
     if (didReserve.current || !token || lines.length === 0) return
     didReserve.current = true
     setReserving(true)
-    reserveOrder({ items: lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })), token })
+    reserveOrder({
+      items: lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
+      token,
+    })
       .then((r) => {
         if (r.ok) setOrderId(r.orderId)
         else setReserveError(r.message)
@@ -85,17 +81,17 @@ export function CalytrixCheckout({ fulfilment }: { fulfilment: ShopFulfilment })
   }, [orderId])
 
   if (lines.length === 0 && !orderId) {
-    // Tomt block: inget att skriva upp. Samma villkor som delade kassan.
     return (
-      <div className={s.table}>
-        <div className={`${s.pad} ${s.padEmpty}`}>
-          <p className={s.emptyKicker}>Orderblocket är tomt</p>
-          <p className={s.emptyText}>Din varukorg är tom — buketterna väntar i butiken.</p>
-          <Link href="/shop" className={s.emptyCta}>
-            In i butiken
+      <section className={s.cxCheckout}>
+        <h1 className={s.cxTitle}>Kassan</h1>
+        <div className={s.cxEmpty}>
+          <p className={s.cxEmptyTitle}>Korgen är tom — än så länge.</p>
+          <p className={s.cxEmptyText}>Någon där ute förtjänar blommor idag.</p>
+          <Link href="/shop" className={s.cxBtn}>
+            Till butiken
           </Link>
         </div>
-      </div>
+      </section>
     )
   }
 
@@ -128,9 +124,8 @@ export function CalytrixCheckout({ fulfilment }: { fulfilment: ShopFulfilment })
       setFormError(res.message)
       return
     }
-    // Betalning krävs (Fas 3, bakom payments_enabled) → Stripe DIREKT, ingen bilresa —
-    // pengasteget får aldrig vänta på en animation. Samma fall-igenom som delade kassan.
-    // inFlight släpps ALDRIG efter lyckat köp: knappen förblir låst under redirecten.
+    // Betalning krävs (bakom payments_enabled) → Stripe. inFlight släpps ALDRIG efter
+    // lyckat köp: knappen förblir låst under redirecten.
     if (res.requiresPayment) {
       const co = await startShopCheckout(res.orderId)
       if (co.ok) {
@@ -139,191 +134,223 @@ export function CalytrixCheckout({ fulfilment }: { fulfilment: ShopFulfilment })
         return
       }
     }
-    // Ordern är bekräftad → budbilen kör (uiverse rad 15785, komprimerad till ~2s).
-    // reduced-motion: hoppa resan helt, redirecta direkt (samma beteende som delad kassa).
-    const reduceMotion =
-      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduceMotion) {
-      clear()
-      router.push(`/bekraftelse/${res.orderId}`)
-      return
-    }
-    setSent(true)
-    window.setTimeout(() => {
-      // clear() först HÄR — töms korgen tidigare försvinner kvittoraderna mitt i resan.
-      clear()
-      router.push(`/bekraftelse/${res.orderId}`)
-    }, 2100)
+    clear()
+    router.push(`/bekraftelse/${res.orderId}`)
   }
 
   // v1: total = delsumma (frakt/moms additivt senare). Full kostnad visas FÖRE köp.
-  const totalCents = subtotalCents
   const pending = submitting || reserving || !orderId
   const itemCount = lines.reduce((a, l) => a + l.quantity, 0)
 
   return (
-    <div className={s.table}>
-      {/* Orderblocket: ett lyft papper på plommonbordet (scen-anatomin ur uiverse
-          rad 15416 — dokumentet är hjälten, bordet är mörkret bakom). */}
-      <div className={s.pad}>
-        <header className={s.padHead}>
-          <p className={s.padKicker}>Orderblock</p>
-          <p className={s.padNo} aria-hidden="true">
-            Nr {orderId ? orderId.slice(0, 6).toUpperCase() : '——'}
-          </p>
-        </header>
+    <section className={s.cxCheckout}>
+      <h1 className={s.cxTitle}>Kassan</h1>
+      <p className={s.cxLede}>
+        Säker betalning · {itemCount} {itemCount === 1 ? 'artikel' : 'artiklar'}
+      </p>
 
-        {/* ── Kvittoraderna: varorna överst, som handskrivna rader med prickad
-               ledare fram till priset. ── */}
-        <ol className={s.rows} aria-label="Din beställning">
-          {lines.map((l, i) => (
-            <li key={l.variantId} className={s.row}>
-              <span className={s.rowNo} aria-hidden="true">
-                {String(i + 1).padStart(2, '0')}
+      <form onSubmit={onSubmit} className={s.cxGrid} noValidate>
+        <div className={s.cxSteps}>
+          {/* ── STEG 1 — LEVERANSUPPGIFTER ── */}
+          <fieldset className={s.cxStep}>
+            <legend className={s.cxStepHead}>
+              <span className={s.cxStepNo} aria-hidden="true">
+                1.
               </span>
-              <span className={s.rowName}>
-                {l.productName}
-                {l.variantName && l.variantName !== 'Standard' ? ` (${l.variantName})` : ''} × {l.quantity}
-              </span>
-              <span className={s.rowLeader} aria-hidden="true" />
-              <span className={s.rowPrice}>{formatShopPrice(l.priceCents * l.quantity, l.currency)}</span>
-            </li>
-          ))}
-        </ol>
+              <span className={s.cxStepTitle}>Leveransuppgifter</span>
+            </legend>
+            <div className={s.cxFields}>
+              <Field
+                id="cx-name"
+                label="Mottagarens namn"
+                placeholder="För- och efternamn"
+                value={fields.name}
+                onChange={(v) => setFields((f) => ({ ...f, name: v }))}
+                autoComplete="name"
+                required
+              />
+              <Field
+                id="cx-phone"
+                label="Telefon"
+                type="tel"
+                placeholder="07x-xxx xx xx"
+                value={fields.phone}
+                onChange={(v) => setFields((f) => ({ ...f, phone: v }))}
+                autoComplete="tel"
+                required
+              />
+              <Field
+                id="cx-email"
+                label="E-post"
+                type="email"
+                placeholder="namn@mail.se"
+                value={fields.email}
+                onChange={(v) => setFields((f) => ({ ...f, email: v }))}
+                autoComplete="email"
+                required
+                wide={!needsAddress}
+              />
+              {needsAddress ? (
+                <Field
+                  id="cx-address"
+                  label="Adress"
+                  placeholder="Gata och nummer"
+                  value={fields.address}
+                  onChange={(v) => setFields((f) => ({ ...f, address: v }))}
+                  autoComplete="street-address"
+                  required
+                />
+              ) : null}
+              <div className={`${s.cxField} ${s.cxFieldWide}`}>
+                <label htmlFor="cx-note" className={s.cxLabel}>
+                  Hälsning på kortet (valfritt)
+                </label>
+                <textarea
+                  id="cx-note"
+                  rows={2}
+                  placeholder="Skrivs för hand av floristen…"
+                  className={s.cxTextarea}
+                  value={fields.note}
+                  onChange={(e) => setFields((f) => ({ ...f, note: e.target.value }))}
+                />
+              </div>
+            </div>
+          </fieldset>
 
-        {/* ── Avprickad plocklista (uiverse rad 5170 .cir-checks): summeringens
-               rader bockas av som att floristen redan plockat allt. Rutorna är
-               dekor (aria-hidden) — raderna är läsbar text. ── */}
-        <div className={s.picked}>
-          <div className={s.pickedRow}>
-            <span className={s.pickedBox} aria-hidden="true" />
-            <span className={s.pickedLabel}>
-              {itemCount} {itemCount === 1 ? 'vara' : 'varor'} plockade
-            </span>
-            <span className={s.rowLeader} aria-hidden="true" />
-            <span className={s.pickedValue}>{formatShopPrice(subtotalCents, currency)}</span>
+          {/* ── STEG 2 — LEVERANSSÄTT (butikens faktiska, förvalt) ── */}
+          <div className={s.cxStep}>
+            <p className={s.cxStepHead}>
+              <span className={s.cxStepNo} aria-hidden="true">
+                2.
+              </span>
+              <span className={s.cxStepTitle}>Leveranssätt</span>
+            </p>
+            <div className={s.cxOption} data-selected="">
+              <span className={s.cxDot} aria-hidden="true" />
+              <span className={s.cxOptionBody}>
+                <span className={s.cxOptionName}>{label}</span>
+                <span className={s.cxOptionDesc}>
+                  {needsAddress
+                    ? 'Vi skickar beställningen till adressen du fyllt i ovan.'
+                    : 'Vi hör av oss när beställningen är redo att hämtas i butiken.'}
+                </span>
+              </span>
+            </div>
           </div>
-          <div className={s.pickedRow}>
-            <span className={s.pickedBox} aria-hidden="true" />
-            <span className={s.pickedLabel}>Betalas vid leverans/upphämtning</span>
+
+          {/* ── STEG 3 — BETALSÄTT ── */}
+          <div className={s.cxStep}>
+            <p className={s.cxStepHead}>
+              <span className={s.cxStepNo} aria-hidden="true">
+                3.
+              </span>
+              <span className={s.cxStepTitle}>Betalsätt</span>
+            </p>
+            <div className={s.cxOption} data-selected="">
+              <span className={s.cxDot} aria-hidden="true" />
+              <span className={s.cxOptionBody}>
+                <span className={s.cxOptionName}>Betala vid leverans eller upphämtning</span>
+                <span className={s.cxOptionDesc}>
+                  Kräver butiken förskottsbetalning skickas du vidare till den säkra
+                  betalsidan när du slutför köpet.
+                </span>
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Full kostnad synlig FÖRE köp-knappen (samma Baymard-regel som delade kassan). */}
-        <div className={s.total}>
-          <span className={s.totalLabel}>Att betala</span>
-          <span className={s.totalValue}>{formatShopPrice(totalCents, currency)}</span>
-        </div>
+        {/* ── ORDERSAMMANFATTNING (sticky) ── */}
+        <aside className={s.cxSummary} aria-label="Din beställning">
+          <h2 className={s.cxSummaryTitle}>Din beställning</h2>
 
-        {reserveError ? (
-          <p role="alert" className={s.alert}>
-            {reserveError}{' '}
-            <Link href="/" className={s.alertLink}>
-              Tillbaka till butiken
-            </Link>
-          </p>
-        ) : null}
+          <ul className={s.cxRows}>
+            {lines.map((l) => (
+              <li key={l.variantId} className={s.cxRow}>
+                <span
+                  className={s.cxRowPhoto}
+                  aria-hidden="true"
+                  style={l.imageUrl ? { backgroundImage: `url(${l.imageUrl})` } : undefined}
+                />
+                <span className={s.cxRowBody}>
+                  <span className={s.cxRowName}>{l.productName}</span>
+                  <span className={s.cxRowQty}>{l.quantity} st</span>
+                </span>
+                <span className={s.cxRowPrice}>
+                  {formatShopPrice(l.priceCents * l.quantity, l.currency)}
+                </span>
+              </li>
+            ))}
+          </ul>
 
-        {/* ── Blanketterna: samma fält, samma ordning, samma fieldset-grupper som
-               delade kassan ("Dina uppgifter" / "Leverans"). Etikett-anatomin ur
-               uiverse rad 15908: titeln sitter PÅ fältets överkant som ett tryck. ── */}
-        <form onSubmit={onSubmit} className={s.form} noValidate>
-          <fieldset className={s.group}>
-            <legend className={s.legend}>Dina uppgifter</legend>
-            <PadField id="name" label="Namn" value={fields.name} onChange={(v) => setFields((f) => ({ ...f, name: v }))} autoComplete="name" required />
-            <PadField id="email" label="E-post" type="email" value={fields.email} onChange={(v) => setFields((f) => ({ ...f, email: v }))} autoComplete="email" required />
-            <PadField id="phone" label="Telefon" type="tel" value={fields.phone} onChange={(v) => setFields((f) => ({ ...f, phone: v }))} autoComplete="tel" required />
-          </fieldset>
+          <div className={s.cxSumRow}>
+            <span className={s.cxSumLabel}>Delsumma</span>
+            <span className={s.cxSumValue}>{formatShopPrice(subtotalCents, currency)}</span>
+          </div>
+          <div className={s.cxSumTotal}>
+            <span>Totalt</span>
+            <span className={s.cxSumTotalValue}>{formatShopPrice(subtotalCents, currency)}</span>
+          </div>
 
-          <fieldset className={s.group}>
-            <legend className={s.legend}>{needsAddress ? 'Leverans' : 'Till beställningen'}</legend>
-            {needsAddress ? (
-              <PadField id="address" label="Leveransadress" value={fields.address} onChange={(v) => setFields((f) => ({ ...f, address: v }))} autoComplete="street-address" required />
-            ) : null}
-            <PadField id="note" label="Meddelande (valfritt)" value={fields.note} onChange={(v) => setFields((f) => ({ ...f, note: v }))} />
-          </fieldset>
-
+          {reserveError ? (
+            <p role="alert" className={s.cxAlert}>
+              {reserveError}{' '}
+              <Link href="/shop" className={s.cxAlertLink}>
+                Tillbaka till butiken
+              </Link>
+            </p>
+          ) : null}
           {formError ? (
-            <p role="alert" className={s.alert}>
+            <p role="alert" className={s.cxAlert}>
               {formError}
             </p>
           ) : null}
 
-          {/* Samma overlay som delade kassan under confirmOrder — men INTE under
-              bilresan (då är ordern redan i hamn, overlayen skulle täcka bilen). */}
-          {submitting && !sent ? <CheckoutLoader /> : null}
+          {submitting ? <CheckoutLoader /> : null}
 
-          {/* SUBMIT = BUDBILENS RESA (uiverse rad 15785). Vilande: vanlig knapp.
-              sent: texten viker undan, bilen kör över vägen, bocken ritas.
-              aria-live-status i .sentMsg berättar samma sak för skärmläsare. */}
           <button
             type="submit"
-            className={s.submit}
-            disabled={pending || sent}
+            className={s.cxCta}
+            disabled={pending}
             aria-busy={submitting || reserving}
-            data-sent={sent ? '' : undefined}
           >
-            <span className={s.submitLabel}>
-              {sent
-                ? ' '
-                : submitting
-                  ? 'Slutför…'
-                  : reserving
-                    ? 'Förbereder…'
-                    : 'Slutför beställning'}
-            </span>
-            <span className={s.ride} aria-hidden="true">
-              <span className={s.road} />
-              {/* Budbil ritad inline (CSP: inga fjärr-assets), calytrix egna toner. */}
-              <svg className={s.truck} viewBox="0 0 52 26" width="52" height="26">
-                <rect x="1" y="4" width="30" height="14" fill="currentColor" />
-                <path d="M31 8h10l6 6v4H31V8Z" fill="currentColor" opacity="0.8" />
-                <rect x="33.5" y="10" width="6" height="4.5" fill="var(--color-primary-d, #4a0e2e)" />
-                <circle cx="10" cy="20" r="4" fill="var(--color-primary-d, #4a0e2e)" stroke="currentColor" strokeWidth="2" />
-                <circle cx="40" cy="20" r="4" fill="var(--color-primary-d, #4a0e2e)" stroke="currentColor" strokeWidth="2" />
-              </svg>
-            </span>
-            <span className={s.sentMsg} role="status" aria-live="polite">
-              {sent ? (
-                <>
-                  <svg viewBox="0 0 12 10" width="14" height="12" aria-hidden="true" className={s.sentCheck}>
-                    <polyline points="1.5 6 4.5 9 10.5 1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  Beställningen är på väg
-                </>
-              ) : null}
-            </span>
+            {submitting
+              ? 'Slutför…'
+              : reserving
+                ? 'Förbereder…'
+                : `Slutför köp — ${formatShopPrice(subtotalCents, currency)}`}
           </button>
-          <p className={s.trust}>🔒 Dina uppgifter används bara för denna beställning.</p>
-        </form>
-      </div>
-    </div>
+          <p className={s.cxFine}>🔒 Dina uppgifter används bara för denna beställning.</p>
+        </aside>
+      </form>
+    </section>
   )
 }
 
-// Blankettfält: etiketten TRYCKT på fältets överkant (anatomin ur uiverse rad 15908
-// .add-card — struktur och fokus-skifte lånade, aldrig hexar/kortfält). Etiketten är
-// en riktig <label> (htmlFor) — trycket är sceneri, kopplingen är på riktigt.
-function PadField({
+/** Fältet: filens etikett i versal mikrotext ovanför en 2px-inramad input. */
+function Field({
   id,
   label,
   value,
   onChange,
+  placeholder,
   type = 'text',
   autoComplete,
   required = false,
+  wide = false,
 }: {
   id: string
   label: string
   value: string
   onChange: (v: string) => void
+  placeholder?: string
   type?: string
   autoComplete?: string
   required?: boolean
+  wide?: boolean
 }) {
   return (
-    <div className={s.fieldWrap}>
-      <label htmlFor={id} className={s.fieldTitle}>
+    <div className={`${s.cxField} ${wide ? s.cxFieldWide : ''}`}>
+      <label htmlFor={id} className={s.cxLabel}>
         {label}
         {required ? ' *' : ''}
       </label>
@@ -332,9 +359,10 @@ function PadField({
         type={type}
         value={value}
         required={required}
+        placeholder={placeholder}
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        className={s.field}
+        className={s.cxInput}
       />
     </div>
   )

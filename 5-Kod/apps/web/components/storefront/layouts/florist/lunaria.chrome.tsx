@@ -9,26 +9,21 @@ import type { ThemeNavProps, ThemeFooterProps } from './types'
 import styles from './lunaria.module.css'
 
 /**
- * LUNARIA — chrome (goal-59 tema-paket). POETISK NATTBLÅ.
+ * LUNARIA — chrome (goal-64, EXAKT kopia ur "Lunaria - Art Déco.dc.html").
  *
- * NAV = SIDO-RAIL-KÄNSLA. Wordmarket är STORT (28px display) till vänster, och menyn
- * står i en KOLUMN — inte en rad — direkt till höger om det, som en rail lagd på sidan.
- * Länkarna är högerställda mikroversaler med en tunn silverlinje (1px --color-line) som
- * löper längs kolumnens vänsterkant; hela huvudet avslutas av en hårlinje mot innehållet.
- * Kluster (korg · konto · CTA) längst till höger, vertikalt centrerat mot kolumnen.
- * Ingen syskonmall har en vertikal länkkolumn i sidhuvudet.
+ * SIDHUVUDET är filens: bläckblå platta med en GULD hårlinje under, wordmarket till
+ * vänster i 30px Poiret One spärrad 0.24em, menyn CENTRERAD i en rad med 26px mellanrum
+ * (spärrade mikroversaler, guldlinje under den aktiva), och längst ut den FYLLDA
+ * guldetiketten "Korg · N" som slår om till pärlvitt vid hover. Ingen backdrop-blur,
+ * inga rundade hörn — deco ritar med linjal.
  *
- * FUNKTIONEN är plattformens: markupen renderas som children i NavShell (mobil-burger,
- * overlay, fokusfälla, scroll-skin — därav shell.navThemed/navLinks/navCluster/navWordmark
- * på elementen), ALLA modul-gatade `links` ritas, korgen ritas när shopen är live,
- * kontolänken när kundkonton är på, huvud-CTA:n är bransch-CTA:n eller boknings-drawern.
- * utilityText ritas av NavShells egen UtilityBar — mallen dubblerar den inte.
+ * SIDFOTEN är filens: guld hårlinje, stort centrerat wordmark, en rad mikroversal-länkar
+ * och en avslutande copyright-rad i dämpat blågrått. Inga kolumner, ingen adressplatta —
+ * mallen säger mindre än sina syskon, med avsikt.
  *
- * FOOTER = NATTBLÅ PLATTA MED STJÄRN-ORNAMENT. En mörk (--color-primary-d) helbredds-
- * platta: stjärnan högst upp, ett stort wordmark under den, taglinen — sedan tre smala
- * kolumner (Besök oss · Öppettider · Meny) i ljus text, och en avslutande hårlinje-rad
- * med copyright + social. Render-on-present: saknas adress/tider/kontakt/social ritas
- * blocket inte alls (aldrig påhittad adress).
+ * FUNKTIONEN är plattformens: markupen renderas som children i NavShell (mobilmeny,
+ * fokusfälla, scroll-skin — därav shell.navThemed/navLinks/navCluster), ALLA modul-gatade
+ * `links` ritas, korgen när shopen är live, kontolänken när kundkonton är på.
  */
 export function LunariaNav(p: ThemeNavProps) {
   return (
@@ -41,13 +36,8 @@ export function LunariaNav(p: ThemeNavProps) {
         <Logo tenant={{ id: '', name: p.tenant.name, slug: '' }} branding={p.branding} />
       </Link>
 
-      {/* Menyn som KOLUMN — silverlinjen sitter på kolumnens vänsterkant.
-          goal-60: railen bär max 6 länkar. Med alla moduler live blir listan 9, och
-          nio rader gör railen högre än sidhuvudet — den lodräta formen är MEDVETEN,
-          höjden var det inte. NavShell får hela `links` (mobil-overlayn) och sidfoten
-          listar allt. */}
-      <nav className={`${shell.navLinks} ${styles.lnNavRail}`} aria-label="Huvudmeny">
-        {p.links.slice(0, 6).map((l) => (
+      <nav className={`${shell.navLinks} ${styles.lnNavLinks}`} aria-label="Huvudmeny">
+        {p.links.map((l) => (
           <Link key={l.href} href={l.href}>
             {l.label}
           </Link>
@@ -55,110 +45,62 @@ export function LunariaNav(p: ThemeNavProps) {
       </nav>
 
       <div className={`${shell.navCluster} ${styles.lnNavCluster}`}>
-        {p.cartEnabled ? <CartNavButton className={shell.navAccount} /> : null}
         {p.customerAccountsEnabled ? (
           <Link href="/login" className={shell.navAccount} aria-label="Logga in">
             <StorefrontIcon name="user" size={18} />
           </Link>
         ) : null}
-        {p.primaryCta && p.primaryCta.href !== '/boka' ? (
-          <Link href={p.primaryCta.href} className={`btn-accent ${styles.lnCta}`}>
+        {/* Filens sidhuvud har EN handling längst ut: den fyllda guldetiketten "Korg · N".
+            Går shopen inte att nå faller vi tillbaka på plattformens huvud-CTA i samma
+            form — annars hade mallen tappat vägen in i bokningen helt. */}
+        {p.cartEnabled ? (
+          <CartNavButton className={styles.lnNavCta} />
+        ) : p.primaryCta && p.primaryCta.href !== '/boka' ? (
+          <Link href={p.primaryCta.href} className={styles.lnNavCta}>
             {p.primaryCta.label}
           </Link>
         ) : (
-          <BookCta className={styles.lnCta} label={p.primaryCta?.label} />
+          <BookCta className={styles.lnNavCta} label={p.primaryCta?.label} />
         )}
       </div>
     </header>
   )
 }
 
-/** Stjärn-ornamentet — sidfotens signatur (fyrspetsig, tunn). */
-function StarOrnament() {
-  return (
-    <svg
-      className={styles.lnFootStar}
-      width="28"
-      height="28"
-      viewBox="0 0 28 28"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path d="M14 0c.9 7.2 6 12.2 14 14-8 1.8-13.1 6.8-14 14-.9-7.2-6-12.2-14-14 8-1.8 13.1-6.8 14-14Z" fill="currentColor" />
-    </svg>
-  )
-}
-
 export function LunariaFooter(p: ThemeFooterProps) {
-  const hours = p.location?.hours ?? null
   const socials = [
     p.social.instagram ? { href: p.social.instagram, label: 'Instagram' } : null,
     p.social.facebook ? { href: p.social.facebook, label: 'Facebook' } : null,
     p.social.tiktok ? { href: p.social.tiktok, label: 'TikTok' } : null,
   ].filter((s): s is { href: string; label: string } => s !== null)
-  const hasVisit = !!p.location?.address || !!p.contact.phone || !!p.contact.email
+
+  // Filens copyright-rad: "© 2026 LUNARIA · STRANDVÄGEN 7 · BYGGD MED COREVO".
+  // Render-on-present: saknas adressen hoppar vi över den — aldrig en påhittad gata.
+  const meta = [
+    `© ${new Date().getFullYear()} ${p.tenant.name}`,
+    p.location?.address ?? null,
+    'Byggd med Corevo',
+  ]
+    .filter((s): s is string => !!s)
+    .join(' · ')
 
   return (
     <footer className={styles.lnFoot}>
       <div className={styles.lnFootInner}>
-        <div className={styles.lnFootTop}>
-          <StarOrnament />
-          <div className={styles.lnFootMark}>{p.tenant.name}</div>
-          <p className={styles.lnFootTagline}>{p.tagline}</p>
-        </div>
-
-        <div className={styles.lnFootCols}>
-          {hasVisit ? (
-            <div className={styles.lnFootCol}>
-              <h4 className={styles.lnFootHead}>Besök oss</h4>
-              {p.location?.address ? <p className={styles.lnFootText}>{p.location.address}</p> : null}
-              {p.contact.phone ? (
-                <p className={styles.lnFootText}>
-                  <a href={`tel:${p.contact.phone.replace(/\s+/g, '')}`}>{p.contact.phone}</a>
-                </p>
-              ) : null}
-              {p.contact.email ? (
-                <p className={styles.lnFootText}>
-                  <a href={`mailto:${p.contact.email}`}>{p.contact.email}</a>
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          {hours ? (
-            <div className={styles.lnFootCol}>
-              <h4 className={styles.lnFootHead}>Öppettider</h4>
-              {hours.map((h) => (
-                <div key={h.day} className={styles.lnFootHoursRow}>
-                  <span>{h.day}</span>
-                  <span>{h.time}</span>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          <div className={styles.lnFootCol}>
-            <h4 className={styles.lnFootHead}>Meny</h4>
-            <nav className={styles.lnFootLinks} aria-label="Sidfotsmeny">
-              {p.links.map((l) => (
-                <Link key={l.href} href={l.href}>
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
+        <p className={styles.lnFootMark}>{p.tenant.name}</p>
+        <nav className={styles.lnFootNav} aria-label="Sidfotsmeny">
+          {p.links.map((l) => (
+            <Link key={l.href} href={l.href}>
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+        {socials.length > 0 ? (
+          <div className={styles.lnFootSocial}>
+            <SocialButtons links={socials} />
           </div>
-        </div>
-
-        <div className={styles.lnFootBottom}>
-          <span>
-            © {new Date().getFullYear()} {p.tenant.name}
-          </span>
-          {socials.length > 0 ? (
-            <span className={styles.lnFootSocial}>
-              <SocialButtons links={socials} />
-            </span>
-          ) : null}
-        </div>
+        ) : null}
+        <p className={styles.lnFootMeta}>{meta}</p>
       </div>
     </footer>
   )

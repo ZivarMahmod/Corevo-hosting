@@ -7,6 +7,7 @@ import { branschCopy } from '@/components/storefront/bransch-copy'
 import { THEME_OWNS_COPY, themeOwnsCopy } from '@/lib/platform/theme-capabilities'
 import { FLORIST_THEMES } from '@/components/storefront/layouts/florist/registry'
 import { EKONOMI_THEMES } from '@/components/storefront/layouts/ekonomi/registry'
+import { SALONG_THEMES } from '@/components/storefront/layouts/salong/registry'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 
 /**
@@ -30,14 +31,18 @@ const resolveMed = (theme: StorefrontTheme, verticalId: string, ownerCopy: Param
 
 describe('goal-64: THEME_OWNS_COPY', () => {
   it('härleds ur mallarnas egna manifest (ownsCopy) — ingen separat lista att glömma', () => {
-    const declared = [...FLORIST_THEMES, ...EKONOMI_THEMES].filter((t) => t.ownsCopy).map((t) => t.key)
+    const declared = [...FLORIST_THEMES, ...EKONOMI_THEMES, ...SALONG_THEMES]
+      .filter((t) => t.ownsCopy)
+      .map((t) => t.key)
     expect([...THEME_OWNS_COPY].sort()).toEqual(declared.sort())
   })
 
-  it('ingen BEFINTLIG mall äger sin copy → noll beteendeändring för de 21', () => {
-    // Faller detta för att en NY mall lagts till med ownsCopy: bra — ta bort raden.
-    // Faller det för att en BEFINTLIG mall fått flaggan: fel, det ändrar en live-kund.
-    expect(THEME_OWNS_COPY.size).toBe(0)
+  it('ingen KUND-mall äger sin copy → noll beteendeändring för de live tenanterna', () => {
+    // Claude Design-mallarna (goal-64) SKA äga sin copy — deras text är en del av designen.
+    // Kund-mallarna får den ALDRIG: det skulle tyst byta texten på en sajt som är i drift.
+    for (const kundmall of ['freshcut', 'flora', 'zentum', 'leander']) {
+      expect(themeOwnsCopy(kundmall)).toBe(false)
+    }
   })
 
   it('utan flaggan vinner branschen över mallen (dagens beteende, oförändrat)', () => {
@@ -45,7 +50,9 @@ describe('goal-64: THEME_OWNS_COPY', () => {
     // Förutsättning: florist-branschen sätter faktiskt en egen hero-rubrik.
     expect(bransch.heroTitle && bransch.heroTitle.length > 0).toBe(true)
 
-    const content = resolveMed('calytrix' as StorefrontTheme, 'florist', null)
+    // flora = kund-mallen (Hantverksfloristerna) — den saknar ownsCopy och ska fortsätta
+    // få bransch-lagret ovanpå sin egen text. Byt INTE till en Claude Design-mall här.
+    const content = resolveMed('flora' as StorefrontTheme, 'florist', null)
     expect(content.heroTitle).toBe(bransch.heroTitle)
   })
 

@@ -1,2081 +1,964 @@
-/* ═══════════ CALYTRIX — plommon/vinröd e-handelsflorist (florist-sviten) ═══════════
-   SKÄRPE-PASS (design-skarpa-zentum.md): identiteten är oförändrad (plommon/vinrött,
-   butiken som hjälte, samma sektionsordning) — det är UTFÖRANDET som skärpts:
+/*
+ * CALYTRIX — E-HANDEL (goal-64, Claude Design-paketet "Calytrix - E-handel.dc.html").
+ *
+ * EXAKT KOPIA. Varje px, hex, font-size, letter-spacing och aspect-ratio är LYFT ur
+ * .dc.html-filens inline-stilar — inget är re-härlett, inget är "ungefär". Filens
+ * `style-hover` blir :hover här; inget annat händer.
+ *
+ * Palett (manifestets 8 nycklar, oförändrade):
+ *   primary #7d1f46 · primaryD #4a0e2e · bg #fbf6f4 · surface #ffffff
+ *   fg #241019 · fg2 #6e4f5c · line #a98d97 · accentSoft #e8d9de
+ * Radie 0px rakt igenom — mallen är KANTIG, och kantigheten ÄR identiteten.
+ *
+ * Färgerna skrivs som tokens (var(--color-*)) med filens hex som fallback: tokens
+ * sätts av floristThemeBlock() ur SAMMA manifest, så värdet är identiskt — men en
+ * ägare som byter accent i Varumärke får då genomslag.
+ */
 
-   · TYPSKALA  ALLA grannsteg ≥ ×1.3 (96 → 50 → 28 → 21 → 16 → 12). Mätning efter
-               första passet fällde 18/16 = ×1.125 — två nivåer som vägde lika mycket.
-   · VIKT      display ALLTID 400. DM Serif Display levereras BARA i vikt 400
-               (app/layout.tsx) — de gamla `font-weight: 600/700` gav SYNTETISK
-               fetstil (browsern smetar ut stammarna). 400 = vad fonten faktiskt är.
-   · RADIE     binärt: 0 på all struktur (--sf-radius = '0px' i calytrix.theme.ts,
-               --tpl-radius nollas nedan), full pill BARA på knapp/badge.
-   · BILD      EN ratio (4:5) på ALLA innehållsbilder — kort, galleri, om-foto.
-   · HOVER     5px lyft / 400ms. Inget scale(1.05), ingen skugg-bloom — inte heller
-               den ÄRVDA: .btn-accent (globals.css) växlar skugga vid hover, nollas.
-   · FÄRG      8 hex totalt (mätt, se calytrix.theme.ts) — guld-inken återbrukar
-               --color-fg och `line` bär även den mjuka tonen. Ingen hex på övertid.
-   · RYTM      eyebrow→rubrik 12px · rubrik→text 20px · text→CTA 32px, i ALLA sektioner.
+/* ═══════════════════════════════ NAV (rad 1 + 2) ═══════════════════════════ */
 
-   Delade sf*-klasser (services/about/gallery/plats/closing) lånas från
-   ../../storefront.module.css. De filerna ägs inte av mallen — där mallen måste
-   skärpa dem görs det med scopade selektorer under .calRoot/.calGallery. */
-
-/* Vars delas av HELA tema-paketet: hemmet (.calRoot), navet (.calNav), sidfoten
-   (.calFooter) och undersidorna (.calPage) — de tre sista bor UTANFÖR .calRoot i
-   DOM:en (nav/footer monteras av (public)/layout.tsx), så vars måste deklareras
-   på var och en, annars faller de tillbaka på plattformens skala. */
-.calRoot,
-.calNav,
-.calFooter,
-.calPage,
-.calShopRoot {
-  /* ── Enda egna dekorfärgen: dämpat antikguld. EN accent, och den sitter bara på
-     hero-CTA:n och "Populär"-badgen — aldrig på en stor yta. Guldet är därmed den
-     ENDA hex mallen lägger till palettens 8 → hex-budgeten (≤8) håller bara om
-     inken ÅTERBRUKAS: --color-fg (#241019) på guld = 7.35:1 (den gamla egna
-     #2b1608 gav 7.00:1 och kostade en nionde hex utan att synas bättre). */
-  --cal-gold: #cf9d3f;
-  --cal-gold-ink: var(--color-fg);
-
-  /* ── TYPSKALA — VARJE grannsteg ≥ ×1.3, hela vägen ned till mikrotexten:
-     96 → 50 → 28 → 21 → 16 → 12  (×1.92 · ×1.79 · ×1.33 · ×1.31 · ×1.33).
-     Den gamla skalan hade 18/16 = ×1.125 i botten: lede och brödtext vägde lika
-     mycket, och två nivåer som väger lika mycket är noll nivåer. */
-  --cal-fs-hero: clamp(3.25rem, 8.4vw, 6rem); /* 52 → 96px */
-  --cal-fs-h2: clamp(2rem, 4.4vw, 3.125rem); /* 32 → 50px */
-  --cal-fs-sub: clamp(1.5rem, 2.3vw, 1.75rem); /* 24 → 28px */
-  --cal-fs-lede: 1.3125rem; /* 21px */
-  --cal-fs-body: 1rem; /* 16px */
-  --cal-fs-micro: 0.75rem; /* 12px */
-
-  /* ── LINE-HEIGHT — rubriken blir en FORM (spänd), brödtexten en YTA (luftig). */
-  --cal-lh-display: 1.06;
-  --cal-lh-head: 1.1;
-  --cal-lh-sub: 1.15;
-  --cal-lh-body: 1.58;
-
-  /* ── LETTER-SPACING — omvänt mot storleken. Aldrig positiv spärr på stor text. */
-  --cal-ls-display: -0.015em;
-  --cal-ls-head: -0.01em;
-  --cal-ls-micro: 0.083em; /* ≈ +1px vid 12px */
-
-  /* ── RYTM — en skala: 12 / 20 / 24 / 32 / 48 / 96. */
-  --cal-sec: clamp(3rem, 7vw, 6rem); /* 48 → 96px sektionsavstånd */
-  --cal-band: clamp(1.5rem, 3.5vw, 3rem); /* 24 → 48px smala band */
-  --cal-gutter: clamp(1.5rem, 4vw, 1.75rem);
-  --cal-step-eyebrow: 12px; /* eyebrow → rubrik */
-  --cal-step-head: 20px; /* rubrik → text */
-  --cal-step-cta: 32px; /* text → CTA */
-
-  /* ── MOTION — återhållsam. Kortet är trögt (400ms), knappen är snabb (160ms):
-     en knapp som svarar på kortets tempo känns seg under fingret. */
-  --cal-dur: 400ms;
-  --cal-lift: -5px;
-
-  /* ══ KORT-ANATOMIN (goal-60) ══════════════════════════════════════════════════
-     EN anatomi, inte fem. Calytrix hade .calCard, .calShopCard, .calSrvCard,
-     .calPriceCard och .calPostCard — fem kort som råkade se lika ut och redan hade
-     börjat glida isär (vissa lyfte kortet, andra bara bilden; vissa hade kant, andra
-     inte). Nu bär mallen kortets FORM och modulen fyller det med sin sak: en bukett,
-     en tjänst, en kurs, ett presentkort, ett blogginlägg, en offert. Nästa bransch
-     ärver anatomin — den behöver inte uppfinna ett kort.
-
-     MEDIA-BEHANDLINGEN har två lägen, och det är skillnaden mellan "en bild i en ruta"
-     och något som känns fysiskt:
-       cover   — fotot fyller plattan (kundens verkliga foton: butiken, teamet, miljön)
-       float   — motivet SVÄVAR på plattan med skugga under (frilagd PNG, transparent
-                 bakgrund). Det är det som ger djup. Fungerar BARA på en frilagd bild —
-                 en drop-shadow på ett rektangulärt foto ger bara en rektangulär skugga.
-                 Frilägningen är ett uppladdningssteg (bildtjänst), inte CSS. */
-  --cal-plate: var(--color-accent-soft); /* rummet motivet står i */
-  --cal-card-ratio: 4 / 5; /* mallens ENDA bildratio */
-  --cal-float-pad: 12%; /* luften runt ett svävande motiv */
-  --cal-float-shadow: drop-shadow(0 18px 22px rgb(36 16 25 / 0.22));
-  --cal-media-dur: 600ms;
-
-  /* ── KÖPKNAPPEN (goal-60). Modulens AddToCart läser --sf-btn-*; mallen sätter dem
-     här och får sin egen knapp utan att röra köp-rälsen. Guld, pill, versaler —
-     samma språk som hero-CTA:n, så butiken känns som resten av mallen. */
-  --sf-btn-h: 48px;
-  --sf-btn-pad: 14px 28px;
-  /* goal-62 C3: calytrix är plommon-mallen där BUTIKEN är hjälten — dess knapp är ett
-     tungt block, inte en kapsel. (16/20 mallar delade pillen; det var därför de kändes
-     som samma sida.) */
-  --sf-btn-radius: 0;
-  --sf-btn-bg: var(--cal-gold);
-  --sf-btn-ink: var(--cal-gold-ink);
-  --sf-btn-border: var(--cal-gold);
-  --sf-btn-weight: 600;
-  --sf-btn-transform: uppercase;
-  --sf-btn-ls: 0.08em;
-  --sf-btn-dur: 160ms;
-  --sf-btn-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --sf-focus: var(--color-fg);
-  /* Navets korg-/kontoknappar: rakskurna som resten av mallen. Plattformen ritade dem
-     som cirklar (hårdkodat 999px i nav-shell) — en cirkel i en radie-0-mall är dekor
-     utan mening. Guldpillret på köp-CTA:n är däremot ett MEDVETET undantag: den enda
-     runda formen på sidan, och därför den som ögat söker sig till. */
-  --sf-navicon-radius: 0px;
-
-  /* ══ FORMULÄREN (goal-60) ══════════════════════════════════════════════════════
-     Mallen ägde nav, hero, kort och sidfot — men i samma sekund som besökaren skulle
-     ANMÄLA sig, BEGÄRA en offert eller HÖRA AV SIG möttes hon av plattformens
-     generiska fält. Mallen slutade där affären började. Nu äger mallen även den ytan.
-
-     Calytrix formulärspråk = samma som resten av mallen: rakskuret, tydlig kant,
-     plommon som fokusfärg. Fältet är en YTA man skriver i, inte en liten ruta —
-     48px hög, tydlig kant, och en kant som mörknar när man hovrar. */
-  --sf-field-h: 48px;
-  --sf-field-pad: 13px 15px;
-  --sf-field-radius: 0px; /* rakskuret, som allt annat strukturellt i mallen */
-  --sf-field-bg: var(--color-surface);
-  --sf-field-border: var(--color-line);
-  --sf-field-border-hover: var(--color-primary);
-  --sf-field-border-focus: var(--color-primary);
-  --sf-field-ring: color-mix(in srgb, var(--color-primary) 20%, transparent);
-  --sf-field-gap: 18px;
-  --sf-label-transform: uppercase;
-  --sf-label-ls: var(--cal-ls-micro);
-  --sf-label-fs: var(--cal-fs-micro);
-  --sf-chip-radius: 0px; /* valchipsen: raka, som korten */
-  --color-primary-fg: var(--color-surface); /* vitt på plommon = 9.74:1 */
-  --sf-danger: #a3122b; /* mättad vinröd — bor i mallens familj, skriker inte */
-
-  /* Galleriets delade .galleryItem läser --tpl-radius, som ärvs från .tplRoot
-     (12px). Nollas här — annars smyger mjuka hörn in i en mall som är radie-0. */
-  --tpl-radius: 0px;
-  --tpl-radius-lg: 0px;
-}
-
-/* ── TYPROLLER (.sf-*) — globala i tokens.css ([data-world] .sf-h1 = 0,2,0).
-   Mallens skala vinner via dubblad rotklass (0,3,0) — scopat till .calRoot, så
-   ingen annan mall påverkas. font-weight: 400 är inte en smaksak: DM Serif
-   Display har ingen 600-skärning, så 600 = syntetisk fetstil = suddiga stammar. */
-.calRoot.calRoot :global(.sf-eyebrow),
-.calPage.calPage :global(.sf-eyebrow) {
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: var(--cal-ls-micro);
-}
-.calRoot.calRoot :global(.sf-h1),
-.calRoot.calRoot :global(.sf-h2) {
-  font-size: var(--cal-fs-h2);
-  font-weight: 400;
-  line-height: var(--cal-lh-head);
-  letter-spacing: var(--cal-ls-head);
-}
-.calRoot.calRoot :global(.sf-lede) {
-  font-size: var(--cal-fs-lede);
-  line-height: var(--cal-lh-body);
-}
-.calRoot.calRoot :global(.sf-body) {
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-}
-
-/* Sektionsavstånd — samma steg i ALLA egna sektioner (butik, om, blogg). */
-.calSection {
-  padding-top: var(--cal-sec);
-  padding-bottom: var(--cal-sec);
-}
-
-/* ═══════════ NAV — annonsrad + split (länkar · wordmark · ikoner) ═══════════
-   shell.navThemed är ett 3-kolumners grid (0,1,0). Mallens .calNav dubblas (0,2,0)
-   och skriver om formen till två VÅNINGAR utan att röra den delade filen — NavShells
-   sticky/scroll hänger kvar på shell.navThemed.
-
-   SOLID PLOMMON (ombyggnaden): navet är samma mörka bord som packbordet
-   (calytrix-cart) — vit text (15.07:1), guld som enda glimt. Annonsraden byter
-   till VINRÖTT så våningarna läses som två olika ytor, inte en tjock. */
-.calNav.calNav {
+/* Filens header: vit, hårlinje under. Annonsraden ovanför är mallens EGEN
+   (chrome.ownsUtility) — NavShell hoppar därför över plattformens remsa. */
+.cxNav {
   display: block;
-  max-width: none;
+  background: var(--color-surface, #ffffff);
+  border-bottom: 1px solid var(--color-accent-soft, #e8d9de);
   padding: 0;
-  gap: 0;
-  background: var(--color-primary-d);
-  color: #fff;
 }
-/* NavShells burger är headerns SYSKON (bor i navRow, color: inherit från roten =
-   mörk ink → osynlig på plommon). Enda button-syskonet efter headern ÄR burgaren. */
-.calNav ~ button {
-  color: #fff;
-}
-.calNavAnnounce {
-  background: var(--color-primary); /* vinröd — vit text 7.64:1 (mätt mot #A31449) */
+
+/* RAD 1 — annonsraden: mörk plommon, mikrotext, centrerad. */
+.cxAnnounce {
+  background: var(--color-primary-d, #4a0e2e);
   color: #fff;
   text-align: center;
-  padding: 10px 24px;
-}
-.calNavAnnounceText {
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
+  padding: 10px 20px;
+  font-size: 13.5px;
   font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
-.calNavBar {
+
+/* RAD 2 — logga vänster · meny center · korg höger (1fr auto 1fr). */
+.cxNavBar {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 28px;
+  height: 66px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 24px;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 12px var(--cal-gutter);
-}
-/* nowrap är avsiktligt: wrap lät länklistan spilla till en andra rad i stället för
-   att hålla en rad. Kapningen till 6 länkar sker i chromet — här får raden aldrig
-   bryta, den ska hellre knipa ihop sitt gap. */
-.calNavLinks {
-  display: flex;
-  align-items: center;
-  gap: clamp(14px, 1.4vw, 24px);
-  justify-self: start;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  flex-wrap: nowrap;
-}
-.calNavLinks a {
-  color: #fff; /* 15.07:1 mot plommon-baren */
-  white-space: nowrap;
-  /* 44px = touch-golvet. Länken var ~19px hög (12px text + 2px kant) — en klickyta
-     man missar med tummen. Boxen växer, INTE fonten; navet mäter sin höjd dynamiskt.
-     Hover-underlinjen flyttar till ::after så den ligger kvar tätt under TEXTEN —
-     en border-bottom hade hamnat vid 44px-boxens botten, långt under orden. */
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
 }
-.calNavLinks a::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(50% - 1em);
-  height: 2px;
-  background: transparent;
+
+.cxNavWordmark {
+  justify-self: start;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-size: 27px;
+  color: var(--color-fg, #241019);
+  letter-spacing: 0.01em;
+  text-decoration: none;
 }
-/* Guld vid hover — den enda glimten på det mörka bordet (6.15:1 mot plommon,
-   räknat #cf9d3f mot #4A0E2E — över 4.5:1-golvet för 12px-text). */
-.calNavLinks a:hover {
-  color: var(--cal-gold);
+
+.cxNavLinks {
+  display: flex;
+  gap: 30px;
 }
-.calNavLinks a:hover::after {
-  background: var(--cal-gold);
-}
-.calNavWordmark {
-  justify-self: center;
+
+.cxNavLinks a {
   white-space: nowrap;
-  /* Logotyp-bilden är 40px hög → länkboxen mätte 40px. Boxen lyfts till touch-golvet
-     (44px) med logotypen centrerad — logotypen själv ritas i exakt samma storlek. */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-fg, #241019);
+  border-bottom: 2px solid transparent;
+  padding: 22px 0 20px;
+  text-decoration: none;
 }
-.calNavWordmark :global(.logo-text) {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-sub);
-  line-height: var(--cal-lh-sub);
-  letter-spacing: var(--cal-ls-head);
-  color: #fff; /* 15.07:1 mot plommon */
-  text-transform: uppercase;
+
+.cxNavLinks a:hover {
+  color: var(--color-primary-ink, #7d1f46);
+  border-bottom-color: var(--color-primary, #7d1f46);
 }
-.calNavCluster {
+
+.cxNavCluster {
   justify-self: end;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-/* Touch-golvet gäller även ikonknapparna: kontolänken mätte 40x44 (plattformens
-   navAccount sätter 40px bredd). min-bredd/-höjd vinner alltid över width/height i
-   CSS oavsett specificitet, så de delade klasserna behöver inte röras. Korgen (44x44)
-   och CTA:n (64px hög) passerar redan — för dem är detta ett no-op. */
-.calNavCluster a,
-.calNavCluster button {
-  min-width: 44px;
-  min-height: 44px;
-}
-/* Korg/konto på mörkt: shell.navAccount har --color-line-kant (osynlig på plommon)
-   och ink-färg. Mallens klass läggs BREDVID (onyx-mönstret) — dubblad för att slå
-   den delade modulens specificitet oavsett källordning. */
-.calNavIcon.calNavIcon {
-  border-color: rgba(255, 255, 255, 0.5);
-  color: #fff;
-  background: transparent;
-}
-.calNavIcon.calNavIcon:hover {
-  border-color: var(--cal-gold);
-  color: var(--cal-gold); /* ikon = grafik, 6.15:1 mot plommon (>3:1-golvet) */
-}
-.calNavIcon.calNavIcon:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
-.calNavCta {
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  padding: 12px 20px;
-  --color-accent: var(--cal-gold);
-  --color-accent-fg: var(--cal-gold-ink);
-}
-/* NavShell visar sin burger < 720px och gömmer SINA klasser — mallens egna måste
-   gömma sig själva, annars ligger länkarna kvar under hamburgaren. */
-@media (max-width: 720px) {
-  /* Länkarna göms — de bor i NavShells overlay under hamburgaren. Men KLUSTRET
-     stannar: korgen (med sin antalsbadge) och köp-CTA:n får inte försvinna på mobil,
-     det är där de behövs mest. Bara CTA:n krymper. */
-  .calNavLinks {
-    display: none;
-  }
-  .calNavBar {
-    grid-template-columns: auto 1fr;
-    gap: 12px;
-  }
-  .calNavWordmark {
-    justify-self: start;
-  }
-  .calNavCluster {
-    gap: 8px;
-  }
-  .calNavCta {
-    padding: 10px 14px;
-  }
+  gap: 9px;
 }
 
-/* ---------- 2. Fullbredds foto-hero ---------- */
-.calHero {
-  position: relative;
-  min-height: clamp(30rem, 80vh, 44rem);
-  background-size: cover;
-  background-position: center;
+/* Korg-knappen: filens inramade rektangel. Fylls svart vid hover
+   (style-hover="background:#241019; color:#fff"). */
+.cxNavCta {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-/* Scrimen är en KONTRAST-komponent, inte dekor. Golvet sätts av mallens STÖRSTA
-   RUBRIK (H1:an, mitt i heron), och rubriker kräver 7:1 — inte 4.5:1. Räknat mot
-   värsta tänkbara underlag (en utbränd, helvit fotopixel) ger alfa:
-     0.24 → 1.78:1 · 0.56 → 4.95:1 · 0.62 → 6.19:1 · 0.65 → 7.00:1 · 0.66 → 7.23:1.
-   Mittzonen låg på 0.56 (= 4.95:1) — nog för brödtext, för lite för en rubrik.
-   Ingen punkt i gradienten går numera under 0.66. */
-.calHeroScrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(0, 0, 0, 0.66) 45%,
-    rgba(0, 0, 0, 0.78) 100%
-  );
-}
-.calHeroInner {
-  position: relative;
-  z-index: 1;
-  max-width: 52rem;
-  margin: 0 auto;
-  padding: 0 var(--cal-gutter);
-  text-align: center;
-}
-.calHeroTitle {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-hero);
-  line-height: var(--cal-lh-display);
-  letter-spacing: var(--cal-ls-display);
-  color: #fff;
-  margin: 0;
-  white-space: pre-line;
-}
-/* Hierarkin görs av SKALAN (96 → 18), inte av uttonad text: leden är ren #fff. */
-.calHeroLede {
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-lede);
-  line-height: var(--cal-lh-body);
-  color: #fff;
-  max-width: 34rem;
-  margin: var(--cal-step-head) auto 0;
-}
-.calHeroCtaRow { margin-top: var(--cal-step-cta); }
-.calHeroCta {
-  /* Sätter om --color-accent/-fg lokalt på knappen (samma element som .btn-accent
-     läser variablerna från) — enda stället guldet syns förutom badgen. */
-  --color-accent: var(--cal-gold);
-  --color-accent-fg: var(--cal-gold-ink);
-}
-
-/* ── CIR-BTN (Zivars element, rad 4888) — hero-/closing-CTA:n "Beställ blommor".
-   ANATOMIN porterad: text + pil-ikon, pilen GLIDER ↗ vid hover, knappen trycks
-   1px ned vid klick, egen fokusring. UTTRYCKET är calytrix: rakt guldblock
-   (radie 0 — deras pill förkastad) och pilen bor i en plommon-CIRKEL, mallens
-   medvetna cirkelundantag (som badge-pillen). Ink på guld = 7.35:1 (etablerat). */
-.calCirBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 16px;
-  min-height: 56px; /* > 44px-touch-golvet */
-  padding: 8px 8px 8px 28px;
-  background: var(--cal-gold);
-  color: var(--cal-gold-ink);
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  text-decoration: none;
+  gap: 9px;
+  border: 2px solid var(--color-fg, #241019);
+  padding: 9px 18px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-fg, #241019);
+  background: var(--color-surface, #ffffff);
   border-radius: 0;
-  transition:
-    background-color var(--sf-btn-dur) var(--sf-btn-ease),
-    transform var(--sf-btn-dur) var(--sf-btn-ease);
-}
-.calCirBtnPuck {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px; /* cirkeln elementet kräver */
-  background: var(--color-primary-d);
-  color: #fff; /* pil = grafik, 15.07:1 mot plommon */
-}
-.calCirBtnPuck svg {
-  transition: transform 220ms var(--sf-btn-ease);
-}
-/* Hover ljusnar guldet en aning (mix mot vitt HÖJER inkens kontrast, aldrig sänker)
-   och pilen glider diagonalt — två saker, aldrig fler. */
-.calCirBtn:hover {
-  background: color-mix(in srgb, var(--cal-gold) 86%, #fff);
-}
-.calCirBtn:hover .calCirBtnPuck svg {
-  transform: translate(2px, -2px);
-}
-.calCirBtn:active {
-  transform: translateY(1px);
-}
-/* Knappen står alltid på mörkt (hero-scrim eller closing-plommon) → vit ring. */
-.calCirBtn:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
+  text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
-/* ── HINT-PRICKEN (Zivars element, rad 4637 .item-hints) — pulserande prick över
-   hero-fotot som pekar in i butiken. ANATOMIN: dot + ring som pulserar utåt +
-   linje/text som växer fram vid hover/fokus. Länken är ett KOMPLEMENT (hero-CTA:n
-   bär funktionen) — därför är hover-avslöjandet okej här, och den har alltid
-   aria-label + fokusring för tangentbord/skärmläsare. */
-.calHint {
-  position: absolute;
-  right: clamp(24px, 12vw, 160px);
-  bottom: clamp(48px, 14vh, 110px);
-  z-index: 1;
-  display: flex;
-  flex-direction: row-reverse; /* etiketten växer ut åt VÄNSTER, in mot rubriken */
-  align-items: center;
-  gap: 12px;
-  min-width: 44px;
-  min-height: 44px;
-  text-decoration: none;
-}
-.calHintDot {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 44px; /* touch-golvet bärs av pricken själv */
-  height: 44px;
-}
-.calHintDot::before {
-  content: '';
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: var(--cal-gold);
-}
-.calHintDot::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 999px;
-  animation: calHintPulse 2.2s ease-out infinite;
-}
-@keyframes calHintPulse {
-  0% {
-    transform: scale(0.5);
-    opacity: 1;
-  }
-  70% {
-    transform: scale(1.2);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1.2);
-    opacity: 0;
-  }
-}
-/* Etiketten: vit mikrotext på scrimmen (scrim-golvet 0.66 → ≥7.2:1 även mot en
-   utbränd vit fotopixel). Linjen ritas i ::after och VÄXER från noll — samma gest
-   som originalets hint-linje. */
-.calHintLabel {
-  position: relative;
-  padding-bottom: 6px;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
+.cxNavCta:hover {
+  background: var(--color-fg, #241019);
   color: #fff;
-  white-space: nowrap;
-  opacity: 0;
-  transform: translateX(8px);
-  transition: opacity 400ms ease, transform 400ms ease;
-}
-.calHintLabel::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 1px;
-  width: 0;
-  background: #fff;
-  transition: width 400ms ease;
-}
-.calHint:hover .calHintLabel,
-.calHint:focus-visible .calHintLabel {
-  opacity: 1;
-  transform: none;
-}
-.calHint:hover .calHintLabel::after,
-.calHint:focus-visible .calHintLabel::after {
-  width: 100%;
-}
-.calHint:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 4px;
-}
-@media (max-width: 720px) {
-  /* Mobil: pricken skulle krocka med den centrerade hero-texten — CTA:n bär vägen
-     in i butiken, pricken är ren desktop-dramatik. */
-  .calHint {
-    display: none;
-  }
 }
 
-/* ── KNAPPENS HOVER — den ÄRVDA skugg-bloomen nollas.
-   .btn-accent (globals.css) bär `box-shadow: var(--shadow-gold)` och byter till
-   `var(--glow-gold)` vid hover. På storefronten pekar de om till
-   --sf-shadow-soft (0 10px 30px rgba(0,0,0,.06)) → --sf-shadow-card
-   (0 24px 60px rgba(0,0,0,.12)): skuggan DUBBLERAS i spridning och opacitet vid
-   hover — exakt den pösiga bloom regeln förbjuder, och den satt på BÅDA mallens
-   knappar (hero-CTA + closing-CTA). Nollad, ersatt av mallens enda rörelse:
-   5px lyft / 400ms. `.calRoot :global(.btn-accent):hover` = (0,2,0) slår
-   `.btn-accent:hover` = (0,1,0); .sfClosingCta-reglerna rör bara background. */
-.calRoot :global(.btn-accent) {
-  box-shadow: none;
-  transition: transform var(--cal-dur) ease;
-}
-.calRoot :global(.btn-accent):hover {
-  box-shadow: none;
-  transform: translateY(var(--cal-lift));
-}
-
-/* ---------- 3. Mörkt marknadsförings-band ---------- */
-/* SEKTIONSÖVERGÅNG (goal-62 C4): plommonbandet är en LYFT PLATTA — samma språk som
-   korten (skuggan som lyfter). Stora rundade överhörn + skugga uppåt gör att bandet
-   ligger PÅ sidan i stället för att vara en rak avdelare. */
-.calBand {
-  background: var(--color-primary-d);
-  padding: var(--cal-band) 24px;
-  text-align: center;
-  clip-path: inset(0 round 72px 72px 0 0);
-}
-.calBandText {
-  max-width: 44rem;
-  margin: 0 auto;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-sub);
-  line-height: var(--cal-lh-sub);
-  color: #fff; /* 15.07:1 */
-}
-
-/* ═══════════ BUTIKEN SOM HJÄLTE — 3D-RINGEN (Zivars element, rad 1349) ═══════════
-   ANATOMIN porterad rakt av: preserve-3d-behållare som roterar oändligt kring Y,
-   korten står i cirkeln via rotateY((360/n)·i) + translateZ(radien). UTTRYCKET är
-   calytrix: 4:5-kort på surface med guldkant, scenen är det mörka plommonbordet
-   (samma dramatik som packbordet). Ringen PAUSAR vid hover/fokus (ett kort ska gå
-   att sikta på och tabba till); reduced-motion fryser den till en stilla solfjäder. */
-.calStage {
-  background: var(--color-primary-d);
-  padding: var(--cal-sec) 0;
-  overflow: hidden; /* perspektivförstoringen får ALDRIG ge sidled-scroll */
-}
-.calStageHead {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 var(--cal-gutter);
-  text-align: center;
-}
-.calStageEyebrow {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--cal-gold); /* 6.15:1 mot plommon (#cf9d3f mot #4A0E2E) */
-}
-.calStageTitle {
-  margin: var(--cal-step-eyebrow) auto 0;
-  max-width: 40rem;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-h2);
-  line-height: var(--cal-lh-head);
-  letter-spacing: var(--cal-ls-head);
-  color: #fff; /* 15.07:1 */
-}
-.calRingScene {
-  position: relative;
-  height: clamp(300px, 44vw, 400px);
-  margin-top: 32px;
-}
-.calRing {
-  /* Radien (translateZ) skalar med kortbredden: kordan mellan grannkort =
-     2·tz·sin(180°/6) = 2·1.45w·0.5 = 1.45w > w → korten överlappar aldrig,
-     ens på mobil (allt skalar med samma w). */
-  --cal-ring-w: clamp(120px, 16vw, 176px);
-  --cal-ring-tz: calc(var(--cal-ring-w) * 1.45);
-  position: absolute;
-  width: var(--cal-ring-w);
-  aspect-ratio: 3 / 4; /* kortets YTTERMÅTT (bild 4:5 + textfot) */
-  top: 50%;
-  left: 50%;
-  margin-top: calc(var(--cal-ring-w) * -0.6667);
-  margin-left: calc(var(--cal-ring-w) / -2);
-  transform-style: preserve-3d;
-  transform: perspective(1200px) rotateX(-8deg);
-  animation: calRingSpin 48s linear infinite;
-}
-@keyframes calRingSpin {
-  from {
-    transform: perspective(1200px) rotateX(-8deg) rotateY(0turn);
-  }
-  to {
-    transform: perspective(1200px) rotateX(-8deg) rotateY(1turn);
-  }
-}
-/* Pausen är en AFFORDANCE, inte dekor: utan den jagar pekaren/fokus ett rullande mål. */
-.calRingScene:hover .calRing,
-.calRingScene:focus-within .calRing {
-  animation-play-state: paused;
-}
-.calRingCard {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-surface);
-  border: 1px solid color-mix(in srgb, var(--cal-gold) 60%, transparent);
-  text-decoration: none;
-  transform: rotateY(calc((360deg / var(--cal-ring-n, 6)) * var(--cal-ring-i, 0)))
-    translateZ(var(--cal-ring-tz));
-}
-.calRingCard:focus-visible {
-  outline: 2px solid var(--cal-gold);
-  outline-offset: 3px;
-}
-.calRingImg {
-  display: block;
-  flex: 1 1 auto;
-  min-height: 0;
-  background-color: var(--cal-plate); /* rummet motivet står i — mallens platta */
-  background-size: cover;
-  background-position: center;
-}
-.calRingName {
-  padding: 10px 12px 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-fg); /* 16.84:1 på surface */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.calRingPrice {
-  padding: 4px 12px 12px;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  color: var(--color-primary); /* ≥9:1 på surface (etablerat 9.08 mot bg) */
-}
-.calStageCtaRow {
-  margin-top: 40px;
-  text-align: center;
-}
-/* Som .calSecCta men för mörk botten: vit text, guldlinje. */
-.calStageCta {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--cal-fs-micro);
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: #fff; /* 15.07:1 */
-  border-bottom: 2px solid var(--cal-gold);
-  padding-bottom: 2px;
-  white-space: nowrap;
-  text-decoration: none;
-  transition: opacity var(--sf-btn-dur) var(--sf-btn-ease);
-}
-.calStageCta:hover {
-  opacity: 0.75;
-}
-.calStageCta:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 4px;
-}
-
-/* ---------- Sektionsrubrik (delas av "Mest sålda" + "Från bloggen") ---------- */
-.calSecHead {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 var(--cal-gutter);
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--cal-step-head);
-  flex-wrap: wrap;
-}
-/* Mikrotext-regeln: 12px / 600 / VERSALER / +1px spärr. Understruken permanent —
-   en kant som redan finns är skarpare än en som tonar fram vid hover. */
-.calSecCta {
-  display: inline-flex;
-  align-items: center;
-  /* 44px = touch-golvet. Länken var 16px hög utan padding — en klickyta man missar. */
-  min-height: 44px;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--cal-fs-micro);
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary); /* 9.08:1 mot --color-bg */
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 2px;
-  white-space: nowrap;
-  transition: opacity var(--sf-btn-dur) var(--sf-btn-ease);
-}
-.calSecCta:hover { opacity: 0.7; }
-.calSecCta:active { opacity: 0.5; }
-.calSecCta:focus-visible,
-.calCard:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 4px;
-}
-/* Navlänkarnas ring bor på mörkt plommon → vit (vinröd-på-plommon ≈ 2:1 syns ej). */
-.calNavLinks a:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 4px;
-}
-
-/* ---------- 4. Horisontell kort-rad ("Mest sålda" + blogg) ---------- */
-.calScrollRow {
-  display: flex;
-  gap: 24px;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  padding: 48px var(--cal-gutter) 8px;
-  -webkit-overflow-scrolling: touch;
-}
-.calCardSlot {
-  flex: 0 0 auto;
-  width: clamp(15rem, 26vw, 19rem);
-  scroll-snap-align: start;
-}
-/* Kortet är en flex-kolumn i full höjd så att priset kan bottenankras (margin-top:auto)
-   — annars sköt ett tvåradigt produktnamn priset nedåt och raden tappade sin baslinje.
-   Hover gör TVÅ saker, aldrig fler: kortet lyfts och bilden zoomar mjukt. */
-.calCard {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  text-decoration: none;
-  /* goal-62 C3 — CALYTRIX SIGNATUR: VARAN LYFTER.
-     15 av 20 mallar hade flata kort (mätt) — varan låg platt mot sidan i allihop. Här är
-     butiken hjälten: kortet vilar med en mjuk skugga och LYFTER ur sidan när man rör vid
-     det. Skuggan är plommon (mallens egen ink), inte en grå standardskugga — den hör till
-     paletten. */
-  background: var(--color-surface);
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-fg) 10%, transparent);
-  transition: transform var(--cal-dur) ease, box-shadow var(--cal-dur) ease;
-}
-.calCard:hover,
-.calCard:focus-visible {
-  transform: translateY(var(--cal-lift));
-  box-shadow: 0 16px 34px color-mix(in srgb, var(--color-fg) 22%, transparent);
-}
-.calCard:hover .calCardImg,
-.calCard:focus-visible .calCardImg {
-  transform: scale(1.04);
-}
-.calCardSlot {
-  display: flex;
-}
-/* PLATTAN — rummet motivet står i. Ägs av mallen, delas av ALLA moduler. */
-.calCardImgWrap {
-  position: relative;
-  border-radius: var(--sf-radius); /* = 0 */
-  overflow: hidden;
-  background: var(--cal-plate);
-}
-.calCardImg {
-  aspect-ratio: var(--cal-card-ratio);
-  background-size: cover;
-  background-position: center;
-  transition: transform var(--cal-media-dur) ease-out;
-}
-
-/* FLOAT — motivet svävar på plattan i stället för att fylla den.
-   `contain` + padding låter motivet stå FRITT i rummet; drop-shadow följer motivets
-   silhuett (inte en rektangel) eftersom bilden är frilagd med transparent bakgrund.
-   Det är skillnaden mellan "ett foto i en ruta" och ett föremål som ligger på en yta.
-   På ett vanligt foto blir skuggan en fyrkant — därför är detta ett OPT-IN-läge som
-   bara sätts när bilden faktiskt är frilagd. */
-.calCardImgFloat {
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  padding: var(--cal-float-pad);
-  filter: var(--cal-float-shadow);
-  /* Skuggan hör till motivet, inte till plattan → den får inte klippas av wrappern. */
-  transition:
-    transform var(--cal-media-dur) cubic-bezier(0.2, 0.8, 0.2, 1),
-    filter var(--cal-media-dur) ease-out;
-}
-/* Vid hover lyfter motivet UR plattan: det stiger, och skuggan växer och mjuknar —
-   som ett föremål man lyfter mot ljuset. Två saker, aldrig fler. */
-.calCard:hover .calCardImgFloat,
-.calCard:focus-visible .calCardImgFloat,
-.calShopMedia:hover .calCardImgFloat {
-  transform: translateY(-8px) scale(1.03);
-  filter: drop-shadow(0 30px 34px rgb(36 16 25 / 0.28));
-}
-/* Badgen är mallens medvetna pill-undantag mot de raka kanterna. */
-.calBadge {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 1;
-  background: var(--cal-gold);
-  color: var(--cal-gold-ink); /* = --color-fg, 7.35:1 mot guldet */
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--cal-fs-micro);
-  line-height: 1.4;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  padding: 5px 12px;
-  border-radius: 999px;
-}
-/* Namnet klipps till två rader: ett långt namn får aldrig knuffa priset ur linje,
-   och ett obrytbart ord ("Höstbukett-Deluxe-Presentförpackning") får aldrig sticka
-   ut ur kortet i den horisontellt scrollande raden. */
-.calCardName {
-  margin: var(--cal-step-head) 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-sub);
-  line-height: var(--cal-lh-sub);
-  letter-spacing: var(--cal-ls-head);
-  color: var(--color-fg); /* 16.84:1 */
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.calCardMeta {
-  margin: 12px 0 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2); /* 6.67:1 */
-}
-.calCardPrice {
-  margin: 12px 0 0;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--cal-fs-body);
-  color: var(--color-primary); /* 9.08:1 */
-}
-/* Radjusteringen: priset bottenankras, och eftersom köp-rälsen ligger DIREKT efter
-   priset i DOM:en trycks paret ned som en enhet. Alla priser i raden hamnar då på
-   samma baslinje oavsett hur långa namn och beskrivningar är.
-   Mätt live: utan detta låg tre priser i samma rad på y=293/293/318 — kortet med
-   kortare beskrivning drog upp sitt pris 25px. Köpknapparna stod i linje, priserna
-   hoppade. Endast EN auto-margin per kolumn (den på .calShopBuy är borttagen),
-   annars delar de på utrymmet i stället för att trycka ned. */
-.calCard .calCardPrice,
-.calShopBody .calCardPrice {
-  margin-top: auto;
-  padding-top: 12px;
-}
-
-@media (max-width: 640px) {
-  .calScrollRow { gap: 12px; padding-top: 24px; }
-  .calCardSlot { width: 13.5rem; }
-}
-
-/* ---------- Galleri — samma bildratio och raka hörn som resten av mallen ----------
-   Gallery.tsx stylas av storefront.module.css (delad, ägs inte av mallen). Markupen
-   ägs däremot av mallen, så en egen wrapper-klass + struktur-selektorer räcker:
-   .galleryItem = 1/1 (0,1,0) → vår (0,2,1) vinner. Hover-scale ligger på
-   `.galleryBtn:hover .galleryImg` (0,3,0) → dubblad wrapper-klass (0,3,2) vinner. */
-.calGallery li {
-  aspect-ratio: 4 / 5;
+/* Konto-ikonen: samma kantiga språk (plattformens shell.navAccount ger kroppen). */
+.cxNavIcon {
+  color: var(--color-fg, #241019);
   border-radius: 0;
-  transition: transform var(--cal-dur) ease;
 }
-.calGallery li:hover { transform: translateY(var(--cal-lift)); }
-.calGallery.calGallery button:hover img { transform: none; }
 
-/* Om-fotot ligger redan i 4/5 (delad .sfAboutPhoto) och blir radie-0 av
-   --sf-radius: '0px'. Ingen override behövs — hela mallen är därmed 4:5 rakt av. */
+/* ═══════════════════════════════ HEMMET ═══════════════════════════════════ */
 
-/* ═══════════ PRESENTKORTET SOM URKLIPPT KUPONG (Zivars element, rad 14857) ═══════
-   ANATOMIN: en papperslapp KLIPPT ur ett ark — perforerad tandkant upptill och
-   nedtill (mask av koniska kilar, exakt tanddjup = halva tandbredden så raden
-   sluter tätt). UTTRYCKET: papper (surface) på det mörka plommonbordet. Formen
-   ljuger inte: presentkortet ÄR en kupong. Ingen påhittad rabattkod — texten är
-   ägarens egen gift-copy. */
-.calCouponBand {
-  background: var(--color-primary-d);
-  padding: var(--cal-band) var(--cal-gutter);
-  text-align: center;
+.cxHome {
+  background: var(--color-bg, #fbf6f4);
+  overflow-x: hidden;
 }
-.calCoupon {
-  --cal-cut: 18px;
-  width: min(44rem, 100%);
+
+/* (1) SPLIT-HERO 5fr / 7fr — text vänster, foto höger, kant i kant. */
+.cxHero {
+  max-width: 1280px;
   margin: 0 auto;
-  padding: calc(var(--cal-cut) + 24px) clamp(24px, 6vw, 56px) calc(var(--cal-cut) + 40px);
-  background: var(--color-surface);
-  /* Tandkanten: två konisk-kil-remsor (upp/ned) + en fyllnad däremellan.
-     Kilarna är 90° → djupet = tandbredden/2, därav calc(var(--cal-cut)/2). */
-  -webkit-mask:
-    conic-gradient(from 135deg at top, #0000 90deg, #000 0) top / var(--cal-cut)
-      calc(var(--cal-cut) / 2) repeat-x,
-    conic-gradient(from -45deg at bottom, #0000 90deg, #000 0) bottom / var(--cal-cut)
-      calc(var(--cal-cut) / 2) repeat-x,
-    linear-gradient(#000 0 0) 50% calc(var(--cal-cut) / 2) / 100% calc(100% - var(--cal-cut))
-      no-repeat;
-  mask:
-    conic-gradient(from 135deg at top, #0000 90deg, #000 0) top / var(--cal-cut)
-      calc(var(--cal-cut) / 2) repeat-x,
-    conic-gradient(from -45deg at bottom, #0000 90deg, #000 0) bottom / var(--cal-cut)
-      calc(var(--cal-cut) / 2) repeat-x,
-    linear-gradient(#000 0 0) 50% calc(var(--cal-cut) / 2) / 100% calc(100% - var(--cal-cut))
-      no-repeat;
-}
-.calCouponKicker {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary); /* 9.08:1 (etablerat mot ljusa ytan) */
-}
-.calCouponText {
-  margin: var(--cal-step-eyebrow) auto 0;
-  max-width: 30rem;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-sub);
-  line-height: var(--cal-lh-sub);
-  color: var(--color-fg); /* 16.84:1 */
-}
-
-/* ── PUSHABLE (Zivars element, rad 5779) — kupongens knapp TRYCKS ner fysiskt.
-   ANATOMIN: tre lager — skugga (blurrad, ligger kvar), kant (mörk sockel), front
-   (lyft -4px). Hover lyfter fronten till -6px med overshoot-fjäder; klick slår
-   den till -2px på 34ms. UTTRYCKET: vinröd front (vit text 7.64:1), plommonkant,
-   skugga ur mallens ink — inga lånade hexar, radie 0. */
-.calPush {
-  position: relative;
-  display: inline-block;
-  margin-top: var(--cal-step-cta);
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-decoration: none;
-}
-.calPushShadow {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--color-fg) 32%, transparent);
-  filter: blur(3px);
-  will-change: transform;
-  transform: translateY(2px);
-  transition: transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1);
-}
-.calPushEdge {
-  position: absolute;
-  inset: 0;
-  background: var(--color-primary-d);
-}
-.calPushFront {
-  display: block;
-  position: relative;
-  padding: 15px 32px; /* 15+15+~17px text ≈ 47px hög → över touch-golvet */
-  background: var(--color-primary);
-  color: #fff; /* 7.64:1 mot vinrött */
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  transform: translateY(-4px);
-  transition: transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1);
-}
-.calPush:hover .calPushFront {
-  transform: translateY(-6px);
-  transition: transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5);
-}
-.calPush:active .calPushFront {
-  transform: translateY(-2px);
-  transition: transform 34ms;
-}
-.calPush:hover .calPushShadow {
-  transform: translateY(4px);
-  transition: transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5);
-}
-.calPush:active .calPushShadow {
-  transform: translateY(1px);
-  transition: transform 34ms;
-}
-.calPush:focus-visible {
-  outline: 2px solid var(--color-fg);
-  outline-offset: 4px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .calCard,
-  .calGallery li,
-  .calRoot :global(.btn-accent) { transition: none; }
-  .calCard:hover,
-  .calGallery li:hover,
-  .calRoot :global(.btn-accent):hover { transform: none; }
-}
-
-/* Knappens ärvda skugg-bloom nollas även i nav/undersidor (de bor utanför .calRoot,
-   där den befintliga nollningen inte når). */
-.calNav :global(.btn-accent),
-.calPage :global(.btn-accent) {
-  box-shadow: none;
-  transition: transform var(--cal-dur) ease;
-}
-.calNav :global(.btn-accent):hover,
-.calPage :global(.btn-accent):hover {
-  box-shadow: none;
-  transform: translateY(var(--cal-lift));
-}
-
-/* ---------- Sektionsrubrik i mallens egen skala (ersätter delade .sf-h2) ---------- */
-.calSecTitle {
-  margin: var(--cal-step-eyebrow) 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-h2);
-  line-height: var(--cal-lh-head);
-  letter-spacing: var(--cal-ls-head);
-  color: var(--color-fg);
-}
-
-/* ---------- PRISER SOM RUTNÄT AV KORT (hemmet) ---------- */
-.calPriceGrid {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 48px var(--cal-gutter) 0;
+  padding: 0 28px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-  gap: 24px;
+  grid-template-columns: 5fr 7fr;
+  gap: 0;
+  align-items: stretch;
 }
-.calPriceCard {
+
+.cxHeroText {
+  padding: 72px 48px 72px 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  padding: 24px;
-  cursor: pointer;
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
-  transition: transform var(--cal-dur) ease, border-color var(--cal-dur) ease;
+  justify-content: center;
 }
-.calPriceCard:hover {
-  transform: translateY(var(--cal-lift));
-  border-color: var(--color-primary);
-}
-.calPriceName {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-sub);
-  line-height: var(--cal-lh-sub);
-  letter-spacing: var(--cal-ls-head);
-  color: var(--color-fg);
-}
-.calPriceDesc {
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2);
-}
-.calPriceFoot {
-  margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid var(--color-line);
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.calPriceValue {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--cal-fs-body);
-  color: var(--color-primary);
-}
-.calPriceDur {
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
+
+.cxEyebrow {
+  margin: 0 0 16px;
+  color: var(--color-primary-ink, #7d1f46);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-fg-2);
 }
 
-/* ---------- Galleri-wrapper (egen sektion, ingen delad band-klass) ---------- */
-.calGalleryWrap {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 48px var(--cal-gutter) 0;
+.cxHeroTitle {
+  margin: 0 0 20px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 64px;
+  line-height: 1.02;
+  color: var(--color-fg, #241019);
 }
 
-/* ---------- OM som brett bildband med text i overlay ---------- */
-.calAboutBand {
-  position: relative;
-  background-size: cover;
-  background-position: center;
+/* Filens <em style="color:#7d1f46"> — ordet som bär heron. */
+.cxHeroEm {
+  color: var(--color-primary-ink, #7d1f46);
+}
+
+.cxHeroLede {
+  margin: 0 0 30px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 17px;
+  line-height: 1.65;
+  max-width: 420px;
+}
+
+.cxHeroCtas {
   display: flex;
+  gap: 14px;
   align-items: center;
-  min-height: clamp(28rem, 60vh, 38rem);
-  padding: var(--cal-sec) var(--cal-gutter);
-}
-/* Panelen är OPAK (surface) → texten läser mot en känd yta, aldrig mot fotot.
-   Scrimen finns bara för att panelens kant ska sitta i en dämpad bild. */
-.calAboutScrim {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.18));
-}
-.calAboutPanel {
-  position: relative;
-  z-index: 1;
-  width: min(34rem, 100%);
-  margin-right: auto;
-  padding: 48px;
-  background: var(--color-surface);
-  border-radius: var(--sf-radius);
-}
-.calAboutTitle {
-  margin: var(--cal-step-eyebrow) 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-h2);
-  line-height: var(--cal-lh-head);
-  letter-spacing: var(--cal-ls-head);
-  color: var(--color-fg);
-}
-.calAboutText {
-  margin: var(--cal-step-head) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2);
-}
-.calAboutStats {
-  margin: var(--cal-step-cta) 0 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
+  margin-bottom: 44px;
   flex-wrap: wrap;
-  gap: 24px 48px;
-}
-.calStatValue {
-  display: block;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-sub);
-  line-height: var(--cal-lh-sub);
-  color: var(--color-primary);
-}
-.calStatLabel {
-  display: block;
-  margin-top: 4px;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-fg-2);
 }
 
-/* ---------- PLATS som EN rad (butikens fot, inte en 2-kolumners split) ---------- */
-.calLocRow {
-  border-top: 1px solid var(--color-line);
-  border-bottom: 1px solid var(--color-line);
-  padding: var(--cal-band) var(--cal-gutter);
-}
-.calLocInner {
-  max-width: 1180px;
-  margin: 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px 48px;
-}
-.calLocAddr {
-  margin: var(--cal-step-eyebrow) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg);
-}
-.calLocHours {
-  display: grid;
-  gap: 4px;
-  min-width: 14rem;
-}
-.calLocHoursRow {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2);
-}
-
-/* ---------- CLOSING — mörk plommonplatta (foto-fri, till skillnad från heron) ---------- */
-.calClosing {
-  background: var(--color-primary-d);
-  padding: var(--cal-sec) var(--cal-gutter);
-  text-align: center;
-}
-.calClosingTitle {
-  max-width: 40rem;
-  margin: 0 auto;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-h2);
-  line-height: var(--cal-lh-head);
-  letter-spacing: var(--cal-ls-head);
-  color: #fff;
-}
-.calClosingLede {
-  max-width: 34rem;
-  margin: var(--cal-step-head) auto 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-lede);
-  line-height: var(--cal-lh-body);
-  color: #fff;
-}
-.calClosingActions {
-  margin-top: var(--cal-step-cta);
-  display: flex;
-  flex-wrap: wrap;
+/* Fylld primärknapp (filens "Handla nu"). */
+.cxBtn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 16px 20px;
-}
-/* Sekundär-CTA:n (boknings-drawern) när butiken är primär: vinröd i stället för
-   guld — samma familj, ett steg bak i hierarkin. Vit text på vinrött = 7.64:1. */
-.calClosingBook {
-  --color-accent: var(--color-primary);
-  --color-accent-fg: #fff;
-}
-
-/* ═══════════ FOOTER — SOLID PLOMMON, tre kolumner, stort wordmark ═══════════
-   Ombyggnaden: sidfoten byter från ink-svart till mallens plommonbord — samma yta
-   som navet och packbordet, så butiken börjar och slutar på samma bord. All vit
-   text ligger på #4A0E2E → 15.07:1 (0.82-opacity-raderna ≈ 12.5:1, mätt som
-   blandfärg). SocialButtons-komponentens tokens pekas om här: vita ikoner, guld-
-   fyllning vid hover (ink på guld 7.35:1), rak radie (mallen är rak). */
-.calFooter {
-  background: var(--color-primary-d);
+  background: var(--color-primary, #7d1f46);
   color: #fff;
-  padding: var(--cal-sec) var(--cal-gutter) 24px;
-  --sf-social-ink: #fff;
-  --sf-social-bg-hover: var(--cal-gold);
-  --sf-social-ink-hover: var(--cal-gold-ink);
-  --sf-social-radius: 0px;
-  --sf-focus: #fff;
-}
-.calFooterGrid {
-  max-width: 1180px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
-  gap: 48px;
-}
-.calFooterWordmark {
-  font-family: var(--font-display);
-  font-weight: 400;
-  /* Wordmarket är EN obrytbar rad ("Hantverksfloristerna" = 20 versala serif-tecken).
-     Vid 390px gav h2-golvet (32px) en min-content på 372px > sidfotens 342px innehålls-
-     box — ordet tvingade 1fr-spåret brett och HELA sidan fick 6px horisontell overflow.
-     Fluid storlek: 7.2vw = 28px vid 390 (namnet ryms på EN rad), taket = samma
-     3.125rem som förr (desktop OFÖRÄNDRAD — på bred skärm får 1.4fr-spåret växa och
-     bära hela ordet, precis som innan). */
-  font-size: clamp(1.75rem, 7.2vw, 3.125rem);
-  line-height: var(--cal-lh-head);
-  letter-spacing: var(--cal-ls-head);
-  text-transform: uppercase;
-  color: #fff;
-}
-.calFooterTagline {
-  margin: var(--cal-step-head) 0 0;
-  max-width: 26rem;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: #fff;
-  opacity: 0.82;
-}
-/* Klassen läggs på SocialButtons-komponentens <ul> (dess .row bär flex+gap). */
-.calFooterSocials {
-  margin-top: var(--cal-step-cta);
-}
-.calFooterLink {
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: #fff;
-  /* 44px = touch-golvet. Länkarna mätte 19-22px i sidfotens täta listor — klickboxen
-     växer via padding och negativ margin kvittar exakt lika mycket, så listrytmen är
-     pixeldensamma. Hover-guldlinjen bor i ::after tätt under texten (navets mönster)
-     — en border-bottom hade legat vid 44px-boxens botten, långt under orden. */
-  position: relative;
-  display: inline-flex;
-  align-items: center;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 16px 34px;
+  letter-spacing: 0.02em;
+  border-radius: 0;
+  text-decoration: none;
   min-height: 44px;
-  padding-block: 13px;
-  margin-block: -13px;
-}
-.calFooterLink::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(50% - 1em);
-  height: 2px;
-  background: transparent;
-  transition: background-color var(--cal-dur) ease;
-}
-.calFooterLink:hover::after {
-  background: var(--cal-gold);
+  box-sizing: border-box;
 }
 
-/* ── MENYLÄNKARNA (Zivars element, rad 12105 .menu) — fast ikon + platta som
-   GLIDER IN bakom länken vid hover/fokus. ANATOMIN porterad: ikonen står still
-   till vänster, ::before-plattan reser in från höger (transform-origin höger),
-   pilen nudgar framåt. MEDVETEN AVVIKELSE: originalet gömmer texten tills hover
-   — hover-only affordance på en navlänk är förbjudet, så etiketten är ALLTID
-   synlig; plattan och pil-nudgen är belöningen, inte informationen. */
-.calFootLink {
-  position: relative;
-  z-index: 0; /* egen stapelkontext så ::before(z:-1) aldrig faller bakom sidfoten */
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px; /* touch-golvet */
-  padding: 0 12px;
-  margin-left: -12px; /* plattans luft kvittas → listens vänsterkant står still */
-  overflow: hidden; /* plattan börjar utanför och får inte synas förrän den glider */
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: #fff; /* 15.07:1 på plommon · 7.64:1 på den vinröda plattan */
-  text-decoration: none;
-}
-.calFootLink::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--color-primary);
-  transform: translateX(101%);
-  transform-origin: center right;
-  transition: transform 200ms ease-in;
-}
-.calFootLink:hover::before,
-.calFootLink:focus-visible::before {
-  transform: translateX(0);
-}
-.calFootIcon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 18px;
-  color: var(--cal-gold); /* ikon = grafik: 6.15:1 mot plommon, 3.1:1 mot plattan */
-}
-.calFootIcon svg {
-  transition: transform 200ms ease-in;
-}
-.calFootLink:hover .calFootIcon,
-.calFootLink:focus-visible .calFootIcon {
-  color: #fff; /* på den vinröda plattan vinner vitt (7.64:1) */
-}
-.calFootLink:hover .calFootIcon svg,
-.calFootLink:focus-visible .calFootIcon svg {
-  transform: translateX(3px);
-}
-.calFootLink:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-}
-.calFootLinkText {
-  white-space: nowrap;
-}
-
-/* ── MEJLKORTET (Zivars element, rad 16190 .subscribe) — papperskortet med knappen
-   HÄNGANDE ut över kanten + vikt hörn under överhänget. ANATOMIN porterad (kort,
-   understruken rad, offset-knapp med skugga, ::after-vikning). MEDVETEN AVVIKELSE:
-   inget inputfält — det finns ingen nyhetsbrevs-motor, och ett fält som inte gör
-   något ljuger. Raden visar ägarens mejl och knappen öppnar mailto. */
-.calMailCard {
-  position: relative;
-  margin-top: 32px;
-  margin-bottom: 26px; /* rum för knappen som hänger 18px under kortet */
-  max-width: 22rem;
-  padding: 20px 20px 28px;
-  background: var(--color-surface);
-  color: var(--color-fg);
-}
-.calMailKicker {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary); /* 9.08:1 på papperet */
-}
-.calMailAddr {
-  display: block;
-  margin-top: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-line);
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg); /* 16.84:1 */
-  overflow-wrap: anywhere;
-}
-.calMailBtn {
-  position: absolute;
-  right: -10px;
-  bottom: -18px;
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px; /* touch-golvet */
-  padding: 12px 22px;
-  background: var(--cal-gold);
-  color: var(--cal-gold-ink); /* 7.35:1 */
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  text-decoration: none;
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--color-fg) 45%, transparent);
-  transition: transform var(--sf-btn-dur) var(--sf-btn-ease);
-}
-/* Vikningen: hörnet som "böjs in" under det utstickande överhänget — mörkare guld
-   (mix mot ink) så det läses som skuggsidan av samma papper. Ren dekor. */
-.calMailBtn::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 100%;
-  border-top: 8px solid color-mix(in srgb, var(--cal-gold) 55%, var(--color-fg));
-  border-right: 10px solid transparent;
-}
-.calMailBtn:hover {
-  transform: translateY(-2px);
-}
-.calMailBtn:active {
-  transform: translateY(0);
-}
-.calMailBtn:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
-.calFooterHead {
-  margin: 0 0 var(--cal-step-head);
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--cal-gold);
-}
-.calFooterLinks {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  /* Raderna bär redan 44px höjd var (touch-golvet i .calFootLink) — 2px gap
-     räcker för att listan inte ska bli en trappa av luft. */
-  gap: 2px;
-}
-.calFooterText {
-  margin: 0 0 12px;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
+.cxBtn:hover {
+  background: var(--color-primary-d, #4a0e2e);
   color: #fff;
-  opacity: 0.82;
 }
-.calFooterHours {
-  margin-top: 20px;
-  display: grid;
-  gap: 4px;
+
+/* Understruken sekundärlänk (filens "Så funkar leveransen"). */
+.cxBtnLine {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-fg, #241019);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 16px 8px;
+  border-bottom: 2px solid var(--color-line, #a98d97);
+  text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
 }
-.calFooterHoursRow {
+
+.cxBtnLine:hover {
+  border-color: var(--color-primary, #7d1f46);
+  color: var(--color-primary-ink, #7d1f46);
+}
+
+/* Inramad sekundärknapp (filens "Mer om oss"). */
+.cxBtnOutline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-fg, #241019);
+  color: var(--color-fg, #241019);
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 13px 28px;
+  border-radius: 0;
+  text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.cxBtnOutline:hover {
+  background: var(--color-fg, #241019);
+  color: #fff;
+}
+
+/* Hero-statraden: tre siffror över en hårlinje. */
+.cxHeroStats {
   display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: #fff;
-  opacity: 0.82;
-}
-.calFooterBottom {
-  max-width: 1180px;
-  margin: var(--cal-sec) auto 0;
+  gap: 36px;
+  border-top: 1px solid var(--color-accent-soft, #e8d9de);
   padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: #fff;
-  opacity: 0.7;
+  flex-wrap: wrap;
 }
 
-/* ═══════════ UNDERSIDOR — /tjanster kort-rutnät · /om tidslinje · /kontakt karta ═══════════ */
-.calPage {
-  padding: var(--cal-sec) var(--cal-gutter);
-  max-width: 1180px;
+.cxStatValue {
+  margin: 0;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-size: 28px;
+  color: var(--color-fg, #241019);
+}
+
+.cxStatLabel {
+  margin: 2px 0 0;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 13.5px;
+}
+
+.cxHeroPhoto {
+  min-height: 600px;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* (2) MEST SÅLDA — sektionshuvud + 4-kolumners rutnät. */
+.cxSection {
+  max-width: 1280px;
   margin: 0 auto;
-}
-.calPageHead {
-  max-width: 40rem;
-  margin: 0 0 48px;
-}
-.calPageTitle {
-  margin: var(--cal-step-eyebrow) 0 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-hero);
-  line-height: var(--cal-lh-display);
-  letter-spacing: var(--cal-ls-display);
-  color: var(--color-fg);
-}
-.calPageLede {
-  margin: var(--cal-step-head) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-lede);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2);
-}
-.calEmpty {
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-lede);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2);
+  padding: 80px 28px 0;
 }
 
-/* /tjanster — KORT-RUTNÄT (4:5-bild + text + pris-fot), varje kort bokar. */
-.calSrvGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-  gap: 24px;
+.cxSecHead {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 32px;
 }
-.calSrvCard {
+
+.cxSecEyebrow {
+  margin: 0 0 8px;
+  color: var(--color-primary-ink, #7d1f46);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.cxSecTitle {
+  margin: 0;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 42px;
+  color: var(--color-fg, #241019);
+}
+
+/* "Visa hela butiken →" — understruken, plommon. */
+.cxSecLink {
+  color: var(--color-primary-ink, #7d1f46);
+  font-weight: 700;
+  font-size: 15px;
+  border-bottom: 2px solid var(--color-primary, #7d1f46);
+  padding-bottom: 3px;
+  white-space: nowrap;
+  text-decoration: none;
+  align-self: flex-end;
+}
+
+.cxSecLink:hover {
+  color: var(--color-primary-d, #4a0e2e);
+}
+
+.cxGrid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* (3) MÖRKT MARKNADSBAND — 1.2fr / 1fr, tre numrerade steg. */
+.cxBand {
+  background: var(--color-primary-d, #4a0e2e);
+  margin-top: 88px;
+  padding: 72px 28px;
+}
+
+.cxBandInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.cxBandTitle {
+  margin: 0 0 16px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 42px;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.cxBandLede {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16.5px;
+  line-height: 1.7;
+  max-width: 480px;
+}
+
+.cxSteps {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  cursor: pointer;
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
-  transition: transform var(--cal-dur) ease, border-color var(--cal-dur) ease;
-}
-.calSrvCard:hover {
-  transform: translateY(var(--cal-lift));
-  border-color: var(--color-primary);
-}
-.calSrvImg {
-  aspect-ratio: 4 / 5;
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-accent-soft);
-}
-.calSrvBody { padding: 24px 24px 20px; }
-.calSrvName {
+  gap: 14px;
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-sub);
-  line-height: var(--cal-lh-sub);
-  letter-spacing: var(--cal-ls-head);
-  color: var(--color-fg);
-}
-.calSrvDesc {
-  margin: 12px 0 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2);
-}
-.calSrvFoot {
-  margin-top: auto;
-  padding: 20px 24px;
-  border-top: 1px solid var(--color-line);
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.calSrvPrice {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--cal-fs-body);
-  color: var(--color-primary);
-}
-.calSrvDur {
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-fg-2);
+  padding: 0;
+  list-style: none;
 }
 
-/* /om — TIDSLINJE: vertikal rail med numrerade noder (ingen foto-split). */
-.calTimeline {
-  position: relative;
-  margin: 0 0 var(--cal-sec);
-  padding-left: 48px;
+.cxStep {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 14px;
+}
+
+.cxStep:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.cxStepNo {
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-size: 22px;
+  color: var(--color-accent-soft, #e8d9de);
+  min-width: 32px;
+}
+
+.cxStepText {
+  margin: 0;
+  color: #fff;
+  font-size: 15.5px;
+}
+
+/* (4) LEVERANSKOLL — foto · text · handling i en vit kantad platta. */
+.cxDelivery {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #a98d97);
+  padding: 36px 48px;
   display: grid;
-  gap: 48px;
-  border-left: 1px solid var(--color-line);
-}
-.calTlItem {
-  position: relative;
-  display: flex;
-  gap: 24px;
-  align-items: baseline;
-}
-.calTlItem::before {
-  content: '';
-  position: absolute;
-  left: -53px;
-  top: 12px;
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  background: var(--color-primary);
-}
-.calTlNum {
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  color: var(--color-primary);
-  flex: 0 0 auto;
-}
-/* Fanns i markupen (calytrix.pages.tsx) men INTE här → className blev "undefined"
-   och tidslinjens textblock var helt ostylat: rubrik + text pressades ihop i en
-   obredd kolumn bredvid siffran. */
-.calTlBody {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.calTlTitle {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-h2);
-  line-height: var(--cal-lh-head);
-  letter-spacing: var(--cal-ls-head);
-  color: var(--color-fg);
-}
-.calTlText {
-  margin: var(--cal-step-head) 0 0;
-  max-width: 34rem;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2);
-}
-.calTlPhoto {
-  aspect-ratio: 4 / 5;
-  max-height: 32rem;
-  background-size: cover;
-  background-position: center;
-  border-radius: var(--sf-radius);
-}
-.calTlQuote {
-  margin: var(--cal-sec) auto 0;
-  max-width: 34rem;
-  text-align: center;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-sub);
-  line-height: var(--cal-lh-sub);
-  color: var(--color-primary);
+  grid-template-columns: auto 1fr 1.1fr;
+  gap: 44px;
+  align-items: center;
 }
 
-/* /kontakt — STOR PLATTA (dämpat foto) med flytande kontaktkort ovanpå. */
-.calMapPlate {
-  position: relative;
-  min-height: clamp(30rem, 70vh, 40rem);
+.cxDeliveryPhoto {
+  width: 170px;
+  height: 212px;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  display: block;
+}
+
+.cxDeliveryTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 32px;
+  color: var(--color-fg, #241019);
+}
+
+.cxDeliveryText {
+  margin: 0;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
+/* Filens tredje spalt är ett adressfält + "Kolla →" — men fältet har ingen
+   handler ens i .dc.html, och motorn har ingen leveranszons-tjänst. Ett fält som
+   inte gör något LJUGER (samma regel som sidfotens nyhetsbrev, goal-62). Kroppen
+   behålls, handlingen är ärlig: filens svarta knapp går till leveranslöftet. */
+.cxDeliveryAction {
+  display: flex;
+  gap: 0;
+}
+
+.cxDeliveryBtn {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 48px var(--cal-gutter);
-  background: var(--color-accent-soft);
-  border-radius: var(--sf-radius);
-  overflow: hidden;
+  background: var(--color-fg, #241019);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 15px 30px;
+  white-space: nowrap;
+  border-radius: 0;
+  text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
 }
-.calMapBg {
+
+.cxDeliveryBtn:hover {
+  background: var(--color-primary, #7d1f46);
+  color: #fff;
+}
+
+/* (5) OM — 1fr/1fr, foto 5:4 vänster. */
+.cxAbout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.cxAboutPhoto {
+  aspect-ratio: 5 / 4;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.cxAboutTitle {
+  margin: 0 0 16px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 42px;
+  color: var(--color-fg, #241019);
+}
+
+.cxAboutCopy {
+  margin: 0 0 26px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 16.5px;
+  line-height: 1.7;
+}
+
+/* (6) CLOSING — helbilds-band med mörk slöja. */
+.cxClosing {
+  margin-top: 96px;
+  position: relative;
+  padding: 100px 28px;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.cxClosingVeil {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
-  filter: grayscale(1) contrast(0.9);
-  opacity: 0.55;
+  background: rgba(36, 16, 25, 0.72);
 }
-.calContactCard {
+
+.cxClosingInner {
   position: relative;
-  z-index: 1;
-  width: min(26rem, 100%);
-  padding: 48px;
-  background: var(--color-surface);
-  border-radius: var(--sf-radius);
-}
-.calContactName {
-  margin: 0 0 var(--cal-step-head);
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: var(--cal-fs-h2);
-  line-height: var(--cal-lh-head);
-  letter-spacing: var(--cal-ls-head);
-  color: var(--color-fg);
-}
-.calContactLabel {
-  margin: 20px 0 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-fg-2);
-}
-.calContactValue {
-  margin: 4px 0 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg);
-}
-.calContactLink {
-  color: var(--color-primary);
-  border-bottom: 1px solid var(--color-primary);
-}
-.calContactHours {
-  margin-top: 4px;
-  display: grid;
-  gap: 4px;
-}
-.calContactHoursRow {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2);
-}
-.calContactActions {
-  margin-top: var(--cal-step-cta);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 24px;
-}
-.calContactCta {
-  --color-accent: var(--cal-gold);
-  --color-accent-fg: var(--cal-gold-ink);
-}
-.calContactMapLink {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: var(--cal-fs-micro);
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary);
-  border-bottom: 2px solid var(--color-primary);
-  padding-bottom: 2px;
-}
-
-@media (max-width: 860px) {
-  .calFooterGrid { grid-template-columns: 1fr; gap: 32px; }
-  /* Säkerhetsnätet gäller BARA singelkolumnläget: ett tenant-namn ännu längre än
-     dagens får hellre radbrytas än tvinga 1fr-spåret bredare än viewporten (= sido-
-     scroll). På bred skärm (>860) skulle samma regel i stället bryta namnet mitt i
-     ordet — där ska spåret växa, inte ordet brytas. */
-  .calFooterWordmark { overflow-wrap: anywhere; }
-}
-@media (max-width: 720px) {
-  .calAboutPanel { padding: 24px; }
-  .calContactCard { padding: 24px; }
-  .calMapPlate { justify-content: center; }
-}
-@media (max-width: 640px) {
-  .calTimeline { padding-left: 24px; }
-  .calTlItem::before { left: -29px; }
-  .calTlItem { flex-direction: column; gap: 12px; }
-}
-
-/* ═══════════ MODUL-VYER — butik + blogg (goal-59, vektor-regeln) ═══════════
-   Modulen äger funktionen (data, kassa, livscykel), mallen äger formen. Vyerna bor
-   UTANFÖR .calRoot (moduls egna sidor monteras av modul-rutten), så vars deklareras
-   även på .calShopRoot — annars faller skalan tillbaka på plattformens.
-
-   Formen är hemmets, inte en ny värld: samma mörka plommonband som sektion 2/10,
-   samma 4:5-bild, samma "Populär"-pill, samma raka hörn, samma 96/50/28/21/16/12. */
-/* .calShopRoot bar tidigare en ORDAGRANT kopierad kopia av hela vars-blocket ovan.
-   Två sanningar som divergerar vid nästa ändring. Den är nu med i den enda
-   deklarationen högst upp i filen — och ärver därmed också --sf-btn-*, så modulens
-   köpknapp får mallens form på butikens egen sida. */
-
-/* Modul-vyernas ögonbryn: mallens EGEN mikrotext-roll (ingen global .sf-*-klass) —
-   samma 12px/600/VERSALER/spärr som resten av Calytrix. */
-.calEyebrow {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-
-/* Modulsidans sidhuvud = mallens mörka plommonplatta (samma som calBand/calClosing). */
-.calShopHero {
-  background: var(--color-primary-d);
-  padding: var(--cal-sec) var(--cal-gutter);
   text-align: center;
 }
-.calShopHeroEyebrow {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
-  text-transform: uppercase;
-  color: var(--cal-gold);
-}
-.calShopHeroTitle {
-  max-width: 44rem;
-  margin: var(--cal-step-eyebrow) auto 0;
-  font-family: var(--font-display);
+
+.cxClosingTitle {
+  margin: 0 0 12px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
   font-weight: 400;
-  font-size: var(--cal-fs-hero);
-  line-height: var(--cal-lh-display);
-  letter-spacing: var(--cal-ls-display);
-  color: #fff; /* 15.07:1 mot --color-primary-d */
-}
-/* Leveranslöftet: sidhuvudets lede — ren #fff, hierarkin görs av skalan. */
-.calShopHeroLede {
-  max-width: 34rem;
-  margin: var(--cal-step-head) auto 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-lede);
-  line-height: var(--cal-lh-body);
+  font-size: 48px;
   color: #fff;
 }
-/* Teaser-lägets leveranslöfte (under rubriken i .calSecHead). */
-.calShopPromise {
-  margin: var(--cal-step-head) 0 0;
-  max-width: 34rem;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg-2);
+
+.cxClosingLede {
+  margin: 0 auto 30px;
+  max-width: 460px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 16.5px;
 }
 
-.calShopNoticeWrap {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 var(--cal-gutter);
-}
-/* STÄNGT-notisen: guldkantad platta — samma accent som "Populär"-pillen, så det
-   läses som mallens röst och inte som ett plattforms-larm. */
-.calShopClosed {
-  margin: 0;
-  padding: 20px 24px;
-  border-left: 4px solid var(--cal-gold);
-  background: var(--color-accent-soft);
-  border-radius: var(--sf-radius); /* = 0 */
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-body);
-  font-weight: 600;
-  line-height: var(--cal-lh-body);
-  color: var(--color-fg); /* 18.05:1 mot den mjuka tonen-ytan */
-}
-
-/* Brett rutnät — butiken är hjälten på sin egen sida. */
-.calShopGrid {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 var(--cal-gutter);
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-  gap: 48px 24px;
-}
-.calShopCard {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-/* Bilden lyfts (5px), inte hela kortet — köpknappen ska stå stilla under pekaren. */
-.calShopMedia {
-  display: block;
+/* Vit knapp på fotot (filens closing-CTA). */
+.cxBtnLight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: var(--color-fg, #241019);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 16px 36px;
+  border-radius: 0;
   text-decoration: none;
-  transition: transform var(--cal-dur) ease;
+  min-height: 44px;
+  box-sizing: border-box;
 }
-.calShopMedia:hover { transform: translateY(var(--cal-lift)); }
-.calShopBody {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+
+.cxBtnLight:hover {
+  background: var(--color-accent-soft, #e8d9de);
+  color: var(--color-fg, #241019);
 }
-.calShopNameLink {
+
+/* ═══════════════════════════════ UNDERSIDOR ══════════════════════════════ */
+
+.cxPage {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 56px 28px 40px;
+}
+
+.cxPageNarrow {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 56px 28px 40px;
+}
+
+.cxPageTitle {
+  margin: 0 0 18px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 56px;
+  color: var(--color-fg, #241019);
+}
+
+.cxPageLede {
+  margin: 0 0 44px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 16.5px;
+  line-height: 1.7;
+  max-width: 560px;
+}
+
+/* /om — split + tre hårlinje-kolumner. */
+.cxOmSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+  margin-bottom: 72px;
+}
+
+.cxOmProse p {
+  margin: 0 0 16px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 16.5px;
+  line-height: 1.7;
+}
+
+.cxOmProse p:last-child {
+  margin-bottom: 0;
+}
+
+.cxOmPhoto {
+  aspect-ratio: 5 / 4;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.cxOmCols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cxOmCol {
+  border-top: 2px solid var(--color-fg, #241019);
+  padding-top: 18px;
+}
+
+.cxOmColTitle {
+  margin: 0 0 6px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 24px;
+  color: var(--color-fg, #241019);
+}
+
+.cxOmColText {
+  margin: 0;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 15px;
+}
+
+/* /tjanster — filens LEVERANS-grammatik: kantade rutor, två kolumner, eyebrow +
+   pris i display-serif + text. Varje ruta är en <Bookable> (funktionen är
+   plattformens: samma boknings-drawer, aldrig mallens egen logik). */
+.cxCards2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.cxFact {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #a98d97);
+  padding: 32px;
+  border-radius: 0;
   color: inherit;
   text-decoration: none;
 }
-.calShopNameLink:hover { color: var(--color-primary); }
-/* Köp-rälsen sitter i kortets fot — alltid i linje mellan grannkort. */
-/* Ingen auto-margin här: priset ovanför bär bottenankaret för hela paret. */
-.calShopBuy {
-  padding-top: 20px;
-  --color-accent: var(--cal-gold);
-  --color-accent-fg: var(--cal-gold-ink);
-  --font-ui: var(--font-body);
+
+.cxFact:hover {
+  box-shadow: 0 14px 34px rgba(74, 14, 46, 0.14);
 }
 
-/* Bloggens datumrad — mikrotext-regeln (12/600/VERSALER/+1px). */
-.calPostDate {
-  margin: var(--cal-step-head) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--cal-fs-micro);
-  font-weight: 600;
-  letter-spacing: var(--cal-ls-micro);
+.cxFactEyebrow {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--color-primary-ink, #7d1f46);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-fg-2);
-}
-/* Datumet äger steget efter bilden → namnet flyttar upp till 12px. */
-.calPostDate + .calCardName { margin-top: 12px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .calShopMedia { transition: none; }
-  .calShopMedia:hover { transform: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .calPriceCard,
-  .calSrvCard,
-  .calNav :global(.btn-accent),
-  .calPage :global(.btn-accent) { transition: none; }
-  .calPriceCard:hover,
-  .calSrvCard:hover,
-  .calNav :global(.btn-accent):hover,
-  .calPage :global(.btn-accent):hover { transform: none; }
+.cxFactValue {
+  display: block;
+  margin: 0 0 10px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-size: 30px;
+  color: var(--color-fg, #241019);
 }
 
-
-/* ── REDUCED MOTION för de nya uiverse-elementen: ringen står stilla (en fryst
-   solfjäder är fortfarande scenen), hint-pulsen slutar pulsera (pricken + etiketten
-   vid fokus finns kvar), pushable/cir-btn/menylänkar slutar animera men behåller
-   alla tillstånd (fronten ligger kvar lyft, plattan hoppar in utan glid). */
-@media (prefers-reduced-motion: reduce) {
-  .calRing {
-    animation: none;
-  }
-  .calHintDot::after {
-    animation: none;
-  }
-  .calHintLabel,
-  .calHintLabel::after,
-  .calCirBtn,
-  .calCirBtnPuck svg,
-  .calPushShadow,
-  .calPushFront,
-  .calFootLink::before,
-  .calFootIcon svg,
-  .calMailBtn,
-  .calStageCta {
-    transition: none;
-  }
-  .calCirBtn:hover .calCirBtnPuck svg,
-  .calCirBtn:active,
-  .calFootLink:hover .calFootIcon svg,
-  .calFootLink:focus-visible .calFootIcon svg,
-  .calMailBtn:hover {
-    transform: none;
-  }
+.cxFactText {
+  display: block;
+  margin: 0;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 15px;
+  line-height: 1.65;
 }
 
-/* goal-62 C3 — KNAPPFORMEN, sista ordet.
-   Mallens knappar bar fortfarande den GLOBALA .btn-accent-pillen: klasserna har samma
-   specificitet (0-1-0) och globals.css vinner på källordning (mätt: 9999px). Dubbel klass
-   (0-2-0) ger mallen tillbaka sin egen form — ett block, som butiken den säljer. */
-.calNavCta.calNavCta,
-.calHeroCta.calHeroCta,
-.calSecCta.calSecCta {
+/* /kontakt — faktaspalt + öppettider (filens showKontakt, vänsterspalten). */
+.cxContact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+}
+
+.cxContactRows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 16px;
+}
+
+.cxContactRow {
+  margin: 0;
+}
+
+.cxContactLabel {
+  font-weight: 700;
+}
+
+.cxContactValue {
+  color: var(--color-fg-2, #6e4f5c);
+}
+
+.cxContactValue a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cxContactValue a:hover {
+  color: var(--color-primary-ink, #7d1f46);
+}
+
+.cxHours {
+  margin-top: 34px;
+  max-width: 360px;
+}
+
+.cxHoursRow {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-accent-soft, #e8d9de);
+  padding: 10px 0;
+  font-size: 15px;
+}
+
+.cxHoursRow:last-child {
+  border-bottom: none;
+}
+
+.cxHoursDay {
+  font-weight: 600;
+}
+
+.cxHoursTime {
+  color: var(--color-fg-2, #6e4f5c);
+}
+
+/* Kontaktsidans högerspalt: filen ritar ett formulär, men motorn har ingen
+   kontakt-mejlräls → ingen död submit. Samma vita platta, ärlig handling. */
+.cxContactCard {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #a98d97);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-self: start;
+}
+
+.cxContactCardTitle {
+  margin: 0;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--color-fg, #241019);
+}
+
+.cxContactCardText {
+  margin: 0;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.cxContactCta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--color-primary, #7d1f46);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 15px 0;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   border-radius: 0;
+  text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.cxContactCta:hover {
+  background: var(--color-primary-d, #4a0e2e);
+  color: #fff;
+}
+
+.cxEmpty {
+  margin: 0;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 15.5px;
+}
+
+/* ═══════════════════════════════ SIDFOTEN ════════════════════════════════ */
+
+/* Filens footer: mörk platta (fg), fyra kolumner 1.4fr/1fr/1fr/1fr, hårlinje
+   under, copyright längst ner. */
+.cxFooter {
+  background: var(--color-fg, #241019);
+  margin-top: 96px;
+  padding: 64px 28px 36px;
+}
+
+.cxFooterGrid {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 48px;
+  padding-bottom: 44px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.cxFooterMark {
+  margin: 0 0 12px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-size: 28px;
+  color: #fff;
+}
+
+.cxFooterTagline {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 14.5px;
+  line-height: 1.7;
+  max-width: 280px;
+}
+
+.cxFooterHead {
+  margin: 0 0 14px;
+  color: var(--color-accent-soft, #e8d9de);
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.cxFooterLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cxFooterLinks a {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14.5px;
+  text-decoration: none;
+}
+
+.cxFooterLinks a:hover {
+  color: #fff;
+}
+
+.cxFooterText {
+  margin: 0 0 14px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Filens nyhetsbrevsfält skickar ingenstans (ingen nyhetsbrevs-motor finns) →
+   samma kropp, ärlig handling: mejla butiken. */
+.cxFooterMailBtn {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  color: var(--color-fg, #241019);
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 11px 18px;
+  border-radius: 0;
+  text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.cxFooterMailBtn:hover {
+  background: var(--color-accent-soft, #e8d9de);
+  color: var(--color-fg, #241019);
+}
+
+.cxFooterBottom {
+  max-width: 1280px;
+  margin: 28px auto 0;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 13px;
+}
+
+/* ═══════════════════════════════ MOBIL ≤760px ════════════════════════════ */
+/* Filens egen media-query (Corevo-tillägget i <helmet>): allt blir en spalt,
+   rubrikerna klampas, träffytorna når 44px. */
+@media (max-width: 760px) {
+  .cxHero,
+  .cxBandInner,
+  .cxAbout,
+  .cxOmSplit,
+  .cxContact,
+  .cxCards2,
+  .cxGrid4,
+  .cxOmCols,
+  .cxDelivery,
+  .cxFooterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cxHeroText {
+    padding: 48px 0 40px;
+  }
+
+  .cxHeroTitle,
+  .cxPageTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+
+  .cxSecTitle,
+  .cxBandTitle,
+  .cxAboutTitle,
+  .cxClosingTitle {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .cxHeroPhoto {
+    min-height: 340px;
+  }
+
+  .cxSecHead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cxDelivery {
+    padding: 28px 20px;
+    gap: 24px;
+  }
+
+  .cxSection,
+  .cxPage,
+  .cxPageNarrow,
+  .cxHero {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .cxNavBar {
+    padding: 0 20px;
+  }
+
+  .cxNavLinks a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
 }

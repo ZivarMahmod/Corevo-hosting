@@ -1,1340 +1,1147 @@
-/* ═══════════ AURORA — LEKFULL BOUTIQUE, korall (tema-paket, goal-59) ═══════════
-   Ett HELT paket: NAV + FOOTER + UNDERSIDOR + hemmets EGNA sektioner. Inga delade
-   .sf*-klasser konsumeras längre — Aurora är en egen sajt, inte plattformens sida i
-   korall. Signaturen: cirklar (nav-CTA, "Handla nu", sifferbadge), valv-bågar och
-   MJUKA rundade kort — mot mallens syskon som kör raka kanter.
+/**
+ * AURORA — ROMANTISK STUDIO (goal-64, Claude Design-paketet).
+ *
+ * EXAKT KOPIA av "Aurora - Romantisk Studio.dc.html". Varje px, hex, line-height och
+ * letter-spacing är LYFT ur filens inline-style — inget är re-härlett, inget är "ungefär".
+ *
+ * Mallens grammatik, i tre drag:
+ *   VALVET      — bilder toppas av en halvcirkel (border-radius 290px 290px 0 0). Det är
+ *                 mallens signatur och återkommer i hero, väg-korten, kurserna och om-sidan.
+ *   KURSIVEN    — Lora italic bär allt som är en RÖST (wordmark, bildtexter, citat, mjuka
+ *                 länkar). Nunito Sans bär allt som är en UPPGIFT (etiketter, knappar, pris).
+ *   HÅRLINJEN   — en länk är kursiv text med 1px terracotta under sig; en knapp är en fylld
+ *                 fyrkant (radie 0). Emellan finns ingenting.
+ *
+ * Vit (#fff) är filens tredje yta (kort, plattor) och står INTE i manifestets palett — den
+ * skrivs därför som literal, precis som i .dc-filen. Allt annat går via var(--color-*).
+ *
+ * Mobil (≤760px) speglar filens EGET "Corevo-tillägg"-block: grid → 1 kolumn, H1/H2 clampas,
+ * sektionspadding 20px, tap-targets ≥44px.
+ */
 
-   Skärpe-reglerna (4-Dokument-Underlag/design-skarpa-zentum.md) hålls:
-   · Typskala 96 / 48 / 30 / 22 / 16 / 12 px — minsta granne-steg ×1.33.
-   · Display i vikt 500, kort/rad-namn 600, mikrotext 12/600/VERSALER/LS 1px.
-   · Rubrik-lh 1.06–1.15, brödtext-lh 1.55–1.60.
-   · BINÄR radie: mjuk radie (--sf-radius = 24px) på ALL struktur, full pill/cirkel
-     bara på knappar, badgar och valv. Ingenting däremellan.
-   · EN bildratio i innehåll: 3:4 (kort, valv, om-foto). Heron = mallens enda panorama.
-   · Hover: 5px lyft / 400ms ease. Inga skuggor, ingen scale.
-   · Rytm ur EN skala: 12 / 20 / 32 / 48 / 96 px.
-   Alla klasser prefixas au* och används BARA av den här mallen. */
-
-/* Vars delas av HELA tema-paketet: hemmet/undersidorna/modul-vyerna (.auRoot), navet
-   (.auNav) och sidfoten (.auFoot). De två sista bor UTANFÖR .auRoot i DOM:en (nav/footer
-   monteras av (public)/layout.tsx) — deklareras vars bara på .auRoot faller de tillbaka
-   på plattformens neutrala värden där. */
-.auRoot,
-.auNav,
-.auFoot {
-  --au-on-dark: #ffffff;
-  --au-ink-rgb: 42, 31, 24; /* = --color-fg #2A1F18 → scrim utan en nionde färg */
-  --au-scrim: linear-gradient(
-    0deg,
-    rgba(var(--au-ink-rgb), 0.88) 0%,
-    rgba(var(--au-ink-rgb), 0.5) 44%,
-    rgba(var(--au-ink-rgb), 0.06) 78%
-  );
-
-  /* TYPSKALA */
-  --au-fs-hero: clamp(56px, 7vw, 96px);
-  --au-fs-h2: clamp(32px, 3.5vw, 48px);
-  --au-fs-card: clamp(24px, 2.2vw, 30px);
-  --au-fs-lede: clamp(18px, 1.7vw, 22px);
-  --au-fs-body: 16px;
-  --au-fs-micro: 12px;
-
-  --au-lh-hero: 1.06;
-  --au-lh-h2: 1.08;
-  --au-lh-card: 1.15;
-  --au-lh-lede: 1.55;
-  --au-lh-body: 1.6;
-
-  --au-fw-display: 500;
-  --au-fw-card: 600;
-  --au-fw-micro: 600;
-
-  --au-ls-display: -0.01em;
-  --au-ls-micro: 1px;
-
-  /* RYTM */
-  --au-sp-eyebrow: 12px;
-  --au-sp-text: 20px;
-  --au-sp-cta: 32px;
-  --au-sp-block: 48px;
-  --au-sec: clamp(48px, 8vw, 96px);
-  --au-gutter: 24px;
-
-  --au-ratio: 3 / 4; /* höga kort — boutiquens enda innehållsratio */
-  /* goal-62 C3: bågens höjd i sektionskanten — samma gest som valv-fotona. */
-  --au-arch: clamp(40px, 6vw, 90px);
-
-  --au-dur: 400ms;
-  --au-lift: -5px;
-
-  /* ── FOKUSRING (goal-60). Aurora hade NOLL fokusringar — en tangentbords-användare
-     såg aldrig var hen stod. Ringen är mallens egen korall på ljus botten; på de mörka
-     korall-banden (auStatement/auClosing/auShopClosed) och över hero-scrimmen byts den
-     mot vitt, annars försvinner korall-mot-korall. */
-  --au-focus: var(--color-primary-d);
-  --au-focus-on-dark: var(--au-on-dark);
-
-  /* ── KÖPKNAPPEN (goal-60). Modulens AddToCart läser --sf-btn-*; Aurora sätter dem här
-     och får BOUTIQUENS knapp — full pill, korall, 12/600/VERSALER/1px — utan att röra
-     köp-rälsen. Kontrast: #fff på --color-primary #C8412A = 4.95:1 (krav ≥4.5). */
-  --sf-btn-h: 46px;
-  --sf-btn-pad: 0 28px;
-  --sf-btn-radius: 999px;
-  --sf-btn-bg: var(--color-primary);
-  --sf-btn-bg-hover: var(--color-primary-d);
-  --sf-btn-ink: var(--au-on-dark);
-  --sf-btn-border: var(--color-primary);
-  --sf-btn-fs: var(--au-fs-micro);
-  --sf-btn-weight: var(--au-fw-micro);
-  --sf-btn-transform: uppercase;
-  --sf-btn-ls: var(--au-ls-micro);
-  --sf-btn-dur: 160ms;
-  --sf-btn-ease: ease;
-  --sf-focus: var(--au-focus);
+.auRoot {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  overflow-x: hidden;
 }
 
-/* ── Typroller ────────────────────────────────────────────────────────────── */
+/* ───────────────────────────── delade primitiver ──────────────────────────── */
+
+/* Etiketten: spärrad versal i terracotta — filens enda "eyebrow"-form. */
 .auEyebrow {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  line-height: 2;
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary-d);
-}
-.auH2 {
-  margin: var(--au-sp-eyebrow) 0 0;
-  font-family: var(--font-display);
-  font-size: var(--au-fs-h2);
-  line-height: var(--au-lh-h2);
-  font-weight: var(--au-fw-display);
-  letter-spacing: var(--au-ls-display);
-  color: var(--color-fg);
-}
-.auBody {
-  margin: var(--au-sp-text) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  font-weight: 400;
-  color: var(--color-fg-2);
-  max-width: 44rem;
-}
-.auSection { padding: var(--au-sec) 0; }
-.auSecHead { text-align: center; padding: 0 var(--au-gutter); }
-
-/* Knapp: pill, 12/600/VERSALER, ingen skugga */
-:global(.btn-accent).auBtn {
-  padding: 0 28px;
-  line-height: 46px;
-  border: 2px solid var(--color-primary);
-  border-radius: 999px;
-  background: var(--color-primary);
-  color: var(--au-on-dark);
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  box-shadow: none;
-  transition: background var(--au-dur) ease, border-color var(--au-dur) ease;
-}
-:global(.btn-accent).auBtn:hover {
-  transform: none;
-  box-shadow: none;
-  background: var(--color-primary-d);
-  border-color: var(--color-primary-d);
-}
-/* Inverterad knapp på de mörka korall-banden (band + closing) */
-:global(.btn-accent).auStatementCta {
-  margin-top: var(--au-sp-cta);
-  background: var(--au-on-dark);
-  border-color: var(--au-on-dark);
-  color: var(--color-primary-d);
-}
-:global(.btn-accent).auStatementCta:hover {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent-soft);
-  color: var(--color-primary-d);
-}
-
-.auBandCta {
-  /* Touch-golv (goal-61 runda 2): sektions-CTA:erna mätte 22px. inline-flex + 44px-golv
-     ger klickboxen; kvittningen (11px upp och ner = halva växten 22→44) håller texten
-     och radrytmen stilla. Understrykningen flyttar från border-bottom (den hade lagt
-     sig vid 44px-boxens botten, långt under texten) till text-decoration vid baslinjen. */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  margin-top: calc(var(--au-sp-cta) - 11px);
-  margin-bottom: -11px;
-  font-family: var(--font-body);
-  font-weight: var(--au-fw-micro);
-  font-size: var(--au-fs-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary-d);
-}
-/* Understrykningen: .tenant-root a (0,1,1) släcker text-decoration med `none`, så
-   linjen behöver dubblad klass (0,2,0) — samma grepp som .auNav.auNav. Den ligger
-   vid baslinjen; border-bottom hade följt med till 44px-boxens botten. */
-.auBandCta.auBandCta {
-  text-decoration: underline;
-  text-decoration-color: var(--color-primary-d);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 5px;
-}
-
-/* ═══════════ SIDHUVUD — script-wordmark vänster + rund CTA-cirkel höger ═══════
-   Basklasserna (shell.navThemed/navLinks/navCluster) behålls i markupen så NavShells
-   mobil-media-query och grid-placering fortsätter styra; Auroras dubblade selektorer
-   (0,2,0) lägger FORMEN ovanpå utan att den delade filen rörs. */
-.auNav.auNav {
-  padding: 18px clamp(var(--au-gutter), 4vw, 40px);
-  max-width: 1400px;
-}
-.auNavWordmark.auNavWordmark {
-  /* Touch-golv (goal-61): wordmark-länken mätte 40px hög — centrera loggan i en
-     minst 44px hög klickyta. */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-}
-.auNavWordmark.auNavWordmark :global(.logo-text) {
-  font-family: var(--font-script), cursive;
-  font-weight: 500;
-  font-size: clamp(28px, 3vw, 40px);
-  letter-spacing: 0;
-  line-height: 1.1;
-  color: var(--color-primary-d);
-}
-.auNavLinks.auNavLinks {
-  gap: 8px;
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
+  margin: 0 0 12px;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
-.auNavLinks.auNavLinks a {
-  /* Touch-golv (goal-61): pillren mätte 36px — inline-flex + min-height lyfter
-     klickytan till 44px utan att röra typografin. Navet mäts dynamiskt (--nav-h)
-     så de extra pixlarna är ofarliga. */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  opacity: 1;
-  color: var(--color-fg);
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  transition: background var(--au-dur) ease, color var(--au-dur) ease,
-    border-color var(--au-dur) ease;
-}
-.auNavLinks.auNavLinks a:hover {
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent-soft);
-  color: var(--color-primary-d);
-}
-.auNavCluster.auNavCluster { gap: 12px; }
 
-/* Huvud-CTA:n = en RUND korall-cirkel (samma gest som hemmets "Handla nu") */
-:global(.btn-accent).auNavCircle,
-.auNavCircle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  width: 76px;
-  height: 76px;
-  padding: 0 6px;
-  border-radius: 50%;
-  border: 2px solid var(--color-primary);
-  background: var(--color-primary);
-  color: var(--au-on-dark);
-  font-family: var(--font-body);
-  font-size: 11px;
-  line-height: 1.25;
-  font-weight: var(--au-fw-micro);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  text-decoration: none;
-  box-shadow: none;
-  transition: transform var(--au-dur) ease, background var(--au-dur) ease;
-}
-:global(.btn-accent).auNavCircle:hover,
-.auNavCircle:hover {
-  transform: translateY(var(--au-lift));
-  background: var(--color-primary-d);
-  border-color: var(--color-primary-d);
-  box-shadow: none;
-}
-
-/* ═══════════ HEM ═══════════════════════════════════════════════════════════ */
-
-/* 1. Tunn korall-annonsrad */
-.auAnnounce {
-  background: var(--color-primary);
-  text-align: center;
-  padding: 9px var(--au-gutter);
-}
-.auAnnounceText {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  line-height: 1.8;
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--au-on-dark);
-}
-
-/* 2. Bred landskaps-hero (panorama 2:1) + rund "Handla nu" ovanpå bilden */
-.auHero { padding: var(--au-gutter) var(--au-gutter) 0; }
-.auHeroFrame {
-  position: relative;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-.auHeroImg {
-  position: relative;
-  aspect-ratio: 2 / 1;
-  border-radius: var(--sf-radius);
-  background-size: cover;
-  background-position: center;
-  overflow: hidden;
-}
-.auHeroScrim {
-  position: absolute;
-  inset: 0;
-  background: var(--au-scrim);
-}
-.auHeroContent {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: clamp(var(--au-sp-text), 4vw, var(--au-sp-block));
-}
-.auHeroEyebrow {
+/* Den fyllda knappen: fyrkant, ingen radie, mörknar vid hover. */
+.auBtn {
   display: inline-block;
-  margin: 0;
-  padding: 2px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 999px;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  line-height: 2;
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--au-on-dark);
-}
-.auHeroTitle {
-  font-family: var(--font-display);
-  font-weight: var(--au-fw-display);
-  font-size: var(--au-fs-hero);
-  line-height: var(--au-lh-hero);
-  letter-spacing: var(--au-ls-display);
-  color: var(--au-on-dark);
-  margin: var(--au-sp-eyebrow) 0 0;
-  white-space: pre-line;
-}
-.auHeroLede {
-  font-family: var(--font-body);
-  font-size: var(--au-fs-lede);
-  line-height: var(--au-lh-lede);
-  color: var(--au-on-dark);
-  max-width: 34rem;
-  margin: var(--au-sp-text) 0 0;
-}
-.auHeroActions { margin-top: var(--au-sp-cta); }
-.auShopCircle {
-  position: absolute;
-  top: var(--au-gutter);
-  right: var(--au-gutter);
-  width: clamp(84px, 10vw, 130px);
-  height: clamp(84px, 10vw, 130px);
-  border-radius: 50%;
   background: var(--color-primary);
-  color: var(--au-on-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: #fff;
+  border: none;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 16px 34px;
   text-align: center;
-  text-decoration: none;
-  font-family: var(--font-body);
-  font-weight: var(--au-fw-micro);
-  font-size: var(--au-fs-micro);
-  line-height: 1.4;
-  text-transform: uppercase;
-  letter-spacing: var(--au-ls-micro);
-  border: 2px solid var(--au-on-dark);
-  transition: transform var(--au-dur) ease, background var(--au-dur) ease;
-}
-.auShopCircle:hover { transform: translateY(var(--au-lift)); background: var(--color-primary-d); }
-.auShopCircle span { display: block; padding: 0 10px; }
-
-/* 3. Korall-band: EN mening + liten inverterad CTA */
-.auStatement {
-  background: var(--color-primary-d);
-  text-align: center;
-  padding: var(--au-sec) var(--au-gutter);
-}
-.auStatementText {
-  margin: 0 auto;
-  max-width: 46rem;
-  font-family: var(--font-display);
-  font-weight: var(--au-fw-display);
-  font-size: var(--au-fs-h2);
-  line-height: var(--au-lh-h2);
-  letter-spacing: var(--au-ls-display);
-  color: var(--au-on-dark);
-}
-
-/* 4. Rosa panel — förskjutet valv-collage (bågen = mallens signatur) */
-/* goal-62 C3 — AURORAS SIGNATUR: VALVET, ända ut i sektionskanten.
-   Mallens bilder bågar redan (999px 999px 0 0) men SEKTIONERNA möttes i raka kanter —
-   samma lådstapling som alla andra mallar. Nu bär bandet självt valvet: den rosa panelen
-   bågar upp i toppen och glider in under sektionen ovanför, precis som mallens valv-foton.
-   Formen är alltså inte en ny idé, den är mallens egen — buren av en yta i stället för
-   bara av en bild. Den negativa marginalen betalar tillbaka bågens höjd, så rytmen står. */
-.auCollageBand {
-  background: var(--color-accent-soft);
-  padding: calc(var(--au-sec) + var(--au-arch)) var(--au-gutter) var(--au-sec);
-  margin-top: calc(-1 * var(--au-arch));
-  border-radius: 50% 50% 0 0 / var(--au-arch) var(--au-arch) 0 0;
-  position: relative;
-  z-index: 1;
-}
-.auCollageHead { text-align: center; margin-bottom: var(--au-sp-block); }
-.auCollageGrid {
-  display: grid;
-  /* minmax(0) + start: bara `1fr` låter spårens auto-minimum växa — valvens 3:4-ratio
-     förde nth-child-offsetens 48px tillbaka in i spårbredden (48 × 3/4 = +36px/spår)
-     och griden blev bredare än sin container → horisontell overflow på hem-sidan.
-     `align-items: start` bryter stretch→ratio-återkopplingen; offseten behålls. */
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--au-gutter);
-  align-items: start;
-  max-width: 68rem;
-  margin: 0 auto;
-}
-.auCollageItem {
-  aspect-ratio: var(--au-ratio);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-line);
-  border-radius: 999px 999px var(--sf-radius) var(--sf-radius);
-}
-.auCollageItem:nth-child(2n) {
-  border-radius: var(--sf-radius) var(--sf-radius) 999px 999px;
-  margin-top: var(--au-sp-block);
-}
-
-/* 5+9. Modul-kort (butik + blogg) — RUNDADE HÖGA kort */
-.auCardGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--au-gutter);
-  max-width: 70rem;
-  margin: var(--au-sp-block) auto 0;
-  padding: 0 var(--au-gutter);
-}
-.auCard {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
-  overflow: hidden;
-  transition: transform var(--au-dur) ease, border-color var(--au-dur) ease;
-}
-.auCard:hover { transform: translateY(var(--au-lift)); border-color: var(--color-primary); }
-.auCardImg {
-  aspect-ratio: var(--au-ratio);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-accent-soft);
-}
-.auCardBody { padding: var(--au-sp-text); }
-.auCardName {
-  font-family: var(--font-display);
-  font-weight: var(--au-fw-card);
-  font-size: var(--au-fs-card);
-  line-height: var(--au-lh-card);
-  color: var(--color-fg);
-  margin: 0;
-}
-.auCardMeta {
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  color: var(--color-fg-2);
-  margin: var(--au-sp-eyebrow) 0 0;
-}
-.auCardPrice {
-  display: block;
-  margin: var(--au-sp-eyebrow) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  font-weight: var(--au-fw-micro);
-  color: var(--color-primary-d);
-}
-
-/* 6. PRISER I TVÅ MJUKA KOLUMNER — Auroras egen prislista (ej den delade rad-listan) */
-.auPriceCols {
-  display: grid;
-  /* minmax(0): med bara `1fr` blir spårets minimum = prisradens min-content (~416px
-     på mobil) och spåret tvingas bredare än viewporten. 0-minimum låter raden krympa
-     — auPriceMain har redan min-width: 0 så texten radbryts i stället. */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--au-sp-text) var(--au-sp-block);
-  max-width: 68rem;
-  margin: var(--au-sp-block) auto 0;
-  padding: 0 var(--au-gutter);
-}
-.auPriceRow {
-  display: flex;
-  align-items: center;
-  gap: var(--au-sp-text);
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: 999px;
-  padding: 14px 22px 14px 14px;
   cursor: pointer;
-  transition: transform var(--au-dur) ease, border-color var(--au-dur) ease;
+  transition: background 0.2s;
 }
-.auPriceRow:hover { transform: translateY(var(--au-lift)); border-color: var(--color-primary); }
-.auPriceMain {
-  display: block;
+
+.auBtn:hover {
+  background: var(--color-primary-d);
+  color: #fff;
+}
+
+/* Den inramade knappen: fylls terracotta vid hover. */
+.auBtnOutline {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: 0;
+  color: var(--color-primary-d);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 15px 36px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.auBtnOutline:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* Hårlinje-länken: kursiv Lora + 1px terracotta under. Mallens mjuka handling. */
+.auLink {
+  display: inline-block;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-primary);
+  padding: 0 0 2px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15.5px;
+  color: var(--color-primary-d);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.auLink:hover {
+  color: var(--color-primary);
+}
+
+.auSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ───────────────────────────────── sidhuvud ───────────────────────────────── */
+
+.auNav {
+  background: color-mix(in srgb, var(--color-bg) 93%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-line);
+  gap: 20px;
+  padding: 20px 28px;
+}
+
+/* Wordmarket ÄR kursiven — 28px Lora italic, gemener. */
+.auNavWordmark {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 28px;
+  color: var(--color-fg);
+  white-space: nowrap;
+  text-transform: lowercase;
+}
+
+.auNavLinks {
   flex: 1;
   min-width: 0;
-  /* Långa enords-namn ("Bröllopskonsultation") får brytas när pillret är smalare än
-     ordet — annars sticker texten ut ur den rundade raden på små skärmar. Hyphens
-     föredras när ordboken finns, så brytningen får bindestreck i stället för ett
-     naket klipp mitt i ordet. */
-  overflow-wrap: anywhere;
-  -webkit-hyphens: auto;
-  hyphens: auto;
-}
-.auRowNum {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  flex: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--color-accent-soft);
-  color: var(--color-primary-d);
-  font-family: var(--font-body);
-  font-weight: var(--au-fw-micro);
-  font-size: var(--au-fs-micro);
-  letter-spacing: var(--au-ls-micro);
-}
-.auRowName {
-  display: block;
-  font-family: var(--font-display);
-  font-size: var(--au-fs-card);
-  line-height: var(--au-lh-card);
-  font-weight: var(--au-fw-card);
-  color: var(--color-fg);
-}
-.auRowDesc {
-  display: block;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  color: var(--color-fg-2);
-}
-.auRowPrice {
-  flex: none;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  font-weight: var(--au-fw-micro);
-  color: var(--color-primary-d);
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
-/* 7. Om — valv-foto + berättelse + stat-trio (Auroras egen grid) */
-.auAboutGrid {
-  display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
-  gap: clamp(var(--au-sp-block), 5vw, 80px);
+.auNavLinks a {
+  white-space: nowrap;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--color-fg);
+  transition: color 0.2s;
+}
+
+.auNavLinks a:hover {
+  color: var(--color-primary);
+  font-style: italic;
+}
+
+.auNavCluster {
+  flex-shrink: 0;
+  display: flex;
   align-items: center;
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 0 var(--au-gutter);
+  gap: 18px;
 }
-.auAboutPhoto {
-  aspect-ratio: var(--au-ratio);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-accent-soft);
-  border-radius: 999px 999px var(--sf-radius) var(--sf-radius);
-}
-.auItalicLine {
+
+/* "korgen (0)" — kursiv hårlinje, inte en ikonknapp. */
+.auNavCart {
+  white-space: nowrap;
   font-family: var(--font-display);
   font-style: italic;
-  font-weight: var(--au-fw-display);
-  font-size: var(--au-fs-card);
-  line-height: var(--au-lh-card);
+  font-size: 15.5px;
   color: var(--color-primary-d);
-  margin: var(--au-sp-text) 0 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-primary);
+  border-radius: 0;
+  padding: 0 0 2px;
+  transition: color 0.2s;
 }
-.auStats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--au-sp-cta) var(--au-sp-block);
-  list-style: none;
-  margin: var(--au-sp-block) 0 0;
-  padding: 0;
+
+.auNavCart:hover {
+  color: var(--color-primary);
 }
-.auStatValue {
-  display: block;
+
+/* Huvudets CTA: fylld fyrkant, tätare än hemmets stora knapp. */
+.auNavCta {
+  white-space: nowrap;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 12px 24px;
+  transition: background 0.2s;
+}
+
+.auNavCta:hover {
+  background: var(--color-primary-d);
+  color: #fff;
+}
+
+/* ──────────────────────────────── hemmet: hero ────────────────────────────── */
+
+.auHero {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 72px 28px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.auHeroTitle {
+  margin: 0 0 22px;
   font-family: var(--font-display);
-  font-size: var(--au-fs-card);
-  line-height: var(--au-lh-card);
-  font-weight: var(--au-fw-card);
-  color: var(--color-primary-d);
+  font-weight: 500;
+  font-size: 56px;
+  line-height: 1.12;
+  color: var(--color-fg);
+  white-space: pre-line;
 }
-.auStatLabel {
-  display: block;
-  margin-top: var(--au-sp-eyebrow);
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
+
+/* Filens <em> i rubriken — kursiv terracotta mitt i meningen. */
+.auHeroTitle em {
+  color: var(--color-primary);
+}
+
+.auHeroLede {
+  margin: 0 0 34px;
+  color: var(--color-fg-2);
+  font-size: 17px;
+  line-height: 1.75;
+  max-width: 440px;
+}
+
+.auHeroCtas {
+  display: flex;
+  gap: 26px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* De tre löftena under heron — hårlinje över, ✿ i terracotta framför varje. */
+.auUsps {
+  display: flex;
+  gap: 28px;
+  margin-top: 44px;
+  border-top: 1px solid var(--color-line);
+  padding-top: 22px;
+  flex-wrap: wrap;
+}
+
+.auUsp {
+  margin: 0;
+  font-size: 13.5px;
   color: var(--color-fg-2);
 }
 
-/* 8. Presentkort — smal rad */
-.auGiftBand {
-  background: var(--color-accent-soft);
-  padding: var(--au-sp-cta) var(--au-gutter);
+.auUsp::before {
+  content: '✿\00a0';
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--color-primary);
+}
+
+/* VALVET — heron är en halvcirkel, inte en fyrkant. */
+.auHeroPhoto {
+  height: 580px;
+  border-radius: 290px 290px 0 0;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.auHeroCaption {
+  margin: 14px 0 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--color-primary);
+}
+
+/* ─────────────────────────── hemmet: de tre vägarna ───────────────────────── */
+
+.auSection {
+  max-width: 1240px;
+  margin: 110px auto 0;
+  padding: 0 28px;
+}
+
+.auSectionNarrow {
+  composes: auSection;
+  max-width: 1000px;
+  margin-top: 100px;
+}
+
+.auGrid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px;
+}
+
+.auPath {
+  display: block;
   text-align: center;
 }
-.auGiftInner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: center;
-  gap: 12px 20px;
+
+.auPathImg {
+  aspect-ratio: 3 / 4;
+  border-radius: 999px 999px 0 0;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
 }
-/* Kvittar 44px-boxens övre växt (11px) så pillret står kvar på baslinjeraden. */
-.auGiftBand .auBandCta { margin-top: -11px; }
-.auGiftLede {
+
+.auPathTitle {
+  margin: 22px 0 6px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 24px;
+  color: var(--color-fg);
+}
+
+.auPathDesc {
+  margin: 0 0 10px;
+  color: var(--color-fg-2);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.auPathCta {
   margin: 0;
   font-family: var(--font-display);
   font-style: italic;
-  font-weight: var(--au-fw-display);
-  font-size: var(--au-fs-lede);
-  line-height: var(--au-lh-lede);
+  font-size: 15px;
   color: var(--color-primary-d);
 }
 
-/* 10. Plats — mjukt kort */
-.auLocCard {
-  display: block;
-  max-width: 68rem;
-  margin: 0 auto;
-  padding: clamp(var(--au-sp-cta), 4vw, var(--au-sp-block));
+/* ──────────────────────────── hemmet: citat-bandet ────────────────────────── */
+
+.auQuote {
   background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
+  margin-top: 110px;
+  padding: 84px 28px;
+  text-align: center;
 }
-.auLocGrid {
+
+.auQuoteText {
+  margin: 0 auto;
+  max-width: 700px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 32px;
+  line-height: 1.45;
+  color: var(--color-fg);
+}
+
+.auQuoteRule {
+  width: 44px;
+  height: 1px;
+  background: var(--color-primary);
+  margin: 28px auto 0;
+}
+
+/* ─────────────────────── centrerat sektionshuvud (hem) ────────────────────── */
+
+.auSecHead {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.auSecTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 40px;
+  color: var(--color-fg);
+}
+
+.auSecFoot {
+  text-align: center;
+  margin: 52px 0 0;
+}
+
+/* ────────────────────────── produkt-griden (hem + butik) ──────────────────── */
+
+.auProdImg {
+  display: block;
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.auProdRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.auProdName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 20px;
+  color: var(--color-fg);
+}
+
+.auProdName a {
+  color: inherit;
+}
+
+.auProdPrice {
+  margin: 0;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-primary-d);
+  white-space: nowrap;
+}
+
+.auProdDesc {
+  margin: 6px 0 12px;
+  color: var(--color-fg-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Köpknappen ÄR modulens <AddToCart> — mallen ger den bara sin form: filens inramade
+   fyrkant ("Lägg i korgen"), som fylls terracotta vid hover. På hemmet finns ingen
+   ShopConfig (och därmed ingen fulfilment) i teaser-propen, så där är "lägg i korgen →"
+   filens kursiva hårlinje som leder till produktsidan — där kontraktet faktiskt finns. */
+.auBuyFramed button {
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: 0;
+  color: var(--color-primary-d);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 11px 26px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.auBuyFramed button:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* ─────────────────────────── hemmet: presentkort-bandet ───────────────────── */
+
+.auBands {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: var(--au-sp-block);
-  align-items: start;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
 }
-.auHours { margin: 0; }
+
+.auBand {
+  display: block;
+  background: var(--color-surface);
+  padding: 44px 40px;
+}
+
+/* Det vita syskonkortet — filens andra band (ram i stället för fylld yta). */
+.auBandWhite {
+  composes: auBand;
+  background: #fff;
+  border: 1px solid var(--color-line);
+}
+
+.auBandTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 28px;
+  color: var(--color-fg);
+}
+
+.auBandText {
+  margin: 0 0 16px;
+  color: var(--color-fg-2);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* ─────────────────────────────── hemmet: studion ──────────────────────────── */
+
+.auAbout {
+  max-width: 1240px;
+  margin: 110px auto 0;
+  padding: 0 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+/* Spegelvänt valv — bågen sitter uppe till HÖGER här. */
+.auAboutPhoto {
+  height: 520px;
+  border-radius: 0 260px 0 0;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.auAboutTitle {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.2;
+  color: var(--color-fg);
+}
+
+.auAboutText {
+  margin: 0 0 16px;
+  color: var(--color-fg-2);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.auAboutLink {
+  composes: auLink;
+  font-size: 16px;
+  padding-bottom: 3px;
+}
+
+/* ────────────────────────── blogg-raderna (hem + blogg) ───────────────────── */
+
+.auPostList {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.auPostCard {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  align-items: center;
+  background: #fff;
+  padding: 24px;
+  transition: box-shadow 0.25s;
+}
+
+.auPostCard:hover {
+  box-shadow: 0 14px 40px rgba(138, 62, 46, 0.1);
+}
+
+.auPostImg {
+  aspect-ratio: 4 / 3;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.auPostDate {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.auPostTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 24px;
+  color: var(--color-fg);
+}
+
+.auPostExcerpt {
+  margin: 0;
+  color: var(--color-fg-2);
+  font-size: 14.5px;
+  line-height: 1.7;
+}
+
+/* Bloggens EGEN sida är samma rad, en aning större (filens showBlogg). */
+.auPostCardWide {
+  composes: auPostCard;
+  grid-template-columns: 260px 1fr;
+  gap: 36px;
+  padding: 26px;
+}
+
+.auPostTitleWide {
+  composes: auPostTitle;
+  font-size: 26px;
+}
+
+.auPostExcerptWide {
+  composes: auPostExcerpt;
+  margin-bottom: 14px;
+  font-size: 15px;
+}
+
+.auPostMore {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--color-primary-d);
+}
+
+/* ───────────────────────────── hemmet: avslutningen ───────────────────────── */
+
+.auClosing {
+  margin-top: 110px;
+  position: relative;
+  padding: 110px 28px;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-fg);
+}
+
+/* Scrimmen är filens: 50% av fg över hela bilden — annars faller den vita texten igenom. */
+.auClosingScrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(58, 42, 36, 0.5), rgba(58, 42, 36, 0.5));
+}
+
+.auClosingInner {
+  position: relative;
+  text-align: center;
+}
+
+.auClosingTitle {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 42px;
+  color: #fff;
+}
+
+.auClosingLede {
+  margin: 0 auto 32px;
+  max-width: 440px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 16.5px;
+  line-height: 1.7;
+}
+
+/* Den vita knappen finns BARA här — mot fotot är terracotta för svag. */
+.auBtnWhite {
+  display: inline-block;
+  background: #fff;
+  color: var(--color-primary-d);
+  border: none;
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 16px 36px;
+  transition: background 0.2s;
+}
+
+.auBtnWhite:hover {
+  background: var(--color-surface);
+  color: var(--color-primary-d);
+}
+
+/* ───────────────────────────────── undersidor ─────────────────────────────── */
+
+.auPage {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 72px 28px 40px;
+  color: var(--color-fg);
+  font-family: var(--font-body);
+}
+
+.auPageMid {
+  composes: auPage;
+  max-width: 1100px;
+}
+
+.auPageNarrow {
+  composes: auPage;
+  max-width: 1000px;
+}
+
+.auPageHead {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.auPageTitle {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 48px;
+  color: var(--color-fg);
+}
+
+.auPageLede {
+  margin: 0 auto;
+  max-width: 480px;
+  color: var(--color-fg-2);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* /om — text vänster, valv höger (filens showOm). */
+.auSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+.auSplitTitle {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 46px;
+  line-height: 1.15;
+  color: var(--color-fg);
+}
+
+.auSplitPhoto {
+  height: 540px;
+  border-radius: 270px 270px 0 0;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.auProse {
+  margin: 0 0 16px;
+  color: var(--color-fg-2);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* Signaturmeningen på /om — kursiv, terracotta. */
+.auQuoteInline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 19px;
+  color: var(--color-primary);
+}
+
+/* teamet — cirklar, inga valv (filens enda helrunda form). */
+.auTeam {
+  margin-top: 96px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px;
+}
+
+.auTeamCard {
+  text-align: center;
+}
+
+.auTeamImg {
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  width: 72%;
+  margin: 0 auto;
+}
+
+.auTeamName {
+  margin: 20px 0 4px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 21px;
+  color: var(--color-fg);
+}
+
+.auTeamRole {
+  margin: 0;
+  color: var(--color-fg-2);
+  font-size: 14.5px;
+}
+
+/* /tjanster — filens kurs-kort: valv, namn, pris, inramad knapp. */
+.auSvcCard {
+  text-align: center;
+}
+
+.auSvcImg {
+  aspect-ratio: 3 / 4;
+  border-radius: 999px 999px 0 0;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.auSvcName {
+  margin: 20px 0 6px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--color-fg);
+}
+
+.auSvcDesc {
+  margin: 0 0 8px;
+  color: var(--color-fg-2);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.auSvcPrice {
+  margin: 0 0 14px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-primary-d);
+}
+
+.auSvcBook {
+  display: inline-block;
+  border: 1px solid var(--color-primary);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-primary-d);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 11px 26px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.auSvcBook:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.auSvcFoot {
+  margin: 56px auto 0;
+  max-width: 560px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--color-fg-2);
+}
+
+.auSvcFoot a {
+  color: var(--color-primary-d);
+  border-bottom: 1px solid var(--color-primary);
+}
+
+.auSvcFoot a:hover {
+  color: var(--color-primary);
+}
+
+/* /kontakt — fakta-spalt + vit platta (filens showKontakt). */
+.auContact {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 72px;
+}
+
+.auContactTitle {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 46px;
+  color: var(--color-fg);
+}
+
+.auContactLede {
+  margin: 0 0 34px;
+  color: var(--color-fg-2);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.auFacts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 15.5px;
+}
+
+.auFact {
+  margin: 0;
+}
+
+/* Etiketten i faktaraden är kursiv Lora, värdet fet Nunito — filens kontrast. */
+.auFactLabel {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--color-primary);
+  margin-right: 10px;
+}
+
+.auFactValue {
+  font-weight: 600;
+  color: var(--color-fg);
+}
+
+.auFactValue a {
+  color: inherit;
+}
+
+.auHours {
+  margin-top: 36px;
+  border-top: 1px solid var(--color-line);
+  padding-top: 22px;
+  max-width: 340px;
+}
+
 .auHoursRow {
   display: flex;
   justify-content: space-between;
-  gap: var(--au-sp-text);
-  margin: 0;
-  padding: 10px 0;
-  border-bottom: 1px dashed var(--color-line);
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  color: var(--color-fg-2);
-}
-.auHoursRow:last-child { border-bottom: 0; }
-
-/* 11. Closing — mörk korall (vit rubrik 7.27:1) */
-.auClosing {
-  background: var(--color-primary-d);
-  text-align: center;
-  padding: var(--au-sec) var(--au-gutter);
-}
-.auClosingTitle {
-  margin: 0 auto;
-  max-width: 40rem;
-  font-family: var(--font-display);
-  font-size: var(--au-fs-h2);
-  line-height: var(--au-lh-h2);
-  font-weight: var(--au-fw-display);
-  letter-spacing: var(--au-ls-display);
-  color: var(--au-on-dark);
-}
-.auClosingLede {
-  margin: var(--au-sp-text) auto 0;
-  max-width: 34rem;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-lede);
-  line-height: var(--au-lh-lede);
-  color: var(--au-on-dark);
-}
-.auClosingActions { margin-top: 0; }
-
-/* ═══════════ UNDERSIDOR (/om, /tjanster, /kontakt) ═════════════════════════ */
-.auPageHead {
-  text-align: center;
-  padding: clamp(var(--au-sp-block), 8vw, 120px) var(--au-gutter) 0;
-  max-width: 46rem;
-  margin: 0 auto;
-}
-.auPageTitle {
-  margin: var(--au-sp-eyebrow) 0 0;
-  font-family: var(--font-display);
-  font-size: var(--au-fs-h2);
-  line-height: var(--au-lh-h2);
-  font-weight: var(--au-fw-display);
-  letter-spacing: var(--au-ls-display);
-  color: var(--color-fg);
-}
-.auPageLede {
-  margin: var(--au-sp-text) auto 0;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: var(--au-fs-lede);
-  line-height: var(--au-lh-lede);
-  color: var(--color-primary-d);
-}
-.auPageSection { padding: var(--au-sec) var(--au-gutter); }
-
-/* /om — valv-collage + berättelse i TVÅ spalter */
-.auOmCollage {
-  display: grid;
-  /* Samma valv+offset-mönster som hemmets collage → samma minmax(0)+start-skydd,
-     annars blåser nth-child-offseten upp spåren via 3:4-ration även på /om. */
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--au-gutter);
-  align-items: start;
-  max-width: 68rem;
-  margin: 0 auto;
-}
-.auOmShot {
-  aspect-ratio: var(--au-ratio);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-accent-soft);
-  border-radius: 999px 999px var(--sf-radius) var(--sf-radius);
-}
-.auOmShot:nth-child(2) { margin-top: var(--au-sp-block); }
-.auOmStory {
-  display: block;
-  columns: 2;
-  column-gap: clamp(var(--au-sp-block), 5vw, 80px);
-  max-width: 62rem;
-  margin: 0 auto;
-}
-.auOmLead {
-  margin: 0 0 var(--au-sp-text);
-  font-family: var(--font-display);
-  font-size: var(--au-fs-card);
-  line-height: var(--au-lh-card);
-  font-weight: var(--au-fw-display);
-  color: var(--color-fg);
-}
-.auOmBody {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  color: var(--color-fg-2);
-}
-.auStatBand {
-  background: var(--color-accent-soft);
-  padding: var(--au-sp-block) var(--au-gutter);
-}
-.auStatBand .auStats {
-  justify-content: center;
-  text-align: center;
-  margin: 0 auto;
-  max-width: 60rem;
-}
-
-/* /tjanster — mjuka kort */
-.auSvcGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--au-gutter);
-  max-width: 70rem;
-  margin: 0 auto;
-}
-.auSvcCard {
-  display: block;
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
-  padding: var(--au-sp-cta);
-  cursor: pointer;
-  transition: transform var(--au-dur) ease, border-color var(--au-dur) ease;
-}
-.auSvcCard:hover { transform: translateY(var(--au-lift)); border-color: var(--color-primary); }
-.auSvcName {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--au-fs-card);
-  line-height: var(--au-lh-card);
-  font-weight: var(--au-fw-card);
-  color: var(--color-fg);
-}
-.auSvcDesc {
-  margin: var(--au-sp-eyebrow) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  color: var(--color-fg-2);
-}
-.auSvcPrice {
-  margin: var(--au-sp-text) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  font-weight: var(--au-fw-micro);
-  color: var(--color-primary-d);
-}
-.auSvcGo {
-  display: inline-block;
-  margin-top: var(--au-sp-text);
-  padding: 8px 18px;
-  border-radius: 999px;
-  background: var(--color-accent-soft);
-  color: var(--color-primary-d);
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-}
-.auEmpty {
-  max-width: 40rem;
-  margin: 0 auto;
-  text-align: center;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-lede);
-  line-height: var(--au-lh-lede);
-  color: var(--color-fg-2);
-}
-
-/* /kontakt — ett stort rundat kontakt-kort */
-.auContactCard {
-  display: block;
-  max-width: 62rem;
-  margin: 0 auto;
-  padding: clamp(var(--au-sp-cta), 5vw, 64px);
-  background: var(--color-surface);
-  border: 2px solid var(--color-accent-soft);
-  border-radius: var(--sf-radius);
-  text-align: center;
-}
-.auContactGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--au-sp-block);
-  text-align: left;
-}
-.auContactBlock { min-width: 0; }
-.auContactHead {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary-d);
-}
-.auContactValue {
-  margin: var(--au-sp-eyebrow) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  color: var(--color-fg-2);
-}
-.auContactHours { margin-top: var(--au-sp-eyebrow); }
-.auContactHoursRow {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--au-sp-text);
-  margin: 0;
   padding: 8px 0;
-  border-bottom: 1px dashed var(--color-line);
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
+  font-size: 15px;
+}
+
+.auHoursRow span:first-child {
+  font-weight: 600;
+}
+
+.auHoursRow span:last-child {
   color: var(--color-fg-2);
 }
-.auContactHoursRow:last-child { border-bottom: 0; }
-.auContactItalic {
-  margin: var(--au-sp-block) auto 0;
-  max-width: 34rem;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: var(--au-fs-card);
-  line-height: var(--au-lh-card);
-  color: var(--color-primary-d);
-}
-.auContactActions { margin-top: var(--au-sp-cta); }
 
-/* ═══════════ SIDFOT — stort script-wordmark, centrerat ═════════════════════ */
-.auFoot {
-  background: var(--color-accent-soft);
-  padding: var(--au-sec) var(--au-gutter) var(--au-sp-cta);
-  text-align: center;
+.auContactCard {
+  background: #fff;
+  padding: 44px;
 }
-.auFootTop { max-width: 60rem; margin: 0 auto; }
-.auFootWordmark {
-  margin: 0;
-  font-family: var(--font-script), cursive;
+
+.auContactCardTitle {
+  margin: 0 0 26px;
+  font-family: var(--font-display);
   font-weight: 500;
-  font-size: clamp(48px, 8vw, 96px);
-  line-height: var(--au-lh-hero);
-  color: var(--color-primary-d);
-}
-.auFootTagline {
-  margin: var(--au-sp-text) auto 0;
-  max-width: 34rem;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  color: var(--color-fg-2);
-}
-.auFootLinks {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: var(--au-sp-cta);
-}
-.auFootLinks a {
-  /* Touch-golv (goal-61): sidfotens piller mätte 36px — samma 44px-golv som navet. */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 8px 18px;
-  border-radius: 999px;
-  border: 1px solid var(--color-primary-d);
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary-d);
-  text-decoration: none;
-  transition: background var(--au-dur) ease, color var(--au-dur) ease;
-}
-.auFootLinks a:hover { background: var(--color-primary-d); color: var(--au-on-dark); }
-.auFootCols {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--au-sp-block);
-  margin-top: var(--au-sp-block);
-  text-align: left;
-}
-.auFootCol { min-width: 12rem; max-width: 18rem; }
-.auFootHead {
-  margin: 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary-d);
-}
-.auFootText {
-  margin: var(--au-sp-eyebrow) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  color: var(--color-fg-2);
-}
-.auFootLink {
-  /* Touch-golv (goal-61 runda 2): telefon och mejl mätte 24px. 44px-golv med negativ
-     kvittning mot radhöjden (16px × 1.6 = 25.6px) så sidfotens radrytm är pixelidentisk.
-     Linjen flyttar från border-bottom till text-decoration så den stannar vid texten
-     i stället för att följa med till 44px-boxens botten. */
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  margin-block: calc((var(--au-fs-body) * var(--au-lh-body) - 44px) / 2);
-  color: var(--color-fg);
-}
-/* Dubblad klass (0,2,0) — annars vinner .tenant-root a (0,1,1) med `none`. */
-.auFootLink.auFootLink {
-  text-decoration: underline;
-  text-decoration-color: var(--color-primary);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
-}
-.auFootLink:hover { color: var(--color-primary-d); }
-.auFootHoursRow {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--au-sp-text);
-  margin: 6px 0 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  color: var(--color-fg-2);
-}
-.auFootSocials {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: var(--au-sp-block);
-}
-.auFootSocial {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid var(--color-primary-d);
-  color: var(--color-primary-d);
-  transition: background var(--au-dur) ease, color var(--au-dur) ease;
-}
-.auFootSocial:hover { background: var(--color-primary-d); color: var(--au-on-dark); }
-.auFootBottom {
-  margin: var(--au-sp-cta) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-fg-2);
-}
-
-/* ═══════════ MODUL-VYER — butik + blogg i Auroras vektor (goal-59) ═════════
-   Modulen äger funktionen (AddToCart, priser, livscykel); Aurora äger formen:
-   samma 3:4-ratio, samma 24px-radie på struktur, samma cirkel-gest som hemmets
-   "Handla nu", samma valv-båge som collaget. Den förskjutna (masonry-aktiga)
-   griden = boutiquens lekfullhet, utan att kortet tappar en enda funktion. */
-
-/* Leveranslöftet — rosa piller direkt under butikens rubrik (alltid synligt) */
-.auShopPromise {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin: var(--au-sp-text) auto 0;
-  padding: 10px 22px;
-  border-radius: 999px;
-  background: var(--color-accent-soft);
-}
-.auShopPromiseTag {
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary-d);
-}
-.auShopPromiseText {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: var(--au-fw-display);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
+  font-size: 26px;
   color: var(--color-fg);
 }
 
-/* Pausat läge — korall-band i mallens ton, inte en generisk varningsruta */
-.auShopClosed {
-  max-width: 46rem;
-  margin: var(--au-sp-cta) auto 0;
-  padding: 18px 28px;
-  border-radius: 999px;
-  background: var(--color-primary-d);
-  color: var(--au-on-dark);
-  text-align: center;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  font-weight: 400;
+.auContactCardBody {
+  margin: 0 0 26px;
+  color: var(--color-fg-2);
+  font-size: 15.5px;
+  line-height: 1.8;
 }
 
-/* Förskjuten grid av höga kort (masonry-känsla utan JS: jämna kort faller ner) */
-.auShopGrid,
-.auPostGrid {
+.auContactActions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ───────────────────────────────── modul-vyer ─────────────────────────────── */
+
+.auShop {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 72px 28px 40px;
+}
+
+.auShopGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--au-sp-block) var(--au-gutter);
-  align-items: start;
+  gap: 44px 36px;
   list-style: none;
-  max-width: 70rem;
-  margin: var(--au-sp-block) auto 0;
-  padding: 0 var(--au-gutter);
+  margin: 0;
+  padding: 0;
 }
-.auShopCard {
-  display: flex;
-  flex-direction: column;
+
+.auBlogg {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 72px 28px 40px;
+}
+
+.auNotice {
+  margin: 0 auto 40px;
+  max-width: 700px;
   background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: var(--sf-radius);
-  overflow: hidden;
-  transition: transform var(--au-dur) ease, border-color var(--au-dur) ease;
-}
-.auShopCard:nth-child(3n + 2) { margin-top: var(--au-sp-block); }
-.auShopCard:hover { transform: translateY(var(--au-lift)); border-color: var(--color-primary); }
-.auShopCardMedia {
-  position: relative;
-  display: block;
-  aspect-ratio: var(--au-ratio);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-accent-soft); /* fallback när imageUrl saknas */
-  text-decoration: none;
-}
-/* Rund korall-CTA per kort — ekar hemmets "Handla nu"-cirkel ovanpå heron */
-.auShopCardCircle {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  border: 2px solid var(--au-on-dark);
-  color: var(--au-on-dark);
+  padding: 18px 24px;
   text-align: center;
-  font-family: var(--font-body);
-  font-size: 11px;
-  line-height: 1.25;
-  font-weight: var(--au-fw-micro);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  transition: background var(--au-dur) ease;
-}
-.auShopCard:hover .auShopCardCircle { background: var(--color-primary-d); }
-.auShopCardBody {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding: var(--au-sp-text);
-}
-.auShopCardLink { color: inherit; text-decoration: none; }
-.auShopCardLink:hover { color: var(--color-primary-d); }
-.auShopPrice {
-  margin: var(--au-sp-text) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
-  font-weight: var(--au-fw-micro);
-  color: var(--color-primary-d);
-}
-/* Köp-rälsen: modulens egen kontroll, klädd i mallens pill-radie. Formen kommer numera
-   ur --sf-btn-* (deklarerade högst upp) — de gamla `!important`-överskrivningarna av
-   modulens knappar är borta: de kunde bara nå radien och stängde i praktiken dörren för
-   knappens sex lägen (:hover/:active/:focus-visible/disabled). */
-.auShopBuy { margin-top: auto; padding-top: var(--au-sp-eyebrow); }
-
-/* Blogg — mjuka VALV-kort (999px-topp = mallens signaturbåge) */
-.auPostCard {
-  background: var(--color-surface);
-  border: 1px solid var(--color-line);
-  border-radius: 999px 999px var(--sf-radius) var(--sf-radius);
-  overflow: hidden;
-  transition: transform var(--au-dur) ease, border-color var(--au-dur) ease;
-}
-.auPostCard:nth-child(3n + 2) { margin-top: var(--au-sp-block); }
-.auPostCard:hover { transform: translateY(var(--au-lift)); border-color: var(--color-primary); }
-.auPostInner { display: block; text-decoration: none; color: inherit; }
-.auPostMedia {
-  display: block;
-  aspect-ratio: var(--au-ratio);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--color-accent-soft);
-}
-.auPostBody { display: block; padding: var(--au-sp-text); }
-.auPostDate {
-  display: block;
-  font-family: var(--font-body);
-  font-size: var(--au-fs-micro);
-  font-weight: var(--au-fw-micro);
-  letter-spacing: var(--au-ls-micro);
-  text-transform: uppercase;
-  color: var(--color-primary-d);
-}
-.auPostTitle {
-  display: block;
-  margin-top: var(--au-sp-eyebrow);
   font-family: var(--font-display);
-  font-size: var(--au-fs-card);
-  line-height: var(--au-lh-card);
-  font-weight: var(--au-fw-card);
-  color: var(--color-fg);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--color-primary-d);
 }
-.auPostExcerpt {
-  display: block;
-  margin-top: var(--au-sp-eyebrow);
-  font-family: var(--font-body);
-  font-size: var(--au-fs-body);
-  line-height: var(--au-lh-body);
+
+.auEmpty {
+  margin: 0;
+  background: #fff;
+  padding: 64px 40px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+/* ───────────────────────────────── sidfoten ───────────────────────────────── */
+
+.auFoot {
+  background: var(--color-surface);
+  margin-top: 110px;
+  padding: 76px 28px 40px;
+  text-align: center;
+}
+
+.auFootMark {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 44px;
+  color: var(--color-primary-d);
+  text-transform: lowercase;
+}
+
+.auFootMeta {
+  margin: 0 0 36px;
   color: var(--color-fg-2);
+  font-size: 15px;
 }
 
-.auModuleMore { margin: var(--au-sp-block) 0 0; text-align: center; }
-.auModuleMore .auBandCta { margin-top: -11px; }
-
-/* ═══════════ FOKUS + PRESS (goal-60) ══════════════════════════════════════
-   Golv: VARJE klickbar yta har en synlig ring. Mallen hade noll — ringen ritas i
-   Auroras egen korall (--au-focus = --color-primary-d), och på MÖRK botten i vitt,
-   annars är den osynlig. Pressen (:active) är kort (80ms) och liten (scale .97 /
-   lyftet tillbaka till 0): en knapp som bara svarar på hover känns död under fingret. */
-.auNavLinks.auNavLinks a:focus-visible,
-.auCard:focus-visible,
-.auPriceRow:focus-visible,
-.auSvcCard:focus-visible,
-.auShopCard:focus-visible,
-.auPostCard:focus-visible,
-.auPostInner:focus-visible,
-.auShopCardMedia:focus-visible,
-.auShopCardLink:focus-visible,
-.auBandCta:focus-visible,
-.auSvcGo:focus-visible,
-.auFootLinks a:focus-visible,
-.auFootLink:focus-visible,
-.auFootSocial:focus-visible,
-.auGiftBand .auBandCta:focus-visible,
-:global(.btn-accent).auBtn:focus-visible,
-:global(.btn-accent).auNavCircle:focus-visible,
-.auNavCircle:focus-visible {
-  outline: 2px solid var(--au-focus);
-  outline-offset: 3px;
-}
-/* Mörka ytor: heron (scrim), korall-banden och closing → ljus ring. */
-.auShopCircle:focus-visible,
-.auStatement .auBandCta:focus-visible,
-:global(.btn-accent).auStatementCta:focus-visible,
-.auClosing :global(.btn-accent):focus-visible {
-  outline: 2px solid var(--au-focus-on-dark);
-  outline-offset: 3px;
+.auFootNav {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
 }
 
-:global(.btn-accent).auBtn:active,
-:global(.btn-accent).auStatementCta:active {
-  transform: scale(0.97);
-  transition-duration: 80ms;
-}
-:global(.btn-accent).auNavCircle:active,
-.auNavCircle:active,
-.auShopCircle:active {
-  transform: translateY(0) scale(0.97);
-  transition-duration: 80ms;
-}
-.auCard:active,
-.auPriceRow:active,
-.auSvcCard:active,
-.auShopCard:active,
-.auPostCard:active {
-  transform: translateY(0);
-  transition-duration: 80ms;
-}
-.auBandCta:active,
-.auSvcGo:active,
-.auFootLinks a:active,
-.auFootSocial:active {
-  transform: scale(0.97);
-  transition-duration: 80ms;
+.auFootNav a {
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary-d);
+  transition: color 0.2s;
 }
 
-/* ═══════════ REDUCED MOTION (goal-60) ═════════════════════════════════════
-   Mallen lyfter (translateY(--au-lift)) och trycker (scale .97) på: nav-cirkeln,
-   hero-cirkeln, hem-kortet, prisraden, tjänstekortet, butikskortet, bloggkortet,
-   knapparna och sidfotens piller. Alla nollas här — ingen transform blir kvar. */
-@media (prefers-reduced-motion: reduce) {
-  :global(.btn-accent).auBtn,
-  :global(.btn-accent).auStatementCta,
-  :global(.btn-accent).auNavCircle,
-  .auNavCircle,
-  .auNavLinks.auNavLinks a,
-  .auShopCircle,
-  .auCard,
-  .auPriceRow,
-  .auSvcCard,
-  .auShopCard,
-  .auShopCardCircle,
-  .auPostCard,
-  .auFootLinks a,
-  .auFootSocial,
-  .auBandCta,
-  .auSvcGo {
-    transition: none;
-    animation: none;
-  }
-  :global(.btn-accent).auBtn:hover,
-  :global(.btn-accent).auBtn:active,
-  :global(.btn-accent).auStatementCta:hover,
-  :global(.btn-accent).auStatementCta:active,
-  :global(.btn-accent).auNavCircle:hover,
-  :global(.btn-accent).auNavCircle:active,
-  .auNavCircle:hover,
-  .auNavCircle:active,
-  .auShopCircle:hover,
-  .auShopCircle:active,
-  .auCard:hover,
-  .auCard:active,
-  .auPriceRow:hover,
-  .auPriceRow:active,
-  .auSvcCard:hover,
-  .auSvcCard:active,
-  .auShopCard:hover,
-  .auShopCard:active,
-  .auPostCard:hover,
-  .auPostCard:active,
-  .auBandCta:active,
-  .auSvcGo:active,
-  .auFootLinks a:active,
-  .auFootSocial:active {
-    transform: none;
-  }
+.auFootNav a:hover {
+  color: var(--color-primary);
 }
 
-/* ═══════════ MOBIL ════════════════════════════════════════════════════════ */
-@media (max-width: 900px) {
-  .auAboutGrid,
-  .auLocGrid,
-  .auContactGrid { grid-template-columns: 1fr; }
-  .auPriceCols { grid-template-columns: minmax(0, 1fr); }
-  .auSvcGrid { grid-template-columns: repeat(2, 1fr); }
-  .auOmStory { columns: 1; }
+.auFootLegal {
+  margin: 0;
+  color: var(--color-fg-2);
+  font-size: 13px;
 }
+
+/* ───────────────────── mobil — speglar filens egen media query ────────────── */
+
 @media (max-width: 760px) {
-  .auHeroImg { aspect-ratio: 4 / 5; }
-  .auCollageGrid,
-  .auOmCollage { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .auCardGrid,
-  .auSvcGrid { grid-template-columns: 1fr; max-width: 24rem; }
+  .auHero,
+  .auGrid3,
+  .auBands,
+  .auAbout,
+  .auSplit,
+  .auTeam,
   .auShopGrid,
-  .auPostGrid { grid-template-columns: 1fr; max-width: 26rem; }
-  .auShopCard:nth-child(3n + 2),
-  .auPostCard:nth-child(3n + 2) { margin-top: 0; }
-  .auShopCircle { width: 78px; height: 78px; }
-  .auPriceRow { border-radius: var(--sf-radius); }
+  .auContact,
+  .auPostCard,
+  .auPostCardWide {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .auHero,
+  .auSection,
+  .auSectionNarrow,
+  .auAbout,
+  .auPage,
+  .auPageMid,
+  .auPageNarrow,
+  .auShop,
+  .auBlogg,
+  .auFoot,
+  .auQuote,
+  .auClosing {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .auNav {
+    padding: 16px 20px;
+  }
+
+  .auHeroTitle,
+  .auSplitTitle,
+  .auContactTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+
+  .auPageTitle,
+  .auSecTitle,
+  .auAboutTitle,
+  .auQuoteText,
+  .auClosingTitle {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .auHeroPhoto {
+    height: 420px;
+    border-radius: 210px 210px 0 0;
+  }
+
+  .auAboutPhoto,
+  .auSplitPhoto {
+    height: 400px;
+  }
+
+  .auSplitPhoto {
+    border-radius: 200px 200px 0 0;
+  }
+
+  /* Tap-targets — filens ≥44px-regel. */
+  .auBtn,
+  .auBtnOutline,
+  .auBtnWhite,
+  .auLink,
+  .auNavCta,
+  .auNavCart,
+  .auSvcBook,
+  .auBuyFramed button {
+    min-height: 44px;
+  }
+
+  .auNavLinks a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .auQuote,
+  .auClosing {
+    padding-top: 56px;
+    padding-bottom: 56px;
+  }
 }

@@ -4,17 +4,13 @@ import type { ThemeContentDefaults } from '../../theme-content'
 import type { ThemeCaps, ExtraField } from '@/lib/platform/theme-capabilities'
 import { calytrix } from './calytrix.theme'
 import { aurora } from './aurora.theme'
-import { sage } from './sage.theme'
-import { oliviathyme } from './oliviathyme.theme'
-import { paisley } from './paisley.theme'
 import { onyx } from './onyx.theme'
-import { viora } from './viora.theme'
-import { isalara } from './isalara.theme'
-import { seraphina } from './seraphina.theme'
-import { wildthistle } from './wildthistle.theme'
-import { mina } from './mina.theme'
 import { lunaria } from './lunaria.theme'
 import { eloria } from './eloria.theme'
+import { ateljevinter } from './ateljevinter.theme'
+import { blomstertorget } from './blomstertorget.theme'
+import { sivsav } from './sivsav.theme'
+import { solsalt } from './solsalt.theme'
 
 export type { FloristTheme } from './types'
 
@@ -32,8 +28,11 @@ export type { FloristTheme } from './types'
  * INGEN React-import här — filen dras in av klient-ytor (mallväljaren, studion).
  */
 export const FLORIST_THEMES: FloristTheme[] = [
-  calytrix, aurora, sage, oliviathyme, paisley, onyx, viora,
-  isalara, seraphina, wildthistle, mina, lunaria, eloria,
+  // CLAUDE DESIGN-SVITEN (goal-64) — 9 florist-mallar, en exakt kopia av varje
+  // levererad .dc.html i handoff/. De 8 mallar som saknade motsvarighet i paketet
+  // (sage, oliviathyme, paisley, viora, isalara, seraphina, wildthistle, mina) är
+  // RIVNA — Zivars order: "bort med de som är gamla".
+  ateljevinter, aurora, blomstertorget, calytrix, eloria, lunaria, onyx, sivsav, solsalt,
 ]
 
 export const FLORIST_KEYS: string[] = FLORIST_THEMES.map((t) => t.key)

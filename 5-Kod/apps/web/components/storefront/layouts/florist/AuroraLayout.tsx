@@ -1,271 +1,328 @@
 import Link from 'next/link'
 import { Reveal } from '../../Reveal'
-import { Bookable } from '../../Bookable'
-import { BookCta } from '@/components/brand/BookCta'
-import { formatPrice, serviceDesc, serviceNum } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './aurora.module.css'
 
 /**
- * AURORA — LEKFULL BOUTIQUE i korall (florist-sviten, goal-58 → tema-paket goal-59).
+ * AURORA — ROMANTISK STUDIO (goal-64, Claude Design-paketet).
  *
- * Hemmet är HELT Auroras eget: NOLL delade .sf*-klasser (det var där alla 13 mallar
- * blev samma sida i olika färg). Kompositionen:
- *   annonsrad → bred landskaps-hero med rund "Handla nu"-cirkel ovanpå bilden →
- *   korall-band med EN mening → valv-collage i förskjuten grid → butik som RUNDADE
- *   HÖGA kort → priser i TVÅ mjuka kolumner → om med valv-foto → presentkort-rad →
- *   blogg → plats som mjukt kort → closing på mörk korall.
+ * Hemmet är en EXAKT kopia av `showHem`-blocket i "Aurora - Romantisk Studio.dc.html",
+ * sektion för sektion, i filens ordning:
  *
- * Modul-gatingen är oförändrad: teasers renderas bara när de finns, presentkortet är
- * en smal rad, cirkelknappen bara när shoppen är nåbar. Layouten är SYNKRON.
+ *   (1) HERO           — text vänster (etikett, rubrik, lede, två CTA:er, tre ✿-löften),
+ *                        valv-foto höger med kursiv bildtext under
+ *   (2) DE TRE VÄGARNA — buketter · bröllop · kurser, som höga valv-kort
+ *   (3) CITAT-BANDET   — blush-platta, en kursiv mening, en 44px hårlinje under
+ *   (4) VECKANS FAVORITER — tre produkter ur shop-modulen + "Hela sortimentet"
+ *   (5) PRESENTKORT + KURSER — två band sida vid sida
+ *   (6) STUDION        — spegelvänt valv-foto vänster, om-texten höger
+ *   (7) FRÅN STUDION   — två blogg-rader (bild vänster, text höger)
+ *   (8) AVSLUTNINGEN   — helbreddsfoto med scrim, vit knapp
+ *
+ * Filen har inget galleri-band på hemmet (galleriet är en EGEN sida i .dc-filen) — och då
+ * har inte mallen det heller. Att lägga till en sektion "för att syskonen har en" ÄR att
+ * improvisera bort mallen (CLAUDE.md § DESIGN-TROHET).
+ *
+ * Modul-gatingen är plattformens och HELIG: favoriterna ritas bara när shopen har teasers,
+ * väg-korten bara mot moduler som går att nå, presentkort-bandet bara när modulen är live.
+ * En avstängd modul får inte ge EN enda länk till sin sida (404-fällan).
+ *
+ * SYNKRON komponent (ingen async, ingen 'use client') — onboarding-studions preview
+ * renderar samma komponent.
  */
-export function AuroraLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
-  const rows = services.slice(0, 6)
-  const hasMore = services.length > 6
-
-  const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
-  const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
-  const presentkortLive = modules?.presentkortLive ?? false
-  // Utan modules-prop (studions statiska preview) VISAS cirkelknappen — previewn
-  // ska se en hel sida även om länken inte är klickbar på riktigt (S9-mönstret).
+export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
+  // Filen visar TRE favoriter på hemmet (homeProducts = products.slice(0, 3))…
+  const favorites = (modules?.shopTeasers ?? []).slice(0, 3)
+  // …och TVÅ blogg-rader (homeBlog = blog.slice(0, 2)).
+  const posts = (modules?.bloggTeasers ?? []).slice(0, 2)
+  // modules === undefined (studions statiska preview) → visa allt.
   const shopReachable = modules ? modules.shopReachable : true
+  const offertReachable = modules ? modules.offertReachable : true
+  const presentkortLive = modules ? modules.presentkortLive : true
 
-  const [hero1, hero2, hero3] = [
-    content.heroImages[0] ?? '',
-    content.heroImages[1] ?? content.heroImages[0] ?? '',
-    content.heroImages[2] ?? content.heroImages[0] ?? '',
-  ]
-  const collage = [
-    hero2,
-    content.galleryImages[0] ?? hero1,
-    content.galleryImages[1] ?? hero1,
-    hero3,
-    content.galleryImages[2] ?? hero1,
-    content.galleryImages[3] ?? hero1,
-  ]
+  const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
+  const [pathBukett, pathBrollop, pathKurs] = content.galleryImages
+
+  // Filens `paths` — de tre vägarna in i sajten. Varje väg ÄR en modul, och en modul som
+  // inte går att nå får ingen ruta: annars leder valvet rakt in i en 404.
+  const paths = [
+    shopReachable
+      ? {
+          key: 'butik',
+          title: 'Buketter',
+          desc: 'Handbundna, varje morgon.',
+          cta: 'till butiken',
+          img: pathBukett ?? heroPhoto,
+          href: '/shop',
+        }
+      : null,
+    offertReachable
+      ? {
+          key: 'brollop',
+          title: 'Bröllop',
+          desc: 'Er dag, i blom.',
+          cta: 'läs mer',
+          img: pathBrollop ?? heroPhoto,
+          href: '/offert',
+        }
+      : null,
+    {
+      key: 'kurser',
+      title: 'Kurser & event',
+      desc: 'Bind din egen bukett.',
+      cta: 'se datum',
+      img: pathKurs ?? heroPhoto,
+      href: '/kurser',
+    },
+  ].filter((p): p is NonNullable<typeof p> => p !== null)
 
   return (
     <div className={styles.auRoot}>
-      {/* 1 — TUNN KORALL-ANNONSRAD */}
-      <div className={styles.auAnnounce}>
-        <p className={styles.auAnnounceText}>{content.utility}</p>
-      </div>
-
-      {/* 2 — BRED LANDSKAPS-HERO med rund "Handla nu"-cirkelknapp uppe till höger */}
+      {/* (1) HERO */}
       <section className={styles.auHero}>
-        <div className={styles.auHeroFrame}>
-          <div className={styles.auHeroImg} style={{ backgroundImage: `url(${hero1})` }}>
-            <div className={styles.auHeroScrim} />
-            <div className={styles.auHeroContent}>
-              <p className={styles.auHeroEyebrow}>{content.heroEyebrow}</p>
-              <h1 className={styles.auHeroTitle}>{content.heroTitle}</h1>
-              <p className={styles.auHeroLede}>{content.heroLede}</p>
-              <div className={styles.auHeroActions}>
-                <BookCta className={styles.auBtn} />
-              </div>
-            </div>
+        <Reveal>
+          <p className={styles.auEyebrow}>{content.heroEyebrow}</p>
+          <h1 className={styles.auHeroTitle}>{content.heroTitle}</h1>
+          <p className={styles.auHeroLede}>{content.heroLede}</p>
+          <div className={styles.auHeroCtas}>
             {shopReachable ? (
-              <Link href="/shop" className={styles.auShopCircle}>
-                <span>Handla nu</span>
+              <Link href="/shop" className={styles.auBtn}>
+                Se buketterna
+              </Link>
+            ) : (
+              <Link href="/tjanster" className={styles.auBtn}>
+                Se vad vi gör
+              </Link>
+            )}
+            {offertReachable ? (
+              <Link href="/offert" className={styles.auLink}>
+                till bröllopet →
               </Link>
             ) : null}
           </div>
-        </div>
-      </section>
-
-      {/* 3 — KORALL-BAND: en mening + liten inverterad CTA */}
-      <section className={styles.auStatement}>
-        <Reveal>
-          <p className={styles.auStatementText}>{content.tagline}</p>
-          <BookCta className={`${styles.auBtn} ${styles.auStatementCta}`} />
+          <div className={styles.auUsps}>
+            <p className={styles.auUsp}>Samma dag-leverans</p>
+            <p className={styles.auUsp}>Handbundet varje morgon</p>
+            <p className={styles.auUsp}>Handskrivna kort</p>
+          </div>
+        </Reveal>
+        <Reveal delay={140}>
+          <div className={styles.auHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} />
+          <p className={styles.auHeroCaption}>ur studion, bunden i morse</p>
         </Reveal>
       </section>
 
-      {/* 4 — ROSA PANEL: förskjutet, asymmetriskt valv-collage */}
-      <section className={styles.auCollageBand}>
-        <Reveal className={styles.auCollageHead}>
-          <p className={styles.auEyebrow}>{content.galleryEyebrow ?? '— Från studion'}</p>
-        </Reveal>
-        <div className={styles.auCollageGrid}>
-          {collage.map((src, i) => (
-            <Reveal key={`${src}-${i}`} delay={i * 70} className={styles.auCollageItem} style={{ backgroundImage: `url(${src})` }}>
-              <span />
+      {/* (2) DE TRE VÄGARNA */}
+      <section className={styles.auSection}>
+        <div className={styles.auGrid3}>
+          {paths.map((p, i) => (
+            <Reveal key={p.key} delay={i * 90}>
+              <Link href={p.href} className={styles.auPath}>
+                <span
+                  className={styles.auPathImg}
+                  style={p.img ? { backgroundImage: `url(${p.img})`, display: 'block' } : { display: 'block' }}
+                />
+                <span className={styles.auPathTitle} style={{ display: 'block' }}>
+                  {p.title}
+                </span>
+                <span className={styles.auPathDesc} style={{ display: 'block' }}>
+                  {p.desc}
+                </span>
+                <span className={styles.auPathCta}>{p.cta} →</span>
+              </Link>
             </Reveal>
           ))}
         </div>
       </section>
 
-      {/* 5 — UR BUTIKEN — rundade HÖGA kort (3:4) */}
-      {shopTeasers.length > 0 ? (
-        <section className={styles.auSection}>
-          <Reveal className={styles.auSecHead}>
-            <p className={styles.auEyebrow}>{content.shopEyebrow ?? '— Ur butiken'}</p>
-            <h2 className={styles.auH2}>{content.shopTitle ?? 'Handla något fint'}</h2>
-          </Reveal>
-          <div className={styles.auCardGrid}>
-            {shopTeasers.map((p, i) => (
-              <Reveal key={p.id} delay={i * 90}>
-                <Link href={`/shop/${p.id}`} className={styles.auCard}>
-                  <div className={styles.auCardImg} style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined} />
-                  <div className={styles.auCardBody}>
-                    <h3 className={styles.auCardName}>{p.name}</h3>
-                    <p className={styles.auCardPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
-                  </div>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
-          <Reveal className={styles.auSecHead}>
-            <Link href="/shop" className={styles.auBandCta}>{content.shopCta ?? 'Se hela butiken'}</Link>
-          </Reveal>
-        </section>
-      ) : null}
-
-      {/* 6 — PRISER I TVÅ MJUKA KOLUMNER (Auroras egen prislista, ingen delad rad-lista) */}
-      {rows.length > 0 ? (
-        <section className={styles.auSection}>
-          <Reveal className={styles.auSecHead}>
-            <p className={styles.auEyebrow}>{content.servicesEyebrow}</p>
-            <h2 className={styles.auH2}>{content.servicesTitle}</h2>
-          </Reveal>
-          <div className={styles.auPriceCols}>
-            {rows.map((s, i) => (
-              <Reveal key={s.id} delay={i * 60}>
-                <Bookable className={styles.auPriceRow} label={`Beställ — ${s.name}`}>
-                  <span className={styles.auRowNum} aria-hidden="true">{serviceNum(i)}</span>
-                  <span className={styles.auPriceMain}>
-                    <span className={styles.auRowName}>{s.name}</span>
-                    <span className={styles.auRowDesc}>{serviceDesc(s)}</span>
-                  </span>
-                  <span className={styles.auRowPrice}>{formatPrice(s)}</span>
-                </Bookable>
-              </Reveal>
-            ))}
-          </div>
-          {hasMore ? (
-            <Reveal className={styles.auSecHead}>
-              <Link href="/tjanster" className={styles.auBandCta}>Se allt vi gör</Link>
-            </Reveal>
-          ) : null}
-        </section>
-      ) : null}
-
-      {/* 7 — OM — valv-foto + berättelse + kursiv värmefras + stat-trio */}
-      <section className={styles.auSection}>
-        <div className={styles.auAboutGrid}>
-          <Reveal>
-            <div className={styles.auAboutPhoto} style={{ backgroundImage: `url(${content.aboutImage})` }} />
-          </Reveal>
-          <Reveal delay={120}>
-            <p className={styles.auEyebrow}>— Om {tenant.name}</p>
-            <h2 className={styles.auH2}>{content.aboutTitle}</h2>
-            <p className={styles.auBody}>{content.aboutCopyHome}</p>
-            <p className={styles.auItalicLine}>”{content.italic}”</p>
-            <ul className={styles.auStats}>
-              {content.stats.map(([n, l]) => (
-                <li key={l}>
-                  <span className={styles.auStatValue}>{n}</span>
-                  <span className={styles.auStatLabel}>{l}</span>
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* 8 — PRESENTKORT — en smal rad, aldrig en hel sektion */}
-      {presentkortLive ? (
-        <section className={styles.auGiftBand}>
-          <Reveal className={styles.auGiftInner}>
-            <p className={styles.auEyebrow}>{content.giftEyebrow ?? '— Presentkort'}</p>
-            <p className={styles.auGiftLede}>{content.giftLede ?? 'Ge bort blomsterglädje, när som helst.'}</p>
-            <Link href="/presentkort" className={styles.auBandCta}>{content.giftCta ?? 'Köp presentkort'}</Link>
-          </Reveal>
-        </section>
-      ) : null}
-
-      {/* 9 — FRÅN BLOGGEN */}
-      {bloggTeasers.length > 0 ? (
-        <section className={styles.auSection}>
-          <Reveal className={styles.auSecHead}>
-            <p className={styles.auEyebrow}>{content.blogEyebrow ?? '— Bloggen'}</p>
-            <h2 className={styles.auH2}>{content.blogTitle ?? 'Nyheter & inspiration'}</h2>
-          </Reveal>
-          <div className={styles.auCardGrid}>
-            {bloggTeasers.map((p, i) => (
-              <Reveal key={p.id} delay={i * 90}>
-                <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.auCard}>
-                  <div className={styles.auCardImg} style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined} />
-                  <div className={styles.auCardBody}>
-                    <h3 className={styles.auCardName}>{p.title}</h3>
-                    {p.excerpt ? <p className={styles.auCardMeta}>{p.excerpt}</p> : null}
-                  </div>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
-          <Reveal className={styles.auSecHead}>
-            <Link href="/blogg" className={styles.auBandCta}>{content.blogCta ?? 'Läs fler inlägg'}</Link>
-          </Reveal>
-        </section>
-      ) : null}
-
-      {/* 10 — PLATS & ÖPPETTIDER — Auroras eget mjuka kort */}
-      <section className={styles.auSection}>
-        <Reveal className={styles.auLocCard}>
-          <div className={styles.auLocGrid}>
-            <div>
-              <p className={styles.auEyebrow}>{content.findEyebrow ?? '— Hitta hit'}</p>
-              <h2 className={styles.auH2}>
-                {location?.address ? location.address.split(',')[0] : tenant.name}
-              </h2>
-              {location?.address ? (
-                <p className={styles.auBody}>{location.address}</p>
-              ) : (
-                <p className={styles.auBody}>Adress visas snart.</p>
-              )}
-              {location?.address ? (
-                <a
-                  href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className={styles.auBandCta}
-                >
-                  Visa på karta
-                </a>
-              ) : null}
-            </div>
-            <div>
-              {location?.hours ? (
-                <div className={styles.auHours}>
-                  {location.hours.map((h) => (
-                    <p key={h.day} className={styles.auHoursRow}>
-                      <span>{h.day}</span>
-                      <span>{h.time}</span>
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.auBody}>Öppettider visas snart.</p>
-              )}
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* 11 — CLOSING på mörk korall (vit rubrik = 7.27:1) */}
-      <section className={styles.auClosing}>
+      {/* (3) CITAT-BANDET */}
+      <section className={styles.auQuote}>
         <Reveal>
-          <h2 className={styles.auClosingTitle}>{content.closingTitle ?? 'Redo att beställa?'}</h2>
-          <p className={styles.auClosingLede}>
-            {content.closingLede ?? 'Handla i butiken, boka en tid eller hör av dig — vi hjälper dig gärna.'}
-          </p>
-          <div className={styles.auClosingActions}>
-            <BookCta className={`${styles.auBtn} ${styles.auStatementCta}`} />
-          </div>
+          <p className={styles.auQuoteText}>{content.italic}</p>
+          <div className={styles.auQuoteRule} />
         </Reveal>
+      </section>
+
+      {/* (4) VECKANS FAVORITER — shop-modulens data, mallens form. Teaser-propen bär ingen
+          ShopConfig (och därmed ingen fulfilment), så köpet sker där kontraktet finns: på
+          produktsidan, med modulens egen <AddToCart>. Mallen bygger ALDRIG egen korg-logik
+          — samma väg som pilotmallen tar. */}
+      {favorites.length > 0 ? (
+        <section className={styles.auSection}>
+          <Reveal className={styles.auSecHead}>
+            <p className={styles.auEyebrow}>{content.shopEyebrow ?? 'Veckans favoriter'}</p>
+            <h2 className={styles.auSecTitle}>{content.shopTitle ?? 'Mest älskade just nu'}</h2>
+          </Reveal>
+          <ul className={styles.auGrid3} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {favorites.map((p, i) => (
+              <li key={p.id}>
+                <Reveal delay={i * 90}>
+                  <Link
+                    href={`/shop/${p.id}`}
+                    className={styles.auProdImg}
+                    style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
+                    aria-label={`${p.name} — visa buketten`}
+                  >
+                    <span className={styles.auSrOnly}>{p.imageAlt ?? p.name}</span>
+                  </Link>
+                  <div className={styles.auProdRow}>
+                    <p className={styles.auProdName}>{p.name}</p>
+                    <p className={styles.auProdPrice}>
+                      {formatShopPrice(p.priceCents, p.currency)}
+                    </p>
+                  </div>
+                  {p.description ? <p className={styles.auProdDesc}>{p.description}</p> : null}
+                  <Link href={`/shop/${p.id}`} className={styles.auLink}>
+                    lägg i korgen →
+                  </Link>
+                </Reveal>
+              </li>
+            ))}
+          </ul>
+          <p className={styles.auSecFoot}>
+            <Link href="/shop" className={styles.auBtnOutline}>
+              {content.shopCta ?? 'Hela sortimentet'}
+            </Link>
+          </p>
+        </section>
+      ) : null}
+
+      {/* (5) PRESENTKORT + KURSER — bandet ritas bara när presentkort-modulen är live.
+          Filens andra band (Blomsterklubben) hör till lojalitet-modulen, som INTE har någon
+          publik sida i plattformen — det bandet hade bara lett till en 404, och bär därför
+          kurs-vägen i stället för en uppdiktad medlemssida. */}
+      {presentkortLive ? (
+        <section className={styles.auSection}>
+          <div className={styles.auBands}>
+            <Reveal>
+              <Link href="/presentkort" className={styles.auBand}>
+                <span className={styles.auEyebrow} style={{ display: 'block' }}>
+                  {content.giftEyebrow ?? 'Presentkort'}
+                </span>
+                <span className={styles.auBandTitle} style={{ display: 'block' }}>
+                  Ge bort blomsterglädje
+                </span>
+                <span className={styles.auBandText} style={{ display: 'block' }}>
+                  {content.giftLede ??
+                    'Valfritt belopp, giltigt ett år — skickas vackert inslaget eller digitalt.'}
+                </span>
+                <span className={styles.auLink}>{content.giftCta ?? 'till presentkorten →'}</span>
+              </Link>
+            </Reveal>
+            <Reveal delay={90}>
+              <Link href="/kurser" className={styles.auBandWhite}>
+                <span className={styles.auEyebrow} style={{ display: 'block' }}>
+                  Kurser &amp; event
+                </span>
+                <span className={styles.auBandTitle} style={{ display: 'block' }}>
+                  Bind din egen bukett
+                </span>
+                <span className={styles.auBandText} style={{ display: 'block' }}>
+                  Små grupper, mycket blommor och fika i studion. Alla nivåer är välkomna.
+                </span>
+                <span className={styles.auLink}>se datum →</span>
+              </Link>
+            </Reveal>
+          </div>
+        </section>
+      ) : null}
+
+      {/* (6) STUDION */}
+      <section className={styles.auAbout}>
+        <Reveal>
+          <div
+            className={styles.auAboutPhoto}
+            style={
+              content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined
+            }
+          />
+        </Reveal>
+        <Reveal delay={140}>
+          <p className={styles.auEyebrow}>{content.teamEyebrow ?? 'Studion'}</p>
+          <h2 className={styles.auAboutTitle}>{content.aboutTitle}</h2>
+          <p className={styles.auAboutText}>{content.aboutCopy}</p>
+          <p className={styles.auAboutText}>
+            Kom förbi på en kaffe, boka en kurs, eller beställ online — det blir fint, det
+            lovar vi.
+          </p>
+          <Link href="/om" className={styles.auAboutLink}>
+            läs vår historia →
+          </Link>
+        </Reveal>
+      </section>
+
+      {/* (7) FRÅN STUDION — blogg-modulens data, mallens rad-form. */}
+      {posts.length > 0 ? (
+        <section className={styles.auSectionNarrow}>
+          <Reveal className={styles.auSecHead}>
+            <p className={styles.auEyebrow}>{content.blogEyebrow ?? 'Bloggen'}</p>
+            <h2 className={styles.auSecTitle}>{content.blogTitle ?? 'Från studion'}</h2>
+          </Reveal>
+          <ul className={styles.auPostList}>
+            {posts.map((post, i) => (
+              <li key={post.id}>
+                <Reveal delay={i * 90}>
+                  <Link
+                    href={post.slug ? `/blogg/${post.slug}` : '/blogg'}
+                    className={styles.auPostCard}
+                  >
+                    <span
+                      className={styles.auPostImg}
+                      style={
+                        post.coverImageUrl
+                          ? { backgroundImage: `url(${post.coverImageUrl})` }
+                          : undefined
+                      }
+                    />
+                    <span>
+                      {post.publishedAt ? (
+                        <span className={styles.auPostDate} style={{ display: 'block' }}>
+                          {formatPostDate(post.publishedAt)}
+                        </span>
+                      ) : null}
+                      <span className={styles.auPostTitle} style={{ display: 'block' }}>
+                        {post.title}
+                      </span>
+                      {post.excerpt ? (
+                        <span className={styles.auPostExcerpt} style={{ display: 'block' }}>
+                          {post.excerpt}
+                        </span>
+                      ) : null}
+                    </span>
+                  </Link>
+                </Reveal>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* (8) AVSLUTNINGEN */}
+      <section
+        className={styles.auClosing}
+        style={
+          content.closingImage ? { backgroundImage: `url(${content.closingImage})` } : undefined
+        }
+      >
+        <div className={styles.auClosingScrim} />
+        <div className={styles.auClosingInner}>
+          <h2 className={styles.auClosingTitle}>Gör någons dag idag</h2>
+          <p className={styles.auClosingLede}>
+            Beställ före kl 14 så levererar vi samma dag, med ett handskrivet kort.
+          </p>
+          <Link href={shopReachable ? '/shop' : '/kontakt'} className={styles.auBtnWhite}>
+            {shopReachable ? 'Se buketterna' : 'Hör av dig'}
+          </Link>
+        </div>
       </section>
     </div>
   )
+}
+
+/** Filens datumform på blogg-raderna ("2 juli 2026"). */
+function formatPostDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
 }

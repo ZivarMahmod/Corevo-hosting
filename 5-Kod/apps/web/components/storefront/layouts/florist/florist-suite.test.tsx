@@ -65,6 +65,42 @@ function render(key: string, modules: LayoutModuleTeasers | undefined, services:
   )
 }
 
+/**
+ * HELA PAKETET (goal-64): hemmet + mallens sidfot. En mall MÅSTE göra sina live-moduler
+ * nåbara — men den får själv välja VAR. De flesta väver in dem som band på hemmet;
+ * Ateljé Vinter (galleri-minimal) har medvetet inga band alls och lägger länkarna i nav
+ * och sidfot i stället, precis som dess Claude Design-fil gör. Renderade vi bara layouten
+ * skulle testet tvinga fram ett presentkortsband i en mall vars fil inte har något — dvs.
+ * kräva att vi improviserar bort designen. Kravet är REACHABILITY, inte ett visst band.
+ *
+ * `links` är samma modul-gatade lista som app/(public)/layout.tsx skickar in: en avstängd
+ * modul finns inte i den, så 404-fällan fångas fortfarande — nu på paketnivå.
+ */
+function renderPackage(key: string, modules: LayoutModuleTeasers, services: Service[] = SERVICES) {
+  const theme = key as StorefrontTheme
+  const def = FLORIST_THEMES.find((t) => t.key === key)
+  const Footer = def?.chrome?.Footer
+  const links = [
+    ...(modules.shopReachable ? [{ href: '/shop', label: 'Butik' }] : []),
+    ...(modules.bloggTeasers.length > 0 ? [{ href: '/blogg', label: 'Blogg' }] : []),
+    ...(modules.presentkortLive ? [{ href: '/presentkort', label: 'Presentkort' }] : []),
+    ...(modules.offertReachable ? [{ href: '/offert', label: 'Offert' }] : []),
+  ]
+  const foot = Footer
+    ? renderToStaticMarkup(
+        <Footer
+          tenant={TENANT}
+          tagline="Tagline"
+          location={LOCATION}
+          contact={{ email: null, phone: null }}
+          social={{ instagram: null, facebook: null, tiktok: null }}
+          links={links}
+        />,
+      )
+    : ''
+  return render(key, modules, services) + foot
+}
+
 /** Länkar (href) i markupen — attributmatchning, aldrig body-grep. */
 function hrefs(html: string): string[] {
   return [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1] as string)
@@ -90,15 +126,15 @@ describe.each(FLORIST_THEMES.map((t) => [t.key, t.name, t] as const))(
       expect(html.length).toBeGreaterThan(2000)
     })
 
-    it('väver in modulerna när de är live (shop-, blogg- och presentkortslänkar finns)', () => {
-      const links = hrefs(render(key, ALL_LIVE))
+    it('gör live-moduler NÅBARA (shop, blogg, presentkort — i hemmet eller i sidfoten)', () => {
+      const links = hrefs(renderPackage(key, ALL_LIVE))
       expect(links.some((h) => h.startsWith('/shop'))).toBe(true)
       expect(links.some((h) => h.startsWith('/blogg'))).toBe(true)
       expect(links.some((h) => h.startsWith('/presentkort'))).toBe(true)
     })
 
     it('avstängda moduler ger INGA länkar till sina sidor (404-fällan)', () => {
-      const links = hrefs(render(key, ALL_OFF))
+      const links = hrefs(renderPackage(key, ALL_OFF))
       expect(links.filter((h) => h.startsWith('/shop'))).toEqual([])
       expect(links.filter((h) => h.startsWith('/offert'))).toEqual([])
       expect(links.filter((h) => h.startsWith('/blogg'))).toEqual([])
@@ -129,13 +165,13 @@ describe.each(FLORIST_THEMES.map((t) => [t.key, t.name, t] as const))(
 )
 
 describe('florist-sviten som helhet', () => {
-  it('13 mallar, unika nycklar', () => {
-    expect(FLORIST_THEMES).toHaveLength(13)
-    expect(new Set(FLORIST_THEMES.map((t) => t.key)).size).toBe(13)
+  it('unika nycklar — ingen mall skuggar en annan', () => {
+    expect(FLORIST_THEMES.length).toBeGreaterThan(0)
+    expect(new Set(FLORIST_THEMES.map((t) => t.key)).size).toBe(FLORIST_THEMES.length)
   })
 
   it('ingen mall delar palett med en annan (de ska INTE se likadana ut)', () => {
     const primaries = FLORIST_THEMES.map((t) => t.palette.primary.toLowerCase())
-    expect(new Set(primaries).size).toBe(13)
+    expect(new Set(primaries).size).toBe(FLORIST_THEMES.length)
   })
 })

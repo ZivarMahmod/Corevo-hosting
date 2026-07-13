@@ -1,0 +1,1048 @@
+/**
+ * SOL & SALT — medelhavsbod (goal-64, Claude Design-paketet).
+ *
+ * EXAKT KOPIA av "Sol & Salt - Medelhav.dc.html". Varje px, hex, radie, letter-spacing och
+ * line-height är LYFT ur filen — inget är re-härlett. Mallens grammatik: koboltblå ytor
+ * (--color-primary) mot solblekt papper (--color-bg), solgula pill-knappar (--color-accent-soft
+ * används INTE som knapp — solgult är accenten i filen och bor i --sl-sun nedan), och
+ * terrakotta (--color-primary-d) som hover OCH som eyebrow-färg. Allt är rundat: 999px på
+ * varje knapp/pill, 24px på korten, 32px på de stora plattorna.
+ *
+ * OBS: `primaryD` = terrakotta (#C2512E) är AVSIKTLIG i manifestet — mallens hover är
+ * terrakotta, inte en mörkare kobolt. Rör den inte.
+ *
+ * Solgult (#F2C349) och de tre tile-tonerna finns inte i FloristPalettens åtta nycklar, så
+ * de bor som lokala variabler här — värdena är filens, oförändrade.
+ *
+ * Mobil (≤760px) speglar filens EGET /* Corevo-tillägg *​/-block: grid → 1 kolumn,
+ * H1/H2 clamp, sektionspadding 20px, tap-targets ≥44px.
+ */
+
+.slRoot {
+  --sl-sun: #F2C349; /* solgult — filens accent (badge, pill-CTA, remsa, stämplar) */
+  --sl-ink-soft: #6E6A57; /* produkternas brödtext */
+  --sl-ink-faint: #8A8770; /* meta/underrader */
+  --sl-shadow: #EADDBB; /* kortens 2px "skugga" (samma ton som --color-line) */
+  --sl-tile-2: #DCE5C7; /* krukväxt-tilens salviegröna platta */
+  --sl-tile-3: #F4DCC4; /* presentkort-tilens persika */
+
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+.slWrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ─────────────────────────────── mikrotypografi ───────────────────────────── */
+
+/* Eyebrow = terrakotta versal-mikro. Filen använder samma rad i varje sektionshuvud. */
+.slEyebrow {
+  margin: 0 0 6px;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary-d);
+}
+
+/* Kobolt textlänk som blir terrakotta — filens enda "tunna" interaktion. */
+.slLink {
+  display: inline-block;
+  background: transparent;
+  border: none;
+  padding: 0;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.slLink:hover {
+  color: var(--color-primary-d);
+}
+
+/* Solgul pill: filens PRIMÄRA knapp (hero-CTA, korgen i navet, kassan). */
+.slPillSun {
+  display: inline-block;
+  border: none;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-primary);
+  background: var(--sl-sun);
+  border-radius: 999px;
+  padding: 15px 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.slPillSun:hover {
+  background: var(--color-bg);
+}
+
+/* Kobolt pill: filens sekundära fyllda knapp (kort, formulär, "Till boden"-tomläge). */
+.slPillBlue {
+  display: inline-block;
+  border: none;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-bg);
+  background: var(--color-primary);
+  border-radius: 999px;
+  padding: 11px 22px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.slPillBlue:hover {
+  background: var(--color-primary-d);
+}
+
+/* Genomskinlig pill med ljus ram — bara på koboltytor (heroens "Boka", sidfotens länkar). */
+.slPillGhost {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-bg);
+  background: transparent;
+  border: 1.5px solid var(--color-bg);
+  border-radius: 999px;
+  padding: 14px 28px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.slPillGhost:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+/* ───────────────────────────────── sidhuvud ───────────────────────────────── */
+
+.slNav {
+  background: var(--color-primary);
+  border-bottom: none;
+  gap: 20px;
+  padding: 15px 32px;
+}
+
+.slNavWordmark {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 27px;
+  color: var(--color-bg);
+}
+
+.slNavLinks {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Nav-länkarna ÄR pills: transparent tills hover, då terrakotta. */
+.slNavLinks a {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--color-bg);
+  background: transparent;
+  border-radius: 999px;
+  padding: 7px 15px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.slNavLinks a:hover {
+  background: var(--color-primary-d);
+  color: var(--color-bg);
+}
+
+.slNavCluster {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slNavAccount {
+  color: var(--color-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Korg-pillen: solgul, blir papper vid hover (filens "Korg · 0"). */
+.slNavCta {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--color-primary);
+  background: var(--sl-sun);
+  border: none;
+  border-radius: 999px;
+  padding: 9px 18px;
+  transition: background 0.2s;
+}
+
+.slNavCta:hover {
+  background: var(--color-bg);
+}
+
+/* ────────────────────────────────── hero ──────────────────────────────────── */
+
+.slHero {
+  padding: 44px 0 0;
+}
+
+.slHeroCard {
+  background: var(--color-primary);
+  border-radius: 32px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+}
+
+.slHeroText {
+  padding: 60px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Heroens eyebrow är en SOLGUL BADGE (inte terrakotta text) — filens enda i det slaget. */
+.slHeroBadge {
+  margin: 0 0 18px;
+  align-self: start;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: var(--sl-sun);
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+.slHeroTitle {
+  margin: 0 0 22px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 62px;
+  line-height: 1.02;
+  color: var(--color-bg);
+  white-space: pre-line;
+}
+
+.slHeroLede {
+  margin: 0 0 34px;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--color-accent-soft);
+  max-width: 400px;
+}
+
+.slHeroCtas {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.slHeroPhoto {
+  background-position: center;
+  background-size: cover;
+  min-height: 480px;
+}
+
+/* ───────────────────────── solremsan (utility, bara hem) ──────────────────── */
+
+.slStrip {
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--sl-sun);
+  padding: 12px 0;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.slStripText {
+  margin: 0;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--color-fg);
+}
+
+/* ─────────────────────────────── sektionshuvud ────────────────────────────── */
+
+.slSection {
+  margin-top: 56px;
+}
+
+.slSecHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.slSecTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 40px;
+  color: var(--color-fg);
+}
+
+/* ───────────────────────── produktkort (hem + boden) ──────────────────────── */
+
+.slGrid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.slCard {
+  background: var(--color-surface);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 2px 0 var(--sl-shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.slCardImg {
+  aspect-ratio: 1 / 1;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+  display: block;
+}
+
+.slCardBody {
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.slCardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.slCardName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--color-fg);
+}
+
+.slCardName a {
+  color: inherit;
+}
+
+.slCardPrice {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-primary-d);
+  white-space: nowrap;
+}
+
+.slCardDesc {
+  margin: 6px 0 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sl-ink-soft);
+}
+
+/* Köpknappen i kortet är AddToCart (modulens komponent) — den läser --sf-btn-*.
+   Här ges den kortets fullbredds-pill-form utan att röra funktionen. */
+.slCardBuy {
+  margin-top: auto;
+}
+
+/* ──────────────────────────── tiles (tre plattor) ─────────────────────────── */
+
+.slTiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 56px;
+}
+
+.slTile {
+  display: block;
+  border-radius: 24px;
+  padding: 32px 28px;
+  transition: opacity 0.2s;
+}
+
+.slTile:hover {
+  opacity: 0.94;
+}
+
+.slTileSun {
+  composes: slTile;
+  background: var(--sl-sun);
+}
+
+.slTileGreen {
+  composes: slTile;
+  background: var(--sl-tile-2);
+}
+
+.slTilePeach {
+  composes: slTile;
+  background: var(--sl-tile-3);
+}
+
+.slTileEmoji {
+  margin: 0 0 10px;
+  font-size: 30px;
+}
+
+.slTileTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 24px;
+  color: var(--color-fg);
+}
+
+.slTileDesc {
+  margin: 0 0 14px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+.slTileCta {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-fg);
+}
+
+/* ─────────────────────────────── om-bandet (hem) ──────────────────────────── */
+
+.slAbout {
+  background: var(--color-surface);
+  border-radius: 32px;
+  padding: 56px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 52px;
+  align-items: center;
+  margin-top: 56px;
+}
+
+.slAboutPhoto {
+  aspect-ratio: 5 / 4;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+  border-radius: 20px;
+}
+
+.slAboutTitle {
+  margin: 0 0 16px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.15;
+  color: var(--color-fg);
+}
+
+.slAboutBody {
+  margin: 0 0 20px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--color-fg-2);
+}
+
+/* Om-bandets eyebrow har 12px undermarginal i filen (mot 6px i sektionshuvudena). */
+.slAboutEyebrow {
+  composes: slEyebrow;
+  margin-bottom: 12px;
+}
+
+/* ───────────────────────── bloggbandet (hem: "Från boden") ────────────────── */
+
+.slBlogBand {
+  margin-top: 56px;
+  padding-bottom: 20px;
+}
+
+.slBlogBandTitle {
+  margin: 0 0 32px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 40px;
+  color: var(--color-fg);
+}
+
+.slTeaserImg {
+  aspect-ratio: 16 / 11;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+  border-radius: 20px;
+  margin-bottom: 14px;
+  display: block;
+}
+
+.slTeaserDate {
+  margin: 0 0 6px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-primary-d);
+}
+
+.slTeaserTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.2;
+  color: var(--color-fg);
+}
+
+/* ───────────────────────────── undersidor (smala) ─────────────────────────── */
+
+.slPage {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 48px 32px 0;
+  color: var(--color-fg);
+  font-family: var(--font-body);
+}
+
+.slPageNarrow {
+  composes: slPage;
+  max-width: 680px;
+}
+
+.slPageWide {
+  composes: slPage;
+  max-width: 1200px;
+}
+
+.slPageTitle {
+  margin: 0 0 32px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 50px;
+  color: var(--color-fg);
+}
+
+.slPageLede {
+  margin: -20px 0 36px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+  max-width: 480px;
+}
+
+/* /om — foto till höger i 4:5, prosa till vänster (filens showOm) */
+.slOmSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 52px;
+  align-items: center;
+  margin-bottom: 52px;
+}
+
+.slOmTitle {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.05;
+  color: var(--color-fg);
+}
+
+.slOmBody {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+
+.slOmBody:last-child {
+  margin-bottom: 0;
+}
+
+.slOmPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+  border-radius: 24px;
+}
+
+/* Om-sidans tre färgplattor (06:00 · Alla · 400 kr) */
+.slFacts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.slFact {
+  border-radius: 20px;
+  padding: 26px;
+}
+
+.slFactSun {
+  composes: slFact;
+  background: var(--sl-sun);
+}
+
+.slFactClay {
+  composes: slFact;
+  background: var(--color-primary-d);
+}
+
+.slFactBlue {
+  composes: slFact;
+  background: var(--color-primary);
+}
+
+.slFactBig {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 34px;
+}
+
+.slFactSmall {
+  margin: 6px 0 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.slFactInk {
+  color: var(--color-fg);
+}
+
+.slFactInkSoft {
+  color: var(--color-fg-2);
+}
+
+.slFactPaper {
+  color: var(--color-bg);
+}
+
+.slFactPaperSoft {
+  color: var(--color-accent-soft);
+}
+
+/* /tjanster — kobolt-kortet med rader (filens boka-panel) */
+.slPanel {
+  background: var(--color-surface);
+  border-radius: 24px;
+  padding: 30px;
+}
+
+.slPanelLabel {
+  margin: 0 0 14px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-fg);
+}
+
+.slList {
+  display: flex;
+  flex-direction: column;
+}
+
+.slListRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-line);
+  padding: 18px 2px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.slListRow:last-child {
+  border-bottom: none;
+}
+
+.slListRow:hover {
+  background: var(--color-bg);
+}
+
+.slListName {
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--color-fg);
+}
+
+.slListDesc {
+  display: block;
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--sl-ink-soft);
+}
+
+.slListPrice {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-primary-d);
+  white-space: nowrap;
+}
+
+/* /kontakt — kobolt-platta till vänster, papperskort till höger */
+.slKontakt {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 44px;
+}
+
+.slKontaktCard {
+  background: var(--color-primary);
+  border-radius: 24px;
+  padding: 30px;
+}
+
+.slKontaktLabel {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sl-sun);
+}
+
+.slKontaktValue {
+  margin: 0 0 20px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-bg);
+}
+
+.slKontaktValue:last-child {
+  margin-bottom: 0;
+}
+
+.slKontaktValue a {
+  color: var(--color-bg);
+}
+
+.slKontaktValue a:hover {
+  color: var(--sl-sun);
+}
+
+.slKontaktForm {
+  background: var(--color-surface);
+  border-radius: 24px;
+  padding: 30px;
+}
+
+.slKontaktIntro {
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--color-fg-2);
+}
+
+.slKontaktCta {
+  composes: slPillBlue;
+  display: block;
+  width: 100%;
+  font-size: 15px;
+  padding: 14px 0;
+}
+
+/* ─────────────────────────── modul-vyer (boden/blogg) ─────────────────────── */
+
+.slShop {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 32px 0;
+}
+
+.slBlogg {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 32px 0;
+}
+
+.slPostList {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Blogg-raden: 250px foto | text, allt inuti ett papperskort (filens showBlogg). */
+.slPostRow {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 28px;
+  align-items: center;
+  background: var(--color-surface);
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.slPostImg {
+  aspect-ratio: 4 / 3;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+
+.slPostBody {
+  padding: 22px 26px 22px 0;
+}
+
+.slPostMeta {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-primary-d);
+}
+
+.slPostTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--color-fg);
+}
+
+.slPostExcerpt {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+
+/* Pausad butik / tomma listor */
+.slNotice {
+  margin: 0 0 32px;
+  background: var(--sl-sun);
+  border-radius: 999px;
+  padding: 12px 24px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-fg);
+}
+
+.slEmpty {
+  margin: 0;
+  background: var(--color-surface);
+  border-radius: 24px;
+  padding: 60px 40px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--sl-ink-soft);
+}
+
+.slMore {
+  display: inline-block;
+  margin-top: 32px;
+}
+
+.slSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ───────────────────────────────── sidfot ─────────────────────────────────── */
+
+.slFoot {
+  margin-top: 80px;
+  background: var(--color-primary);
+  padding: 48px 32px;
+}
+
+.slFootRow {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.slFootMark {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--color-bg);
+}
+
+.slFootTagline {
+  margin: 0;
+  font-size: 13.5px;
+  color: #A9C3EE; /* filens ljusblå sidfotston — ingen palett-nyckel bär den */
+}
+
+.slFootNav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Sidfotens länkar är pills med ljus ram; den FÖRSTA är solgul (filens "Solklubben"). */
+.slFootNav a {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--color-bg);
+  border: 1.5px solid var(--color-bg);
+  border-radius: 999px;
+  padding: 6px 13px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.slFootNav a:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.slFootNav a:first-child {
+  color: var(--color-primary);
+  background: var(--sl-sun);
+  border-color: var(--sl-sun);
+  padding: 7px 14px;
+}
+
+.slFootNav a:first-child:hover {
+  background: var(--color-bg);
+  border-color: var(--color-bg);
+}
+
+.slFootMeta {
+  margin: 0;
+  font-size: 12px;
+  color: #8EA9DC; /* filens dämpade sidfots-copyright */
+}
+
+/* ───────────────────── mobil — speglar filens egen media query ────────────── */
+
+@media (max-width: 760px) {
+  .slWrap,
+  .slPage,
+  .slPageNarrow,
+  .slPageWide,
+  .slShop,
+  .slBlogg {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .slHeroCard,
+  .slGrid3,
+  .slTiles,
+  .slAbout,
+  .slOmSplit,
+  .slFacts,
+  .slKontakt,
+  .slPostRow {
+    grid-template-columns: 1fr;
+  }
+
+  .slHeroText {
+    padding: 36px 24px;
+  }
+
+  .slHeroPhoto {
+    min-height: 280px;
+  }
+
+  .slHeroTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+
+  .slSecTitle,
+  .slBlogBandTitle,
+  .slPageTitle,
+  .slOmTitle,
+  .slAboutTitle {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .slAbout {
+    padding: 32px 24px;
+    gap: 32px;
+  }
+
+  .slPostBody {
+    padding: 0 22px 22px;
+  }
+
+  .slNav {
+    padding: 12px 20px;
+  }
+
+  .slNavLinks a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .slFoot {
+    padding: 36px 20px;
+  }
+
+  .slLink,
+  .slPillSun,
+  .slPillBlue,
+  .slPillGhost,
+  .slNavCta,
+  .slKontaktCta,
+  .slListRow,
+  .slTile {
+    min-height: 44px;
+  }
+}

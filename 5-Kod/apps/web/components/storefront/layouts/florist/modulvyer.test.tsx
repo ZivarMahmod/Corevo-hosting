@@ -43,8 +43,8 @@ const POSTS: BloggPost[] = [
 const WITH_VIEWS = FLORIST_THEMES.filter((t) => t.moduleViews?.shop && t.moduleViews?.blogg)
 
 describe('florist-svitens modul-vyer', () => {
-  it('alla 13 mallar äger både butiks- och bloggvyn', () => {
-    expect(WITH_VIEWS).toHaveLength(13)
+  it('VARJE mall i sviten äger både butiks- och bloggvyn', () => {
+    expect(WITH_VIEWS).toHaveLength(FLORIST_THEMES.length)
   })
 })
 

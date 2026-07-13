@@ -1,0 +1,879 @@
+/**
+ * SIV & SÄV — skandinaviskt ljust (goal-64, Claude Design-paketet).
+ *
+ * EXAKT KOPIA av "Siv & Säv - Skandinaviskt.dc.html". Varje px, hex, letter-spacing och
+ * line-height är LYFT ur filen — inget re-härlett, inget "nästan". Mallens grammatik:
+ * varmvitt (#F4F1EA) mot salvia (#7C8B6B), luftiga sektioner (72–88px mellan band),
+ * PILL-knappar överallt (border-radius:999px) och mjuka 24px-hörn på alla ytor. Heron och
+ * om-fotot har filens signatur: 200px-rundning UPPTILL, 24px nedtill — en portalform som
+ * ingen syskonmall har.
+ *
+ * Två hex ligger som literaler i stället för tokens, för att de INTE finns bland
+ * manifestets 8 palett-nycklar och därför inte får re-härledas ur dem:
+ *   #C9C6B4 — pill-konturen (nav-korgen, "Lägg i korg", val-pillren)
+ *   #8A8B7C / #A7A594 — de två svagaste metatext-nivåerna (kvitton, footer-meta)
+ *
+ * Mobil (≤760px) speglar filens EGET /* Corevo-tillägg *​/-block: grid → 1 kolumn,
+ * H1/H2 clampas, sektionspadding 20px, tap-targets ≥44px.
+ */
+
+.ssRoot {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+.ssWrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* ─────────────────────────────── mikrotypografi ───────────────────────────── */
+
+/* Filens eyebrow: 13px, 0.16em spärr, versaler, salvia. Återkommer på VARJE sida. */
+.ssEyebrow {
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink);
+}
+
+/* Understruken salvialänk — filens sekundära handling ("Hela sortimentet →"). */
+.ssUnderline {
+  display: inline-block;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-primary);
+  padding: 0 0 3px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--color-primary-ink);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.ssUnderline:hover {
+  color: var(--color-fg);
+  border-color: var(--color-fg);
+}
+
+/* Den mörka PILL-knappen: filens primära handling. Hover → salvia. */
+.ssSolid {
+  display: inline-block;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 15px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ssSolid:hover {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+/* Den KONTURADE pillen: "Lägg i korg", korg-etiketten i navet. Hover → fylls mörk. */
+.ssPill {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--color-fg);
+  background: transparent;
+  border: 1px solid #c9c6b4;
+  border-radius: 999px;
+  padding: 9px 20px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.ssPill:hover {
+  background: var(--color-fg);
+  color: var(--color-bg);
+  border-color: var(--color-fg);
+}
+
+/* ───────────────────────────────── sidhuvud ───────────────────────────────── */
+
+.ssNav {
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+  gap: 24px;
+  padding: 26px 40px;
+}
+
+.ssNavWordmark {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 23px;
+  letter-spacing: 0.01em;
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+
+.ssNavLinks {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.ssNavLinks a {
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 14.5px;
+  color: var(--color-primary-ink);
+  transition: color 0.2s;
+}
+
+.ssNavLinks a:hover {
+  color: var(--color-fg);
+}
+
+.ssNavCluster {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Filens "Korg · 0" — konturad pill, 14px, fylls mörk vid hover. */
+.ssNavCta {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-fg);
+  background: transparent;
+  border: 1px solid #c9c6b4;
+  border-radius: 999px;
+  padding: 9px 18px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.ssNavCta:hover {
+  background: var(--color-fg);
+  color: var(--color-bg);
+  border-color: var(--color-fg);
+}
+
+/* ────────────────────────────────── hero ──────────────────────────────────── */
+
+.ssHero {
+  padding: 64px 0 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 72px;
+  align-items: center;
+}
+
+.ssHeroEyebrow {
+  composes: ssEyebrow;
+  margin-bottom: 22px;
+}
+
+.ssHeroTitle {
+  margin: 0 0 26px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 60px;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  white-space: pre-line;
+}
+
+.ssHeroLede {
+  margin: 0 0 38px;
+  font-size: 17px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+  max-width: 400px;
+}
+
+.ssHeroCtas {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Portalformen: 200px rundning upptill, 24px nedtill. Mallens signatur. */
+.ssHeroPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  border-radius: 200px 200px 24px 24px;
+}
+
+/* ─────────────────────────────── tre löften ───────────────────────────────── */
+
+.ssPromises {
+  margin-top: 72px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  padding: 36px 0;
+}
+
+.ssPromiseTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 19px;
+  color: var(--color-fg);
+}
+
+.ssPromiseDesc {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--color-fg-2);
+}
+
+/* ─────────────────────────── sektionshuvud (band) ─────────────────────────── */
+
+.ssSection {
+  margin-top: 80px;
+}
+
+.ssSectionWide {
+  composes: ssSection;
+  margin-top: 88px;
+}
+
+.ssSecHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ssSecTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 38px;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+
+.ssSecLink {
+  composes: ssUnderline;
+  white-space: nowrap;
+  font-size: 14.5px;
+}
+
+/* ──────────────────────── veckans buketter (hem-shop) ─────────────────────── */
+
+.ssProductGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ssProductImg {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  border-radius: 24px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.ssProductRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.ssProductName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 20px;
+  color: var(--color-fg);
+}
+
+.ssProductName a {
+  color: inherit;
+}
+
+.ssProductPrice {
+  margin: 0;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--color-primary-ink);
+  white-space: nowrap;
+}
+
+.ssProductDesc {
+  margin: 6px 0 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+/* ───────────────────────────────── om-band ────────────────────────────────── */
+
+.ssAbout {
+  background: var(--color-accent-soft);
+  border-radius: 32px;
+  padding: 64px 56px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.ssAboutEyebrow {
+  composes: ssEyebrow;
+  margin-bottom: 14px;
+}
+
+.ssAboutTitle {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--color-fg);
+}
+
+.ssAboutBody {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+
+.ssAboutPhoto {
+  aspect-ratio: 1 / 1;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  border-radius: 24px;
+}
+
+/* ───────────────────────────── journalen (hem) ────────────────────────────── */
+
+.ssJournalGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 20px;
+}
+
+.ssJournalCard {
+  display: block;
+}
+
+.ssJournalImg {
+  aspect-ratio: 16 / 11;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  border-radius: 20px;
+  margin-bottom: 14px;
+}
+
+.ssJournalDate {
+  margin: 0 0 6px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink);
+}
+
+.ssJournalTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.25;
+  color: var(--color-fg);
+}
+
+/* ───────────────────────────── undersidor ─────────────────────────────────── */
+
+.ssPage {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 64px 40px 0;
+  color: var(--color-fg);
+  font-family: var(--font-body);
+}
+
+.ssPageNarrow {
+  composes: ssPage;
+  max-width: 680px;
+}
+
+.ssPageTitle {
+  margin: 0 0 40px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 52px;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+
+.ssPageLede {
+  margin: -26px 0 40px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+  max-width: 460px;
+}
+
+/* /om — texten till vänster, portalfotot till höger (filens showOm) */
+.ssOmSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+  margin-bottom: 56px;
+}
+
+.ssOmTitle {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+
+.ssOmBody {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--color-fg-2);
+}
+
+.ssOmBody:last-child {
+  margin-bottom: 0;
+}
+
+.ssOmPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  border-radius: 200px 200px 24px 24px;
+}
+
+.ssOmStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  border-top: 1px solid var(--color-line);
+  padding-top: 36px;
+}
+
+.ssOmStatValue {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 30px;
+  color: var(--color-fg);
+}
+
+.ssOmStatLabel {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--color-fg-2);
+}
+
+/* /tjanster — vita 24px-kort med pill-CTA (filens kort-grammatik) */
+.ssServiceList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ssServiceRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid transparent;
+  border-radius: 24px;
+  padding: 22px 28px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.ssServiceRow:hover {
+  border-color: var(--color-primary);
+}
+
+.ssServiceName {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 20px;
+  color: var(--color-fg);
+}
+
+.ssServiceDesc {
+  display: block;
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+
+.ssServicePrice {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--color-primary-ink);
+  white-space: nowrap;
+}
+
+/* /kontakt — faktakolumn + vit kort-panel (filens showKontakt) */
+.ssKontaktGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 48px;
+}
+
+.ssFactLabel {
+  margin: 0 0 10px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink);
+}
+
+.ssFactValue {
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--color-fg);
+}
+
+.ssFactValue:last-child {
+  margin-bottom: 0;
+}
+
+.ssFactValue a {
+  color: var(--color-fg);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.ssFactValue a:hover {
+  border-color: var(--color-fg);
+}
+
+.ssCard {
+  background: var(--color-surface);
+  border-radius: 24px;
+  padding: 32px;
+}
+
+.ssCardProse {
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+
+.ssCardProse:last-child {
+  margin-bottom: 0;
+}
+
+/* ───────────────────────── modul-vyer (butik/journal) ─────────────────────── */
+
+.ssShop {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 64px 40px 0;
+}
+
+.ssShopGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 44px 36px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ssShopName {
+  composes: ssProductName;
+  font-size: 21px;
+}
+
+.ssShopDesc {
+  composes: ssProductDesc;
+  line-height: 1.6;
+}
+
+/* Pausad butik: katalogen läsbar, noll köpknappar — filens vita 24px-yta bär beskedet. */
+.ssNotice {
+  margin: 0 0 36px;
+  background: var(--color-surface);
+  border-radius: 24px;
+  padding: 20px 26px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--color-fg);
+}
+
+.ssEmpty {
+  margin: 0;
+  background: var(--color-surface);
+  border-radius: 24px;
+  padding: 64px 40px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--color-fg-2);
+}
+
+.ssMore {
+  margin: 44px 0 0;
+}
+
+/* Journalen (blogg) — filens showBlogg: 260px-bild | text, i ett vitt 24px-kort. */
+.ssBlogg {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 64px 40px 0;
+}
+
+.ssPostList {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ssPostCard {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 32px;
+  align-items: center;
+  background: var(--color-surface);
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.ssPostImg {
+  aspect-ratio: 4 / 3;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-accent-soft);
+}
+
+.ssPostBody {
+  padding: 24px 28px 24px 0;
+}
+
+.ssPostMeta {
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary-ink);
+}
+
+.ssPostTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--color-fg);
+}
+
+.ssPostTitle a {
+  color: inherit;
+}
+
+.ssPostExcerpt {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+/* Kort UTAN bild: bilden är en modul-detalj — saknas den kollapsar kortet till text. */
+.ssPostCardText {
+  composes: ssPostCard;
+  grid-template-columns: 1fr;
+}
+
+.ssPostCardText .ssPostBody {
+  padding: 26px 28px;
+}
+
+/* ───────────────────────────────── sidfot ─────────────────────────────────── */
+
+.ssFoot {
+  margin-top: 96px;
+  border-top: 1px solid var(--color-line);
+  padding: 56px 40px 40px;
+}
+
+.ssFootRow {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ssFootMark {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 24px;
+  color: var(--color-fg);
+}
+
+.ssFootSub {
+  margin: 0;
+  font-size: 13.5px;
+  color: #8a8b7c;
+}
+
+.ssFootNav {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.ssFootNav a {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-primary-ink);
+  transition: color 0.2s;
+}
+
+.ssFootNav a:hover {
+  color: var(--color-fg);
+}
+
+.ssFootMeta {
+  margin: 0;
+  font-size: 12.5px;
+  color: #a7a594;
+}
+
+.ssSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ───────────────────── mobil — speglar filens egen media query ────────────── */
+
+@media (max-width: 760px) {
+  .ssWrap,
+  .ssPage,
+  .ssPageNarrow,
+  .ssShop,
+  .ssBlogg,
+  .ssFoot {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .ssHero,
+  .ssPromises,
+  .ssProductGrid,
+  .ssJournalGrid,
+  .ssAbout,
+  .ssOmSplit,
+  .ssOmStats,
+  .ssShopGrid,
+  .ssKontaktGrid,
+  .ssPostCard {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .ssHero {
+    padding-top: 40px;
+  }
+
+  .ssHeroTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+
+  .ssPageTitle,
+  .ssSecTitle,
+  .ssAboutTitle,
+  .ssOmTitle {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .ssAbout {
+    padding: 40px 24px;
+  }
+
+  .ssSection,
+  .ssSectionWide {
+    margin-top: 56px;
+  }
+
+  .ssNav {
+    padding: 16px 20px;
+  }
+
+  .ssNavLinks a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .ssSolid,
+  .ssPill,
+  .ssNavCta,
+  .ssUnderline,
+  .ssSecLink,
+  .ssServiceRow {
+    min-height: 44px;
+  }
+}

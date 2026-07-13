@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { SocialButtons } from '../../SocialButtons'
 import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { StorefrontIcon } from '@/components/storefront/StorefrontIcon'
@@ -9,37 +8,34 @@ import type { ThemeNavProps, ThemeFooterProps } from './types'
 import styles from './aurora.module.css'
 
 /**
- * AURORA — mallens EGET sidhuvud + sidfot (goal-59 tema-paket).
+ * AURORA — chrome (goal-64, exakt kopia ur .dc.html).
  *
- * NAV: klassisk topprad, men wordmarket är ett STORT rundat script (var(--font-script),
- * korall) längst till vänster, länkarna ligger som mjuka piller mitt i raden, och
- * huvud-CTA:n är en RUND korall-cirkel längst till höger — samma cirkel-gest som
- * hemmets "Handla nu"-knapp. Ingen annan mall har en cirkel i naven.
+ * SIDHUVUDET är filens: wordmarket i 28px Lora italic till vänster (gemener — det ÄR
+ * mallens röst), menyn centrerad i en rad, och längst ut TVÅ handlingar: den kursiva
+ * hårlinje-korgen ("korgen (0)") och den fyllda terracotta-knappen "Boka tid". Ingen
+ * ikonknapp, ingen pill — filen har varken.
+ *
+ * SIDFOTEN är filens: en blush-platta (surface), allt centrerat — ett stort kursivt
+ * wordmark, adressraden, länkarna i en radbrytande rad, och copyright längst ner.
+ * Inga kolumner. Render-on-present: saknas adress/kontakt skrivs bara det som finns.
  *
  * FUNKTIONEN är plattformens: markupen renderas som children i NavShell (mobilmeny,
- * fokusfälla, scroll-skin), ALLA modul-gatade `links` renderas, korgen renderas när
- * shop-modulen är live och kontolänken när kundkonton är på. shell.navThemed /
- * shell.navLinks / shell.navCluster behålls som BAS-klasser — det är dem NavShells
- * mobil-media-query stänger av — och Auroras egna klasser läggs PÅ dem (dubblade
- * selektorer i CSS:en vinner på specificitet).
- *
- * FOOTER: en mjuk korall-platta, allt centrerat kring ett JÄTTESTORT script-wordmark;
- * under det en rad piller-länkar och tre kolumner (besök / öppettider / kontakt).
- * Render-on-present: adress, tider, telefon, mejl och socialt ritas bara när de finns.
+ * fokusfälla, scroll-skin — därav shell.navThemed/navLinks/navCluster), ALLA modul-gatade
+ * `links` ritas, korgen när shopen är live, kontolänken när kundkonton är på.
  */
 export function AuroraNav(p: ThemeNavProps) {
   return (
     <header className={`${shell.navThemed} ${styles.auNav}`}>
-      <Link href="/" className={`${shell.navWordmark} ${styles.auNavWordmark}`} aria-label={p.tenant.name}>
-        <Logo tenant={p.tenant} branding={p.branding} />
+      <Link
+        href="/"
+        className={`${shell.navWordmark} ${styles.auNavWordmark}`}
+        aria-label={p.tenant.name}
+      >
+        <Logo tenant={{ id: '', name: p.tenant.name, slug: '' }} branding={p.branding} />
       </Link>
 
-      {/* Desktop-navet bär MAX 6 länkar (goal-60). Med alla moduler live blir listan 9,
-          och nio piller + script-wordmark + korg + konto + CTA-cirkel får inte plats på
-          en rad — de spillde till en andra våning. NavShell får fortfarande HELA `links`
-          (mobil-overlayn), och sidfoten listar allt: inget blir oåtkomligt. */}
       <nav className={`${shell.navLinks} ${styles.auNavLinks}`} aria-label="Huvudmeny">
-        {p.links.slice(0, 6).map((l) => (
+        {p.links.map((l) => (
           <Link key={l.href} href={l.href}>
             {l.label}
           </Link>
@@ -47,18 +43,19 @@ export function AuroraNav(p: ThemeNavProps) {
       </nav>
 
       <div className={`${shell.navCluster} ${styles.auNavCluster}`}>
-        {p.cartEnabled ? <CartNavButton className={shell.navAccount} /> : null}
         {p.customerAccountsEnabled ? (
           <Link href="/login" className={shell.navAccount} aria-label="Logga in">
             <StorefrontIcon name="user" size={18} />
           </Link>
         ) : null}
+        {/* Korgen bär filens kursiva hårlinje-form, inte plattformens ikon. */}
+        {p.cartEnabled ? <CartNavButton className={styles.auNavCart} /> : null}
         {p.primaryCta && p.primaryCta.href !== '/boka' ? (
-          <Link href={p.primaryCta.href} className={`btn-accent ${styles.auNavCircle}`}>
+          <Link href={p.primaryCta.href} className={styles.auNavCta}>
             {p.primaryCta.label}
           </Link>
         ) : (
-          <BookCta className={styles.auNavCircle} label={p.primaryCta?.label} />
+          <BookCta className={styles.auNavCta} label={p.primaryCta?.label} />
         )}
       </div>
     </header>
@@ -66,76 +63,25 @@ export function AuroraNav(p: ThemeNavProps) {
 }
 
 export function AuroraFooter(p: ThemeFooterProps) {
-  const hours = p.location?.hours ?? null
-  const hasContact = !!p.contact.phone || !!p.contact.email
-  const socials = [
-    { href: p.social.instagram, label: 'Instagram', icon: 'instagram' as const },
-    { href: p.social.facebook, label: 'Facebook', icon: 'facebook' as const },
-  ].filter((s) => !!s.href)
+  // Filens adressrad: "blomsterstudio · Blomstergatan 4, Stockholm · 08-123 456 78".
+  // Vi hittar ALDRIG på en adress — raden byggs av det tenanten faktiskt har.
+  const meta = [p.tagline, p.location?.address, p.contact.phone].filter(Boolean).join(' · ')
 
   return (
     <footer className={styles.auFoot}>
-      <div className={styles.auFootTop}>
-        <p className={styles.auFootWordmark}>{p.tenant.name}</p>
-        <p className={styles.auFootTagline}>{p.tagline}</p>
-        <nav className={styles.auFootLinks} aria-label="Sidfotsmeny">
-          {p.links.map((l) => (
-            <Link key={l.href} href={l.href}>
-              {l.label}
-            </Link>
-          ))}
-        </nav>
-      </div>
+      <p className={styles.auFootMark}>{p.tenant.name}</p>
+      {meta ? <p className={styles.auFootMeta}>{meta}</p> : null}
 
-      <div className={styles.auFootCols}>
-        {p.location?.address ? (
-          <div className={styles.auFootCol}>
-            <h2 className={styles.auFootHead}>Besök oss</h2>
-            <p className={styles.auFootText}>{p.location.address}</p>
-          </div>
-        ) : null}
+      <nav className={styles.auFootNav} aria-label="Sidfotsmeny">
+        {p.links.map((l) => (
+          <Link key={l.href} href={l.href}>
+            {l.label}
+          </Link>
+        ))}
+      </nav>
 
-        {hours ? (
-          <div className={styles.auFootCol}>
-            <h2 className={styles.auFootHead}>Öppettider</h2>
-            {hours.map((h) => (
-              <p key={h.day} className={styles.auFootHoursRow}>
-                <span>{h.day}</span>
-                <span>{h.time}</span>
-              </p>
-            ))}
-          </div>
-        ) : null}
-
-        {hasContact ? (
-          <div className={styles.auFootCol}>
-            <h2 className={styles.auFootHead}>Hör av dig</h2>
-            {p.contact.phone ? (
-              <p className={styles.auFootText}>
-                <a className={styles.auFootLink} href={`tel:${p.contact.phone.replace(/\s+/g, '')}`}>
-                  {p.contact.phone}
-                </a>
-              </p>
-            ) : null}
-            {p.contact.email ? (
-              <p className={styles.auFootText}>
-                <a className={styles.auFootLink} href={`mailto:${p.contact.email}`}>
-                  {p.contact.email}
-                </a>
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {socials.length > 0 ? (
-        <div className={styles.auFootSocials}>
-          <SocialButtons links={socials} />
-        </div>
-      ) : null}
-
-      <p className={styles.auFootBottom}>
-        © {new Date().getFullYear()} {p.tenant.name}
+      <p className={styles.auFootLegal}>
+        © {new Date().getFullYear()} {p.tenant.name} · Byggd med Corevo
       </p>
     </footer>
   )

@@ -1,213 +1,181 @@
 import { Reveal } from '../../Reveal'
 import { Bookable } from '../../Bookable'
-import { BookCta } from '@/components/brand/BookCta'
 import { formatPrice, serviceDesc } from '../../service-format'
 import type { ThemePageProps } from './types'
 import styles from './aurora.module.css'
 
 /**
- * AURORA — mallens EGNA undersidor (goal-59). Ingen delad .sf*-sektion: /om, /tjanster
- * och /kontakt är komponerade i Auroras eget formspråk (valv-collage, mjuka rundade
- * kort, korall-piller) så mallen läses som en egen sajt hela vägen — inte bara på hemmet.
+ * AURORA — undersidorna (goal-64, exakt kopia ur .dc.html).
  *
- *  /om        bildcollage i valv (3 st, förskjutna) + berättelsen i TVÅ spalter + stat-rad
- *  /tjanster  mjuka rundade kort i rutnät, varje kort i en <Bookable> (öppnar bokningen).
- *             Utan tjänster: ärlig tom-text — vi hittar ALDRIG på ett utbud.
- *  /kontakt   ett stort rundat kontakt-kort (korall-kant) med riktiga uppgifter,
- *             render-on-present, plus karta-länk och boknings-CTA.
+ *   /om       → filens `showOm`: "Vi gillar blommor. Mycket." — text vänster, valv-foto
+ *               höger, sedan tre cirkel-porträtt.
+ *   /tjanster → filens kurs-grammatik (`showKurser`): höga valv-kort med namn, pris och
+ *               en inramad knapp. Knappen är <Bookable> — bokningen är MODULENS.
+ *   /kontakt  → filens `showKontakt`: fakta-spalt (telefon/e-post/studio + öppettider) till
+ *               vänster, vit platta till höger.
+ *
+ * Den vita plattan i filen är ett kontaktFORMULÄR. Formuläret är designens BILD av
+ * kontakt-modulen; plattformen har ingen formulärs-endpoint på /kontakt, och en ruta som
+ * inte skickar något är värre än ingen ruta. Plattan behåller därför sin form och sin text,
+ * men handlingen går via mailto/tel — de kanaler som FAKTISKT når florristen.
+ *
+ * SYNKRONA server-komponenter. Render-on-present: saknas adress/kontakt ritas blocket inte
+ * alls — mallen hittar aldrig på en adress.
  */
-function PageHead({ eyebrow, title, lede }: { eyebrow: string; title: string; lede?: string }) {
-  return (
-    <header className={styles.auPageHead}>
-      <p className={styles.auEyebrow}>{eyebrow}</p>
-      <h1 className={styles.auPageTitle}>{title}</h1>
-      {lede ? <p className={styles.auPageLede}>{lede}</p> : null}
-    </header>
-  )
-}
 
-export function AuroraOm({ tenant, content }: ThemePageProps) {
-  const shots = [
-    content.aboutImage,
-    content.galleryImages[0] ?? content.heroImages[0] ?? '',
-    content.galleryImages[1] ?? content.heroImages[1] ?? '',
-  ].filter(Boolean)
+export function AuroraOm({ content, tenant }: ThemePageProps) {
+  const photo = content.aboutImage ?? content.heroImages[0] ?? ''
 
   return (
-    <div className={styles.auRoot}>
-      <PageHead eyebrow={`— Om ${tenant.name}`} title={content.aboutTitle} lede={content.italic} />
-
-      {shots.length > 0 ? (
-        <section className={styles.auPageSection}>
-          <div className={styles.auOmCollage}>
-            {shots.map((src, i) => (
-              <Reveal
-                key={`${src}-${i}`}
-                delay={i * 80}
-                className={styles.auOmShot}
-                style={{ backgroundImage: `url(${src})` }}
-              >
-                <span />
-              </Reveal>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className={styles.auPageSection}>
-        <Reveal className={styles.auOmStory}>
-          <p className={styles.auOmLead}>{content.aboutCopy}</p>
-          <p className={styles.auOmBody}>{content.heroLede}</p>
-        </Reveal>
-      </section>
-
-      {content.stats.length > 0 ? (
-        <section className={styles.auStatBand}>
-          <ul className={styles.auStats}>
-            {content.stats.map(([n, l]) => (
-              <li key={l}>
-                <span className={styles.auStatValue}>{n}</span>
-                <span className={styles.auStatLabel}>{l}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <section className={styles.auClosing}>
+    <div className={styles.auPage}>
+      <section className={styles.auSplit}>
         <Reveal>
-          <h2 className={styles.auClosingTitle}>{content.closingTitle ?? 'Redo att beställa?'}</h2>
-          <p className={styles.auClosingLede}>
-            {content.closingLede ?? 'Hör av dig eller boka en tid — vi hjälper dig gärna.'}
-          </p>
-          <div className={styles.auClosingActions}>
-            <BookCta className={styles.auBtn} />
-          </div>
+          <p className={styles.auEyebrow}>Om {tenant.name}</p>
+          <h1 className={styles.auSplitTitle}>{content.aboutTitle}</h1>
+          <p className={styles.auProse}>{content.aboutCopy}</p>
+          <p className={styles.auQuoteInline}>{content.italic}</p>
+        </Reveal>
+        <Reveal delay={140}>
+          <div
+            className={styles.auSplitPhoto}
+            style={photo ? { backgroundImage: `url(${photo})` } : undefined}
+          />
         </Reveal>
       </section>
+
+      {content.team.length > 0 ? (
+        <section className={styles.auTeam}>
+          {content.team.map((t, i) => (
+            <Reveal key={t.name} delay={i * 90} className={styles.auTeamCard}>
+              <div
+                className={styles.auTeamImg}
+                style={t.img ? { backgroundImage: `url(${t.img})` } : undefined}
+              />
+              <p className={styles.auTeamName}>{t.name}</p>
+              <p className={styles.auTeamRole}>{t.role}</p>
+            </Reveal>
+          ))}
+        </section>
+      ) : null}
     </div>
   )
 }
 
 export function AuroraTjanster({ content, services }: ThemePageProps) {
   return (
-    <div className={styles.auRoot}>
-      <PageHead
-        eyebrow={content.servicesEyebrow}
-        title={content.servicesTitle}
-        lede={content.servicesIntro ?? undefined}
-      />
+    <div className={styles.auPage}>
+      <div className={styles.auPageHead}>
+        <p className={styles.auEyebrow}>{content.servicesEyebrow}</p>
+        <h1 className={styles.auPageTitle}>{content.servicesTitle}</h1>
+        <p className={styles.auPageLede}>
+          {content.servicesIntro ??
+            'Små grupper, mycket blommor och fika i studion. Alla nivåer är välkomna.'}
+        </p>
+      </div>
 
-      <section className={styles.auPageSection}>
-        {services.length > 0 ? (
-          <div className={styles.auSvcGrid}>
-            {services.map((s, i) => (
-              <Reveal key={s.id} delay={i * 60}>
-                <Bookable className={styles.auSvcCard} label={`Beställ — ${s.name}`}>
-                  <h2 className={styles.auSvcName}>{s.name}</h2>
-                  <p className={styles.auSvcDesc}>{serviceDesc(s)}</p>
-                  <p className={styles.auSvcPrice}>{formatPrice(s)}</p>
-                  <span className={styles.auSvcGo} aria-hidden="true">
-                    Boka →
-                  </span>
-                </Bookable>
-              </Reveal>
-            ))}
-          </div>
-        ) : (
-          <p className={styles.auEmpty}>Utbudet fylls på — hör gärna av dig så berättar vi vad vi kan göra för dig.</p>
-        )}
-      </section>
+      {services.length === 0 ? (
+        <p className={styles.auEmpty}>Tjänsterna visas snart.</p>
+      ) : (
+        <div className={styles.auGrid3}>
+          {services.map((s, i) => (
+            <Reveal key={s.id} delay={i * 90} className={styles.auSvcCard}>
+              <div
+                className={styles.auSvcImg}
+                style={
+                  content.galleryImages[i % content.galleryImages.length]
+                    ? {
+                        backgroundImage: `url(${content.galleryImages[i % content.galleryImages.length]})`,
+                      }
+                    : undefined
+                }
+              />
+              <p className={styles.auSvcName}>{s.name}</p>
+              <p className={styles.auSvcDesc}>{serviceDesc(s)}</p>
+              <p className={styles.auSvcPrice}>{formatPrice(s)}</p>
+              <Bookable className={styles.auSvcBook} label={`Boka — ${s.name}`}>
+                Boka plats
+              </Bookable>
+            </Reveal>
+          ))}
+        </div>
+      )}
 
-      <section className={styles.auClosing}>
-        <Reveal>
-          <h2 className={styles.auClosingTitle}>{content.closingTitle ?? 'Vill du ha något särskilt?'}</h2>
-          <p className={styles.auClosingLede}>
-            {content.closingLede ?? 'Vi binder gärna efter dina önskemål — boka en tid så pratar vi ihop oss.'}
-          </p>
-          <div className={styles.auClosingActions}>
-            <BookCta className={styles.auBtn} />
-          </div>
-        </Reveal>
-      </section>
+      <p className={styles.auSvcFoot}>
+        Privat grupp eller möhippa? <a href="/offert">Be om en offert</a> så ordnar vi ett eget
+        event.
+      </p>
     </div>
   )
 }
 
-export function AuroraKontakt({ tenant, content, location, contact }: ThemePageProps) {
+export function AuroraKontakt({ content, tenant, location, contact }: ThemePageProps) {
   const hours = location?.hours ?? null
-  const address = location?.address ?? null
 
   return (
-    <div className={styles.auRoot}>
-      <PageHead
-        eyebrow={content.contactEyebrow ?? '— Hitta hit'}
-        title={content.contactTitle ?? 'Säg hej'}
-        lede={`Kom förbi butiken, ring eller mejla — vi finns här för dig som vill ha blommor från ${tenant.name}.`}
-      />
+    <div className={styles.auPageMid}>
+      <section className={styles.auContact}>
+        <Reveal>
+          <p className={styles.auEyebrow}>{content.contactEyebrow ?? 'Kontakt'}</p>
+          <h1 className={styles.auContactTitle}>{content.contactTitle ?? 'Säg hej!'}</h1>
+          <p className={styles.auContactLede}>
+            Frågor om en beställning, ett bröllop eller något helt annat? Skriv en rad — vi
+            svarar samma dag.
+          </p>
 
-      <section className={styles.auPageSection}>
-        <Reveal className={styles.auContactCard}>
-          <div className={styles.auContactGrid}>
-            <div className={styles.auContactBlock}>
-              <h2 className={styles.auContactHead}>Adress</h2>
-              {address ? (
-                <>
-                  <p className={styles.auContactValue}>{address}</p>
-                  <a
-                    className={styles.auBandCta}
-                    href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
-                    Visa på karta
-                  </a>
-                </>
-              ) : (
-                <p className={styles.auContactValue}>Visas snart</p>
-              )}
-            </div>
-
-            <div className={styles.auContactBlock}>
-              <h2 className={styles.auContactHead}>Öppettider</h2>
-              {hours ? (
-                <div className={styles.auContactHours}>
-                  {hours.map((h) => (
-                    <p key={h.day} className={styles.auContactHoursRow}>
-                      <span>{h.day}</span>
-                      <span>{h.time}</span>
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.auContactValue}>Visas snart</p>
-              )}
-            </div>
-
-            {contact.phone || contact.email ? (
-              <div className={styles.auContactBlock}>
-                <h2 className={styles.auContactHead}>Kontakt</h2>
-                {contact.phone ? (
-                  <p className={styles.auContactValue}>
-                    <a className={styles.auFootLink} href={`tel:${contact.phone.replace(/\s+/g, '')}`}>
-                      {contact.phone}
-                    </a>
-                  </p>
-                ) : null}
-                {contact.email ? (
-                  <p className={styles.auContactValue}>
-                    <a className={styles.auFootLink} href={`mailto:${contact.email}`}>
-                      {contact.email}
-                    </a>
-                  </p>
-                ) : null}
-              </div>
+          <div className={styles.auFacts}>
+            {contact.phone ? (
+              <p className={styles.auFact}>
+                <span className={styles.auFactLabel}>telefon</span>
+                <span className={styles.auFactValue}>
+                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+                </span>
+              </p>
+            ) : null}
+            {contact.email ? (
+              <p className={styles.auFact}>
+                <span className={styles.auFactLabel}>e-post</span>
+                <span className={styles.auFactValue}>
+                  <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                </span>
+              </p>
+            ) : null}
+            {location?.address ? (
+              <p className={styles.auFact}>
+                <span className={styles.auFactLabel}>studio</span>
+                <span className={styles.auFactValue}>{location.address}</span>
+              </p>
             ) : null}
           </div>
 
-          <p className={styles.auContactItalic}>”{content.italic}”</p>
+          {hours ? (
+            <div className={styles.auHours}>
+              {hours.map((h) => (
+                <div key={h.day} className={styles.auHoursRow}>
+                  <span>{h.day}</span>
+                  <span>{h.time}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </Reveal>
+
+        <Reveal delay={140} className={styles.auContactCard}>
+          <h2 className={styles.auContactCardTitle}>Skriv till oss</h2>
+          <p className={styles.auContactCardBody}>
+            Berätta gärna om färger, budget och leveransadress — så återkommer vi med ett
+            förslag. Vill du hellre prata? Ring, så tar vi det direkt.
+          </p>
           <div className={styles.auContactActions}>
-            <BookCta className={styles.auBtn} />
+            {contact.email ? (
+              <a href={`mailto:${contact.email}`} className={styles.auBtn}>
+                Skicka ett mejl
+              </a>
+            ) : null}
+            {contact.phone ? (
+              <a href={`tel:${contact.phone.replace(/\s+/g, '')}`} className={styles.auLink}>
+                ring {tenant.name.toLowerCase()} →
+              </a>
+            ) : null}
           </div>
         </Reveal>
       </section>

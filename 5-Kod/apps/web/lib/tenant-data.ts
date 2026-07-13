@@ -34,12 +34,15 @@ export type CustomOverride = { css?: string }
  *  inline on top. Default = leander. */
 export const STOREFRONT_THEMES = [
   'salvia', 'leander', 'zigge', 'linnea', 'edit', 'flora', 'freshcut',
-  // FLORIST-SVITEN (goal-58) — 13 mallar; allt annat om dem (layout, palett, copy,
-  // caps, CSS) bor i components/storefront/layouts/florist/registry.ts. Nycklarna
-  // MÅSTE vara literaler här (StorefrontTheme härleds ur listan) → den enda platsen
-  // en florist-mall syns utanför sitt registry.
-  'calytrix', 'aurora', 'sage', 'oliviathyme', 'paisley', 'onyx', 'viora',
-  'isalara', 'seraphina', 'wildthistle', 'mina', 'lunaria', 'eloria',
+  // FLORIST-SVITEN (goal-64) — 9 mallar ur Claude Design-paketen (handoff/*.dc.html).
+  // Allt annat om dem (layout, palett, copy, caps, CSS) bor i
+  // components/storefront/layouts/florist/registry.ts. Nycklarna MÅSTE vara literaler
+  // här (StorefrontTheme härleds ur listan) → den enda platsen en mall syns utanför
+  // sitt registry.
+  'ateljevinter', 'aurora', 'blomstertorget', 'calytrix', 'eloria',
+  'lunaria', 'onyx', 'sivsav', 'solsalt',
+  // SALONG-SVITEN (goal-64) — layouts/salong/registry.ts
+  'kalla', 'siluett', 'snitt',
   // EKONOMI-SVITEN (goal-63) — allt om dem bor i layouts/ekonomi/registry.ts.
   'zentum',
 ] as const

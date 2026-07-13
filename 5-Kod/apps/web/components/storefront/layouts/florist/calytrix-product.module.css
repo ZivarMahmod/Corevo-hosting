@@ -1,347 +1,173 @@
-/* ═══════════ CALYTRIX PRODUKTSIDA — SKYLTFÖNSTRET ═══════════
-   Mallen äger sidan. En enda vara i plommondramatik: fotot störst, på en lutad
-   vinröd platta mot ett mörkt plommonbord (packbordets gest, se calytrix-cart
-   — samma butik). Ingen annan mall får de här klasserna.
+/*
+ * CALYTRIX — PRODUKTSIDAN. Filens grammatik ur `showButik` + `showVarukorg`:
+ * vit yta, 1px #a98d97-kant, 4:5-foto, serif-rubrik, plommon-pris, kantiga knappar.
+ */
 
-   FÄRGPAR (WCAG 2.x relativ luminans, mätt mot calytrix.theme.ts palett):
-     #fff  på primaryD #4a0e2e … 15.07:1  (≥ 4.5 ✓, mallens redan mätta par)
-     #fff  på primary  #7d1f46 …  9.74:1  (≥ 4.5 ✓)
-     fg    #241019 på bg #fbf6f4 … 16.84:1 (≥ 4.5 ✓)
-     fg2   #6e4f5c på bg          …  6.67:1 (≥ 4.5 ✓)
-     fg    på accentSoft #e8d9de … ~13.2:1 (≥ 4.5 ✓)
-     primary på accentSoft        …  7.15:1 (≥ 4.5 ✓, temats egen mätning)
-     vit 75 % på primaryD (blend #d2c2ca-ish) … ~8.9:1 (≥ 4.5 ✓)
-   Radie 0 överallt — calytrix är RAK. */
-
-.scene {
-  max-width: 1180px;
+.cxProduct {
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 56px 28px 40px;
 }
 
-.back {
-  margin: 0 0 18px;
+.cxBack {
+  margin: 0 0 24px;
+  font-size: 14.5px;
+  font-weight: 700;
 }
-.backLink {
-  display: inline-block;
-  padding: 12px 0; /* 44px-golvet via padding — länken är liten men träffytan inte */
-  font-size: 13.5px;
-  letter-spacing: 0.04em;
-  color: var(--color-fg); /* fg på bg 16.84:1 */
+
+.cxBack a {
+  color: var(--color-primary-ink, #7d1f46);
   text-decoration: none;
 }
-.backLink:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.backLink:focus-visible {
-  outline: 2px solid var(--color-primary-d);
-  outline-offset: 2px;
+
+.cxBack a:hover {
+  color: var(--color-primary-d, #4a0e2e);
 }
 
-/* ── SKYLTFÖNSTRET: mörk scen + ljus marginalanteckning ── */
-.window {
+.cxSplit {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
-  gap: 0; /* scenen och marginalen ska SITTA IHOP — ett fönster, inte två kort */
-  align-items: stretch;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: start;
 }
 
-/* Bordet: plommon som YTA (som packbordets .board) — varan är hjälten på det. */
-.stage {
-  background: var(--color-primary-d);
-  color: var(--color-surface, #fff);
-  padding: clamp(1.75rem, 4vw, 3.5rem);
-  display: grid;
-  align-content: start;
-  gap: clamp(1.25rem, 3vw, 2rem);
-}
-.stageKicker {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  opacity: 0.75; /* vit 75 % på plommon ≈ 8.9:1 — läsbar, men tydligt sekundär */
+.cxPhotoWrap {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #a98d97);
 }
 
-.plateWrap {
-  margin: 0;
-  display: grid;
-  justify-items: center;
-}
-
-/* Plattan: packbordets lutade vinröda platta, i JÄTTEFORMAT (rad 8214-anatomin:
-   bildkort med överlagrad lapp; deras hörn-rörelse, vårt raka uttryck).
-   4:5 är mallens enda ratio (samma som korgens 92×115). */
-.plate {
-  position: relative;
-  width: min(100%, 520px);
-  aspect-ratio: 4 / 5;
-  background: var(--color-primary);
-  transform: rotate(-2deg);
-  box-shadow: 0 26px 60px -22px rgb(0 0 0 / 60%);
-  transition: transform 240ms ease;
-  overflow: hidden;
-}
-/* Varan lyfter när man närmar sig — samma gest som korgens foto-platta. */
-.plateWrap:hover .plate,
-.plateWrap:focus-within .plate {
-  transform: rotate(0deg) translateY(-4px);
-}
-.photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.cxPhoto {
   display: block;
-}
-.photoEmpty {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--color-surface, #fff); /* vit på primary 9.74:1 — men detta är grafik (≥3:1 räcker) */
-  opacity: 0.55;
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: var(--color-accent-soft, #e8d9de);
 }
 
-/* Hälsningslappen: ALLTID läsbar (hover-only affordance förbjudet) — vit lapp i
-   bildens nedre hörn, motlutad, som glider med när plattan rätar sig. */
-.greet {
-  position: absolute;
-  left: -6px; /* sticker ut en aning över kanten — en lapp, inte en badge */
-  bottom: 18px;
-  padding: 10px 18px 10px 22px;
-  background: var(--color-surface, #fff);
-  color: var(--color-primary-d); /* plommon på vitt = 15.07:1 (inversen av mallens mätta par) */
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+.cxInfo {
+  padding-top: 8px;
+}
+
+.cxEyebrow {
+  margin: 0 0 8px;
+  color: var(--color-primary-ink, #7d1f46);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  transform: rotate(2deg);
-  box-shadow: 0 8px 18px -8px rgb(0 0 0 / 45%);
-  transition: transform 240ms ease;
-}
-.plateWrap:hover .greet,
-.plateWrap:focus-within .greet {
-  transform: rotate(0deg) translateY(-2px);
 }
 
-/* ── MARGINALANTECKNINGEN: ljus spalt, plommonregel i toppen (korgens .note-släkting) ── */
-.margin {
-  background: var(--color-bg);
-  border-top: 6px solid var(--color-primary-d);
-  padding: clamp(1.5rem, 3.5vw, 2.75rem);
-  display: grid;
-  align-content: start;
-  gap: 0;
-}
-.kicker {
+.cxTitle {
   margin: 0 0 12px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-primary-d); /* primaryD på bg — mörkare än primarys 9.08:1 ✓ */
-}
-.title {
-  margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-weight: 400; /* DM Serif finns BARA i 400 — allt annat blir syntetisk fetstil */
-  font-size: clamp(2rem, 4.5vw, 3.1rem);
-  line-height: 1.05;
-  color: var(--color-fg); /* 16.84:1 på bg */
-}
-.price {
-  margin: 0 0 22px;
-  font-family: var(--font-display);
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
   font-weight: 400;
-  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
-  color: var(--color-primary); /* primary på bg 9.08:1 (temats egen mätning) */
-  font-variant-numeric: tabular-nums;
+  font-size: 56px;
+  line-height: 1.05;
+  color: var(--color-fg, #241019);
 }
 
-/* Leveranslöftet som IFYLLD checklista (rad 5170-anatomin: box + bock).
-   Rutorna är statiska löftesmarkörer, inte formulär — därför span, inte input. */
-.checks {
-  list-style: none;
-  margin: 0 0 24px;
+.cxPrice {
+  margin: 0 0 26px;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--color-primary-ink, #7d1f46);
+}
+
+.cxDesc p {
+  margin: 0 0 14px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* Leveranslöftet: filens rad-över-hårlinje-språk (varukorgens summering). */
+.cxFacts {
+  margin: 26px 0;
   padding: 0;
-  display: grid;
-  gap: 12px;
+  border-top: 1px solid var(--color-accent-soft, #e8d9de);
 }
-.checkRow {
+
+.cxFactRow {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 14.5px;
-  line-height: 1.45;
-  color: var(--color-fg); /* 16.84:1 på bg */
-}
-.checkBox {
-  flex-shrink: 0;
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  margin-top: 1px;
-  background: var(--color-primary); /* bocken: vit på vinröd 9.74:1 — grafik, ≥3:1 ✓ */
-  color: var(--color-surface, #fff);
-  /* radie 0 — calytrix är rak; uiverse-boxens 8px hörn stannar hos uiverse */
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-accent-soft, #e8d9de);
+  font-size: 15px;
 }
 
-.paused {
+.cxFactRow dt {
   margin: 0;
-  padding: 14px 16px;
-  background: var(--color-accent-soft);
-  border-left: 4px solid var(--color-primary);
-  color: var(--color-fg); /* fg på accentSoft ~13.2:1 */
-  font-size: 14.5px;
-  line-height: 1.5;
+  color: var(--color-fg-2, #6e4f5c);
 }
 
-.buy {
-  /* AddToCart (delad funktion) får luft men styrs inte om — dess knappar bär
-     mallens --sf-btn-* från temats data-theme-block. */
-  display: grid;
-  gap: 10px;
-}
-
-/* ── DOSSIERN: flikarna (rad 4972-anatomin: fyllt val i en rad — men RAKT,
-   understruket av samma plommonyta som scenen, ingen pill). ── */
-.dossier {
-  margin-top: clamp(1.75rem, 4vw, 3rem);
-}
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--color-line);
-}
-.tab {
-  min-height: 48px; /* 44px-golvet med marginal */
-  padding: 0 clamp(16px, 3vw, 28px);
-  border: 0;
-  background: transparent;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-fg2); /* fg2 på bg 6.67:1 */
-  cursor: pointer;
-  transition: background 160ms ease, color 160ms ease;
-}
-.tab:hover {
-  color: var(--color-fg);
-}
-/* Vald flik = FYLLD (cir-tabs-anatomin: valet byter yta, inte bara färg) —
-   plommon under texten binder ihop dossiern med scenen ovanför. */
-.tab[aria-selected='true'] {
-  background: var(--color-primary-d);
-  color: var(--color-surface, #fff); /* 15.07:1 */
-}
-.tab:focus-visible {
-  outline: 2px solid var(--color-primary-d);
-  outline-offset: -4px; /* inåt — fliken kan ligga kant i kant med grannen */
-}
-.tab[aria-selected='true']:focus-visible {
-  outline-color: var(--color-surface, #fff);
-}
-
-.panel {
-  padding: clamp(1.25rem, 3vw, 2rem) 0 0;
-}
-.body {
-  margin: 0 0 1em;
-  max-width: 62ch;
-  font-size: 15.5px;
-  line-height: 1.65;
-  color: var(--color-fg); /* 16.84:1 */
-}
-.body:last-child {
-  margin-bottom: 0;
-}
-.deliverLabel {
-  margin: 0 0 6px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-primary-d);
-}
-
-/* ── VÅRD-KORTET: skötselråden som URKLIPPT lapp (rad 14857-anatomin: kupongen
-   ur klipparen). Saxklippt överkant via clip-path (raka tänder — calytrix
-   klipper inte vågigt), lätt lutning som plattan, skugga som lyfter den från
-   sidan. Ingen rörelse — lappen LIGGER där, den hoppar inte. ── */
-.careCard {
-  max-width: 460px;
-  padding: calc(14px + clamp(1.1rem, 2.5vw, 1.6rem)) clamp(1.25rem, 3vw, 1.75rem)
-    clamp(1.1rem, 2.5vw, 1.6rem);
-  background: var(--color-accent-soft);
-  transform: rotate(-0.6deg);
-  box-shadow: 0 16px 34px -18px rgb(0 0 0 / 35%);
-  /* Sax-tänderna: 14px djupa, 10 % breda — klippt med rak sax ur floristens block. */
-  clip-path: polygon(
-    0 14px, 5% 0, 10% 14px, 15% 0, 20% 14px, 25% 0, 30% 14px, 35% 0, 40% 14px,
-    45% 0, 50% 14px, 55% 0, 60% 14px, 65% 0, 70% 14px, 75% 0, 80% 14px, 85% 0,
-    90% 14px, 95% 0, 100% 14px, 100% 100%, 0 100%
-  );
-}
-.careKicker {
-  margin: 0 0 10px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-primary); /* primary på accentSoft 7.15:1 (temats mätning) */
-}
-.careList {
-  list-style: none;
+.cxFactRow dd {
   margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-.careList li {
-  position: relative;
-  padding-left: 18px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--color-fg); /* fg på accentSoft ~13.2:1 */
-}
-/* Punkt som penndrag — ett kort streck, inte en rund prick (calytrix är rak). */
-.careList li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.72em;
-  width: 10px;
-  height: 2px;
-  background: var(--color-primary); /* dekor mot accentSoft 7.15:1 — långt över 3:1 */
+  font-weight: 600;
+  color: var(--color-fg, #241019);
+  text-align: right;
 }
 
-/* ── RESPONSIVT: under 900px staplas fönstret — scenen först (varan störst). ── */
-@media (max-width: 900px) {
-  .window {
+.cxPaused {
+  margin: 0;
+  background: var(--color-accent-soft, #e8d9de);
+  border-left: 3px solid var(--color-primary, #7d1f46);
+  padding: 14px 18px;
+  color: var(--color-fg, #241019);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+/* Köp-kontrollen är modulens <AddToCart>; mallen ger den filens form. */
+.cxBuy :global(button) {
+  border: 2px solid var(--color-fg, #241019);
+  background: var(--color-primary, #7d1f46);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: 0;
+  min-height: 44px;
+  padding: 14px 30px;
+  box-sizing: border-box;
+}
+
+.cxBuy :global(button:hover) {
+  background: var(--color-primary-d, #4a0e2e);
+  border-color: var(--color-primary-d, #4a0e2e);
+  color: #fff;
+}
+
+.cxBuy :global(button:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cxBuy :global(select),
+.cxBuy :global(input) {
+  border: 2px solid var(--color-fg, #241019);
+  border-radius: 0;
+  background: var(--color-bg, #fbf6f4);
+  font-family: var(--font-body, 'Instrument Sans'), system-ui, sans-serif;
+  font-size: 14.5px;
+  min-height: 44px;
+}
+
+@media (max-width: 760px) {
+  .cxSplit {
     grid-template-columns: 1fr;
+    gap: 28px;
   }
-  .plate {
-    width: min(100%, 440px);
-  }
-}
 
-/* Rörelse är krydda, aldrig krav: utan motion står plattan kvar i sin lutning. */
-@media (prefers-reduced-motion: reduce) {
-  .plate,
-  .greet,
-  .tab {
-    transition: none;
+  .cxTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
   }
-  .plateWrap:hover .plate,
-  .plateWrap:focus-within .plate {
-    transform: rotate(-2deg);
-  }
-  .plateWrap:hover .greet,
-  .plateWrap:focus-within .greet {
-    transform: rotate(2deg);
+
+  .cxProduct {
+    padding-left: 20px;
+    padding-right: 20px;
   }
 }

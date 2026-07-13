@@ -1,0 +1,1018 @@
+/**
+ * SILUETT — modemagasin (goal-64, EXAKT kopia av "Siluett - Modemagasin.dc.html").
+ *
+ * Varje px, hex, letter-spacing och line-height nedan är LYFT ur .dc-filens inline-style.
+ * Inget är re-härlett, inget är "ungefär". Filens style-hover:er blir :hover-regler,
+ * eftersom en server-komponent inte kan bära en onMouseEnter — det är hela anledningen
+ * till att markupen flyttar ut sina stilar hit.
+ *
+ * Färgerna går via temats CSS-vars (satta ur manifestets palette i salongThemeBlock):
+ *   --color-primary  #6741D9 elviolett   --color-bg      #F6F4EF porslin
+ *   --color-fg       #131313 bläck       --color-surface #FFFFFF
+ *   --color-fg-2     #6E685D             --color-line    #E5E0D4
+ *   --color-accent-soft #ECE5FB
+ * Filens #9B9486 (den ljusare mikroversalen) finns INTE i paletten — den är mallens egen
+ * ton och står därför hårdkodad, precis som i designen.
+ */
+
+.siRoot {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+/* ── delade primitiv ─────────────────────────────────────────────────────── */
+
+/* max-width:1240px; margin:0 auto; padding:0 32px */
+.siWrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* eyebrow: 11px / 0.28em / versal / elviolett */
+.siEyebrow {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+/* Filens understrukna textlänk: 12px / 0.16em / 2px bläcklinje under */
+.siUnderline {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  border-bottom: 2px solid var(--color-fg);
+  padding-bottom: 3px;
+}
+.siUnderline:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Filens fyllda knapp: bläck-platta som blir elviolett vid hover. Radie 0. */
+.siSolid {
+  display: inline-block;
+  white-space: nowrap;
+  text-align: center;
+  border: none;
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  background: var(--color-fg);
+  padding: 17px 34px;
+}
+.siSolid:hover {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+/* Filens "Boka →" — bara elviolett mikroversal, ingen platta */
+.siInk {
+  display: inline-block;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.siInk:hover {
+  color: var(--color-fg);
+}
+
+.siSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.siEmpty {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+.siNotice {
+  margin: 0 0 24px;
+  border: 1px solid var(--color-line);
+  background: var(--color-accent-soft);
+  padding: 14px 18px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--color-fg);
+}
+
+/* ── MASTHEAD ────────────────────────────────────────────────────────────── */
+
+/* header: sticky, porslin, 2px bläcklinje under. Raden: 16px 32px, gap 24. */
+.siNav {
+  background: var(--color-bg);
+  border-bottom: 2px solid var(--color-fg);
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Wordmark: Bodoni 25px, 0.14em, versal */
+.siNavWordmark {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.siNavLinks {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.siNavLinks a {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 3px;
+}
+.siNavLinks a:hover {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.siNavCluster {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Kasse-knappen: bläck-platta, 9px 16px, blir elviolett vid hover */
+.siNavCta {
+  white-space: nowrap;
+  border: none;
+  border-radius: 0;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  background: var(--color-fg);
+  padding: 9px 16px;
+}
+.siNavCta:hover {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+/* ── HEM (1) HERO ────────────────────────────────────────────────────────── */
+
+.siHero {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 52px;
+  align-items: center;
+}
+
+.siHeroEyebrow {
+  margin: 0 0 20px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.siHeroTitle {
+  margin: 0 0 24px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 74px;
+  line-height: 0.98;
+  color: var(--color-fg);
+  white-space: pre-line;
+}
+.siHeroTitle em {
+  font-style: italic;
+}
+
+.siHeroLede {
+  margin: 0 0 36px;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+  max-width: 420px;
+}
+
+.siHeroCtas {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* "Drottninggatan 4 · Stockholm · Tis–Lör" */
+.siHeroMeta {
+  margin: 40px 0 0;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #9b9486;
+}
+
+.siHeroPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+
+.siHeroCap {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 12px;
+}
+.siHeroCapLabel {
+  margin: 0;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #9b9486;
+}
+.siHeroCapSeason {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--color-primary);
+}
+
+/* ── HEM (2) REMSAN ──────────────────────────────────────────────────────── */
+
+.siTicker {
+  max-width: 1240px;
+  margin: 56px auto 0;
+  padding: 0 32px;
+}
+.siTickerRow {
+  border-top: 2px solid var(--color-fg);
+  border-bottom: 2px solid var(--color-fg);
+  padding: 13px 0;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.siTickerRow span {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.siTickerDot {
+  color: var(--color-primary) !important;
+}
+
+/* ── HEM (3) TRE SIGNATURER ──────────────────────────────────────────────── */
+
+.siSection {
+  max-width: 1240px;
+  margin: 64px auto 0;
+  padding: 0 32px;
+}
+.siSectionWide {
+  max-width: 1240px;
+  margin: 72px auto 0;
+  padding: 0 32px;
+}
+
+.siSecHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.siSecTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 42px;
+  color: var(--color-fg);
+}
+
+.siSigGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+}
+
+.siSigCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  padding: 30px 28px;
+  height: 100%;
+  text-align: left;
+  width: 100%;
+}
+
+.siSigNo {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 28px;
+  color: var(--color-primary);
+}
+.siSigName {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 27px;
+  color: var(--color-fg);
+}
+.siSigDesc {
+  margin: 0 0 22px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+.siSigFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid var(--color-line);
+  padding-top: 16px;
+}
+.siSigPrice {
+  font-family: var(--font-display);
+  font-size: 21px;
+  color: var(--color-fg);
+}
+.siSigTid {
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9b9486;
+}
+.siSigBook {
+  display: inline-block;
+  margin-top: 16px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.siSigCard:hover .siSigBook {
+  color: var(--color-fg);
+}
+
+/* ── HEM (4) SALONGEN ────────────────────────────────────────────────────── */
+
+.siAbout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+.siAboutPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+.siAboutTitle {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: italic;
+  font-size: 40px;
+  line-height: 1.1;
+  color: var(--color-fg);
+}
+.siAboutEyebrow {
+  margin: 0 0 14px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.siAboutBody {
+  margin: 0 0 24px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--color-fg-2);
+}
+.siAboutBodyTight {
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--color-fg-2);
+}
+
+/* ── HEM (5) VID STOLARNA ────────────────────────────────────────────────── */
+
+.siTeamGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.siTeamPhoto {
+  aspect-ratio: 3 / 4;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+.siTeamName {
+  margin: 14px 0 2px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 23px;
+  color: var(--color-fg);
+}
+.siTeamRole {
+  margin: 0 0 10px;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9b9486;
+}
+
+/* ── HEM (6) JOURNAL ─────────────────────────────────────────────────────── */
+
+.siJournal {
+  max-width: 1240px;
+  margin: 72px auto 0;
+  padding: 0 32px 24px;
+}
+.siJournalHead {
+  border-top: 2px solid var(--color-fg);
+  padding-top: 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.siJournalRow {
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 28px;
+  align-items: center;
+  border-bottom: 1px solid var(--color-line);
+  padding: 20px 0;
+}
+.siJournalMeta {
+  margin: 0;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.siJournalTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 25px;
+  color: var(--color-fg);
+}
+.siJournalArrow {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 18px;
+  color: #9b9486;
+}
+.siJournalRow:hover .siJournalTitle {
+  color: var(--color-primary);
+}
+
+/* ── UNDERSIDOR ──────────────────────────────────────────────────────────── */
+
+/* Filens sid-h1: Bodoni 58px */
+.siPageTitle {
+  margin: 0 0 44px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 58px;
+  color: var(--color-fg);
+}
+
+.siPage {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 52px 32px 0;
+}
+.siPageNarrow {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 52px 32px 0;
+}
+.siPageOm {
+  max-width: 1020px;
+  margin: 0 auto;
+  padding: 52px 32px 0;
+}
+.siPageKontakt {
+  max-width: 1020px;
+  margin: 0 auto;
+  padding: 52px 32px 0;
+}
+
+/* /tjanster — prislistans grammatik */
+.siPriceGroup {
+  margin-bottom: 44px;
+}
+.siPriceGroupHead {
+  border-top: 2px solid var(--color-fg);
+  padding-top: 12px;
+  margin-bottom: 6px;
+}
+.siPriceGroupName {
+  margin: 0;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+.siPriceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 24px;
+  border-bottom: 1px solid var(--color-line);
+  padding: 17px 0;
+  cursor: pointer;
+}
+.siPriceMain {
+  flex: 1;
+  min-width: 0;
+}
+.siPriceName {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 24px;
+  color: var(--color-fg);
+}
+.siPriceDesc {
+  display: block;
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: var(--color-fg-2);
+}
+.siPriceTid {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9b9486;
+}
+.siPriceKr {
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--color-fg);
+  min-width: 86px;
+  text-align: right;
+}
+.siPriceBook {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.siPriceRow:hover .siPriceBook {
+  color: var(--color-fg);
+}
+
+/* /om */
+.siOmSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 52px;
+  align-items: center;
+  margin-bottom: 56px;
+}
+.siOmTitle {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 46px;
+  line-height: 1.05;
+  color: var(--color-fg);
+}
+.siOmBody {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+.siOmBodyLast {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+.siOmPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+.siStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.siStat {
+  border-top: 2px solid var(--color-fg);
+  padding-top: 18px;
+}
+.siStatValue {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 40px;
+  color: var(--color-fg);
+}
+.siStatValueAccent {
+  color: var(--color-primary);
+}
+.siStatLabel {
+  margin: 6px 0 0;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9b9486;
+}
+
+/* /kontakt — bläckplattan + faktabladet */
+.siKontaktGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 44px;
+}
+.siKontaktCard {
+  background: var(--color-fg);
+  padding: 34px 30px;
+}
+.siKontaktLabel {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.siKontaktValue {
+  margin: 0 0 22px;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--color-bg);
+}
+.siKontaktValueLast {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--color-bg);
+}
+.siKontaktValue a,
+.siKontaktValueLast a {
+  color: var(--color-bg);
+}
+.siKontaktValue a:hover,
+.siKontaktValueLast a:hover {
+  color: var(--color-primary);
+}
+.siKontaktProse {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  padding: 30px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--color-fg-2);
+}
+
+/* ── MODUL-VYER ──────────────────────────────────────────────────────────── */
+
+/* BUTIKEN — filens showButik: tre spalter, 1:1-foto, hårlinje under fotot */
+.siShop {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 52px 32px 0;
+}
+.siShopTitle {
+  margin: 0 0 36px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 58px;
+  color: var(--color-fg);
+}
+.siShopGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+}
+.siShopCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.siShopImg {
+  display: block;
+  aspect-ratio: 1 / 1;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+.siShopBody {
+  padding: 20px 22px 22px;
+  border-top: 1px solid var(--color-line);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.siShopHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.siShopName {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--color-fg);
+}
+.siShopName a:hover {
+  color: var(--color-primary);
+}
+.siShopPrice {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+.siShopDesc {
+  margin: 6px 0 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+/* Köp-knappen är <AddToCart> — mallen ger den sin form via kontrakts-vars, aldrig
+   genom att bygga en egen knapp (funktionen är modulens). */
+.siShopBuy {
+  margin-top: auto;
+  --sf-btn-bg: transparent;
+  --sf-btn-fg: var(--color-fg);
+  --sf-btn-border: var(--color-fg);
+  --sf-btn-radius: 0px;
+  --sf-btn-bg-hover: var(--color-fg);
+  --sf-btn-fg-hover: var(--color-bg);
+}
+
+/* JOURNAL — filens showJournal: text till vänster, 3:2-bild till höger */
+.siBlogg {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 52px 32px 0;
+}
+.siPostList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--color-fg);
+}
+.siPostRow {
+  display: grid;
+  grid-template-columns: 1fr 190px;
+  gap: 30px;
+  align-items: center;
+  border-bottom: 1px solid var(--color-line);
+  padding: 26px 0;
+}
+.siPostMeta {
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+.siPostTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.15;
+  color: var(--color-fg);
+}
+.siPostRow:hover .siPostTitle {
+  color: var(--color-primary);
+}
+.siPostExcerpt {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+.siPostPhoto {
+  aspect-ratio: 3 / 2;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+.siMoreLink {
+  margin-top: 28px;
+}
+
+/* ── SIDFOT ──────────────────────────────────────────────────────────────── */
+
+.siFoot {
+  margin-top: 88px;
+  background: var(--color-fg);
+  padding: 50px 32px;
+}
+.siFootRow {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.siFootMark {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+}
+.siFootTagline {
+  margin: 0;
+  font-size: 13px;
+  color: #9b9486;
+}
+.siFootNav {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+.siFootNav a {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+}
+.siFootNav a:hover {
+  color: var(--color-primary);
+}
+/* Filens första sidfotslänk (klubben) ligger i elviolett och vänder vid hover. */
+.siFootNavAccent {
+  color: var(--color-primary) !important;
+}
+.siFootNavAccent:hover {
+  color: var(--color-bg) !important;
+}
+.siFootMeta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-fg-2);
+}
+
+/* ── MOBIL ≤760px — filens EGET /* Corevo-tillägg */-block, speglat ───────── */
+
+@media (max-width: 760px) {
+  .siHero,
+  .siSigGrid,
+  .siAbout,
+  .siTeamGrid,
+  .siJournalRow,
+  .siOmSplit,
+  .siStats,
+  .siKontaktGrid,
+  .siShopGrid,
+  .siPostRow {
+    grid-template-columns: 1fr;
+  }
+
+  .siHeroTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+  .siPageTitle,
+  .siShopTitle,
+  .siOmTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+  .siSecTitle,
+  .siAboutTitle {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  /* sektion/footer/header-padding → 20px */
+  .siNav,
+  .siHero,
+  .siTicker,
+  .siSection,
+  .siSectionWide,
+  .siJournal,
+  .siPage,
+  .siPageNarrow,
+  .siPageOm,
+  .siPageKontakt,
+  .siShop,
+  .siBlogg,
+  .siWrap {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .siFoot {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  /* tap-targets */
+  .siSolid,
+  .siUnderline,
+  .siInk,
+  .siNavCta,
+  .siPriceRow,
+  .siSigBook {
+    min-height: 44px;
+  }
+  .siNavLinks a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}

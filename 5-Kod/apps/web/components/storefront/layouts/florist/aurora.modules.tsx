@@ -1,34 +1,29 @@
 import { AddToCart } from '../../shop/AddToCart'
-import {
-  formatShopPrice,
-  fulfilmentPromise,
-  SHOP_FULFILMENT_LABELS,
-} from '@/lib/storefront/shop/types'
-import type { BloggPost } from '@/lib/storefront/blogg/types'
+import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { ThemeShopViewProps, ThemeBloggViewProps } from './types'
 import styles from './aurora.module.css'
 
 /**
- * AURORA — mallens EGNA modul-vyer (goal-59, vektor-regeln).
+ * AURORA — MODUL-VYER (goal-64, vektor-regeln).
  *
- *   "mallens vektor är apex för modulens vektor, men komponenten och modulens
- *    funktion är densamma"
+ * Modulen äger FUNKTIONEN: datan är laddad, livscykeln gatad, köp-rälsen är fortfarande
+ * <AddToCart> och priset formateras alltid av formatShopPrice. Formen är mallens, exakt som
+ * .dc.html ritar den:
  *
- * MODULEN äger funktionen: datan är redan laddad, livscykeln (paused) redan gatad,
- * köpknappen är fortfarande <AddToCart> (klientkomponenten med variantval, stepper,
- * lager och varukorg). Priset formateras ALLTID via formatShopPrice, leveranslöftet
- * via fulfilmentPromise + SHOP_FULFILMENT_LABELS. Inget av det får en mall röra.
+ *   BUTIKEN (showButik) — centrerat huvud ("Handbundet, varje morgon"), tre kolumner,
+ *   4:5-bilder utan radie, namn + pris på samma baslinje, och en INRAMAD "Lägg i korgen"
+ *   som fylls terracotta vid hover. Inga kort, inga skuggor.
  *
- * MALLEN äger formen: samma korall-boutique som hemmet — förskjuten (masonry-aktig)
- * grid av HÖGA rundade 3:4-kort, en rund korall-CTA-cirkel per kort som ekar hemmets
- * "Handla nu"-cirkel, priset i primaryD, leveranslöftet som ett rosa piller i
- * sektionshuvudet. Bloggen får mallens valv-bågar (999px-topp) — samma gest som
- * hemmets collage och om-fotot.
+ *   BLOGGEN (showBlogg) — vita rader i en smal spalt (1000px): 260px-bild till vänster,
+ *   datum i spärrad terracotta, rubrik i Lora, och "läs mer →" i kursiv. Raden lyfter med
+ *   en varm skugga vid hover.
+ *
+ * PAUSAD BUTIK: katalogen förblir läsbar, köpknapparna försvinner. En kund ska aldrig kunna
+ * handla i en stängd butik.
  *
  * SYNKRONA server-komponenter. Ingen async, ingen 'use client'.
  */
 
-/** Ärendets datumformat (samma mönster som BloggSection.formatPostDate). */
 function formatPostDate(iso: string | null): string | null {
   if (!iso) return null
   const d = new Date(iso)
@@ -36,86 +31,68 @@ function formatPostDate(iso: string | null): string | null {
   return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-/* ═══════════ BUTIK ═══════════════════════════════════════════════════════════ */
+/* ═════════════════════════════════ BUTIKEN ════════════════════════════════ */
 
-export function AuroraShop({ data, paused, limit, moreHref, content, tenantName }: ThemeShopViewProps) {
+export function AuroraShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
-  const teaser = typeof limit === 'number'
-  const products = teaser ? allProducts.slice(0, limit) : allProducts
+  const products = typeof limit === 'number' ? allProducts.slice(0, limit) : allProducts
   const clipped = products.length < allProducts.length
+  const teaser = typeof limit === 'number'
 
-  // Startsidans teaser + tom LIVE-butik → rendera inget alls (inga "visas snart"-löften).
+  // Teaser + tom (och inte pausad) butik → rendera ingenting. Inga "visas snart"-löften.
   if (teaser && allProducts.length === 0 && !paused) return null
 
-  const promise = fulfilmentPromise(config)
-  const fulfilmentLabel = SHOP_FULFILMENT_LABELS[config.fulfilment]
-
   return (
-    <section
-      className={`${styles.auRoot} ${styles.auSection}`}
-      data-module="shop"
-      data-fulfilment={config.fulfilment}
-    >
-      <div className={styles.auSecHead}>
-        <p className={styles.auEyebrow}>{content.shopEyebrow ?? `— Butiken hos ${tenantName}`}</p>
-        <h2 className={styles.auH2}>{content.shopTitle ?? 'Handla blommor hem'}</h2>
-        {/* LEVERANSLÖFTET — rosa piller direkt under rubriken, alltid synligt. */}
-        <p className={styles.auShopPromise}>
-          <span className={styles.auShopPromiseTag}>{fulfilmentLabel}</span>
-          <span className={styles.auShopPromiseText}>{promise}</span>
+    <section className={styles.auShop} data-module="shop" data-fulfilment={config.fulfilment}>
+      <div className={styles.auPageHead}>
+        <p className={styles.auEyebrow}>{content.shopEyebrow ?? 'Butiken'}</p>
+        <h1 className={styles.auPageTitle}>{content.shopTitle ?? 'Handbundet, varje morgon'}</h1>
+        <p className={styles.auPageLede}>
+          Lägg det du vill ha i korgen — vi binder allt samma dag som det levereras.
         </p>
       </div>
 
       {paused ? (
-        <p role="status" className={styles.auShopClosed}>
-          Butiken är tillfälligt stängd för nya beställningar — du kan titta runt, men
-          inget går att lägga i korgen just nu. Vi öppnar snart igen.
+        <p role="status" className={styles.auNotice}>
+          Butiken är tillfälligt stängd för nya beställningar. Vi öppnar snart igen.
         </p>
       ) : null}
 
       {products.length === 0 ? (
-        <p className={styles.auEmpty}>
-          Sortimentet fylls på just nu — hör gärna av dig, så binder vi något efter dina önskemål.
-        </p>
+        <p className={styles.auEmpty}>Butiken är tom just nu.</p>
       ) : (
         <ul className={styles.auShopGrid}>
           {products.map((p) => (
-            <li key={p.id} className={styles.auShopCard}>
+            <li key={p.id}>
               <a
-                className={styles.auShopCardMedia}
                 href={`/shop/${p.id}`}
-                aria-label={`${p.name} — visa produkt`}
+                className={styles.auProdImg}
+                aria-label={`${p.name} — visa buketten`}
                 style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
               >
-                {/* Rund korall-cirkel — ekar hemmets "Handla nu" ovanpå heron. */}
-                <span className={styles.auShopCardCircle} aria-hidden="true">
-                  Se mer
-                </span>
+                <span className={styles.auSrOnly}>{p.imageAlt ?? p.name}</span>
               </a>
-              <div className={styles.auShopCardBody}>
-                <h3 className={styles.auCardName}>
-                  <a className={styles.auShopCardLink} href={`/shop/${p.id}`}>
-                    {p.name}
-                  </a>
-                </h3>
-                {p.description ? <p className={styles.auCardMeta}>{p.description}</p> : null}
-                <p className={styles.auShopPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
-                {/* KÖP-RÄLSEN — modulens egen klientkomponent, orörd. */}
-                {paused ? null : (
-                  <div className={styles.auShopBuy}>
-                    <AddToCart product={p} fulfilment={config.fulfilment} />
-                  </div>
-                )}
+              <div className={styles.auProdRow}>
+                <p className={styles.auProdName}>
+                  <a href={`/shop/${p.id}`}>{p.name}</a>
+                </p>
+                <p className={styles.auProdPrice}>{formatShopPrice(p.priceCents, p.currency)}</p>
               </div>
+              {p.description ? <p className={styles.auProdDesc}>{p.description}</p> : null}
+              {paused ? null : (
+                <div className={styles.auBuyFramed}>
+                  <AddToCart product={p} fulfilment={config.fulfilment} compact />
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
 
       {moreHref && (clipped || teaser) && allProducts.length > 0 ? (
-        <p className={styles.auModuleMore}>
-          <a className={styles.auBandCta} href={moreHref}>
-            {content.shopCta ?? 'Visa hela butiken →'}
+        <p className={styles.auSecFoot}>
+          <a href={moreHref} className={styles.auBtnOutline}>
+            {content.shopCta ?? 'Hela sortimentet'}
           </a>
         </p>
       ) : null}
@@ -123,66 +100,66 @@ export function AuroraShop({ data, paused, limit, moreHref, content, tenantName 
   )
 }
 
-/* ═══════════ BLOGG ═══════════════════════════════════════════════════════════ */
+/* ═════════════════════════════════ BLOGGEN ════════════════════════════════ */
 
-function AuroraPostInner({ post }: { post: BloggPost }) {
-  const date = formatPostDate(post.publishedAt)
-  return (
-    <>
-      <span
-        className={styles.auPostMedia}
-        style={post.coverImageUrl ? { backgroundImage: `url(${post.coverImageUrl})` } : undefined}
-        role={post.coverImageUrl ? 'img' : undefined}
-        aria-label={post.coverImageUrl ? (post.coverImageAlt ?? post.title) : undefined}
-      />
-      <span className={styles.auPostBody}>
-        {date ? <span className={styles.auPostDate}>{date}</span> : null}
-        <span className={styles.auPostTitle}>{post.title}</span>
-        {post.excerpt ? <span className={styles.auPostExcerpt}>{post.excerpt}</span> : null}
-      </span>
-    </>
-  )
-}
-
-export function AuroraBlogg({ posts: allPosts, limit, moreHref, content, tenantName }: ThemeBloggViewProps) {
+export function AuroraBlogg({ posts: allPosts, limit, moreHref, content }: ThemeBloggViewProps) {
   const teaser = typeof limit === 'number'
   const posts = teaser ? allPosts.slice(0, limit) : allPosts
+
   if (teaser && allPosts.length === 0) return null
 
   return (
-    <section className={`${styles.auRoot} ${styles.auSection}`} data-module="blogg">
-      <div className={styles.auSecHead}>
-        <p className={styles.auEyebrow}>{content.blogEyebrow ?? '— Journalen'}</p>
-        <h2 className={styles.auH2}>{content.blogTitle ?? `Nytt från ${tenantName}`}</h2>
+    <section className={styles.auBlogg} data-module="blogg">
+      <div className={styles.auPageHead}>
+        <p className={styles.auEyebrow}>{content.blogEyebrow ?? 'Bloggen'}</p>
+        <h1 className={styles.auPageTitle}>{content.blogTitle ?? 'Från studion'}</h1>
       </div>
 
       {posts.length === 0 ? (
-        <p className={styles.auEmpty}>Inga inlägg är publicerade än — vi skriver på.</p>
+        <p className={styles.auEmpty}>Inga inlägg är publicerade ännu.</p>
       ) : (
-        <ul className={styles.auPostGrid}>
-          {posts.map((post) =>
-            post.slug ? (
-              <li key={post.id} className={styles.auPostCard}>
-                <a className={styles.auPostInner} href={`/blogg/${post.slug}`}>
-                  <AuroraPostInner post={post} />
+        <ul className={styles.auPostList}>
+          {posts.map((p) => {
+            const date = formatPostDate(p.publishedAt)
+            return (
+              <li key={p.id}>
+                <a
+                  href={p.slug ? `/blogg/${p.slug}` : '/blogg'}
+                  className={styles.auPostCardWide}
+                >
+                  <span
+                    className={styles.auPostImg}
+                    style={
+                      p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined
+                    }
+                  />
+                  <span>
+                    {date ? (
+                      <span className={styles.auPostDate} style={{ display: 'block' }}>
+                        {date}
+                      </span>
+                    ) : null}
+                    <span className={styles.auPostTitleWide} style={{ display: 'block' }}>
+                      {p.title}
+                    </span>
+                    {p.excerpt ? (
+                      <span className={styles.auPostExcerptWide} style={{ display: 'block' }}>
+                        {p.excerpt}
+                      </span>
+                    ) : null}
+                    <span className={styles.auPostMore}>läs mer →</span>
+                  </span>
                 </a>
               </li>
-            ) : (
-              // Inlägg utan slug (äldre rader) renderas OLÄNKADE — aldrig en död länk.
-              <li key={post.id} className={styles.auPostCard}>
-                <div className={styles.auPostInner}>
-                  <AuroraPostInner post={post} />
-                </div>
-              </li>
-            ),
-          )}
+            )
+          })}
         </ul>
       )}
 
       {moreHref && teaser && allPosts.length > 0 ? (
-        <p className={styles.auModuleMore}>
-          <a className={styles.auBandCta} href={moreHref}>
-            {content.blogCta ?? 'Läs hela bloggen →'}
+        <p className={styles.auSecFoot}>
+          <a href={moreHref} className={styles.auBtnOutline}>
+            {content.blogCta ?? 'Läs fler inlägg'}
           </a>
         </p>
       ) : null}

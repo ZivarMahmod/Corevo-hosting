@@ -1,325 +1,326 @@
-/* ═══════════ CALYTRIX VARUKORG — PACKBORDET ═══════════
-   Mallen äger sidan. Plommon & vinrött, "butiken som hjälte": varorna ligger som en
-   numrerad plocklista på ett mörkt bord, summeringen är floristens marginalanteckning.
-   Ingen annan mall får de här klasserna — onyx/mina/zigge bygger sina korgar i egna
-   filer. Färgerna är calytrix egna tokens (--color-*), aldrig lånade hexar. */
+/*
+ * CALYTRIX — VARUKORGEN. EXAKT KOPIA av `showVarukorg` i .dc.html:
+ * 1.8fr/1fr, vita rader med 1px #a98d97-kant (delad kant mellan raderna),
+ * 96×120-foto, kantiga −/+-rutor och en sticky sammanfattning (top: 96px).
+ */
 
-.scene {
-  display: grid;
-  grid-template-columns: 1fr minmax(260px, 340px);
-  gap: clamp(1.5rem, 4vw, 3.5rem);
-  align-items: start;
-  max-width: 1180px;
+.cxCart {
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 56px 28px 40px;
 }
 
-/* ── PLOCKLISTAN ── */
-.board {
+.cxTitle {
+  margin: 0 0 6px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 56px;
+  color: var(--color-fg, #241019);
+}
+
+.cxCount {
+  margin: 0 0 40px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 15px;
+}
+
+/* ── Tomt läge ── */
+.cxEmpty {
+  border: 1px solid var(--color-line, #a98d97);
+  background: var(--color-surface, #ffffff);
+  padding: 72px 40px;
+  text-align: center;
+}
+
+.cxEmptyTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-size: 28px;
+  color: var(--color-fg, #241019);
+}
+
+.cxEmptyText {
+  margin: 0 0 28px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 15.5px;
+}
+
+.cxBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary, #7d1f46);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 15px 34px;
+  border-radius: 0;
+  text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.cxBtn:hover {
+  background: var(--color-primary-d, #4a0e2e);
+  color: #fff;
+}
+
+/* ── Radlistan + summeringen ── */
+.cxGrid {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.cxLines {
+  display: flex;
+  flex-direction: column;
+}
+
+.cxList {
   list-style: none;
   margin: 0;
   padding: 0;
-  /* Bordet: mallens mörka plommon som YTA, inte som accent — kassaraden hos
-     Calytrix ÄR dramatisk. Vit text på plommon är mallens redan mätta par. */
-  background: var(--color-primary-d);
-  color: var(--color-surface, #fff);
 }
 
-.slip {
-  display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  gap: clamp(1rem, 2.5vw, 1.75rem);
+/* Filens rader delar kant: border-bottom:none på varje rad, en avslutande linje
+   under listan (.cxListRule). */
+.cxRow {
+  display: flex;
+  gap: 22px;
   align-items: center;
-  padding: clamp(1.25rem, 3vw, 2rem);
-}
-.slip + .slip {
-  border-top: 1px solid color-mix(in srgb, var(--color-surface, #fff) 16%, transparent);
-}
-
-/* Radnumret — ordersblockets siffra, display-typsnittet i jätteformat, halvt tonad. */
-.slipNo {
-  font-family: var(--font-display);
-  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  line-height: 1;
-  opacity: 0.35;
-  font-variant-numeric: tabular-nums;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #a98d97);
+  border-bottom: none;
+  padding: 20px 24px;
 }
 
-/* Fotot står på en LUTAD vinröd platta — samma "varan lyfter"-gest som butikskorten. */
-.slipPhotoLink {
-  display: block;
-  text-decoration: none;
-}
-.slipPhotoLink:focus-visible {
-  outline: 2px solid var(--color-surface, #fff);
-  outline-offset: 3px;
-}
-.slipPhotoPlate {
-  display: block;
-  width: 92px;
-  height: 115px; /* mallens enda ratio: 4:5 */
-  background: var(--color-primary);
-  transform: rotate(-2deg);
-  box-shadow: 0 10px 24px -10px rgb(0 0 0 / 55%);
-  transition: transform 240ms ease;
-  overflow: hidden;
-}
-.slipPhotoLink:hover .slipPhotoPlate {
-  transform: rotate(0deg) translateY(-3px);
-}
-.slipPhoto {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.cxRowPhoto {
+  width: 96px;
+  height: 120px;
+  flex-shrink: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: var(--color-accent-soft, #e8d9de);
   display: block;
 }
 
-.slipBody {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
+.cxRowBody {
+  flex: 1;
 }
-.slipName {
-  font-family: var(--font-display);
-  font-size: clamp(1.1rem, 2vw, 1.35rem);
-  line-height: 1.15;
+
+.cxRowName {
+  margin: 0 0 4px;
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--color-fg, #241019);
+}
+
+.cxRowName a {
   color: inherit;
   text-decoration: none;
 }
-.slipName:hover {
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-.slipName:focus-visible {
-  outline: 2px solid var(--color-surface, #fff);
-  outline-offset: 3px;
-}
-.slipVariant {
-  font-size: 13px;
-  opacity: 0.75;
-}
-.slipUnit {
-  font-size: 13px;
-  opacity: 0.75;
-  font-variant-numeric: tabular-nums;
+
+.cxRowName a:hover {
+  color: var(--color-primary-ink, #7d1f46);
 }
 
-.slipControls {
+.cxRowUnit {
+  margin: 0 0 14px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 13.5px;
+}
+
+.cxQty {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-top: 10px;
+  gap: 0;
 }
 
-/* Antalet: en skarp liten räknare i mallens raka formspråk (calytrix radie = 0). */
-.qty {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid color-mix(in srgb, var(--color-surface, #fff) 35%, transparent);
-}
-.qtyBtn {
+.cxQtyBtn {
   width: 44px;
   height: 44px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 160ms ease;
-}
-.qtyBtn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-surface, #fff) 12%, transparent);
-}
-.qtyBtn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-.qtyBtn:focus-visible {
-  outline: 2px solid var(--color-surface, #fff);
-  outline-offset: -4px;
-}
-.qtyVal {
-  min-width: 34px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-/* "Stryk" — floristens penndrag, inte en soptunna. Overstrike vid hover. */
-.remove {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  opacity: 0.75;
-  font: inherit;
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  padding: 12px 6px; /* 44px-golvet via padding */
-  text-decoration: none;
-}
-.remove:hover {
-  opacity: 1;
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
-}
-.remove:focus-visible {
-  outline: 2px solid var(--color-surface, #fff);
-  outline-offset: 2px;
-}
-
-.slipTotal {
-  font-family: var(--font-display);
-  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* ── ORDERSBLOCKET (summeringen) ── */
-.note {
-  position: sticky;
-  top: 24px;
-  padding: clamp(1.5rem, 3vw, 2rem);
-  background: var(--color-bg);
-  border-top: 6px solid var(--color-primary-d);
-  box-shadow: 0 18px 40px -18px rgb(0 0 0 / 30%);
-}
-.noteKicker {
-  margin: 0 0 12px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-primary-d);
-}
-.noteRows {
-  margin: 0;
-}
-.noteRow {
+  border: 1px solid var(--color-fg, #241019);
+  background: var(--color-surface, #ffffff);
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-fg, #241019);
+  border-radius: 0;
+}
+
+.cxQtyBtn:hover:not(:disabled) {
+  background: var(--color-fg, #241019);
+  color: #fff;
+}
+
+.cxQtyBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cxQtyVal {
+  width: 44px;
+  height: 44px;
+  border-top: 1px solid var(--color-fg, #241019);
+  border-bottom: 1px solid var(--color-fg, #241019);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--color-fg, #241019);
+}
+
+.cxRowEnd {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: end;
   gap: 12px;
 }
-.noteRow dt {
-  font-size: 14px;
-  color: var(--color-fg);
-}
-.noteRow dd {
+
+.cxRowTotal {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.6rem, 3vw, 2.1rem);
-  color: var(--color-fg);
-  font-variant-numeric: tabular-nums;
-}
-.noteFine {
-  margin: 10px 0 18px;
-  font-size: 12.5px;
-  color: color-mix(in srgb, var(--color-fg) 72%, var(--color-bg));
-}
-.noteCta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 52px;
-  background: var(--color-primary-d);
-  color: var(--color-surface, #fff);
-  text-decoration: none;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  transition: background 180ms ease, transform 180ms ease;
-}
-.noteCta:hover {
-  background: var(--color-primary);
-  transform: translateY(-2px);
-}
-.noteCta:focus-visible {
-  outline: 2px solid var(--color-fg);
-  outline-offset: 3px;
-}
-.noteBack {
-  display: inline-block;
-  margin-top: 14px;
-  padding: 10px 0; /* 44px-golv */
-  font-size: 13.5px;
-  color: var(--color-fg);
-  text-decoration: none;
-}
-.noteBack:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.noteBack:focus-visible {
-  outline: 2px solid var(--color-fg);
-  outline-offset: 2px;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--color-primary-ink, #7d1f46);
 }
 
-/* ── TOMT PACKBORD ── */
-.emptyBoard {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: clamp(3rem, 8vw, 5.5rem) 1.5rem;
-  background: var(--color-primary-d);
-  color: var(--color-surface, #fff);
+.cxRemove {
+  background: transparent;
+  border: none;
+  color: var(--color-line, #a98d97);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 8px 0;
+  min-height: 44px;
 }
-.emptyIcon {
-  opacity: 0.55;
+
+.cxRemove:hover {
+  color: var(--color-primary-ink, #7d1f46);
 }
-.emptyKicker {
-  margin: 18px 0 4px;
-  font-family: var(--font-display);
-  font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+
+.cxListRule {
+  border-top: 1px solid var(--color-line, #a98d97);
 }
-.emptyText {
-  margin: 0 0 24px;
-  opacity: 0.8;
-}
-.emptyCta {
+
+.cxBack {
+  margin-top: 20px;
+  color: var(--color-primary-ink, #7d1f46);
+  font-weight: 700;
+  font-size: 14.5px;
+  text-decoration: none;
+  align-self: flex-start;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-height: 50px;
-  padding: 0 34px;
-  background: var(--color-surface, #fff);
-  color: var(--color-primary-d);
-  font-weight: 600;
-  text-decoration: none;
-  transition: transform 180ms ease;
-}
-.emptyCta:hover {
-  transform: translateY(-2px);
-}
-.emptyCta:focus-visible {
-  outline: 2px solid var(--color-surface, #fff);
-  outline-offset: 3px;
 }
 
-@media (max-width: 860px) {
-  .scene {
+.cxBack:hover {
+  color: var(--color-primary-d, #4a0e2e);
+}
+
+/* Sammanfattningen — sticky, precis som filen (top: 96px). */
+.cxSummary {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #a98d97);
+  padding: 30px;
+  position: sticky;
+  top: 96px;
+}
+
+.cxSummaryTitle {
+  margin: 0 0 22px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--color-fg, #241019);
+}
+
+.cxSumRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-accent-soft, #e8d9de);
+  font-size: 15px;
+}
+
+.cxSumLabel {
+  color: var(--color-fg-2, #6e4f5c);
+}
+
+.cxSumValue {
+  font-weight: 600;
+  color: var(--color-fg, #241019);
+}
+
+.cxSumTotal {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 0 22px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-fg, #241019);
+}
+
+.cxSumTotalValue {
+  color: var(--color-primary-ink, #7d1f46);
+}
+
+.cxCta {
+  display: block;
+  text-align: center;
+  background: var(--color-primary, #7d1f46);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 16px 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 0;
+  text-decoration: none;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.cxCta:hover {
+  background: var(--color-primary-d, #4a0e2e);
+  color: #fff;
+}
+
+.cxFine {
+  margin: 16px 0 0;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .cxGrid {
     grid-template-columns: 1fr;
   }
-  .note {
+
+  .cxTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+
+  .cxRow {
+    flex-wrap: wrap;
+  }
+
+  .cxSummary {
     position: static;
   }
-  .slip {
-    grid-template-columns: auto 1fr auto;
-  }
-  .slipNo {
-    display: none;
-  }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .slipPhotoPlate,
-  .noteCta,
-  .emptyCta {
-    transition: none;
-  }
-  .slipPhotoLink:hover .slipPhotoPlate,
-  .noteCta:hover,
-  .emptyCta:hover {
-    transform: rotate(-2deg);
+  .cxCart {
+    padding-left: 20px;
+    padding-right: 20px;
   }
 }

@@ -1,322 +1,240 @@
 import Link from 'next/link'
-import type { CSSProperties } from 'react'
 import { Reveal } from '../../Reveal'
-import { Gallery } from '../../Gallery'
-import { Bookable } from '../../Bookable'
-import { BookCta } from '@/components/brand/BookCta'
-import { BRANSCH_BOKNING } from '../../bransch-copy'
-import { formatPrice, formatDuration, serviceDesc } from '../../service-format'
 import { formatShopPrice } from '@/lib/storefront/shop/types'
 import type { StorefrontLayoutProps } from '../types'
 import styles from './calytrix.module.css'
+import card from './calytrix-modules.module.css'
 
 /**
- * CALYTRIX — plommon/vinröd e-handelsflorist, ombyggd från grunden (Zivars order:
- * "mallen äger ALLT som syns"). Scenen är ny; MOTORN är exakt densamma: samma
- * modul-gating (shopReachable/teasers/presentkortLive), samma Bookable/BookCta,
- * samma dataflöden. Zivars uiverse-element bär sidan — ANATOMIN är porterad
- * (struktur, rörelse, tillstånd), uttrycket kommer ur calytrix egna tokens:
+ * CALYTRIX — E-HANDEL (goal-64, Claude Design-paketet "Calytrix - E-handel.dc.html").
  *
- *   · cir-btn (rad 4888)      → hero- och closing-CTA:n "Beställ blommor":
- *                                guldblock + pil i plommon-cirkel som glider ↗
- *   · item-hints (rad 4637)   → pulserande prick på hero-fotot som pekar in i butiken
- *   · 3D-karusellen (rad 1349)→ "BUTIKEN SOM HJÄLTE": bästsäljarna roterar som en
- *                                ring av produktkort på mörkt plommon — signaturen
- *   · cutout-kupongen (14857) → presentkortsraden som URKLIPPT kupong (perforerad
- *                                papperslapp på plommonbordet)
- *   · pushable (rad 5779)     → kupongens knapp TRYCKS ner fysiskt (3 lager:
- *                                skugga/kant/front)
+ * Hemmet är en EXAKT kopia av `showHem`-blocket i filen, sektion för sektion, i filens
+ * ordning:
  *
- * Ordning: (1) foto-hero med cir-btn + hint-prick → (2) plommonband (tagline) →
- * (3) 3D-karusellen → (4) priser som kortrutnät → (5) blogg-rad → (6) presentkorts-
- * kupongen → (7) galleri → (8) OM-bildband → (9) plats-rad → (10) closing.
+ *   (1) SPLIT-HERO 5fr/7fr — eyebrow, 64px serif-rubrik med det plommonfärgade ordet,
+ *       lede, två CTA:er och tre siffror över en hårlinje. Fotot går kant i kant, 600px.
+ *   (2) MEST SÅLDA        — fyra produktkort ur webshop-modulen (filens `homeProducts`
+ *       = products.slice(0, 4)) med "Visa hela butiken →" i sektionshuvudet.
+ *   (3) MÖRKT MARKNADSBAND — löftet + tre numrerade steg (välj · betala · hämta).
+ *   (4) LEVERANSKOLL      — vit kantad platta: foto, rubrik, handling.
+ *   (5) BUTIKEN, ALLTID ÖPPEN — 5:4-foto + om-texten + "Mer om oss".
+ *   (6) CLOSING           — helbilds-band med slöja: "Någon blir glad idag."
  *
- * Modul-gating (LAG, testad i florist-suite.test.tsx): av modul = NOLL länkar till
- * dess sida. Hero-CTA:n länkar bara till /shop när shopReachable; annars faller den
- * tillbaka på boknings-drawern med floristens verb (aldrig "boka tid" — bransch-
- * copy äger orden). Layouten är SYNKRON (previewn kan inte rendera async).
+ * Filen har varken galleri-band eller blogg-band på hemmet — och då har inte mallen det
+ * heller. Att lägga till en sektion "för att de andra mallarna har en" ÄR att improvisera
+ * bort mallen (CLAUDE.md § DESIGN-TROHET).
+ *
+ * MODUL-GATINGEN ÄR HELIG: är webshopen av finns inga köpknappar, inga produktkort och
+ * ingen enda länk till /shop — heron faller då tillbaka på tjänstesidan. modules ===
+ * undefined (studions statiska preview) → visa allt.
+ *
+ * SYNKRON komponent (ingen async, ingen 'use client') — onboarding-studions preview
+ * renderar samma komponent.
  */
-export function CalytrixLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
-  const rows = services.slice(0, 6)
-  const hasMore = services.length > 6
-
-  const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
-  const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
-  const presentkortLive = modules?.presentkortLive ?? false
+export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
+  // Filens hem visar FYRA produkter (`homeProducts = all.slice(0, 4)`).
+  const products = (modules?.shopTeasers ?? []).slice(0, 4)
   const shopReachable = modules ? modules.shopReachable : true
 
-  const heroImg = content.heroImages[0] ?? ''
+  const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
+  const deliveryPhoto = content.galleryImages[0] ?? content.heroImages[1] ?? ''
+  const [titleLine1, titleLine2] = content.heroTitle.split('\n')
 
-  // Ringen behöver 6 kort för att läsas som en RING (3 kort = en gles triangel).
-  // Teasers är max 3 (LayoutModuleTeasers) → de repeteras cykliskt. Dubbletterna
-  // är mus-klickbara men tas UR tabb-ordningen (tabIndex -1 + aria-hidden):
-  // en skärmläsare ska höra varje produkt EN gång, inte tre.
-  const RING_SLOTS = 6
-  const ringSlots =
-    shopTeasers.length > 0
-      ? Array.from({ length: RING_SLOTS }, (_, i) => ({
-          p: shopTeasers[i % shopTeasers.length]!,
-          dup: i >= shopTeasers.length,
-        }))
-      : []
-
-  // Pilen i cir-btn-knappen (ritad inline — CSP tillåter inga fjärr-assets).
-  const cirArrow = (
-    <span className={styles.calCirBtnPuck} aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 18 18 6" />
-        <path d="M8 6h10v10" />
-      </svg>
-    </span>
-  )
+  // Filens tre steg i marknadsbandet. Fetstilen sitter på handlingen, resten är löftet.
+  const steps = [
+    { strong: 'Välj bukett', rest: ' — priset syns direkt, inga överraskningar.' },
+    { strong: 'Betala på ett par klick', rest: ' — kort eller Swish.' },
+    { strong: 'Hämta eller få levererat', rest: ' — samma dag före kl 14.' },
+  ]
 
   return (
-    <div className={styles.calRoot}>
-      {/* 1 — FULLBREDDS FOTO-HERO. CTA:n är cir-btn-anatomin: guldblock + pil i
-          plommon-cirkel (cirkeln är mallens medvetna undantag från radie 0 — som
-          badge-pillen). Hint-pricken (item-hints) pulserar över fotot och pekar
-          in i butiken — bara när butiken faktiskt går att nå. */}
-      <section className={styles.calHero} style={{ backgroundImage: `url(${heroImg})` }}>
-        <div className={styles.calHeroScrim} aria-hidden="true" />
-        <div className={styles.calHeroInner}>
-          <h1 className={styles.calHeroTitle}>{content.heroTitle}</h1>
-          <p className={styles.calHeroLede}>{content.heroLede}</p>
-          <div className={styles.calHeroCtaRow}>
-            {shopReachable ? (
-              <Link href="/shop" className={styles.calCirBtn}>
-                Beställ blommor
-                {cirArrow}
-              </Link>
-            ) : (
-              /* Butiken av → boknings-drawern, med FLORISTENS verb ur bransch-
-                 lagret (en florist bokar en konsultation, aldrig en "tid"). */
-              <BookCta className={styles.calHeroCta} label={BRANSCH_BOKNING.florist!.cta} />
-            )}
-          </div>
-        </div>
-        {shopReachable ? (
-          <Link href="/shop" className={styles.calHint} aria-label="In i butiken — se buketterna">
-            <span className={styles.calHintDot} aria-hidden="true" />
-            <span className={styles.calHintLabel} aria-hidden="true">
-              In i butiken
-            </span>
-          </Link>
-        ) : null}
-      </section>
-
-      {/* 2 — MÖRKT MARKNADSFÖRINGS-BAND (lyft platta, oförändrad gest) */}
-      <section className={styles.calBand}>
-        <p className={styles.calBandText}>{content.tagline}</p>
-      </section>
-
-      {/* 3 — BUTIKEN SOM HJÄLTE: bästsäljarna som ROTERANDE 3D-RING på mörkt
-          plommon. Anatomin ur uiverse-karusellen (preserve-3d, rotateY per index,
-          translateZ ut till ringens radie, oändlig rotation) — uttrycket ur mallens
-          tokens (4:5-kort på surface, guldkant, plommonrum). Ringen PAUSAR vid
-          hover/fokus så ett kort går att sikta på; reduced-motion fryser den helt
-          (en stillastående solfjäder är fortfarande scenen). */}
-      {ringSlots.length > 0 ? (
-        <section className={styles.calStage}>
-          <Reveal className={styles.calStageHead} as="div">
-            <p className={styles.calStageEyebrow}>{content.shopEyebrow ?? '— Mest sålda'}</p>
-            <h2 className={styles.calStageTitle}>{content.shopTitle ?? 'Beställ det alla vill ha'}</h2>
-          </Reveal>
-          <div className={styles.calRingScene}>
-            <div
-              className={styles.calRing}
-              style={{ '--cal-ring-n': String(RING_SLOTS) } as CSSProperties}
-            >
-              {ringSlots.map(({ p, dup }, i) => (
-                <Link
-                  key={`${p.id}-${i}`}
-                  href={`/shop/${p.id}`}
-                  className={styles.calRingCard}
-                  style={{ '--cal-ring-i': String(i) } as CSSProperties}
-                  tabIndex={dup ? -1 : undefined}
-                  aria-hidden={dup ? true : undefined}
-                >
-                  <span
-                    className={styles.calRingImg}
-                    style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
-                  />
-                  <span className={styles.calRingName}>{p.name}</span>
-                  <span className={styles.calRingPrice}>{formatShopPrice(p.priceCents, p.currency)}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-          {shopReachable ? (
-            <div className={styles.calStageCtaRow}>
-              <Link href="/shop" className={styles.calStageCta}>
-                {content.shopCta ?? 'Visa hela butiken'}
-              </Link>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {/* 4 — PRISER SOM RUTNÄT AV KORT (varje kort = <Bookable> — funktionen orörd) */}
-      {rows.length > 0 ? (
-        <section className={styles.calSection}>
-          <Reveal className={styles.calSecHead} as="div">
-            <div>
-              <p className="sf-eyebrow">{content.servicesEyebrow}</p>
-              <h2 className={styles.calSecTitle}>{content.servicesTitle}</h2>
-            </div>
-            {hasMore ? (
-              <Link href="/tjanster" className={styles.calSecCta}>
-                Se allt vi gör
-              </Link>
+    <div className={styles.cxHome}>
+      {/* ══ (1) SPLIT-HERO ══ */}
+      <section className={styles.cxHero}>
+        <Reveal className={styles.cxHeroText}>
+          <p className={styles.cxEyebrow}>{content.heroEyebrow}</p>
+          <h1 className={styles.cxHeroTitle}>
+            {titleLine1}
+            {titleLine2 ? (
+              <>
+                {' '}
+                <em className={styles.cxHeroEm}>{titleLine2}</em>
+              </>
             ) : null}
-          </Reveal>
-          <div className={styles.calPriceGrid}>
-            {rows.map((s, i) => (
-              <Reveal key={s.id} as="div" delay={i * 60}>
-                <Bookable className={styles.calPriceCard} label={`Boka — ${s.name}`}>
-                  <span className={styles.calPriceName}>{s.name}</span>
-                  <span className={styles.calPriceDesc}>{serviceDesc(s)}</span>
-                  <span className={styles.calPriceFoot}>
-                    <span className={styles.calPriceValue}>{formatPrice(s)}</span>
-                    <span className={styles.calPriceDur}>{formatDuration(s)}</span>
-                  </span>
-                </Bookable>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {/* 5 — FRÅN BLOGGEN (samma kort-formspråk som butiken) */}
-      {bloggTeasers.length > 0 ? (
-        <section className={styles.calSection}>
-          <Reveal className={styles.calSecHead} as="div">
-            <div>
-              <p className="sf-eyebrow">{content.blogEyebrow ?? '— Från bloggen'}</p>
-              <h2 className={styles.calSecTitle}>{content.blogTitle ?? 'Nytt från floristen'}</h2>
-            </div>
-            <Link href="/blogg" className={styles.calSecCta}>
-              {content.blogCta ?? 'Läs hela bloggen'}
+          </h1>
+          <p className={styles.cxHeroLede}>{content.heroLede}</p>
+          <div className={styles.cxHeroCtas}>
+            {/* Butiken av → CTA:n leder ALDRIG till en sida kunden inte har. */}
+            <Link href={shopReachable ? '/shop' : '/tjanster'} className={styles.cxBtn}>
+              {shopReachable ? 'Handla nu' : 'Se sortimentet'}
             </Link>
-          </Reveal>
-          <div className={styles.calScrollRow}>
-            {bloggTeasers.map((p, i) => (
-              <Reveal key={p.id} as="div" delay={i * 70} className={styles.calCardSlot}>
-                <Link href={p.slug ? `/blogg/${p.slug}` : '/blogg'} className={styles.calCard}>
-                  <div className={styles.calCardImgWrap}>
-                    <div
-                      className={styles.calCardImg}
-                      style={p.coverImageUrl ? { backgroundImage: `url(${p.coverImageUrl})` } : undefined}
-                    />
-                  </div>
-                  <h3 className={styles.calCardName}>{p.title}</h3>
-                  {p.excerpt ? <p className={styles.calCardMeta}>{p.excerpt}</p> : null}
-                </Link>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {/* 6 — PRESENTKORTET SOM URKLIPPT KUPONG (cutout-anatomin): en perforerad
-          papperslapp på det mörka plommonbordet — presentkortet ÄR ju en kupong,
-          så formen ljuger inte. Knappen är pushable-anatomin: tre lager
-          (skugga/kant/front) och fronten TRYCKS ner fysiskt vid klick. */}
-      {presentkortLive ? (
-        <section className={styles.calCouponBand}>
-          <Reveal className={styles.calCoupon} as="div">
-            <p className={styles.calCouponKicker}>{content.giftEyebrow ?? '— Presentkort'}</p>
-            <p className={styles.calCouponText}>{content.giftLede ?? 'Ge bort något som blommar.'}</p>
-            <Link href="/presentkort" className={styles.calPush}>
-              <span className={styles.calPushShadow} aria-hidden="true" />
-              <span className={styles.calPushEdge} aria-hidden="true" />
-              <span className={styles.calPushFront}>{content.giftCta ?? 'Till presentkorten'}</span>
+            <Link href="#leverans" className={styles.cxBtnLine}>
+              Så funkar leveransen
             </Link>
-          </Reveal>
-        </section>
-      ) : null}
-
-      {/* 7 — GALLERI (mallens 4:5-ratio + raka hörn via .calGallery-wrappern) */}
-      {content.galleryImages.length > 0 ? (
-        <section className={styles.calSection}>
-          <div className={styles.calSecHead}>
-            <p className="sf-eyebrow">{content.galleryEyebrow ?? '— Galleri'}</p>
           </div>
-          <Reveal className={`${styles.calGallery} ${styles.calGalleryWrap}`} as="div">
-            <Gallery photos={content.galleryImages.map((src) => ({ src, alt: 'Galleribild' }))} />
-          </Reveal>
-        </section>
-      ) : null}
-
-      {/* 8 — OM: brett bildband, texten ligger som overlay-platta i bilden */}
-      <section className={styles.calAboutBand} style={{ backgroundImage: `url(${content.aboutImage})` }}>
-        <div className={styles.calAboutScrim} aria-hidden="true" />
-        <Reveal className={styles.calAboutPanel} as="div">
-          <p className="sf-eyebrow">— Om {tenant.name}</p>
-          <h2 className={styles.calAboutTitle}>{content.aboutTitle}</h2>
-          <p className={styles.calAboutText}>{content.aboutCopyHome}</p>
-          <ul className={styles.calAboutStats}>
-            {content.stats.map(([n, l]) => (
-              <li key={l}>
-                <span className={styles.calStatValue}>{n}</span>
-                <span className={styles.calStatLabel}>{l}</span>
-              </li>
-            ))}
-          </ul>
-        </Reveal>
-      </section>
-
-      {/* 9 — PLATS: en rad med adress · tider · karta-länk (butikens fot) */}
-      <section className={styles.calLocRow}>
-        <div className={styles.calLocInner}>
-          <div>
-            <p className="sf-eyebrow">{content.findEyebrow ?? '— Hitta hit'}</p>
-            <p className={styles.calLocAddr}>{location?.address ?? 'Adress visas snart.'}</p>
-          </div>
-          {location?.hours ? (
-            <div className={styles.calLocHours}>
-              {location.hours.map((h) => (
-                <div key={h.day} className={styles.calLocHoursRow}>
-                  <span>{h.day}</span>
-                  <span>{h.time}</span>
+          {content.stats.length > 0 ? (
+            <div className={styles.cxHeroStats}>
+              {content.stats.map(([value, label]) => (
+                <div key={label}>
+                  <p className={styles.cxStatValue}>{value}</p>
+                  <p className={styles.cxStatLabel}>{label}</p>
                 </div>
               ))}
             </div>
           ) : null}
-          {location?.address ? (
-            <a
-              className={styles.calSecCta}
-              href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              Visa på karta
-            </a>
-          ) : null}
+        </Reveal>
+        <div className={styles.cxHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} />
+      </section>
+
+      {/* ══ (2) MEST SÅLDA — modulens data, mallens form ══ */}
+      {products.length > 0 ? (
+        <section className={styles.cxSection} data-module="shop">
+          <Reveal className={styles.cxSecHead} as="div">
+            <div>
+              <p className={styles.cxSecEyebrow}>{content.shopEyebrow ?? 'Mest sålda'}</p>
+              <h2 className={styles.cxSecTitle}>
+                {content.shopTitle ?? 'Beställ det alla vill ha'}
+              </h2>
+            </div>
+            <Link href="/shop" className={styles.cxSecLink}>
+              {content.shopCta ?? 'Visa hela butiken →'}
+            </Link>
+          </Reveal>
+          <ul className={styles.cxGrid4}>
+            {products.map((p, i) => (
+              <li key={p.id}>
+                <Reveal delay={i * 90}>
+                  <article className={card.cxCard}>
+                    <Link
+                      href={`/shop/${p.id}`}
+                      className={card.cxCardMedia}
+                      aria-label={`${p.name} — visa produkt`}
+                    >
+                      <span
+                        className={card.cxCardImg}
+                        role="img"
+                        aria-label={p.imageAlt ?? p.name}
+                        style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})` } : undefined}
+                      />
+                    </Link>
+                    <div className={card.cxCardBody}>
+                      <div className={card.cxCardHead}>
+                        <h3 className={card.cxCardName}>
+                          <Link href={`/shop/${p.id}`}>{p.name}</Link>
+                        </h3>
+                        <p className={card.cxCardPrice}>
+                          {formatShopPrice(p.priceCents, p.currency)}
+                        </p>
+                      </div>
+                      {/* Filens "LÄGG I KORG" i mallens form. Teaser-propen bär INTE
+                          shop-configen (LayoutModuleTeasers = produkter + reachable), och
+                          köp-knappens text ÄR fulfilment-beroende (shopCtaLabel: "Lägg i
+                          kundvagn" / "Reservera för upphämtning" / "Beställ till butik").
+                          Att gissa en fulfilment här hade satt fel löfte på hemmet — så
+                          knappen bär till produktsidan, där modulens riktiga <AddToCart>
+                          med rätt config sitter. Formen är filens, löftet är sant. */}
+                      <div className={card.cxCardBuy}>
+                        <Link href={`/shop/${p.id}`}>Köp</Link>
+                      </div>
+                    </div>
+                  </article>
+                </Reveal>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* ══ (3) MÖRKT MARKNADSBAND — heroens "Så funkar leveransen" landar här ══ */}
+      <section className={styles.cxBand} id="leverans">
+        <div className={styles.cxBandInner}>
+          <Reveal>
+            <h2 className={styles.cxBandTitle}>{content.tagline}</h2>
+            <p className={styles.cxBandLede}>
+              Vi binder din beställning samma dag som den går ut. Beställer du innan kl 14 en
+              vardag står budet utanför dörren innan kvällen.
+            </p>
+          </Reveal>
+          <Reveal delay={120}>
+            <ol className={styles.cxSteps}>
+              {steps.map((s, i) => (
+                <li key={s.strong} className={styles.cxStep}>
+                  <span className={styles.cxStepNo} aria-hidden="true">
+                    {i + 1}.
+                  </span>
+                  <p className={styles.cxStepText}>
+                    <strong>{s.strong}</strong>
+                    {s.rest}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </Reveal>
         </div>
       </section>
 
-      {/* 10 — CLOSING: mörk plommonplatta. Primär = cir-btn in i butiken (gatad),
-           sekundär = boknings-drawern i vinrött (funktionen får aldrig tappas —
-           konsultationen ska gå att boka även från sidfotens granne). */}
-      <section className={styles.calClosing}>
-        <Reveal>
-          <h2 className={styles.calClosingTitle}>{content.closingTitle ?? 'Redo att beställa?'}</h2>
-          <p className={styles.calClosingLede}>
-            {content.closingLede ?? 'Handla i butiken, boka en tjänst eller hör av dig — vi finns här.'}
-          </p>
-          <div className={styles.calClosingActions}>
-            {shopReachable ? (
-              <Link href="/shop" className={styles.calCirBtn}>
-                Beställ blommor
-                {cirArrow}
-              </Link>
-            ) : null}
-            <BookCta
-              className={`${styles.calHeroCta} ${shopReachable ? styles.calClosingBook : ''}`}
-              label={BRANSCH_BOKNING.florist!.cta}
-            />
+      {/* ══ (4) LEVERANSKOLL ══
+          Filens tredje spalt är ett adressfält + "Kolla →" — fältet har ingen handler ens
+          i .dc.html, och motorn har ingen leveranszons-tjänst. Ett fält som inte gör något
+          ljuger (goal-62, sidfotens nyhetsbrev). Kroppen är filens; handlingen är ärlig. */}
+      <section className={styles.cxSection}>
+        <Reveal className={styles.cxDelivery} as="div">
+          <span
+            className={styles.cxDeliveryPhoto}
+            style={deliveryPhoto ? { backgroundImage: `url(${deliveryPhoto})` } : undefined}
+            aria-hidden="true"
+          />
+          <div>
+            <p className={styles.cxSecEyebrow}>{content.findEyebrow ?? 'Leveranskoll'}</p>
+            <h2 className={styles.cxDeliveryTitle}>Levererar vi till dig?</h2>
+            <p className={styles.cxDeliveryText}>
+              Hämta i butiken eller få buketten hemlevererad — leveranssätten står i butiken,
+              och du väljer i kassan.
+            </p>
+          </div>
+          <div className={styles.cxDeliveryAction}>
+            <Link href="/kontakt" className={styles.cxDeliveryBtn}>
+              Kolla med oss →
+            </Link>
           </div>
         </Reveal>
+      </section>
+
+      {/* ══ (5) BUTIKEN, ALLTID ÖPPEN ══ */}
+      <section className={styles.cxSection}>
+        <div className={styles.cxAbout}>
+          <Reveal>
+            <div
+              className={styles.cxAboutPhoto}
+              style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
+            />
+          </Reveal>
+          <Reveal delay={120}>
+            <p className={styles.cxSecEyebrow}>{content.teamEyebrow ?? 'Om butiken'}</p>
+            <h2 className={styles.cxAboutTitle}>{content.aboutTitle}</h2>
+            <p className={styles.cxAboutCopy}>{content.aboutCopyHome ?? content.aboutCopy}</p>
+            <Link href="/om" className={styles.cxBtnOutline}>
+              Mer om oss
+            </Link>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ══ (6) CLOSING ══ */}
+      <section
+        className={styles.cxClosing}
+        style={content.closingImage ? { backgroundImage: `url(${content.closingImage})` } : undefined}
+      >
+        <div className={styles.cxClosingVeil} aria-hidden="true" />
+        <div className={styles.cxClosingInner}>
+          <h2 className={styles.cxClosingTitle}>{content.closingTitle ?? 'Någon blir glad idag.'}</h2>
+          <p className={styles.cxClosingLede}>
+            {content.closingLede ?? 'Beställ före kl 14 så levererar vi innan kvällen.'}
+          </p>
+          <Link href={shopReachable ? '/shop' : '/tjanster'} className={styles.cxBtnLight}>
+            {shopReachable ? 'Handla nu' : 'Se sortimentet'}
+          </Link>
+        </div>
       </section>
     </div>
   )

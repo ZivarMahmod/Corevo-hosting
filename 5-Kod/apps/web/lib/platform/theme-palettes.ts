@@ -11,6 +11,7 @@
  */
 import { FLORIST_PALETTES } from '@/components/storefront/layouts/florist/registry'
 import { EKONOMI_PALETTES } from '@/components/storefront/layouts/ekonomi/registry'
+import { SALONG_PALETTES } from '@/components/storefront/layouts/salong/registry'
 import { THEME_CONTENT } from '@/components/storefront/theme-content'
 import type { StorefrontTheme } from '@/lib/tenant-data'
 
@@ -96,6 +97,14 @@ export const THEME_PALETTES: ThemePalette[] = [
   ...EKONOMI_PALETTES.map((p) => ({
     ...p,
     category: 'ekonomi' as const,
+    tags: tagsFor(p.key, p.desc, p.bg),
+    hero: hero(p.key),
+  })),
+  // SALONG-SVITEN (goal-64) — Claude Design-paketen för salong/frisör. Kategori 'bokning',
+  // samma flik som de äldre handbyggda salongsmallarna.
+  ...SALONG_PALETTES.map((p) => ({
+    ...p,
+    category: 'bokning' as const,
     tags: tagsFor(p.key, p.desc, p.bg),
     hero: hero(p.key),
   })),

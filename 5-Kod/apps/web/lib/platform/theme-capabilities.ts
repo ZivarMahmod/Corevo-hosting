@@ -19,6 +19,11 @@ import {
   FLORIST_OWNS_COPY,
 } from '@/components/storefront/layouts/florist/registry'
 import { EKONOMI_CAPS, EKONOMI_OWNS_COPY } from '@/components/storefront/layouts/ekonomi/registry'
+import {
+  SALONG_CAPS,
+  SALONG_EXTRA_HOME,
+  SALONG_OWNS_COPY,
+} from '@/components/storefront/layouts/salong/registry'
 
 export type ThemeCaps = {
   heroEyebrow: boolean
@@ -36,6 +41,7 @@ export const THEME_CAPS: Record<string, ThemeCaps> = {
   // saknade rad göme dess galleri-kontroll i editorn i månader, se raden nedan).
   ...FLORIST_CAPS,
   ...EKONOMI_CAPS,
+  ...SALONG_CAPS,
   freshcut: { heroEyebrow: false, homeStats: false, homeGallery: true, homeAbout: true },
   salvia: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: true },
   leander: { heroEyebrow: true, homeStats: true, homeGallery: true, homeAbout: false },
@@ -68,6 +74,7 @@ export function themeCaps(key: string): ThemeCaps {
 export const THEME_OWNS_COPY: ReadonlySet<string> = new Set<string>([
   ...FLORIST_OWNS_COPY,
   ...EKONOMI_OWNS_COPY,
+  ...SALONG_OWNS_COPY,
 ])
 
 export function themeOwnsCopy(key: string): boolean {
@@ -84,6 +91,7 @@ export const THEME_EXTRA_HOME: Record<string, ExtraField[]> = {
   // sin egen <key>.theme.ts (extraHome) — registryt samlar, hit spreadas de. En mall
   // utan deklaration får inga extra fält (ingen tyst default).
   ...FLORIST_EXTRA_HOME,
+  ...SALONG_EXTRA_HOME,
   // goal-57 körning 13 (D1/D4): floras pelare + invävda modul-band — varje synlig
   // text på hemmet redigerbar. Defaults = layoutens inbyggda strängar (FloraLayout).
   flora: [

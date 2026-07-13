@@ -3,130 +3,118 @@ import { OnyxNav, OnyxFooter } from './onyx.chrome'
 import { OnyxOm, OnyxTjanster, OnyxKontakt } from './onyx.pages'
 import { OnyxShop, OnyxBlogg } from './onyx.modules'
 
-/** Unsplash photo manifest — every id below verified `curl -sI` → 200 (2026-07-11). */
+// Foto-id:n LYFTA ur "Onyx - Mörk Studio.dc.html" (rawProducts/galleryItems/hero/om) —
+// inte utbytta, inte "liknande". HANDOFF.md §2 regel 4: byt aldrig ett Unsplash-ID.
 const u = (id: string, w = 1600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&q=80&auto=format&fit=crop`
 
 const IMG = {
-  hero1: u('1580124917341-d318cbacc34f'),
-  hero2: u('1623183074617-90611646e4ca'),
-  hero3: u('1623183073860-70eacab1bca4'),
-  g1: u('1553531384-cc64ac80f931', 900),
-  g2: u('1502741126161-b048400d085d', 900),
-  g3: u('1659564131634-32ca6b67fa47', 900),
-  g4: u('1692150763648-ee3f8e7f9bfa', 900),
-  g5: u('1623183074743-6c3b3e67bcc6', 900),
-  g6: u('1544384368-1bab87853ce5', 900),
-  about: u('1653676044917-a208ec026c7a'),
-  closing: u('1635692491203-de15c113ac2c'),
-  p1: u('1697339273848-57ad25305c53', 700),
-  p2: u('1728302941201-1d5ae1afb59b', 700),
-  p3: u('1728302941720-e800fc74023b', 700),
+  magnoliaNoir: u('1518343161123-c7e9ab4dc4da'), // FIG. 01 — hero i filen
+  brandRosa: u('1557982780-d68d843c32ab'), // FIG. 02 — om-fotot i filen
+  glod: u('1442458017215-285b83f65851'), // FIG. 03 — closing-fotot i filen
+  vinmork: u('1612351641432-20a0f196086c'), // FIG. 04
+  askros: u('1520179737749-b7752f6f56fb'), // FIG. 05
+  calla: u('1469259943454-aa100abba749'), // FIG. 06
 } as const
 
 /**
- * ONYX — nästan svart + EN korall, dramatisk. Zivar: "ska kännas som ett svärd,
- * inte en mjuk morot". Skärpe-passet (design-skarpa-zentum.md, regel 5–8):
+ * ONYX — MÖRK STUDIO (goal-64, Claude Design-paketet).
  *
- * • 8 hex, EN hue-familj. Mint (#3fe7b0) och det gröna accentSoft (#1E3630) är
- *   BORTA — de var en andra och tredje kulör som slogs med koralen om
- *   hierarkin (= moroten). accentSoft är nu en korall-tonad ink.
- * • Korallen är LYFT i ljushet (#E8442D → #FF6A4A, samma kulör) så att alla tre
- *   kraven håller samtidigt — de gick inte ihop förut:
- *      korall som text på svart  6.67:1  (var 4.76:1)
- *      korall som text på surface 6.14:1 (var 4.39:1 = UNDER 4.5 → underkänt)
- *      ink på korall (knapptext)  6.67:1 (vit på korall var 3.97:1 = underkänt)
- *   Knapptexten är därför INK på korall, aldrig vit — vit text på en mättad
- *   korall kan aldrig nå 4.5:1.
- * • primaryD (#E0563B) är hover-fyllningen: ink på den ger 5.01:1.
- * • Rubrik-ink (#F5F1E8) på svart = 16.76:1, brödtext (#A19C90) = 6.90:1.
+ * EXAKT KOPIA av "Onyx - Mörk Studio.dc.html". Palett, typsnitt, radie, navHeight och
+ * caps är LYFTA ur filens `#corevo-manifest`-block — inget är re-härlett. Copyn är filens
+ * egen svenska, verbatim: "Blommor är inte alltid söta.", "Sista buketten binds 21:45."
  *
- * Skarpa hörn (radius 0) hela vägen — konsekvent, bestämt, aldrig mjukt; pill
- * BARA på knappar (se onyx.module.css).
+ * ONYX ÄR MÖRK (bg #121212, mässing #C9973F som ENDA accent). Mallens CSS sätter svart
+ * botten på varje rot-sektion, så ingen text kan ärva en ljus yta.
+ *
+ * ownsCopy: true — bransch-lagret hoppas över. Utan flaggan hade BRANSCH_COPY lagt
+ * florist-branschens generiska hero-text ovanpå nattfloristens, och hela paketet varit
+ * osynligt för varje florist-tenant. Ägarens egen settings.copy vinner fortfarande.
  */
 export const onyx: FloristTheme = {
   key: 'onyx',
   name: 'Onyx',
-  desc: 'Svart · korall · dramatisk',
+  desc: 'Nattflorist i svart och mässing.',
+  // Manifestets `palette`, alla 8 nycklar, oförändrade.
   palette: {
-    primary: '#FF6A4A',
-    primaryD: '#E0563B',
-    bg: '#111110',
-    surface: '#1B1A18',
-    fg: '#F5F1E8',
-    fg2: '#A19C90',
-    line: '#2E2C27',
-    accentSoft: '#231512',
+    primary: '#C9973F',
+    primaryD: '#B08434',
+    bg: '#121212',
+    surface: '#1C1C1C',
+    fg: '#F2EFEA',
+    fg2: '#9C968C',
+    line: '#2E2E2E',
+    accentSoft: '#6B655B',
   },
+  // Manifestets `fonts`: Space Grotesk i rubrikerna, IBM Plex Mono i mikroetiketterna.
   fonts: {
-    display: 'var(--font-dmserif), Georgia, serif',
-    body: 'var(--font-jost), system-ui, sans-serif',
+    display: 'var(--font-spacegrotesk), system-ui, sans-serif',
+    body: 'var(--font-plexmono), ui-monospace, monospace',
   },
   radius: '0px',
-  // Sidhuvudet är TVÅ våningar (krön + rad) → toppklustret måste reservera mer.
-  navHeight: { desktop: '184px', mobile: '132px' },
+  // Manifestets navHeight — bor HÄR och aldrig i CSS (.shellMain är en global klass; en
+  // ren :global()-regel i en CSS Module är inte "pure" → webpack-fel i prod-bygget).
+  navHeight: { desktop: '68px', mobile: '56px' },
   content: {
-    heroEyebrow: '— Blomsterhandel & bud',
-    heroTitle: 'Blommor med\nkaraktär.',
+    heroEyebrow: 'EST. 2019 — SÖDERMALM',
+    heroTitle: 'Blommor är inte alltid söta.',
     heroLede:
-      'Handplockade snitt i djupa toner, bundna för hand och levererade samma dag — för dig som vill ge något som sticker ut.',
-    tagline: 'Blommor med skärpa',
-    utility: 'Bud samma dag vid beställning innan kl 14 · Hämtning i butik',
-    italic: 'Vackert behöver inte vara försiktigt.',
+      'Mörka sorter, skulpturala stjälkar och arrangemang med attityd. Bundna sent, levererade samma kväll — när blommor behövs som mest.',
+    tagline: 'BLOMMOR EFTER MÖRKRETS INBROTT',
+    utility: 'ÖPPET TIS–LÖR 12–22 · KATARINA BANGATA 9',
+    // Filens manifest-band på hemmet.
+    italic: 'Vi jobbar när staden vaknar på riktigt. Sista buketten binds 21:45.',
     aboutCopy:
-      'Vi är en blomsterhandel som tror på starka färger, ärligt hantverk och blommor som får ta plats. Varje bukett binds för hand, samma dag som den lämnar butiken.',
-    servicesEyebrow: '— Det vi gör',
-    servicesTitle: 'Tjänster',
-    aboutTitle: 'Om oss',
-    teamEyebrow: '— Teamet',
-    teamTitle: 'Händerna bakom buketterna',
-    heroImages: [IMG.hero1, IMG.hero2, IMG.hero3],
-    galleryImages: [IMG.g1, IMG.g2, IMG.g3, IMG.g4, IMG.g5, IMG.g6],
-    aboutImage: IMG.about,
-    closingImage: IMG.closing,
-    team: [
-      { name: 'Vårt team', role: 'Florister', img: IMG.p1 },
-      { name: 'Butik & bud', role: 'Butik & leverans', img: IMG.p2 },
-      { name: 'Bindning', role: 'Buketter & binderi', img: IMG.p3 },
-    ],
+      'Onyx startade som ett nattöppet blomsterstånd utanför en klubb på Södermalm. Idén var enkel: blommor behövs mest efter klockan sju — när middagen glömts, bråket ska sonas eller kvällen ska bli speciell.',
+    aboutTitle: 'Floristen som aldrig sover.',
+    servicesEyebrow: 'BOKNING',
+    servicesTitle: 'Boka studion',
+    teamEyebrow: 'OM ONYX',
+    teamTitle: 'Floristen som aldrig sover.',
+    heroImages: [IMG.magnoliaNoir, IMG.brandRosa, IMG.glod],
+    galleryImages: [IMG.magnoliaNoir, IMG.brandRosa, IMG.glod, IMG.vinmork, IMG.askros, IMG.calla],
+    aboutImage: IMG.brandRosa,
+    closingImage: IMG.glod,
+    team: [],
+    // Filens tre siffror på /om — verbatim.
     stats: [
-      ['100%', 'handbundet'],
-      ['Djärvt', 'urval'],
-      ['Samma dag', 'bud'],
+      ['21:45', 'sista bindningen, varje kväll'],
+      ['7 dgr', 'hållbarhetsgaranti, annars ny kasse'],
+      ['0 st', 'babyrosa ursäkter sedan 2019'],
     ],
   },
-  caps: {
-    heroEyebrow: true,
-    homeStats: true,
-    homeGallery: true,
-    homeAbout: true,
-  },
-  // goal-61 editor-paritet: mallens EGNA redigerbara element på HEM. Defaults =
-  // layoutens inbyggda fallback-strängar (OnyxLayout/onyx.modules), ordagrant —
-  // tomt fält = mallens inbyggda text fortsätter gälla.
-  extraHome: [
-    {
-      name: 'galleryEyebrow',
-      label: 'Galleri: eyebrow',
-      hint: 'Styr både säsongs-trion och galleriet — tomt ger trion "— I säsong" och galleriet "— Galleri".',
-      default: '— Galleri',
-    },
-    { name: 'shopEyebrow', label: 'Butiks-bandet: eyebrow', default: '— Ur butiken' },
-    { name: 'shopTitle', label: 'Butiks-bandet: rubrik', default: 'Beställ något dramatiskt' },
-    { name: 'shopCta', label: 'Butiks-bandet: knapptext', default: 'Visa hela butiken' },
-    { name: 'blogEyebrow', label: 'Blogg-bandet: eyebrow', default: '— Från bloggen' },
-    { name: 'blogTitle', label: 'Blogg-bandet: rubrik', default: 'Säsong, tips & inspiration' },
-    { name: 'blogCta', label: 'Blogg-bandet: knapptext', default: 'Läs hela bloggen' },
-    { name: 'giftEyebrow', label: 'Presentkort-raden: eyebrow', default: '— Presentkort' },
-    { name: 'giftLede', label: 'Presentkort-raden: text', default: 'Ge bort något som sticker ut.' },
-    { name: 'giftCta', label: 'Presentkort-raden: länktext', default: 'Till presentkorten' },
-    { name: 'findEyebrow', label: 'Plats-sektionen: eyebrow', default: '— Hitta till butiken' },
-  ],
-  // goal-59 TEMA-PAKET: Onyx äger sitt sidhuvud (krön + rad), sin helsvarta sidfot
-  // och sina tre undersidor. FUNKTIONEN är fortfarande plattformens (NavShell +
-  // modul-gatade länkar/CTA) — bara FORMEN är mallens.
+  // Manifestets `caps`, oförändrade: filen har varken sifferband eller galleri på hemmet.
+  caps: { heroEyebrow: true, homeStats: false, homeGallery: false, homeAbout: true },
+  // goal-59 TEMA-PAKET: Onyx äger sitt sidhuvud (railens form), sin sidfot och sina tre
+  // undersidor. FUNKTIONEN är plattformens (NavShell + modul-gatade länkar/CTA).
   chrome: { Nav: OnyxNav, Footer: OnyxFooter },
   pages: { om: OnyxOm, tjanster: OnyxTjanster, kontakt: OnyxKontakt },
-  // Vektor-regeln: modulen äger funktionen (data, varukorg, kassa), mallen formen.
+  // Vektor-regeln: modulen äger funktionen (data, korg, kassa), mallen formen.
   moduleViews: { shop: OnyxShop, blogg: OnyxBlogg },
+  ownsCopy: true,
+  // goal-61 editor-paritet: hemmets redigerbara element. default = layoutens inbyggda
+  // fallback-sträng VERBATIM (OnyxLayout/onyx.modules) — fältet ska förifyllas ärligt.
+  extraHome: [
+    { name: 'findEyebrow', label: 'Hero: fotnot', default: 'KVÄLLSLEVERANS 18–23 · BESTÄLL FÖRE 20:00' },
+    { name: 'galleryEyebrow', label: 'Hero: bildtext (FIG)', default: 'FIG. 01 — MAGNOLIA NOIR' },
+    { name: 'shopEyebrow', label: 'Butiken: eyebrow', default: 'DROP 27 — VECKA 28' },
+    { name: 'shopTitle', label: 'Veckans drop: rubrik', default: 'Veckans drop' },
+    { name: 'shopCta', label: 'Veckans drop: länktext', default: 'SE ALLT →' },
+    { name: 'pillar1Title', label: 'Väg 02: rubrik', default: 'Veckans drop' },
+    { name: 'pillar1Body', label: 'Väg 02: text', rows: 2, default: 'Begränsade buketter, nya varje måndag.' },
+    { name: 'pillar2Title', label: 'Väg 03: rubrik', default: 'Night classes' },
+    { name: 'pillar2Body', label: 'Väg 03: text', rows: 2, default: 'Kvällskurser i studion — bind till hög musik.' },
+    { name: 'pillar3Title', label: 'Väg 08: rubrik', default: 'Kretsen' },
+    { name: 'pillar3Body', label: 'Väg 08: text', rows: 2, default: 'Inre cirkeln. Tidig access och stängda kvällar.' },
+    { name: 'blogEyebrow', label: 'Journal: eyebrow', default: 'JOURNAL' },
+    { name: 'blogTitle', label: 'Journal: rubrik', default: 'Journal' },
+    { name: 'blogCta', label: 'Journal: länktext', default: 'ALLA INLÄGG →' },
+    { name: 'closingTitle', label: 'Avslutningen: rubrik', default: 'Ikväll, före 23:00.' },
+    {
+      name: 'closingLede',
+      label: 'Avslutningen: text',
+      rows: 2,
+      default: 'Beställ före 20:00 så cyklar budet ut buketten samma kväll.',
+    },
+  ],
 }

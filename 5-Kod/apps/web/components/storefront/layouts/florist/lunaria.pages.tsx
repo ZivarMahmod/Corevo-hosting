@@ -1,200 +1,146 @@
-import Link from 'next/link'
-import { Reveal } from '../../Reveal'
 import { Bookable } from '../../Bookable'
-import { BookCta } from '@/components/brand/BookCta'
-import { formatPrice, formatDuration, serviceDesc, serviceNum } from '../../service-format'
+import { formatPrice, serviceDesc } from '../../service-format'
 import type { ThemePageProps } from './types'
 import styles from './lunaria.module.css'
 
 /**
- * LUNARIA — mallens EGNA undersidor (goal-59 tema-paket). Tidigare föll varje mall
- * tillbaka på de DELADE sektionerna så fort man lämnade hemmet — därför kändes hela
- * sviten som samma sajt. Lunaria kör sitt eget språk (offset + hårlinjer + stora tal)
- * hela vägen ut:
+ * LUNARIA — undersidorna (goal-64, EXAKT kopia ur "Lunaria - Art Déco.dc.html").
  *
- *   /om        OFFSET-UPPSLAG — samma grammatik som hemmets hero: ett foto till höger
- *              och en textplatta som skjuter UT över dess vänsterkant. Under: en
- *              hårlinje-delad faktarad och en citat-remsa i vetefärg. Ingen team-rad.
- *   /tjanster  LUGN LISTA — stora display-siffror (nummer vänster, pris höger) på
- *              hårlinje-rader, varje rad en <Bookable> som öppnar bokningen.
- *              services=[] → ärlig tom-text, aldrig påhittade rader.
- *   /kontakt   ÖVERLAPPANDE KORT — ett nattblått foto-band med ett ljust kort som
- *              ligger OVANPÅ dess nederkant (adress · tider · kontakt · boka).
- *              Render-on-present hela vägen.
+ *   /om       → filens `showOm`: "Salongen vid boulevarden" — prosa till vänster, foto i
+ *               4:5 i en guldram till höger, sedan sifferbandet (1926 · 100% · IV) i EN
+ *               guldram med silverlinjer emellan.
+ *   /tjanster → filens `showBoka`-ruta: guldetikett "Ärende", sedan rader med deco-rutan
+ *               på snedden, namn till vänster, pris i guld till höger. Varje rad är en
+ *               <Bookable> — funktionen är plattformens (drawer eller /boka).
+ *   /kontakt  → filens `showKontakt`: faktarutan (Salongen · Kontakt · Öppet) till
+ *               vänster, prosan + sänd-knappen till höger.
+ *
+ * SYNKRONA server-komponenter. Render-on-present: saknas adress/kontakt ritas rutan inte
+ * alls — mallen hittar aldrig på en adress.
  */
-export function LunariaOm({ tenant, content }: ThemePageProps) {
+
+export function LunariaOm({ content, tenant }: ThemePageProps) {
+  const stats = content.stats ?? []
+
   return (
-    <div className={styles.lnPage}>
-      <section className={styles.lnSpread}>
-        <div className={styles.lnSpreadFrame}>
-          <Reveal
-            className={styles.lnSpreadPhoto}
-            style={{ backgroundImage: `url(${content.aboutImage})` }}
-          >
-            <span />
-          </Reveal>
-          <Reveal delay={140} className={styles.lnSpreadCard}>
-            <p className={styles.lnEyebrow}>— Om {tenant.name}</p>
-            <h1 className={styles.lnPageTitle}>{content.aboutTitle}</h1>
-            <p className={styles.lnBody}>{content.aboutCopy}</p>
-            <p className={styles.lnBody}>{content.aboutCopyHome}</p>
-          </Reveal>
+    <section className={styles.lnPage}>
+      <div className={styles.lnAbout}>
+        <div>
+          <p className={styles.lnAboutEyebrow}>{content.teamEyebrow ?? 'Om salongen'}</p>
+          <h1 className={styles.lnAboutTitle}>{content.aboutTitle}</h1>
+          <p className={styles.lnAboutCopy}>{content.aboutCopy}</p>
+          {content.closingLede ? (
+            <p className={styles.lnAboutCopy}>{content.closingLede}</p>
+          ) : null}
         </div>
-      </section>
+        <div className={styles.lnAboutFrame}>
+          <div
+            className={styles.lnAboutPhoto}
+            style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
+            role="img"
+            aria-label={tenant.name}
+          />
+        </div>
+      </div>
 
-      <section className={styles.lnFactBand}>
-        <Reveal>
-          <ul className={styles.lnFactRow}>
-            {content.stats.map(([n, l]) => (
-              <li key={l} className={styles.lnFact}>
-                <span className={styles.lnStatValue}>{n}</span>
-                <span className={styles.lnStatLabel}>{l}</span>
-              </li>
-            ))}
-          </ul>
-        </Reveal>
-      </section>
-
-      <section className={styles.lnQuoteBand}>
-        <Reveal>
-          <p className={styles.lnQuote}>&rdquo;{content.italic}&rdquo;</p>
-        </Reveal>
-      </section>
-    </div>
+      {stats.length > 0 ? (
+        <div className={styles.lnStats}>
+          {stats.map(([value, label]) => (
+            <div key={label} className={styles.lnStat}>
+              <p className={styles.lnStatValue}>{value}</p>
+              <p className={styles.lnStatLabel}>{label}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
   )
 }
 
-export function LunariaTjanster({ tenant, content, services }: ThemePageProps) {
+export function LunariaTjanster({ content, services }: ThemePageProps) {
   return (
-    <div className={styles.lnPage}>
-      <Reveal className={styles.lnPageHead}>
-        <p className={styles.lnEyebrow}>{content.servicesEyebrow}</p>
-        <h1 className={styles.lnPageTitle}>{content.servicesTitle}</h1>
-        <p className={styles.lnHeroLede}>
-          {content.servicesIntro ??
-            `Allt vi gör hos ${tenant.name}. Välj en rad så öppnar vi bokningen.`}
-        </p>
-      </Reveal>
+    <section className={styles.lnPageNarrow}>
+      <h1 className={styles.lnPageTitle}>{content.servicesTitle}</h1>
+      <p className={styles.lnPageLede}>
+        {content.servicesIntro ??
+          'Konsultation för bröllop, större arrangemang eller ett samtal om det ni drömmer om.'}
+      </p>
 
-      {services.length > 0 ? (
-        <div className={styles.lnNarrow}>
-          <div className={styles.lnPriceList}>
-            {services.map((s, i) => (
-              <Reveal key={s.id} delay={Math.min(i, 8) * 50}>
-                <Bookable className={styles.lnPriceRow} label={`Beställ — ${s.name}`}>
-                  <span className={styles.lnPriceNum} aria-hidden="true">
-                    {serviceNum(i)}
-                  </span>
-                  <span className={styles.lnPriceMain}>
-                    <span className={styles.lnPriceName}>{s.name}</span>
-                    <span className={styles.lnPriceDesc}>{serviceDesc(s)}</span>
-                    <span className={styles.lnPriceTime}>{formatDuration(s)}</span>
-                  </span>
-                  <span className={styles.lnPriceValue}>{formatPrice(s)}</span>
-                </Bookable>
-              </Reveal>
+      <div className={styles.lnPanel}>
+        <p className={styles.lnPanelLabel}>{content.servicesEyebrow}</p>
+        {services.length === 0 ? (
+          <p className={styles.lnEmpty}>Salongens ärenden visas snart.</p>
+        ) : (
+          <div className={styles.lnServiceList}>
+            {services.map((s) => (
+              <Bookable key={s.id} className={styles.lnServiceRow} label={`Boka — ${s.name}`}>
+                <span className={styles.lnDiamond} aria-hidden="true" />
+                <span className={styles.lnServiceName}>
+                  {s.name}
+                  <span className={styles.lnServiceDesc}>{serviceDesc(s)}</span>
+                </span>
+                <span className={styles.lnServicePrice}>{formatPrice(s)}</span>
+              </Bookable>
             ))}
           </div>
-          <Reveal className={styles.lnPageFoot}>
-            <BookCta className={styles.lnCta} />
-          </Reveal>
-        </div>
-      ) : (
-        <Reveal className={styles.lnPageFoot}>
-          <p className={styles.lnBody} style={{ margin: '0 auto' }}>
-            Prislistan fylls på. Hör av dig så berättar vi vad vi kan göra för dig.
-          </p>
-          <Link href="/kontakt" className={styles.lnBandCta}>
-            Kontakta oss
-          </Link>
-        </Reveal>
-      )}
-    </div>
+        )}
+      </div>
+    </section>
   )
 }
 
-export function LunariaKontakt({ tenant, content, location, contact }: ThemePageProps) {
+export function LunariaKontakt({ content, location, contact }: ThemePageProps) {
   const hours = location?.hours ?? null
-  const hasContact = !!contact.phone || !!contact.email
-  const bandPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
 
   return (
-    <div className={styles.lnPage}>
-      <section className={styles.lnContactWrap}>
-        <div
-          className={styles.lnContactBand}
-          style={bandPhoto ? { backgroundImage: `url(${bandPhoto})` } : undefined}
-        >
-          <div className={styles.lnContactScrim} />
+    <section className={styles.lnPage}>
+      <h1 className={styles.lnPageTitle}>{content.contactTitle ?? 'Kontakt'}</h1>
+
+      <div className={styles.lnContact}>
+        <div className={styles.lnContactBox}>
+          {location?.address ? (
+            <>
+              <p className={styles.lnFactLabel}>Salongen</p>
+              <p className={styles.lnFactValue}>{location.address}</p>
+            </>
+          ) : null}
+          {contact.email || contact.phone ? (
+            <>
+              <p className={styles.lnFactLabel}>Kontakt</p>
+              <p className={styles.lnFactValue}>
+                {contact.email ? (
+                  <>
+                    <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                    <br />
+                  </>
+                ) : null}
+                {contact.phone ? (
+                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
+                ) : null}
+              </p>
+            </>
+          ) : null}
+          {hours ? (
+            <>
+              <p className={styles.lnFactLabel}>Öppet</p>
+              <p className={styles.lnFactValue}>
+                {hours.map((h) => `${h.day} ${h.time}`).join(' · ')}
+              </p>
+            </>
+          ) : null}
         </div>
 
-        {/* Kortet ligger OVANPÅ bandets nederkant — samma offset-grammatik som heron. */}
-        <Reveal className={styles.lnContactCard}>
-          <p className={styles.lnEyebrow}>{content.contactEyebrow ?? '— Hitta hit'}</p>
-          <h1 className={styles.lnPageTitle}>{content.contactTitle ?? 'Kontakt'}</h1>
-          <p className={styles.lnBody}>
-            Välkommen in till {tenant.name} — eller hör av dig, vi svarar gärna.
-          </p>
-
-          <div className={styles.lnContactGrid}>
-            <div className={styles.lnContactBlock}>
-              <p className={styles.lnContactLabel}>Adress</p>
-              {location?.address ? (
-                <>
-                  <p className={styles.lnContactValue}>{location.address}</p>
-                  <a
-                    className={styles.lnBandCta}
-                    style={{ margin: '20px 0 0' }}
-                    href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(location.address)}`}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
-                    Visa på karta
-                  </a>
-                </>
-              ) : (
-                <p className={styles.lnContactValue}>Visas snart</p>
-              )}
-            </div>
-
-            <div className={styles.lnContactBlock}>
-              <p className={styles.lnContactLabel}>Öppettider</p>
-              {hours ? (
-                <div className={styles.lnHours}>
-                  {hours.map((h) => (
-                    <div key={h.day} className={styles.lnHoursRow}>
-                      <span>{h.day}</span>
-                      <span>{h.time}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.lnContactValue}>Visas snart</p>
-              )}
-            </div>
-
-            {hasContact ? (
-              <div className={styles.lnContactBlock}>
-                <p className={styles.lnContactLabel}>Kontakt</p>
-                {contact.phone ? (
-                  <p className={styles.lnContactValue}>
-                    <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
-                  </p>
-                ) : null}
-                {contact.email ? (
-                  <p className={styles.lnContactValue}>
-                    <a href={`mailto:${contact.email}`}>{contact.email}</a>
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-
-          <div className={styles.lnContactActions}>
-            <BookCta className={styles.lnCta} />
-          </div>
-        </Reveal>
-      </section>
-    </div>
+        <div className={styles.lnContactBox}>
+          <p className={styles.lnContactProse}>{content.closingLede ?? content.aboutCopy}</p>
+          {/* Filens "Sänd"-knapp: mallen bygger inget eget formulär — den lämnar över till
+              kundens riktiga mejladress när den finns, annars till boknings-rälsen. */}
+          {contact.email ? (
+            <a href={`mailto:${contact.email}`} className={styles.lnSolid}>
+              Sänd
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </section>
   )
 }

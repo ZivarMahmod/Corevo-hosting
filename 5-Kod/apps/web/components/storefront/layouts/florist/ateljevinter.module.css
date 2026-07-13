@@ -1,0 +1,738 @@
+/**
+ * ATELJÉ VINTER — galleri-minimal (goal-64, Claude Design-paketet).
+ *
+ * EXAKT KOPIA av "Ateljé Vinter - Galleri Minimal.dc.html". Varje px, hex, letter-spacing
+ * och line-height är LYFT ur filen — inget är re-härlett, inget är "nästan". Mallens hela
+ * grammatik: gemener överallt, tunna hårlinjer (1px #E4E4DE), inga fyllda ytor, inga
+ * rundade hörn (radie 0), Manrope 300 i displayen och 0.2em spärrad mikroversal i etiketter.
+ * Interaktion = understruken hårlinje som mörknar, aldrig en knapp som lyfter.
+ *
+ * Mobil (≤760px) speglar filens egna /* Corevo-tillägg *​/-block: allt kollapsar till en
+ * kolumn, H1/H2 clampas, sektionspadding 20px, tap-targets ≥44px.
+ */
+
+.avRoot {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  /* Gemener ÄR mallen — den skriver aldrig med versal begynnelse. */
+  text-transform: lowercase;
+}
+
+.avWrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.avRule {
+  height: 1px;
+  background: var(--color-line);
+}
+
+/* ─────────────────────────────── mikrotypografi ───────────────────────────── */
+
+.avEyebrow {
+  margin: 0 0 26px;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.26em;
+  color: var(--color-primary);
+}
+
+.avMeta {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--color-fg-2);
+}
+
+.avMetaPrice {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--color-primary);
+}
+
+/* Hårlinje-länken: mallens ENDA interaktionsform (aldrig en fylld knapp). */
+.avUnderline {
+  display: inline-block;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-line);
+  padding: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.avUnderline:hover {
+  color: var(--color-fg);
+  border-color: var(--color-fg);
+}
+
+/* Den fyllda knappen finns BARA där filen har den: kassan, korgen, bokningen. */
+.avSolid {
+  display: inline-block;
+  background: var(--color-fg);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 0;
+  font-weight: 500;
+  font-size: 12.5px;
+  letter-spacing: 0.2em;
+  padding: 16px 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.avSolid:hover {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+.avSolidWide {
+  composes: avSolid;
+  display: block;
+  width: 100%;
+  letter-spacing: 0.24em;
+  padding: 18px 0;
+}
+
+/* ───────────────────────────────── sidhuvud ───────────────────────────────── */
+
+.avNav {
+  background: color-mix(in srgb, var(--color-bg) 94%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-line);
+  gap: 20px;
+  padding: 22px 32px;
+}
+
+.avNavWordmark {
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+
+.avNavLinks {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.avNavLinks a {
+  white-space: nowrap;
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--color-fg-2);
+  transition: color 0.2s;
+}
+
+.avNavLinks a:hover {
+  color: var(--color-fg);
+}
+
+.avNavCluster {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* "korg — 0": den inramade mikroetiketten i filens sidhuvud. */
+.avNavCta {
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--color-fg);
+  background: transparent;
+  border: 1px solid var(--color-fg);
+  border-radius: 0;
+  padding: 8px 14px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.avNavCta:hover {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+
+/* ────────────────────────────────── hero ──────────────────────────────────── */
+
+.avHero {
+  padding: 110px 0 90px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 96px;
+  align-items: center;
+}
+
+.avHeroTitle {
+  margin: 0 0 30px;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 52px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  white-space: pre-line;
+}
+
+.avHeroLede {
+  margin: 0 0 44px;
+  color: var(--color-fg-2);
+  font-size: 15.5px;
+  line-height: 1.9;
+  max-width: 360px;
+}
+
+.avHeroPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  display: block;
+}
+
+.avHeroCaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* ─────────────────────────────── sektionshuvud ────────────────────────────── */
+
+.avSection {
+  padding: 90px 0;
+}
+
+.avSecHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
+  margin-bottom: 56px;
+}
+
+.avSecTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 30px;
+  letter-spacing: 0.01em;
+  color: var(--color-fg);
+}
+
+.avSecCount {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--color-fg-2);
+}
+
+/* ──────────────────────────── verk-rutnätet (hem) ─────────────────────────── */
+
+.avWorkGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 56px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.avWorkImg {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  margin-bottom: 16px;
+  display: block;
+}
+
+.avWorkRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.avWorkName {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--color-fg);
+}
+
+.avWorkPrice {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.avWorkBuy {
+  margin-top: 12px;
+}
+
+/* ────────────────────── ateljéns hållning (statement) ─────────────────────── */
+
+.avStatement {
+  padding: 110px 0;
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.avStatementText {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 26px;
+  line-height: 1.6;
+  color: var(--color-fg);
+}
+
+/* ────────────────────────────── rummen (i–iii) ────────────────────────────── */
+
+.avRooms {
+  padding: 90px 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 56px;
+}
+
+.avRoom {
+  display: block;
+}
+
+.avRoomNum {
+  margin: 0 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--color-fg-2);
+}
+
+.avRoomTitle {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--color-fg);
+}
+
+.avRoomDesc {
+  margin: 0 0 16px;
+  color: var(--color-fg-2);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+/* ───────────────────────────── undersidor (smala) ─────────────────────────── */
+
+.avPage {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 90px 40px 40px;
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  text-transform: lowercase;
+}
+
+.avPageNarrow {
+  composes: avPage;
+  max-width: 640px;
+}
+
+.avPageTitle {
+  margin: 0 0 60px;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: 44px;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+}
+
+.avPageLede {
+  margin: -40px 0 60px;
+  color: var(--color-fg-2);
+  font-size: 14.5px;
+  line-height: 1.9;
+  max-width: 440px;
+}
+
+.avSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+.avSplitPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.avProse p {
+  margin: 0 0 20px;
+  color: var(--color-fg-2);
+  font-size: 14.5px;
+  line-height: 1.95;
+}
+
+.avProse p:last-child {
+  margin-bottom: 0;
+}
+
+/* tjänstelistan — hårlinje-rader, pris till höger (filens prislist-grammatik) */
+.avList {
+  border-top: 1px solid var(--color-line);
+}
+
+.avListRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-line);
+  padding: 26px 2px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.avListRow:hover {
+  background: var(--color-surface);
+}
+
+.avListName {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  color: var(--color-fg);
+}
+
+.avListDesc {
+  display: block;
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  letter-spacing: 0;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+.avListPrice {
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+/* kontaktens faktarad */
+.avFacts {
+  border-top: 1px solid var(--color-line);
+  padding-top: 32px;
+  margin-bottom: 56px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.avFactLabel {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--color-fg-2);
+}
+
+.avFactValue {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.8;
+  color: var(--color-fg);
+}
+
+.avFactValue a {
+  color: var(--color-fg);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.avFactValue a:hover {
+  border-color: var(--color-fg);
+}
+
+/* ───────────────────────────── modul-vyer (butik) ─────────────────────────── */
+
+.avShop {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 90px 40px 40px;
+  text-transform: lowercase;
+}
+
+.avShopGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px 72px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.avShopImg {
+  aspect-ratio: 5 / 6;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+  margin-bottom: 18px;
+  display: block;
+}
+
+.avShopHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+
+.avShopFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.avShopDesc {
+  margin: 0;
+  color: var(--color-fg-2);
+  font-size: 13.5px;
+  line-height: 1.7;
+  max-width: 340px;
+}
+
+.avNotice {
+  margin: 0 0 40px;
+  border-top: 1px solid var(--color-fg);
+  border-bottom: 1px solid var(--color-fg);
+  padding: 18px 0;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--color-fg);
+}
+
+.avEmpty {
+  margin: 0;
+  padding: 70px 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  color: var(--color-fg-2);
+}
+
+/* ───────────────────────── modul-vyer (anteckningar) ──────────────────────── */
+
+.avBlogg {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 90px 40px 40px;
+  text-transform: lowercase;
+}
+
+.avPostList {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.avPostDate {
+  margin: 0 0 12px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--color-primary);
+}
+
+.avPostTitle {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.4;
+  color: var(--color-fg);
+}
+
+.avPostExcerpt {
+  margin: 0 0 16px;
+  color: var(--color-fg-2);
+  font-size: 14.5px;
+  line-height: 1.9;
+}
+
+/* ───────────────────────────────── sidfot ─────────────────────────────────── */
+
+.avFoot {
+  max-width: 1280px;
+  margin: 110px auto 0;
+  padding: 0 40px 40px;
+  text-transform: lowercase;
+}
+
+.avFootRule {
+  height: 1px;
+  background: var(--color-line);
+  margin-bottom: 28px;
+}
+
+.avFootRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.avFootMark {
+  margin: 0;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: 0.22em;
+  color: var(--color-fg);
+}
+
+.avFootNav {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.avFootNav a {
+  white-space: nowrap;
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  color: var(--color-fg-2);
+  transition: color 0.2s;
+}
+
+.avFootNav a:hover {
+  color: var(--color-fg);
+}
+
+.avFootMeta {
+  margin: 0;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--color-accent-soft);
+}
+
+.avSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ───────────────────── mobil — speglar filens egen media query ────────────── */
+
+@media (max-width: 760px) {
+  .avWrap,
+  .avPage,
+  .avPageNarrow,
+  .avShop,
+  .avBlogg,
+  .avFoot {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .avHero,
+  .avWorkGrid,
+  .avRooms,
+  .avShopGrid,
+  .avSplit,
+  .avFacts {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .avHero {
+    padding: 60px 0 50px;
+  }
+
+  .avHeroTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+
+  .avPageTitle,
+  .avSecTitle,
+  .avStatementText {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .avPageLede {
+    margin-top: -30px;
+  }
+
+  .avSection,
+  .avRooms,
+  .avStatement {
+    padding: 50px 0;
+  }
+
+  .avNav {
+    padding: 16px 20px;
+  }
+
+  .avUnderline,
+  .avNavCta,
+  .avSolid,
+  .avListRow {
+    min-height: 44px;
+  }
+
+  .avNavLinks a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .avShopFoot {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}

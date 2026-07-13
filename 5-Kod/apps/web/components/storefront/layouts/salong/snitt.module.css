@@ -1,0 +1,1187 @@
+/**
+ * SNITT — SVART STUDIO (goal-64, Claude Design-paketet).
+ *
+ * EXAKT KOPIA av "Snitt - Svart Studio.dc.html". Varje px, hex, letter-spacing och
+ * line-height är LYFT ur filen — inget är re-härlett, inget är "nästan".
+ *
+ * Mallens grammatik: mörk yta (#141412), Anton i poster-versaler, Work Sans i brödtext,
+ * hårlinjer (1px #2C2C27), radie 0 och EN accent — limen #D6F344.
+ *
+ * LIMEN BÄR ALLTID SVART TEXT. Aldrig tvärtom. Varje lime yta i filen (toppstrip,
+ * CTA-knapp, band, stamkort) sätter color:#141412 = var(--color-bg). Den regeln är
+ * inte kosmetik: lime på mörk text är 12,9:1, mörk lime-text på svart är 1,6:1 och
+ * osynlig. Därför finns ingen klass här som sätter color:var(--color-primary) på en
+ * lime bakgrund.
+ *
+ * Hårlinje-färgen #3A3A33 (knapp- och fältkanter) finns inte som token — den är lyft
+ * verbatim ur filen, precis som allt annat.
+ *
+ * navHeight sätts i snitt.theme.ts ur manifestet, ALDRIG här: .shellMain är en global
+ * klass, och en ren :global()-regel i en CSS Module är inte "pure" → webpack-fel i
+ * produktionsbygget.
+ *
+ * Mobil (≤760px) speglar filens EGET /* Corevo-tillägg *​/-block: grid → 1 kolumn,
+ * H1/H2 clampas, sektionspadding 20px, tap-targets ≥44px.
+ */
+
+.snRoot {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+.snWrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ─────────────────────────────── mikrotypografi ───────────────────────────── */
+
+/* Filens eyebrow: "— Tjänster" — strecket i lime, ordet i fg2. */
+.snEyebrow {
+  margin: 0 0 10px;
+  font-weight: 600;
+  font-size: 12.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+.snDash {
+  color: var(--color-primary);
+}
+
+/* Heroens spärrade kind-rad (0.26em — bredare än sektionernas 0.2em). */
+.snHeroEyebrow {
+  margin: 0 0 34px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+/* Limens punkt efter ordmärket ("Snitt."). */
+.snDot {
+  color: var(--color-primary);
+}
+
+/* ───────────────────────────────── knappar ────────────────────────────────── */
+
+/* Den FYLLDA lime-knappen — svart text, alltid. Hover → benvit yta, svart text kvar. */
+.snBtn {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  background: var(--color-primary);
+  border: none;
+  border-radius: 0;
+  padding: 16px 32px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.snBtn:hover {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+
+/* Den INRAMADE knappen — hårlinje #3A3A33 som tänds lime vid hover. */
+.snBtnGhost {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  background: transparent;
+  border: 1px solid #3a3a33;
+  border-radius: 0;
+  padding: 15px 28px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.snBtnGhost:hover {
+  border-color: var(--color-primary);
+}
+
+/* Textlänken i lime ("Hela prislistan →", "Boka") — mörknar aldrig, den bleknar till fg. */
+.snLink {
+  display: inline-block;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.snLink:hover {
+  color: var(--color-fg);
+}
+
+/* ───────────────────────────────── sidhuvud ───────────────────────────────── */
+
+/* Filens toppstrip: lime remsa över hela bredden, SVART text. */
+.snUtility {
+  background: var(--color-primary);
+  padding: 7px 0;
+  text-align: center;
+}
+
+.snUtilityText {
+  margin: 0;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+}
+
+.snNav {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-line);
+  gap: 24px;
+  padding: 16px 32px;
+}
+
+.snNavWordmark {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.snNavLinks {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.snNavLinks a {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  transition: color 0.2s;
+}
+
+.snNavLinks a:hover {
+  color: var(--color-primary);
+}
+
+.snNavCluster {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Korg-etiketten: inramad, tänds lime vid hover (filens "Korg (0)"). */
+.snNavCart {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  background: transparent;
+  border: 1px solid #3a3a33;
+  border-radius: 0;
+  padding: 9px 14px;
+  transition: border-color 0.2s;
+}
+
+.snNavCart:hover {
+  border-color: var(--color-primary);
+}
+
+/* Huvudets "Boka nu" — lime yta, svart text. */
+.snNavCta {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  background: var(--color-primary);
+  border: none;
+  border-radius: 0;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.snNavCta:hover {
+  background: var(--color-fg);
+  color: var(--color-bg);
+}
+
+/* ────────────────────────────────── hero ──────────────────────────────────── */
+
+.snHero {
+  padding: 64px 0 0;
+}
+
+.snHeroTitle {
+  margin: 0 0 26px;
+  font-family: var(--font-display);
+  font-size: 96px;
+  line-height: 0.96;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  white-space: pre-line;
+}
+
+/* Andra raden i H1 är lime (filens <span style="color:#D6F344">kant.</span>). */
+.snHeroAccent {
+  color: var(--color-primary);
+}
+
+.snHeroFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.snHeroLede {
+  margin: 0;
+  max-width: 440px;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+.snHeroCtas {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Foto-triptyken: 1.2fr | 1fr | 1fr, mittbilden nedskjuten 32px. */
+.snTriptych {
+  margin-top: 48px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 14px;
+}
+
+.snPhotoWide {
+  aspect-ratio: 4 / 3;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.snPhotoTall {
+  aspect-ratio: 3 / 4;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.snPhotoDrop {
+  margin-top: 32px;
+}
+
+/* ───────────────────────────── sektioner (hem) ────────────────────────────── */
+
+.snSection {
+  margin-top: 80px;
+}
+
+/* Prislistan på hemmet är smalare (1000px) än resten av sidan (1240px). */
+.snSectionNarrow {
+  max-width: 1000px;
+  margin: 80px auto 0;
+}
+
+.snSecTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 48px;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+/* Sektionsrubrikernas lime-hälft ("Hantverket, presenterat."). */
+.snSecAccent {
+  color: var(--color-primary);
+}
+
+.snSecLede {
+  margin: 0 0 38px;
+  max-width: 520px;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+/* Rubrik utan lede (Stolarna / Hittar du hit?) — 46px, direkt på rutnätet. */
+.snSecTitleAlt {
+  margin: 0 0 34px;
+  font-family: var(--font-display);
+  font-size: 46px;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+/* ───────────────────────── prislistan (rader + grupper) ───────────────────── */
+
+.snGroup {
+  margin-bottom: 34px;
+}
+
+.snGroupName {
+  margin: 0 0 4px;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 10px;
+}
+
+/* Prisraden ÄR bokningsknappen (<Bookable>) — hela raden klickbar, som i filen. */
+.snRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 22px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-line);
+  padding: 18px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.snRow:hover {
+  background: var(--color-surface);
+}
+
+.snRowMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.snRowName {
+  display: block;
+  margin: 0;
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--color-fg);
+}
+
+.snRowDesc {
+  display: block;
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+
+.snRowTid {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-soft);
+}
+
+.snRowPrice {
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 19px;
+  letter-spacing: 0.02em;
+  color: var(--color-fg);
+  min-width: 88px;
+  text-align: right;
+}
+
+.snRowBook {
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.snRow:hover .snRowBook {
+  color: var(--color-fg);
+}
+
+.snListMore {
+  margin: 6px 0 0;
+}
+
+/* ─────────────────────────── lime CTA-bandet (hem) ────────────────────────── */
+
+.snBand {
+  background: var(--color-primary);
+  padding: 44px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+/* SVART text på limen — undantagslöst. */
+.snBandTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  text-transform: uppercase;
+  color: var(--color-bg);
+}
+
+/* Knappen INNE i lime-bandet är omvänd: svart yta, LIME text (filens enda undantag —
+   och det bryter inte regeln, för här är limen texten och svart är ytan). */
+.snBandCta {
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: var(--color-bg);
+  border: none;
+  border-radius: 0;
+  padding: 16px 34px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.snBandCta:hover {
+  color: var(--color-fg);
+}
+
+/* ───────────────────────────── om studion (hem) ───────────────────────────── */
+
+.snAbout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.snAboutPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.snAboutTitle {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: 46px;
+  line-height: 1.02;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.snAboutBody {
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--color-fg-2);
+}
+
+.snAboutItalic {
+  margin: 0 0 28px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--color-fg-2);
+}
+
+/* 5,0★-blocket (caps.homeStats) — första siffran i lime, resten benvitt. */
+.snStats {
+  display: flex;
+  gap: 36px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.snStatValue {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 38px;
+  color: var(--color-fg);
+}
+
+.snStatFirst {
+  color: var(--color-primary);
+}
+
+.snStatLabel {
+  margin: 4px 0 0;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-soft);
+}
+
+/* ───────────────────────── stolarna (team, OWNER-ONLY) ────────────────────── */
+
+.snCards3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.snCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+}
+
+.snCardPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+
+.snCardBody {
+  padding: 20px 22px 24px;
+}
+
+.snCardName {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.snCardRole {
+  margin: 0 0 12px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.snCardBook {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.snCardBook:hover {
+  color: var(--color-fg);
+}
+
+/* ─────────────────────── plats & öppettider (hem/kontakt) ─────────────────── */
+
+.snFacts {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+}
+
+.snFact {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  padding: 28px;
+}
+
+.snFactLabel {
+  margin: 0 0 10px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.snFactValue {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--color-fg);
+}
+
+.snFactValue a {
+  color: var(--color-fg);
+}
+
+.snFactValue a:hover {
+  color: var(--color-primary);
+}
+
+.snFactMuted {
+  color: var(--color-accent-soft);
+}
+
+/* Filens kart-platta: diagonalstriped yta med monospace-etikett. */
+.snMap {
+  margin-top: 14px;
+  height: 180px;
+  background: repeating-linear-gradient(45deg, #1d1d1a 0 14px, #191916 14px 28px);
+  border: 1px solid var(--color-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.snMapText {
+  margin: 0;
+  font-family: monospace;
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  color: var(--color-accent-soft);
+}
+
+/* ───────────────────────────────── undersidor ─────────────────────────────── */
+
+.snPage {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+  color: var(--color-fg);
+  font-family: var(--font-body);
+}
+
+/* Prislistan (1000px) och Om (1020px) — filens egna bredder, sida för sida. */
+.snPageNarrow {
+  composes: snPage;
+  max-width: 1000px;
+}
+
+.snPageOm {
+  composes: snPage;
+  max-width: 1020px;
+}
+
+.snPageTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 64px;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.snPageTitleAlone {
+  composes: snPageTitle;
+  margin-bottom: 42px;
+}
+
+.snPageLede {
+  margin: 0 0 42px;
+  max-width: 520px;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--color-fg-2);
+}
+
+.snEmpty {
+  margin: 0;
+  padding: 70px 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg-2);
+}
+
+/* Om-sidan: text | foto, sedan tre statistik-plattor. */
+.snOmSplit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+  margin-bottom: 56px;
+}
+
+.snOmTitle {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-size: 54px;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.snOmBody {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+
+.snOmBody:last-child {
+  margin-bottom: 0;
+}
+
+.snOmPhoto {
+  aspect-ratio: 4 / 5;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-surface);
+}
+
+.snStatCards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.snStatCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  padding: 28px;
+}
+
+.snStatCardValue {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 38px;
+  color: var(--color-fg);
+}
+
+.snStatCardLabel {
+  margin: 6px 0 0;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-soft);
+}
+
+/* Kontakt-sidan: faktaplattan (1fr) bredvid prosan (1.3fr). */
+.snKontakt {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.snPanel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  padding: 32px 30px;
+}
+
+.snPanelLabel {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.snPanelValue {
+  margin: 0 0 22px;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--color-fg);
+}
+
+.snPanelValue:last-child {
+  margin-bottom: 0;
+}
+
+.snPanelValue a {
+  color: var(--color-fg);
+}
+
+.snPanelValue a:hover {
+  color: var(--color-primary);
+}
+
+.snProse {
+  margin: 0 0 24px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--color-fg-2);
+}
+
+/* ───────────────────────── modul-vy: HYLLAN (butik) ───────────────────────── */
+
+.snShop {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+  font-family: var(--font-body);
+  color: var(--color-fg);
+}
+
+.snShopGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.snShopImg {
+  display: block;
+  aspect-ratio: 1 / 1;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+
+.snShopHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.snShopName {
+  margin: 0;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--color-fg);
+}
+
+.snShopName a {
+  color: var(--color-fg);
+}
+
+.snShopName a:hover {
+  color: var(--color-primary);
+}
+
+/* Priset i lime — på MÖRK yta, aldrig lime-på-lime. */
+.snShopPrice {
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--color-primary);
+}
+
+.snShopDesc {
+  margin: 6px 0 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-fg-2);
+}
+
+.snNotice {
+  margin: 0 0 34px;
+  border-top: 1px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  padding: 18px 0;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.snShopMore {
+  margin: 34px 0 0;
+}
+
+/* ───────────────────────── modul-vy: JOURNAL (blogg) ──────────────────────── */
+
+.snBlogg {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 56px 32px 0;
+  font-family: var(--font-body);
+  color: var(--color-fg);
+}
+
+.snPostList {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Inlägget: 220px foto | text, hela raden klickbar. */
+.snPost {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 26px;
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  transition: border-color 0.2s;
+}
+
+.snPost:hover {
+  border-color: var(--color-primary);
+}
+
+.snPostPhoto {
+  display: block;
+  aspect-ratio: 4 / 3;
+  background-position: center;
+  background-size: cover;
+  background-color: var(--color-line);
+}
+
+.snPostBody {
+  display: block;
+  padding: 22px 26px 22px 0;
+}
+
+.snPostMeta {
+  display: block;
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.snPostTitle {
+  display: block;
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  color: var(--color-fg);
+}
+
+.snPostExcerpt {
+  display: block;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-fg-2);
+}
+
+.snBloggMore {
+  margin: 26px 0 0;
+}
+
+/* ───────────────────────────────── sidfot ─────────────────────────────────── */
+
+/* Filens sidfot är MÖRKARE än sidan (#0E0E0C) — den enda ytan i mallen som är det. */
+.snFoot {
+  margin-top: 88px;
+  background: #0e0e0c;
+  border-top: 1px solid var(--color-line);
+  padding: 50px 32px;
+  font-family: var(--font-body);
+}
+
+.snFootRow {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.snFootMark {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+}
+
+.snFootTagline {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-accent-soft);
+}
+
+.snFootNav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Sidfotens länkar är inramade etiketter; den FÖRSTA är fylld lime med svart text —
+   precis som filen lyfter "Insidan" ur raden. */
+.snFootNav a {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg);
+  border: 1px solid #3a3a33;
+  padding: 7px 13px;
+  transition: border-color 0.2s;
+}
+
+.snFootNav a:hover {
+  border-color: var(--color-primary);
+}
+
+.snFootNav a:first-child {
+  font-weight: 700;
+  color: var(--color-bg);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  padding: 8px 14px;
+  transition: background 0.2s;
+}
+
+.snFootNav a:first-child:hover {
+  background: var(--color-fg);
+  border-color: var(--color-fg);
+  color: var(--color-bg);
+}
+
+.snFootMeta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-accent-soft);
+}
+
+.snSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ───────────────────── mobil — speglar filens egen media query ────────────── */
+
+@media (max-width: 760px) {
+  .snWrap,
+  .snPage,
+  .snPageNarrow,
+  .snPageOm,
+  .snShop,
+  .snBlogg,
+  .snFoot {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .snTriptych,
+  .snAbout,
+  .snCards3,
+  .snFacts,
+  .snOmSplit,
+  .snStatCards,
+  .snKontakt,
+  .snShopGrid,
+  .snPost {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .snPhotoDrop {
+    margin-top: 0;
+  }
+
+  .snPostBody {
+    padding: 22px 20px;
+  }
+
+  .snHeroTitle,
+  .snPageTitle,
+  .snPageTitleAlone {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
+  }
+
+  .snSecTitle,
+  .snSecTitleAlt,
+  .snAboutTitle,
+  .snOmTitle,
+  .snBandTitle {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  .snHero {
+    padding-top: 40px;
+  }
+
+  .snSection,
+  .snSectionNarrow {
+    margin-top: 50px;
+  }
+
+  .snBand {
+    padding: 28px 24px;
+  }
+
+  .snBtn,
+  .snBtnGhost,
+  .snLink,
+  .snNavCta,
+  .snNavCart,
+  .snBandCta,
+  .snCardBook,
+  .snRow {
+    min-height: 44px;
+  }
+
+  .snNav {
+    padding: 16px 20px;
+  }
+
+  .snNavLinks a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .snRow {
+    flex-wrap: wrap;
+  }
+}

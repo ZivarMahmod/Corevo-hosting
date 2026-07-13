@@ -1,481 +1,380 @@
-/* ═══════════ CALYTRIX KASSA — FLORISTENS ORDERBLOCK ═══════════
-   Mallen äger sidan. Kassan är butikens ordersblock: ett lyft papper på det mörka
-   plommonbordet (samma bord som packlistan i calytrix-cart.module.css). Kvittorader
-   överst, avprickad plocklista, blankettfält med tryckt etikett, och en budbil som
-   kör över submit-knappen när ordern är i hamn.
+/*
+ * CALYTRIX — KASSAN. EXAKT KOPIA av `showKassa` i .dc.html: 1.7fr/1fr, tre vita
+ * stegkort med 1px #a98d97-kant och plommonfärgad serif-siffra, fält med 2px svart
+ * kant på #fbf6f4, och en sticky ordersammanfattning (top: 96px).
+ */
 
-   Uiverse-anatomier lånade (struktur/rörelse, ALDRIG hexar):
-   rad 15416 scen-kortet · rad 15908 blankett-etiketten · rad 5170 plocklist-bocken ·
-   rad 15785 lastbilsknappen. Uttrycket är calytrix tokens, radie 0 överallt.
+.cxCheckout {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 56px 28px 40px;
+}
 
-   KONTRAST (mätt mot mallens egna värden):
-   · vit på plommon #4A0E2E ......... 15.1:1  (bordet)
-   · vit på vinröd #A31449 .......... 7.6:1   (submit-knappen)
-   · vinröd #A31449 på ljust papper . 7.6:1   (kicker/legend/fokus)
-   · fg 72%-mix på papper ........... ~6:1    (dämpade etiketter, jfr kassaskalets
-                                              bevisade 68% = 5.5:1)                  */
+.cxTitle {
+  margin: 0 0 6px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 56px;
+  color: var(--color-fg, #241019);
+}
 
-/* ── BORDET: mörkret bakom dokumentet. Scen-anatomin ur uiverse rad 15416 —
-      dokumentet är hjälten, bordet gör det dramatiskt. ── */
-.table {
-  background: var(--color-primary-d);
-  padding: clamp(1.75rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem);
+.cxLede {
+  margin: 0 0 40px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 15px;
+}
+
+.cxGrid {
   display: grid;
-  justify-items: center;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 40px;
+  align-items: start;
 }
 
-/* ── ORDERBLOCKET: papperet, lätt vridet som lagt på bordet (samma gest som
-      korgens lutade fotoplattor). Vinröd tryckkant överst som på riktiga block. ── */
-.pad {
-  width: 100%;
-  max-width: 640px;
-  background: var(--color-bg);
-  color: var(--color-fg);
-  border-top: 6px solid var(--color-primary);
-  padding: clamp(1.5rem, 4vw, 2.5rem);
-  transform: rotate(-0.4deg);
-  box-shadow: 0 26px 60px -22px rgb(0 0 0 / 60%);
-}
-
-.padHead {
+.cxSteps {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: clamp(1.25rem, 3vw, 2rem);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent);
-  padding-bottom: 12px;
-}
-.padKicker {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-primary); /* vinröd på papper: 7.6:1 */
-}
-.padNo {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-  /* 72% fg-mix ≈ 6:1 — dekorativt ordernummer, ändå läsbart. */
-  color: color-mix(in srgb, var(--color-fg) 72%, var(--color-bg));
+  flex-direction: column;
+  gap: 26px;
 }
 
-/* ── KVITTORADERNA: varorna som handskrivna rader, prickad ledare till priset. ── */
-.rows {
-  list-style: none;
-  margin: 0 0 1.25rem;
-  padding: 0;
-}
-.row {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 9px 0;
-}
-.rowNo {
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--color-fg) 72%, var(--color-bg)); /* ~6:1 */
-}
-.rowName {
-  font-size: 15px;
-  line-height: 1.35;
+/* ── Stegkortet ── */
+.cxStep {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #a98d97);
+  padding: 32px;
+  margin: 0;
   min-width: 0;
 }
-.rowLeader {
-  flex: 1;
-  min-width: 24px;
-  border-bottom: 1px dotted color-mix(in srgb, var(--color-fg) 38%, transparent);
-  transform: translateY(-4px);
-}
-.rowPrice {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  font-size: 15px;
+
+.cxStepHead {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 0 0 22px;
+  padding: 0;
 }
 
-/* ── PLOCKLISTAN AVPRICKAD (uiverse rad 5170 .cir-checks): fyrkantig ruta —
-      calytrix radie = 0 — med bock ritad i ren CSS (rotated L, inga bild-assets).
-      Bocken skalar in vid mount: samma "prickas av"-gest som förlagan. ── */
-.picked {
-  display: grid;
-  gap: 10px;
-  margin: 0 0 1.5rem;
-  padding: 14px 0;
-  border-top: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 22%, transparent);
+.cxStepNo {
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-size: 24px;
+  color: var(--color-primary-ink, #7d1f46);
 }
-.pickedRow {
+
+.cxStepTitle {
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--color-fg, #241019);
+}
+
+/* ── Fälten ── */
+.cxFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.cxField {
+  min-width: 0;
+}
+
+.cxFieldWide {
+  grid-column: span 2;
+}
+
+.cxLabel {
+  display: block;
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  color: var(--color-fg, #241019);
+}
+
+.cxInput,
+.cxTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px solid var(--color-fg, #241019);
+  border-radius: 0;
+  padding: 12px 14px;
+  font-family: var(--font-body, 'Instrument Sans'), system-ui, sans-serif;
+  font-size: 14.5px;
+  background: var(--color-bg, #fbf6f4);
+  color: var(--color-fg, #241019);
+  min-height: 44px;
+}
+
+.cxTextarea {
+  resize: vertical;
+}
+
+.cxInput::placeholder,
+.cxTextarea::placeholder {
+  color: var(--color-line, #a98d97);
+}
+
+.cxInput:focus-visible,
+.cxTextarea:focus-visible {
+  outline: 2px solid var(--color-primary, #7d1f46);
+  outline-offset: 2px;
+}
+
+/* ── Steg 2 & 3: filens val-rader (prick + namn + beskrivning). Den enda raden är
+   butikens FAKTISKA leveranssätt/betalsätt — förvald, aldrig en fejkad lista. ── */
+.cxOption {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  border: 2px solid var(--color-primary, #7d1f46);
+  background: var(--color-bg, #fbf6f4);
+  padding: 16px 18px;
 }
-.pickedBox {
-  position: relative;
-  flex: none;
+
+.cxDot {
   width: 18px;
   height: 18px;
-  background: var(--color-primary); /* vinröd ruta, vit bock: 7.6:1 (dekor ändå) */
-}
-.pickedBox::after {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 2.5px;
-  width: 5px;
-  height: 9px;
-  border-right: 2px solid var(--color-surface, #fff);
-  border-bottom: 2px solid var(--color-surface, #fff);
-  transform: rotate(45deg) scale(1);
-  animation: calytrix-tick 260ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
-}
-@keyframes calytrix-tick {
-  from {
-    opacity: 0;
-    transform: rotate(45deg) scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: rotate(45deg) scale(1);
-  }
-}
-.pickedLabel {
-  font-size: 14px;
-}
-.pickedValue {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  font-size: 14px;
+  border-radius: 999px;
+  border: 2px solid var(--color-primary, #7d1f46);
+  background: var(--color-primary, #7d1f46);
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
-/* ── ATT BETALA: marginalanteckningens stora siffra — full kostnad FÖRE knappen. ── */
-.total {
+.cxOptionBody {
+  flex: 1;
+}
+
+.cxOptionName {
+  display: block;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-fg, #241019);
+}
+
+.cxOptionDesc {
+  display: block;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 13.5px;
+  margin-top: 2px;
+}
+
+/* ── Ordersammanfattningen ── */
+.cxSummary {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-line, #a98d97);
+  padding: 30px;
+  position: sticky;
+  top: 96px;
+}
+
+.cxSummaryTitle {
+  margin: 0 0 20px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--color-fg, #241019);
+}
+
+.cxRows {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cxRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--color-accent-soft, #e8d9de);
+  padding-bottom: 12px;
+}
+
+.cxRowPhoto {
+  width: 48px;
+  height: 60px;
+  flex-shrink: 0;
+  display: block;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: var(--color-accent-soft, #e8d9de);
+}
+
+.cxRowBody {
+  flex: 1;
+}
+
+.cxRowName {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-fg, #241019);
+}
+
+.cxRowQty {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 12.5px;
+}
+
+.cxRowPrice {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-fg, #241019);
+  white-space: nowrap;
+}
+
+.cxSumRow {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 1.75rem;
-}
-.totalLabel {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-primary); /* 7.6:1 på papper */
-}
-.totalValue {
-  font-family: var(--font-display);
-  font-size: clamp(1.7rem, 4vw, 2.3rem);
-  font-variant-numeric: tabular-nums;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-accent-soft, #e8d9de);
+  font-size: 14.5px;
 }
 
-/* ── FEL: vinrött bläck på papperet — aldrig en grå ruta. ── */
-.alert {
-  margin: 0 0 1.25rem;
-  padding: 12px 14px;
-  font-size: 14px;
-  line-height: 1.5;
-  /* vinröd text på 10% vinröd-i-papper: ljus yta, texten själv bär ~7:1. */
-  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg));
-  border-left: 3px solid var(--color-primary);
-  color: color-mix(in srgb, var(--color-primary) 85%, var(--color-fg));
-}
-.alertLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px; /* klickyte-golvet, fast länken ser ut som text */
-  color: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.alertLink:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+.cxSumLabel {
+  color: var(--color-fg-2, #6e4f5c);
 }
 
-/* ── BLANKETTERNA (uiverse rad 15908): etiketten TRYCKT på fältets överkant,
-      färgskiftar vinröd när fältet får fokus. Bara anatomin lånad — Corevo tar
-      inga kortnummer här (betalning vid leverans/upphämtning). ── */
-.form {
-  display: grid;
-  gap: 1.5rem;
-}
-.group {
-  border: 0;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 20px;
-}
-.legend {
-  padding: 0;
-  margin-bottom: 14px;
-  font-size: 12px;
+.cxSumValue {
   font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-primary); /* 7.6:1 på papper */
-}
-.fieldWrap {
-  position: relative;
-}
-.fieldTitle {
-  position: absolute;
-  top: -8px;
-  left: 10px;
-  padding: 0 7px;
-  background: var(--color-bg); /* "skär" fältkanten — trycket sitter PÅ linjen */
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: color-mix(in srgb, var(--color-fg) 72%, var(--color-bg)); /* ~6:1 */
-  transition: color 160ms ease;
-  z-index: 1;
-}
-.fieldWrap:focus-within .fieldTitle {
-  color: var(--color-primary); /* fokus-skiftet ur förlagan, i mallens vinröd */
-}
-.field {
-  width: 100%;
-  height: 52px; /* träffyta > 44px-golvet */
-  padding: 0 14px;
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--color-fg) 35%, transparent);
-  border-radius: 0; /* calytrix är RAK */
-  color: var(--color-fg);
-  font: inherit;
-  font-size: 15px;
-  caret-color: var(--color-primary);
-  transition: border-color 160ms ease;
-}
-.field:hover {
-  border-color: color-mix(in srgb, var(--color-fg) 55%, transparent);
-}
-.field:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  /* dubblad kant i stället för glöd — rak, som ett hårdare penndrag */
-  box-shadow: inset 0 0 0 1px var(--color-primary);
-}
-.field:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
-/* ── SUBMIT = BUDBILENS RESA (uiverse rad 15785 .order-wrapper, komprimerad
-      10s → ~2s). Vila: plommonknapp. data-sent: texten viker undan, vägen och
-      bilen kör förbi, "Beställningen är på väg" + bock ritas in. ── */
-.submit {
-  position: relative;
-  overflow: hidden;
-  min-height: 56px;
-  border: 0;
-  border-radius: 0;
-  background: var(--color-primary-d); /* vit text på plommon: 15.1:1 */
-  color: var(--color-surface, #fff);
-  font: inherit;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  transition: background 180ms ease, transform 180ms ease;
-}
-.submit:hover:not(:disabled) {
-  background: var(--color-primary); /* vit på vinröd: 7.6:1 */
-  transform: translateY(-2px);
-}
-.submit:disabled {
-  cursor: default;
-}
-.submit:disabled:not([data-sent]) {
-  opacity: 0.75;
-}
-.submit:focus-visible {
-  outline: 2px solid var(--color-fg);
-  outline-offset: 3px;
-}
-.submitLabel {
-  display: inline-block;
-  transition: opacity 150ms ease, transform 150ms ease;
-}
-.submit[data-sent] .submitLabel {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-/* Vägen: prickad linje som rullar under bilen — bara under resan. */
-.ride {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-}
-.submit[data-sent] .ride {
-  opacity: 1;
-}
-.road {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 0;
-  border-top: 2px dashed color-mix(in srgb, var(--color-surface, #fff) 45%, transparent);
-}
-.submit[data-sent] .road {
-  animation: calytrix-road 1.6s linear both;
-}
-@keyframes calytrix-road {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-260px);
-  }
-}
-.truck {
-  position: absolute;
-  left: -64px;
-  top: 50%;
-  transform: translateY(-58%);
-  color: var(--color-surface, #fff);
-}
-.submit[data-sent] .truck {
-  /* Resan: in från vänster, saktar in på mitten (lasten på), gasar ut höger —
-     samma dramaturgi som förlagan, komprimerad. */
-  animation: calytrix-drive 1.6s cubic-bezier(0.45, 0, 0.3, 1) both;
-}
-@keyframes calytrix-drive {
-  0% {
-    left: -64px;
-  }
-  40%,
-  52% {
-    left: calc(50% - 26px);
-  }
-  100% {
-    left: calc(100% + 16px);
-  }
-}
-
-/* Kvittensen: texten + bocken ritas in när bilen lämnat bild. */
-.sentMsg {
-  position: absolute;
-  inset: 0;
+.cxSumTotal {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  opacity: 0;
-  pointer-events: none;
-}
-.submit[data-sent] .sentMsg {
-  animation: calytrix-arrive 300ms ease 1.6s both;
-}
-@keyframes calytrix-arrive {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.sentCheck polyline {
-  stroke-dasharray: 16;
-  stroke-dashoffset: 16;
-}
-.submit[data-sent] .sentCheck polyline {
-  animation: calytrix-check 300ms ease 1.75s both;
-}
-@keyframes calytrix-check {
-  to {
-    stroke-dashoffset: 0;
-  }
+  justify-content: space-between;
+  padding: 14px 0 20px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-fg, #241019);
 }
 
-.trust {
-  margin: 0;
-  font-size: 13px;
-  text-align: center;
-  color: color-mix(in srgb, var(--color-fg) 72%, var(--color-bg)); /* ~6:1 */
+.cxSumTotalValue {
+  color: var(--color-primary-ink, #7d1f46);
 }
 
-/* ── TOMT BLOCK ── */
-.padEmpty {
+.cxCta {
+  display: block;
+  width: 100%;
   text-align: center;
-  padding: clamp(2.5rem, 6vw, 4rem) 1.5rem;
+  background: var(--color-primary, #7d1f46);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 16px 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 0;
+  min-height: 44px;
+  box-sizing: border-box;
 }
-.emptyKicker {
-  margin: 0 0 6px;
-  font-family: var(--font-display);
-  font-size: clamp(1.4rem, 3vw, 1.9rem);
+
+.cxCta:hover:not(:disabled) {
+  background: var(--color-primary-d, #4a0e2e);
+  color: #fff;
 }
-.emptyText {
-  margin: 0 0 22px;
-  color: color-mix(in srgb, var(--color-fg) 72%, var(--color-bg)); /* ~6:1 */
+
+.cxCta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
-.emptyCta {
+
+.cxFine {
+  margin: 14px 0 0;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 12px;
+  text-align: center;
+}
+
+.cxAlert {
+  margin: 0 0 16px;
+  background: var(--color-accent-soft, #e8d9de);
+  border-left: 3px solid var(--color-primary, #7d1f46);
+  padding: 12px 14px;
+  color: var(--color-fg, #241019);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cxAlertLink {
+  color: var(--color-primary-ink, #7d1f46);
+  text-decoration: underline;
+}
+
+/* ── Tomt läge ── */
+.cxEmpty {
+  border: 1px solid var(--color-line, #a98d97);
+  background: var(--color-surface, #ffffff);
+  padding: 72px 40px;
+  text-align: center;
+  margin-top: 34px;
+}
+
+.cxEmptyTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-display, 'Instrument Serif'), Georgia, serif;
+  font-size: 28px;
+  color: var(--color-fg, #241019);
+}
+
+.cxEmptyText {
+  margin: 0 0 28px;
+  color: var(--color-fg-2, #6e4f5c);
+  font-size: 15.5px;
+}
+
+.cxBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 50px; /* > 44px-golvet */
-  padding: 0 32px;
-  background: var(--color-primary-d); /* vit på plommon: 15.1:1 */
-  color: var(--color-surface, #fff);
-  font-weight: 600;
+  background: var(--color-primary, #7d1f46);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 15px 34px;
+  border-radius: 0;
   text-decoration: none;
-  transition: background 180ms ease, transform 180ms ease;
-}
-.emptyCta:hover {
-  background: var(--color-primary);
-  transform: translateY(-2px);
-}
-.emptyCta:focus-visible {
-  outline: 2px solid var(--color-fg);
-  outline-offset: 3px;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
-@media (max-width: 640px) {
-  .pad {
-    transform: none; /* på smal skärm får vridningen papperet att nudda kanten */
-  }
-  .rowNo {
-    display: none;
-  }
+.cxBtn:hover {
+  background: var(--color-primary-d, #4a0e2e);
+  color: #fff;
 }
 
-/* Reduced motion: JS hoppar redan över bilresan (redirect direkt), men om sent
-   ändå skulle hinna renderas: inga animationer, kvittensen visas statiskt. */
-@media (prefers-reduced-motion: reduce) {
-  .pickedBox::after,
-  .submitLabel,
-  .field,
-  .fieldTitle,
-  .submit,
-  .emptyCta {
-    animation: none;
-    transition: none;
+@media (max-width: 760px) {
+  .cxGrid,
+  .cxFields {
+    grid-template-columns: 1fr;
   }
-  .submit:hover:not(:disabled),
-  .emptyCta:hover {
-    transform: none;
+
+  .cxFieldWide {
+    grid-column: span 1;
   }
-  .submit[data-sent] .road,
-  .submit[data-sent] .truck {
-    animation: none;
-    opacity: 0;
+
+  .cxTitle {
+    font-size: clamp(32px, 9vw, 46px);
+    line-height: 1.1;
   }
-  .submit[data-sent] .sentMsg {
-    animation: none;
-    opacity: 1;
+
+  .cxSummary {
+    position: static;
   }
-  .submit[data-sent] .sentCheck polyline {
-    animation: none;
-    stroke-dashoffset: 0;
+
+  .cxCheckout {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .cxStep {
+    padding: 24px 20px;
   }
 }
