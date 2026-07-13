@@ -82,6 +82,13 @@ export function StorefrontPreview({
       name: s.name,
       description: null,
       category: null,
+      // Sälj-fälten (0046) — previewen visar ingen kampanj: operatören skriver bara
+      // namn + pris i studion, och en påhittad badge/rea här hade lovat något
+      // tenanten aldrig satt.
+      badge: null,
+      image_url: null,
+      sale_price_cents: null,
+      sort_order: i,
       duration_min: 30,
       price_cents: s.price_cents,
       active: true,

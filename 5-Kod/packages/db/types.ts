@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       audit_log: {
@@ -258,6 +283,50 @@ export type Database = {
           },
         ]
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          status: string
+          subject: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          status?: string
+          subject?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_slots: {
         Row: {
           asset_id: string | null
@@ -451,50 +520,6 @@ export type Database = {
           },
         ]
       }
-      contact_messages: {
-        Row: {
-          created_at: string
-          email: string | null
-          id: string
-          message: string
-          name: string
-          phone: string | null
-          status: string
-          subject: string | null
-          tenant_id: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          message: string
-          name: string
-          phone?: string | null
-          status?: string
-          subject?: string | null
-          tenant_id: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          message?: string
-          name?: string
-          phone?: string | null
-          status?: string
-          subject?: string | null
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contact_messages_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       customers: {
         Row: {
           auth_user_id: string | null
@@ -561,6 +586,124 @@ export type Database = {
           },
         ]
       }
+      event_registrations: {
+        Row: {
+          created_at: string
+          email: string | null
+          event_id: string
+          id: string
+          message: string | null
+          name: string
+          order_item_id: string | null
+          party_size: number
+          phone: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event_id: string
+          id?: string
+          message?: string | null
+          name: string
+          order_item_id?: string | null
+          party_size?: number
+          phone?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event_id?: string
+          id?: string
+          message?: string | null
+          name?: string
+          order_item_id?: string | null
+          party_size?: number
+          phone?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gallery_items: {
+        Row: {
+          active: boolean
+          aspect_ratio: string | null
+          asset_id: string | null
+          caption: string | null
+          created_at: string
+          id: string
+          sort_order: number
+          tag: string | null
+          tenant_id: string
+          year_label: string | null
+        }
+        Insert: {
+          active?: boolean
+          aspect_ratio?: string | null
+          asset_id?: string | null
+          caption?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          tag?: string | null
+          tenant_id: string
+          year_label?: string | null
+        }
+        Update: {
+          active?: boolean
+          aspect_ratio?: string | null
+          asset_id?: string | null
+          caption?: string | null
+          created_at?: string
+          id?: string
+          sort_order?: number
+          tag?: string | null
+          tenant_id?: string
+          year_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gallery_items_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gallery_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gift_cards: {
         Row: {
           balance_cents: number
@@ -613,9 +756,9 @@ export type Database = {
           id?: string
           initial_amount_cents?: number
           issued_at?: string | null
+          message?: string | null
           order_id?: string | null
           order_item_id?: string | null
-          message?: string | null
           recipient_email?: string | null
           recipient_name?: string | null
           status?: string
@@ -623,6 +766,20 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "gift_cards_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "shop_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_cards_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_order_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gift_cards_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -783,60 +940,6 @@ export type Database = {
           },
         ]
       }
-      gallery_items: {
-        Row: {
-          active: boolean
-          asset_id: string | null
-          aspect_ratio: string | null
-          caption: string | null
-          created_at: string
-          id: string
-          sort_order: number
-          tag: string | null
-          tenant_id: string
-          year_label: string | null
-        }
-        Insert: {
-          active?: boolean
-          asset_id?: string | null
-          aspect_ratio?: string | null
-          caption?: string | null
-          created_at?: string
-          id?: string
-          sort_order?: number
-          tag?: string | null
-          tenant_id: string
-          year_label?: string | null
-        }
-        Update: {
-          active?: boolean
-          asset_id?: string | null
-          aspect_ratio?: string | null
-          caption?: string | null
-          created_at?: string
-          id?: string
-          sort_order?: number
-          tag?: string | null
-          tenant_id?: string
-          year_label?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gallery_items_asset_id_fkey"
-            columns: ["asset_id"]
-            isOneToOne: false
-            referencedRelation: "media_assets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gallery_items_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       loyalty_plans: {
         Row: {
           active: boolean
@@ -877,53 +980,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "loyalty_plans_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      shop_shipping_options: {
-        Row: {
-          active: boolean
-          cost_cents: number
-          created_at: string
-          description: string | null
-          id: string
-          key: string
-          name: string
-          sort_order: number
-          tenant_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          active?: boolean
-          cost_cents?: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          key: string
-          name: string
-          sort_order?: number
-          tenant_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          active?: boolean
-          cost_cents?: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          key?: string
-          name?: string
-          sort_order?: number
-          tenant_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shop_shipping_options_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1022,116 +1078,6 @@ export type Database = {
           variant_schema?: Json
         }
         Relationships: []
-      }
-      event_registrations: {
-        Row: {
-          created_at: string
-          email: string | null
-          event_id: string
-          id: string
-          message: string | null
-          name: string
-          order_item_id: string | null
-          party_size: number
-          phone: string | null
-          status: string
-          tenant_id: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          event_id: string
-          id?: string
-          message?: string | null
-          name: string
-          order_item_id?: string | null
-          party_size?: number
-          phone?: string | null
-          status?: string
-          tenant_id: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          event_id?: string
-          id?: string
-          message?: string | null
-          name?: string
-          order_item_id?: string | null
-          party_size?: number
-          phone?: string | null
-          status?: string
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_registrations_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "tenant_events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_registrations_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tenant_events: {
-        Row: {
-          capacity: number
-          created_at: string
-          description: string | null
-          duration_min: number
-          id: string
-          price_cents: number
-          reserved_qty: number
-          starts_at: string
-          status: string
-          tenant_id: string
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          capacity: number
-          created_at?: string
-          description?: string | null
-          duration_min?: number
-          id?: string
-          price_cents?: number
-          reserved_qty?: number
-          starts_at: string
-          status?: string
-          tenant_id: string
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          capacity?: number
-          created_at?: string
-          description?: string | null
-          duration_min?: number
-          id?: string
-          price_cents?: number
-          reserved_qty?: number
-          starts_at?: string
-          status?: string
-          tenant_id?: string
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tenant_events_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       offert_requests: {
         Row: {
@@ -1394,46 +1340,58 @@ export type Database = {
       services: {
         Row: {
           active: boolean
+          badge: string | null
           buffer_min: number | null
           category: string | null
           created_at: string
           description: string | null
           duration_min: number
           id: string
+          image_url: string | null
           location_id: string | null
           name: string
           price_cents: number
+          sale_price_cents: number | null
           slot_step_min: number | null
+          sort_order: number
           tenant_id: string
           updated_at: string | null
         }
         Insert: {
           active?: boolean
+          badge?: string | null
           buffer_min?: number | null
           category?: string | null
           created_at?: string
           description?: string | null
           duration_min: number
           id?: string
+          image_url?: string | null
           location_id?: string | null
           name: string
           price_cents?: number
+          sale_price_cents?: number | null
           slot_step_min?: number | null
+          sort_order?: number
           tenant_id: string
           updated_at?: string | null
         }
         Update: {
           active?: boolean
+          badge?: string | null
           buffer_min?: number | null
           category?: string | null
           created_at?: string
           description?: string | null
           duration_min?: number
           id?: string
+          image_url?: string | null
           location_id?: string | null
           name?: string
           price_cents?: number
+          sale_price_cents?: number | null
           slot_step_min?: number | null
+          sort_order?: number
           tenant_id?: string
           updated_at?: string | null
         }
@@ -1449,6 +1407,29 @@ export type Database = {
             foreignKeyName: "services_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_order_counters: {
+        Row: {
+          next_no: number
+          tenant_id: string
+        }
+        Insert: {
+          next_no?: number
+          tenant_id: string
+        }
+        Update: {
+          next_no?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_order_counters_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -1519,6 +1500,27 @@ export type Database = {
           variant_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "shop_order_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_items_event_registration_id_fkey"
+            columns: ["event_registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_order_items_gift_card_id_fkey"
+            columns: ["gift_card_id"]
+            isOneToOne: false
+            referencedRelation: "gift_cards"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shop_order_items_order_id_fkey"
             columns: ["order_id"]
@@ -1662,6 +1664,13 @@ export type Database = {
             columns: ["pickup_location_id"]
             isOneToOne: false
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_orders_shipping_option_id_fkey"
+            columns: ["shipping_option_id"]
+            isOneToOne: false
+            referencedRelation: "shop_shipping_options"
             referencedColumns: ["id"]
           },
           {
@@ -1821,6 +1830,53 @@ export type Database = {
           },
         ]
       }
+      shop_shipping_options: {
+        Row: {
+          active: boolean
+          cost_cents: number
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          sort_order: number
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          cost_cents?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          sort_order?: number
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          cost_cents?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          sort_order?: number
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_shipping_options_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_content_vertical_defaults: {
         Row: {
           created_at: string
@@ -1861,52 +1917,52 @@ export type Database = {
       }
       staff: {
         Row: {
-          avatar_url: string | null
-          show_on_site: boolean
-          short_name: string | null
-          specialties: string | null
-          bio: string | null
           active: boolean
+          avatar_url: string | null
+          bio: string | null
           buffer_min: number | null
           created_at: string
           id: string
           location_id: string | null
           profile_id: string | null
+          short_name: string | null
+          show_on_site: boolean
           slot_step_min: number | null
+          specialties: string | null
           tenant_id: string
           title: string | null
           updated_at: string | null
         }
         Insert: {
-          avatar_url?: string | null
-          show_on_site?: boolean
-          short_name?: string | null
-          specialties?: string | null
-          bio?: string | null
           active?: boolean
+          avatar_url?: string | null
+          bio?: string | null
           buffer_min?: number | null
           created_at?: string
           id?: string
           location_id?: string | null
           profile_id?: string | null
+          short_name?: string | null
+          show_on_site?: boolean
           slot_step_min?: number | null
+          specialties?: string | null
           tenant_id: string
           title?: string | null
           updated_at?: string | null
         }
         Update: {
-          avatar_url?: string | null
-          show_on_site?: boolean
-          short_name?: string | null
-          specialties?: string | null
-          bio?: string | null
           active?: boolean
+          avatar_url?: string | null
+          bio?: string | null
           buffer_min?: number | null
           created_at?: string
           id?: string
           location_id?: string | null
           profile_id?: string | null
+          short_name?: string | null
+          show_on_site?: boolean
           slot_step_min?: number | null
+          specialties?: string | null
           tenant_id?: string
           title?: string | null
           updated_at?: string | null
@@ -2098,6 +2154,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tenant_domains_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_events: {
+        Row: {
+          capacity: number
+          created_at: string
+          description: string | null
+          duration_min: number
+          id: string
+          price_cents: number
+          reserved_qty: number
+          starts_at: string
+          status: string
+          tenant_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          capacity: number
+          created_at?: string
+          description?: string | null
+          duration_min?: number
+          id?: string
+          price_cents?: number
+          reserved_qty?: number
+          starts_at: string
+          status?: string
+          tenant_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          capacity?: number
+          created_at?: string
+          description?: string | null
+          duration_min?: number
+          id?: string
+          price_cents?: number
+          reserved_qty?: number
+          starts_at?: string
+          status?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_events_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2529,6 +2638,10 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      _generate_gift_code: {
+        Args: { p_prefix?: string; p_tenant: string }
+        Returns: string
+      }
       check_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_secs: number }
         Returns: boolean
@@ -2541,23 +2654,16 @@ export type Database = {
           p_guest_phone?: string
           p_note?: string
           p_order_id: string
+          p_payment_method?: string
           p_pickup_location?: string
           p_ship_address?: string
+          p_shipping_option?: string
           p_token: string
         }
         Returns: {
           order_id: string
           requires_payment: boolean
         }[]
-      }
-      join_loyalty_club: {
-        Args: {
-          p_email: string
-          p_name?: string
-          p_plan?: string
-          p_tenant_slug: string
-        }
-        Returns: string
       }
       create_public_booking: {
         Args: {
@@ -2580,6 +2686,7 @@ export type Database = {
         Args: { p_email: string; p_phone: string; p_tenant: string }
         Returns: string
       }
+      event_seats_left: { Args: { p_event: string }; Returns: number }
       expire_abandoned_pending_bookings: {
         Args: { p_ttl_min?: number }
         Returns: number
@@ -2630,6 +2737,15 @@ export type Database = {
       get_public_shop_order: {
         Args: { p_id: string; p_token: string }
         Returns: Json
+      }
+      join_loyalty_club: {
+        Args: {
+          p_email: string
+          p_name?: string
+          p_plan?: string
+          p_tenant_slug: string
+        }
+        Returns: string
       }
       mark_shop_order_paid: { Args: { p_order_id: string }; Returns: undefined }
       prune_expired_shop_reserves: { Args: never; Returns: number }
@@ -2781,6 +2897,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
