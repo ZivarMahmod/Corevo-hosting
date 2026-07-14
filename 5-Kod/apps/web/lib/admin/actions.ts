@@ -11,7 +11,13 @@ import { resolveRoleMatrix } from '@/lib/platform/roles-permissions'
 import { canWrite } from '@/lib/platform/catalog-shared'
 import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { refundBookingPayment } from '@/lib/stripe/refund'
-import { BOOKING_STATUSES, ALLOWED_FROM, type BookingStatus } from './format'
+import {
+  BOOKING_STATUSES,
+  ALLOWED_FROM,
+  restoreBlockedByRefund,
+  cancellationTrace,
+  type BookingStatus,
+} from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
@@ -1376,6 +1382,61 @@ export async function setCustomerPrivacy(_p: ActionState, fd: FormData): Promise
   return { success: 'Visningsnamn uppdaterat.' }
 }
 
+/** Dölj/visa kund (B-25 soft delete). Kunden försvinner ur listor och sök men raden
+ *  och HELA bokningshistoriken finns kvar — och kan visas igen med ett klick. Det är
+ *  INTE GDPR-radering (den vägen är status='anonymized' och är enkelriktad). */
+export async function setCustomerHidden(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const customerId = String(fd.get('customer_id') ?? '')
+  const hide = String(fd.get('hide') ?? '') === '1'
+  if (!customerId) return { error: 'Saknar kund.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('customers')
+    .update({ hidden_at: hide ? new Date().toISOString() : null })
+    .eq('id', customerId)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidatePath('/admin/kunder')
+  revalidatePath(`/admin/kunder/${customerId}`)
+  return {
+    success: hide
+      ? 'Kunden är dold — historiken finns kvar, och kunden kan visas igen härifrån.'
+      : 'Kunden syns igen i listor och sök.',
+  }
+}
+
+/** Toggle: får kunden boka SJÄLV via sajten/kundkontot? Av = salongen bokar åt hen
+ *  (telefonen fungerar alltid, och ägarens egen kalenderbokning påverkas aldrig).
+ *  Används för kunder som upprepat uteblir — utan att behöva dölja eller radera dem. */
+export async function setCustomerSelfBook(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const customerId = String(fd.get('customer_id') ?? '')
+  const allow = String(fd.get('allow') ?? '') === '1'
+  if (!customerId) return { error: 'Saknar kund.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('customers')
+    .update({ self_book: allow })
+    .eq('id', customerId)
+    .eq('tenant_id', ctx.tenant.id)
+  if (error) return { error: GENERIC }
+
+  revalidatePath(`/admin/kunder/${customerId}`)
+  return {
+    success: allow
+      ? 'Kunden kan boka själv igen.'
+      : 'Onlinebokning avstängd för kunden — ni bokar åt hen i kalendern.',
+  }
+}
+
 /**
  * Rättar en kunds kontakt-PII (telefon + e-post) från kundkortet — front-desk
  * måste kunna fixa en feltypad siffra utan att be kunden boka om.
@@ -1490,7 +1551,7 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
   // Ångra en avbokning (B-24). PENGARNA styr, inte klicket: har betalningen
   // återbetalats är den bokningen slut — att väcka den skulle säga "betald" om en
   // tid kunden fått pengarna tillbaka för. ALLOWED_FROM kan inte se pengar, så
-  // vakten sitter här. Frisören får i stället boka en ny tid, med en ny betalning.
+  // vakten sitter här (regeln själv: restoreBlockedByRefund, unit-låst i format.test).
   if (current.status === 'cancelled') {
     const { data: pay } = await supabase
       .from('payments')
@@ -1498,18 +1559,12 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
       .eq('booking_id', bookingId)
       .eq('tenant_id', ctx.tenant.id)
       .maybeSingle()
-    if (pay?.status === 'refunded')
+    if (restoreBlockedByRefund(current.status, pay?.status))
       return { error: 'Bokningen är återbetald och kan inte återställas. Boka en ny tid.' }
   }
 
-  // Avbokningsspåret: vem och när. Sätts vid avbokning, NOLLSTÄLLS vid återställning
-  // — annars ligger bokningen kvar i ångraloggen fast den är aktiv igen.
-  const trace =
-    status === 'cancelled'
-      ? { cancelled_at: new Date().toISOString(), cancelled_by: 'business' }
-      : current.status === 'cancelled'
-        ? { cancelled_at: null, cancelled_by: null }
-        : {}
+  // Avbokningsspåret: vem och när (cancellationTrace, unit-låst i format.test).
+  const trace = cancellationTrace(current.status, status)
 
   // Gate the write on the current status: .in('status', allowedFrom) means the
   // UPDATE only matches when the transition is permitted. Zero rows back ⇒ the

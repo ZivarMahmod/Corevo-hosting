@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
+import { addDays as addDaysStr } from '@/lib/admin/dates'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { Button, Icon, Modal, useToast } from '@/components/portal/ui'
 import {
@@ -56,6 +57,9 @@ export type CalendarBlock = {
   startTs: string
   endTs: string
   reason: string
+  /** Satt när blockeringen ingår i en återkommande serie — då erbjuder drawern
+   *  "endast denna / denna och framåt" i stället för en enkel borttagning. */
+  seriesId: string | null
 }
 
 export type CalendarView = 'dag' | 'vecka' | 'manad'
@@ -250,22 +254,36 @@ export function CalendarBoard({
     })
   }
 
-  // Navigering bor i URL:en. Vy och datum är delbara och bakåtknappen fungerar.
-  const go = (next: { vy?: CalendarView; datum?: string }) => {
+  // Navigering bor i URL:en. Vy, datum och resursfilter är delbara och bakåtknappen
+  // fungerar. resurs: '' = alla (parametern tas bort).
+  const go = (next: { vy?: CalendarView; datum?: string; resurs?: string }) => {
     const q = new URLSearchParams(params.toString())
     if (next.vy) q.set('vy', next.vy)
     if (next.datum) q.set('datum', next.datum)
+    if (next.resurs !== undefined) {
+      if (next.resurs) q.set('resurs', next.resurs)
+      else q.delete('resurs')
+    }
     q.delete('open')
     router.push(`/admin/bokningar?${q.toString()}`)
   }
 
+  // Resursfilter (B-06): fokusera EN person. Filtreringen sker här — samma data,
+  // smalare blick — så filtret följer med gratis mellan dag/vecka/månad. Ett påhittat
+  // ?resurs= som inte finns i rostern ignoreras tyst (= alla).
+  const resurs = params.get('resurs') ?? ''
+  const resursValid = staff.some((s) => s.id === resurs)
+  const vStaff = resursValid ? staff.filter((s) => s.id === resurs) : staff
+  const vBookings = resursValid ? bookings.filter((b) => b.staffId === resurs) : bookings
+  const vBlocks = resursValid ? blocks.filter((b) => b.staffId === resurs) : blocks
+
   // Arbetsdagens fönster = union av resursernas arbetstider. Tom dag (ingen arbetar)
   // faller tillbaka på 08–18 så rutnätet aldrig kollapsar till en tom remsa.
   const [dayStart, dayEnd] = useMemo(() => {
-    const starts = staff.filter((s) => s.start).map((s) => toMin(s.start!))
-    const ends = staff.filter((s) => s.end).map((s) => toMin(s.end!))
+    const starts = vStaff.filter((s) => s.start).map((s) => toMin(s.start!))
+    const ends = vStaff.filter((s) => s.end).map((s) => toMin(s.end!))
     // Bokningar utanför arbetstid (t.ex. inlagda före ett schemabyte) måste ändå SYNAS.
-    for (const b of bookings) {
+    for (const b of vBookings) {
       starts.push(minutesInTz(b.startTs, tz))
       ends.push(minutesInTz(b.endTs, tz))
     }
@@ -273,7 +291,7 @@ export function CalendarBoard({
     const lo = Math.floor(Math.min(...starts) / 60) * 60
     const hi = Math.ceil(Math.max(...ends) / 60) * 60
     return [lo, Math.max(hi, lo + 60)]
-  }, [staff, bookings, tz])
+  }, [vStaff, vBookings, tz])
 
   const hours = useMemo(() => {
     const out: number[] = []
@@ -357,12 +375,43 @@ export function CalendarBoard({
           >
             <Icon name="chevronRight" size={16} />
           </button>
+          {view !== 'manad' && (
+            // Ombokningshoppet (B-06): "kom tillbaka om en månad" är frisörens
+            // vanligaste framåtblick. Ett klick, samma veckodag fyra veckor fram.
+            <button
+              type="button"
+              className={styles.todayBtn}
+              onClick={() => go({ datum: addDaysStr(date, 28) })}
+              title="Fyra veckor fram — samma veckodag"
+              aria-label="Hoppa fyra veckor fram"
+            >
+              +4 v
+            </button>
+          )}
           <h2 className={styles.periodLabel}>
             {view === 'manad' ? monthLabel : dayLabelLong}
           </h2>
         </div>
 
         <div className={styles.toolbarRight}>
+          {/* Resursfilter (B-06) — bara när det finns någon att filtrera på. Native
+              <select>: telefonens inbyggda väljare slår allt vi kan bygga. */}
+          {staff.length > 1 && (
+            <select
+              className={styles.resSelect}
+              value={resursValid ? resurs : ''}
+              onChange={(e) => go({ resurs: e.target.value })}
+              aria-label={`Visa en ${staffNoun.toLowerCase()}`}
+            >
+              <option value="">Alla</option>
+              {staff.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
+
           {/* Sök — "när kommer Anna?" ska inte kräva att man bläddrar vecka för vecka. */}
           <CalendarSearch tz={tz} />
 
@@ -420,9 +469,9 @@ export function CalendarBoard({
       <div className={styles.scroll}>
         {view === 'dag' && (
           <DayGrid
-            bookings={bookings}
-            blocks={blocks}
-            staff={staff}
+            bookings={vBookings}
+            blocks={vBlocks}
+            staff={vStaff}
             tz={tz}
             date={date}
             today={today}
@@ -439,7 +488,7 @@ export function CalendarBoard({
         )}
         {view === 'vecka' && (
           <WeekGrid
-            bookings={bookings}
+            bookings={vBookings}
             tz={tz}
             date={date}
             today={today}
@@ -452,7 +501,7 @@ export function CalendarBoard({
         )}
         {view === 'manad' && (
           <MonthGrid
-            bookings={bookings}
+            bookings={vBookings}
             tz={tz}
             date={date}
             today={today}

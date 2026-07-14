@@ -215,7 +215,10 @@ export function BookingDrawer({
   }, [state])
 
   const actions = actionsFor(booking.status)
-  const terminal = isAvbokad(booking.status)
+  // En avbokad tid i det FÖRFLUTNA kan inte återställas — det vore att boka in någon
+  // igår. (no_show får däremot rättas bakåt: "hen kom visst" är en korrigering av
+  // historien, inte en ny bokning.) Samma regel som ångraloggen.
+  const restoreBlockedPast = booking.status === 'cancelled' && booking.isPast
   const showAutoKlar = booking.isPast && isBokad(booking.status)
   // Payment-guard: en ej betald, ej avbokad bokning får ALDRIG auto-markeras
   // "klar + betald" (sen kund / no-show).
@@ -234,10 +237,10 @@ export function BookingDrawer({
       onClose={onClose}
       ariaLabel={`Bokning ${booking.serviceName}`}
       footer={
-        terminal ? (
+        restoreBlockedPast ? (
           <Callout tone="info" icon="shield">
-            Avbokade och uteblivna bokningar är slutgiltiga — de raderas aldrig och kan inte
-            återställas (en återbetalning är redan hanterad). Skapa en ny bokning vid behov.
+            Tiden har passerat — en avbokad tid kan bara återställas medan den ligger framåt.
+            Bokningen raderas aldrig och finns kvar i ångraloggen; skapa en ny tid vid behov.
           </Callout>
         ) : actions.length > 0 ? (
           <div style={{ display: 'flex', gap: 8, width: '100%' }}>

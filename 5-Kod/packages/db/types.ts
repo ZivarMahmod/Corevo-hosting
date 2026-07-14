@@ -535,10 +535,12 @@ export type Database = {
           email: string | null
           first_seen_at: string
           full_name: string | null
+          hidden_at: string | null
           id: string
           last_seen_at: string
           name_hidden: boolean
           phone: string | null
+          self_book: boolean
           status: string
           tenant_id: string
           updated_at: string | null
@@ -551,10 +553,12 @@ export type Database = {
           email?: string | null
           first_seen_at?: string
           full_name?: string | null
+          hidden_at?: string | null
           id?: string
           last_seen_at?: string
           name_hidden?: boolean
           phone?: string | null
+          self_book?: boolean
           status?: string
           tenant_id: string
           updated_at?: string | null
@@ -567,10 +571,12 @@ export type Database = {
           email?: string | null
           first_seen_at?: string
           full_name?: string | null
+          hidden_at?: string | null
           id?: string
           last_seen_at?: string
           name_hidden?: boolean
           phone?: string | null
+          self_book?: boolean
           status?: string
           tenant_id?: string
           updated_at?: string | null
@@ -2390,6 +2396,7 @@ export type Database = {
           id: string
           location_id: string | null
           reason: string | null
+          series_id: string | null
           staff_id: string
           start_ts: string
           tenant_id: string
@@ -2400,6 +2407,7 @@ export type Database = {
           id?: string
           location_id?: string | null
           reason?: string | null
+          series_id?: string | null
           staff_id: string
           start_ts: string
           tenant_id: string
@@ -2410,6 +2418,7 @@ export type Database = {
           id?: string
           location_id?: string | null
           reason?: string | null
+          series_id?: string | null
           staff_id?: string
           start_ts?: string
           tenant_id?: string

@@ -72,6 +72,30 @@ export const ALLOWED_FROM: Record<BookingStatus, BookingStatus[]> = {
   cancelled: ['pending', 'confirmed', 'completed', 'no_show'],
 }
 
+/** Refund-vakten (B-24): en ÅTERBETALD bokning får aldrig väckas — då skulle systemet
+ *  påstå "betald" om en tid kunden fått pengarna tillbaka för. Ren funktion så
+ *  invarianten är testbar utan databas; setBookingStatus är enda anroparen. */
+export function restoreBlockedByRefund(
+  currentStatus: string,
+  paymentStatus: string | null | undefined,
+): boolean {
+  return currentStatus === 'cancelled' && paymentStatus === 'refunded'
+}
+
+/** Avbokningsspåret (B-24): vad som ska skrivas på bookings-raden vid en statusändring.
+ *  In i cancelled → stämpla när+vem. Ut ur cancelled → NOLLA spåret (annars ligger
+ *  bokningen kvar i ångraloggen fast den är aktiv igen). Övriga övergångar rör det inte. */
+export function cancellationTrace(
+  currentStatus: string,
+  targetStatus: string,
+  now = new Date(),
+): { cancelled_at: string | null; cancelled_by: string | null } | Record<string, never> {
+  if (targetStatus === 'cancelled')
+    return { cancelled_at: now.toISOString(), cancelled_by: 'business' }
+  if (currentStatus === 'cancelled') return { cancelled_at: null, cancelled_by: null }
+  return {}
+}
+
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Ej bekräftad',
   confirmed: 'Bekräftad',

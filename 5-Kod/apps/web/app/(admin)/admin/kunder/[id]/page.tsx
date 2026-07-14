@@ -16,6 +16,7 @@ import { badgeClass } from '@/components/admin/badge'
 import { PageHead, Card, Badge, LoyaltyBlock } from '@/components/portal/ui'
 import { CustomerContactCard } from '@/components/admin/CustomerContactCard'
 import { CustomerPrivacyForm } from '@/components/admin/CustomerPrivacyForm'
+import { CustomerFlags } from '@/components/admin/CustomerFlags'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kund · Adminpanel' }
@@ -129,6 +130,21 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             customerId={customer.id}
             nameHidden={customer.nameHidden}
             displayName={customer.displayName}
+          />
+        </Card>
+
+        {/* Styrning (B-25): dölj (soft delete) + självbokning. Medvetet SKILD från
+            GDPR-vägen — dölj är reversibelt, anonymisering är det inte. */}
+        <Card>
+          <span className="eyebrow">Styrning</span>
+          <p className="prose" style={{ margin: '8px 0 14px', fontSize: 13 }}>
+            Att dölja en kund raderar ingenting — historiken och bokningarna finns kvar. Stängd
+            självbokning betyder att ni bokar åt kunden; er egen kalender påverkas aldrig.
+          </p>
+          <CustomerFlags
+            customerId={customer.id}
+            hidden={customer.hidden}
+            selfBook={customer.selfBook}
           />
         </Card>
 

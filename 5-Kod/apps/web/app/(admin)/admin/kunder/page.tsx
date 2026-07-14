@@ -31,7 +31,7 @@ function tierBadge(tier: 'guld' | 'silver' | 'brons' | 'ny') {
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; dolda?: string }>
 }) {
   const sp = await searchParams
   const user = await requirePortal('admin')
@@ -45,8 +45,14 @@ export default async function CustomersPage({
     )
   }
 
-  const all = await listCustomers(tenant.id)
-  const stats = customerStats(all)
+  // Dolda kunder (B-25) syns aldrig i standardlistan — men de är inte raderade, så
+  // ?dolda=1 visar dem (det är också vägen TILLBAKA: dölj av misstag → hitta → visa
+  // igen). Statistiken räknar bara synliga; en dold kund ska inte spöka i siffrorna.
+  const everyone = await listCustomers(tenant.id)
+  const showHidden = sp.dolda === '1'
+  const hiddenCount = everyone.filter((c) => c.hidden).length
+  const all = everyone.filter((c) => c.hidden === showHidden)
+  const stats = customerStats(everyone.filter((c) => !c.hidden))
   const goldCount = all.filter((c) => c.tier === 'guld').length
   const q = sp.q?.trim() ?? ''
   const list = q ? all.filter((c) => c.shownName.toLowerCase().includes(q.toLowerCase())) : all
@@ -100,6 +106,21 @@ export default async function CustomersPage({
       <div style={{ margin: '16px 0 0' }}>
         <CustomerSearch defaultValue={q} />
       </div>
+
+      {/* Vägen till dolda kunder — och tillbaka. Länken finns bara när den behövs. */}
+      {(hiddenCount > 0 || showHidden) && (
+        <p style={{ margin: '12px 0 0', fontSize: 13 }}>
+          {showHidden ? (
+            <Link href="/admin/kunder" className="portal-link">
+              ← Tillbaka till synliga kunder
+            </Link>
+          ) : (
+            <Link href="/admin/kunder?dolda=1" className="portal-link">
+              Dolda kunder ({hiddenCount})
+            </Link>
+          )}
+        </p>
+      )}
 
       {all.length === 0 ? (
         <Card>

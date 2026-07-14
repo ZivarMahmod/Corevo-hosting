@@ -214,6 +214,22 @@ export async function rebookBooking(
   }
 
   const supabase = await createClient()
+
+  // Självbokningsspärr (B-25): salongen kan stänga av en kunds onlinebokning.
+  // RLS släpper kundens EGEN rad (auth_user_id = uid), så läsningen fungerar här.
+  // Saknas raden är kunden oflaggad → tillåten (default self_book = true).
+  // ponytail: vakten täcker inloggade kundflöden. En gäst som bokar med ny e-post
+  // går förbi — det gör hen oavsett spärr (ny identitet). DB-nivå vore create_public_
+  // booking-RPC:n; byggs den dagen någon faktiskt kringgår detta.
+  const { data: me } = await supabase
+    .from('customers')
+    .select('self_book')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (me?.self_book === false) {
+    return { error: 'Onlinebokning är avstängd för ditt konto. Ring oss så bokar vi åt dig.' }
+  }
+
   const cutoff = await getCancellationCutoffHours(supabase, user.tenantId ?? '')
   if (!withinCancellationWindow(old.startTs, cutoff)) {
     return { error: `Ombokning måste ske minst ${cutoff} timmar före tiden.` }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBlock, removeBlock } from '@/lib/admin/calendar-actions'
+import { REPEAT_KINDS, REPEAT_LABELS, type RepeatKind } from '@/lib/admin/block-series'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { Button, Callout, Modal, useToast } from '@/components/portal/ui'
 import type { CalendarBlock, CalendarStaff } from './CalendarBoard'
@@ -48,6 +49,7 @@ export function BlockDrawer({
   const [startMin, setStartMin] = useState(seed?.startMinute ?? 12 * 60)
   const [lengthMin, setLengthMin] = useState(60)
   const [reason, setReason] = useState('Rast')
+  const [repeat, setRepeat] = useState<RepeatKind>('ingen')
 
   const timeOf = (iso: string) =>
     new Intl.DateTimeFormat('sv-SE', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(
@@ -58,7 +60,7 @@ export function BlockDrawer({
     startAction(async () => {
       const startIso = zonedTimeToUtc(date, fromMin(startMin), tz).toISOString()
       const endIso = zonedTimeToUtc(date, fromMin(startMin + lengthMin), tz).toISOString()
-      const res = await createBlock({ staffId, startIso, endIso, reason })
+      const res = await createBlock({ staffId, startIso, endIso, reason, repeat })
       if (res.error) notify(res.error, 'warning')
       else {
         notify(res.success ?? 'Tiden är blockerad.', 'success')
@@ -68,10 +70,10 @@ export function BlockDrawer({
     })
   }
 
-  const remove = () => {
+  const remove = (scope: 'en' | 'framat') => {
     if (!existing) return
     startAction(async () => {
-      const res = await removeBlock(existing.id)
+      const res = await removeBlock(existing.id, scope)
       if (res.error) notify(res.error, 'warning')
       else {
         notify(res.success ?? 'Blockeringen är borttagen.', 'success')
@@ -91,20 +93,50 @@ export function BlockDrawer({
         onClose={onClose}
         ariaLabel="Blockerad tid"
         footer={
-          <Button
-            variant="ghost"
-            icon="x"
-            onClick={remove}
-            disabled={busy}
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              color: 'var(--c-danger)',
-              borderColor: 'var(--c-danger)',
-            }}
-          >
-            {busy ? 'Tar bort…' : 'Ta bort blockeringen'}
-          </Button>
+          existing.seriesId ? (
+            // Serieblockering: TVÅ tydliga vägar (B-23). "Framåt" raderar aldrig
+            // bakåt — förra veckans rast är historik, inte något att skriva om.
+            <div style={{ display: 'grid', gap: 8, width: '100%' }}>
+              <Button
+                variant="ghost"
+                icon="x"
+                onClick={() => remove('en')}
+                disabled={busy}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                {busy ? 'Tar bort…' : 'Ta bort endast denna'}
+              </Button>
+              <Button
+                variant="ghost"
+                icon="x"
+                onClick={() => remove('framat')}
+                disabled={busy}
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  color: 'var(--c-danger)',
+                  borderColor: 'var(--c-danger)',
+                }}
+              >
+                {busy ? 'Tar bort…' : 'Ta bort denna och alla framåt'}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              icon="x"
+              onClick={() => remove('en')}
+              disabled={busy}
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                color: 'var(--c-danger)',
+                borderColor: 'var(--c-danger)',
+              }}
+            >
+              {busy ? 'Tar bort…' : 'Ta bort blockeringen'}
+            </Button>
+          )
         }
       >
         <div style={{ display: 'grid', gap: 16 }}>
@@ -112,7 +144,12 @@ export function BlockDrawer({
             <div className="eyebrow" style={{ marginBottom: 6 }}>
               Orsak
             </div>
-            <p style={{ margin: 0, fontSize: 14, color: 'var(--c-ink)' }}>{existing.reason}</p>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--c-ink)' }}>
+              {existing.reason}
+              {existing.seriesId && (
+                <span style={{ color: 'var(--c-ink-3)' }}> · återkommande</span>
+              )}
+            </p>
           </div>
           <Callout tone="info" icon="info">
             Tiden går inte att boka — varken av dig eller av en kund på sajten. Tar du bort
@@ -225,8 +262,30 @@ export function BlockDrawer({
           />
         </section>
 
+        <section>
+          <div className="eyebrow" style={{ marginBottom: 8 }}>
+            Upprepa
+          </div>
+          {/* Native <select>: sex fasta val behöver ingen egen komponent, och
+              telefonens inbyggda väljare är bättre än allt vi kan bygga. */}
+          <select
+            className={styles.input}
+            value={repeat}
+            onChange={(e) => setRepeat(e.target.value as RepeatKind)}
+            aria-label="Upprepning"
+          >
+            {REPEAT_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {REPEAT_LABELS[k]}
+              </option>
+            ))}
+          </select>
+        </section>
+
         <Callout tone="info" icon="info">
-          Blockerad tid försvinner direkt ur den publika bokningen — kunder kan inte boka den.
+          {repeat === 'ingen'
+            ? 'Blockerad tid försvinner direkt ur den publika bokningen — kunder kan inte boka den.'
+            : 'Upprepningen läggs in 12 månader framåt. Du kan ta bort ett enskilt tillfälle, eller ett tillfälle och alla efter det.'}
         </Callout>
       </div>
     </Modal>

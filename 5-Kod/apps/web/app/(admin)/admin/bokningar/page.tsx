@@ -105,6 +105,7 @@ export default async function KalenderPage({
     startTs: t.start_ts,
     endTs: t.end_ts,
     reason: t.reason?.trim() || 'Blockerad',
+    seriesId: t.series_id,
   }))
 
   // Betalstatus i EN batchad läsning över fönstrets bokningar (inte en per rad).

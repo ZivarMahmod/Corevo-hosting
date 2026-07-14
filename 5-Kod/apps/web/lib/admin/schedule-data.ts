@@ -33,13 +33,16 @@ export async function listTimeOffOverlapping(
   toUtc: string,
 ): Promise<TimeOffAdminRow[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('time_off')
     .select('*')
     .eq('tenant_id', tenantId)
     .lt('start_ts', toUtc)
     .gt('end_ts', fromUtc)
     .order('start_ts', { ascending: true })
+  // Kasta, svälj inte (B-10): osynliga blockeringar p.g.a. datafel gör att en rast
+  // ser bokningsbar ut i kalendern — tyst fel på exakt fel ställe.
+  if (error) throw new Error(`listTimeOffOverlapping: ${error.message}`)
   return data ?? []
 }
 

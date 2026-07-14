@@ -5,6 +5,7 @@ import { requirePortal } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { createClient } from '@/lib/supabase/server'
 import { adminDaySlots, type AdminSlot } from '@/lib/admin/calendar-slots'
+import { seriesOccurrences, REPEAT_KINDS, type RepeatKind } from '@/lib/admin/block-series'
 import { setBookingStatus } from '@/lib/admin/actions'
 import { resolveCustomerName } from '@/lib/personal/customer'
 import { sendBookingConfirmation } from '@/lib/notifications/booking'
@@ -62,6 +63,9 @@ export async function searchCustomers(query: string): Promise<CustomerHit[]> {
     .from('customers')
     .select('id, display_name, full_name, name_hidden, email, phone')
     .eq('tenant_id', tenant.id)
+    // Dold kund (B-25) hittas inte i sök — det är vad "dold" betyder. Behöver man
+    // hen ändå finns "Dolda kunder" på Kunder-sidan; bokningen går alltid via namn.
+    .is('hidden_at', null)
     .or(`display_name.ilike.${like},full_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`)
     .limit(8)
 
@@ -156,15 +160,17 @@ export type BlockState = { success?: string; error?: string }
  * bokningsmotorn redan räknar som upptagen tid (get_busy_intervals). Blockerar man en
  * timme här försvinner den ur den publika bokningen i samma stund.
  *
- * ponytail: ingen upprepning än — time_off saknar serie-kolumner. En återkommande rast
- * kräver migration (series_id + regel) och "endast denna / denna och framåt"-valet.
- * Läggs som eget steg; en enkel blockering täcker dagens behov.
+ * Upprepning (B-22/B-23) är MATERIALISERAD: "lunch varje dag" skrivs som en rad per
+ * dag 12 månader fram, alla med samma series_id. Läskedjan (kalender, bokningsmotor,
+ * realtid) förblir orörd — den ser bara vanliga rader. Väggklockelogiken bor i
+ * seriesOccurrences och är DST-testad.
  */
 export async function createBlock(input: {
   staffId: string
   startIso: string
   endIso: string
   reason: string
+  repeat?: RepeatKind
 }): Promise<BlockState> {
   const user = await requirePortal('admin')
   const tenant = await getAdminTenant(user)
@@ -177,30 +183,84 @@ export async function createBlock(input: {
   }
   if (end <= start) return { error: 'Sluttiden måste vara efter starttiden.' }
 
-  const supabase = await createClient()
-  const { error } = await supabase.from('time_off').insert({
-    tenant_id: tenant.id,
-    staff_id: input.staffId,
-    start_ts: start.toISOString(),
-    end_ts: end.toISOString(),
-    reason: input.reason.trim() || 'Blockerad',
+  const repeat: RepeatKind = REPEAT_KINDS.includes(input.repeat as RepeatKind)
+    ? (input.repeat as RepeatKind)
+    : 'ingen'
+  const occurrences = seriesOccurrences({
+    startIso: start.toISOString(),
+    endIso: end.toISOString(),
+    repeat,
+    tz: tenant.timeZone,
   })
+  const seriesId = occurrences.length > 1 ? crypto.randomUUID() : null
+  const reason = input.reason.trim() || 'Blockerad'
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('time_off').insert(
+    occurrences.map((o) => ({
+      tenant_id: tenant.id,
+      staff_id: input.staffId,
+      start_ts: o.startIso,
+      end_ts: o.endIso,
+      reason,
+      series_id: seriesId,
+    })),
+  )
   if (error) return { error: 'Blockeringen gick inte att spara. Försök igen.' }
 
   revalidatePath('/admin/bokningar')
   revalidatePath('/admin')
-  return { success: 'Tiden är blockerad — den går inte längre att boka.' }
+  return {
+    success:
+      occurrences.length > 1
+        ? `Tiden är blockerad och upprepas — ${occurrences.length} tillfällen inlagda (12 månader framåt).`
+        : 'Tiden är blockerad — den går inte längre att boka.',
+  }
 }
 
 /** Ta bort en blockering. Befintliga bokningar i tiden påverkas ALDRIG — de ligger
- *  kvar; blockeringen hindrade bara NYA bokningar. */
-export async function removeBlock(blockId: string): Promise<BlockState> {
+ *  kvar; blockeringen hindrade bara NYA bokningar.
+ *
+ *  scope (B-23): 'en' tar bort exakt den valda förekomsten; 'framat' tar bort den
+ *  och alla senare i samma serie. Bakåt skrivs ALDRIG om — raderna för förra veckan
+ *  är historik om vad som faktiskt var blockerat. */
+export async function removeBlock(blockId: string, scope: 'en' | 'framat' = 'en'): Promise<BlockState> {
   const user = await requirePortal('admin')
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
   if (!blockId) return { error: 'Ogiltig blockering.' }
 
   const supabase = await createClient()
+
+  if (scope === 'framat') {
+    // Läs den valda radens serie + start (RLS-fencad). Utan serie faller vi ner
+    // till singel-borttagning — knappen ska aldrig kunna radera mer än den lovar.
+    const { data: row } = await supabase
+      .from('time_off')
+      .select('series_id, start_ts')
+      .eq('id', blockId)
+      .eq('tenant_id', tenant.id)
+      .maybeSingle()
+    if (!row) return { error: 'Blockeringen finns inte längre.' }
+
+    if (row.series_id) {
+      const { data: gone, error } = await supabase
+        .from('time_off')
+        .delete()
+        .eq('tenant_id', tenant.id)
+        .eq('series_id', row.series_id)
+        .gte('start_ts', row.start_ts)
+        .select('id')
+      if (error) return { error: 'Blockeringarna gick inte att ta bort. Försök igen.' }
+
+      revalidatePath('/admin/bokningar')
+      revalidatePath('/admin')
+      return {
+        success: `${gone?.length ?? 0} blockeringar borttagna — denna och alla framåt. Tidigare tillfällen ligger kvar.`,
+      }
+    }
+  }
+
   const { error } = await supabase
     .from('time_off')
     .delete()

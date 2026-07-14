@@ -4,9 +4,9 @@
 logiken; det här täcker det bara ögon och fingrar ser: tangentbord, zoom, pekskärm, riktiga
 enheter.
 
-> ⚠️ **Kör migration `0060_booking_cancel_audit.sql` FÖRST.** Utan den misslyckas varje
-> avbokning (koden skriver `cancelled_at`/`cancelled_by` som inte finns än).
-> `cd 5-Kod && npx supabase db push`
+> ⚠️ **Kör migration `0061_block_series_customer_flags.sql` FÖRST** (0060 är redan körd).
+> Utan 0061 failar blockeringar, Kunder-sidan och kundsök. Klistra in filens innehåll i
+> Supabase SQL Editor och kör — den är ofarlig att köra två gånger.
 
 Logga in som `info@freshcut.se`.
 
@@ -96,6 +96,27 @@ Logga in som `info@freshcut.se`.
 
 ### Hjälp
 - [ ] ⓘ i verktygsraden → sju frågor. Ingen tour tar över första gången.
+
+### Återkommande blockering *(nytt — kräver 0061)*
+- [ ] Blockera tid → välj "Varje dag" → spara. Meddelandet säger hur många tillfällen som lades in.
+- [ ] Kalendern visar rasten imorgon och nästa vecka också.
+- [ ] Klicka en förekomst → "Ta bort endast denna" → bara den dagen försvinner.
+- [ ] Klicka en annan → "Ta bort denna och alla framåt" → framtiden rensas, gårdagens ligger kvar.
+
+### Resursfilter + veckohopp *(nytt)*
+- [ ] Väljaren i verktygsraden visar en person — kalendern smalnar till den kolumnen, i alla tre vyer.
+- [ ] "+4 v" hoppar till samma veckodag fyra veckor fram (ombokning: "kom tillbaka om en månad").
+
+### Dölj kund + självbokning *(nytt — kräver 0061)*
+- [ ] Kundkort → Styrning → "Dölj" → kunden borta ur Kunder-listan OCH kundsöket i kalendern.
+- [ ] Kunder-sidan visar länken "Dolda kunder (N)" → kunden finns där → "Visa igen" tar tillbaka hen.
+- [ ] Kundens bokningshistorik fanns kvar hela tiden (inget raderades).
+- [ ] Stäng av "Får boka själv" → logga in som kund → ombokning nekas med hänvisning att ringa.
+- [ ] Ägaren kan FORTFARANDE boka åt kunden i kalendern (vakten gäller bara kundens egna flöden).
+
+### Feltillstånd *(nytt)*
+- [ ] Stäng av nätverket (flygplansläge) → ladda om kalendern → felsida med "Försök igen",
+      toppnaven kvar. Nätet på → Försök igen → kalendern laddar. ALDRIG en tom kalender vid fel.
 
 ---
 

@@ -64,13 +64,16 @@ const ACTIVE_BOOKING = ['pending', 'confirmed', 'completed'] as const
 /** All services (active + inactive), grouped sensibly for the admin table. */
 export async function listServices(tenantId: string): Promise<ServiceRow[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('services')
     .select('*')
     .eq('tenant_id', tenantId)
     .order('active', { ascending: false })
     .order('category', { ascending: true, nullsFirst: true })
     .order('name', { ascending: true })
+  // Kasta, svälj inte (B-10): en tyst tom tjänstlista gör bokningsdialogen obrukbar
+  // utan förklaring. Hellre felsidan med Försök igen.
+  if (error) throw new Error(`listServices: ${error.message}`)
   return data ?? []
 }
 
@@ -216,7 +219,10 @@ export async function listBookings(
   if (filters.staffId) q = q.eq('staff_id', filters.staffId)
   if (filters.status) q = q.eq('status', filters.status)
   if (filters.locationId) q = q.eq('location_id', filters.locationId)
-  const { data } = await q.order('start_ts', { ascending: true })
+  const { data, error } = await q.order('start_ts', { ascending: true })
+  // Kasta, svälj inte (B-10): ett datafel som blir [] ser ut som en TOM kalender —
+  // "dagen är fri" är en farligare lögn än en felsida. error.tsx fångar + Försök igen.
+  if (error) throw new Error(`listBookings: ${error.message}`)
 
   type Row = {
     id: string
@@ -303,6 +309,8 @@ export type AdminCustomer = {
    *  migr 0011:107). 0 = ingen lojalitets-aktivitet, aldrig fejkat. */
   loyaltyPoints: number
   tier: CustomerTier
+  /** B-25 soft delete: dold ur listor/sök. Historiken finns kvar. */
+  hidden: boolean
 }
 
 /** Public display name for a customer row WITHOUT leaking a hidden full name.
@@ -329,9 +337,11 @@ export async function listCustomers(
   searchTerm?: string,
 ): Promise<AdminCustomer[]> {
   const supabase = await createClient()
+  // hidden_at följer med (B-25): sidan partitionerar synliga/dolda i EN läsning i
+  // stället för två frågor — de dolda behövs ändå för "Dolda kunder (N)"-räknaren.
   const { data } = await supabase
     .from('customers')
-    .select('id, display_name, full_name, name_hidden, status, first_seen_at, last_seen_at, bookings(start_ts, status)')
+    .select('id, display_name, full_name, name_hidden, status, first_seen_at, last_seen_at, hidden_at, bookings(start_ts, status)')
     .eq('tenant_id', tenantId)
     .eq('status', 'active')
     .order('last_seen_at', { ascending: false })
@@ -370,6 +380,7 @@ export async function listCustomers(
       isReturning: active.length >= RETURNING_VISITS,
       loyaltyPoints: lp,
       tier: tierOf(lp),
+      hidden: c.hidden_at != null,
     }
   })
 
@@ -409,6 +420,10 @@ export type CustomerDetail = {
   isLinkedAccount: boolean
   history: AdminBooking[]
   visits: number
+  /** B-25: dold ur listor/sök (soft delete — historiken kvar). */
+  hidden: boolean
+  /** B-25: får kunden boka själv via sajten/kundkontot? */
+  selfBook: boolean
 }
 
 export async function getCustomerDetail(
@@ -418,7 +433,7 @@ export async function getCustomerDetail(
   const supabase = await createClient()
   const { data: c } = await supabase
     .from('customers')
-    .select('id, display_name, full_name, name_hidden, status, first_seen_at, last_seen_at, auth_user_id')
+    .select('id, display_name, full_name, name_hidden, status, first_seen_at, last_seen_at, auth_user_id, hidden_at, self_book')
     .eq('tenant_id', tenantId)
     .eq('id', customerId)
     .maybeSingle()
@@ -481,6 +496,8 @@ export async function getCustomerDetail(
     isLinkedAccount: Boolean(c.auth_user_id),
     history,
     visits,
+    hidden: c.hidden_at != null,
+    selfBook: c.self_book,
   }
 }
 
@@ -532,7 +549,7 @@ export type StaffDay = {
  *  ritas som ledig, inte utelämnas. */
 export async function staffDay(tenantId: string, weekday: number): Promise<StaffDay[]> {
   const supabase = await createClient()
-  const [{ data: staffRows }, { data: hourRows }] = await Promise.all([
+  const [staffRes, hoursRes] = await Promise.all([
     supabase
       .from('staff')
       .select('id, title')
@@ -548,6 +565,12 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
       .eq('weekday', weekday)
       .order('start_time', { ascending: true }),
   ])
+  // Kasta, svälj inte (B-10): noll resurser p.g.a. datafel skulle rita en kalender
+  // helt utan kolumner — som ser ut som "ingen jobbar idag".
+  if (staffRes.error) throw new Error(`staffDay: ${staffRes.error.message}`)
+  if (hoursRes.error) throw new Error(`staffDay: ${hoursRes.error.message}`)
+  const { data: staffRows } = staffRes
+  const { data: hourRows } = hoursRes
 
   // Flera pass samma dag (t.ex. förmiddag + kväll) → resursens dag spänner från
   // första starten till sista slutet. Luckan mellan passen ritas som ej tillgänglig
