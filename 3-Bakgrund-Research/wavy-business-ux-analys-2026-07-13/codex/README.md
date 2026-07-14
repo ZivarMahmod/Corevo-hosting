@@ -1,6 +1,6 @@
 # Wavy Business — djup UX- och systemanalys
 
-> **Beslutsstatus 2026-07-14:** Detta dokument är research och beskriver Wavy. Formuleringar om att arbetsytan bör vara startsidan är observationer/lärdomar från Wavy, inte längre Corevos produktbeslut. Corevos låsta målbild finns i `1-Planering/10-kundadmin-bokningsarbetsbord/`: Översikt är entrén och Kalender är det kompletta arbetsbordet ett klick bort.
+> **Beslutsstatus 2026-07-14:** Detta dokument är research och beskriver Wavy. Formuleringar om att arbetsytan bör vara startsidan är observationer/lärdomar från Wavy, inte längre Corevos produktbeslut. Corevos låsta målbild finns i `00-LAS-MIG-FORST.md` och dokumenten `01`–`06` i denna mapp: Översikt är entrén och Kalender är det kompletta arbetsbordet ett klick bort.
 
 **Datum:** 2026-07-13  
 **Typ:** Konkurrentresearch / kunskapsunderlag  

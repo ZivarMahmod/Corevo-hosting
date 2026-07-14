@@ -5,12 +5,12 @@ Två oberoende analyser av samma underlag. Mappen är delad per författare så 
 | Mapp | Författare | Innehåll |
 |---|---|---|
 | [`claude/`](claude/) | Claude (Cowork) | `WAVY-UX-ANALYS.md` — djup UX- och systemanalys från live-genomgång av ett skarpt Wavy-konto. |
-| [`codex/`](codex/) | Codex | `README.md` (huvudrapport, skärmbildsgrundad), `LIVE-ANALYS-OCH-FUNKTIONSPARITET.md` (livegranskning + funktionsparitetsmatris), `KALLREGISTER.md` (källor). |
+| [`codex/`](codex/) | Codex | Codex research, källregister samt den samlade dokumentserien för Corevos kundadmin och bokningsarbetsbord. Start: `00-LAS-MIG-FORST.md`. |
 
 ## Arbetsregel
 
-Varje agent skriver **bara** i sin egen mapp. Jämförelse och syntes sker i `1-Planering/10-kundadmin-bokningsarbetsbord/05-syntes-code-codex.md`.
+Varje agent skriver **bara** i sin egen mapp. Jämförelse, syntes och Codex dokumentserie finns i `codex/`; börja med `codex/00-LAS-MIG-FORST.md`.
 
 ## Beslutsstatus
 
-Detta är research, inte produktbeslut. Corevos låsta målbild för kundadmin bor i `1-Planering/10-kundadmin-bokningsarbetsbord/`.
+Researchobservationer och produktbeslut är tydligt märkta i respektive dokument. Corevos samlade målbild för kundadmin finns i `codex/00-LAS-MIG-FORST.md` och dokumenten `01`–`06` bredvid den.

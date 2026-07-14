@@ -1,6 +1,6 @@
 # Wavy Business live — funktionsparitet och riktning för Corevos kund-admin
 
-> **Beslutsstatus 2026-07-14:** Liveobservationerna och kodgapen i rapporten gäller fortfarande. Den tidigare rekommendationen att kalendern ska vara hela kund-adminens startsida är ersatt efter Zivars produktbeslut. Gällande målbild finns i `1-Planering/10-kundadmin-bokningsarbetsbord/`: Översikt är startsidan, Kalender öppnar det kompletta bokningsarbetsbordet direkt och den globala toppnavigationen ligger kvar.
+> **Beslutsstatus 2026-07-14:** Liveobservationerna och kodgapen i rapporten gäller fortfarande. Den tidigare rekommendationen att kalendern ska vara hela kund-adminens startsida är ersatt efter Zivars produktbeslut. Gällande målbild finns i `00-LAS-MIG-FORST.md` och dokumenten `01`–`06` i denna mapp: Översikt är startsidan, Kalender öppnar det kompletta bokningsarbetsbordet direkt och den globala toppnavigationen ligger kvar.
 
 **Datum:** 2026-07-13  
 **Placering:** `3-Bakgrund-Research/wavy-business-ux-analys-2026-07-13/`  
@@ -298,7 +298,7 @@ En dashboard som även försöker vara bokningsarbetsyta tvingar Wavy-kunder att
 4. Redigera sidan är en egen huvudfunktion och ersätts inte av en duplicerad Presentationsinställning.
 5. E-post/lösenord och beständig session behålls. SMS-inloggning införs inte.
 6. E-post är standardnotis. SMS är ett senare fakturerbart tillval.
-7. Fullständig planeringskanon finns i `1-Planering/10-kundadmin-bokningsarbetsbord/`.
+7. Fullständig planeringskanon finns i `00-LAS-MIG-FORST.md` och dokumenten `01`–`06` i denna mapp.
 
 ## 14. Rekommenderad ordning om riktningen godkänns
 
