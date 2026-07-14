@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-14T18:27:36.731Z",
+  "generated": "2026-07-14T19:07:25.626Z",
   "note": "Kända historiska bransch-ord-träffar (städlista). Nya träffar utöver dessa failar vakten. Städa en träff = fixa koden och ta bort raden här. Regenerera = radera filen och kör om.",
   "entries": [
     {
@@ -43,96 +43,6 @@
       "line": 136,
       "word": "Barbershop",
       "text": "lede: 'Barbershop i centrala Linköping.', img: uns('1503951914875-452162b0f3f1'),"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 25,
-      "word": "Frisör",
-      "text": "{ src: u('1600948836101-f9ffda59d250'), alt: 'Frisör som stylar håret på en kund i salongen' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 25,
-      "word": "salongen",
-      "text": "{ src: u('1600948836101-f9ffda59d250'), alt: 'Frisör som stylar håret på en kund i salongen' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 26,
-      "word": "klippning",
-      "text": "{ src: u('1560066984-138dadb4c035'), alt: 'Närbild på klippning hos frisören' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 26,
-      "word": "frisören",
-      "text": "{ src: u('1560066984-138dadb4c035'), alt: 'Närbild på klippning hos frisören' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 27,
-      "word": "salongsmiljö",
-      "text": "{ src: u('1521590832167-7bcbfaa6381f'), alt: 'Ljus och inbjudande salongsmiljö' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 32,
-      "word": "klippning",
-      "text": "{ src: u('1503951914875-452162b0f3f1', 900), alt: 'Resultat efter klippning och styling' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 33,
-      "word": "salongen",
-      "text": "{ src: u('1599351431202-1e0f0137899a', 900), alt: 'Färgning och behandling i salongen' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 35,
-      "word": "Salongens",
-      "text": "{ src: u('1521590832167-7bcbfaa6381f', 900), alt: 'Salongens interiör' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 36,
-      "word": "Frisör",
-      "text": "{ src: u('1560066984-138dadb4c035', 900), alt: 'Frisör i arbete' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 37,
-      "word": "Stylist",
-      "text": "{ src: u('1600948836101-f9ffda59d250', 900), alt: 'Stylist med kund vid stolen' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 43,
-      "word": "Salongens",
-      "text": "alt: 'Salongens lugna och omsorgsfulla miljö',"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 48,
-      "word": "frisör",
-      "text": "{ src: u('1580618672591-eb180b1a973f', 700), alt: 'Porträtt av frisör' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 49,
-      "word": "frisör",
-      "text": "{ src: u('1582095133179-bfd08e2fc6b3', 700), alt: 'Porträtt av frisör' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 50,
-      "word": "frisör",
-      "text": "{ src: u('1607990281513-2c110a25bd8c', 700), alt: 'Porträtt av frisör' },"
-    },
-    {
-      "file": "components/storefront/images.ts",
-      "line": 56,
-      "word": "salongsmiljö",
-      "text": "alt: 'Inbjudande salongsmiljö redo att ta emot dig',"
     },
     {
       "file": "components/storefront/seo.tsx",

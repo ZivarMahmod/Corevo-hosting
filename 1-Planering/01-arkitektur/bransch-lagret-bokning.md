@@ -87,16 +87,40 @@ när branschen bokar något strukturellt annat. Fyra äkta gap:
 - **Ekonomibyrå / rådgivning** bokar ett *möte* — ofta utan att kunden väljer person.
   Idag måste en staff-rad finnas och pekas ut. Går att bruka (en "Rådgivning"-rad), men
   det är en workaround, inte en modell.
-- **Fix när det behövs:** gör `staff_id` null-bar + inför `resource_type`, eller en
-  syntetisk "vem som helst"-resurs. Rör INTE kalendern — den ritar redan kolumner ur en lista.
+
+- ⛔ **FÄLLAN: gör INTE `staff_id` null-bar.** Krockskyddet ÄR den kolumnen:
+  ```sql
+  exclude using gist (staff_id with =, tstzrange(start_ts, end_ts) with &&)
+  where (status in ('pending','confirmed','completed'))
+  ```
+  `NULL = NULL` är inte sant i SQL → en null-bar `staff_id` gör att EXCLUDE **tyst slutar
+  gälla** för precis de bokningar som saknar resurs. Två möten kan då läggas på varandra
+  utan att DB:n säger ifrån. Det offrar dataintegriteten, som går före allt.
+
+- **Fixen är motsatsen:** `staff_id` förblir NOT NULL, men `staff` slutar betyda "en
+  människa". Lägg till `staff.kind` ('person' | 'objekt' | 'resurs') så att en byrå kan
+  lägga upp resursen "Rådgivning" och en verkstad resursen "Lyft 1" — utan att UI:t kallar
+  dem personal. Krockskyddet fortsätter fungera oförändrat. Kalendern rör vi inte: den
+  ritar redan kolumner ur en lista och bryr sig inte om vad raderna föreställer.
 
 ### GAP 2 — Det finns ingen OBJEKT-entitet (verkstad/cykelverkstad)
-- En verkstad bokar in **ett objekt** (cykeln, bilen), inte en person. Objektet har
-  reg.nr/modell/ägare och är det som ligger inne över tid.
-- Idag: **ingen tabell för det.** Objektet kan bara skrivas som fritext i `bookings.note`.
-  Det går inte att söka på, inte statusa, inte koppla historik till.
-- **Detta är det största gapet.** Det är ett nytt fält/entitet (`assets` + `booking.asset_id`),
-  inte en kalenderfork. Kalendern kan rita en objekt-kolumn lika gärna som en person-kolumn.
+
+> **RÄTTAD 2026-07-14.** Första versionen av det här stycket sa att verkstaden "bokar
+> objektet". Det är fel, och felet spelar roll: hade vi byggt på det hade cykeln blivit
+> en RESURS-kolumn i kalendern.
+>
+> Verkstaden bokar **mekanikern** (eller lyften) — det är den som upptar tid och kan
+> dubbelbokas. **Cykeln är vad jobbet HANDLAR OM, inte vad som utför det.** Objektet är
+> alltså ett ATTRIBUT på bokningen, inte en resurs.
+
+- Idag: **ingen tabell för objektet.** Det kan bara skrivas som fritext i `bookings.note`
+  → går inte att söka på, inte statusa, ingen historik ("den här cykeln har varit inne 3 ggr").
+- **Fixen (när en riktig verkstadskund finns):** `assets` (kund-ägt objekt: modell, reg.nr,
+  ägare) + `bookings.asset_id` **null-bar**. Krockskyddet rörs INTE — det sitter kvar på
+  `staff_id`. Kalendern rörs inte alls.
+- Kalendern kan däremot rita en **objekt-som-utför**-kolumn (lyft, bås, stol) redan idag —
+  det är bara en `staff`-rad. Det som saknas för det är `staff.kind` ('person' | 'objekt'),
+  så att UI:t slutar kalla en lyft för "personal". Litet, men inte gjort.
 
 ### GAP 3 — Florist: leverans-FÖNSTER finns inte i kalendern
 - En florist säljer *leverans mellan 12–16 på fredag* — ett tidsfönster + adress, utan

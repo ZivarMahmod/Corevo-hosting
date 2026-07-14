@@ -204,6 +204,12 @@ export async function LocalBusinessJsonLd({
     nagelstudio: 'NailSalon',
     florist: 'Florist',
     restaurang: 'Restaurant',
+    tatueringsstudio: 'TattooParlor',
+    'ekonomibyrå': 'AccountingService',
+    'rådgivning': 'ProfessionalService',
+    // ateljé och verkstad utelämnade MED FLIT: schema.org har ingen typ som passar
+    // (AutoRepair vore fel för en cykelverkstad, ArtGallery fel för en ateljé som
+    // tar emot besök). Fel subtyp är sämre än ingen — de faller till LocalBusiness.
   }
   const schemaType = (vertical && SCHEMA_TYPE_BY_VERTICAL[vertical]) || 'LocalBusiness'
   const data: Record<string, unknown> = {
