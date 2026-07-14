@@ -45,7 +45,7 @@ export const ateljevinter: FloristTheme = {
   desc: 'Galleri-minimal · blommor som objekt',
   // Manifestets `palette`, alla 8 nycklar, oförändrade.
   palette: {
-    primary: '#6F7D6E',
+    primary: '#6C796B',
     primaryD: '#5A6659',
     bg: '#FBFBF9',
     surface: '#F3F3EE',

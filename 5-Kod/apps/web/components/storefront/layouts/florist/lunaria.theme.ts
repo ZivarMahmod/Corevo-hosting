@@ -45,7 +45,7 @@ export const lunaria: FloristTheme = {
     fg: '#ECE6D6',
     fg2: '#B8BFCB',
     line: '#334455',
-    accentSoft: '#7C8AA0',
+    accentSoft: '#7F8CA2',
   },
   // Manifestets `fonts`: Poiret One i displayen (deco-linjen), Jost i brödtexten.
   fonts: {
