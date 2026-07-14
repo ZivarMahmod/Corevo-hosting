@@ -15,8 +15,10 @@ import { getAdminModuleStates, isModuleActivated, isBookingActivated } from '@/l
 import { listLocations } from '@/lib/admin/data'
 import { PLATS_COOKIE } from '@/lib/admin/plats'
 import { PortalTopbar } from './PortalTopbar'
-import { PlatformTopnav } from './PlatformTopnav'
-import platformStyles from './PlatformTopnav.module.css'
+import { Topnav } from './Topnav'
+import topnavStyles from './Topnav.module.css'
+import { PLATFORM_AREAS, PLATFORM_SUBNAV } from './platform-navigation'
+import { adminAreas } from './admin-navigation'
 import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
@@ -164,25 +166,52 @@ export async function PortalShell({
       }
     }
 
-    // Superadmin has its own handoff shell: five top-level destinations instead
-    // of the tenant-admin sidebar. Only the chrome changes; children are the same
-    // route components and therefore keep every real read, action and guard.
-    if (portal === 'platform') {
+    // Superadmin och kund-admin delar handoff-skalet: fem toppdestinationer i stället
+    // för sidofältet. Bara chrome byts — children är samma route-komponenter och behåller
+    // varje riktig läsning, action och guard. Personal-portalen har kvar sidofältet.
+    if (portal === 'platform' || portal === 'admin') {
+      const isPlatform = portal === 'platform'
       return (
         <div
-          className={`tenant-root portal-shell ${platformStyles.shell}`}
+          className={`tenant-root portal-shell ${topnavStyles.shell}`}
           data-world={world}
-          data-portal="platform"
+          data-portal={portal}
           data-tenant={bundle?.tenant.id}
           style={injectTenantTokens(branding) as CSSProperties}
         >
-          <PlatformTopnav
+          <Topnav
+            areas={isPlatform ? PLATFORM_AREAS : adminAreas(activeModuleKeys)}
+            subnav={isPlatform ? PLATFORM_SUBNAV : undefined}
             paletteItems={paletteItems}
+            brandHref={isPlatform ? '/' : '/admin'}
+            // Superadmin är Corevo självt; kund-adminen är VERKSAMHETEN — namnet och
+            // "via Corevo" bär rollgränsen. Ordet "Superadmin" får aldrig synas här.
+            brandMark={isPlatform ? 'C' : (brand.charAt(0).toUpperCase() || 'C')}
+            brandName={brand}
+            brandSub={isPlatform ? 'Superadmin' : 'via Corevo'}
+            brandLabel={
+              isPlatform ? 'Corevo superadmin – översikt' : `${brand} – översikt`
+            }
+            primaryAction={
+              isPlatform
+                ? { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' }
+                : // Kund-adminens primärhandling BOR I KALENDERN (den öppnar drawern med
+                  // dagens kontext). En knapp i toppnaven som bara länkar dit blir en
+                  // andra knapp för samma sak — precis det codex/00 §2 förbjuder.
+                  undefined
+            }
+            contextLink={
+              !isPlatform && contextLink
+                ? { href: contextLink.href, label: 'Öppna min sida' }
+                : undefined
+            }
+            extra={isPlatform ? null : locationSwitcher}
             userLabel={userLabel}
             email={email}
+            roleLabel={isPlatform ? 'Super admin' : userSub}
             signOut={<SignOutButton />}
           />
-          <main className={`portal-main ${platformStyles.main}`}>
+          <main className={`portal-main ${topnavStyles.main}`}>
             <ToastProvider>{children}</ToastProvider>
           </main>
         </div>

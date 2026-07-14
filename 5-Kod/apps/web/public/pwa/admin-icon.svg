@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Corevo Admin — hemskärms-ikon. Bläck (--c-forest #26261f) + guld (--c-gold),
+       samma palett som back-officeens toppnav, så appikonen och produkten hör ihop.
+       Glyfen är ett schema: kolumner (resurser) med en bokad tid i guld — det ÄR
+       kalenderarbetsbordet, inte en generisk almanacka.
+       maskable-safe: allt viktigt ligger inom mitt-cirkeln (radie ~205). -->
+  <rect width="512" height="512" rx="96" fill="#26261f"/>
+  <!-- ram -->
+  <rect x="126" y="150" width="260" height="230" rx="26" fill="none" stroke="#F6F4EE" stroke-width="20"/>
+  <!-- huvudrad (resurskolumnernas etiketter) -->
+  <line x1="126" y1="212" x2="386" y2="212" stroke="#F6F4EE" stroke-width="20"/>
+  <!-- upphängning -->
+  <line x1="186" y1="118" x2="186" y2="182" stroke="#F6F4EE" stroke-width="20" stroke-linecap="round"/>
+  <line x1="326" y1="118" x2="326" y2="182" stroke="#F6F4EE" stroke-width="20" stroke-linecap="round"/>
+  <!-- kolumndelare -->
+  <line x1="212" y1="212" x2="212" y2="380" stroke="#F6F4EE" stroke-width="8" opacity="0.45"/>
+  <line x1="300" y1="212" x2="300" y2="380" stroke="#F6F4EE" stroke-width="8" opacity="0.45"/>
+  <!-- en bokad tid: höjd = längd, precis som i gridet -->
+  <rect x="228" y="248" width="56" height="86" rx="12" fill="#8f6d28"/>
+</svg>

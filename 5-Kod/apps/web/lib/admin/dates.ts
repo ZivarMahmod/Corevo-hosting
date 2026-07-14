@@ -32,6 +32,46 @@ export function weekRangeUtc(date: string, timeZone: string): { fromUtc: string;
   }
 }
 
+/** [Mon 00:00, Mon 00:00) UTC-fönster som täcker HELA månadsrutnätet för `date` —
+ *  alltså från måndagen i veckan där den 1:a ligger, till måndagen efter månadens
+ *  sista dag. Kalendern ritar ett 7-kolumnersrutnät; randdagarna hör till grannmånaden
+ *  men ska visa sina bokningar, annars ser rutnätet trasigt ut (goal-66). */
+export function monthGridRangeUtc(
+  date: string,
+  timeZone: string,
+): { fromUtc: string; toUtc: string; firstDay: string; lastDay: string } {
+  const { y, m } = ymd(date)
+  const firstDay = `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-01`
+  // Dag 0 i nästa månad = sista dagen i denna.
+  const lastDate = new Date(Date.UTC(y, m, 0, 12, 0, 0))
+  const lastDay = lastDate.toISOString().slice(0, 10)
+  const gridStart = mondayOf(firstDay)
+  const gridEnd = addDays(mondayOf(lastDay), 7)
+  return {
+    fromUtc: zonedTimeToUtc(gridStart, '00:00', timeZone).toISOString(),
+    toUtc: zonedTimeToUtc(gridEnd, '00:00', timeZone).toISOString(),
+    firstDay,
+    lastDay,
+  }
+}
+
+/** Måndagen ('YYYY-MM-DD') i veckan som innehåller `date`. */
+export function mondayOfDate(date: string): string {
+  return mondayOf(date)
+}
+
+/** Lägg till `n` månader på en 'YYYY-MM-DD' (klampas till månadens sista dag —
+ *  31 jan + 1 månad = 28/29 feb, aldrig ett överspill till mars). */
+export function addMonths(date: string, n: number): string {
+  const { y, m, d } = ymd(date)
+  const target = new Date(Date.UTC(y, m - 1 + n, 1, 12, 0, 0))
+  const daysInTarget = new Date(
+    Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0, 12, 0, 0),
+  ).getUTCDate()
+  target.setUTCDate(Math.min(d, daysInTarget))
+  return target.toISOString().slice(0, 10)
+}
+
 function ymd(date: string): { y: number; m: number; d: number } {
   const p = date.split('-')
   return { y: Number(p[0]), m: Number(p[1]), d: Number(p[2]) }

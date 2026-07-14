@@ -1,29 +1,49 @@
 import type { Metadata } from 'next'
 import { requirePortal } from '@/lib/auth/session'
-import { getAdminTenant, storefrontUrl } from '@/lib/admin/tenant'
+import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
 import {
   listBookings,
   listBookingPayments,
   listLocations,
-  listStaff,
-  listWorkingHours,
-  listWorkingHourSlots,
+  listServices,
+  staffDay,
   type AdminBooking,
   type BookingPayment,
 } from '@/lib/admin/data'
-import { dayRangeUtc, isValidDate, todayInTz, weekRangeUtc } from '@/lib/admin/dates'
+import {
+  dayRangeUtc,
+  isValidDate,
+  monthGridRangeUtc,
+  todayInTz,
+  weekRangeUtc,
+} from '@/lib/admin/dates'
+import { listTimeOffOverlapping } from '@/lib/admin/schedule-data'
 import { resolvePlats } from '@/lib/admin/plats'
-import { PageHead, Button, Icon } from '@/components/portal/ui'
-import { BookingsClient, type BookingRow, type WeekTemplate } from '@/components/admin/BookingsClient'
+import { PageHead } from '@/components/portal/ui'
+import {
+  CalendarBoard,
+  type CalendarBlock,
+  type CalendarView,
+} from '@/components/admin/CalendarBoard'
+import type { BookingRow } from '@/components/admin/BookingDrawer'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Bokningar · Adminpanel' }
+export const metadata: Metadata = { title: 'Kalender · Adminpanel' }
 
-export default async function BookingsPage({
+const VIEWS: CalendarView[] = ['dag', 'vecka', 'manad']
+
+/** Kalendern — kund-adminens arbetsbord (goal-66). ETT ställe för bokningsarbetet:
+ *  dag, vecka och månad är vyer av samma data, inte tre sidor. Ersätter den gamla
+ *  lista+veckoraster-sidan OCH helskärmskiosken (/vy) — de var två system över samma
+ *  bokningar.
+ *
+ *  Vy och datum kommer ur URL:en, så en länk öppnar exakt det arbetsbord man delade
+ *  (Översiktens "Öppna kalendern" och dess bokningsrader länkar hit). */
+export default async function KalenderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string; personal?: string; plats?: string }>
+  searchParams: Promise<{ vy?: string; datum?: string; plats?: string; open?: string }>
 }) {
   const sp = await searchParams
   const user = await requirePortal('admin')
@@ -31,7 +51,7 @@ export default async function BookingsPage({
   if (!tenant) {
     return (
       <section className="portal-section">
-        <PageHead eyebrow="Adminpanel" title="Bokningar" />
+        <PageHead eyebrow="Adminpanel" title="Kalender" />
         <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
@@ -39,117 +59,71 @@ export default async function BookingsPage({
 
   const tz = tenant.timeZone
   const today = todayInTz(tz)
+  const view: CalendarView = VIEWS.includes(sp.vy as CalendarView) ? (sp.vy as CalendarView) : 'dag'
+  const date = isValidDate(sp.datum) ? sp.datum : today
 
-  const [staff, allLocations] = await Promise.all([
-    listStaff(tenant.id),
-    listLocations(tenant.id),
+  // Plats-filtret finns bara som yta när tenanten har >1 AKTIV plats. Ett påhittat
+  // ?plats= kan aldrig peka utanför RLS-fencet — det blir bara "alla platser".
+  const locations = (await listLocations(tenant.id)).filter((l) => l.active)
+  const locationFilter =
+    locations.length > 1 ? await resolvePlats(sp.plats, locations.map((l) => l.id)) : ''
+
+  // Fönstret följer vyn. Månadsvyn hämtar HELA rutnätet (inkl. randdagarna från
+  // grannmånaderna) — annars ser rutnätets kanter tomma ut fast de har bokningar.
+  const range =
+    view === 'manad'
+      ? monthGridRangeUtc(date, tz)
+      : view === 'vecka'
+        ? weekRangeUtc(date, tz)
+        : dayRangeUtc(date, tz)
+
+  // Veckodagen i salongens tidszon (0=sön…6=lör, samma konvention som
+  // working_hours.weekday) — inte serverns lokala dag.
+  const weekday = new Date(`${date}T12:00:00Z`).getUTCDay()
+
+  // Frånvaro = kalenderns blockeringar. EN modell för "resursen kan inte bokas" —
+  // rast, frånvaro och avvikande arbetstid är samma sak (Wavys universalmekanism).
+  // Intervall-överlapp, så en semester som började i förra fönstret syns ändå.
+  const [bookings, roster, timeOff, allServices] = await Promise.all([
+    listBookings(tenant.id, {
+      fromUtc: range.fromUtc,
+      toUtc: range.toUtc,
+      locationId: locationFilter || undefined,
+    }),
+    staffDay(tenant.id, weekday),
+    // Blockeringar ritas bara i dag- och veckovyn. Månadsvyn visar antal per dag, så
+    // en 42-dagars frånvarofråga där vore ren spilld last.
+    view === 'manad'
+      ? Promise.resolve([])
+      : listTimeOffOverlapping(tenant.id, range.fromUtc, range.toUtc),
+    listServices(tenant.id),
   ])
 
-  // ── URL-styrda serverfilter (validerade mot tenantens egna rader — ett påhittat
-  //    ?personal=/?plats= kan aldrig peka utanför RLS-fencet, det blir bara Alla). ──
-  // ?week= ankrar Vecka-vyn; vilken dag som helst i veckan duger (weekRangeUtc
-  // snappar själv till måndag) så bakåt-/framåt-länkar är rena ±7-dagar.
-  const weekAnchor = isValidDate(sp.week) ? sp.week : today
-  const staffFilter = staff.some((s) => s.id === sp.personal) ? sp.personal! : ''
-  // Plats-filtret finns bara som yta när tenanten har >1 AKTIV plats (FreshCut har
-  // 1 → helt osynligt). Inaktiva platser erbjuds inte som val.
-  const locations = allLocations.filter((l) => l.active)
-  const showLocation = locations.length > 1
-  // ?plats= vinner; utan param gäller topbarens valda butik (corevo-plats-cookien).
-  const locationFilter = showLocation
-    ? await resolvePlats(
-        sp.plats,
-        locations.map((l) => l.id),
-      )
-    : ''
+  const blocks: CalendarBlock[] = timeOff.map((t) => ({
+    id: t.id,
+    staffId: t.staff_id,
+    startTs: t.start_ts,
+    endTs: t.end_ts,
+    reason: t.reason?.trim() || 'Blockerad',
+  }))
 
-  const serverFilters = {
-    staffId: staffFilter || undefined,
-    locationId: locationFilter || undefined,
-  }
-
-  // Två separata fönster (vyerna har olika tidskontrakt):
-  //  • Lista = kommande från idag (open-ended) — operativ kö.
-  //  • Vecka = HELA den valda veckan, även bakåt i tiden → historik-bläddring.
-  const week = weekRangeUtc(weekAnchor, tz)
-  const [listaBookings, veckaBookings] = await Promise.all([
-    listBookings(tenant.id, { fromUtc: dayRangeUtc(today, tz).fromUtc, ...serverFilters }),
-    listBookings(tenant.id, { fromUtc: week.fromUtc, toUtc: week.toUtc, ...serverFilters }),
-  ])
-
-  // Week raster (mock SLOT_TEMPLATE + WEEK_DAYS.closed): two independent axes per
-  // weekday (0=Sun…6=Sat), so the Vecka grid fills with the real raster even at
-  // zero bookings — the empty scaffold IS the empty-state (what the salon sees
-  // live now). Aggregated across all staff:
-  //   • OPEN/CLOSED comes from working_hours presence (no row for a weekday →
-  //     genuinely Stängt). Never inferred from missing slot rows.
-  //   • The slot start-times come from explicit working_hour_slots when seeded;
-  //     otherwise they are DERIVED from the working-hours window (start→end at a
-  //     fixed display step), mirroring the booking engine's two-mode raster
-  //     (lib/booking/availability: explicit slots, else a stepped window).
-  // Vid personal-filter byggs rastret av BARA den medarbetarens schema, så
-  // "Ledig"-cellerna i Vecka-vyn matchar filtret.
-  const rasterStaff = staffFilter ? staff.filter((s) => s.id === staffFilter) : staff
-  const [slotRowsByStaff, whRowsByStaff] = await Promise.all([
-    Promise.all(rasterStaff.map((s) => listWorkingHourSlots(tenant.id, s.id))),
-    Promise.all(rasterStaff.map((s) => listWorkingHours(tenant.id, s.id))),
-  ])
-  const slotRows = slotRowsByStaff.flat()
-  const whRows = whRowsByStaff.flat()
-
-  // Display granularity for the DERIVED raster (no effect when explicit slots
-  // exist). 30 min keeps the week-overview column readable; the per-service
-  // booking engine still computes its own finer availability elsewhere.
-  const RASTER_STEP_MIN = 30
-  const hhmm = (t: string) => t.slice(0, 5)
-  const toMin = (t: string) => {
-    const [h, m] = hhmm(t).split(':').map(Number)
-    return h! * 60 + m!
-  }
-  const fromMin = (mins: number) =>
-    `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
-
-  // Explicit slot start-times per weekday (distinct, across staff).
-  const explicitByWeekday: Record<number, Set<string>> = {}
-  for (const r of slotRows) {
-    ;(explicitByWeekday[r.weekday] ??= new Set<string>()).add(hhmm(r.start_time))
-  }
-  // Open window per weekday = the union [earliest start, latest end) across staff.
-  const openByWeekday: Record<number, { start: number; end: number }> = {}
-  for (const r of whRows) {
-    const s = toMin(r.start_time)
-    const e = toMin(r.end_time)
-    const cur = openByWeekday[r.weekday]
-    openByWeekday[r.weekday] = cur
-      ? { start: Math.min(cur.start, s), end: Math.max(cur.end, e) }
-      : { start: s, end: e }
-  }
-
-  const weekTemplate: WeekTemplate = {}
-  for (let wd = 0; wd <= 6; wd++) {
-    const explicit = explicitByWeekday[wd]
-    if (explicit && explicit.size > 0) {
-      weekTemplate[wd] = { closed: false, slots: [...explicit].sort() }
-      continue
-    }
-    const open = openByWeekday[wd]
-    if (!open) {
-      weekTemplate[wd] = { closed: true, slots: [] } // genuinely closed (no hours)
-      continue
-    }
-    const slots: string[] = []
-    for (let t = open.start; t < open.end; t += RASTER_STEP_MIN) slots.push(fromMin(t))
-    weekTemplate[wd] = { closed: false, slots }
-  }
-
-  // Enrich with the REAL payment rows (or the honest no-payment null) — ONE batched
-  // read over the union of both windows (dedupad) i stället för en per bokning.
-  const allIds = [...new Set([...listaBookings, ...veckaBookings].map((b) => b.id))]
-  const payments = await listBookingPayments(tenant.id, allIds)
+  // Betalstatus i EN batchad läsning över fönstrets bokningar (inte en per rad).
+  //
+  // Hoppas HELT i månadsvyn: den visar antal per dag, aldrig en enskild boknings
+  // betalstatus — och fönstret är 42 dagar. Att slå upp betalningar för hela månaden
+  // för att sedan inte visa dem är den dyraste sortens död kod: den syns inte, men
+  // databasen betalar för den vid varje månadsbläddring.
+  const payments =
+    view === 'manad'
+      ? new Map<string, BookingPayment>()
+      : await listBookingPayments(
+          tenant.id,
+          bookings.map((b) => b.id),
+        )
 
   const now = Date.now()
   const NO_PAYMENT: BookingPayment = { status: null, amountCents: null }
-  const toRow = (b: AdminBooking): BookingRow => {
+  const rows: BookingRow[] = bookings.map((b: AdminBooking) => {
     const pay = payments.get(b.id) ?? NO_PAYMENT
     return {
       id: b.id,
@@ -157,76 +131,43 @@ export default async function BookingsPage({
       endTs: b.endTs,
       serviceName: b.serviceName,
       staffTitle: b.staffTitle,
+      staffId: b.staffId,
       priceCents: b.priceCents,
       status: b.status,
       createdAt: b.createdAt,
       note: b.note,
       customerId: b.customerId,
       customerName: b.customerName,
+      customerPhone: b.customerPhone,
       locationName: b.locationName,
-      // Derived (pure): the slot's start instant is already in the past.
       isPast: new Date(b.startTs).getTime() < now,
       paymentStatus: pay.status,
       paymentAmountCents: pay.amountCents,
     }
-  }
-  const listaRows = listaBookings.map(toRow)
-  const veckaRows = veckaBookings.map(toRow)
-
-  // PageHead ghost date button: today in the salon tz ("tis 2 juni"-style) — en
-  // RIKTIG länk tillbaka till innevarande vecka (behåller aktiva filter).
-  const todayLabel = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: tz,
-    weekday: 'short',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date())
-  const todayParams = new URLSearchParams()
-  todayParams.set('week', today)
-  if (staffFilter) todayParams.set('personal', staffFilter)
-  if (locationFilter) todayParams.set('plats', locationFilter)
+  })
 
   return (
-    <section className="portal-section">
-      <PageHead
-        eyebrow={tenant.name}
-        title="Bokningar"
-        lede="En kontrollyta — välj den vy du jobbar bäst i. Ditt val sparas automatiskt."
-      >
-        <Button href={`/admin/bokningar?${todayParams.toString()}`} variant="ghost" icon="calendar" size="sm">
-          {todayLabel}
-        </Button>
-        {/* Bokningsvy = helskärms-kiosken (dagens bokningar per medarbetare +
-            dag-bläddring) — tänkt att stå öppen på en surfplatta hela dagen. */}
-        <Button href="/admin/bokningar/vy" variant="ghost" icon="grid" size="sm">
-          Bokningsvy — helskärm
-        </Button>
-        {/* Admin kan inte skapa bokningar härifrån ännu — ärlig UI: länka till
-            tenantens PUBLIKA bokningsflöde (ny flik) i stället för en död knapp. */}
-        <a
-          href={storefrontUrl(tenant.slug)}
-          target="_blank"
-          rel="noreferrer"
-          className="pbtn pbtn--primary pbtn--md"
-        >
-          <Icon name="external" size={17} />
-          Boka åt kund på din sida
-        </a>
-      </PageHead>
-
-      <BookingsClient
-        bookings={listaRows}
-        weekBookings={veckaRows}
-        weekAnchor={weekAnchor}
-        tz={tz}
-        weekTemplate={weekTemplate}
-        staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
-        staffOptions={staff.map((s) => ({ id: s.id, name: s.displayName }))}
-        staffFilter={staffFilter}
-        locationOptions={locations.map((l) => ({ id: l.id, name: l.name }))}
-        locationFilter={locationFilter}
-        showLocation={showLocation}
-      />
-    </section>
+    <CalendarBoard
+      bookings={rows}
+      blocks={blocks}
+      staff={roster.map((s) => ({ id: s.staffId, name: s.name, start: s.start, end: s.end }))}
+      // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
+      // drawern och sedan avvisas av servern.
+      services={allServices
+        .filter((s) => s.active)
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          durationMin: s.duration_min ?? 30,
+          priceCents: s.price_cents ?? null,
+        }))}
+      tz={tz}
+      view={view}
+      date={date}
+      today={today}
+      locationId={locationFilter || undefined}
+      staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
+      openBookingId={sp.open}
+    />
   )
 }

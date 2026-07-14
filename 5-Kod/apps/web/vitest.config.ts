@@ -22,6 +22,8 @@ export default defineConfig({
     // goal-32: also cover the ops deploy-config generator (pure route-merge +
     // fail-closed DB fetch live in scripts/*.mjs, gated like app logic).
     // goal-47: + component render tests (.tsx via renderToStaticMarkup, node env).
-    include: ['lib/**/*.test.ts', 'scripts/**/*.test.mjs', 'components/**/*.test.tsx'],
+    // goal-65: .ts under components/ täcktes inte av mönstret ovan — ren
+    // navigationslogik (admin-navigation) behöver ingen JSX och tystades bort.
+    include: ['lib/**/*.test.ts', 'scripts/**/*.test.mjs', 'components/**/*.test.{ts,tsx}'],
   },
 })

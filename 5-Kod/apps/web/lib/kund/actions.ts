@@ -156,7 +156,10 @@ export async function cancelBooking(
 
   const { error } = await supabase
     .from('bookings')
-    .update({ status: 'cancelled' })
+    // cancelled_by: 'customer' — salongens ångralogg ska kunna svara "kunden avbokade
+    // själv" utan att gissa. Skriver vi bara status här blir loggen en lista över
+    // avbokningar utan avsändare, och då är den värdelös just när den behövs.
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancelled_by: 'customer' })
     .eq('id', bookingId)
     .eq('customer_profile_id', user.id)
     .in('status', ACTIVE_STATUSES)

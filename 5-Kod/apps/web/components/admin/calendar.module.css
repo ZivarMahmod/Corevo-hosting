@@ -1,0 +1,1313 @@
+/* Kalenderarbetsbordet (goal-66). Varje färg, radie och mått kommer ur back-office-
+   tokens (--c-*, --shadow-*, --dur/--ease) — ingen ny hex, ingen ny typskala.
+
+   BÄRANDE IDÉ: ytan äger sin egen scroll. `.board` är en flexkolumn som fyller
+   höjden under toppnaven; `.scroll` är det ENDA som scrollar. Därför scrollar aldrig
+   dokumentet, toppnaven ligger kvar, och samma markup fungerar på mobil stående,
+   iPad liggande och desktop utan special-hack. */
+
+.board {
+  display: flex;
+  flex-direction: column;
+  /* Fyller ytan skalet ger oss (main är flex-höjd i workbench-läget). dvh (inte vh)
+     så mobilens adressfält inte klipper botten när det fälls in. */
+  height: calc(100dvh - 58px - 30px);
+  min-height: 420px;
+  border-radius: 18px;
+  background: var(--c-paper);
+  /* Ram som en hårfin ljusrand + mjuk skugga i stället för en tecknad 1px-linje. */
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--c-line) 75%, transparent),
+    0 12px 32px color-mix(in srgb, var(--c-ink) 6%, transparent);
+  overflow: hidden;
+}
+
+/* ---- verktygsrad ---- */
+.toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-paper);
+  flex-wrap: wrap;
+}
+
+.navGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconBtn,
+.todayBtn,
+.viewBtn {
+  min-height: 44px; /* touchmål — samma som toppnavens kontroller */
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--c-line);
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+}
+
+.iconBtn {
+  width: 44px;
+  display: grid;
+  place-items: center;
+}
+
+.todayBtn {
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.iconBtn:hover,
+.todayBtn:hover {
+  border-color: var(--c-line-strong);
+  color: var(--c-ink);
+}
+
+/* Tangentbordsfokus måste SYNAS på varje kontroll i verktygsraden — hela kalendern
+   ska gå att köra utan mus (Wavys tydligaste svaghet: fokus avstängt, bokningar
+   onåbara med tangentbord). */
+.iconBtn:focus-visible,
+.todayBtn:focus-visible,
+.viewBtn:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: -1px;
+}
+
+.periodLabel {
+  margin: 0 0 0 8px;
+  color: var(--c-ink);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.viewSwitch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  background: var(--c-cream);
+}
+
+.viewBtn {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.viewBtnOn {
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-weight: 650;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Primärhandlingen i kalendern. Samma accent som toppnavens primärknapp — en
+   verksamhet ska känna igen "det här är huvudhandlingen" överallt i produkten. */
+.newBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--platform-accent);
+  color: var(--platform-on-accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.newBtn:hover {
+  filter: brightness(1.09);
+}
+.newBtn:focus-visible,
+.blockBtn:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 2px;
+}
+
+/* ---- hjälp ---- */
+.helpBtn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  background: var(--c-paper);
+  color: var(--c-ink-3);
+  cursor: pointer;
+}
+.helpBtn:hover {
+  border-color: var(--c-line-strong);
+  color: var(--c-ink);
+}
+.helpBtn:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 2px;
+}
+
+.helpList {
+  display: grid;
+  gap: 6px;
+}
+
+.helpItem {
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: var(--c-paper);
+  overflow: hidden;
+}
+
+.helpQ {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 14px;
+  color: var(--c-ink);
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  list-style: none;
+}
+.helpQ::-webkit-details-marker {
+  display: none;
+}
+.helpQ:hover {
+  background: var(--c-paper-2);
+}
+.helpItem[open] .helpQ svg {
+  transform: rotate(90deg);
+}
+.helpQ svg {
+  flex: none;
+  color: var(--c-ink-3);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.helpA {
+  margin: 0;
+  padding: 0 14px 14px;
+  color: var(--c-ink-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ── Sök ────────────────────────────────────────────────────────────────────── */
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  height: 36px;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--c-line) 70%, transparent);
+  border-radius: 999px;
+  background: var(--c-surface);
+  color: var(--c-ink-3);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.search:focus-within {
+  border-color: color-mix(in srgb, var(--c-gold) 55%, transparent);
+}
+
+.searchInput {
+  width: 150px;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--c-ink-1);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--c-ink-3);
+}
+
+/* Träfflistan hänger UNDER rutan och över kalendern. z-index ligger över blocken men
+   under Modal — en öppen dialog ska aldrig få en sökträff ovanpå sig. */
+.searchDrop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: min(340px, calc(100vw - 32px));
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md, 12px);
+  background: var(--c-surface);
+  box-shadow: 0 14px 40px -12px rgb(0 0 0 / 0.22);
+}
+
+.searchNote {
+  margin: 0;
+  padding: 12px 10px;
+  color: var(--c-ink-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.searchHit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.searchHit:hover,
+.searchHit:focus-visible {
+  background: var(--c-paper-2);
+  outline: none;
+}
+
+.searchHitName {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--c-ink-1);
+}
+
+.searchHitDim {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--c-paper-2);
+  color: var(--c-ink-3);
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.searchHitMeta {
+  font-size: 12px;
+  color: var(--c-ink-3);
+}
+
+/* Mobil: sökrutan krymper till ikonbredd tills man fokuserar den — verktygsraden får
+   inte svälla till två rader bara för ett fält man använder någon gång i timmen. */
+@media (max-width: 620px) {
+  .searchInput {
+    width: 84px;
+  }
+
+  .search:focus-within .searchInput {
+    width: 140px;
+  }
+}
+
+/* ── Ångraloggen (B-24) ─────────────────────────────────────────────────────── */
+
+.logList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.logItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--c-line) 60%, transparent);
+  border-radius: var(--r-md, 12px);
+  background: var(--c-surface);
+}
+
+.logMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.logName {
+  font-size: 14px;
+  color: var(--c-ink-1);
+}
+
+.logMeta {
+  font-size: 12.5px;
+  color: var(--c-ink-2);
+}
+
+.logWho {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--c-ink-3);
+}
+
+.logRestore {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--c-line) 80%, transparent);
+  border-radius: 999px;
+  background: var(--c-surface);
+  color: var(--c-ink-1);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.logRestore:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-gold) 10%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--c-gold) 45%, transparent);
+}
+
+.logRestore:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Passerad tid: text, inte en avstängd knapp. En grå knapp inbjuder till klick och
+   svarar aldrig — meningen säger direkt varför det inte går. */
+.logPast {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+}
+
+.logEmpty {
+  margin: 0;
+  padding: 18px 2px;
+  color: var(--c-ink-2);
+  font-size: 13.5px;
+}
+
+.logOk,
+.logError {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md, 12px);
+  font-size: 13px;
+}
+
+.logOk {
+  background: color-mix(in srgb, var(--c-gold) 12%, var(--c-surface));
+  color: var(--c-ink-1);
+}
+
+.logError {
+  background: color-mix(in srgb, var(--c-danger, #b3261e) 10%, var(--c-surface));
+  color: var(--c-danger, #b3261e);
+}
+
+/* Under ~620px är Modal en bottensheet — raden får inte pressa knappen ur kanten. */
+@media (max-width: 620px) {
+  .logItem {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .logRestore {
+    justify-content: center;
+  }
+}
+
+/* Blockera tid = sekundär handling. Samma form som primärknappen, lugnare ton — den
+   ska finnas där utan att konkurrera med dagens huvudjobb. */
+.blockBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.blockBtn:hover {
+  border-color: var(--c-line-strong);
+  color: var(--c-ink);
+}
+
+/* ---- scrollytan: det ENDA som scrollar ---- */
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* ---- dag/vecka: tidsaxel + kolumner ---- */
+.dayWrap {
+  --axis-w: 56px;
+  --col-min: 148px;
+  min-width: 100%;
+  width: max-content;
+}
+
+.head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: var(--axis-w) repeat(var(--cols), minmax(var(--col-min), 1fr));
+  /* Huvudet lyfter mjukt när gridet scrollar under det — ingen hård underkantslinje. */
+  background: var(--c-paper);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--c-line) 70%, transparent);
+}
+
+.headSpacer {
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--c-line) 55%, transparent);
+}
+
+.headCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 13px;
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--c-line) 55%, transparent);
+  text-align: left;
+}
+
+.headCellBtn {
+  border-top: 0;
+  border-bottom: 0;
+  border-left: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.headCellBtn:hover {
+  background: var(--c-paper-2);
+}
+.headCellBtn:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: -2px;
+}
+
+.headToday .headName {
+  color: var(--c-forest);
+}
+.headToday::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--c-forest);
+  content: '';
+}
+
+.headName {
+  color: var(--c-ink);
+  font-size: 13.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headHours {
+  color: var(--c-ink-3);
+  font-size: 11.5px;
+}
+
+.body {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--axis-w) repeat(var(--cols), minmax(var(--col-min), 1fr));
+  /* Luft ovanför första timstrecket — annars klipps dess etikett (som är centrerad på
+     linjen) av kolumnhuvudets underkant. */
+  padding-top: 10px;
+}
+
+.axis {
+  position: relative;
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--c-line) 55%, transparent);
+}
+
+.axisMark {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  color: var(--c-ink-3);
+  font-size: 11px;
+}
+
+.col {
+  position: relative;
+  /* Mjuk kolumnavdelare: en halvtransparent linje i stället för en hård ram. Rutnätet
+     ska ANTYDAS, inte ritas — det är skillnaden mellan ett kalkylark och en kalender. */
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--c-line) 55%, transparent);
+}
+
+/* Utanför arbetstid: nedtonad, men kolumnen finns kvar. En ledig resurs är
+   information ("hen jobbar inte idag"), inte en tom lucka i rutnätet. Diskret
+   diagonalmönster gör skillnaden läsbar även i gråskala. */
+.offHours {
+  position: absolute;
+  right: 0;
+  left: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--c-cream) 82%, transparent),
+    color-mix(in srgb, var(--c-cream) 82%, transparent) 7px,
+    color-mix(in srgb, var(--c-paper-2) 60%, transparent) 7px,
+    color-mix(in srgb, var(--c-paper-2) 60%, transparent) 14px
+  );
+}
+
+/* Hel timme = svag linje. Halvtimme = ännu svagare (bara en ledtråd för ögat).
+   Inga hårda 1px-svarta linjer någonstans. */
+.hourLine {
+  position: absolute;
+  right: 0;
+  left: 0;
+  border-top: 1px solid color-mix(in srgb, var(--c-line) 60%, transparent);
+}
+.hourLine::after {
+  position: absolute;
+  top: calc(var(--half, 42px) - 1px);
+  right: 0;
+  left: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--c-line) 32%, transparent);
+  content: '';
+}
+
+/* Ledig yta — hela kolumnens bakgrund är klickbar ("boka här"). Ligger UNDER
+   bokningsblocken i z-ordning, så ett klick på en bokning öppnar bokningen. */
+.freeArea {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: copy;
+}
+.freeArea:hover {
+  background: color-mix(in srgb, var(--c-gold) 6%, transparent);
+}
+.freeArea:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: -2px;
+}
+
+/* ---- bokningsblock: y = starttid, höjd = längd ----
+   Mjukt kort, inte en cell. Ingen hård ram: accentkanten till vänster + en varm,
+   nästan omärklig ton av samma accent bär identiteten. Skuggan är låg och diffus, så
+   blocken vilar på ytan i stället för att sitta fastnitade i ett rutnät. */
+.block {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  padding: 5px 9px;
+  border: 0;
+  border-left: 3px solid var(--c-gold);
+  border-radius: 11px;
+  background:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--c-gold) 9%, var(--c-paper)),
+      var(--c-paper) 60%
+    );
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--c-ink) 6%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--c-line) 60%, transparent);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+/* Lyft vid hover — kortet reagerar, det känns levande i stället för statiskt. */
+.block:hover {
+  z-index: 2;
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 16px color-mix(in srgb, var(--c-ink) 12%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--c-line-strong) 70%, transparent);
+}
+.block:focus-visible {
+  z-index: 2;
+  outline: 2px solid var(--c-forest);
+  outline-offset: 2px;
+}
+
+/* Dragbar: markören säger att kortet kan tas. Under själva dragningen tonas originalet
+   ned så man ser vart man är på väg. */
+.blockDrag {
+  cursor: grab;
+}
+.blockDrag:active {
+  cursor: grabbing;
+  transform: scale(0.99);
+}
+
+/* Avbokad tonas ned OCH får ett kryss i texten — status uttrycks aldrig enbart i färg. */
+.blockDim {
+  background: var(--c-paper-2);
+  opacity: 0.72;
+}
+.blockDim .blockName {
+  text-decoration: line-through;
+}
+
+.blockTime {
+  color: var(--c-forest);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  flex: none;
+}
+
+.blockName {
+  color: var(--c-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.blockService {
+  color: var(--c-ink-3);
+  font-size: 11.5px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Telefonnumret ska gå att LÄSA på håll utan att skrika — det är referensinfo, inte
+   rubrik. Siffrorna sitter i tabellsiffror (.num) så de inte hoppar mellan blocken. */
+.blockPhone {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 1px;
+  color: var(--c-ink-3);
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.blockPhone svg {
+  flex: none;
+  opacity: 0.75;
+}
+
+.blockFlag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: auto;
+  color: var(--c-ink-2);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* Kort block (< 40px, dvs under ~30 min): EN rad — tid, namn, statusikon. Hellre tre
+   saker som syns än fyra som klipps. Hela informationen finns i title + drawern. */
+.blockTiny {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+}
+.blockTiny .blockName {
+  flex: 1;
+  min-width: 0;
+}
+
+.blockFlagTiny {
+  display: inline-flex;
+  flex: none;
+  color: var(--c-ink-2);
+}
+
+/* ---- blockerad tid ----
+   Skiljs från en bokning med MER än färg: diagonalrandigt mönster + ikon + text.
+   Måste vara läsbar i gråskala (repeating-linear-gradient bär mönstret, inte kulören). */
+.blocked {
+  position: absolute;
+  right: 2px;
+  left: 2px;
+  z-index: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  padding: 3px 7px;
+  border: 1px dashed color-mix(in srgb, var(--c-line-strong) 75%, transparent);
+  border-radius: 10px;
+  /* Mönstret (inte färgen) skiljer en blockering från en bokning — funkar i gråskala
+     och för färgblinda. Mjuk lutning, inte hårda ränder. */
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--c-paper-2) 92%, transparent),
+    color-mix(in srgb, var(--c-paper-2) 92%, transparent) 6px,
+    color-mix(in srgb, var(--c-paper-3) 80%, transparent) 6px,
+    color-mix(in srgb, var(--c-paper-3) 80%, transparent) 12px
+  );
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.blocked:hover {
+  border-color: var(--c-line-strong);
+}
+.blocked:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 1px;
+}
+
+.blockedText {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--c-ink-2);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- nu-linjen ---- */
+.nowLine {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 3;
+  height: 1px;
+  /* Tunn och tonad — ska säga "här är vi nu", inte skrika. */
+  background: color-mix(in srgb, var(--c-danger) 70%, transparent);
+  pointer-events: none;
+}
+.nowLine::before {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--c-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-danger) 16%, transparent);
+  content: '';
+}
+
+/* ---- drop-förhandsvisning ----
+   Ritas medan man drar: exakt var bokningen landar, med tiderna utskrivna. Streckad
+   och genomskinlig — den är ett LÖFTE om vad som händer, inte en bokning som redan
+   skett. */
+.dropPreview {
+  position: absolute;
+  right: 3px;
+  left: 3px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 2px dashed var(--c-forest);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--c-forest) 10%, transparent);
+  color: var(--c-forest);
+  font-size: 11.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+/* ---- flytt-bekräftelse (i Modal) ---- */
+.confirmBody {
+  margin: 0 0 14px;
+  color: var(--c-ink-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Från → Till sida vid sida: konsekvensen läses på en blick, inte som en textmassa. */
+.moveDiff {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--c-paper-2);
+  color: var(--c-ink-3);
+}
+
+.moveFrom,
+.moveTo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.moveFrom span:last-child {
+  color: var(--c-ink-2);
+  font-size: 13px;
+  text-decoration: line-through;
+}
+
+.moveTo span:last-child {
+  color: var(--c-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ---- månad ---- */
+.month {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 12px;
+}
+
+.monthHead,
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.monthHead {
+  margin-bottom: 6px;
+}
+
+.monthHeadCell {
+  padding: 4px 6px;
+  color: var(--c-ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.monthGrid {
+  flex: 1;
+  grid-auto-rows: minmax(84px, 1fr);
+}
+
+.monthCell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  background: var(--c-paper);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+.monthCell:hover {
+  border-color: var(--c-line-strong);
+  background: var(--c-paper-2);
+}
+.monthCell:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 1px;
+}
+
+/* Dagar utanför månaden hör till grannmånaden — dämpade, men klickbara. */
+.monthCellOut {
+  background: var(--c-cream);
+  opacity: 0.62;
+}
+
+.monthCellToday {
+  border-color: var(--c-forest);
+}
+
+.monthDayNum {
+  color: var(--c-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.monthCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--c-ink-2);
+  font-size: 11.5px;
+}
+
+.monthPending {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+  font-weight: 700;
+}
+
+.empty {
+  margin: 0;
+  padding: 40px 24px;
+  color: var(--c-ink-2);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ---- skapa bokning (drawern) ----
+   Tjänster och lediga tider är CHIPS: allt synligt på en gång, inget gömt bakom en
+   dropdown. Recognition over recall — man känner igen sin tjänst, minns den inte. */
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-start;
+  padding: 9px 13px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: var(--c-paper);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.chip:hover {
+  border-color: var(--c-line-strong);
+  background: var(--c-paper-2);
+}
+.chip:focus-visible,
+.slotChip:focus-visible,
+.hit:focus-visible,
+.pickedChange:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 1px;
+}
+
+.chipOn {
+  border-color: var(--c-forest);
+  background: color-mix(in srgb, var(--c-forest) 7%, var(--c-paper));
+}
+
+.chipName {
+  color: var(--c-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.chipMeta {
+  color: var(--c-ink-3);
+  font-size: 11.5px;
+}
+
+.slotStaff {
+  margin-bottom: 6px;
+  color: var(--c-ink-2);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.slotChip {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  background: var(--c-paper);
+  color: var(--c-ink);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.slotChip:hover {
+  border-color: var(--c-forest);
+  background: color-mix(in srgb, var(--c-forest) 8%, var(--c-paper));
+}
+
+/* Vald tid/kund: kontexten visas som en RAD, aldrig som ett formulär man matar in
+   igen. Det klickade valet skrivs aldrig om. */
+.pickedRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 13px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: var(--c-paper-2);
+  color: var(--c-ink);
+  font-size: 13.5px;
+}
+
+.pickedMeta {
+  color: var(--c-ink-3);
+  font-size: 12px;
+}
+
+.pickedChange {
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.pickedChange:hover {
+  border-color: var(--c-line-strong);
+  color: var(--c-ink);
+}
+
+.hint {
+  margin: 8px 0 0;
+  color: var(--c-ink-3);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font: inherit;
+  font-size: 13.5px;
+  box-sizing: border-box;
+}
+.input:focus-visible {
+  border-color: var(--c-forest);
+  outline: 2px solid color-mix(in srgb, var(--c-forest) 30%, transparent);
+  outline-offset: 0;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.hitList {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.hit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--c-line);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+.hitList li:last-child .hit {
+  border-bottom: 0;
+}
+.hit:hover {
+  background: var(--c-paper-2);
+}
+
+.radioList {
+  display: grid;
+  gap: 4px;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  color: var(--c-ink);
+  cursor: pointer;
+  font-size: 13.5px;
+}
+.radio:hover {
+  background: var(--c-paper-2);
+}
+
+/* Avstängt val = förklarat val. Aldrig bara grått: texten säger VARFÖR. */
+.radioOff {
+  color: var(--c-ink-3);
+  cursor: not-allowed;
+}
+.radioOff:hover {
+  background: transparent;
+}
+
+/* ---- responsivt ----
+   Kolumnerna har en minsta bredd (--col-min) och .dayWrap är `width: max-content`,
+   så många resurser scrollar horisontellt INNE i .scroll i stället för att pressas
+   ihop till oläsliga remsor. På små skärmar krymper minbredden i stället för att
+   kolumnerna försvinner — man ska alltid kunna se ALLA anställda. */
+@media (max-width: 760px) {
+  .board {
+    /* Mobilen får hela höjden: verktygsraden viker till två rader, så vi tar bort
+       kortets marginal-antagande och låter ytan andas. */
+    height: calc(100dvh - 58px - 24px);
+    border-radius: 12px;
+  }
+
+  .toolbar {
+    padding: 8px 10px;
+  }
+
+  .navGroup {
+    order: 1;
+    flex: 1 0 100%;
+  }
+
+  .toolbarRight {
+    order: 2;
+    flex: 1 0 100%;
+  }
+
+  .viewSwitch {
+    width: 100%;
+  }
+
+  .viewBtn {
+    flex: 1;
+  }
+
+  .periodLabel {
+    font-size: 14.5px;
+  }
+
+  .dayWrap {
+    --axis-w: 44px;
+    --col-min: 116px;
+  }
+
+  .monthGrid {
+    gap: 4px;
+    grid-auto-rows: minmax(58px, 1fr);
+  }
+
+  .monthCount {
+    font-size: 10.5px;
+  }
+}
+
+/* Liggande telefon: låg höjd, mycket bredd. Verktygsraden får inte äta halva vyn. */
+@media (max-height: 520px) and (orientation: landscape) {
+  .board {
+    height: calc(100dvh - 58px - 16px);
+    min-height: 300px;
+  }
+
+  .toolbar {
+    padding: 6px 10px;
+  }
+
+  .iconBtn,
+  .todayBtn {
+    min-height: 38px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block,
+  .monthCell,
+  .chip,
+  .slotChip {
+    transition: none;
+  }
+  .block:hover {
+    transform: none;
+  }
+  .confirmBackdrop,
+  .confirmCard {
+    animation: none;
+  }
+}

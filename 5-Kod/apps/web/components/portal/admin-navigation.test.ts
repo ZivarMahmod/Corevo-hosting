@@ -1,0 +1,73 @@
+import { describe, expect, it } from 'vitest'
+import { adminAreas } from './admin-navigation'
+import { activeTopnavArea } from './Topnav'
+
+/** goal-65: kund-adminens toppnav. Reglerna som testas är låsta beslut, inte smak:
+ *  en verksamhet utan moduler ser exakt fem val (codex/00 §"Målets toppnavigation"),
+ *  bara AKTIVERADE moduler får synas (nav-items.ts modulgating), och aktivmarkeringen
+ *  måste skilja /admin från /admin/kunder. */
+
+const label = (areas: ReturnType<typeof adminAreas>) => areas.map((a) => a.label)
+
+describe('adminAreas', () => {
+  it('visar exakt de fem huvudvalen för en verksamhet utan moduler', () => {
+    expect(label(adminAreas([]))).toEqual([
+      'Översikt',
+      'Kalender',
+      'Kunder',
+      'Redigera sidan',
+      'Inställningar',
+    ])
+  })
+
+  it('lägger in aktiverade moduler som egna poster, före Redigera sidan', () => {
+    expect(label(adminAreas(['shop', 'blogg']))).toEqual([
+      'Översikt',
+      'Kalender',
+      'Kunder',
+      'Webshop',
+      'Blogg',
+      'Redigera sidan',
+      'Inställningar',
+    ])
+  })
+
+  it('visar aldrig en modul som kunden inte aktiverat', () => {
+    expect(label(adminAreas(['shop']))).not.toContain('Presentkort')
+  })
+
+  it('säger aldrig "Superadmin" eller läcker plattformsytor', () => {
+    const hrefs = adminAreas(undefined).map((a) => a.href)
+    expect(hrefs.every((href) => href.startsWith('/admin'))).toBe(true)
+    expect(hrefs).not.toContain('/salonger')
+  })
+})
+
+describe('aktivt område', () => {
+  const areas = adminAreas([])
+  const activeId = (pathname: string) => activeTopnavArea(pathname, areas)?.id
+
+  it('markerar Översikt bara på /admin, inte på undersidorna', () => {
+    expect(activeId('/admin')).toBe('oversikt')
+    expect(activeId('/admin/kunder')).toBe('kunder')
+    expect(activeId('/admin/bokningar')).toBe('kalender')
+  })
+
+  it('håller Inställningar aktiv på sina undersidor', () => {
+    for (const path of [
+      '/admin/installningar',
+      '/admin/personal',
+      '/admin/tjanster',
+      '/admin/scheman',
+      '/admin/platser',
+    ]) {
+      expect(activeId(path)).toBe('installningar')
+    }
+  })
+
+  it('ger Inställningar en subnav och de andra områdena ingen', () => {
+    const settings = areas.find((a) => a.id === 'installningar')
+    expect(settings?.subnav?.length).toBe(5)
+    expect(areas.find((a) => a.id === 'kalender')?.subnav).toBeUndefined()
+  })
+})

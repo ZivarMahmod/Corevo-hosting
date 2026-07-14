@@ -189,7 +189,9 @@ export async function cancelOwnBooking(_prev: ActionState, formData: FormData): 
   const supabase = await createClient()
   const { data: released, error } = await supabase
     .from('bookings')
-    .update({ status: 'cancelled' })
+    // cancelled_by: 'business' — personalen ÄR salongen sett från kunden. Loggen
+    // skiljer på "kunden avbokade" och "vi avbokade", inte på vilken anställd.
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancelled_by: 'business' })
     .eq('id', bookingId)
     .in('staff_id', myStaffIds)
     .in('status', [...ACTIVE_STATUSES])

@@ -63,16 +63,21 @@ export function RealtimeBookings({ tenantId }: { tenantId?: string }) {
         if (cancelled) return
         if (session) await supabase.realtime.setAuth(session.access_token)
 
+        const scope = tenantId ? { filter: `tenant_id=eq.${tenantId}` } : {}
         channel = supabase
           .channel('rt-bookings')
           .on(
             'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'bookings',
-              ...(tenantId ? { filter: `tenant_id=eq.${tenantId}` } : {}),
-            },
+            { event: '*', schema: 'public', table: 'bookings', ...scope },
+            () => debouncedRefresh(),
+          )
+          // Blockeringar (time_off) på SAMMA kanal — en rast som läggs in på iPaden i
+          // salongen ska synas direkt i receptionens kalender. Samma debounce, samma
+          // socket: ingen extra anslutning, ingen extra DB-last (signalen bär ingen
+          // data — servern läser om, RLS-fencat).
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'time_off', ...scope },
             () => debouncedRefresh(),
           )
           .subscribe()

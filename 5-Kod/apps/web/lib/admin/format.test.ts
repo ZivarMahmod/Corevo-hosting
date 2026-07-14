@@ -11,10 +11,16 @@ describe('ALLOWED_FROM status-transition matrix', () => {
     for (const s of BOOKING_STATUSES) expect(ALLOWED_FROM[s]).toBeDefined()
   })
 
-  it('keeps `cancelled` as the only NON-revivable terminal — never a source', () => {
-    // Cancelling moves money (refund); reviving a refunded booking would desync
-    // Stripe. So no target may be reached FROM `cancelled`.
-    expect(sources).not.toContain('cancelled')
+  it('lets a cancelled booking be restored — but ONLY back to `confirmed`', () => {
+    // B-24 (ångraloggen): en felavbokad tid ska gå att få tillbaka. Restore landar
+    // i `confirmed` — den enda status där tiden faktiskt är bokad igen. Att också
+    // öppna cancelled→completed/no_show vore att låta ett ångra-klick påstå att ett
+    // besök ägt rum. Refund-invarianten lever kvar i setBookingStatus (matrisen ser
+    // inte pengar): en ÅTERBETALD bokning går aldrig att återställa.
+    expect(ALLOWED_FROM.confirmed).toContain('cancelled')
+    for (const target of ['pending', 'completed', 'no_show'] as const) {
+      expect(ALLOWED_FROM[target]).not.toContain('cancelled')
+    }
   })
 
   it('lets `completed` be corrected — it appears as a source', () => {

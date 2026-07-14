@@ -1486,12 +1486,37 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
   if (current.status === status) return { success: 'Status uppdaterad.' }
 
   const allowedFrom = ALLOWED_FROM[status as BookingStatus]
+
+  // Ångra en avbokning (B-24). PENGARNA styr, inte klicket: har betalningen
+  // återbetalats är den bokningen slut — att väcka den skulle säga "betald" om en
+  // tid kunden fått pengarna tillbaka för. ALLOWED_FROM kan inte se pengar, så
+  // vakten sitter här. Frisören får i stället boka en ny tid, med en ny betalning.
+  if (current.status === 'cancelled') {
+    const { data: pay } = await supabase
+      .from('payments')
+      .select('status')
+      .eq('booking_id', bookingId)
+      .eq('tenant_id', ctx.tenant.id)
+      .maybeSingle()
+    if (pay?.status === 'refunded')
+      return { error: 'Bokningen är återbetald och kan inte återställas. Boka en ny tid.' }
+  }
+
+  // Avbokningsspåret: vem och när. Sätts vid avbokning, NOLLSTÄLLS vid återställning
+  // — annars ligger bokningen kvar i ångraloggen fast den är aktiv igen.
+  const trace =
+    status === 'cancelled'
+      ? { cancelled_at: new Date().toISOString(), cancelled_by: 'business' }
+      : current.status === 'cancelled'
+        ? { cancelled_at: null, cancelled_by: null }
+        : {}
+
   // Gate the write on the current status: .in('status', allowedFrom) means the
   // UPDATE only matches when the transition is permitted. Zero rows back ⇒ the
   // booking was in a status this target can't be reached from.
   const { data: updated, error } = await supabase
     .from('bookings')
-    .update({ status })
+    .update({ status, ...trace })
     .eq('id', bookingId)
     .eq('tenant_id', ctx.tenant.id)
     .in('status', allowedFrom)

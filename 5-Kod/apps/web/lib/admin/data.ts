@@ -41,6 +41,10 @@ export type AdminBooking = {
    *  (shownNameOf: display_name → initial vid name_hidden → full_name).
    *  null = ingen kundkoppling; ett dolt fullnamn läcker aldrig hit. */
   customerName: string | null
+  /** Kundens telefon — så receptionen kan RINGA direkt ur kalendern. null = gäst
+   *  utan nummer. `name_hidden` maskerar NAMNET, aldrig numret: den kund som valt
+   *  att vara anonym utåt ska fortfarande gå att nå av salongen hen bokat hos. */
+  customerPhone: string | null
 }
 
 export type BookingFilters = {
@@ -195,10 +199,16 @@ export async function listBookings(
   // fencar läsningen till role_level>=3 i tenanten — kan raden inte läsas blir
   // embedden null och UI:t faller ärligt tillbaka till 'Gäst', aldrig ett läckt
   // fullnamn (maskningen sker i shownNameOf, samma regel som Kunder-sidan).
+  //
+  // `phone` följer med: kalendern måste kunna RINGA kunden ("sen igår, kommer du?")
+  // utan att först öppna bokningen. Det är inte en ny PII-väg — customers_rls släpper
+  // redan igenom raden till ägaren, och en kund i ägarens egen kalender är precis det
+  // driftfall get_customer_contact:s fönster beskriver. RPC:n behövs där anroparen
+  // INTE har den fencen (kundportalen, personalvyn); här har den det.
   let q = supabase
     .from('bookings')
     .select(
-      'id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, location_id, customer_id, services(name), staff(title), locations(name), customers(display_name, full_name, name_hidden)',
+      'id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, location_id, customer_id, services(name), staff(title), locations(name), customers(display_name, full_name, name_hidden, phone)',
     )
     .eq('tenant_id', tenantId)
   if (filters.fromUtc) q = q.gte('start_ts', filters.fromUtc)
@@ -222,7 +232,7 @@ export async function listBookings(
     services: { name: string } | null
     staff: { title: string | null } | null
     locations: { name: string } | null
-    customers: Pick<CustomerRow, 'display_name' | 'full_name' | 'name_hidden'> | null
+    customers: Pick<CustomerRow, 'display_name' | 'full_name' | 'name_hidden' | 'phone'> | null
   }
   const mapped: AdminBooking[] = ((data ?? []) as Row[]).map((b) => ({
     id: b.id,
@@ -237,6 +247,7 @@ export async function listBookings(
     locationName: b.locations?.name ?? null,
     customerId: b.customer_id,
     customerName: b.customers ? shownNameOf(b.customers) : null,
+    customerPhone: b.customers?.phone?.trim() || null,
     serviceName: b.services?.name ?? 'Okänd tjänst',
     staffTitle: b.staff?.title?.trim() || 'Medarbetare',
   }))
@@ -449,6 +460,9 @@ export async function getCustomerDetail(
     // Raden ÄR kundens egen historik — identiteten är redan känd + maskad ovan.
     customerId,
     customerName: shownNameOf(c),
+    // Kundkortet visar kontaktuppgifterna i sin egen sektion (tidsbunden PII via
+    // get_customer_contact). Historikraderna behöver inte upprepa numret.
+    customerPhone: null,
     serviceName: b.services?.name ?? 'Okänd tjänst',
     staffTitle: b.staff?.title?.trim() || 'Medarbetare',
   }))
@@ -501,6 +515,67 @@ export async function getCustomerContact(customerId: string): Promise<CustomerCo
 
 export type ServiceMixEntry = { name: string; count: number }
 export type PeakHourEntry = { hour: number; count: number }
+
+/** En resurs (personal) och dess arbetstid en given veckodag. `start`/`end` är null
+ *  när resursen inte arbetar den dagen — det är ett ärligt "ledig", inte saknad data. */
+export type StaffDay = {
+  staffId: string
+  name: string
+  start: string | null
+  end: string | null
+}
+
+/** Dagens resursläge: aktiv personal + deras arbetstid för veckodagen (0=sön … 6=lör,
+ *  samma konvention som working_hours.weekday). EN läsning för hela tenanten — den
+ *  gamla listWorkingHours(staffId) är per resurs och blir N+1 i en dagvy.
+ *  Kalenderns kolumner (goal-66) läser samma funktion: en resurs som är ledig ska
+ *  ritas som ledig, inte utelämnas. */
+export async function staffDay(tenantId: string, weekday: number): Promise<StaffDay[]> {
+  const supabase = await createClient()
+  const [{ data: staffRows }, { data: hourRows }] = await Promise.all([
+    supabase
+      .from('staff')
+      .select('id, title')
+      .eq('tenant_id', tenantId)
+      .eq('active', true)
+      // Stabil kolumnordning i kalendern kräver en deterministisk sortering — samma
+      // ordning varje ladd, annars hoppar resurserna mellan kolumner.
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('working_hours')
+      .select('staff_id, start_time, end_time')
+      .eq('tenant_id', tenantId)
+      .eq('weekday', weekday)
+      .order('start_time', { ascending: true }),
+  ])
+
+  // Flera pass samma dag (t.ex. förmiddag + kväll) → resursens dag spänner från
+  // första starten till sista slutet. Luckan mellan passen ritas som ej tillgänglig
+  // i kalendern; här räcker ytterkanterna.
+  const span = new Map<string, { start: string; end: string }>()
+  for (const row of (hourRows ?? []) as {
+    staff_id: string
+    start_time: string
+    end_time: string
+  }[]) {
+    const prev = span.get(row.staff_id)
+    span.set(row.staff_id, {
+      start: prev && prev.start < row.start_time ? prev.start : row.start_time,
+      end: prev && prev.end > row.end_time ? prev.end : row.end_time,
+    })
+  }
+
+  return ((staffRows ?? []) as { id: string; title: string | null }[]).map((s) => {
+    const hours = span.get(s.id)
+    return {
+      staffId: s.id,
+      // Samma fallback som listStaff.displayName — identiteten bärs av namnet.
+      name: s.title?.trim() || 'Namnlös medarbetare',
+      start: hours?.start ?? null,
+      end: hours?.end ?? null,
+    }
+  })
+}
 
 export type DashboardData = {
   servicesActive: number

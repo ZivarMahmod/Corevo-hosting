@@ -278,6 +278,34 @@
   filter: brightness(1.09);
 }
 
+/* Kund-adminens "Öppna min sida" + platsväljare. Nya element (superadmin har ingen
+   enskild storefront och ingen platsväljare), men byggda av EXAKT samma tokens och mått
+   som .search — ingen ny färg, radie eller typskala införs. */
+.context {
+  min-height: 44px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  background: var(--c-cream);
+  color: var(--c-ink-2);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.context:hover {
+  border-color: var(--c-line-strong);
+  color: var(--c-ink);
+}
+
+.extra {
+  flex: none;
+  min-width: 0;
+}
+
 .theme {
   flex: none;
 }
@@ -460,6 +488,16 @@
   overflow: hidden;
 }
 
+/* Arbetsbord (kalendern) tar HELA ytan. 1320px-spalten är gjord för läsbar text —
+   ett schema med fem resurskolumner ska i stället använda varje pixel skärmen har.
+   Utan detta blir det en smal remsa mitt på en tom sida (Zivar 2026-07-14). */
+.shell[data-world='backoffice']:has(.main > :global(.workbench)) .main {
+  width: 100%;
+  max-width: none;
+  padding: 14px 14px 16px;
+  min-height: calc(100dvh - 58px);
+}
+
 @media (max-width: 1120px) {
   .bar {
     flex-wrap: wrap;
@@ -503,6 +541,26 @@
   }
 
   .newCustomer span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Mobil: "Öppna min sida" är sekundärt — texten viker undan, ikonen (44px touchmål)
+     räcker. Primärhandlingen (+ Ny bokning) och kontomenyn är kvar i tumräckhåll. */
+  .context {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .context span {
     position: absolute;
     width: 1px;
     height: 1px;
