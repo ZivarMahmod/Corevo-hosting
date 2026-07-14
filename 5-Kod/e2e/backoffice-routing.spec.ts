@@ -32,7 +32,10 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
 
     // Clean back-office routes resolve (no /platform prefix).
     await page.goto(`${BOOKING}/salonger`)
-    await expect(page.getByRole('heading', { name: 'Salonger' })).toBeVisible()
+    // Rubriken heter "Kunder", inte "Salonger": tenants ÄR kunderna, och plattformen
+    // säljer till fler branscher än salonger. Rutten behåller sitt gamla namn (den är
+    // en URL, inte en etikett) — men ytan säger det den är.
+    await expect(page.getByRole('heading', { name: 'Kunder' })).toBeVisible()
     await page.goto(`${BOOKING}/fakturering`)
     await expect(page.getByRole('heading', { name: 'Faktureringsunderlag' })).toBeVisible()
 
@@ -60,12 +63,29 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
     }
   })
 
-  test('staff → their schedule (/personal); /admin denied', async ({ page }) => {
+  test('staff → kalendern, men ALDRIG systemadministrationen', async ({ page }) => {
+    // goal-67 ÄNDRADE DEN HÄR REGELN, och testet fångade att det inte var uppdaterat.
+    // FÖRR: staff (nivå 3) var under admin-portalens miniminivå (6) → hela /admin nekades.
+    // NU:  "Full frihet i kalendern. Ingen systemadministration." (Zivars ord.) Personalen
+    //      måste kunna boka, flytta, avboka och söka kunder — annars är produkten oanvändbar
+    //      för den som faktiskt står i salongen. Vakten är requireAdminArea (lib/auth/admin-areas.ts),
+    //      inte längre en enda nivågräns för hela /admin.
     await loginAt(page, BOOKING, SEED.staff)
-    await expect(page).toHaveURL(new RegExp(`${BOOKING}/personal`))
-    // Level fence: staff (level 3) is below the admin portal minimum (6) → denied.
-    await page.goto(`${BOOKING}/admin`)
-    await expect(page).toHaveURL(new RegExp(`${BOOKING}/ingen-atkomst`))
+
+    // Kalendern och kunderna: JA.
+    for (const p of ['/admin/bokningar', '/admin/kunder']) {
+      await page.goto(`${BOOKING}${p}`)
+      await expect(page, `${p} måste vara öppen för personal`).toHaveURL(new RegExp(`${BOOKING}${p}`))
+    }
+
+    // Systemadministrationen: NEJ. Det är den här raden som gör rollen meningsfull —
+    // utan den vore "staff" bara ett annat namn för salon_admin.
+    for (const p of ['/admin/installningar', '/admin/personal', '/admin/tjanster']) {
+      await page.goto(`${BOOKING}${p}`)
+      await expect(page, `${p} måste nekas för personal`).toHaveURL(
+        new RegExp(`${BOOKING}/ingen-atkomst`),
+      )
+    }
   })
 })
 

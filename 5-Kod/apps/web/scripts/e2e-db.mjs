@@ -42,7 +42,10 @@ function sql(query) {
   const tmp = path.join(tmpdir(), `corevo-e2e-${randomBytes(6).toString('hex')}.sql`)
   writeFileSync(tmp, query, 'utf8')
   try {
-    return execFileSync('bash', ['-lc', `npx supabase db query --linked "$(cat '${tmp}')"`], {
+    // `-f <fil>` och INTE SQL:en som argument: seed-filen är ~7 kB och Windows svarar
+    // "The command line is too long" långt innan dess. Filen ligger i os.tmpdir() och
+    // raderas alltid (finally) — den bär ett engångslösenord i klartext.
+    return execFileSync('bash', ['-lc', `npx supabase db query --linked -f '${tmp}'`], {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],

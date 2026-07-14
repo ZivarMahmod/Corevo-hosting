@@ -134,3 +134,25 @@ where not exists (
   select 1 from public.working_hours
   where staff_id = 'e2e00000-0000-0000-0000-000000000041' and weekday = d
 );
+
+-- ── bokbara starttider (working_hour_slots) ──
+-- DEN HÄR SAKNADES och sviten hittade det: `working_hours` säger NÄR någon JOBBAR;
+-- `working_hour_slots` säger vilka starttider som går att BOKA. Den publika bokningen
+-- läser den senare. Utan slots är kalendern öppen men bokningssidan tom — precis vad
+-- e2e-felet sa: "No available slot in the 14-day window".
+-- En rad per bokbar starttid: mån–fre, 09:00–16:45, var 15:e minut (= 32 st/dag, 160 totalt).
+insert into public.working_hour_slots (tenant_id, staff_id, location_id, weekday, start_time, active)
+select 'e2e00000-0000-0000-0000-000000000001',
+       'e2e00000-0000-0000-0000-000000000041',
+       'e2e00000-0000-0000-0000-000000000071',
+       d,
+       (time '09:00' + (n || ' minutes')::interval)::time,
+       true
+from generate_series(1, 5) as d
+cross join generate_series(0, 465, 15) as n   -- 09:00 → 16:45
+where not exists (
+  select 1 from public.working_hour_slots
+  where staff_id = 'e2e00000-0000-0000-0000-000000000041'
+    and weekday = d
+    and start_time = (time '09:00' + (n || ' minutes')::interval)::time
+);

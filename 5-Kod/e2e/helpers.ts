@@ -62,18 +62,37 @@ export async function loginCustomer(page: Page, email: string, slug = SEED.tenan
   await submitLogin(page, email)
 }
 
+/** Wizardens "gå vidare"-knapp. Varje steg kräver ETT tryck — det finns ingen
+ *  auto-avancering. Testet trodde tidigare att ett val räckte och fastnade på steg 1. */
+export async function wizardNext(page: Page) {
+  await page.locator('.wizard-cta').click()
+}
+
+/** Cookie-bannern ligger ÖVER wizardens knappar och åt alla klick i botten av vyn.
+ *  Den är inte en bugg — den ska ligga där — men den måste bort innan man kan boka,
+ *  precis som för en riktig kund. Idempotent: gör inget om banner saknas. */
+export async function acceptCookies(page: Page) {
+  const btn = page.getByRole('button', { name: 'Acceptera alla' })
+  if (await btn.isVisible({ timeout: 3000 }).catch(() => false)) await btn.click()
+}
+
 /**
- * Walk the public booking wizard up to the time grid and click the first day that
- * has any free slot (weekends have none — working_hours is Mon–Fri). Returns once
- * a time button is selectable. Throws if no day in the 14-day window is bookable.
+ * Välj första bokbara dag + tid i bokningswizardens steg 3.
+ *
+ * Dagväljaren är en MÅNADSKALENDER (.fc-cal-cell), inte längre en 14-dagars remsa av
+ * .wizard-day — den ändringen är vad som gjorde att testet inte hittade någon dag alls.
+ * En dag med lediga tider har en prick (.fc-cal-dot); en dag utan är `disabled`.
+ * Vi klickar bokbara dagar i tur och ordning tills tider dyker upp.
  */
 export async function pickFirstAvailableSlot(page: Page) {
-  const days = page.locator('.wizard-day')
+  await acceptCookies(page)
+  const days = page.locator('.fc-cal-cell:not([disabled])')
+  await days.first().waitFor({ state: 'visible', timeout: 10_000 })
   const count = await days.count()
   for (let i = 0; i < count; i++) {
     await days.nth(i).click()
     const time = page.locator('.wizard-time').first()
-    // Either times render, or the "no slots" notice appears — race them.
+    // Antingen renderas tider, eller så kommer "inga lediga tider"-beskedet — kappla dem.
     await Promise.race([
       time.waitFor({ state: 'visible', timeout: 4000 }).catch(() => {}),
       page.getByText('Inga lediga tider').waitFor({ state: 'visible', timeout: 4000 }).catch(() => {}),
@@ -83,5 +102,5 @@ export async function pickFirstAvailableSlot(page: Page) {
       return
     }
   }
-  throw new Error('No available slot in the 14-day window for the seeded tenant.')
+  throw new Error('Ingen bokbar dag i månadskalendern för den seedade fixturen.')
 }
