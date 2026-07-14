@@ -7,13 +7,13 @@ import styles from './lunaria.module.css'
 /**
  * LUNARIA — undersidorna (goal-64, EXAKT kopia ur "Lunaria - Art Déco.dc.html").
  *
- *   /om       → filens `showOm`: "Salongen vid boulevarden" — prosa till vänster, foto i
+ *   /om       → filens `showOm`: "Blomsterboden vid boulevarden" — prosa till vänster, foto i
  *               4:5 i en guldram till höger, sedan sifferbandet (1926 · 100% · IV) i EN
  *               guldram med silverlinjer emellan.
  *   /tjanster → filens `showBoka`-ruta: guldetikett "Ärende", sedan rader med deco-rutan
  *               på snedden, namn till vänster, pris i guld till höger. Varje rad är en
  *               <Bookable> — funktionen är plattformens (drawer eller /boka).
- *   /kontakt  → filens `showKontakt`: faktarutan (Salongen · Kontakt · Öppet) till
+ *   /kontakt  → filens `showKontakt`: faktarutan (Butiken · Kontakt · Öppet) till
  *               vänster, prosan + sänd-knappen till höger.
  *
  * SYNKRONA server-komponenter. Render-on-present: saknas adress/kontakt ritas rutan inte
@@ -27,7 +27,7 @@ export function LunariaOm({ content, tenant }: ThemePageProps) {
     <section className={styles.lnPage}>
       <div className={styles.lnAbout}>
         <div>
-          <p className={styles.lnAboutEyebrow}>{content.teamEyebrow ?? 'Om salongen'}</p>
+          <p className={styles.lnAboutEyebrow}>{content.teamEyebrow ?? 'Om butiken'}</p>
           <h1 className={styles.lnAboutTitle}>{content.aboutTitle}</h1>
           <p className={styles.lnAboutCopy}>{content.aboutCopy}</p>
           {content.closingLede ? (
@@ -70,7 +70,7 @@ export function LunariaTjanster({ content, services }: ThemePageProps) {
       <div className={styles.lnPanel}>
         <p className={styles.lnPanelLabel}>{content.servicesEyebrow}</p>
         {services.length === 0 ? (
-          <p className={styles.lnEmpty}>Salongens ärenden visas snart.</p>
+          <p className={styles.lnEmpty}>Butikens tjänster visas snart.</p>
         ) : (
           <div className={styles.lnServiceList}>
             {services.map((s) => (
@@ -101,7 +101,7 @@ export function LunariaKontakt({ content, location, contact }: ThemePageProps) {
         <div className={styles.lnContactBox}>
           {location?.address ? (
             <>
-              <p className={styles.lnFactLabel}>Salongen</p>
+              <p className={styles.lnFactLabel}>Butiken</p>
               <p className={styles.lnFactValue}>{location.address}</p>
             </>
           ) : null}

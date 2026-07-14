@@ -1,10 +1,10 @@
 {
-  "generated": "2026-07-12T04:41:16.844Z",
+  "generated": "2026-07-14T17:22:36.783Z",
   "note": "Kända historiska bransch-ord-träffar (städlista). Nya träffar utöver dessa failar vakten. Städa en träff = fixa koden och ta bort raden här. Regenerera = radera filen och kör om.",
   "entries": [
     {
       "file": "app/(platform)/salonger/[id]/page.tsx",
-      "line": 352,
+      "line": 391,
       "word": "Salongsägare",
       "text": "{/* #10 — owner name from users.full_name; honest \"Salongsägare\""
     },
@@ -28,55 +28,55 @@
     },
     {
       "file": "components/platform/CreateTenantForm.tsx",
-      "line": 121,
+      "line": 110,
       "word": "barber",
       "text": "display: \"'Bebas Neue', sans-serif\", radius: 4, caps: true, vibe: 'Mörk & rå barber',"
     },
     {
       "file": "components/platform/CreateTenantForm.tsx",
-      "line": 122,
+      "line": 111,
       "word": "Barber",
       "text": "eyebrow: 'Barber & frisör', hero: 'Skarp fade. Ren stil.',"
     },
     {
       "file": "components/platform/CreateTenantForm.tsx",
-      "line": 122,
+      "line": 111,
       "word": "frisör",
       "text": "eyebrow: 'Barber & frisör', hero: 'Skarp fade. Ren stil.',"
     },
     {
       "file": "components/platform/CreateTenantForm.tsx",
-      "line": 123,
+      "line": 112,
       "word": "barbering",
       "text": "lede: 'Klassisk barbering med modern attityd.', img: uns('1585747860715-2ba37e788b70'),"
     },
     {
       "file": "components/platform/CreateTenantForm.tsx",
-      "line": 145,
+      "line": 134,
       "word": "Barbershop",
       "text": "display: \"'Playfair Display', Georgia, serif\", radius: 0, caps: false, vibe: 'Barbershop (freshcut.se)',"
     },
     {
       "file": "components/platform/CreateTenantForm.tsx",
-      "line": 146,
+      "line": 135,
       "word": "Barbershop",
       "text": "eyebrow: 'Barbershop', hero: 'FreshCut',"
     },
     {
       "file": "components/platform/CreateTenantForm.tsx",
-      "line": 147,
+      "line": 136,
       "word": "Barbershop",
       "text": "lede: 'Barbershop i centrala Linköping.', img: uns('1503951914875-452162b0f3f1'),"
     },
     {
       "file": "components/platform/SalongerClient.tsx",
-      "line": 80,
+      "line": 88,
       "word": "salonger",
       "text": "const [view, setView] = usePersistentView<'kort' | 'lista'>('salonger:view', ['kort', 'lista'], 'kort')"
     },
     {
       "file": "components/platform/SalongerClient.tsx",
-      "line": 114,
+      "line": 122,
       "word": "salonger",
       "text": "a.download = 'salonger.csv'"
     },
@@ -184,85 +184,85 @@
     },
     {
       "file": "components/storefront/seo.tsx",
-      "line": 176,
+      "line": 202,
       "word": "frisör",
       "text": "'frisör': 'HairSalon',"
     },
     {
       "file": "components/storefront/seo.tsx",
-      "line": 177,
+      "line": 203,
       "word": "barbershop",
       "text": "barbershop: 'HairSalon',"
     },
     {
       "file": "components/storefront/theme-content.ts",
-      "line": 294,
+      "line": 369,
       "word": "Barbershop",
       "text": "heroEyebrow: '— Barbershop',"
     },
     {
       "file": "components/storefront/theme-content.ts",
-      "line": 296,
+      "line": 371,
       "word": "Barbershop",
       "text": "heroLede: 'Barbershop i centrala Linköping',"
     },
     {
       "file": "components/storefront/theme-content.ts",
-      "line": 297,
+      "line": 372,
       "word": "Barbershop",
       "text": "tagline: 'Barbershop i centrala Linköping',"
     },
     {
       "file": "components/storefront/theme-content.ts",
-      "line": 298,
+      "line": 373,
       "word": "Boka tid",
       "text": "utility: 'Boka tid online · Välkommen in',"
     },
     {
       "file": "components/storefront/theme-content.ts",
-      "line": 299,
+      "line": 374,
       "word": "frisörsalong",
       "text": "italic: 'Mer än bara en frisörsalong.',"
     },
     {
       "file": "components/storefront/theme-content.ts",
-      "line": 301,
+      "line": 376,
       "word": "barberare",
       "text": "'I våra fräscha lokaler mitt i Linköping City känner du dig väl omhändertagen av våra barberare, som har mångårig erfarenhet inom herrklippningar. Oavsett om du vill snygga till ditt skägg, ögonbryn e"
     },
     {
       "file": "components/storefront/theme-content.ts",
-      "line": 301,
+      "line": 376,
       "word": "klippning",
       "text": "'I våra fräscha lokaler mitt i Linköping City känner du dig väl omhändertagen av våra barberare, som har mångårig erfarenhet inom herrklippningar. Oavsett om du vill snygga till ditt skägg, ögonbryn e"
     },
     {
       "file": "components/storefront/theme-content.ts",
-      "line": 305,
+      "line": 380,
       "word": "barberare",
       "text": "teamEyebrow: '— Våra barberare',"
     },
     {
       "file": "components/storefront/theme-content.ts",
-      "line": 306,
+      "line": 381,
       "word": "barberare",
       "text": "teamTitle: 'Våra barberare.',"
     },
     {
       "file": "components/platform/onboarding-studio/preview-modules.tsx",
-      "line": 95,
+      "line": 93,
       "word": "Frisörsalong",
       "text": "frisor: { name: 'Frisörsalong', eyebrow: 'Frisörsalong', staffWord: 'Frisör', serviceWord: 'Behandling' },"
     },
     {
       "file": "components/platform/onboarding-studio/preview-modules.tsx",
-      "line": 95,
+      "line": 93,
       "word": "Frisörsalong",
       "text": "frisor: { name: 'Frisörsalong', eyebrow: 'Frisörsalong', staffWord: 'Frisör', serviceWord: 'Behandling' },"
     },
     {
       "file": "components/platform/onboarding-studio/preview-modules.tsx",
-      "line": 95,
+      "line": 93,
       "word": "Frisör",
       "text": "frisor: { name: 'Frisörsalong', eyebrow: 'Frisörsalong', staffWord: 'Frisör', serviceWord: 'Behandling' },"
     },
@@ -315,6 +315,12 @@
       "text": "{/* \"Mer än bara en frisörsalong.\" — centered editorial + 4-photo gallery */}"
     },
     {
+      "file": "components/storefront/layouts/presentkort-views.tsx",
+      "line": 235,
+      "word": "klippning",
+      "text": "export const SiluettPresentkort = (props: ThemePresentkortViewProps) => <PresentkortsKort {...props} spec={{ variant: 'siluett', titleFont: \"'Bodoni Moda'\", titleSize: 58, titleColor: '#131313', cardB"
+    },
+    {
       "file": "lib/platform/people.ts",
       "line": 29,
       "word": "Salong",
@@ -322,31 +328,31 @@
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 90,
+      "line": 126,
       "word": "frisörsalong",
       "text": "default: 'Mer än bara en frisörsalong.',"
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 108,
+      "line": 144,
       "word": "frisörer",
       "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 108,
+      "line": 144,
       "word": "klippningen",
       "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 108,
+      "line": 144,
       "word": "klippning",
       "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
     },
     {
       "file": "lib/platform/theme-capabilities.ts",
-      "line": 108,
+      "line": 144,
       "word": "klippning",
       "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
     }

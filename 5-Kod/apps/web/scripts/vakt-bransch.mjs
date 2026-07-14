@@ -44,6 +44,12 @@ function isTemplateCopyFile(rel) {
 // frisör. Vakten skulle annars flagga den enda fil som gör det rätt.
 const BRANSCH_ÄGDA = new Set(['components/storefront/bransch-copy.ts']);
 
+// Samma sak fast för hela mappar: en salong-mall SKA säga salong. Ett bransch-ord
+// i florist-mappen är däremot en läcka — därför bara branschens egen mapp.
+const BRANSCH_ÄGDA_PREFIX = ['components/storefront/layouts/salong/'];
+const ärBranschÄgd = (rel) =>
+  BRANSCH_ÄGDA.has(rel) || BRANSCH_ÄGDA_PREFIX.some((p) => rel.startsWith(p));
+
 function* walk(dir) {
   const entries = fs.readdirSync(dir, { recursive: true, withFileTypes: true });
   for (const e of entries) {
@@ -52,7 +58,7 @@ function* walk(dir) {
     if (full.includes(`${path.sep}node_modules${path.sep}`)) continue;
     if (!/\.tsx?$/.test(e.name)) continue;
     if (/\.test\./.test(e.name)) continue;
-    if (BRANSCH_ÄGDA.has(path.relative(WEB_ROOT, full).split(path.sep).join('/'))) continue;
+    if (ärBranschÄgd(path.relative(WEB_ROOT, full).split(path.sep).join('/'))) continue;
     yield full;
   }
 }

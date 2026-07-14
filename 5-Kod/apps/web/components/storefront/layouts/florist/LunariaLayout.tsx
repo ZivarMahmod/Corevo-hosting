@@ -11,11 +11,11 @@ import styles from './lunaria.module.css'
  * för sektion, i filens ordning:
  *
  *   (1) HERO          — dubbel guldram: text (deco-hörn, eyebrow, 64px Poiret One,
- *                       "Träd in i salongen" + "Boka →") | foto i höger halva, 500px högt
- *   (2) GULD-DELARE   — "◆ Salongens urval ◆" mellan två guldlinjer
+ *                       "Kliv in i butiken" + "Boka →") | foto i höger halva, 500px högt
+ *   (2) GULD-DELARE   — "◆ Floristens urval ◆" mellan två guldlinjer
  *   (3) URVAL         — tre verk ur butiken, inramade kort med "Lägg i korg"
  *   (4) MANIFEST      — citatet mellan två guldlinjer
- *   (5) TRE SALONGER  — I · II · III, romerska siffror, var sin väg in i en modul
+ *   (5) TRE PELARE  — I · II · III, romerska siffror, var sin väg in i en modul
  *   (6) KRÖNIKAN      — tre blogg-teasers under en tunn silverdelare
  *
  * Filen har varken galleri-band eller presentkortsrad på hemmet — då har inte mallen det
@@ -23,7 +23,7 @@ import styles from './lunaria.module.css'
  * improvisera bort mallen).
  *
  * Modul-gatingen är plattformens och HELIG: urvalet ritas bara när shopen har teasers,
- * krönikan bara när bloggen har inlägg, och "Träd in i salongen" pekar på /tjanster när
+ * krönikan bara när bloggen har inlägg, och "Kliv in i butiken" pekar på /tjanster när
  * shopen inte går att nå. SYNKRON komponent (ingen async, ingen 'use client') — studions
  * preview renderar samma komponent.
  */
@@ -40,7 +40,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
 
-  // Filens tre salonger: I Bröllop → /boka, II Salongskvällar → /kurser, III Cirkeln →
+  // Filens tre pelare: I Bröllop → /boka, II Bindkvällar → /kurser, III Cirkeln →
   // /klubb (manifestets `klubb` = lojalitetsmodulen).
   const salons: { no: string; title: string; desc: string; cta: string; href: string | null }[] = [
     {
@@ -52,7 +52,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
     },
     {
       no: 'II',
-      title: content.pillar2Title ?? 'Salongskvällar',
+      title: content.pillar2Title ?? 'Bindkvällar',
       desc: content.pillar2Body ?? 'Lär dig binda med balans och proportion.',
       cta: 'Se kurser',
       href: '/kurser',
@@ -84,7 +84,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
                       href={shopReachable ? '/shop' : '/tjanster'}
                       className={styles.lnSolid}
                     >
-                      Träd in i salongen
+                      Kliv in i butiken
                     </Link>
                     <Link href="/boka" className={styles.lnUnderline}>
                       Boka →
@@ -106,7 +106,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
             <section className={styles.lnDivider}>
               <span className={styles.lnRuleGold} />
               <span className={styles.lnDividerLabel}>
-                {content.homeGalleryEyebrow ?? '◆ Salongens urval ◆'}
+                {content.homeGalleryEyebrow ?? '◆ Floristens urval ◆'}
               </span>
               <span className={styles.lnRuleGold} />
             </section>
@@ -160,7 +160,7 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
           </Reveal>
         </section>
 
-        {/* (5) TRE SALONGER — I · II · III */}
+        {/* (5) TRE PELARE — I · II · III */}
         <section className={styles.lnSalons}>
           {salons.map((s, i) => (
             <Reveal key={s.no} delay={i * 90}>

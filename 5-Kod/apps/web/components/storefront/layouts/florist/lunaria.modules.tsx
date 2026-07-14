@@ -16,7 +16,7 @@ import styles from './lunaria.module.css'
  * Modulen äger FUNKTIONEN: datan är laddad, livscykeln gatad, köp-rälsen är fortfarande
  * <AddToCart>. Formen är mallens, exakt som .dc.html ritar den:
  *
- *   SALONGEN (butik) — filens `showButik`: centrerad eyebrow ("Kollektion VII") + 52px
+ *   BLOMSTERBODEN (butik) — filens `showButik`: centrerad eyebrow ("Kollektion VII") + 52px
  *   Poiret One-rubrik, sedan TRE kolumner med inramade kort (silverram som guldnar vid
  *   hover), 4:5-bild, namn i display, beskrivning i tunn grotesk, pris i guld och den
  *   INRAMADE guldknappen. Inga skuggor, inga rundade hörn.
@@ -35,7 +35,7 @@ function formatPostDate(iso: string | null): string | null {
   return d.toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })
 }
 
-/* ════════════════════════════════ SALONGEN ════════════════════════════════ */
+/* ════════════════════════════════ BLOMSTERBODEN ════════════════════════════════ */
 
 export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeShopViewProps) {
   const { config, products: allProducts } = data
@@ -52,7 +52,7 @@ export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeSho
   return (
     <section className={styles.lnShop} data-module="shop" data-fulfilment={config.fulfilment}>
       <p className={styles.lnPageEyebrow}>{content.shopEyebrow ?? 'Kollektion VII'}</p>
-      <h1 className={styles.lnPageTitle}>{content.shopTitle ?? 'Salongen'}</h1>
+      <h1 className={styles.lnPageTitle}>{content.shopTitle ?? 'Blomsterboden'}</h1>
 
       {/* KATEGORI-CHIPS (goal-64, migration 0057) — filens rad 149-152: centrerad rad,
           rätvinkliga chips med GULDKANT alltid (även ovald), 11.5px versal med 0.16em spärr.
@@ -75,7 +75,7 @@ export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeSho
 
       {paused ? (
         <p role="status" className={styles.lnNotice}>
-          Salongen tar för närvarande inte emot nya beställningar. Vi öppnar snart igen.
+          Butiken tar för närvarande inte emot nya beställningar. Vi öppnar snart igen.
         </p>
       ) : null}
 
@@ -83,7 +83,7 @@ export function LunariaShop({ data, paused, limit, moreHref, content }: ThemeSho
         <p className={styles.lnEmpty}>
           {data.activeCategory
             ? `Inget i ${data.activeCategory} just nu.`
-            : 'Salongen är tom just nu.'}
+            : 'Blomsterboden är tom just nu.'}
         </p>
       ) : (
         <ul className={styles.lnGrid3}>
@@ -243,7 +243,7 @@ export function LunariaLojalitet({
       <h1 className={styles.lnGalTitle}>{content.clubTitle ?? 'Cirkeln'}</h1>
       <p className={styles.lnClubLede}>
         {content.clubLede ??
-          'Lunarias inre krets. Kostnadsfritt medlemskap med förtur, förmåner och salongens privata kvällar.'}
+          'Lunarias inre krets. Kostnadsfritt medlemskap med förtur, förmåner och butikens privata kvällar.'}
       </p>
 
       <div className={styles.lnCardOuter}>

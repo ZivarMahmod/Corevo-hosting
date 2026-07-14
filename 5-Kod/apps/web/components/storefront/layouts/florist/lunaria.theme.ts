@@ -15,7 +15,7 @@ const IMG = {
   champagne: u('1747226757800-6d8f87cfc0fe'),
   manhattan: u('1598453055371-0f5e37113bea'),
   solitar: u('1522748906645-95d8adfd52c7'),
-  salongensVal: u('1602934585418-f588bea4215c'),
+  floristensVal: u('1602934585418-f588bea4215c'),
 } as const
 
 /**
@@ -60,23 +60,23 @@ export const lunaria: FloristTheme = {
     heroLede:
       'Komponerade med den geometriska elegansens öga — symmetri, lugn och en gnista guld. Levererade med bud.',
     tagline: 'Komponerade med den geometriska elegansens öga.',
-    utility: 'Handbundet i salongen · Bud inom staden',
+    utility: 'Handbundet i ateljén · Bud inom staden',
     // Filens manifest-citat på hemmet (radbrytningen är designens egen).
     italic: '”Symmetrin lugnar ögat.\nGuldet väcker det.”',
-    aboutTitle: 'Salongen vid boulevarden',
+    aboutTitle: 'Blomsterboden vid boulevarden',
     aboutCopy:
       'Lunaria öppnade 1926 som stadens första blomstersalong i decostil. Sedan dess har vi hållit fast vid samma idé: att en bukett ska komponeras som ett smycke — med proportion, balans och en gnista guld.',
     // Om-sidans ANDRA stycke (filen har två) — closingLede är den befintliga nyckeln.
     closingLede:
-      'Idag binds allt fortfarande för hand i salongen, av florister som lärt sig hantverket i generationer.',
+      'Idag binds allt fortfarande för hand i ateljén, av florister som lärt sig hantverket i generationer.',
     // /tjanster = filens boka-ruta: etiketten "Ärende" över raderna.
     servicesEyebrow: 'Ärende',
-    servicesTitle: 'Boka salongen',
+    servicesTitle: 'Besök butiken',
     servicesIntro:
       'Konsultation för bröllop, större arrangemang eller ett samtal om det ni drömmer om.',
     contactTitle: 'Kontakt',
-    teamEyebrow: 'Om salongen',
-    teamTitle: 'Salongen vid boulevarden',
+    teamEyebrow: 'Om butiken',
+    teamTitle: 'Blomsterboden vid boulevarden',
     heroImages: [IMG.astoria, IMG.boulevard, IMG.champagne],
     galleryImages: [
       IMG.astoria,
@@ -84,14 +84,14 @@ export const lunaria: FloristTheme = {
       IMG.champagne,
       IMG.manhattan,
       IMG.solitar,
-      IMG.salongensVal,
+      IMG.floristensVal,
     ],
     aboutImage: IMG.astoria,
-    closingImage: IMG.salongensVal,
+    closingImage: IMG.floristensVal,
     team: [],
     // Filens sifferband på om-sidan, verbatim.
     stats: [
-      ['1926', 'grundades salongen'],
+      ['1926', 'slog butiken rot'],
       ['100%', 'handbundet'],
       ['IV', 'generationer florister'],
     ],
@@ -112,16 +112,16 @@ export const lunaria: FloristTheme = {
   // Redigerbara element på hemmet. default = layoutens inbyggda fallback VERBATIM
   // (LunariaLayout.tsx) — fältet ska förifyllas ärligt.
   extraHome: [
-    { name: 'pillar1Title', label: 'Salong I: rubrik', default: 'Bröllop' },
-    { name: 'pillar1Body', label: 'Salong I: text', rows: 2, default: 'Brudbukett och dekor komponerad i decostil.' },
-    { name: 'pillar2Title', label: 'Salong II: rubrik', default: 'Salongskvällar' },
-    { name: 'pillar2Body', label: 'Salong II: text', rows: 2, default: 'Lär dig binda med balans och proportion.' },
-    { name: 'pillar3Title', label: 'Salong III: rubrik', default: 'Cirkeln' },
-    { name: 'pillar3Body', label: 'Salong III: text', rows: 2, default: 'Vår inre krets — förtur och privata kvällar.' },
-    { name: 'homeGalleryEyebrow', label: 'Urvalet: guld-delarens text', default: '◆ Salongens urval ◆' },
-    { name: 'shopEyebrow', label: 'Salongen: eyebrow', default: 'Kollektion VII' },
-    { name: 'shopTitle', label: 'Salongen: rubrik', default: 'Salongen' },
-    { name: 'shopCta', label: 'Salongen: länktext', default: 'Hela samlingen →' },
+    { name: 'pillar1Title', label: 'Pelare I: rubrik', default: 'Bröllop' },
+    { name: 'pillar1Body', label: 'Pelare I: text', rows: 2, default: 'Brudbukett och dekor komponerad i decostil.' },
+    { name: 'pillar2Title', label: 'Pelare II: rubrik', default: 'Bindkvällar' },
+    { name: 'pillar2Body', label: 'Pelare II: text', rows: 2, default: 'Lär dig binda med balans och proportion.' },
+    { name: 'pillar3Title', label: 'Pelare III: rubrik', default: 'Cirkeln' },
+    { name: 'pillar3Body', label: 'Pelare III: text', rows: 2, default: 'Vår inre krets — förtur och privata kvällar.' },
+    { name: 'homeGalleryEyebrow', label: 'Urvalet: guld-delarens text', default: '◆ Floristens urval ◆' },
+    { name: 'shopEyebrow', label: 'Butiken: eyebrow', default: 'Kollektion VII' },
+    { name: 'shopTitle', label: 'Butiken: rubrik', default: 'Blomsterboden' },
+    { name: 'shopCta', label: 'Butiken: länktext', default: 'Hela samlingen →' },
     { name: 'blogTitle', label: 'Krönikan: rubrik', default: 'Krönikan' },
     { name: 'blogCta', label: 'Krönikan: länktext', default: 'Hela krönikan →' },
     // goal-64: galleriet + Cirkeln. default = vyns inbyggda fallback VERBATIM.
@@ -132,7 +132,7 @@ export const lunaria: FloristTheme = {
       label: 'Cirkeln: text',
       rows: 2,
       default:
-        'Lunarias inre krets. Kostnadsfritt medlemskap med förtur, förmåner och salongens privata kvällar.',
+        'Lunarias inre krets. Kostnadsfritt medlemskap med förtur, förmåner och butikens privata kvällar.',
     },
     { name: 'clubCta', label: 'Cirkeln: knapptext', default: 'Ansök om medlemskap' },
   ],
