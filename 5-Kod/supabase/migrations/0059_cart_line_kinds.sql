@@ -1,5 +1,5 @@
 -- ============================================================================
--- 0058 — KORGEN BÄR MER ÄN PRODUKTER (goal-64)
+-- 0059 — KORGEN BÄR MER ÄN PRODUKTER (goal-64)
 --
 -- Alla 12 Claude Design-paket lägger presentkort i VARUKORGEN, och Calytrix lägger
 -- dessutom kursplatser där:
