@@ -18,11 +18,25 @@ import styles from './calendar.module.css'
 /** Snabbval — de tre orsaker som faktiskt används dagligen. Fritext för resten. */
 const REASONS = ['Rast', 'Frånvaro', 'Möte']
 
-/** Vanligaste längderna. 60 min är default (samma som Wavy). */
-const LENGTHS = [15, 30, 45, 60, 90, 120]
+/** Snabbval för längd. GENVÄGAR, inte gränser: de sätter bara sluttiden, som sedan går
+ *  att ändra fritt. Förut VAR de gränsen — man kunde inte blockera 3 timmar, och inte
+ *  en hel semestervecka. Servern har alltid tillåtit godtycklig start/slut. */
+const LENGTHS = [30, 60, 120, 240]
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const fromMin = (m: number) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`
+
+/** Lägg minuter till en (datum, tid) och få tillbaka nytt datum + ny tid. Bär över
+ *  dygnsgränsen — en blockering får sträcka sig in i nästa dag. */
+function addMinutes(date: string, time: string, mins: number): { date: string; time: string } {
+  const [h = 0, m = 0] = time.split(':').map(Number)
+  const d = new Date(`${date}T00:00:00`)
+  d.setMinutes(d.getMinutes() + h * 60 + m + mins)
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  }
+}
 
 export function BlockDrawer({
   staff,
@@ -46,10 +60,33 @@ export function BlockDrawer({
   const [busy, startAction] = useTransition()
 
   const [staffId, setStaffId] = useState(seed?.staffId ?? staff[0]?.id ?? '')
-  const [startMin, setStartMin] = useState(seed?.startMinute ?? 12 * 60)
-  const [lengthMin, setLengthMin] = useState(60)
+  // FRÅN och TILL som fyra fria fält (datum + tid × 2) i stället för "start + en av sex
+  // fasta längder". Zivar: "man ska kunna välja valfri tid när till när och kanske flera
+  // dagar". Servern (createBlock) har alltid tagit godtycklig start/slut — det var bara
+  // formuläret som låste. En hel semestervecka är nu samma handgrepp som en rast.
+  const seedTime = fromMin(seed?.startMinute ?? 12 * 60)
+  const [startDate, setStartDate] = useState(date)
+  const [startTime, setStartTime] = useState(seedTime)
+  const seedEnd = addMinutes(date, seedTime, 60)
+  const [endDate, setEndDate] = useState(seedEnd.date)
+  const [endTime, setEndTime] = useState(seedEnd.time)
   const [reason, setReason] = useState('Rast')
   const [repeat, setRepeat] = useState<RepeatKind>('ingen')
+
+  /** Snabbval: sätt sluttiden till start + n minuter. Bara en genväg — fälten går att
+   *  ändra efteråt. */
+  const setLength = (mins: number) => {
+    const e = addMinutes(startDate, startTime, mins)
+    setEndDate(e.date)
+    setEndTime(e.time)
+  }
+
+  // Sluttiden måste ligga efter starttiden. Vi VISAR felet i stället för att låta
+  // servern kasta tillbaka det: användaren ska se det medan hen skriver.
+  const startsAt = new Date(`${startDate}T${startTime}`)
+  const endsAt = new Date(`${endDate}T${endTime}`)
+  const invalid = !(endsAt > startsAt)
+  const spansDays = startDate !== endDate
 
   const timeOf = (iso: string) =>
     new Intl.DateTimeFormat('sv-SE', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(
@@ -58,8 +95,9 @@ export function BlockDrawer({
 
   const save = () => {
     startAction(async () => {
-      const startIso = zonedTimeToUtc(date, fromMin(startMin), tz).toISOString()
-      const endIso = zonedTimeToUtc(date, fromMin(startMin + lengthMin), tz).toISOString()
+      // Varje ände har sitt EGET datum — det är det som gör flerdygnsblockeringen möjlig.
+      const startIso = zonedTimeToUtc(startDate, startTime, tz).toISOString()
+      const endIso = zonedTimeToUtc(endDate, endTime, tz).toISOString()
       const res = await createBlock({ staffId, startIso, endIso, reason, repeat })
       if (res.error) notify(res.error, 'warning')
       else {
@@ -165,7 +203,13 @@ export function BlockDrawer({
   return (
     <Modal
       title="Blockera tid"
-      sub={`${fromMin(startMin)}–${fromMin(startMin + lengthMin)}`}
+      sub={
+        invalid
+          ? 'Sluttiden måste vara efter starttiden'
+          : spansDays
+            ? `${startDate} ${startTime} → ${endDate} ${endTime}`
+            : `${startTime}–${endTime}`
+      }
       onClose={onClose}
       ariaLabel="Blockera tid"
       footer={
@@ -173,14 +217,17 @@ export function BlockDrawer({
           variant="primary"
           icon="check"
           onClick={save}
-          disabled={busy || !staffId}
+          disabled={busy || !staffId || invalid}
           style={{ width: '100%', justifyContent: 'center' }}
         >
           {busy ? 'Sparar…' : 'Blockera'}
         </Button>
       }
     >
-      <div style={{ display: 'grid', gap: 18 }}>
+      {/* Kompakt rutnät, inte en lång remsa. Formuläret rymdes förut inte i dialogen och
+          fick en scrollhiss mitt i innehållet — nu ligger fälten parvis och allt syns
+          på en gång. Färre sektioner, samma information. */}
+      <div className={styles.blockForm}>
         <section>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
             Vem
@@ -200,41 +247,69 @@ export function BlockDrawer({
           </div>
         </section>
 
-        <section>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>
-            Start
+        {/* FRÅN → TILL. Två datum, inte ett: en blockering får sträcka sig över flera
+            dygn (semester, sjukfrånvaro, mässa). */}
+        <section className={styles.blockSpan}>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>
+              Från
+            </div>
+            <div className={styles.blockPair}>
+              <input
+                className={styles.input}
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                aria-label="Startdatum"
+              />
+              <input
+                className={styles.input}
+                type="time"
+                step={900}
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                aria-label="Starttid"
+              />
+            </div>
           </div>
-          <input
-            className={styles.input}
-            type="time"
-            step={900}
-            value={fromMin(startMin)}
-            onChange={(e) => {
-              const [h, m] = e.target.value.split(':').map(Number)
-              if (Number.isFinite(h) && Number.isFinite(m)) setStartMin(h! * 60 + m!)
-            }}
-            aria-label="Starttid"
-          />
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 6 }}>
+              Till
+            </div>
+            <div className={styles.blockPair}>
+              <input
+                className={styles.input}
+                type="date"
+                min={startDate}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                aria-label="Slutdatum"
+              />
+              <input
+                className={styles.input}
+                type="time"
+                step={900}
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                aria-label="Sluttid"
+              />
+            </div>
+          </div>
         </section>
 
-        <section>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>
-            Hur länge
-          </div>
-          <div className={styles.chipRow}>
-            {LENGTHS.map((len) => (
-              <button
-                key={len}
-                type="button"
-                className={`${styles.slotChip}${lengthMin === len ? ` ${styles.chipOn}` : ''}`}
-                onClick={() => setLengthMin(len)}
-                aria-pressed={lengthMin === len}
-              >
-                {len} min
-              </button>
-            ))}
-          </div>
-        </section>
+        {/* Genvägar, inte gränser: de sätter sluttiden, fälten ovan går att ändra efteråt. */}
+        <div className={styles.chipRow}>
+          {LENGTHS.map((len) => (
+            <button
+              key={len}
+              type="button"
+              className={styles.slotChip}
+              onClick={() => setLength(len)}
+            >
+              {len < 60 ? `${len} min` : `${len / 60} h`}
+            </button>
+          ))}
+        </div>
 
         <section>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
@@ -282,11 +357,11 @@ export function BlockDrawer({
           </select>
         </section>
 
-        <Callout tone="info" icon="info">
-          {repeat === 'ingen'
-            ? 'Blockerad tid försvinner direkt ur den publika bokningen — kunder kan inte boka den.'
-            : 'Upprepningen läggs in 12 månader framåt. Du kan ta bort ett enskilt tillfälle, eller ett tillfälle och alla efter det.'}
-        </Callout>
+        {spansDays && !invalid && (
+          <Callout tone="info" icon="info">
+            Blockeringen sträcker sig över flera dagar — hela perioden går inte att boka.
+          </Callout>
+        )}
       </div>
     </Modal>
   )

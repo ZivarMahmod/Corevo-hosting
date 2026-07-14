@@ -8,7 +8,8 @@
 
 **Teknik:** Next.js 15.5, React 19, TypeScript, Supabase Auth/Postgres/RLS/Cron, OpenNext på Cloudflare Workers, Vitest, Playwright, Web App Manifest, Service Worker, Web Push.
 
-**Designkälla:** `1-Planering/11-kundportal-kommunikation/00-DESIGN-kundportal-kommunikation.md`
+**Designkälla:** `1-Planering/12-claude-och-codex/01-CODEX-DESIGN-kundportal-kommunikation.md`  
+**Sammanställning med Goal 68:** `1-Planering/12-claude-och-codex/00-SAMMANSTALLNING-goal-68-och-codex.md`
 
 ## Globala regler
 
@@ -68,7 +69,7 @@ U5–U8 kan detaljbyggas parallellt med U3–U4 först efter att U1–U2:s inter
 - `5-Kod/apps/web/lib/communications/providers/push.ts` — Web Push-adapter.
 - `5-Kod/apps/web/lib/communications/providers/sms.ts` — adapter runt vald SMS-provider i sista fasen.
 - `5-Kod/apps/web/lib/communications/cost.ts` — immutable kostnad/debiteringssnapshot.
-- `5-Kod/apps/web/lib/customer-portal/relationships.ts` — central, auth-bunden relations-DAL.
+- `5-Kod/apps/web/lib/customer-portal/relationships.ts` — central, `auth.uid()`-bunden relations-DAL.
 - `5-Kod/apps/web/lib/customer-portal/dashboard.ts` — aggregerad tenantportalmodell.
 - `5-Kod/apps/web/lib/customer-portal/preferences.ts` — företagsspecifika kanalval.
 - `5-Kod/apps/web/app/api/communications/dispatch/route.ts` — skyddad batchdispatcher.
@@ -158,7 +159,8 @@ type AttemptStatus =
 
 - `communication_events`: tenant, event_type, aggregate_type/id, occurred_at, payload, idempotency_key, status, available_at, lease, attempts, last_error.
 - `communication_attempts`: event, tenant, channel, recipient fingerprint/subscription, template key/version, provider, provider_message_id, status, retry data, timestamps, error code, immutable cost snapshot.
-- `customer_communication_preferences`: tenant + customer, transaktionell email/push/SMS-policy och separat marketing opt-in.
+- `customer_communication_preferences`: tenant + customer/auth user, transaktionell email/push/SMS-policy och separat marketing opt-in.
+- Skapa inte `customer_accounts`/`customer_business_links` i första vågen om F1 inte bevisar att befintlig `(tenant_id, auth_user_id)`-modell saknar ett nödvändigt globalt tillstånd.
 
 - [ ] Skriv DB-test: två inserts med samma event-idempotensnyckel ger en rad.
 - [ ] Skriv DB-test: två attempts för samma event/kanal/mottagare/templateversion kan inte skapas.

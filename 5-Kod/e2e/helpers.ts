@@ -1,14 +1,29 @@
 import { expect, type Page } from '@playwright/test'
 
-// Seed identities (supabase/seed.sql). These exist ONLY on a seeded staging DB —
-// the @mutating specs that log in must run against staging, never prod.
+// Fixtur-identiteter. Motsvarigheten i DB är supabase/seeds/e2e-seed.sql, som läggs
+// upp och rivs av apps/web/scripts/e2e-db.mjs (seed → kör → teardown → verify).
+//
+// LÖSENORDET ÄR ALDRIG HÅRDKODAT. Fixturen innehåller en super_admin, och sviten kör
+// mot produktionsdatabasen (Zivars beslut 2026-07-14 — inga slutkunder, Free-planen
+// saknar branching). Ett känt lösenord på ett super_admin-konto i prod vore
+// oförsvarligt, även i tio minuter. `e2e-db.mjs seed` slumpar ett engångslösenord och
+// skickar det vidare via E2E_PASSWORD. Saknas variabeln finns ingen fixtur att logga
+// in på — då ska sviten falla direkt, inte gissa.
+const password = process.env.E2E_PASSWORD
+if (!password) {
+  throw new Error(
+    'E2E_PASSWORD saknas. Kör `node apps/web/scripts/e2e-db.mjs seed` och exportera värdet den skriver ut.',
+  )
+}
+
 export const SEED = {
   tenant: { slug: 'frisor1', name: 'Frisör Ett' },
-  tenant2: { slug: 'frisor2', name: 'Salong Två' },
-  password: 'Demo!1234',
+  password,
   salonAdmin: 'admin@frisor1.se',
   staff: 'klippare@frisor1.se',
-  platformAdmin: 'platform@corevo.se',
+  // e2e-platform, INTE platform@corevo.se: en super_admin med ett engångslösenord får
+  // aldrig kunna förväxlas med ett riktigt plattformskonto.
+  platformAdmin: 'e2e-platform@corevo.se',
 } as const
 
 // G12 two-zone hosts. `*.localhost` is loopback in Chromium → no DNS needed.

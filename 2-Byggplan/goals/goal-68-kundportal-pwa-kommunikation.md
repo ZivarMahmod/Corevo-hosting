@@ -1,220 +1,148 @@
-# 68 — Goal: Corevos kundportal, PWA & kommunikationsarkitektur
+# 68 — Goal: Kundportal, PWA & kommunikation (KÖRBAR MASTER — autonom, Codex ⇄ Claude Code)
 
-**Datum:** 2026-07-14
-**Typ:** Autonom byggorder för Claude Code / Codex — körs via `/goal`.
-**Vad detta är:** Den enda ingångspunkten för delprojektet. Läs HELA filen först, innan du rör kod.
-**Omfattning:** Stort, sammanhängande delprojekt i **7 faser**. Byggs i **fasordning, en fas i taget, en commit per punkt**. Detta är inte ett kvällsbygge — F1 är enbart analys, ingen kod.
+**Datum:** 2026-07-14 (v2.0 — en körbar goal)
+**Typ:** Autonom byggorder för **Claude Code + Codex i CLI**, som samarbetar hela vägen. Körs via `/goal`.
+**Vad detta är:** Den **enda ingångspunkten**. När denna goal är aktiverad sköter de två CLI-agenterna allt sinsemellan — **Zivar och planeraren stör inte**. Läs HELA filen + kanon-kedjan först.
 
-> **Läs detta först:** Goal 67 och tidigare kalenderarbete är i princip färdigt. Behandla detta som ett **nytt delprojekt ovanpå** det befintliga Corevo-systemet — inte som en fortsättning där du förväntas känna till gamla muntliga beslut. Men bygg inte blint efter föreslagna tabell- eller katalognamn: projektet har redan motsvarande strukturer. **Återanvänd, utöka och förbättra** det som finns. Sektionen *"Beslut som redan är fattade"* mappar varje föreslaget namn mot verkligheten — den är kärnan i den här briefen.
-
----
-
-## Utgångsläge — var projektet faktiskt står (verifierat, inte antaget)
-
-- **Goal 67 är klart och pushat till `main`:** kalender/kund-admin L1+L2, statistiksida, personalfärger, månadsvy, `no_show`, roller, belastningstest (krockskyddet håller). ~1038 enhetstester gröna, `tsc` rent.
-- **⛔ Deploy-frys AKTIV:** Zivar har sagt **STOPP**. Bygg lokalt. Kör **en** dev-server (`npx next dev -p 3111`). Kör **aldrig** `next build` medan dev-servern är uppe (delad `.next` → cache-korruption `MODULE_NOT_FOUND ./NNNN.js`). **Ingen push, ingen tagg, ingen deploy förrän Zivar uttryckligen säger till.**
-- **Migrationer:** högst applicerad = `0062_staff_color`. `0063` är en no-op. `0064` (idempotens-fix) är **skriven men EJ applicerad** — väntar Zivars ok. Nästa lediga nummer = **0065** (grep-verifiera innan du tar ett nummer; repot för ingen `supabase migration list` — schemat i prod ÄR sanningen).
-- **DB-sanning:** Supabase-projekt `clylvowtowbtotrahuad` (PG17). **ALDRIG** `ygieacwrpevytghdxecd` (fel-connector-fällan).
-- **RLS:** ALLA tabeller har `rls_enabled=true`. Tenant-isolering sker via `private.tenant_id()` — **RÖR EJ**. Varje ny tabell MÅSTE ha egen RLS.
-- **Stack:** Next.js (`5-Kod/apps/web`, `app/(admin)`), Supabase (numrerade migrationer + RLS), Cloudflare, pnpm, `@corevo/db`-typer.
-- **Bokning:** all bokning går genom `create_public_booking`-RPC:n. Krockskydd = DB:ns EXCLUDE-constraint (bevisat i belastningstest). Ingen gräddfil.
-- **PWA finns redan:** admin-kalendern är installerbar (manifest + service worker). Kundportalens PWA ska **återanvända** det mönstret, inte forka ett andra.
+> **Detta är ett stort delprojekt (Fas A–H). Kör det i sekvens, en arbetsenhet i taget, med review-grind mellan varje. Stanna aldrig för en människa — genuint mänskliga steg är parkerade längst ned och blockerar aldrig bygget. Under deploy-frysen betyder "klar" lokal/staging-verifiering, ALDRIG prod.**
 
 ---
 
-## Uppdraget
+## Kanon-kedjan — läs i denna ordning innan kod
 
-Bygg grunden för:
+1. `1-Planering/12-claude-och-codex/00-SAMMANSTALLNING-goal-68-och-codex.md` — gemensam sanning, lösta konflikter, fasordning A–H.
+2. `1-Planering/12-claude-och-codex/01-CODEX-DESIGN-kundportal-kommunikation.md` — **spec** (produkt + arkitektur).
+3. `1-Planering/12-claude-och-codex/02-CODEX-IMPLEMENTATIONSPLAN.md` — **plan** med fil-för-fil-detalj (U0–U13, tester, review-grindar).
+4. Denna fil — den körbara mastern som binder ihop allt och styr samarbetet.
 
-1. Ett **centralt, globalt kundkonto** på `minbokning.corevo.se`.
-2. **Automatisk koppling** kundkonto ↔ företag ↔ bokningar (kunden ska aldrig koppla manuellt).
-3. En **installerbar PWA**.
-4. **Web Push**-notiser (flera enheter per konto).
-5. Fungerande **bokningskommunikation via e-post** (grundkanalen).
-6. En **kanalneutral kommunikationsmotor** där SMS kan anslutas senare utan att bokningslogiken skrivs om.
-7. Datamodell som **stödjer flera Corevo-företag per globalt konto** — men funktionen är **dold bakom en flagga**.
-8. En **administrativ kommunikationsöversikt** (utskick nu, SMS-kostnad senare).
+Vid krock vinner `SAMMANSTALLNING` + Codex `DESIGN`/`PLAN`. Denna fil får inte gå emot dem — den är avstämd (2026-07-14).
 
-**Produktprincipen som styr allt:** kunden ska **inte** behöva skapa konto innan en bokning. Det publika bokningsflödet måste förbli snabbt. Kontot erbjuds **efter** bokningen, via en säker länk i bekräftelsemejlet, och kopplas automatiskt till rätt kund och bokning.
+---
 
-```
-Hemsida → bokar utan konto → bokning sparas → bekräftelsemejl med säker länk
-→ ser/hanterar bokningen → erbjuds konto → kontot kopplas automatiskt
-→ installerar PWA → aktiverar push
-```
+## Samarbetsprotokoll — Codex ⇄ Claude Code
 
-**Byggnadsregel nummer ett:** bokningen får **aldrig** misslyckas eller försvinna för att e-post eller push inte fungerar. Kommunikation är alltid asynkron och sidoordnad kärnflödet.
+- **Roller (kan växla per arbetsenhet, men EN äger en arbetsenhet i taget):**
+  - **Byggare** — implementerar arbetsenheten (TDD), commitar, synkar.
+  - **Granskare** — den andra agenten. Granskar mot arbetsenhetens *Klar när* + **faktisk kod/migration/test**, inte mot byggarens rapport. Betygsätter varje kryssruta SATISFIED / PARTIAL / MISSING.
+- **Arbetsenhet = en U-punkt** (U0…U13 i Codex PLAN). **En i taget till grön.** Ingen nästa arbetsenhet förrän granskaren släpper den.
+- **Review-grind mellan varje enhet:** brist → byggaren rättar i en fix-runda; först därefter nästa enhet. (= Codex-planens "oberoende review-grind efter varje arbetsenhet".)
+- **Aldrig parallell skrivning i samma fil.** Lås per område — särskilt migrationer, auth/middleware/routing och `lib/communications/*`-kontrakten. Två agenter rör aldrig samma fil samtidigt.
+- **En arbetsenhet = en (eller få) sammanhängande commit(s); synka före nästa** så den andra agenten ser sanningen, inte en osynkad arbetskopia.
+- **Oklarhet/konflikt löses av agenterna själva mot kanon.** Hittas en genuin motsägelse i kanon: välj det `SAMMANSTALLNING` säger, skriv en rad i arbetsloggen, gå vidare. **Stanna aldrig för en människa.**
+- **Gemensam arbetslogg:** `2-Byggplan/goals/goal-68-ARBETSLOGG.md`, nyaste överst. En rad per avslutad arbetsenhet: byggare, granskare, verdikt, ändrade filer, migration, testresultat, ev. flagga till Zivar. Detta är Zivars recap när han är tillbaka.
 
 ---
 
 ## Autonomi-regler
 
-- Du fattar **alla tekniska val själv** — fråga aldrig droppvis. En komplett brief betyder att du inte ska behöva stanna.
-- **En commit per punkt.** Verifiera + testa grönt före nästa punkt.
-- Genuint mänskliga steg (DNS, SMS-leverantör, secrets) är **batchade** längst ned — de blockerar aldrig bygget, du väntar aldrig på dem.
-- **Databasändringar bara via numrerade, idempotenta migrationer** med rollback-fil bredvid, `set search_path`. Grep nästa lediga nummer (≥ 0065).
-- **RLS på varje ny tabell** — följ det befintliga `private.tenant_id()`-mönstret; för globala/kundägda tabeller, fence på `auth.uid()` → `customer_accounts`.
-- `pnpm build` (eller `tsc --noEmit`) + hela testsviten + bransch-vakten **grön före varje commit**.
-- **INGEN deploy under frysen.** Allt demonstreras i den lokala miljön. Push/tagg/`wrangler` sker först när Zivar häver frysen.
-- Skriv en **arbetslogg** (`goal-68-ARBETSLOGG.md`, nyaste överst) efter varje avslutad fas: vad byggdes, vilka filer, vilka migrationer, vilka tester, vad flaggas till Zivar.
+- Agenterna fattar **alla tekniska val själva** — fråga aldrig droppvis, vänta aldrig på människa.
+- **Genuint mänskliga steg är parkerade längst ned** (§ Människo-grindar). Bygget går så långt det kan på lokal/staging och **stannar före** dem — det backar aldrig och gissar aldrig förbi dem.
+- **Deploy-frys aktiv:** ingen prodmigration, ingen push till skarp miljö, ingen tagg, ingen deploy. **"Klar" = lokal/staging** schema- + testverifiering. Prodapplicering är en separat Zivar-grind.
+- **DB endast via numrerade, idempotenta migrationer** med rollback-fil bredvid, `set search_path`. **Grep nästa lediga nummer vid byggstart — ≥ 0067** (`0065`/`0066` finns redan).
+- **RLS + explicita grants + negativa tenant-tester** på varje ny exponerad tabell. Följ `private.tenant_id()`-mönstret; kund-/globala tabeller fence:as på `auth.uid()`.
+- `pnpm typecheck` + `pnpm test` + bransch-vakt **grön före varje arbetsenhets commit**. Kör **aldrig** `next build` medan dev-servern är uppe (delad `.next` → `MODULE_NOT_FOUND`).
+- Aldrig authz från `user_metadata`; aldrig service-role/secret i klient eller service worker.
 
 ---
 
 ## Beslut som redan är fattade — stanna INTE för dessa
 
-Prompten nedan föreslår generiska namn. Projektet har redan motsvarigheter. **Detta är facit — bygg mot det, inte mot de föreslagna namnen.**
+**Namn-mappning (föreslaget → verklighet):** `business`→`tenants`/`tenant_id` · `business_customers`→befintliga **`customers`** (utöka) · `business_branding`→`tenant_settings.branding:jsonb` · feature flags→befintlig plattforms-/tenantkonfig (inventeras i Fas A, bygg inget andra flaggsystem) · lojalitet→`loyalty_ledger` (läs, bygg ej om).
 
-| Prompten föreslår | Verkligheten i Corevo | Regel |
-|---|---|---|
-| `business` / `business_id` | Befintliga `tenants` / `tenant_id` | Skapa **aldrig** en `businesses`-tabell. `tenant_id` är isoleringsnyckeln överallt. |
-| `business_customers` (företagsspecifik kundpost) | Befintliga **`customers`** (tenant-scoped: `contact_hash`, `auth_user_id`, dedup via `merged_into`) | **Utöka `customers`** — skapa ingen parallell tabell. |
-| `customer_accounts` (globalt konto) | **Finns inte** — genuint ny nivå | Se nästa punkt. |
-| `business_branding` | Befintlig **`tenant_settings.branding:jsonb`** | Utöka jsonb-fältet. Skapa egen tabell bara om jsonb bevisligen inte räcker. |
-| Feature flags | Befintligt modul-system **`modules` / `tenant_modules`** (`state`, `config:jsonb`) + kolumnflaggor (`customers.self_book`) | **Inventera först.** Bygg inte ett andra flaggsystem. |
-| Lojalitet | Befintlig **`loyalty_ledger`** (append-only, summeras över merge-kedjan) | Kundportalen **läser** den. Bygg aldrig om den. |
+**Identitet:** `customer_accounts` är **uppskjuten**. Våg 1 = `auth.uid()` + befintlig `customers` per tenant (`customers.auth_user_id` är redan unik per `(tenant_id, auth_user_id)`). Egen tabell först om **Fas A** bevisar behov.
 
-**Den genuint nya arkitektur-biten — läs noga:**
-Idag är kundidentiteten **tenant-scoped**: `customers.auth_user_id → users`, och `users` bär `tenant_id NOT NULL`. En inloggad kund hör alltså till **ett** företag. Kundportalen kräver en identitet som spänner **över** företag (`minbokning.corevo.se`). Det är den enda strukturellt nya nivån:
+**Host (LÅST):** `minbooking.corevo.se` = **personal** (oförändrad, regressionstestas) · `booking.corevo.se` = **admin** · kundportal `CUSTOMER_PORTAL_HOST` = **`mina.corevo.se`**, **våg 1 additivt på befintlig `/konto` på nuvarande deploy-host** (ingen DNS blockerar bygget; subdomänen aktiveras vid go-live).
+
+**Matchning:** `public.customer_contact_hash` (tenant-saltad) + `merged_into`-tombstone + append-only `loyalty_ledger` (goal-41). Aldrig namn ensamt, aldrig TS-reimplementation.
+
+**Bokning:** ny bokning via `create_public_booking` + EXCLUDE (auktoritativt krockskydd). Ombokning: återanvänd befintlig säker omboknings-action **om** rätt transaktionskontrakt; kringgå aldrig RPC/EXCLUDE. Kartläggs i Fas A.
+
+**Övrigt:** bokning commitas före kommunikation; providerfel rör aldrig bokningen · `customer_multi_business_hub` byggs i datalagret men är **av** (ingen väljare/katalog) · SMS = interface/mock nu, riktig provider sist · ärliga statusord (aldrig "läst/sett" utan bevis) · PWA-service-worker **antas ej** — verifieras med filbevis i Fas A · providers "på riktigt" = lokal testprovider/staging först · commit-gräns = självständigt verifierbar arbetsenhet.
+
+---
+
+## Faserna — kör i ordning, en arbetsenhet i taget
+
+Fas ↔ Codex-arbetsenheter. Fil-för-fil-detalj + reviewgrindar finns i Codex `PLAN`. *Klar när* här är fasens grind; varje U-punkt har dessutom sin egen i planen.
+
+### Fas A — Analys & baseline *(F1 + U0, ingen produktkod)*
+Bekräfta med **fil/rad-bevis**: schema, migrationsläge, authkopplingar, `/konto`, routing, PWA-mönster (SW!), e-post, reminder-cron, flaggornas faktiska lagringsyta, RLS. Bevisa dagens gästbokning överlever saknad mejlprovider.
+**Klar när:** `goal-68-ANALYS.md` finns med (1) vad som finns, (2) återanvändbart, (3) måste ändras, (4) risker/migreringar, (5) stegplan, (6) parallelliserbart · mappningen ovan bekräftad mot faktisk kod · flaggmekanismens lagringsyta utskriven · **ingen kodändring gjord**.
+
+### Fas B — Global identitet & säkerhetsfundament *(U1–U2 delvis + U5-token, U6-RLS)*
+Kontrakt/typer + flaggor (alla av → dagens beteende), signerade/återkallbara bokningslänkar (hårdna befintlig HMAC), kommunikationspreferenser, snäva `auth.uid()`-RPC:er/vyer.
+**Klar när:** avstängda flaggor ger diff-0 i dagens ytor · token för bokning A öppnar aldrig bokning B / tenant B / utgången / manipulerad · **negativa A↔B-tester gröna** · inga interna anteckningar eller andra tenants exponeras.
+
+### Fas C — Kommunikationsledger & e-post *(U2–U4)*
+`communication_events` + `communication_attempts` + `customer_communication_preferences`, transaktionell **outbox** i bokningens transaktionsgräns, dispatcher (lease/`FOR UPDATE SKIP LOCKED`, idempotens, retry, dead-letter), e-post bakom `CommunicationProvider` (återanvänd mallar/branding).
+**Klar när:** samma event-idempotensnyckel → **en rad**; samma event/kanal/mottagare/templateversion → inget dubbel-attempt · bokning commitas när provider kastar · minst-once-jobb → högst ett utskick per nyckel (100 parallella claims testat) · gammal direktsändning + ledger mejlar aldrig dubbelt.
+
+### Fas D — Säker kontoaktivering & central portal *(U5–U7)*
+Länk→verifiering→`auth.uid()`→rätt tenant/`customers`. Extrahera/återanvänd `/konto`; central portal bakom host- + featureflagga. Startsida: nästa bokning → snabbåtgärder → lojalitet → historik → notisstatus. Tenant-branding.
+**Klar när:** verifierat konto länkas konservativt, ingen osäker merge · `minbooking.corevo.se` → personal (host-routingtest) · flagga av → dagens `/konto` orört · en relation öppnas utan väljare; flera relationer + flagga av → bara explicit företag; ingen katalog/sök · mobil 360/390/768/desktop.
+
+### Fas E — PWA & Web Push *(U8–U9)*
+Kundmanifest, versionshanterad `customer-sw.js`, ärligt offlineläge, install efter värdeögonblick. `customer_push_subscriptions` (en rad/enhet). Push-behörighet efter eget klick + förklaringsruta.
+**Klar när:** installerbar utan att röra admin/personal-manifest · SW cachar aldrig auth/privat data publikt · offline blockerar mutationer (ingen falsk "ombokad/avbokad") · ingen prompt vid load · två enheter, endpoint A=410 → bara A inaktiveras · notification-click bara mot allowlistad intern route · ingen känslig låsskärmstext.
+
+### Fas F — Policy & kommunikationsöversikt *(U10–U11)*
+Ren, deterministisk policy-resolver (event × email × push × tenantpolicy × kundpreferens; separat marknadsföringssamtycke; `manual_attention` när ingen kanal). Adminöversikt bakom flagga: ärliga räknare, kostnadssnapshot, CSV-underlag.
+**Klar när:** bekräftelse ger e-post även när push finns · marknadsföring använder aldrig transaktionellt samtycke · kritisk ändring utan kanal → `manual_attention`, aldrig falsk success · tenant A:s ägare kan ej exportera tenant B · varje visad summa härledd ur immutable attempts · kalenderpersonal nekas ytan.
+
+### Fas G — Säkerhet, last & drift *(U12)*
+Fullt flöde gästbokning→event→mejl→länk→konto→portal→push. Negativa tenant/auth/token/subscription/export-tester. Last: dubbelklick, dubbla köleveranser, providerfel, gammal SW, Worker-requestmätning.
+**Klar när:** hela flödet demonstrerat lokalt/staging · noll tappade/dubbla bokningar/utskick under last · alla negativa säkerhetstester gröna · `pnpm typecheck`/`test`/`build` (dev-server av) + Playwright mot staging gröna · oberoende granskare jämför bevisen mot DoD.
+
+### Fas H — Riktig SMS-provider *(U13 — sist, människo-grindad)*
+Interface/mock är byggt sedan Fas C. **Riktig SMS-trafik byggs INTE här autonomt** — den kräver Zivars val av leverantör/pris/avsändare/go. Förbered allt runt: E.164-normalisering, segmentberäkning, webhook-signatur, immutable kostnadssnapshot, kill switch, tenantflagga (av).
+**Klar när:** allt utom riktig sändning är byggt och testat mot mock · `sms_enabled` = false · en tydlig rad i arbetsloggen: "Fas H väntar Zivars SMS-go."
+
+---
+
+## Människo-grindar — parkerade, blockerar ALDRIG bygget
+
+Bygg klart allt lokalt/staging. **Stanna före** dessa, skriv dem i arbetsloggen, fortsätt inte förbi:
+
+- **Prodapplicering** av migrationer (deploy-frysen).
+- **Riktig e-post:** avsändardomän + SPF/DKIM (kör mot testprovider tills dess).
+- **VAPID-nycklar** för push: generera par lokalt; privat nyckel i secrets = Zivar.
+- **DNS för `mina.corevo.se`** (våg 1 kör på `/konto`, ingen DNS krävs för att bygga).
+- **SMS:** leverantör + pris + avsändare + go (Fas H).
+- **Cloudflare Workers Paid** före affärskritisk FreshCut-trafik.
+- **Go-live / deploy** — först när Zivar häver frysen.
+
+---
+
+## Definition of Done (lokal/staging under frysen)
+
+Gästbokning utan konto överlever kommunikationsfel · e-post via beständigt event/attempt med säker länk · säker kontolänkning utan cross-tenant-läckage · portalens tenantläge visar bokningar/historik/lojalitet/branding · datamodellen bär flera relationer men UI visar ingen väljare med flaggan av · kund-PWA installerbar med ärligt offlineläge · push per enhet, permanent endpointfel isoleras · idempotens under retry/samtidighet · ägaren ser sann kanalstatus + exportunderlag · SMS-adapter kan anslutas utan ändring i bokningsdomänen, riktig trafik av tills Fas H-go · tenant-isolering bevisad med negativa tester · dubbla requests → inga dubbletter · lokal/staging demonstrerar HELA flödet · dokumentation (arkitektur→`5-Kod/docs/`, drift→`5-Kod/docs/ops/`, manuella enhetstester→`6-Testing/`).
+
+---
+
+## När ni är klara
+
+- `goal-68-ARBETSLOGG.md` fylld per arbetsenhet.
+- DoD genomgången med bevis (testartefakter + stagingbevis, inte påståenden).
+- Bygget stannat före människo-grindarna, dessa listade.
+- Lokal/staging-miljö redo att demonstrera hela flödet. **Ingen push/deploy.**
+
+---
+
+## /goal — klistras in för att aktivera
 
 ```
-auth.users  (global inloggning)
-     │
-     ▼
-customer_accounts        ← NY: global identitet, en per person, verifierad e-post/telefon
-     │  (customer_business_links: konto ↔ tenant ↔ customers-rad, link_status, verified_at)
-     ▼
-customers  (BEFINTLIG, tenant-scoped kundpost — utökas, inte ersätts)
-     │
-     ▼
-bookings   (BEFINTLIG)
+/goal
+
+Kör 2-Byggplan/goals/goal-68-kundportal-pwa-kommunikation.md — kundportal, PWA & kommunikation, autonomt, Codex + Claude Code samarbetar. 
+
+Villkor:
+- Filen + kanon-kedjan i 1-Planering/12-claude-och-codex/ är enda ingångspunkten. Läs först.
+- Autonomt: alla tekniska val själva, allt via kod/migration/CLI, fråga aldrig droppvis, stanna aldrig för människa.
+- Samarbetsprotokollet gäller: en arbetsenhet i taget, byggare + oberoende granskare, review-grind mellan varje, aldrig parallell skrivning i samma fil, gemensam arbetslogg.
+- DB via numrerade idempotenta migrationer ≥0067 + rollback + RLS + negativa tester. pnpm typecheck+test grönt före varje commit.
+- Deploy-frys: klar = lokal/staging. Ingen prodmigration, push, tagg eller deploy. Människo-grindarna parkeras, blockerar aldrig.
+- Stanna när alla faser är lokal/staging-verifierade och människo-grindarna är listade i arbetsloggen.
 ```
-
-Bygg `customer_accounts` som en **ny nivå ovanpå** `customers`. Riv inte tenant-modellen. En tenant ska bara se sin egen `customers`-rad och sina egna länkar — aldrig vilka andra Corevo-företag ett globalt konto är kopplat till.
-
-**Fler låsta beslut:**
-- Kontakt-matchning använder **`public.customer_contact_hash`** (tenant-saltad SHA256). Matcha **aldrig** på namn ensamt. Återimplementera **aldrig** hashen i TS (det är driften goal-22/goal-41 uttryckligen förbjuder).
-- Konservativ sammanslagning: vid osäkerhet, **behåll separata kundposter** tills kopplingen verifierats. Följ `merged_into`-tombstone-mönstret från goal-41 — `loyalty_ledger` rörs aldrig, poäng summeras via läs-pathen.
-- Signerade bokningslänkar: **inte** ett rått boknings-ID som ensam autentisering. Signerad, svårgissad, tidsbegränsad, återkallbar, kopplad till rätt bokning **och** rätt tenant. Spara hash av token-värdet, inte klartext.
-- SMS **byggs inte** mot riktig leverantör i denna fas — bara interface + avstängd mock.
-- `minbokning.corevo.se`-funktionen för flera företag är **avstängd** initialt (`customer_multi_business_hub = false`): ingen företagsväljare, ingen "Mina företag"-meny, ingen katalog. FreshCut-kunden ser bara FreshCut.
-
----
-
-## Faserna — bygg i ordning, en fas i taget
-
-Varje fas har **Mål**, **Bygg** och en **Klar när**-checklista (kontraktet — varje kryssruta ska gå att verifiera objektivt).
-
-### F1 — Projektanalys & plan *(ingen kod ännu)*
-
-**Mål:** förstå den befintliga arkitekturen på riktigt innan något byggs, och anpassa planen efter den.
-
-**Bygg (analys):** inventera och dokumentera nuläget för: frontendstruktur, autentisering, Supabase-konfig, `customers`/`bookings`/`tenants`-schemat, hur tenants identifieras, befintlig RLS, e-posthantering, Edge Functions/Workers, modul-/flaggsystemet (`modules`/`tenant_modules`), roller/behörigheter, `loyalty_ledger`, API-routes, ev. befintlig service worker/manifest, domän- och routinglogik.
-
-**Klar när:**
-- [ ] `goal-68-ANALYS.md` finns med: (1) vad som redan finns, (2) vad som kan återanvändas, (3) vad som måste förändras, (4) risker & migreringar, (5) föreslagen implementation i steg, (6) vad som kan köras parallellt.
-- [ ] Analysen bekräftar eller korrigerar mappnings-tabellen i *"Beslut som redan är fattade"* mot faktisk kod (namnger fil + rad för varje befintlig struktur).
-- [ ] Ingen kodändring gjord i F1.
-
-### F2 — Domän & databas
-
-**Mål:** den globala identiteten, kopplingarna, signerade länkar, push-prenumerationer, kommunikationslogg och flaggor — med tenant-isolering bevisad av negativa tester.
-
-**Bygg:**
-- Migration(er) ≥ 0065, idempotenta + rollback: `customer_accounts`, `customer_business_links`, `push_subscriptions`, `communication_events`, `communication_attempts`, `notification_templates`, signerad-länk-tabell (token-**hash**, tenant, bokning, giltighetstid, revoke). Utöka `customers`/`tenant_settings` där mappningstabellen säger det.
-- RLS på varje ny tabell. Globala/kundägda tabeller fence:as på `auth.uid() → customer_accounts`; tenant-tabeller på `private.tenant_id()`.
-- Feature-flaggor via det befintliga systemet: `customer_portal_enabled`, `customer_account_creation_enabled`, `pwa_install_enabled`, `web_push_enabled`, `customer_multi_business_hub` (av), `sms_enabled` (av), `communication_dashboard_enabled`, `loyalty_portal_enabled`, `native_app_ready`. Styrbara per miljö och per tenant.
-
-**Klar när:**
-- [ ] Varje ny tabell finns i prod-schemat (`information_schema`-koll returnerar rad), är idempotent, har rollback-fil.
-- [ ] `push_subscriptions` är en **separat tabell** (flera enheter per konto), inte ett fält på kunden.
-- [ ] Signerad länk ger tillgång till **exakt en** bokning, är tidsbegränsad och återkallbar; klartext-token lagras aldrig.
-- [ ] **Negativa säkerhetstester passerar:** kund A når inte kund B; tenant X når inte tenant Y:s `customers`/bokningar/lojalitet/kommunikation; token för bokning A öppnar inte bokning B; manipulerat `tenant_id` kringgår inte RLS.
-- [ ] Flaggorna finns och `customer_multi_business_hub` läser `false`.
-
-### F3 — Kommunikationsmotor
-
-**Mål:** kanalneutral motor. Bokningskoden innehåller **ingen** leverantörslogik.
-
-**Bygg:** domänhändelser (`appointment.created/rescheduled/cancelled_by_*/reminder_due`, `customer.account_created`, `loyalty.points_added`) → central **policy-resolver** → providers bakom ett gemensamt `CommunicationProvider`-interface. E-post + push implementeras nu; SMS = interface + avstängd mock. Köer, kontrollerade återförsök, idempotens-nycklar, loggning till `communication_attempts`.
-
-**Klar när:**
-- [ ] En bokning skapar en `communication_event`; motorn översätter den till rätt kanaler enligt policyn (e-post alltid vid giltig e-post; push om aktiv prenumeration; SMS av).
-- [ ] E-post- och push-provider skickar på riktigt (lokalt/mot testläge); SMS-providern är en mock som loggar men inte skickar.
-- [ ] Bokningen överlever att en provider är nere (bevisat i test): bokningen finns, kunden får bekräftelsesida, felet loggas, försök görs igen.
-- [ ] Idempotens: samma `request_id`/idempotency-key ger aldrig dubbelt mejl/dubbel push/dubbla poäng.
-- [ ] Statusmodellen skiljer `queued/provider_accepted/sent/failed/expired/clicked` — inget påstås som "läst" utan bevis.
-
-### F4 — Kundportal
-
-**Mål:** enkel, mobil-först portal på `minbokning.corevo.se`. När multi-business är av öppnas FreshCuts vy direkt, utan väljare.
-
-**Bygg:** routes (anpassa till routern): `/`, `/login`, `/register`, `/verify`, `/bookings`, `/bookings/:id`, `/loyalty`, `/notifications`, `/profile`, `/business/:tenantId`, `/manage/:token`. Startsidan prioriterar: **nästa bokning** → snabbåtgärder (omboka/avboka/kontakta/lägg i kalender) → lojalitet → historik → påminnelse-status. Tenant-branding från `tenant_settings.branding`. Kontoaktivering från den signerade länken kopplar `auth.users → customer_accounts → customers → bookings`.
-
-**Klar när:**
-- [ ] En gäst kan öppna den säkra länken och se/av-/omboka enligt företagets regler utan full inloggning.
-- [ ] Konto skapat via länken kopplas automatiskt till rätt `customers`-rad och visar direkt rätt kommande bokningar, historik och lojalitet.
-- [ ] Om-/avbokning går genom `create_public_booking`-vägen och respekterar krockskyddet.
-- [ ] Portalen bär rätt tenant-branding (logo, namn, accentfärg, kontakt).
-- [ ] Med `customer_multi_business_hub = false` finns ingen företagsväljare och ingen "Mina företag"; endast det öppnade företaget syns.
-
-### F5 — PWA
-
-**Mål:** `minbokning.corevo.se` installerbar; push aktiveras av kunden själv.
-
-**Bygg:** manifest (namn, ikoner, theme/bg, start-URL, standalone), service worker (versionshantering, säker uppdatering, offline-appskal + fallback), kontrollerat install-flöde (erbjuds efter tydligt skäl, inte vid sidladdning; separata instruktioner iOS/Android/desktop), push-behörighet bakom egen förklaring (inte vid load), prenumerations-livscykel (`unsupported/not_requested/prompt_available/granted/denied/subscription_active/expired/revoked`).
-
-**Klar när:**
-- [ ] PWA:n installerbar på stödda enheter; install-prompten visas **inte** aggressivt vid load.
-- [ ] Kunden aktiverar push själv efter egen förklaringsruta; browserns dialog triggas först på klick.
-- [ ] Flera prenumerationer per konto fungerar; en utgången/återkallad prenumeration hanteras utan att slå ut kundens övriga enheter.
-- [ ] Offline visar aldrig gammal bokningsdata som aktuell — allt offline-innehåll är märkt som senast synkat; av-/ombokning kan aldrig se lyckad ut offline utan serverbekräftelse.
-
-### F6 — Administrativ kommunikationsöversikt
-
-**Mål:** första ägar-vyn över utskick. Underlag för framtida SMS-fakturering.
-
-**Bygg:** vy (under statistik/kommunikation/inställningar enligt befintlig IA) som visar e-post (skickade/lyckade/misslyckade/väntande), push (skickade/misslyckade/öppnade när mätbart/aktiva/utgångna prenumerationer/andel med push), SMS-grunden (avstängd, men framtida antal/segment/kostnad synliga), samt viktiga fel (kritiska misslyckade utskick, kunder utan fungerande kanal, utgångna prenumerationer, studsad e-post).
-
-**Klar när:**
-- [ ] Vyn läser `communication_attempts` och visar korrekta räknare per kanal.
-- [ ] Formuleringen är ärlig: "Push accepterad av push-tjänst"/"Push öppnad", aldrig "Kunden har sett" utan bevis.
-- [ ] SMS-sektionen visas som avstängd med plats för framtida kostnad/segment.
-
-### F7 — Kvalitetssäkring
-
-**Mål:** bevisa att helheten håller.
-
-**Bygg/kör:** enhetstester (policy, kundmatchning, tokenvalidering, tenant-behörighet, flaggor, fallback), integrationstester (anonym bokning → e-posthändelse → konto via länk → koppling → rätt bokningar; push sparas/utgår; attempt loggas), säkerhetstester (kund/tenant-isolering, token-korsning, manipulerat `tenant_id`), samtidighet/last (dubbelklick boka, samma idempotency-key, dubbla köleveranser, provider nere, flera enheter), UX-granskning, död kod bort.
-
-**Klar när:**
-- [ ] Alla nya tester gröna; hela sviten grön; `tsc` 0; bransch-vakt 0 nya.
-- [ ] Negativa säkerhetstesterna från F2 ingår i sviten och passerar.
-- [ ] Den lokala miljön demonstrerar **hela** flödet (gäst-bokning → mejl → länk → konto → portal → push).
-
----
-
-## Batchade uppföljningar — kräver människa, blockerar inte bygget
-
-Bygg runt dessa; lämna dem namngivna åt Zivar. Väntar aldrig på dem.
-
-- **SMS-leverantör** (t.ex. 46elks/Twilio) — pris/segment/kostnadsmodell. Interface + mock byggs nu; riktig koppling är ett senare ägar-beslut.
-- **`minbokning.corevo.se`** — DNS/Cloudflare-route (kan mockas lokalt via hosts/env under bygget).
-- **VAPID-nycklar** för Web Push — generera par; Zivar lägger privat nyckel i secrets.
-- **Transaktionsmejl** — avsändardomän + SPF/DKIM-verifiering (kan köras mot testläge lokalt).
-- **Deploy-frysen** — inget går live förrän Zivar häver den.
-
----
-
-## När du är klar
-
-- `goal-68-ARBETSLOGG.md` fylld per fas (nyaste överst).
-- Definition of Done-listan nedan genomgången punkt för punkt, med bevis.
-- Lokal miljö startad och redo att demonstrera hela flödet för granskning.
-- **Ingen** push/deploy — vänta på Zivars klartecken.
-
-### Definition of Done
-
-1. Kund kan boka utan konto. 2. Bokningen sparas atomiskt. 3. Rätt `customers`-rad skapas/matchas (via `contact_hash`, konservativt). 4. Bekräftelsemejl skapas och skickas. 5. Mejlet bär en säker hanteringslänk. 6. Länken öppnar exakt rätt bokning. 7. Kund kan skapa konto från bokningen. 8. Kontot länkas säkert till rätt kundrelation. 9–11. Kunden ser rätt kommande bokningar, historik och lojalitet. 12. Om-/avbokning enligt reglerna. 13. Rätt tenant-branding. 14. PWA installerbar. 15. Kunden aktiverar push själv. 16. Flera prenumerationer per konto. 17. Utgången prenumeration hanteras. 18. Push-/e-postfel påverkar aldrig bokningen. 19. Alla kommunikationsförsök loggas. 20. SMS kan anslutas senare utan omskrivning. 21. Datamodellen stödjer flera företag per konto. 22. "Mina företag" dold när flaggan är av. 23. Tenant-isolering bevisad med negativa tester. 24. Dubbla requests → inga dubbla bokningar/utskick. 25. Lokal miljö demar hela flödet. 26. Dokumentation: arkitektur, miljövariabler, lokalkörning, testning.
 
 ---
 
@@ -222,4 +150,6 @@ Bygg runt dessa; lämna dem namngivna åt Zivar. Väntar aldrig på dem.
 
 | Version | Datum | Ändring |
 |---|---|---|
-| 1.0 | 2026-07-14 | Första utkast. Fristående prompt omgjord till grundad goal-brief: föreslagna namn mappade mot befintligt schema (`tenants`/`customers`/`tenant_settings.branding`/`modules`), global identitet identifierad som enda strukturellt nya nivån, deploy-frys + migrationsläge + `create_public_booking`-väg inlagda som låsta beslut. |
+| 1.0 | 2026-07-14 | Fristående prompt → grundad goal-brief. |
+| 1.1 | 2026-07-14 | Avstämd mot Codex `SAMMANSTALLNING` (host, migration ≥0067, frys=staging, PWA-SW, `customer_accounts` uppskjuten). |
+| 2.0 | 2026-07-14 | **Omgjord till EN körbar autonom master-goal.** Samarbetsprotokoll Codex⇄Claude Code, autonomi-regler, alla faser A–H med *Klar när*, människo-grindar parkerade, `/goal`-kommando. Körs utan att Zivar/planeraren stör. |

@@ -9,6 +9,10 @@
 .board {
   display: flex;
   flex-direction: column;
+  /* Samma skäl som .scroll: kortet får aldrig bli bredare än ytan det står i.
+     Kolumnerna scrollar inuti, inte utanför. */
+  min-width: 0;
+  max-width: 100%;
   /* Fyller ytan skalet ger oss (main är flex-höjd i workbench-läget). dvh (inte vh)
      så mobilens adressfält inte klipper botten när det fälls in. */
   height: calc(100dvh - 58px - 30px);
@@ -505,6 +509,13 @@
 .scroll {
   flex: 1;
   min-height: 0;
+  /* min-width: 0 ÄR HELA MOBIL-BUGGEN. Ett flex-barn har `min-width: auto`, vilket
+     betyder "krymp aldrig under mitt innehåll". Innehållet här är .dayWrap med
+     `width: max-content` — alltså alla resurskolumner. Utan den här raden vägrar
+     .scroll krympa, .board växer med den, och HELA sidan får horisontell scroll:
+     verktygsraden och toppnavet skars av utanför skärmkanten på mobilen. Nu krymper
+     ytan till skärmen och kolumnerna scrollar INNE i .scroll, där de ska. */
+  min-width: 0;
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -660,6 +671,14 @@
 .freeArea:hover {
   background: color-mix(in srgb, var(--c-gold) 6%, transparent);
 }
+
+/* Fingret ligger kvar på ytan — spärren räknar ner. Utan den här återkopplingen känns
+   fördröjningen som att appen hängt sig; med den ser man att systemet lyssnar.
+   `touch-action: pan-x pan-y` behålls implicit: ytan får ALDRIG äta scrollen. */
+.freeAreaArmed {
+  background: color-mix(in srgb, var(--c-forest) 12%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c-forest) 55%, transparent);
+}
 .freeArea:focus-visible {
   outline: 2px solid var(--c-forest);
   outline-offset: -2px;
@@ -683,13 +702,16 @@
   overflow: hidden;
   padding: 5px 9px;
   border: 0;
-  border-left: 3px solid var(--bk, var(--c-gold));
-  border-radius: 11px;
+  /* Färgen ska SYNAS (Zivar: "de här med färgerna ka bli tydligare"). Kanten är bredare
+     och tonen kraftigare än förut (3px/14% → 5px/26%) — men fortfarande en TON, inte en
+     fylld platta: texten måste behålla sin kontrast mot bakgrunden. */
+  border-left: 5px solid var(--bk, var(--c-gold));
+  border-radius: 8px;
   background:
     linear-gradient(
       to right,
-      color-mix(in srgb, var(--bk, var(--c-gold)) 14%, var(--c-paper)),
-      color-mix(in srgb, var(--bk, var(--c-gold)) 4%, var(--c-paper)) 60%
+      color-mix(in srgb, var(--bk, var(--c-gold)) 26%, var(--c-paper)),
+      color-mix(in srgb, var(--bk, var(--c-gold)) 9%, var(--c-paper)) 70%
     );
   box-shadow:
     0 1px 2px color-mix(in srgb, var(--c-ink) 6%, transparent),
@@ -782,14 +804,27 @@
   opacity: 0.75;
 }
 
+/* Statusflaggan ligger ABSOLUT i kortets övre högra hörn — inte som en rad i flödet.
+   Som flödesrad (margin-top:auto) åt den höjd från tjänstetexten och klippte den i
+   varje 30-min-block. Nu kostar den noll höjd och kan sitta kvar i ALLA storlekar. */
 .blockFlag {
+  position: absolute;
+  top: 4px;
+  right: 6px;
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  margin-top: auto;
   color: var(--c-ink-2);
   font-size: 10.5px;
   font-weight: 600;
+}
+
+/* Stora kort har plats för ordet, inte bara ikonen. Då får flaggan en egen platta så
+   den inte flyter ihop med kundnamnet under. */
+.blockFlagFull {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--c-paper) 78%, transparent);
 }
 
 /* Kort block (< 40px, dvs under ~30 min): EN rad — tid, namn, statusikon. Hellre tre
@@ -805,11 +840,6 @@
   min-width: 0;
 }
 
-.blockFlagTiny {
-  display: inline-flex;
-  flex: none;
-  color: var(--c-ink-2);
-}
 
 /* ---- blockerad tid ----
    Skiljs från en bokning med MER än färg: diagonalrandigt mönster + ikon + text.
@@ -1190,6 +1220,35 @@
   gap: 8px;
 }
 
+/* ---- Blockera tid: kompakt formulär ----
+   Sektionerna låg förut på rad efter rad och sprängde dialogens höjd → en scrollhiss
+   mitt i innehållet, med "Blockera"-knappen fastnitad under. Nu är luften stramare och
+   FRÅN/TILL delar en rad, så hela formuläret ryms utan att scrolla. */
+.blockForm {
+  display: grid;
+  gap: 14px;
+}
+
+.blockSpan {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Datum + tid sitter ihop som ETT fält — det är en tidpunkt, inte två inställningar. */
+.blockPair {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 6px;
+}
+
+/* Telefon: två tidpunkter bredvid varandra blir fyra oläsliga fält. Staplas. */
+@media (max-width: 560px) {
+  .blockSpan {
+    grid-template-columns: 1fr;
+  }
+}
+
 .chip {
   display: flex;
   flex-direction: column;
@@ -1197,7 +1256,7 @@
   align-items: flex-start;
   padding: 9px 13px;
   border: 1px solid var(--c-line);
-  border-radius: 12px;
+  border-radius: 6px;
   background: var(--c-paper);
   cursor: pointer;
   font: inherit;
@@ -1241,11 +1300,13 @@
   font-weight: 650;
 }
 
+/* Raka kanter, inte piller (Zivar: "inte massa runda hörn överallt"). 999px gjorde varje
+   val till en tablett; 6px läser som en KNAPP i ett formulär och rimmar med fälten. */
 .slotChip {
   min-height: 40px;
   padding: 0 14px;
   border: 1px solid var(--c-line);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--c-paper);
   color: var(--c-ink);
   cursor: pointer;
@@ -1440,6 +1501,31 @@
 
   .monthCount {
     font-size: 10.5px;
+  }
+}
+
+/* ---- iPad / surfplatta (761–1024px) ----
+   Egen nivå, inte "stor mobil" och inte "liten desktop". Plattan har gott om bredd men
+   används med FINGER: touchmålen måste vara kvar i full storlek, medan kolumnerna får
+   vara smalare än på desktop så en hel personalstyrka ryms utan att man scrollar i sidled. */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .dayWrap {
+    --axis-w: 50px;
+    --col-min: 132px;
+  }
+
+  .iconBtn,
+  .todayBtn,
+  .viewBtn {
+    min-height: 44px; /* fingret, inte muspekaren, styr här */
+  }
+}
+
+/* Telefon: kolumnen är för smal för ett telefonnummer. Numret försvinner INTE — det
+   står i kortet man öppnar. Ett avhugget nummer är värre än inget nummer. */
+@media (max-width: 760px) {
+  .blockPhone {
+    display: none;
   }
 }
 

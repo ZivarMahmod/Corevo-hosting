@@ -1,6 +1,6 @@
 # Corevo kundportal, PWA och kommunikation — produkt- och arkitekturdesign
 
-**Status:** beslutad design, implementationsplan finns i samma mapp  
+**Status:** Codex-underlag, sammanfogat med Goal 68 via `00-SAMMANSTALLNING-goal-68-och-codex.md`  
 **Datum:** 2026-07-14  
 **Kanon överordnad denna fil:** `1-Planering/01-arkitektur/multibransch-plattform-arkitektur.md`  
 **Ursprung:** Zivars GPT-diskussion om kundkonto, PWA, push, e-post, SMS-kostnad och framtida app, verifierad mot befintlig Corevo-kod 2026-07-14.
@@ -46,7 +46,7 @@ Den första releasen visar bara det företag som öppnade portalen. Flerföretag
 | Område | Finns idag | Konsekvens |
 |---|---|---|
 | Kundkonto | `app/(kund)/konto/*` med bokningar, historik, lojalitet, favoriter, beställningar och profil | Återanvänd och dela upp; skapa inte en parallell portal från noll. |
-| Kundidentitet | `customers.auth_user_id`, unik per `(tenant_id, auth_user_id)` | En global auth-användare kan redan ha separata kundrelationer hos flera tenants. Ny `customer_accounts`-tabell behövs inte i första vågen. |
+| Kundidentitet | `auth.users` är global och samma `auth.uid()` kan redan länkas till en `customers`-rad per tenant | Återanvänd detta i första vågen. Inför inte `customer_accounts` utan ett konkret behov som F1 kan bevisa. |
 | Bokningskoppling | `bookings.customer_id` och `resolve_booking_customer` | Återanvänd och hårdna konservativ matchning. |
 | RLS | Kund kan läsa egen tenant-rad; admin använder `private.tenant_id()` | Central flerföretagsläsning kräver särskilda snäva RPC:er/policies som utgår från `auth.uid()`, inte en aktiv tenant-cookie. |
 | E-post | `lib/notifications/*`, bokningsmallar, cron-påminnelser, tenant-branding | Behåll provider och mallar; lägg beständig event-/attempt-logg runt utskick. |
@@ -60,10 +60,10 @@ Den första releasen visar bara det företag som öppnade portalen. Flerföretag
 
 ### 4.1 Låst modell
 
-`auth.users`/`public.users` är global inloggning. `public.customers` är företagsspecifik kundrelation. En auth-användare får ha högst en aktiv länkad kundrad per tenant, men kan ha kundrader hos många tenants.
+`auth.users` är global inloggning. Corevos `public.users` är appens roll-/tenantprofil och `public.customers` är företagsspecifik kundrelation. Samma `auth.uid()` kan redan vara länkat till högst en kundrad per tenant och därmed bära flera företag. Första vågen använder detta direkt via snäva portal-RPC:er/RLS. En separat `customer_accounts`-nivå införs endast om F1 bevisar ett självständigt globalt profiltillstånd som inte säkert kan knytas till `auth.uid()`.
 
 ```text
-global auth user
+auth.users
   ├─ customer hos FreshCut (tenant A)
   │    ├─ bokningar
   │    ├─ lojalitet
@@ -73,7 +73,7 @@ global auth user
        └─ lojalitet
 ```
 
-FreshCut får aldrig se att samma person använder tenant B. Centrala portalen får endast läsa relationer vars `customers.auth_user_id = auth.uid()`.
+FreshCut får aldrig se att samma person använder tenant B. Centrala portalen får endast läsa `customers`-relationer vars `auth_user_id = auth.uid()`.
 
 ### 4.2 Kontoaktivering
 

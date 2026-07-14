@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { addDays as addDaysStr } from '@/lib/admin/dates'
@@ -631,6 +631,90 @@ function NowLine({ dayStart, tz, offset = 0 }: { dayStart: number; tz: string; o
   return <div className={styles.nowLine} style={{ top: top + offset }} aria-hidden="true" />
 }
 
+/** Håll-tid innan en tryckning på tom yta räknas som "jag vill boka HÄR". */
+const HOLD_MS = 320
+/** Rör fingret sig mer än så är det en scroll, inte en tryckning. */
+const SLOP_PX = 10
+
+/**
+ * Ledig yta i kalendern — "tryck där du vill boka".
+ *
+ * MED MUS: ett klick, direkt. Ingen fördröjning, inget att lära sig.
+ *
+ * MED FINGER: ett vanligt tryck gör INGENTING. Man måste hålla kvar ~320 ms utan att
+ * flytta fingret. Varför: kalendern scrollar i båda led, och på en telefon avslutas en
+ * scroll ofta med att man nuddar ytan för att stoppa rullningen — den nudden öppnade
+ * förut bokningsdialogen. Att avbryta en dialog man aldrig bad om är värre än att
+ * behöva hålla in en tredjedels sekund. Rör fingret sig mer än 10 px, eller lyfts det
+ * före tiden, händer ingenting alls.
+ *
+ * Ytan får en tydlig markering under hållet (.freeAreaArmed) så det syns att systemet
+ * lyssnar — annars känns fördröjningen som en bugg i stället för en spärr.
+ *
+ * TANGENTBORD: Enter/Space på knappen fungerar som förut (öppnar mitt i ytan).
+ */
+function FreeArea({
+  staffName,
+  onPick,
+}: {
+  staffName: string
+  onPick: (clientY: number, box: DOMRect) => void
+}) {
+  const [armed, setArmed] = useState(false)
+  const hold = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null)
+
+  const cancel = () => {
+    if (hold.current) clearTimeout(hold.current.timer)
+    hold.current = null
+    setArmed(false)
+  }
+
+  return (
+    <button
+      type="button"
+      className={`${styles.freeArea}${armed ? ` ${styles.freeAreaArmed}` : ''}`}
+      aria-label={`Boka ledig tid hos ${staffName}`}
+      onPointerDown={(e) => {
+        if (e.pointerType === 'mouse') return // musen går på onClick
+        const el = e.currentTarget
+        const { clientX: x, clientY: y } = e
+        setArmed(true)
+        hold.current = {
+          x,
+          y,
+          timer: setTimeout(() => {
+            hold.current = null
+            setArmed(false)
+            onPick(y, el.getBoundingClientRect())
+          }, HOLD_MS),
+        }
+      }}
+      onPointerMove={(e) => {
+        const h = hold.current
+        if (!h) return
+        if (Math.abs(e.clientX - h.x) > SLOP_PX || Math.abs(e.clientY - h.y) > SLOP_PX) cancel()
+      }}
+      onPointerUp={cancel}
+      onPointerCancel={cancel}
+      onPointerLeave={cancel}
+      onClick={(e) => {
+        // Touch har redan hanterats i pointer-flödet; det syntetiska click:et som följer
+        // ett tryck får INTE öppna dialogen en gång till (eller alls, om hållet avbröts).
+        if (e.detail === 0) {
+          // detail === 0 → tangentbord (Enter/Space), inte en riktig pekare. Öppna mitt
+          // i ytan: en tangentbordsanvändare har ingen y-koordinat att sikta med.
+          const box = e.currentTarget.getBoundingClientRect()
+          onPick(box.top + box.height / 2, box)
+          return
+        }
+        const pt = (e.nativeEvent as Partial<PointerEvent>).pointerType
+        if (pt && pt !== 'mouse') return
+        onPick(e.clientY, e.currentTarget.getBoundingClientRect())
+      }}
+    />
+  )
+}
+
 function BookingBlock({
   booking,
   tz,
@@ -665,16 +749,26 @@ function BookingBlock({
   const name = booking.customerName?.trim() || 'Gäst'
 
   // Ett block är bara så högt som tiden är lång — texten måste anpassa sig, inte
-  // klippas mitt i en rad. Tre nivåer, styrda av verklig höjd:
-  //   ≥ 56px  allt (tid · kund · tjänst · telefon · statusflagga)
-  //   ≥ 34px  tid · kund · tjänst — TJÄNSTEN överlever hit ner med flit: "vilken
-  //           klippning?" är den fråga receptionen ställer oftast, och en 30-min-tid
-  //           (42px) är exakt den bokning man annars hade behövt öppna för att se det
-  //   < 34px  EN rad: tid och kund sida vid sida
-  // Statusen finns alltid kvar i accentkanten + i drawern; det är texten som viker,
-  // aldrig informationen.
+  // klippas mitt i en rad.
+  //
+  // FIXAT (Zivars mobilskärmdump): nivåerna var gissade, inte räknade. En 30-min-tid är
+  // 42px hög (30 × PX_PER_MIN 1.4). Den föll på "≥ 34 → medium" och fick FYRA rader —
+  // tid (13px) + namn (16) + tjänst (14) + status (13) = 56px text i ett block med 32px
+  // fri höjd (42 minus 10px padding). Resultatet var exakt det på skärmdumpen:
+  // "Gäst" och "Herrklippnin" avhuggna mitt i tecknen.
+  //
+  // Nu räknas nivåerna ur radhöjderna i CSS:en, med paddingen avdragen:
+  //   ≥ 66px  allt        tid + namn + tjänst + telefon   (13+16+14+13 = 56 + 10)
+  //   ≥ 52px  medium      tid + namn + tjänst             (43 + 10)
+  //   ≥ 38px  compact     tid + namn                      (29 + 10)  ← 30-min-tiden
+  //   < 38px  tiny        EN rad: tid och namn sida vid sida
+  //
+  // Statusflaggan tar INGEN höjd längre — den ligger absolut i kortets hörn (.blockFlag)
+  // i stället för att vara en femte rad som trängde ut tjänsten. Texten viker; det gör
+  // aldrig informationen: allt finns i title, aria-label och drawern.
   const h = Math.max(height, 20)
-  const tier = h >= 56 ? 'full' : h >= 34 ? 'medium' : 'tiny'
+  const tier = h >= 66 ? 'full' : h >= 52 ? 'medium' : h >= 38 ? 'compact' : 'tiny'
+  const showService = tier === 'full' || tier === 'medium'
   // Avbokad tid → inget nummer. Att ringa någon som redan avbokat är precis det
   // misstag ett synligt nummer inbjuder till.
   const phone = showPhone && !dim ? booking.customerPhone : null
@@ -720,7 +814,7 @@ function BookingBlock({
     >
       <span className={`num ${styles.blockTime}`}>{timeLabel(booking.startTs, tz)}</span>
       <span className={styles.blockName}>{name}</span>
-      {tier !== 'tiny' && <span className={styles.blockService}>{booking.serviceName}</span>}
+      {showService && <span className={styles.blockService}>{booking.serviceName}</span>}
       {/* Numret står som TEXT här, inte som länk: blocket är redan en <button>, och en
           <a> inuti en <button> är ogiltig HTML som skärmläsare tolkar olika. Ringbart
           blir det i dialogen — ett klick bort, precis som önskat. */}
@@ -730,17 +824,16 @@ function BookingBlock({
           {phone}
         </span>
       )}
-      {/* Status bärs av ikon + text, aldrig av färgen ensam (färgblinda + gråskala).
-          I ett litet block räcker ikonen — texten skulle ändå inte få plats. */}
-      {statusFlag && tier !== 'tiny' && (
-        <span className={styles.blockFlag}>
+      {/* Status bärs av ikon (+ text när kortet är stort nog), aldrig av färgen ensam
+          — färgblinda och gråskala måste kunna läsa den. Flaggan ligger ABSOLUT i
+          hörnet: som flödesrad åt den förut höjd från tjänsten och klippte texten. */}
+      {statusFlag && (
+        <span
+          className={`${styles.blockFlag}${tier === 'full' ? ` ${styles.blockFlagFull}` : ''}`}
+          title={statusFlag.text}
+        >
           <Icon name={statusFlag.icon} size={11} />
           {tier === 'full' && <span>{statusFlag.text}</span>}
-        </span>
-      )}
-      {statusFlag && tier === 'tiny' && (
-        <span className={styles.blockFlagTiny} aria-hidden="true">
-          <Icon name={statusFlag.icon} size={11} />
         </span>
       )}
       {/* goal-67 — VEMS TID? I dagvyn svarar kolumnen. I VECKOVYN finns ingen kolumn,
@@ -923,14 +1016,12 @@ function DayGrid({
               <HourLines hours={hours} dayStart={dayStart} />
 
               {/* Ledig yta är klickbar — Wavys "klicka där du vill boka". Fungerar
-                  också med tangentbord (Enter/Space på knappen). */}
-              <button
-                type="button"
-                className={styles.freeArea}
-                aria-label={`Boka ledig tid hos ${s.name}`}
-                onClick={(e) => {
-                  const box = e.currentTarget.getBoundingClientRect()
-                  const minute = dayStart + (e.clientY - box.top) / PX_PER_MIN
+                  också med tangentbord (Enter/Space på knappen). På TOUCH krävs en
+                  avsiktlig tryckning, se FreeArea. */}
+              <FreeArea
+                staffName={s.name}
+                onPick={(clientY, box) => {
+                  const minute = dayStart + (clientY - box.top) / PX_PER_MIN
                   onEmptyClick(s.id, s.name, minute)
                 }}
               />
