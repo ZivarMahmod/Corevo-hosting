@@ -6,6 +6,11 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
+  // Gratisplanens tak är 3 MiB GZIPPAD worker. OpenNext-servern är ominifierad
+  // (~18 MiB rå) och gick 2026-07-14 över taket (3.17 MiB gz). Minifiering via
+  // wranglers esbuild tar den under igen. Kostnad: minifierade stackspår i
+  // Cloudflare-loggen — priset för att stanna på gratisplanen.
+  "minify": true,
   // Public client env, provided at RUNTIME. OpenNext maps `vars` -> process.env;
   // Next's build-time NEXT_PUBLIC_* inlining is INCONSISTENT across server chunks
   // on the Workers adapter (the (public) storefront read process.env at runtime
