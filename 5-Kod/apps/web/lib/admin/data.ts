@@ -2,6 +2,7 @@ import 'server-only'
 import type { Tables } from '@corevo/db'
 import type { TenantBranding } from '@corevo/ui'
 import { createClient } from '@/lib/supabase/server'
+import { staffColor } from './staff-colors'
 
 // Every read here runs through the cookie-bound authenticated client, so RLS
 // (0002: tenant_id = private.tenant_id()) fences it to the admin's own tenant.
@@ -530,8 +531,6 @@ export async function getCustomerContact(customerId: string): Promise<CustomerCo
   }
 }
 
-export type ServiceMixEntry = { name: string; count: number }
-export type PeakHourEntry = { hour: number; count: number }
 
 /** En resurs (personal) och dess arbetstid en given veckodag. `start`/`end` är null
  *  när resursen inte arbetar den dagen — det är ett ärligt "ledig", inte saknad data. */
@@ -540,6 +539,9 @@ export type StaffDay = {
   name: string
   start: string | null
   end: string | null
+  /** goal-67: kalenderfärgen. Alltid en hex — härledd ur id:t när ingen är vald,
+   *  så kalendern är färgkodad från dag ett utan att någon behövt välja. */
+  color: string
 }
 
 /** Dagens resursläge: aktiv personal + deras arbetstid för veckodagen (0=sön … 6=lör,
@@ -552,7 +554,7 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
   const [staffRes, hoursRes] = await Promise.all([
     supabase
       .from('staff')
-      .select('id, title')
+      .select('id, title, color')
       .eq('tenant_id', tenantId)
       .eq('active', true)
       // Stabil kolumnordning i kalendern kräver en deterministisk sortering — samma
@@ -588,7 +590,9 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
     })
   }
 
-  return ((staffRows ?? []) as { id: string; title: string | null }[]).map((s) => {
+  return (
+    (staffRows ?? []) as { id: string; title: string | null; color: string | null }[]
+  ).map((s) => {
     const hours = span.get(s.id)
     return {
       staffId: s.id,
@@ -596,49 +600,37 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
       name: s.title?.trim() || 'Namnlös medarbetare',
       start: hours?.start ?? null,
       end: hours?.end ?? null,
+      color: staffColor(s.id, s.color),
     }
   })
 }
 
+/** goal-67: översikten svarar på "vad händer idag" — inget annat. `servicesActive`,
+ *  `staffActive`, `serviceMix` och `peakHours` räknades ut här men renderades av INGEN
+ *  sida; den frågan bor nu på /admin/statistik med riktig period och jämförelse. */
 export type DashboardData = {
-  servicesActive: number
-  staffActive: number
   todayCount: number
   weekCount: number
   upcomingToday: AdminBooking[]
-  /** Most-booked services this week (top 5). */
-  serviceMix: ServiceMixEntry[]
-  /** Busiest hours-of-day this week (top 4), in the tenant's timezone. */
-  peakHours: PeakHourEntry[]
-}
-
-/** Hour-of-day (0–23) of an ISO instant in a given IANA timezone. */
-function hourInTz(iso: string, timeZone: string): number {
-  const h = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hour12: false, timeZone }).format(
-    new Date(iso),
-  )
-  const n = Number(h)
-  return Number.isInteger(n) && n >= 0 && n <= 23 ? n : 0
+  /** Dagens BOKADE VÄRDE (öre) — summan av dagens aktiva tider, genomförda som
+   *  kommande. Det är INTE "intäkt": en tid kl 16 har inte tjänats in kl 09. Kortet
+   *  heter därför "Bokat idag" och hintan säger hur mycket som redan är klart.
+   *  (Codex-granskning: etiketten "Intäkt" ljög om framtida tider.) */
+  todayBookedCents: number
+  /** Av det bokade värdet: den del som redan är genomförd (status = completed). */
+  todayDoneCents: number
+  /** Antal av dagens tider som saknar pris — ett tyst 0 hade underskattat summan
+   *  utan att någon märkte det. Kortet flaggar det i stället för att ljuga tyst. */
+  todayUnpriced: number
 }
 
 export async function dashboardData(
   tenantId: string,
   today: { fromUtc: string; toUtc: string },
   week: { fromUtc: string; toUtc: string },
-  timeZone: string,
 ): Promise<DashboardData> {
   const supabase = await createClient()
-  const [services, staff, todayB, weekRows, upcoming] = await Promise.all([
-    supabase
-      .from('services')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .eq('active', true),
-    supabase
-      .from('staff')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .eq('active', true),
+  const [todayB, weekB, upcoming] = await Promise.all([
     supabase
       .from('bookings')
       .select('*', { count: 'exact', head: true })
@@ -646,10 +638,12 @@ export async function dashboardData(
       .in('status', ACTIVE_BOOKING as unknown as string[])
       .gte('start_ts', today.fromUtc)
       .lt('start_ts', today.toUtc),
-    // Week rows (not just a count) so we can derive service-mix + peak hours.
+    // goal-67: veckan behövs bara som ETT TAL här. Förut drogs varje veckorad hem för
+    // att räkna service-mix och peak-hours — som ingen sida någonsin renderade. Den
+    // frågan bor nu på /admin/statistik, med riktig period och jämförelse.
     supabase
       .from('bookings')
-      .select('start_ts, services(name)')
+      .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .in('status', ACTIVE_BOOKING as unknown as string[])
       .gte('start_ts', week.fromUtc)
@@ -657,41 +651,22 @@ export async function dashboardData(
     listBookings(tenantId, { fromUtc: today.fromUtc, toUtc: today.toUtc }),
   ])
 
-  type WRow = { start_ts: string; services: { name: string } | null }
-  const rows = (weekRows.data ?? []) as WRow[]
-
-  // Service-mix: count per service name, top 5.
-  const mix = new Map<string, number>()
-  for (const r of rows) {
-    const name = r.services?.name ?? 'Okänd tjänst'
-    mix.set(name, (mix.get(name) ?? 0) + 1)
-  }
-  const serviceMix: ServiceMixEntry[] = [...mix.entries()]
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-
-  // Peak hours: count per hour-of-day (tenant tz), top 4.
-  const hours = new Map<number, number>()
-  for (const r of rows) {
-    const h = hourInTz(r.start_ts, timeZone)
-    hours.set(h, (hours.get(h) ?? 0) + 1)
-  }
-  const peakHours: PeakHourEntry[] = [...hours.entries()]
-    .map(([hour, count]) => ({ hour, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 4)
-
   // Keep the list consistent with `todayCount` (both exclude cancelled/no_show).
   const active = new Set<string>(ACTIVE_BOOKING)
+  const todayRows = upcoming.filter((b) => active.has(b.status))
+
   return {
-    servicesActive: services.count ?? 0,
-    staffActive: staff.count ?? 0,
     todayCount: todayB.count ?? 0,
-    weekCount: rows.length,
-    upcomingToday: upcoming.filter((b) => active.has(b.status)),
-    serviceMix,
-    peakHours,
+    weekCount: weekB.count ?? 0,
+    upcomingToday: todayRows,
+    // Dagens värde styr en dag — antalet bokningar gör det inte (tre färgningar ≠ tre
+    // luggklipp). Men BOKAT ≠ INTJÄNAT: hela dagen summeras, klart och kommande, och
+    // de två hålls isär i stället för att bakas ihop till ett tal som ljuger.
+    todayBookedCents: todayRows.reduce((sum, b) => sum + (b.priceCents ?? 0), 0),
+    todayDoneCents: todayRows
+      .filter((b) => b.status === 'completed')
+      .reduce((sum, b) => sum + (b.priceCents ?? 0), 0),
+    todayUnpriced: todayRows.filter((b) => b.priceCents == null).length,
   }
 }
 

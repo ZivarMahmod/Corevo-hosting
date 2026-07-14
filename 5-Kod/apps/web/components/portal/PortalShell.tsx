@@ -93,7 +93,10 @@ export async function PortalShell({
         k === 'booking' ? isBookingActivated(states) : isModuleActivated(states, k),
       )
     }
-    let paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys)
+    // Roll-separationen: personal (nivå 3) ser bara sin arbetsdag i menyn OCH i
+    // ⌘K-paletten. platform_admin passerar allt (räknas som toppnivå).
+    const navRoleLevel = user.platformAdmin ? Number.MAX_SAFE_INTEGER : user.roleLevel
+    let paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys, navRoleLevel)
     if (portal === 'platform') {
       const tenantOptions = await listTenantNavOptions()
       paletteItems = [
@@ -233,6 +236,7 @@ export async function PortalShell({
           userSub={userSub}
           signOut={<SignOutButton compact />}
           activeModuleKeys={activeModuleKeys}
+          roleLevel={navRoleLevel}
         />
         <div className="portal-col">
           <PortalTopbar

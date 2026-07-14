@@ -669,6 +669,11 @@
    Mjukt kort, inte en cell. Ingen hård ram: accentkanten till vänster + en varm,
    nästan omärklig ton av samma accent bär identiteten. Skuggan är låg och diffus, så
    blocken vilar på ytan i stället för att sitta fastnitade i ett rutnät. */
+/* goal-67 — PERSONENS FÄRG ÄGER KORTET. `--bk` sätts inline (staff.color, eller en
+   deterministisk palettfärg ur id:t). EN hex tonas mot bakgrunden med color-mix, så
+   ljus och mörk vy följer med automatiskt — vi håller inte två paletter i synk.
+   Statusen tappar inget: den bär ikon + text (.blockFlag) och avbokat dessutom
+   dimning + genomstrykning, så färgen är en genväg, aldrig den enda bäraren. */
 .block {
   position: absolute;
   z-index: 1;
@@ -678,13 +683,13 @@
   overflow: hidden;
   padding: 5px 9px;
   border: 0;
-  border-left: 3px solid var(--c-gold);
+  border-left: 3px solid var(--bk, var(--c-gold));
   border-radius: 11px;
   background:
     linear-gradient(
       to right,
-      color-mix(in srgb, var(--c-gold) 9%, var(--c-paper)),
-      var(--c-paper) 60%
+      color-mix(in srgb, var(--bk, var(--c-gold)) 14%, var(--c-paper)),
+      color-mix(in srgb, var(--bk, var(--c-gold)) 4%, var(--c-paper)) 60%
     );
   box-shadow:
     0 1px 2px color-mix(in srgb, var(--c-ink) 6%, transparent),
@@ -971,27 +976,25 @@
   grid-auto-rows: minmax(84px, 1fr);
 }
 
+/* goal-67: cellen är inte längre en knapp — korten inuti den är egna knappar.
+   Den äger sin egen scroll, så en FULL dag aldrig svämmar över i grannrutan och
+   rutnätet håller formen även i en månad där varje dag är fullbokad. */
 .monthCell {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-  padding: 8px 10px;
+  gap: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
   border: 1px solid var(--c-line);
   border-radius: 10px;
   background: var(--c-paper);
-  cursor: pointer;
-  font: inherit;
   text-align: left;
+  scrollbar-width: thin;
   transition: border-color var(--dur-fast) var(--ease-out);
 }
 .monthCell:hover {
   border-color: var(--c-line-strong);
-  background: var(--c-paper-2);
-}
-.monthCell:focus-visible {
-  outline: 2px solid var(--c-forest);
-  outline-offset: 1px;
 }
 
 /* Dagar utanför månaden hör till grannmånaden — dämpade, men klickbara. */
@@ -1002,6 +1005,32 @@
 
 .monthCellToday {
   border-color: var(--c-forest);
+  box-shadow: inset 0 0 0 1px var(--c-forest);
+}
+
+/* Dagnumret ÄR vägen till dagvyn. Sitter kvar när kortlistan rullar — annars tappar
+   man vilken dag man tittar på mitt i en full cell. */
+.monthDayBtn {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.monthDayBtn:hover .monthDayNum {
+  color: var(--c-forest);
+}
+.monthDayBtn:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 1px;
 }
 
 .monthDayNum {
@@ -1010,23 +1039,138 @@
   font-weight: 700;
 }
 
-.monthCount {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--c-ink-2);
-  font-size: 11.5px;
+/* Antalet står kvar — men som en liten siffra bredvid datumet, inte som ersättning
+   för bokningarna. "Hur full?" och "vad är bokat?" besvaras nu av samma cell. */
+.monthDayCount {
+  color: var(--c-ink-3);
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.monthPending {
+.monthList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* MÅNADENS BOKNINGSKORT — hela cellens bredd, ingen onödig kapning.
+   Tid och namn är de två fälten man scannar efter; de får aldrig ellipseras.
+   Tjänsten viker först, telefonnumret sist (och bara när cellen är bred nog). */
+.mBk {
+  position: relative; /* .mBkFlag är absolut — utan detta hoppar den ur kortet. */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0 6px;
+  align-items: center;
+  width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  border-left: 3px solid var(--bk);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bk) 12%, var(--c-paper));
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.mBk:hover {
+  background: color-mix(in srgb, var(--bk) 22%, var(--c-paper));
+}
+.mBk:focus-visible {
+  outline: 2px solid var(--bk);
+  outline-offset: 1px;
+}
+
+.mBkTime {
+  grid-row: 1;
+  color: var(--c-ink-2);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mBkName {
+  grid-row: 1;
+  overflow: hidden;
+  color: var(--c-ink);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Personens INITIALER — färgen får aldrig vara ensam bärare av "vems tid?".
+   En färgblind användare läser bokstäverna; alla andra läser färgen först. */
+.mBkWho,
+.blockWho {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 1px 5px;
-  border-radius: 999px;
-  background: var(--c-warning-bg);
+  justify-content: center;
+  min-width: 20px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  /* Vit text på palettens mörkaste OCH ljusaste nyanser: en tunn mörk kant håller
+     kontrasten även på #56B4E9/#E69F00 i ljus vy. */
+  text-shadow: 0 1px 1px rgb(0 0 0 / 35%);
+}
+.mBkWho {
+  grid-row: 1;
+  grid-column: 3;
+}
+.blockWho {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+}
+
+.mBkService,
+.mBkPhone {
+  grid-column: 2;
+  overflow: hidden;
+  color: var(--c-ink-3);
+  font-size: 10.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.mBkPhone {
+  font-variant-numeric: tabular-nums;
+}
+
+.mBkFlag {
+  position: absolute;
+  right: 4px;
   color: var(--c-warning);
+}
+
+/* Trång cell (smal skärm) → tjänst och telefon viker, tid + namn står kvar.
+   Informationen försvinner inte: kortet öppnas med ett klick. */
+@media (max-width: 1100px) {
+  .mBkService,
+  .mBkPhone {
+    display: none;
+  }
+}
+
+.monthMore {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--c-paper-2);
+  color: var(--c-ink-2);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  font-size: 10.5px;
   font-weight: 700;
+}
+.monthMore:hover {
+  background: var(--c-cream);
+  color: var(--c-ink);
 }
 
 .empty {

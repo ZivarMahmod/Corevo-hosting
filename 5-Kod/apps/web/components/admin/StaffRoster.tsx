@@ -13,6 +13,7 @@ import {
   type ActionState,
 } from '@/lib/admin/actions'
 import { statusLabel } from '@/lib/admin/format'
+import { STAFF_PALETTE, staffColor } from '@/lib/admin/staff-colors'
 import {
   Badge,
   Button,
@@ -69,6 +70,9 @@ export type StaffCard = {
   /** Syns i publika team-sektionen (staff.show_on_site, 0049) — styr ENDAST
    *  "Våra barberare" på sidan; bokningsbarheten är `active` som förut. */
   showOnSite?: boolean
+  /** goal-67: vald kalenderfärg (staff.color, hex) — null = ingen vald, kalendern
+   *  härleder då en färg ur id:t. Optional så äldre callers kompilerar. */
+  color?: string | null
   today: StaffDayRow[]
 }
 
@@ -576,6 +580,8 @@ function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => 
         </p>
       )}
 
+      <ColorPicker member={member} onSaved={onSaved} />
+
       <form action={actAction} style={{ marginTop: 10 }}>
         <input type="hidden" name="id" value={member.id} />
         <input type="hidden" name="active" value={String(!member.active)} />
@@ -592,6 +598,75 @@ function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => 
       <p style={{ fontSize: 12, color: 'var(--c-ink-3)', margin: '8px 0 0', lineHeight: 1.5 }}>
         Inaktiv personal döljs på den publika sajten och går inte att boka.
       </p>
+    </section>
+  )
+}
+
+/** goal-67 — KALENDERFÄRGEN. Tolv rutor, ETT klick = sparat: ingen färgdialog, ingen
+ *  "Spara"-knapp, inget mellansteg. Paletten är Okabe–Ito (färgblindsäker); färgen är
+ *  aldrig ensam bärare i kalendern (namn står i kortet, status har ikon + text).
+ *  Ingen vald färg → kalendern härleder en ur id:t, så rutnätet är färgkodat ändå. */
+function ColorPicker({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
+  const { notify } = useToast()
+  const router = useRouter()
+  const [state, action, pending] = useActionState<ActionState, FormData>(updateStaff, {})
+  const current = staffColor(member.id, member.color)
+
+  useEffect(() => {
+    if (state.success) {
+      notify('Färgen sparad', 'success')
+      router.refresh()
+      onSaved()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success])
+
+  return (
+    <section style={{ marginTop: 14 }}>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>
+        Färg i kalendern
+      </div>
+      <form action={action} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <input type="hidden" name="id" value={member.id} />
+        {STAFF_PALETTE.map((c) => {
+          const chosen = c.toLowerCase() === current.toLowerCase()
+          return (
+            <button
+              key={c}
+              type="submit"
+              name="color"
+              value={c}
+              disabled={pending}
+              aria-label={`Välj färg ${c}`}
+              aria-pressed={chosen}
+              title={c}
+              style={{
+                width: 26,
+                height: 26,
+                padding: 0,
+                borderRadius: 8,
+                background: c,
+                // Vald färg bärs av en ring + bock, inte av färgen ensam — annars är
+                // "vilken är vald?" osynlig för en färgblind användare.
+                border: chosen ? '2px solid var(--c-ink)' : '1px solid var(--c-line)',
+                boxShadow: chosen ? '0 0 0 2px var(--c-paper) inset' : 'none',
+                cursor: pending ? 'wait' : 'pointer',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              {chosen ? '✓' : ''}
+            </button>
+          )
+        })}
+      </form>
+      {state.error && (
+        <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
+          {state.error}
+        </p>
+      )}
     </section>
   )
 }

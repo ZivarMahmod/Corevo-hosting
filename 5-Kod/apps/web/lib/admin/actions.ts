@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { requirePortal, type CurrentUser } from '@/lib/auth/session'
+import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
+import type { AdminArea } from '@/lib/auth/admin-areas'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
 import { uploadImage, uploadErrorMessage, deleteByPublicUrl, pruneRemovedImages, type UploadResult } from '@/lib/r2/upload'
@@ -34,9 +35,13 @@ const GENERIC = 'Något gick fel. Försök igen.'
  * NOT role-aware (a level-2 kund shares the tenant claim), so the role gate lives
  * here in the server action. Also resolves the tenant (id + slug) needed to scope
  * writes and invalidate the public cache.
+ *
+ * ROLL-SEPARATION: varje mutation deklarerar VILKEN yta den tillhör (lib/auth/admin-areas.ts).
+ * Personal (nivå 3) släpps igenom på kalender-/kundytorna men NEKAS på systemytorna
+ * (tjänster, personal, platser, sida, inställningar …) — samma tabell som sidorna läser.
  */
-async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
-  const user = await requirePortal('admin')
+async function adminCtx(area: AdminArea): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
+  const user = await requireAdminArea(area)
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
   return { user, tenant }
@@ -44,7 +49,7 @@ async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | 
 
 // ── Services ────────────────────────────────────────────────────────────────
 export async function createService(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('tjanster')
   if (!ctx) return { error: NO_TENANT }
 
   const name = String(fd.get('name') ?? '').trim()
@@ -73,7 +78,7 @@ export async function createService(_p: ActionState, fd: FormData): Promise<Acti
 }
 
 export async function updateService(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('tjanster')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -100,7 +105,7 @@ export async function updateService(_p: ActionState, fd: FormData): Promise<Acti
 }
 
 export async function toggleServiceActive(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('tjanster')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -121,7 +126,7 @@ export async function toggleServiceActive(_p: ActionState, fd: FormData): Promis
 }
 
 export async function deleteService(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('tjanster')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -157,7 +162,7 @@ function revalidateLocations(slug: string) {
 }
 
 export async function createLocation(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('platser')
   if (!ctx) return { error: NO_TENANT }
 
   const name = String(fd.get('name') ?? '').trim()
@@ -234,7 +239,7 @@ export async function createLocation(_p: ActionState, fd: FormData): Promise<Act
 }
 
 export async function updateLocation(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('platser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -272,7 +277,7 @@ export async function updateLocation(_p: ActionState, fd: FormData): Promise<Act
  * primary is load-bearing, and an inactive primary can't be deactivated-away later.
  */
 export async function setPrimaryLocation(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('platser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -306,7 +311,7 @@ export async function setPrimaryLocation(_p: ActionState, fd: FormData): Promise
  * a non-primary, always passes.
  */
 export async function toggleLocationActive(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('platser')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -348,7 +353,7 @@ function revalidateStaff(slug: string) {
 }
 
 export async function createStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const title = String(fd.get('title') ?? '').trim()
@@ -370,7 +375,7 @@ export async function createStaff(_p: ActionState, fd: FormData): Promise<Action
 }
 
 export async function updateStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -385,11 +390,21 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
     location_id?: string | null
     show_on_site?: boolean
     avatar_url?: string | null
+    color?: string | null
   } = {}
   if (fd.has('title')) {
     const title = String(fd.get('title') ?? '').trim()
     if (!title) return { error: 'Ange ett namn/en titel.' }
     patch.title = title
+  }
+  // goal-67: kalenderfärgen. Värdet hamnar i en inline-style i kalendern — bara ren
+  // hex släpps in (DB:n har samma check, vakten står på båda sidor). Tomt = "ingen
+  // vald färg" → appen härleder färgen ur id:t igen.
+  if (fd.has('color')) {
+    const color = String(fd.get('color') ?? '').trim()
+    if (!color) patch.color = null
+    else if (!/^#[0-9a-fA-F]{6}$/.test(color)) return { error: 'Ogiltig färg.' }
+    else patch.color = color
   }
 
   const supabase = await createClient()
@@ -469,7 +484,7 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
 }
 
 export async function toggleStaffActive(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -491,7 +506,7 @@ export async function toggleStaffActive(_p: ActionState, fd: FormData): Promise<
 }
 
 export async function deleteStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -513,7 +528,7 @@ export async function deleteStaff(_p: ActionState, fd: FormData): Promise<Action
 
 /** Replace the set of services a staff member performs (staff_services join). */
 export async function setStaffServices(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const staffId = String(fd.get('staff_id') ?? '')
@@ -579,7 +594,7 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
  * secret is wired in the Worker before relying on this in production.
  */
 export async function inviteStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const email = String(fd.get('email') ?? '').trim().toLowerCase()
@@ -696,7 +711,7 @@ async function resolveScheduleLocation(
 }
 
 export async function addStaffWorkingHours(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const staffId = String(fd.get('staff_id') ?? '')
@@ -745,7 +760,7 @@ export async function addStaffWorkingHours(_p: ActionState, fd: FormData): Promi
 }
 
 export async function deleteStaffWorkingHours(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -776,7 +791,7 @@ export async function deleteStaffWorkingHours(_p: ActionState, fd: FormData): Pr
 // editable here but do not yet change the public bookable times. Copy reflects that.
 
 export async function addStaffSlots(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const staffId = String(fd.get('staff_id') ?? '')
@@ -837,7 +852,7 @@ export async function addStaffSlots(_p: ActionState, fd: FormData): Promise<Acti
 }
 
 export async function deleteStaffSlot(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -863,7 +878,7 @@ export async function deleteStaffSlot(_p: ActionState, fd: FormData): Promise<Ac
  * then tweaks the generated list. p_step = the raster used during generation only.
  */
 export async function seedStaffSlots(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
   const staffId = String(fd.get('staff_id') ?? '')
@@ -934,7 +949,7 @@ type Branding = {
 }
 
 export async function saveBranding(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('sida')
   if (!ctx) return { error: NO_TENANT }
 
   // goal-21 RBAC enforcement (ADDITIVE-RESTRICTIVE, on top of adminCtx's level gate):
@@ -1047,7 +1062,7 @@ function mediaUploadMessage(reason: Exclude<UploadResult, { ok: true }>['reason'
  *   stat_value_<i> / stat_label_<i>  (note: STORED as [value, label])
  */
 export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('sida')
   if (!ctx) return { error: NO_TENANT }
 
   const keyPrefix = `tenants/${ctx.tenant.id}/storefront`
@@ -1195,7 +1210,7 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
 const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic'] as const
 
 export async function saveStorefrontCopy(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('sida')
   if (!ctx) return { error: NO_TENANT }
 
   // Build the copy patch from the form. An empty field is stored as '' — the
@@ -1256,7 +1271,7 @@ function httpsUrlOrNull(raw: FormDataEntryValue | null): string | null | undefin
 }
 
 export async function saveSettings(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('installningar')
   if (!ctx) return { error: NO_TENANT }
 
   const name = String(fd.get('name') ?? '').trim()
@@ -1335,7 +1350,7 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   }
 
   revalidateTenant(ctx.tenant.slug)
-  revalidatePath('/admin/installningar')
+  revalidatePath('/admin/installningar/foretag')
   return { success: 'Inställningar sparade.' }
 }
 
@@ -1349,7 +1364,7 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
  *   display_name     → optional explicit chosen name (e.g. first name / nickname)
  */
 export async function setCustomerPrivacy(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('kunder')
   if (!ctx) return { error: NO_TENANT }
 
   const customerId = String(fd.get('customer_id') ?? '')
@@ -1386,7 +1401,7 @@ export async function setCustomerPrivacy(_p: ActionState, fd: FormData): Promise
  *  och HELA bokningshistoriken finns kvar — och kan visas igen med ett klick. Det är
  *  INTE GDPR-radering (den vägen är status='anonymized' och är enkelriktad). */
 export async function setCustomerHidden(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('kunder')
   if (!ctx) return { error: NO_TENANT }
 
   const customerId = String(fd.get('customer_id') ?? '')
@@ -1414,7 +1429,7 @@ export async function setCustomerHidden(_p: ActionState, fd: FormData): Promise<
  *  (telefonen fungerar alltid, och ägarens egen kalenderbokning påverkas aldrig).
  *  Används för kunder som upprepat uteblir — utan att behöva dölja eller radera dem. */
 export async function setCustomerSelfBook(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('kunder')
   if (!ctx) return { error: NO_TENANT }
 
   const customerId = String(fd.get('customer_id') ?? '')
@@ -1457,7 +1472,7 @@ export async function setCustomerSelfBook(_p: ActionState, fd: FormData): Promis
  *     (0015: "AUTHED branch ... leaves contact_hash NULL") — rör den inte då.
  */
 export async function saveCustomerContact(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('kunder')
   if (!ctx) return { error: NO_TENANT }
 
   const customerId = String(fd.get('customer_id') ?? '')
@@ -1522,7 +1537,7 @@ export async function saveCustomerContact(_p: ActionState, fd: FormData): Promis
 // BOOKING_STATUSES so its invariant is unit-testable without this 'use server'
 // module (a 'use server' file may only export async functions).
 export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx()
+  const ctx = await adminCtx('bokningar')
   if (!ctx) return { error: NO_TENANT }
 
   const bookingId = String(fd.get('bookingId') ?? '')
@@ -1539,12 +1554,19 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
   // and without re-firing the review-nudge/refund side-effects below.
   const { data: current } = await supabase
     .from('bookings')
-    .select('status')
+    .select('status, start_ts')
     .eq('id', bookingId)
     .eq('tenant_id', ctx.tenant.id)
     .maybeSingle()
   if (!current) return { error: 'Saknar bokning.' }
   if (current.status === status) return { success: 'Status uppdaterad.' }
+
+  // Uteblivet besök är ett PÅSTÅENDE OM DÅTID: en tid som inte har börjat kan inte ha
+  // uteblivit. Vakten sitter på servern, inte bara i knapp-logiken — UI:t kan inte vara
+  // enda sanningen om vad en status betyder. (Ångerbart: no_show → confirmed, se
+  // ALLOWED_FROM — receptionen felklickar och priset ska inte bli en lögn.)
+  if (status === 'no_show' && new Date(current.start_ts).getTime() > Date.now())
+    return { error: 'Tiden har inte börjat än — en framtida bokning kan inte ha uteblivit.' }
 
   const allowedFrom = ALLOWED_FROM[status as BookingStatus]
 

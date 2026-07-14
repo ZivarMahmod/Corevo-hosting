@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listGiftCards } from '@/lib/admin/presentkort/data'
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Presentkort · Adminpanel' }
 
 export default async function PresentkortPage() {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('presentkort')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

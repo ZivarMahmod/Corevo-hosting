@@ -209,13 +209,24 @@ schemat. Kalendern räknar i stället ur arbetstid + bokningar + blockeringar. S
 
 # L3 — Städ
 
-- [ ] **C-01** Inställningarna grupperas i de nio kategorierna. Befintliga sidor mappas in — **ingen omdesign**.
-      Varje inställning får exakt ett hem. Duplicerad sajtdata bort → länk till Redigera sidan.
-- [ ] **C-02** "Redigera sidan" som huvudval: entry-yta (förhandskort + publiceringsstatus + "Öppna redigeraren").
-      Editorn rörs inte. Ingen global "Publicera ändringar"-knapp som blandar drift och sajt.
-- [ ] **C-03** Bokningsregler som begripliga lägen (På/Pausad/Av med konsekvenstext), inte råa flags.
-- [ ] **C-04** Session verifierad: beständig inloggning, säker intern returväg, generiskt felmeddelande.
-      Konto och säkerhet: lösenordsbyte, aktiva sessioner, logga ut andra enheter.
+- [x] **C-01** *(2026-07-14)* Inställningar = KARTAN: nio kategorier (`lib/admin/settings-map.ts`, enda
+      sanningen — toppnavets subnav läser samma lista). Varje kort = vad det är + verklig status + ett
+      klick in. Ingen sida omdesignad; det gamla formuläret flyttade till `/admin/installningar/foretag`
+      och Stripe-kortet till `/admin/installningar/betalning` (retur-URL:en i `lib/admin/stripe.ts` följde med).
+      **Strukna kategorier** (ingen sida bakom → ingen platshållare): Moduler (plattformens beslut,
+      DB-vakten i 0026), Drift (bor i super-adminens kundkort), Notiser (reglage inne i SettingsForm).
+- [x] **C-02** *(2026-07-14)* `/admin/sida` = ingång: inert förhandskort (samma preview-rutt som studion) +
+      status (publicerad · bokningsläge · egen domän) + EN knapp. Redigeraren ORÖRD, flyttad till
+      `/admin/sida/redigera`. Ingen global publicera-knapp.
+- [x] **C-03** *(2026-07-14)* Bokningsregler = lägen, kopplade till den RIKTIGA mekanismen
+      (`tenant_modules.state` för `booking`, samma som storefronten läser). **Tre lägen visas, TVÅ är
+      växlingsbara:** På ↔ Pausad. Av visas men går inte att välja — DB-vakten (0026
+      `tenant_modules_state_guard`) gör off→på till en super-admin-övergång, så en Av-knapp hade varit en
+      enkelriktad fälla. Konsekvenstext i varje läge. `lib/admin/booking-mode.ts` + 15 tester.
+- [x] **C-04** *(2026-07-14)* Konto och säkerhet: lösenordsbyte (`supabase.auth.updateUser`) + "logga ut
+      andra enheter" (`signOut({ scope: 'others' })`). **Aktiva sessioner byggdes INTE** — Supabase Auth
+      exponerar inget sessions-API (varken auth-js eller admin-API:t kan lista dem). Vi visar den enhet vi
+      faktiskt vet något om och säger det rakt ut. Ingen fejkad lista.
 - [ ] **C-05** Wavy-migreringstest: de 9 uppgifterna, mät tid/beslut/fel/hjälpbehov (`6-Testing/`).
 - [ ] **C-06** Presettest: samma kalendermotor mot minst två icke-frisörpresets. Noll kodforkar.
 - [ ] **C-07** Frisörord ut ur admin-kod och hjälpcopy.

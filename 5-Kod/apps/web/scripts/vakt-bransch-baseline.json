@@ -1,31 +1,7 @@
 {
-  "generated": "2026-07-14T17:22:36.783Z",
+  "generated": "2026-07-14T18:27:36.731Z",
   "note": "Kända historiska bransch-ord-träffar (städlista). Nya träffar utöver dessa failar vakten. Städa en träff = fixa koden och ta bort raden här. Regenerera = radera filen och kör om.",
   "entries": [
-    {
-      "file": "app/(platform)/salonger/[id]/page.tsx",
-      "line": 391,
-      "word": "Salongsägare",
-      "text": "{/* #10 — owner name from users.full_name; honest \"Salongsägare\""
-    },
-    {
-      "file": "components/kund/StylistCard.tsx",
-      "line": 67,
-      "word": "stylistName",
-      "text": "<div className={styles.stylistName}>{name}</div>"
-    },
-    {
-      "file": "components/kund/StylistCard.tsx",
-      "line": 68,
-      "word": "stylistRel",
-      "text": "<div className={styles.stylistRel}>{rel}</div>"
-    },
-    {
-      "file": "components/kund/StylistCard.tsx",
-      "line": 103,
-      "word": "stylistName",
-      "text": "<div className={styles.stylistName}>Välj din {staffLc}</div>"
-    },
     {
       "file": "components/platform/CreateTenantForm.tsx",
       "line": 110,
@@ -67,18 +43,6 @@
       "line": 136,
       "word": "Barbershop",
       "text": "lede: 'Barbershop i centrala Linköping.', img: uns('1503951914875-452162b0f3f1'),"
-    },
-    {
-      "file": "components/platform/SalongerClient.tsx",
-      "line": 88,
-      "word": "salonger",
-      "text": "const [view, setView] = usePersistentView<'kort' | 'lista'>('salonger:view', ['kort', 'lista'], 'kort')"
-    },
-    {
-      "file": "components/platform/SalongerClient.tsx",
-      "line": 122,
-      "word": "salonger",
-      "text": "a.download = 'salonger.csv'"
     },
     {
       "file": "components/storefront/images.ts",
@@ -169,18 +133,6 @@
       "line": 56,
       "word": "salongsmiljö",
       "text": "alt: 'Inbjudande salongsmiljö redo att ta emot dig',"
-    },
-    {
-      "file": "components/storefront/sections.tsx",
-      "line": 107,
-      "word": "stylistName",
-      "text": "<h3 className={styles.stylistName}>{s.name}</h3>"
-    },
-    {
-      "file": "components/storefront/sections.tsx",
-      "line": 108,
-      "word": "stylistRole",
-      "text": "<p className={styles.stylistRole}>{s.role}</p>"
     },
     {
       "file": "components/storefront/seo.tsx",
@@ -309,22 +261,10 @@
       "text": "'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på "
     },
     {
-      "file": "components/storefront/layouts/FreshCutLayout.tsx",
-      "line": 47,
-      "word": "frisörsalong",
-      "text": "{/* \"Mer än bara en frisörsalong.\" — centered editorial + 4-photo gallery */}"
-    },
-    {
       "file": "components/storefront/layouts/presentkort-views.tsx",
       "line": 235,
       "word": "klippning",
       "text": "export const SiluettPresentkort = (props: ThemePresentkortViewProps) => <PresentkortsKort {...props} spec={{ variant: 'siluett', titleFont: \"'Bodoni Moda'\", titleSize: 58, titleColor: '#131313', cardB"
-    },
-    {
-      "file": "lib/platform/people.ts",
-      "line": 29,
-      "word": "Salong",
-      "text": "tenant: string // salon NAME (mock column \"Salong\")"
     },
     {
       "file": "lib/platform/theme-capabilities.ts",

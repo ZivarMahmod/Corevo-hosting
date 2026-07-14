@@ -55,8 +55,9 @@ describe('platform host (booking) — salon admin only', () => {
       to: '/fakturering',
     })
   })
-  it('redirects staff surfaces to minbooking', () => {
-    expect(decide('platform', '/personal')).toEqual({ action: 'redirectHost', host: HOSTS.staff, to: '/personal' })
+  it('serves the staff surfaces too (roll-separation: personalen loggar in här)', () => {
+    expect(decide('platform', '/personal')).toEqual({ action: 'pass' })
+    expect(decide('platform', '/personal/arbetstider')).toEqual({ action: 'pass' })
   })
   it('sends / (and unknown paths) to the salon-admin entry', () => {
     expect(decide('platform', '/')).toEqual({ action: 'redirect', to: '/admin' })

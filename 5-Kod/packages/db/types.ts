@@ -1933,6 +1933,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           buffer_min: number | null
+          color: string | null
           created_at: string
           id: string
           location_id: string | null
@@ -1950,6 +1951,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           buffer_min?: number | null
+          color?: string | null
           created_at?: string
           id?: string
           location_id?: string | null
@@ -1967,6 +1969,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           buffer_min?: number | null
+          color?: string | null
           created_at?: string
           id?: string
           location_id?: string | null

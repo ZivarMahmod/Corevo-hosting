@@ -82,7 +82,11 @@ export function decideBackofficeRoute(params: {
 
     case 'platform':
       if (isPrefix(path, PLATFORM_GROUP)) return { action: 'redirectHost', host: hosts.superadmin, to: path }
-      if (isPrefix(path, STAFF_GROUP)) return { action: 'redirectHost', host: hosts.staff, to: path }
+      // ROLL-SEPARATION: personalen jobbar i adminportalens kalender och loggar därför
+      // in på DEN HÄR dörren. Deras schema-/frånvaroytor (/personal) serveras alltså
+      // här också — annars hade varje klick i menyn kastat dem till en värd där de
+      // saknar session. minbooking-dörren serverar dem fortfarande (staff_portal nedan).
+      if (isPrefix(path, STAFF_GROUP)) return { action: 'pass' }
       if (isPrefix(path, ADMIN_GROUP)) return { action: 'pass' }
       // `/` (and anything else) → salon-admin entry; the auth gate forwards an
       // unauthenticated visitor on to /login.

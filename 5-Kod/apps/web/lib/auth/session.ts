@@ -8,6 +8,7 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PORTAL_MIN_LEVEL, type Portal } from '@/lib/auth/roles'
+import { canAccessAdminArea, type AdminArea } from '@/lib/auth/admin-areas'
 import { logAuthDenied } from '@/lib/observability'
 
 export type CurrentUser = {
@@ -82,6 +83,21 @@ export async function requireMinLevel(minLevel: number): Promise<CurrentUser> {
 /** Convenience: require the minimum level for a named portal. */
 export async function requirePortal(portal: Portal): Promise<CurrentUser> {
   return requireMinLevel(PORTAL_MIN_LEVEL[portal])
+}
+
+/**
+ * ROLL-SEPARATION: kräv behörighet för en NAMNGIVEN admin-yta (lib/auth/admin-areas.ts).
+ * Adminportalens layout släpper in redan från staff-nivån (ADMIN_PORTAL_FLOOR) — det är
+ * HÄR, och i varje muterande server action, ytan faktiskt gatas. RLS är tenant-scopad,
+ * inte rollmedveten: en action utan den här vakten är öppen för personalen.
+ */
+export async function requireAdminArea(area: AdminArea): Promise<CurrentUser> {
+  const user = await requireUser()
+  if (!canAccessAdminArea(area, user)) {
+    logAuthDenied({ userId: user.id, roleLevel: user.roleLevel, need: `admin:${area}` })
+    redirect('/ingen-atkomst')
+  }
+  return user
 }
 
 /** Require the global platform_admin flag (cross-tenant). */

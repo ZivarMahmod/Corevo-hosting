@@ -1,5 +1,6 @@
 import type { IconName } from './ui/Icon'
 import type { CommandItem } from './ui/CommandPalette'
+import { ADMIN_AREA_MIN_LEVEL as A } from '@/lib/auth/admin-areas'
 
 /** ENDA källan för back-office-navigationen. Både PortalSidebar (railen) och
  *  PortalShell (⌘K-paletten via paletteFromNav) konsumerar SAMMA lista — de kan
@@ -15,6 +16,10 @@ export type NavItem = {
   /** tenant_modules-nyckel — posten visas BARA när kundens modul är aktiverad
    *  (Zivar: "de moduler som är aktiva är de som syns för kunden"). */
   module?: string
+  /** Lägsta rollnivå som ser posten (roll-separationen; se lib/auth/admin-areas.ts).
+   *  Utelämnad → alla i portalen ser den. OBS: att dölja en länk är INTE
+   *  behörighetskontroll — serversidan (requireAdminArea) är sanningen. */
+  minLevel?: number
 }
 /** A nav entry is either a group header (handoff Sidebar groups the rail by
  *  area: Insyn/Tenants… for super, Din dag/Hantera/Din sida for salon) or a
@@ -61,31 +66,42 @@ export const NAV: Record<PortalRole, NavConfig> = {
   },
   admin: {
     sub: 'Adminpanel',
+    // minLevel = ADMIN_AREA_MIN_LEVEL (lib/auth/admin-areas.ts) — SAMMA tabell som
+    // sidorna och de muterande actions gatar på. Personal (3) ser sin arbetsdag;
+    // systemytorna kräver ägare/administratör (6).
     items: [
       { group: 'Din dag' },
-      { href: '/admin', label: 'Översikt', icon: 'home' },
-      { href: '/admin/bokningar', label: 'Bokningar', icon: 'calendar' },
+      { href: '/admin', label: 'Översikt', icon: 'home', minLevel: A.oversikt },
+      { href: '/admin/bokningar', label: 'Bokningar', icon: 'calendar', minLevel: A.bokningar },
+      // Personalens egna ytor (schema/frånvaro) bor i (personal)-portalen men nås
+      // från SAMMA meny — hela arbetsdagen bakom en inloggning.
+      { href: '/personal/arbetstider', label: 'Mitt schema', icon: 'clock' },
+      { href: '/personal/franvaro', label: 'Frånvaro', icon: 'coffee' },
+      // goal-67: statistiken hör till "Din dag" — det är frågan man ställer när dagen
+      // är slut, inte en systeminställning. Ägaren/administratören ser den; personalen
+      // gör det inte (A.statistik = 6).
+      { href: '/admin/statistik', label: 'Statistik', icon: 'trendUp', minLevel: A.statistik },
       { group: 'Hantera' },
-      { href: '/admin/kunder', label: 'Kunder', icon: 'user' },
-      { href: '/admin/tjanster', label: 'Tjänster', icon: 'scissors' },
-      { href: '/admin/personal', label: 'Personal', icon: 'users' },
-      { href: '/admin/platser', label: 'Platser', icon: 'building' },
-      { href: '/admin/scheman', label: 'Scheman', icon: 'clock' },
+      { href: '/admin/kunder', label: 'Kunder', icon: 'user', minLevel: A.kunder },
+      { href: '/admin/tjanster', label: 'Tjänster', icon: 'scissors', minLevel: A.tjanster },
+      { href: '/admin/personal', label: 'Personal', icon: 'users', minLevel: A.personal },
+      { href: '/admin/platser', label: 'Platser', icon: 'building', minLevel: A.platser },
+      { href: '/admin/scheman', label: 'Scheman', icon: 'clock', minLevel: A.scheman },
       // Kundens språk, inte plattformens: "Moduler" är en intern term (Zivar).
       { group: 'Din verksamhet' },
       // Kurser = egen opt-in-modul sedan 0056 (rad krävs, isModuleActivated).
-      { href: '/admin/kurser', label: 'Kurser', icon: 'calendar', module: 'kurser' },
-      { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', module: 'media_library' },
-      { href: '/admin/webshop', label: 'Webshop', icon: 'grid', module: 'shop' },
-      { href: '/admin/blogg', label: 'Blogg', icon: 'edit', module: 'blogg' },
-      { href: '/admin/offerter', label: 'Offerter', icon: 'mail', module: 'offert' },
-      { href: '/admin/lojalitet', label: 'Lojalitet', icon: 'star', module: 'lojalitet' },
-      { href: '/admin/presentkort', label: 'Presentkort', icon: 'gift', module: 'presentkort' },
+      { href: '/admin/kurser', label: 'Kurser', icon: 'calendar', module: 'kurser', minLevel: A.kurser },
+      { href: '/admin/media', label: 'Bildbibliotek', icon: 'upload', module: 'media_library', minLevel: A.media },
+      { href: '/admin/webshop', label: 'Webshop', icon: 'grid', module: 'shop', minLevel: A.webshop },
+      { href: '/admin/blogg', label: 'Blogg', icon: 'edit', module: 'blogg', minLevel: A.blogg },
+      { href: '/admin/offerter', label: 'Offerter', icon: 'mail', module: 'offert', minLevel: A.offerter },
+      { href: '/admin/lojalitet', label: 'Lojalitet', icon: 'star', module: 'lojalitet', minLevel: A.lojalitet },
+      { href: '/admin/presentkort', label: 'Presentkort', icon: 'gift', module: 'presentkort', minLevel: A.presentkort },
       { group: 'Din sida' },
       // Bokningsflödet (bokningssätt/tid-väljare/bilder) bor som flik INNE i
       // Redigera sidan — en yta, en preview (Zivar 2026-07-10).
-      { href: '/admin/sida', label: 'Redigera sidan', icon: 'palette' },
-      { href: '/admin/installningar', label: 'Inställningar', icon: 'settings' },
+      { href: '/admin/sida', label: 'Redigera sidan', icon: 'palette', minLevel: A.sida },
+      { href: '/admin/installningar', label: 'Inställningar', icon: 'settings', minLevel: A.installningar },
     ],
   },
   personal: {
@@ -98,14 +114,27 @@ export const NAV: Record<PortalRole, NavConfig> = {
   },
 }
 
+/** Syns posten? Modul-gating (aktiverad modul) OCH roll-gating (minLevel).
+ *  `roleLevel` undefined → ingen roll-gating (bakåtkompatibelt). */
+export function isNavItemVisible(
+  item: NavItem,
+  opts: { activeModuleKeys?: string[]; roleLevel?: number },
+): boolean {
+  if (item.module && opts.activeModuleKeys && !opts.activeModuleKeys.includes(item.module)) return false
+  if (item.minLevel !== undefined && opts.roleLevel !== undefined && opts.roleLevel < item.minLevel)
+    return false
+  return true
+}
+
 /** ⌘K-palettens "Gå till"-lista, härledd ur SAMMA NAV som sidomenyn. Samma
- *  modul-gating som PortalSidebar: `activeModuleKeys` undefined → ingen gating
- *  (platform/personal); [] → alla modul-poster döljs. */
-export function paletteFromNav(role: PortalRole, activeModuleKeys?: string[]): CommandItem[] {
+ *  modul- och roll-gating som PortalSidebar: `activeModuleKeys` undefined → ingen
+ *  modul-gating (platform/personal); [] → alla modul-poster döljs. */
+export function paletteFromNav(
+  role: PortalRole,
+  activeModuleKeys?: string[],
+  roleLevel?: number,
+): CommandItem[] {
   return NAV[role].items
-    .filter(
-      (e): e is NavItem =>
-        !isGroup(e) && (!e.module || !activeModuleKeys || activeModuleKeys.includes(e.module)),
-    )
+    .filter((e): e is NavItem => !isGroup(e) && isNavItemVisible(e, { activeModuleKeys, roleLevel }))
     .map(({ href, label, icon }) => ({ href, label, icon, kind: 'Gå till' }))
 }

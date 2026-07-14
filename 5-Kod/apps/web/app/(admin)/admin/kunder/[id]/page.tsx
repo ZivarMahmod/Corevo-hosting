@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
 import {
@@ -46,7 +46,7 @@ function nextTierAt(tier: CustomerTier): number | null {
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('kunder')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

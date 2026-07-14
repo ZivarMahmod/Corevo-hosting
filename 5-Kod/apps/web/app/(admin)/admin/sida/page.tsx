@@ -1,118 +1,106 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
+import { listDomains } from '@/lib/admin/data'
 import { createClient } from '@/lib/supabase/server'
-import { getTenantDetail } from '@/lib/platform/tenants'
-import { SidaStudio } from '@/components/platform/SidaStudio'
-import { getVerticalCopy } from '@/components/storefront/vertical-copy'
-import { tenantStorefrontUrl, tenantStorefrontHost } from '@/lib/storefront-url'
-import { STOREFRONT_THEMES, DEFAULT_STOREFRONT_THEME } from '@/lib/tenant-data'
-import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
-import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
-import { PageHead } from '@/components/portal/ui'
-import type { TenantBranding } from '@corevo/ui'
+import { getAdminModuleStates, moduleAdminState } from '@/lib/admin/modules'
+import { bookingModeFromState, BOOKING_MODE_COPY } from '@/lib/admin/booking-mode'
+import { PageHead, Card, Badge, Button } from '@/components/portal/ui'
+
+/** L3 C-02 — "Redigera sidan" som INGÅNG: så här ser sidan ut just nu + vad som
+ *  gäller (publicerad? bokning? egen domän?) + EN knapp in i redigeraren.
+ *  Redigeraren själv (SidaStudio) är ORÖRD — den flyttade bara till
+ *  /admin/sida/redigera. Ingen global "publicera"-knapp som blandar drift och sida. */
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Redigera sidan · Adminpanel' }
+export const metadata: Metadata = { title: 'Din sida · Adminpanel' }
 
-const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
-
-/**
- * Kundens EGEN Sida-studio — exakt samma redigeringsyta som super-adminens
- * kundkort (Sida-fliken i /salonger/[id]), monterad på booking-hosten med
- * tenant BUNDEN TILL SESSIONEN. Zivar: "det jag ändrar ändras hos honom med" —
- * båda ytorna delar komponenter, actions (sidaCtx-dubbelguard) och preview-rutt,
- * så de kan aldrig glida isär. Salongsägaren redigerar färger, typsnitt,
- * texter, bilder, team, kontakt och öppettider med live-preview bredvid.
- * Mall-byte är dock plattformens beslut: canChangeTemplate=false döljer
- * sektionen här, och setTenantTheme nekar salon_admin server-side.
- */
-export default async function AdminSidaPage() {
-  const user = await requirePortal('admin')
+export default async function SidaEntryPage() {
+  const user = await requireAdminArea('sida')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (
       <section className="portal-section">
-        <h1>Redigera sidan</h1>
+        <PageHead eyebrow="Adminpanel" title="Din sida" />
         <p className="prose">Inget företag är kopplat till ditt konto.</p>
       </section>
     )
   }
 
-  // Samma detalj-läsning som kundkortet, men med ÄGARENS egen cookie-klient:
-  // RLS (private.tenant_id()) staketar varje query till den egna salongen.
   const supabase = await createClient()
-  const detail = await getTenantDetail(tenant.id, supabase)
-  if (!detail) {
-    return (
-      <section className="portal-section">
-        <h1>Redigera sidan</h1>
-        <p className="prose">Kunde inte läsa företagets data. Försök igen.</p>
-      </section>
-    )
-  }
+  const [{ data: row }, domains, moduleStates] = await Promise.all([
+    supabase.from('tenants').select('status').eq('id', tenant.id).maybeSingle(),
+    listDomains(tenant.id),
+    getAdminModuleStates(tenant.id),
+  ])
 
-  const { tenant: row, settings, branding, operative, copy } = detail
-  // Modulflikarna (Butik/Kurser/Blogg/Offert/Presentkort) visas bara för moduler som
-  // är PÅ — samma gate som kund-adminens nav.
-  const adminModuleStates = await getAdminModuleStates(row.id)
-  const b = branding as TenantBranding
-  const rawTheme = (settings?.settings as { theme?: unknown } | null)?.theme
-  const activeTemplateKey =
-    typeof rawTheme === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
-      ? rawTheme
-      : DEFAULT_STOREFRONT_THEME
-  const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
-  const contactObj = (rawSettings.contact ?? {}) as { email?: unknown; phone?: unknown }
-  const contactEmail =
-    typeof contactObj.email === 'string' && contactObj.email.trim() ? contactObj.email.trim() : null
-  const contactPhone =
-    typeof contactObj.phone === 'string' && contactObj.phone.trim() ? contactObj.phone.trim() : null
-  const storefrontUrl = tenantStorefrontUrl(row.slug) ?? `https://${row.slug}.${ROOT}`
-  const storefrontHost = tenantStorefrontHost(row.slug) ?? `${row.slug}.${ROOT}`
+  const published = row?.status === 'active'
+  const primaryDomain =
+    domains.find((d) => d.is_primary && d.verified) ?? domains.find((d) => d.verified)
+  const bookingMode = bookingModeFromState(
+    'booking' in moduleStates ? moduleAdminState(moduleStates, 'booking') : undefined,
+  )
 
   return (
-    <>
+    <section className="portal-section">
       <PageHead
-        title="Redigera sidan"
-        lede="Allt som syns på din hemsida — färger, texter, bilder och kontakt — med förhandsvisning bredvid."
+        eyebrow={tenant.name}
+        title="Din sida"
+        lede="Så här ser sidan ut för dina kunder just nu."
       />
-      <SidaStudio
-        tenantId={row.id}
-        previewPath={`/salong-preview/${row.slug}`}
-        storefrontUrl={storefrontUrl}
-        storefrontHost={storefrontHost}
-        templateKey={activeTemplateKey}
-        isActive={row.status === 'active'}
-        branding={b}
-        copy={copy}
-        heroImages={b.hero_images ?? []}
-        galleryImages={b.gallery_images ?? []}
-        name={row.name}
-        social={detail.social}
-        openingHours={detail.openingHours}
-        contactEmail={contactEmail}
-        contactPhone={contactPhone}
-        address={detail.primaryAddress}
-        bookingVariant={operative.bookingVariant}
-        pickerMode={readPickerMode(rawSettings)}
-        staffAvatars={readStaffAvatarMode(rawSettings)}
-        hasStaffPhoto={detail.staffList.some((s) => s.active && s.avatar_url)}
-        staffTeam={detail.staffList.map((s) => ({
-          id: s.id,
-          title: s.title,
-          active: s.active,
-          avatarUrl: s.avatar_url,
-          showOnSite: s.show_on_site,
-        }))}
-        canChangeTemplate={false}
-        verticalCopy={await getVerticalCopy(
-          (row as { vertical_id?: string | null }).vertical_id ?? null,
-        )}
-        liveModules={['shop', 'kurser', 'blogg', 'offert', 'presentkort', 'lojalitet', 'galleri'].filter((k) =>
-          isModuleActivated(adminModuleStates, k),
-        )}
-      />
-    </>
+
+      <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Förhandskortet: samma preview-rutt som redigeraren använder, nedskalad
+            och inert (pointer-events: none) — det är en bild av sidan, inte en yta
+            att klicka i. Knappen nedan är vägen in. */}
+        <div
+          style={{
+            position: 'relative',
+            height: 280,
+            overflow: 'hidden',
+            borderRadius: 12,
+            border: '1px solid var(--c-line)',
+            background: 'var(--c-paper-2)',
+          }}
+        >
+          <iframe
+            src={`/salong-preview/${tenant.slug}`}
+            title="Förhandsvisning av din sida"
+            tabIndex={-1}
+            aria-hidden="true"
+            style={{
+              width: '1280px',
+              height: '900px',
+              border: 0,
+              transform: 'scale(0.42)',
+              transformOrigin: 'top left',
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <Badge tone={published ? 'success' : 'warning'}>
+            {published ? 'Publicerad' : 'Inte publicerad'}
+          </Badge>
+          <Badge
+            tone={
+              bookingMode === 'pa' ? 'success' : bookingMode === 'pausad' ? 'warning' : 'neutral'
+            }
+          >
+            Bokning: {BOOKING_MODE_COPY[bookingMode].label.toLowerCase()}
+          </Badge>
+          <Badge tone={primaryDomain ? 'success' : 'neutral'}>
+            {primaryDomain ? primaryDomain.domain : 'Ingen egen domän'}
+          </Badge>
+        </div>
+
+        <div>
+          <Button href="/admin/sida/redigera" icon="edit">
+            Öppna redigeraren
+          </Button>
+        </div>
+      </Card>
+    </section>
   )
 }

@@ -12,7 +12,9 @@ describe('role thresholds (pinned to real DB levels {2,3,6,8})', () => {
 
   it('portalHomeFor routes every real role to its own portal', () => {
     expect(portalHomeFor({ roleLevel: 2, platformAdmin: false })).toBe('/konto')
-    expect(portalHomeFor({ roleLevel: 3, platformAdmin: false })).toBe('/personal')
+    // ROLL-SEPARATION: personalens arbetsdag ÄR kalendern → de landar i
+    // adminportalens bokningsyta (som släpper in nivå 3), inte i /personal.
+    expect(portalHomeFor({ roleLevel: 3, platformAdmin: false })).toBe('/admin/bokningar')
     expect(portalHomeFor({ roleLevel: 6, platformAdmin: false })).toBe('/admin')
     // super_admin: the platform_admin flag drives the landing regardless of level.
     expect(portalHomeFor({ roleLevel: 8, platformAdmin: true })).toBe('/')
@@ -31,7 +33,8 @@ describe('goal-27 backofficeHostKindForRole — door isolation (one door per rol
   it('maps each role to its single allowed back-office door', () => {
     expect(backofficeHostKindForRole({ roleLevel: 8, platformAdmin: true })).toBe('superadmin')
     expect(backofficeHostKindForRole({ roleLevel: 6, platformAdmin: false })).toBe('platform')
-    expect(backofficeHostKindForRole({ roleLevel: 3, platformAdmin: false })).toBe('staff_portal')
+    // ROLL-SEPARATION: personal loggar in på ADMIN-dörren (kalendern bor där).
+    expect(backofficeHostKindForRole({ roleLevel: 3, platformAdmin: false })).toBe('platform')
     expect(backofficeHostKindForRole({ roleLevel: 2, platformAdmin: false })).toBe('tenant')
     expect(backofficeHostKindForRole({ roleLevel: 0, platformAdmin: false })).toBe('tenant')
   })
@@ -43,11 +46,11 @@ describe('goal-27 backofficeHostKindForRole — door isolation (one door per rol
     expect(backofficeHostKindForRole({ roleLevel: 6, platformAdmin: true })).toBe('superadmin')
   })
 
-  it('no role maps to two doors (super≠salon≠staff)', () => {
+  it('super-admin-dörren är sin egen (godmode kan aldrig etableras på booking)', () => {
     const doors = [
       backofficeHostKindForRole({ roleLevel: 8, platformAdmin: true }),
       backofficeHostKindForRole({ roleLevel: 6, platformAdmin: false }),
-      backofficeHostKindForRole({ roleLevel: 3, platformAdmin: false }),
+      backofficeHostKindForRole({ roleLevel: 2, platformAdmin: false }),
     ]
     expect(new Set(doors).size).toBe(3)
   })

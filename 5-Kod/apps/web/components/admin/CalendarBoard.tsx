@@ -24,6 +24,7 @@ import { BlockDrawer } from './BlockDrawer'
 import { CalendarHelp } from './CalendarHelp'
 import { CancelledLog } from './CancelledLog'
 import { CalendarSearch } from './CalendarSearch'
+import { staffColor, staffInitials } from '@/lib/admin/staff-colors'
 import styles from './calendar.module.css'
 
 /** Kalenderarbetsbordet (goal-66). ETT arbetsbord, tre vyer — inte tre sidor:
@@ -46,6 +47,8 @@ export type CalendarStaff = {
   /** Arbetstidens ytterkanter den valda dagen ('HH:MM'), null = ledig. */
   start: string | null
   end: string | null
+  /** goal-67: personens kalenderfärg (hex). Serverhärledd — aldrig null här. */
+  color: string
 }
 
 /** En blockerad tid (time_off): rast, frånvaro eller avvikande arbetstid. EN
@@ -277,6 +280,15 @@ export function CalendarBoard({
   const vBookings = resursValid ? bookings.filter((b) => b.staffId === resurs) : bookings
   const vBlocks = resursValid ? blocks.filter((b) => b.staffId === resurs) : blocks
 
+  // goal-67 — färgen slås upp på staffId. Vecko- och månadsvyn saknar resurskolumner
+  // och är just därför de vyer som BEHÖVER färgen mest. En bokning vars resurs
+  // avaktiverats sedan dess (inte i `staff`) faller tillbaka på den härledda färgen —
+  // aldrig ett tomt kort.
+  const colorOf = useMemo(() => {
+    const map = new Map(staff.map((s) => [s.id, s.color]))
+    return (staffId: string) => map.get(staffId) ?? staffColor(staffId)
+  }, [staff])
+
   // Arbetsdagens fönster = union av resursernas arbetstider. Tom dag (ingen arbetar)
   // faller tillbaka på 08–18 så rutnätet aldrig kollapsar till en tom remsa.
   const [dayStart, dayEnd] = useMemo(() => {
@@ -472,6 +484,7 @@ export function CalendarBoard({
             bookings={vBookings}
             blocks={vBlocks}
             staff={vStaff}
+            staffNoun={staffNoun}
             tz={tz}
             date={date}
             today={today}
@@ -497,6 +510,7 @@ export function CalendarBoard({
             gridHeight={gridHeight}
             onOpen={setOpen}
             onDayClick={(d) => go({ vy: 'dag', datum: d })}
+            colorOf={colorOf}
           />
         )}
         {view === 'manad' && (
@@ -506,6 +520,8 @@ export function CalendarBoard({
             date={date}
             today={today}
             onDayClick={(d) => go({ vy: 'dag', datum: d })}
+            onOpen={setOpen}
+            colorOf={colorOf}
           />
         )}
       </div>
@@ -625,6 +641,7 @@ function BookingBlock({
   onOpen,
   draggable,
   showPhone,
+  color,
 }: {
   booking: BookingRow
   tz: string
@@ -633,6 +650,10 @@ function BookingBlock({
   lane: number
   lanes: number
   onOpen: (b: BookingRow) => void
+  /** goal-67: den bokade personens färg (hex). Bär "vems tid är det?" — den fråga
+   *  en full dag ställer oftast. Aldrig ensam bärare: initialerna står i kortet och
+   *  status har fortfarande ikon + text. */
+  color: string
   /** Avbokade tider går inte att flytta — och veckovyn saknar resurskolumner att
    *  släppa i, så dragning är avstängd där. */
   draggable?: boolean
@@ -657,14 +678,18 @@ function BookingBlock({
   // Avbokad tid → inget nummer. Att ringa någon som redan avbokat är precis det
   // misstag ett synligt nummer inbjuder till.
   const phone = showPhone && !dim ? booking.customerPhone : null
+  // Uteblivet besök har EGEN ikon + egen text — det får aldrig se ut som en avbokning
+  // (avbokat = besked i tid; uteblivet = förlorad intäkt och förlorad tid).
   const statusFlag =
     booking.status === 'pending'
       ? { icon: 'alert' as const, text: 'Obekräftad' }
       : isKlar(booking.status)
         ? { icon: 'check' as const, text: 'Klar' }
-        : dim
-          ? { icon: 'x' as const, text: 'Avbokad' }
-          : null
+        : booking.status === 'no_show'
+          ? { icon: 'clock' as const, text: 'Uteblev' }
+          : dim
+            ? { icon: 'x' as const, text: 'Avbokad' }
+            : null
 
   return (
     <button
@@ -675,7 +700,10 @@ function BookingBlock({
         height: h,
         left: `calc(${(lane / lanes) * 100}% + 2px)`,
         width: `calc(${100 / lanes}% - 4px)`,
-        borderLeftColor: statusAccent(booking.status),
+        // Personens färg äger kortet (kant + toning, se calendar.module.css).
+        // Statusen bär sin egen ikon + text, så den behöver inte kanten längre.
+        ['--bk' as string]: color,
+        ['--bk-status' as string]: statusAccent(booking.status),
       }}
       draggable={draggable}
       onDragStart={(e) => {
@@ -713,6 +741,14 @@ function BookingBlock({
       {statusFlag && tier === 'tiny' && (
         <span className={styles.blockFlagTiny} aria-hidden="true">
           <Icon name={statusFlag.icon} size={11} />
+        </span>
+      )}
+      {/* goal-67 — VEMS TID? I dagvyn svarar kolumnen. I VECKOVYN finns ingen kolumn,
+          och då vore färgen ensam bärare — det bryter regeln. Initialerna gör färgen
+          till en genväg i stället för det enda svaret. (Codex-granskning, MEDEL.) */}
+      {!showPhone && tier !== 'tiny' && (
+        <span className={styles.blockWho} style={{ background: color }}>
+          {staffInitials(booking.staffTitle)}
         </span>
       )}
     </button>
@@ -755,6 +791,7 @@ function DayGrid({
   bookings,
   blocks,
   staff,
+  staffNoun,
   tz,
   date,
   today,
@@ -771,6 +808,9 @@ function DayGrid({
   bookings: BookingRow[]
   blocks: CalendarBlock[]
   staff: CalendarStaff[]
+  /** Branschens ord för en resurs-kolumn ('Stylist', 'Florist', 'Formgivare' …),
+   *  resolvad ur tenantens terminologi. Kalendern antar aldrig en bransch. */
+  staffNoun: string
   tz: string
   date: string
   today: string
@@ -787,8 +827,8 @@ function DayGrid({
   if (staff.length === 0) {
     return (
       <p className={styles.empty}>
-        Ingen personal upplagd ännu. Lägg till medarbetare under Inställningar, så får kalendern
-        sina kolumner.
+        Ingen {staffNoun.toLowerCase()} upplagd ännu. Lägg till {staffNoun.toLowerCase()} under
+        Inställningar, så får kalendern sina kolumner.
       </p>
     )
   }
@@ -926,6 +966,7 @@ function DayGrid({
                   onOpen={onOpen}
                   draggable={!isAvbokad(booking.status)}
                   showPhone
+                  color={s.color}
                 />
               ))}
 
@@ -966,6 +1007,7 @@ function WeekGrid({
   gridHeight,
   onOpen,
   onDayClick,
+  colorOf,
 }: {
   bookings: BookingRow[]
   tz: string
@@ -976,6 +1018,7 @@ function WeekGrid({
   gridHeight: number
   onOpen: (b: BookingRow) => void
   onDayClick: (date: string) => void
+  colorOf: (staffId: string) => string
 }) {
   // Veckans sju dagar från måndagen i den valda veckan.
   const monday = useMemo(() => {
@@ -1023,8 +1066,9 @@ function WeekGrid({
         <TimeAxis hours={hours} dayStart={dayStart} />
 
         {days.map((d) => {
-          // Alla resurser överlagras i veckovyn — identiteten står på blocket, så
-          // man ser vems tid det är utan att färgen bär betydelsen.
+          // Alla resurser överlagras i veckovyn — DÄRFÖR bär färgen mest här: sju
+          // dagar utan resurskolumner, och ändå ska man se vems tid det är. Namnet
+          // står kvar på blocket, så färgen är en genväg, inte den enda vägen.
           const mine = bookings.filter((b) => dayKey(b.startTs, tz) === d)
           const placed = placeOverlaps(mine, tz)
           return (
@@ -1042,6 +1086,7 @@ function WeekGrid({
                   lane={lane}
                   lanes={lanes}
                   onOpen={onOpen}
+                  color={colorOf(booking.staffId)}
                 />
               ))}
               {d === today && <NowLine dayStart={dayStart} tz={tz} />}
@@ -1059,12 +1104,16 @@ function MonthGrid({
   date,
   today,
   onDayClick,
+  onOpen,
+  colorOf,
 }: {
   bookings: BookingRow[]
   tz: string
   date: string
   today: string
   onDayClick: (date: string) => void
+  onOpen: (b: BookingRow) => void
+  colorOf: (staffId: string) => string
 }) {
   const { cells, month } = useMemo(() => {
     const anchor = new Date(`${date}T12:00:00Z`)
@@ -1085,17 +1134,20 @@ function MonthGrid({
     return { cells, month }
   }, [date])
 
-  // Antal per dag — månadsvyn svarar på "hur full är dagen", inte "vilka tider".
+  // goal-67: månadsvyn visar BOKNINGARNA, inte bara ett antal. "3 bokningar" tvingar
+  // fram ett extra klick för att se VAD som är bokat — och det klicket är hela frågan.
+  // Korten får hela dagcellens bredd (tid · namn · tjänst på en rad som andas), och
+  // dagen som inte får plats säger ärligt "+N fler" i stället för att klippa texten.
   const perDay = useMemo(() => {
-    const map = new Map<string, { total: number; pending: number }>()
+    const map = new Map<string, BookingRow[]>()
     for (const b of bookings) {
-      if (isAvbokad(b.status)) continue
       const key = dayKey(b.startTs, tz)
-      const cur = map.get(key) ?? { total: 0, pending: 0 }
-      cur.total += 1
-      if (b.status === 'pending') cur.pending += 1
-      map.set(key, cur)
+      const list = map.get(key)
+      if (list) list.push(b)
+      else map.set(key, [b])
     }
+    // Kronologiskt inom dagen — kalendern läses uppifrån och ner, alltid.
+    for (const list of map.values()) list.sort((a, b) => a.startTs.localeCompare(b.startTs))
     return map
   }, [bookings, tz])
 
@@ -1112,31 +1164,102 @@ function MonthGrid({
       </div>
       <div className={styles.monthGrid}>
         {cells.map(({ key, inMonth }) => {
-          const stats = perDay.get(key)
+          const all = perDay.get(key) ?? []
+          const live = all.filter((b) => !isAvbokad(b.status))
           const dayNum = Number(key.slice(8, 10))
+          // Cellen är rullbar (CSS), så en FULL dag tappar aldrig en bokning — men vi
+          // renderar inte 40 kort i 42 celler heller. Taket är generöst; resten
+          // sammanfattas och dagvyn är ett klick bort.
+          const MAX = 8
+          const shown = live.slice(0, MAX)
+          const rest = live.length - shown.length
           return (
-            <button
+            <div
               key={key}
-              type="button"
               className={`${styles.monthCell}${inMonth ? '' : ` ${styles.monthCellOut}`}${key === today ? ` ${styles.monthCellToday}` : ''}`}
-              onClick={() => onDayClick(key)}
-              aria-label={`${key}${stats ? `, ${stats.total} bokningar` : ', inga bokningar'}`}
             >
-              <span className={`num ${styles.monthDayNum}`}>{dayNum}</span>
-              {stats ? (
-                <span className={styles.monthCount}>
-                  <span className="num">{stats.total}</span> bokningar
-                  {stats.pending > 0 && (
-                    <span className={styles.monthPending}>
-                      <Icon name="alert" size={10} /> {stats.pending}
-                    </span>
-                  )}
-                </span>
-              ) : null}
-            </button>
+              {/* Dagnumret ÄR vägen till dagvyn — hela cellen kan inte vara en knapp
+                  längre, för korten inuti den är egna knappar (ogiltig HTML annars). */}
+              <button
+                type="button"
+                className={styles.monthDayBtn}
+                onClick={() => onDayClick(key)}
+                aria-label={`Öppna ${key} i dagvyn, ${live.length} bokningar`}
+              >
+                <span className={`num ${styles.monthDayNum}`}>{dayNum}</span>
+                {live.length > 0 && (
+                  <span className={`num ${styles.monthDayCount}`}>{live.length}</span>
+                )}
+              </button>
+
+              <div className={styles.monthList}>
+                {shown.map((b) => (
+                  <MonthBooking key={b.id} booking={b} tz={tz} color={colorOf(b.staffId)} onOpen={onOpen} />
+                ))}
+                {rest > 0 && (
+                  <button type="button" className={styles.monthMore} onClick={() => onDayClick(key)}>
+                    +<span className="num">{rest}</span> fler
+                  </button>
+                )}
+              </div>
+            </div>
           )
         })}
       </div>
     </div>
+  )
+}
+
+/** Ett bokningskort i månadsvyn. Samma information som i dagvyn — tid, kund, tjänst,
+ *  personens färg — men på EN rad som får hela cellens bredd. Texten kapas aldrig i
+ *  onödan: cellen är bredare än ett Wavy-kort, och det som ändå inte får plats
+ *  ellipseras i tjänsten (sist), aldrig i namnet. */
+function MonthBooking({
+  booking,
+  tz,
+  color,
+  onOpen,
+}: {
+  booking: BookingRow
+  tz: string
+  color: string
+  onOpen: (b: BookingRow) => void
+}) {
+  const name = booking.customerName?.trim() || 'Gäst'
+  const pending = booking.status === 'pending'
+  const noShow = booking.status === 'no_show'
+  // Månadsvyn har minst plats av alla — men statusen får ändå aldrig bäras av färg
+  // ensam: ikonen + skärmläsartexten följer med.
+  const flag = pending
+    ? { icon: 'alert' as const, text: 'obekräftad' }
+    : noShow
+      ? { icon: 'clock' as const, text: 'uteblev' }
+      : null
+  return (
+    <button
+      type="button"
+      className={styles.mBk}
+      style={{ ['--bk' as string]: color }}
+      onClick={() => onOpen(booking)}
+      title={`${timeLabel(booking.startTs, tz)} · ${name} · ${booking.serviceName} · ${booking.staffTitle}${noShow ? ' · Uteblev' : ''}`}
+      aria-label={`${timeLabel(booking.startTs, tz)} ${name}, ${booking.serviceName}, ${booking.staffTitle}${flag ? `, ${flag.text}` : ''}`}
+    >
+      <span className={`num ${styles.mBkTime}`}>{timeLabel(booking.startTs, tz)}</span>
+      <span className={styles.mBkName}>{name}</span>
+      {/* Initialerna, inte bara färgen — månadsvyn har inga resurskolumner, så utan dem
+          vore färgen ensam bärare av "vems tid?". (Codex-granskning, MEDEL.) */}
+      <span className={styles.mBkWho} style={{ background: color }}>
+        {staffInitials(booking.staffTitle)}
+      </span>
+      <span className={styles.mBkService}>{booking.serviceName}</span>
+      {booking.customerPhone && (
+        <span className={`num ${styles.mBkPhone}`}>{booking.customerPhone}</span>
+      )}
+      {flag && (
+        <span className={styles.mBkFlag} aria-hidden="true">
+          <Icon name={flag.icon} size={10} />
+        </span>
+      )}
+    </button>
   )
 }

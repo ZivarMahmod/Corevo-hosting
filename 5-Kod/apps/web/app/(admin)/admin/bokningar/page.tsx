@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
 import {
@@ -46,7 +46,7 @@ export default async function KalenderPage({
   searchParams: Promise<{ vy?: string; datum?: string; plats?: string; open?: string }>
 }) {
   const sp = await searchParams
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (
@@ -151,7 +151,13 @@ export default async function KalenderPage({
     <CalendarBoard
       bookings={rows}
       blocks={blocks}
-      staff={roster.map((s) => ({ id: s.staffId, name: s.name, start: s.start, end: s.end }))}
+      staff={roster.map((s) => ({
+        id: s.staffId,
+        name: s.name,
+        start: s.start,
+        end: s.end,
+        color: s.color,
+      }))}
       // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
       // drawern och sedan avvisas av servern.
       services={allServices

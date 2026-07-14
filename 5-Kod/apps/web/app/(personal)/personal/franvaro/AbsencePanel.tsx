@@ -115,7 +115,7 @@ export function AbsencePanel({
           <div style={{ marginTop: 16 }}>
             <Callout tone="info" icon="info">
               Frånvaro stänger automatiskt dina bokbara tider på storefronten för perioden. Tider
-              anges i salongens tidszon ({timeZone}).
+              anges i tidszonen {timeZone}.
             </Callout>
           </div>
 

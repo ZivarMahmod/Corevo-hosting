@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { requirePortal, type CurrentUser } from '@/lib/auth/session'
+import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, type AdminTenant } from '@/lib/admin/tenant'
 import type { ActionState } from '@/lib/admin/actions'
 import { giftCardVoidable, giftStatusLabel, kronorToCents, type GiftCardStatus } from './types'
@@ -13,12 +13,12 @@ const CODE_CLASH = 'Kunde inte skapa kod, försök igen.'
 
 /**
  * Authorization fence for every gift-card mutation. Mirrors lib/admin/shop/actions.ts:
- * requirePortal('admin') + getAdminTenant, which together verify the caller's role AND
+ * requireAdminArea('presentkort') + getAdminTenant, which together verify the caller's role AND
  * resolve the tenant (id + slug) for scoped writes. RLS is defence-in-depth, not a
  * substitute.
  */
 async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('presentkort')
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
   return { user, tenant }

@@ -1,24 +1,33 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import Link from 'next/link'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { getSettingsRow, listLocations, listDomains } from '@/lib/admin/data'
+import {
+  getSettingsRow,
+  listServices,
+  listStaff,
+  listLocations,
+  listDomains,
+  staffDay,
+} from '@/lib/admin/data'
+import { getAdminModuleStates, moduleAdminState } from '@/lib/admin/modules'
+import { bookingModeFromState, BOOKING_MODE_COPY } from '@/lib/admin/booking-mode'
+import { settingsCategories, type SettingsCategoryId } from '@/lib/admin/settings-map'
 import { createClient } from '@/lib/supabase/server'
-import { SettingsForm } from '@/components/admin/SettingsForm'
-import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
-import { PageHead, Card, Badge, Callout } from '@/components/portal/ui'
-import styles from '@/components/admin/admin.module.css'
+import { PageHead, Card, Badge, Icon, type BadgeTone } from '@/components/portal/ui'
+
+/** L3 C-01 — Inställningar = KARTAN över de ytor som redan finns. Nio kategorier:
+ *  varje kort säger VAD det är, VAD läget är just nu, och tar dig dit i ETT klick.
+ *  Ingen sida flyttas hit, ingen designas om. Kategorilistan bor i
+ *  lib/admin/settings-map.ts (enda sanningen — även toppnavets subnav läser den). */
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Inställningar · Adminpanel' }
 
-const ROOT_DOMAIN = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se').replace(/:\d+$/, '')
+type Status = { text: string; tone: BadgeTone }
 
-export default async function SettingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ stripe?: string }>
-}) {
-  const user = await requirePortal('admin')
+export default async function SettingsPage() {
+  const user = await requireAdminArea('installningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (
@@ -30,137 +39,118 @@ export default async function SettingsPage({
   }
 
   const supabase = await createClient()
-  const [settings, locations, domains, { data: stripeRow }, { stripe }] = await Promise.all([
-    getSettingsRow(tenant.id),
-    listLocations(tenant.id),
-    listDomains(tenant.id),
-    supabase
-      .from('tenants')
-      .select('stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted')
-      .eq('id', tenant.id)
-      .maybeSingle(),
-    searchParams.then((s) => ({ stripe: s.stripe })),
-  ])
-  const primary = locations.find((l) => l.is_primary) ?? locations[0] ?? null
-  const sjson = (settings?.settings ?? {}) as {
-    cancellation_cutoff_hours?: number
-    contact?: { email?: string | null; phone?: string | null }
-    customer_accounts_enabled?: boolean
-    notifications?: { confirmation?: boolean; reminder?: boolean; review?: boolean }
-    google_review_url?: string | null
-    cookie_banner_enabled?: boolean
-  }
-  const contact = sjson.contact ?? {}
+  const [settings, services, staff, locations, domains, moduleStates, today, { data: tRow }] =
+    await Promise.all([
+      getSettingsRow(tenant.id),
+      listServices(tenant.id),
+      listStaff(tenant.id),
+      listLocations(tenant.id),
+      listDomains(tenant.id),
+      getAdminModuleStates(tenant.id),
+      staffDay(tenant.id, new Date().getDay()),
+      supabase
+        .from('tenants')
+        .select('status, stripe_charges_enabled')
+        .eq('id', tenant.id)
+        .maybeSingle(),
+    ])
 
-  const verifiedDomains = domains.filter((d) => d.verified).length
+  const sjson = (settings?.settings ?? {}) as {
+    contact?: { email?: string | null; phone?: string | null }
+  }
+  const contactDone = Boolean(sjson.contact?.email?.trim() || sjson.contact?.phone?.trim())
+  const activeServices = services.filter((s) => s.active).length
+  const activeStaff = staff.filter((s) => s.active).length
+  const withHoursToday = today.filter((s) => s.start && s.end).length
+  const bookingMode = bookingModeFromState(
+    'booking' in moduleStates ? moduleAdminState(moduleStates, 'booking') : undefined,
+  )
+  const verifiedDomain = domains.some((d) => d.verified)
+  const chargesOn = tRow?.stripe_charges_enabled === true
+  const published = tRow?.status === 'active'
+
+  // Status = verkligheten, aldrig en gissning. Saknas något visas det som saknas.
+  const status: Record<SettingsCategoryId, Status> = {
+    foretag: contactDone
+      ? { text: 'Ifyllt', tone: 'success' }
+      : { text: 'Kontaktuppgifter saknas', tone: 'warning' },
+    bokning: {
+      text: BOOKING_MODE_COPY[bookingMode].label,
+      tone: bookingMode === 'pa' ? 'success' : bookingMode === 'pausad' ? 'warning' : 'neutral',
+    },
+    tjanster: activeServices
+      ? { text: `${activeServices} aktiva`, tone: 'neutral' }
+      : { text: 'Inga än', tone: 'warning' },
+    personal: activeStaff
+      ? { text: `${activeStaff} aktiva`, tone: 'neutral' }
+      : { text: 'Ingen än', tone: 'warning' },
+    scheman: withHoursToday
+      ? { text: `${withHoursToday} arbetar idag`, tone: 'neutral' }
+      : { text: 'Ingen arbetstid idag', tone: 'warning' },
+    platser: locations.length
+      ? {
+          text: `${locations.length} ${locations.length === 1 ? 'plats' : 'platser'}`,
+          tone: 'neutral',
+        }
+      : { text: 'Ingen än', tone: 'warning' },
+    sida: published
+      ? {
+          text: verifiedDomain ? 'Publicerad · egen domän' : 'Publicerad',
+          tone: 'success',
+        }
+      : { text: 'Inte publicerad', tone: 'warning' },
+    betalning: chargesOn
+      ? {
+          text: settings?.payments_enabled ? 'Betalning vid bokning' : 'Stripe kopplat',
+          tone: 'success',
+        }
+      : { text: 'Stripe inte kopplat', tone: 'neutral' },
+    konto: { text: user.email ?? 'Inloggad', tone: 'neutral' },
+  }
+
+  const categories = settingsCategories(tenant.terminology)
 
   return (
-    <section className="portal-section" style={{ maxWidth: '640px' }}>
+    <section className="portal-section">
       <PageHead
         eyebrow={tenant.name}
         title="Inställningar"
-        lede="Varje reglage är på riktigt kopplat. Slår du på något funkar funktionen — annars finns den inte här. Företagets namn, kontakt, tidszon, betalning och avbokningsregel styrs härifrån."
+        lede="Allt som styr ditt företag — ett hem per sak."
       />
 
-      <SettingsForm
-        name={tenant.name}
-        paymentMode={settings?.payment_mode ?? 'on_site'}
-        cancellationHours={
-          typeof sjson.cancellation_cutoff_hours === 'number' ? sjson.cancellation_cutoff_hours : 24
-        }
-        timezone={primary?.timezone ?? tenant.timeZone}
-        locationName={primary?.name ?? tenant.name}
-        address={primary?.address ?? ''}
-        contactEmail={contact.email ?? ''}
-        contactPhone={contact.phone ?? ''}
-        customerAccountsEnabled={sjson.customer_accounts_enabled === true}
-        notifications={{
-          confirmation: sjson.notifications?.confirmation !== false,
-          reminder: sjson.notifications?.reminder !== false,
-          review: sjson.notifications?.review !== false,
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+          gap: '1rem',
         }}
-        googleReviewUrl={sjson.google_review_url ?? ''}
-        cookieBannerEnabled={sjson.cookie_banner_enabled !== false}
-      />
-
-      {/* ── Betalning ── mockens andra kärnkort. EN lean Card: h2 + live-toggle
-          ("Betalning vid bokning" = den wired payments_enabled-kontrollen) + amber
-          sköld-band + en kompakt Stripe-anslutningsrad. Stripe-kopplingen bor INNE
-          i kortet (inget fristående syskon-kort), exakt som mockens Stripe-rad. */}
-      <StripeConnectCard
-        hasAccount={Boolean(stripeRow?.stripe_account_id)}
-        chargesEnabled={stripeRow?.stripe_charges_enabled ?? false}
-        payoutsEnabled={stripeRow?.stripe_payouts_enabled ?? false}
-        detailsSubmitted={stripeRow?.stripe_details_submitted ?? false}
-        paymentsEnabled={settings?.payments_enabled ?? false}
-        justReturned={stripe === 'return'}
-      />
-
-      {/* ── Egen domän ── den enda inställningsgruppen som sidan själv renderar,
-          så den får visa upp playbook-mönstret: Card-primitiv + eyebrow-rubrik +
-          Badge-status + proof-Callout. Endast riktiga fält: d.domain / d.verified /
-          d.is_primary. */}
-      <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
-        <div>
-          <span className="eyebrow">Egen domän</span>
-          <h2 className="h2" style={{ margin: '6px 0 0' }}>
-            Adress till din sajt
-          </h2>
-        </div>
-
-        <p className="body" style={{ margin: 0 }}>
-          Din salong nås på{' '}
-          <span className={styles.code}>
-            {tenant.slug}.{ROOT_DOMAIN}
-          </span>
-          . Vill du koppla en egen domän (t.ex. <span className={styles.code}>dinsalong.se</span>)
-          kontaktar du Corevo — själva DNS-/Cloudflare-kopplingen görs av oss (G08).
-        </p>
-
-        {domains.length > 0 ? (
-          <>
-            <ul className={styles.list}>
-              {domains.map((d) => (
-                <li key={d.id} className={styles.row}>
-                  <span className={styles.code}>{d.domain}</span>
-                  <span style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    <Badge tone={d.verified ? 'success' : 'warning'}>
-                      {d.verified ? 'Verifierad' : 'Väntar på verifiering'}
-                    </Badge>
-                    {d.is_primary ? <Badge tone="gold">Primär</Badge> : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <Callout
-              tone={verifiedDomains > 0 ? 'success' : 'warning'}
-              icon={verifiedDomains > 0 ? 'checkCircle' : 'alert'}
+      >
+        {categories.map((c) => (
+          <Link
+            key={c.id}
+            href={c.href}
+            style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+          >
+            <Card
+              style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', height: '100%' }}
             >
-              {verifiedDomains > 0 ? (
-                <>
-                  <span className="num">{verifiedDomains}</span> av{' '}
-                  <span className="num">{domains.length}</span> domän
-                  {domains.length === 1 ? '' : 'er'} är verifierad och pekar mot ditt företag —
-                  kunder kan nå sajten på din egna adress.
-                </>
-              ) : (
-                <>
-                  Domänen är tillagd men inte verifierad ännu. Tills DNS-kopplingen är klar når
-                  kunderna din sajt på {tenant.slug}.{ROOT_DOMAIN} — Corevo hör av sig när den är
-                  redo.
-                </>
-              )}
-            </Callout>
-          </>
-        ) : (
-          /* Behåller den befintliga svenska tomtillståndet (regel 6), om-skinnad som
-             en lugn info-Callout. */
-          <Callout tone="info" icon="info">
-            Ingen egen domän kopplad ännu. Din salong nås på {tenant.slug}.{ROOT_DOMAIN}. Kontakta
-            Corevo för att koppla en egen domän.
-          </Callout>
-        )}
-      </Card>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                <Icon name={c.icon} size={18} />
+                <h2 className="h3" style={{ margin: 0, flex: 1 }}>
+                  {c.label}
+                </h2>
+                <Icon name="chevronRight" size={16} />
+              </div>
+              <span>
+                <Badge tone={status[c.id].tone}>{status[c.id].text}</Badge>
+              </span>
+              <p className="body" style={{ margin: 0, color: 'var(--c-ink-2)' }}>
+                {c.hint}
+              </p>
+            </Card>
+          </Link>
+        ))}
+      </div>
     </section>
   )
 }

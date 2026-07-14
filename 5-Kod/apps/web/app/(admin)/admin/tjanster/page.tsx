@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { listServices } from '@/lib/admin/data'
 import { ServicesManager } from '@/components/admin/ServicesManager'
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Tjänster · Adminpanel' }
 
 export default async function ServicesPage() {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('tjanster')
   const tenant = await getAdminTenant(user)
   if (!tenant) return <NoTenant />
 

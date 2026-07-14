@@ -691,8 +691,8 @@ export function WorkingHoursEditor({
         Arbetstider (öppet–stängt)
       </h2>
       <p className="small" style={{ margin: '4px 0 0', maxWidth: 560, color: 'var(--c-ink-3)' }}>
-        Veckovisa intervall för {staffName} — styr salongens öppettider på den publika sajten och
-        är grunden de bokbara tiderna ovan genereras ur.
+        Veckovisa intervall för {staffName} — styr öppettiderna på den publika sajten och är
+        grunden de bokbara tiderna ovan genereras ur.
       </p>
 
       <WorkingHoursAddRow

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { Icon } from './ui/Icon'
 // NAV bor i nav-items.ts — SAMMA lista driver ⌘K-paletten (PortalShell via
 // paletteFromNav), så sidomeny och palett kan inte drifta isär (goal-55 steg 1).
-import { NAV, isGroup, type PortalRole } from './nav-items'
+import { NAV, isGroup, isNavItemVisible, type PortalRole } from './nav-items'
 
 export type { PortalRole }
 
@@ -31,6 +31,7 @@ export function PortalSidebar({
   userSub,
   signOut,
   activeModuleKeys,
+  roleLevel,
 }: {
   role: PortalRole
   brand: string
@@ -41,13 +42,16 @@ export function PortalSidebar({
   /** Aktiverade tenant_modules-nycklar (admin-portalen). undefined → ingen
    *  gating (platform/personal); [] → alla modul-poster döljs. */
   activeModuleKeys?: string[]
+  /** Rollnivå (roll-separationen): poster med högre minLevel döljs. undefined →
+   *  ingen roll-gating. Servern gatar ändå (requireAdminArea) — detta är bara UI. */
+  roleLevel?: number
 }) {
   const pathname = usePathname()
   const cfg = NAV[role]
-  // Modulstyrd meny: dölj modul-poster vars modul inte är aktiverad för kunden,
-  // och dölj grupprubriker som blivit tomma (t.ex. hela "Moduler"-gruppen).
+  // Modul- och rollstyrd meny: dölj poster vars modul inte är aktiverad för kunden
+  // eller vars minLevel rollen inte når, och dölj grupprubriker som blivit tomma.
   const filtered = cfg.items.filter(
-    (e) => isGroup(e) || !e.module || !activeModuleKeys || activeModuleKeys.includes(e.module),
+    (e) => isGroup(e) || isNavItemVisible(e, { activeModuleKeys, roleLevel }),
   )
   const items = filtered.filter((e, i) => {
     if (!isGroup(e)) return true

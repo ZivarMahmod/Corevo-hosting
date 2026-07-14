@@ -22,6 +22,9 @@ import { getAdminTenant, loadAdminTenantById, type AdminTenant } from '@/lib/adm
 export async function moduleCtx(
   fd: FormData,
 ): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
+  // ROLL-SEPARATION: modulerna (webshop/blogg/media/offert/kurser) ÄR systemytor —
+  // alla ligger på salon_admin-nivå i lib/auth/admin-areas.ts. requirePortal('admin')
+  // = nivå 6 håller därför personalen (nivå 3) ute från VARJE modul-mutation.
   const user = await requirePortal('admin') // platform_admin always passes
   if (user.platformAdmin) {
     const tenantId = String(fd.get('tenantId') ?? '').trim()

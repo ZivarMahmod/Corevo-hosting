@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { createClient } from '@/lib/supabase/server'
 import { adminDaySlots, type AdminSlot } from '@/lib/admin/calendar-slots'
@@ -23,7 +23,7 @@ export async function loadDaySlots(input: {
   date: string
   locationId?: string
 }): Promise<SlotsState> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
   if (!input.serviceId || !input.date) return { error: 'Välj en tjänst först.' }
@@ -51,7 +51,7 @@ export type CustomerHit = {
 /** Sök kund på namn/e-post/telefon. Samma kontroll söker OCH skapar i drawern —
  *  ingen träff betyder "skriv klart, så blir det en ny kund" (Wavys enda formulär). */
 export async function searchCustomers(query: string): Promise<CustomerHit[]> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return []
   const q = query.trim()
@@ -99,7 +99,7 @@ export async function moveBooking(input: {
   /** Ny resurs. Samma som förut = ren tidsflytt. */
   staffId: string
 }): Promise<MoveBookingState> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
   if (!input.bookingId || !input.staffId || Number.isNaN(Date.parse(input.startIso))) {
@@ -125,7 +125,13 @@ export async function moveBooking(input: {
   const start = new Date(input.startIso)
   const end = new Date(start.getTime() + durationMs)
 
-  const { error } = await supabase
+  // goal-67 (belastningstest): statusvakten ovan LÄSER status, men läsningen och
+  // skrivningen är två anrop. En bokning som avbokas i glappet flyttades ändå — bevisat
+  // med samtidig avboka+flytta: slutstatus 'cancelled', och tiden hade ändå flyttats.
+  // Vakten måste sitta i SKRIVNINGEN, inte bara framför den: `.in('status', …)` gör
+  // UPDATE:n till en villkorad skrivning, så en avbokad rad matchar noll rader.
+  const MOVABLE = ['pending', 'confirmed', 'completed'] as const
+  const { data: moved, error } = await supabase
     .from('bookings')
     .update({
       start_ts: start.toISOString(),
@@ -134,6 +140,14 @@ export async function moveBooking(input: {
     })
     .eq('id', input.bookingId)
     .eq('tenant_id', tenant.id)
+    .in('status', MOVABLE as unknown as string[])
+    .select('id')
+
+  // Noll rader utan fel = raden ändrade status under oss (avbokad/utebliven mitt i
+  // draget). Inte ett tekniskt fel — ett kapplöpningsfall med ett ärligt svar.
+  if (!error && (moved?.length ?? 0) === 0) {
+    return { error: 'Tiden ändrades av någon annan just nu. Ladda om kalendern.' }
+  }
 
   if (error) {
     // 23P01 = exclusion_violation → tiden krockar med en annan bokning. Originalet
@@ -172,7 +186,7 @@ export async function createBlock(input: {
   reason: string
   repeat?: RepeatKind
 }): Promise<BlockState> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
 
@@ -225,7 +239,7 @@ export async function createBlock(input: {
  *  och alla senare i samma serie. Bakåt skrivs ALDRIG om — raderna för förra veckan
  *  är historik om vad som faktiskt var blockerat. */
 export async function removeBlock(blockId: string, scope: 'en' | 'framat' = 'en'): Promise<BlockState> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
   if (!blockId) return { error: 'Ogiltig blockering.' }
@@ -298,7 +312,7 @@ export type BookingHit = {
  * ett år framåt (en kund kan boka långt fram).
  */
 export async function searchBookings(query: string): Promise<BookingHit[]> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return []
   const q = query.trim()
@@ -367,7 +381,7 @@ export type CancelledBooking = {
  *  Läses först när loggen ÖPPNAS, inte vid varje kalenderrendering. Kalendern laddas
  *  femtio gånger om dagen; loggen öppnas kanske en gång i veckan. */
 export async function loadCancelled(): Promise<CancelledBooking[]> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return []
 
@@ -436,7 +450,7 @@ export async function createAdminBooking(
   _prev: CreateBookingState,
   fd: FormData,
 ): Promise<CreateBookingState> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
 

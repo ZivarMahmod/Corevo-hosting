@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm, termPlural } from '@/lib/platform/verticals-shared'
 import { listServices, listStaff, listLocations } from '@/lib/admin/data'
@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Personal · Adminpanel' }
 
 export default async function StaffPage() {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('personal')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (
@@ -87,6 +87,7 @@ export default async function StaffPage() {
     // "Foto & synlighet på sidan" (updateStaff-partialpatch).
     avatarUrl: s.avatar_url,
     showOnSite: s.show_on_site,
+    color: s.color ?? null,
     today: (
       dayByStaff.get(s.id) ?? []
     ).sort((a, b) => (a.startTs < b.startTs ? -1 : 1)),

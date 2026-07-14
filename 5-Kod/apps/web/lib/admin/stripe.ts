@@ -62,8 +62,8 @@ export async function startStripeOnboarding(
 
   const origin = await requestOrigin()
   // Tillbaka till ytan man kom ifrån: kundkortet för platform-admin, annars
-  // kund-adminens inställningar.
-  const backPath = user.platformAdmin ? `/salonger/${tenant.id}` : '/admin/installningar'
+  // kund-adminens betalningskategori (L3 C-01: Stripe-kortet bor på egen route).
+  const backPath = user.platformAdmin ? `/salonger/${tenant.id}` : '/admin/installningar/betalning'
   let url: string
   try {
     url = await createOnboardingLink(stripe, accountId, {
@@ -116,7 +116,7 @@ export async function refreshStripeStatus(
   // goal-61 preview-parity: charges_enabled bor på cachade tenants-raden — utan
   // tag-bust ser betalnings-gaten gammal Stripe-status i upp till 300 s.
   revalidateTenant(tenant.slug)
-  revalidatePath('/admin/installningar')
+  revalidatePath('/admin/installningar/betalning')
   revalidatePath(`/salonger/${tenant.id}`)
   return {
     success: status.chargesEnabled
@@ -158,7 +158,7 @@ export async function setPaymentsEnabled(
   if (error) return { error: GENERIC }
 
   revalidateTenant(tenant.slug)
-  revalidatePath('/admin/installningar')
+  revalidatePath('/admin/installningar/betalning')
   revalidatePath(`/salonger/${tenant.id}`)
   return { success: enabled ? 'Onlinebetalning vid bokning: PÅ.' : 'Onlinebetalning vid bokning: AV.' }
 }

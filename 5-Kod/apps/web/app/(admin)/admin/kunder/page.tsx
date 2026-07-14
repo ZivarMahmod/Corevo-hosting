@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
 import { listCustomers, customerStats } from '@/lib/admin/data'
@@ -34,7 +34,7 @@ export default async function CustomersPage({
   searchParams: Promise<{ q?: string; dolda?: string }>
 }) {
   const sp = await searchParams
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('kunder')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

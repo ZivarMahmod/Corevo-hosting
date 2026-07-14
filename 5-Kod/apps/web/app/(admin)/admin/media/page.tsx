@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listMediaAssets, getStorageUsage } from '@/lib/admin/media/data'
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Bildbibliotek · Adminpanel' }
 
 export default async function MediaPage() {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('media')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

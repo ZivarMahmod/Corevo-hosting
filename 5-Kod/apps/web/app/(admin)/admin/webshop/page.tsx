@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listShopProducts, listShopOrders, listShippingOptions } from '@/lib/admin/shop/data'
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Webshop · Adminpanel' }
 
 export default async function WebshopPage() {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('webshop')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

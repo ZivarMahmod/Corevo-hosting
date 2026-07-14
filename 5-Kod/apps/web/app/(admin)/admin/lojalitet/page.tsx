@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listLoyaltyMembers, recentLoyaltyActivity } from '@/lib/admin/lojalitet/data'
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Lojalitet · Adminpanel' }
 
 export default async function LojalitetPage() {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('lojalitet')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

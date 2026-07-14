@@ -1,0 +1,217 @@
+/* Statistik-ytan. Allt ritas med back-office-tokens (--c-* / --shadow / --dur /
+   --ease) → ljus och mörk vy följer med automatiskt, ingen hårdkodad hex.
+   Diagram = ren CSS (grid + width/height i %). Inga chart-bibliotek. */
+
+/* ---- periodväljare (pill-rad) ---- */
+.periods {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.period {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.period:hover {
+  border-color: var(--c-forest);
+  color: var(--c-forest);
+}
+.periodOn,
+.periodOn:hover {
+  background: var(--c-forest);
+  border-color: var(--c-forest);
+  color: #fff;
+}
+
+/* ---- delta-pill under KPI-siffran ---- */
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+}
+.deltaUp {
+  color: var(--c-success, #16a34a);
+}
+.deltaDown {
+  color: var(--c-danger, #dc2626);
+}
+.deltaFlat {
+  color: var(--c-ink-3);
+}
+
+/* ---- sektion ---- */
+.section {
+  margin-top: 28px;
+}
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* ---- topplista med staplar ---- */
+.bars {
+  display: grid;
+  gap: 12px;
+}
+.bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+.barName {
+  color: var(--c-ink);
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.barValue {
+  color: var(--c-forest);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.barTrack {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--c-paper-2);
+  overflow: hidden;
+}
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--c-forest);
+}
+.barFillGold {
+  background: var(--c-gold, #b98a2e);
+}
+.barMeta {
+  grid-column: 1 / -1;
+  color: var(--c-ink-3);
+  font-size: 12px;
+}
+
+/* ---- kolumndiagram (veckodag / timme) ---- */
+.columns {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: 6px;
+  height: 140px;
+}
+.column {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  min-width: 0;
+}
+.columnBar {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 6px 6px 0 0;
+  background: var(--c-forest);
+}
+.columnBarQuiet {
+  background: var(--c-line-strong);
+}
+.columnLabel {
+  color: var(--c-ink-3);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.columnCount {
+  color: var(--c-ink-2);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---- två kolumner ---- */
+.split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+/* ---- kund-fördelning (staplad andelsbar) ---- */
+.share {
+  display: flex;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--c-paper-2);
+}
+.shareNew {
+  background: var(--c-gold, #b98a2e);
+}
+.shareReturning {
+  background: var(--c-forest);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+}
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--c-ink-2);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+/* ---- ärligt tomläge ---- */
+.empty {
+  padding: 28px 18px;
+  border: 1px dashed var(--c-line-strong);
+  border-radius: 12px;
+  background: var(--c-paper-2);
+  color: var(--c-ink-2);
+  font-size: 14px;
+  text-align: center;
+}
+.empty strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--c-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .period {
+    transition: none;
+  }
+}

@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { portalHomeFor, backofficeHostKindForRole } from '@/lib/auth/roles'
+import { portalHomeFor, backofficeHostKindForRole, PORTAL_MIN_LEVEL } from '@/lib/auth/roles'
 import {
   getTenantFromHost,
   isPreviewHost,
@@ -65,11 +65,20 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   // production: on preview/dev (*.localhost) the unified booking door still accepts
   // every role, keeping the e2e harness valid.
   const host = (await headers()).get('host')
+  let staffOnLegacyDoor = false
   if (!isPreviewHost(host)) {
     const hostKind = getTenantFromHost(host).kind
     if (hostKind === 'superadmin' || hostKind === 'platform' || hostKind === 'staff_portal') {
       const door = backofficeHostKindForRole({ roleLevel, platformAdmin })
-      if (door !== hostKind) {
+      // ROLL-SEPARATION: personalens dörr är numera ADMIN-dörren (kalendern), men den
+      // GAMLA personaldörren (minbooking) fortsätter acceptera dem — ingen befintlig
+      // inloggning eller bokmärkt adress går sönder. Övriga dörrar är oförändrat låsta.
+      staffOnLegacyDoor =
+        door === 'platform' &&
+        hostKind === 'staff_portal' &&
+        !platformAdmin &&
+        roleLevel < PORTAL_MIN_LEVEL.admin
+      if (door !== hostKind && !staffOnLegacyDoor) {
         // Reject: clear the just-created session (this is the supabase client method,
         // NOT the redirecting signOut wrapper below) and point them at THEIR own door
         // — never reveal the door they probed.
@@ -93,6 +102,9 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
 
   // Honor the originally requested page (same host) only AFTER the door check.
   if (next && next.startsWith('/')) redirect(next)
+  // Personal som loggade in på den gamla minbooking-dörren stannar i /personal —
+  // deras hemadress i adminkalendern ligger på en annan värd (ingen session där).
+  if (staffOnLegacyDoor) redirect('/personal')
   redirect(portalHomeFor({ roleLevel, platformAdmin }))
 }
 

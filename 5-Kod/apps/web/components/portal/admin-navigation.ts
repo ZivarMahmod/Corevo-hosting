@@ -1,4 +1,5 @@
 import { NAV, isGroup } from './nav-items'
+import { settingsCategories } from '@/lib/admin/settings-map'
 import type { TopnavArea, TopnavItem } from './Topnav'
 
 /** Kund-adminens toppnavigation — samma form som platform-navigation.ts, samma
@@ -10,17 +11,16 @@ import type { TopnavArea, TopnavItem } from './Topnav'
  *  vilket ÄR Wavy-enkelheten. Modulnycklarna och deras hrefs/labels kommer ur
  *  nav-items.ts, som förblir enda sanningen för både sidomeny, ⌘K och detta nav. */
 
-/** Inställningarnas undernavigation. De nio kategorierna i codex/00 §5 är målbilden,
- *  men bara routes som FINNS får ligga här — nav-items.ts-regeln: inga 404-platshållare.
- *  Tjänster/Personal/Scheman/Platser var egna sidomenyposter; de blir undersidor till
- *  Inställningar utan att koden i sidorna ändras. Resterande kategorier (bokningsregler,
- *  notiser, konto/säkerhet, data/export) får egna routes i L3 och läggs till här då. */
+/** Inställningarnas undernavigation. Kategorierna kommer nu ur lib/admin/settings-map.ts
+ *  (L3 C-01, enda sanningen — samma lista som kartan på /admin/installningar renderar),
+ *  så nav och karta kan inte drifta isär. Bara routes som FINNS ligger här — samma
+ *  regel som nav-items.ts: inga 404-platshållare.
+ *  "Din sida" är UNDANTAGET: den är ett eget huvudval i toppnaven och upprepas inte här. */
 const SETTINGS_SUBNAV: readonly TopnavItem[] = [
-  { href: '/admin/installningar', label: 'Företag och profil' },
-  { href: '/admin/personal', label: 'Personal' },
-  { href: '/admin/tjanster', label: 'Tjänster' },
-  { href: '/admin/scheman', label: 'Öppettider och schema' },
-  { href: '/admin/platser', label: 'Platser' },
+  { href: '/admin/installningar', label: 'Alla inställningar' },
+  ...settingsCategories()
+    .filter((c) => c.id !== 'sida')
+    .map((c) => ({ href: c.href, label: c.label })),
 ] as const
 
 const SETTINGS_PREFIXES = SETTINGS_SUBNAV.map((item) => item.href)

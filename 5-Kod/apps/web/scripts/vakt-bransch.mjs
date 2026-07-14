@@ -65,24 +65,73 @@ function* walk(dir) {
 
 const PURE_TEXT_LINE = /^[\p{L}\d\s.,:;!?()&–—%'’""·+\/-]+$/u;
 
+/** Två löpande ord = prosa (en mening), inte en kodsymbol. */
+const HAS_PROSE = /\p{L}+\s+\p{L}+/u;
+
+/** Kodsymbol, inte ett ord: en identifierare har intern versal (StylistCard,
+ *  stylistName, SalongCardVM). Inget svenskt ord har det → säker diskvalificering. */
+const IS_IDENTIFIER = (word) => /\p{Ll}\p{Lu}|^\p{Ll}+\p{Lu}/u.test(word) || /\p{Lu}.*\p{Lu}/u.test(word);
+
+/** Är träffen inne i en radkommentar? "//" som ligger UTANFÖR en sträng före
+ *  träffen. (Gamla regeln missade `x: string // mock column "Salong"` — citattecken
+ *  INNE i kommentaren fick den att se ut som en strängliteral.) */
+function inLineComment(line, start) {
+  let inStr = null;
+  for (let i = 0; i < start - 1; i++) {
+    const c = line[i];
+    if (inStr) {
+      if (c === '\\') i++;
+      else if (c === inStr) inStr = null;
+    } else if (c === '"' || c === "'" || c === '`') inStr = c;
+    else if (c === '/' && line[i + 1] === '/') return true;
+  }
+  return false;
+}
+
+/** Strängen runt träffen — används för att skilja COPY ('Din salong nås på') från
+ *  KOD-strängar (slugs/filnamn/nycklar: 'salonger.csv', 'salonger:view'). */
+function enclosingString(line, start, end) {
+  const q = /['"`]/;
+  let openIdx = -1;
+  for (let i = start - 1; i >= 0; i--) if (q.test(line[i])) { openIdx = i; break; }
+  if (openIdx < 0) return null;
+  const quote = line[openIdx];
+  const closeIdx = line.indexOf(quote, end);
+  if (closeIdx < 0) return null;
+  return line.slice(openIdx + 1, closeIdx);
+}
+
 /** Avgör om en träff på raden ser user-facing ut (strängliteral eller JSX-text). */
-function classifyMatch(line, start, end, isTsx, inBlockComment) {
+function classifyMatch(line, start, end, isTsx, inBlockComment, word) {
   const trimmed = line.trim();
   if (inBlockComment) return null;
   if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) return null;
+  if (trimmed.startsWith('{/*')) return null; // JSX-kommentar {/* … */}
   if (/^\s*import[\s{'"]/.test(line)) return null; // importvägar
   if (line[start - 1] === '/') return null; // path-segment (/salonger, url-slug)
+  if (IS_IDENTIFIER(word)) return null; // StylistCard, styles.stylistName, SalongCardVM
+  if (inLineComment(line, start)) return null; // kommentar (även med citattecken i)
 
   const before = line.slice(0, start);
   const after = line.slice(end);
   const inString = /['"`]/.test(before) && /['"`]/.test(after);
 
-  // Kommentar i slutet av kodrad: "//" före träffen utan att träffen är i sträng
-  if (!inString && /\/\//.test(before)) return null;
+  if (inString) {
+    // Kod-sträng (slug, filnamn, nyckel, path) = inte copy. Copy har mellanslag.
+    const content = enclosingString(line, start, end);
+    if (content && !/\s/.test(content) && /[:./\\_]/.test(content)) return null;
+    return 'sträng';
+  }
 
-  if (inString) return 'sträng';
-  if (isTsx && (/[>]/.test(before) || /[<]/.test(after) || PURE_TEXT_LINE.test(trimmed))) {
-    return 'jsx-text';
+  if (isTsx) {
+    if (/[>]/.test(before) || /[<]/.test(after) || PURE_TEXT_LINE.test(trimmed)) return 'jsx-text';
+    // JSX-prosa MED interpolation: `Heldagar i salongens tidszon ({tenant.timeZone}).`
+    // Gamla regeln blundade för raden så fort den innehöll {…} eller en tagg — där
+    // gömde sig admin-läckorna. Strippa uttryck/taggar och testa resten som prosa.
+    const residue = line.replace(/\{[^{}]*\}/g, ' ').replace(/<[^<>]*>/g, ' ').trim();
+    if (residue.includes(word) && PURE_TEXT_LINE.test(residue) && HAS_PROSE.test(residue)) {
+      return 'jsx-text';
+    }
   }
   return null; // identifierare / övrig kod
 }
@@ -111,7 +160,7 @@ function scan() {
           re.lastIndex = 0;
           let m;
           while ((m = re.exec(line)) !== null) {
-            const kind = classifyMatch(line, m.index, m.index + m[0].length, isTsx, wasInBlock);
+            const kind = classifyMatch(line, m.index, m.index + m[0].length, isTsx, wasInBlock, m[0]);
             if (!kind) continue;
             hits.push({ file: rel, line: i + 1, word: m[0], text: line.trim().slice(0, 200) });
           }

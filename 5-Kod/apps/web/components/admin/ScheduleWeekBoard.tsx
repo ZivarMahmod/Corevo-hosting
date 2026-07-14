@@ -64,6 +64,7 @@ export function ScheduleWeekBoard({
   plats,
   locations,
   staffNoun,
+  staffSingular = 'medarbetare',
   basePath = '/admin/scheman',
   readOnly = false,
 }: {
@@ -79,7 +80,12 @@ export function ScheduleWeekBoard({
   plats: string
   /** >1 aktiv plats → själva filtret; annars tom lista → ingen plats-UI alls. */
   locations: BoardLocation[]
+  /** Branschens PLURALA personalord ('Personal', 'Florister', 'Formgivare') — rad-
+   *  kolumnens rubrik. Resolvas via termPlural(tenant.terminology, 'staff', …). */
   staffNoun: string
+  /** Branschens SINGULARA personalord ('medarbetare', 'florist', 'formgivare') —
+   *  tomtillståndet talar om EN person. Default = dagens neutrala ord. */
+  staffSingular?: string
   /** Rutt bläddringen länkar inom — kiosken (Schemavy) skickar sin egen. */
   basePath?: string
   /** Kiosk-läget: personalraderna är inte länkar till mall-redigeraren. */
@@ -189,8 +195,8 @@ export function ScheduleWeekBoard({
       >
         {rows.length === 0 ? (
           <p className="small" style={{ margin: 0, padding: '18px 20px', color: 'var(--c-ink-3)' }}>
-            Ingen aktiv personal att visa. Aktivera minst en medarbetare under <em>Personal</em> så
-            fylls veckoöversikten här.
+            Ingen aktiv {staffSingular.toLowerCase()} att visa. Aktivera minst en{' '}
+            {staffSingular.toLowerCase()} under <em>{staffNoun}</em> så fylls veckoöversikten här.
           </p>
         ) : (
           <div

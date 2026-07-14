@@ -77,11 +77,18 @@ export const PRIMARY_CTA_LABEL_MAX = 40
 
 /** Generic Swedish singular fallbacks per terminology key — used ONLY when the
  *  vertical has no override AND the call site passes no explicit fallback. Neutral
- *  platform defaults, never bransch-guesses. */
+ *  platform defaults, never bransch-guesses.
+ *
+ *  'business' = verksamhetsordet (florist → 'Butik', verkstad → 'Verkstad'). Det
+ *  lagras i OBESTÄMD form, så det går INTE att bygga en svensk genitiv ur det
+ *  ("Butik" → "butiks tidszon" ✗). Copy som vill äga verksamheten possessivt måste
+ *  därför skrivas om neutralt ("öppettiderna", "tidszonen") tills nyckeln
+ *  standardiserats — se 1-Planering/01-arkitektur/bransch-lagret-bokning.md. */
 export const TERMINOLOGY_DEFAULTS: Record<string, string> = {
   staff: 'Personal',
   service: 'Tjänst',
   unit: 'Resurs',
+  business: 'Verksamhet',
 }
 
 /** Coerce a raw jsonb `terminology` value into a clean { key: label } map (strings

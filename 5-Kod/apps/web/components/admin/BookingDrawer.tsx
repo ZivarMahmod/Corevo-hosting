@@ -60,6 +60,10 @@ export const isAvbokad = (s: string) => s === 'cancelled' || s === 'no_show'
 /** status → accentfärg. Avbokad→danger, klar→success, annars gold. Bäraren av
  *  betydelsen är ALDRIG färgen ensam — varje yta sätter också ikon/text. */
 export function statusAccent(status: string): string {
+  // Utebliven ≠ avbokad: avbokat är ett besked i tid, uteblivet är en förlust. Egen
+  // accent (warning) — men färgen bär aldrig ensam: kortet sätter ikon (clock) + texten
+  // "Uteblev", drawern sätter badge + statusrad.
+  if (status === 'no_show') return 'var(--c-warning)'
   if (isAvbokad(status)) return 'var(--c-danger)'
   if (isKlar(status)) return 'var(--c-success)'
   return 'var(--c-gold)'
@@ -129,17 +133,23 @@ type DrawerAction = {
   label: string
   target: BookingStatus
   variant: ButtonVariant
-  icon: 'check' | 'x' | 'undo'
+  icon: 'check' | 'x' | 'undo' | 'clock'
   danger?: boolean
 }
 
-function actionsFor(status: string): DrawerAction[] {
+/** `isPast` = bokningens starttid har passerat. "Uteblev" visas BARA då — en tid som
+ *  inte har börjat kan inte ha uteblivit (samma vakt står på servern; knappen är
+ *  bekvämlighet, inte regeln). Inget bekräftelsesteg: klicket är ångerbart (Öppna
+ *  igen), och en dialog för varje felklick är dyrare än ångern. */
+function actionsFor(status: string, isPast: boolean): DrawerAction[] {
   const can = (target: BookingStatus) =>
     (ALLOWED_FROM[target] as readonly string[]).includes(status)
   const out: DrawerAction[] = []
   if (isBokad(status)) {
     if (can('cancelled'))
       out.push({ label: 'Avboka', target: 'cancelled', variant: 'ghost', icon: 'x', danger: true })
+    if (isPast && can('no_show'))
+      out.push({ label: 'Uteblev', target: 'no_show', variant: 'ghost', icon: 'clock' })
     if (can('completed'))
       out.push({ label: 'Markera klar', target: 'completed', variant: 'primary', icon: 'check' })
   } else if (isKlar(status) || status === 'no_show') {
@@ -207,14 +217,17 @@ export function BookingDrawer({
     // keying on state.success would skip the effect on a 2nd consecutive action
     // (klar → öppna igen), dropping its toast + refresh.
     if (state.success) {
-      notify('Status uppdaterad — speglas på storefront, personal och översikt', 'success')
+      // Servern äger meddelandet. Drawern kastade förut serverns svar och hittade på en
+      // egen mening ("… speglas på storefront, personal och översikt") — en rad ingen
+      // läser, och två sanningar om samma händelse som kan glida isär. (E2E-granskning.)
+      notify(state.success, 'success')
       router.refresh()
     }
     if (state.error) notify(state.error, 'warning')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state])
 
-  const actions = actionsFor(booking.status)
+  const actions = actionsFor(booking.status, booking.isPast)
   // En avbokad tid i det FÖRFLUTNA kan inte återställas — det vore att boka in någon
   // igår. (no_show får däremot rättas bakåt: "hen kom visst" är en korrigering av
   // historien, inte en ny bokning.) Samma regel som ångraloggen.

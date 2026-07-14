@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm, termPlural } from '@/lib/platform/verticals-shared'
 import { listStaff, listWorkingHours, listWorkingHourSlots, listLocations, listServices } from '@/lib/admin/data'
@@ -47,7 +47,7 @@ export default async function SchedulesPage({
   searchParams: Promise<{ staff?: string; week?: string; plats?: string }>
 }) {
   const sp = await searchParams
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('scheman')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (
@@ -71,7 +71,7 @@ export default async function SchedulesPage({
             <strong>Lägg till {staffNoun.toLowerCase()} först.</strong>
           </p>
           <p className="small" style={{ marginTop: 6 }}>
-            Schemat sätts per medarbetare — skapa minst en under <em>{staffPlural}</em>, så fylls
+            Schemat sätts per {staffNoun.toLowerCase()} — skapa minst en under <em>{staffPlural}</em>, så fylls
             veckoöversikten här.
           </p>
         </Card>
@@ -160,6 +160,7 @@ export default async function SchedulesPage({
         plats={board.plats}
         locations={board.multiLoc ? locations.map((l) => ({ id: l.id, name: l.name })) : []}
         staffNoun={staffPlural}
+        staffSingular={staffNoun}
       />
 
       {/* 2 ▸ FRÅNVARO (avvikelserna): semester/sjukdom för hela teamet */}
@@ -172,7 +173,7 @@ export default async function SchedulesPage({
         </h2>
         <p className="small" style={{ margin: '4px 0 12px', maxWidth: 560, color: 'var(--c-ink-3)' }}>
           Semester, sjukdom och annan ledighet — blockerar bokningar för perioden och visas som
-          overlay i veckoöversikten. Heldagar i salongens tidszon ({tenant.timeZone}).
+          overlay i veckoöversikten. Heldagar anges i tidszonen {tenant.timeZone}.
         </p>
         <TimeOffManager
           items={timeOffItems}

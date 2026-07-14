@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { dashboardData, staffDay, type AdminBooking } from '@/lib/admin/data'
 import { getAdminModuleStates, isBookingActivated } from '@/lib/admin/modules'
 import { todayInTz, dayRangeUtc, weekRangeUtc } from '@/lib/admin/dates'
-import { formatTime, statusLabel } from '@/lib/admin/format'
+import { formatPrice, formatTime, statusLabel } from '@/lib/admin/format'
 import { PageHead, Stat, Card, Badge, Button, Callout, Icon } from '@/components/portal/ui'
 import type { BadgeTone } from '@/components/portal/ui'
 import styles from './dashboard.module.css'
@@ -26,7 +26,7 @@ const STATUS_TONE: Record<string, BadgeTone> = {
  *  vidare till Kalendern. Den får aldrig bli en andra kalender, visa inställningsfält
  *  eller KPI:er för moduler kunden inte har. */
 export default async function AdminPage() {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('oversikt')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (
@@ -44,7 +44,7 @@ export default async function AdminPage() {
   const weekday = new Date(`${today}T12:00:00Z`).getUTCDay()
 
   const [data, roster, moduleStates] = await Promise.all([
-    dashboardData(tenant.id, dayRange, weekRange, tenant.timeZone),
+    dashboardData(tenant.id, dayRange, weekRange),
     staffDay(tenant.id, weekday),
     getAdminModuleStates(tenant.id),
   ])
@@ -95,9 +95,10 @@ export default async function AdminPage() {
         </Callout>
       )}
 
-      {/* Dagens rad — tre tal som faktiskt styr dagen. Beläggning i procent kräver
-          kapacitetsmatte som datalagret inte exponerar; hellre tre sanna tal än ett
-          uppfunnet fjärde (ponytail: lägg till när slot-kapaciteten finns i B-01). */}
+      {/* goal-67 — tre tal som STYR dagen. "Denna vecka: 47" var ett tal man läste och
+          sedan inte gjorde något med; veckan bor nu på /admin/statistik med period och
+          jämförelse. I dess ställe: dagens intäkt — det tal en ägare faktiskt agerar på
+          (tre färgningar ≠ tre luggklipp, antalet bokningar döljer skillnaden). */}
       <div className="bo-stat-grid">
         <Stat
           label="Bokningar idag"
@@ -115,11 +116,18 @@ export default async function AdminPage() {
           icon="clock"
           hint={next ? `${nameOf(next)} · ${next.serviceName} · ${next.staffTitle}` : 'Inget mer idag'}
         />
+        {/* "Bokat", inte "Intäkt": en tid kl 16 har inte tjänats in kl 09. Hintan säger
+            hur mycket som REDAN är klart — och flaggar ärligt om någon tid saknar pris,
+            i stället för att räkna den som noll i tysthet. (Codex-granskning, MEDEL.) */}
         <Stat
-          label="Denna vecka"
-          value={data.weekCount}
+          label="Bokat idag"
+          value={formatPrice(data.todayBookedCents)}
           icon="trendUp"
-          hint={`${roster.filter((s) => s.start).length} i tjänst idag`}
+          hint={
+            data.todayUnpriced > 0
+              ? `${formatPrice(data.todayDoneCents)} klart · ${data.todayUnpriced} utan pris`
+              : `${formatPrice(data.todayDoneCents)} klart · ${roster.filter((s) => s.start).length} i tjänst`
+          }
         />
       </div>
 
@@ -213,6 +221,18 @@ export default async function AdminPage() {
             ) : (
               roster.map((s) => (
                 <div key={s.staffId} className={styles.bookingRow}>
+                  {/* goal-67: samma färg som i kalendern. Listan och rutnätet talar
+                      samma språk — man slipper översätta namn → färg i huvudet. */}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 10,
+                      height: 10,
+                      flexShrink: 0,
+                      borderRadius: 3,
+                      background: s.color,
+                    }}
+                  />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className={styles.rowName}>{s.name}</div>
                   </div>

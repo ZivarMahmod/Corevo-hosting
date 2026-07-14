@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminModuleStates, isModuleActivated } from '@/lib/admin/modules'
 import { listOffertRequests } from '@/lib/admin/offert/data'
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Offertförfrågningar · Adminpanel' }
 
 export default async function OfferterPage() {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('offerter')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

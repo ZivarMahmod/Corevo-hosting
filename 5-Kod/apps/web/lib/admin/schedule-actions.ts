@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { requirePortal, type CurrentUser } from '@/lib/auth/session'
+import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { addDays } from '@/lib/personal/format'
@@ -19,7 +19,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
  * server-actionen. Tenanten kommer ALLTID ur sessionen, aldrig ur klient-input.
  */
 async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
-  const user = await requirePortal('admin')
+  const user = await requireAdminArea('scheman')
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
   return { user, tenant }

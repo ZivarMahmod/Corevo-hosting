@@ -54,7 +54,10 @@ export const PROTECTED_PREFIXES = [
 export function portalHomeFor(opts: { roleLevel: number; platformAdmin: boolean }): string {
   if (opts.platformAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return '/'
   if (opts.roleLevel >= PORTAL_MIN_LEVEL.admin) return '/admin'
-  if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return '/personal'
+  // ROLL-SEPARATION: personalens arbetsdag ÄR kalendern. De landar direkt i
+  // bokningsarbetsbordet (adminportalens kalenderyta släpper in nivå 3 —
+  // lib/auth/admin-areas.ts); /personal (schema/frånvaro) finns kvar i menyn.
+  if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return '/admin/bokningar'
   return '/konto'
 }
 
@@ -73,7 +76,10 @@ export function backofficeHostKindForRole(opts: {
   platformAdmin: boolean
 }): 'superadmin' | 'platform' | 'staff_portal' | 'tenant' {
   if (opts.platformAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return 'superadmin'
-  if (opts.roleLevel >= PORTAL_MIN_LEVEL.admin) return 'platform'
-  if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return 'staff_portal'
+  // ROLL-SEPARATION: personal (nivå 3) jobbar i adminportalens kalender och därför på
+  // ADMIN-dörren (booking). Den dörren serverar även /personal (schema/frånvaro), så
+  // hela arbetsdagen ligger bakom EN inloggning — noll extra klick, ingen värdbyte.
+  // minbooking-dörren (staff_portal) lever kvar och serverar /personal som förr.
+  if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return 'platform'
   return 'tenant'
 }
