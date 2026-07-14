@@ -1,7 +1,9 @@
 # 10 — Kund-admin och bokningsarbetsbord
 
-**Status:** PRODUKTRIKTNING LÅST med Zivar 2026-07-14.  
-**Omfattning:** Kund-adminens informationsarkitektur, visuella skal, bokningsarbetsbord, inställningar, inloggning och notifieringsprinciper.  
+**Status:** PRODUKTRIKTNING LÅST med Zivar 2026-07-14.
+
+**Omfattning:** Kund-adminens informationsarkitektur, visuella skal, bokningsarbetsbord, inställningar, inloggning och notifieringsprinciper.
+
 **Inte ett goal:** Denna mapp beskriver vad som ska byggas och varför. Efter Zivars granskning tas ett exakt designunderlag fram i `4-Dokument-Underlag/`, därefter skrivs ett eller flera goals i `2-Byggplan/goals/`.
 
 ## Beskedet i en mening

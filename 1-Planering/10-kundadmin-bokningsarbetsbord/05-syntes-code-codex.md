@@ -61,8 +61,10 @@ Detta är huvudunderlaget när produktarkitektur, byggordning och komponentgrän
 
 ### 1. “Hela produkten är kalendern”
 
-**Code-observation:** Detta förklarar Wavys enkelhet och är korrekt för Wavy.  
-**Tidigare Codex-rekommendation:** Kalendern borde vara operativ startsida för bokningskunder.  
+**Code-observation:** Detta förklarar Wavys enkelhet och är korrekt för Wavy.
+
+**Tidigare Codex-rekommendation:** Kalendern borde vara operativ startsida för bokningskunder.
+
 **Zivars beslut:** Corevo ska öppna på Översikt. Kalendern ska vara hela arbetsytan först när användaren väljer Kalender.
 
 **Lösning:**
