@@ -190,7 +190,7 @@ Denna del beslutar produktens målbild. Den beslutar inte:
 
 1. Produktkanon: `1-Planering/01-arkitektur/multibransch-plattform-arkitektur.md`.
 2. Låsta beslut för denna del: denna mapp.
-3. Konkurrentresearch: `3-Bakgrund-Research/WAVY-UX-ANALYS.md` och `3-Bakgrund-Research/wavy-business-ux-analys-2026-07-13/`.
+3. Konkurrentresearch: `3-Bakgrund-Research/wavy-business-ux-analys-2026-07-13/claude/WAVY-UX-ANALYS.md` och `3-Bakgrund-Research/wavy-business-ux-analys-2026-07-13/codex/`.
 4. Kodnuläge: `5-Kod/`.
 
 Research beskriver vad Wavy gör och varför det fungerar. Den styr inte Corevos produktarkitektur när den krockar med ett låst beslut här.

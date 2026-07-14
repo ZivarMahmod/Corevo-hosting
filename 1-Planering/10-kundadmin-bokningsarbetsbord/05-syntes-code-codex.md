@@ -4,8 +4,8 @@
 
 Två separata analyser har gjorts av Wavy Business:
 
-- `3-Bakgrund-Research/WAVY-UX-ANALYS.md` — djup liveanalys med exakta Wavy-flöden, klick, beteenden och medvetna produktbegränsningar;
-- `3-Bakgrund-Research/wavy-business-ux-analys-2026-07-13/LIVE-ANALYS-OCH-FUNKTIONSPARITET.md` — Wavy jämfört med Corevos faktiska kod, multi-branschkrav, tillgänglighet och funktionsgap.
+- `3-Bakgrund-Research/wavy-business-ux-analys-2026-07-13/claude/WAVY-UX-ANALYS.md` — djup liveanalys med exakta Wavy-flöden, klick, beteenden och medvetna produktbegränsningar;
+- `3-Bakgrund-Research/wavy-business-ux-analys-2026-07-13/codex/LIVE-ANALYS-OCH-FUNKTIONSPARITET.md` — Wavy jämfört med Corevos faktiska kod, multi-branschkrav, tillgänglighet och funktionsgap.
 
 De konkurrerar inte. De har olika styrkor och ska användas tillsammans.
 
