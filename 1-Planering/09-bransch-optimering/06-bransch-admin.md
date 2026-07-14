@@ -1,5 +1,7 @@
 # 06 — Bransch-anpassning av kund-adminen (app/(admin))
 
+> **Beslutsstatus 2026-07-14:** Kodkartläggningen och terminologigapen i denna FAS 0-research gäller fortfarande. Rekommendationer som bygger vidare på det mörkgröna globala sidofältet är ersatta av `1-Planering/10-kundadmin-bokningsarbetsbord/`. Terminologiwiring ska genomföras inne i det nya ljusa kund-adminskalet, inte genom att permanenta det gamla skalet.
+
 > FAS 0-research (2026-07-11). Kartlägger vad som REDAN bransch-anpassas i kund-adminen
 > (booking.corevo.se), vad som saknas för att en nagelstudio/restaurang ska känna att
 > adminen är byggd för dem, och vad som bäst styrs via bransch-kundbilden (rapport 02).

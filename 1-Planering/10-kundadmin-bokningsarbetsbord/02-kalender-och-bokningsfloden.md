@@ -105,7 +105,7 @@ Avbokning sker från bokningsdrawern utan sidbyte. Systemet ska:
 - behålla historik och källa;
 - frigöra tiden först efter bekräftad servermutation;
 - visa ångra/återställ när domänregler och efterföljande bokningar tillåter det;
-- hantera eventuell betalning/退款 som ett separat tydligt tillstånd, aldrig tyst.
+- hantera eventuell betalning/återbetalning som ett separat tydligt tillstånd, aldrig tyst.
 
 ## Blockera tid
 

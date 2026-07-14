@@ -1,5 +1,7 @@
 # 07 — Syntes: prioriterad byggordning (FAS 1→4)
 
+> **Beslutsstatus 2026-07-14:** Denna syntes behåller sina bransch-, terminologi- och modulparametergap. Kund-adminens visuella skal och ordningen för dess ombyggnad styrs nu av `1-Planering/10-kundadmin-bokningsarbetsbord/`. FAS 3A ska samordnas med det nya skalet så att gammal sidebar/chrome inte först byggs ut och sedan kastas.
+
 > Syntes 2026-07-11 av rapporterna 01–06. Varje punkt = byggbar goal-kandidat med
 > omfattning **S** (<½ dag), **M** (½–2 dagar), **L** (>2 dagar / flera commits) och beroenden.
 > Stående regler: FreshCut fredas alltid (tema `freshcut` + tenant freshcut röres aldrig);
