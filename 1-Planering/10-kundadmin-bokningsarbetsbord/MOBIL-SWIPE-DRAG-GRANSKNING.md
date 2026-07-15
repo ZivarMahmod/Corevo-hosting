@@ -26,6 +26,18 @@ Fil: `5-Kod/apps/web/components/admin/CalendarBoard.tsx`.
 - `pendingMove`-bekräftelsen (flytt = medveten handling) behålls.
 - Klick-bubblan (touch-klick på block → Ring/Öppna) får inte trigga av ett grepp — greppet måste avbryta bubbel-klicket (`e.detail`/pointer-flöde som `FreeArea`).
 
-## Öppna frågor till mocken
-- Ska mobil vara en-persons-kolumn (svep = byt dag entydigt) eller behålla flerkolumn + scroll?
-- Långtryck-grepp vs. dedikerad "flytta"-knapp i bubblan (touch-vänligare, ingen krock alls)?
+## Mocken svarar (Frisöradmin Mobil PWA.dc.html — landade i Dagens genomgångar)
+Designen löser krocken genom att TA BORT den, inte finjustera den:
+- **Mobil = EN-kolumn per frisör** (chips "en i taget", rad 54–61). Ingen flerkolumn → ingen vågrätt scroll → **swipe/‹ › = byt dag blir entydigt**.
+- **Flytt sker via bottom-sheet, inte finger-drag på rutnätet.** Tryck på bokning → sheet med `Incheckning · Omboka · Avboka` (rad 239–244). "Omboka" = flytt-flödet på touch. Rutnätet behöver alltså INGEN touch-drag alls på mobil.
+- Näst-kort överst, FAB `+` för ny bokning, tidsaxel 44px + 54px/timme.
+- OBS: mocken är minbooking/personal-PWA:n ("MINBOOKING · DITT KONTO", bottennav Kalender/Min profil), inte /admin. Interaktionsmodellen (en-kolumn + sheet) är ändå svaret för den mobila kalendern.
+
+## Reviderad fix (mot mocken)
+1. **Mobil (≤~720px): en-kolumn-kalender** — visa en frisör i taget (chips), tidsaxel + en kolumn. Ingen vågrätt scroll.
+2. **Svep/‹ ›= byt dag** blir säkert i en-kolumn-läget (ingen scroll-krock). Behåll pilar som primär, svep som bonus.
+3. **Flytt på touch = "Omboka" i sheet/bubbla**, inte drag. Ingen långtryck-drag behövs → ingen gest-krock. Desktop-musdrag (draggable/onDrop) lämnas orört.
+4. Grinda ändå swipe-handlern så den aldrig triggar av touch som startar på ett block (defensivt, om flerkolumn behålls i något läge).
+
+## Öppet till Zivar (en fråga)
+Ska /admin-kalendern på mobil byggas om till en-kolumn enligt mocken, ELLER är mocken minbooking-PWA:n som är ett EGET bygge (och /admin-mobilen får bara swipe-grindningen + en "Omboka"-knapp)? Scope skiljer sig stort.
