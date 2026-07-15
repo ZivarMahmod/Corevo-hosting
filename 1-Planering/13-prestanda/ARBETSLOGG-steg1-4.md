@@ -147,4 +147,25 @@ render-test/manuell). Commit avgränsad. INGEN push/deploy förrän alla 4 steg 
 Codex-not: `CreateTenantForm`, `theme-palettes/content/capabilities`, `SidaStudio` drar
 fortfarande registry→React-grafen på sina rutter. Ej varje-request. Gör EFTER steg 1–4 om tid.
 ## Steg 3 — minnesbovarna kunder/statistik (C4,C5) — EJ STARTAD
-## Steg 4 — klientvikt: lazy realtid/kalender + bild-srcset (B3,B4,B5) — EJ STARTAD
+## Steg 4 — klientvikt: lazy realtid/kalender + bild-srcset (B3,B4,B5) — KLAR ✅ (väntar Codex)
+
+**B3** RealtimeBookings (osynlig, drar hela Supabase-browserklienten ~55-70 kB gzip på VARJE
+back-office-sida) → ny klient-wrapper `RealtimeBookingsLazy.tsx` med `next/dynamic(ssr:false)`.
+De 3 server-layouterna (admin/personal/platform) renderar wrappern → realtidsklienten laddas i
+egen chunk EFTER hydrering, av kritiska JS-vägen. (ssr:false kräver klientkomponent → wrappern.)
+
+**B4** `CalendarBoard.tsx`: NewBookingDrawer/BlockDrawer/CalendarHelp/CancelledLog → `next/dynamic`
+(visas bara vid klick → egna chunks, ~40-50 kB av initialladdningen). BookingDrawer lämnad STATISK
+(delar modul med synkrona render-hjälpare dayKey/isAvbokad/… som behövs eagerly).
+
+**B5** Ny hjälpare `components/storefront/img.ts` `unsplashSrcSet()` — genererar 480/800/1200/1600-
+srcset ur Unsplash-URL:ens `w=`, undefined för icke-Unsplash (R2-uppladdningar orörda). Appliceras på
+de DELADE render-punkterna (HeroCarousel, Gallery grid+lightbox, sections AboutSplit) + `sizes`.
+Tema-`.theme.ts` BYGGER bara URL:er, renderar inte — de går genom dessa delade komponenter.
+**Kvar (dokumenterat):** ekonomi ZentumLayout/zentum.pages har egna direkta `<img>` (Unsplash) utanför
+delade komponenter; module-vyer (shop/galleri/team) renderar mest R2-uppladdningar (hjälparen = no-op).
+Följdsvep vid behov. Test: `img.test.ts` (2 nya, 1085 totalt).
+
+**Verifiering:** `tsc` rent · lint 0 · 1085 tester · build exit 0 · rot-/layout fortf. 4 css.
+
+## Steg 4 (gammal placeholder) — klientvikt: lazy realtid/kalender + bild-srcset (B3,B4,B5)
