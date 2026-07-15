@@ -39,6 +39,9 @@ Master–detalj = **delad `layout.tsx`** under `kunder/`:
 4. Verify: tsc/eslint/vitest, rutter kompilerar, PII-staket intakt, dölj/self_book/export/GDPR orörda. Codex-granska diff.
 5. Commit → push → deploy (v-tagg), prod-rök.
 
+## Status (bygget)
+KLART lokalt (tsc/eslint rena, 1115 tester gröna, rutter kompilerar 307): `layout.tsx` (master–detalj-skal, listan hämtas en gång) · `KunderBoard.tsx` (mobil-panelval via pathname) · `CustomerWorkbenchList.tsx` (sök+chips+highlight) · `page.tsx` (tomt läge = överblick+export) · `[id]/page.tsx` (v2-kort) · `CustomerNoteEditor.tsx` (autospar) · `saveCustomerNote` (admin-action) · `relativeVisitSv`/`isInactiveSince` (+test). Codex granskar diffen → sedan deploy.
+
 ## Beslut att yta till Zivar
 - Telefon utelämnas ur listan + sök = namn (PII-staket). Kortet visar tel i driftfönstret som förr.
 - "Inbjuden"-konto, PUSH/SMS-kanaler, marknadssamtycke, SENASTE UTSKICK = goal-68 → ärliga tomma lägen, inget fejkat.

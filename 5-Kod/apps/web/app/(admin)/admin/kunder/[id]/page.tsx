@@ -4,256 +4,351 @@ import { notFound } from 'next/navigation'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
-import {
-  getCustomerDetail,
-  getCustomerContact,
-  getCustomerLoyalty,
-  type CustomerTier,
-} from '@/lib/admin/data'
-import { getCustomerStaffFavorite } from '@/lib/kund/favorites'
+import { getCustomerDetail, getCustomerContact, getCustomerLoyalty } from '@/lib/admin/data'
+import { getMyFavorites } from '@/lib/kund/favorites'
+import { getCustomerNotes } from '@/lib/personal/customer'
 import { formatDateTime, formatPrice, statusLabel } from '@/lib/admin/format'
-import { badgeClass } from '@/components/admin/badge'
-import { PageHead, Card, Badge, LoyaltyBlock } from '@/components/portal/ui'
-import { CustomerContactCard } from '@/components/admin/CustomerContactCard'
-import { CustomerPrivacyForm } from '@/components/admin/CustomerPrivacyForm'
+import { staffColor } from '@/lib/admin/staff-colors'
+import { CustomerNoteEditor } from '@/components/admin/CustomerNoteEditor'
 import { CustomerFlags } from '@/components/admin/CustomerFlags'
+import { CustomerPrivacyForm } from '@/components/admin/CustomerPrivacyForm'
+import { CustomerContactCard } from '@/components/admin/CustomerContactCard'
+import { CustomerExport, type ExportRow } from '../CustomerExport'
+import styles from '@/components/admin/kunder-v2.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Kund · Adminpanel' }
 
-/** Härledd nivå → svensk etikett (samma mappning som listan; LoyaltyBlock/Badge
- *  vill ha versal-initial-etiketten). */
-const TIER_LABEL: Record<CustomerTier, string> = {
+const TIER_LABEL: Record<'guld' | 'silver' | 'brons' | 'ny', string> = {
   guld: 'Guld',
   silver: 'Silver',
   brons: 'Brons',
   ny: 'Ny',
 }
 
-/** Nästa riktiga nivåtröskel ovanför nuvarande poäng. Trösklarna speglar
- *  lib/admin/data (Guld=500, Silver=150); guld = toppnivå → null (rail döljs). */
-function nextTierAt(tier: CustomerTier): number | null {
-  switch (tier) {
-    case 'ny':
-    case 'brons':
-      return 150
-    case 'silver':
-      return 500
-    default:
-      return null
-  }
-}
+const CANCELLED = new Set(['cancelled', 'no_show'])
 
-export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CustomerCardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await requireAdminArea('kunder')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (
-      <section className="portal-section">
-        <PageHead eyebrow="Adminpanel" title="Kund" />
-        <p className="prose">Inget företag är kopplat till ditt konto.</p>
-      </section>
+      <div className={styles.pane}>
+        <div className={styles.paneInner}>
+          <p className="prose">Inget företag är kopplat till ditt konto.</p>
+        </div>
+      </div>
     )
   }
 
   const customer = await getCustomerDetail(tenant.id, id)
   if (!customer) notFound()
 
-  // Time-bound contact PII (RPC; null fields when outside the operational window).
-  // Riktigt lojalitets-saldo + favoritfrisör (båda admin-läsbara via RLS). Kör
-  // parallellt. Prestanda C4: getCustomerLoyalty läser BARA den här kundens aggregat
-  // (RPC admin_customer_rows med p_customer) i stället för att dra HELA kundlistan.
-  const [contact, fav, loyalty] = await Promise.all([
+  const [contact, favs, loyalty, notes] = await Promise.all([
     getCustomerContact(id),
-    getCustomerStaffFavorite(id),
+    getMyFavorites(id),
     getCustomerLoyalty(tenant.id, id),
+    getCustomerNotes(id),
   ])
-  // VIKTIGT: getCustomerLoyalty är status='active'-filtrerad medan getCustomerDetail
-  // INTE filtrerar status — en 'anonymized' (GDPR-skrubbad) kund nås via direkt-URL men
-  // har ingen aktiv rad. Då är loyalty null → vi visar en ÄRLIG tom-text, ALDRIG ett
-  // påhittat 0/Ny-saldo.
-  const favStaff = fav?.title?.trim() || '—'
+
   const tz = tenant.timeZone
+  const staffTerm = resolveTerm(tenant.terminology, 'staff', 'Personal')
+  const now = Date.now()
+
+  // Härledda nyckeltal (ur historiken + ledger — aldrig fejkat).
+  const totalCents = customer.history
+    .filter((b) => !CANCELLED.has(b.status))
+    .reduce((s, b) => s + (b.priceCents ?? 0), 0)
+  const cancelCount = customer.history.filter((b) => CANCELLED.has(b.status)).length
+
+  // NÄSTA = tidigaste kommande aktiva bokning (historiken är fallande sorterad).
+  const upcoming = customer.history
+    .filter((b) => !CANCELLED.has(b.status) && new Date(b.startTs).getTime() >= now)
+    .sort((a, b) => new Date(a.startTs).getTime() - new Date(b.startTs).getTime())[0]
+
+  const favStaff = favs.find((f) => f.kind === 'staff')
+  const favService = favs.find((f) => f.kind === 'service')
+
+  const initial = (customer.shownName.trim()[0] ?? '?').toUpperCase()
+  const isNew = customer.firstSeenAt.slice(0, 7) === new Date().toISOString().slice(0, 7)
+
+  const chips: Array<{ label: string; color: string }> = []
+  if (customer.hidden) chips.push({ label: 'DOLD', color: 'var(--c-danger)' })
+  else if (isNew) chips.push({ label: 'NY KUND', color: 'var(--c-gold)' })
+  else if (customer.visits >= 5) chips.push({ label: 'STAMKUND', color: 'var(--c-ink-2)' })
+  if (customer.nameHidden) chips.push({ label: 'SKYDDAT NAMN', color: 'var(--c-info)' })
+
+  const phone = contact?.phone ?? null
+  const email = contact?.email ?? null
+  const channel = email ? 'E-POST ✓' : '—'
+  // Varning bara när vi POSITIVT vet att kanaler saknas (i driftfönstret, inga fält).
+  const noChannels = Boolean(contact?.piiVisible) && !email && !phone
+
+  const exportRow: ExportRow[] = [
+    {
+      shownName: customer.shownName,
+      tier: loyalty ? TIER_LABEL[loyalty.tier] : '—',
+      visits: customer.visits,
+      lastVisit: customer.lastSeenAt ? formatDateTime(customer.lastSeenAt, tz) : '—',
+      favStaff: favStaff?.name ?? '—',
+      loyaltyPoints: loyalty?.loyaltyPoints ?? 0,
+    },
+  ]
 
   return (
-    <section className="portal-section">
-      <PageHead
-        eyebrow={
-          <Link href="/admin/kunder" style={{ color: 'inherit', textDecoration: 'none' }}>
-            ← Kunder
-          </Link>
-        }
-        title={customer.shownName}
-      >
-        {customer.visits >= 5 ? (
-          <Badge tone="gold">Återkommande · {customer.visits} besök</Badge>
-        ) : (
-          <Badge tone="neutral">{customer.visits} besök</Badge>
-        )}
-      </PageHead>
+    <div className={styles.pane}>
+      <div className={styles.paneInner}>
+        <Link href="/admin/kunder" className={styles.back}>
+          ← Kunder
+        </Link>
 
-      <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'minmax(0, 1fr)' }}>
-        {/* Identitet — bestående */}
-        <Card>
-          <span className="eyebrow">Identitet · bestående</span>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '12px 18px',
-              marginTop: 12,
-            }}
-          >
-            <Detail label="Visningsnamn" value={customer.shownName} />
-            <Detail label="Återkommande" value={`${customer.visits} besök`} num />
-            <Detail
-              label={`Favorit${resolveTerm(tenant.terminology, 'staff', 'Personal').toLowerCase()}`}
-              value={favStaff}
-            />
-            <Detail label="Konto" value={customer.isLinkedAccount ? 'Inloggad kund' : 'Gäst'} />
-            <Detail label="Kund sedan" value={formatDateTime(customer.firstSeenAt, tz)} num />
-            <Detail label="Senast sedd" value={formatDateTime(customer.lastSeenAt, tz)} num />
+        {/* ── header ── */}
+        <div className={styles.header}>
+          <div className={styles.headAvatar} aria-hidden="true">
+            {initial}
           </div>
-        </Card>
+          <div className={styles.headMain}>
+            <div className={styles.headName}>
+              <h1>{customer.shownName}</h1>
+              {chips.map((c) => (
+                <span key={c.label} className={styles.headChip} style={{ color: c.color }}>
+                  {c.label}
+                </span>
+              ))}
+            </div>
+            <div className={styles.headContact}>
+              <span>{phone ?? 'Inget nummer i fönstret'}</span>
+              <span className="muted">{email ?? '—'}</span>
+              <span className="muted">kund sedan {formatDateTime(customer.firstSeenAt, tz)}</span>
+            </div>
+          </div>
+          <div className={styles.headActions}>
+            {phone && (
+              <a href={`tel:${phone.replace(/\s/g, '')}`} className={`${styles.btnGhost} ${styles.btnRing}`}>
+                ✆ Ring
+              </a>
+            )}
+            <Link href="/admin/bokningar" className={styles.btnPrimary}>
+              Boka in
+            </Link>
+          </div>
+        </div>
 
-        {/* Visningsnamn — kunden styr (M6 §4) */}
-        <Card>
-          <span className="eyebrow">Visningsnamn · kundens val</span>
-          <p className="prose" style={{ margin: '8px 0 14px', fontSize: 13 }}>
-            Kunden väljer själv hur namnet syns. Lojalitetsbandet bygger på identiteten, aldrig på
-            exponerad personuppgift. Du kan ändra detta på kundens begäran.
-          </p>
-          <CustomerPrivacyForm
-            customerId={customer.id}
-            nameHidden={customer.nameHidden}
-            displayName={customer.displayName}
-          />
-        </Card>
+        {/* ── nyckeltal ── */}
+        <div className={styles.stats}>
+          <div className={styles.statCard}>
+            <div className={styles.statNum}>{customer.visits}</div>
+            <div className={styles.statLbl}>besök</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statNum}>{formatPrice(totalCents) || '0 kr'}</div>
+            <div className={styles.statLbl}>totalt bokat</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statNum}>{cancelCount}</div>
+            <div className={styles.statLbl}>avbokningar</div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={styles.statNum}>{loyalty ? loyalty.loyaltyPoints.toLocaleString('sv-SE') : '—'}</div>
+            <div className={styles.statLbl}>lojalitetspoäng</div>
+          </div>
+        </div>
 
-        {/* Styrning (B-25): dölj (soft delete) + självbokning. Medvetet SKILD från
-            GDPR-vägen — dölj är reversibelt, anonymisering är det inte. */}
-        <Card>
-          <span className="eyebrow">Styrning</span>
-          <p className="prose" style={{ margin: '8px 0 14px', fontSize: 13 }}>
-            Att dölja en kund raderar ingenting — historiken och bokningarna finns kvar. Stängd
-            självbokning betyder att ni bokar åt kunden; er egen kalender påverkas aldrig.
-          </p>
-          <CustomerFlags
-            customerId={customer.id}
-            hidden={customer.hidden}
-            selfBook={customer.selfBook}
-          />
-        </Card>
-
-        {/* Kontakt-PII — tidsbunden (RPC). Behåller den RPC-medvetna kortets
-            grindning (visas bara i driftfönstret) — ärlig maskering utanför. */}
-        <Card>
-          <span className="eyebrow">Kontakt-PII · tidsbunden</span>
-          <p className="prose" style={{ margin: '8px 0 14px', fontSize: 13 }}>
-            Telefon och e-post visas bara i det operativa fönstret kring en bokning. Utanför fönstret
-            är de maskerade — så data inte ligger framme i onödan.
-          </p>
-          {/* canEdit: en GDPR-skrubbad kund (status ≠ 'active') får ALDRIG
-              återfyllas med ny PII — server-actionen vägrar, kortet döljer formen. */}
-          <CustomerContactCard
-            contact={contact}
-            customerId={customer.id}
-            canEdit={customer.status === 'active'}
-          />
-        </Card>
-
-        {/* Lojalitet — stor guld-poängsiffra + Nästa nivå + progress (§4.6).
-            LoyaltyBlock äger sin egen "Lojalitet · {nivå}"-eyebrow, så Card:en
-            sätter ingen egen rubrik (undviker dubblering). Poäng/nivå härleds ur
-            loyalty_ledger (riktigt saldo, aldrig fejkat). Saknas raden (skrubbad
-            kund) → ärlig tom-text, aldrig påhittat saldo. */}
-        <Card>
-          {loyalty ? (
-            <LoyaltyBlock
-              world="backoffice"
-              tier={TIER_LABEL[loyalty.tier]}
-              points={loyalty.loyaltyPoints}
-              nextTierAt={nextTierAt(loyalty.tier)}
-            />
+        {/* ── NÄSTA ── */}
+        <div className={styles.next}>
+          {upcoming ? (
+            <>
+              <span className={styles.nextTag}>NÄSTA</span>
+              <span className={styles.nextText}>
+                {formatDateTime(upcoming.startTs, tz)} · {upcoming.serviceName}
+              </span>
+              <span className={styles.nextStaff}>
+                <span
+                  className={styles.dot}
+                  style={{ background: staffColor(upcoming.staffId) }}
+                  aria-hidden="true"
+                />
+                {upcoming.staffTitle}
+              </span>
+              <div style={{ flex: 1 }} />
+              <Link href="/admin/bokningar" className={styles.link}>
+                Visa i kalendern →
+              </Link>
+            </>
           ) : (
             <>
-              <span className="eyebrow">Lojalitet</span>
-              <p className="prose" style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--c-ink-2)' }}>
-                Lojalitetspoäng kunde inte hämtas för den här kunden (kunden kan vara avregistrerad
-                eller skrubbad). Inget saldo visas hellre än ett påhittat.
-              </p>
+              <span className={`${styles.nextTag} ${styles.nextTagMuted}`}>NÄSTA</span>
+              <span style={{ fontSize: 14, color: 'var(--c-ink-3)', fontStyle: 'italic' }}>
+                Ingen kommande tid
+              </span>
+              <div style={{ flex: 1 }} />
+              <Link href="/admin/bokningar" className={styles.btnPrimary} style={{ padding: '8px 14px' }}>
+                Boka in
+              </Link>
             </>
           )}
-        </Card>
+        </div>
 
-        {/* Bokningshistorik (via bookings.customer_id) */}
-        <Card pad={0}>
-          <div style={{ padding: '18px 22px 4px' }}>
-            <span className="eyebrow">Bokningshistorik</span>
+        {/* ── två kolumner ── */}
+        <div className={styles.cols}>
+          <div className={styles.col}>
+            <CustomerNoteEditor customerId={customer.id} initial={notes.internalNote ?? ''} />
+
+            {/* FAVORITER */}
+            <div className={styles.card}>
+              <div className={styles.eyebrow} style={{ marginBottom: 12 }}>
+                FAVORITER
+              </div>
+              {favStaff || favService ? (
+                <div className={styles.favs}>
+                  {favStaff && (
+                    <span className={styles.favPill}>
+                      <span
+                        className={styles.dot}
+                        style={{ background: staffColor(favStaff.staffId ?? favStaff.id) }}
+                        aria-hidden="true"
+                      />
+                      {favStaff.name}
+                    </span>
+                  )}
+                  {favService && (
+                    <span className={`${styles.favPill} muted`}>✂ {favService.name}</span>
+                  )}
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--c-ink-3)', fontStyle: 'italic' }}>
+                  Kunden har inte sparat någon favorit ännu.
+                </p>
+              )}
+            </div>
+
+            {/* KONTO & KOMMUNIKATION */}
+            <div className={styles.card}>
+              <div className={styles.eyebrow} style={{ marginBottom: 12 }}>
+                KONTO &amp; KOMMUNIKATION
+              </div>
+              <div className={styles.kv}>
+                <span>Kundkonto</span>
+                <span className={styles.kvVal}>
+                  <span
+                    className={styles.dot}
+                    style={{ background: customer.isLinkedAccount ? 'var(--c-ok, #9ac4a5)' : 'var(--c-ink-3)' }}
+                  />
+                  <span style={{ fontSize: 13, color: 'var(--c-ink-2)' }}>
+                    {customer.isLinkedAccount ? 'Aktivt konto' : 'Gäst — inget konto'}
+                  </span>
+                </span>
+              </div>
+              <div className={styles.kv}>
+                <span>Kan boka själv online</span>
+                <span className={styles.kvMono}>{customer.selfBook ? 'PÅ' : 'AV'}</span>
+              </div>
+              <div className={styles.kv}>
+                <span>Påminnelser</span>
+                <span className={styles.kvMono}>{channel}</span>
+              </div>
+              <div className={styles.kv}>
+                <span>Marknadsföring</span>
+                <span className={styles.kvMono}>—</span>
+              </div>
+              {noChannels && (
+                <div className={styles.warnRow}>
+                  <span aria-hidden="true">⚠</span>
+                  <span>Inga digitala kanaler — påminnelser hanteras manuellt</span>
+                </div>
+              )}
+            </div>
           </div>
-          {customer.history.length === 0 ? (
-            <div style={{ padding: '8px 22px 22px', color: 'var(--c-ink-2)' }}>
-              Inga bokningar kopplade till den här kunden ännu.
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="ptable">
-                <thead>
-                  <tr>
-                    <th>Tid</th>
-                    <th>Tjänst</th>
-                    <th>{resolveTerm(tenant.terminology, 'staff', 'Medarbetare')}</th>
-                    <th>Status</th>
-                    <th>Bokad den</th>
-                    <th data-last="">Pris</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customer.history.map((b) => (
-                    <tr key={b.id}>
-                      <td className="num">{formatDateTime(b.startTs, tz)}</td>
-                      <td>{b.serviceName}</td>
-                      <td>{b.staffTitle}</td>
-                      <td>
-                        <span className={badgeClass(b.status)}>{statusLabel(b.status)}</span>
-                      </td>
-                      <td className="num" style={{ color: 'var(--c-ink-3)' }}>
-                        {formatDateTime(b.createdAt, tz)}
-                      </td>
-                      <td data-last="" className="num">
-                        {formatPrice(b.priceCents)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
-      </div>
-    </section>
-  )
-}
 
-function Detail({ label, value, num }: { label: string; value: string; num?: boolean }) {
-  return (
-    <div>
-      <div
-        style={{
-          fontSize: 11,
-          color: 'var(--c-ink-3)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-        }}
-      >
-        {label}
-      </div>
-      <div
-        className={num ? 'num' : undefined}
-        style={{ fontSize: 14, fontWeight: 500, marginTop: 3, color: 'var(--c-ink)' }}
-      >
-        {value}
+          <div className={styles.col}>
+            {/* BESÖKSHISTORIK */}
+            <div className={`${styles.card} ${styles.cardFlush}`}>
+              <div className={styles.cardHead} style={{ padding: '10px 0 4px' }}>
+                <div className={styles.eyebrow}>BESÖKSHISTORIK</div>
+                <span className={styles.link}>{customer.visits} besök</span>
+              </div>
+              {customer.history.length === 0 ? (
+                <div className={styles.emptyLine}>Inga bokningar kopplade till kunden ännu.</div>
+              ) : (
+                customer.history.map((b) => {
+                  const cancelled = CANCELLED.has(b.status)
+                  return (
+                    <div key={b.id} className={styles.hRow}>
+                      <span className={styles.hDate}>{formatDateTime(b.startTs, tz)}</span>
+                      <span className={`${styles.hService} ${cancelled ? styles.hCancelled : ''}`}>
+                        {b.serviceName}
+                        {cancelled ? ` — ${statusLabel(b.status).toLowerCase()}` : ''}
+                      </span>
+                      <span className={styles.hStaff}>
+                        <span
+                          className={styles.dot}
+                          style={{ background: staffColor(b.staffId) }}
+                          aria-hidden="true"
+                        />
+                        {b.staffTitle}
+                      </span>
+                      <span className={`${styles.hPrice} ${cancelled ? styles.hPriceCancelled : ''}`}>
+                        {cancelled ? '—' : formatPrice(b.priceCents)}
+                      </span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            {/* SENASTE UTSKICK — goal-68 (communication_events) ej byggt → ärligt tomt. */}
+            <div className={`${styles.card} ${styles.cardFlush}`}>
+              <div className={styles.cardHead} style={{ padding: '10px 0 4px' }}>
+                <div className={styles.eyebrow}>SENASTE UTSKICK</div>
+              </div>
+              <div className={styles.emptyLine}>Inga utskick — kunden nås manuellt.</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Fler: dölj/självbokning, visningsnamn, kontakt-PII, export ── */}
+        <details className={styles.fler}>
+          <summary>⋯ Fler inställningar för kunden</summary>
+          <div className={styles.flerBody}>
+            <div className={styles.card}>
+              <div className={styles.eyebrow} style={{ marginBottom: 12 }}>
+                STYRNING
+              </div>
+              <CustomerFlags
+                customerId={customer.id}
+                hidden={customer.hidden}
+                selfBook={customer.selfBook}
+              />
+            </div>
+            <div className={styles.card}>
+              <div className={styles.eyebrow} style={{ marginBottom: 12 }}>
+                VISNINGSNAMN · KUNDENS VAL
+              </div>
+              <CustomerPrivacyForm
+                customerId={customer.id}
+                nameHidden={customer.nameHidden}
+                displayName={customer.displayName}
+              />
+            </div>
+            <div className={styles.card}>
+              <div className={styles.eyebrow} style={{ marginBottom: 12 }}>
+                KONTAKT-PII · TIDSBUNDEN
+              </div>
+              <CustomerContactCard
+                contact={contact}
+                customerId={customer.id}
+                canEdit={customer.status === 'active'}
+              />
+            </div>
+            <div className={styles.card}>
+              <div className={styles.eyebrow} style={{ marginBottom: 12 }}>
+                EXPORT · {staffTerm.toUpperCase()}
+              </div>
+              <CustomerExport rows={exportRow} />
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   )

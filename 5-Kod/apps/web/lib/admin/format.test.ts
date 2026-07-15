@@ -3,6 +3,8 @@ import {
   ALLOWED_FROM,
   BOOKING_STATUSES,
   cancellationTrace,
+  relativeVisitSv,
+  isInactiveSince,
   restoreBlockedByRefund,
   type BookingStatus,
 } from './format'
@@ -89,5 +91,30 @@ describe('cancellationTrace (ångraloggens spår)', () => {
   it('rör inte spåret för övergångar som inte passerar cancelled', () => {
     expect(cancellationTrace('pending', 'confirmed', NOW)).toEqual({})
     expect(cancellationTrace('confirmed', 'completed', NOW)).toEqual({})
+  })
+})
+
+describe('relativeVisitSv', () => {
+  const NOW = new Date('2026-07-15T12:00:00Z')
+  const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString()
+  it('idag / igår / dagar / veckor / månader', () => {
+    expect(relativeVisitSv(daysAgo(0), NOW)).toBe('idag')
+    expect(relativeVisitSv(daysAgo(1), NOW)).toBe('igår')
+    expect(relativeVisitSv(daysAgo(3), NOW)).toBe('3 dgr sedan')
+    expect(relativeVisitSv(daysAgo(21), NOW)).toBe('3 v sedan')
+    expect(relativeVisitSv(daysAgo(122), NOW)).toBe('4 mån sedan')
+  })
+  it('null → aldrig, skräp → —', () => {
+    expect(relativeVisitSv(null, NOW)).toBe('aldrig')
+    expect(relativeVisitSv('inte-ett-datum', NOW)).toBe('—')
+  })
+})
+
+describe('isInactiveSince', () => {
+  const NOW = new Date('2026-07-15T12:00:00Z')
+  it('>90 dgr = inaktiv, null = inaktiv, färskt = ej', () => {
+    expect(isInactiveSince(new Date(NOW.getTime() - 100 * 86_400_000).toISOString(), 90, NOW)).toBe(true)
+    expect(isInactiveSince(new Date(NOW.getTime() - 10 * 86_400_000).toISOString(), 90, NOW)).toBe(false)
+    expect(isInactiveSince(null, 90, NOW)).toBe(true)
   })
 })

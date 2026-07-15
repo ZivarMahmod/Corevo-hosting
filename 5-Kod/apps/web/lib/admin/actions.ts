@@ -1452,6 +1452,36 @@ export async function setCustomerSelfBook(_p: ActionState, fd: FormData): Promis
   }
 }
 
+/** Kunder v2 KLIENTKORT: spara den fria interna anteckningen (customer_notes.internal_note).
+ *  Admin-gatad (kunder-ytan); RLS på customer_notes är personal-only, admin (nivå ≥3)
+ *  ryms. Upsert på (tenant, customer) rör BARA internal_note — de strukturerade fälten
+ *  (preferenser/allergier m.m. från personalens klientkort) lämnas orörda vid update. */
+export async function saveCustomerNote(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx('kunder')
+  if (!ctx) return { error: NO_TENANT }
+
+  const customerId = String(fd.get('customer_id') ?? '')
+  if (!customerId) return { error: 'Saknar kund.' }
+  const raw = String(fd.get('note') ?? '').trim()
+  const note = raw ? raw.slice(0, 2000) : null
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('customer_notes').upsert(
+    {
+      tenant_id: ctx.tenant.id,
+      customer_id: customerId,
+      internal_note: note,
+      created_by: ctx.user.id,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'tenant_id,customer_id' },
+  )
+  if (error) return { error: GENERIC }
+
+  revalidatePath(`/admin/kunder/${customerId}`)
+  return { success: 'Anteckningen sparad.' }
+}
+
 /**
  * Rättar en kunds kontakt-PII (telefon + e-post) från kundkortet — front-desk
  * måste kunna fixa en feltypad siffra utan att be kunden boka om.

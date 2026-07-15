@@ -37,6 +37,29 @@ export function formatDateTime(iso: string, timeZone: string): string {
   }).format(new Date(iso))
 }
 
+/** Kunder v2-listan: senaste besök som mänsklig relativtid ("idag", "3 v sedan",
+ *  "4 mån sedan"). Ren funktion (now injiceras) så den är testbar. Grov men ärlig:
+ *  vecka = 7 dgr, månad = 30 dgr — för en registerlista räcker approximationen. */
+export function relativeVisitSv(iso: string | null, now: Date = new Date()): string {
+  if (!iso) return 'aldrig'
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return '—'
+  const days = Math.floor((now.getTime() - then) / 86_400_000)
+  if (days <= 0) return 'idag'
+  if (days === 1) return 'igår'
+  if (days < 7) return `${days} dgr sedan`
+  if (days < 60) return `${Math.floor(days / 7)} v sedan`
+  return `${Math.floor(days / 30)} mån sedan`
+}
+
+/** Kunder v2: är senaste besök äldre än `days` dagar (inaktiv-filtret >3 mån)? */
+export function isInactiveSince(iso: string | null, days = 90, now: Date = new Date()): boolean {
+  if (!iso) return true
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return false
+  return now.getTime() - then > days * 86_400_000
+}
+
 export function formatTime(iso: string, timeZone: string): string {
   return new Intl.DateTimeFormat('sv-SE', {
     hour: '2-digit',

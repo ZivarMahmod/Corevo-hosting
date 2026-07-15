@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>FreshCut · Minbooking PWA (frisör)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; }
+    body {
+      --bg:#121210; --sf:#1C1C18; --sf2:#25251F; --sf3:#2E2E28;
+      --ink:#F0F0EA; --ink2:#C8C8BD; --ink3:#96968C;
+      --line:#33332C; --line2:#4A4A41;
+      --grön:#2F5F47; --grön2:#3A7357; --on-grön:#E9F2EC;
+      --ok:#9AC4A5; --warn:#D6AC6A; --bad:#D68F85;
+      background:#0C0C0B; color:var(--ink);
+      font-family:'Instrument Sans',sans-serif;
+    }
+    a { color:var(--ink2); text-decoration:none; }
+    a:hover { color:var(--ink); }
+    ::selection { background:#3A5A48; color:#fff; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; display:grid; place-items:center; padding:36px 24px;">
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+<div style="height:100%; box-sizing:border-box; position:relative; display:flex; flex-direction:column; background:var(--bg); color:var(--ink); font-family:'Instrument Sans',sans-serif; padding-top:58px; overflow:hidden;">
+
+  <!-- ════ KALENDER ════ -->
+  <sc-if value="{{ mTabKal }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="PWA – Kalender" style="display:flex; flex-direction:column; flex:1; min-height:0;">
+
+    <!-- Sidhuvud -->
+    <div style="display:flex; align-items:center; gap:10px; padding:2px 16px 10px;">
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:19px; font-weight:700; letter-spacing:-.01em;">Onsdag 15 juli</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3); margin-top:2px;">{{ mMono }}</div>
+      </div>
+      <div style="display:flex; border:1px solid var(--line2); border-radius:10px; overflow:hidden; flex-shrink:0;">
+        <span style="padding:10px 13px; font-size:15px; color:var(--ink2);">‹</span>
+        <span style="padding:10px 13px; font-size:15px; color:var(--ink2); border-left:1px solid var(--line);">›</span>
+      </div>
+      <div style="width:34px; height:34px; border-radius:50%; background:rgba(143,214,166,.16); border:2px solid #8FD6A6; display:grid; place-items:center; font-size:13px; font-weight:700; flex-shrink:0;">J</div>
+    </div>
+
+    <!-- Frisörchips (en i taget på mobil) -->
+    <sc-if value="{{ seAlla }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; gap:6px; padding:0 16px 10px; overflow-x:auto;">
+        <sc-for list="{{ mChips }}" as="c" hint-placeholder-count="4">
+          <span onClick="{{ c.pick }}" style="display:inline-flex; align-items:center; gap:7px; padding:9px 14px; border-radius:99px; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0; border:1px solid {{ c.bd }}; background:{{ c.bg }}; color:{{ c.c }};"><span style="width:8px; height:8px; border-radius:50%; background:{{ c.dot }};"></span>{{ c.label }}</span>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- Näst-kort (bara egen dag) -->
+    <sc-if value="{{ mNxShow }}" hint-placeholder-val="{{ true }}">
+      <div style="margin:0 16px 10px; background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3);">NÄSTA</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:{{ nxCdC }};">om {{ nxCd }} min</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600;">{{ nxTid }}</span>
+          <div style="min-width:0;">
+            <div style="font-size:14.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ nxKund }} <sc-if value="{{ nxNy }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.08em; color:var(--warn); border:1px solid var(--line2); border-radius:99px; padding:1px 6px; margin-left:3px;">NY</span></sc-if></div>
+            <div style="font-size:11.5px; color:var(--ink3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ nxMeta }}</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <span onClick="{{ nxCheckin }}" style="flex:1; text-align:center; padding:12px 0; border-radius:11px; background:{{ nxCkBg }}; border:1px solid {{ nxCkBd }}; color:var(--on-grön); font-size:13.5px; font-weight:600; cursor:pointer;">{{ nxCkLabel }}</span>
+          <span onClick="{{ nxOpen }}" style="padding:12px 18px; border-radius:11px; border:1px solid var(--line2); font-size:13.5px; font-weight:600; color:var(--ink2); cursor:pointer;">Visa</span>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ mReadOnly }}" hint-placeholder-val="{{ false }}">
+      <div style="margin:0 16px 10px; padding:9px 12px; border:1px dashed var(--line2); border-radius:11px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink3);">{{ mReadText }}</div>
+    </sc-if>
+
+    <!-- Tidsgrid -->
+    <div style="flex:1; overflow:auto; min-height:0;">
+      <div style="display:grid; grid-template-columns:44px 1fr; position:relative; height:486px; margin:4px 12px 0 0;">
+        <div style="position:absolute; left:44px; right:0; top:121px; height:2px; background:var(--warn); z-index:10; opacity:.9; pointer-events:none;">
+          <span style="position:absolute; left:-40px; top:-8px; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:600; color:var(--warn); background:var(--bg); padding:1px 4px; border-radius:4px; border:1px solid var(--warn);">11:14</span>
+        </div>
+        <div style="position:relative; height:486px;">
+          <sc-for list="{{ hours }}" as="h" hint-placeholder-count="9">
+            <div style="position:absolute; left:0; right:0; top:{{ h.top }}px; border-top:1px solid var(--line);">
+              <span style="position:absolute; top:-6px; right:8px; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--ink3); background:var(--bg); padding:0 3px;">{{ h.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="position:relative; height:486px; border-left:1px solid var(--line);">
+          <div style="position:absolute; inset:0; background:repeating-linear-gradient(to bottom, transparent, transparent 53px, var(--line) 53px, var(--line) 54px); pointer-events:none;"></div>
+          {{ mBlocks }}
+        </div>
+      </div>
+      <div style="height:80px;"></div>
+    </div>
+
+    <!-- FAB -->
+    <sc-if value="{{ kanSkapa }}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{ mOpenNew }}" style="position:absolute; right:16px; bottom:96px; width:54px; height:54px; border-radius:50%; background:var(--grön); color:var(--on-grön); display:grid; place-items:center; font-size:26px; font-weight:600; box-shadow:0 10px 28px rgba(0,0,0,.5); cursor:pointer; z-index:20;">+</div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ════ MIN PROFIL ════ -->
+  <sc-if value="{{ mTabPro }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="PWA – Min profil" style="flex:1; overflow:auto; min-height:0; padding:0 16px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3);">MINBOOKING · DITT KONTO</div>
+    <div style="font-size:21px; font-weight:700; letter-spacing:-.01em; margin:4px 0 14px;">Min profil</div>
+
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; align-items:center; gap:13px;">
+      <div style="width:44px; height:44px; border-radius:50%; background:rgba(143,214,166,.16); border:2px solid #8FD6A6; display:grid; place-items:center; font-size:16px; font-weight:700;">J</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:15px; font-weight:700;">John Ekberg <span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.1em; color:var(--ink2); border:1px solid var(--line2); border-radius:99px; padding:2px 7px; margin-left:4px; vertical-align:2px;">FRISÖR</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3); margin-top:3px;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="89e3e6e1e7c9effbecfae1eafcfda7faec">[email&#160;protected]</a></div>
+      </div>
+      <span style="width:13px; height:13px; border-radius:50%; background:#8FD6A6; flex-shrink:0;"></span>
+    </div>
+
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3);">DIN BOKNINGSLÄNK</div>
+      <div style="display:flex; align-items:center; gap:8px; margin-top:9px;">
+        <span style="flex:1; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink2); background:var(--sf2); border:1px solid var(--line); border-radius:10px; padding:11px 11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">freshcut.corevo.se/boka/john</span>
+        <span onClick="{{ kopiera }}" style="padding:11px 13px; border-radius:10px; border:1px solid var(--line2); font-size:12px; font-weight:600; color:{{ kopC }}; cursor:pointer; white-space:nowrap;">{{ kopLabel }}</span>
+      </div>
+    </div>
+
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:12px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3);">MINA PASS</span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">V. 29</span>
+      </div>
+      <sc-for list="{{ pass }}" as="p" hint-placeholder-count="7">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-top:1px solid var(--line);">
+          <span style="font-size:12.5px; color:var(--ink2);">{{ p.dag }} <sc-if value="{{ p.idag }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:.1em; color:var(--warn); border:1px solid var(--line2); border-radius:99px; padding:1px 5px; margin-left:5px;">IDAG</span></sc-if></span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:{{ p.c }}; font-style:{{ p.kursiv }};">{{ p.tid }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3); margin-bottom:4px;">FRÅNVARO &amp; LEDIGHET</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--line);">
+        <div>
+          <div style="font-size:12.5px; font-weight:600;">Semester</div>
+          <div style="font-size:11px; color:var(--ink3); margin-top:1px;">27 juli – 3 augusti</div>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.1em; color:var(--ok); border:1px solid var(--grön2); border-radius:99px; padding:2px 7px;">GODKÄND</span>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <span style="flex:1; text-align:center; padding:11px 0; border-radius:10px; border:1px solid var(--line2); font-size:12px; font-weight:600; color:var(--ink2); cursor:pointer;">+ Ansök om ledigt</span>
+        <span style="flex:1; text-align:center; padding:11px 0; border-radius:10px; border:1px solid var(--line); font-size:12px; font-weight:600; color:var(--bad); cursor:pointer;">Sjukanmäl idag</span>
+      </div>
+    </div>
+
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3); margin-bottom:4px;">NOTISER</div>
+      <sc-for list="{{ notiser }}" as="n" hint-placeholder-count="3">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--line);">
+          <div>
+            <div style="font-size:12.5px; font-weight:600;">{{ n.t }}</div>
+            <div style="font-size:11px; color:var(--ink3); margin-top:1px;">{{ n.d }}</div>
+          </div>
+          <div onClick="{{ n.flip }}" style="width:38px; height:23px; border-radius:99px; background:{{ n.bg }}; cursor:pointer; flex-shrink:0; transition:background .15s;">
+            <span style="display:block; width:19px; height:19px; border-radius:50%; background:#F0F0EA; margin:2px; transform:translateX({{ n.x }}px); transition:transform .15s;"></span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3); margin-bottom:4px;">KONTO</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--line);">
+        <span style="font-size:12.5px; font-weight:600;">Byt lösenord</span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink3);">›</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid var(--line);">
+        <span style="font-size:12.5px; font-weight:600;">Logga ut</span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink3);">›</span>
+      </div>
+    </div>
+
+    <div style="margin:12px 0 20px; padding:11px 12px; border:1px dashed var(--line2); border-radius:12px; font-size:11.5px; color:var(--ink3); display:flex; gap:7px;"><span>ⓘ</span><span>Din chef kan ge dig tillgång till fler delar — t.ex. kundregistret eller dagens siffror.</span></div>
+  </div>
+  </sc-if>
+
+  <!-- ════ Bottennav ════ -->
+  <div style="display:flex; border-top:1px solid var(--line); background:var(--bg); padding:10px 0 30px; flex-shrink:0;">
+    <div onClick="{{ mGoKal }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; min-height:44px; justify-content:center;">
+      <span style="font-size:12.5px; font-weight:{{ mNavKalW }}; color:{{ mNavKalC }};">Kalender</span>
+      <span style="width:4px; height:4px; border-radius:50%; background:{{ mNavKalDot }};"></span>
+    </div>
+    <div onClick="{{ mGoPro }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; min-height:44px; justify-content:center;">
+      <span style="font-size:12.5px; font-weight:{{ mNavProW }}; color:{{ mNavProC }};">Min profil</span>
+      <span style="width:4px; height:4px; border-radius:50%; background:{{ mNavProDot }};"></span>
+    </div>
+  </div>
+
+  <!-- ════ Bottom sheet: bokning ════ -->
+  <sc-if value="{{ shOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ shClose }}" style="position:absolute; inset:0; z-index:30; background:rgba(0,0,0,.55); backdrop-filter:blur(2px);"></div>
+    <div data-screen-label="PWA – Bokningssheet" style="position:absolute; left:0; right:0; bottom:0; z-index:31; background:var(--sf); border-top:1px solid var(--line2); border-radius:20px 20px 0 0; padding:10px 18px 40px;">
+      <div style="width:40px; height:4px; border-radius:99px; background:var(--line2); margin:0 auto 12px;"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <span style="display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--ink2);"><span style="width:9px; height:9px; border-radius:50%; background:#8FD6A6;"></span>din bokning · idag</span>
+        <span onClick="{{ shClose }}" style="color:var(--ink3); font-size:15px; cursor:pointer; padding:6px;">✕</span>
+      </div>
+      <div style="display:flex; align-items:baseline; gap:11px; margin-top:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600;">{{ selTid }}</span>
+        <span style="font-size:15px; font-weight:600;">{{ selTjanst }}</span>
+      </div>
+      <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">{{ selMeta }}</div>
+      <sc-if value="{{ selCancelled }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:10px; padding:8px 12px; border:1px solid var(--bad); border-radius:9px; font-size:12px; color:var(--bad); display:flex; gap:8px; align-items:center;"><span>✕</span>Avbokades idag 10:42 av kunden</div>
+      </sc-if>
+      <div style="display:flex; align-items:center; gap:11px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line);">
+        <div style="width:34px; height:34px; border-radius:50%; background:var(--sf3); display:grid; place-items:center; font-size:12px; font-weight:700;">{{ selInit }}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13.5px; font-weight:600;">{{ selKund }} <sc-if value="{{ selNy }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.08em; color:var(--warn); border:1px solid var(--line2); border-radius:99px; padding:1px 6px; margin-left:3px;">NY KUND</span></sc-if></div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink3); margin-top:2px;">{{ selTelText }}</div>
+        </div>
+        <sc-if value="{{ selTel }}" hint-placeholder-val="{{ false }}">
+          <span style="padding:10px 13px; border-radius:10px; border:1px solid var(--grön2); color:var(--ok); font-size:12px; font-weight:600; cursor:pointer;">✆ Ring</span>
+        </sc-if>
+      </div>
+      <sc-if value="{{ selNote }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:10px; font-size:12.5px; color:var(--ink2); font-style:italic;">"{{ selNote }}"</div>
+      </sc-if>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <sc-if value="{{ selActive }}" hint-placeholder-val="{{ true }}">
+          <span onClick="{{ doCheckin }}" style="flex:1.4; text-align:center; padding:13px 0; border-radius:11px; background:{{ dlgCkBg }}; border:1px solid {{ dlgCkBd }}; color:var(--on-grön); font-size:13px; font-weight:600; cursor:pointer;">{{ dlgCkLabel }}</span>
+          <span style="flex:1; text-align:center; padding:13px 0; border-radius:11px; border:1px solid var(--line2); font-size:13px; color:var(--ink2); cursor:pointer;">Omboka</span>
+          <span style="text-align:center; padding:13px 14px; border-radius:11px; border:1px solid var(--line); font-size:13px; color:var(--bad); cursor:pointer;">Avboka</span>
+        </sc-if>
+        <sc-if value="{{ selCancelled }}" hint-placeholder-val="{{ false }}">
+          <span style="flex:1; text-align:center; padding:13px 0; border-radius:11px; border:1px solid var(--line2); font-size:13px; color:var(--ink2); cursor:pointer;">Boka in igen</span>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-import>
+</div>
+</x-dc>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 470, &quot;height&quot;: 960 },
+  &quot;seAllaKalendrar&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Behörigheter (ägaren styr)&quot; },
+  &quot;kanSkapaBokningar&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Behörigheter (ägaren styr)&quot; }
+}">
+class Component extends DCLogic {
+  ME = 1;
+  NOW = 11 + 14 / 60;
+
+  state = {
+    tab: 'kal',          // 'kal' | 'pro'
+    who: 1,              // vald frisör i chipsraden (mobil = en i taget)
+    sheet: null,         // bokning öppen i bottom sheet (id)
+    confirm: null,       // 2-stegs incheckning: 'nx' | 'dlg'
+    copied: false,
+    notiser: [true, true, false],
+    bookings: [
+      { id: 1, staff: 0, s: 9.5,  e: 10.25, kund: 'Emma Dahl',    tjanst: 'Klippning',            pris: 450,  tel: '070-311 22 88', done: true },
+      { id: 2, staff: 0, s: 13,   e: 14,    kund: 'Sara Nyström', tjanst: 'Färg',                 pris: 980,  tel: '073-518 40 02' },
+      { id: 3, staff: 0, s: 15,   e: 16.25, kund: 'Lova Ferm',    tjanst: 'Färg + klipp',         pris: 1240, tel: '070-882 19 44' },
+      { id: 4, staff: 1, s: 10,   e: 11,    kund: 'Viktor Ståhl', tjanst: 'Fade',                 pris: 480,  tel: '072-604 77 31', done: true },
+      { id: 5, staff: 1, s: 12,   e: 12.5,  kund: 'Marcus Lind',  tjanst: 'Fade',                 pris: 480,  tel: '070-455 90 12' },
+      { id: 6, staff: 1, s: 13,   e: 13.75, kund: 'Lunch',        tjanst: '',                     paus: true },
+      { id: 7, staff: 1, s: 14,   e: 15,    kund: 'Alva Rehn',    tjanst: 'Färg',                 pris: 980,  tel: '073-220 14 87', ny: true, note: 'Vill bli lite ljusare i topparna.' },
+      { id: 8, staff: 1, s: 15.5, e: 16.25, kund: 'Erik Lund',    tjanst: 'Klippning',            pris: 620,  tel: '070-218 66 03', cancelled: true },
+      { id: 9, staff: 1, s: 16.5, e: 17.5,  kund: 'Noah Pers',    tjanst: 'Klippning',            pris: 450,  tel: null },
+      { id: 10, staff: 2, s: 11.5, e: 12.25, kund: 'Jonas Berg',  tjanst: 'Klippning + skäggtrim', pris: 620, tel: '070-123 45 67', ny: true },
+      { id: 11, staff: 2, s: 14,  e: 15.5,  kund: 'Elias Karim',  tjanst: 'Barntrim + klipp',     pris: 540,  tel: null },
+      { id: 12, staff: 3, s: 9,   e: 9.75,  kund: 'Omar Reza',    tjanst: 'Trim',                 pris: 380,  tel: '076-901 33 25', done: true },
+      { id: 13, staff: 3, s: 12,  e: 13,    kund: 'Lunch',        tjanst: '',                     paus: true },
+      { id: 14, staff: 3, s: 16,  e: 16.5,  kund: 'Adam Öst',     tjanst: 'Snaggning',            pris: 340,  tel: '070-778 21 90' },
+      { id: 15, staff: 3, s: 17,  e: 17.5,  kund: 'Leo Vinter',   tjanst: 'Skäggtrim',            pris: 380,  tel: '072-140 58 66' },
+    ],
+  };
+
+  STAFF = [
+    { name: 'Hilal', dot: '#8FB4E3', tint: 'rgba(143,180,227,.16)' },
+    { name: 'John',  dot: '#8FD6A6', tint: 'rgba(143,214,166,.16)' },
+    { name: 'Ali',   dot: '#5FC7B2', tint: 'rgba(95,199,178,.16)' },
+    { name: 'Aziz',  dot: '#C0A5F0', tint: 'rgba(192,165,240,.16)' },
+  ];
+
+  componentWillUnmount() { clearTimeout(this._ct); clearTimeout(this._cp); }
+
+  fmt(t) { const h = Math.floor(t), m = Math.round((t - h) * 60); return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'); }
+
+  checkin(id) {
+    this.setState({ bookings: this.state.bookings.map(b => b.id === id ? { ...b, done: true } : b), sheet: null, confirm: null });
+  }
+  arm(key, id) {
+    if (this.state.confirm === key) { clearTimeout(this._ct); this.setState({ confirm: null }); this.checkin(id); return; }
+    clearTimeout(this._ct);
+    this.setState({ confirm: key });
+    this._ct = setTimeout(() => this.setState({ confirm: null }), 3500);
+  }
+
+  renderVals() {
+    const R = React.createElement;
+    const mono = "'IBM Plex Mono',monospace";
+    const st = this.state;
+    const S = this.STAFF;
+    const ME = this.ME;
+    const seAlla = this.props.seAllaKalendrar ?? true;
+    const kanSkapa = this.props.kanSkapaBokningar ?? true;
+    const who = seAlla ? st.who : ME;
+    const self = who === ME;
+
+    const mkBlock = (b) => {
+      const stf = S[b.staff];
+      const mine = b.staff === ME;
+      const top = (b.s - 9) * 54 + 2, height = (b.e - b.s) * 54 - 4;
+      const row = height < 40;
+      const base = {
+        position: 'absolute', left: 8, right: 8, top, height,
+        borderRadius: 8, boxSizing: 'border-box', padding: height < 32 ? '3px 11px' : '5px 11px',
+        overflow: 'hidden', cursor: mine && !b.paus ? 'pointer' : 'default',
+        background: stf.tint, border: '1px solid rgba(255,255,255,.06)', borderLeft: '3px solid ' + stf.dot,
+        display: 'flex', flexDirection: row ? 'row' : 'column',
+        alignItems: row ? 'center' : 'stretch', gap: row ? 7 : 1,
+        zIndex: 2,
+      };
+      if (b.done) { base.opacity = .42; base.background = '#25251F'; base.borderLeft = '3px solid #4A4A41'; }
+      if (b.paus) { base.background = 'repeating-linear-gradient(45deg,#1C1C18,#1C1C18 4px,#25251F 4px,#25251F 8px)'; base.border = '1px solid #33332C'; base.borderLeft = '1px solid #33332C'; }
+      if (b.cancelled) { base.background = 'transparent'; base.border = '1px dashed #D68F85'; base.borderLeft = '1px dashed #D68F85'; base.opacity = .75; }
+
+      const strike = b.done || b.cancelled ? 'line-through' : 'none';
+      const meta = b.tjanst && !b.paus
+        ? b.tjanst + ' · ' + Math.round((b.e - b.s) * 60) + ' min' + (b.pris ? ' · ' + b.pris + ' kr' : '')
+        : b.tjanst;
+      const kids = [];
+      kids.push(R('span', { key: 't', style: { fontFamily: mono, fontSize: 10, color: b.cancelled ? '#D68F85' : '#96968C', textDecoration: strike, flexShrink: 0 } }, this.fmt(b.s) + '–' + this.fmt(b.e)));
+      kids.push(R('span', { key: 'k', style: { fontSize: 12.5, fontWeight: 600, color: '#F0F0EA', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', textDecoration: strike } }, b.kund));
+      if (meta) kids.push(R('span', { key: 's', style: { fontSize: 11, color: row ? '#96968C' : '#C8C8BD', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' } }, meta));
+      if (b.cancelled) kids.push(R('span', { key: 'c', style: { fontFamily: mono, fontSize: 8.5, letterSpacing: '.1em', color: '#D68F85', marginLeft: row ? 'auto' : 0 } }, 'AVBOKAD'));
+
+      return R('div', {
+        key: b.id, style: base,
+        onClick: (mine && !b.paus) ? () => this.setState({ sheet: b.id, confirm: null }) : undefined,
+      }, kids);
+    };
+
+    const dayBookings = st.bookings.filter(b => b.staff === who);
+    const mine = st.bookings.filter(b => b.staff === ME);
+    const aktiva = dayBookings.filter(b => !b.paus && !b.cancelled);
+    const klara = aktiva.filter(b => b.done).length;
+    const sista = aktiva.length ? Math.max(...aktiva.map(b => b.e)) : 18;
+
+    const upcoming = mine.filter(b => !b.done && !b.cancelled && !b.paus && b.s > this.NOW).sort((a, b) => a.s - b.s);
+    const nx = upcoming[0];
+    const nxCd = nx ? Math.round((nx.s - this.NOW) * 60) : 0;
+
+    const sel = st.bookings.find(b => b.id === st.sheet) || {};
+
+    const chipStyle = (on) => ({ bg: on ? '#2E2E28' : 'transparent', bd: on ? '#4A4A41' : '#33332C', c: on ? '#F0F0EA' : '#96968C' });
+    const mChips = [
+      { label: 'Jag', dot: S[ME].dot, idx: ME },
+      { label: 'Hilal', dot: S[0].dot, idx: 0 },
+      { label: 'Ali', dot: S[2].dot, idx: 2 },
+      { label: 'Aziz', dot: S[3].dot, idx: 3 },
+    ].map(c => ({ ...c, ...chipStyle(who === c.idx), pick: () => this.setState({ who: c.idx, sheet: null, confirm: null }) }));
+
+    const navOn = { c: '#F0F0EA', w: 600, dot: '#9AC4A5' };
+    const navOff = { c: '#96968C', w: 400, dot: 'transparent' };
+    const nk = st.tab === 'kal' ? navOn : navOff;
+    const np = st.tab === 'pro' ? navOn : navOff;
+
+    return {
+      seAlla, kanSkapa,
+      mTabKal: st.tab === 'kal', mTabPro: st.tab === 'pro',
+      mGoKal: () => this.setState({ tab: 'kal' }), mGoPro: () => this.setState({ tab: 'pro' }),
+      mNavKalC: nk.c, mNavKalW: nk.w, mNavKalDot: nk.dot,
+      mNavProC: np.c, mNavProW: np.w, mNavProDot: np.dot,
+      mMono: self
+        ? 'v. 29 · ' + aktiva.length + ' bokningar · ' + klara + ' klar · sista slutar ' + this.fmt(sista)
+        : S[who].name + 's dag · ' + aktiva.length + ' bokningar',
+      mChips,
+      mBlocks: dayBookings.map(mkBlock),
+      hours: Array.from({ length: 10 }, (_, i) => ({ label: String(9 + i).padStart(2, '0'), top: i * 54 })),
+      // näst-kort
+      mNxShow: self && !!nx, mReadOnly: !self,
+      mReadText: 'DU SER ' + S[who].name.toUpperCase() + 'S DAG · ENDAST LÄSLÄGE',
+      nxTid: nx ? this.fmt(nx.s) : '', nxKund: nx ? nx.kund : '', nxNy: !!(nx && nx.ny),
+      nxMeta: nx ? nx.tjanst + ' · ' + Math.round((nx.e - nx.s) * 60) + ' min · ' + nx.pris + ' kr' : '',
+      nxCd, nxCdC: nxCd < 10 ? '#D6AC6A' : '#C8C8BD',
+      nxCheckin: () => { if (nx) this.arm('nx', nx.id); },
+      nxCkLabel: st.confirm === 'nx' ? 'Bekräfta ✓' : 'Checka in',
+      nxCkBg: st.confirm === 'nx' ? '#3A7357' : '#2F5F47',
+      nxCkBd: st.confirm === 'nx' ? '#9AC4A5' : 'transparent',
+      nxOpen: () => { if (nx) this.setState({ sheet: nx.id, confirm: null }); },
+      mOpenNew: () => {},
+      // sheet
+      shOpen: !!st.sheet,
+      shClose: () => this.setState({ sheet: null, confirm: null }),
+      selTid: this.fmt(sel.s || 9) + '–' + this.fmt(sel.e || 10),
+      selTjanst: sel.tjanst || '',
+      selMeta: Math.round(((sel.e || 0) - (sel.s || 0)) * 60) + ' min · ' + (sel.pris || 0) + ' kr',
+      selKund: sel.kund || '', selInit: (sel.kund || '??').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(),
+      selTel: !!sel.tel, selTelText: sel.tel ? sel.tel + (sel.ny ? ' · 1:a besöket' : '') : 'Inget nummer angivet',
+      selNote: sel.note || false, selNy: !!sel.ny, selCancelled: !!sel.cancelled, selActive: !sel.cancelled,
+      doCheckin: () => this.arm('dlg', st.sheet),
+      dlgCkLabel: st.confirm === 'dlg' ? 'Bekräfta ✓' : 'Checka in',
+      dlgCkBg: st.confirm === 'dlg' ? '#3A7357' : '#2F5F47',
+      dlgCkBd: st.confirm === 'dlg' ? '#9AC4A5' : 'transparent',
+      // profil
+      kopiera: () => { this.setState({ copied: true }); clearTimeout(this._cp); this._cp = setTimeout(() => this.setState({ copied: false }), 2000); },
+      kopLabel: st.copied ? 'Kopierad ✓' : 'Kopiera',
+      kopC: st.copied ? '#9AC4A5' : '#C8C8BD',
+      pass: [
+        { dag: 'Måndag',  tid: '09:00–18:00', c: '#C8C8BD', kursiv: 'normal', idag: false },
+        { dag: 'Tisdag',  tid: '09:00–18:00', c: '#C8C8BD', kursiv: 'normal', idag: false },
+        { dag: 'Onsdag',  tid: '10:00–18:00', c: '#F0F0EA', kursiv: 'normal', idag: true },
+        { dag: 'Torsdag', tid: '09:00–18:00', c: '#C8C8BD', kursiv: 'normal', idag: false },
+        { dag: 'Fredag',  tid: '09:00–16:00', c: '#C8C8BD', kursiv: 'normal', idag: false },
+        { dag: 'Lördag',  tid: 'Ledig',       c: '#96968C', kursiv: 'italic', idag: false },
+        { dag: 'Söndag',  tid: 'Ledig',       c: '#96968C', kursiv: 'italic', idag: false },
+      ],
+      notiser: [
+        { t: 'SMS vid ny bokning', d: 'När någon bokar en tid hos dig' },
+        { t: 'SMS vid avbokning', d: 'När en kund avbokar samma dag' },
+        { t: 'Dagsöversikt på morgonen', d: 'Ditt schema kl 07:00' },
+      ].map((n, i) => ({
+        ...n,
+        bg: st.notiser[i] ? '#2F5F47' : '#2E2E28',
+        x: st.notiser[i] ? 15 : 0,
+        flip: () => { const arr = st.notiser.slice(); arr[i] = !arr[i]; this.setState({ notiser: arr }); },
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>

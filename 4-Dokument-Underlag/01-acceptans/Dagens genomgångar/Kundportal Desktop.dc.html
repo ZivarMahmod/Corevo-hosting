@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>Corevo · Kundportal desktop (slutkund)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; }
+    body {
+      --bg:#121210; --sf:#1C1C18; --sf2:#25251F; --sf3:#2E2E28;
+      --ink:#F0F0EA; --ink2:#C8C8BD; --ink3:#96968C;
+      --line:#33332C; --line2:#4A4A41;
+      --grön:#2F5F47; --grön2:#3A7357; --on-grön:#E9F2EC;
+      --ok:#9AC4A5; --warn:#D6AC6A; --bad:#D68F85;
+      background:var(--bg); color:var(--ink);
+      font-family:'Instrument Sans',sans-serif;
+    }
+    a { color:var(--ink2); text-decoration:none; }
+    a:hover { color:var(--ink); }
+    ::selection { background:#3A5A48; color:#fff; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; min-width:1180px; background:var(--bg);">
+
+  <!-- ══ Neutralt Corevo-skal ══ -->
+  <div style="display:flex; align-items:center; gap:14px; height:54px; padding:0 28px; border-bottom:1px solid var(--line); white-space:nowrap;">
+    <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.16em; color:var(--ink3);">COREVO · MINA SIDOR</span>
+    <div style="flex:1;"></div>
+    <span style="font-size:13px; color:var(--ink2);">Marcus Lind</span>
+    <div style="width:30px; height:30px; border-radius:50%; background:var(--sf3); border:1px solid var(--line2); display:grid; place-items:center; font-size:11px; font-weight:700;">ML</div>
+    <span style="padding:7px 12px; border-radius:9px; border:1px solid var(--line); font-size:12.5px; color:var(--ink3); cursor:pointer;">Logga ut</span>
+  </div>
+
+  <!-- ══ Tenant-header (branding inuti företagsvyn) ══ -->
+  <div data-screen-label="Kundportal desktop" style="max-width:1080px; margin:0 auto; padding:26px 24px 0;">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div style="width:48px; height:48px; border-radius:13px; background:var(--sf3); display:grid; place-items:center; font-weight:700; font-size:20px;">F</div>
+      <div style="flex:1;">
+        <div style="font-size:23px; font-weight:700; letter-spacing:-.01em;">FreshCut</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3); margin-top:2px;">Storgatan 12, Umeå · Mån–Fre 09–18 · Lör 10–15</div>
+      </div>
+      <span style="padding:10px 15px; border-radius:10px; border:1px solid var(--line2); font-size:13px; font-weight:600; color:var(--ink2); cursor:pointer;">✆ 090-12 34 56</span>
+      <span style="padding:10px 18px; border-radius:10px; background:var(--grön); color:var(--on-grön); font-size:13.5px; font-weight:600; cursor:pointer;">Boka ny tid</span>
+    </div>
+  </div>
+
+  <div style="max-width:1080px; margin:0 auto; padding:20px 24px 48px; display:grid; grid-template-columns:1.5fr 1fr; gap:18px; align-items:start;">
+
+    <!-- ══ Vänster ══ -->
+    <div style="display:grid; gap:18px;">
+
+      <!-- Nästa bokning -->
+      <sc-if value="{{ harBokning }}" hint-placeholder-val="{{ true }}">
+        <div style="background:var(--sf); border:1px solid var(--grön2); border-radius:16px; padding:22px; box-shadow:inset 3px 0 0 var(--ok);">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ok);">NÄSTA BOKNING</span>
+            <sc-if value="{{ visaCd }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink2);">om {{ cd }} min</span></sc-if>
+          </div>
+          <div style="display:flex; align-items:baseline; gap:12px; margin-top:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:36px; font-weight:600;">{{ bokTid }}</span>
+            <span style="font-size:17px; color:var(--ink2);">{{ bokDag }}</span>
+          </div>
+          <div style="font-size:16px; font-weight:600; margin-top:8px;">Fade · 30 min · 480 kr</div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink2); margin-top:5px;"><span style="width:9px; height:9px; border-radius:50%; background:#8FD6A6;"></span>hos John · Storgatan 12 <span style="color:var(--ink2); font-weight:600; cursor:pointer; margin-left:4px;">Hitta hit ↗</span></div>
+          <div style="display:flex; gap:8px; margin-top:16px;">
+            <span style="padding:11px 16px; border-radius:10px; border:1px solid var(--line2); font-size:13px; font-weight:600; color:var(--ink2); cursor:pointer;">＋ Lägg i kalender</span>
+            <span onClick="{{ openOmboka }}" style="padding:11px 16px; border-radius:10px; border:1px solid var(--line2); font-size:13px; font-weight:600; color:var(--ink2); cursor:pointer;">Omboka</span>
+            <span onClick="{{ openAvboka }}" style="padding:11px 16px; border-radius:10px; border:1px solid var(--line); font-size:13px; font-weight:600; color:var(--bad); cursor:pointer;">Avboka</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3); margin-top:12px; line-height:1.7;">Gratis om- och avbokning fram till 24 h innan. Påminnelse dagen innan via {{ paminnelseVia }}.</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line);">
+            <div>
+              <div style="font-size:13px; font-weight:600;">Tidigare tid?</div>
+              <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">{{ vlDesc }}</div>
+            </div>
+            <div onClick="{{ vlTap }}" style="width:38px; height:23px; border-radius:99px; background:{{ vlBg }}; cursor:pointer; flex-shrink:0; transition:background .15s;">
+              <span style="display:block; width:19px; height:19px; border-radius:50%; background:#F0F0EA; margin:2px; transform:translateX({{ vlX }}px); transition:transform .15s;"></span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ingenBokning }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:22px;">
+          <div style="font-size:15px; font-weight:600;">Ingen kommande bokning</div>
+          <div style="font-size:13px; color:var(--ink3); margin-top:3px;">{{ tomText }}</div>
+          <div style="font-size:13px; color:var(--ink2); margin-top:14px;">Det har gått 4 veckor sedan din senaste Fade hos John.</div>
+          <span style="display:inline-block; padding:11px 18px; border-radius:10px; border:1px solid var(--grön2); color:var(--ok); font-size:13px; font-weight:600; cursor:pointer; margin-top:10px;">Boka Fade hos John igen</span>
+        </div>
+      </sc-if>
+
+      <!-- Historik -->
+      <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:8px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); padding:14px 0 6px;">HISTORIK</div>
+        <sc-for list="{{ historik }}" as="h" hint-placeholder-count="3">
+          <div style="display:flex; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--line);">
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:14px; font-weight:600;">{{ h.tjanst }}</div>
+              <div style="display:flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink3); margin-top:3px;"><span style="width:7px; height:7px; border-radius:50%; background:{{ h.dot }};"></span>{{ h.meta }}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink2);">{{ h.pris }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3); text-decoration:underline; cursor:pointer; margin-top:3px;">Kvitto</div>
+            </div>
+            <span style="padding:9px 14px; border-radius:10px; border:1px solid var(--line2); font-size:12.5px; font-weight:600; color:var(--ink2); cursor:pointer;">Boka igen</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Beställningar -->
+      <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:8px 22px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); padding:14px 0 6px;">BESTÄLLNINGAR</div>
+        <div style="display:flex; align-items:center; gap:14px; padding:13px 0; border-top:1px solid var(--line);">
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:600;">Styling Pomade</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink3); margin-top:3px;">18 juni · hämtad i salongen</div>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink2);">149 kr</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Höger ══ -->
+    <div style="display:grid; gap:18px;">
+
+      <!-- Lojalitet -->
+      <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3);">STÄMPELKORT</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink2);">7 / 10</span>
+        </div>
+        <div style="display:flex; gap:7px; margin-top:14px;">
+          <sc-for list="{{ stamps }}" as="s" hint-placeholder-count="10">
+            <span style="flex:1; aspect-ratio:1; border-radius:50%; background:{{ s.bg }}; border:1px solid {{ s.bd }};"></span>
+          </sc-for>
+        </div>
+        <div style="font-size:13px; color:var(--ink2); margin-top:12px;">3 besök kvar till <strong style="color:var(--ok);">20 % rabatt</strong> på valfri klippning.</div>
+      </div>
+
+      <!-- Notiser -->
+      <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); margin-bottom:4px;">NOTISER</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid var(--line);">
+          <div>
+            <div style="font-size:13px; font-weight:600;">E-post</div>
+            <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">Bekräftelser och påminnelser — alltid på</div>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.1em; color:var(--ok); border:1px solid var(--grön2); border-radius:99px; padding:2px 7px;">PÅ</span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid var(--line);">
+          <div>
+            <div style="font-size:13px; font-weight:600;">Push på den här enheten</div>
+            <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">{{ pushDesc }}</div>
+          </div>
+          <div onClick="{{ pushTap }}" style="width:38px; height:23px; border-radius:99px; background:{{ pushBg }}; cursor:pointer; flex-shrink:0; transition:background .15s;">
+            <span style="display:block; width:19px; height:19px; border-radius:50%; background:#F0F0EA; margin:2px; transform:translateX({{ pushX }}px); transition:transform .15s;"></span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid var(--line);">
+          <div>
+            <div style="font-size:13px; font-weight:600;">Erbjudanden från FreshCut</div>
+            <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">Separat samtycke — påverkar inte bokningsbesked</div>
+          </div>
+          <div onClick="{{ mktTap }}" style="width:38px; height:23px; border-radius:99px; background:{{ mktBg }}; cursor:pointer; flex-shrink:0; transition:background .15s;">
+            <span style="display:block; width:19px; height:19px; border-radius:50%; background:#F0F0EA; margin:2px; transform:translateX({{ mktX }}px); transition:transform .15s;"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Konto -->
+      <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:18px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); margin-bottom:4px;">KONTO</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-top:1px solid var(--line);">
+          <span style="font-size:13px; font-weight:600;">Byt lösenord</span><span style="color:var(--ink3);">›</span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-top:1px solid var(--line);">
+          <span style="font-size:13px; font-weight:600;">Mina uppgifter hos FreshCut</span><span style="color:var(--ink3);">›</span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-top:1px solid var(--line);">
+          <span style="font-size:13px; font-weight:600;">Logga ut</span><span style="color:var(--ink3);">›</span>
+        </div>
+      </div>
+
+      <div style="text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.12em; color:var(--ink3);">UPPDATERAD 11:14 · MINA.COREVO.SE</div>
+    </div>
+  </div>
+
+  <!-- ══ Dialog: Avboka ══ -->
+  <sc-if value="{{ shAvboka }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeSheet }}" style="position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.55); backdrop-filter:blur(2px);"></div>
+    <div data-screen-label="Dialog – Avboka" style="position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:51; width:400px; background:var(--sf); border:1px solid var(--line2); border-radius:18px; box-shadow:0 24px 64px rgba(0,0,0,.6); padding:20px;">
+      <div style="font-size:17px; font-weight:700;">Avboka besöket?</div>
+      <div style="font-size:13px; color:var(--ink2); margin-top:6px;">{{ bokDag }} {{ bokTid }} · Fade hos John</div>
+      <div style="margin-top:12px; padding:10px 12px; background:var(--sf2); border-radius:10px; font-size:12.5px; color:var(--ink3); line-height:1.5;">Gratis avbokning fram till 24 h innan. Salongen får besked direkt.</div>
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <span onClick="{{ closeSheet }}" style="flex:1; text-align:center; padding:11px 0; border-radius:10px; border:1px solid var(--line2); font-size:13px; font-weight:600; color:var(--ink2); cursor:pointer;">Behåll tiden</span>
+        <span onClick="{{ doAvboka }}" style="flex:1; text-align:center; padding:11px 0; border-radius:10px; border:1px solid var(--bad); font-size:13px; font-weight:600; color:var(--bad); cursor:pointer;">Avboka besöket</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══ Dialog: Omboka ══ -->
+  <sc-if value="{{ shOmboka }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeSheet }}" style="position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.55); backdrop-filter:blur(2px);"></div>
+    <div data-screen-label="Dialog – Omboka" style="position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:51; width:420px; background:var(--sf); border:1px solid var(--line2); border-radius:18px; box-shadow:0 24px 64px rgba(0,0,0,.6); padding:20px;">
+      <div style="font-size:17px; font-weight:700;">Välj ny tid</div>
+      <div style="font-size:13px; color:var(--ink2); margin-top:4px;">Fade · 30 min · hos John</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; color:var(--ink3); margin:16px 0 8px;">DAG</div>
+      <div style="display:flex; gap:6px;">
+        <sc-for list="{{ obDagar }}" as="d" hint-placeholder-count="3">
+          <span onClick="{{ d.pick }}" style="padding:8px 13px; border-radius:99px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid {{ d.bd }}; background:{{ d.bg }}; color:{{ d.c }};">{{ d.label }}</span>
+        </sc-for>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.12em; color:var(--ink3); margin:16px 0 8px;">LEDIGA TIDER</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <sc-for list="{{ obTider }}" as="t" hint-placeholder-count="5">
+          <span onClick="{{ t.pick }}" style="padding:8px 13px; border-radius:99px; font-size:13px; font-weight:600; cursor:pointer; font-family:'IBM Plex Mono',monospace; border:1px solid {{ t.bd }}; background:{{ t.bg }}; color:{{ t.c }};">{{ t.label }}</span>
+        </sc-for>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:18px;">
+        <span onClick="{{ closeSheet }}" style="padding:10px 16px; border-radius:10px; border:1px solid var(--line2); font-size:13px; color:var(--ink2); cursor:pointer;">Avbryt</span>
+        <span onClick="{{ doOmboka }}" style="padding:10px 18px; border-radius:10px; background:var(--grön); color:var(--on-grön); font-size:13px; font-weight:600; cursor:pointer;">Bekräfta ny tid</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══ Dialog: Push-samtycke ══ -->
+  <sc-if value="{{ shPush }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeSheet }}" style="position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.55); backdrop-filter:blur(2px);"></div>
+    <div data-screen-label="Dialog – Push-samtycke" style="position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:51; width:400px; background:var(--sf); border:1px solid var(--line2); border-radius:18px; box-shadow:0 24px 64px rgba(0,0,0,.6); padding:20px;">
+      <div style="font-size:17px; font-weight:700;">Notiser från FreshCut</div>
+      <div style="font-size:13px; color:var(--ink2); margin-top:8px; line-height:1.55;">Påminnelse innan ditt besök och besked om något ändras. Inga erbjudanden utan separat samtycke. Du kan stänga av när som helst.</div>
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <span onClick="{{ closeSheet }}" style="flex:1; text-align:center; padding:11px 0; border-radius:10px; border:1px solid var(--line2); font-size:13px; font-weight:600; color:var(--ink2); cursor:pointer;">Inte nu</span>
+        <span onClick="{{ doPush }}" style="flex:1; text-align:center; padding:11px 0; border-radius:10px; background:var(--grön); color:var(--on-grön); font-size:13px; font-weight:600; cursor:pointer;">Aktivera notiser</span>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--ink3); text-align:center; margin-top:12px;">Webbläsaren frågar en gång till — det är normalt.</div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    sheet: null,
+    bokning: { dag: 'Idag', tid: '12:00' },
+    tomText: '',
+    obDag: 0, obTid: 2,
+    push: false, mkt: false, vl: false,
+  };
+
+  chip(list, activeIdx, key) {
+    return list.map((label, i) => ({
+      label,
+      bg: i === activeIdx ? '#2E2E28' : 'transparent',
+      bd: i === activeIdx ? '#4A4A41' : '#33332C',
+      c: i === activeIdx ? '#F0F0EA' : '#96968C',
+      pick: () => this.setState({ [key]: i }),
+    }));
+  }
+
+  renderVals() {
+    const st = this.state;
+    const b = st.bokning;
+    const dagar = ['Imorgon', 'Fre 17 juli', 'Lör 18 juli'];
+    const tider = ['09:15', '10:30', '13:00', '14:15', '16:45'];
+
+    return {
+      harBokning: !!b, ingenBokning: !b,
+      bokDag: b ? b.dag : '', bokTid: b ? b.tid : '',
+      visaCd: !!b && b.dag === 'Idag' && b.tid === '12:00', cd: 46,
+      paminnelseVia: st.push ? 'e-post + push' : 'e-post',
+      tomText: st.tomText || 'Boka en ny tid när det passar dig.',
+      shAvboka: st.sheet === 'avboka', shOmboka: st.sheet === 'omboka', shPush: st.sheet === 'push',
+      openAvboka: () => this.setState({ sheet: 'avboka' }),
+      openOmboka: () => this.setState({ sheet: 'omboka' }),
+      closeSheet: () => this.setState({ sheet: null }),
+      doAvboka: () => this.setState({ sheet: null, bokning: null, tomText: 'Din bokning är avbokad. Bekräftelse skickas via e-post.' }),
+      doOmboka: () => this.setState({ sheet: null, bokning: { dag: dagar[st.obDag], tid: tider[st.obTid] } }),
+      obDagar: this.chip(dagar, st.obDag, 'obDag'),
+      obTider: this.chip(tider, st.obTid, 'obTid'),
+      stamps: Array.from({ length: 10 }, (_, i) => ({
+        bg: i < 7 ? '#2F5F47' : 'transparent',
+        bd: i < 7 ? '#3A7357' : '#33332C',
+      })),
+      historik: [
+        { tjanst: 'Fade', meta: '18 juni · John', dot: '#8FD6A6', pris: '480 kr' },
+        { tjanst: 'Fade', meta: '12 maj · John', dot: '#8FD6A6', pris: '480 kr' },
+        { tjanst: 'Klippning + skäggtrim', meta: '2 april · Ali', dot: '#5FC7B2', pris: '620 kr' },
+      ],
+      pushTap: () => { if (st.push) { this.setState({ push: false }); } else { this.setState({ sheet: 'push' }); } },
+      doPush: () => this.setState({ push: true, sheet: null }),
+      pushBg: st.push ? '#2F5F47' : '#2E2E28', pushX: st.push ? 15 : 0,
+      pushDesc: st.push ? 'Aktiv — påminnelser och ändringar' : 'Av — aktiveras per enhet',
+      mktTap: () => this.setState({ mkt: !st.mkt }),
+      vlTap: () => this.setState({ vl: !st.vl }),
+      vlBg: st.vl ? '#2F5F47' : '#2E2E28', vlX: st.vl ? 15 : 0,
+      vlDesc: st.vl ? 'Bevakar — vi hör av oss om en tid hos John blir ledig' : 'Bli meddelad om en avbokad tid hos John',
+      mktBg: st.mkt ? '#2F5F47' : '#2E2E28', mktX: st.mkt ? 15 : 0,
+    };
+  }
+}
+</script>
+</body>
+</html>
