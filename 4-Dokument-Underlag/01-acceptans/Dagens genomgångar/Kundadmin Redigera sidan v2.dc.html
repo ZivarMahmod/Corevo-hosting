@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>FreshCut · Redigera sidan v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=Marcellus&family=Anton&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; }
+    body {
+      --bg:#121210; --sf:#1C1C18; --sf2:#25251F; --sf3:#2E2E28;
+      --ink:#F0F0EA; --ink2:#C8C8BD; --ink3:#96968C;
+      --line:#33332C; --line2:#4A4A41;
+      --grön:#2F5F47; --grön2:#3A7357; --on-grön:#E9F2EC;
+      --ok:#9AC4A5; --warn:#D6AC6A; --bad:#D68F85; --info:#A2B6D0;
+      background:var(--bg); color:var(--ink);
+      font-family:'Instrument Sans',sans-serif;
+    }
+    a { color:var(--ink2); text-decoration:none; }
+    a:hover { color:var(--ink); }
+    ::selection { background:#3A5A48; color:#fff; }
+    input, textarea { outline:none; }
+  </style>
+</helmet>
+
+<div style="height:100vh; min-width:1280px; background:var(--bg); display:flex; flex-direction:column; overflow:hidden;">
+
+  <!-- ══ Toppnav ══ -->
+  <div style="display:flex; align-items:center; gap:20px; height:60px; flex-shrink:0; padding:0 24px; border-bottom:1px solid var(--line); background:var(--bg); white-space:nowrap;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="width:34px; height:34px; border-radius:9px; background:var(--sf3); display:grid; place-items:center; font-weight:700; font-size:15px;">F</div>
+      <div>
+        <div style="font-weight:700; font-size:15px; letter-spacing:-.01em;">FreshCut</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.14em; color:var(--ink3);">VIA COREVO</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:4px; margin-left:8px;">
+      <div onClick="{{ navGuard }}" style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2); cursor:pointer;">Översikt</div>
+      <div onClick="{{ navGuard }}" style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2); cursor:pointer;">Kalender</div>
+      <div onClick="{{ navGuard }}" style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2); cursor:pointer;">Kunder</div>
+      <div style="padding:8px 14px; border-radius:9px; background:var(--sf2); font-weight:600; font-size:14px;">Redigera sidan</div>
+      <div onClick="{{ navGuard }}" style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2); cursor:pointer;">Inställningar</div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--line); border-radius:9px; font-size:13.5px; color:var(--ink2);">Öppna min sida ↗</div>
+    <div style="width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); display:grid; place-items:center; font-size:13px; font-weight:600;">I</div>
+  </div>
+
+  <!-- ══ Editor-toolbar ══ -->
+  <div style="display:flex; align-items:center; gap:14px; padding:12px 24px; border-bottom:1px solid var(--line); white-space:nowrap; flex-shrink:0;">
+    <div>
+      <div style="font-size:16px; font-weight:700; letter-spacing:-.01em;">Redigera sidan</div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3); margin-top:1px;">{{ urlText }}</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:3px; overflow-x:auto; flex:1; margin:0 6px; padding:2px 0;">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="7">
+        <span onClick="{{ t.pick }}" style="padding:7px 13px; border-radius:9px; cursor:pointer; background:{{ t.bg }}; box-shadow:inset 0 -2px 0 {{ t.accent }}; flex-shrink:0; font-size:13px; font-weight:600; color:{{ t.c }};">{{ t.name }}</span>
+      </sc-for>
+    </div>
+    <span title="{{ statusText }}" style="display:inline-flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:{{ statusC }}; flex-shrink:0;"><span style="width:7px; height:7px; border-radius:50%; background:{{ statusC }};"></span>{{ statusShort }}</span>
+    <div style="display:flex; background:var(--sf2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; font-size:13px;">
+      <span onClick="{{ pickDesktop }}" style="padding:6px 14px; border-radius:8px; cursor:pointer; background:{{ devDBg }}; color:{{ devDC }}; font-weight:600;">Dator</span>
+      <span onClick="{{ pickMobile }}" style="padding:6px 14px; border-radius:8px; cursor:pointer; background:{{ devMBg }}; color:{{ devMC }}; font-weight:600;">Mobil</span>
+    </div>
+    <span style="padding:9px 15px; border:1px solid var(--line); border-radius:10px; font-size:13px; color:var(--ink2); font-weight:600; cursor:pointer;">Öppna live ↗</span>
+    <span onClick="{{ saveDraft }}" style="padding:9px 15px; border:1px solid {{ draftBd }}; border-radius:10px; font-size:13px; color:{{ draftC }}; font-weight:600; cursor:pointer;">Spara utkast</span>
+    <span onClick="{{ publish }}" style="padding:9px 17px; border-radius:10px; background:{{ pubBg }}; color:{{ pubC }}; border:1px solid {{ pubBd }}; font-weight:600; font-size:13px; cursor:pointer;">{{ pubText }}</span>
+  </div>
+
+  <!-- ══ Utkast-banner ══ -->
+  <sc-if value="{{ banner }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex; align-items:center; gap:10px; padding:9px 24px; background:#2A2416; border-bottom:1px solid #4A4235; flex-shrink:0; white-space:nowrap;">
+      <span style="width:7px; height:7px; border-radius:50%; background:var(--warn); flex-shrink:0;"></span>
+      <span style="flex:1; font-size:12.5px; color:var(--warn); overflow:hidden; text-overflow:ellipsis;">{{ bannerText }}</span>
+      <span onClick="{{ publish }}" style="font-size:12.5px; color:var(--ink); font-weight:600; cursor:pointer;">Publicera nu</span>
+      <span onClick="{{ discard }}" style="font-size:12.5px; color:var(--ink3); cursor:pointer;">Kasta utkastet</span>
+    </div>
+  </sc-if>
+
+  <!-- ══ Panel + förhandsvisning ══ -->
+  <div style="display:grid; grid-template-columns:470px 1fr; flex:1; min-height:0;">
+
+    <!-- ── VÄNSTER: redigeringskort för vald del ── -->
+    <div data-screen-label="Redigeringspanel" style="border-right:1px solid var(--line); overflow-y:auto; min-height:0; background:var(--sf);">
+      <div style="padding:16px 18px 40px; display:grid; gap:14px;">
+        <sc-for list="{{ cards }}" as="card" hint-placeholder-count="3">
+          <div style="background:var(--sf2); border:1px solid var(--line); border-radius:14px; padding:16px 18px;">
+            <div style="display:flex; align-items:center; gap:9px; margin-bottom:4px;">
+              <div style="font-size:14.5px; font-weight:700; flex:1;">{{ card.title }}</div>
+              <sc-if value="{{ card.chip }}" hint-placeholder-val="{{ false }}">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.09em; color:{{ card.chipC }}; border:1px solid var(--line2); border-radius:99px; padding:2px 8px;">{{ card.chip }}</span>
+              </sc-if>
+            </div>
+            <sc-if value="{{ card.note }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:11.5px; color:var(--ink3); line-height:1.5; margin-bottom:10px;">{{ card.note }}</div>
+            </sc-if>
+
+            <sc-if value="{{ card.isInfo }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:flex-start; gap:10px; padding:11px 13px; background:var(--sf); border:1px solid var(--line); border-radius:10px; margin-top:6px;">
+                <span style="color:var(--info); font-size:14px;">ⓘ</span>
+                <span style="flex:1; font-size:12.5px; color:var(--ink2); line-height:1.55;">{{ card.infoText }}</span>
+              </div>
+              <a href="#" style="display:inline-block; font-size:12.5px; margin-top:10px;">{{ card.infoLink }} →</a>
+            </sc-if>
+
+            <sc-if value="{{ card.isColors }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--line); margin-top:8px;">
+                <span style="width:30px; height:30px; border-radius:50%; background:{{ primColor }}; border:1px solid var(--line2); flex-shrink:0;"></span>
+                <div style="flex:1;">
+                  <div style="font-size:13px; font-weight:600;">Primärfärg <span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.09em; color:{{ primChipC }}; border:1px solid var(--line2); border-radius:99px; padding:1px 7px; margin-left:5px;">{{ primChip }}</span></div>
+                  <div style="font-size:11px; color:var(--ink3); margin-top:1px;">Rubriker, knappar och länkar</div>
+                </div>
+                <span style="display:flex; gap:6px;">
+                  <sc-for list="{{ primOpts }}" as="o" hint-placeholder-count="3">
+                    <span onClick="{{ o.pick }}" style="width:24px; height:24px; border-radius:50%; background:{{ o.col }}; border:2px solid {{ o.ring }}; cursor:pointer;" title="{{ o.col }}"></span>
+                  </sc-for>
+                </span>
+                <span onClick="{{ vvPrim }}" style="font-size:11.5px; color:var(--ink3); border:1px solid var(--line); border-radius:7px; padding:4px 9px; cursor:pointer;">Visa var</span>
+              </div>
+              <div style="font-size:11px; color:var(--ink3); margin-top:6px;">Färgerna är utvalda för att passa mallen — allt annat på sidan följer med automatiskt.</div>
+            </sc-if>
+
+            <sc-if value="{{ card.isImgs }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; gap:8px; margin-top:8px;">
+                <span style="width:76px; height:56px; border-radius:8px; background:repeating-linear-gradient(45deg,var(--sf3),var(--sf3) 4px,var(--sf) 4px,var(--sf) 8px); border:1px solid var(--line2);"></span>
+                <span style="width:76px; height:56px; border-radius:8px; background:repeating-linear-gradient(45deg,var(--sf3),var(--sf3) 4px,var(--sf) 4px,var(--sf) 8px); border:1px solid var(--line2);"></span>
+                <span style="width:76px; height:56px; border-radius:8px; border:1px dashed var(--line2); display:grid; place-items:center; color:var(--ink3); font-size:16px; cursor:pointer;">+</span>
+              </div>
+              <div style="display:flex; gap:12px; margin-top:9px;">
+                <span style="font-size:11.5px; color:var(--ink2); cursor:pointer; font-weight:600;">Byt bild</span>
+                <span style="font-size:11.5px; color:var(--bad); cursor:pointer;">Ta bort</span>
+                <span style="font-size:11.5px; color:var(--ink3);">Egna bilder ersätter mallens.</span>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ card.isHours }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px;">
+                <sc-for list="{{ hoursFields }}" as="hf" hint-placeholder-count="7">
+                  <div>
+                    <div style="font-size:11px; color:var(--ink3); margin-bottom:4px;">{{ hf.label }}</div>
+                    <input value="{{ hf.val }}" onChange="{{ hf.onChange }}" placeholder="auto" style="width:100%; box-sizing:border-box; background:var(--sf); border:1px solid var(--line2); border-radius:8px; padding:8px 10px; color:var(--ink); font-size:12.5px; font-family:'IBM Plex Mono',monospace;">
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-size:11px; color:var(--ink3); line-height:1.55; margin-top:9px;">Skriv t.ex. <span style="color:var(--ink2);">10–19</span> eller <span style="color:var(--ink2);">Stängt</span>. Tomma dagar hämtas automatiskt från personalens scheman.</div>
+            </sc-if>
+
+            <sc-for list="{{ card.fields }}" as="f" hint-placeholder-count="3">
+              <div style="padding:10px 0 2px;">
+                <div style="display:flex; align-items:center; gap:7px; margin-bottom:6px;">
+                  <span style="font-size:12.5px; font-weight:600;">{{ f.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.09em; color:{{ f.chipC }}; border:1px solid var(--line2); border-radius:99px; padding:1px 7px;">{{ f.chip }}</span>
+                  <div style="flex:1;"></div>
+                  <sc-if value="{{ f.vv }}" hint-placeholder-val="{{ false }}">
+                    <span onClick="{{ f.visaVar }}" style="font-size:11px; color:var(--ink3); border:1px solid var(--line); border-radius:7px; padding:3px 8px; cursor:pointer;">Visa var</span>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ f.isArea }}" hint-placeholder-val="{{ false }}">
+                  <textarea value="{{ f.val }}" onChange="{{ f.onChange }}" style="width:100%; box-sizing:border-box; min-height:64px; background:var(--sf); border:1px solid var(--line2); border-radius:9px; padding:9px 11px; color:var(--ink); font-size:13px; line-height:1.5; font-family:'Instrument Sans',sans-serif; resize:vertical;"></textarea>
+                </sc-if>
+                <sc-if value="{{ f.isInput }}" hint-placeholder-val="{{ true }}">
+                  <input value="{{ f.val }}" onChange="{{ f.onChange }}" placeholder="{{ f.ph }}" style="width:100%; box-sizing:border-box; background:var(--sf); border:1px solid var(--line2); border-radius:9px; padding:9px 11px; color:var(--ink); font-size:13px; font-family:'Instrument Sans',sans-serif;">
+                </sc-if>
+                <sc-if value="{{ f.help }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:11px; color:var(--ink3); line-height:1.5; margin-top:5px;">{{ f.help }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ── HÖGER: förhandsvisning, fyller hela ytan ── -->
+    <div style="overflow-y:auto; min-height:0; background:#0C0C0B;">
+      <div style="width:{{ prevWidth }}; margin:0 auto; min-height:100%; display:flex; flex-direction:column;">
+
+        <!-- ═ Mall: Källa (ljus, serif) ═ -->
+        <sc-if value="{{ isKalla }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#F3EFE7; color:#22302B; flex:1; display:flex; flex-direction:column;">
+            <div style="background:#22302B; color:#DAD3C2; text-align:center; font-size:9px; letter-spacing:.2em; padding:7px;">BOKA TID ONLINE · VÄLKOMMEN IN</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 30px; border-bottom:1px solid #DAD3C2;">
+              <span style="font-family:'Marcellus',serif; font-size:17px; letter-spacing:.18em; outline:{{ flName }}; outline-offset:3px;">{{ nameU }}</span>
+              <span style="display:flex; gap:14px; font-size:9.5px; letter-spacing:.16em; color:#5F6B60; font-weight:700;"><span>BEHANDLINGAR</span><span>BOKA</span><span>OM</span></span>
+            </div>
+
+            <sc-if value="{{ pageHem }}" hint-placeholder-val="{{ true }}">
+              <div style="text-align:center; padding:52px 30px 44px;">
+                <div style="font-size:10px; letter-spacing:.26em; font-weight:700; margin-bottom:12px; color:{{ primColor }};">SALONG · LINKÖPING</div>
+                <div style="font-family:'Marcellus',serif; font-size:{{ heroFs }}px; line-height:1.12; white-space:pre-line; outline:{{ flHeroTitle }}; outline-offset:4px;">{{ v_heroTitle }}</div>
+                <div style="font-size:13.5px; color:#5F6B60; margin-top:12px; max-width:440px; margin-left:auto; margin-right:auto; line-height:1.6; outline:{{ flHeroSub }}; outline-offset:3px;">{{ v_heroSub }}</div>
+                <span style="display:inline-block; margin-top:20px; color:#EDF2EC; font-size:11px; letter-spacing:.14em; font-weight:700; padding:12px 26px; border-radius:6px; background:{{ primColor }}; outline:{{ flHeroBtn }}; outline-offset:3px;">{{ v_heroBtnU }}</span>
+              </div>
+              <div style="padding:28px 34px; border-top:1px solid #DAD3C2;">
+                <div style="font-family:'Marcellus',serif; font-size:21px; margin-bottom:12px; outline:{{ flMidTitle }}; outline-offset:3px;">{{ v_midTitle }}</div>
+                <div style="display:flex; justify-content:space-between; font-size:12.5px; padding:9px 0; border-bottom:1px solid #DAD3C2;"><span>Klippning</span><span style="font-family:'IBM Plex Mono',monospace;">450 kr</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:12.5px; padding:9px 0; border-bottom:1px solid #DAD3C2;"><span>Färg + klipp</span><span style="font-family:'IBM Plex Mono',monospace;">1 240 kr</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:12.5px; padding:9px 0;"><span>Fade</span><span style="font-family:'IBM Plex Mono',monospace;">480 kr</span></div>
+              </div>
+              <div style="background:#22302B; color:#DAD3C2; padding:30px 34px;">
+                <div style="font-family:'Marcellus',serif; font-size:19px; color:#F3EFE7; outline:{{ flWhyTitle }}; outline-offset:3px;">{{ v_whyTitle }}</div>
+                <div style="font-size:12px; line-height:1.65; margin-top:8px; max-width:520px; outline:{{ flWhyText }}; outline-offset:3px;">{{ v_whyText }}</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ pageKontakt }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:44px 38px; max-width:560px;">
+                <div style="font-size:10px; letter-spacing:.24em; font-weight:700; color:{{ primColor }}; outline:{{ flKEyebrow }}; outline-offset:3px;">{{ v_kEyebrowU }}</div>
+                <div style="font-family:'Marcellus',serif; font-size:32px; margin-top:9px; outline:{{ flKTitle }}; outline-offset:3px;">{{ v_kTitle }}</div>
+                <div style="font-size:10px; letter-spacing:.2em; color:#93998C; font-weight:700; margin-top:26px;">ADRESS</div>
+                <div style="font-family:'Marcellus',serif; font-size:19px; margin-top:6px; outline:{{ flAdress }}; outline-offset:3px;">{{ v_adress }}</div>
+                <div style="font-size:12.5px; margin-top:5px; color:#5F6B60;">Visa på karta → · <span style="font-family:'IBM Plex Mono',monospace; outline:{{ flTelefon }}; outline-offset:2px;">{{ v_telefon }}</span></div>
+                <div style="font-size:10px; letter-spacing:.2em; color:#93998C; font-weight:700; margin-top:26px;">ÖPPETTIDER</div>
+                <div style="outline:{{ flHours }}; outline-offset:3px; margin-top:5px;">
+                  <sc-for list="{{ prevHours }}" as="ph" hint-placeholder-count="4">
+                    <div style="display:flex; justify-content:space-between; font-size:13px; padding:9px 0; border-bottom:1px solid #DAD3C2;"><span>{{ ph.label }}</span><span style="font-family:'IBM Plex Mono',monospace;">{{ ph.val }}</span></div>
+                  </sc-for>
+                </div>
+                <div style="font-size:11.5px; color:#5F6B60; margin-top:14px;">Lediga tider syns alltid i bokningen — välj den som passar dig.</div>
+              </div>
+            </sc-if>
+
+            <div style="flex:1;"></div>
+            <div style="background:#22302B; color:#93998C; padding:15px 34px; display:flex; justify-content:space-between; font-size:10.5px;">
+              <span>{{ v_name }}</span><span style="font-family:'IBM Plex Mono',monospace;">{{ v_telefon }}</span><span>{{ v_adress }}</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ═ Mall: Snitt (svart + lime) ═ -->
+        <sc-if value="{{ isSnitt }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#141412; color:#EFEDE6; flex:1; display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 30px; border-bottom:1px solid #2C2C27;">
+              <span style="font-family:'Anton',sans-serif; font-size:16px; letter-spacing:.06em; outline:{{ flName }}; outline-offset:3px;">{{ nameU }}</span>
+              <span style="display:flex; gap:14px; font-size:9.5px; letter-spacing:.16em; color:#A39F93; font-weight:700;"><span>— TJÄNSTER</span><span>— TEAM</span><span>— BOKA</span></span>
+            </div>
+
+            <sc-if value="{{ pageHem }}" hint-placeholder-val="{{ true }}">
+              <div style="padding:48px 34px 38px;">
+                <div style="font-family:'Anton',sans-serif; font-size:{{ heroFsSnitt }}px; line-height:1.04; text-transform:uppercase; white-space:pre-line; outline:{{ flHeroTitle }}; outline-offset:4px;">{{ v_heroTitle }}</div>
+                <div style="font-size:13px; color:#A39F93; margin-top:12px; max-width:420px; line-height:1.6; outline:{{ flHeroSub }}; outline-offset:3px;">{{ v_heroSub }}</div>
+                <span style="display:inline-block; margin-top:18px; color:#141412; font-family:'Anton',sans-serif; font-size:12px; letter-spacing:.08em; padding:12px 24px; text-transform:uppercase; background:{{ primColor }}; outline:{{ flHeroBtn }}; outline-offset:3px;">{{ v_heroBtn }}</span>
+              </div>
+              <div style="display:flex; gap:16px; padding:11px 34px; border-top:1px solid #2C2C27; border-bottom:1px solid #2C2C27; font-size:11px; color:#A39F93;">
+                <span style="color:{{ primColor }};">★ 5,0</span><span>212 recensioner</span><span>Sedan 2019</span>
+              </div>
+              <div style="padding:26px 34px;">
+                <div style="font-size:10px; letter-spacing:.2em; color:#A39F93; margin-bottom:12px; outline:{{ flMidTitle }}; outline-offset:3px;">{{ v_midTitleU }}</div>
+                <div style="display:flex; justify-content:space-between; font-size:12.5px; padding:9px 0; border-bottom:1px solid #2C2C27;"><span>KLIPPNING</span><span style="font-family:'IBM Plex Mono',monospace; color:{{ primColor }};">450</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:12.5px; padding:9px 0; border-bottom:1px solid #2C2C27;"><span>FADE</span><span style="font-family:'IBM Plex Mono',monospace; color:{{ primColor }};">480</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:12.5px; padding:9px 0;"><span>SKÄGGTRIM</span><span style="font-family:'IBM Plex Mono',monospace; color:{{ primColor }};">380</span></div>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:2px; padding:0 34px 26px;">
+                <span style="aspect-ratio:1; background:#1D1D1A;"></span>
+                <span style="aspect-ratio:1; background:#242420;"></span>
+                <span style="aspect-ratio:1; background:#1D1D1A;"></span>
+                <span style="aspect-ratio:1; background:#242420;"></span>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ pageKontakt }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:42px 34px; max-width:560px;">
+                <div style="font-size:10px; letter-spacing:.24em; color:#A39F93; font-weight:700; outline:{{ flKEyebrow }}; outline-offset:3px;">{{ v_kEyebrowU }}</div>
+                <div style="font-family:'Anton',sans-serif; font-size:30px; text-transform:uppercase; margin-top:9px; outline:{{ flKTitle }}; outline-offset:3px;">{{ v_kTitle }}</div>
+                <div style="font-size:13px; margin-top:22px; outline:{{ flAdress }}; outline-offset:3px;">{{ v_adress }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:{{ primColor }}; margin-top:5px; outline:{{ flTelefon }}; outline-offset:2px;">{{ v_telefon }}</div>
+                <div style="margin-top:20px; outline:{{ flHours }}; outline-offset:3px;">
+                  <sc-for list="{{ prevHours }}" as="ph" hint-placeholder-count="4">
+                    <div style="display:flex; justify-content:space-between; font-size:12px; padding:9px 0; border-bottom:1px solid #2C2C27; color:#A39F93;"><span>{{ ph.label }}</span><span style="font-family:'IBM Plex Mono',monospace; color:#EFEDE6;">{{ ph.val }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="flex:1;"></div>
+            <div style="background:#0E0E0D; padding:15px 34px; display:flex; justify-content:space-between; font-size:10.5px; color:#A39F93;">
+              <span>{{ nameU }}</span><span style="font-family:'IBM Plex Mono',monospace;">{{ v_telefon }}</span><span>{{ v_adress }}</span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Dialog: lämna med osparade ändringar ══ -->
+  <sc-if value="{{ dlgLeave }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ stay }}" style="position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.55); backdrop-filter:blur(2px);"></div>
+    <div style="position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:51; width:400px; background:var(--sf); border:1px solid var(--line2); border-radius:18px; box-shadow:0 24px 64px rgba(0,0,0,.6); padding:22px 22px 18px;">
+      <div style="font-size:17px; font-weight:700;">Lämna redigeraren?</div>
+      <div style="font-size:13px; color:var(--ink2); line-height:1.55; margin-top:8px;">Du har ändringar som inte är publicerade. Spara dem som ett utkast så kan du fortsätta senare — eller kasta dem.</div>
+      <div style="display:grid; gap:8px; margin-top:18px;">
+        <span onClick="{{ draftAndLeave }}" style="text-align:center; padding:11px 0; border-radius:10px; background:var(--grön); color:var(--on-grön); font-size:13.5px; font-weight:600; cursor:pointer;">Spara utkast &amp; lämna</span>
+        <span onClick="{{ discardAndLeave }}" style="text-align:center; padding:11px 0; border-radius:10px; border:1px solid var(--line2); font-size:13.5px; color:var(--bad); cursor:pointer;">Kasta ändringarna</span>
+        <span onClick="{{ stay }}" style="text-align:center; padding:11px 0; border-radius:10px; font-size:13.5px; color:var(--ink2); cursor:pointer;">Stanna kvar</span>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;mall&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kalla&quot;,&quot;snitt&quot;],&quot;default&quot;:&quot;kalla&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Testa mallanpassning&quot;}}">
+class Component extends DCLogic {
+  DEF = {
+    shared: {
+      name: 'FreshCut', epost: 'info@freshcut.se', telefon: '0927-84 92 84',
+      adress: 'Bokhållaregatan 2, 582 24 Linköping',
+      insta: 'instagram.com/freshcut', fb: '', tiktok: '',
+      kEyebrow: '— Hitta hit', kTitle: 'Plats & öppettider',
+      hours: { man: '', tis: '', ons: '', tor: '', fre: '09:00–19:00', lor: '11:00–18:00', son: 'Stängt' },
+    },
+    kalla: {
+      heroTitle: 'Håret hör ihop\nmed resten av dig', heroSub: 'Lugn salong mitt i Linköping. Klipp, färg och hårbotten — i ditt tempo.', heroBtn: 'Boka tid',
+      midTitle: 'Behandlingar', whyTitle: 'Varför oss?', whyText: 'Vi börjar alltid med ett kort samtal, arbetar utan stress och avslutar med en stunds ro. Håret ska hålla — inte bara till fredag.',
+      omText: 'Källa öppnade 2019 med en enkel idé: håret hör ihop med resten av dig.',
+      bokIntro: 'Välj behandling och terapeut — betala på plats eller online.',
+      prim: '#1D5E54', primOpts: ['#1D5E54', '#1F4636', '#33518F'],
+    },
+    snitt: {
+      heroTitle: 'RENT SNITT.\nINGET KRÅNGEL.', heroSub: 'Klippning och skäggvård för alla. Drop in eller boka online — du sitter i stolen samma dag.', heroBtn: 'Boka',
+      midTitle: '— Tjänster', whyTitle: 'Varför oss?', whyText: 'Erfarna frisörer, bästa produkterna och priser utan överraskningar.',
+      omText: 'Hörnsalongen där frisör möter barberare. Vi håller det enkelt, vasst och prisvärt.',
+      bokIntro: 'Välj tjänst och frisör. Drop-in när det finns luckor.',
+      prim: '#D6F344', primOpts: ['#D6F344', '#D6AC6A', '#EFEDE6'],
+    },
+  };
+
+  state = {
+    tab: 'hem', device: 0, flash: null,
+    dirty: false, draftAt: null, dlgLeave: false,
+    vals: { shared: {}, kalla: {}, snitt: {} },
+  };
+
+  MALLAR = {
+    kalla: { label: 'Källa — Hårspa', sw: ['#F3EFE7', '#1D5E54', '#22302B'],
+      tabs: [
+        { id: 'allmant', name: 'Allmänt', sub: 'Namn · färger · typsnitt' },
+        { id: 'hem', name: 'Hem', sub: 'Hero · texter · bilder' },
+        { id: 'tjanster', name: 'Behandlingar', sub: 'Utbud & priser' },
+        { id: 'team', name: 'Terapeuter', sub: 'Teamsidan' },
+        { id: 'om', name: 'Om oss', sub: 'Berättelse · bild' },
+        { id: 'kontakt', name: 'Kontakt', sub: 'Adress · öppettider' },
+        { id: 'bokning', name: 'Bokning', sub: 'Text · bokningssätt' },
+        { id: 'apoteket', name: 'Apoteket', sub: 'Butikens sida' },
+        { id: 'journal', name: 'Anteckningar', sub: 'Bloggens sida' },
+      ] },
+    snitt: { label: 'Snitt — Svart Studio', sw: ['#141412', '#D6F344', '#EFEDE6'],
+      tabs: [
+        { id: 'allmant', name: 'Allmänt', sub: 'Namn · färger · typsnitt' },
+        { id: 'hem', name: 'Postern', sub: 'Rubrik · betyg · bilder' },
+        { id: 'tjanster', name: 'Tjänster', sub: 'Utbud & signaturer' },
+        { id: 'team', name: 'Teamet', sub: 'Teamsidan' },
+        { id: 'galleri', name: 'Galleriet', sub: 'Bildrutor' },
+        { id: 'kontakt', name: 'Kontakt', sub: 'Adress · öppettider' },
+        { id: 'bokning', name: 'Bokning', sub: 'Text · bokningssätt' },
+      ] },
+  };
+
+  mall() { return this.props.mall === 'snitt' ? 'snitt' : 'kalla'; }
+  get(scope, key) {
+    const ov = this.state.vals[scope][key];
+    return ov !== undefined ? ov : this.DEF[scope][key];
+  }
+  set(scope, key, val) { this.state.vals[scope][key] = val; this.setState({ dirty: true }); }
+  edited(scope, key) { return this.state.vals[scope][key] !== undefined && this.state.vals[scope][key] !== this.DEF[scope][key]; }
+
+  fld(scope, key, label, opts) {
+    const o = opts || {};
+    const ed = this.edited(scope, key);
+    return {
+      label, val: this.get(scope, key),
+      onChange: (e) => this.set(scope, key, e.target.value),
+      chip: ed ? 'EGEN TEXT' : 'STANDARD', chipC: ed ? '#D6AC6A' : '#96968C',
+      isArea: !!o.area, isInput: !o.area, ph: o.ph || '',
+      help: o.help || false,
+      vv: !!o.vv, visaVar: o.vv ? (() => this.flash(o.vv)) : undefined,
+    };
+  }
+  sfld(key, label, opts) { return this.fld('shared', key, label, opts); }
+
+  flash(key) {
+    this.setState({ flash: key });
+    clearTimeout(this._ft);
+    this._ft = setTimeout(() => this.setState({ flash: null }), 1600);
+  }
+
+  cardsFor(tab, m) {
+    if (tab === 'allmant') return [
+      { title: 'Företagsnamn', fields: [this.sfld('name', 'Företagsnamn', { vv: 'name', help: 'Visas i sidhuvudet, sidfoten och bokningen. Samma namn som i er admin.' })] },
+      { title: 'Varumärke — färger', isColors: true, note: 'Din sida har färdiga standardfärger — ändra bara det du vill avvika från.' },
+      { title: 'Typsnitt', isInfo: true, infoText: 'Typsnitten är valda för att passa ihop och läsas bra på mobil. Vill ni en annan stil — hör av er till oss på Corevo.', infoLink: 'Kontakta Corevo' },
+    ];
+    if (tab === 'hem') return [
+      { title: 'Texterna på startsidan', fields: [
+        this.fld(m, 'heroTitle', 'Stora rubriken', { area: true, vv: 'heroTitle', help: 'Radbrytning tillåten.' }),
+        this.fld(m, 'heroSub', 'Texten under rubriken', { area: true, vv: 'heroSub' }),
+        this.fld(m, 'heroBtn', 'Boka-knappen', { vv: 'heroBtn' }),
+        this.fld(m, 'midTitle', 'Rubriken, mittensektionen', { vv: 'midTitle' }),
+        this.fld(m, 'whyTitle', '"Varför oss"-rubriken', { vv: 'whyTitle' }),
+        this.fld(m, 'whyText', '"Varför oss"-texten', { area: true, vv: 'whyText' }),
+      ] },
+      { title: 'Bilder på startsidan', chip: 'EGNA BILDER', chipC: '#D6AC6A', isImgs: true, note: 'Bilderna högst upp — de som visas här är exakt de som syns på sidan just nu.' },
+      ...(m === 'snitt' ? [{ title: 'Betygsraden', isInfo: true, infoText: 'Betyget (5,0★) och antalet recensioner hämtas från era Google-recensioner och uppdateras automatiskt.', infoLink: 'Koppla under Inställningar → Integrationer' }] : []),
+    ];
+    if (tab === 'tjanster') return [
+      { title: 'Utbud & priser', isInfo: true, infoText: 'Behandlingar, priser och längder hämtas från era tjänster. Ändrar ni en tjänst uppdateras sidan direkt — inget dubbelarbete här.', infoLink: 'Ändra under Inställningar → Tjänster' },
+      { title: 'Sidans rubriker', fields: [this.fld(m, 'midTitle', 'Sidrubrik', { vv: 'midTitle' })] },
+    ];
+    if (tab === 'team') return [
+      { title: 'Teamet', isInfo: true, infoText: 'Namn, roller och bilder hämtas från era personalprofiler. Ny kollega? Lägg till under Personal så dyker hen upp här.', infoLink: 'Ändra under Inställningar → Personal' },
+    ];
+    if (tab === 'om') return [
+      { title: 'Berättelsen', fields: [this.fld(m, 'omText', 'Om oss-texten', { area: true })] },
+      { title: 'Bild på Om oss-sidan', isImgs: true },
+    ];
+    if (tab === 'kontakt') return [
+      { title: 'Sidans rubriker', fields: [
+        this.sfld('kEyebrow', 'Liten rubrik (överraden)', { vv: 'kEyebrow' }),
+        this.sfld('kTitle', 'Sidrubrik', { vv: 'kTitle' }),
+      ] },
+      { title: 'Kontakt, adress & sociala medier', note: 'Syns på Kontakt-sidan och i sidfoten. Adressen driver även kartan (slås upp automatiskt).', fields: [
+        this.sfld('epost', 'E-post'),
+        this.sfld('telefon', 'Telefon', { vv: 'telefon' }),
+        this.sfld('adress', 'Adress', { vv: 'adress' }),
+        this.sfld('insta', 'Instagram', { ph: 'instagram.com/foretaget' }),
+        this.sfld('fb', 'Facebook', { ph: 'facebook.com/foretaget' }),
+        this.sfld('tiktok', 'TikTok', { ph: 'tiktok.com/@foretaget' }),
+      ] },
+      { title: 'Öppettider', chip: this.hoursEdited() ? 'EGNA TIDER' : 'FRÅN SCHEMAN', chipC: this.hoursEdited() ? '#D6AC6A' : '#96968C', isHours: true },
+    ];
+    if (tab === 'bokning') return [
+      { title: 'Texten i bokningen', fields: [this.fld(m, 'bokIntro', 'Introtext', { area: true, help: 'Visas överst när kunden bokar.' })] },
+      { title: 'Tider & bokningssätt', isInfo: true, infoText: 'Vilka tider som går att boka styrs av personalens arbetstider och tjänsternas längd — aldrig härifrån.', infoLink: 'Ändra under Inställningar → Bokningsregler' },
+    ];
+    if (tab === 'apoteket') return [
+      { title: 'Apoteket (butik)', isInfo: true, infoText: 'Produkter, priser och lager sköts i butiksmodulen. Sidan visas bara när butiken är på.', infoLink: 'Ändra under Butik' },
+    ];
+    if (tab === 'journal') return [
+      { title: 'Anteckningar (blogg)', isInfo: true, infoText: 'Inlägg skrivs i bloggmodulen och visas här automatiskt — nyaste överst.', infoLink: 'Skriv ett inlägg' },
+    ];
+    if (tab === 'galleri') return [
+      { title: 'Galleriet', chip: 'EGNA BILDER', chipC: '#D6AC6A', isImgs: true, note: 'Bildrutorna på startsidan. Dra för att ändra ordning.' },
+    ];
+    return [];
+  }
+
+  hoursEdited() { const h = this.get('shared', 'hours'); return Object.values(h).some(v => v !== ''); }
+
+  renderVals() {
+    const st = this.state;
+    const m = this.mall();
+    const M = this.MALLAR[m];
+    const D = this.DEF[m];
+    const mobile = st.device === 1;
+    const fl = (key) => st.flash === key ? '2px solid #D6AC6A' : 'none';
+
+    const tabs = M.tabs.map(t => ({
+      ...t,
+      bg: st.tab === t.id ? '#2E2E28' : 'transparent',
+      bd: st.tab === t.id ? '#4A4A41' : '#33332C',
+      c: st.tab === t.id ? '#F0F0EA' : '#C8C8BD',
+      accent: st.tab === t.id ? '#3A7357' : 'transparent',
+      pick: () => this.setState({ tab: t.id, flash: null }),
+    }));
+
+    const validTab = M.tabs.some(t => t.id === st.tab) ? st.tab : 'hem';
+    const cards = this.cardsFor(validTab, m).map(c => ({
+      chip: false, note: false, isInfo: false, isColors: false, isImgs: false, isHours: false,
+      fields: [], infoText: '', infoLink: '', ...c,
+    }));
+
+    const prim = this.get(m, 'prim');
+    const primOpts = D.primOpts.map(col => ({
+      col, ring: col === prim ? '#F0F0EA' : '#4A4A41',
+      pick: () => this.set(m, 'prim', col),
+    }));
+
+    const H = this.get('shared', 'hours');
+    const hoursFields = [
+      ['man', 'Måndag'], ['tis', 'Tisdag'], ['ons', 'Onsdag'], ['tor', 'Torsdag'], ['fre', 'Fredag'], ['lor', 'Lördag'], ['son', 'Söndag'],
+    ].map(([k, label]) => ({
+      label, val: H[k],
+      onChange: (e) => { const h = { ...this.get('shared', 'hours') }; h[k] = e.target.value; this.set('shared', 'hours', h); },
+    }));
+    const prevHours = [
+      { label: 'Måndag–Torsdag', val: H.man || '09:00–18:00' },
+      { label: 'Fredag', val: H.fre || '09:00–18:00' },
+      { label: 'Lördag', val: H.lor || 'Stängt' },
+      { label: 'Söndag', val: H.son || 'Stängt' },
+    ];
+
+    const page = validTab === 'kontakt' ? 'kontakt' : 'hem';
+    const name = this.get('shared', 'name');
+
+    // status: osparat → utkast → publicerat
+    let statusText, statusC;
+    if (st.dirty) { statusText = 'Osparade ändringar — bara förhandsvisning'; statusC = '#D6AC6A'; }
+    else if (st.draftAt) { statusText = 'Utkast sparat ' + st.draftAt + ' · inte publicerat'; statusC = '#D6AC6A'; }
+    else { statusText = 'Allt publicerat · live'; statusC = '#9AC4A5'; }
+    const actionable = st.dirty || st.draftAt;
+
+    const reset = { vals: { shared: {}, kalla: {}, snitt: {} }, dirty: false, draftAt: null, dlgLeave: false };
+
+    return {
+      mallLabel: M.label, sw1: M.sw[0], sw2: M.sw[1], sw3: M.sw[2],
+      urlText: name.toLowerCase().replace(/\s/g, '') + '.corevo.se' + (page === 'kontakt' ? '/kontakt' : '/'),
+      statusText, statusC,
+      statusShort: st.dirty ? 'Osparat' : (st.draftAt ? 'Utkast' : 'Live'),
+      tabs, cards,
+      primColor: prim, primOpts,
+      primChip: this.edited(m, 'prim') ? 'EGEN FÄRG' : 'STANDARD', primChipC: this.edited(m, 'prim') ? '#D6AC6A' : '#96968C',
+      vvPrim: () => this.flash('prim'),
+      hoursFields, prevHours,
+      devDBg: mobile ? 'transparent' : '#2E2E28', devDC: mobile ? '#96968C' : '#F0F0EA',
+      devMBg: mobile ? '#2E2E28' : 'transparent', devMC: mobile ? '#F0F0EA' : '#96968C',
+      pickDesktop: () => this.setState({ device: 0 }),
+      pickMobile: () => this.setState({ device: 1 }),
+      prevWidth: mobile ? '390px' : '100%',
+      // utkast & publicering
+      saveDraft: () => this.setState({ dirty: false, draftAt: '11:42' }),
+      publish: () => this.setState({ dirty: false, draftAt: null }),
+      discard: () => this.setState(reset),
+      draftBd: st.dirty ? '#4A4A41' : '#33332C', draftC: st.dirty ? '#F0F0EA' : '#96968C',
+      pubText: actionable ? 'Publicera' : 'Publicerat ✓',
+      pubBg: actionable ? '#2F5F47' : 'transparent',
+      pubC: actionable ? '#E9F2EC' : '#96968C',
+      pubBd: actionable ? '#2F5F47' : '#33332C',
+      banner: !st.dirty && !!st.draftAt,
+      bannerText: 'Utkast sparat ' + (st.draftAt || '') + ' — besökare ser fortfarande den publicerade versionen. Fortsätt ändra eller publicera när du är klar.',
+      // lämna-vakt
+      navGuard: () => { if (st.dirty) this.setState({ dlgLeave: true }); },
+      dlgLeave: st.dlgLeave,
+      stay: () => this.setState({ dlgLeave: false }),
+      draftAndLeave: () => this.setState({ dirty: false, draftAt: '11:42', dlgLeave: false }),
+      discardAndLeave: () => this.setState(reset),
+      // förhandsvisning
+      isKalla: m === 'kalla', isSnitt: m === 'snitt',
+      pageHem: page === 'hem', pageKontakt: page === 'kontakt',
+      v_name: name, nameU: name.toUpperCase(),
+      v_heroTitle: this.get(m, 'heroTitle'), v_heroSub: this.get(m, 'heroSub'),
+      v_heroBtn: this.get(m, 'heroBtn'), v_heroBtnU: this.get(m, 'heroBtn').toUpperCase(),
+      v_midTitle: this.get(m, 'midTitle'), v_midTitleU: this.get(m, 'midTitle').toUpperCase(),
+      v_whyTitle: this.get(m, 'whyTitle'), v_whyText: this.get(m, 'whyText'),
+      v_kEyebrowU: this.get('shared', 'kEyebrow').toUpperCase(), v_kTitle: this.get('shared', 'kTitle'),
+      v_adress: this.get('shared', 'adress'), v_telefon: this.get('shared', 'telefon'),
+      heroFs: mobile ? 26 : 40, heroFsSnitt: mobile ? 30 : 52,
+      flName: fl('name'), flHeroTitle: fl('heroTitle'), flHeroSub: fl('heroSub'), flHeroBtn: fl('heroBtn'),
+      flMidTitle: fl('midTitle'), flWhyTitle: fl('whyTitle'), flWhyText: fl('whyText'),
+      flKEyebrow: fl('kEyebrow'), flKTitle: fl('kTitle'), flAdress: fl('adress'), flTelefon: fl('telefon'), flHours: fl('hours'),
+    };
+  }
+}
+</script>
+</body>
+</html>

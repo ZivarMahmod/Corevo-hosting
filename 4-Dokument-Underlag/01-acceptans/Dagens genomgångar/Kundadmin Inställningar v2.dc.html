@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>FreshCut · Inställningar v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; }
+    body {
+      --bg:#121210; --sf:#1C1C18; --sf2:#25251F; --sf3:#2E2E28;
+      --ink:#F0F0EA; --ink2:#C8C8BD; --ink3:#96968C;
+      --line:#33332C; --line2:#4A4A41;
+      --grön:#2F5F47; --grön2:#3A7357; --on-grön:#E9F2EC;
+      --ok:#9AC4A5; --warn:#D6AC6A; --bad:#D68F85; --info:#A2B6D0;
+      background:var(--bg); color:var(--ink);
+      font-family:'Instrument Sans',sans-serif;
+    }
+    a { color:var(--ink2); text-decoration:none; }
+    a:hover { color:var(--ink); }
+    ::selection { background:#3A5A48; color:#fff; }
+    input { outline:none; }
+  </style>
+</helmet>
+
+<div style="height:100vh; min-width:1280px; background:var(--bg); display:flex; flex-direction:column; overflow:hidden;">
+
+  <!-- ══ Toppnav (universal banner) ══ -->
+  <div style="display:flex; align-items:center; gap:16px; height:60px; flex-shrink:0; padding:0 24px; border-bottom:1px solid var(--line); background:var(--bg); white-space:nowrap;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="width:34px; height:34px; border-radius:9px; background:var(--sf3); display:grid; place-items:center; font-weight:700; font-size:15px;">F</div>
+      <div>
+        <div style="font-weight:700; font-size:15px; letter-spacing:-.01em;">FreshCut</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.14em; color:var(--ink3);">VIA COREVO</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:4px; margin-left:6px;">
+      <div style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2);">Översikt</div>
+      <div style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2);">Kalender</div>
+      <div style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2);">Kunder</div>
+      <div style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2);">Redigera sidan</div>
+      <div style="padding:8px 14px; border-radius:9px; background:var(--sf2); font-weight:600; font-size:14px;">Inställningar</div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--line); border-radius:9px; color:var(--ink3); font-size:13.5px; width:170px;">
+      <span>⌕</span><span style="flex:1;">Sök kund, bokning…</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; border:1px solid var(--line); border-radius:5px; padding:2px 5px;">Ctrl K</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:8px 13px; border:1px solid var(--line2); border-radius:9px; font-size:13.5px; font-weight:600;">Öppna min sida ↗</div>
+    <div style="width:34px; height:34px; border-radius:9px; border:1px solid var(--line); display:grid; place-items:center; color:var(--ink3); font-size:14px;">◐</div>
+    <div style="width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); display:grid; place-items:center; font-size:13px; font-weight:600;">I</div>
+  </div>
+
+  <!-- ══ Innehåll: vänsternav + panel ══ -->
+  <div style="display:grid; grid-template-columns:308px 1fr; flex:1; min-height:0;">
+
+    <!-- ── VÄNSTER: kategorier + sök ── -->
+    <div data-screen-label="Inställningsnav" style="border-right:1px solid var(--line); overflow-y:auto; min-height:0; background:var(--sf); padding:18px 14px 40px;">
+      <div style="font-size:19px; font-weight:700; letter-spacing:-.01em; padding:0 6px;">Inställningar</div>
+
+      <div style="display:flex; align-items:center; gap:9px; padding:9px 12px; border:1px solid var(--line2); border-radius:10px; background:var(--bg); margin:12px 0 6px;">
+        <span style="color:var(--ink3);">⌕</span>
+        <input onChange="{{ onSearch }}" placeholder="Sök — öppettider, pris, behörighet…" style="flex:1; background:transparent; border:none; color:var(--ink); font-size:13px; font-family:'Instrument Sans',sans-serif;">
+      </div>
+
+      <!-- sökresultat -->
+      <sc-if value="{{ searching }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:4px 6px;">
+          <sc-for list="{{ hits }}" as="h" hint-placeholder-count="3">
+            <div onClick="{{ h.go }}" style="padding:10px 10px; border-bottom:1px solid var(--line); cursor:pointer;">
+              <div style="font-size:13.5px; font-weight:600;">{{ h.name }}</div>
+              <div style="font-size:11.5px; color:var(--ink3); margin-top:2px;">{{ h.hint }}</div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noHits }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:12px 10px; font-size:12.5px; color:var(--ink3); font-style:italic;">Inget hittat — testa "pris", "frånvaro", "lösenord"…</div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- kategorinav -->
+      <sc-if value="{{ notSearching }}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.15em; color:var(--ink3); padding:16px 6px 6px;">{{ g.label }}</div>
+          <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="2">
+            <div onClick="{{ it.pick }}" style="display:flex; align-items:center; gap:11px; padding:10px 10px; border-radius:10px; cursor:pointer; background:{{ it.bg }};">
+              <span style="width:30px; height:30px; border-radius:8px; background:var(--sf2); border:1px solid var(--line); display:grid; place-items:center; font-size:13px; color:var(--ink2); flex-shrink:0;">{{ it.icon }}</span>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:13.5px; font-weight:600; color:{{ it.c }};">{{ it.name }}</div>
+                <div style="font-size:11px; color:var(--ink3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ it.desc }}</div>
+              </div>
+              <sc-if value="{{ it.status }}" hint-placeholder-val="{{ false }}">
+                <span style="width:7px; height:7px; border-radius:50%; background:{{ it.statusC }}; flex-shrink:0;" title="{{ it.status }}"></span>
+              </sc-if>
+            </div>
+          </sc-for>
+        </sc-for>
+      </sc-if>
+    </div>
+
+    <!-- ── HÖGER: vald kategori ── -->
+    <div style="overflow-y:auto; min-height:0;">
+      <div style="max-width:760px; margin:0 auto; padding:30px 36px 64px;">
+
+        <!-- ═ Bokningsregler ═ -->
+        <sc-if value="{{ paneBokning }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:22px; font-weight:700; letter-spacing:-.01em;">Bokningsregler</div>
+          <div style="font-size:13px; color:var(--ink3); margin-top:4px;">Hur och när kunder kan boka online. Tiderna som visas styrs av personalens arbetstider.</div>
+
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); margin:24px 0 10px;">ONLINEBOKNING</div>
+          <div style="display:grid; gap:8px;">
+            <sc-for list="{{ bokModes }}" as="bm" hint-placeholder-count="3">
+              <div onClick="{{ bm.pick }}" style="display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border:1px solid {{ bm.bd }}; border-radius:13px; cursor:pointer; background:{{ bm.bg }};">
+                <span style="width:16px; height:16px; border-radius:50%; border:2px solid {{ bm.ringC }}; background:{{ bm.dotC }}; margin-top:1px; flex-shrink:0; box-sizing:border-box;"></span>
+                <div style="flex:1;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:14.5px; font-weight:700;">{{ bm.name }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.1em; color:{{ bm.chipC }};">{{ bm.chip }}</span>
+                  </div>
+                  <div style="font-size:12.5px; color:var(--ink2); margin-top:3px; line-height:1.5;">{{ bm.desc }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); margin:26px 0 4px;">REGLER</div>
+          <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:4px 18px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line);">
+              <div>
+                <div style="font-size:13.5px; font-weight:600;">Hur långt fram kan kunder boka?</div>
+                <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">Kalendern visar tider så här långt framåt.</div>
+              </div>
+              <span style="padding:7px 12px; border:1px solid var(--line2); border-radius:9px; font-size:13px; font-family:'IBM Plex Mono',monospace;">90 dagar ▾</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line);">
+              <div>
+                <div style="font-size:13.5px; font-weight:600;">Avbokning senast</div>
+                <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">Därefter går det inte att avboka via länken i mejlet.</div>
+              </div>
+              <span style="padding:7px 12px; border:1px solid var(--line2); border-radius:9px; font-size:13px; font-family:'IBM Plex Mono',monospace;">24 timmar ▾</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 0;">
+              <div>
+                <div style="font-size:13.5px; font-weight:600;">Nya kunder får boka själva</div>
+                <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">Kan stängas av per kund på kundkortet.</div>
+              </div>
+              <span onClick="{{ tgSelfBook }}" style="width:38px; height:22px; border-radius:99px; background:{{ sbBg }}; position:relative; cursor:pointer; transition:background .15s; flex-shrink:0;">
+                <span style="position:absolute; top:2px; left:{{ sbLeft }}px; width:18px; height:18px; border-radius:50%; background:var(--ink); transition:left .15s;"></span>
+              </span>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px; margin-top:22px; padding:11px 14px; background:var(--sf); border:1px solid var(--line); border-radius:11px;">
+            <span style="color:var(--info); font-size:14px;">ⓘ</span>
+            <span style="font-size:12.5px; color:var(--ink2); line-height:1.5;">Öppettiderna på din sida är en annan sak — de redigeras under <a href="#">Redigera sidan → Kontakt</a>. Vilka tider som går att boka styrs av <a href="#">Scheman</a>.</span>
+          </div>
+        </sc-if>
+
+        <!-- ═ Tjänster ═ -->
+        <sc-if value="{{ paneTjanster }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
+            <div>
+              <div style="font-size:22px; font-weight:700; letter-spacing:-.01em;">Tjänster &amp; priser</div>
+              <div style="font-size:13px; color:var(--ink3); margin-top:4px;">Ändringar syns direkt på din sida och i bokningen.</div>
+            </div>
+            <span style="padding:9px 15px; border-radius:10px; background:var(--grön); color:var(--on-grön); font-weight:600; font-size:13px; cursor:pointer; flex-shrink:0;">+ Ny tjänst</span>
+          </div>
+
+          <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:2px 18px; margin-top:20px;">
+            <sc-for list="{{ tjanster }}" as="tj" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; gap:14px; padding:13px 0; border-bottom:1px solid var(--line);">
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:14px; font-weight:600;">{{ tj.name }}</span>
+                    <sc-if value="{{ tj.pop }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.09em; color:var(--warn); border:1px solid var(--line2); border-radius:99px; padding:1px 7px;">POPULÄR</span>
+                    </sc-if>
+                  </div>
+                  <div style="font-size:11.5px; color:var(--ink3); margin-top:2px;">{{ tj.staff }}</div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink2); width:64px; text-align:right;">{{ tj.min }} min</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; width:80px; text-align:right;">{{ tj.pris }}</span>
+                <span style="color:var(--ink3); cursor:pointer; padding:4px 8px;">⋯</span>
+              </div>
+            </sc-for>
+            <div style="padding:12px 0; font-size:12px; color:var(--ink3);">Dra för att ändra ordningen på sidan.</div>
+          </div>
+        </sc-if>
+
+        <!-- ═ Konto & säkerhet ═ -->
+        <sc-if value="{{ paneKonto }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:22px; font-weight:700; letter-spacing:-.01em;">Konto &amp; säkerhet</div>
+          <div style="font-size:13px; color:var(--ink3); margin-top:4px;">Din inloggning och dina enheter.</div>
+
+          <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:4px 18px; margin-top:22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line);">
+              <div>
+                <div style="font-size:13.5px; font-weight:600;">Lösenord</div>
+                <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">Senast ändrat för 4 månader sedan.</div>
+              </div>
+              <span style="padding:8px 13px; border:1px solid var(--line2); border-radius:9px; font-size:12.5px; font-weight:600; color:var(--ink2); cursor:pointer;">Byt lösenord</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 0;">
+              <div>
+                <div style="font-size:13.5px; font-weight:600;">E-post för inloggning</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink3); margin-top:1px;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2e474c5c4f4647436e485c4b5d464d5b5a005d4b">[email&#160;protected]</a></div>
+              </div>
+              <span style="padding:8px 13px; border:1px solid var(--line); border-radius:9px; font-size:12.5px; color:var(--ink3); cursor:pointer;">Ändra</span>
+            </div>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); margin:26px 0 4px;">AKTIVA SESSIONER</div>
+          <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:4px 18px;">
+            <div style="display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--line);">
+              <span style="width:8px; height:8px; border-radius:50%; background:var(--ok); flex-shrink:0;"></span>
+              <div style="flex:1;">
+                <div style="font-size:13.5px; font-weight:600;">Chrome · Windows <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.09em; color:var(--ok); border:1px solid var(--line2); border-radius:99px; padding:1px 7px; margin-left:5px;">DENNA ENHET</span></div>
+                <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">Linköping · aktiv nu</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; padding:13px 0;">
+              <span style="width:8px; height:8px; border-radius:50%; background:var(--line2); flex-shrink:0;"></span>
+              <div style="flex:1;">
+                <div style="font-size:13.5px; font-weight:600;">Safari · iPhone</div>
+                <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">Linköping · igår 21:14</div>
+              </div>
+              <span style="font-size:12.5px; color:var(--ink3); cursor:pointer;">Logga ut</span>
+            </div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--bad); margin:26px 0 4px;">FAROZON</div>
+          <div style="background:var(--sf); border:1px solid #5A3532; border-radius:14px; padding:4px 18px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 0;">
+              <div>
+                <div style="font-size:13.5px; font-weight:600;">Logga ut alla andra enheter</div>
+                <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">Alla utom den här loggas ut direkt.</div>
+              </div>
+              <span style="padding:8px 13px; border:1px solid #5A3532; border-radius:9px; font-size:12.5px; color:var(--bad); font-weight:600; cursor:pointer; flex-shrink:0;">Logga ut alla…</span>
+            </div>
+            <div style="padding:0 0 11px; font-size:11.5px; color:var(--ink3); font-style:italic;">Allt härinne kräver en extra bekräftelse.</div>
+          </div>
+        </sc-if>
+
+        <!-- ═ Roller & behörigheter ═ -->
+        <sc-if value="{{ paneRoller }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:22px; font-weight:700; letter-spacing:-.01em;">Roller &amp; behörigheter</div>
+          <div style="font-size:13px; color:var(--ink3); margin-top:4px;">Vem som får göra vad. Varje konto är personligt — allt som görs loggas på kontot och kan spåras.</div>
+
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); margin:24px 0 10px;">TRE ROLLER</div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+            <sc-for list="{{ roles }}" as="r" hint-placeholder-count="3">
+              <div style="background:var(--sf); border:1px solid var(--line); border-radius:13px; padding:14px 15px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.1em; color:{{ r.c }}; border:1px solid var(--line2); border-radius:99px; padding:2px 8px;">{{ r.name }}</span>
+                <div style="font-size:12px; color:var(--ink2); line-height:1.55; margin-top:9px;">{{ r.desc }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); margin:26px 0 4px;">TEAMET</div>
+          <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:2px 18px;">
+            <sc-for list="{{ team }}" as="p" hint-placeholder-count="6">
+              <div style="border-bottom:1px solid var(--line);">
+                <div style="display:flex; align-items:center; gap:12px; padding:12px 0;">
+                  <div style="width:32px; height:32px; border-radius:50%; background:var(--sf3); border:2px solid {{ p.dot }}; display:grid; place-items:center; font-size:11.5px; font-weight:700; flex-shrink:0;">{{ p.init }}</div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-size:13.5px; font-weight:600;">{{ p.name }} <sc-if value="{{ p.you }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.09em; color:var(--ink3); border:1px solid var(--line2); border-radius:99px; padding:1px 7px; margin-left:4px;">DET ÄR DU</span></sc-if></div>
+                    <div style="font-size:11px; color:var(--ink3); margin-top:1px;">{{ p.sub }}</div>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.09em; color:{{ p.rollC }}; border:1px solid var(--line2); border-radius:99px; padding:4px 11px; cursor:pointer;">{{ p.roll }} ▾</span>
+                  <sc-if value="{{ p.canCustom }}" hint-placeholder-val="{{ false }}">
+                    <span onClick="{{ p.toggleExp }}" style="font-size:12px; color:var(--ink2); cursor:pointer; padding:4px 6px;">{{ p.expLabel }}</span>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ p.isExp }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:0 0 14px 44px; padding:6px 16px; background:var(--sf2); border:1px solid var(--line); border-radius:11px;">
+                    <sc-for list="{{ p.permRows }}" as="pr" hint-placeholder-count="4">
+                      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--line);">
+                        <div>
+                          <div style="font-size:12.5px; font-weight:600;">{{ pr.name }}</div>
+                          <div style="font-size:10.5px; color:var(--ink3); margin-top:1px;">{{ pr.hint }}</div>
+                        </div>
+                        <span onClick="{{ pr.click }}" style="width:34px; height:20px; border-radius:99px; background:{{ pr.bg }}; position:relative; cursor:pointer; transition:background .15s; flex-shrink:0;">
+                          <span style="position:absolute; top:2px; left:{{ pr.left }}px; width:16px; height:16px; border-radius:50%; background:var(--ink); transition:left .15s;"></span>
+                        </span>
+                      </div>
+                    </sc-for>
+                    <div style="padding:8px 0; font-size:10.5px; color:var(--ink3); font-style:italic;">Tillägg utöver rollen — gäller bara {{ p.fname }}.</div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="padding:12px 0; display:flex; align-items:center; justify-content:space-between;">
+              <span style="font-size:11.5px; color:var(--ink3);">Fler ägare? Sätt rollen ÄGARE på fler konton — dela aldrig en inloggning.</span>
+              <span style="padding:8px 13px; border:1px solid var(--line2); border-radius:9px; font-size:12.5px; font-weight:600; color:var(--ink2); cursor:pointer;">+ Bjud in</span>
+            </div>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--ink3); margin:26px 0 4px;">AKTIVITETSLOGG</div>
+          <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:2px 18px;">
+            <sc-for list="{{ logg }}" as="l" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line);">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink3); width:86px; flex-shrink:0;">{{ l.t }}</span>
+                <span style="font-size:12.5px; color:var(--ink2);"><span style="color:var(--ink); font-weight:600;">{{ l.who }}</span> {{ l.what }}</span>
+              </div>
+            </sc-for>
+            <div style="padding:11px 0;"><a href="#" style="font-size:12.5px;">Visa hela loggen →</a></div>
+          </div>
+        </sc-if>
+
+        <!-- ═ Generisk kategori (behåller dagens innehåll) ═ -->
+        <sc-if value="{{ paneStub }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:22px; font-weight:700; letter-spacing:-.01em;">{{ stubTitle }}</div>
+          <div style="font-size:13px; color:var(--ink3); margin-top:4px;">{{ stubDesc }}</div>
+          <div style="background:var(--sf); border:1px solid var(--line); border-radius:14px; padding:4px 18px; margin-top:22px;">
+            <sc-for list="{{ stubRows }}" as="r" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 0; border-bottom:1px solid var(--line);">
+                <div>
+                  <div style="font-size:13.5px; font-weight:600;">{{ r.name }}</div>
+                  <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">{{ r.desc }}</div>
+                </div>
+                <sc-if value="{{ r.chip }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.09em; color:{{ r.chipC }}; border:1px solid var(--line2); border-radius:99px; padding:2px 8px; flex-shrink:0;">{{ r.chip }}</span>
+                </sc-if>
+                <sc-if value="{{ r.arrow }}" hint-placeholder-val="{{ true }}"><span style="color:var(--ink3);">›</span></sc-if>
+              </div>
+            </sc-for>
+            <div style="padding:11px 0; font-size:11.5px; color:var(--ink3); font-style:italic;">Innehållet är dagens sida — den får bara det nya skalet.</div>
+          </div>
+
+          <sc-if value="{{ stubDanger }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.14em; color:var(--bad); margin:26px 0 4px;">FAROZON</div>
+            <div style="background:var(--sf); border:1px solid #5A3532; border-radius:14px; padding:4px 18px;">
+              <sc-for list="{{ stubDangerRows }}" as="d" hint-placeholder-count="1">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 0; border-bottom:1px solid var(--line);">
+                  <div>
+                    <div style="font-size:13.5px; font-weight:600;">{{ d.name }}</div>
+                    <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">{{ d.desc }}</div>
+                  </div>
+                  <span style="padding:8px 13px; border:1px solid #5A3532; border-radius:9px; font-size:12.5px; color:var(--bad); font-weight:600; cursor:pointer; flex-shrink:0;">{{ d.btn }}</span>
+                </div>
+              </sc-for>
+              <div style="padding:11px 0; font-size:11.5px; color:var(--ink3); font-style:italic;">Allt härinne kräver en extra bekräftelse.</div>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { sel: 'roller', q: '', bokMode: 0, selfBook: true, exp: 'hilal',
+    perms: { hilal: { cal: true, sida: false, siffror: false, kunder: true }, john: { cal: false, sida: false, siffror: false, kunder: true }, aziz: { cal: false, sida: false, siffror: false, kunder: false } } };
+
+  PERMDEFS = [
+    { k: 'cal', name: 'Ser alla kalendrar', hint: 'Annars bara sin egen' },
+    { k: 'kunder', name: 'Hanterar kundregistret', hint: 'Se och ändra alla kunder' },
+    { k: 'sida', name: 'Redigerar sidan', hint: 'Texter, bilder, färger' },
+    { k: 'siffror', name: 'Ser dagens siffror', hint: 'Bokat belopp, beläggning' },
+  ];
+
+  GROUPS = [
+    { label: 'VERKSAMHET', items: [
+      { id: 'tjanster', icon: '✂', name: 'Tjänster & priser', desc: 'Utbud, längder, priser' },
+      { id: 'personal', icon: '◉', name: 'Personal', desc: 'Medarbetare, foton, visa på sidan' },
+      { id: 'scheman', icon: '▤', name: 'Scheman & frånvaro', desc: 'Arbetstider, semester, schemalås' },
+      { id: 'platser', icon: '◎', name: 'Platser', desc: 'Adresser, tidszon' },
+    ] },
+    { label: 'BOKNING', items: [
+      { id: 'bokningsregler', icon: '▦', name: 'Bokningsregler', desc: 'På/paus, fönster, avbokning' },
+      { id: 'bokningsflode', icon: '➔', name: 'Bokningsflöde', desc: 'Utseende: kalender, avatarer, färger' },
+    ] },
+    { label: 'PENGAR', items: [
+      { id: 'betalning', icon: '¤', name: 'Betalning', desc: 'Stripe, betala vid bokning', status: 'Utbetalningar väntar', statusC: '#D6AC6A' },
+    ] },
+    { label: 'KOMMUNIKATION', items: [
+      { id: 'paminnelser', icon: '✉', name: 'Påminnelser & utskick', desc: 'Bekräftelser, påminnelser, kanaler' },
+      { id: 'integrationer', icon: '⇄', name: 'Integrationer', desc: 'Google-recensioner' },
+    ] },
+    { label: 'KONTO', items: [
+      { id: 'roller', icon: '◈', name: 'Roller & behörigheter', desc: 'Vem får göra vad — allt loggas' },
+      { id: 'konto', icon: '⚿', name: 'Konto & säkerhet', desc: 'Lösenord, aktiva enheter' },
+      { id: 'sekretess', icon: '§', name: 'Sekretess & GDPR', desc: 'Kunddata, export, radering' },
+    ] },
+  ];
+
+  INDEX = [
+    { name: 'Öppettider på sidan', hint: 'Redigera sidan → Kontakt', go: 'bokningsregler', k: 'öppettider öppet tider' },
+    { name: 'Bokningsbara tider', hint: 'Scheman & frånvaro — personalens arbetstider', go: 'scheman', k: 'öppettider tider arbetstid schema' },
+    { name: 'Pris på en tjänst', hint: 'Tjänster & priser', go: 'tjanster', k: 'pris tjänst klippning ändra pris' },
+    { name: 'Lägg till medarbetare', hint: 'Personal', go: 'personal', k: 'personal frisör medarbetare anställd' },
+    { name: 'Semester / frånvaro', hint: 'Scheman & frånvaro', go: 'scheman', k: 'semester frånvaro ledig sjuk' },
+    { name: 'Pausa onlinebokningen', hint: 'Bokningsregler', go: 'bokningsregler', k: 'pausa stäng bokning på av' },
+    { name: 'Avbokningsregler', hint: 'Bokningsregler', go: 'bokningsregler', k: 'avboka avbokning regler' },
+    { name: 'Bokningens utseende', hint: 'Bokningsflöde', go: 'bokningsflode', k: 'utseende kalender avatar färg bokningsflöde' },
+    { name: 'Koppla Stripe / kortbetalning', hint: 'Betalning', go: 'betalning', k: 'stripe betalning kort swish utbetalning pengar' },
+    { name: 'Påminnelser till kunder', hint: 'Påminnelser & utskick', go: 'paminnelser', k: 'påminnelse sms mejl e-post utskick notis' },
+    { name: 'Google-recensioner', hint: 'Integrationer', go: 'integrationer', k: 'google recension betyg stjärnor' },
+    { name: 'Byt lösenord', hint: 'Konto & säkerhet', go: 'konto', k: 'lösenord byta säkerhet' },
+    { name: 'Logga ut en enhet', hint: 'Konto & säkerhet', go: 'konto', k: 'logga ut enhet session' },
+    { name: 'Exportera / radera kunddata', hint: 'Sekretess & GDPR', go: 'sekretess', k: 'gdpr export radera kunddata sekretess' },
+    { name: 'Färger & texter på sidan', hint: 'Fliken Redigera sidan', go: 'bokningsregler', k: 'färg text bild hemsida logga' },
+    { name: 'Ny plats / adress', hint: 'Platser', go: 'platser', k: 'plats adress salong tidszon' },
+    { name: 'Ge en anställd behörighet', hint: 'Roller & behörigheter', go: 'roller', k: 'roll behörighet rättighet ägare platschef anställd' },
+    { name: 'Vem gjorde vad? (logg)', hint: 'Roller & behörigheter', go: 'roller', k: 'logg spåra aktivitet historik vem' },
+  ];
+
+  STUBS = {
+    personal: { title: 'Personal', desc: 'Medarbetare, foton och vad som syns på sidan.', rows: [
+      { name: 'Medarbetare', desc: '4 aktiva · foto, roll, plats' },
+      { name: 'Visa på sidan', desc: 'Vem som syns under Team' },
+    ], danger: [
+      { name: 'Ta bort medarbetare', desc: 'Kommande bokningar måste flyttas först — historiken behålls', btn: 'Ta bort…' },
+    ] },
+    scheman: { title: 'Scheman & frånvaro', desc: 'Arbetstiderna styr vilka tider som går att boka.', rows: [
+      { name: 'Veckoschema', desc: 'Personal × mån–sön, bläddra veckor' },
+      { name: 'Frånvaro', desc: 'Semester, sjukdom, återkommande' },
+      { name: 'Grundtider', desc: 'Låsta — lås upp med automatisk säkerhetskopia', chip: 'LÅST', chipC: '#8FD6A6' },
+    ] },
+    platser: { title: 'Platser', desc: 'Era adresser. Fler platser ger platsväljare i toppraden.', rows: [
+      { name: 'Linköping City', desc: 'Bokhållaregatan 2 · Europe/Stockholm' },
+      { name: 'Tornby', desc: 'Svedengatan 11 · Europe/Stockholm' },
+      { name: '+ Ny plats', desc: '', arrow: false },
+    ] },
+    bokningsflode: { title: 'Bokningsflöde', desc: 'Hur bokningen ser ut för kunden — med live-förhandsvisning.', rows: [
+      { name: 'Bokningssätt', desc: '4 presentationer med mini-schema' },
+      { name: 'Tidsväljare', desc: 'Kalender eller dag-remsa' },
+      { name: 'Personal i bokningen', desc: 'Foto, initialer eller bara namn' },
+    ] },
+    betalning: { title: 'Betalning', desc: 'Kortbetalning via Stripe. Pengarna går direkt till ert konto.', rows: [
+      { name: 'Stripe-konto', desc: 'Kopplat · ib****@freshcut.se', chip: 'AKTIVT', chipC: '#8FD6A6' },
+      { name: 'Ta betalt vid bokning', desc: 'Kund betalar när tiden bokas', chip: 'PÅ', chipC: '#8FD6A6' },
+      { name: 'Utbetalningar', desc: 'Slutför verifieringen hos Stripe', chip: 'VÄNTAR', chipC: '#D6AC6A' },
+    ] },
+    paminnelser: { title: 'Påminnelser & utskick', desc: 'Vad kunder får och när. Visar bara det systemet faktiskt kan.', rows: [
+      { name: 'Bokningsbekräftelse', desc: 'E-post, direkt vid bokning', chip: 'PÅ', chipC: '#8FD6A6' },
+      { name: 'Påminnelse dagen innan', desc: 'E-post · push när kunden har appen', chip: 'PÅ', chipC: '#8FD6A6' },
+      { name: 'SMS', desc: 'Kräver avtal — hör av dig till Corevo', chip: 'KOMMER', chipC: '#96968C' },
+    ] },
+    integrationer: { title: 'Integrationer', desc: 'Kopplingar till tjänster utanför Corevo.', rows: [
+      { name: 'Google-recensioner', desc: 'Visar betyget på din sida', chip: 'KOPPLAD', chipC: '#8FD6A6' },
+    ] },
+    sekretess: { title: 'Sekretess & GDPR', desc: 'Kunddata hanteras enligt GDPR.', rows: [
+      { name: 'Exportera kunddata', desc: 'Ladda ner underlag per kund' },
+      { name: 'Personuppgiftsbiträdesavtal', desc: 'Corevo × er salong (PDF)' },
+    ], danger: [
+      { name: 'Radera kund ("rätten att bli glömd")', desc: 'Anonymiserar all kunddata — kan inte ångras', btn: 'Radera…' },
+    ] },
+  };
+
+  renderVals() {
+    const st = this.state;
+    const q = st.q.trim().toLowerCase();
+
+    const groups = this.GROUPS.map(g => ({
+      label: g.label,
+      items: g.items.map(it => ({
+        ...it,
+        status: it.status || false, statusC: it.statusC || '#96968C',
+        bg: st.sel === it.id ? '#25251F' : 'transparent',
+        c: st.sel === it.id ? '#F0F0EA' : '#C8C8BD',
+        pick: () => this.setState({ sel: it.id }),
+      })),
+    }));
+
+    const hits = q ? this.INDEX.filter(x => (x.name + ' ' + x.hint + ' ' + x.k).toLowerCase().includes(q)).slice(0, 7).map(x => ({
+      name: x.name, hint: x.hint,
+      go: () => this.setState({ sel: x.go, q: '' }),
+    })) : [];
+
+    const modes = [
+      { name: 'På', chip: 'REKOMMENDERAS', chipC: '#8FD6A6', desc: 'Kunder bokar själva på din sida, dygnet runt. Bekräftelse skickas direkt.' },
+      { name: 'Pausad', chip: 'TILLFÄLLIGT', chipC: '#D6AC6A', desc: 'Sidan visas men bokningen är stängd — "Ring oss så hjälper vi dig" visas istället. Bra vid semester.' },
+      { name: 'Av', chip: '', chipC: '#96968C', desc: 'Bokningen syns inte alls på sidan. Ni lägger in alla tider själva i kalendern.' },
+    ];
+    const bokModes = modes.map((mo, i) => ({
+      ...mo,
+      bd: st.bokMode === i ? '#3A7357' : '#33332C',
+      bg: st.bokMode === i ? 'rgba(47,95,71,.12)' : 'transparent',
+      ringC: st.bokMode === i ? '#8FD6A6' : '#4A4A41',
+      dotC: st.bokMode === i ? '#8FD6A6' : 'transparent',
+      pick: () => this.setState({ bokMode: i }),
+    }));
+
+    const tjanster = [
+      { name: 'Klippning', staff: 'Alla frisörer', min: 30, pris: '450 kr', pop: true },
+      { name: 'Klippning + skäggtrim', staff: 'Alla frisörer', min: 45, pris: '620 kr' },
+      { name: 'Fade', staff: 'John, Ali', min: 30, pris: '480 kr' },
+      { name: 'Barntrim (0–12 år)', staff: 'Ali, Aziz', min: 30, pris: '380 kr' },
+      { name: 'Färg + klipp', staff: 'Hilal', min: 75, pris: '1 240 kr' },
+      { name: 'Snaggning', staff: 'Alla frisörer', min: 15, pris: '340 kr' },
+    ];
+
+    const sel = st.sel;
+    const stub = this.STUBS[sel];
+
+    const roles = [
+      { name: 'ÄGARE', c: '#8FD6A6', desc: 'Allt — betalning, roller, GDPR, sidan. Flera ägare går bra.' },
+      { name: 'PLATSCHEF', c: '#A2B6D0', desc: 'Vardagsdriften: kalender, kunder, tjänster, scheman.' },
+      { name: 'FRISÖR', c: '#96968C', desc: 'Sin egen kalender och sina bokningar — inget mer.' },
+    ];
+    const mkPerms = (id) => this.PERMDEFS.map(pd => ({
+      name: pd.name, hint: pd.hint,
+      bg: st.perms[id][pd.k] ? '#2F5F47' : '#2E2E28',
+      left: st.perms[id][pd.k] ? 16 : 2,
+      click: () => { st.perms[id][pd.k] = !st.perms[id][pd.k]; this.forceUpdate(); },
+    }));
+    const TEAM = [
+      { id: 'ibrahim', init: 'I', name: 'Ibrahim Yilmaz', sub: 'ibrahim@freshcut.se', dot: '#4A4A41', roll: 'ÄGARE', rollC: '#8FD6A6', you: true },
+      { id: 'vera', init: 'V', name: 'Vera Öst', sub: 'vera@freshcut.se', dot: '#4A4A41', roll: 'ÄGARE', rollC: '#8FD6A6' },
+      { id: 'ali', init: 'A', name: 'Ali Reza', sub: 'Linköping City', dot: '#5FC7B2', roll: 'PLATSCHEF', rollC: '#A2B6D0' },
+      { id: 'hilal', init: 'H', name: 'Hilal Demir', sub: 'Linköping City', dot: '#8FB4E3', roll: 'FRISÖR', rollC: '#96968C', custom: true },
+      { id: 'john', init: 'J', name: 'John Svahn', sub: 'Tornby', dot: '#8FD6A6', roll: 'FRISÖR', rollC: '#96968C', custom: true },
+      { id: 'aziz', init: 'Az', name: 'Aziz Kaya', sub: 'Tornby', dot: '#C0A5F0', roll: 'FRISÖR', rollC: '#96968C', custom: true },
+    ];
+    const team = TEAM.map(p => ({
+      ...p, you: !!p.you,
+      fname: p.name.split(' ')[0],
+      canCustom: !!p.custom,
+      isExp: st.exp === p.id,
+      expLabel: st.exp === p.id ? 'Stäng ▴' : 'Anpassa ▾',
+      toggleExp: () => this.setState({ exp: st.exp === p.id ? null : p.id }),
+      permRows: p.custom ? mkPerms(p.id) : [],
+    }));
+    const logg = [
+      { t: 'idag 10:42', who: 'Ali', what: 'avbokade Erik Lund, klippning 15:30' },
+      { t: 'igår 18:03', who: 'Vera', what: 'ändrade priset på Färg + klipp (1 180 → 1 240 kr)' },
+      { t: 'igår 09:20', who: 'Hilal', what: 'lade in frånvaro 21–25 juli' },
+      { t: '12 jul', who: 'Ibrahim', what: 'bjöd in Aziz Kaya som FRISÖR' },
+    ];
+    const stubRows = stub ? stub.rows.map(r => ({ chip: false, arrow: r.arrow !== false, chipC: '#96968C', ...r })) : [];
+
+    return {
+      onSearch: (e) => this.setState({ q: e.target.value }),
+      searching: !!q, notSearching: !q,
+      hits, noHits: q && hits.length === 0,
+      groups,
+      paneBokning: sel === 'bokningsregler',
+      paneTjanster: sel === 'tjanster',
+      paneKonto: sel === 'konto',
+      paneRoller: sel === 'roller',
+      roles, team, logg,
+      paneStub: !!stub,
+      stubTitle: stub ? stub.title : '', stubDesc: stub ? stub.desc : '', stubRows,
+      stubDanger: !!(stub && stub.danger),
+      stubDangerRows: stub && stub.danger ? stub.danger : [],
+      bokModes, tjanster,
+      sbBg: st.selfBook ? '#2F5F47' : '#2E2E28', sbLeft: st.selfBook ? 18 : 2,
+      tgSelfBook: () => this.setState({ selfBook: !st.selfBook }),
+    };
+  }
+}
+</script>
+</body>
+</html>
