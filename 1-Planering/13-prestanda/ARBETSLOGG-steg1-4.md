@@ -50,7 +50,31 @@ lint; render-/kontrast-vakter; login/admin/storefront/bokning-rök.
 
 **Nästa åtgärd:** läs build.log när bygget klart → räkna /login-stylesheets.
 
-## Steg 2 — vattenfallsfixar (C1,C2,C3) — PLANERAD, redo att implementera
+## Steg 2 — vattenfallsfixar (C1,C2,C3) — KLAR ✅
+
+**C2** `lib/tenant-data.ts`: `currentTenant()` → React `cache()` (anropades i generateMetadata
++ PublicLayout + barnsidor; headers()+override kördes om varje gång). Request-dedupe.
+
+**C3** `lib/auth/session.ts` `getCurrentUser`: två seriella frågor (users→roles) → EN FK-embed
+`roles:role_id(level,name)`. FK `users_role_id_fkey` bekräftad; join-data verifierad mot prod
+(salon_admin=6/staff=3/kund=2). Defensiv array-eller-objekt-normalisering. Fail-closed (null→level 0).
+
+**C1** `app/(public)/layout.tsx`: 6 seriella await → ETT `Promise.all` (copy, moduleStates, wizard-trio,
+staffNoun, rawPrimaryCta, teamCount, kurserCount). Modul-derivationer (booking/shop/nav-grindar/CTA-gate)
+körs efteråt, ren sync. `/team` + `/kurser`-länkarna gatas på nya count-hjälpare
+(`countTeamMembers`/`countUpcomingEvents` i load-team/load-kurser) i stället för fulla list-laddningar.
+
+**Codex-granskning:** C3/parallellisering/wizard-gating OK. Fann EN regress: `countTeamMembers`
+räknade blanksteg-titlar som loadTeamMembers trimmar bort → risk för /team-länk till tom sida.
+**Rättad:** hämtar bara `title`, filtrerar trim i app-lagret = exakt render-villkoret.
+
+**Verifiering:** build exit 0 (rot-/layout fortf. 4 css → steg 1 orört) · `tsc` rent · 1083 tester ·
+lint 0. P99-vinsten kan bara mätas i prod (steg 6) — här bevisat: färre seriella hopp, gating oförändrad.
+
+**Filer:** tenant-data.ts, auth/session.ts, (public)/layout.tsx, storefront/team/load-team.ts,
+storefront/kurser/load-kurser.ts.
+
+## Steg 2 — GAMMAL PLAN (klar, historik)
 
 Steg 1 committad: **8e65c38**. Working tree rent. Nästa = implementera C1→C2→C3.
 
