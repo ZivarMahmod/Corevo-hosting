@@ -106,3 +106,28 @@ export async function loadUpcomingEvents(tenantId: string, slug: string): Promis
   )
   return load()
 }
+
+/**
+ * Prestanda C1: navlänken /kurser gatas på "finns kommande event" — layouten laddade
+ * hela event-listan (+ taken-summering) bara för `.length > 0`. Det här är samma
+ * upcoming-open-villkor som en ren COUNT, utan rad-data och utan service-round-trippen.
+ * /kurser-SIDAN använder fortfarande loadUpcomingEvents. Samma tenant-tag → busts ihop.
+ */
+export async function countUpcomingEvents(tenantId: string, slug: string): Promise<number> {
+  const norm = slug.trim().toLowerCase()
+  const load = unstable_cache(
+    async (): Promise<number> => {
+      const supabase = createPublicClient()
+      const { count } = await supabase
+        .from('tenant_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
+        .eq('status', 'open')
+        .gte('starts_at', new Date().toISOString())
+      return count ?? 0
+    },
+    ['kurser-count-by-tenant', tenantId, norm],
+    { tags: [`tenant:${norm}`], revalidate: 300 },
+  )
+  return load()
+}

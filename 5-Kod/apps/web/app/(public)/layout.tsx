@@ -14,7 +14,7 @@ import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
 import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
-import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
+import { countUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
 import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
 import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
@@ -23,7 +23,7 @@ import { resolvePrimaryCta } from '@/components/storefront/primary-cta'
 import { THEME_CONTENT, resolveTenantCopy } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { LocalBusinessJsonLd } from '@/components/storefront/seo'
-import { loadTeamMembers } from '@/lib/storefront/team/load-team'
+import { countTeamMembers } from '@/lib/storefront/team/load-team'
 import storefront from '@/components/storefront/storefront.module.css'
 
 // Per-request, host-resolved tenant → never prerender.
@@ -72,55 +72,61 @@ export default async function PublicLayout({ children }: { children: React.React
     branding: settings.branding,
   }
   const overrideCss = settings.customOverride?.css
-  // Footer tagline honours the owner's settings.copy override (theme default
-  // otherwise); utility micro-copy is theme-default by contract. The thin
-  // utility strip stays theme-fixed — only `tagline` is owner-editable here.
-  const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
+  // Prestanda C1: allt nedan behöver bara tenant.id/slug/vertical_id ur bundlen och är
+  // inbördes OBEROENDE — det kördes tidigare som sex seriella await-hopp på varje
+  // storefront-sidvisning (auditens vattenfall). Ett Promise.all gör dem parallella.
+  // De derivationer som behöver moduleStates (modul-grindar, CTA-gaten) är ren sync och
+  // sker efteråt, oförändrade. Navlänkarna /team och /kurser gatas nu på COUNT i stället
+  // för att ladda hela listorna bara för `.length > 0`.
+  //   copy        — footer-tagline (ägar-override annars tema-default; utility tema-fast)
+  //   moduleStates— per-modul-livscykel (spår 5): storefronten renderar bara LIVE-moduler;
+  //                 draft/off ej publikt, paused → banner + inerta CTA. Saknad rad → 'live'
+  //                 (moduleState-default) så FreshCut/omigrerade salonger ser EXAKT ut som förr.
+  //   wizard-trion— services/locations/prefs för den inbäddade bokningswizarden (som /boka).
+  //   staffNoun   — bransch-substantiv (default 'Frisör') för drawern.
+  //   rawPrimaryCta—bransch-styrd huvud-CTA (config-first); modul-gatas nedan.
+  const [
+    copy,
+    moduleStates,
+    [allWizardServices, wizardLocations, bookingPrefs],
+    staffNoun,
+    rawPrimaryCta,
+    teamCount,
+    kurserCount,
+  ] = await Promise.all([
+    getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null),
+    getTenantModuleStates(tenant.id, tenant.slug),
+    Promise.all([
+      getWizardServices(tenant.id, tenant.slug),
+      getWizardLocations(tenant.id, tenant.slug),
+      getBookingPrefs(tenant.id, tenant.slug),
+    ]),
+    resolveStaffNoun(tenant.vertical_id),
+    resolvePrimaryCta(tenant.vertical_id),
+    countTeamMembers(tenant.id, tenant.slug),
+    countUpcomingEvents(tenant.id, tenant.slug),
+  ])
+
   const themeBase = THEME_CONTENT[settings.theme]
   const tagline = resolveTenantCopy(settings.theme, copy).tagline
   const content = { utility: themeBase.utility, tagline }
 
-  // Multi-bransch (spår 5): the tenant's per-module lifecycle. The storefront renders
-  // only LIVE modules; 'draft'/'off' booking is not public; 'paused' booking shows a
-  // "stängt"-banner and the CTAs go inert. BACKWARD-COMPAT: a tenant with no
-  // tenant_modules row defaults booking→'live' (moduleState), so FreshCut (and any
-  // un-migrated salon) renders EXACTLY as before.
-  const moduleStates = await getTenantModuleStates(tenant.id, tenant.slug)
   const bookingState = moduleState(moduleStates, 'booking')
   const bookingLive = bookingState === 'live'
   const bookingPaused = bookingState === 'paused'
-  // goal-55 7B: shop live/paused → korg-ikon i naven (alltid synlig, badge vid
-  // count>0) + korg-rad i mobil-overlayn, i stället för den flytande bollen.
+  // goal-55 7B: shop live/paused → korg-ikon i naven (alltid synlig, badge vid count>0).
   const shopState = moduleState(moduleStates, 'shop')
   const cartEnabled = shopState === 'live' || shopState === 'paused'
-
-  // Services + active locations shaped for the embedded booking wizard — same as
-  // /boka, cached. locations feed the drawer's picker (hidden for 1-location tenants).
-  // Booking gating: only a LIVE booking module gets real services; draft/off/paused
-  // pass an EMPTY list so every "Boka tid" CTA is inert (BookingProvider.available
-  // is false), without removing the storefront's content/pages.
-  const [allWizardServices, wizardLocations, bookingPrefs] = await Promise.all([
-    getWizardServices(tenant.id, tenant.slug),
-    getWizardLocations(tenant.id, tenant.slug),
-    // Redesign-prefs (tid-väljare + barberarbild-läge) — rå-läses ur settings via
-    // samma seam som readBookingVariant, cachat per tenant.
-    getBookingPrefs(tenant.id, tenant.slug),
-  ])
+  // Booking gating: bara en LIVE booking-modul får riktiga tjänster; draft/off/paused
+  // ger en TOM lista så varje "Boka tid"-CTA är inert (BookingProvider.available=false).
   const wizardServices = bookingLive ? allWizardServices : []
-
-  // Bransch-resolved staff noun (default 'Frisör') for the embedded booking wizard,
-  // so a non-frisör tenant's drawer reads e.g. "Barberare"/"Nagelteknolog".
-  const staffNoun = await resolveStaffNoun(tenant.vertical_id)
-  // BRANSCH-REGELN: bokningens VERB (drawer-etikett, aria, footer-tagline, inline-
-  // rubrik) kommer ur bransch-lagret — "Boka bord" hos en restaurang, "Boka
-  // konsultation" hos en florist. Låg hårdkodat som "Boka tid" på fem ställen.
+  // BRANSCH-REGELN: bokningens VERB (drawer/aria/footer/inline) ur bransch-lagret.
   const bokning = branschBokning(tenant.vertical_id)
 
   // goal-55 8A: bransch-styrd huvud-CTA i naven (config-first, aldrig if(bransch)).
   // Modul-gaten bor HÄR (layouten har moduleStates): pekar branschens CTA på en
   // modulsida vars modul inte är live → falla tillbaka till BookCta (null-prop).
   // Nav/NavShell får bara en färdig cta — eller null = dagens 'Boka tid' exakt.
-  const rawPrimaryCta = await resolvePrimaryCta(tenant.vertical_id)
   const CTA_HREF_MODULE: Record<string, string> = {
     '/shop': 'shop',
     '/blogg': 'blogg',
@@ -152,8 +158,7 @@ export default async function PublicLayout({ children }: { children: React.React
     { href: '/', label: 'Hem' },
     ...(cartEnabled ? [{ href: '/shop', label: 'Butik' }] : []),
     ...(allWizardServices.length > 0 ? [{ href: '/tjanster', label: 'Tjänster' }] : []),
-    ...(moduleState(moduleStates, 'kurser') === 'live' &&
-    (await loadUpcomingEvents(tenant.id, tenant.slug)).length > 0
+    ...(moduleState(moduleStates, 'kurser') === 'live' && kurserCount > 0
       ? [{ href: '/kurser', label: 'Kurser' }]
       : []),
     ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'
@@ -181,7 +186,7 @@ export default async function PublicLayout({ children }: { children: React.React
     // goal-64 TEAMET: INGEN modul — det är kundens folk. Länken gatas därför på FÖREKOMST
     // (minst en aktiv medarbetare som valt att synas). Utan folk finns ingen sida att
     // länka till — samma render-on-present-regel som resten av storefronten.
-    ...((await loadTeamMembers(tenant.id, tenant.slug)).length > 0
+    ...(teamCount > 0
       ? [{ href: '/team', label: 'Team' }]
       : []),
     { href: '/om', label: 'Om oss' },

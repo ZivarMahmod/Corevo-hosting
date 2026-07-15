@@ -74,3 +74,36 @@ export async function loadTeamMembers(tenantId: string, slug: string): Promise<T
   )
   return load()
 }
+
+/**
+ * Prestanda C1: navlänken /team gatas på FÖREKOMST — layouten laddade hela team-listan
+ * (6 fält + mappning) bara för `.length > 0`. Det här är EXAKT samma render-villkor som
+ * loadTeamMembers (active + show_on_site + trimmat namn), men drar bara `title`-kolumnen.
+ * Team-SIDAN använder fortfarande loadTeamMembers (den behöver fälten). Samma tenant-tag
+ * → busts ihop.
+ *
+ * En head-count går inte: loadTeamMembers släpper rader vars title är NULL *eller*
+ * blanksteg (name = title?.trim(); filter name.length>0). En count-i-DB kan inte uttrycka
+ * trim utan RPC. Staff-rader per tenant är få → hämta title och filtrera i app-lagret,
+ * identiskt med render-filtret. Aldrig en /team-länk till en tom team-sida.
+ */
+export async function countTeamMembers(tenantId: string, slug: string): Promise<number> {
+  const norm = slug.trim().toLowerCase()
+  const load = unstable_cache(
+    async (): Promise<number> => {
+      const supabase = createPublicClient()
+      const { data } = await supabase
+        .from('staff')
+        .select('title')
+        .eq('tenant_id', tenantId) // app-lagrets tenant-isolering (RLS gör det INTE för anon)
+        .eq('active', true)
+        .eq('show_on_site', true)
+      return ((data ?? []) as { title: string | null }[]).filter(
+        (r) => (r.title?.trim() ?? '').length > 0,
+      ).length
+    },
+    ['team-count-by-tenant', tenantId, norm],
+    { tags: [`tenant:${norm}`], revalidate: 300 },
+  )
+  return load()
+}

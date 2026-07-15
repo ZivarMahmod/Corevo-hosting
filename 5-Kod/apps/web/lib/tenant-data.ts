@@ -4,6 +4,7 @@
 // CRITICAL (ADR 01 §2 / migration 0004): the `anon` role has NO tenant_id claim,
 // so RLS does NOT isolate one tenant from another. Every query here filters by
 // the resolved tenant_id/slug in the app. RLS is only defense-in-depth.
+import { cache } from 'react'
 import { headers } from 'next/headers'
 import { unstable_cache } from 'next/cache'
 import type { Tables } from '@corevo/db'
@@ -389,10 +390,14 @@ export async function getServices(tenantId: string, slug: string): Promise<Servi
 /**
  * Resolve the current request's tenant from the Host header (dev: subdomain on
  * localhost, e.g. frisor1.localhost:3000). Returns null for root/platform/
- * reserved/unknown hosts. Reads headers() → never cached; delegates to the
- * cached getTenantBySlug for the data.
+ * reserved/unknown hosts. Delegates to the cached getTenantBySlug for the data.
+ *
+ * Prestanda C2: request-scopad `cache()` — layouten anropar currentTenant både i
+ * generateMetadata OCH i PublicLayout (+ barnsidor), och varje anrop körde headers()
+ * + applyDevThemeOverride på nytt. cache() dedupar hela upplösningen per render.
+ * getTenantBySlug är dessutom unstable_cache:ad (DB-träffen delas ändå).
  */
-export async function currentTenant(): Promise<TenantBundle | null> {
+export const currentTenant = cache(async (): Promise<TenantBundle | null> => {
   const h = await headers()
   // Prefer the slug the middleware already resolved (covers subdomain, ?tenant=
   // and /t/<slug> uniformly — the latter two are the workers.dev preview path).
@@ -402,7 +407,7 @@ export async function currentTenant(): Promise<TenantBundle | null> {
   const res = getTenantFromHost(h.get('host'))
   if (res.kind !== 'tenant') return null
   return applyDevThemeOverride(await getTenantBySlug(res.slug))
-}
+})
 
 /**
  * DEV-ONLY mall-växel (goal-61): cookien `corevo-dev-theme` låter localhost rendera

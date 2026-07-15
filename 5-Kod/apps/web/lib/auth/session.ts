@@ -35,25 +35,23 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   const appMeta = (user.app_metadata ?? {}) as { tenant_id?: string; platform_admin?: boolean }
 
+  // Prestanda C3: rollnivån hämtas via en FK-embed (users.role_id → roles) i STÄLLET
+  // för en andra seriell round-trip till `roles`. Samma RLS-väg som förut (användaren
+  // läser sin egen users-rad + sin roll). PostgREST returnerar en to-one-relation som
+  // objekt; vi normaliserar defensivt ifall klienten typar den som array.
   const { data: profile } = await supabase
     .from('users')
-    .select('tenant_id, role_id')
+    .select('tenant_id, role_id, roles:role_id(level, name)')
     .eq('id', user.id)
     .maybeSingle()
 
-  let roleLevel = 0
-  let roleName: string | null = null
-  if (profile?.role_id) {
-    const { data: role } = await supabase
-      .from('roles')
-      .select('level, name')
-      .eq('id', profile.role_id)
-      .maybeSingle()
-    if (role) {
-      roleLevel = role.level
-      roleName = role.name
-    }
-  }
+  const roleEmbed = (profile as { roles?: unknown } | null)?.roles
+  const role = (Array.isArray(roleEmbed) ? roleEmbed[0] : roleEmbed) as
+    | { level: number; name: string | null }
+    | null
+    | undefined
+  const roleLevel = role?.level ?? 0
+  const roleName = role?.name ?? null
 
   return {
     id: user.id,
