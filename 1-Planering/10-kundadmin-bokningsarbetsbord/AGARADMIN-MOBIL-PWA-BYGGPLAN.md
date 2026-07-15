@@ -1,6 +1,9 @@
 # Ägar-admin Mobil/PWA — byggplan (helheten)
 
-Mock: `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/ägareadmin-mobil-pwa/` (`index-Kundadmin Mobil PWA.html` + `KUNDADMIN-MOBIL-PWA-NOTES.md` = LAG). Sätter standarden för de andra admin-rollerna (kommer senare).
+Mock: `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/ägareadmin-mobil-pwa/`. **Auktoritativ referens = `index-Kundadmin Responsiv.html`** (visar EN sida över alla brytpunkter), plus `index-Kundadmin Mobil PWA.html` + `KUNDADMIN-MOBIL-PWA-NOTES.md`. Sätter standarden för de andra admin-rollerna (kommer senare).
+
+## ⛔ ÖVERORDNAD PRINCIP (Zivar 2026-07-15, slår mocken vid konflikt)
+**Mobil V = EXAKT desktop V:s funktioner, bara bra omplacerade. INGET nytt, inget mobil-eget, inget som göms.** Det är MITT ansvar att hålla allt detsamma för mobilen. → Om mocken introducerar något som inte finns i desktop (t.ex. dagsnabbval-chips) är det FEL och byggs inte. Dagbyte = befintliga ‹ Idag ›-stegaren (redan på båda); längre hopp = befintliga **Månad-vyn** (tryck på datumet på mobil), inte nya chips. Referensen `index-Kundadmin Responsiv.html` bekräftar: samma toolbar (stegare + Dag/Vecka/Månad-segment + Blockera + Ny bokning) på alla bredder, bara omplacerad.
 
 ## Bärande princip (från NOTES, ett KRAV)
 **SAMMA admin som desktop (booking.corevo.se) — ingen separat app/kodbas.** EN sida som anpassar layouten ENBART efter CSS-viewportens bredd. Aldrig UA-sniff, aldrig "är detta en telefon". Då funkar "visa datorversion", browser-zoom och split-screen gratis.
@@ -29,7 +32,8 @@ Overlays (mobil = bottom sheets): **bubbla** (Ring/Öppna) → **boknings-sheet*
 - Flytt: desktop drag kvar; **mobil = Omboka i sheet** (drag krockar med scroll — redan borttaget svep 2026-07-15 v1.34.1).
 
 ## Faser (en i taget → verifiera → klart)
-- **✅ Fas 0 (KLAR, v1.34.1):** ta bort krockande svep → dagsnabbval-chips.
+- **✅ Fas 0 (KLAR):** svep-byt-dag borttaget (var mobil-eget + trasigt, krockade med kolumn-scroll). INGA dag-chips (v1.34.1-chipsen var FEL mot paritetsprincipen → reverterade). Dagbyte = befintliga ‹ Idag ›-stegaren på båda; långt hopp = Månad-vyn.
+- **⏸️ PAUS (Zivar 2026-07-15): bygg INTE resten av PWA:n än.** Fas 1+ väntar på klarsignal.
 - **Fas 1 — Kalender mobil (tjänan):** fit-to-width 4-kolumner <768 (ingen vågrät scroll) + block-innehåll trimmat per bredd (namn/typ/telefon-prioritet) + nu-linje. Ingen ny data.
 - **Fas 2 — Chrome responsivt:** bottennav + FAB + topprad-komprimering + Mer-sheet <768; behåll sidomeny ≥768. UA-fritt, bara media/container queries.
 - **Fas 3 — Sheets:** boknings-bubbla→sheet (Omboka-flytt), Ny bokning-sheet (FAB), Blockera-sheet <768; dialoger centrerade ≥768.

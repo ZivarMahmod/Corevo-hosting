@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
-import { isoWeekNumber, addDays } from '@/lib/admin/dates'
+import { isoWeekNumber } from '@/lib/admin/dates'
 import { occupancyPct } from '@/lib/admin/dashboard-view'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { Button, Icon, Modal, useToast } from '@/components/portal/ui'
@@ -400,25 +400,10 @@ export function CalendarBoard({
     go({ datum: d.toISOString().slice(0, 10) })
   }
 
-  // Dagsnabbval (mockens dag-chips): Idag + kommande dagar, tumvänligt dagbyte.
-  // ERSÄTTER den gamla svep-gesten. På mobil visas alla frisörer som kolumner → ytan
-  // scrollar vågrätt, och en svep-byt-dag ovanpå det blir omöjlig att skilja från
-  // kolumn-scroll (Zivars "helt galen"). Designen byter dag via stegaren + de här
-  // chipsen; touchen ägs helt av scroll (vågrätt) och tap (öppna bokning). Drag för
-  // att flytta bokning finns kvar på desktop; på mobil sker flytt via bokningens sheet.
-  const dayChips =
-    view === 'dag'
-      ? Array.from({ length: 6 }, (_, i) => {
-          const iso = addDays(today, i)
-          const label =
-            i === 0
-              ? 'Idag'
-              : new Intl.DateTimeFormat('sv-SE', { weekday: 'short', day: 'numeric', timeZone: tz })
-                  .format(new Date(`${iso}T12:00:00Z`))
-                  .replace('.', '')
-          return { iso, label, active: iso === date }
-        })
-      : []
+  // Dagbyte sker via ‹ Idag ›-stegaren (samma kontroll på desktop och mobil) och,
+  // för längre hopp, via Månad-vyn (tryck på datumet). Ingen mobil-egen svep-gest och
+  // inga dag-chips — mobilytan ska ha SAMMA funktioner som desktop, bara omplacerade
+  // (Zivar 2026-07-15). Den gamla svep-byt-dag togs bort (krockade med kolumn-scroll).
 
   // Klick på ledig yta = "boka här". Tiden SNAPPAS till 15 min (ett klick på 09:20-höjd
   // ger 09:15, aldrig 09:20) och resurs + tid ärvs in i drawern — användaren ska aldrig
@@ -622,24 +607,6 @@ export function CalendarBoard({
           </button>
         </div>
       </div>
-
-      {/* Dagsnabbval — mockens tumvänliga dagbyte (Idag · Tor 16 · Fre 17 …). Ersätter
-          svep; syns bara i dagvyn. Egen vågrät scroll, inga synliga scrollbars. */}
-      {dayChips.length > 0 && (
-        <div className={styles.dayChips} role="group" aria-label="Snabbval av dag">
-          {dayChips.map((c) => (
-            <button
-              key={c.iso}
-              type="button"
-              className={`${styles.dayChip}${c.active ? ` ${styles.dayChipOn}` : ''}`}
-              aria-current={c.active ? 'date' : undefined}
-              onClick={() => go({ datum: c.iso })}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Scrollytan. overflow ligger HÄR, inte på sidan — därför scrollar aldrig
           dokumentet och toppnaven stannar kvar. */}

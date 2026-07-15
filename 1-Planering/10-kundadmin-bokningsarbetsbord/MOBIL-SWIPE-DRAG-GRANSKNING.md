@@ -41,3 +41,12 @@ Designen löser krocken genom att TA BORT den, inte finjustera den:
 
 ## Öppet till Zivar (en fråga)
 Ska /admin-kalendern på mobil byggas om till en-kolumn enligt mocken, ELLER är mocken minbooking-PWA:n som är ett EGET bygge (och /admin-mobilen får bara swipe-grindningen + en "Omboka"-knapp)? Scope skiljer sig stort.
+
+---
+
+## ⛔ SLUTGILTIGT (Zivar 2026-07-15) — överskriver sektionerna ovan
+Två saker klarnade EFTER granskningen och gör minbooking-sektionerna ovan inaktuella:
+1. **Rätt mock = ägar-admin, inte minbooking.** `ägareadmin-mobil-pwa/` (referens `index-Kundadmin Responsiv.html`). Där är mobilen **alla 4 frisörer som kolumner, fit-to-width (ingen vågrät scroll)** — INTE en-kolumn.
+2. **Paritetsprincip (Zivar): mobil = exakt desktop-funktioner, bara omplacerade. Inget nytt.** → Dagbyte = befintliga ‹ Idag ›-stegaren (finns på båda); längre hopp = befintliga **Månad-vyn** (tryck på datumet). INGA dag-chips (de var nytt → fel, reverterade). Ingen svep (mobil-eget → togs bort).
+
+**KLART nu:** svep-byt-dag + dag-chips borta → dagbyte via stegaren/Månad, paritet med desktop. **Flytt på touch = "Omboka" i bokningens sheet** (Fas 3), desktop-drag orört. Resten av PWA:n = PAUSAD tills Zivar ger klarsignal.
