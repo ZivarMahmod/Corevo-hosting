@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { StorePhoto } from './images'
+import { unsplashSrcSet } from './img'
 import styles from './storefront.module.css'
 
 /**
@@ -99,6 +100,8 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={p.src}
+                srcSet={unsplashSrcSet(p.src)}
+                sizes="(max-width: 720px) 50vw, 320px"
                 alt={p.alt}
                 loading="lazy"
                 className={styles.galleryImg}
@@ -137,6 +140,8 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={photos[openIdx!]!.src}
+              srcSet={unsplashSrcSet(photos[openIdx!]!.src)}
+              sizes="100vw"
               alt={photos[openIdx!]!.alt}
               className={styles.lightboxImg}
               onError={(e) => {

@@ -1,6 +1,6 @@
 import { requirePlatformAdmin } from '@/lib/auth/session'
 import { PortalShell } from '@/components/portal/PortalShell'
-import { RealtimeBookings } from '@/components/realtime/RealtimeBookings'
+import { RealtimeBookingsLazy } from '@/components/realtime/RealtimeBookingsLazy'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +14,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
     <PortalShell user={user} title="Plattform" world="backoffice" portal="platform">
       {/* No tenantId: platform_admin is cross-tenant by design. RLS still fences
           the channel to is_platform_admin(). */}
-      <RealtimeBookings />
+      <RealtimeBookingsLazy />
       {children}
     </PortalShell>
   )

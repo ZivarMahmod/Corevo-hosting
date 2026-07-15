@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
+import { unsplashSrcSet } from './img'
 import styles from './storefront.module.css'
 
 /**
@@ -81,6 +82,9 @@ export function HeroCarousel({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={img.src}
+              // Prestanda B5: responsiv hero — mobilen hämtar 480/800 i stället för 1600.
+              srcSet={unsplashSrcSet(img.src)}
+              sizes="100vw"
               alt=""
               className={styles.heroImg}
               loading={i === 0 ? 'eager' : 'lazy'}

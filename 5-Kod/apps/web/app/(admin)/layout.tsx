@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { requireMinLevel } from '@/lib/auth/session'
 import { ADMIN_PORTAL_FLOOR } from '@/lib/auth/admin-areas'
 import { PortalShell } from '@/components/portal/PortalShell'
-import { RealtimeBookings } from '@/components/realtime/RealtimeBookings'
+import { RealtimeBookingsLazy } from '@/components/realtime/RealtimeBookingsLazy'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <PortalShell user={user} title="Adminpanel" world="backoffice" portal="admin">
       {/* Live-refresh bookings views on any write to this tenant's bookings.
           tenantId is the server-resolved JWT tenant; RLS fences the channel. */}
-      <RealtimeBookings tenantId={user.tenantId ?? undefined} />
+      <RealtimeBookingsLazy tenantId={user.tenantId ?? undefined} />
       {children}
     </PortalShell>
   )

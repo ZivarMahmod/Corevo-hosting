@@ -6,6 +6,7 @@ import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { addDays as addDaysStr } from '@/lib/admin/dates'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { Button, Icon, Modal, useToast } from '@/components/portal/ui'
+import dynamic from 'next/dynamic'
 import {
   BookingDrawer,
   dayKey,
@@ -15,14 +16,19 @@ import {
   timeLabel,
   type BookingRow,
 } from './BookingDrawer'
-import {
-  NewBookingDrawer,
-  type CalendarService,
-  type NewBookingSeed,
-} from './NewBookingDrawer'
-import { BlockDrawer } from './BlockDrawer'
-import { CalendarHelp } from './CalendarHelp'
-import { CancelledLog } from './CancelledLog'
+import type { CalendarService, NewBookingSeed } from './NewBookingDrawer'
+
+// Prestanda B4: dynamic() splittar dessa fyra ur kalenderns HUVUD-chunk (~40-50 kB).
+// NewBookingDrawer + BlockDrawer renderas villkorligt (creating/blocking-state) → chunken
+// hämtas först vid klick. CalendarHelp + CancelledLog monteras alltid (deras trigger-knapp
+// syns i verktygsraden; bara modal-innehållet är klick-gatat) → deras chunk hämtas vid
+// mount, men ligger fortfarande UTANFÖR huvud-chunken (mindre initial parse). BookingDrawer
+// lämnas STATISK: den delar modul med synkrona render-hjälpare (dayKey/isAvbokad/isKlar/
+// statusAccent/timeLabel) som CalendarBoard behöver eagerly — att splitta drar in modulen ändå.
+const NewBookingDrawer = dynamic(() => import('./NewBookingDrawer').then((m) => m.NewBookingDrawer))
+const BlockDrawer = dynamic(() => import('./BlockDrawer').then((m) => m.BlockDrawer))
+const CalendarHelp = dynamic(() => import('./CalendarHelp').then((m) => m.CalendarHelp))
+const CancelledLog = dynamic(() => import('./CancelledLog').then((m) => m.CancelledLog))
 import { CalendarSearch } from './CalendarSearch'
 import { staffColor, staffInitials } from '@/lib/admin/staff-colors'
 import styles from './calendar.module.css'

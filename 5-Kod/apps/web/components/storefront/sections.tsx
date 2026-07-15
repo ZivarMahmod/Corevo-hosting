@@ -3,6 +3,7 @@ import { currentTenant } from '@/lib/tenant-data'
 import { Reveal } from './Reveal'
 import { Parallax } from './Parallax'
 import type { ResolvedThemeContent } from './theme-content'
+import { unsplashSrcSet } from './img'
 import styles from './storefront.module.css'
 
 /* Editorial section building blocks (server components). Each leads with type or
@@ -131,7 +132,13 @@ export function AboutSplit({
       <div className={`section-inner ${styles.aboutGrid}`}>
         <Reveal className={styles.aboutPhoto}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={content.aboutImage} alt={`Miljön hos ${salonName}`} loading="lazy" />
+          <img
+            src={content.aboutImage}
+            srcSet={unsplashSrcSet(content.aboutImage)}
+            sizes="(max-width: 900px) 100vw, 50vw"
+            alt={`Miljön hos ${salonName}`}
+            loading="lazy"
+          />
         </Reveal>
         <Reveal className={styles.aboutCopy} delay={80}>
           <p className={styles.eyebrow}>— Om {salonName}</p>
