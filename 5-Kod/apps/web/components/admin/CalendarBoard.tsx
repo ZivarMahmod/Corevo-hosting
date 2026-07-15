@@ -713,6 +713,7 @@ export function CalendarBoard({
           booking={open}
           tz={tz}
           staffNoun={staffNoun}
+          staffColor={colorOf(open.staffId)}
           onClose={() => setOpen(null)}
         />
       )}

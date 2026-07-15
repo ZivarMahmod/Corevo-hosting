@@ -201,11 +201,14 @@ export function BookingDrawer({
   tz,
   onClose,
   staffNoun,
+  staffColor,
 }: {
   booking: BookingRow
   tz: string
   onClose: () => void
   staffNoun: string
+  /** Personens kalenderfärg (hex) — pricken i dialogens hero. Serverhärledd via kalendern. */
+  staffColor?: string
 }) {
   const { notify } = useToast()
   const router = useRouter()
@@ -244,9 +247,41 @@ export function BookingDrawer({
 
   return (
     <Modal
-      title={booking.serviceName}
-      sub={`${dayLabel(booking.startTs, tz)} ${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} · ${booking.staffTitle}`}
-      accent={<span className={badgeClass(booking.status)}>{statusLabel(booking.status)}</span>}
+      // v2-hero: stor mono-tid + tjänst leder, personprick + "hos X · dag" + status i
+      // accent-raden. All övrig info (betalning/bokad-den/status) ligger kvar i kroppen.
+      title={
+        <span
+          style={{ display: 'inline-flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}
+        >
+          <span
+            className="num"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 600 }}
+          >
+            {timeLabel(booking.startTs, tz)}–{timeLabel(booking.endTs, tz)}
+          </span>
+          <span style={{ fontSize: 16, fontWeight: 600 }}>{booking.serviceName}</span>
+        </span>
+      }
+      sub={`${Math.round(
+        (new Date(booking.endTs).getTime() - new Date(booking.startTs).getTime()) / 60000,
+      )} min · ${priceLabel(booking.priceCents)}`}
+      accent={
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span
+            aria-hidden="true"
+            style={{
+              width: 9,
+              height: 9,
+              borderRadius: 999,
+              background: staffColor ?? 'var(--c-ink-3)',
+            }}
+          />
+          <span style={{ color: 'var(--c-ink-2)', fontSize: 12.5 }}>
+            hos {booking.staffTitle} · {dayLabel(booking.startTs, tz)}
+          </span>
+          <span className={badgeClass(booking.status)}>{statusLabel(booking.status)}</span>
+        </span>
+      }
       onClose={onClose}
       ariaLabel={`Bokning ${booking.serviceName}`}
       footer={
@@ -370,28 +405,8 @@ export function BookingDrawer({
           )}
         </section>
 
-        <section>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>
-            Tjänst & bokning
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
-            <DetailPair
-              label="Tid"
-              value={`${dayLabel(booking.startTs, tz)} ${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)}`}
-              num
-            />
-            <DetailPair label={staffNoun} value={booking.staffTitle} />
-            <DetailPair label="Pris" value={priceLabel(booking.priceCents)} num />
-            <DetailPair label="Betalning" value={paymentLabel(booking)} num />
-            <DetailPair
-              label="Bokad den"
-              value={`${dayLabel(booking.createdAt, tz)} ${timeLabel(booking.createdAt, tz)}`}
-              num
-            />
-            <DetailPair label="Status" value={statusLabel(booking.status)} />
-          </div>
-        </section>
-
+        {/* Noteringen leder efter kunden (designen) — kundens meddelande är det man vill
+            se innan man agerar. */}
         <section>
           <div className="eyebrow" style={{ marginBottom: 10 }}>
             Noteringar mot bokningen
@@ -400,6 +415,25 @@ export function BookingDrawer({
             notes={notes}
             emptyText="Ingen notering på den här bokningen. Kundens meddelande vid bokning landar här."
           />
+        </section>
+
+        {/* Detaljer UNDER — tid/tjänst/pris/personal står redan i heron, så gridet bär
+            bara det som inte visas där: betalning, när den bokades, status. Inget tappas
+            (NOTES: viktigast först, resten kvar under). */}
+        <section>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>
+            Detaljer
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+            <DetailPair label="Betalning" value={paymentLabel(booking)} num />
+            <DetailPair
+              label="Bokad den"
+              value={`${dayLabel(booking.createdAt, tz)} ${timeLabel(booking.createdAt, tz)}`}
+              num
+            />
+            <DetailPair label="Status" value={statusLabel(booking.status)} />
+            <DetailPair label={staffNoun} value={booking.staffTitle} />
+          </div>
         </section>
 
         {state.error && (
