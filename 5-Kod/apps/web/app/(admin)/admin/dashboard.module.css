@@ -1,75 +1,552 @@
-/* Översikt (goal-65). Sid-scopad, rör inte portal-global.css. Varje värde kommer ur
-   back-office-tokens (--c-* / --shadow / --dur / --ease) — ingen hårdkodad hex, ingen
-   ny typskala. Transitions är reduced-motion-guardade.
+/* Översikt v2 (goal-68, Claude Design "Dagens genomgångar"). Sid-scopad, rör inte
+   portal-global.css. Varje färg kommer ur back-office-tokens (--c-*) — designens hex
+   ÄR admins dark-tokens (sf=--c-paper, ok=--c-success, warn=--c-warning …), så inget
+   hårdkodas. Mono = global .num (--font-mono). Transitions reduced-motion-guardade. */
 
-   Borttaget i goal-65: snabbåtgärds-raden (fyra kort som ledde till samma ställen som
-   toppnaven redan gör) och topptimmar-diagrammet (statistik hör inte hemma på entrén —
-   codex/00 §5 flyttar den till en framtida Insikter-yta). */
-
-/* ---- kortets huvud: rubrik + valfri räknare/länk ---- */
-.cardHead {
-  padding: 18px 22px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 4px 0 32px;
 }
 
-.cardLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--c-forest);
-  font-family: var(--font-ui);
-  font-size: 13px;
+/* ── Sidhuvud ── */
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--c-warning);
+  text-transform: uppercase;
+}
+.greeting {
+  margin: 10px 0 8px;
+  font-size: 38px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: var(--c-ink);
+}
+.headSub {
+  font-size: 15px;
+  color: var(--c-ink-2);
+}
+.headSub strong {
+  color: var(--c-ink);
   font-weight: 600;
+}
+.headActions {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 356px;
+  gap: 20px;
+  margin-top: 24px;
+  align-items: start;
+}
+.col {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* ── Kort ── */
+.card {
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px;
+}
+.cardTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--c-ink);
+}
+.cardLink {
+  font-size: 13px;
+  color: var(--c-ink-3);
   text-decoration: none;
 }
 .cardLink:hover {
-  text-decoration: underline;
+  color: var(--c-ink);
+}
+.kicker {
+  font-size: 10.5px;
+  letter-spacing: 0.15em;
+  color: var(--c-ink-3);
 }
 
-/* ---- rad: bokning eller resurs ---- */
-.bookingRow {
+/* ── Härnäst-hero ── */
+.hero {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.heroMain {
+  padding: 22px 24px;
+  border-right: 1px solid var(--c-line);
+}
+.heroTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.heroCountdown {
+  font-size: 11px;
+  color: var(--c-success);
+}
+.heroHeadline {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-top: 14px;
+}
+.heroClock {
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--c-ink);
+}
+.heroService {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+.heroMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--c-ink-2);
+  flex-wrap: wrap;
+}
+.heroCustomer {
+  color: var(--c-ink);
+  font-weight: 600;
+}
+.heroStaff {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.heroActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+.heroEmpty {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--c-ink-2);
+}
+.heroEmpty strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--c-ink);
+}
+.heroSide {
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+}
+.heroSideEmpty {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--c-ink-3);
+}
+.heroSideList {
+  margin-top: 12px;
+}
+.laterRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--c-line);
+  text-decoration: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.laterRow:last-child {
+  border-bottom: none;
+}
+.laterRow:hover {
+  opacity: 0.72;
+}
+.laterTime {
+  font-size: 13px;
+  color: var(--c-ink-2);
+  width: 44px;
+  flex: none;
+}
+.laterName {
+  font-size: 13.5px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--c-ink-2);
+}
+.laterAll {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--c-ink-3);
+  text-decoration: none;
+}
+.laterAll:hover {
+  color: var(--c-ink);
+}
+
+/* delad prick */
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+}
+
+/* ── Dagens schema (tidslinje) ── */
+.legend {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  font-size: 12px;
+  color: var(--c-ink-3);
+}
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legendBooked,
+.legendDone {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--c-paper-3);
+  border: 1px solid var(--c-line-strong);
+}
+.legendDone {
+  opacity: 0.55;
+}
+.legendNow {
+  width: 2px;
+  height: 12px;
+  background: var(--c-warning);
+}
+.timeline {
+  padding: 0 22px 22px;
+}
+.axisRow {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 0 16px;
+}
+.axis {
+  position: relative;
+  height: 16px;
+}
+.axisTick {
+  position: absolute;
+  font-size: 10px;
+  color: var(--c-ink-3);
+  transform: translateX(-50%);
+}
+.axisTick:first-child {
+  transform: none;
+}
+.lanes {
+  position: relative;
+  margin-top: 6px;
+}
+.nowLine {
+  position: absolute;
+  top: -4px;
+  bottom: 0;
+  width: 2px;
+  background: var(--c-warning);
+  opacity: 0.85;
+  z-index: 5;
+  border-radius: 2px;
+}
+.lane {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 0 16px;
+  align-items: center;
+  border-top: 1px solid var(--c-line);
+  padding: 7px 0;
+}
+.laneHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.laneName {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--c-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lanePass {
+  font-size: 10.5px;
+  color: var(--c-ink-3);
+}
+.track {
+  position: relative;
+  height: 36px;
+  border-radius: 8px;
+}
+.laneFree {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  font-size: 12px;
+  color: var(--c-ink-3);
+  font-style: italic;
+}
+.block {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  box-sizing: border-box;
+  background: var(--c-paper-3);
+  border: 1px solid var(--c-line-strong);
+  border-left: 3px solid var(--c-ink-3);
+}
+.blockDone {
+  opacity: 0.55;
+}
+.blockDone .blockLabel {
+  text-decoration: line-through;
+}
+.blockHot {
+  background: var(--c-forest-fill);
+  border-color: color-mix(in srgb, var(--c-forest-fill) 60%, #fff);
+}
+.blockHot .blockLabel {
+  color: var(--c-on-forest);
+}
+.blockLabel {
+  font-size: 10.5px;
+  color: var(--c-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Kommande idag ── */
+.upcoming {
+  padding: 0 22px 10px;
+}
+.upRow {
+  display: grid;
+  grid-template-columns: 56px 1.4fr 1fr 118px 92px;
+  gap: 14px;
+  align-items: center;
+  padding: 11px 0;
+  border-top: 1px solid var(--c-line);
   text-decoration: none;
   transition: background var(--dur-fast) var(--ease-out);
 }
-.bookingRow:hover {
+.upRow:hover {
+  background: var(--c-paper-2);
+}
+.upTime {
+  font-size: 13px;
+  color: var(--c-ink-2);
+}
+.upName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upService {
+  font-size: 13.5px;
+  color: var(--c-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.upStaff {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--c-ink-2);
+  min-width: 0;
+}
+.upStatus {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 99px;
+  justify-self: end;
+  border: 1px solid var(--c-line-strong);
+}
+
+/* ── Idag i siffror ── */
+.statsPad {
+  padding: 20px 22px;
+}
+.statRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0 10px;
+  border-bottom: 1px solid var(--c-line);
+}
+.statBig {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--c-ink);
+}
+.statSub {
+  font-size: 12.5px;
+  color: var(--c-ink-3);
+}
+.bar {
+  width: 110px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--c-paper-3);
+  overflow: hidden;
+  flex: none;
+}
+.barFill {
+  height: 100%;
+  border-radius: 99px;
+}
+.cmp {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ── Kräver uppmärksamhet ── */
+.attnPad {
+  padding: 20px 22px;
+}
+.attnHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.attnHead .cardTitle {
+  flex: 1;
+  font-size: 16px;
+}
+.attnBadge {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+  border-radius: 99px;
+  padding: 2px 9px;
+}
+.attnEmpty {
+  padding: 8px 0 2px;
+  font-size: 13px;
+  color: var(--c-ink-3);
+}
+.attnItem {
+  display: flex;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--c-line);
+}
+.attnItem:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+.attnDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.attnTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+.attnDetail {
+  font-size: 12.5px;
+  color: var(--c-ink-2);
+  margin-top: 2px;
+}
+.attnActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+/* ── Genvägar ── */
+.shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.shortcut {
+  padding: 12px;
+  border: 1px solid var(--c-line);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+.shortcut:hover {
+  border-color: var(--c-line-strong);
   background: var(--c-paper-2);
 }
 
-.rowTime {
-  width: 48px;
-  flex: none;
-  color: var(--c-forest);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.rowName {
-  color: var(--c-ink);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.rowSub {
-  color: var(--c-ink-3);
-  font-size: 12.5px;
-}
-
-.rowHours {
-  color: var(--c-ink-2);
-  font-size: 13px;
-}
-
-/* ---- ärligt tomläge: säger vad som saknas, inte "inga resultat" ---- */
+/* ── delat tomläge ── */
 .emptyState {
-  margin: 0 12px 12px;
+  margin: 0 22px 22px;
   padding: 22px 18px;
   border: 1px dashed var(--c-line-strong);
   border-radius: 12px;
@@ -78,15 +555,30 @@
   font-size: 14px;
   text-align: center;
 }
-
 .emptyState strong {
   display: block;
   margin-bottom: 4px;
   color: var(--c-ink);
 }
 
+/* ── responsivt: stapla under 900px ── */
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  .heroMain {
+    border-right: none;
+    border-bottom: 1px solid var(--c-line);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .bookingRow {
+  .laterRow,
+  .upRow,
+  .shortcut {
     transition: none;
   }
 }

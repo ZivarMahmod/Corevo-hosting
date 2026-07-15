@@ -4,6 +4,7 @@ import type { Tables } from '@corevo/db'
 import type { TenantBranding } from '@corevo/ui'
 import { createClient } from '@/lib/supabase/server'
 import { staffColor } from './staff-colors'
+import { hmToMinutes, sumMergedMinutes } from './dashboard-view'
 
 // Every read here runs through the cookie-bound authenticated client, so RLS
 // (0002: tenant_id = private.tenant_id()) fences it to the admin's own tenant.
@@ -52,6 +53,10 @@ export type AdminBooking = {
 export type BookingFilters = {
   fromUtc?: string
   toUtc?: string
+  /** Filter on cancelled_at (NOT start_ts) — "vad avbokades under detta fönster".
+   *  Använder 0060-indexet (tenant_id, cancelled_at desc). */
+  cancelledFromUtc?: string
+  cancelledToUtc?: string
   staffId?: string
   status?: string
   locationId?: string
@@ -220,6 +225,8 @@ export async function listBookings(
     .eq('tenant_id', tenantId)
   if (filters.fromUtc) q = q.gte('start_ts', filters.fromUtc)
   if (filters.toUtc) q = q.lt('start_ts', filters.toUtc)
+  if (filters.cancelledFromUtc) q = q.gte('cancelled_at', filters.cancelledFromUtc)
+  if (filters.cancelledToUtc) q = q.lt('cancelled_at', filters.cancelledToUtc)
   if (filters.staffId) q = q.eq('staff_id', filters.staffId)
   if (filters.status) q = q.eq('status', filters.status)
   if (filters.locationId) q = q.eq('location_id', filters.locationId)
@@ -559,10 +566,16 @@ export type StaffDay = {
   name: string
   start: string | null
   end: string | null
+  /** Faktiska arbetsminuter för dagen = SUMMAN av alla pass, inte ytterspannet
+   *  (start→end). Ett delat schema 09–12 + 15–18 = 360 min, inte 540. Beläggningen
+   *  på översikten delar bokade minuter med detta; ytterspannet skulle överskatta
+   *  nämnaren och förvränga procenten (Codex-granskning). 0 när resursen är ledig. */
+  workedMinutes: number
   /** goal-67: kalenderfärgen. Alltid en hex — härledd ur id:t när ingen är vald,
    *  så kalendern är färgkodad från dag ett utan att någon behövt välja. */
   color: string
 }
+
 
 /** Dagens resursläge: aktiv personal + deras arbetstid för veckodagen (0=sön … 6=lör,
  *  samma konvention som working_hours.weekday). EN läsning för hela tenanten — den
@@ -598,6 +611,8 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
   // första starten till sista slutet. Luckan mellan passen ritas som ej tillgänglig
   // i kalendern; här räcker ytterkanterna.
   const span = new Map<string, { start: string; end: string }>()
+  // Pass-intervall per resurs (minuter) — slås ihop nedan så överlapp inte dubbelräknas.
+  const passes = new Map<string, [number, number][]>()
   for (const row of (hourRows ?? []) as {
     staff_id: string
     start_time: string
@@ -608,7 +623,13 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
       start: prev && prev.start < row.start_time ? prev.start : row.start_time,
       end: prev && prev.end > row.end_time ? prev.end : row.end_time,
     })
+    const arr = passes.get(row.staff_id) ?? []
+    arr.push([hmToMinutes(row.start_time), hmToMinutes(row.end_time)])
+    passes.set(row.staff_id, arr)
   }
+  // Faktiska arbetsminuter per resurs = sammanslagna pass (ej ytterspann, ej dubbelräknat).
+  const worked = new Map<string, number>()
+  for (const [id, ivs] of passes) worked.set(id, sumMergedMinutes(ivs))
 
   return (
     (staffRows ?? []) as { id: string; title: string | null; color: string | null }[]
@@ -620,6 +641,7 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
       name: s.title?.trim() || 'Namnlös medarbetare',
       start: hours?.start ?? null,
       end: hours?.end ?? null,
+      workedMinutes: worked.get(s.id) ?? 0,
       color: staffColor(s.id, s.color),
     }
   })
@@ -630,7 +652,6 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
  *  sida; den frågan bor nu på /admin/statistik med riktig period och jämförelse. */
 export type DashboardData = {
   todayCount: number
-  weekCount: number
   upcomingToday: AdminBooking[]
   /** Dagens BOKADE VÄRDE (öre) — summan av dagens aktiva tider, genomförda som
    *  kommande. Det är INTE "intäkt": en tid kl 16 har inte tjänats in kl 09. Kortet
@@ -642,15 +663,30 @@ export type DashboardData = {
   /** Antal av dagens tider som saknar pris — ett tyst 0 hade underskattat summan
    *  utan att någon märkte det. Kortet flaggar det i stället för att ljuga tyst. */
   todayUnpriced: number
+  /** Samma veckodag förra veckan: bokat värde (öre). Driver "+X% v. {dag}"-jämförelsen
+   *  i "Idag i siffror". 0 om ingen jämförbar dag fanns → chipet döljs (ingen falsk 0%). */
+  prevWeekdayBookedCents: number
+  /** Dagens AVBOKADE tider (avbokade idag, cancelled_at) — frigjorda luckor som
+   *  inkorgen "Kräver uppmärksamhet" listar med en "Fyll luckan"-åtgärd. */
+  cancellationsToday: AdminBooking[]
+  /** Avbokningspanelens aggregat: antal + förlorat värde (öre) per period, bucketade
+   *  på cancelled_at mot varje periods egen startgräns (idag/veckans måndag/månadens
+   *  1:a). Fönstren är oberoende — veckan kan spänna in i föregående månad. */
+  cancellationStats: {
+    today: { count: number; cents: number }
+    week: { count: number; cents: number }
+    month: { count: number; cents: number }
+  }
 }
 
 export async function dashboardData(
   tenantId: string,
   today: { fromUtc: string; toUtc: string },
-  week: { fromUtc: string; toUtc: string },
+  prevWeekday: { fromUtc: string; toUtc: string },
+  periods: { weekFromUtc: string; monthFromUtc: string },
 ): Promise<DashboardData> {
   const supabase = await createClient()
-  const [todayB, weekB, upcoming] = await Promise.all([
+  const [todayB, upcoming, prevRows, cancellations, cancelAgg] = await Promise.all([
     supabase
       .from('bookings')
       .select('*', { count: 'exact', head: true })
@@ -658,26 +694,70 @@ export async function dashboardData(
       .in('status', ACTIVE_BOOKING as unknown as string[])
       .gte('start_ts', today.fromUtc)
       .lt('start_ts', today.toUtc),
-    // goal-67: veckan behövs bara som ETT TAL här. Förut drogs varje veckorad hem för
-    // att räkna service-mix och peak-hours — som ingen sida någonsin renderade. Den
-    // frågan bor nu på /admin/statistik, med riktig period och jämförelse.
+    listBookings(tenantId, { fromUtc: today.fromUtc, toUtc: today.toUtc }),
+    // Samma veckodag förra veckan — bara prislappen behövs, inte raderna. Summeras i JS
+    // (en dags bokningar = litet); PostgREST saknar billig SUM här.
     supabase
       .from('bookings')
-      .select('*', { count: 'exact', head: true })
+      .select('price_cents')
       .eq('tenant_id', tenantId)
       .in('status', ACTIVE_BOOKING as unknown as string[])
-      .gte('start_ts', week.fromUtc)
-      .lt('start_ts', week.toUtc),
-    listBookings(tenantId, { fromUtc: today.fromUtc, toUtc: today.toUtc }),
+      .gte('start_ts', prevWeekday.fromUtc)
+      .lt('start_ts', prevWeekday.toUtc),
+    // Avbokningar som SKEDDE idag (cancelled_at, inte start_ts) — verkliga händelser
+    // för inkorgen. En bokning avbokad för veckor sedan är ingen ny lucka att fylla.
+    listBookings(tenantId, {
+      cancelledFromUtc: today.fromUtc,
+      cancelledToUtc: today.toUtc,
+      status: 'cancelled',
+    }),
+    // Avbokningspanelens aggregat: EN läsning från det TIDIGASTE fönstret (veckan kan
+    // börja i föregående månad vid månadsskifte), bucketas i JS till idag/vecka/månad.
+    supabase
+      .from('bookings')
+      .select('cancelled_at, price_cents')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'cancelled')
+      .gte(
+        'cancelled_at',
+        periods.weekFromUtc < periods.monthFromUtc ? periods.weekFromUtc : periods.monthFromUtc,
+      ),
   ])
+  // Kasta, svälj inte (B-10): ett query-fel som blir 0 avbokningar ser ut som en lugn
+  // dag — en farligare lögn än en felsida.
+  if (cancelAgg.error) throw new Error(`dashboardData cancelAgg: ${cancelAgg.error.message}`)
+  if (prevRows.error) throw new Error(`dashboardData prevRows: ${prevRows.error.message}`)
 
   // Keep the list consistent with `todayCount` (both exclude cancelled/no_show).
   const active = new Set<string>(ACTIVE_BOOKING)
   const todayRows = upcoming.filter((b) => active.has(b.status))
+  const prevWeekdayBookedCents = (
+    (prevRows.data ?? []) as { price_cents: number | null }[]
+  ).reduce((sum, r) => sum + (r.price_cents ?? 0), 0)
+
+  // Bucketa avbokningar (kumulativt: idag ⊆ vecka ⊆ månad).
+  const cancellationStats = {
+    today: { count: 0, cents: 0 },
+    week: { count: 0, cents: 0 },
+    month: { count: 0, cents: 0 },
+  }
+  for (const r of (cancelAgg.data ?? []) as { cancelled_at: string | null; price_cents: number | null }[]) {
+    if (!r.cancelled_at) continue
+    const cents = r.price_cents ?? 0
+    cancellationStats.month.count++
+    cancellationStats.month.cents += cents
+    if (r.cancelled_at >= periods.weekFromUtc) {
+      cancellationStats.week.count++
+      cancellationStats.week.cents += cents
+    }
+    if (r.cancelled_at >= today.fromUtc) {
+      cancellationStats.today.count++
+      cancellationStats.today.cents += cents
+    }
+  }
 
   return {
     todayCount: todayB.count ?? 0,
-    weekCount: weekB.count ?? 0,
     upcomingToday: todayRows,
     // Dagens värde styr en dag — antalet bokningar gör det inte (tre färgningar ≠ tre
     // luggklipp). Men BOKAT ≠ INTJÄNAT: hela dagen summeras, klart och kommande, och
@@ -687,6 +767,9 @@ export async function dashboardData(
       .filter((b) => b.status === 'completed')
       .reduce((sum, b) => sum + (b.priceCents ?? 0), 0),
     todayUnpriced: todayRows.filter((b) => b.priceCents == null).length,
+    prevWeekdayBookedCents,
+    cancellationsToday: cancellations,
+    cancellationStats,
   }
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { addDays as addDaysStr } from '@/lib/admin/dates'
@@ -221,13 +221,35 @@ export function CalendarBoard({
   const [open, setOpen] = useState<BookingRow | null>(
     () => bookings.find((b) => b.id === openBookingId) ?? null,
   )
-  /** null = stängd. Ett objekt (ev. med seed) = skapa-läge. */
-  const [creating, setCreating] = useState<{ seed: NewBookingSeed | null } | null>(null)
-  /** Blockera tid: ny (seed från gridklick eller tom) eller befintlig (öppnad blockering). */
+  /** null = stängd. Ett objekt (ev. med seed) = skapa-läge. Översiktens genväg
+   *  "Ny bokning" djuplänkar hit med ?ny → drawern öppnas direkt vid landning. */
+  const [creating, setCreating] = useState<{ seed: NewBookingSeed | null } | null>(
+    () => (params.get('ny') !== null ? { seed: null } : null),
+  )
+  /** Blockera tid: ny (seed från gridklick eller tom) eller befintlig (öppnad blockering).
+   *  Genvägen "Blockera tid" djuplänkar hit med ?blockera. Ömsesidigt uteslutande med
+   *  ?ny — bara en drawer öppnas vid landning. */
   const [blocking, setBlocking] = useState<{
     seed: { staffId: string; startMinute: number } | null
     existing: CalendarBlock | null
-  } | null>(null)
+  } | null>(() =>
+    params.get('blockera') !== null && params.get('ny') === null
+      ? { seed: null, existing: null }
+      : null,
+  )
+
+  // Djuplänk-parametrar (?ny/?blockera) är ENGÅNGS: rensa dem ur URL:en efter att
+  // drawern öppnats, annars öppnar en omladdning/tillbaka-navigering den igen.
+  useEffect(() => {
+    if (params.get('ny') === null && params.get('blockera') === null) return
+    const sp = new URLSearchParams(params.toString())
+    sp.delete('ny')
+    sp.delete('blockera')
+    const qs = sp.toString()
+    router.replace(qs ? `/admin/bokningar?${qs}` : '/admin/bokningar', { scroll: false })
+    // Endast vid mount — parametrarna läses en gång in i drawer-state ovan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { notify } = useToast()
   const [moving, startMove] = useTransition()

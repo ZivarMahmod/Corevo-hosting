@@ -17,6 +17,11 @@ export type AdminTenant = {
   /** Bransch label overlay (verticals.terminology). Empty for the 'generell' bransch
    *  or an unset vertical; admin label surfaces resolve through it via resolveTerm. */
   terminology: Terminology
+  /** settings.require_booking_approval — kräver salongen att varje bokning godkänns
+   *  (Bekräfta/Avböj) innan den gäller? Default FALSE: en salong godkänner inte besök,
+   *  bokningen görs och gäller. Bara branscher som behöver ett godkännandesteg sätter
+   *  detta → översiktens inkorg visar då obekräftade tider. */
+  requireBookingApproval: boolean
 }
 
 const FALLBACK_TZ = 'Europe/Stockholm'
@@ -42,7 +47,7 @@ export async function getAdminTenant(user: CurrentUser): Promise<AdminTenant | n
  */
 export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant | null> {
   const supabase = await createClient()
-  const [{ data: tenant }, { data: loc }] = await Promise.all([
+  const [{ data: tenant }, { data: loc }, { data: settingsRow }] = await Promise.all([
     supabase
       .from('tenants')
       .select('id, slug, name, status, vertical_id')
@@ -53,6 +58,12 @@ export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant
       .select('id, timezone')
       .eq('tenant_id', tenantId)
       .eq('is_primary', true)
+      .maybeSingle(),
+    // Bokningsgodkännande bor i tenant_settings.settings (jsonb), inte på tenants.
+    supabase
+      .from('tenant_settings')
+      .select('settings')
+      .eq('tenant_id', tenantId)
       .maybeSingle(),
   ])
   if (!tenant) return null
@@ -74,6 +85,8 @@ export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant
     terminology = cleanTerminology(vertical?.terminology)
   }
 
+  const settings = (settingsRow?.settings ?? {}) as Record<string, unknown>
+
   return {
     id: tenant.id,
     slug: tenant.slug,
@@ -82,6 +95,7 @@ export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant
     locationId: loc?.id ?? null,
     verticalId: tenant.vertical_id ?? null,
     terminology,
+    requireBookingApproval: settings.require_booking_approval === true,
   }
 }
 

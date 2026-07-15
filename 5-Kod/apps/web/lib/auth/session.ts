@@ -14,6 +14,9 @@ import { logAuthDenied } from '@/lib/observability'
 export type CurrentUser = {
   id: string
   email: string | null
+  /** Visningsnamn ur auth user_metadata (full_name/name), null när inget satt.
+   *  Kosmetiskt (hälsningar) — aldrig en behörighetssignal. */
+  name: string | null
   tenantId: string | null
   platformAdmin: boolean
   roleLevel: number
@@ -34,6 +37,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!user) return null
 
   const appMeta = (user.app_metadata ?? {}) as { tenant_id?: string; platform_admin?: boolean }
+  const userMeta = (user.user_metadata ?? {}) as { full_name?: string; name?: string }
+  const name = userMeta.full_name?.trim() || userMeta.name?.trim() || null
 
   // Prestanda C3: rollnivån hämtas via en FK-embed (users.role_id → roles) i STÄLLET
   // för en andra seriell round-trip till `roles`. Samma RLS-väg som förut (användaren
@@ -56,6 +61,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   return {
     id: user.id,
     email: user.email ?? null,
+    name,
     tenantId: appMeta.tenant_id ?? profile?.tenant_id ?? null,
     platformAdmin: appMeta.platform_admin === true,
     roleLevel,

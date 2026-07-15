@@ -1,0 +1,83 @@
+/* Avbokningspanel (goal-68). Färger ur back-office-tokens, matchar översiktens kort. */
+
+.card {
+  background: var(--c-paper);
+  border: 1px solid var(--c-line);
+  border-radius: 16px;
+  padding: 20px 22px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.kicker {
+  font-size: 10.5px;
+  letter-spacing: 0.15em;
+  color: var(--c-ink-3);
+}
+.tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--c-paper-2);
+}
+.tab {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 11px;
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--c-ink-3);
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.tab:hover {
+  color: var(--c-ink-2);
+}
+.tabActive {
+  background: var(--c-paper-3);
+  color: var(--c-ink);
+}
+.tab:focus-visible {
+  outline: 2px solid var(--c-gold);
+  outline-offset: 2px;
+}
+.body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+.count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.countNum {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--c-ink);
+}
+.countLabel {
+  font-size: 13px;
+  color: var(--c-ink-2);
+}
+.value {
+  font-size: 14px;
+  color: var(--c-ink-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+}

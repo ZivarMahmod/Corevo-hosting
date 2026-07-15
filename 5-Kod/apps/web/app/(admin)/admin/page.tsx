@@ -5,26 +5,29 @@ import { getAdminTenant } from '@/lib/admin/tenant'
 import { dashboardData, staffDay, type AdminBooking } from '@/lib/admin/data'
 import { getAdminModuleStates, isBookingActivated } from '@/lib/admin/modules'
 import { todayInTz, dayRangeUtc, weekRangeUtc } from '@/lib/admin/dates'
-import { formatPrice, formatTime, statusLabel } from '@/lib/admin/format'
-import { PageHead, Stat, Card, Badge, Button, Callout, Icon } from '@/components/portal/ui'
-import type { BadgeTone } from '@/components/portal/ui'
+import { formatPrice, formatTime } from '@/lib/admin/format'
+import {
+  greetingFor,
+  parseHM,
+  hourInTz,
+  laneBlock,
+  occupancyPct,
+  comparisonPct,
+  countdownMinutes,
+} from '@/lib/admin/dashboard-view'
+import { Button, Callout } from '@/components/portal/ui'
+import { CancellationStats } from '@/components/admin/CancellationStats'
 import styles from './dashboard.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Översikt · Adminpanel' }
 
-const STATUS_TONE: Record<string, BadgeTone> = {
-  pending: 'gold',
-  confirmed: 'info',
-  completed: 'success',
-  cancelled: 'danger',
-  no_show: 'danger',
-}
-
 /** Översikten är ENTRÉN, inte arbetsbordet (låst beslut, codex/00 §2): den svarar på
- *  "vad händer idag", "vad kräver mitt beslut" och "vad är nästa handling" — och pekar
- *  vidare till Kalendern. Den får aldrig bli en andra kalender, visa inställningsfält
- *  eller KPI:er för moduler kunden inte har. */
+ *  "vad händer nu", "läget i siffror" och "vad kräver mitt beslut" — och pekar vidare
+ *  till Kalendern. goal-68 (Claude Design v2 + Zivars omgång): tvåkolumnslayout —
+ *  vänster = operativt (Härnäst-hero, tidslinje, kommande), höger = läget (siffror,
+ *  inkorg, genvägar). Tidslinjen är LÄS-BARA: inga block att dra, ingen andra kalender.
+ *  Alla tal kommer ur riktig data; inget fejkas. */
 export default async function AdminPage() {
   const user = await requireAdminArea('oversikt')
   const tenant = await getAdminTenant(user)
@@ -37,56 +40,140 @@ export default async function AdminPage() {
     )
   }
 
-  const today = todayInTz(tenant.timeZone)
-  const dayRange = dayRangeUtc(today, tenant.timeZone)
-  const weekRange = weekRangeUtc(today, tenant.timeZone)
-  // Veckodagen i tenantens tidszon (0=sön … 6=lör) — inte serverns lokala dag.
+  const tz = tenant.timeZone
+  const today = todayInTz(tz)
+  const dayRange = dayRangeUtc(today, tz)
+  // Samma veckodag förra veckan (för +% jämförelsen).
+  const prevDate = new Date(`${today}T12:00:00Z`)
+  prevDate.setUTCDate(prevDate.getUTCDate() - 7)
+  const prevRange = dayRangeUtc(prevDate.toISOString().slice(0, 10), tz)
+  // Avbokningspanelens fönster: veckans start (måndag) + månadens första dag i tenant-tz.
+  const weekStart = weekRangeUtc(today, tz).fromUtc
+  const monthStart = dayRangeUtc(`${today.slice(0, 7)}-01`, tz).fromUtc
+  // Veckodagen i tenantens tidszon (0=sön … 6=lör).
   const weekday = new Date(`${today}T12:00:00Z`).getUTCDay()
 
   const [data, roster, moduleStates] = await Promise.all([
-    dashboardData(tenant.id, dayRange, weekRange),
+    dashboardData(tenant.id, dayRange, prevRange, {
+      weekFromUtc: weekStart,
+      monthFromUtc: monthStart,
+    }),
     staffDay(tenant.id, weekday),
     getAdminModuleStates(tenant.id),
   ])
 
-  // Dagens rader. upcomingToday BÄR redan det maskerade kundnamnet (AdminBooking
-  // .customerName, samma privacy-regel som Kunder-listan) — sidan gör ingen egen
-  // kundläsning.
+  // ── Härledda dagsvärden ────────────────────────────────────────────────────
   const done = data.upcomingToday.filter((b) => b.status === 'completed')
-  const upcoming = data.upcomingToday.filter(
+  const active = data.upcomingToday.filter(
     (b) => b.status === 'pending' || b.status === 'confirmed',
   )
-  // Kräver uppmärksamhet = obekräftade tider. De är de enda som väntar på ETT beslut
-  // av användaren; allt annat är information och hör hemma i listan nedan.
-  const needsAction = data.upcomingToday.filter((b) => b.status === 'pending')
-  const next = upcoming[0] ?? null
+  const nowIso = new Date().toISOString()
+  const nowMs = Date.parse(nowIso)
+  // Framåtblick: allt som inte redan börjat (det som "pågår" är inte KOMMANDE).
+  const future = active
+    .filter((b) => Date.parse(b.startTs) > nowMs)
+    .sort((a, b) => a.startTs.localeCompare(b.startTs))
+  const next = future[0] ?? null
+  const later = future.slice(1)
+  const countdownMin = next ? countdownMinutes(nowMs, Date.parse(next.startTs)) : 0
+  // Designkrav: countdown < 10 min = brådskande (warn-gult).
+  const countdownUrgent = next != null && countdownMin < 10
 
-  // Driftvarning visas BARA vid ett verkligt problem — ingen rad med gröna
-  // "allt fungerar"-system (codex/06: "Döda modulkort visas inte").
+  // Kräver uppmärksamhet: obekräftade tider VISAS bara om salongen kräver godkännande
+  // (settings.require_booking_approval). En salong godkänner inte varje besök — då är
+  // inkorgen till för verkliga undantag: dagens avbokningar (frigjorda luckor).
+  const requiresApproval = tenant.requireBookingApproval === true
+  const pendingApproval = requiresApproval
+    ? active.filter((b) => b.status === 'pending')
+    : []
+  const attentionCount = pendingApproval.length + data.cancellationsToday.length
+
   const bookingPaused = !isBookingActivated(moduleStates)
 
+  // ── Siffror ────────────────────────────────────────────────────────────────
+  const workingStaff = roster.filter((s) => s.start)
+  const donePct = data.todayCount > 0 ? Math.round((done.length / data.todayCount) * 100) : 0
+  // Beläggning = bokade minuter / personalens FAKTISKA arbetsminuter (summa av pass,
+  // inte ytterspann — staffDay.workedMinutes). Ärligt tak 100%.
+  const bookedMin = data.upcomingToday.reduce(
+    (sum, b) => sum + Math.max(0, (Date.parse(b.endTs) - Date.parse(b.startTs)) / 60000),
+    0,
+  )
+  const availableMin = workingStaff.reduce((sum, s) => sum + s.workedMinutes, 0)
+  const occupancy = occupancyPct(bookedMin, availableMin)
+  // +X% mot samma veckodag förra veckan — null döljer chipet (ingen falsk 0%).
+  const cmp = comparisonPct(data.todayBookedCents, data.prevWeekdayBookedCents)
+  const weekdayName = new Intl.DateTimeFormat('sv-SE', { weekday: 'long', timeZone: tz }).format(
+    new Date(),
+  )
+
+  // ── Tidslinje: fönster + block per resurs ──────────────────────────────────
+  const startsH = workingStaff.map((s) => parseHM(s.start!))
+  const endsH = workingStaff.map((s) => parseHM(s.end!))
+  const dayStartH = startsH.length ? Math.floor(Math.min(...startsH)) : 9
+  const dayEndH = endsH.length ? Math.ceil(Math.max(...endsH)) : 18
+  const span = Math.max(1, dayEndH - dayStartH)
+  const pos = (h: number) => ((h - dayStartH) / span) * 100
+  const axisHours = Array.from({ length: dayEndH - dayStartH + 1 }, (_, i) => dayStartH + i)
+  const nowH = hourInTz(nowIso, tz)
+  const showNow = nowH >= dayStartH && nowH <= dayEndH
+  const bookingsByStaff = new Map<string, AdminBooking[]>()
+  for (const b of data.upcomingToday) {
+    const arr = bookingsByStaff.get(b.staffId) ?? []
+    arr.push(b)
+    bookingsByStaff.set(b.staffId, arr)
+  }
+
+  // ── Presentation-hjälp ─────────────────────────────────────────────────────
+  const greeting = greetingFor(nowH)
+  const firstName = user.name?.split(/\s+/)[0] ?? null
   const dateLabel = new Intl.DateTimeFormat('sv-SE', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
-    timeZone: tenant.timeZone,
+    timeZone: tz,
   }).format(new Date())
-
   const nameOf = (b: AdminBooking) => b.customerName ?? 'Gäst'
-  const timeOf = (b: AdminBooking) => formatTime(b.startTs, tenant.timeZone)
+  const timeOf = (b: AdminBooking) => formatTime(b.startTs, tz)
+  const durationOf = (b: AdminBooking) =>
+    Math.max(0, Math.round((Date.parse(b.endTs) - Date.parse(b.startTs)) / 60000))
+  const staffColorOf = (id: string) => roster.find((s) => s.staffId === id)?.color ?? 'var(--c-ink-3)'
 
   return (
-    <section className="portal-section">
-      <PageHead
-        eyebrow={tenant.name}
-        title={dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}
-        lede="Dagens läge. Arbetet utförs i kalendern."
-      >
-        {/* EN primär väg vidare. "Öppna min sida" bor i toppnavet — den dupliceras inte här. */}
-        <Button href="/admin/bokningar" variant="primary" icon="calendar">
-          Öppna kalendern
-        </Button>
-      </PageHead>
+    <div className={styles.page}>
+      {/* ── Sidhuvud ── */}
+      <div className={styles.head}>
+        <div>
+          <div className={`num ${styles.eyebrow}`}>
+            {dateLabel} · Alla platser
+          </div>
+          <h1 className={styles.greeting}>
+            {greeting}
+            {firstName ? `, ${firstName}` : ''}
+          </h1>
+          <div className={styles.headSub}>
+            {data.todayCount} bokningar idag · {done.length} klara
+            {next ? (
+              <>
+                {' '}· nästa besök om{' '}
+                <strong style={countdownUrgent ? { color: 'var(--c-warning)' } : undefined}>
+                  {countdownMin} min
+                </strong>
+              </>
+            ) : (
+              ' · inget kvar idag'
+            )}
+          </div>
+        </div>
+        <div className={styles.headActions}>
+          <Button href="/admin/bokningar?ny=1" variant="subtle">
+            + Ny bokning
+          </Button>
+          <Button href="/admin/bokningar" variant="primary" icon="calendar">
+            Öppna kalendern
+          </Button>
+        </div>
+      </div>
 
       {bookingPaused && (
         <Callout tone="warning" icon="alert">
@@ -95,160 +182,386 @@ export default async function AdminPage() {
         </Callout>
       )}
 
-      {/* goal-67 — tre tal som STYR dagen. "Denna vecka: 47" var ett tal man läste och
-          sedan inte gjorde något med; veckan bor nu på /admin/statistik med period och
-          jämförelse. I dess ställe: dagens intäkt — det tal en ägare faktiskt agerar på
-          (tre färgningar ≠ tre luggklipp, antalet bokningar döljer skillnaden). */}
-      <div className="bo-stat-grid">
-        <Stat
-          label="Bokningar idag"
-          value={data.todayCount}
-          icon="calendar"
-          hint={
-            needsAction.length > 0
-              ? `${needsAction.length} obekräftade · ${done.length} klara`
-              : `${done.length} klara · ${upcoming.length} kvar`
-          }
-        />
-        <Stat
-          label="Nästa besök"
-          value={next ? timeOf(next) : '–'}
-          icon="clock"
-          hint={next ? `${nameOf(next)} · ${next.serviceName} · ${next.staffTitle}` : 'Inget mer idag'}
-        />
-        {/* "Bokat", inte "Intäkt": en tid kl 16 har inte tjänats in kl 09. Hintan säger
-            hur mycket som REDAN är klart — och flaggar ärligt om någon tid saknar pris,
-            i stället för att räkna den som noll i tysthet. (Codex-granskning, MEDEL.) */}
-        <Stat
-          label="Bokat idag"
-          value={formatPrice(data.todayBookedCents)}
-          icon="trendUp"
-          hint={
-            data.todayUnpriced > 0
-              ? `${formatPrice(data.todayDoneCents)} klart · ${data.todayUnpriced} utan pris`
-              : `${formatPrice(data.todayDoneCents)} klart · ${roster.filter((s) => s.start).length} i tjänst`
-          }
-        />
-      </div>
-
-      <div className="bo-2col">
-        <div style={{ display: 'grid', gap: 16 }}>
-          {/* Kräver uppmärksamhet — varje rad har EN konkret handling. Tomt läge är
-              ärligt och lugnt, inte en tom låda. */}
-          <Card pad={0}>
-            <div className={styles.cardHead}>
-              <h2 className="h2">Kräver uppmärksamhet</h2>
-              {needsAction.length > 0 && <Badge tone="gold">{needsAction.length}</Badge>}
-            </div>
-            <div style={{ padding: '0 10px 10px' }}>
-              {needsAction.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <strong>Inget kräver din uppmärksamhet.</strong>
-                  Obekräftade och ändrade tider dyker upp här.
-                </div>
-              ) : (
-                needsAction.map((b) => (
-                  <div key={b.id} className={styles.bookingRow}>
-                    <div className={`num ${styles.rowTime}`}>{timeOf(b)}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className={styles.rowName}>{nameOf(b)}</div>
-                      <div className={styles.rowSub}>
-                        {b.serviceName} · {b.staffTitle} · väntar på bekräftelse
-                      </div>
-                    </div>
-                    <Button href={`/admin/bokningar?open=${b.id}`} variant="subtle" size="sm">
-                      Öppna
-                    </Button>
+      <div className={styles.grid}>
+        {/* ── VÄNSTER: operativt ── */}
+        <div className={styles.col}>
+          {/* Härnäst-hero */}
+          <div className={styles.hero}>
+            <div className={styles.heroMain}>
+              <div className={styles.heroTop}>
+                <span className={`num ${styles.kicker}`}>HÄRNÄST</span>
+                {next && (
+                  <span
+                    className={`num ${styles.heroCountdown}`}
+                    style={countdownUrgent ? { color: 'var(--c-warning)' } : undefined}
+                  >
+                    om {countdownMin} min
+                  </span>
+                )}
+              </div>
+              {next ? (
+                <>
+                  <div className={styles.heroHeadline}>
+                    <span className={`num ${styles.heroClock}`}>{timeOf(next)}</span>
+                    <span className={styles.heroService}>{next.serviceName}</span>
                   </div>
-                ))
-              )}
-            </div>
-          </Card>
-
-          {/* Kommande idag — kompakt lista, INTE en kalender. Radklick öppnar bokningen
-              i kalendern (drawern i goal-66; tills dess bokningsvyn). */}
-          <Card pad={0}>
-            <div className={styles.cardHead}>
-              <h2 className="h2">Kommande idag</h2>
-              <Link href="/admin/bokningar" className={styles.cardLink}>
-                Visa alla i kalendern <Icon name="arrowRight" size={15} />
-              </Link>
-            </div>
-            <div style={{ padding: '0 10px 10px' }}>
-              {upcoming.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <strong>
-                    {data.todayCount === 0 ? 'Inga bokningar idag.' : 'Inga fler tider kvar idag.'}
-                  </strong>
+                  <div className={styles.heroMeta}>
+                    <span className={styles.heroCustomer}>{nameOf(next)}</span>
+                    <span>·</span>
+                    <span className={styles.heroStaff}>
+                      <span
+                        className={styles.dot}
+                        style={{ background: staffColorOf(next.staffId) }}
+                      />
+                      hos {next.staffTitle}
+                    </span>
+                    <span>·</span>
+                    <span>{durationOf(next)} min</span>
+                    {next.priceCents != null && (
+                      <>
+                        <span>·</span>
+                        <span>{formatPrice(next.priceCents)}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className={styles.heroActions}>
+                    <Button href={`/admin/bokningar?open=${next.id}`} variant="primary" size="sm">
+                      Öppna bokning
+                    </Button>
+                    {next.customerId && (
+                      <Button href={`/admin/kunder/${next.customerId}`} variant="subtle" size="sm">
+                        Visa kund
+                      </Button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className={styles.heroEmpty}>
+                  <strong>Inga fler tider idag.</strong>
                   {data.todayCount === 0
                     ? 'Nya bokningar dyker upp här automatiskt.'
-                    : `Alla dagens tider är genomförda — ${done.length} klara.`}
+                    : `Alla dagens ${data.todayCount} tider är avklarade.`}
+                  <div className={styles.heroActions}>
+                    <Button href="/admin/bokningar?ny=1" variant="primary" size="sm">
+                      + Ny bokning
+                    </Button>
+                    <Button href="/admin/bokningar?blockera=1" variant="subtle" size="sm">
+                      Blockera tid
+                    </Button>
+                  </div>
                 </div>
-              ) : (
-                upcoming.slice(0, 6).map((b) => (
-                  <Link
-                    key={b.id}
-                    href={`/admin/bokningar?open=${b.id}`}
-                    className={styles.bookingRow}
-                  >
-                    <div className={`num ${styles.rowTime}`}>{timeOf(b)}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className={styles.rowName}>{nameOf(b)}</div>
-                      <div className={styles.rowSub}>
-                        {b.serviceName} · {b.staffTitle}
-                      </div>
-                    </div>
-                    <Badge tone={STATUS_TONE[b.status] ?? 'neutral'}>{statusLabel(b.status)}</Badge>
-                  </Link>
-                ))
               )}
             </div>
-          </Card>
-        </div>
-
-        {/* Personal idag — vem som arbetar och när. En ledig resurs visas som ledig,
-            aldrig bortplockad: frånvaro är information, inte tomhet. */}
-        <Card pad={0}>
-          <div className={styles.cardHead}>
-            <h2 className="h2">Personal idag</h2>
+            <div className={styles.heroSide}>
+              <span className={`num ${styles.kicker}`}>DÄREFTER</span>
+              {later.length === 0 ? (
+                <div className={styles.heroSideEmpty}>Inget mer i kön.</div>
+              ) : (
+                <div className={styles.heroSideList}>
+                  {later.slice(0, 3).map((b) => (
+                    <Link key={b.id} href={`/admin/bokningar?open=${b.id}`} className={styles.laterRow}>
+                      <span className={`num ${styles.laterTime}`}>{timeOf(b)}</span>
+                      <span className={styles.laterName}>
+                        {b.serviceName} · {nameOf(b)}
+                      </span>
+                      <span className={styles.dot} style={{ background: staffColorOf(b.staffId) }} />
+                    </Link>
+                  ))}
+                </div>
+              )}
+              {later.length > 0 && (
+                <Link href="/admin/bokningar" className={styles.laterAll}>
+                  Alla {later.length} kvarvarande →
+                </Link>
+              )}
+            </div>
           </div>
-          <div style={{ padding: '0 10px 10px' }}>
+
+          {/* Dagens schema — tidslinje (läs-bara) */}
+          <div className={styles.card}>
+            <div className={styles.cardHead}>
+              <h2 className={styles.cardTitle}>Dagens schema</h2>
+              <div className={styles.legend}>
+                <span className={styles.legendItem}>
+                  <span className={styles.legendBooked} /> Bokad
+                </span>
+                <span className={styles.legendItem}>
+                  <span className={styles.legendDone} /> Klar
+                </span>
+                <span className={styles.legendItem}>
+                  <span className={styles.legendNow} /> Nu
+                </span>
+              </div>
+            </div>
+
             {roster.length === 0 ? (
               <div className={styles.emptyState}>
                 <strong>Ingen personal upplagd.</strong>
                 Lägg till medarbetare under Inställningar.
               </div>
             ) : (
-              roster.map((s) => (
-                <div key={s.staffId} className={styles.bookingRow}>
-                  {/* goal-67: samma färg som i kalendern. Listan och rutnätet talar
-                      samma språk — man slipper översätta namn → färg i huvudet. */}
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 10,
-                      height: 10,
-                      flexShrink: 0,
-                      borderRadius: 3,
-                      background: s.color,
-                    }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className={styles.rowName}>{s.name}</div>
+              <div className={styles.timeline}>
+                {/* timaxel */}
+                <div className={styles.axisRow}>
+                  <div />
+                  <div className={styles.axis}>
+                    {axisHours.map((h) => (
+                      <span
+                        key={h}
+                        className={`num ${styles.axisTick}`}
+                        style={{ left: `${pos(h)}%` }}
+                      >
+                        {String(h).padStart(2, '0')}
+                      </span>
+                    ))}
                   </div>
-                  {s.start && s.end ? (
-                    <span className={`num ${styles.rowHours}`}>
-                      {s.start.slice(0, 5)}–{s.end.slice(0, 5)}
-                    </span>
-                  ) : (
-                    <Badge tone="neutral">Ledig</Badge>
-                  )}
                 </div>
-              ))
+
+                <div className={styles.lanes}>
+                  {showNow && (
+                    <div
+                      className={styles.nowLine}
+                      style={{ left: `calc(150px + 16px + (100% - 166px) * ${pos(nowH) / 100})` }}
+                    />
+                  )}
+                  {roster.map((s) => {
+                    const blocks = bookingsByStaff.get(s.staffId) ?? []
+                    return (
+                      <div key={s.staffId} className={styles.lane}>
+                        <div className={styles.laneHead}>
+                          <span className={styles.dot} style={{ background: s.color }} />
+                          <div style={{ minWidth: 0 }}>
+                            <div className={styles.laneName}>{s.name}</div>
+                            <div className={`num ${styles.lanePass}`}>
+                              {s.start ? `${s.start.slice(0, 5)}–${s.end!.slice(0, 5)}` : 'Ledig idag'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className={styles.track}>
+                          {!s.start && <span className={styles.laneFree}>Ledig — inga pass</span>}
+                          {blocks.map((b) => {
+                            const g = laneBlock(
+                              hourInTz(b.startTs, tz),
+                              hourInTz(b.endTs, tz),
+                              dayStartH,
+                              dayEndH,
+                            )
+                            // Helt utanför dagsfönstret → rita inget (klampat till bredd 0).
+                            if (g.width <= 0) return null
+                            const isDone = b.status === 'completed'
+                            const isHot = next?.id === b.id
+                            return (
+                              <span
+                                key={b.id}
+                                title={`${timeOf(b)} ${b.serviceName}`}
+                                className={`${styles.block} ${isDone ? styles.blockDone : ''} ${
+                                  isHot ? styles.blockHot : ''
+                                }`}
+                                style={{
+                                  left: `${g.left}%`,
+                                  width: `${Math.max(2, g.width)}%`,
+                                  borderLeftColor: s.color,
+                                }}
+                              >
+                                <span className={`num ${styles.blockLabel}`}>{b.serviceName}</span>
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             )}
           </div>
-        </Card>
+
+          {/* Kommande idag */}
+          <div className={styles.card}>
+            <div className={styles.cardHead}>
+              <h2 className={styles.cardTitle}>Kommande idag</h2>
+              <Link href="/admin/bokningar" className={styles.cardLink}>
+                Visa i kalendern →
+              </Link>
+            </div>
+            {future.length === 0 ? (
+              <div className={styles.emptyState}>
+                <strong>Inga fler tider kvar idag.</strong>
+                Nya bokningar dyker upp här automatiskt.
+              </div>
+            ) : (
+              <div className={styles.upcoming}>
+                {future.slice(0, 6).map((b) => {
+                  const st = STATUS_META[b.status] ?? { label: 'Bokad', color: 'var(--c-ink-3)' }
+                  return (
+                    <Link key={b.id} href={`/admin/bokningar?open=${b.id}`} className={styles.upRow}>
+                      <span className={`num ${styles.upTime}`}>{timeOf(b)}</span>
+                      <span className={styles.upName}>{nameOf(b)}</span>
+                      <span className={styles.upService}>{b.serviceName}</span>
+                      <span className={styles.upStaff}>
+                        <span className={styles.dot} style={{ background: staffColorOf(b.staffId) }} />
+                        {b.staffTitle}
+                      </span>
+                      <span className={`num ${styles.upStatus}`} style={{ color: st.color }}>
+                        {st.label}
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── HÖGER: läget ── */}
+        <div className={styles.col}>
+          {/* Idag i siffror */}
+          <div className={styles.card}>
+            <div className={styles.statsPad}>
+              <div className={`num ${styles.kicker}`} style={{ marginBottom: 4 }}>
+                IDAG I SIFFROR
+              </div>
+              <div className={styles.statRow}>
+                <div>
+                  <div className={styles.statBig}>{data.todayCount}</div>
+                  <div className={styles.statSub}>
+                    bokningar · {done.length} klara · {active.length} kvar
+                  </div>
+                </div>
+                <div className={styles.bar}>
+                  <div className={styles.barFill} style={{ width: `${donePct}%`, background: 'var(--c-success)' }} />
+                </div>
+              </div>
+              <div className={styles.statRow}>
+                <div>
+                  <div className={styles.statBig}>{formatPrice(data.todayBookedCents)}</div>
+                  <div className={styles.statSub}>
+                    bokat idag · {formatPrice(data.todayDoneCents)} klart
+                    {data.todayUnpriced > 0 ? ` · ${data.todayUnpriced} utan pris` : ''}
+                  </div>
+                </div>
+                {cmp != null && (
+                  <div
+                    className={`num ${styles.cmp}`}
+                    style={{ color: cmp >= 0 ? 'var(--c-success)' : 'var(--c-danger)' }}
+                  >
+                    {cmp >= 0 ? '+' : ''}
+                    {cmp}% v. {weekdayName}
+                  </div>
+                )}
+              </div>
+              <div className={styles.statRow} style={{ borderBottom: 'none', paddingBottom: 2 }}>
+                <div>
+                  <div className={styles.statBig}>{occupancy}%</div>
+                  <div className={styles.statSub}>
+                    beläggning · {workingStaff.length} i tjänst
+                  </div>
+                </div>
+                <div className={styles.bar}>
+                  <div className={styles.barFill} style={{ width: `${occupancy}%`, background: 'var(--c-info)' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Kräver uppmärksamhet */}
+          <div className={styles.card}>
+            <div className={styles.attnPad}>
+              <div className={styles.attnHead}>
+                <h2 className={styles.cardTitle}>Kräver uppmärksamhet</h2>
+                {attentionCount > 0 && (
+                  <span className={`num ${styles.attnBadge}`}>{attentionCount}</span>
+                )}
+              </div>
+
+              {attentionCount === 0 ? (
+                <div className={styles.attnEmpty}>Inget kräver din uppmärksamhet just nu.</div>
+              ) : (
+                <>
+                  {pendingApproval.map((b) => (
+                    <div key={b.id} className={styles.attnItem}>
+                      <span className={styles.attnDot} style={{ background: 'var(--c-warning)' }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className={styles.attnTitle}>Obekräftad bokning</div>
+                        <div className={styles.attnDetail}>
+                          {nameOf(b)} · {timeOf(b)} · {b.serviceName}
+                        </div>
+                        <div className={styles.attnActions}>
+                          <Button href={`/admin/bokningar?open=${b.id}`} variant="subtle" size="sm">
+                            Öppna
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {data.cancellationsToday.map((b) => (
+                    <div key={b.id} className={styles.attnItem}>
+                      <span className={styles.attnDot} style={{ background: 'var(--c-danger)' }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className={styles.attnTitle}>Avbokning — lucka {timeOf(b)}</div>
+                        <div className={styles.attnDetail}>
+                          {nameOf(b)} avbokade · {durationOf(b)} min hos {b.staffTitle} frigjord
+                        </div>
+                        <div className={styles.attnActions}>
+                          <Button href="/admin/bokningar?ny=1" variant="subtle" size="sm">
+                            Fyll luckan
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Avbokningar — period-växlare (antal + förlorat värde) */}
+          <CancellationStats
+            today={{
+              count: data.cancellationStats.today.count,
+              value: formatPrice(data.cancellationStats.today.cents),
+            }}
+            week={{
+              count: data.cancellationStats.week.count,
+              value: formatPrice(data.cancellationStats.week.cents),
+            }}
+            month={{
+              count: data.cancellationStats.month.count,
+              value: formatPrice(data.cancellationStats.month.cents),
+            }}
+          />
+
+          {/* Genvägar */}
+          <div className={styles.card}>
+            <div className={styles.statsPad}>
+              <div className={`num ${styles.kicker}`} style={{ marginBottom: 14 }}>
+                GENVÄGAR
+              </div>
+              <div className={styles.shortcuts}>
+                <Link href="/admin/bokningar?ny=1" className={styles.shortcut}>
+                  ＋ Ny bokning
+                </Link>
+                <Link href="/admin/bokningar?blockera=1" className={styles.shortcut}>
+                  ◔ Blockera tid
+                </Link>
+                <Link href="/admin/kunder" className={styles.shortcut}>
+                  ◉ Kunder
+                </Link>
+                <Link href="/admin/statistik" className={styles.shortcut}>
+                  ▤ Statistik
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
   )
+}
+
+// Statuschip-etikett + färg (page-lokalt, ingen data-access).
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  pending: { label: 'Obekräftad', color: 'var(--c-warning)' },
+  confirmed: { label: 'Bekräftad', color: 'var(--c-success)' },
+  completed: { label: 'Klar', color: 'var(--c-ink-3)' },
 }

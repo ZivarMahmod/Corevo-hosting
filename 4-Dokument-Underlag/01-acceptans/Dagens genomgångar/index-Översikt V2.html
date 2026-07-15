@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>FreshCut · Översikt v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; }
+    body {
+      --bg:#121210; --sf:#1C1C18; --sf2:#25251F; --sf3:#2E2E28;
+      --ink:#F0F0EA; --ink2:#C8C8BD; --ink3:#96968C;
+      --line:#33332C; --line2:#4A4A41;
+      --grön:#2F5F47; --grön2:#3A7357; --on-grön:#E9F2EC;
+      --ok:#9AC4A5; --warn:#D6AC6A; --bad:#D68F85; --info:#A2B6D0;
+      background:var(--bg); color:var(--ink);
+      font-family:'Instrument Sans',sans-serif;
+    }
+    a { color:var(--ink2); text-decoration:none; }
+    a:hover { color:var(--ink); }
+    ::selection { background:#3A5A48; color:#fff; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; min-width:1280px; background:var(--bg);">
+
+  <!-- ══ Toppnav (oförändrad struktur, samma som idag) ══ -->
+  <div style="display:flex; align-items:center; gap:20px; height:60px; padding:0 24px; border-bottom:1px solid var(--line); background:var(--bg); position:sticky; top:0; z-index:20; white-space:nowrap;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="width:34px; height:34px; border-radius:9px; background:var(--sf3); display:grid; place-items:center; font-weight:700; font-size:15px;">F</div>
+      <div>
+        <div style="font-weight:700; font-size:15px; letter-spacing:-.01em;">FreshCut</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.14em; color:var(--ink3);">VIA COREVO</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:4px; margin-left:8px;">
+      <div style="padding:8px 14px; border-radius:9px; background:var(--sf2); font-weight:600; font-size:14px;">Översikt</div>
+      <div style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2);">Kalender</div>
+      <div style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2);">Kunder</div>
+      <div style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2);">Redigera sidan</div>
+      <div style="padding:8px 14px; border-radius:9px; font-size:14px; color:var(--ink2);">Inställningar</div>
+    </div>
+    <div style="flex:1;"></div>
+    <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--line); border-radius:9px; color:var(--ink3); font-size:13.5px; width:180px;">
+      <span>⌕</span><span style="flex:1;">Sök…</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; border:1px solid var(--line); border-radius:5px; padding:2px 5px;">Ctrl K</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--line); border-radius:9px; font-size:13.5px; color:var(--ink2);">Öppna min sida ↗</div>
+    <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--line); border-radius:9px; font-size:13.5px; color:var(--ink2);">◎ Alla platser ▾</div>
+    <div style="width:34px; height:34px; border-radius:50%; border:1px solid var(--line2); display:grid; place-items:center; font-size:13px; font-weight:600;">I</div>
+  </div>
+
+  <!-- ══ Sidinnehåll ══ -->
+  <div style="max-width:1240px; margin:0 auto; padding:36px 32px 64px;">
+
+    <!-- Sidhuvud: hälsning + primära åtgärder -->
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.16em; color:var(--warn); text-transform:uppercase;">Onsdag 15 juli · Alla platser</div>
+        <h1 style="margin:10px 0 8px; font-size:38px; letter-spacing:-.02em; font-weight:700;">God morgon, Ibrahim</h1>
+        <div style="font-size:15px; color:var(--ink2);">12 bokningar idag · 5 klara · nästa besök om <span style="color:var(--ink); font-weight:600;">18 min</span></div>
+      </div>
+      <div style="display:flex; gap:10px; padding-bottom:4px;">
+        <div style="padding:11px 18px; border:1px solid var(--line2); border-radius:10px; font-weight:600; font-size:14px; color:var(--ink2);">+ Ny bokning</div>
+        <div style="padding:11px 18px; border-radius:10px; background:var(--grön); color:var(--on-grön); font-weight:600; font-size:14px; display:flex; align-items:center; gap:8px;">▦ Öppna kalendern</div>
+      </div>
+    </div>
+
+    <!-- Huvudgrid -->
+    <div style="display:grid; grid-template-columns:1fr 356px; gap:20px; margin-top:28px; align-items:start;">
+
+      <!-- ── VÄNSTER KOLUMN ── -->
+      <div style="display:grid; gap:20px;">
+
+        <!-- Härnäst (hero) -->
+        <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; overflow:hidden;">
+          <div style="display:grid; grid-template-columns:1.2fr 1fr;">
+            <div style="padding:22px 24px; border-right:1px solid var(--line);">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.15em; color:var(--ink3);">HÄRNÄST</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ok);">om 18 min</div>
+              </div>
+              <div style="display:flex; align-items:baseline; gap:14px; margin-top:14px;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:40px; font-weight:600; letter-spacing:-.02em;">11:30</div>
+                <div style="font-size:17px; font-weight:600;">Klippning + skäggtrim</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; margin-top:10px; font-size:14px; color:var(--ink2); flex-wrap:wrap;">
+                <span style="color:var(--ink); font-weight:600;">Jonas Berg</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em; border:1px solid var(--line2); border-radius:99px; padding:2px 8px; color:var(--warn);">NY KUND</span>
+                <span>·</span>
+                <span style="display:inline-flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; border-radius:50%; background:#7FC0B4;"></span>hos Ali</span>
+                <span>·</span><span>45 min</span><span>·</span><span>620 kr</span>
+              </div>
+              <div style="display:flex; gap:8px; margin-top:18px;">
+                <div style="padding:9px 15px; border-radius:9px; background:var(--sf3); font-weight:600; font-size:13.5px;">Checka in</div>
+                <div style="padding:9px 15px; border-radius:9px; border:1px solid var(--line); font-size:13.5px; color:var(--ink2);">Visa bokning</div>
+              </div>
+            </div>
+            <div style="padding:22px 24px; background:var(--sf);">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.15em; color:var(--ink3); margin-bottom:14px;">DÄREFTER</div>
+              <div style="display:grid; gap:0;">
+                <div style="display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--line);">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink2); width:44px;">12:00</span>
+                  <span style="font-size:13.5px; flex:1;">Fade · Marcus L</span>
+                  <span style="width:8px; height:8px; border-radius:50%; background:#9AC4A5;" title="John"></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--line);">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink2); width:44px;">13:00</span>
+                  <span style="font-size:13.5px; flex:1;">Klippning · Sara Nyström</span>
+                  <span style="width:8px; height:8px; border-radius:50%; background:#A2B6D0;" title="Hilal"></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px; padding:9px 0;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink2); width:44px;">14:00</span>
+                  <span style="font-size:13.5px; flex:1;">Barntrim · Elias K</span>
+                  <span style="width:8px; height:8px; border-radius:50%; background:#7FC0B4;" title="Ali"></span>
+                </div>
+              </div>
+              <a href="#" style="display:inline-block; margin-top:14px; font-size:13px; color:var(--ink3);">Alla 7 kvarvarande →</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dagens schema: tidslinje per medarbetare -->
+        <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:22px 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
+            <div style="font-size:17px; font-weight:700;">Dagens schema</div>
+            <div style="display:flex; align-items:center; gap:14px; font-size:12px; color:var(--ink3);">
+              <span style="display:inline-flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; border-radius:3px; background:var(--sf3); border:1px solid var(--line2);"></span>Bokad</span>
+              <span style="display:inline-flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; border-radius:3px; background:repeating-linear-gradient(45deg,var(--sf2),var(--sf2) 3px,var(--sf3) 3px,var(--sf3) 6px); border:1px solid var(--line);"></span>Paus</span>
+              <span style="display:inline-flex; align-items:center; gap:6px;"><span style="width:2px; height:12px; background:var(--warn);"></span>Nu</span>
+            </div>
+          </div>
+
+          <!-- timaxel -->
+          <div style="display:grid; grid-template-columns:150px 1fr; gap:0 16px;">
+            <div></div>
+            <div style="position:relative; height:16px;">
+              <span style="position:absolute; left:0%; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">09</span>
+              <span style="position:absolute; left:11.1%; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">10</span>
+              <span style="position:absolute; left:22.2%; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">11</span>
+              <span style="position:absolute; left:33.3%; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">12</span>
+              <span style="position:absolute; left:44.4%; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">13</span>
+              <span style="position:absolute; left:55.6%; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">14</span>
+              <span style="position:absolute; left:66.7%; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">15</span>
+              <span style="position:absolute; left:77.8%; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">16</span>
+              <span style="position:absolute; left:88.9%; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">17</span>
+              <span style="position:absolute; right:0; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3);">18</span>
+            </div>
+          </div>
+
+          <div style="position:relative; margin-top:6px;">
+            <!-- nu-linje över alla rader -->
+            <div style="position:absolute; left:calc(150px + 16px + (100% - 166px) * .244); top:-4px; bottom:0; width:2px; background:var(--warn); opacity:.85; z-index:5; border-radius:2px;"></div>
+
+            <sc-for list="{{ lanes }}" as="lane" hint-placeholder-count="5">
+              <div style="display:grid; grid-template-columns:150px 1fr; gap:0 16px; align-items:center; border-top:1px solid var(--line); padding:7px 0;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="width:9px; height:9px; border-radius:50%; background:{{ lane.dot }};"></span>
+                  <div>
+                    <div style="font-size:13.5px; font-weight:600;">{{ lane.name }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink3);">{{ lane.pass }}</div>
+                  </div>
+                </div>
+                <div style="position:relative; height:36px; background:var(--sf); border-radius:8px;">{{ lane.blocks }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Kommande idag (kompakt lista) -->
+        <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:10px 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0 6px;">
+            <div style="font-size:17px; font-weight:700;">Kommande idag</div>
+            <a href="#" style="font-size:13px; color:var(--ink3);">Visa i kalendern →</a>
+          </div>
+          <sc-for list="{{ upcoming }}" as="b" hint-placeholder-count="4">
+            <div style="display:grid; grid-template-columns:56px 1.4fr 1fr 110px 96px; gap:14px; align-items:center; padding:11px 0; border-top:1px solid var(--line);">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink2);">{{ b.time }}</span>
+              <span style="font-size:14px; font-weight:600;">{{ b.customer }}</span>
+              <span style="font-size:13.5px; color:var(--ink2);">{{ b.service }}</span>
+              <span style="display:inline-flex; align-items:center; gap:7px; font-size:13px; color:var(--ink2);"><span style="width:8px; height:8px; border-radius:50%; background:{{ b.dot }};"></span>{{ b.staff }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em; padding:3px 9px; border-radius:99px; justify-self:end; border:1px solid var(--line2); color:{{ b.stC }};">{{ b.status }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- ── HÖGER KOLUMN ── -->
+      <div style="display:grid; gap:20px;">
+
+        <!-- Idag i siffror -->
+        <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:20px 22px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.15em; color:var(--ink3); margin-bottom:4px;">IDAG I SIFFROR</div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:12px 0 10px; border-bottom:1px solid var(--line);">
+            <div>
+              <div style="font-size:26px; font-weight:700; letter-spacing:-.02em;">12</div>
+              <div style="font-size:12.5px; color:var(--ink3);">bokningar · 5 klara · 7 kvar</div>
+            </div>
+            <div style="width:110px; height:6px; border-radius:99px; background:var(--sf3); overflow:hidden;"><div style="width:42%; height:100%; background:var(--ok); border-radius:99px;"></div></div>
+          </div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:12px 0 10px; border-bottom:1px solid var(--line);">
+            <div>
+              <div style="font-size:26px; font-weight:700; letter-spacing:-.02em;">4 380 kr</div>
+              <div style="font-size:12.5px; color:var(--ink3);">bokat idag · 1 840 kr klart</div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ok);">+12% v. onsdag</div>
+          </div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:12px 0 2px;">
+            <div>
+              <div style="font-size:26px; font-weight:700; letter-spacing:-.02em;">62%</div>
+              <div style="font-size:12.5px; color:var(--ink3);">beläggning · 4 i tjänst</div>
+            </div>
+            <div style="width:110px; height:6px; border-radius:99px; background:var(--sf3); overflow:hidden;"><div style="width:62%; height:100%; background:var(--info); border-radius:99px;"></div></div>
+          </div>
+        </div>
+
+        <!-- Kräver uppmärksamhet -->
+        <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:20px 22px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <div style="font-size:16px; font-weight:700; flex:1;">Kräver uppmärksamhet</div>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; background:#3A2E22; color:var(--warn); border-radius:99px; padding:2px 9px;">2</span>
+          </div>
+
+          <div style="padding:13px 0; border-bottom:1px solid var(--line);">
+            <div style="display:flex; gap:10px;">
+              <span style="width:8px; height:8px; border-radius:50%; background:var(--warn); margin-top:5px; flex-shrink:0;"></span>
+              <div style="flex:1;">
+                <div style="font-size:13.5px; font-weight:600;">Obekräftad bokning</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">Sara Nyström · imorgon 14:00 · Slingor</div>
+                <div style="display:flex; gap:6px; margin-top:9px;">
+                  <span style="padding:6px 12px; border-radius:8px; background:var(--sf3); font-size:12.5px; font-weight:600;">Bekräfta</span>
+                  <span style="padding:6px 12px; border-radius:8px; border:1px solid var(--line); font-size:12.5px; color:var(--ink2);">Avböj</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:13px 0 4px;">
+            <div style="display:flex; gap:10px;">
+              <span style="width:8px; height:8px; border-radius:50%; background:var(--bad); margin-top:5px; flex-shrink:0;"></span>
+              <div style="flex:1;">
+                <div style="font-size:13.5px; font-weight:600;">Avbokning — lucka 15:30</div>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">Erik Lund avbokade · 45 min hos John frigjord</div>
+                <div style="display:flex; gap:6px; margin-top:9px;">
+                  <span style="padding:6px 12px; border-radius:8px; background:var(--sf3); font-size:12.5px; font-weight:600;">Fyll luckan</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Genvägar -->
+        <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:20px 22px;">
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.15em; color:var(--ink3); margin-bottom:14px;">GENVÄGAR</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div style="padding:12px; border:1px solid var(--line); border-radius:10px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px;"><span style="color:var(--ink3);">＋</span>Ny bokning</div>
+            <div style="padding:12px; border:1px solid var(--line); border-radius:10px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px;"><span style="color:var(--ink3);">◔</span>Blockera tid</div>
+            <div style="padding:12px; border:1px solid var(--line); border-radius:10px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px;"><span style="color:var(--ink3);">◉</span>Ny kund</div>
+            <div style="padding:12px; border:1px solid var(--line); border-radius:10px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:8px;"><span style="color:var(--ink3);">✉</span>Påminnelser</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const R = React.createElement;
+    // block: start/slut i timmar (9–18), label, dot-färg
+    const mk = (blocks) => blocks.map((b, i) => {
+      const left = ((b.s - 9) / 9 * 100).toFixed(2) + '%';
+      const width = ((b.e - b.s) / 9 * 100).toFixed(2) + '%';
+      const paus = b.type === 'paus';
+      const done = b.type === 'done';
+      return R('div', {
+        key: i,
+        title: b.label,
+        style: {
+          position: 'absolute', left, width, top: 4, bottom: 4,
+          borderRadius: 6, overflow: 'hidden', display: 'flex', alignItems: 'center',
+          padding: '0 8px', boxSizing: 'border-box',
+          background: paus
+            ? 'repeating-linear-gradient(45deg,#25251F,#25251F 3px,#2E2E28 3px,#2E2E28 6px)'
+            : (b.hot ? '#2F5F47' : '#2E2E28'),
+          border: '1px solid ' + (b.hot ? '#3A7357' : '#4A4A41'),
+          borderLeft: paus ? '1px solid #4A4A41' : '3px solid ' + b.dot,
+          opacity: done ? 0.55 : 1,
+        }
+      }, R('span', {
+        style: {
+          fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5,
+          color: b.hot ? '#E9F2EC' : '#C8C8BD',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          textDecoration: done ? 'line-through' : 'none',
+        }
+      }, b.label));
+    });
+
+    const lanes = [
+      { name: 'Hilal', pass: '09:00–18:00', dot: '#A2B6D0', blocks: mk([
+        { s: 9.5, e: 10.25, label: 'Klippning', dot: '#A2B6D0', type: 'done' },
+        { s: 13, e: 14.5, label: 'Färg + klipp', dot: '#A2B6D0' },
+      ]) },
+      { name: 'John', pass: '09:00–18:00', dot: '#9AC4A5', blocks: mk([
+        { s: 10, e: 11, label: 'Fade', dot: '#9AC4A5', type: 'done' },
+        { s: 12, e: 12.75, label: 'Fade · Marcus', dot: '#9AC4A5' },
+        { s: 16, e: 17, label: 'Klippning', dot: '#9AC4A5' },
+      ]) },
+      { name: 'Ali', pass: '10:00–18:00', dot: '#7FC0B4', blocks: mk([
+        { s: 11.5, e: 12.25, label: '11:30 Jonas B', dot: '#7FC0B4', hot: true },
+        { s: 14, e: 15.5, label: 'Barntrim + klipp', dot: '#7FC0B4' },
+      ]) },
+      { name: 'Aziz', pass: '09:00–18:00', dot: '#B9A6D6', blocks: mk([
+        { s: 9, e: 9.75, label: 'Trim', dot: '#B9A6D6', type: 'done' },
+        { s: 12, e: 13, label: 'Lunch', dot: '#B9A6D6', type: 'paus' },
+        { s: 16, e: 17.5, label: 'Klippning ×2', dot: '#B9A6D6' },
+      ]) },
+      { name: 'Zivar', pass: 'Ledig idag', dot: '#6E6E66', blocks: [
+        R('span', { key: 0, style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', paddingLeft: 10, fontSize: 12, color: '#6E6E66', fontStyle: 'italic' } }, 'Ledig — inga pass')
+      ] },
+    ];
+
+    const upcoming = [
+      { time: '11:30', customer: 'Jonas Berg', service: 'Klippning + skäggtrim', staff: 'Ali', dot: '#7FC0B4', status: 'BEKRÄFTAD', stC: '#9AC4A5' },
+      { time: '12:00', customer: 'Marcus Lind', service: 'Fade', staff: 'John', dot: '#9AC4A5', status: 'ONLINE', stC: '#A2B6D0' },
+      { time: '13:00', customer: 'Sara Nyström', service: 'Klippning', staff: 'Hilal', dot: '#A2B6D0', status: 'OBEKRÄFTAD', stC: '#D6AC6A' },
+      { time: '14:00', customer: 'Elias Karim', service: 'Barntrim', staff: 'Ali', dot: '#7FC0B4', status: 'BEKRÄFTAD', stC: '#9AC4A5' },
+    ];
+
+    return { lanes, upcoming };
+  }
+}
+</script>
+</body>
+</html>
