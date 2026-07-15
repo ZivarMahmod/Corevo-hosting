@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <title>Corevo · Kundportal — Mina företag (hub)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; }
+    body {
+      --bg:#121210; --sf:#1C1C18; --sf2:#25251F; --sf3:#2E2E28;
+      --ink:#F0F0EA; --ink2:#C8C8BD; --ink3:#96968C;
+      --line:#33332C; --line2:#4A4A41;
+      --grön:#2F5F47; --grön2:#3A7357; --on-grön:#E9F2EC;
+      --ok:#9AC4A5; --warn:#D6AC6A; --bad:#D68F85;
+      background:#0C0C0B; color:var(--ink);
+      font-family:'Instrument Sans',sans-serif;
+    }
+    a { color:var(--ink2); text-decoration:none; }
+    a:hover { color:var(--ink); }
+    ::selection { background:#3A5A48; color:#fff; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; display:grid; place-items:center; padding:36px 24px;">
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="402px,874px">
+<div style="height:100%; box-sizing:border-box; position:relative; display:flex; flex-direction:column; background:var(--bg); color:var(--ink); font-family:'Instrument Sans',sans-serif; padding-top:56px; overflow:hidden;">
+
+  <!-- ══ Neutralt Corevo-skal ══ -->
+  <div style="display:flex; align-items:center; gap:10px; padding:2px 16px 10px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.16em; color:var(--ink3); flex:1;">COREVO · MINA SIDOR</div>
+    <div style="width:30px; height:30px; border-radius:50%; background:var(--sf3); border:1px solid var(--line2); display:grid; place-items:center; font-size:11.5px; font-weight:700;">ML</div>
+  </div>
+
+  <!-- ════════════ HUB: MINA FÖRETAG ════════════ -->
+  <sc-if value="{{ visaHub }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="Hub – Mina företag" style="flex:1; overflow:auto; min-height:0; padding:0 16px;">
+    <div style="font-size:21px; font-weight:700; letter-spacing:-.01em; margin:4px 0 2px;">Hej Marcus</div>
+    <div style="font-size:12.5px; color:var(--ink3); margin-bottom:14px;">Dina bokningar och beställningar, samlade.</div>
+
+    <!-- Aggregerat: härnäst över alla företag -->
+    <div onClick="{{ oppnaFresh }}" style="background:var(--sf); border:1px solid var(--grön2); border-radius:16px; padding:14px 16px; box-shadow:inset 3px 0 0 var(--ok); cursor:pointer;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ok);">HÄRNÄST</span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink2);">om 46 min</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:11px; margin-top:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600;">12:00</span>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13.5px; font-weight:600;">Fade hos John</div>
+          <div style="font-size:11.5px; color:var(--ink3); margin-top:1px;">FreshCut · Storgatan 12, Umeå</div>
+        </div>
+        <span style="color:var(--ink3);">›</span>
+      </div>
+    </div>
+
+    <!-- Företagslista (endast verifierade relationer) -->
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3); margin:18px 0 8px;">MINA FÖRETAG</div>
+    <sc-for list="{{ foretag }}" as="f" hint-placeholder-count="3">
+      <div onClick="{{ f.oppna }}" style="display:flex; align-items:center; gap:12px; background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:8px; cursor:pointer; box-shadow:inset 3px 0 0 {{ f.accent }};">
+        <div style="width:42px; height:42px; border-radius:12px; background:var(--sf3); display:grid; place-items:center; font-weight:700; font-size:17px; flex-shrink:0;">{{ f.init }}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:14.5px; font-weight:700;">{{ f.namn }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--ink3); margin-top:2px;">{{ f.bransch }}</div>
+          <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:{{ f.radC }}; margin-top:6px;"><span style="width:7px; height:7px; border-radius:50%; background:{{ f.accent }};"></span>{{ f.rad }}</div>
+        </div>
+        <span style="color:var(--ink3);">›</span>
+      </div>
+    </sc-for>
+
+    <!-- Så växer listan -->
+    <div style="display:flex; gap:10px; background:var(--sf2); border:1px dashed var(--line2); border-radius:14px; padding:12px 14px; margin-top:6px;">
+      <span style="color:var(--ink3);">ⓘ</span>
+      <div style="font-size:11.5px; color:var(--ink3); line-height:1.55;">Företag dyker upp här automatiskt när du bokar eller handlar hos ett företag som använder Corevo — det finns inget att söka eller lägga till. Varje företag ser bara sin egen relation med dig.</div>
+    </div>
+    <div style="text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.12em; color:var(--ink3); margin-top:16px;">UPPDATERAD 11:14 · MINA.COREVO.SE</div>
+    <div style="height:20px;"></div>
+  </div>
+  </sc-if>
+
+  <!-- ════════════ FÖRETAGSVY (tenant-branding inuti) ════════════ -->
+  <sc-if value="{{ visaForetag }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Hub – Företagsvy" style="flex:1; overflow:auto; min-height:0; padding:0 16px;">
+    <sc-if value="{{ hub }}" hint-placeholder-val="{{ true }}">
+      <div onClick="{{ tillHub }}" style="display:inline-flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink2); font-weight:600; cursor:pointer; padding:4px 0 10px;">‹ Mina företag</div>
+    </sc-if>
+    <div style="display:flex; align-items:center; gap:11px; padding:2px 0 14px;">
+      <div style="width:40px; height:40px; border-radius:11px; background:var(--sf3); display:grid; place-items:center; font-weight:700; font-size:17px;">{{ fgInit }}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:17px; font-weight:700;">{{ fgNamn }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--ink3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ fgAdress }}</div>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3); border:1px solid var(--line); border-radius:99px; padding:5px 10px; white-space:nowrap; flex-shrink:0;">✆ Ring</span>
+    </div>
+
+    <sc-if value="{{ fgHarNasta }}" hint-placeholder-val="{{ true }}">
+      <div style="background:var(--sf); border:1px solid var(--line2); border-radius:16px; padding:16px; box-shadow:inset 3px 0 0 {{ fgAccent }};">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:{{ fgAccent }};">{{ fgNastaLabel }}</span>
+        <div style="display:flex; align-items:baseline; gap:10px; margin-top:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600;">{{ fgNastaTid }}</span>
+          <span style="font-size:13.5px; color:var(--ink2);">{{ fgNastaDag }}</span>
+        </div>
+        <div style="font-size:14px; font-weight:600; margin-top:6px;">{{ fgNastaText }}</div>
+        <div style="font-size:12px; color:var(--ink3); margin-top:3px;">{{ fgNastaSub }}</div>
+        <div style="display:flex; gap:8px; margin-top:13px;">
+          <span style="flex:1; text-align:center; padding:11px 0; border-radius:11px; border:1px solid var(--line2); font-size:12.5px; font-weight:600; color:var(--ink2); cursor:pointer;">{{ fgKnapp1 }}</span>
+          <span style="flex:1; text-align:center; padding:11px 0; border-radius:11px; border:1px solid var(--line2); font-size:12.5px; font-weight:600; color:var(--ink2); cursor:pointer;">{{ fgKnapp2 }}</span>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ fgTom }}" hint-placeholder-val="{{ false }}">
+      <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:16px; text-align:center;">
+        <div style="font-size:13.5px; font-weight:600;">Inget inbokat just nu</div>
+        <div style="font-size:12px; color:var(--ink3); margin-top:3px;">{{ fgTomText }}</div>
+      </div>
+    </sc-if>
+
+    <span style="display:block; text-align:center; padding:13px 0; border-radius:12px; background:var(--grön); color:var(--on-grön); font-size:13.5px; font-weight:600; cursor:pointer; margin-top:10px;">{{ fgCta }}</span>
+
+    <sc-if value="{{ fgLojShow }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin-top:10px;">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3);">{{ fgLojLabel }}</div>
+          <div style="font-size:12.5px; color:var(--ink2); margin-top:5px;">{{ fgLojText }}</div>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:13px; color:{{ fgAccent }}; font-weight:600;">{{ fgLojVal }}</span>
+      </div>
+    </sc-if>
+
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3); margin:16px 0 8px;">HISTORIK</div>
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:2px 16px;">
+      <sc-for list="{{ fgHistorik }}" as="h" hint-placeholder-count="2">
+        <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line);">
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:13px; font-weight:600;">{{ h.rubrik }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3); margin-top:2px;">{{ h.meta }}</div>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink2);">{{ h.pris }}</span>
+          <span style="padding:8px 12px; border-radius:10px; border:1px solid var(--line2); font-size:11.5px; font-weight:600; color:var(--ink2); cursor:pointer;">{{ h.knapp }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--ink3); margin:12px 2px 0; line-height:1.6;">Notiser och uppgifter för {{ fgNamn }} hanteras i den här företagsvyn — inget delas med andra företag.</div>
+    <div style="height:20px;"></div>
+  </div>
+  </sc-if>
+
+  <!-- ════════════ PROFIL (globalt konto) ════════════ -->
+  <sc-if value="{{ visaProfil }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Hub – Profil (globalt konto)" style="flex:1; overflow:auto; min-height:0; padding:0 16px;">
+    <div style="font-size:21px; font-weight:700; letter-spacing:-.01em; margin:4px 0 14px;">Profil</div>
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:16px; display:flex; align-items:center; gap:12px;">
+      <div style="width:44px; height:44px; border-radius:50%; background:var(--sf3); border:1px solid var(--line2); display:grid; place-items:center; font-size:15px; font-weight:700;">ML</div>
+      <div>
+        <div style="font-size:15px; font-weight:700;">Marcus Lind</div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink3); margin-top:3px;">070-455 90 12 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="274a4655445254674a464e4b095442">[email&#160;protected]</a></div>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; background:var(--sf2); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-top:10px;">
+      <span style="color:var(--ink3);">ⓘ</span>
+      <div style="font-size:11.5px; color:var(--ink3); line-height:1.55;">Ett konto — men varje företag ser bara sin egen relation med dig. FreshCut vet inte var du handlar blommor.</div>
+    </div>
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3); margin-bottom:4px;">NOTISER PER FÖRETAG</div>
+      <sc-for list="{{ notisRader }}" as="n" hint-placeholder-count="3">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid var(--line);">
+          <div style="display:flex; align-items:center; gap:9px;">
+            <span style="width:8px; height:8px; border-radius:50%; background:{{ n.accent }};"></span>
+            <span style="font-size:12.5px; font-weight:600;">{{ n.namn }}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--ink3);">{{ n.status }}</span>
+            <span style="color:var(--ink3);">›</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:var(--sf); border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:12px;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.14em; color:var(--ink3); margin-bottom:4px;">KONTO</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-top:1px solid var(--line);">
+        <span style="font-size:12.5px; font-weight:600;">Byt lösenord</span><span style="color:var(--ink3);">›</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-top:1px solid var(--line);">
+        <span style="font-size:12.5px; font-weight:600;">Mina uppgifter &amp; GDPR</span><span style="color:var(--ink3);">›</span>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-top:1px solid var(--line);">
+        <span style="font-size:12.5px; font-weight:600;">Logga ut</span><span style="color:var(--ink3);">›</span>
+      </div>
+    </div>
+    <div style="height:20px;"></div>
+  </div>
+  </sc-if>
+
+  <!-- ══ Bottennav ══ -->
+  <div style="display:flex; border-top:1px solid var(--line); background:var(--bg); padding:10px 0 30px; flex-shrink:0;">
+    <div onClick="{{ goHem }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; min-height:44px; justify-content:center;">
+      <span style="font-size:12.5px; font-weight:{{ navHemW }}; color:{{ navHemC }};">Hem</span>
+      <span style="width:4px; height:4px; border-radius:50%; background:{{ navHemDot }};"></span>
+    </div>
+    <div onClick="{{ goPro }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; min-height:44px; justify-content:center;">
+      <span style="font-size:12.5px; font-weight:{{ navProW }}; color:{{ navProC }};">Profil</span>
+      <span style="width:4px; height:4px; border-radius:50%; background:{{ navProDot }};"></span>
+    </div>
+  </div>
+</div>
+</x-import>
+</div>
+</x-dc>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 470, &quot;height&quot;: 960 },
+  &quot;hubAktiverad&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Feature flag (customer_multi_business_hub)&quot; }
+}">
+class Component extends DCLogic {
+  state = {
+    tab: 'hem',        // 'hem' | 'pro'
+    valt: null,        // index i FTG = öppen företagsvy
+  };
+
+  FTG = [
+    {
+      init: 'F', namn: 'FreshCut', bransch: 'FRISÖR · UMEÅ', accent: '#8FD6A6',
+      adress: 'Storgatan 12, Umeå · 090-12 34 56',
+      rad: 'Nästa: idag 12:00 · Fade hos John', radC: '#F0F0EA',
+      nasta: { label: 'NÄSTA BOKNING', tid: '12:00', dag: 'Idag', text: 'Fade · 30 min · 480 kr', sub: 'hos John · Storgatan 12', k1: 'Omboka', k2: 'Avboka' },
+      cta: 'Boka ny tid',
+      loj: { label: 'STÄMPELKORT', text: '3 besök kvar till 20 % rabatt', val: '7/10' },
+      historik: [
+        { rubrik: 'Fade', meta: '18 juni · John', pris: '480 kr', knapp: 'Boka igen' },
+        { rubrik: 'Klippning + skäggtrim', meta: '2 april · Ali', pris: '620 kr', knapp: 'Boka igen' },
+      ],
+    },
+    {
+      init: 'B', namn: 'Blomstertorget', bransch: 'BLOMSTER · UMEÅ', accent: '#D6AC6A',
+      adress: 'Rådhusesplanaden 4, Umeå · 090-77 21 30',
+      rad: 'Beställning hämtas fre 17 juli', radC: '#C8C8BD',
+      nasta: { label: 'BESTÄLLNING', tid: 'Fre', dag: '17 juli', text: 'Bukett Sommaräng · 449 kr', sub: 'hämtas i butiken · betald', k1: 'Ändra', k2: 'Avboka' },
+      cta: 'Beställ igen',
+      loj: { label: 'KUNDKLUBB', text: 'Poäng ger rabatt på nästa bukett', val: '120 p' },
+      historik: [
+        { rubrik: 'Tulpanbukett', meta: '12 maj · leverans', pris: '349 kr', knapp: 'Beställ igen' },
+      ],
+    },
+    {
+      init: 'K', namn: 'Källa Hårspa', bransch: 'HÅRSPA · UMEÅ', accent: '#A2B6D0',
+      adress: 'Västra Esplanaden 9, Umeå · 090-14 58 20',
+      rad: 'Senaste besök 3 februari', radC: '#96968C',
+      nasta: null, tomText: 'Ditt senaste besök var 3 februari.',
+      cta: 'Boka ny tid',
+      loj: null,
+      historik: [
+        { rubrik: 'Hårspa-behandling', meta: '3 februari · Vera', pris: '890 kr', knapp: 'Boka igen' },
+      ],
+    },
+  ];
+
+  renderVals() {
+    const st = this.state;
+    const hub = this.props.hubAktiverad ?? true;
+    const valt = hub ? st.valt : 0;         // flagga AV = dagens beteende: direkt in i företaget
+    const f = valt !== null ? this.FTG[valt] : null;
+
+    const navOn = { c: '#F0F0EA', w: 600, dot: '#9AC4A5' };
+    const navOff = { c: '#96968C', w: 400, dot: 'transparent' };
+    const nh = st.tab === 'hem' ? navOn : navOff;
+    const np = st.tab === 'pro' ? navOn : navOff;
+
+    return {
+      hub,
+      visaHub: hub && st.tab === 'hem' && valt === null,
+      visaForetag: st.tab === 'hem' && valt !== null,
+      visaProfil: st.tab === 'pro',
+      goHem: () => this.setState({ tab: 'hem' }),
+      goPro: () => this.setState({ tab: 'pro' }),
+      navHemC: nh.c, navHemW: nh.w, navHemDot: nh.dot,
+      navProC: np.c, navProW: np.w, navProDot: np.dot,
+      tillHub: () => this.setState({ valt: null }),
+      oppnaFresh: () => this.setState({ valt: 0 }),
+      foretag: this.FTG.map((x, i) => ({ ...x, oppna: () => this.setState({ valt: i }) })),
+      // vald företagsvy
+      fgInit: f ? f.init : '', fgNamn: f ? f.namn : '', fgAdress: f ? f.adress : '', fgAccent: f ? f.accent : '#8FD6A6',
+      fgHarNasta: !!(f && f.nasta), fgTom: !!(f && !f.nasta),
+      fgTomText: f && f.tomText ? f.tomText : '',
+      fgNastaLabel: f && f.nasta ? f.nasta.label : '', fgNastaTid: f && f.nasta ? f.nasta.tid : '',
+      fgNastaDag: f && f.nasta ? f.nasta.dag : '', fgNastaText: f && f.nasta ? f.nasta.text : '',
+      fgNastaSub: f && f.nasta ? f.nasta.sub : '', fgKnapp1: f && f.nasta ? f.nasta.k1 : '', fgKnapp2: f && f.nasta ? f.nasta.k2 : '',
+      fgCta: f ? f.cta : '',
+      fgLojShow: !!(f && f.loj),
+      fgLojLabel: f && f.loj ? f.loj.label : '', fgLojText: f && f.loj ? f.loj.text : '', fgLojVal: f && f.loj ? f.loj.val : '',
+      fgHistorik: f ? f.historik : [],
+      // profil
+      notisRader: this.FTG.map(x => ({ namn: x.namn, accent: x.accent, status: x.init === 'F' ? 'E-POST + PUSH' : 'E-POST' })),
+    };
+  }
+}
+</script>
+</body>
+</html>
