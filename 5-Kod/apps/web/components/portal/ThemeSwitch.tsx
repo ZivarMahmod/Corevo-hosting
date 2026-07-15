@@ -14,6 +14,16 @@ import { Icon } from './ui/Icon'
  */
 type Mode = 'auto' | 'light' | 'dark'
 const KEY = 'corevo-bo-theme'
+const THEME_EVENT = 'corevo-bo-theme-change'
+
+function savedMode(): Mode {
+  try {
+    const saved = localStorage.getItem(KEY)
+    return saved === 'light' || saved === 'dark' ? saved : 'auto'
+  } catch {
+    return 'auto'
+  }
+}
 
 function apply(mode: Mode) {
   const root = document.documentElement
@@ -26,11 +36,19 @@ export function ThemeSwitch() {
   // själva färgerna sattes redan av no-flash-scriptet).
   const [mode, setMode] = useState<Mode>('auto')
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(KEY)
-      if (saved === 'light' || saved === 'dark') setMode(saved)
-    } catch {
-      /* private mode etc — auto gäller */
+    setMode(savedMode())
+    const sync = (event: Event) => {
+      const detail = (event as CustomEvent<Mode>).detail
+      setMode(detail === 'light' || detail === 'dark' || detail === 'auto' ? detail : savedMode())
+    }
+    const syncStorage = (event: StorageEvent) => {
+      if (event.key === KEY) setMode(savedMode())
+    }
+    window.addEventListener(THEME_EVENT, sync)
+    window.addEventListener('storage', syncStorage)
+    return () => {
+      window.removeEventListener(THEME_EVENT, sync)
+      window.removeEventListener('storage', syncStorage)
     }
   }, [])
 
@@ -42,6 +60,9 @@ export function ThemeSwitch() {
       /* ignore */
     }
     apply(m)
+    // `storage` avfyras inte i samma dokument. Det egna eventet håller den synliga
+    // mobilväljaren och den CSS-dolda desktopväljaren i exakt samma state vid resize.
+    window.dispatchEvent(new CustomEvent<Mode>(THEME_EVENT, { detail: m }))
   }
 
   return (

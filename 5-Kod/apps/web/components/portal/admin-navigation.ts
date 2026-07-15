@@ -62,3 +62,24 @@ export function adminAreas(activeModuleKeys?: string[]): TopnavArea[] {
     },
   ]
 }
+
+export type AdminMobileNavigation = {
+  /** De tre fasta destinationerna i mobilens nederkant. */
+  tabs: TopnavArea[]
+  /** Varje övrig, redan tillåten adminyta samlas under Mer — inget döljs. */
+  more: TopnavArea[]
+  /** Kalenderns befintliga skapaflöde, exponerat som den centrala FAB-knappen. */
+  action: { href: string; label: string }
+}
+
+/** Mobilen arrangerar om samma adminnavigation som desktop. Funktionen tar den redan
+ * modul- och rollfiltrerade listan, så den kan varken lägga till en otillåten yta eller
+ * tappa en aktiverad modul. */
+export function adminMobileNavigation(areas: readonly TopnavArea[]): AdminMobileNavigation {
+  const tabIds = new Set(['oversikt', 'kalender', 'kunder'])
+  return {
+    tabs: areas.filter((area) => tabIds.has(area.id)),
+    more: areas.filter((area) => !tabIds.has(area.id)),
+    action: { href: '/admin/bokningar?ny', label: 'Ny bokning' },
+  }
+}

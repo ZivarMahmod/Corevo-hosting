@@ -7,6 +7,7 @@ import {
   listBookingPayments,
   listLocations,
   listServices,
+  listStaffBookingResources,
   staffDay,
   type AdminBooking,
   type BookingPayment,
@@ -66,7 +67,12 @@ export default async function KalenderPage({
   // ?plats= kan aldrig peka utanför RLS-fencet — det blir bara "alla platser".
   const locations = (await listLocations(tenant.id)).filter((l) => l.active)
   const locationFilter =
-    locations.length > 1 ? await resolvePlats(sp.plats, locations.map((l) => l.id)) : ''
+    locations.length > 1
+      ? await resolvePlats(
+          sp.plats,
+          locations.map((l) => l.id),
+        )
+      : ''
 
   // Fönstret följer vyn. Månadsvyn hämtar HELA rutnätet (inkl. randdagarna från
   // grannmånaderna) — annars ser rutnätets kanter tomma ut fast de har bokningar.
@@ -84,7 +90,7 @@ export default async function KalenderPage({
   // Frånvaro = kalenderns blockeringar. EN modell för "resursen kan inte bokas" —
   // rast, frånvaro och avvikande arbetstid är samma sak (Wavys universalmekanism).
   // Intervall-överlapp, så en semester som började i förra fönstret syns ändå.
-  const [bookings, roster, timeOff, allServices] = await Promise.all([
+  const [bookings, roster, timeOff, allServices, staffResources] = await Promise.all([
     listBookings(tenant.id, {
       fromUtc: range.fromUtc,
       toUtc: range.toUtc,
@@ -97,7 +103,11 @@ export default async function KalenderPage({
       ? Promise.resolve([])
       : listTimeOffOverlapping(tenant.id, range.fromUtc, range.toUtc),
     listServices(tenant.id),
+    listStaffBookingResources(tenant.id),
   ])
+
+  const resourcesByStaff = new Map(staffResources.map((resource) => [resource.staffId, resource]))
+  const activeLocationIds = new Set(locations.map((location) => location.id))
 
   const blocks: CalendarBlock[] = timeOff.map((t) => ({
     id: t.id,
@@ -133,6 +143,7 @@ export default async function KalenderPage({
       serviceName: b.serviceName,
       staffTitle: b.staffTitle,
       staffId: b.staffId,
+      serviceId: b.serviceId,
       priceCents: b.priceCents,
       status: b.status,
       createdAt: b.createdAt,
@@ -141,6 +152,7 @@ export default async function KalenderPage({
       customerName: b.customerName,
       customerPhone: b.customerPhone,
       locationName: b.locationName,
+      locationId: b.locationId,
       isPast: new Date(b.startTs).getTime() < now,
       paymentStatus: pay.status,
       paymentAmountCents: pay.amountCents,
@@ -160,6 +172,11 @@ export default async function KalenderPage({
         // Serverberäknade arbetsminuter (sammanslagna pass) — nämnaren i kalenderns
         // beläggningssiffra. Klienten räknar statistiken så den följer resursfiltret.
         workedMinutes: s.workedMinutes,
+        serviceIds: resourcesByStaff.get(s.staffId)?.serviceIds ?? [],
+        locationIds:
+          resourcesByStaff
+            .get(s.staffId)
+            ?.locationIds.filter((locationId) => activeLocationIds.has(locationId)) ?? [],
       }))}
       // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
       // drawern och sedan avvisas av servern.

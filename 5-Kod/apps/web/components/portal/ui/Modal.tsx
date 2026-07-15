@@ -66,7 +66,10 @@ export function Modal({
       if (focusable.length === 0) return
       const first = focusable[0]!
       const last = focusable[focusable.length - 1]!
-      if (e.shiftKey && document.activeElement === first) {
+      if (!cardRef.current.contains(document.activeElement)) {
+        e.preventDefault()
+        ;(e.shiftKey ? last : first).focus()
+      } else if (e.shiftKey && document.activeElement === first) {
         e.preventDefault()
         last.focus()
       } else if (!e.shiftKey && document.activeElement === last) {
@@ -105,7 +108,7 @@ export function Modal({
     >
       <div
         ref={cardRef}
-        className={`${styles.card}${size === 'sm' ? ` ${styles.cardSm}` : ''}`}
+        className={`${styles.card}${size === 'sm' ? ` ${styles.cardSm}` : ''}${footer ? '' : ` ${styles.cardNoFooter}`}`}
         role="dialog"
         aria-modal="true"
         aria-label={label}

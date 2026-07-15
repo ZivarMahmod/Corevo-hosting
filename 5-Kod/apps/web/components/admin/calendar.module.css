@@ -646,6 +646,10 @@
   color: var(--c-ink);
 }
 
+.mobileBlockBtn {
+  display: none;
+}
+
 /* ---- scrollytan: det ENDA som scrollar ---- */
 .scroll {
   flex: 1;
@@ -895,12 +899,11 @@
      fylld platta: texten måste behålla sin kontrast mot bakgrunden. */
   border-left: 5px solid var(--bk, var(--c-gold));
   border-radius: 8px;
-  background:
-    linear-gradient(
-      to right,
-      color-mix(in srgb, var(--bk, var(--c-gold)) 26%, var(--c-paper)),
-      color-mix(in srgb, var(--bk, var(--c-gold)) 9%, var(--c-paper)) 70%
-    );
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--bk, var(--c-gold)) 26%, var(--c-paper)),
+    color-mix(in srgb, var(--bk, var(--c-gold)) 9%, var(--c-paper)) 70%
+  );
   box-shadow:
     0 1px 2px color-mix(in srgb, var(--c-ink) 6%, transparent),
     0 0 0 1px color-mix(in srgb, var(--c-line) 60%, transparent);
@@ -1027,7 +1030,6 @@
   flex: 1;
   min-width: 0;
 }
-
 
 /* ---- klick-bubbla (designens signatur) ----
    Liten popover vid klickpunkten: Ring + Öppna. Scrim fångar utanför-klick utan att
@@ -1718,33 +1720,55 @@
 }
 
 /* ---- responsivt ----
-   Kolumnerna har en minsta bredd (--col-min) och .dayWrap är `width: max-content`,
-   så många resurser scrollar horisontellt INNE i .scroll i stället för att pressas
-   ihop till oläsliga remsor. På små skärmar krymper minbredden i stället för att
-   kolumnerna försvinner — man ska alltid kunna se ALLA anställda. */
-@media (max-width: 760px) {
+   Mobilkanon visar alltid samtliga resurskolumner samtidigt. Desktop och iPad får
+   fortfarande en läsbar minbredd och intern sidscroll vid riktigt stora team. */
+@media (max-width: 767px) {
   .board {
-    /* Mobilen får hela höjden: verktygsraden viker till två rader, så vi tar bort
-       kortets marginal-antagande och låter ytan andas. */
-    height: calc(100dvh - 58px - 24px);
-    border-radius: 12px;
+    height: calc(
+      100dvh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+    );
+    min-height: 360px;
+    border-radius: 0;
   }
 
   .toolbar {
-    padding: 8px 10px;
+    gap: 10px;
+    padding: 10px 14px;
   }
 
   .navGroup {
     order: 1;
     flex: 1 0 100%;
+    gap: 10px;
+  }
+
+  .navSeg {
+    order: 2;
+  }
+
+  .navSegIcon {
+    width: 38px;
+  }
+
+  .navSegToday {
+    padding-inline: 11px;
+    font-size: 12px;
+  }
+
+  .periodGroup {
+    order: 1;
+    flex: 1;
+    margin-left: 0;
   }
 
   .toolbarRight {
     order: 2;
     flex: 1 0 100%;
+    flex-wrap: wrap;
   }
 
   .viewSwitch {
+    order: -2;
     width: 100%;
   }
 
@@ -1752,13 +1776,110 @@
     flex: 1;
   }
 
+  .mobileBlockBtn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    padding: 0;
+  }
+
+  .desktopBlockBtn,
+  .newBtn {
+    display: none;
+  }
+
+  .resChips {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
   .periodLabel {
-    font-size: 14.5px;
+    font-size: 17px;
   }
 
   .dayWrap {
-    --axis-w: 44px;
-    --col-min: 116px;
+    --axis-w: 34px;
+    --col-min: 0px;
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .scroll {
+    overflow-x: hidden;
+    padding-bottom: 90px;
+  }
+
+  .headCell {
+    min-width: 0;
+    padding: 8px 3px 7px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .headCellDay {
+    justify-content: center;
+  }
+
+  .headAvatar,
+  .headLoad {
+    display: none;
+  }
+
+  .headText {
+    align-items: center;
+  }
+
+  .headName {
+    max-width: 100%;
+    font-size: 11.5px;
+  }
+
+  .headHours {
+    max-width: 100%;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .axisMark {
+    right: 4px;
+    font-size: 9px;
+  }
+
+  .block {
+    gap: 0;
+    padding: 4px 3px;
+    border-left-width: 3px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--bk, var(--c-gold)) 16%, var(--c-paper));
+  }
+
+  .blockTime {
+    font-size: 9px;
+  }
+
+  .blockName {
+    font-size: 10.5px;
+  }
+
+  .blockService {
+    font-size: 9px;
+  }
+
+  .blockFlag {
+    top: 3px;
+    right: 3px;
+  }
+
+  .blockTiny {
+    gap: 3px;
+    padding-inline: 3px;
   }
 
   .monthGrid {
@@ -1775,7 +1896,7 @@
    Egen nivå, inte "stor mobil" och inte "liten desktop". Plattan har gott om bredd men
    används med FINGER: touchmålen måste vara kvar i full storlek, medan kolumnerna får
    vara smalare än på desktop så en hel personalstyrka ryms utan att man scrollar i sidled. */
-@media (min-width: 761px) and (max-width: 1024px) {
+@media (min-width: 768px) and (max-width: 1199px) {
   .dayWrap {
     --axis-w: 50px;
     --col-min: 132px;
@@ -1790,7 +1911,7 @@
 
 /* Telefon: kolumnen är för smal för ett telefonnummer. Numret försvinner INTE — det
    står i kortet man öppnar. Ett avhugget nummer är värre än inget nummer. */
-@media (max-width: 760px) {
+@media (max-width: 767px) {
   .blockPhone {
     display: none;
   }

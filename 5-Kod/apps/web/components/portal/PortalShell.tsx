@@ -18,7 +18,7 @@ import { PortalTopbar } from './PortalTopbar'
 import { Topnav } from './Topnav'
 import topnavStyles from './Topnav.module.css'
 import { PLATFORM_AREAS, PLATFORM_SUBNAV } from './platform-navigation'
-import { adminAreas } from './admin-navigation'
+import { adminAreas, adminMobileNavigation } from './admin-navigation'
 import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
@@ -156,11 +156,8 @@ export async function PortalShell({
     // Topbar context link — handoff shows "Se din sida" → the salon's public
     // storefront (computed from the slug so it's correct in dev AND prod, never
     // the localhost env base). Platform has no single storefront → no link.
-    const storefrontUrl =
-      portal === 'platform' ? null : tenantStorefrontUrl(bundle?.tenant.slug)
-    const contextLink = storefrontUrl
-      ? { label: 'Se din sida', href: storefrontUrl }
-      : undefined
+    const storefrontUrl = portal === 'platform' ? null : tenantStorefrontUrl(bundle?.tenant.slug)
+    const contextLink = storefrontUrl ? { label: 'Se din sida', href: storefrontUrl } : undefined
 
     // Global butik-väljare (Zivar 2026-07-10): vid >1 AKTIV plats får salongs-
     // admin en switcher i topbaren; valet bor i corevo-plats-cookien och styr
@@ -186,6 +183,7 @@ export async function PortalShell({
     // varje riktig läsning, action och guard. Personal-portalen har kvar sidofältet.
     if (portal === 'platform' || portal === 'admin') {
       const isPlatform = portal === 'platform'
+      const topAreas = isPlatform ? PLATFORM_AREAS : adminAreas(activeModuleKeys)
       return (
         <div
           className={`tenant-root portal-shell ${topnavStyles.shell}`}
@@ -195,18 +193,17 @@ export async function PortalShell({
           style={injectTenantTokens(branding) as CSSProperties}
         >
           <Topnav
-            areas={isPlatform ? PLATFORM_AREAS : adminAreas(activeModuleKeys)}
+            areas={topAreas}
+            mobileNavigation={isPlatform ? undefined : adminMobileNavigation(topAreas)}
             subnav={isPlatform ? PLATFORM_SUBNAV : undefined}
             paletteItems={paletteItems}
             brandHref={isPlatform ? '/' : '/admin'}
             // Superadmin är Corevo självt; kund-adminen är VERKSAMHETEN — namnet och
             // "via Corevo" bär rollgränsen. Ordet "Superadmin" får aldrig synas här.
-            brandMark={isPlatform ? 'C' : (brand.charAt(0).toUpperCase() || 'C')}
+            brandMark={isPlatform ? 'C' : brand.charAt(0).toUpperCase() || 'C'}
             brandName={brand}
             brandSub={isPlatform ? 'Superadmin' : 'via Corevo'}
-            brandLabel={
-              isPlatform ? 'Corevo superadmin – översikt' : `${brand} – översikt`
-            }
+            brandLabel={isPlatform ? 'Corevo superadmin – översikt' : `${brand} – översikt`}
             primaryAction={
               isPlatform
                 ? { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' }
@@ -279,7 +276,8 @@ export async function PortalShell({
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser()
-  const fullName = ((authUser?.user_metadata ?? {}) as { full_name?: string }).full_name?.trim() || null
+  const fullName =
+    ((authUser?.user_metadata ?? {}) as { full_name?: string }).full_name?.trim() || null
   const initial = (fullName?.charAt(0) || user.email?.charAt(0) || '·').toUpperCase()
 
   return (

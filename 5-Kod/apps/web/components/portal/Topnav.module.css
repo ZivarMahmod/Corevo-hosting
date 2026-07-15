@@ -424,6 +424,99 @@
   color: var(--c-ink);
 }
 
+/* Kund-adminens mobilchrome finns i samma komponent men aktiveras först under
+   768px. Plattformen, som inte skickar mobileNavigation, påverkas inte. */
+.mobileActions,
+.mobileNav {
+  display: none;
+}
+
+.mobileMoreLinks {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileMoreGroup + .mobileMoreGroup {
+  border-top: 1px solid var(--c-line);
+}
+
+.mobileMoreLink,
+.mobileMoreTools > a {
+  min-height: 48px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--c-ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.mobileMoreLinkActive {
+  color: var(--c-ink);
+}
+
+.mobileMoreSubnav {
+  padding: 0 4px 10px 14px;
+  display: grid;
+  gap: 3px;
+}
+
+.mobileMoreSubnav a {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  color: var(--c-ink-2);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.mobileMoreSubnav a[aria-current='page'] {
+  color: var(--c-ink);
+  font-weight: 650;
+}
+
+.mobileMoreTools {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--c-line);
+}
+
+.mobileMoreExtra {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.mobileMoreTheme {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--c-ink-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mobileMoreAccount {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--c-line);
+}
+
+.mobileMoreAccount .accountIdentity {
+  padding-inline: 4px;
+}
+
+.mobileMoreAccount :global(.portal-signout) {
+  width: 100%;
+  min-height: 48px;
+  justify-content: flex-start;
+}
+
 .subnavWrap {
   border-top: 1px solid var(--c-line);
   background: color-mix(in srgb, var(--c-paper) 92%, var(--c-cream));
@@ -517,6 +610,224 @@
   }
 }
 
+/* iPad 768–1199: en komprimerad rad enligt responsivkanon. Om en kund har många
+   moduler scrollar bara destinationsremsan; kontrollerna till höger försvinner inte. */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .mobileAdmin .bar {
+    min-height: 56px;
+    padding: 0 18px;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  .mobileAdmin .mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    font-size: 14px;
+  }
+
+  .mobileAdmin .brandText {
+    display: none;
+  }
+
+  .mobileAdmin .nav {
+    order: initial;
+    width: auto;
+    min-width: 0;
+    margin-left: 0;
+    flex: 1;
+    overflow-x: auto;
+  }
+
+  .mobileAdmin .navLink {
+    flex: none;
+    padding-inline: 12px;
+    justify-content: center;
+  }
+
+  .mobileAdmin .search {
+    width: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .mobileAdmin .searchText,
+  .mobileAdmin .search kbd {
+    display: none;
+  }
+
+  .mobileAdmin .context,
+  .mobileAdmin .theme :global(.bo-theme button),
+  .mobileAdmin .account > summary {
+    min-height: 36px;
+  }
+
+  .mobileAdmin .account > summary {
+    width: 36px;
+  }
+}
+
+@media (max-width: 767px) {
+  .mobileAdmin {
+    min-height: calc(52px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    box-sizing: border-box;
+  }
+
+  .mobileAdmin .bar {
+    min-height: 52px;
+    padding: 0 14px;
+    flex-wrap: nowrap;
+    gap: 10px;
+  }
+
+  .mobileAdmin .brand {
+    flex: 1;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .mobileAdmin .mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .mobileAdmin .brandText {
+    display: flex;
+  }
+
+  .mobileAdmin .brandName {
+    max-width: min(48vw, 210px);
+    overflow: hidden;
+    font-size: 13.5px;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileAdmin .brandSub {
+    font-family: var(--font-mono);
+    font-size: 7.5px;
+    letter-spacing: 0.14em;
+  }
+
+  .mobileAdmin .nav,
+  .mobileAdmin .actions,
+  .mobileAdmin .subnavWrap {
+    display: none;
+  }
+
+  .mobileActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mobileSearch,
+  .mobileAccount {
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--c-line);
+    background: var(--c-paper);
+    color: var(--c-ink-2);
+    cursor: pointer;
+  }
+
+  .mobileSearch {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .mobileAccount {
+    width: 32px;
+    height: 32px;
+    border-color: var(--c-line-strong);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .mobileNav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 25;
+    min-height: calc(72px + env(safe-area-inset-bottom));
+    padding: 8px 6px calc(18px + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: end;
+    border-top: 1px solid var(--c-line);
+    background: var(--c-cream);
+    box-sizing: border-box;
+  }
+
+  .mobileNavItem {
+    min-width: 0;
+    min-height: 44px;
+    padding: 4px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 0;
+    background: transparent;
+    color: var(--c-ink-3);
+    font: inherit;
+    font-size: 11.5px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .mobileNavItem::after {
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: transparent;
+    content: '';
+  }
+
+  .mobileNavItemActive {
+    color: var(--c-ink);
+    font-weight: 650;
+  }
+
+  .mobileNavItemActive::after {
+    background: var(--c-success);
+  }
+
+  .mobileFab {
+    width: 52px;
+    height: 52px;
+    margin: -24px auto 0;
+    display: grid;
+    place-items: center;
+    border: 4px solid var(--c-cream);
+    border-radius: 999px;
+    background: #2f5f47;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+    color: var(--c-on-forest);
+  }
+
+  .shell[data-world='backoffice'] .main {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .shell[data-world='backoffice']:has(.main > :global(.workbench)) .main {
+    padding: 10px 0 calc(78px + env(safe-area-inset-bottom));
+    min-height: calc(100dvh - 52px - env(safe-area-inset-top));
+  }
+}
+
 @media (max-width: 760px) {
   .bar {
     padding-inline: 14px;
@@ -581,7 +892,7 @@
   }
 
   .shell[data-world='backoffice'] .main {
-    padding: 20px 14px 72px;
+    padding: 20px 14px calc(96px + env(safe-area-inset-bottom));
   }
 }
 

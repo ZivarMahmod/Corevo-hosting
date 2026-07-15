@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { adminAreas } from './admin-navigation'
+import { adminAreas, adminMobileNavigation } from './admin-navigation'
 import { activeTopnavArea } from './Topnav'
 
 /** goal-65: kund-adminens toppnav. Reglerna som testas är låsta beslut, inte smak:
@@ -73,5 +73,27 @@ describe('aktivt område', () => {
     expect(settings?.subnav?.[0]?.href).toBe('/admin/installningar')
     expect(settings?.subnav?.some((i) => i.href === '/admin/sida')).toBe(false)
     expect(areas.find((a) => a.id === 'kalender')?.subnav).toBeUndefined()
+  })
+})
+
+describe('mobil admin-navigation', () => {
+  it('behåller driftvalen i bottennaven och flyttar resten till Mer', () => {
+    const mobile = adminMobileNavigation(adminAreas(['shop', 'blogg']))
+
+    expect(mobile.tabs.map((area) => area.id)).toEqual(['oversikt', 'kalender', 'kunder'])
+    expect(mobile.more.map((area) => area.label)).toEqual([
+      'Webshop',
+      'Blogg',
+      'Redigera sidan',
+      'Inställningar',
+    ])
+    expect(mobile.action).toEqual({ href: '/admin/bokningar?ny', label: 'Ny bokning' })
+  })
+
+  it('tappar aldrig ett huvudval när aktiva moduler saknas', () => {
+    const areas = adminAreas([])
+    const mobile = adminMobileNavigation(areas)
+
+    expect([...mobile.tabs, ...mobile.more]).toEqual(areas)
   })
 })

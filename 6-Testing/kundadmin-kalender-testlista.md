@@ -1,6 +1,6 @@
 # Testlista — kund-admin: skal + kalender (goal-65 + goal-66)
 
-**Detta är det som INTE går att verifiera mekaniskt.** Enhetstester (933) och bygget täcker
+**Detta är det som INTE går att verifiera mekaniskt.** Enhetstester (1 132) och bygget täcker
 logiken; det här täcker det bara ögon och fingrar ser: tangentbord, zoom, pekskärm, riktiga
 enheter.
 
@@ -32,6 +32,28 @@ Logga in som `info@freshcut.se`.
 - [ ] iPad **liggande** och **stående**.
 - [ ] Mobil **liggande** och **stående**.
 - [ ] Sidan scrollar aldrig i sidled. (Blocken får scrolla inuti sin egen yta — sidan får inte.)
+
+## Del 01 · Mobil acceptans (dagens genomgång)
+
+- [ ] Kontrollera bredderna **390, 768, 1024, 1199 och 1440 px**. Under 1200 px visas
+      bottennavet som fem textetiketter: Översikt · Kalender · Kunder · Min sida · Mer.
+      Inga navigationsikoner visas; aktiv etikett har den lilla pricken under sig.
+- [ ] Den gröna mittknappen `+` öppnar Ny bokning. Kalenderns samtliga resurskolumner
+      ryms i bredd på mobil utan sidscroll; resurschipsen kan svepas men visar ingen scrollbar.
+- [ ] Direktlänk `?ny=1` öppnar Ny bokning en gång och städar URL:en. Samma länk/
+      plusknapp ska kunna öppna dialogen igen utan sidladdning. `?blockera=1` öppnar Blockera;
+      om båda finns vinner Ny bokning.
+- [ ] Dagens dagvy centreras automatiskt kring aktuell tid. Scrolla sedan manuellt och skapa/
+      uppdatera en bokning: kalendern får **inte** hoppa tillbaka. Byt dag och tillbaka till idag:
+      då ska den centreras igen.
+- [ ] Mobilknappen **Blockera** ligger bredvid datumstegen. Dag/Vecka/Månad ligger på en
+      egen fullbreddsrad. Bokningsblock har personens svaga färgton plus tydlig vänsterkant.
+- [ ] Öppna **Mer**, välj en länk: arket stängs. Byt tema i mobilvyn och bredda sedan
+      fönstret: temaikonen i desktopnavet visar samma val.
+- [ ] Öppna en bokning på mobil → **Omboka**. Flytta datum/tid och byt person. En ledig
+      tid sparas; en krock nekas och originalbokningen ligger kvar oförändrad.
+- [ ] iPhone/iPad med safe areas: inget hamnar under kameraön/notchen eller hemstrecket,
+      varken toppnav, kalender, Mer-ark eller dialog utan footer.
 
 ---
 

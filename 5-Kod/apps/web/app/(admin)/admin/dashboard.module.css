@@ -575,6 +575,161 @@
   }
 }
 
+/* Mobil <768: samma data och handlingar som desktop, omarrangerade till kanonens
+   enkla kortflöde. Ny bokning + kalender ligger redan i det globala bottennavet. */
+@media (max-width: 767px) {
+  .page {
+    padding: 2px 0 0;
+  }
+
+  .head {
+    display: block;
+  }
+
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+  }
+
+  .greeting {
+    margin: 4px 0 2px;
+    font-size: 21px;
+  }
+
+  .headSub {
+    font-size: 12.5px;
+  }
+
+  .headActions {
+    display: none;
+  }
+
+  .grid {
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .col {
+    gap: 10px;
+  }
+
+  .heroMain,
+  .heroSide {
+    padding: 14px 16px;
+  }
+
+  .heroHeadline {
+    gap: 11px;
+    margin-top: 9px;
+  }
+
+  .heroClock {
+    font-size: 23px;
+  }
+
+  .heroService {
+    font-size: 13.5px;
+  }
+
+  .heroMeta {
+    gap: 6px;
+    margin-top: 5px;
+    font-size: 11.5px;
+  }
+
+  .heroActions {
+    margin-top: 12px;
+  }
+
+  .cardHead {
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  .cardTitle {
+    font-size: 15px;
+  }
+
+  .legend {
+    max-width: 58%;
+    justify-content: flex-end;
+    gap: 7px;
+    flex-wrap: wrap;
+    font-size: 10px;
+  }
+
+  .timeline {
+    padding: 0 16px 16px;
+  }
+
+  .laneName {
+    font-size: 12px;
+  }
+
+  .lanePass {
+    font-size: 9px;
+  }
+
+  .upcoming {
+    padding: 0 16px 8px;
+  }
+
+  .upRow {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'time name status'
+      'time service service'
+      'time staff staff';
+    gap: 3px 10px;
+    padding: 12px 0;
+  }
+
+  .upTime {
+    grid-area: time;
+    align-self: start;
+  }
+
+  .upName {
+    grid-area: name;
+  }
+
+  .upService {
+    grid-area: service;
+    font-size: 12px;
+  }
+
+  .upStaff {
+    grid-area: staff;
+    font-size: 11.5px;
+  }
+
+  .upStatus {
+    grid-area: status;
+    padding-inline: 6px;
+  }
+
+  .statsPad,
+  .attnPad {
+    padding: 16px;
+  }
+
+  .statBig {
+    font-size: 22px;
+  }
+
+  .bar {
+    width: 90px;
+  }
+
+  .shortcuts {
+    grid-template-columns: 1fr;
+  }
+
+  .emptyState {
+    margin: 0 16px 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .laterRow,
   .upRow,

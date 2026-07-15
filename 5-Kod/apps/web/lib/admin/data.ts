@@ -30,6 +30,7 @@ export type AdminBooking = {
   priceCents: number | null
   note: string | null
   staffId: string
+  serviceId: string
   serviceName: string
   staffTitle: string
   /** When the booking was made (created_at) — "bokad den" column (M6 §3.2). */
@@ -103,6 +104,54 @@ export async function listStaff(tenantId: string): Promise<StaffWithServices[]> 
       displayName: row.title?.trim() || 'Namnlös medarbetare',
     }
   })
+}
+
+export type StaffBookingResources = {
+  staffId: string
+  serviceIds: string[]
+  locationIds: string[]
+}
+
+/** Giltiga tjänst-/platskopplingar för kalenderns ombokningsväljare.
+ *  Två tenant-filtrerade batchläsningar undviker N+1 och ser till att klienten
+ *  bara erbjuder samma resurser som moveBooking + DB-triggern accepterar. */
+export async function listStaffBookingResources(
+  tenantId: string,
+): Promise<StaffBookingResources[]> {
+  const supabase = await createClient()
+  const [servicesRes, locationsRes] = await Promise.all([
+    supabase.from('staff_services').select('staff_id, service_id').eq('tenant_id', tenantId),
+    supabase
+      .from('working_hours')
+      .select('staff_id, location_id')
+      .eq('tenant_id', tenantId)
+      .not('location_id', 'is', null),
+  ])
+  if (servicesRes.error) {
+    throw new Error(`listStaffBookingResources.services: ${servicesRes.error.message}`)
+  }
+  if (locationsRes.error) {
+    throw new Error(`listStaffBookingResources.locations: ${locationsRes.error.message}`)
+  }
+
+  const byStaff = new Map<string, { serviceIds: Set<string>; locationIds: Set<string> }>()
+  const resource = (staffId: string) => {
+    const current = byStaff.get(staffId)
+    if (current) return current
+    const created = { serviceIds: new Set<string>(), locationIds: new Set<string>() }
+    byStaff.set(staffId, created)
+    return created
+  }
+  for (const row of servicesRes.data ?? []) resource(row.staff_id).serviceIds.add(row.service_id)
+  for (const row of locationsRes.data ?? []) {
+    if (row.location_id) resource(row.staff_id).locationIds.add(row.location_id)
+  }
+
+  return [...byStaff.entries()].map(([staffId, links]) => ({
+    staffId,
+    serviceIds: [...links.serviceIds],
+    locationIds: [...links.locationIds],
+  }))
 }
 
 // Prestanda C2: request-scopad cache() — PortalShell (butik-väljaren) och admin-
@@ -185,10 +234,7 @@ export async function listWorkingHours(
 
 /** Explicit bookable start times per (staff, weekday) — M6 §5 model. Active only;
  *  weekday→start ordered for a clean per-day grouping. */
-export async function listWorkingHourSlots(
-  tenantId: string,
-  staffId: string,
-): Promise<SlotRow[]> {
+export async function listWorkingHourSlots(tenantId: string, staffId: string): Promise<SlotRow[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('working_hour_slots')
@@ -220,7 +266,7 @@ export async function listBookings(
   let q = supabase
     .from('bookings')
     .select(
-      'id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, location_id, customer_id, services(name), staff(title), locations(name), customers(display_name, full_name, name_hidden, phone)',
+      'id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, service_id, location_id, customer_id, services(name), staff(title), locations(name), customers(display_name, full_name, name_hidden, phone)',
     )
     .eq('tenant_id', tenantId)
   if (filters.fromUtc) q = q.gte('start_ts', filters.fromUtc)
@@ -244,6 +290,7 @@ export async function listBookings(
     note: string | null
     created_at: string
     staff_id: string
+    service_id: string
     location_id: string
     customer_id: string | null
     services: { name: string } | null
@@ -260,6 +307,7 @@ export async function listBookings(
     note: b.note,
     createdAt: b.created_at,
     staffId: b.staff_id,
+    serviceId: b.service_id,
     locationId: b.location_id,
     locationName: b.locations?.name ?? null,
     customerId: b.customer_id,
@@ -461,7 +509,9 @@ export async function getCustomerDetail(
   const supabase = await createClient()
   const { data: c } = await supabase
     .from('customers')
-    .select('id, display_name, full_name, name_hidden, status, first_seen_at, last_seen_at, auth_user_id, hidden_at, self_book')
+    .select(
+      'id, display_name, full_name, name_hidden, status, first_seen_at, last_seen_at, auth_user_id, hidden_at, self_book',
+    )
     .eq('tenant_id', tenantId)
     .eq('id', customerId)
     .maybeSingle()
@@ -470,7 +520,9 @@ export async function getCustomerDetail(
   // History via the new stable band (bookings.customer_id). Newest first.
   const { data: bd } = await supabase
     .from('bookings')
-    .select('id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, location_id, services(name), staff(title), locations(name)')
+    .select(
+      'id, start_ts, end_ts, status, price_cents, note, created_at, staff_id, service_id, location_id, services(name), staff(title), locations(name)',
+    )
     .eq('tenant_id', tenantId)
     .eq('customer_id', customerId)
     .order('start_ts', { ascending: false })
@@ -484,6 +536,7 @@ export async function getCustomerDetail(
     note: string | null
     created_at: string
     staff_id: string
+    service_id: string
     location_id: string
     services: { name: string } | null
     staff: { title: string | null } | null
@@ -498,6 +551,7 @@ export async function getCustomerDetail(
     note: b.note,
     createdAt: b.created_at,
     staffId: b.staff_id,
+    serviceId: b.service_id,
     locationId: b.location_id,
     locationName: b.locations?.name ?? null,
     // Raden ÄR kundens egen historik — identiteten är redan känd + maskad ovan.
@@ -558,7 +612,6 @@ export async function getCustomerContact(customerId: string): Promise<CustomerCo
   }
 }
 
-
 /** En resurs (personal) och dess arbetstid en given veckodag. `start`/`end` är null
  *  när resursen inte arbetar den dagen — det är ett ärligt "ledig", inte saknad data. */
 export type StaffDay = {
@@ -575,7 +628,6 @@ export type StaffDay = {
    *  så kalendern är färgkodad från dag ett utan att någon behövt välja. */
   color: string
 }
-
 
 /** Dagens resursläge: aktiv personal + deras arbetstid för veckodagen (0=sön … 6=lör,
  *  samma konvention som working_hours.weekday). EN läsning för hela tenanten — den
@@ -631,20 +683,20 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
   const worked = new Map<string, number>()
   for (const [id, ivs] of passes) worked.set(id, sumMergedMinutes(ivs))
 
-  return (
-    (staffRows ?? []) as { id: string; title: string | null; color: string | null }[]
-  ).map((s) => {
-    const hours = span.get(s.id)
-    return {
-      staffId: s.id,
-      // Samma fallback som listStaff.displayName — identiteten bärs av namnet.
-      name: s.title?.trim() || 'Namnlös medarbetare',
-      start: hours?.start ?? null,
-      end: hours?.end ?? null,
-      workedMinutes: worked.get(s.id) ?? 0,
-      color: staffColor(s.id, s.color),
-    }
-  })
+  return ((staffRows ?? []) as { id: string; title: string | null; color: string | null }[]).map(
+    (s) => {
+      const hours = span.get(s.id)
+      return {
+        staffId: s.id,
+        // Samma fallback som listStaff.displayName — identiteten bärs av namnet.
+        name: s.title?.trim() || 'Namnlös medarbetare',
+        start: hours?.start ?? null,
+        end: hours?.end ?? null,
+        workedMinutes: worked.get(s.id) ?? 0,
+        color: staffColor(s.id, s.color),
+      }
+    },
+  )
 }
 
 /** goal-67: översikten svarar på "vad händer idag" — inget annat. `servicesActive`,
@@ -731,9 +783,10 @@ export async function dashboardData(
   // Keep the list consistent with `todayCount` (both exclude cancelled/no_show).
   const active = new Set<string>(ACTIVE_BOOKING)
   const todayRows = upcoming.filter((b) => active.has(b.status))
-  const prevWeekdayBookedCents = (
-    (prevRows.data ?? []) as { price_cents: number | null }[]
-  ).reduce((sum, r) => sum + (r.price_cents ?? 0), 0)
+  const prevWeekdayBookedCents = ((prevRows.data ?? []) as { price_cents: number | null }[]).reduce(
+    (sum, r) => sum + (r.price_cents ?? 0),
+    0,
+  )
 
   // Bucketa avbokningar (kumulativt: idag ⊆ vecka ⊆ månad).
   const cancellationStats = {
@@ -741,7 +794,10 @@ export async function dashboardData(
     week: { count: 0, cents: 0 },
     month: { count: 0, cents: 0 },
   }
-  for (const r of (cancelAgg.data ?? []) as { cancelled_at: string | null; price_cents: number | null }[]) {
+  for (const r of (cancelAgg.data ?? []) as {
+    cancelled_at: string | null
+    price_cents: number | null
+  }[]) {
     if (!r.cancelled_at) continue
     const cents = r.price_cents ?? 0
     cancellationStats.month.count++
@@ -792,7 +848,9 @@ export type BookingPayment = {
 
 /** Normalise a raw payments.status string into the known set (defensive: any
  *  unknown value collapses to null so the UI never shows a phantom badge). */
-export function normalisePaymentStatus(raw: string | null | undefined): BookingPaymentStatus | null {
+export function normalisePaymentStatus(
+  raw: string | null | undefined,
+): BookingPaymentStatus | null {
   if (raw === 'pending' || raw === 'succeeded' || raw === 'failed') return raw
   return null
 }
@@ -814,7 +872,11 @@ export async function listBookingPayments(
     .select('booking_id, status, amount_cents')
     .eq('tenant_id', tenantId)
     .in('booking_id', bookingIds)
-  for (const p of (data ?? []) as { booking_id: string | null; status: string | null; amount_cents: number | null }[]) {
+  for (const p of (data ?? []) as {
+    booking_id: string | null
+    status: string | null
+    amount_cents: number | null
+  }[]) {
     if (!p.booking_id) continue
     out.set(p.booking_id, {
       status: normalisePaymentStatus(p.status),

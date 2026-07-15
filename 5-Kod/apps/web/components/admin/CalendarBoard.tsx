@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic'
 import {
   BookingDrawer,
   dayKey,
+  eligibleRescheduleStaff,
   isAvbokad,
   isKlar,
   statusAccent,
@@ -59,6 +60,9 @@ export type CalendarStaff = {
   color: string
   /** Arbetsminuter den valda dagen (sammanslagna pass) — nämnaren i beläggningssiffran. */
   workedMinutes: number
+  /** Resurskopplingarna bakom ombokningsväljaren; båda är tenant-fencade på servern. */
+  serviceIds: string[]
+  locationIds: string[]
 }
 
 /** En blockerad tid (time_off): rast, frånvaro eller avvikande arbetstid. EN
@@ -104,6 +108,25 @@ const toMin = (hhmm: string) => {
 }
 const fromMin = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+
+export type CalendarLaunchMode = 'new' | 'block' | null
+
+/** Djuplänkens skapaflöde. Ny bokning vinner uttryckligen om en gammal/delad URL
+ * råkar innehålla båda parametrarna. */
+export function calendarLaunchMode(params: Pick<URLSearchParams, 'get'>): CalendarLaunchMode {
+  if (params.get('ny') !== null) return 'new'
+  if (params.get('blockera') !== null) return 'block'
+  return null
+}
+
+/** Centrerar nu-linjen i kalenderns egna scrollyta och klampar vid dygnets kanter. */
+export function centeredCalendarScrollTop(
+  lineTop: number,
+  viewportHeight: number,
+  scrollHeight: number,
+): number {
+  return Math.max(0, Math.min(lineTop - viewportHeight / 2, scrollHeight - viewportHeight))
+}
 
 /** Tidsaxeln — samma i dag- och veckovyn, så den bor på ett ställe. */
 function TimeAxis({ hours, dayStart }: { hours: number[]; dayStart: number }) {
@@ -166,9 +189,7 @@ function minutesInTz(ts: string, tz: string): number {
  *  varje bokning tar första banan där den får plats. */
 type Placed = { booking: BookingRow; lane: number; lanes: number }
 export function placeOverlaps(items: BookingRow[], tz: string): Placed[] {
-  const sorted = [...items].sort(
-    (a, b) => minutesInTz(a.startTs, tz) - minutesInTz(b.startTs, tz),
-  )
+  const sorted = [...items].sort((a, b) => minutesInTz(a.startTs, tz) - minutesInTz(b.startTs, tz))
   const laneEnd: number[] = []
   const placed: { booking: BookingRow; lane: number; start: number; end: number }[] = []
 
@@ -222,13 +243,15 @@ export function CalendarBoard({
 }) {
   const router = useRouter()
   const params = useSearchParams()
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const lastAutoScrollKey = useRef<string | null>(null)
   const [open, setOpen] = useState<BookingRow | null>(
     () => bookings.find((b) => b.id === openBookingId) ?? null,
   )
   /** null = stängd. Ett objekt (ev. med seed) = skapa-läge. Översiktens genväg
    *  "Ny bokning" djuplänkar hit med ?ny → drawern öppnas direkt vid landning. */
-  const [creating, setCreating] = useState<{ seed: NewBookingSeed | null } | null>(
-    () => (params.get('ny') !== null ? { seed: null } : null),
+  const [creating, setCreating] = useState<{ seed: NewBookingSeed | null } | null>(() =>
+    calendarLaunchMode(params) === 'new' ? { seed: null } : null,
   )
   /** Blockera tid: ny (seed från gridklick eller tom) eller befintlig (öppnad blockering).
    *  Genvägen "Blockera tid" djuplänkar hit med ?blockera. Ömsesidigt uteslutande med
@@ -236,24 +259,56 @@ export function CalendarBoard({
   const [blocking, setBlocking] = useState<{
     seed: { staffId: string; startMinute: number } | null
     existing: CalendarBlock | null
-  } | null>(() =>
-    params.get('blockera') !== null && params.get('ny') === null
-      ? { seed: null, existing: null }
-      : null,
-  )
+  } | null>(() => (calendarLaunchMode(params) === 'block' ? { seed: null, existing: null } : null))
 
   // Djuplänk-parametrar (?ny/?blockera) är ENGÅNGS: rensa dem ur URL:en efter att
   // drawern öppnats, annars öppnar en omladdning/tillbaka-navigering den igen.
   useEffect(() => {
-    if (params.get('ny') === null && params.get('blockera') === null) return
+    const mode = calendarLaunchMode(params)
+    if (!mode) return
+    if (mode === 'new') {
+      setBlocking(null)
+      setCreating({ seed: null })
+    } else {
+      setCreating(null)
+      setBlocking({ seed: null, existing: null })
+    }
     const sp = new URLSearchParams(params.toString())
     sp.delete('ny')
     sp.delete('blockera')
     const qs = sp.toString()
     router.replace(qs ? `/admin/bokningar?${qs}` : '/admin/bokningar', { scroll: false })
-    // Endast vid mount — parametrarna läses en gång in i drawer-state ovan.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [params, router])
+
+  // När dagens dagvy öppnas ska personalen landa vid NU, inte vid arbetsdagens
+  // första timme. Vi scrollar kalenderns egen yta (aldrig dokumentet) och centrerar
+  // linjen så det finns sammanhang både bakåt och framåt.
+  useEffect(() => {
+    if (view !== 'dag' || date !== today) {
+      lastAutoScrollKey.current = null
+      return
+    }
+    const key = `${view}:${date}`
+    if (lastAutoScrollKey.current === key) return
+    const frame = window.requestAnimationFrame(() => {
+      const scroller = scrollRef.current
+      const line = scroller?.querySelector<HTMLElement>('[data-calendar-now]')
+      if (!scroller || !line) return
+      // Markera först när scrollningen verkligen sker. I React Strict Mode körs
+      // effect setup→cleanup→setup; första frame:n avbryts då, och andra setup
+      // måste fortfarande få schemalägga en riktig autoscroll.
+      lastAutoScrollKey.current = key
+      const scrollRect = scroller.getBoundingClientRect()
+      const lineRect = line.getBoundingClientRect()
+      const lineTop = scroller.scrollTop + lineRect.top - scrollRect.top
+      scroller.scrollTop = centeredCalendarScrollTop(
+        lineTop,
+        scroller.clientHeight,
+        scroller.scrollHeight,
+      )
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [date, today, view])
 
   const { notify } = useToast()
   const [moving, startMove] = useTransition()
@@ -336,8 +391,7 @@ export function CalendarBoard({
     const cancelled = vBookings.filter((b) => b.status === 'cancelled').length
     const live = vBookings.filter((b) => !isAvbokad(b.status))
     const bookedMin = live.reduce(
-      (sum, b) =>
-        sum + (new Date(b.endTs).getTime() - new Date(b.startTs).getTime()) / 60000,
+      (sum, b) => sum + (new Date(b.endTs).getTime() - new Date(b.startTs).getTime()) / 60000,
       0,
     )
     const workedMin = vStaff.reduce((sum, s) => sum + s.workedMinutes, 0)
@@ -499,6 +553,14 @@ export function CalendarBoard({
               </div>
             )}
           </div>
+          <button
+            type="button"
+            className={`${styles.blockBtn} ${styles.mobileBlockBtn}`}
+            onClick={() => setBlocking({ seed: null, existing: null })}
+            aria-label="Blockera tid"
+          >
+            <Icon name="clock" size={14} />
+          </button>
         </div>
 
         <div className={styles.toolbarRight}>
@@ -588,10 +650,10 @@ export function CalendarBoard({
               länge. Sekundär knapp — det är inte dagens huvudhandling. */}
           <button
             type="button"
-            className={styles.blockBtn}
+            className={`${styles.blockBtn} ${styles.desktopBlockBtn}`}
             onClick={() => setBlocking({ seed: null, existing: null })}
           >
-            <Icon name="x" size={14} />
+            <Icon name="clock" size={14} />
             <span>Blockera tid</span>
           </button>
 
@@ -610,7 +672,7 @@ export function CalendarBoard({
 
       {/* Scrollytan. overflow ligger HÄR, inte på sidan — därför scrollar aldrig
           dokumentet och toppnaven stannar kvar. */}
-      <div className={styles.scroll}>
+      <div ref={scrollRef} className={styles.scroll}>
         {view === 'dag' && (
           <DayGrid
             bookings={vBookings}
@@ -679,6 +741,7 @@ export function CalendarBoard({
           tz={tz}
           staffNoun={staffNoun}
           staffColor={colorOf(open.staffId)}
+          staff={eligibleRescheduleStaff(staff, open.serviceId, open.locationId)}
           onClose={() => setOpen(null)}
         />
       )}
@@ -776,7 +839,14 @@ function NowLine({ dayStart, tz, offset = 0 }: { dayStart: number; tz: string; o
   const nowMin = minutesInTz(new Date().toISOString(), tz)
   const top = (nowMin - dayStart) * PX_PER_MIN
   if (top < 0) return null
-  return <div className={styles.nowLine} style={{ top: top + offset }} aria-hidden="true" />
+  return (
+    <div
+      className={styles.nowLine}
+      style={{ top: top + offset }}
+      data-calendar-now
+      aria-hidden="true"
+    />
+  )
 }
 
 /** Håll-tid innan en tryckning på tom yta räknas som "jag vill boka HÄR". */
@@ -1228,7 +1298,7 @@ function DayGrid({
                 // förhandsvisningen inte visa var tiden SLUTAR. Den läses ur draget.
                 const dragged = bookings.find((b) => b.id === draggingId)
                 const durationMin = dragged
-                  ? (minutesInTz(dragged.endTs, tz) - minutesInTz(dragged.startTs, tz))
+                  ? minutesInTz(dragged.endTs, tz) - minutesInTz(dragged.startTs, tz)
                   : 30
                 if (
                   !dragOver ||
@@ -1299,9 +1369,7 @@ function DayGrid({
                     block={bl}
                     tz={tz}
                     top={(minutesInTz(bl.startTs, tz) - dayStart) * PX_PER_MIN}
-                    height={
-                      (minutesInTz(bl.endTs, tz) - minutesInTz(bl.startTs, tz)) * PX_PER_MIN
-                    }
+                    height={(minutesInTz(bl.endTs, tz) - minutesInTz(bl.startTs, tz)) * PX_PER_MIN}
                     onOpen={onOpenBlock}
                   />
                 ))}
@@ -1552,10 +1620,20 @@ function MonthGrid({
 
               <div className={styles.monthList}>
                 {shown.map((b) => (
-                  <MonthBooking key={b.id} booking={b} tz={tz} color={colorOf(b.staffId)} onOpen={onOpen} />
+                  <MonthBooking
+                    key={b.id}
+                    booking={b}
+                    tz={tz}
+                    color={colorOf(b.staffId)}
+                    onOpen={onOpen}
+                  />
                 ))}
                 {rest > 0 && (
-                  <button type="button" className={styles.monthMore} onClick={() => onDayClick(key)}>
+                  <button
+                    type="button"
+                    className={styles.monthMore}
+                    onClick={() => onDayClick(key)}
+                  >
                     +<span className="num">{rest}</span> fler
                   </button>
                 )}

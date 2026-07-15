@@ -491,14 +491,31 @@
   .stats { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 767px) {
   .board {
     grid-template-columns: 1fr;
+    height: calc(
+      100dvh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+    );
+    min-height: 360px;
+    border-radius: 0;
   }
   /* Mobil: listan ÄR sidan; kortet öppnas som egen vy. Data-attribut på .board
      styr vilken panel som visas (satt av klienten utifrån om en kund är vald). */
   .board[data-mobile-view='list'] .pane { display: none; }
   .board[data-mobile-view='card'] .list { display: none; }
   .board[data-mobile-view='card'] .back { display: inline-flex; }
-  .paneInner { padding: 20px 18px 48px; }
+  .list { border-right: 0; }
+  .listHead { padding: 16px 16px 0; }
+  .listTitle { font-size: 21px; }
+  .newBtn, .back { min-height: 44px; }
+  .row { padding-inline: 16px; }
+  .paneInner { padding: 20px 16px calc(48px + env(safe-area-inset-bottom)); }
+  .header { flex-wrap: wrap; }
+  .headAvatar { width: 48px; height: 48px; font-size: 17px; }
+  .headName h1 { font-size: 21px; }
+  .headActions { width: 100%; flex-wrap: wrap; }
+  .headActions > * { flex: 1; text-align: center; }
+  .stats { gap: 8px; margin-top: 18px; }
+  .statCard { padding: 12px; }
 }

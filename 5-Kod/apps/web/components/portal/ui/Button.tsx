@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, ReactNode, Ref } from 'react'
 import { Icon, type IconName } from './Icon'
 
 export type ButtonVariant = 'primary' | 'gold' | 'ghost' | 'subtle'
@@ -27,6 +27,7 @@ export function Button({
   target,
   rel,
   form,
+  buttonRef,
 }: {
   children: ReactNode
   variant?: ButtonVariant
@@ -47,6 +48,8 @@ export function Button({
   /** HTML form-attribut — låter en submit-knapp bo utanför sitt <form> (t.ex.
    *  drawer-footers). Ignoreras när `href` renderar en <a>. */
   form?: string
+  /** Ref för fokusstyrning när button-formen används; ignoreras för href-formen. */
+  buttonRef?: Ref<HTMLButtonElement>
 }) {
   const cls = `pbtn pbtn--${variant} pbtn--${size}${className ? ` ${className}` : ''}`
   const inner = (
@@ -65,6 +68,7 @@ export function Button({
   }
   return (
     <button
+      ref={buttonRef}
       className={cls}
       type={type ?? 'button'}
       disabled={disabled}

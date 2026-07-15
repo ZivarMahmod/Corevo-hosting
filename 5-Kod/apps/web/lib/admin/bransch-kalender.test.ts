@@ -2,13 +2,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { placeOverlaps } from '@/components/admin/CalendarBoard'
-import type { BookingRow } from '@/components/admin/BookingDrawer'
 import {
-  resolveTerm,
-  termPlural,
-  type Terminology,
-} from '@/lib/platform/verticals-shared'
+  calendarLaunchMode,
+  centeredCalendarScrollTop,
+  placeOverlaps,
+} from '@/components/admin/CalendarBoard'
+import type { BookingRow } from '@/components/admin/BookingDrawer'
+import { resolveTerm, termPlural, type Terminology } from '@/lib/platform/verticals-shared'
 
 /**
  * C-06 — BEVIS: kalendermotorn är BRANSCH-GENERELL.
@@ -155,6 +155,24 @@ describe('kalendermotorn är bransch-blind (ingen kodfork)', () => {
     const [first] = placeOverlaps(scenario('Sorgbukett', 'Florist'), TZ)
     expect(first.booking.serviceName).toBe('Sorgbukett')
     expect(first.booking.staffTitle).toBe('Florist')
+  })
+})
+
+describe('kalenderns responsiva startbeteende', () => {
+  it('öppnar Ny bokning från ?ny och prioriterar den framför blockering', () => {
+    expect(calendarLaunchMode(new URLSearchParams('ny'))).toBe('new')
+    expect(calendarLaunchMode(new URLSearchParams('blockera&ny'))).toBe('new')
+  })
+
+  it('öppnar Blockera tid från ?blockera och annars ingenting', () => {
+    expect(calendarLaunchMode(new URLSearchParams('blockera'))).toBe('block')
+    expect(calendarLaunchMode(new URLSearchParams('vy=dag'))).toBeNull()
+  })
+
+  it('centrerar nu-linjen och klampar scrollpositionen inom kalendern', () => {
+    expect(centeredCalendarScrollTop(600, 400, 1200)).toBe(400)
+    expect(centeredCalendarScrollTop(80, 400, 1200)).toBe(0)
+    expect(centeredCalendarScrollTop(1150, 400, 1200)).toBe(800)
   })
 })
 

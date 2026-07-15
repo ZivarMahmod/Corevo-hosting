@@ -66,7 +66,9 @@ export async function searchCustomers(query: string): Promise<CustomerHit[]> {
     // Dold kund (B-25) hittas inte i sök — det är vad "dold" betyder. Behöver man
     // hen ändå finns "Dolda kunder" på Kunder-sidan; bokningen går alltid via namn.
     .is('hidden_at', null)
-    .or(`display_name.ilike.${like},full_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`)
+    .or(
+      `display_name.ilike.${like},full_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`,
+    )
     .limit(8)
 
   return (data ?? []).map((c) => ({
@@ -112,13 +114,60 @@ export async function moveBooking(input: {
   // så en påhittad boknings-id kan aldrig träffa någon annans rad.
   const { data: current } = await supabase
     .from('bookings')
-    .select('start_ts, end_ts, status')
+    .select('start_ts, end_ts, status, service_id, location_id')
     .eq('id', input.bookingId)
     .eq('tenant_id', tenant.id)
     .maybeSingle()
   if (!current) return { error: 'Bokningen finns inte längre. Ladda om kalendern.' }
   if (current.status === 'cancelled' || current.status === 'no_show') {
     return { error: 'En avbokad tid kan inte flyttas. Skapa en ny bokning i stället.' }
+  }
+
+  // UI:t visar bara personal på den aktuella platsen, men en server action kan
+  // anropas direkt med valfri UUID. Verifiera därför resursen igen här: aktiv
+  // personal i samma tenant, kopplad till bokningens tjänst och plats.
+  const [targetStaff, offeredService, activeLocation, staffAtLocation] = await Promise.all([
+    supabase
+      .from('staff')
+      .select('id')
+      .eq('id', input.staffId)
+      .eq('tenant_id', tenant.id)
+      .eq('active', true)
+      .maybeSingle(),
+    supabase
+      .from('staff_services')
+      .select('staff_id')
+      .eq('tenant_id', tenant.id)
+      .eq('staff_id', input.staffId)
+      .eq('service_id', current.service_id)
+      .maybeSingle(),
+    supabase
+      .from('locations')
+      .select('id')
+      .eq('id', current.location_id)
+      .eq('tenant_id', tenant.id)
+      .eq('active', true)
+      .maybeSingle(),
+    supabase
+      .from('working_hours')
+      .select('staff_id')
+      .eq('tenant_id', tenant.id)
+      .eq('staff_id', input.staffId)
+      .eq('location_id', current.location_id)
+      .limit(1)
+      .maybeSingle(),
+  ])
+
+  if (targetStaff.error || !targetStaff.data || offeredService.error || !offeredService.data) {
+    return { error: 'Medarbetaren kan inte utföra den här tjänsten. Välj en annan.' }
+  }
+  if (
+    activeLocation.error ||
+    !activeLocation.data ||
+    staffAtLocation.error ||
+    !staffAtLocation.data
+  ) {
+    return { error: 'Medarbetaren arbetar inte på bokningens plats. Välj en annan.' }
   }
 
   const durationMs = new Date(current.end_ts).getTime() - new Date(current.start_ts).getTime()
@@ -154,6 +203,15 @@ export async function moveBooking(input: {
     // ligger kvar orört; användaren får veta det och kan välja en annan tid.
     if (error.message.includes('no_double_booking') || error.code === '23P01') {
       return { error: 'Tiden krockar med en annan bokning. Bokningen ligger kvar där den var.' }
+    }
+    if (error.message.includes('invalid_staff_location')) {
+      return { error: 'Medarbetaren arbetar inte på bokningens plats. Bokningen är oförändrad.' }
+    }
+    if (error.message.includes('invalid_staff')) {
+      return { error: 'Medarbetaren kan inte utföra den här tjänsten. Bokningen är oförändrad.' }
+    }
+    if (error.message.includes('invalid_location')) {
+      return { error: 'Bokningens plats är inte längre tillgänglig. Bokningen är oförändrad.' }
     }
     return { error: 'Flytten gick inte igenom. Bokningen ligger kvar där den var.' }
   }
@@ -238,7 +296,10 @@ export async function createBlock(input: {
  *  scope (B-23): 'en' tar bort exakt den valda förekomsten; 'framat' tar bort den
  *  och alla senare i samma serie. Bakåt skrivs ALDRIG om — raderna för förra veckan
  *  är historik om vad som faktiskt var blockerat. */
-export async function removeBlock(blockId: string, scope: 'en' | 'framat' = 'en'): Promise<BlockState> {
+export async function removeBlock(
+  blockId: string,
+  scope: 'en' | 'framat' = 'en',
+): Promise<BlockState> {
   const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
@@ -550,7 +611,10 @@ export async function createAdminBooking(
   // som en misslyckad bokning — vi säger sanningen om båda delarna var för sig.
   const wantsEmail = String(fd.get('notify') ?? '') === 'epost'
   if (!wantsEmail) {
-    return { success: 'Bokningen är sparad. Inget meddelande skickades.', bookingId: String(bookingId) }
+    return {
+      success: 'Bokningen är sparad. Inget meddelande skickades.',
+      bookingId: String(bookingId),
+    }
   }
 
   const { data: fresh } = await supabase
@@ -599,5 +663,8 @@ export async function createAdminBooking(
     }
   }
 
-  return { success: `Bokningen är sparad. Bekräftelse skickad till ${to}.`, bookingId: String(bookingId) }
+  return {
+    success: `Bokningen är sparad. Bekräftelse skickad till ${to}.`,
+    bookingId: String(bookingId),
+  }
 }

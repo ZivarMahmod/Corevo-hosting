@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { setBookingStatus, type ActionState } from '@/lib/admin/actions'
@@ -17,6 +17,9 @@ import {
   type ThreadNote,
 } from '@/components/portal/ui'
 import type { BookingPaymentStatus } from '@/lib/admin/data'
+import { moveBooking } from '@/lib/admin/calendar-actions'
+import { zonedTimeToUtc } from '@/lib/booking/tz'
+import styles from './calendar.module.css'
 
 /** Bokningsdrawern och dess delade format-/statushjälpare. Låg tidigare INNE i
  *  BookingsClient; lyft ut i goal-66 så kalenderarbetsbordet öppnar EXAKT samma yta
@@ -32,6 +35,9 @@ export type BookingRow = {
   staffTitle: string
   /** Resursens id — kalendern placerar bokningen i rätt kolumn. */
   staffId: string
+  /** Råa resurs-id:n behövs för att filtrera giltiga ombokningsval. */
+  serviceId: string
+  locationId: string
   priceCents: number | null
   status: string
   createdAt: string
@@ -88,6 +94,24 @@ export const timeLabel = (ts: string, tz: string) =>
   new Intl.DateTimeFormat('sv-SE', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(
     new Date(ts),
   )
+
+/** En vald lokal väggtid blir ett UTC-instant med bokningsmotorns egen DST-säkra
+ * konvertering. Omboka får aldrig anta att Stockholm alltid är UTC+1/+2. */
+export const rescheduleStartIso = (date: string, time: string, tz: string) =>
+  zonedTimeToUtc(date, time, tz).toISOString()
+
+export function eligibleRescheduleStaff<
+  T extends {
+    id: string
+    name: string
+    serviceIds: readonly string[]
+    locationIds: readonly string[]
+  },
+>(staff: readonly T[], serviceId: string, locationId: string): T[] {
+  return staff.filter(
+    (person) => person.serviceIds.includes(serviceId) && person.locationIds.includes(locationId),
+  )
+}
 export const priceLabel = (cents: number | null) =>
   cents == null ? '—' : `${(cents / 100).toLocaleString('sv-SE')} kr`
 
@@ -158,7 +182,12 @@ function actionsFor(status: string, isPast: boolean): DrawerAction[] {
   } else if (status === 'cancelled') {
     // "Återställ", inte "Öppna igen": det är ett ÅNGRA, och ordet ska säga det.
     if (can('confirmed'))
-      out.push({ label: 'Återställ bokningen', target: 'confirmed', variant: 'ghost', icon: 'undo' })
+      out.push({
+        label: 'Återställ bokningen',
+        target: 'confirmed',
+        variant: 'ghost',
+        icon: 'undo',
+      })
   }
   return out
 }
@@ -202,6 +231,7 @@ export function BookingDrawer({
   onClose,
   staffNoun,
   staffColor,
+  staff,
 }: {
   booking: BookingRow
   tz: string
@@ -209,10 +239,35 @@ export function BookingDrawer({
   staffNoun: string
   /** Personens kalenderfärg (hex) — pricken i dialogens hero. Serverhärledd via kalendern. */
   staffColor?: string
+  /** Redan tenant-/platsfiltrerade resurser som bokningen faktiskt kan flyttas till. */
+  staff: ReadonlyArray<{ id: string; name: string }>
 }) {
   const { notify } = useToast()
   const router = useRouter()
+  const defaultRescheduleStaffId = staff.some((person) => person.id === booking.staffId)
+    ? booking.staffId
+    : (staff[0]?.id ?? '')
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setBookingStatus, {})
+  const [rescheduling, setRescheduling] = useState(false)
+  const [rescheduleStaffId, setRescheduleStaffId] = useState(defaultRescheduleStaffId)
+  const [rescheduleDate, setRescheduleDate] = useState(() => dayKey(booking.startTs, tz))
+  const [rescheduleTime, setRescheduleTime] = useState(() => timeLabel(booking.startTs, tz))
+  const [moveError, setMoveError] = useState<string | null>(null)
+  const [moving, startMove] = useTransition()
+  const rescheduleFirstFieldRef = useRef<HTMLSelectElement>(null)
+  const rescheduleTriggerRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    setRescheduling(false)
+    setRescheduleStaffId(defaultRescheduleStaffId)
+    setRescheduleDate(dayKey(booking.startTs, tz))
+    setRescheduleTime(timeLabel(booking.startTs, tz))
+    setMoveError(null)
+  }, [booking.id, booking.startTs, defaultRescheduleStaffId, tz])
+
+  useEffect(() => {
+    if (rescheduling) rescheduleFirstFieldRef.current?.focus()
+  }, [rescheduling])
 
   useEffect(() => {
     // Key on the whole `state` object: useActionState returns a FRESH reference per
@@ -239,6 +294,29 @@ export function BookingDrawer({
   // Payment-guard: en ej betald, ej avbokad bokning får ALDRIG auto-markeras
   // "klar + betald" (sen kund / no-show).
   const showPaymentGuard = booking.paymentStatus !== 'succeeded' && !isAvbokad(booking.status)
+  const canReschedule = !isAvbokad(booking.status) && staff.length > 0
+
+  const submitReschedule = () => {
+    if (!rescheduleStaffId || !rescheduleDate || !rescheduleTime) {
+      setMoveError('Välj person, datum och tid.')
+      return
+    }
+    setMoveError(null)
+    startMove(async () => {
+      const result = await moveBooking({
+        bookingId: booking.id,
+        staffId: rescheduleStaffId,
+        startIso: rescheduleStartIso(rescheduleDate, rescheduleTime, tz),
+      })
+      if (result.error) {
+        setMoveError(result.error)
+        return
+      }
+      notify(result.success ?? 'Bokningen är flyttad.', 'success')
+      router.refresh()
+      onClose()
+    })
+  }
 
   const notes: ThreadNote[] =
     booking.note && booking.note.trim() !== ''
@@ -250,9 +328,7 @@ export function BookingDrawer({
       // v2-hero: stor mono-tid + tjänst leder, personprick + "hos X · dag" + status i
       // accent-raden. All övrig info (betalning/bokad-den/status) ligger kvar i kroppen.
       title={
-        <span
-          style={{ display: 'inline-flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}
-        >
+        <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
           <span
             className="num"
             style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 600 }}
@@ -285,15 +361,57 @@ export function BookingDrawer({
       onClose={onClose}
       ariaLabel={`Bokning ${booking.serviceName}`}
       footer={
-        restoreBlockedPast ? (
+        rescheduling ? (
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setRescheduling(false)
+                setMoveError(null)
+                window.requestAnimationFrame(() => rescheduleTriggerRef.current?.focus())
+              }}
+              disabled={moving}
+              style={{ flex: 1, justifyContent: 'center' }}
+            >
+              Avbryt
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              icon="calendar"
+              onClick={submitReschedule}
+              disabled={moving}
+              style={{ flex: 1, justifyContent: 'center' }}
+            >
+              {moving ? 'Flyttar…' : 'Flytta bokningen'}
+            </Button>
+          </div>
+        ) : restoreBlockedPast ? (
           <Callout tone="info" icon="shield">
             Tiden har passerat — en avbokad tid kan bara återställas medan den ligger framåt.
             Bokningen raderas aldrig och finns kvar i ångraloggen; skapa en ny tid vid behov.
           </Callout>
-        ) : actions.length > 0 ? (
-          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+        ) : actions.length > 0 || canReschedule ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: '100%' }}>
+            {canReschedule && (
+              <Button
+                buttonRef={rescheduleTriggerRef}
+                type="button"
+                variant="ghost"
+                icon="calendar"
+                onClick={() => setRescheduling(true)}
+                style={{ flex: '1 1 120px', justifyContent: 'center' }}
+              >
+                Omboka
+              </Button>
+            )}
             {actions.map((a) => (
-              <form key={a.target} action={formAction} style={{ flex: 1, display: 'flex' }}>
+              <form
+                key={a.target}
+                action={formAction}
+                style={{ flex: '1 1 120px', display: 'flex' }}
+              >
                 <input type="hidden" name="bookingId" value={booking.id} />
                 <input type="hidden" name="status" value={a.target} />
                 <Button
@@ -318,6 +436,62 @@ export function BookingDrawer({
       }
     >
       <div style={{ display: 'grid', gap: 18 }}>
+        {rescheduling && (
+          <section
+            style={{
+              display: 'grid',
+              gap: 12,
+              padding: 14,
+              border: '1px solid var(--c-line)',
+              borderRadius: 14,
+              background: 'var(--c-paper-2)',
+            }}
+          >
+            <div className="eyebrow">Omboka</div>
+            <label style={{ display: 'grid', gap: 6, fontSize: 12.5, color: 'var(--c-ink-2)' }}>
+              {staffNoun}
+              <select
+                ref={rescheduleFirstFieldRef}
+                className={styles.input}
+                value={rescheduleStaffId}
+                onChange={(event) => setRescheduleStaffId(event.target.value)}
+              >
+                {staff.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className={styles.twoCol} style={{ marginTop: 0 }}>
+              <label style={{ display: 'grid', gap: 6, fontSize: 12.5, color: 'var(--c-ink-2)' }}>
+                Datum
+                <input
+                  className={styles.input}
+                  type="date"
+                  value={rescheduleDate}
+                  onChange={(event) => setRescheduleDate(event.target.value)}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 6, fontSize: 12.5, color: 'var(--c-ink-2)' }}>
+                Tid
+                <input
+                  className={styles.input}
+                  type="time"
+                  step={900}
+                  value={rescheduleTime}
+                  onChange={(event) => setRescheduleTime(event.target.value)}
+                />
+              </label>
+            </div>
+            {moveError && (
+              <Callout tone="warning" icon="alert">
+                {moveError}
+              </Callout>
+            )}
+          </section>
+        )}
+
         {showAutoKlar && (
           <Callout tone="info" icon="clock">
             Tiden har passerat. Markeras <b>auto-klar</b> ikväll om du inte gör det själv —
