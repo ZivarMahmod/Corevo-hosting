@@ -428,30 +428,34 @@ export function CalendarBoard({
       {/* Verktygsrad — sticky, alltid nåbar, viker till två rader på mobil. */}
       <div className={styles.toolbar}>
         <div className={styles.navGroup}>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            onClick={() => shift(-1)}
-            aria-label="Föregående"
-          >
-            <Icon name="chevronLeft" size={16} />
-          </button>
-          <button
-            type="button"
-            className={styles.todayBtn}
-            onClick={() => go({ datum: today })}
-            aria-current={date === today ? 'date' : undefined}
-          >
-            Idag
-          </button>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            onClick={() => shift(1)}
-            aria-label="Nästa"
-          >
-            <Icon name="chevronRight" size={16} />
-          </button>
+          {/* Segmenterad grupp ‹ Idag › — en sammanhållen kontroll som i designen, i
+              stället för tre lösa piller. */}
+          <div className={styles.navSeg}>
+            <button
+              type="button"
+              className={styles.navSegIcon}
+              onClick={() => shift(-1)}
+              aria-label="Föregående"
+            >
+              <Icon name="chevronLeft" size={16} />
+            </button>
+            <button
+              type="button"
+              className={styles.navSegToday}
+              onClick={() => go({ datum: today })}
+              aria-current={date === today ? 'date' : undefined}
+            >
+              Idag
+            </button>
+            <button
+              type="button"
+              className={styles.navSegIcon}
+              onClick={() => shift(1)}
+              aria-label="Nästa"
+            >
+              <Icon name="chevronRight" size={16} />
+            </button>
+          </div>
           {view !== 'manad' && (
             // Ombokningshoppet (B-06): "kom tillbaka om en månad" är frisörens
             // vanligaste framåtblick. Ett klick, samma veckodag fyra veckor fram.
@@ -467,14 +471,19 @@ export function CalendarBoard({
           )}
           <div className={styles.periodGroup}>
             <h2 className={styles.periodLabel}>
-              {view === 'manad' ? monthLabel : dayLabelLong}
+              {/* Versal första bokstav — sv-SE Intl ger gemener veckodag/månad, designen
+                  visar "Onsdag 15 juli". */}
+              {(() => {
+                const label = view === 'manad' ? monthLabel : dayLabelLong
+                return label.charAt(0).toUpperCase() + label.slice(1)
+              })()}
             </h2>
             {/* Designens mono-statusrad — bara i dagvyn (server skickar null annars).
                 Beläggning och avbokat döljs var för sig när de är 0/saknas: en rad som
                 säger "0%" varje morgon är brus, inte information. */}
             {dayStats && (
               <div className={`num ${styles.periodStats}`}>
-                <span>v.{dayStats.week}</span>
+                <span>v. {dayStats.week}</span>
                 <span aria-hidden="true">·</span>
                 <span>
                   {dayStats.count} {dayStats.count === 1 ? 'bokning' : 'bokningar'}
@@ -1187,7 +1196,7 @@ function DayGrid({
               style={{ ['--bk' as string]: s.color }}
             >
               <span className={styles.headAvatar} aria-hidden="true">
-                {staffInitials(s.name)}
+                {(s.name.trim()[0] ?? '?').toUpperCase()}
               </span>
               <span className={styles.headText}>
                 <span className={styles.headName}>{s.name}</span>

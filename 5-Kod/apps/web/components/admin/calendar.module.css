@@ -46,6 +46,51 @@
   min-width: 0;
 }
 
+/* Segmenterad ‹ Idag › — EN kontroll med delare mellan, inte tre lösa piller (designen). */
+.navSeg {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.navSegIcon,
+.navSegToday {
+  min-height: 44px;
+  border: 0;
+  background: var(--c-paper);
+  color: var(--c-ink-2);
+  cursor: pointer;
+  font: inherit;
+}
+.navSegIcon {
+  width: 42px;
+  display: grid;
+  place-items: center;
+}
+.navSegToday {
+  padding: 0 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--c-ink);
+  /* Delare på var sida — den mittersta knappen ramas in utan extra element. */
+  box-shadow:
+    inset 1px 0 0 var(--c-line),
+    inset -1px 0 0 var(--c-line);
+}
+.navSegIcon:hover,
+.navSegToday:hover {
+  background: var(--c-paper-2);
+  color: var(--c-ink);
+}
+.navSegIcon:focus-visible,
+.navSegToday:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: -2px;
+}
+
 .toolbarRight {
   display: flex;
   align-items: center;
