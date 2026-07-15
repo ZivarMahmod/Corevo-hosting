@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
-import { addDays as addDaysStr } from '@/lib/admin/dates'
+import { addDays as addDaysStr, isoWeekNumber } from '@/lib/admin/dates'
+import { occupancyPct } from '@/lib/admin/dashboard-view'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { Button, Icon, Modal, useToast } from '@/components/portal/ui'
 import dynamic from 'next/dynamic'
@@ -13,6 +14,7 @@ import {
   isAvbokad,
   isKlar,
   statusAccent,
+  telHref,
   timeLabel,
   type BookingRow,
 } from './BookingDrawer'
@@ -55,6 +57,8 @@ export type CalendarStaff = {
   end: string | null
   /** goal-67: personens kalenderfärg (hex). Serverhärledd — aldrig null här. */
   color: string
+  /** Arbetsminuter den valda dagen (sammanslagna pass) — nämnaren i beläggningssiffran. */
+  workedMinutes: number
 }
 
 /** En blockerad tid (time_off): rast, frånvaro eller avvikande arbetstid. EN
@@ -268,6 +272,12 @@ export function CalendarBoard({
     minute: number
     durationMin: number
   } | null>(null)
+  /** Klick-bubblan (designens signatur): ett pekar-/touch-klick på ett block öppnar en
+   *  liten bubbla vid pekaren med Ring + Öppna, i stället för att slänga upp hela drawern.
+   *  Bara pekare/touch — tangentbord (Enter/Space) öppnar drawern direkt (se BookingBlock),
+   *  för en bubbla man inte kan sikta med musen på är bara ett extra steg. */
+  const [bubble, setBubble] = useState<{ booking: BookingRow; x: number; y: number } | null>(null)
+  const openBubble = (b: BookingRow, x: number, y: number) => setBubble({ booking: b, x, y })
 
   const staffNames = useMemo(() => new Map(staff.map((s) => [s.id, s.name])), [staff])
 
@@ -316,6 +326,33 @@ export function CalendarBoard({
     const map = new Map(staff.map((s) => [s.id, s.color]))
     return (staffId: string) => map.get(staffId) ?? staffColor(staffId)
   }, [staff])
+
+  // Verktygsradens mono-statusrad (designens "v.29 · 12 bokningar · 62% · 1 avbokad").
+  // Räknas HÄR, på den filtrerade datan (vStaff/vBookings) — så raden följer resurs-
+  // och platsfiltret i stället för att visa dagens totaler oavsett vad man tittar på.
+  // Bara dagvyn: beläggning över en vecka/månad är en meningslös medelsiffra.
+  const dayStats = useMemo(() => {
+    if (view !== 'dag') return null
+    const cancelled = vBookings.filter((b) => b.status === 'cancelled').length
+    const live = vBookings.filter((b) => !isAvbokad(b.status))
+    const bookedMin = live.reduce(
+      (sum, b) =>
+        sum + (new Date(b.endTs).getTime() - new Date(b.startTs).getTime()) / 60000,
+      0,
+    )
+    const workedMin = vStaff.reduce((sum, s) => sum + s.workedMinutes, 0)
+    // Beläggning döljs när ett platsfilter är aktivt: arbetsminuterna (workedMinutes) är
+    // hela personens arbetsdag, inte platsavgränsade, medan bokningarna ovan ÄR filtrerade
+    // per plats → nämnaren skulle bli för stor och siffran ljuga för lågt. Hellre ingen
+    // siffra än en felaktig. (Codex-granskning, MEDEL.)
+    const occupancy = locationId ? null : occupancyPct(bookedMin, workedMin)
+    return {
+      week: isoWeekNumber(date),
+      count: live.length,
+      occupancy,
+      cancelled,
+    }
+  }, [view, vBookings, vStaff, date, locationId])
 
   // Arbetsdagens fönster = union av resursernas arbetstider. Tom dag (ingen arbetar)
   // faller tillbaka på 08–18 så rutnätet aldrig kollapsar till en tom remsa.
@@ -428,15 +465,79 @@ export function CalendarBoard({
               +4 v
             </button>
           )}
-          <h2 className={styles.periodLabel}>
-            {view === 'manad' ? monthLabel : dayLabelLong}
-          </h2>
+          <div className={styles.periodGroup}>
+            <h2 className={styles.periodLabel}>
+              {view === 'manad' ? monthLabel : dayLabelLong}
+            </h2>
+            {/* Designens mono-statusrad — bara i dagvyn (server skickar null annars).
+                Beläggning och avbokat döljs var för sig när de är 0/saknas: en rad som
+                säger "0%" varje morgon är brus, inte information. */}
+            {dayStats && (
+              <div className={`num ${styles.periodStats}`}>
+                <span>v.{dayStats.week}</span>
+                <span aria-hidden="true">·</span>
+                <span>
+                  {dayStats.count} {dayStats.count === 1 ? 'bokning' : 'bokningar'}
+                </span>
+                {dayStats.occupancy != null && dayStats.occupancy > 0 && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span>{dayStats.occupancy}%</span>
+                  </>
+                )}
+                {dayStats.cancelled > 0 && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className={styles.periodStatsBad}>
+                      {dayStats.cancelled} avbokad{dayStats.cancelled === 1 ? '' : 'e'}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className={styles.toolbarRight}>
-          {/* Resursfilter (B-06) — bara när det finns någon att filtrera på. Native
-              <select>: telefonens inbyggda väljare slår allt vi kan bygga. */}
-          {staff.length > 1 && (
+          {/* Resursfilter (B-06). Litet team (salongsfallet) → designens färgprick-chips,
+              allt synligt på en gång. Stort team → native <select> som skalar och ger
+              telefonen sin inbyggda väljare. Filtret följer med mellan dag/vecka/månad
+              oavsett kontroll (resurs bor i URL:en). */}
+          {staff.length > 1 && staff.length <= 6 && (
+            <div
+              className={styles.resChips}
+              role="radiogroup"
+              aria-label={`Visa en ${staffNoun.toLowerCase()}`}
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={!resursValid}
+                className={`${styles.resChip}${!resursValid ? ` ${styles.resChipOn}` : ''}`}
+                onClick={() => go({ resurs: '' })}
+              >
+                Alla {staff.length}
+              </button>
+              {staff.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={resurs === s.id}
+                  className={`${styles.resChip}${resurs === s.id ? ` ${styles.resChipOn}` : ''}`}
+                  onClick={() => go({ resurs: resurs === s.id ? '' : s.id })}
+                >
+                  <span
+                    className={styles.resChipDot}
+                    style={{ background: s.color }}
+                    aria-hidden="true"
+                  />
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {staff.length > 6 && (
             <select
               className={styles.resSelect}
               value={resursValid ? resurs : ''}
@@ -520,6 +621,7 @@ export function CalendarBoard({
             dayStart={dayStart}
             gridHeight={gridHeight}
             onOpen={setOpen}
+            onBubble={openBubble}
             onEmptyClick={onEmptyClick}
             onDropBooking={onDropBooking}
             onOpenBlock={(block) => setBlocking({ seed: null, existing: block })}
@@ -537,6 +639,7 @@ export function CalendarBoard({
             dayStart={dayStart}
             gridHeight={gridHeight}
             onOpen={setOpen}
+            onBubble={openBubble}
             onDayClick={(d) => go({ vy: 'dag', datum: d })}
             colorOf={colorOf}
           />
@@ -553,6 +656,19 @@ export function CalendarBoard({
           />
         )}
       </div>
+
+      {bubble && (
+        <CalendarBubble
+          booking={bubble.booking}
+          x={bubble.x}
+          y={bubble.y}
+          onOpen={(b) => {
+            setBubble(null)
+            setOpen(b)
+          }}
+          onClose={() => setBubble(null)}
+        />
+      )}
 
       {open && (
         <BookingDrawer
@@ -743,6 +859,94 @@ function FreeArea({
   )
 }
 
+/** Klick-bubblan (designens signatur). Öppnas vid pekar-/touch-klick på ett block med
+ *  Ring (bara om nummer) + Öppna. Ligger `fixed` vid klickpunkten, klamrad innanför
+ *  viewporten. Fokus flyttas in, Escape och klick utanför stänger — så den funkar även
+ *  för touch och screenreader, inte bara mus. Renderas bara på klient (efter interaktion),
+ *  så `window` finns alltid här. */
+function CalendarBubble({
+  booking,
+  x,
+  y,
+  onOpen,
+  onClose,
+}: {
+  booking: BookingRow
+  x: number
+  y: number
+  onOpen: (b: BookingRow) => void
+  onClose: () => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const tel = telHref(booking.customerPhone)
+
+  useEffect(() => {
+    // Var fokus låg innan bubblan (det klickade blocket) — återställs vid stängning så
+    // Escape/scrim inte tappar fokus till <body>. Öppna-vägen öppnar drawern som sedan
+    // tar fokus själv (monteras efter att bubblan avmonterats). (Codex-granskning, MEDEL.)
+    const prev = document.activeElement as HTMLElement | null
+    const box = ref.current
+    const focusables = () => Array.from(box?.querySelectorAll<HTMLElement>('a,button') ?? [])
+    focusables()[0]?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      // Minimal fokusfälla: Tab cyklar inom bubblans knappar, lämnar den aldrig bakom scrimen.
+      if (e.key === 'Tab') {
+        const items = focusables()
+        if (items.length === 0) return
+        const first = items[0]!
+        const last = items[items.length - 1]!
+        const active = document.activeElement
+        if (e.shiftKey && active === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      // Återställ bara om fokus fortfarande ligger kvar i bubblan (Öppna-vägen har redan
+      // flyttat det vidare till drawern — rör det inte då).
+      if (box && box.contains(document.activeElement)) prev?.focus?.()
+    }
+  }, [onClose])
+
+  // Klamra innanför viewporten så bubblan aldrig hamnar delvis utanför kanten.
+  const left = Math.min(Math.max(x, 96), window.innerWidth - 96)
+  const top = Math.max(y - 14, 64)
+  const name = booking.customerName?.trim() || 'Gäst'
+
+  return (
+    <>
+      <div className={styles.bubbleScrim} onClick={onClose} aria-hidden="true" />
+      <div
+        ref={ref}
+        className={styles.bubble}
+        style={{ left, top }}
+        role="dialog"
+        aria-label={`Åtgärder för ${name}`}
+      >
+        {tel && (
+          <a href={tel} className={styles.bubbleRing} onClick={onClose}>
+            <Icon name="phone" size={14} />
+            Ring
+          </a>
+        )}
+        <button type="button" className={styles.bubbleOpen} onClick={() => onOpen(booking)}>
+          Öppna
+        </button>
+      </div>
+    </>
+  )
+}
+
 function BookingBlock({
   booking,
   tz,
@@ -751,6 +955,7 @@ function BookingBlock({
   lane,
   lanes,
   onOpen,
+  onBubble,
   draggable,
   showPhone,
   color,
@@ -762,6 +967,8 @@ function BookingBlock({
   lane: number
   lanes: number
   onOpen: (b: BookingRow) => void
+  /** Pekar-/touch-klick → bubbla vid pekaren. Utelämnad (t.ex. framtida ytor) → onOpen. */
+  onBubble?: (b: BookingRow, x: number, y: number) => void
   /** goal-67: den bokade personens färg (hex). Bär "vems tid är det?" — den fråga
    *  en full dag ställer oftast. Aldrig ensam bärare: initialerna står i kortet och
    *  status har fortfarande ikon + text. */
@@ -836,7 +1043,12 @@ function BookingBlock({
       onDragEnd={() => {
         draggingId = null
       }}
-      onClick={() => onOpen(booking)}
+      onClick={(e) => {
+        // Tangentbord (Enter/Space) ger detail===0 → öppna drawern direkt: en bubbla
+        // finns ingen pekare att sikta med. Pekare/touch → bubblan vid klickpunkten.
+        if (e.detail === 0 || !onBubble) onOpen(booking)
+        else onBubble(booking, e.clientX, e.clientY)
+      }}
       title={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} · ${name} · ${booking.serviceName}`}
       aria-label={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} ${name}, ${booking.serviceName}, ${booking.staffTitle}${statusFlag ? `, ${statusFlag.text}` : ''}`}
     >
@@ -920,6 +1132,7 @@ function DayGrid({
   dayStart,
   gridHeight,
   onOpen,
+  onBubble,
   onEmptyClick,
   onDropBooking,
   onOpenBlock,
@@ -939,6 +1152,7 @@ function DayGrid({
   dayStart: number
   gridHeight: number
   onOpen: (b: BookingRow) => void
+  onBubble: (b: BookingRow, x: number, y: number) => void
   onEmptyClick: (staffId: string, staffName: string, minute: number) => void
   onDropBooking: (booking: BookingRow, staffId: string, minute: number) => void
   onOpenBlock: (block: CalendarBlock) => void
@@ -960,14 +1174,31 @@ function DayGrid({
           kolumn man tittar i. */}
       <div className={styles.head}>
         <div className={styles.headSpacer} />
-        {staff.map((s) => (
-          <div key={s.id} className={styles.headCell}>
-            <span className={styles.headName}>{s.name}</span>
-            <span className={`num ${styles.headHours}`}>
-              {s.start && s.end ? `${s.start.slice(0, 5)}–${s.end.slice(0, 5)}` : 'Ledig'}
-            </span>
-          </div>
-        ))}
+        {staff.map((s) => {
+          // "N idag" = personens LEVANDE bokningar (avbokat/uteblivet räknas inte som
+          // dagens arbete). Samma sanning som lastsiffran i designens kolumnhuvud.
+          const load = bookings.filter((b) => b.staffId === s.id && !isAvbokad(b.status)).length
+          return (
+            <div
+              key={s.id}
+              className={`${styles.headCell} ${styles.headCellDay}`}
+              // 2px färglinje under huvudet (designens box-shadow) — färgen förstärker
+              // kolumnidentiteten men bärs aldrig ensam: namn + avatar-initialer står kvar.
+              style={{ ['--bk' as string]: s.color }}
+            >
+              <span className={styles.headAvatar} aria-hidden="true">
+                {staffInitials(s.name)}
+              </span>
+              <span className={styles.headText}>
+                <span className={styles.headName}>{s.name}</span>
+                <span className={`num ${styles.headHours}`}>
+                  {s.start && s.end ? `${s.start.slice(0, 5)}–${s.end.slice(0, 5)}` : 'Ledig'}
+                </span>
+              </span>
+              <span className={`num ${styles.headLoad}`}>{load} idag</span>
+            </div>
+          )
+        })}
       </div>
 
       <div className={styles.body} style={{ height: gridHeight }}>
@@ -1083,6 +1314,7 @@ function DayGrid({
                   lane={lane}
                   lanes={lanes}
                   onOpen={onOpen}
+                  onBubble={onBubble}
                   draggable={!isAvbokad(booking.status)}
                   showPhone
                   color={s.color}
@@ -1125,6 +1357,7 @@ function WeekGrid({
   dayStart,
   gridHeight,
   onOpen,
+  onBubble,
   onDayClick,
   colorOf,
 }: {
@@ -1136,6 +1369,7 @@ function WeekGrid({
   dayStart: number
   gridHeight: number
   onOpen: (b: BookingRow) => void
+  onBubble: (b: BookingRow, x: number, y: number) => void
   onDayClick: (date: string) => void
   colorOf: (staffId: string) => string
 }) {
@@ -1205,6 +1439,7 @@ function WeekGrid({
                   lane={lane}
                   lanes={lanes}
                   onOpen={onOpen}
+                  onBubble={onBubble}
                   color={colorOf(booking.staffId)}
                 />
               ))}

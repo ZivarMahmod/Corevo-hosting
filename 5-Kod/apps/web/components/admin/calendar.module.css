@@ -92,8 +92,34 @@
   outline-offset: -1px;
 }
 
+/* Rubrik + mono-statusrad staplade, till höger om navigeringen. */
+.periodGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-left: 8px;
+  min-width: 0;
+}
+
+/* Designens mono-rad: v.29 · 12 bokningar · 62% · 1 avbokad. Diskret referens under
+   rubriken — mono så siffrorna inte hoppar när dagen byter. */
+.periodStats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--c-ink-3);
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.periodStatsBad {
+  color: var(--c-danger);
+}
+
 .periodLabel {
-  margin: 0 0 0 8px;
+  margin: 0;
   color: var(--c-ink);
   font-family: var(--font-display);
   font-size: 16px;
@@ -242,6 +268,66 @@
 .resSelect:focus-visible {
   outline: 2px solid var(--c-gold);
   outline-offset: 2px;
+}
+
+/* ── Resurschips (litet team) ───────────────────────────────────────────────── */
+.resChips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.resChips::-webkit-scrollbar {
+  display: none;
+}
+
+.resChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--c-line);
+  border-radius: 999px;
+  background: var(--c-paper);
+  color: var(--c-ink-3);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.resChip:hover {
+  border-color: var(--c-line-strong);
+  color: var(--c-ink);
+}
+.resChip:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 2px;
+}
+
+/* Aktivt filter: fylld ton + full text. Prickens färg bär vem; texten bär det också. */
+.resChipOn {
+  border-color: var(--c-line-strong);
+  background: var(--c-paper-3);
+  color: var(--c-ink);
+  font-weight: 600;
+}
+
+.resChipDot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 999px;
+}
+
+/* Touch: chip-raden behåller 44px höjd som resten av verktygsraden. */
+@media (min-width: 761px) and (max-width: 1024px) {
+  .resChip {
+    min-height: 44px;
+  }
 }
 
 /* ── Sök ────────────────────────────────────────────────────────────────────── */
@@ -552,6 +638,53 @@
   text-align: left;
 }
 
+/* Dagvyns resurshuvud: avatar · namn/pass · last på EN rad, med 2px färglinje under
+   (designen). Veckovyns dagknapp behåller kolumn-.headCell — därför en egen variant. */
+.headCellDay {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  box-shadow:
+    inset -1px 0 0 color-mix(in srgb, var(--c-line) 55%, transparent),
+    inset 0 -2px 0 var(--bk, transparent);
+}
+
+/* Avatar: initialer i en ring + tonad bakgrund av personens färg. Bär "vems kolumn?"
+   tillsammans med namnet — färgen är en genväg, inte det enda svaret. */
+.headAvatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 2px solid var(--bk, var(--c-line-strong));
+  background: color-mix(in srgb, var(--bk, var(--c-line)) 16%, var(--c-paper));
+  color: var(--c-ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.headText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Dagens last, till höger (designens "N idag"). Mono så siffran inte hoppar mellan
+   kolumner. Diskret — det är referens, inte rubrik. */
+.headLoad {
+  flex: none;
+  color: var(--c-ink-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .headCellBtn {
   border-top: 0;
   border-bottom: 0;
@@ -840,6 +973,85 @@
   min-width: 0;
 }
 
+
+/* ---- klick-bubbla (designens signatur) ----
+   Liten popover vid klickpunkten: Ring + Öppna. Scrim fångar utanför-klick utan att
+   mörklägga kalendern (man ska se vilket block bubblan hör till). */
+.bubbleScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.bubble {
+  position: fixed;
+  z-index: 41;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 14px;
+  background: var(--c-paper-2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Pil-svans nedåt mot blocket. */
+.bubble::after {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-right: 1px solid var(--c-line-strong);
+  border-bottom: 1px solid var(--c-line-strong);
+  background: var(--c-paper-2);
+  transform: translateX(-50%) rotate(45deg);
+  content: '';
+}
+
+.bubbleRing,
+.bubbleOpen {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Ring = grön primär (designens CTA-grön, inte admins vita accent — ringa är HANDLINGEN
+   man öppnade bubblan för). */
+.bubbleRing {
+  border: 0;
+  background: var(--c-forest-fill);
+  color: #fff;
+  text-decoration: none;
+}
+.bubbleRing:hover {
+  filter: brightness(1.1);
+}
+
+.bubbleOpen {
+  border: 1px solid var(--c-line-strong);
+  background: transparent;
+  color: var(--c-ink);
+}
+.bubbleOpen:hover {
+  background: var(--c-paper-3);
+}
+
+.bubbleRing:focus-visible,
+.bubbleOpen:focus-visible {
+  outline: 2px solid var(--c-forest);
+  outline-offset: 2px;
+}
 
 /* ---- blockerad tid ----
    Skiljs från en bokning med MER än färg: diagonalrandigt mönster + ikon + text.

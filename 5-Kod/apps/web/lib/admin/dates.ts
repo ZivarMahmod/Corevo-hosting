@@ -94,6 +94,21 @@ function mondayOf(date: string): string {
   return addDays(date, delta)
 }
 
+/** ISO 8601-veckonummer (1–53) för ett 'YYYY-MM-DD'-datum. Veckan tillhör det år som
+ *  dess torsdag ligger i — därför normaliseras till torsdagen i veckan innan man räknar.
+ *  Rent datumaritmetik i UTC (ingen tidszon behövs: veckonumret är samma dygnet ut). */
+export function isoWeekNumber(date: string): number {
+  const { y, m, d } = ymd(date)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  // Flytta till veckans torsdag (ISO: måndag=0 … söndag=6).
+  const dow = (dt.getUTCDay() + 6) % 7
+  dt.setUTCDate(dt.getUTCDate() - dow + 3)
+  const firstThursday = new Date(Date.UTC(dt.getUTCFullYear(), 0, 4))
+  const ftDow = (firstThursday.getUTCDay() + 6) % 7
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - ftDow + 3)
+  return 1 + Math.round((dt.getTime() - firstThursday.getTime()) / (7 * 24 * 3600 * 1000))
+}
+
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 /** Validate a 'YYYY-MM-DD' query param, rejecting normalised junk (2026-13-45). */
 export function isValidDate(s: string | undefined | null): s is string {

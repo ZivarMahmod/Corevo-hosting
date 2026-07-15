@@ -157,6 +157,9 @@ export default async function KalenderPage({
         start: s.start,
         end: s.end,
         color: s.color,
+        // Serverberäknade arbetsminuter (sammanslagna pass) — nämnaren i kalenderns
+        // beläggningssiffra. Klienten räknar statistiken så den följer resursfiltret.
+        workedMinutes: s.workedMinutes,
       }))}
       // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
       // drawern och sedan avvisas av servern.
