@@ -13,9 +13,10 @@
     "vakt": "node scripts/vakt-bransch.mjs",
     "kontrast": "node scripts/kontrast.mjs",
     "vakt:foton": "vitest run components/storefront/foton.test.tsx",
+    "gen:theme-css": "node -e \"process.env.GEN='1';require('child_process').execSync('vitest run components/storefront/layouts/theme-css.sync.test.ts',{stdio:'inherit'})\"",
     "vakt:kontrast": "node scripts/vakt-kontrast.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && node scripts/deploy-prod.mjs"
+    "deploy": "vitest run components/storefront/layouts/theme-css.sync.test.ts && opennextjs-cloudflare build && node scripts/deploy-prod.mjs"
   },
   "dependencies": {
     "@corevo/auth": "workspace:*",

@@ -34,9 +34,16 @@ import {
   Work_Sans,
   Figtree,
 } from 'next/font/google'
-import { FLORIST_THEME_CSS } from '@/components/storefront/layouts/florist/registry'
-import { EKONOMI_THEME_CSS } from '@/components/storefront/layouts/ekonomi/registry'
-import { SALONG_THEME_CSS } from '@/components/storefront/layouts/salong/registry'
+// Steg 1 (prestanda-auditen): palett-CSS:en importeras nu ur en REN DATAFIL (noll
+// imports) i stället för ur tema-registryt. Registryt drog hela storefront-modulgrafen
+// (nav/footer/kassa/wizard, 150+ filer) in i rot-layouten, som kör på VARJE request —
+// login, admin, 404, api. Filen genereras ur registryn (npm run gen:theme-css) och
+// hålls i synk av theme-css.sync.test.ts.
+import {
+  FLORIST_THEME_CSS,
+  EKONOMI_THEME_CSS,
+  SALONG_THEME_CSS,
+} from '@/components/storefront/layouts/theme-css.generated'
 import '@corevo/ui/tokens.css'
 import './globals.css'
 import './booking-global.css'
