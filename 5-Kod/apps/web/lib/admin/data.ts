@@ -398,10 +398,14 @@ export async function getCustomerLoyalty(
   customerId: string,
 ): Promise<{ loyaltyPoints: number; tier: CustomerTier } | null> {
   const supabase = await createClient()
-  const { data } = await supabase.rpc('admin_customer_rows', {
+  const { data, error } = await supabase.rpc('admin_customer_rows', {
     p_tenant: tenantId,
     p_customer: customerId,
   })
+  // Skilj ETT RIKTIGT FEL (kasta → felsida) från en frånvarande rad (null → ärlig
+  // tom-text). Att svälja felet vore en tyst lögn: "ingen lojalitet" i stället för
+  // "vi kunde inte läsa den" (samma ärlighetsprincip som listCustomers/getStats).
+  if (error) throw new Error(`getCustomerLoyalty: ${error.message}`)
   const row = data?.[0]
   if (!row) return null
   return { loyaltyPoints: row.loyalty_points, tier: tierOf(row.loyalty_points) }
