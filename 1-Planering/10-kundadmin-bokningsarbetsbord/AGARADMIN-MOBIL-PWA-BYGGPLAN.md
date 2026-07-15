@@ -1,6 +1,6 @@
 # Ägar-admin Mobil/PWA — byggplan (helheten)
 
-Mock: `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/ägareadmin-mobil-pwa/`. **Auktoritativ referens = `index-Kundadmin Responsiv.html`** (visar EN sida över alla brytpunkter), plus `index-Kundadmin Mobil PWA.html` + `KUNDADMIN-MOBIL-PWA-NOTES.md`. Sätter standarden för de andra admin-rollerna (kommer senare).
+Mock: `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/01-agaradmin-mobil-pwa/`. **Auktoritativ referens = `index-Kundadmin Responsiv.html`** (visar EN sida över alla brytpunkter), plus `index-Kundadmin Mobil PWA.html` + `KUNDADMIN-MOBIL-PWA-NOTES.md`. Sätter standarden för de andra admin-rollerna (kommer senare).
 
 ## ⛔ ÖVERORDNAD PRINCIP (Zivar 2026-07-15, slår mocken vid konflikt)
 **Mobil V = EXAKT desktop V:s funktioner, bara bra omplacerade. INGET nytt, inget mobil-eget, inget som göms.** Det är MITT ansvar att hålla allt detsamma för mobilen. → Om mocken introducerar något som inte finns i desktop (t.ex. dagsnabbval-chips) är det FEL och byggs inte. Dagbyte = befintliga ‹ Idag ›-stegaren (redan på båda); längre hopp = befintliga **Månad-vyn** (tryck på datumet på mobil), inte nya chips. Referensen `index-Kundadmin Responsiv.html` bekräftar: samma toolbar (stegare + Dag/Vecka/Månad-segment + Blockera + Ny bokning) på alla bredder, bara omplacerad.
@@ -13,7 +13,7 @@ Mock: `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/ägareadmin-mobil-pw
 
 ## Skärmar (mobil <768)
 Chrome: **topprad 52px** (logo · [flex] · sök-ikon · avatar) + **bottennav 5 slots** (Översikt · Kalender · grön **Ny bokning-FAB** mitten upphöjd · Kunder · Mer). Safe-area-inset, touch ≥44px. Inga synliga scrollbars.
-1. **Kalender (tjänan):** datum+monorad · ‹ Idag ›-stegare · ◔ Blockera · **dagsnabbval-chips** · **alla 4 frisörer som kolumner, fit-to-width (ingen vågrät scroll)** · nu-linje (autoscroll in) · block trimmar innehåll per bredd.
+1. **Kalender (tjänan):** datum+monorad · ‹ Idag ›-stegare (dagbyte, SAMMA som desktop) · Månad-vyn för långt hopp · ◔ Blockera · **alla 4 frisörer som kolumner, fit-to-width (ingen vågrät scroll)** · nu-linje (autoscroll in) · block trimmar innehåll per bredd. (INGA dag-chips — paritet.)
 2. **Översikt:** Härnäst-kort (countdown, 2-stegs Checka in, Visa→kalendern) · Idag i siffror (progressbars) · Kräver uppmärksamhet · Avbokningar (segment Idag/Vecka/Månad).
 3. **Kunder:** sök + radlista → kundkort (befintligt, Kunder v2).
 4. **Mer:** Redigera sidan · Inställningar · Öppna min sida ↗ · Mörkt läge (Auto/Ljus/Mörk) · profil · Logga ut.
