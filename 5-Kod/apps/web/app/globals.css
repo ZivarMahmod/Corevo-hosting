@@ -338,3 +338,15 @@ h3 {
 /* ---- portal chrome → moved to portal-global.css (FAS 0 split) ---- */
 /* ---- booking classes (boka-, wizard-, confirm-, booking-confirm) → moved to
    booking-global.css (FAS 0 split) ---- */
+
+/* Dolda scrollbars i HELA bygget (Zivars order): ingen synlig scrollbar med pilar
+   någonstans. Scroll sker med finger, hjul eller trackpad — overflow/scroll fungerar
+   precis som förut, bara den visuella listen försvinner. */
+* {
+  scrollbar-width: none; /* Firefox */
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* Chromium / WebKit / Edge */
+}
