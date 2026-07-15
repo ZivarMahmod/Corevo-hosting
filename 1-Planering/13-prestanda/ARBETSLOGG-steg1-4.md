@@ -12,6 +12,22 @@ Linux, 2m9s). Codex slut-GO (0 blockerare). Migration 0067 på prod.
 storefront behåller sina 14 (korrekt isolerade till publika rutter), data-theme intakt.
 Ingen regress på login/storefront/bokning/admin.
 
+## Step 6 — MÄT OM (2026-07-15 06:02Z, ~4,5h efter deploy)
+
+Mät-skript: `5-Kod/apps/web/scripts/cf-exceeded.mjs` (Cloudflare GraphQL, `workersInvocationsAdaptive`).
+
+| Fönster | requests | exceededResources | andel |
+|---|---|---|---|
+| 6 dygn (baslinje) | 15 490 | 69 | 0,445 % |
+| 24h (mest före deploy) | 2 552 | **47** | **1,842 %** |
+| sedan deploy (~4,5h) | 23 | 0 | 0 % |
+
+**Slutsats: FÖR TIDIGT.** Baslinje bekräftad. Krascherna ACCELERERADE före deployen (24h-takt 4×
+6-dygnssnittet — 47/69 kom senaste dygnet, stämmer med minneshypotesen). Post-deploy 0/23 crashes
+men 23 requests är statistiskt meningslöst (väntat ~0,4 vid gammal takt). **Ingen kodändring behövs.**
+Kör om `scripts/cf-exceeded.mjs` om ~2-3 dygn och jämför 24h-takten mot 1,842 %. Sjunker den tydligt
+→ steg 1-3 bet. Gör den inte → mät minnet direkt (auditens plan B).
+
 Kvar (utanför loopens 4 steg): step 5 "resten" (Suspense i admin, lazy mall-uppslag A2, font-
 tokens B6, C6 realtids-gating, död kod), step 6 "mät om" (6 dygns prod-data → jämför
 exceededResources). Följdfixar: steg 2b metadata-registry (admin/plattform-sidor), B5-svep för
