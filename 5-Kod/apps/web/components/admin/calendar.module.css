@@ -85,6 +85,16 @@
   background: var(--c-paper-2);
   color: var(--c-ink);
 }
+
+/* Borta från idag → knappen lyser upp (gyllene ton) som en inbjudan tillbaka. På idag
+   är den neutral. Snabb väg hem även om man bläddrat långt bort. */
+.navSegTodayAway {
+  background: color-mix(in srgb, var(--c-gold) 18%, var(--c-paper));
+  color: var(--c-ink);
+}
+.navSegTodayAway:hover {
+  background: color-mix(in srgb, var(--c-gold) 28%, var(--c-paper));
+}
 .navSegIcon:focus-visible,
 .navSegToday:focus-visible {
   outline: 2px solid var(--c-forest);
