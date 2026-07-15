@@ -40,7 +40,7 @@ Master–detalj = **delad `layout.tsx`** under `kunder/`:
 5. Commit → push → deploy (v-tagg), prod-rök.
 
 ## Status (bygget)
-KLART lokalt (tsc/eslint rena, 1115 tester gröna, rutter kompilerar 307): `layout.tsx` (master–detalj-skal, listan hämtas en gång) · `KunderBoard.tsx` (mobil-panelval via pathname) · `CustomerWorkbenchList.tsx` (sök+chips+highlight) · `page.tsx` (tomt läge = överblick+export) · `[id]/page.tsx` (v2-kort) · `CustomerNoteEditor.tsx` (autospar) · `saveCustomerNote` (admin-action) · `relativeVisitSv`/`isInactiveSince` (+test). Codex granskar diffen → sedan deploy.
+KLART lokalt (tsc/eslint rena, 1115 tester gröna, rutter kompilerar 307): `layout.tsx` (master–detalj-skal, listan hämtas en gång) · `KunderBoard.tsx` (mobil-panelval via pathname) · `CustomerWorkbenchList.tsx` (sök+chips+highlight) · `page.tsx` (tomt läge = överblick+export) · `[id]/page.tsx` (v2-kort) · `CustomerNoteEditor.tsx` (autospar) · `saveCustomerNote` (admin-action) · `relativeVisitSv`/`isInactiveSince` (+test). LIVE tag v1.34.0 (deployad 2026-07-15, prod-rök grön). Codex-fynd (export-dolda) fixat.
 
 ## Beslut att yta till Zivar
 - Telefon utelämnas ur listan + sök = namn (PII-staket). Kortet visar tel i driftfönstret som förr.
