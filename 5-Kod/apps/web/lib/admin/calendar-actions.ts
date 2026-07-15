@@ -474,16 +474,46 @@ export async function createAdminBooking(
   }
 
   const supabase = await createClient()
+
+  // KUNDIDENTITET. RPC:ns p_customer är en AUTH-ANVÄNDARE (customer_profile_id) och dess
+  // identitetsvakt kräver p_customer = auth.uid() — dvs "boka bara åt dig själv". Det är
+  // rätt för publik självbokning, men admin bokar åt NÅGON ANNAN. `customerId` här är
+  // dessutom en rad i `customers` (inte ett user-id), så att skicka den som p_customer gav
+  // alltid `forbidden_customer` → bokningen föll. Lösning: skicka den valda kundens kontakt
+  // som gäst-fält och lämna p_customer null. resolve_customer_id länkar då tillbaka till
+  // SAMMA kundrad via contact_hash (e-post/telefon) — ingen dubblett, ingen vakt.
+  let cName = guestName
+  let cEmail = guestEmail
+  let cPhone = guestPhone
+  if (customerId) {
+    const { data: cust } = await supabase
+      .from('customers')
+      .select('display_name, full_name, email, phone')
+      .eq('id', customerId)
+      .eq('tenant_id', tenant.id)
+      .maybeSingle<{
+        display_name: string | null
+        full_name: string | null
+        email: string | null
+        phone: string | null
+      }>()
+    if (!cust) return { error: 'Kunden hittades inte — ladda om och försök igen.' }
+    cName = (cust.full_name?.trim() || cust.display_name?.trim() || guestName || 'Kund').trim()
+    cEmail = cust.email?.trim() || ''
+    cPhone = cust.phone?.trim() || ''
+  }
+
   const { data: bookingId, error } = await supabase.rpc('create_public_booking', {
     p_tenant_slug: tenant.slug,
     p_service: serviceId,
     p_staff: staffId,
     p_location: locationId || undefined,
     p_start: start,
-    p_customer: customerId || undefined,
-    p_guest_name: customerId ? undefined : guestName,
-    p_guest_email: customerId ? undefined : guestEmail || undefined,
-    p_guest_phone: customerId ? undefined : guestPhone || undefined,
+    // p_customer lämnas alltid null i admin-flödet (se ovan) — kunden länkas via kontakten.
+    p_customer: undefined,
+    p_guest_name: cName || undefined,
+    p_guest_email: cEmail || undefined,
+    p_guest_phone: cPhone || undefined,
     p_note: note || undefined,
     p_request_id: crypto.randomUUID(),
   })
