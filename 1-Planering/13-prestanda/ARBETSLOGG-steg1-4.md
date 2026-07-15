@@ -74,6 +74,38 @@ lint 0. P99-vinsten kan bara mätas i prod (steg 6) — här bevisat: färre ser
 **Filer:** tenant-data.ts, auth/session.ts, (public)/layout.tsx, storefront/team/load-team.ts,
 storefront/kurser/load-kurser.ts.
 
+## Steg 3 — minnesbovarna kunder/statistik (C4,C5) — KLAR ✅ (väntar Codex innan commit)
+
+**C4 `/admin/kunder`** (den farligaste; korrekthetsbugg vid 1000+ kunder). Laddade ALLA kunder
+med inbäddad bokningshistorik + HELA loyalty_ledger → JS-aggregering; PostgREST kapar vid taket
+→ TYST fel. Kunddetaljsidan drog HELA listan för EN kunds poäng.
+- **Ny migration `0067_admin_customer_rows_rpc.sql`**: RPC `admin_customer_rows(p_tenant, p_customer?)`,
+  SECURITY INVOKER (samma RLS), aggregerar visits/last_visit/loyalty_points i SQL. **Applicerad på
+  prod** (create-or-replace = idempotent) + **paritetsverifierad: 7 freshcut-kunder, 0 avvik** mot
+  manuell count/sum/max.
+- `lib/admin/data.ts`: `listCustomers` → RPC (maskering/nivå kvar i JS). Ny `getCustomerLoyalty`
+  (en kund, returnerar null för icke-aktiv/skrubbad → ärlig tom-text, aldrig 0/Ny).
+- `kunder/[id]/page.tsx`: `listCustomers(hela listan)` → `getCustomerLoyalty` (en kund).
+- `packages/db/types.ts`: RPC-typ handlagd (ingen full-regen).
+
+**C5 `/admin/statistik`** (`lib/admin/stats.ts`). Laddade HELA kundtabellen (kapas 1000+ → tyst
+newCustomers-fel). Fix: hämta first_seen_at BARA för periodens boknings-kund-id:n (`.in()`),
+aggregateStats-matten **oförändrad** → identiska siffror, utan taket, utan hela tabellen i isolatet.
+**Medvetet EJ gjort:** portat boknings-fönstrets aggregering (occupancy/trend) till SQL — testad
+ren logik, tidsbunden (12-24 mån), kan ej paritetsverifieras mot freshcups lilla dataset. Ärligt
+dokumenterat; boknings-fönstret är tidsbundet, inte kund-antals-skalande.
+
+**Codex-granskning → 3 fixar applicerade:**
+1. Grant-bugg: `revoke from anon` tog inte bort PUBLIC:s default-EXECUTE → nu `revoke from public`
+   före grant. Verifierat: `has_function_privilege('anon',…)` = **false**, authenticated = true.
+2. C4 1000-rads-tak: `listCustomers` sidhämtar nu RPC:n i block om 1000 (`.range`-loop) + RPC:n
+   fick unik tie-break (`order by last_seen_at, id`) → svansen tappas aldrig vid 1000+ kunder.
+   (Projektet har f.ö. INGET `pgrst.db_max_rows` satt — men loopen är korrekt oavsett.)
+3. C5 `.in()`-tak: chunkar kund-id:n i block om 1000 + kastar på fel (svalde det förut).
+
+**Verifiering:** `tsc` rent · 1083 tester · lint 0 (app) · build exit 0 · RPC-paritet 0 avvik ·
+grant verifierad (anon=false/authed=true) · rpc_rows=7.
+
 ## Steg 2 — GAMMAL PLAN (klar, historik)
 
 Steg 1 committad: **8e65c38**. Working tree rent. Nästa = implementera C1→C2→C3.
