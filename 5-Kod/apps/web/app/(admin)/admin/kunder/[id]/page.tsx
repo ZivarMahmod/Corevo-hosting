@@ -7,7 +7,7 @@ import { resolveTerm } from '@/lib/platform/verticals-shared'
 import {
   getCustomerDetail,
   getCustomerContact,
-  listCustomers,
+  getCustomerLoyalty,
   type CustomerTier,
 } from '@/lib/admin/data'
 import { getCustomerStaffFavorite } from '@/lib/kund/favorites'
@@ -62,19 +62,17 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
   // Time-bound contact PII (RPC; null fields when outside the operational window).
   // Riktigt lojalitets-saldo + favoritfrisör (båda admin-läsbara via RLS). Kör
-  // parallellt — listCustomers härleder poäng/nivå ur loyalty_ledger; vi plockar
-  // ut just den här kundens rad (getCustomerDetail bär inte poäng).
-  const [contact, fav, allCustomers] = await Promise.all([
+  // parallellt. Prestanda C4: getCustomerLoyalty läser BARA den här kundens aggregat
+  // (RPC admin_customer_rows med p_customer) i stället för att dra HELA kundlistan.
+  const [contact, fav, loyalty] = await Promise.all([
     getCustomerContact(id),
     getCustomerStaffFavorite(id),
-    listCustomers(tenant.id),
+    getCustomerLoyalty(tenant.id, id),
   ])
-  // VIKTIGT: listCustomers är status='active'-filtrerad medan getCustomerDetail
-  // INTE filtrerar status — en 'anonymized' (GDPR-skrubbad) kund nås via direkt-URL
-  // men saknas i listan. Då är loyalty undefined → vi visar en ÄRLIG tom-text,
-  // ALDRIG ett påhittat 0/Ny-saldo. (lib saknar en single-customer-poängläsning —
-  // flaggat i manifestet.)
-  const loyalty = allCustomers.find((c) => c.id === id)
+  // VIKTIGT: getCustomerLoyalty är status='active'-filtrerad medan getCustomerDetail
+  // INTE filtrerar status — en 'anonymized' (GDPR-skrubbad) kund nås via direkt-URL men
+  // har ingen aktiv rad. Då är loyalty null → vi visar en ÄRLIG tom-text, ALDRIG ett
+  // påhittat 0/Ny-saldo.
   const favStaff = fav?.title?.trim() || '—'
   const tz = tenant.timeZone
 

@@ -341,57 +341,70 @@ export async function listCustomers(
   searchTerm?: string,
 ): Promise<AdminCustomer[]> {
   const supabase = await createClient()
-  // hidden_at följer med (B-25): sidan partitionerar synliga/dolda i EN läsning i
-  // stället för två frågor — de dolda behövs ändå för "Dolda kunder (N)"-räknaren.
-  const { data } = await supabase
-    .from('customers')
-    .select('id, display_name, full_name, name_hidden, status, first_seen_at, last_seen_at, hidden_at, bookings(start_ts, status)')
-    .eq('tenant_id', tenantId)
-    .eq('status', 'active')
-    .order('last_seen_at', { ascending: false })
-
-  // Riktigt lojalitets-saldo per kund (sum signerad points_delta). loyalty_ledger
-  // är append-only + SELECT-only tenant-wide för admin (migr 0011:551). Saldo HÄRLEDS
-  // — inga lagrade saldokolumner. Tomt → 0 p (ärligt, aldrig fejkat).
-  const { data: ledger } = await supabase
-    .from('loyalty_ledger')
-    .select('customer_id, points_delta')
-    .eq('tenant_id', tenantId)
-  const points = new Map<string, number>()
-  for (const r of (ledger ?? []) as { customer_id: string | null; points_delta: number }[]) {
-    if (!r.customer_id) continue
-    points.set(r.customer_id, (points.get(r.customer_id) ?? 0) + r.points_delta)
-  }
-
-  type Row = CustomerRow & { bookings: { start_ts: string; status: string }[] | null }
-  const rows: AdminCustomer[] = ((data ?? []) as Row[]).map((c) => {
-    const active = (c.bookings ?? []).filter((b) =>
-      (ACTIVE_BOOKING as readonly string[]).includes(b.status),
-    )
-    const lastVisit = active.reduce<string | null>(
-      (max, b) => (max == null || b.start_ts > max ? b.start_ts : max),
-      null,
-    )
-    const lp = points.get(c.id) ?? 0
-    return {
-      id: c.id,
-      shownName: shownNameOf(c),
-      nameHidden: c.name_hidden,
-      status: c.status,
-      visits: active.length,
-      lastVisitTs: lastVisit,
-      firstSeenAt: c.first_seen_at,
-      isReturning: active.length >= RETURNING_VISITS,
-      loyaltyPoints: lp,
-      tier: tierOf(lp),
-      hidden: c.hidden_at != null,
+  // Prestanda C4: besök (count), senaste besök (max) och lojalitetssaldo (sum) räknas
+  // nu i Postgres (RPC admin_customer_rows, migr 0067) i stället för att ladda hela
+  // bokningshistoriken PER kund + HELA loyalty_ledger in i isolatet och räkna i JS.
+  // Det tog bort den TYSTA korrekthetsbuggen: en inbäddad select/full ledger kapas vid
+  // PostgREST-taket vid 1000+ rader, en SQL-COUNT/SUM gör det aldrig. Namn-maskering +
+  // nivå-tärning bor kvar här (rent per-rad, ingen I/O). RPC:n är SECURITY INVOKER →
+  // exakt samma RLS som de tre separata läsningarna. hidden_at följer med (B-25): sidan
+  // partitionerar synliga/dolda i EN läsning.
+  // Sidhämta i block om 1000: ett enskilt PostgREST-svar kan kapas (db-max-rows), och
+  // en tenant med 1000+ aktiva kunder ska INTE tyst tappa svansen — det var hela C4-
+  // buggen. RPC:n har stabil unik ordning (last_seen_at, id) så .range aldrig
+  // tappar/dubblar vid sidgränsen. Loopen kör ett anrop tills en sida < 1000.
+  const PAGE = 1000
+  const rows: AdminCustomer[] = []
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await supabase
+      .rpc('admin_customer_rows', { p_tenant: tenantId })
+      .range(offset, offset + PAGE - 1)
+    if (error) throw new Error(`listCustomers: ${error.message}`)
+    const page = data ?? []
+    for (const c of page) {
+      const lp = c.loyalty_points
+      rows.push({
+        id: c.id,
+        shownName: shownNameOf(c),
+        nameHidden: c.name_hidden,
+        status: c.status,
+        visits: c.visits,
+        lastVisitTs: c.last_visit_ts,
+        firstSeenAt: c.first_seen_at,
+        isReturning: c.visits >= RETURNING_VISITS,
+        loyaltyPoints: lp,
+        tier: tierOf(lp),
+        hidden: c.hidden_at != null,
+      })
     }
-  })
+    if (page.length < PAGE) break
+  }
 
   const term = searchTerm?.trim().toLowerCase()
   if (!term) return rows
   // Match the SHOWN name only (never the hidden full name) — privacy-preserving.
   return rows.filter((c) => c.shownName.toLowerCase().includes(term))
+}
+
+/** Prestanda C4: en ENDA kunds lojalitetssaldo + nivå, för kunddetaljsidan — som
+ *  tidigare drog HELA kundlistan bara för att plocka ut den här radens poäng. Samma
+ *  RPC, filtrerad till en kund (p_customer).
+ *
+ *  Returnerar NULL när ingen aktiv rad finns (RPC:n är status='active'-filtrerad, precis
+ *  som listCustomers): en 'anonymized' (GDPR-skrubbad) kund nås via direkt-URL men har
+ *  ingen lojalitetsrad → sidan visar ÄRLIG tom-text, ALDRIG ett påhittat 0/Ny-saldo. */
+export async function getCustomerLoyalty(
+  tenantId: string,
+  customerId: string,
+): Promise<{ loyaltyPoints: number; tier: CustomerTier } | null> {
+  const supabase = await createClient()
+  const { data } = await supabase.rpc('admin_customer_rows', {
+    p_tenant: tenantId,
+    p_customer: customerId,
+  })
+  const row = data?.[0]
+  if (!row) return null
+  return { loyaltyPoints: row.loyalty_points, tier: tierOf(row.loyalty_points) }
 }
 
 export type CustomerStats = {

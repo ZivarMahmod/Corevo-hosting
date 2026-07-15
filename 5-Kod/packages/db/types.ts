@@ -2709,6 +2709,22 @@ export type Database = {
         Args: { p_ttl_min?: number }
         Returns: number
       }
+      admin_customer_rows: {
+        Args: { p_tenant: string; p_customer?: string }
+        Returns: {
+          id: string
+          display_name: string | null
+          full_name: string | null
+          name_hidden: boolean
+          status: string
+          first_seen_at: string
+          last_seen_at: string | null
+          hidden_at: string | null
+          visits: number
+          last_visit_ts: string | null
+          loyalty_points: number
+        }[]
+      }
       get_busy_intervals: {
         Args: {
           p_from: string

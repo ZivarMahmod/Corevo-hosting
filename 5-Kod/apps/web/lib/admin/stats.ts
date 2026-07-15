@@ -426,7 +426,7 @@ export async function getStats(
   ).toISOString()
   const windowFrom = prevFrom < trendFrom ? prevFrom : trendFrom
 
-  const [bookingRes, shiftRes, staffRes, customerRes] = await Promise.all([
+  const [bookingRes, shiftRes, staffRes] = await Promise.all([
     supabase
       .from('bookings')
       .select('start_ts, end_ts, status, price_cents, staff_id, customer_id, services(name), staff(title)')
@@ -442,7 +442,6 @@ export async function getStats(
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .eq('active', true),
-    supabase.from('customers').select('id, first_seen_at').eq('tenant_id', tenantId),
   ])
 
   // Kasta, svälj inte (B-10): en tyst tom statistiksida ser ut som "noll omsättning" —
@@ -463,9 +462,32 @@ export async function getStats(
     endTime: s.end_time,
   }))
 
-  const customers: StatCustomer[] = (
-    (customerRes.data ?? []) as { id: string; first_seen_at: string }[]
-  ).map((c) => ({ id: c.id, firstSeenAt: c.first_seen_at }))
+  // Prestanda C5: hämta first_seen_at BARA för kunderna som faktiskt bokat i perioden.
+  // aggregateStats slår bara upp firstSeen för periodens (cur.active) kunder — förr
+  // lästes HELA kundtabellen, som PostgREST kapar vid 1000+ rader → newCustomers blev
+  // TYST fel (och hela tabellen drogs in i isolatet). En scoped .in()-läsning ger
+  // IDENTISKA siffror utan taket; aggregateStats-matematiken är helt oförändrad.
+  const periodCustomerIds = [
+    ...new Set(rows.map((b) => b.customerId).filter((v): v is string => !!v)),
+  ]
+  // Chunka i block om 1000: både `.in(...)` (URL-längd) och PostgREST-svaret kan kapas,
+  // och en period med 1000+ unika boknings-kunder ska inte tyst tappa firstSeen för
+  // svansen → newCustomers-undercount (samma bugg som fixen stänger). Fel kastas, sväljs
+  // inte: ett tomt firstSeen ser ut som "alla återkommande", en tyst lögn i statistiken.
+  const CHUNK = 1000
+  const customers: StatCustomer[] = []
+  for (let i = 0; i < periodCustomerIds.length; i += CHUNK) {
+    const idChunk = periodCustomerIds.slice(i, i + CHUNK)
+    const { data: custData, error: custErr } = await supabase
+      .from('customers')
+      .select('id, first_seen_at')
+      .eq('tenant_id', tenantId) // defense-in-depth (RLS fenceear redan per tenant)
+      .in('id', idChunk)
+    if (custErr) throw new Error(`getStats customers: ${custErr.message}`)
+    for (const c of (custData ?? []) as { id: string; first_seen_at: string }[]) {
+      customers.push({ id: c.id, firstSeenAt: c.first_seen_at })
+    }
+  }
 
   return aggregateStats({
     rows,
