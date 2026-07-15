@@ -8,8 +8,9 @@ Här dumpar Claude och Codex sina dokument när vi granskat varandra och stämt 
 |---|---|---|---|
 | `00-SAMMANSTALLNING-goal-68-och-codex.md` | Codex | *här* | **Läs först:** gemensam sanning + lösta konflikter + fasordning A–H |
 | `01-CODEX-DESIGN-kundportal-kommunikation.md` | Codex | *här* | **Kanon-spec** (produkt + arkitektur) |
-| `02-CODEX-IMPLEMENTATIONSPLAN.md` | Codex | *här* | **Kanon-plan** (U0–U13 + 6-goal-split) |
-| `goal-68-kundportal-pwa-kommunikation.md` (v1.1) | Claude | `2-Byggplan/goals/` | **Ingång + grundnings-addendum** — pekar på kanon ovan |
+| `02-CODEX-IMPLEMENTATIONSPLAN.md` | Codex | *här* | **Kanon-plan** (U0–U13 + verifierbara arbetsenheter) |
+| `03-EXEKVERINGSROADMAP-goal-68.md` | Codex | *här* | **Körordning + test-/bevisgrindar** för 68.0–68.5 |
+| `goal-68-kundportal-pwa-kommunikation.md` (v3.0) | Codex | `2-Byggplan/goals/` | **Program-master/index, inte en mega-goal** |
 | `GRANSKNING-claude-av-codex-2026-07-14.md` | Claude | *här* | Cross-review + avstämda beslut |
 
 ## Status på loopen — STÄNGD
@@ -17,9 +18,10 @@ Här dumpar Claude och Codex sina dokument när vi granskat varandra och stämt 
 - [x] Claude granskade Codex två dokument → `GRANSKNING`.
 - [x] Codex granskade `goal-68` + `GRANSKNING` → `00-SAMMANSTALLNING`.
 - [x] **Host låst:** `minbooking.corevo.se` = personal · `booking.corevo.se` = admin · kundportal `CUSTOMER_PORTAL_HOST = mina.corevo.se`, våg 1 additivt på befintlig `/konto`.
-- [x] `goal-68` rättad till v1.1 — inga kvarvarande konflikter mot `SAMMANSTALLNING`.
-- [ ] **Flaggmekanismen inventeras mekaniskt i Fas A** innan kod (enda öppna, hör till bygget).
+- [x] `goal-68` omgjord till program-master v3.0 med sex verifierbara leveransvågor.
+- [ ] **Entry gate:** Goal 67 verifieras och flyttas till `klart/` innan 68.0 aktiveras.
+- [ ] **68.0/U0** inventerar mekaniskt flaggmekanism, atomisk outbox, ombokning, token, preview/staging och UI-underlag innan produktkod.
 
 ## Verdikt i en mening
 
-Underlagen är avstämda och pekar åt samma håll. Codex plan är ryggraden; goal-68 grundar och pekar. **Claude Code kan börja bygga — Fas A (analys, ingen kod) först**, sen 6 goals ur splitten, en i taget, verifiera efter varje.
+Teknikriktningen är avstämd, men bygget startar inte som ett enda autonomt mål. **Efter att Goal 67 stängts körs 68.0/U0 (analys, ingen produktkod), därefter 68.1–68.5 en i taget med oberoende bevisgrind.** Riktig SMS-provider är en separat senare goal.

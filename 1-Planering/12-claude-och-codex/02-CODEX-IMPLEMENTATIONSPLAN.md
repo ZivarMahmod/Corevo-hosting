@@ -17,7 +17,7 @@
 - `minbooking.corevo.se` fortsätter vara personalens host.
 - Slutkundsportalens slutliga hostnamn är ett deploybeslut och representeras av `CUSTOMER_PORTAL_HOST` tills dess.
 - Dagens `/konto` och bokning ska fortsätta fungera när alla nya flaggor är av.
-- Alla bokningsvägar fortsätter genom `create_public_booking`; DB:ns konfliktspärr är auktoritativ.
+- Ny publik bokning fortsätter genom `create_public_booking`; DB:ns konfliktspärr är auktoritativ. Ombokning ska i U0 kartläggas till befintlig säker transaktionsväg och får inte tvingas genom fel RPC.
 - Bokning commitas före kommunikation. Providerfel får aldrig påverka bokningsresultatet.
 - Ingen prodmutation, push eller deploy utan Zivars uttryckliga besked.
 - Ingen riktig SMS-trafik före arbetsenhet 13:s go/no-go.
@@ -85,18 +85,18 @@ U5–U8 kan detaljbyggas parallellt med U3–U4 först efter att U1–U2:s inter
 - `5-Kod/apps/web/lib/communications/*.test.ts`
 - `5-Kod/apps/web/lib/customer-portal/*.test.ts`
 - `5-Kod/apps/web/lib/auth/customer-host-routing.test.ts`
-- `5-Kod/apps/web/e2e/customer-portal.spec.ts`
-- `5-Kod/apps/web/e2e/customer-pwa.spec.ts`
-- `5-Kod/apps/web/e2e/communication-idempotency.spec.ts`
-- `5-Kod/apps/web/e2e/customer-tenant-isolation.spec.ts`
-- `5-Kod/apps/web/e2e/communication-load.spec.ts`
+- `5-Kod/e2e/customer-portal.spec.ts`
+- `5-Kod/e2e/customer-pwa.spec.ts`
+- `5-Kod/e2e/communication-idempotency.spec.ts`
+- `5-Kod/e2e/customer-tenant-isolation.spec.ts`
+- `5-Kod/e2e/communication-load.spec.ts`
 - `6-Testing/kundportal-pwa-enheter.md` — Zivars manuella iPhone/Android/desktop-test.
 
 ## U0 — Baseline och bevis före ändring
 
 **Leverans:** dokumenterad verklig baseline; inga produktändringar.
 
-- [ ] Bekräfta migration 0061 enligt `2-Byggplan/goals/goal-67-kundadmin-fortsattning.md` innan någon ny migration planeras.
+- [ ] Bekräfta att Goal 67 är mekaniskt verifierad och flyttad till `klart/`; grep-verifiera därefter aktuell migrationsbaseline. Vid granskningen 2026-07-15 fanns `0067_admin_customer_rows_rpc.sql`, men numret får aldrig antas vid byggstart.
 - [ ] Kör `pnpm typecheck` och `pnpm test` i `5-Kod/apps/web`; spara antal gröna tester i arbetsloggen.
 - [ ] Kör dagens gästbokning lokalt och bevisa att bokning sparas även när mejlprovider saknas.
 - [ ] Kör dagens `/konto` för inloggad kund och inventera exakt vilka funktioner som måste vara regressionsfria.
@@ -168,6 +168,7 @@ type AttemptStatus =
 - [ ] Skriv positivt test för kundens egna preferenser och ägarens tenantöversikt.
 - [ ] Implementera tabeller, index, constraints, grants och RLS.
 - [ ] Implementera en transaktionssäker funktion som boknings-RPC kan anropa för att skapa event efter bokningens insert.
+- [ ] Uppdatera den auktoritativa `create_public_booking`-RPC:n (eller lås en DB-trigger i U0) så att bokningsinsert och `communication_events` sker i **samma SQL-transaktion**. Bevara exakt RPC-signatur, idempotens och EXCLUDE-beteende med kontraktstest. Ett appanrop efter RPC-retur uppfyller inte kravet.
 - [ ] Lägg inga providerhemligheter eller fulla meddelandekroppar i eventpayload.
 - [ ] Kör advisors/säkerhetsgranskning enligt aktuell Supabase CLI/MCP innan migrationen godkänns.
 
@@ -272,6 +273,8 @@ type ProviderResult =
 ## U7 — Central portal bakom host- och feature gate
 
 **Leverans:** ny central portal kan köras lokalt/staging, men befintlig `/konto` och personalhost är oförändrade när flaggan är av.
+
+**Förkrav:** komplett Codex Design-/acceptanspaket i `4-Dokument-Underlag/01-acceptans/` med exakta skärmar, tomma/fel/offline/session-states, responsive specs samt mekaniska acceptanstester/probe. U7 får inte improvisera UI där underlag saknas.
 
 **Filer:**
 
@@ -446,15 +449,17 @@ type ProviderResult =
 - Varje exekverad och mekaniskt verifierad goal flyttas till `2-Byggplan/klart/06-mejl-notiser/` eller korrekt kategori; inget markeras klart enbart för att kod finns.
 - ROADMAP/HANDOFF uppdateras endast med verifierat nuläge, kända gap och nästa säkra steg.
 
-## Rekommenderad goal-uppdelning
+## Obligatorisk goal-uppdelning
 
-Skapa inte ett enda jättemål. När Goal 67 är verifierat/stängt skapas följande goals en i taget:
+Skapa inte ett enda jättemål. När Goal 67 är verifierat/stängt exekveras programmet enligt `03-EXEKVERINGSROADMAP-goal-68.md`, en del-goal i taget:
 
-1. **Kundportal-identitet och kommunikationsledger** — U0–U3.
-2. **E-post och säker kontoaktivering** — U4–U6.
-3. **Central kundportal bakom flagga** — U7.
-4. **Kund-PWA och Web Push** — U8–U10.
-5. **Kommunikationsöversikt, last och drift** — U11–U12.
-6. **SMS-provider och kostnadsfakturering** — U13, endast efter särskilt beslut.
+1. **Baseline och tekniska beslut** — U0, ingen produktkod.
+2. **Kundportal-identitet och kommunikationsledger** — U1–U3.
+3. **E-post och säker kontoaktivering** — U4–U6.
+4. **Central kundportal bakom flagga** — U7.
+5. **Kund-PWA, Web Push och kanalpolicy** — U8–U10.
+6. **Kommunikationsöversikt, last och drift** — U11–U12.
+
+**Riktig SMS-provider och kostnadsavstämning** — U13 — är en separat senare goal, endast efter Zivars uttryckliga val av provider, pris, avsändare och riktig testtrafik.
 
 Denna ordning lämnar fungerande, testbar produkt efter varje goal och gör SMS till den sista inkopplingen precis som Zivar har beslutat.

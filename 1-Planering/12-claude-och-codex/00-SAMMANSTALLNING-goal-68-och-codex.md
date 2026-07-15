@@ -38,10 +38,10 @@ Claude och Codex är överens om produktens kärna:
 
 ## 3. Korrigeringar som måste göras i Goal 68 före exekvering
 
-Goal 68 är användbar som övergripande brief men ska inte köras blint i nuvarande form.
+Goal 68 är sedan 2026-07-15 en program-master och ska inte köras som ett enda `/goal`. Punkterna nedan är historiken bakom v3.0 och fortsatt verifieringsunderlag.
 
 1. Alla slutkundsreferenser till `minbokning.corevo.se` ersätts med `CUSTOMER_PORTAL_HOST`. `minbooking.corevo.se` testas explicit som regressionsskydd för personal.
-2. “Nästa lediga migration ≥0065” är inaktuellt. Repot innehåller redan `0065_tenant_modules_rollvakt.sql` och `0066_branscher_atelje_verkstad_radgivning.sql`. Nästa nummer ska grep-verifieras vid byggstart och är tidigast 0067.
+2. Hårdkodade migrationsnummer är inaktuella. Vid granskningen 2026-07-15 fanns även `0067_admin_customer_rows_rpc.sql`; nästa nummer ska alltid grep-verifieras vid faktisk byggstart.
 3. F2:s krav att nya tabeller ska finnas i **prod** strider mot deploy-/migrationsfrysen. Under frysen är “klar” lokal/staging schema- och testverifiering. Prodapplicering är en separat Zivar-grind.
 4. Goal 68 säger att PWA redan har service worker. F1 måste verifiera detta mekaniskt; repot har manifest-routes och ikoner, men service-workerimplementeringen får inte antas utan filbevis.
 5. Goal 68:s formulering att ombokning ska gå genom `create_public_booking` behöver kartläggas mot verklig ombokningsimplementation. Ny bokning får inte kringgå RPC/DB-krockskydd, men befintlig säker ombokningsaction ska återanvändas om den har rätt transaktionskontrakt.
@@ -51,7 +51,7 @@ Goal 68 är användbar som övergripande brief men ska inte köras blint i nuvar
 
 ## 4. Rekommenderad gemensam fasordning
 
-Goal 68:s sju faser och Codex U0–U13 blir följande gemensamma exekveringsordning:
+Den tekniska fasordningen nedan förklarar innehållet. Den faktiska goal-loopen och testgrindarna styrs av `03-EXEKVERINGSROADMAP-goal-68.md`.
 
 ### Fas A — analys och baseline
 
@@ -100,6 +100,8 @@ Goal 68:s sju faser och Codex U0–U13 blir följande gemensamma exekveringsordn
 
 ### Fas H — riktig SMS-provider, sist
 
+Fas H är en separat senare goal och ingår inte i Goal 68:s stängningskrav.
+
 - Verifiera aktuell provider, pris, segmentregler, avsändare, webhookauth och GDPR innan kod.
 - Minsta test till godkänt testnummer.
 - Provider-ID/webhook/segment/kostnad stäms av mot leverantörens portal/faktura.
@@ -141,8 +143,9 @@ Tenantens admin får läsa attempts för sin tenant, men får inte lista auth-an
 1. `00-SAMMANSTALLNING-goal-68-och-codex.md` — läs först; löser konflikter och anger gemensam riktning.
 2. `01-CODEX-DESIGN-kundportal-kommunikation.md` — detaljerad produkt-/arkitekturdesign och bakgrund.
 3. `02-CODEX-IMPLEMENTATIONSPLAN.md` — konkreta arbetsenheter, filer, tester och reviewgrindar.
-4. Goal 68 ligger fortsatt i `2-Byggplan/goals/goal-68-kundportal-pwa-kommunikation.md` eftersom en goal enligt repo-regler ska bo där. Den bör korrigeras enligt §3 innan `/goal` körs.
+4. `03-EXEKVERINGSROADMAP-goal-68.md` — del-goals, testfamiljer, bevisstruktur och stoppskyltar.
+5. Goal 68 ligger i `2-Byggplan/goals/goal-68-kundportal-pwa-kommunikation.md` som program-master/index och aktiveras inte direkt.
 
 ## 8. Rekommenderad nästa handling
 
-Claude läser denna sammanställning och de två Codex-dokumenten, rättar Goal 68:s konflikter och genomför endast F1/Fas A först. Efter F1 ska den exakta DB-/authdesignen jämföras mot verkligt schema innan första migrationen skrivs. Detta respekterar Goal 68:s egen regel att analysfasen inte ändrar kod.
+Verifiera och stäng Goal 67. Skapa därefter den separata del-goalen `goal-68-0-baseline-och-ktd.md` från U0 och program-mastern. Genomför endast baseline/KTD först; ingen produktkod eller migration skrivs innan dess oberoende review är grön.
