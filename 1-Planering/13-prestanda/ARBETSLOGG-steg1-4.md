@@ -1,5 +1,25 @@
 # Arbetslogg — prestandaplanen steg 1–4
 
+## ✅ ALLA 4 STEG KLARA + DEPLOYADE (2026-07-15, tag v1.31.3)
+
+Commits på main: steg1 `8e65c38`, steg2 `8e1752a`, steg2b `6fbeeab`, steg3 `caee157`,
+steg4 `e69714f`, slutfix `4f75551`. Pushade + deploy **v1.31.3 grönt** (CI/OpenNext på
+Linux, 2m9s). Codex slut-GO (0 blockerare). Migration 0067 på prod.
+
+**Prod-rök (curl):** /login 200 "Logga in" · freshcut.se storefront 200 "FreshCut" · /boka 200
+"Boka tid" · /om,/tjanster,/kontakt,/shop 200 · /admin,/salonger,/admin/kunder → 307 login-gate
+(ingen 500). **Steg 1 bekräftad live: /login 13 → 3 stylesheets** (+ 3 små inline palett-`<style>`);
+storefront behåller sina 14 (korrekt isolerade till publika rutter), data-theme intakt.
+Ingen regress på login/storefront/bokning/admin.
+
+Kvar (utanför loopens 4 steg): step 5 "resten" (Suspense i admin, lazy mall-uppslag A2, font-
+tokens B6, C6 realtids-gating, död kod), step 6 "mät om" (6 dygns prod-data → jämför
+exceededResources). Följdfixar: steg 2b metadata-registry (admin/plattform-sidor), B5-svep för
+ekonomi-zentums egna `<img>`, getCustomerLoyalty-konsistens (gjord).
+
+---
+
+
 Löpande logg för /loop-körningen. Källa: `00-PRESTANDA-AUDIT.md` §5.
 
 ## Steg 1 — dela tema-data från React-komponenterna (A1) — KLAR ✅
