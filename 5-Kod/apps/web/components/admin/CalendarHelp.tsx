@@ -45,19 +45,20 @@ const TIPS: { q: string; a: string }[] = [
   },
 ]
 
-export function CalendarHelp() {
+export function CalendarHelp({ label }: { label?: string }) {
   const [open, setOpen] = useState(false)
 
   return (
     <>
       <button
         type="button"
-        className={styles.helpBtn}
+        className={`${styles.helpBtn}${label ? ` ${styles.helpBtnLabelled}` : ''}`}
         onClick={() => setOpen(true)}
         aria-label="Hjälp om kalendern"
         title="Hjälp"
       >
         <Icon name="info" size={16} />
+        {label && <span>{label}</span>}
       </button>
 
       {open && (

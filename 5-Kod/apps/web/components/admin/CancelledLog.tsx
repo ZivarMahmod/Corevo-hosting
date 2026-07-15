@@ -45,7 +45,7 @@ function slotLabel(iso: string, tz: string): string {
   }).format(new Date(iso))
 }
 
-export function CancelledLog({ tz }: { tz: string }) {
+export function CancelledLog({ tz, label }: { tz: string; label?: string }) {
   const [open, setOpen] = useState(false)
   const [rows, setRows] = useState<CancelledBooking[] | null>(null)
   const [msg, setMsg] = useState<{ text: string; bad?: boolean } | null>(null)
@@ -75,12 +75,13 @@ export function CancelledLog({ tz }: { tz: string }) {
     <>
       <button
         type="button"
-        className={styles.helpBtn}
+        className={`${styles.helpBtn}${label ? ` ${styles.helpBtnLabelled}` : ''}`}
         onClick={openLog}
         aria-label="Avbokade tider"
         title="Avbokade tider"
       >
         <Icon name="undo" size={16} />
+        {label && <span>{label}</span>}
       </button>
 
       {open && (

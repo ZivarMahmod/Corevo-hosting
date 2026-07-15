@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CommandPalette, type CommandItem } from './ui/CommandPalette'
@@ -9,6 +9,8 @@ import { Icon, type IconName } from './ui/Icon'
 import { Modal } from './ui/Modal'
 import { ThemeSwitch } from './ThemeSwitch'
 import styles from './Topnav.module.css'
+import adminStyles from './AdminTopnav.module.css'
+import { closePortalDetails, useDismissibleDetails } from './useDismissibleDetails'
 
 /**
  * Back-office-skalet från 2026-07-13-handoffen. Var superadmin-only (PlatformTopnav);
@@ -57,6 +59,64 @@ export function activeTopnavArea(
   )
 }
 
+function AccountIdentity({
+  userLabel,
+  email,
+  roleLabel,
+  admin = false,
+}: {
+  userLabel: string
+  email: string
+  roleLabel: string
+  admin?: boolean
+}) {
+  return (
+    <div
+      className={`${styles.accountIdentity}${admin ? ` ${adminStyles.accountIdentity}` : ''}`}
+    >
+      <strong>{userLabel}</strong>
+      <span>
+        {email} <b aria-hidden="true">·</b> {roleLabel}
+      </span>
+    </div>
+  )
+}
+
+function mobileNavGlyph(areaId: string) {
+  if (areaId === 'oversikt') return '▦'
+  if (areaId === 'kalender') return '▤'
+  if (areaId === 'kunder') return '◉'
+  return '≡'
+}
+
+function AccountLinks({
+  items,
+  mobile = false,
+  onNavigate,
+}: {
+  items: readonly TopnavItem[]
+  mobile?: boolean
+  onNavigate?: () => void
+}) {
+  return (
+    <div
+      className={`${adminStyles.accountLinks}${mobile ? ` ${adminStyles.accountLinksMobile}` : ''}`}
+    >
+      {items.map((item) =>
+        item.href.startsWith('/') ? (
+          <Link key={item.href} href={item.href} onClick={onNavigate}>
+            {item.label}
+          </Link>
+        ) : (
+          <a key={item.href} href={item.href} onClick={onNavigate}>
+            {item.label}
+          </a>
+        ),
+      )}
+    </div>
+  )
+}
+
 export function Topnav({
   areas,
   mobileNavigation,
@@ -69,6 +129,8 @@ export function Topnav({
   brandLabel,
   primaryAction,
   contextLink,
+  themeVariant = 'segmented',
+  accountLinks,
   extra,
   userLabel,
   email,
@@ -91,6 +153,10 @@ export function Topnav({
   primaryAction?: { href: string; label: string; icon: IconName }
   /** "Öppna min sida" — kund-adminens publika sajt. Superadmin har ingen enskild storefront. */
   contextLink?: { href: string; label: string }
+  /** Toppbannerens temakontroll: tre direktval eller kanonens kompakta cykelknapp. */
+  themeVariant?: 'segmented' | 'cycle'
+  /** Rollspecifika kontolänkar; toppnaven äger bara presentationen. */
+  accountLinks?: readonly TopnavItem[]
   /** Platsväljare e.d. Renderas före tema-switchen. */
   extra?: ReactNode
   userLabel: string
@@ -103,9 +169,36 @@ export function Topnav({
   const subnav = activeArea ? (activeArea.subnav ?? subnavByArea?.[activeArea.id]) : undefined
   const [commandOpen, setCommandOpen] = useState(false)
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
+  const [mobileAccountOpen, setMobileAccountOpen] = useState(false)
   const [isMac, setIsMac] = useState(false)
   const accountRef = useRef<HTMLDetailsElement>(null)
+  const onAccountToggle = useDismissibleDetails(accountRef)
   const initial = (userLabel.charAt(0) || email.charAt(0) || 'C').toUpperCase()
+
+  const closeDesktopAccount = useCallback(() => {
+    if (accountRef.current) accountRef.current.open = false
+  }, [])
+
+  const openCommandPalette = useCallback(() => {
+    closePortalDetails()
+    setMobileMoreOpen(false)
+    setMobileAccountOpen(false)
+    setCommandOpen(true)
+  }, [])
+
+  const openMobileMore = useCallback(() => {
+    closePortalDetails()
+    setCommandOpen(false)
+    setMobileAccountOpen(false)
+    setMobileMoreOpen(true)
+  }, [])
+
+  const openMobileAccount = useCallback(() => {
+    closePortalDetails()
+    setCommandOpen(false)
+    setMobileMoreOpen(false)
+    setMobileAccountOpen(true)
+  }, [])
 
   useEffect(() => {
     setIsMac(/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || ''))
@@ -115,30 +208,37 @@ export function Topnav({
     const onKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
-        setMobileMoreOpen(false)
-        setCommandOpen((open) => !open)
+        if (commandOpen) setCommandOpen(false)
+        else openCommandPalette()
       }
-      if (event.key === 'Escape' && accountRef.current?.open) {
-        accountRef.current.open = false
-        accountRef.current.querySelector('summary')?.focus()
-      }
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      const account = accountRef.current
-      if (account?.open && !account.contains(event.target as Node)) account.open = false
     }
     window.addEventListener('keydown', onKey)
-    document.addEventListener('pointerdown', onPointerDown)
     return () => {
       window.removeEventListener('keydown', onKey)
-      document.removeEventListener('pointerdown', onPointerDown)
     }
-  }, [])
+  }, [commandOpen, openCommandPalette])
 
   useEffect(() => {
-    if (accountRef.current) accountRef.current.open = false
+    closePortalDetails()
+    setCommandOpen(false)
     setMobileMoreOpen(false)
+    setMobileAccountOpen(false)
   }, [pathname])
+
+  useEffect(() => {
+    if (!mobileNavigation) return
+
+    const desktop = window.matchMedia('(min-width: 768px)')
+    const closeMobileSurfaces = ({ matches }: Pick<MediaQueryList, 'matches'>) => {
+      if (!matches) return
+      setMobileMoreOpen(false)
+      setMobileAccountOpen(false)
+    }
+
+    closeMobileSurfaces(desktop)
+    desktop.addEventListener('change', closeMobileSurfaces)
+    return () => desktop.removeEventListener('change', closeMobileSurfaces)
+  }, [mobileNavigation])
 
   const mobileMoreActive =
     mobileNavigation?.more.some((area) => area.id === activeArea?.id) ?? false
@@ -152,8 +252,16 @@ export function Topnav({
               {brandMark}
             </span>
             <span className={styles.brandText}>
-              <span className={styles.brandName}>{brandName}</span>
-              <span className={styles.brandSub}>{brandSub}</span>
+              <span
+                className={`${styles.brandName}${mobileNavigation ? ` ${adminStyles.brandName}` : ''}`}
+              >
+                {brandName}
+              </span>
+              <span
+                className={`${styles.brandSub}${mobileNavigation ? ` ${adminStyles.brandSub}` : ''}`}
+              >
+                {brandSub}
+              </span>
             </span>
           </Link>
 
@@ -176,13 +284,13 @@ export function Topnav({
           <div className={styles.actions}>
             <button
               type="button"
-              className={styles.search}
-              onClick={() => setCommandOpen(true)}
-              aria-label="Sök sida eller åtgärd"
+              className={`${styles.search}${mobileNavigation ? ` ${adminStyles.search}${extra ? ` ${adminStyles.searchWithExtra}` : ''}` : ''}`}
+              onClick={openCommandPalette}
+              aria-label="Sök kund, bokning eller sida"
               aria-haspopup="dialog"
             >
               <Icon name="search" size={15} />
-              <span className={styles.searchText}>Sök…</span>
+              <span className={styles.searchText}>Sök kund, bokning…</span>
               <kbd>{isMac ? '⌘' : 'Ctrl'} K</kbd>
             </button>
             {primaryAction ? (
@@ -191,6 +299,7 @@ export function Topnav({
                 <span>{primaryAction.label}</span>
               </Link>
             ) : null}
+            {extra ? <div className={styles.extra}>{extra}</div> : null}
             {contextLink ? (
               <a
                 href={contextLink.href}
@@ -198,24 +307,35 @@ export function Topnav({
                 target="_blank"
                 rel="noreferrer"
               >
-                <span>{contextLink.label}</span>
-                <Icon name="link" size={14} />
+                <span className={styles.contextWide}>{contextLink.label}</span>
+                <span className={adminStyles.contextCompact}>Min sida</span>
+                <Icon name="external" size={14} />
               </a>
             ) : null}
-            {extra ? <div className={styles.extra}>{extra}</div> : null}
-            <div className={styles.theme}>
-              <ThemeSwitch />
+            <div className={`${styles.theme} ${adminStyles.theme}`}>
+              <ThemeSwitch variant={themeVariant} />
             </div>
-            <details ref={accountRef} className={styles.account}>
+            <details
+              ref={accountRef}
+              className={styles.account}
+              data-portal-details
+              onToggle={onAccountToggle}
+            >
               <summary aria-label="Öppna kontomeny" title={userLabel}>
                 {initial}
               </summary>
-              <div className={styles.accountMenu}>
-                <div className={styles.accountIdentity}>
-                  <strong>{userLabel}</strong>
-                  <span>{email}</span>
-                  <em>{roleLabel}</em>
-                </div>
+              <div
+                className={`${styles.accountMenu}${accountLinks?.length ? ` ${adminStyles.accountMenu}` : ''}`}
+              >
+                <AccountIdentity
+                  userLabel={userLabel}
+                  email={email}
+                  roleLabel={roleLabel}
+                  admin={Boolean(accountLinks?.length)}
+                />
+                {accountLinks?.length ? (
+                  <AccountLinks items={accountLinks} onNavigate={closeDesktopAccount} />
+                ) : null}
                 {signOut}
               </div>
             </details>
@@ -226,8 +346,8 @@ export function Topnav({
               <button
                 type="button"
                 className={styles.mobileSearch}
-                onClick={() => setCommandOpen(true)}
-                aria-label="Sök sida eller åtgärd"
+                onClick={openCommandPalette}
+                aria-label="Sök kund, bokning eller sida"
                 aria-haspopup="dialog"
               >
                 <Icon name="search" size={17} />
@@ -235,8 +355,8 @@ export function Topnav({
               <button
                 type="button"
                 className={styles.mobileAccount}
-                onClick={() => setMobileMoreOpen(true)}
-                aria-label="Öppna konto och fler val"
+                onClick={openMobileAccount}
+                aria-label="Öppna kontomeny"
                 aria-haspopup="dialog"
               >
                 {initial}
@@ -276,6 +396,9 @@ export function Topnav({
                   className={`${styles.mobileNavItem}${active ? ` ${styles.mobileNavItemActive}` : ''}`}
                   aria-current={active ? 'page' : undefined}
                 >
+                  <span className={adminStyles.mobileNavIcon} aria-hidden="true">
+                    {mobileNavGlyph(area.id)}
+                  </span>
                   <span>{area.label}</span>
                 </Link>
               )
@@ -285,7 +408,10 @@ export function Topnav({
               className={styles.mobileFab}
               aria-label={mobileNavigation.action.label}
             >
-              <Icon name="plus" size={24} />
+              <span className={styles.mobileFabButton} aria-hidden="true">
+                <Icon name="plus" size={20} />
+              </span>
+              <span className={styles.mobileFabLabel}>{mobileNavigation.action.label}</span>
             </Link>
             {mobileNavigation.tabs.slice(2).map((area) => {
               const active = area.id === activeArea?.id
@@ -296,6 +422,9 @@ export function Topnav({
                   className={`${styles.mobileNavItem}${active ? ` ${styles.mobileNavItemActive}` : ''}`}
                   aria-current={active ? 'page' : undefined}
                 >
+                  <span className={adminStyles.mobileNavIcon} aria-hidden="true">
+                    {mobileNavGlyph(area.id)}
+                  </span>
                   <span>{area.label}</span>
                 </Link>
               )
@@ -303,10 +432,14 @@ export function Topnav({
             <button
               type="button"
               className={`${styles.mobileNavItem}${mobileMoreActive ? ` ${styles.mobileNavItemActive}` : ''}`}
-              onClick={() => setMobileMoreOpen(true)}
+              onClick={openMobileMore}
               aria-label="Fler adminytor"
               aria-haspopup="dialog"
+              aria-current={mobileMoreActive ? 'page' : undefined}
             >
+              <span className={adminStyles.mobileNavIcon} aria-hidden="true">
+                {mobileNavGlyph('more')}
+              </span>
               <span>Mer</span>
             </button>
           </nav>
@@ -322,7 +455,7 @@ export function Topnav({
       {mobileNavigation && mobileMoreOpen ? (
         <Modal
           title="Mer"
-          ariaLabel="Fler adminytor och konto"
+          ariaLabel="Fler adminytor och verktyg"
           onClose={() => setMobileMoreOpen(false)}
         >
           <nav className={styles.mobileMoreLinks} aria-label="Fler adminytor">
@@ -369,18 +502,30 @@ export function Topnav({
               </a>
             ) : null}
             {extra ? <div className={styles.mobileMoreExtra}>{extra}</div> : null}
-            <div className={styles.mobileMoreTheme}>
+            <div className={`${styles.mobileMoreTheme} ${adminStyles.theme}`}>
               <span>Tema</span>
-              <ThemeSwitch />
+              <ThemeSwitch variant={themeVariant} />
             </div>
           </div>
 
+        </Modal>
+      ) : null}
+
+      {mobileNavigation && mobileAccountOpen ? (
+        <Modal
+          title="Konto"
+          ariaLabel="Kontomeny"
+          onClose={() => setMobileAccountOpen(false)}
+        >
           <div className={styles.mobileMoreAccount}>
-            <div className={styles.accountIdentity}>
-              <strong>{userLabel}</strong>
-              <span>{email}</span>
-              <em>{roleLabel}</em>
-            </div>
+            <AccountIdentity userLabel={userLabel} email={email} roleLabel={roleLabel} admin />
+            {accountLinks?.length ? (
+              <AccountLinks
+                items={accountLinks}
+                mobile
+                onNavigate={() => setMobileAccountOpen(false)}
+              />
+            ) : null}
             {signOut}
           </div>
         </Modal>

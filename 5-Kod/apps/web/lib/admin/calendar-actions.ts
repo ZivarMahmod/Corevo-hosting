@@ -11,10 +11,9 @@ import { resolveCustomerName } from '@/lib/personal/customer'
 import { sendBookingConfirmation } from '@/lib/notifications/booking'
 import { requestOrigin } from '@/lib/url'
 
-/** Kalenderns skriv- och sökvägar (goal-66). Bokningen går genom SAMMA RPC som
- *  kundens egen bokning (create_public_booking) — då gäller alla skydd automatiskt:
- *  dubbelbokningsspärren, staff↔plats-fencet och tenant-valideringen. En adminbokning
- *  får inte vara en gräddfil förbi reglerna. */
+/** Kalenderns skriv- och sökvägar (goal-66). Admin-RPC:n delegerar själva slotten
+ *  till samma create_public_booking som kundflödet använder — dubbelbokningsspärr,
+ *  staff↔plats-fence och tenant-validering gäller därför oförändrat. */
 
 export type SlotsState = { slots?: AdminSlot[]; error?: string }
 
@@ -524,8 +523,14 @@ export async function createAdminBooking(
   const guestEmail = String(fd.get('guestEmail') ?? '').trim()
   const guestPhone = String(fd.get('guestPhone') ?? '').trim()
   const note = String(fd.get('note') ?? '').trim()
+  const requestId = String(fd.get('requestId') ?? '')
 
-  if (!serviceId || !staffId || Number.isNaN(Date.parse(start))) {
+  if (
+    !serviceId ||
+    !staffId ||
+    Number.isNaN(Date.parse(start)) ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)
+  ) {
     return { error: 'Ogiltig tid eller tjänst — ladda om och försök igen.' }
   }
   // Enda kravet: vi måste veta VEM tiden är för. Antingen en befintlig kund, eller
@@ -536,50 +541,27 @@ export async function createAdminBooking(
 
   const supabase = await createClient()
 
-  // KUNDIDENTITET. RPC:ns p_customer är en AUTH-ANVÄNDARE (customer_profile_id) och dess
-  // identitetsvakt kräver p_customer = auth.uid() — dvs "boka bara åt dig själv". Det är
-  // rätt för publik självbokning, men admin bokar åt NÅGON ANNAN. `customerId` här är
-  // dessutom en rad i `customers` (inte ett user-id), så att skicka den som p_customer gav
-  // alltid `forbidden_customer` → bokningen föll. Lösning: skicka den valda kundens kontakt
-  // som gäst-fält och lämna p_customer null. resolve_customer_id länkar då tillbaka till
-  // SAMMA kundrad via contact_hash (e-post/telefon) — ingen dubblett, ingen vakt.
-  let cName = guestName
-  let cEmail = guestEmail
-  let cPhone = guestPhone
-  if (customerId) {
-    const { data: cust } = await supabase
-      .from('customers')
-      .select('display_name, full_name, email, phone')
-      .eq('id', customerId)
-      .eq('tenant_id', tenant.id)
-      .maybeSingle<{
-        display_name: string | null
-        full_name: string | null
-        email: string | null
-        phone: string | null
-      }>()
-    if (!cust) return { error: 'Kunden hittades inte — ladda om och försök igen.' }
-    cName = (cust.full_name?.trim() || cust.display_name?.trim() || guestName || 'Kund').trim()
-    cEmail = cust.email?.trim() || ''
-    cPhone = cust.phone?.trim() || ''
-  }
-
-  const { data: bookingId, error } = await supabase.rpc('create_public_booking', {
-    p_tenant_slug: tenant.slug,
+  // Admin bokar åt någon annan än auth.uid(). Den särskilda admin-RPC:n gör
+  // bokning + exakt kundkoppling atomiskt och tenant-säkert. Publik självbokning
+  // fortsätter gå genom create_public_booking direkt.
+  const { data: bookingResultRaw, error } = await supabase.rpc('create_admin_booking', {
     p_service: serviceId,
     p_staff: staffId,
     p_location: locationId || undefined,
     p_start: start,
-    // p_customer lämnas alltid null i admin-flödet (se ovan) — kunden länkas via kontakten.
-    p_customer: undefined,
-    p_guest_name: cName || undefined,
-    p_guest_email: cEmail || undefined,
-    p_guest_phone: cPhone || undefined,
+    p_customer_id: customerId || undefined,
+    p_guest_name: guestName || undefined,
+    p_guest_email: guestEmail || undefined,
+    p_guest_phone: guestPhone || undefined,
     p_note: note || undefined,
-    p_request_id: crypto.randomUUID(),
+    p_request_id: requestId,
   })
 
-  if (error || !bookingId) {
+  const bookingResult =
+    bookingResultRaw && typeof bookingResultRaw === 'object' && !Array.isArray(bookingResultRaw)
+      ? (bookingResultRaw as { booking_id?: unknown; created?: unknown })
+      : null
+  if (error || !bookingResult || typeof bookingResult.booking_id !== 'string') {
     const msg = error?.message ?? ''
     // Konflikten är ÄRLIG: någon annan hann före. Inmatningen ligger kvar i drawern
     // så användaren kan välja en annan tid utan att skriva om allt.
@@ -589,20 +571,23 @@ export async function createAdminBooking(
     if (msg.includes('invalid_staff_location')) {
       return { error: 'Medarbetaren har inga tider på den platsen.' }
     }
+    if (msg.includes('invalid_customer')) {
+      return { error: 'Kunden hittades inte — ladda om och försök igen.' }
+    }
     return { error: 'Bokningen gick inte igenom. Försök igen.' }
   }
-
-  // Bokad av personalen = bekräftad. Kunden står framför dig eller ringde — det finns
-  // inget att vänta på. (Publika självbokningar kan kräva godkännande; det är en
-  // annan väg.)
-  await supabase
-    .from('bookings')
-    .update({ status: 'confirmed' })
-    .eq('id', bookingId)
-    .eq('tenant_id', tenant.id)
+  const bookingId = bookingResult.booking_id
 
   revalidatePath('/admin/bokningar')
   revalidatePath('/admin')
+
+  const created = bookingResult.created === true
+  if (!created) {
+    return {
+      success: 'Bokningen var redan sparad. Inget nytt meddelande skickades.',
+      bookingId,
+    }
+  }
 
   // NOTISEN. Drawern har redan visat exakt vad som skulle skickas — nu måste det
   // faktiskt ske, annars ljuger UI:t. Valde användaren "Skicka inget" skickas inget.

@@ -634,8 +634,20 @@ export type StaffDay = {
  *  gamla listWorkingHours(staffId) är per resurs och blir N+1 i en dagvy.
  *  Kalenderns kolumner (goal-66) läser samma funktion: en resurs som är ledig ska
  *  ritas som ledig, inte utelämnas. */
-export async function staffDay(tenantId: string, weekday: number): Promise<StaffDay[]> {
+export async function staffDay(
+  tenantId: string,
+  weekday: number,
+  locationId?: string,
+): Promise<StaffDay[]> {
   const supabase = await createClient()
+  let hoursQuery = supabase
+    .from('working_hours')
+    .select('staff_id, weekday, start_time, end_time')
+    .eq('tenant_id', tenantId)
+    .order('start_time', { ascending: true })
+  if (locationId) hoursQuery = hoursQuery.eq('location_id', locationId)
+  else hoursQuery = hoursQuery.eq('weekday', weekday)
+
   const [staffRes, hoursRes] = await Promise.all([
     supabase
       .from('staff')
@@ -645,12 +657,7 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
       // Stabil kolumnordning i kalendern kräver en deterministisk sortering — samma
       // ordning varje ladd, annars hoppar resurserna mellan kolumner.
       .order('created_at', { ascending: true }),
-    supabase
-      .from('working_hours')
-      .select('staff_id, start_time, end_time')
-      .eq('tenant_id', tenantId)
-      .eq('weekday', weekday)
-      .order('start_time', { ascending: true }),
+    hoursQuery,
   ])
   // Kasta, svälj inte (B-10): noll resurser p.g.a. datafel skulle rita en kalender
   // helt utan kolumner — som ser ut som "ingen jobbar idag".
@@ -658,6 +665,9 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
   if (hoursRes.error) throw new Error(`staffDay: ${hoursRes.error.message}`)
   const { data: staffRows } = staffRes
   const { data: hourRows } = hoursRes
+  const locationStaffIds = locationId
+    ? new Set((hourRows ?? []).map((row: { staff_id: string }) => row.staff_id))
+    : null
 
   // Flera pass samma dag (t.ex. förmiddag + kväll) → resursens dag spänner från
   // första starten till sista slutet. Luckan mellan passen ritas som ej tillgänglig
@@ -667,9 +677,11 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
   const passes = new Map<string, [number, number][]>()
   for (const row of (hourRows ?? []) as {
     staff_id: string
+    weekday: number
     start_time: string
     end_time: string
   }[]) {
+    if (row.weekday !== weekday) continue
     const prev = span.get(row.staff_id)
     span.set(row.staff_id, {
       start: prev && prev.start < row.start_time ? prev.start : row.start_time,
@@ -683,8 +695,9 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
   const worked = new Map<string, number>()
   for (const [id, ivs] of passes) worked.set(id, sumMergedMinutes(ivs))
 
-  return ((staffRows ?? []) as { id: string; title: string | null; color: string | null }[]).map(
-    (s) => {
+  return ((staffRows ?? []) as { id: string; title: string | null; color: string | null }[])
+    .filter((staffRow) => !locationStaffIds || locationStaffIds.has(staffRow.id))
+    .map((s) => {
       const hours = span.get(s.id)
       return {
         staffId: s.id,
@@ -695,8 +708,7 @@ export async function staffDay(tenantId: string, weekday: number): Promise<Staff
         workedMinutes: worked.get(s.id) ?? 0,
         color: staffColor(s.id, s.color),
       }
-    },
-  )
+    })
 }
 
 /** goal-67: översikten svarar på "vad händer idag" — inget annat. `servicesActive`,
@@ -735,45 +747,59 @@ export async function dashboardData(
   tenantId: string,
   today: { fromUtc: string; toUtc: string },
   prevWeekday: { fromUtc: string; toUtc: string },
-  periods: { weekFromUtc: string; monthFromUtc: string },
+  options: { weekFromUtc: string; monthFromUtc: string; locationId?: string },
 ): Promise<DashboardData> {
   const supabase = await createClient()
+  let todayCountQuery = supabase
+    .from('bookings')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .in('status', ACTIVE_BOOKING as unknown as string[])
+    .gte('start_ts', today.fromUtc)
+    .lt('start_ts', today.toUtc)
+  let previousQuery = supabase
+    .from('bookings')
+    .select('price_cents')
+    .eq('tenant_id', tenantId)
+    .in('status', ACTIVE_BOOKING as unknown as string[])
+    .gte('start_ts', prevWeekday.fromUtc)
+    .lt('start_ts', prevWeekday.toUtc)
+  let cancellationQuery = supabase
+    .from('bookings')
+    .select('cancelled_at, price_cents')
+    .eq('tenant_id', tenantId)
+    .eq('status', 'cancelled')
+    .gte(
+      'cancelled_at',
+      options.weekFromUtc < options.monthFromUtc ? options.weekFromUtc : options.monthFromUtc,
+    )
+  if (options.locationId) {
+    todayCountQuery = todayCountQuery.eq('location_id', options.locationId)
+    previousQuery = previousQuery.eq('location_id', options.locationId)
+    cancellationQuery = cancellationQuery.eq('location_id', options.locationId)
+  }
+
   const [todayB, upcoming, prevRows, cancellations, cancelAgg] = await Promise.all([
-    supabase
-      .from('bookings')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .in('status', ACTIVE_BOOKING as unknown as string[])
-      .gte('start_ts', today.fromUtc)
-      .lt('start_ts', today.toUtc),
-    listBookings(tenantId, { fromUtc: today.fromUtc, toUtc: today.toUtc }),
+    todayCountQuery,
+    listBookings(tenantId, {
+      fromUtc: today.fromUtc,
+      toUtc: today.toUtc,
+      locationId: options.locationId,
+    }),
     // Samma veckodag förra veckan — bara prislappen behövs, inte raderna. Summeras i JS
     // (en dags bokningar = litet); PostgREST saknar billig SUM här.
-    supabase
-      .from('bookings')
-      .select('price_cents')
-      .eq('tenant_id', tenantId)
-      .in('status', ACTIVE_BOOKING as unknown as string[])
-      .gte('start_ts', prevWeekday.fromUtc)
-      .lt('start_ts', prevWeekday.toUtc),
+    previousQuery,
     // Avbokningar som SKEDDE idag (cancelled_at, inte start_ts) — verkliga händelser
     // för inkorgen. En bokning avbokad för veckor sedan är ingen ny lucka att fylla.
     listBookings(tenantId, {
       cancelledFromUtc: today.fromUtc,
       cancelledToUtc: today.toUtc,
       status: 'cancelled',
+      locationId: options.locationId,
     }),
     // Avbokningspanelens aggregat: EN läsning från det TIDIGASTE fönstret (veckan kan
     // börja i föregående månad vid månadsskifte), bucketas i JS till idag/vecka/månad.
-    supabase
-      .from('bookings')
-      .select('cancelled_at, price_cents')
-      .eq('tenant_id', tenantId)
-      .eq('status', 'cancelled')
-      .gte(
-        'cancelled_at',
-        periods.weekFromUtc < periods.monthFromUtc ? periods.weekFromUtc : periods.monthFromUtc,
-      ),
+    cancellationQuery,
   ])
   // Kasta, svälj inte (B-10): ett query-fel som blir 0 avbokningar ser ut som en lugn
   // dag — en farligare lögn än en felsida.
@@ -802,7 +828,7 @@ export async function dashboardData(
     const cents = r.price_cents ?? 0
     cancellationStats.month.count++
     cancellationStats.month.cents += cents
-    if (r.cancelled_at >= periods.weekFromUtc) {
+    if (r.cancelled_at >= options.weekFromUtc) {
       cancellationStats.week.count++
       cancellationStats.week.cents += cents
     }

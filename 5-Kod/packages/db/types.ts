@@ -2683,6 +2683,21 @@ export type Database = {
           requires_payment: boolean
         }[]
       }
+      create_admin_booking: {
+        Args: {
+          p_customer_id?: string
+          p_guest_email?: string
+          p_guest_name?: string
+          p_guest_phone?: string
+          p_location?: string
+          p_note?: string
+          p_request_id: string
+          p_service: string
+          p_staff: string
+          p_start: string
+        }
+        Returns: Json
+      }
       create_public_booking: {
         Args: {
           p_customer?: string

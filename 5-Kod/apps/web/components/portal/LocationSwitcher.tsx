@@ -1,13 +1,17 @@
 'use client'
 
-import { useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { Icon } from './ui/Icon'
+import { useRef, useTransition } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { PLATS_ALLA, PLATS_COOKIE } from '@/lib/admin/plats-constants'
+import styles from './LocationSwitcher.module.css'
+import { useDismissibleDetails } from './useDismissibleDetails'
+import { effectiveLocationValue, locationSelectionTarget } from './location-switcher-state'
 
 /**
- * Topbarens butik-väljare (kund-admin, bara vid >1 aktiv plats): skriver valet
- * till corevo-plats-cookien och laddar om server-datat — Bokningar/Scheman/
- * Bokningsvyn defaultar till valet (lib/admin/plats.ts). '' = Alla platser.
+ * Universalbannerens globala platsväljare. Den visas bara när PortalShell har
+ * hittat fler än en aktiv plats. Valet sparas i samma corevo-plats-cookie som
+ * Bokningar och Scheman redan läser. URL:ens `plats` hålls synkad så att dess
+ * uttryckliga filter inte kan vinna över ett nyare menyval.
  */
 export function LocationSwitcher({
   locations,
@@ -17,46 +21,83 @@ export function LocationSwitcher({
   value: string
 }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const detailsRef = useRef<HTMLDetailsElement>(null)
+  const onToggle = useDismissibleDetails(detailsRef)
   const [pending, start] = useTransition()
+  const effectiveValue = effectiveLocationValue(
+    searchParams.get('plats'),
+    value,
+    locations.map((location) => location.id),
+  )
+  const selectedName =
+    locations.find((location) => location.id === effectiveValue)?.name ?? 'Alla platser'
+
+  const choose = (nextValue: string) => {
+    if (detailsRef.current) detailsRef.current.open = false
+    const queryValue = nextValue || PLATS_ALLA
+    const cookieAlreadyMatches = value === nextValue
+    const queryAlreadyMatches = searchParams.get('plats') === queryValue
+    if (cookieAlreadyMatches && queryAlreadyMatches) return
+
+    document.cookie = `${PLATS_COOKIE}=${encodeURIComponent(queryValue)}; path=/; max-age=31536000; samesite=lax`
+    const currentSearch = searchParams.toString()
+    const target = locationSelectionTarget(pathname, currentSearch, nextValue)
+    const current = currentSearch ? `${pathname}?${currentSearch}` : pathname
+    start(() => {
+      // replace laddar om serverkomponenterna när URL:en ändras. Om bara cookien
+      // behövde synkas ligger vi redan på rätt URL och gör en explicit refresh.
+      if (target === current) router.refresh()
+      else router.replace(target, { scroll: false })
+    })
+  }
+
+  const options = [{ id: '', name: 'Alla platser' }, ...locations]
+
   return (
-    <label
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        fontSize: 12.5,
-        color: 'var(--c-ink-3)',
-        opacity: pending ? 0.6 : 1,
-      }}
-      title="Vald butik — Bokningar, Scheman och Bokningsvyn följer valet"
+    <details
+      ref={detailsRef}
+      className={styles.switcher}
+      data-portal-details
+      aria-busy={pending}
+      onToggle={onToggle}
     >
-      <Icon name="mapPin" size={14} />
-      <select
-        value={value}
-        onChange={(e) => {
-          const v = e.target.value
-          document.cookie = `corevo-plats=${encodeURIComponent(v)}; path=/; max-age=31536000; samesite=lax`
-          start(() => router.refresh())
-        }}
-        style={{
-          font: 'inherit',
-          fontSize: 13,
-          padding: '6px 9px',
-          borderRadius: 7,
-          border: '1px solid var(--c-line)',
-          background: 'var(--c-paper)',
-          color: 'var(--c-ink)',
-          maxWidth: 180,
-        }}
-        aria-label="Vald butik"
+      <summary
+        className={styles.summary}
+        aria-label={`Platsfilter: ${selectedName}`}
+        title={`${selectedName} — filtrerar alla flikar`}
       >
-        <option value="">Alla platser</option>
-        {locations.map((l) => (
-          <option key={l.id} value={l.id}>
-            {l.name}
-          </option>
-        ))}
-      </select>
-    </label>
+        <span className={styles.marker} aria-hidden="true">
+          ◎
+        </span>
+        <span className={styles.label}>{selectedName}</span>
+        <span className={styles.chevron} aria-hidden="true">
+          ▾
+        </span>
+      </summary>
+
+      <div className={styles.menu} role="menu" aria-label="Välj plats">
+        <div className={styles.heading}>PLATS — FILTRERAR ALLT</div>
+        {options.map((option) => {
+          const active = option.id === effectiveValue
+          return (
+            <button
+              key={option.id || 'all'}
+              type="button"
+              className={`${styles.option}${active ? ` ${styles.optionActive}` : ''}`}
+              role="menuitemradio"
+              aria-checked={active}
+              disabled={pending}
+              onClick={() => choose(option.id)}
+            >
+              <span className={styles.dot} aria-hidden="true" />
+              <span>{option.name}</span>
+            </button>
+          )
+        })}
+        <div className={styles.footer}>Valet följer med till alla flikar.</div>
+      </div>
+    </details>
   )
 }

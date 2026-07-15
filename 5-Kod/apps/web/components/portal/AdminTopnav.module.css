@@ -1,0 +1,116 @@
+/* Kundadminens kompakta temaknapp finns bara i universalbannern och mobilens Mer-yta. */
+.brandName {
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.brandSub {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+}
+
+.search {
+  width: 170px;
+  min-width: 170px;
+  height: 34px;
+  min-height: 34px;
+  padding-inline: 12px;
+  border-radius: 9px;
+  font-size: 13.5px;
+}
+
+.searchWithExtra {
+  width: 150px;
+  min-width: 150px;
+}
+
+.theme :global(.bo-theme--compact) {
+  border-radius: 9px;
+  background: var(--c-cream);
+}
+
+.theme :global(.bo-theme--compact button) {
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  justify-content: center;
+  color: var(--c-ink-3);
+  font-size: 15px;
+}
+
+.theme :global(.bo-theme--compact button:hover) {
+  background: var(--c-paper-2);
+  color: var(--c-ink);
+}
+
+.accountLinks {
+  display: flex;
+  flex-direction: column;
+}
+
+.accountLinks a {
+  min-height: 42px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--c-line);
+  color: var(--c-ink-2);
+  font-size: 13.5px;
+  text-decoration: none;
+}
+
+.accountLinks a:hover {
+  background: var(--c-paper-3);
+  color: var(--c-ink);
+}
+
+.accountLinksMobile a {
+  min-height: 48px;
+  padding-inline: 4px;
+}
+
+.accountIdentity {
+  margin: 0;
+  padding: 13px 16px;
+}
+
+.accountIdentity strong {
+  font-weight: 700;
+}
+
+.accountIdentity span {
+  margin-top: 2px;
+  font-size: 10.5px;
+}
+
+.accountMenu :global(.portal-signout) {
+  min-height: 42px;
+  padding-inline: 16px;
+  font-size: 13.5px;
+}
+
+.contextCompact {
+  display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .search,
+  .searchWithExtra {
+    width: 34px;
+    min-width: 34px;
+    padding: 0;
+  }
+
+  .contextCompact {
+    display: inline;
+  }
+}
+
+@media (max-width: 767px) {
+  .mobileNavIcon {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+  }
+}

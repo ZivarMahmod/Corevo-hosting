@@ -23,6 +23,14 @@ import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
 
+const ADMIN_ACCOUNT_LINKS = [
+  { href: '/admin/installningar/konto', label: 'Mitt konto' },
+  {
+    href: 'mailto:booking@corevo.se?subject=Hj%C3%A4lp%20med%20Corevo',
+    label: 'Hjälp & support',
+  },
+] as const
+
 // ⌘K-palettens "Gå till"-lista härleds ur nav-items.ts (paletteFromNav) — SAMMA
 // NAV som PortalSidebar renderar, så palett och sidomeny kan inte drifta isär
 // (goal-55 steg 1; ersätter den handkopierade PALETTE/MODULE_PALETTE-dubbletten).
@@ -217,6 +225,8 @@ export async function PortalShell({
                 ? { href: contextLink.href, label: 'Öppna min sida' }
                 : undefined
             }
+            themeVariant={isPlatform ? 'segmented' : 'cycle'}
+            accountLinks={isPlatform ? undefined : ADMIN_ACCOUNT_LINKS}
             extra={isPlatform ? null : locationSwitcher}
             userLabel={userLabel}
             email={email}

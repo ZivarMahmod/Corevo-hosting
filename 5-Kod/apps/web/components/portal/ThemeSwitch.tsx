@@ -16,6 +16,18 @@ type Mode = 'auto' | 'light' | 'dark'
 const KEY = 'corevo-bo-theme'
 const THEME_EVENT = 'corevo-bo-theme-change'
 
+const MODE_LABEL: Record<Mode, string> = {
+  auto: 'Automatiskt läge',
+  light: 'Ljust läge',
+  dark: 'Mörkt läge',
+}
+
+export function nextThemeMode(mode: Mode): Mode {
+  if (mode === 'auto') return 'light'
+  if (mode === 'light') return 'dark'
+  return 'auto'
+}
+
 function savedMode(): Mode {
   try {
     const saved = localStorage.getItem(KEY)
@@ -31,7 +43,11 @@ function apply(mode: Mode) {
   else root.removeAttribute('data-bo-theme')
 }
 
-export function ThemeSwitch() {
+export function ThemeSwitch({
+  variant = 'segmented',
+}: {
+  variant?: 'segmented' | 'cycle'
+} = {}) {
   // SSR renderar 'auto' — den sparade moden läses efter mount (ingen hydration-mismatch;
   // själva färgerna sattes redan av no-flash-scriptet).
   const [mode, setMode] = useState<Mode>('auto')
@@ -63,6 +79,26 @@ export function ThemeSwitch() {
     // `storage` avfyras inte i samma dokument. Det egna eventet håller den synliga
     // mobilväljaren och den CSS-dolda desktopväljaren i exakt samma state vid resize.
     window.dispatchEvent(new CustomEvent<Mode>(THEME_EVENT, { detail: m }))
+  }
+
+  if (variant === 'cycle') {
+    const next = nextThemeMode(mode)
+    const title = `${MODE_LABEL[mode]} — byt till ${MODE_LABEL[next].toLocaleLowerCase('sv-SE')}`
+    return (
+      <div className="bo-theme bo-theme--compact">
+        <button
+          type="button"
+          data-mode={mode}
+          onClick={() => pick(next)}
+          title={title}
+          aria-label={title}
+        >
+          <span className="bo-theme-quick-icon" aria-hidden="true">
+            ◐
+          </span>
+        </button>
+      </div>
+    )
   }
 
   return (

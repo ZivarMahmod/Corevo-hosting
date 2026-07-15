@@ -260,6 +260,26 @@ export function CalendarBoard({
     seed: { staffId: string; startMinute: number } | null
     existing: CalendarBlock | null
   } | null>(() => (calendarLaunchMode(params) === 'block' ? { seed: null, existing: null } : null))
+  const [mobileDateOpen, setMobileDateOpen] = useState(false)
+
+  // router.refresh() levererar en ny bookings-array efter statusändring. Den öppna
+  // drawern höll tidigare kvar objektet från före refresh och kunde därför visa
+  // "Bekräftad" + aktiva knappar samtidigt som kortet redan var "Avbokad".
+  useEffect(() => {
+    setOpen((current) => {
+      if (!current) return current
+      return bookings.find((booking) => booking.id === current.id) ?? null
+    })
+  }, [bookings])
+
+  useEffect(() => {
+    if (!mobileDateOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileDateOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [mobileDateOpen])
 
   // Djuplänk-parametrar (?ny/?blockera) är ENGÅNGS: rensa dem ur URL:en efter att
   // drawern öppnats, annars öppnar en omladdning/tillbaka-navigering den igen.
@@ -361,6 +381,7 @@ export function CalendarBoard({
       else q.delete('resurs')
     }
     q.delete('open')
+    setMobileDateOpen(false)
     router.push(`/admin/bokningar?${q.toString()}`)
   }
 
@@ -444,6 +465,79 @@ export function CalendarBoard({
     year: 'numeric',
     timeZone: tz,
   }).format(new Date(`${date}T12:00:00Z`))
+
+  const mobilePeriodLabel = useMemo(() => {
+    if (view === 'manad') return monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)
+    if (view === 'vecka') {
+      const selected = new Date(`${date}T12:00:00Z`)
+      const day = selected.getUTCDay()
+      const monday = new Date(selected)
+      monday.setUTCDate(selected.getUTCDate() + (day === 0 ? -6 : 1 - day))
+      const sunday = new Date(monday)
+      sunday.setUTCDate(monday.getUTCDate() + 6)
+      const first = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', timeZone: tz }).format(
+        monday,
+      )
+      const last = new Intl.DateTimeFormat('sv-SE', {
+        day: 'numeric',
+        month: 'long',
+        timeZone: tz,
+      }).format(sunday)
+      return `${first}–${last}`
+    }
+    const selected = new Date(`${date}T12:00:00Z`)
+    if (date === today) {
+      const rest = new Intl.DateTimeFormat('sv-SE', {
+        day: 'numeric',
+        month: 'long',
+        timeZone: tz,
+      }).format(selected)
+      return `Idag ${rest}`
+    }
+    return dayLabelLong.charAt(0).toUpperCase() + dayLabelLong.slice(1)
+  }, [date, dayLabelLong, monthLabel, today, tz, view])
+
+  const mobilePeriodStats = useMemo(() => {
+    const periodBookings =
+      view === 'manad'
+        ? vBookings.filter((booking) => dayKey(booking.startTs, tz).startsWith(date.slice(0, 7)))
+        : vBookings
+    const live = periodBookings.filter((booking) => !isAvbokad(booking.status)).length
+    const cancelled = periodBookings.filter((booking) => booking.status === 'cancelled').length
+    const parts = [`${live} ${live === 1 ? 'bokning' : 'bokningar'}`]
+    if (view === 'dag' && dayStats?.occupancy != null && dayStats.occupancy > 0) {
+      parts.push(`${dayStats.occupancy}%`)
+    }
+    if (cancelled > 0) {
+      parts.push(`${cancelled} avbokad${cancelled === 1 ? '' : 'e'}`)
+    }
+    const count = parts.join(' · ')
+    const focusedName = resursValid ? staff.find((person) => person.id === resurs)?.name : null
+    if (view === 'manad') return count
+    return `v. ${isoWeekNumber(date)} · ${focusedName ? `${focusedName} · ` : ''}${count}`
+  }, [date, dayStats?.occupancy, resurs, resursValid, staff, tz, vBookings, view])
+
+  const mobileMonth = useMemo(() => {
+    const anchor = new Date(`${date}T12:00:00Z`)
+    const year = anchor.getUTCFullYear()
+    const month = anchor.getUTCMonth()
+    const first = new Date(Date.UTC(year, month, 1, 12))
+    const leading = (first.getUTCDay() + 6) % 7
+    const days = new Date(Date.UTC(year, month + 1, 0, 12)).getUTCDate()
+    const cells: Array<string | null> = Array.from({ length: leading }, () => null)
+    for (let day = 1; day <= days; day += 1) {
+      cells.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
+    }
+    while (cells.length % 7 !== 0) cells.push(null)
+    return {
+      label: new Intl.DateTimeFormat('sv-SE', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: tz,
+      }).format(anchor),
+      cells,
+    }
+  }, [date, tz])
 
   const step = view === 'manad' ? 'month' : view === 'vecka' ? 'week' : 'day'
   const shift = (dir: -1 | 1) => {
@@ -564,55 +658,20 @@ export function CalendarBoard({
         </div>
 
         <div className={styles.toolbarRight}>
-          {/* Resursfilter (B-06). Litet team (salongsfallet) → designens färgprick-chips,
-              allt synligt på en gång. Stort team → native <select> som skalar och ger
-              telefonen sin inbyggda väljare. Filtret följer med mellan dag/vecka/månad
-              oavsett kontroll (resurs bor i URL:en). */}
-          {staff.length > 1 && staff.length <= 6 && (
-            <div
-              className={styles.resChips}
-              role="radiogroup"
-              aria-label={`Visa en ${staffNoun.toLowerCase()}`}
-            >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={!resursValid}
-                className={`${styles.resChip}${!resursValid ? ` ${styles.resChipOn}` : ''}`}
-                onClick={() => go({ resurs: '' })}
-              >
-                Alla {staff.length}
-              </button>
-              {staff.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={resurs === s.id}
-                  className={`${styles.resChip}${resurs === s.id ? ` ${styles.resChipOn}` : ''}`}
-                  onClick={() => go({ resurs: resurs === s.id ? '' : s.id })}
-                >
-                  <span
-                    className={styles.resChipDot}
-                    style={{ background: s.color }}
-                    aria-hidden="true"
-                  />
-                  {s.name}
-                </button>
-              ))}
-            </div>
-          )}
-          {staff.length > 6 && (
+          {/* I dagvyn ÄR kolumnrubrikerna personalvalet. Vecka/månad saknar sådana
+              rubriker, så desktop/iPad får ett enda kompakt val för att behålla
+              filterfunktionen utan den dubbla chipraden. Mobilens toolbar är dold. */}
+          {view !== 'dag' && staff.length > 1 && (
             <select
               className={styles.resSelect}
               value={resursValid ? resurs : ''}
-              onChange={(e) => go({ resurs: e.target.value })}
-              aria-label={`Visa en ${staffNoun.toLowerCase()}`}
+              onChange={(event) => go({ resurs: event.target.value })}
+              aria-label={`Filtrera på ${staffNoun.toLowerCase()}`}
             >
-              <option value="">Alla</option>
-              {staff.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
+              <option value="">Alla {staff.length}</option>
+              {staff.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
                 </option>
               ))}
             </select>
@@ -690,6 +749,8 @@ export function CalendarBoard({
             onEmptyClick={onEmptyClick}
             onDropBooking={onDropBooking}
             onOpenBlock={(block) => setBlocking({ seed: null, existing: block })}
+            focusedStaffId={resursValid ? resurs : null}
+            onStaffToggle={(staffId) => go({ resurs: resurs === staffId ? '' : staffId })}
             dragOver={dragOver}
             setDragOver={setDragOver}
           />
@@ -721,6 +782,118 @@ export function CalendarBoard({
           />
         )}
       </div>
+
+      <div className={styles.mobileCalendarDock}>
+        <div className={styles.mobileCalendarDateRow}>
+          <button
+            type="button"
+            className={styles.mobileDateToggle}
+            onClick={() => setMobileDateOpen((open) => !open)}
+            aria-expanded={mobileDateOpen}
+            aria-haspopup="dialog"
+          >
+            <span className={styles.mobileDateTitle}>
+              {mobilePeriodLabel}
+              <span aria-hidden="true">{mobileDateOpen ? '▾' : '▴'}</span>
+            </span>
+            <span className={`num ${styles.mobileDateStats}`}>{mobilePeriodStats}</span>
+          </button>
+          {(date !== today || view !== 'dag' || resursValid) && (
+            <button
+              type="button"
+              className={styles.mobileTodayBtn}
+              onClick={() => go({ datum: today, vy: 'dag', resurs: '' })}
+            >
+              Idag
+            </button>
+          )}
+          <div className={styles.mobileStep} aria-label="Bläddra i kalendern">
+            <button type="button" onClick={() => shift(-1)} aria-label="Föregående">
+              <Icon name="chevronLeft" size={15} />
+            </button>
+            <button type="button" onClick={() => shift(1)} aria-label="Nästa">
+              <Icon name="chevronRight" size={15} />
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.mobileCalendarActionRow}>
+          <div className={styles.mobileViewSwitch} role="radiogroup" aria-label="Kalendervy">
+            {VIEWS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                role="radio"
+                aria-checked={view === item.value}
+                className={view === item.value ? styles.mobileViewOn : undefined}
+                onClick={() => go({ vy: item.value })}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className={styles.mobileBlockAction}
+            onClick={() => setBlocking({ seed: null, existing: null })}
+          >
+            <Icon name="clock" size={13} />
+            Blockera
+          </button>
+        </div>
+
+        <div className={styles.mobileCalendarUtilities} aria-label="Fler kalenderverktyg">
+          <CalendarSearch tz={tz} />
+          <CancelledLog tz={tz} label="Avbokade" />
+          <CalendarHelp label="Hjälp" />
+        </div>
+      </div>
+
+      {mobileDateOpen && (
+        <>
+          <button
+            type="button"
+            className={styles.mobileCalendarScrim}
+            onClick={() => setMobileDateOpen(false)}
+            aria-label="Stäng datumväljaren"
+          />
+          <div
+            className={styles.mobileCalendarPicker}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Välj datum"
+          >
+            <div className={styles.mobilePickerHead}>
+              <strong>
+                {mobileMonth.label.charAt(0).toUpperCase() + mobileMonth.label.slice(1)}
+              </strong>
+              <span className="num">Välj en dag</span>
+            </div>
+            <div className={styles.mobilePickerWeekdays} aria-hidden="true">
+              {['M', 'T', 'O', 'T', 'F', 'L', 'S'].map((dayName, index) => (
+                <span key={`${dayName}-${index}`}>{dayName}</span>
+              ))}
+            </div>
+            <div className={styles.mobilePickerDays}>
+              {mobileMonth.cells.map((cell, index) =>
+                cell ? (
+                  <button
+                    key={cell}
+                    type="button"
+                    className={`${cell === date ? ` ${styles.mobilePickerSelected}` : ''}${cell === today ? ` ${styles.mobilePickerToday}` : ''}`}
+                    onClick={() => go({ datum: cell, vy: 'dag' })}
+                    aria-current={cell === date ? 'date' : undefined}
+                  >
+                    {Number(cell.slice(-2))}
+                  </button>
+                ) : (
+                  <span key={`blank-${index}`} />
+                ),
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {bubble && (
         <CalendarBubble
@@ -1210,6 +1383,8 @@ function DayGrid({
   onEmptyClick,
   onDropBooking,
   onOpenBlock,
+  focusedStaffId,
+  onStaffToggle,
   dragOver,
   setDragOver,
 }: {
@@ -1230,6 +1405,8 @@ function DayGrid({
   onEmptyClick: (staffId: string, staffName: string, minute: number) => void
   onDropBooking: (booking: BookingRow, staffId: string, minute: number) => void
   onOpenBlock: (block: CalendarBlock) => void
+  focusedStaffId: string | null
+  onStaffToggle: (staffId: string) => void
   dragOver: { staffId: string; minute: number; durationMin: number } | null
   setDragOver: (v: { staffId: string; minute: number; durationMin: number } | null) => void
 }) {
@@ -1253,12 +1430,20 @@ function DayGrid({
           // dagens arbete). Samma sanning som lastsiffran i designens kolumnhuvud.
           const load = bookings.filter((b) => b.staffId === s.id && !isAvbokad(b.status)).length
           return (
-            <div
+            <button
               key={s.id}
-              className={`${styles.headCell} ${styles.headCellDay}`}
+              type="button"
+              className={`${styles.headCell} ${styles.headCellDay} ${styles.headCellBtn}`}
               // 2px färglinje under huvudet (designens box-shadow) — färgen förstärker
               // kolumnidentiteten men bärs aldrig ensam: namn + avatar-initialer står kvar.
               style={{ ['--bk' as string]: s.color }}
+              onClick={() => onStaffToggle(s.id)}
+              aria-pressed={focusedStaffId === s.id}
+              aria-label={
+                focusedStaffId === s.id
+                  ? `Visa alla ${staffNoun.toLowerCase()}`
+                  : `Visa bara ${s.name}`
+              }
             >
               <span className={styles.headAvatar} aria-hidden="true">
                 {(s.name.trim()[0] ?? '?').toUpperCase()}
@@ -1268,9 +1453,12 @@ function DayGrid({
                 <span className={`num ${styles.headHours}`}>
                   {s.start && s.end ? `${s.start.slice(0, 5)}–${s.end.slice(0, 5)}` : 'Ledig'}
                 </span>
+                {focusedStaffId === s.id && (
+                  <span className={styles.headFocusHint}>× Visa alla</span>
+                )}
               </span>
               <span className={`num ${styles.headLoad}`}>{load} idag</span>
-            </div>
+            </button>
           )
         })}
       </div>

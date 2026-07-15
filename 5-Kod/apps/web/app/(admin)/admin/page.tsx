@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
-import { dashboardData, staffDay, type AdminBooking } from '@/lib/admin/data'
+import { dashboardData, listLocations, staffDay, type AdminBooking } from '@/lib/admin/data'
 import { getAdminModuleStates, isBookingActivated } from '@/lib/admin/modules'
+import { resolvePlats } from '@/lib/admin/plats'
 import { todayInTz, dayRangeUtc, weekRangeUtc } from '@/lib/admin/dates'
 import { formatPrice, formatTime } from '@/lib/admin/format'
 import {
@@ -28,7 +29,12 @@ export const metadata: Metadata = { title: 'Översikt · Adminpanel' }
  *  vänster = operativt (Härnäst-hero, tidslinje, kommande), höger = läget (siffror,
  *  inkorg, genvägar). Tidslinjen är LÄS-BARA: inga block att dra, ingen andra kalender.
  *  Alla tal kommer ur riktig data; inget fejkas. */
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plats?: string }>
+}) {
+  const sp = await searchParams
   const user = await requireAdminArea('oversikt')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
@@ -53,12 +59,23 @@ export default async function AdminPage() {
   // Veckodagen i tenantens tidszon (0=sön … 6=lör).
   const weekday = new Date(`${today}T12:00:00Z`).getUTCDay()
 
+  const locations = (await listLocations(tenant.id)).filter((location) => location.active)
+  const locationFilter =
+    locations.length > 1
+      ? await resolvePlats(
+          sp.plats,
+          locations.map((location) => location.id),
+        )
+      : ''
+  const selectedLocation = locations.find((location) => location.id === locationFilter)
+
   const [data, roster, moduleStates] = await Promise.all([
     dashboardData(tenant.id, dayRange, prevRange, {
       weekFromUtc: weekStart,
       monthFromUtc: monthStart,
+      locationId: locationFilter || undefined,
     }),
-    staffDay(tenant.id, weekday),
+    staffDay(tenant.id, weekday, locationFilter || undefined),
     getAdminModuleStates(tenant.id),
   ])
 
@@ -83,9 +100,7 @@ export default async function AdminPage() {
   // (settings.require_booking_approval). En salong godkänner inte varje besök — då är
   // inkorgen till för verkliga undantag: dagens avbokningar (frigjorda luckor).
   const requiresApproval = tenant.requireBookingApproval === true
-  const pendingApproval = requiresApproval
-    ? active.filter((b) => b.status === 'pending')
-    : []
+  const pendingApproval = requiresApproval ? active.filter((b) => b.status === 'pending') : []
   const attentionCount = pendingApproval.length + data.cancellationsToday.length
 
   const bookingPaused = !isBookingActivated(moduleStates)
@@ -137,7 +152,8 @@ export default async function AdminPage() {
   const timeOf = (b: AdminBooking) => formatTime(b.startTs, tz)
   const durationOf = (b: AdminBooking) =>
     Math.max(0, Math.round((Date.parse(b.endTs) - Date.parse(b.startTs)) / 60000))
-  const staffColorOf = (id: string) => roster.find((s) => s.staffId === id)?.color ?? 'var(--c-ink-3)'
+  const staffColorOf = (id: string) =>
+    roster.find((s) => s.staffId === id)?.color ?? 'var(--c-ink-3)'
 
   return (
     <div className={styles.page}>
@@ -145,7 +161,7 @@ export default async function AdminPage() {
       <div className={styles.head}>
         <div>
           <div className={`num ${styles.eyebrow}`}>
-            {dateLabel} · Alla platser
+            {dateLabel} · {selectedLocation?.name ?? 'Alla platser'}
           </div>
           <h1 className={styles.greeting}>
             {greeting}
@@ -155,7 +171,8 @@ export default async function AdminPage() {
             {data.todayCount} bokningar idag · {done.length} klara
             {next ? (
               <>
-                {' '}· nästa besök om{' '}
+                {' '}
+                · nästa besök om{' '}
                 <strong style={countdownUrgent ? { color: 'var(--c-warning)' } : undefined}>
                   {countdownMin} min
                 </strong>
@@ -259,12 +276,19 @@ export default async function AdminPage() {
               ) : (
                 <div className={styles.heroSideList}>
                   {later.slice(0, 3).map((b) => (
-                    <Link key={b.id} href={`/admin/bokningar?open=${b.id}`} className={styles.laterRow}>
+                    <Link
+                      key={b.id}
+                      href={`/admin/bokningar?open=${b.id}`}
+                      className={styles.laterRow}
+                    >
                       <span className={`num ${styles.laterTime}`}>{timeOf(b)}</span>
                       <span className={styles.laterName}>
                         {b.serviceName} · {nameOf(b)}
                       </span>
-                      <span className={styles.dot} style={{ background: staffColorOf(b.staffId) }} />
+                      <span
+                        className={styles.dot}
+                        style={{ background: staffColorOf(b.staffId) }}
+                      />
                     </Link>
                   ))}
                 </div>
@@ -333,7 +357,9 @@ export default async function AdminPage() {
                           <div style={{ minWidth: 0 }}>
                             <div className={styles.laneName}>{s.name}</div>
                             <div className={`num ${styles.lanePass}`}>
-                              {s.start ? `${s.start.slice(0, 5)}–${s.end!.slice(0, 5)}` : 'Ledig idag'}
+                              {s.start
+                                ? `${s.start.slice(0, 5)}–${s.end!.slice(0, 5)}`
+                                : 'Ledig idag'}
                             </div>
                           </div>
                         </div>
@@ -394,12 +420,19 @@ export default async function AdminPage() {
                 {future.slice(0, 6).map((b) => {
                   const st = STATUS_META[b.status] ?? { label: 'Bokad', color: 'var(--c-ink-3)' }
                   return (
-                    <Link key={b.id} href={`/admin/bokningar?open=${b.id}`} className={styles.upRow}>
+                    <Link
+                      key={b.id}
+                      href={`/admin/bokningar?open=${b.id}`}
+                      className={styles.upRow}
+                    >
                       <span className={`num ${styles.upTime}`}>{timeOf(b)}</span>
                       <span className={styles.upName}>{nameOf(b)}</span>
                       <span className={styles.upService}>{b.serviceName}</span>
                       <span className={styles.upStaff}>
-                        <span className={styles.dot} style={{ background: staffColorOf(b.staffId) }} />
+                        <span
+                          className={styles.dot}
+                          style={{ background: staffColorOf(b.staffId) }}
+                        />
                         {b.staffTitle}
                       </span>
                       <span className={`num ${styles.upStatus}`} style={{ color: st.color }}>
@@ -429,7 +462,10 @@ export default async function AdminPage() {
                   </div>
                 </div>
                 <div className={styles.bar}>
-                  <div className={styles.barFill} style={{ width: `${donePct}%`, background: 'var(--c-success)' }} />
+                  <div
+                    className={styles.barFill}
+                    style={{ width: `${donePct}%`, background: 'var(--c-success)' }}
+                  />
                 </div>
               </div>
               <div className={styles.statRow}>
@@ -453,12 +489,13 @@ export default async function AdminPage() {
               <div className={styles.statRow} style={{ borderBottom: 'none', paddingBottom: 2 }}>
                 <div>
                   <div className={styles.statBig}>{occupancy}%</div>
-                  <div className={styles.statSub}>
-                    beläggning · {workingStaff.length} i tjänst
-                  </div>
+                  <div className={styles.statSub}>beläggning · {workingStaff.length} i tjänst</div>
                 </div>
                 <div className={styles.bar}>
-                  <div className={styles.barFill} style={{ width: `${occupancy}%`, background: 'var(--c-info)' }} />
+                  <div
+                    className={styles.barFill}
+                    style={{ width: `${occupancy}%`, background: 'var(--c-info)' }}
+                  />
                 </div>
               </div>
             </div>

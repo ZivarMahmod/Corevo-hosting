@@ -1,4 +1,7 @@
 import { cookies } from 'next/headers'
+import { PLATS_ALLA, PLATS_COOKIE } from './plats-constants'
+
+export { PLATS_ALLA, PLATS_COOKIE } from './plats-constants'
 
 /**
  * Global "vald butik" för kund-admin (Zivar 2026-07-10: "ett val där man väljer
@@ -8,9 +11,6 @@ import { cookies } from 'next/headers'
  * Sidans egna filter vinner alltid — "alla" är sentinel för ett uttryckligt
  * "Alla platser" (annars skulle cookien återta valet så fort parametern föll bort).
  */
-export const PLATS_COOKIE = 'corevo-plats'
-export const PLATS_ALLA = 'alla'
-
 /** ?plats= (uttryckligt val, 'alla' = alla platser) → annars cookien → annars ''.
  *  Bara id:n i validIds räknas — allt annat blir '' (alla). */
 export async function resolvePlats(

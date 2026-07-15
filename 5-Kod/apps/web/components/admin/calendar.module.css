@@ -257,6 +257,19 @@
   outline-offset: 2px;
 }
 
+.helpBtnLabelled {
+  width: auto;
+  padding-inline: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .helpList {
   display: grid;
   gap: 6px;
@@ -650,6 +663,14 @@
   display: none;
 }
 
+/* Kalender Mobil v2: datum/vy/sekundärverktyg bor i en lugn docka ovanför det
+   universella bottennavet. Markupen är gemensam men syns bara under mobilbrytningen. */
+.mobileCalendarDock,
+.mobileCalendarScrim,
+.mobileCalendarPicker {
+  display: none;
+}
+
 /* ---- scrollytan: det ENDA som scrollar ---- */
 .scroll {
   flex: 1;
@@ -732,6 +753,13 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+}
+
+.headFocusHint {
+  color: var(--c-ink-3);
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Dagens last, till höger (designens "N idag"). Mono så siffran inte hoppar mellan
@@ -1724,16 +1752,14 @@
    fortfarande en läsbar minbredd och intern sidscroll vid riktigt stora team. */
 @media (max-width: 767px) {
   .board {
-    height: calc(
-      100dvh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
-    );
+    position: relative;
+    height: calc(100dvh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     min-height: 360px;
     border-radius: 0;
   }
 
   .toolbar {
-    gap: 10px;
-    padding: 10px 14px;
+    display: none;
   }
 
   .navGroup {
@@ -1810,7 +1836,7 @@
 
   .scroll {
     overflow-x: hidden;
-    padding-bottom: 90px;
+    padding-bottom: 0;
   }
 
   .headCell {
@@ -1845,6 +1871,13 @@
     font-size: 8px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .headFocusHint {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 8px;
+    text-overflow: ellipsis;
   }
 
   .axisMark {
@@ -1889,6 +1922,292 @@
 
   .monthCount {
     font-size: 10.5px;
+  }
+
+  .mobileCalendarDock {
+    position: relative;
+    z-index: 6;
+    display: block;
+    flex: none;
+    border-top: 1px solid var(--c-line);
+    background: var(--c-cream);
+    box-shadow: 0 -8px 20px color-mix(in srgb, var(--c-ink) 5%, transparent);
+  }
+
+  .mobileCalendarDateRow {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 50px;
+    padding: 7px 12px 3px;
+  }
+
+  .mobileDateToggle {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 2px 0;
+    border: 0;
+    background: transparent;
+    color: var(--c-ink);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+  }
+
+  .mobileDateTitle {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: 16.5px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileDateTitle > span {
+    flex: none;
+    color: var(--c-ink-3);
+    font-size: 9px;
+  }
+
+  .mobileDateStats {
+    display: block;
+    margin-top: 1px;
+    overflow: hidden;
+    color: var(--c-ink-3);
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileTodayBtn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid color-mix(in srgb, var(--c-forest) 65%, var(--c-line));
+    border-radius: 9px;
+    background: var(--c-paper);
+    color: var(--c-forest);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 650;
+  }
+
+  .mobileStep {
+    display: flex;
+    flex: none;
+    overflow: hidden;
+    border: 1px solid var(--c-line-strong);
+    border-radius: 9px;
+    background: var(--c-paper);
+  }
+
+  .mobileStep button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--c-ink-2);
+    cursor: pointer;
+  }
+
+  .mobileStep button + button {
+    border-left: 1px solid var(--c-line);
+  }
+
+  .mobileCalendarActionRow {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 2px 12px 4px;
+  }
+
+  .mobileViewSwitch {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .mobileViewSwitch button {
+    min-width: 44px;
+    min-height: 36px;
+    padding: 0 9px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--c-ink-3);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .mobileViewSwitch .mobileViewOn {
+    background: var(--c-paper-3);
+    color: var(--c-ink);
+  }
+
+  .mobileBlockAction {
+    min-height: 36px;
+    margin-left: auto;
+    padding: 0 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid color-mix(in srgb, var(--c-gold) 42%, var(--c-line));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c-gold) 9%, var(--c-paper));
+    color: var(--c-gold);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 650;
+  }
+
+  .mobileCalendarUtilities {
+    min-height: 42px;
+    padding: 3px 12px 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 1px solid color-mix(in srgb, var(--c-line) 65%, transparent);
+  }
+
+  .mobileCalendarUtilities .search {
+    flex: 1;
+    height: 34px;
+    background: var(--c-paper);
+  }
+
+  .mobileCalendarUtilities .searchInput {
+    width: 100%;
+  }
+
+  .mobileCalendarUtilities .search:focus-within .searchInput {
+    width: 100%;
+  }
+
+  .mobileCalendarUtilities .searchDrop {
+    top: auto;
+    right: auto;
+    bottom: calc(100% + 7px);
+    left: 0;
+    width: min(340px, calc(100vw - 24px));
+  }
+
+  .mobileCalendarUtilities .helpBtnLabelled {
+    flex: none;
+    height: 34px;
+    min-height: 34px;
+    padding-inline: 9px;
+    background: var(--c-paper);
+  }
+
+  .mobileCalendarScrim {
+    position: absolute;
+    inset: 0;
+    z-index: 27;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    display: block;
+    border: 0;
+    background: color-mix(in srgb, var(--c-ink) 10%, transparent);
+    cursor: default;
+  }
+
+  .mobileCalendarPicker {
+    position: absolute;
+    right: 12px;
+    bottom: 140px;
+    left: 12px;
+    z-index: 28;
+    display: block;
+    padding: 13px;
+    border: 1px solid var(--c-line-strong);
+    border-radius: 16px;
+    background: var(--c-paper);
+    box-shadow: 0 18px 44px color-mix(in srgb, var(--c-ink) 18%, transparent);
+  }
+
+  .mobilePickerHead {
+    margin-bottom: 9px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .mobilePickerHead strong {
+    color: var(--c-ink);
+    font-size: 13px;
+  }
+
+  .mobilePickerHead span {
+    color: var(--c-ink-3);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mobilePickerWeekdays,
+  .mobilePickerDays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .mobilePickerWeekdays span {
+    padding: 3px 0;
+    color: var(--c-ink-3);
+    font-family: var(--font-mono);
+    font-size: 8px;
+    text-align: center;
+  }
+
+  .mobilePickerDays button,
+  .mobilePickerDays > span {
+    min-width: 0;
+    min-height: 40px;
+  }
+
+  .mobilePickerDays button {
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--c-ink);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .mobilePickerDays .mobilePickerSelected {
+    background: var(--c-ink);
+    color: var(--c-paper);
+  }
+
+  .mobilePickerDays .mobilePickerToday:not(.mobilePickerSelected) {
+    border-color: var(--c-forest);
+    color: var(--c-forest);
+  }
+
+  .mobileDateToggle:focus-visible,
+  .mobileTodayBtn:focus-visible,
+  .mobileStep button:focus-visible,
+  .mobileViewSwitch button:focus-visible,
+  .mobileBlockAction:focus-visible,
+  .mobilePickerDays button:focus-visible {
+    outline: 2px solid var(--c-forest);
+    outline-offset: -2px;
   }
 }
 

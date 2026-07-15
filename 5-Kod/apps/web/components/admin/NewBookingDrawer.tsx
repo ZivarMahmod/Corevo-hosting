@@ -82,6 +82,9 @@ export function NewBookingDrawer({
   const [phone, setPhone] = useState('')
   const [note, setNote] = useState('')
   const [notifyChoice, setNotifyChoice] = useState<'ingen' | 'epost'>('ingen')
+  // Samma intent-id lever genom fel/retry medan drawern är monterad. Ett förlorat
+  // svar får då tillbaka samma bokning i stället för en falsk tidskonflikt.
+  const [requestId] = useState(() => crypto.randomUUID())
 
   const service = services.find((s) => s.id === serviceId) ?? null
 
@@ -167,6 +170,7 @@ export function NewBookingDrawer({
       ariaLabel="Ny bokning"
       footer={
         <form action={formAction} style={{ width: '100%' }}>
+          <input type="hidden" name="requestId" value={requestId} />
           <input type="hidden" name="service" value={serviceId} />
           <input type="hidden" name="staff" value={picked?.staffId ?? ''} />
           <input type="hidden" name="start" value={picked?.startIso ?? ''} />
@@ -238,11 +242,7 @@ export function NewBookingDrawer({
               <span className="num">{timeOf(picked.startIso)}</span>
               <span>{staffNames.get(picked.staffId) ?? ''}</span>
               {service && <span className={styles.pickedMeta}>{service.durationMin} min</span>}
-              <button
-                type="button"
-                className={styles.pickedChange}
-                onClick={() => setPicked(null)}
-              >
+              <button type="button" className={styles.pickedChange} onClick={() => setPicked(null)}>
                 Byt tid
               </button>
             </div>
@@ -250,7 +250,9 @@ export function NewBookingDrawer({
 
           {!picked &&
             (!serviceId ? (
-              <p className={styles.hint}>Välj en tjänst — då visas de tider som faktiskt får plats.</p>
+              <p className={styles.hint}>
+                Välj en tjänst — då visas de tider som faktiskt får plats.
+              </p>
             ) : slotsLoading ? (
               <p className={styles.hint}>Räknar ut lediga tider…</p>
             ) : slots.length === 0 ? (
@@ -292,7 +294,9 @@ export function NewBookingDrawer({
             <div className={styles.pickedRow}>
               <Icon name="user" size={15} />
               <span style={{ fontWeight: 600 }}>{chosen.name}</span>
-              <span className={styles.pickedMeta}>{chosen.email ?? chosen.phone ?? 'ingen kontakt'}</span>
+              <span className={styles.pickedMeta}>
+                {chosen.email ?? chosen.phone ?? 'ingen kontakt'}
+              </span>
               <button
                 type="button"
                 className={styles.pickedChange}

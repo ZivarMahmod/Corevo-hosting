@@ -9,6 +9,7 @@ const read = (relative: string) => fs.readFileSync(path.join(WEB_ROOT, relative)
 describe('del 01: ägar-adminens responsiva kontrakt', () => {
   it('har exakt mobilbrytpunkt, bottennav och safe-area i det delade toppnavet', () => {
     const css = read('components/portal/Topnav.module.css')
+    const adminCss = read('components/portal/AdminTopnav.module.css')
     const component = read('components/portal/Topnav.tsx')
     const theme = read('components/portal/ThemeSwitch.tsx')
     const modal = read('components/portal/ui/modal.module.css')
@@ -18,10 +19,16 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(css).toContain('env(safe-area-inset-bottom)')
     expect(component).toContain('mobileNavigation')
     expect(component).toContain('aria-label="Mobilnavigering"')
-    expect(component).not.toContain('mobileIcon(area.id)')
-    expect(css).toMatch(/\.mobileNavItem\s*\{[\s\S]*?font-size:\s*11\.5px;/)
+    expect(component).toContain('mobileNavGlyph(area.id)')
+    expect(component).toContain("mobileNavGlyph('more')")
+    expect(adminCss).toMatch(/\.mobileNavIcon\s*\{[\s\S]*?font-size:\s*16px;/)
+    expect(css).toMatch(/\.mobileNavItem\s*\{[\s\S]*?font-size:\s*9\.5px;/)
     expect(css).toMatch(/\.mobileNav\s*\{[\s\S]*?z-index:\s*25;/)
-    expect(css).toMatch(/\.mobileFab\s*\{[\s\S]*?background:\s*#2f5f47;/i)
+    expect(component).toContain('className={styles.mobileFabLabel}')
+    expect(component).toContain('{mobileNavigation.action.label}</span>')
+    expect(css).toMatch(
+      /\.mobileFabButton\s*\{[\s\S]*?width:\s*46px;[\s\S]*?height:\s*46px;[\s\S]*?background:\s*#2f5f47;/i,
+    )
     expect(css).toContain('env(safe-area-inset-top)')
     expect(theme).toContain('THEME_EVENT')
     expect(theme).toContain('dispatchEvent')
