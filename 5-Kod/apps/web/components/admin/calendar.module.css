@@ -647,6 +647,42 @@
 }
 
 /* ---- scrollytan: det ENDA som scrollar ---- */
+/* ---- dagsnabbval (mockens dag-chips) — ersätter svep-byt-dag ---- */
+.dayChips {
+  flex: none;
+  display: flex;
+  gap: 6px;
+  padding: 8px 14px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--c-line);
+  scrollbar-width: none;
+}
+.dayChips::-webkit-scrollbar {
+  display: none;
+}
+.dayChip {
+  flex: none;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  background: transparent;
+  color: var(--c-ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  min-height: 34px;
+}
+.dayChip:hover {
+  color: var(--c-ink);
+  border-color: var(--c-line-strong);
+}
+.dayChipOn {
+  background: var(--c-paper-3);
+  border-color: var(--c-line-strong);
+  color: var(--c-ink);
+}
+
 .scroll {
   flex: 1;
   min-height: 0;

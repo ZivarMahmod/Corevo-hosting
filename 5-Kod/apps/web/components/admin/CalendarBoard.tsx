@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
-import { isoWeekNumber } from '@/lib/admin/dates'
+import { isoWeekNumber, addDays } from '@/lib/admin/dates'
 import { occupancyPct } from '@/lib/admin/dashboard-view'
 import { moveBooking } from '@/lib/admin/calendar-actions'
 import { Button, Icon, Modal, useToast } from '@/components/portal/ui'
@@ -400,40 +400,25 @@ export function CalendarBoard({
     go({ datum: d.toISOString().slice(0, 10) })
   }
 
-  // Svep med fingret = byt dag (mobil). Ligger på scrollytan och agerar FÖRST vid
-  // touchend, bara på ett tydligt horisontellt svep — så det aldrig konkurrerar med:
-  //   • att nudda/öppna en bokning (litet svep → under tröskeln, inget händer),
-  //   • lodrät scroll (dy dominerar → ignoreras),
-  //   • vågrät kolumn-scroll (agerar bara när kolumnerna INTE kan scrolla vidare åt det
-  //     hållet, dvs de ryms eller man är vid kanten → "överscroll" bläddrar dagen).
-  // Höger-svep = föregående, vänster-svep = nästa (som att bläddra i en kalender).
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const swipe = useRef<{ x: number; y: number } | null>(null)
-  const onTouchStart = (e: React.TouchEvent) => {
-    swipe.current = e.touches.length === 1 ? { x: e.touches[0]!.clientX, y: e.touches[0]!.clientY } : null
-  }
-  const onTouchEnd = (e: React.TouchEvent) => {
-    const s = swipe.current
-    swipe.current = null
-    const el = scrollRef.current
-    if (!s || !el) return
-    const t = e.changedTouches[0]
-    if (!t) return
-    const dx = t.clientX - s.x
-    const dy = t.clientY - s.y
-    // Tydligt horisontellt svep: minst 70px och klart mer vågrätt än lodrätt.
-    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return
-    const canScrollX = el.scrollWidth > el.clientWidth + 1
-    if (dx > 0) {
-      // svep höger → föregående dag. Blockeras om kolumnerna kan scrolla vänster.
-      if (canScrollX && el.scrollLeft > 0) return
-      shift(-1)
-    } else {
-      const atRight = el.scrollLeft >= el.scrollWidth - el.clientWidth - 1
-      if (canScrollX && !atRight) return
-      shift(1)
-    }
-  }
+  // Dagsnabbval (mockens dag-chips): Idag + kommande dagar, tumvänligt dagbyte.
+  // ERSÄTTER den gamla svep-gesten. På mobil visas alla frisörer som kolumner → ytan
+  // scrollar vågrätt, och en svep-byt-dag ovanpå det blir omöjlig att skilja från
+  // kolumn-scroll (Zivars "helt galen"). Designen byter dag via stegaren + de här
+  // chipsen; touchen ägs helt av scroll (vågrätt) och tap (öppna bokning). Drag för
+  // att flytta bokning finns kvar på desktop; på mobil sker flytt via bokningens sheet.
+  const dayChips =
+    view === 'dag'
+      ? Array.from({ length: 6 }, (_, i) => {
+          const iso = addDays(today, i)
+          const label =
+            i === 0
+              ? 'Idag'
+              : new Intl.DateTimeFormat('sv-SE', { weekday: 'short', day: 'numeric', timeZone: tz })
+                  .format(new Date(`${iso}T12:00:00Z`))
+                  .replace('.', '')
+          return { iso, label, active: iso === date }
+        })
+      : []
 
   // Klick på ledig yta = "boka här". Tiden SNAPPAS till 15 min (ett klick på 09:20-höjd
   // ger 09:15, aldrig 09:20) och resurs + tid ärvs in i drawern — användaren ska aldrig
@@ -638,14 +623,27 @@ export function CalendarBoard({
         </div>
       </div>
 
+      {/* Dagsnabbval — mockens tumvänliga dagbyte (Idag · Tor 16 · Fre 17 …). Ersätter
+          svep; syns bara i dagvyn. Egen vågrät scroll, inga synliga scrollbars. */}
+      {dayChips.length > 0 && (
+        <div className={styles.dayChips} role="group" aria-label="Snabbval av dag">
+          {dayChips.map((c) => (
+            <button
+              key={c.iso}
+              type="button"
+              className={`${styles.dayChip}${c.active ? ` ${styles.dayChipOn}` : ''}`}
+              aria-current={c.active ? 'date' : undefined}
+              onClick={() => go({ datum: c.iso })}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Scrollytan. overflow ligger HÄR, inte på sidan — därför scrollar aldrig
           dokumentet och toppnaven stannar kvar. */}
-      <div
-        className={styles.scroll}
-        ref={scrollRef}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
+      <div className={styles.scroll}>
         {view === 'dag' && (
           <DayGrid
             bookings={vBookings}
