@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 
@@ -30,7 +31,10 @@ function parseState(raw: unknown): ModuleState {
  * (callers treat absent as 'off'). Returns {} on any error so a read miss can
  * never crash an admin page — the surface then shows the "not active" notice.
  */
-export async function getAdminModuleStates(tenantId: string): Promise<AdminModuleStates> {
+// Prestanda C2: request-scopad cache() — PortalShell OCH modul-sidorna läser
+// tenant_modules per request; dedupar dubbla läsningar (RLS-scopat, samma request
+// = samma användare).
+export const getAdminModuleStates = cache(async (tenantId: string): Promise<AdminModuleStates> => {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('tenant_modules')
@@ -45,7 +49,7 @@ export async function getAdminModuleStates(tenantId: string): Promise<AdminModul
     }
   }
   return out
-}
+})
 
 /** Resolve one module's state from the map (absent → 'off'). */
 export function moduleAdminState(states: AdminModuleStates, key: string): ModuleState {

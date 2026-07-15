@@ -79,18 +79,37 @@ export async function PortalShell({
     const email = user.email ?? ''
     const userLabel = email.split('@')[0] || email || 'Konto'
 
-    // Modulstyrd admin-yta: läs kundens tenant_modules EN gång här (RLS-scopad)
-    // och låt sidomeny + ⌘K-palett visa BARA aktiverade moduler. Platform/personal
-    // gatar inte (undefined → PortalSidebar visar allt).
+    // Prestanda C3: chromets tre tenant-läsningar (modul-states, bransch-terminologi,
+    // platser) är oberoende och kördes tidigare seriellt. Ett Promise.all gör dem
+    // parallella. Alla tre är null utanför sina villkor (portal/bundle/vertical_id),
+    // och derivationerna nedan är oförändrade — bara hämtningen är hopslagen.
+    const isAdminTenant = portal === 'admin' && !!bundle
+    const [moduleStates, verticalRow, adminLocations] = await Promise.all([
+      isAdminTenant ? getAdminModuleStates(bundle!.tenant.id) : Promise.resolve(null),
+      bundle?.tenant.vertical_id
+        ? (async () => {
+            const sb = await createClient()
+            const { data } = await sb
+              .from('verticals')
+              .select('terminology')
+              .eq('key', bundle.tenant.vertical_id!)
+              .maybeSingle()
+            return data
+          })()
+        : Promise.resolve(null),
+      isAdminTenant ? listLocations(bundle!.tenant.id) : Promise.resolve(null),
+    ])
+
+    // Modulstyrd admin-yta: kundens tenant_modules (RLS-scopad) → sidomeny + ⌘K-palett
+    // visar BARA aktiverade moduler. Platform/personal gatar inte (undefined → allt).
     let activeModuleKeys: string[] | undefined
-    if (portal === 'admin' && bundle) {
-      const states = await getAdminModuleStates(bundle.tenant.id)
+    if (moduleStates) {
       // Modul-nycklarna läses ur NAV (nav-items.ts) — samma poster som sidomenyn.
       // 'booking' är default-live utan tenant_modules-rad (isBookingActivated) —
       // övriga moduler är opt-in (rad krävs, isModuleActivated).
       const moduleKeys = NAV.admin.items.flatMap((e) => (!isGroup(e) && e.module ? [e.module] : []))
       activeModuleKeys = moduleKeys.filter((k) =>
-        k === 'booking' ? isBookingActivated(states) : isModuleActivated(states, k),
+        k === 'booking' ? isBookingActivated(moduleStates) : isModuleActivated(moduleStates, k),
       )
     }
     // Roll-separationen: personal (nivå 3) ser bara sin arbetsdag i menyn OCH i
@@ -116,16 +135,9 @@ export async function PortalShell({
     // chrome — on any miss the overlay stays {} → today's hardcoded word). The
     // platform portal has no single tenant (bundle null) → overlay stays {} and
     // the platform_admin path below never consults the staff entry anyway.
-    let terminology: ReturnType<typeof cleanTerminology> = {}
-    if (bundle?.tenant.vertical_id) {
-      const supabase = await createClient()
-      const { data: vertical } = await supabase
-        .from('verticals')
-        .select('terminology')
-        .eq('key', bundle.tenant.vertical_id)
-        .maybeSingle()
-      terminology = cleanTerminology(vertical?.terminology)
-    }
+    const terminology: ReturnType<typeof cleanTerminology> = verticalRow
+      ? cleanTerminology(verticalRow.terminology)
+      : {}
     // Humanize the raw role enum for the sidebar identity cell (mock shows
     // "Ägare", not "salon_admin"). Falls back to the raw name for unmapped roles.
     // 'staff' speaks the tenant's bransch via terminology (fallback 'Frisör' = the
@@ -154,8 +166,8 @@ export async function PortalShell({
     // admin en switcher i topbaren; valet bor i corevo-plats-cookien och styr
     // Bokningar/Scheman/Bokningsvyns default (lib/admin/plats.ts).
     let locationSwitcher: ReactNode = null
-    if (portal === 'admin' && bundle) {
-      const activeLocations = (await listLocations(bundle.tenant.id)).filter((l) => l.active)
+    if (adminLocations) {
+      const activeLocations = adminLocations.filter((l) => l.active)
       if (activeLocations.length > 1) {
         const jar = await cookies()
         const saved = jar.get(PLATS_COOKIE)?.value ?? ''

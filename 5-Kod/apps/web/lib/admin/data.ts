@@ -1,4 +1,5 @@
 import 'server-only'
+import { cache } from 'react'
 import type { Tables } from '@corevo/db'
 import type { TenantBranding } from '@corevo/ui'
 import { createClient } from '@/lib/supabase/server'
@@ -99,7 +100,9 @@ export async function listStaff(tenantId: string): Promise<StaffWithServices[]> 
   })
 }
 
-export async function listLocations(tenantId: string): Promise<LocationRow[]> {
+// Prestanda C2: request-scopad cache() — PortalShell (butik-väljaren) och admin-
+// sidorna läser platserna per request; dedupar dubbla locations-frågor.
+export const listLocations = cache(async (tenantId: string): Promise<LocationRow[]> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('locations')
@@ -108,7 +111,7 @@ export async function listLocations(tenantId: string): Promise<LocationRow[]> {
     .order('is_primary', { ascending: false })
     .order('created_at', { ascending: true })
   return data ?? []
-}
+})
 
 export async function getSettingsRow(tenantId: string): Promise<SettingsRow | null> {
   const supabase = await createClient()

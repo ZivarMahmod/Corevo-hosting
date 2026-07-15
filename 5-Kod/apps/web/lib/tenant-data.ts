@@ -435,7 +435,9 @@ async function applyDevThemeOverride(bundle: TenantBundle | null): Promise<Tenan
  * authed server client so RLS lets them read their tenant even when suspended —
  * NOT the anon public client (which only sees active tenants).
  */
-export async function getTenantById(id: string): Promise<TenantBundle | null> {
+// Prestanda C2: request-scopad cache() — PortalShell OCH getAdminTenant (+ sidor)
+// läser tenanten per request; utan dedupe blir det dubbla tenants+settings-frågor.
+export const getTenantById = cache(async (id: string): Promise<TenantBundle | null> => {
   const supabase = await createClient()
   const { data: tenant } = await supabase.from('tenants').select('*').eq('id', id).maybeSingle()
   if (!tenant) return null
@@ -447,4 +449,4 @@ export async function getTenantById(id: string): Promise<TenantBundle | null> {
   // Back-office chrome only needs name/branding/settings — the storefront contact
   // area (location/hours) is not rendered here, so we skip the extra reads.
   return { tenant, settings: parseSettings(settingsRow ?? null), location: null }
-}
+})
