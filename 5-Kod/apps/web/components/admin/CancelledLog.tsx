@@ -45,7 +45,15 @@ function slotLabel(iso: string, tz: string): string {
   }).format(new Date(iso))
 }
 
-export function CancelledLog({ tz, label }: { tz: string; label?: string }) {
+export function CancelledLog({
+  tz,
+  label,
+  embedded = false,
+}: {
+  tz: string
+  label?: string
+  embedded?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const [rows, setRows] = useState<CancelledBooking[] | null>(null)
   const [msg, setMsg] = useState<{ text: string; bad?: boolean } | null>(null)
@@ -71,6 +79,60 @@ export function CancelledLog({ tz, label }: { tz: string; label?: string }) {
     })
   }
 
+  const logContent = (
+    <>
+      {msg && (
+        <p className={msg.bad ? styles.logError : styles.logOk} role="status">
+          {msg.text}
+        </p>
+      )}
+
+      {rows === null && <p className={styles.logEmpty}>Hämtar…</p>}
+
+      {rows?.length === 0 && (
+        <p className={styles.logEmpty}>Inga avbokningar de senaste 30 dagarna.</p>
+      )}
+
+      {rows && rows.length > 0 && (
+        <ul className={styles.logList}>
+          {rows.map((r) => (
+            <li key={r.id} className={styles.logItem}>
+              <div className={styles.logMain}>
+                <strong className={styles.logName}>{r.customerName}</strong>
+                <span className={styles.logMeta}>
+                  {r.serviceName}
+                  {r.staffTitle ? ` · ${r.staffTitle}` : ''}
+                </span>
+                <span className={styles.logMeta}>{slotLabel(r.startTs, tz)}</span>
+                <span className={styles.logWho}>
+                  {when(r.cancelledAt)}
+                  {r.cancelledBy ? ` · ${WHO[r.cancelledBy]}` : ''}
+                </span>
+              </div>
+
+              {/* En passerad tid går inte att återställa — det vore att boka in
+                  någon i går. Vi säger varför i stället för att visa en knapp
+                  som bara skulle misslyckas. */}
+              {r.isPast ? (
+                <span className={styles.logPast}>Tiden har passerat</span>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.logRestore}
+                  onClick={() => restore(r.id)}
+                  disabled={pending}
+                >
+                  <Icon name="undo" size={14} />
+                  Återställ
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  )
+
   return (
     <>
       <button
@@ -84,62 +146,21 @@ export function CancelledLog({ tz, label }: { tz: string; label?: string }) {
         {label && <span>{label}</span>}
       </button>
 
-      {open && (
+      {open && embedded && (
+        <section className={styles.logEmbedded} aria-label="Avbokade tider, senaste 30 dagarna">
+          <p className={styles.logEmbeddedTitle}>Senaste 30 dagarna</p>
+          {logContent}
+        </section>
+      )}
+
+      {open && !embedded && (
         <Modal
           title="Avbokade tider"
           sub="Senaste 30 dagarna"
           onClose={() => setOpen(false)}
           ariaLabel="Avbokade tider"
         >
-          {msg && (
-            <p className={msg.bad ? styles.logError : styles.logOk} role="status">
-              {msg.text}
-            </p>
-          )}
-
-          {rows === null && <p className={styles.logEmpty}>Hämtar…</p>}
-
-          {rows?.length === 0 && (
-            <p className={styles.logEmpty}>Inga avbokningar de senaste 30 dagarna.</p>
-          )}
-
-          {rows && rows.length > 0 && (
-            <ul className={styles.logList}>
-              {rows.map((r) => (
-                <li key={r.id} className={styles.logItem}>
-                  <div className={styles.logMain}>
-                    <strong className={styles.logName}>{r.customerName}</strong>
-                    <span className={styles.logMeta}>
-                      {r.serviceName}
-                      {r.staffTitle ? ` · ${r.staffTitle}` : ''}
-                    </span>
-                    <span className={styles.logMeta}>{slotLabel(r.startTs, tz)}</span>
-                    <span className={styles.logWho}>
-                      {when(r.cancelledAt)}
-                      {r.cancelledBy ? ` · ${WHO[r.cancelledBy]}` : ''}
-                    </span>
-                  </div>
-
-                  {/* En passerad tid går inte att återställa — det vore att boka in
-                      någon i går. Vi säger varför i stället för att visa en knapp
-                      som bara skulle misslyckas. */}
-                  {r.isPast ? (
-                    <span className={styles.logPast}>Tiden har passerat</span>
-                  ) : (
-                    <button
-                      type="button"
-                      className={styles.logRestore}
-                      onClick={() => restore(r.id)}
-                      disabled={pending}
-                    >
-                      <Icon name="undo" size={14} />
-                      Återställ
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+          {logContent}
         </Modal>
       )}
     </>

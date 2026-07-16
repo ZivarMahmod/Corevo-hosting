@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Icon, Modal } from '@/components/portal/ui'
 import styles from './calendar.module.css'
 
@@ -45,19 +45,27 @@ const TIPS: { q: string; a: string }[] = [
   },
 ]
 
-export function CalendarHelp({ label }: { label?: string }) {
+export function CalendarHelp({
+  label,
+  mobileHeader = false,
+  children,
+}: {
+  label?: string
+  mobileHeader?: boolean
+  children?: ReactNode
+}) {
   const [open, setOpen] = useState(false)
 
   return (
     <>
       <button
         type="button"
-        className={`${styles.helpBtn}${label ? ` ${styles.helpBtnLabelled}` : ''}`}
+        className={`${styles.helpBtn}${label ? ` ${styles.helpBtnLabelled}` : ''}${mobileHeader ? ` ${styles.helpBtnMobileHeader}` : ''}`}
         onClick={() => setOpen(true)}
         aria-label="Hjälp om kalendern"
         title="Hjälp"
       >
-        <Icon name="info" size={16} />
+        {mobileHeader ? <span aria-hidden="true">?</span> : <Icon name="info" size={16} />}
         {label && <span>{label}</span>}
       </button>
 
@@ -76,6 +84,7 @@ export function CalendarHelp({ label }: { label?: string }) {
               </details>
             ))}
           </div>
+          {children ? <div className={styles.helpExtras}>{children}</div> : null}
         </Modal>
       )}
     </>

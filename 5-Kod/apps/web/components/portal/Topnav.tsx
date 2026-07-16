@@ -410,7 +410,10 @@ export function Topnav({
                   className={`${styles.mobileNavItem}${active ? ` ${styles.mobileNavItemActive}` : ''}`}
                   aria-current={active ? 'page' : undefined}
                 >
-                  <span className={adminStyles.mobileNavIcon} aria-hidden="true">
+                  <span
+                    className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
+                    aria-hidden="true"
+                  >
                     {mobileNavGlyph(area.id)}
                   </span>
                   <span>{area.label}</span>
@@ -436,7 +439,10 @@ export function Topnav({
                   className={`${styles.mobileNavItem}${active ? ` ${styles.mobileNavItemActive}` : ''}`}
                   aria-current={active ? 'page' : undefined}
                 >
-                  <span className={adminStyles.mobileNavIcon} aria-hidden="true">
+                  <span
+                    className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
+                    aria-hidden="true"
+                  >
                     {mobileNavGlyph(area.id)}
                   </span>
                   <span>{area.label}</span>
@@ -451,7 +457,10 @@ export function Topnav({
               aria-haspopup="dialog"
               aria-current={mobileMoreActive ? 'page' : undefined}
             >
-              <span className={adminStyles.mobileNavIcon} aria-hidden="true">
+              <span
+                className={`${styles.mobileNavIcon} ${adminStyles.mobileNavIcon}`}
+                aria-hidden="true"
+              >
                 {mobileNavGlyph('more')}
               </span>
               <span>Mer</span>
@@ -510,6 +519,14 @@ export function Topnav({
           </nav>
 
           <div className={styles.mobileMoreTools}>
+            <button
+              type="button"
+              className={styles.mobileMoreAccountLink}
+              onClick={openMobileAccount}
+            >
+              <span>Konto</span>
+              <Icon name="chevronRight" size={17} />
+            </button>
             {contextLink ? (
               <a href={contextLink.href} target="_blank" rel="noreferrer">
                 <span>{contextLink.label}</span>

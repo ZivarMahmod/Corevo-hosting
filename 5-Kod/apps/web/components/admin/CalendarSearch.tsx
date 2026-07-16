@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Icon } from '@/components/portal/ui'
+import { Icon, Modal } from '@/components/portal/ui'
 import { searchBookings, type BookingHit } from '@/lib/admin/calendar-actions'
 import { isAvbokad } from './BookingDrawer'
 import styles from './calendar.module.css'
@@ -16,10 +16,17 @@ import styles from './calendar.module.css'
  *  En träff är en GENVÄG, inte en vy: klick → kalendern hoppar till den dagen och öppnar
  *  bokningen. Man landar där arbetet görs, inte i en sökresultatsida man måste lämna. */
 
-export function CalendarSearch({ tz }: { tz: string }) {
+export function CalendarSearch({
+  tz,
+  mobileSheet = false,
+}: {
+  tz: string
+  mobileSheet?: boolean
+}) {
   const router = useRouter()
   const [q, setQ] = useState('')
   const [hits, setHits] = useState<BookingHit[] | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const box = useRef<HTMLDivElement>(null)
 
@@ -51,11 +58,18 @@ export function CalendarSearch({ tz }: { tz: string }) {
   function open(hit: BookingHit) {
     setHits(null)
     setQ('')
+    setSheetOpen(false)
     router.push(`/admin/bokningar?vy=dag&datum=${hit.date}&open=${hit.id}`)
   }
 
-  return (
-    <div className={styles.search} ref={box}>
+  function closeSheet() {
+    setSheetOpen(false)
+    setHits(null)
+    setQ('')
+  }
+
+  const searchField = (
+    <div className={`${styles.search}${mobileSheet ? ` ${styles.searchSheet}` : ''}`} ref={box}>
       <Icon name="search" size={15} />
       <input
         type="search"
@@ -115,5 +129,35 @@ export function CalendarSearch({ tz }: { tz: string }) {
         </div>
       )}
     </div>
+  )
+
+  if (!mobileSheet) return searchField
+
+  return (
+    <>
+      <button
+        type="button"
+        className={styles.mobileSearchTrigger}
+        onClick={() => setSheetOpen(true)}
+        aria-label="Sök i kalendern"
+        aria-haspopup="dialog"
+      >
+        <Icon name="search" size={16} />
+      </button>
+
+      {sheetOpen && (
+        <Modal
+          title="Sök i kalendern"
+          sub="Kund eller bokning"
+          onClose={closeSheet}
+          ariaLabel="Sök i kalendern"
+        >
+          {searchField}
+          <p className={styles.mobileSearchHint}>
+            Skriv minst två tecken. Välj en träff för att gå direkt till bokningen.
+          </p>
+        </Modal>
+      )}
+    </>
   )
 }

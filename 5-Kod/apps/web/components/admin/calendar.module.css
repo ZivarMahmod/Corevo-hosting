@@ -270,6 +270,17 @@
   white-space: nowrap;
 }
 
+.helpExtras {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-line);
+}
+
+.helpExtras .helpBtnLabelled {
+  width: 100%;
+  justify-content: center;
+}
+
 .helpList {
   display: grid;
   gap: 6px;
@@ -432,6 +443,13 @@
 
 .searchInput::placeholder {
   color: var(--c-ink-3);
+}
+
+.mobileSearchHint {
+  margin: 10px 2px 0;
+  color: var(--c-ink-3);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 /* Träfflistan hänger UNDER rutan och över kalendern. z-index ligger över blocken men
@@ -667,8 +685,27 @@
    universella bottennavet. Markupen är gemensam men syns bara under mobilbrytningen. */
 .mobileCalendarDock,
 .mobileCalendarScrim,
-.mobileCalendarPicker {
+.mobileCalendarPicker,
+.mobileCalendarHeaderHelp,
+.mobileCalendarSearchAction {
   display: none;
+}
+
+.logEmbedded {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md, 12px);
+  background: var(--c-paper-2);
+}
+
+.logEmbeddedTitle {
+  margin: 0 0 8px;
+  color: var(--c-ink-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* ---- scrollytan: det ENDA som scrollar ---- */
@@ -1753,7 +1790,7 @@
 @media (max-width: 767px) {
   .board {
     position: relative;
-    height: calc(100dvh - 140px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    height: calc(100dvh - 130px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     min-height: 360px;
     border-radius: 0;
   }
@@ -1828,7 +1865,7 @@
   }
 
   .dayWrap {
-    --axis-w: 34px;
+    --axis-w: 30px;
     --col-min: 0px;
     width: 100%;
     min-width: 100%;
@@ -1841,7 +1878,7 @@
 
   .headCell {
     min-width: 0;
-    padding: 8px 3px 7px;
+    padding: 8px 2px 7px;
     align-items: center;
     text-align: center;
   }
@@ -1931,7 +1968,7 @@
     flex: none;
     border-top: 1px solid var(--c-line);
     background: var(--c-cream);
-    box-shadow: 0 -8px 20px color-mix(in srgb, var(--c-ink) 5%, transparent);
+    box-shadow: none;
   }
 
   .mobileCalendarDateRow {
@@ -2072,43 +2109,64 @@
     font-weight: 650;
   }
 
-  .mobileCalendarUtilities {
-    min-height: 42px;
-    padding: 3px 12px 6px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border-top: 1px solid color-mix(in srgb, var(--c-line) 65%, transparent);
+  .mobileCalendarHeaderHelp {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 4px);
+    right: 10px;
+    z-index: 30;
+    display: block;
   }
 
-  .mobileCalendarUtilities .search {
-    flex: 1;
-    height: 34px;
+  .helpBtnMobileHeader {
+    width: 44px;
+    height: 44px;
+    border-color: var(--c-line-strong);
     background: var(--c-paper);
+    color: var(--c-ink);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 650;
   }
 
-  .mobileCalendarUtilities .searchInput {
+  .mobileCalendarSearchAction {
+    position: fixed;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    left: calc(50% - 49px);
+    z-index: 26;
+    display: block;
+  }
+
+  .mobileSearchTrigger {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--c-line-strong);
+    border-radius: 999px;
+    background: var(--c-paper);
+    box-shadow: 0 7px 18px color-mix(in srgb, var(--c-ink) 16%, transparent);
+    color: var(--c-ink-2);
+    cursor: pointer;
+  }
+
+  .searchSheet {
+    width: 100%;
+    height: 44px;
+    background: var(--c-paper-2);
+  }
+
+  .searchSheet .searchInput,
+  .searchSheet:focus-within .searchInput {
     width: 100%;
   }
 
-  .mobileCalendarUtilities .search:focus-within .searchInput {
-    width: 100%;
-  }
-
-  .mobileCalendarUtilities .searchDrop {
-    top: auto;
-    right: auto;
-    bottom: calc(100% + 7px);
+  .searchSheet .searchDrop {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
     left: 0;
-    width: min(340px, calc(100vw - 24px));
-  }
-
-  .mobileCalendarUtilities .helpBtnLabelled {
-    flex: none;
-    height: 34px;
-    min-height: 34px;
-    padding-inline: 9px;
-    background: var(--c-paper);
+    width: 100%;
   }
 
   .mobileCalendarScrim {
@@ -2127,7 +2185,7 @@
   .mobileCalendarPicker {
     position: absolute;
     right: 12px;
-    bottom: 140px;
+    bottom: 98px;
     left: 12px;
     z-index: 28;
     display: block;
@@ -2205,6 +2263,7 @@
   .mobileStep button:focus-visible,
   .mobileViewSwitch button:focus-visible,
   .mobileBlockAction:focus-visible,
+  .mobileSearchTrigger:focus-visible,
   .mobilePickerDays button:focus-visible {
     outline: 2px solid var(--c-forest);
     outline-offset: -2px;

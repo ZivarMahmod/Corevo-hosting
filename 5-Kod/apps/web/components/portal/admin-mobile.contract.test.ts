@@ -39,6 +39,35 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     )
   })
 
+  it('matchar kalenderns Mobil v2-skal utan att ändra övriga adminrutter', () => {
+    const css = read('components/portal/Topnav.module.css')
+    const calendarCss = read('components/admin/calendar.module.css')
+    const component = read('components/portal/Topnav.tsx')
+
+    expect(css).toContain(".shell[data-portal='admin']:has(.main > :global(.workbench))")
+    expect(css).toMatch(
+      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileAdmin \.brandSub\s*\{[\s\S]*?display:\s*block;/,
+    )
+    expect(css).toMatch(
+      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileActions\s*\{[\s\S]*?display:\s*none;/,
+    )
+    expect(css).toMatch(
+      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileNavIcon\s*\{[\s\S]*?display:\s*none;/,
+    )
+    expect(css).toMatch(
+      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileNavItemActive::after\s*\{[\s\S]*?background:\s*var\(--c-forest\);/,
+    )
+    expect(css).toMatch(
+      /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileFabLabel\s*\{[\s\S]*?display:\s*none;/,
+    )
+    expect(calendarCss).toMatch(
+      /\.mobileCalendarSearchAction\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*26;/,
+    )
+    expect(component).toContain('mobileMoreAccountLink')
+    expect(component).toContain('openMobileAccount')
+    expect(component).toContain('styles.mobileNavIcon')
+  })
+
   it('pressar ihop alla kalenderkolumner på mobil utan vågrät scroll', () => {
     const css = read('components/admin/calendar.module.css')
 

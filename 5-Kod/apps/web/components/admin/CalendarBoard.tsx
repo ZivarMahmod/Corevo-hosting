@@ -606,6 +606,12 @@ export function CalendarBoard({
     // `workbench` säger till skalet att den här ytan är ett ARBETSBORD, inte en
     // textsida: den släpper 1320px-spalten och tar hela skärmen (Topnav.module.css).
     <div className={`workbench ${styles.board}`}>
+      <div className={styles.mobileCalendarHeaderHelp}>
+        <CalendarHelp mobileHeader>
+          <CancelledLog tz={tz} label="Avbokade tider" embedded />
+        </CalendarHelp>
+      </div>
+
       {/* Verktygsrad — sticky, alltid nåbar, viker till två rader på mobil. */}
       <div className={styles.toolbar}>
         <div className={styles.navGroup}>
@@ -880,11 +886,10 @@ export function CalendarBoard({
           </button>
         </div>
 
-        <div className={styles.mobileCalendarUtilities} aria-label="Fler kalenderverktyg">
-          <CalendarSearch tz={tz} />
-          <CancelledLog tz={tz} label="Avbokade" />
-          <CalendarHelp label="Hjälp" />
-        </div>
+      </div>
+
+      <div className={styles.mobileCalendarSearchAction}>
+        <CalendarSearch tz={tz} mobileSheet />
       </div>
 
       {mobileDateOpen && (

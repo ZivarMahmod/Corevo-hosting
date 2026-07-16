@@ -32,14 +32,24 @@ describe('Kalender Mobil v2', () => {
     )
   })
 
-  it('skriver ut vad mobilens sekundära kalenderverktyg gör', () => {
+  it('ger mobilen en egen topphjälp och bottensök utan en permanent verktygsrad', () => {
     const component = read('components/admin/CalendarBoard.tsx')
     const search = read('components/admin/CalendarSearch.tsx')
+    const help = read('components/admin/CalendarHelp.tsx')
+    const cancelled = read('components/admin/CancelledLog.tsx')
 
-    expect(search).toContain('Sök kund')
-    expect(component).toContain('Avbokade')
-    expect(component).toContain('Hjälp')
-    expect(component).toContain('Blockera')
+    expect(component).toContain('mobileCalendarHeaderHelp')
+    expect(component).toContain('mobileCalendarSearchAction')
+    expect(component).not.toContain('mobileCalendarUtilities')
+    expect(component).toContain('<CalendarHelp mobileHeader>')
+    expect(component).toContain('<CancelledLog tz={tz} label="Avbokade tider" embedded />')
+    expect(component).toContain('<CalendarSearch tz={tz} mobileSheet />')
+    expect(search).toContain('mobileSheet?: boolean')
+    expect(search).toContain('Sök i kalendern')
+    expect(help).toContain('mobileHeader?: boolean')
+    expect(help).toContain('children?: ReactNode')
+    expect(cancelled).toContain('embedded?: boolean')
+    expect(cancelled).toContain('styles.logEmbedded')
   })
 
   it('begränsar månadsstatusen till vald månad och behåller beläggning och avbokningar', () => {

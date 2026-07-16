@@ -507,7 +507,8 @@
 }
 
 .mobileMoreLink,
-.mobileMoreTools > a {
+.mobileMoreTools > a,
+.mobileMoreAccountLink {
   min-height: 48px;
   padding: 0 4px;
   display: flex;
@@ -518,6 +519,14 @@
   font-size: 14px;
   font-weight: 600;
   text-decoration: none;
+}
+
+.mobileMoreAccountLink {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .mobileMoreLinkActive {
@@ -895,6 +904,63 @@
   .shell[data-world='backoffice']:has(.main > :global(.workbench)) .main {
     padding: 10px 0 calc(78px + env(safe-area-inset-bottom));
     min-height: calc(100dvh - 52px - env(safe-area-inset-top));
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileAdmin .brandSub {
+    display: block;
+    font-size: 7.5px;
+    line-height: 1;
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileActions {
+    display: none;
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileNav {
+    grid-template-columns: repeat(2, 1fr) 102px repeat(2, 1fr);
+    padding-top: 8px;
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileNavIcon {
+    display: none;
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileNavItem {
+    position: relative;
+    gap: 4px;
+    padding-top: 6px;
+    font-size: 11.5px;
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileNavItem::after {
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: transparent;
+    content: '';
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileNavItemActive::after {
+    background: var(--c-forest);
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileFab {
+    margin: -7px auto 0;
+    transform: translateX(26px);
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileFabButton {
+    width: 44px;
+    height: 44px;
+    box-shadow: 0 7px 18px rgba(0, 0, 0, 0.28);
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileFabLabel {
+    display: none;
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .main {
+    padding-top: 0;
   }
 }
 
