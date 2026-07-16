@@ -22,6 +22,9 @@ export type AdminTenant = {
    *  bokningen görs och gäller. Bara branscher som behöver ett godkännandesteg sätter
    *  detta → översiktens inkorg visar då obekräftade tider. */
   requireBookingApproval: boolean
+  /** Onlinebetalning visas bara när både ägartoggle och Stripe-readiness är sanna. */
+  paymentsEnabled: boolean
+  stripeChargesEnabled: boolean
 }
 
 const FALLBACK_TZ = 'Europe/Stockholm'
@@ -50,7 +53,7 @@ export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant
   const [{ data: tenant }, { data: loc }, { data: settingsRow }] = await Promise.all([
     supabase
       .from('tenants')
-      .select('id, slug, name, status, vertical_id')
+      .select('id, slug, name, status, vertical_id, stripe_charges_enabled')
       .eq('id', tenantId)
       .maybeSingle(),
     supabase
@@ -62,7 +65,7 @@ export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant
     // Bokningsgodkännande bor i tenant_settings.settings (jsonb), inte på tenants.
     supabase
       .from('tenant_settings')
-      .select('settings')
+      .select('settings, payments_enabled')
       .eq('tenant_id', tenantId)
       .maybeSingle(),
   ])
@@ -96,6 +99,8 @@ export async function loadAdminTenantById(tenantId: string): Promise<AdminTenant
     verticalId: tenant.vertical_id ?? null,
     terminology,
     requireBookingApproval: settings.require_booking_approval === true,
+    paymentsEnabled: settingsRow?.payments_enabled === true,
+    stripeChargesEnabled: tenant.stripe_charges_enabled === true,
   }
 }
 

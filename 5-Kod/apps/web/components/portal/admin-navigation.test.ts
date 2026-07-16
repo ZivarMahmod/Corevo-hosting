@@ -41,6 +41,10 @@ describe('adminAreas', () => {
     expect(hrefs.every((href) => href.startsWith('/admin'))).toBe(true)
     expect(hrefs).not.toContain('/salonger')
   })
+
+  it('visar personal bara de tre arbetsytor som servern tillåter', () => {
+    expect(label(adminAreas(['shop', 'blogg'], 3))).toEqual(['Översikt', 'Kalender', 'Kunder'])
+  })
 })
 
 describe('aktivt område', () => {
@@ -63,6 +67,17 @@ describe('aktivt område', () => {
     ]) {
       expect(activeId(path)).toBe('installningar')
     }
+  })
+
+  it('markerar bara en inställningsflik åt gången', async () => {
+    const { activeTopnavSubitem } = await import('./Topnav')
+    const settings = areas.find((a) => a.id === 'installningar')
+    expect(activeTopnavSubitem('/admin/personal', settings?.subnav ?? [])?.href).toBe(
+      '/admin/personal',
+    )
+    expect(activeTopnavSubitem('/admin/installningar/konto', settings?.subnav ?? [])?.href).toBe(
+      '/admin/installningar/konto',
+    )
   })
 
   it('ger Inställningar en subnav och de andra områdena ingen', () => {

@@ -46,24 +46,46 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   // objekt; vi normaliserar defensivt ifall klienten typar den som array.
   const { data: profile } = await supabase
     .from('users')
-    .select('tenant_id, role_id, roles:role_id(level, name)')
+    .select('tenant_id, role_id, status, roles:role_id(level, name, tenant_id)')
     .eq('id', user.id)
     .maybeSingle()
 
   const roleEmbed = (profile as { roles?: unknown } | null)?.roles
   const role = (Array.isArray(roleEmbed) ? roleEmbed[0] : roleEmbed) as
-    | { level: number; name: string | null }
+    | { level: number; name: string | null; tenant_id: string | null }
     | null
     | undefined
-  const roleLevel = role?.level ?? 0
-  const roleName = role?.name ?? null
+
+  // En staff-roll utan aktiv personalrad är återkallad, även om webbläsaren ännu
+  // bär ett gammalt JWT. Samma kontroll finns i private.role_level() för direkt DB-
+  // åtkomst; DAL-vakten gör att sidan/actionen dessutom nekar med rätt portalflöde.
+  let activeStaff: { id: string } | null = null
+  if (profile?.status === 'active' && role?.level === 3) {
+    const { data } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('tenant_id', profile.tenant_id)
+      .eq('profile_id', user.id)
+      .eq('active', true)
+      .limit(1)
+      .maybeSingle()
+    activeStaff = data
+  }
+  const accountAuthorized =
+    profile?.status === 'active' && (role?.level !== 3 || Boolean(activeStaff))
+  const roleLevel = accountAuthorized ? (role?.level ?? 0) : 0
+  const roleName = accountAuthorized ? (role?.name ?? null) : null
 
   return {
     id: user.id,
     email: user.email ?? null,
     name,
-    tenantId: appMeta.tenant_id ?? profile?.tenant_id ?? null,
-    platformAdmin: appMeta.platform_admin === true,
+    tenantId: profile ? profile.tenant_id : (appMeta.tenant_id ?? null),
+    platformAdmin:
+      accountAuthorized &&
+      appMeta.platform_admin === true &&
+      roleLevel >= 7 &&
+      role?.tenant_id === null,
     roleLevel,
     roleName,
   }

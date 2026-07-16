@@ -43,9 +43,12 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
     .maybeSingle()
   if (!b) return { ok: false, reason: 'not_found', message: 'Bokningen hittades inte.' }
 
-  // 3. Already cancelled?
+  // 3. Only active bookings can be cancelled.
   if (b.status === 'cancelled') {
     return { ok: false, reason: 'already_cancelled', message: 'Den här tiden är redan avbokad.' }
+  }
+  if (b.status !== 'pending' && b.status !== 'confirmed') {
+    return { ok: false, reason: 'error', message: 'Bokningen kan inte avbokas.' }
   }
 
   // 4. Re-check the cancellation window (the page may have been open a while).
@@ -56,11 +59,13 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
 
   // Set status='cancelled' (service-role). Guard on status so a concurrent cancel
   // (e.g. staff in the back-office) doesn't double-fire the notification below.
+  const cancelledAt = new Date().toISOString()
   const { data: updated, error } = await admin
     .from('bookings')
-    .update({ status: 'cancelled' })
+    .update({ status: 'cancelled', cancelled_at: cancelledAt, cancelled_by: 'customer' })
     .eq('id', bookingId)
-    .neq('status', 'cancelled')
+    .eq('tenant_id', b.tenant_id)
+    .in('status', ['pending', 'confirmed'])
     .select('id')
     .maybeSingle()
   if (error) {

@@ -157,42 +157,30 @@ export async function POST(req: Request): Promise<Response> {
             })
             break
           }
-          // State-set: markera payment betald + spara PI-id (idempotent).
-          // .neq('status','refunded'): en RE-leverans av succeeded på en redan
-          // återbetald betalning får ALDRIG återuppliva 'refunded' → 'succeeded'
-          // (det retriggade annars refundBookingPayment + lämnade raden felmärkt).
-          // pending→succeeded, failed→succeeded (retry) och succeeded→succeeded
-          // (no-op) passerar fortfarande.
-          await admin
-            .from('payments')
-            .update({ status: 'succeeded', stripe_payment_intent_id: pi.id })
-            .eq('booking_id', bookingId)
-            .eq('tenant_id', tenantId)
-            .neq('status', 'refunded')
-          // Bekräfta bokningen (bara från pending → confirmed; rör ej completed).
-          await admin
-            .from('bookings')
-            .update({ status: 'confirmed' })
-            .eq('id', bookingId)
-            .eq('tenant_id', tenantId)
-            .eq('status', 'pending')
+          // Betalning + pending→confirmed är EN DB-transaktion. En retry är
+          // idempotent och en redan refunded payment återupplivas aldrig.
+          const { data: confirmation, error: confirmationError } = await admin.rpc(
+            'confirm_booking_payment',
+            { p_booking: bookingId, p_tenant: tenantId, p_payment_intent: pi.id },
+          )
+          if (confirmationError) throw confirmationError
+          const confirmationState = confirmation as {
+            booking_status?: string
+            payment_status?: string
+          } | null
+          const bookingStatus = confirmationState?.booking_status ?? null
+          const paymentStatus = confirmationState?.payment_status ?? null
 
           // Sen betalning på en redan AVBOKAD bokning: confirm-UPDATE ovan no-oppade
           // (WHERE status='pending'), så bokningen står kvar cancelled. Återbetala
           // då pengarna (refundBookingPayment är idempotent — no-op om redan refunded).
-          const { data: bk } = await admin
-            .from('bookings')
-            .select('status')
-            .eq('id', bookingId)
-            .eq('tenant_id', tenantId)
-            .maybeSingle()
-          if (bk?.status === 'cancelled') {
+          if (bookingStatus === 'cancelled' && paymentStatus === 'succeeded') {
             await refundBookingPayment(bookingId, tenantId)
           }
 
           // Kvitto (G10) — gästkontakt rider på note (G04-sömmen). Best-effort.
           // Hoppas över för avbokade/återbetalda bokningar (inget kvitto då).
-          if (bk?.status !== 'cancelled') {
+          if (bookingStatus !== 'cancelled' && paymentStatus === 'succeeded') {
             try {
               const { data: b } = await admin
                 .from('bookings')

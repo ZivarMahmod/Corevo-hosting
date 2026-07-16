@@ -30,6 +30,13 @@ export type ActionState = { error?: string; success?: string }
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
 
+type AdminServiceClient = NonNullable<ReturnType<typeof createAdminServiceClient>>
+
+async function removeInvitedStaffUser(service: AdminServiceClient, authId: string): Promise<void> {
+  await service.from('users').delete().eq('id', authId)
+  await service.auth.admin.deleteUser(authId)
+}
+
 /**
  * Authorization fence for EVERY admin mutation. RLS only isolates tenants, it is
  * NOT role-aware (a level-2 kund shares the tenant claim), so the role gate lives
@@ -360,18 +367,16 @@ export async function createStaff(_p: ActionState, fd: FormData): Promise<Action
   if (!title) return { error: 'Ange ett namn/en titel.' }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('staff').insert({
-    tenant_id: ctx.tenant.id,
-    location_id: ctx.tenant.locationId,
-    title,
-    active: true,
+  const { error } = await supabase.rpc('create_staff_with_defaults', {
+    p_title: title,
+    p_location: ctx.tenant.locationId ?? undefined,
   })
   if (error) return { error: GENERIC }
 
   revalidateStaff(ctx.tenant.slug)
   // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
   revalidateTenant(ctx.tenant.slug)
-  return { success: 'Medarbetare tillagd.' }
+  return { success: 'Medarbetare tillagd med aktiva tjänster och vardagsschema 09–17.' }
 }
 
 export async function updateStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -492,17 +497,24 @@ export async function toggleStaffActive(_p: ActionState, fd: FormData): Promise<
   if (!id) return { error: 'Saknar medarbetare.' }
 
   const supabase = await createClient()
-  const { error } = await supabase
-    .from('staff')
-    .update({ active })
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
+  const { data: accountLinked, error } = await supabase.rpc('set_staff_active', {
+    p_staff: id,
+    p_active: active,
+  })
   if (error) return { error: GENERIC }
 
   revalidateStaff(ctx.tenant.slug)
   // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
   revalidateTenant(ctx.tenant.slug)
-  return { success: active ? 'Medarbetare aktiverad.' : 'Medarbetare inaktiverad.' }
+  return {
+    success: active
+      ? accountLinked
+        ? 'Medarbetare och konto aktiverade.'
+        : 'Medarbetare aktiverad.'
+      : accountLinked
+        ? 'Medarbetare inaktiverad och kontoåtkomst stängd.'
+        : 'Medarbetare inaktiverad.',
+  }
 }
 
 export async function deleteStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -557,23 +569,13 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   const valid = new Set((own ?? []).map((r) => r.id))
   const toInsert = requested.filter((id) => valid.has(id))
 
-  // Replace: clear this staff's links, then insert the new set.
-  const del = await supabase
-    .from('staff_services')
-    .delete()
-    .eq('tenant_id', ctx.tenant.id)
-    .eq('staff_id', staffId)
-  if (del.error) return { error: GENERIC }
-
-  if (toInsert.length) {
-    const rows = toInsert.map((service_id) => ({
-      tenant_id: ctx.tenant.id,
-      staff_id: staffId,
-      service_id,
-    }))
-    const ins = await supabase.from('staff_services').insert(rows)
-    if (ins.error) return { error: GENERIC }
-  }
+  // RPC:n gör delete+insert i EN transaktion. Ett insertfel kan aldrig lämna
+  // medarbetaren utan de kopplingar som fanns före försöket.
+  const { error } = await supabase.rpc('replace_staff_services', {
+    p_staff: staffId,
+    p_services: toInsert,
+  })
+  if (error) return { error: GENERIC }
 
   revalidateStaff(ctx.tenant.slug)
   // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
@@ -613,14 +615,13 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
 
   const supabase = await createClient()
 
-  // 1) Tenant-scoped `staff` role (level 3). Idempotent upsert on (tenant_id, name)
-  //    avoids a TOCTOU race / unique-violation, then re-select the id. RLS roles_write
-  //    admits tenant_id = private.tenant_id() (0002:50), so a salon_admin may do this.
-  //    Done BEFORE the auth-user invite so an RLS/DB failure can't orphan an auth user.
-  await supabase
+  // 1) Tenant-scoped `staff` role (level 3). Roller är plattformsdata efter 0071,
+  //    så den redan obligatoriska service-klienten skapar/läser rollen server-side.
+  //    Detta görs före Auth-inbjudan så ett DB-fel inte skapar ett föräldralöst konto.
+  await svc
     .from('roles')
     .upsert({ tenant_id: ctx.tenant.id, name: 'staff', level: 3 }, { onConflict: 'tenant_id,name', ignoreDuplicates: true })
-  const { data: role, error: rErr } = await supabase
+  const { data: role, error: rErr } = await svc
     .from('roles')
     .select('id')
     .eq('tenant_id', ctx.tenant.id)
@@ -641,41 +642,57 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
 
   // 3) Bake tenant_id into app_metadata so the JWT carries it before the access
   //    token hook is enabled (same belt-and-suspenders as the platform invite).
-  await svc.auth.admin.updateUserById(authId, {
+  const { error: metadataError } = await svc.auth.admin.updateUserById(authId, {
     app_metadata: { tenant_id: ctx.tenant.id, platform_admin: false },
   })
+  if (metadataError) {
+    await removeInvitedStaffUser(svc, authId)
+    return { error: 'Medarbetarkontot kunde inte kopplas till företaget.' }
+  }
 
-  // 4) public.users row (authed client; RLS allows the admin within their tenant).
-  const { error: uErr } = await supabase
+  // 4) public.users-raden skrivs med service-role; authenticated får avsiktligt
+  //    aldrig ändra role_id/status direkt efter 0071.
+  const { error: uErr } = await svc
     .from('users')
     .insert({ id: authId, tenant_id: ctx.tenant.id, email, role_id: roleId, status: 'active' })
   if (uErr) {
+    await removeInvitedStaffUser(svc, authId)
     return { error: 'Medarbetaren kunde inte kopplas (kontot finns kanske redan).' }
   }
 
   // 5) Create or link the staff row → profile_id points at the new account.
   if (staffId) {
-    const { error: linkErr } = await supabase
+    const { data: linked, error: linkErr } = await supabase
       .from('staff')
       .update({ profile_id: authId })
       .eq('id', staffId)
       .eq('tenant_id', ctx.tenant.id)
-    if (linkErr) return { error: GENERIC }
+      .select('id')
+      .maybeSingle()
+    if (linkErr || !linked) {
+      await removeInvitedStaffUser(svc, authId)
+      return { error: GENERIC }
+    }
   } else {
-    const { error: insErr } = await supabase.from('staff').insert({
-      tenant_id: ctx.tenant.id,
-      location_id: ctx.tenant.locationId,
-      profile_id: authId,
-      title: title || email,
-      active: true,
+    const { error: insErr } = await supabase.rpc('create_staff_with_defaults', {
+      p_title: title || email,
+      p_location: ctx.tenant.locationId ?? undefined,
+      p_profile: authId,
     })
-    if (insErr) return { error: GENERIC }
+    if (insErr) {
+      await removeInvitedStaffUser(svc, authId)
+      return { error: GENERIC }
+    }
   }
 
   revalidateStaff(ctx.tenant.slug)
   // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
   revalidateTenant(ctx.tenant.slug)
-  return { success: `Inbjudan skickad till ${email}. Medarbetaren skapar lösenord via länken.` }
+  return {
+    success: staffId
+      ? `Inbjudan skickad till ${email}. Kontot är kopplat till den befintliga medarbetaren.`
+      : `Inbjudan skickad till ${email}. Ny personal får aktiva tjänster och vardagsschema 09–17.`,
+  }
 }
 
 // ── Working hours (schedules, per staff) ──────────────────────────────────────
@@ -1595,8 +1612,18 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
   // uteblivit. Vakten sitter på servern, inte bara i knapp-logiken — UI:t kan inte vara
   // enda sanningen om vad en status betyder. (Ångerbart: no_show → confirmed, se
   // ALLOWED_FROM — receptionen felklickar och priset ska inte bli en lögn.)
-  if (status === 'no_show' && new Date(current.start_ts).getTime() > Date.now())
-    return { error: 'Tiden har inte börjat än — en framtida bokning kan inte ha uteblivit.' }
+  const nowIso = new Date().toISOString()
+  if (
+    (status === 'no_show' || status === 'completed') &&
+    new Date(current.start_ts).getTime() > Date.now()
+  ) {
+    return {
+      error:
+        status === 'no_show'
+          ? 'Tiden har inte börjat än — en framtida bokning kan inte ha uteblivit.'
+          : 'Tiden har inte börjat än — en framtida bokning kan inte markeras klar.',
+    }
+  }
 
   const allowedFrom = ALLOWED_FROM[status as BookingStatus]
 
@@ -1621,12 +1648,20 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
   // Gate the write on the current status: .in('status', allowedFrom) means the
   // UPDATE only matches when the transition is permitted. Zero rows back ⇒ the
   // booking was in a status this target can't be reached from.
-  const { data: updated, error } = await supabase
+  const writer = createAdminServiceClient()
+  if (!writer) return { error: 'Bokningsändringar är inte tillgängliga just nu. Försök igen senare.' }
+
+  const statusUpdate = writer
     .from('bookings')
     .update({ status, ...trace })
     .eq('id', bookingId)
     .eq('tenant_id', ctx.tenant.id)
     .in('status', allowedFrom)
+  const guardedUpdate =
+    status === 'no_show' || status === 'completed'
+      ? statusUpdate.lte('start_ts', nowIso)
+      : statusUpdate
+  const { data: updated, error } = await guardedUpdate
     .select('id')
     .maybeSingle()
   if (error) {

@@ -87,12 +87,12 @@ export async function PortalShell({
     const email = user.email ?? ''
     const userLabel = email.split('@')[0] || email || 'Konto'
 
-    // Prestanda C3: chromets tre tenant-läsningar (modul-states, bransch-terminologi,
-    // platser) är oberoende och kördes tidigare seriellt. Ett Promise.all gör dem
-    // parallella. Alla tre är null utanför sina villkor (portal/bundle/vertical_id),
+    // Prestanda C3: chromets tenant-läsningar (moduler, terminologi, platser och
+    // verifierad domän) är oberoende och körs parallellt. Alla är null utanför
+    // sina villkor (portal/bundle/vertical_id),
     // och derivationerna nedan är oförändrade — bara hämtningen är hopslagen.
     const isAdminTenant = portal === 'admin' && !!bundle
-    const [moduleStates, verticalRow, adminLocations] = await Promise.all([
+    const [moduleStates, verticalRow, adminLocations, adminDomain] = await Promise.all([
       isAdminTenant ? getAdminModuleStates(bundle!.tenant.id) : Promise.resolve(null),
       bundle?.tenant.vertical_id
         ? (async () => {
@@ -106,6 +106,20 @@ export async function PortalShell({
           })()
         : Promise.resolve(null),
       isAdminTenant ? listLocations(bundle!.tenant.id) : Promise.resolve(null),
+      isAdminTenant
+        ? (async () => {
+            const sb = await createClient()
+            const { data } = await sb
+              .from('tenant_domains')
+              .select('domain')
+              .eq('tenant_id', bundle!.tenant.id)
+              .eq('verified', true)
+              .order('is_primary', { ascending: false })
+              .limit(1)
+              .maybeSingle()
+            return data
+          })()
+        : Promise.resolve(null),
     ])
 
     // Modulstyrd admin-yta: kundens tenant_modules (RLS-scopad) → sidomeny + ⌘K-palett
@@ -164,7 +178,10 @@ export async function PortalShell({
     // Topbar context link — handoff shows "Se din sida" → the salon's public
     // storefront (computed from the slug so it's correct in dev AND prod, never
     // the localhost env base). Platform has no single storefront → no link.
-    const storefrontUrl = portal === 'platform' ? null : tenantStorefrontUrl(bundle?.tenant.slug)
+    const storefrontUrl =
+      portal === 'platform'
+        ? null
+        : tenantStorefrontUrl(bundle?.tenant.slug, adminDomain?.domain)
     const contextLink = storefrontUrl ? { label: 'Se din sida', href: storefrontUrl } : undefined
 
     // Global butik-väljare (Zivar 2026-07-10): vid >1 AKTIV plats får salongs-
@@ -191,7 +208,7 @@ export async function PortalShell({
     // varje riktig läsning, action och guard. Personal-portalen har kvar sidofältet.
     if (portal === 'platform' || portal === 'admin') {
       const isPlatform = portal === 'platform'
-      const topAreas = isPlatform ? PLATFORM_AREAS : adminAreas(activeModuleKeys)
+      const topAreas = isPlatform ? PLATFORM_AREAS : adminAreas(activeModuleKeys, navRoleLevel)
       return (
         <div
           className={`tenant-root portal-shell ${topnavStyles.shell}`}
@@ -205,6 +222,7 @@ export async function PortalShell({
             mobileNavigation={isPlatform ? undefined : adminMobileNavigation(topAreas)}
             subnav={isPlatform ? PLATFORM_SUBNAV : undefined}
             paletteItems={paletteItems}
+            remoteAdminSearch={!isPlatform}
             brandHref={isPlatform ? '/' : '/admin'}
             // Superadmin är Corevo självt; kund-adminen är VERKSAMHETEN — namnet och
             // "via Corevo" bär rollgränsen. Ordet "Superadmin" får aldrig synas här.

@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icon, type IconName } from './Icon'
+import { searchAdminPalette } from '@/lib/admin/calendar-actions'
 
 /** One go-to entry in the palette. Serializable so the server shell can build
  *  the list (role-keyed) and hand it to this client component. */
@@ -30,14 +31,20 @@ export function CommandPalette({
   open,
   onClose,
   items,
+  remoteAdminSearch = false,
 }: {
   open: boolean
   onClose: () => void
   items: ReadonlyArray<CommandItem>
+  /** Kundadmin: komplettera navigationsposterna med tenantens kunder/bokningar. */
+  remoteAdminSearch?: boolean
 }) {
   const router = useRouter()
   const [q, setQ] = useState('')
   const [hi, setHi] = useState(0)
+  const [remoteItems, setRemoteItems] = useState<CommandItem[]>([])
+  const [remoteStatus, setRemoteStatus] = useState<'idle' | 'searching' | 'settled' | 'error'>('idle')
+  const requestSequence = useRef(0)
   const dialogRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
@@ -49,6 +56,8 @@ export function CommandPalette({
       returnFocusRef.current = document.activeElement as HTMLElement | null
       setQ('')
       setHi(0)
+      setRemoteItems([])
+      setRemoteStatus('idle')
       // focus after the open paint so the autofocus lands reliably
       const t = window.setTimeout(() => inputRef.current?.focus(), 20)
       return () => window.clearTimeout(t)
@@ -56,15 +65,42 @@ export function CommandPalette({
     if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus()
   }, [open])
 
+  useEffect(() => {
+    const term = q.trim()
+    if (!open || !remoteAdminSearch || term.length < 2) {
+      requestSequence.current += 1
+      setRemoteItems([])
+      setRemoteStatus('idle')
+      return
+    }
+
+    const sequence = ++requestSequence.current
+    setRemoteStatus('searching')
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await searchAdminPalette(term)
+        if (sequence !== requestSequence.current) return
+        setRemoteItems(result.items)
+        setRemoteStatus(result.error ? 'error' : 'settled')
+      } catch {
+        if (sequence !== requestSequence.current) return
+        setRemoteItems([])
+        setRemoteStatus('error')
+      }
+    }, 250)
+    return () => window.clearTimeout(timer)
+  }, [open, q, remoteAdminSearch])
+
   const list = useMemo(() => {
     const ql = q.trim().toLowerCase()
-    const matched = ql
+    const matchedStatic = ql
       ? items.filter((it) =>
           `${it.label} ${it.kind ?? ''} ${it.sub ?? ''}`.toLowerCase().includes(ql),
         )
       : items
-    return matched.slice(0, 9)
-  }, [q, items])
+    const combined = ql ? [...remoteItems, ...matchedStatic] : matchedStatic
+    return combined.filter((item, index) => combined.findIndex((x) => x.href === item.href) === index).slice(0, 9)
+  }, [q, items, remoteItems])
 
   function run(it: CommandItem) {
     onClose()
@@ -145,7 +181,13 @@ export function CommandPalette({
           <kbd>esc</kbd>
         </div>
         <div id={listboxId} className="bo-cmdk-list" role="listbox" aria-label="Sökresultat">
-          {list.length === 0 && (
+          {remoteStatus === 'searching' && list.length === 0 && (
+            <div className="bo-cmdk-empty">Söker kunder och bokningar…</div>
+          )}
+          {remoteStatus === 'error' && list.length === 0 && (
+            <div className="bo-cmdk-empty">Sökningen gick inte att genomföra. Försök igen.</div>
+          )}
+          {remoteStatus !== 'searching' && remoteStatus !== 'error' && list.length === 0 && (
             <div className="bo-cmdk-empty">Inget matchar &ldquo;{q}&rdquo;.</div>
           )}
           {list.map((it, i) => (

@@ -59,6 +59,17 @@ export function activeTopnavArea(
   )
 }
 
+/** Välj den mest specifika undersidan. Roten /admin/installningar matchar annars
+ * varje undersida och gav två samtidiga aria-current-markeringar. */
+export function activeTopnavSubitem(
+  pathname: string,
+  items: readonly TopnavItem[],
+): TopnavItem | undefined {
+  return items
+    .filter((item) => topnavPathMatches(pathname, item.href))
+    .sort((a, b) => b.href.length - a.href.length)[0]
+}
+
 function AccountIdentity({
   userLabel,
   email,
@@ -122,6 +133,7 @@ export function Topnav({
   mobileNavigation,
   subnav: subnavByArea,
   paletteItems,
+  remoteAdminSearch = false,
   brandHref,
   brandMark,
   brandName,
@@ -143,6 +155,7 @@ export function Topnav({
   /** Subnav per område-id (superadminens befintliga karta). Områdets egen `subnav` vinner. */
   subnav?: Partial<Record<string, readonly TopnavItem[]>>
   paletteItems: ReadonlyArray<CommandItem>
+  remoteAdminSearch?: boolean
   brandHref: string
   /** Bokstaven i varumärkesrutan. */
   brandMark: string
@@ -167,6 +180,7 @@ export function Topnav({
   const pathname = usePathname()
   const activeArea = activeTopnavArea(pathname, areas) ?? areas[0]
   const subnav = activeArea ? (activeArea.subnav ?? subnavByArea?.[activeArea.id]) : undefined
+  const activeSubitem = subnav ? activeTopnavSubitem(pathname, subnav) : undefined
   const [commandOpen, setCommandOpen] = useState(false)
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
   const [mobileAccountOpen, setMobileAccountOpen] = useState(false)
@@ -369,7 +383,7 @@ export function Topnav({
           <div className={styles.subnavWrap}>
             <nav className={styles.subnav} aria-label={`${activeArea?.label} – undersidor`}>
               {subnav.map((item) => {
-                const active = topnavPathMatches(pathname, item.href)
+                const active = activeSubitem?.href === item.href
                 return (
                   <Link
                     key={item.href}
@@ -449,6 +463,7 @@ export function Topnav({
           open={commandOpen}
           onClose={() => setCommandOpen(false)}
           items={paletteItems}
+          remoteAdminSearch={remoteAdminSearch}
         />
       </header>
 
@@ -475,7 +490,7 @@ export function Topnav({
                   {active && area.subnav ? (
                     <div className={styles.mobileMoreSubnav}>
                       {area.subnav.map((item) => {
-                        const itemActive = topnavPathMatches(pathname, item.href)
+                        const itemActive = activeSubitem?.href === item.href
                         return (
                           <Link
                             key={item.href}

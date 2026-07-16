@@ -2,10 +2,10 @@ import 'server-only'
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
 
-// Service-role client for the ONE admin operation RLS can't do: creating an auth
-// user (staff invite via auth.admin.*). Everything else in the admin revir goes
-// through the authed cookie client + RLS. The key is server-only and must never
-// reach the browser.
+// Service-role client for tightly scoped server operations RLS must not expose to
+// a browser session: auth-user invites and Stripe-owned readiness/billing fields.
+// Ordinary admin CRUD still goes through the authenticated cookie client + RLS.
+// The key is server-only and must never reach the browser.
 //
 // Graceful degrade: SUPABASE_SERVICE_ROLE_KEY is empty in local/dev (mirrors the
 // R2 + platform-invite pattern), so this returns null and the invite flow skips

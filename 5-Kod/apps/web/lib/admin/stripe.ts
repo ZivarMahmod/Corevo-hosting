@@ -8,6 +8,7 @@ import { revalidateTenant } from './tenant'
 import { getStripe } from '@/lib/stripe/client'
 import { createExpressAccount, createOnboardingLink, fetchConnectStatus } from '@/lib/stripe/connect'
 import { requestOrigin } from '@/lib/url'
+import { createAdminServiceClient } from './service'
 
 // Stripe Connect onboarding actions (G09 step 2), delade mellan kund-adminens
 // /admin/installningar och super-admin-kundkortet /salonger/[id] (goal-54 körning 5)
@@ -36,6 +37,8 @@ export async function startStripeOnboarding(
 
   const stripe = getStripe()
   if (!stripe) return { error: NO_STRIPE }
+  const service = createAdminServiceClient()
+  if (!service) return { error: 'Stripe kan inte uppdateras just nu. Kontakta Corevo.' }
 
   const supabase = await createClient()
   const { data: row } = await supabase
@@ -53,7 +56,7 @@ export async function startStripeOnboarding(
     } catch {
       return { error: 'Kunde inte skapa Stripe-konto. Försök igen.' }
     }
-    const { error } = await supabase
+    const { error } = await service
       .from('tenants')
       .update({ stripe_account_id: accountId })
       .eq('id', tenant.id)
@@ -87,6 +90,8 @@ export async function refreshStripeStatus(
 
   const stripe = getStripe()
   if (!stripe) return { error: NO_STRIPE }
+  const service = createAdminServiceClient()
+  if (!service) return { error: 'Stripe kan inte uppdateras just nu. Kontakta Corevo.' }
 
   const supabase = await createClient()
   const { data: row } = await supabase
@@ -103,7 +108,7 @@ export async function refreshStripeStatus(
     return { error: 'Kunde inte hämta Stripe-status. Försök igen.' }
   }
 
-  const { error } = await supabase
+  const { error } = await service
     .from('tenants')
     .update({
       stripe_charges_enabled: status.chargesEnabled,
@@ -140,6 +145,8 @@ export async function setPaymentsEnabled(
 
   const enabled = String(fd.get('payments_enabled') ?? '') === 'true'
   const supabase = await createClient()
+  const service = createAdminServiceClient()
+  if (!service) return { error: 'Betalningsläget kan inte uppdateras just nu. Kontakta Corevo.' }
 
   if (enabled) {
     const { data: row } = await supabase
@@ -152,7 +159,7 @@ export async function setPaymentsEnabled(
     }
   }
 
-  const { error } = await supabase
+  const { error } = await service
     .from('tenant_settings')
     .upsert({ tenant_id: tenant.id, payments_enabled: enabled }, { onConflict: 'tenant_id' })
   if (error) return { error: GENERIC }

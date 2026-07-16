@@ -154,7 +154,10 @@ export async function cancelBooking(
     return { error: `Avbokning måste ske minst ${cutoff} timmar före tiden.` }
   }
 
-  const { error } = await supabase
+  // Kundsessionen har ingen rå UPDATE-policy på bookings. Den privilegierade
+  // skrivningen sker först efter ägarskap + cutoff ovan, på servern.
+  const admin = createAdminClient()
+  const { error } = await admin
     .from('bookings')
     // cancelled_by: 'customer' — salongens ångralogg ska kunna svara "kunden avbokade
     // själv" utan att gissa. Skriver vi bara status här blir loggen en lista över
@@ -256,9 +259,14 @@ export async function rebookBooking(
   // ger tillbaka de uppdaterade raderna (RLS låter kunden läsa egna rader). Fel
   // eller 0 rader = den gamla bokningen släpptes ALDRIG → kompensera genom att
   // avboka den nyss skapade, annars hänger kunden på två aktiva bokningar.
-  const { data: released, error: releaseErr } = await supabase
+  const admin = createAdminClient()
+  const { data: released, error: releaseErr } = await admin
     .from('bookings')
-    .update({ status: 'cancelled' })
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: 'customer',
+    })
     .eq('id', bookingId)
     .eq('customer_profile_id', user.id)
     .in('status', ACTIVE_STATUSES)
@@ -266,9 +274,13 @@ export async function rebookBooking(
   if (releaseErr || !released || released.length === 0) {
     // Rollback (best-effort): avboka den nya bokningen så slutläget är "ingen
     // ändring". Samma RLS-klient + ägar-/status-fence som ordinarie avbokning.
-    await supabase
+    await admin
       .from('bookings')
-      .update({ status: 'cancelled' })
+      .update({
+        status: 'cancelled',
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: 'customer',
+      })
       .eq('id', newId)
       .eq('customer_profile_id', user.id)
       .in('status', ACTIVE_STATUSES)

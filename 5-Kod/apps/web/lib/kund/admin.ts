@@ -5,13 +5,11 @@ import type { Database } from '@corevo/db'
 /**
  * Service-role Supabase client — SERVER-ONLY, bypasses RLS.
  *
- * Used solely to bootstrap a customer at signup: the auth.users record (with the
- * tenant_id baked into app_metadata) and the matching public.users row. A fresh
- * signup's JWT carries no tenant_id claim yet, so a normal authenticated INSERT
- * into public.users would fail the `tenant_id = private.tenant_id()` RLS check —
- * hence the privileged bootstrap (same reason the SQL seed sets app_metadata by
- * hand). Role is always hard-pinned to `kund` by the caller, so this can never
- * escalate privileges.
+ * Used only after a server action has established the caller's identity and
+ * resource ownership: auth bootstrap plus customer cancel/rebook writes whose
+ * cutoff/refund/notification flow must not be exposed as raw PostgREST UPDATE.
+ * A fresh signup's role is hard-pinned to `kund`; booking ids are resolved from
+ * the signed-in customer's own RLS-scoped reads before this client is created.
  *
  * Instantiated lazily INSIDE the action (never at module scope) so the key is
  * not evaluated or bundled at build time. NEVER import into a Client Component.

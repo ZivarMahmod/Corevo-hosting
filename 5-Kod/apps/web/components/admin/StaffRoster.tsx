@@ -1142,8 +1142,8 @@ function AddStaffDrawer({ onClose }: { onClose: () => void }) {
             Lägg till i företaget
           </div>
           <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
-            Skapa en medarbetarrad som du hanterar härifrån. Koppla tjänster och schema efteråt — ge
-            eget konto när du vill.
+            Skapar en aktiv medarbetare med alla aktiva tjänster och ett tydligt standardschema:
+            måndag–fredag 09–17 på primär plats. Allt kan justeras direkt under Schema.
           </p>
           <form action={createAction} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input
@@ -1170,7 +1170,7 @@ function AddStaffDrawer({ onClose }: { onClose: () => void }) {
           </div>
           <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
             Medarbetaren får en engångslänk, sätter lösenord och får sin egen vy direkt. En
-            medarbetarrad skapas samtidigt.
+            medarbetarrad med aktiva tjänster och standardschema måndag–fredag 09–17 skapas samtidigt.
           </p>
           <form action={invAction} style={{ display: 'grid', gap: 8 }}>
             <input

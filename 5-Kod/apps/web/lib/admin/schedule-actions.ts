@@ -167,35 +167,13 @@ export async function restoreScheduleBackup(): Promise<ActionState> {
   if (!ctx) return { error: NO_TENANT }
   const supabase = await createClient()
 
-  const { data: existing } = await supabase
-    .from('tenant_settings')
-    .select('settings')
-    .eq('tenant_id', ctx.tenant.id)
-    .maybeSingle()
-  const backup = ((existing?.settings ?? {}) as { schedule_backup?: ScheduleBackup }).schedule_backup
-  if (!backup || !Array.isArray(backup.working_hours) || !Array.isArray(backup.slots)) {
+  // Delete+insert av båda tabellerna sker i en DB-transaktion. Ett enda fel rullar
+  // tillbaka allt; användaren kan aldrig stå med ett halvåterställt schema.
+  const { error } = await supabase.rpc('restore_schedule_backup')
+  if (error?.message.includes('missing_schedule_backup')) {
     return { error: 'Ingen sparad kopia finns att återställa till.' }
   }
-
-  // Släng-och-återinsätt (raderna refereras inte av bokningar — bokade tider
-  // ligger som timestamps på bookings). Inte transaktionellt över PostgREST:
-  // om insert:en fallerar finns kopian kvar i settings och kan köras igen.
-  const del1 = await supabase.from('working_hour_slots').delete().eq('tenant_id', ctx.tenant.id)
-  const del2 = await supabase.from('working_hours').delete().eq('tenant_id', ctx.tenant.id)
-  if (del1.error || del2.error) return { error: GENERIC }
-
-  if (backup.working_hours.length > 0) {
-    const { error } = await supabase
-      .from('working_hours')
-      .insert(backup.working_hours.map((r) => ({ ...r, tenant_id: ctx.tenant.id })))
-    if (error) return { error: 'Återställningen misslyckades halvvägs — försök igen.' }
-  }
-  if (backup.slots.length > 0) {
-    const { error } = await supabase
-      .from('working_hour_slots')
-      .insert(backup.slots.map((r) => ({ ...r, tenant_id: ctx.tenant.id })))
-    if (error) return { error: 'Återställningen misslyckades halvvägs — försök igen.' }
-  }
+  if (error) return { error: GENERIC }
 
   revalidatePath('/admin/scheman')
   revalidateTenant(ctx.tenant.slug)

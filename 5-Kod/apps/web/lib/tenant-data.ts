@@ -16,7 +16,10 @@ import { readBookingVariant, type BookingVariant } from '@/lib/platform/booking-
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { withBranschMedia } from '@/components/storefront/images'
 
-export type Tenant = Tables<'tenants'>
+export type Tenant = Pick<
+  Tables<'tenants'>,
+  'id' | 'slug' | 'name' | 'status' | 'city' | 'vertical_id' | 'created_at' | 'updated_at'
+>
 // Base row + the 0046 merch columns (optional — generated types don't know them yet).
 export type Service = Tables<'services'> & {
   sale_price_cents?: number | null
@@ -24,7 +27,10 @@ export type Service = Tables<'services'> & {
   image_url?: string | null
   sort_order?: number | null
 }
-type TenantSettingsRow = Tables<'tenant_settings'>
+type TenantSettingsRow = Pick<
+  Tables<'tenant_settings'>,
+  'branding' | 'settings' | 'payment_mode'
+>
 
 export type LayoutConfig = { nav_variant?: string; hero_variant?: string }
 export type CustomOverride = { css?: string }
@@ -326,14 +332,14 @@ export async function getTenantBySlug(slug: string): Promise<TenantBundle | null
       const supabase = createPublicClient()
       const { data: tenant, error } = await supabase
         .from('tenants')
-        .select('*')
+        .select('id, slug, name, status, city, vertical_id, created_at, updated_at')
         .eq('slug', norm)
         .eq('status', 'active')
         .maybeSingle()
       if (error || !tenant) return null
       const { data: settingsRow } = await supabase
         .from('tenant_settings')
-        .select('*')
+        .select('branding, settings, payment_mode')
         .eq('tenant_id', tenant.id) // app-layer scope
         .maybeSingle()
       const settings = parseSettings(settingsRow ?? null)

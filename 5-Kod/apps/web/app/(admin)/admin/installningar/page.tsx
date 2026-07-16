@@ -14,6 +14,8 @@ import { getAdminModuleStates, moduleAdminState } from '@/lib/admin/modules'
 import { bookingModeFromState, BOOKING_MODE_COPY } from '@/lib/admin/booking-mode'
 import { settingsCategories, type SettingsCategoryId } from '@/lib/admin/settings-map'
 import { createClient } from '@/lib/supabase/server'
+import { todayInTz } from '@/lib/admin/dates'
+import { weekdayOf } from '@/lib/booking/tz'
 import { PageHead, Card, Badge, Icon, type BadgeTone } from '@/components/portal/ui'
 
 /** L3 C-01 — Inställningar = KARTAN över de ytor som redan finns. Nio kategorier:
@@ -47,7 +49,7 @@ export default async function SettingsPage() {
       listLocations(tenant.id),
       listDomains(tenant.id),
       getAdminModuleStates(tenant.id),
-      staffDay(tenant.id, new Date().getDay()),
+      staffDay(tenant.id, weekdayOf(todayInTz(tenant.timeZone))),
       supabase
         .from('tenants')
         .select('status, stripe_charges_enabled')

@@ -1,5 +1,6 @@
-import { NAV, isGroup } from './nav-items'
+import { NAV, isGroup, isNavItemVisible } from './nav-items'
 import { settingsCategories } from '@/lib/admin/settings-map'
+import { ADMIN_AREA_MIN_LEVEL as A } from '@/lib/auth/admin-areas'
 import type { TopnavArea, TopnavItem } from './Topnav'
 
 /** Kund-adminens toppnavigation — samma form som platform-navigation.ts, samma
@@ -28,10 +29,10 @@ const SETTINGS_PREFIXES = SETTINGS_SUBNAV.map((item) => item.href)
 /** Modulposterna ur NAV.admin (de som har en `module`-nyckel), filtrerade på kundens
  *  aktiverade moduler. `activeModuleKeys` undefined ⇒ ingen gating (samma kontrakt som
  *  PortalSidebar/paletteFromNav); [] ⇒ inga modulposter alls. */
-function moduleAreas(activeModuleKeys?: string[]): TopnavArea[] {
+function moduleAreas(activeModuleKeys?: string[], roleLevel?: number): TopnavArea[] {
   return NAV.admin.items.flatMap((entry) => {
     if (isGroup(entry) || !entry.module) return []
-    if (activeModuleKeys && !activeModuleKeys.includes(entry.module)) return []
+    if (!isNavItemVisible(entry, { activeModuleKeys, roleLevel })) return []
     return [
       {
         id: `modul-${entry.module}`,
@@ -43,7 +44,8 @@ function moduleAreas(activeModuleKeys?: string[]): TopnavArea[] {
   })
 }
 
-export function adminAreas(activeModuleKeys?: string[]): TopnavArea[] {
+export function adminAreas(activeModuleKeys?: string[], roleLevel?: number): TopnavArea[] {
+  const allowed = (minimum: number) => roleLevel === undefined || roleLevel >= minimum
   return [
     // exact: /admin är prefix till varenda annan adminroute — utan detta hade
     // Översikt markerats som aktiv överallt.
@@ -51,15 +53,19 @@ export function adminAreas(activeModuleKeys?: string[]): TopnavArea[] {
     // Bokningsytan ÄR kalendern (goal-66 byter innehållet på routen, inte routen).
     { id: 'kalender', href: '/admin/bokningar', label: 'Kalender', prefixes: ['/admin/bokningar'] },
     { id: 'kunder', href: '/admin/kunder', label: 'Kunder', prefixes: ['/admin/kunder'] },
-    ...moduleAreas(activeModuleKeys),
-    { id: 'sida', href: '/admin/sida', label: 'Redigera sidan', prefixes: ['/admin/sida'] },
-    {
-      id: 'installningar',
-      href: '/admin/installningar',
-      label: 'Inställningar',
-      prefixes: SETTINGS_PREFIXES,
-      subnav: SETTINGS_SUBNAV,
-    },
+    ...moduleAreas(activeModuleKeys, roleLevel),
+    ...(allowed(A.sida)
+      ? [{ id: 'sida', href: '/admin/sida', label: 'Redigera sidan', prefixes: ['/admin/sida'] }]
+      : []),
+    ...(allowed(A.installningar)
+      ? [{
+          id: 'installningar',
+          href: '/admin/installningar',
+          label: 'Inställningar',
+          prefixes: SETTINGS_PREFIXES,
+          subnav: SETTINGS_SUBNAV,
+        }]
+      : []),
   ]
 }
 

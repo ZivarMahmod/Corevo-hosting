@@ -225,8 +225,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     typeof rawTheme === 'string' && (STOREFRONT_THEMES as readonly string[]).includes(rawTheme)
       ? rawTheme
       : DEFAULT_STOREFRONT_THEME
-  const storefrontUrl = tenantStorefrontUrl(tenant.slug) ?? url
-  const storefrontHost = tenantStorefrontHost(tenant.slug) ?? `${tenant.slug}.${ROOT}`
+  const storefrontUrl = tenantStorefrontUrl(tenant.slug, detail.primaryDomain) ?? url
+  const storefrontHost = tenantStorefrontHost(tenant.slug, detail.primaryDomain) ?? `${tenant.slug}.${ROOT}`
 
   // Kund-överblick (Översikt): everything the operator needs to know at a glance,
   // derived from already-loaded data (no extra query). Launch-readiness mirrors the

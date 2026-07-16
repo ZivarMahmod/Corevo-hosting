@@ -42,6 +42,8 @@ export type NewBookingSeed = {
 const priceLabel = (cents: number | null) =>
   cents == null ? '' : `${(cents / 100).toLocaleString('sv-SE')} kr`
 
+type CustomerSearchStatus = 'idle' | 'debouncing' | 'searching' | 'settled' | 'error'
+
 export function NewBookingDrawer({
   services,
   staffNames,
@@ -77,6 +79,8 @@ export function NewBookingDrawer({
 
   const [customerQuery, setCustomerQuery] = useState('')
   const [hits, setHits] = useState<CustomerHit[]>([])
+  const [customerSearchStatus, setCustomerSearchStatus] = useState<CustomerSearchStatus>('idle')
+  const [customerSearchError, setCustomerSearchError] = useState<string | null>(null)
   const [chosen, setChosen] = useState<CustomerHit | null>(null)
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -110,19 +114,48 @@ export function NewBookingDrawer({
   // Kundsök: en kontroll som söker OCH skapar. Debounce så vi inte skickar en fråga
   // per tangenttryck.
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const customerSearchSeq = useRef(0)
   useEffect(() => {
-    if (chosen) return
     if (timer.current) clearTimeout(timer.current)
+    const sequence = ++customerSearchSeq.current
+    if (chosen) {
+      setCustomerSearchStatus('idle')
+      setCustomerSearchError(null)
+      return
+    }
     const q = customerQuery.trim()
     if (q.length < 2) {
       setHits([])
+      setCustomerSearchError(null)
+      setCustomerSearchStatus('idle')
       return
     }
+    setHits([])
+    setCustomerSearchError(null)
+    setCustomerSearchStatus('debouncing')
     timer.current = setTimeout(async () => {
-      setHits(await searchCustomers(q))
+      setCustomerSearchStatus('searching')
+      try {
+        const result = await searchCustomers(q)
+        if (customerSearchSeq.current !== sequence) return
+        if (result.error) {
+          setHits([])
+          setCustomerSearchError(result.error)
+          setCustomerSearchStatus('error')
+          return
+        }
+        setHits(result.hits)
+        setCustomerSearchStatus('settled')
+      } catch {
+        if (customerSearchSeq.current !== sequence) return
+        setHits([])
+        setCustomerSearchError('Kundsökningen gick inte att genomföra.')
+        setCustomerSearchStatus('error')
+      }
     }, 220)
     return () => {
       if (timer.current) clearTimeout(timer.current)
+      if (customerSearchSeq.current === sequence) customerSearchSeq.current += 1
     }
   }, [customerQuery, chosen])
 
@@ -156,7 +189,10 @@ export function NewBookingDrawer({
   const contactEmail = chosen?.email ?? (email.trim() || null)
   const canEmail = Boolean(contactEmail)
 
-  const readyToSave = Boolean(service && picked && (chosen || customerQuery.trim()))
+  const customerResolved = Boolean(chosen) || customerSearchStatus === 'settled'
+  const readyToSave = Boolean(
+    service && picked && customerResolved && customerQuery.trim().length >= 2,
+  )
 
   return (
     <Modal
@@ -337,7 +373,18 @@ export function NewBookingDrawer({
                   ))}
                 </ul>
               )}
-              {customerQuery.trim().length >= 2 && hits.length === 0 && !slotsLoading && (
+              {(customerSearchStatus === 'debouncing' || customerSearchStatus === 'searching') && (
+                <p className={styles.hint} role="status">
+                  Söker kunder…
+                </p>
+              )}
+              {customerSearchStatus === 'error' && (
+                <Callout tone="warning" icon="alert">
+                  {customerSearchError ?? 'Kundsökningen gick inte att genomföra.'} Försök igen innan
+                  du bokar, så att ingen dubblett skapas.
+                </Callout>
+              )}
+              {customerSearchStatus === 'settled' && hits.length === 0 && (
                 <>
                   <p className={styles.hint}>
                     Ingen träff — <b>{customerQuery.trim()}</b> läggs upp som ny kund. E-post och

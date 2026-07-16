@@ -8,6 +8,7 @@ import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { refundBookingPayment } from '@/lib/stripe/refund'
 import { getMyStaff } from './staff'
 import { getCustomerCard, getCustomerNotes, type CustomerCard, type CustomerNotes } from './customer'
+import { createAdminServiceClient } from '@/lib/admin/service'
 
 export type ActionState = { error?: string; success?: string }
 
@@ -38,13 +39,36 @@ export async function setBookingStatus(_prev: ActionState, formData: FormData): 
   const myStaffIds = staff.map((s) => s.id)
 
   const supabase = await createClient()
-  const { error } = await supabase
+  const nowIso = new Date().toISOString()
+  const { data: current } = await supabase
+    .from('bookings')
+    .select('id, start_ts')
+    .eq('id', bookingId)
+    .eq('tenant_id', user.tenantId ?? '')
+    .in('staff_id', myStaffIds)
+    .in('status', ['pending', 'confirmed'])
+    .maybeSingle()
+  if (!current) return { error: 'Bokningen kan inte ändras längre.' }
+  if (
+    (status === 'completed' || status === 'no_show') &&
+    new Date(current.start_ts).getTime() > Date.now()
+  ) {
+    return { error: 'Tiden har inte börjat än.' }
+  }
+
+  const writer = createAdminServiceClient()
+  if (!writer) return { error: 'Bokningsändringar är inte tillgängliga just nu.' }
+  const { data: updated, error } = await writer
     .from('bookings')
     .update({ status })
     .eq('id', bookingId)
+    .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
     .in('status', ['pending', 'confirmed'])
+    .lte('start_ts', nowIso)
+    .select('id')
   if (error) return { error: 'Kunde inte spara statusen. Försök igen.' }
+  if (!updated || updated.length === 0) return { error: 'Bokningen kan inte ändras längre.' }
 
   // Visit done → nudge the customer for a Google review (M9). Best-effort: the
   // helper never throws, so a mail hiccup can't fail the status the staff just set.
@@ -62,7 +86,7 @@ export async function setBookingStatus(_prev: ActionState, formData: FormData): 
 
 // ── Walk-in / drop-in (own staff_id) ─────────────────────────────────────────
 // The frisör logs a customer who walked in. Direct authenticated insert (staff is
-// role_level >= 3 → bookings_rls lets them write in their own tenant). The
+// role_level >= 3 → bookings_staff_insert lets them write in their own tenant). The
 // no_double_booking EXCLUDE is the only conflict guard — a 23P01 means the slot is
 // already taken. staff_id is pinned to the caller's OWN id (never a colleague's).
 // No customer row is created (customer_id stays null); an optional name rides the
@@ -121,10 +145,11 @@ export async function createWalkIn(_prev: ActionState, formData: FormData): Prom
 }
 
 // ── Rebook (own booking, same staff + service, new time) ─────────────────────
-// In-place UPDATE of start/end on the staff's OWN active booking — atomic and
+// Server-privileged UPDATE of start/end after the staff's OWN active booking has
+// been verified — atomic and
 // simpler than create-new-then-cancel-old (a row can't conflict with itself, and
-// the EXCLUDE still guards against colliding with a DIFFERENT booking). End is
-// recomputed from the booking's service duration so the slot length stays correct.
+// the EXCLUDE still guards against colliding with a DIFFERENT booking). Preserve
+// the duration snapshot stored on the booking even if the service changes later.
 export async function rebookOwnBooking(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requirePortal('personal')
   const bookingId = String(formData.get('bookingId') ?? '')
@@ -139,26 +164,32 @@ export async function rebookOwnBooking(_prev: ActionState, formData: FormData): 
 
   const supabase = await createClient()
 
-  // Load the OWN active booking + its service duration (own-scope via staff_id).
+  // Load the OWN active booking and preserve its original duration snapshot.
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, start_ts, services(duration_min)')
+    .select('id, start_ts, end_ts')
     .eq('id', bookingId)
+    .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
     .in('status', [...ACTIVE_STATUSES])
     .maybeSingle()
   if (!booking) return { error: 'Bokningen kan inte ombokas.' }
-  const durationMin = (booking.services as { duration_min: number } | null)?.duration_min
-  if (!durationMin) return { error: 'Tjänstens längd saknas — kan inte omboka.' }
+  const durationMs = new Date(booking.end_ts).getTime() - new Date(booking.start_ts).getTime()
+  if (!Number.isFinite(durationMs) || durationMs <= 0) {
+    return { error: 'Bokningens längd är ogiltig — kan inte omboka.' }
+  }
 
   const startUtc = localToUtc(startLocal, tz)
   if (!startUtc) return { error: 'Ogiltig tid.' }
-  const endUtc = new Date(startUtc.getTime() + durationMin * 60_000)
+  const endUtc = new Date(startUtc.getTime() + durationMs)
 
-  const { data: updated, error } = await supabase
+  const writer = createAdminServiceClient()
+  if (!writer) return { error: 'Bokningsändringar är inte tillgängliga just nu.' }
+  const { data: updated, error } = await writer
     .from('bookings')
     .update({ start_ts: startUtc.toISOString(), end_ts: endUtc.toISOString() })
     .eq('id', bookingId)
+    .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
     .in('status', [...ACTIVE_STATUSES])
     .select('id')
@@ -187,12 +218,15 @@ export async function cancelOwnBooking(_prev: ActionState, formData: FormData): 
   const myStaffIds = staff.map((s) => s.id)
 
   const supabase = await createClient()
-  const { data: released, error } = await supabase
+  const writer = createAdminServiceClient()
+  if (!writer) return { error: 'Bokningsändringar är inte tillgängliga just nu.' }
+  const { data: released, error } = await writer
     .from('bookings')
     // cancelled_by: 'business' — personalen ÄR salongen sett från kunden. Loggen
     // skiljer på "kunden avbokade" och "vi avbokade", inte på vilken anställd.
     .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancelled_by: 'business' })
     .eq('id', bookingId)
+    .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
     .in('status', [...ACTIVE_STATUSES])
     .select('id')

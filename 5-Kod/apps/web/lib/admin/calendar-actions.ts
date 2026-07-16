@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireAdminArea } from '@/lib/auth/session'
-import { getAdminTenant } from '@/lib/admin/tenant'
+import { getAdminTenant, type AdminTenant } from '@/lib/admin/tenant'
 import { createClient } from '@/lib/supabase/server'
 import { adminDaySlots, type AdminSlot } from '@/lib/admin/calendar-slots'
 import { seriesOccurrences, REPEAT_KINDS, type RepeatKind } from '@/lib/admin/block-series'
@@ -10,6 +10,7 @@ import { setBookingStatus } from '@/lib/admin/actions'
 import { resolveCustomerName } from '@/lib/personal/customer'
 import { sendBookingConfirmation } from '@/lib/notifications/booking'
 import { requestOrigin } from '@/lib/url'
+import { createAdminServiceClient } from '@/lib/admin/service'
 
 /** Kalenderns skriv- och sökvägar (goal-66). Admin-RPC:n delegerar själva slotten
  *  till samma create_public_booking som kundflödet använder — dubbelbokningsspärr,
@@ -33,9 +34,9 @@ export async function loadDaySlots(input: {
     timeZone: tenant.timeZone,
     serviceId: input.serviceId,
     locationId: input.locationId,
-    // Ägaren får boka bakåt i tiden (efterregistrera ett besök som redan skett) —
-    // det publika flödet får inte. Därför skickas inget `now`-tak här.
-    now: new Date(0),
+    // Samma nutidsgräns som skriv-RPC:n. Kalendern ska aldrig erbjuda en tid som
+    // sedan avslås som passerad när ägaren trycker Spara.
+    now: new Date(),
   })
   return { slots }
 }
@@ -47,21 +48,18 @@ export type CustomerHit = {
   phone: string | null
 }
 
-/** Sök kund på namn/e-post/telefon. Samma kontroll söker OCH skapar i drawern —
- *  ingen träff betyder "skriv klart, så blir det en ny kund" (Wavys enda formulär). */
-export async function searchCustomers(query: string): Promise<CustomerHit[]> {
-  const user = await requireAdminArea('bokningar')
-  const tenant = await getAdminTenant(user)
-  if (!tenant) return []
+export type CustomerSearchResult = { hits: CustomerHit[]; error?: string }
+
+async function queryCustomers(tenantId: string, query: string): Promise<CustomerSearchResult> {
   const q = query.trim()
-  if (q.length < 2) return []
+  if (q.length < 2) return { hits: [] }
 
   const supabase = await createClient()
   const like = `%${q}%`
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('customers')
     .select('id, display_name, full_name, name_hidden, email, phone')
-    .eq('tenant_id', tenant.id)
+    .eq('tenant_id', tenantId)
     // Dold kund (B-25) hittas inte i sök — det är vad "dold" betyder. Behöver man
     // hen ändå finns "Dolda kunder" på Kunder-sidan; bokningen går alltid via namn.
     .is('hidden_at', null)
@@ -69,17 +67,52 @@ export async function searchCustomers(query: string): Promise<CustomerHit[]> {
       `display_name.ilike.${like},full_name.ilike.${like},email.ilike.${like},phone.ilike.${like}`,
     )
     .limit(8)
+  if (error) return { hits: [], error: 'Kundsökningen gick inte att genomföra.' }
 
-  return (data ?? []).map((c) => ({
-    id: c.id,
-    // Samma maskningsregel som resten av adminen — ett dolt fullnamn läcker aldrig.
-    name: resolveCustomerName(c),
-    email: c.email,
-    phone: c.phone,
-  }))
+  return {
+    hits: (data ?? []).map((c) => ({
+      id: c.id,
+      // Samma maskningsregel som resten av adminen — ett dolt fullnamn läcker aldrig.
+      name: resolveCustomerName(c),
+      email: c.email,
+      phone: c.phone,
+    })),
+  }
+}
+
+/** Sök kund på namn/e-post/telefon. Samma kontroll söker OCH skapar i drawern —
+ *  ingen träff betyder "skriv klart, så blir det en ny kund" (Wavys enda formulär). */
+export async function searchCustomers(query: string): Promise<CustomerSearchResult> {
+  const user = await requireAdminArea('bokningar')
+  const tenant = await getAdminTenant(user)
+  if (!tenant) return { hits: [], error: 'Kundsökningen gick inte att genomföra.' }
+  return queryCustomers(tenant.id, query)
 }
 
 export type MoveBookingState = { success?: string; error?: string }
+
+function availabilityFenceMessage(message: string, unchanged = false): string | null {
+  const suffix = unchanged ? ' Bokningen är oförändrad.' : ''
+  if (message.includes('booking_outside_working_hours')) {
+    return `Tiden ligger utanför medarbetarens arbetstid.${suffix}`
+  }
+  if (message.includes('booking_not_explicit_slot')) {
+    return `Starttiden är inte bokningsbar i medarbetarens schema.${suffix}`
+  }
+  if (message.includes('booking_not_on_slot_step')) {
+    return `Starttiden följer inte medarbetarens bokningsintervall.${suffix}`
+  }
+  if (message.includes('invalid_booking_duration')) {
+    return `Bokningens längd stämmer inte med tjänsten.${suffix}`
+  }
+  if (message.includes('booking_overlaps_time_off')) {
+    return `Tiden överlappar en blockering eller frånvaro.${suffix}`
+  }
+  if (message.includes('start_in_past')) {
+    return `Tiden har redan passerat.${suffix}`
+  }
+  return null
+}
 
 /**
  * Flytta en bokning till ny tid och/eller ny resurs (drag i kalendern, eller
@@ -118,8 +151,8 @@ export async function moveBooking(input: {
     .eq('tenant_id', tenant.id)
     .maybeSingle()
   if (!current) return { error: 'Bokningen finns inte längre. Ladda om kalendern.' }
-  if (current.status === 'cancelled' || current.status === 'no_show') {
-    return { error: 'En avbokad tid kan inte flyttas. Skapa en ny bokning i stället.' }
+  if (current.status !== 'pending' && current.status !== 'confirmed') {
+    return { error: 'En avslutad tid kan inte flyttas. Skapa en ny bokning i stället.' }
   }
 
   // UI:t visar bara personal på den aktuella platsen, men en server action kan
@@ -178,8 +211,12 @@ export async function moveBooking(input: {
   // med samtidig avboka+flytta: slutstatus 'cancelled', och tiden hade ändå flyttats.
   // Vakten måste sitta i SKRIVNINGEN, inte bara framför den: `.in('status', …)` gör
   // UPDATE:n till en villkorad skrivning, så en avbokad rad matchar noll rader.
-  const MOVABLE = ['pending', 'confirmed', 'completed'] as const
-  const { data: moved, error } = await supabase
+  const writer = createAdminServiceClient()
+  if (!writer) {
+    return { error: 'Bokningsändringar är inte tillgängliga just nu. Försök igen senare.' }
+  }
+  const MOVABLE = ['pending', 'confirmed'] as const
+  const { data: moved, error } = await writer
     .from('bookings')
     .update({
       start_ts: start.toISOString(),
@@ -212,6 +249,8 @@ export async function moveBooking(input: {
     if (error.message.includes('invalid_location')) {
       return { error: 'Bokningens plats är inte längre tillgänglig. Bokningen är oförändrad.' }
     }
+    const availabilityError = availabilityFenceMessage(error.message, true)
+    if (availabilityError) return { error: availabilityError }
     return { error: 'Flytten gick inte igenom. Bokningen ligger kvar där den var.' }
   }
 
@@ -360,6 +399,60 @@ export type BookingHit = {
   status: string
 }
 
+export type AdminPaletteSearchResult = {
+  items: {
+    href: string
+    label: string
+    sub?: string
+    kind: 'Kund' | 'Bokning'
+    icon: 'users' | 'calendar'
+  }[]
+  error?: string
+}
+
+async function queryBookings(
+  tenant: Pick<AdminTenant, 'id' | 'timeZone'>,
+  hits: CustomerHit[],
+): Promise<BookingHit[]> {
+  if (hits.length === 0) return []
+  const byId = new Map(hits.map((hit) => [hit.id, hit.name]))
+  const supabase = await createClient()
+  const from = new Date(Date.now() - 30 * 24 * 3600_000).toISOString()
+  const to = new Date(Date.now() + 365 * 24 * 3600_000).toISOString()
+  const { data } = await supabase
+    .from('bookings')
+    .select('id, start_ts, status, customer_id, services(name), staff(title)')
+    .eq('tenant_id', tenant.id)
+    .in('customer_id', [...byId.keys()])
+    .gte('start_ts', from)
+    .lt('start_ts', to)
+    .order('start_ts', { ascending: true })
+    .limit(20)
+
+  return (data ?? []).map((booking) => {
+    const row = booking as unknown as {
+      id: string
+      start_ts: string
+      status: string
+      customer_id: string
+      services: { name: string } | null
+      staff: { title: string | null } | null
+    }
+    return {
+      id: row.id,
+      startTs: row.start_ts,
+      // Kalenderlänken måste följa salongens väggklocka, inte UTC-datumet.
+      date: new Intl.DateTimeFormat('sv-SE', { timeZone: tenant.timeZone }).format(
+        new Date(row.start_ts),
+      ),
+      customerName: byId.get(row.customer_id) ?? 'Kund',
+      serviceName: row.services?.name ?? 'Bokning',
+      staffTitle: row.staff?.title ?? '',
+      status: row.status,
+    }
+  })
+}
+
 /**
  * Hitta en kunds bokningar. Svarar på frisörens vanligaste fråga: "när kommer Anna?"
  *
@@ -378,46 +471,44 @@ export async function searchBookings(query: string): Promise<BookingHit[]> {
   const q = query.trim()
   if (q.length < 2) return []
 
-  const hits = await searchCustomers(q)
-  if (hits.length === 0) return []
-  const byId = new Map(hits.map((h) => [h.id, h.name]))
+  const customerSearch = await queryCustomers(tenant.id, q)
+  const hits = customerSearch.hits
+  if (customerSearch.error || hits.length === 0) return []
+  return queryBookings(tenant, hits)
+}
 
-  const supabase = await createClient()
-  const from = new Date(Date.now() - 30 * 24 * 3600_000).toISOString()
-  const to = new Date(Date.now() + 365 * 24 * 3600_000).toISOString()
-  const { data } = await supabase
-    .from('bookings')
-    .select('id, start_ts, status, customer_id, services(name), staff(title)')
-    .eq('tenant_id', tenant.id)
-    .in('customer_id', [...byId.keys()])
-    .gte('start_ts', from)
-    .lt('start_ts', to)
-    .order('start_ts', { ascending: true })
-    .limit(20)
+/** Toppbannerns globala sök: riktiga tenant-scopade kunder + bokningar, inte
+ * bara statiska navigationslänkar. Returnerar direktlänkar till kundkortet eller
+ * rätt kalenderdag med bokningsdrawern öppen. */
+export async function searchAdminPalette(query: string): Promise<AdminPaletteSearchResult> {
+  const q = query.trim()
+  if (q.length < 2) return { items: [] }
 
-  return (data ?? []).map((b) => {
-    const row = b as unknown as {
-      id: string
-      start_ts: string
-      status: string
-      customer_id: string
-      services: { name: string } | null
-      staff: { title: string | null } | null
-    }
-    return {
-      id: row.id,
-      startTs: row.start_ts,
-      // Datumet måste vara salongens VÄGGKLOCKA, inte UTC: en tid 23:30 svensk tid
-      // ligger på nästa UTC-datum, och då hade sökträffen hoppat till fel dag.
-      date: new Intl.DateTimeFormat('sv-SE', { timeZone: tenant.timeZone }).format(
-        new Date(row.start_ts),
-      ),
-      customerName: byId.get(row.customer_id) ?? 'Kund',
-      serviceName: row.services?.name ?? 'Bokning',
-      staffTitle: row.staff?.title ?? '',
-      status: row.status,
-    }
-  })
+  const user = await requireAdminArea('bokningar')
+  const tenant = await getAdminTenant(user)
+  if (!tenant) return { items: [], error: 'Sökningen gick inte att genomföra.' }
+  const customers = await queryCustomers(tenant.id, q)
+  if (customers.error) return { items: [], error: customers.error }
+  const bookings = await queryBookings(tenant, customers.hits)
+
+  return {
+    items: [
+      ...customers.hits.slice(0, 5).map((customer) => ({
+        href: `/admin/kunder/${customer.id}`,
+        label: customer.name,
+        sub: customer.email ?? customer.phone ?? 'Kundkort',
+        kind: 'Kund' as const,
+        icon: 'users' as const,
+      })),
+      ...bookings.slice(0, 6).map((booking) => ({
+        href: `/admin/bokningar?vy=dag&datum=${booking.date}&open=${booking.id}`,
+        label: booking.customerName,
+        sub: `${booking.date} · ${booking.serviceName}${booking.staffTitle ? ` · ${booking.staffTitle}` : ''}`,
+        kind: 'Bokning' as const,
+        icon: 'calendar' as const,
+      })),
+    ],
+  }
 }
 
 // ── Ångraloggen (B-24) ────────────────────────────────────────────────────────
@@ -574,6 +665,8 @@ export async function createAdminBooking(
     if (msg.includes('invalid_customer')) {
       return { error: 'Kunden hittades inte — ladda om och försök igen.' }
     }
+    const availabilityError = availabilityFenceMessage(msg)
+    if (availabilityError) return { error: availabilityError }
     return { error: 'Bokningen gick inte igenom. Försök igen.' }
   }
   const bookingId = bookingResult.booking_id

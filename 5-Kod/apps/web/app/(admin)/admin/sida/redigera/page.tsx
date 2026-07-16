@@ -68,8 +68,8 @@ export default async function AdminSidaPage() {
     typeof contactObj.email === 'string' && contactObj.email.trim() ? contactObj.email.trim() : null
   const contactPhone =
     typeof contactObj.phone === 'string' && contactObj.phone.trim() ? contactObj.phone.trim() : null
-  const storefrontUrl = tenantStorefrontUrl(row.slug) ?? `https://${row.slug}.${ROOT}`
-  const storefrontHost = tenantStorefrontHost(row.slug) ?? `${row.slug}.${ROOT}`
+  const storefrontUrl = tenantStorefrontUrl(row.slug, detail.primaryDomain) ?? `https://${row.slug}.${ROOT}`
+  const storefrontHost = tenantStorefrontHost(row.slug, detail.primaryDomain) ?? `${row.slug}.${ROOT}`
 
   return (
     <>

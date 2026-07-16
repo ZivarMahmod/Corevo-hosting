@@ -2698,6 +2698,18 @@ export type Database = {
         }
         Returns: Json
       }
+      create_staff_with_defaults: {
+        Args: {
+          p_location?: string
+          p_profile?: string
+          p_title: string
+        }
+        Returns: string
+      }
+      confirm_booking_payment: {
+        Args: { p_booking: string; p_payment_intent: string; p_tenant: string }
+        Returns: Json
+      }
       create_public_booking: {
         Args: {
           p_customer?: string
@@ -2782,6 +2794,15 @@ export type Database = {
           tenant_name: string
           tenant_slug: string
         }[]
+      }
+      replace_staff_services: {
+        Args: { p_services: string[]; p_staff: string }
+        Returns: undefined
+      }
+      restore_schedule_backup: { Args: never; Returns: undefined }
+      set_staff_active: {
+        Args: { p_active: boolean; p_staff: string }
+        Returns: boolean
       }
       get_public_shop_order: {
         Args: { p_id: string; p_token: string }

@@ -174,7 +174,7 @@ function actionsFor(status: string, isPast: boolean): DrawerAction[] {
       out.push({ label: 'Avboka', target: 'cancelled', variant: 'ghost', icon: 'x', danger: true })
     if (isPast && can('no_show'))
       out.push({ label: 'Uteblev', target: 'no_show', variant: 'ghost', icon: 'clock' })
-    if (can('completed'))
+    if (isPast && can('completed'))
       out.push({ label: 'Markera klar', target: 'completed', variant: 'primary', icon: 'check' })
   } else if (isKlar(status) || status === 'no_show') {
     if (can('confirmed'))
@@ -232,6 +232,7 @@ export function BookingDrawer({
   staffNoun,
   staffColor,
   staff,
+  onlinePaymentsActive,
 }: {
   booking: BookingRow
   tz: string
@@ -241,6 +242,8 @@ export function BookingDrawer({
   staffColor?: string
   /** Redan tenant-/platsfiltrerade resurser som bokningen faktiskt kan flyttas till. */
   staff: ReadonlyArray<{ id: string; name: string }>
+  /** Sann endast när ägartoggle + Stripe charges_enabled båda är aktiva. */
+  onlinePaymentsActive: boolean
 }) {
   const { notify } = useToast()
   const router = useRouter()
@@ -293,8 +296,11 @@ export function BookingDrawer({
   const showAutoKlar = booking.isPast && isBokad(booking.status)
   // Payment-guard: en ej betald, ej avbokad bokning får ALDRIG auto-markeras
   // "klar + betald" (sen kund / no-show).
-  const showPaymentGuard = booking.paymentStatus !== 'succeeded' && !isAvbokad(booking.status)
-  const canReschedule = !isAvbokad(booking.status) && staff.length > 0
+  const showPaymentGuard =
+    onlinePaymentsActive &&
+    booking.paymentStatus !== 'succeeded' &&
+    !isAvbokad(booking.status)
+  const canReschedule = isBokad(booking.status) && staff.length > 0
 
   const submitReschedule = () => {
     if (!rescheduleStaffId || !rescheduleDate || !rescheduleTime) {

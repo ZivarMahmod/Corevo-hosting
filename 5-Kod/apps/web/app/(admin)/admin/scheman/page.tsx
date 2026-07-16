@@ -210,6 +210,7 @@ export default async function SchedulesPage({
           active={selected.active}
           serviceIds={selected.serviceIds}
           services={allServices.filter((s) => s.active).map((s) => ({ id: s.id, name: s.name }))}
+          workingDays={new Set(rows.map((row) => row.weekday)).size}
         />
 
         {/* Grundtiderna läggs en gång — låset kräver ett uttryckligt "Lås upp"

@@ -195,6 +195,7 @@ export default async function KalenderPage({
       locationId={locationFilter || undefined}
       staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
       openBookingId={sp.open}
+      onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
     />
   )
 }

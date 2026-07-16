@@ -141,12 +141,12 @@ export function SlotManager({
         </Callout>
       </div>
 
-      {/* A7-ärlighet: publika bokningsmotorn läser working_hours (veckoschemat),
-          inte working_hour_slots — säg det rakt ut istället för att låtsas. */}
+      {/* A7-ärlighet: explicita starttider är opt-in per personal/dag. När minst
+          en finns är bara de tiderna publikt bokningsbara inom arbetstiden. */}
       <div style={{ marginBottom: 16 }}>
         <Callout tone="info" icon="info">
-          Obs: exakta tider här styr ännu inte den publika bokningen — den utgår från
-          veckoschemat.
+          Exakta tider här styr den publika bokningen. Finns minst en tid för dagen kan
+          kunden bara välja de tiderna, inom arbetstiden nedan.
         </Callout>
       </div>
 

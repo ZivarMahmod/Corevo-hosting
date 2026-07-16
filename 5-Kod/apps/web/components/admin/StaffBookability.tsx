@@ -22,12 +22,14 @@ export function StaffBookability({
   active,
   serviceIds,
   services,
+  workingDays,
 }: {
   staffId: string
   staffName: string
   active: boolean
   serviceIds: string[]
   services: BookabilityService[]
+  workingDays: number
 }) {
   const { notify } = useToast()
   const router = useRouter()
@@ -42,7 +44,7 @@ export function StaffBookability({
 
   useEffect(() => {
     if (actState.success) {
-      notify(active ? 'Medarbetaren inaktiverad — går inte att boka' : 'Medarbetaren aktiverad', 'info')
+      notify(actState.success, 'info')
       router.refresh()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -56,17 +58,20 @@ export function StaffBookability({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [svcState.success])
 
-  const bookable = active && serviceIds.length > 0
+  const bookable = active && serviceIds.length > 0 && workingDays > 0
+  const reason = !active
+    ? 'Inaktiv — kan inte bokas'
+    : serviceIds.length === 0
+      ? 'Inga tjänster — kan inte bokas'
+      : workingDays === 0
+        ? 'Inget schema — kan inte bokas'
+        : `Kan bokas · ${workingDays} dagar/vecka`
   return (
     <Card style={{ marginBottom: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <span style={{ fontWeight: 600, fontSize: 14.5 }}>{staffName}</span>
         <Badge tone={bookable ? 'success' : 'warning'}>
-          {bookable
-            ? 'Kan bokas'
-            : active
-              ? 'Inga tjänster kopplade — kan inte bokas'
-              : 'Inaktiv — kan inte bokas'}
+          {reason}
         </Badge>
         <form action={actAction} style={{ marginLeft: 'auto' }}>
           <input type="hidden" name="id" value={staffId} />
@@ -75,6 +80,22 @@ export function StaffBookability({
             {actPending ? '…' : active ? 'Inaktivera' : 'Aktivera'}
           </Button>
         </form>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))',
+          gap: 8,
+          marginTop: 12,
+          fontSize: 12.5,
+          color: 'var(--c-ink-2)',
+        }}
+        aria-label="Bokningsbarhet"
+      >
+        <span>① Status: <strong>{active ? 'aktiv' : 'inaktiv'}</strong></span>
+        <span>② Tjänster: <strong>{serviceIds.length}</strong></span>
+        <span>③ Schematider: <strong>{workingDays} dagar</strong></span>
       </div>
 
       <form action={svcAction} style={{ marginTop: 12 }}>
@@ -101,7 +122,7 @@ export function StaffBookability({
             {svcPending ? 'Sparar…' : 'Spara tjänster'}
           </Button>
           <span style={{ fontSize: 12, color: 'var(--c-ink-3)' }}>
-            Foto, konto och plats sköts under{' '}
+            Alla tre stegen ovan måste vara klara. Foto, konto och plats sköts under{' '}
             <Link href="/admin/personal" style={{ color: 'var(--c-forest)', fontWeight: 600 }}>
               Personal
             </Link>

@@ -424,6 +424,8 @@ export type TenantDetail = {
   openingHours: { day: string; time: string }[] | null
   /** Primär location-adress (footern på storefronten) — super-admin kontakt-kort. */
   primaryAddress: string | null
+  /** Verifierad egen domän, primär först. null → slug.corevo.se. */
+  primaryDomain: string | null
 }
 
 const ACTIVE_BOOKING = ['pending', 'confirmed', 'completed']
@@ -468,7 +470,7 @@ export async function getTenantDetail(
   if (tenantErr) throw new Error(`getTenantDetail: ${tenantErr.message}`)
   if (!tenant) return null
 
-  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes, locationRes] = await Promise.all([
+  const [settingsRes, servicesRes, serviceRowsRes, staffRes, staffRowsRes, hoursRowsRes, hoursRes, bookingsRes, completedRes, adminRes, staffServicesRes, serviceBookingsRes, locationRes, domainRes] = await Promise.all([
     supabase.from('tenant_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
     supabase.from('services').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('active', true),
     // Editable service rows for the super-admin services surface. All services (active
@@ -524,9 +526,19 @@ export async function getTenantDetail(
       .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from('tenant_domains')
+      .select('domain')
+      .eq('tenant_id', tenantId)
+      .eq('verified', true)
+      .order('is_primary', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
   const locAddrRaw = (locationRes.data as { address?: unknown } | null)?.address
   const primaryAddress = typeof locAddrRaw === 'string' && locAddrRaw.trim() ? locAddrRaw.trim() : null
+  const domainRaw = (domainRes.data as { domain?: unknown } | null)?.domain
+  const primaryDomain = typeof domainRaw === 'string' && domainRaw.trim() ? domainRaw.trim() : null
 
   const settings = settingsRes.data ?? null
   const branding = (settings?.branding ?? {}) as TenantBranding
@@ -694,6 +706,7 @@ export async function getTenantDetail(
     social,
     openingHours: openingHours && openingHours.length > 0 ? openingHours : null,
     primaryAddress,
+    primaryDomain,
   }
 }
 

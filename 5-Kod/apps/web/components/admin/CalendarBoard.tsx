@@ -13,6 +13,7 @@ import {
   dayKey,
   eligibleRescheduleStaff,
   isAvbokad,
+  isBokad,
   isKlar,
   statusAccent,
   telHref,
@@ -228,6 +229,7 @@ export function CalendarBoard({
   /** Dagens datum i salongens tidszon — "Idag"-knappen och nu-linjen utgår från det. */
   today,
   openBookingId,
+  onlinePaymentsActive,
 }: {
   bookings: BookingRow[]
   blocks: CalendarBlock[]
@@ -240,6 +242,7 @@ export function CalendarBoard({
   locationId?: string
   today: string
   openBookingId?: string
+  onlinePaymentsActive: boolean
 }) {
   const router = useRouter()
   const params = useSearchParams()
@@ -915,6 +918,7 @@ export function CalendarBoard({
           staffNoun={staffNoun}
           staffColor={colorOf(open.staffId)}
           staff={eligibleRescheduleStaff(staff, open.serviceId, open.locationId)}
+          onlinePaymentsActive={onlinePaymentsActive}
           onClose={() => setOpen(null)}
         />
       )}
@@ -1575,7 +1579,7 @@ function DayGrid({
                   lanes={lanes}
                   onOpen={onOpen}
                   onBubble={onBubble}
-                  draggable={!isAvbokad(booking.status)}
+                  draggable={isBokad(booking.status)}
                   showPhone
                   color={s.color}
                 />
