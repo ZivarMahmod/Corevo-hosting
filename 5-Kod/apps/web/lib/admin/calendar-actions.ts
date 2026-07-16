@@ -10,7 +10,6 @@ import { setBookingStatus } from '@/lib/admin/actions'
 import { resolveCustomerName } from '@/lib/personal/customer'
 import { sendBookingConfirmation } from '@/lib/notifications/booking'
 import { requestOrigin } from '@/lib/url'
-import { createAdminServiceClient } from '@/lib/admin/service'
 
 /** Kalenderns skriv- och sökvägar (goal-66). Admin-RPC:n delegerar själva slotten
  *  till samma create_public_booking som kundflödet använder — dubbelbokningsspärr,
@@ -27,18 +26,23 @@ export async function loadDaySlots(input: {
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
   if (!input.serviceId || !input.date) return { error: 'Välj en tjänst först.' }
+  if (!input.locationId) return { error: 'Välj en plats först.' }
 
-  const slots = await adminDaySlots({
-    tenantId: tenant.id,
-    date: input.date,
-    timeZone: tenant.timeZone,
-    serviceId: input.serviceId,
-    locationId: input.locationId,
-    // Samma nutidsgräns som skriv-RPC:n. Kalendern ska aldrig erbjuda en tid som
-    // sedan avslås som passerad när ägaren trycker Spara.
-    now: new Date(),
-  })
-  return { slots }
+  try {
+    const slots = await adminDaySlots({
+      tenantId: tenant.id,
+      date: input.date,
+      timeZone: tenant.timeZone,
+      serviceId: input.serviceId,
+      locationId: input.locationId,
+      // Samma nutidsgräns som skriv-RPC:n. Kalendern ska aldrig erbjuda en tid som
+      // sedan avslås som passerad när ägaren trycker Spara.
+      now: new Date(),
+    })
+    return { slots }
+  } catch {
+    return { error: 'Lediga tider kunde inte hämtas. Försök igen.' }
+  }
 }
 
 export type CustomerHit = {
@@ -108,6 +112,21 @@ function availabilityFenceMessage(message: string, unchanged = false): string | 
   if (message.includes('booking_overlaps_time_off')) {
     return `Tiden överlappar en blockering eller frånvaro.${suffix}`
   }
+  if (message.includes('booking_overlaps_location_closure')) {
+    return `Platsen är stängd under den tiden.${suffix}`
+  }
+  if (message.includes('booking_outside_location_opening_hours')) {
+    return `Tiden ligger utanför platsens öppettider.${suffix}`
+  }
+  if (message.includes('booking_inside_min_notice')) {
+    return `Tiden ligger för nära i tid enligt platsens bokningsregler.${suffix}`
+  }
+  if (message.includes('booking_outside_advance_window')) {
+    return `Tiden ligger längre fram än platsens bokningshorisont.${suffix}`
+  }
+  if (message.includes('booking_overlaps_reserved_time')) {
+    return `Tiden krockar med en annan bokning.${suffix}`
+  }
   if (message.includes('start_in_past')) {
     return `Tiden har redan passerat.${suffix}`
   }
@@ -132,107 +151,60 @@ export async function moveBooking(input: {
   startIso: string
   /** Ny resurs. Samma som förut = ren tidsflytt. */
   staffId: string
+  locationId: string
+  serviceId: string
+  expectedStartIso: string
+  expectedStaffId: string
+  /** När flytten startades i en frånvarokö auditeras upplösningen atomiskt. */
+  absenceTimeOffId?: string
 }): Promise<MoveBookingState> {
   const user = await requireAdminArea('bokningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) return { error: 'Inget företag är kopplat till ditt konto.' }
-  if (!input.bookingId || !input.staffId || Number.isNaN(Date.parse(input.startIso))) {
+  if (
+    !input.bookingId ||
+    !input.staffId ||
+    !input.locationId ||
+    !input.serviceId ||
+    !input.expectedStaffId ||
+    Number.isNaN(Date.parse(input.startIso)) ||
+    Number.isNaN(Date.parse(input.expectedStartIso))
+  ) {
     return { error: 'Ogiltig flytt — ladda om och försök igen.' }
   }
 
   const supabase = await createClient()
-
-  // Läs bokningens längd — den ska bevaras. Läsningen är RLS-fencad till egen tenant,
-  // så en påhittad boknings-id kan aldrig träffa någon annans rad.
-  const { data: current } = await supabase
-    .from('bookings')
-    .select('start_ts, end_ts, status, service_id, location_id')
-    .eq('id', input.bookingId)
-    .eq('tenant_id', tenant.id)
-    .maybeSingle()
-  if (!current) return { error: 'Bokningen finns inte längre. Ladda om kalendern.' }
-  if (current.status !== 'pending' && current.status !== 'confirmed') {
-    return { error: 'En avslutad tid kan inte flyttas. Skapa en ny bokning i stället.' }
+  const bookingRpc = supabase as unknown as {
+    rpc(
+      name: 'reschedule_admin_booking' | 'reschedule_admin_absence_booking',
+      args: {
+        p_booking: string
+        p_location: string
+        p_staff: string
+        p_service: string
+        p_start: string
+        p_expected_start: string
+        p_expected_staff: string
+        p_time_off?: string
+      },
+    ): PromiseLike<{
+      data: unknown
+      error: { code?: string; message: string } | null
+    }>
   }
-
-  // UI:t visar bara personal på den aktuella platsen, men en server action kan
-  // anropas direkt med valfri UUID. Verifiera därför resursen igen här: aktiv
-  // personal i samma tenant, kopplad till bokningens tjänst och plats.
-  const [targetStaff, offeredService, activeLocation, staffAtLocation] = await Promise.all([
-    supabase
-      .from('staff')
-      .select('id')
-      .eq('id', input.staffId)
-      .eq('tenant_id', tenant.id)
-      .eq('active', true)
-      .maybeSingle(),
-    supabase
-      .from('staff_services')
-      .select('staff_id')
-      .eq('tenant_id', tenant.id)
-      .eq('staff_id', input.staffId)
-      .eq('service_id', current.service_id)
-      .maybeSingle(),
-    supabase
-      .from('locations')
-      .select('id')
-      .eq('id', current.location_id)
-      .eq('tenant_id', tenant.id)
-      .eq('active', true)
-      .maybeSingle(),
-    supabase
-      .from('working_hours')
-      .select('staff_id')
-      .eq('tenant_id', tenant.id)
-      .eq('staff_id', input.staffId)
-      .eq('location_id', current.location_id)
-      .limit(1)
-      .maybeSingle(),
-  ])
-
-  if (targetStaff.error || !targetStaff.data || offeredService.error || !offeredService.data) {
-    return { error: 'Medarbetaren kan inte utföra den här tjänsten. Välj en annan.' }
-  }
-  if (
-    activeLocation.error ||
-    !activeLocation.data ||
-    staffAtLocation.error ||
-    !staffAtLocation.data
-  ) {
-    return { error: 'Medarbetaren arbetar inte på bokningens plats. Välj en annan.' }
-  }
-
-  const durationMs = new Date(current.end_ts).getTime() - new Date(current.start_ts).getTime()
-  const start = new Date(input.startIso)
-  const end = new Date(start.getTime() + durationMs)
-
-  // goal-67 (belastningstest): statusvakten ovan LÄSER status, men läsningen och
-  // skrivningen är två anrop. En bokning som avbokas i glappet flyttades ändå — bevisat
-  // med samtidig avboka+flytta: slutstatus 'cancelled', och tiden hade ändå flyttats.
-  // Vakten måste sitta i SKRIVNINGEN, inte bara framför den: `.in('status', …)` gör
-  // UPDATE:n till en villkorad skrivning, så en avbokad rad matchar noll rader.
-  const writer = createAdminServiceClient()
-  if (!writer) {
-    return { error: 'Bokningsändringar är inte tillgängliga just nu. Försök igen senare.' }
-  }
-  const MOVABLE = ['pending', 'confirmed'] as const
-  const { data: moved, error } = await writer
-    .from('bookings')
-    .update({
-      start_ts: start.toISOString(),
-      end_ts: end.toISOString(),
-      staff_id: input.staffId,
-    })
-    .eq('id', input.bookingId)
-    .eq('tenant_id', tenant.id)
-    .in('status', MOVABLE as unknown as string[])
-    .select('id')
-
-  // Noll rader utan fel = raden ändrade status under oss (avbokad/utebliven mitt i
-  // draget). Inte ett tekniskt fel — ett kapplöpningsfall med ett ärligt svar.
-  if (!error && (moved?.length ?? 0) === 0) {
-    return { error: 'Tiden ändrades av någon annan just nu. Ladda om kalendern.' }
-  }
+  const rpcName = input.absenceTimeOffId
+    ? 'reschedule_admin_absence_booking'
+    : 'reschedule_admin_booking'
+  const { error } = await bookingRpc.rpc(rpcName, {
+    p_booking: input.bookingId,
+    p_location: input.locationId,
+    p_staff: input.staffId,
+    p_service: input.serviceId,
+    p_start: input.startIso,
+    p_expected_start: input.expectedStartIso,
+    p_expected_staff: input.expectedStaffId,
+    ...(input.absenceTimeOffId ? { p_time_off: input.absenceTimeOffId } : {}),
+  })
 
   if (error) {
     // 23P01 = exclusion_violation → tiden krockar med en annan bokning. Originalet
@@ -240,10 +212,22 @@ export async function moveBooking(input: {
     if (error.message.includes('no_double_booking') || error.code === '23P01') {
       return { error: 'Tiden krockar med en annan bokning. Bokningen ligger kvar där den var.' }
     }
+    if (error.code === '40001' || error.message.includes('booking_changed_concurrently')) {
+      return { error: 'Tiden ändrades av någon annan just nu. Bokningen är oförändrad här.' }
+    }
+    if (error.message.includes('booking_not_reschedulable')) {
+      return { error: 'En avslutad tid kan inte flyttas. Skapa en ny bokning i stället.' }
+    }
+    if (error.message.includes('cross_location_reschedule_forbidden')) {
+      return { error: 'Bokningen kan inte flyttas mellan platser. Bokningen är oförändrad.' }
+    }
     if (error.message.includes('invalid_staff_location')) {
       return { error: 'Medarbetaren arbetar inte på bokningens plats. Bokningen är oförändrad.' }
     }
-    if (error.message.includes('invalid_staff')) {
+    if (
+      error.message.includes('invalid_staff') ||
+      error.message.includes('invalid_booking_resources')
+    ) {
       return { error: 'Medarbetaren kan inte utföra den här tjänsten. Bokningen är oförändrad.' }
     }
     if (error.message.includes('invalid_location')) {
@@ -259,7 +243,131 @@ export async function moveBooking(input: {
   return { success: 'Bokningen är flyttad.' }
 }
 
-export type BlockState = { success?: string; error?: string }
+export type BlockState = { success?: string; error?: string; blockId?: string }
+
+export type BlockImpact = {
+  bookingId: string
+  startTs: string
+  endTs: string
+  customerName: string
+  customerEmail: string | null
+  customerPhone: string | null
+  serviceName: string
+  status: string
+  handled: boolean
+  resolution: string | null
+}
+
+type BlockImpactRow = {
+  booking_id: string
+  start_ts: string
+  end_ts: string
+  customer_name: string
+  customer_email: string | null
+  customer_phone: string | null
+  service_name: string
+  status: string
+  handled: boolean
+  resolution: string | null
+}
+
+const mapBlockImpact = (row: BlockImpactRow): BlockImpact => ({
+  bookingId: row.booking_id,
+  startTs: row.start_ts,
+  endTs: row.end_ts,
+  customerName: row.customer_name,
+  customerEmail: row.customer_email,
+  customerPhone: row.customer_phone,
+  serviceName: row.service_name,
+  status: row.status,
+  handled: row.handled,
+  resolution: row.resolution,
+})
+
+export async function previewBlockImpacts(input: {
+  locationId: string
+  staffId: string
+  startIso: string
+  endIso: string
+}): Promise<{ impacts: BlockImpact[]; error?: string }> {
+  const user = await requireAdminArea('bokningar')
+  const tenant = await getAdminTenant(user)
+  if (!tenant || !input.locationId || !input.staffId) {
+    return { impacts: [], error: 'Välj plats och medarbetare först.' }
+  }
+  const supabase = await createClient()
+  const impactRpc = supabase as unknown as {
+    rpc(
+      name: 'preview_admin_time_off_impacts',
+      args: { p_location: string; p_staff: string; p_start: string; p_end: string },
+    ): PromiseLike<{ data: BlockImpactRow[] | null; error: { message: string } | null }>
+  }
+  const { data, error } = await impactRpc.rpc('preview_admin_time_off_impacts', {
+    p_location: input.locationId,
+    p_staff: input.staffId,
+    p_start: input.startIso,
+    p_end: input.endIso,
+  })
+  if (error) return { impacts: [], error: 'Bokningarna kunde inte kontrolleras. Försök igen.' }
+  return { impacts: (data ?? []).map(mapBlockImpact) }
+}
+
+export async function loadBlockImpacts(
+  timeOffId: string,
+): Promise<{ impacts: BlockImpact[]; error?: string }> {
+  const user = await requireAdminArea('bokningar')
+  const tenant = await getAdminTenant(user)
+  if (!tenant || !timeOffId) return { impacts: [], error: 'Blockeringen kunde inte läsas.' }
+  const supabase = await createClient()
+  const impactRpc = supabase as unknown as {
+    rpc(
+      name: 'get_admin_time_off_impacts',
+      args: { p_time_off: string },
+    ): PromiseLike<{ data: BlockImpactRow[] | null; error: { message: string } | null }>
+  }
+  const { data, error } = await impactRpc.rpc('get_admin_time_off_impacts', {
+    p_time_off: timeOffId,
+  })
+  if (error) return { impacts: [], error: 'Arbetskön kunde inte laddas.' }
+  return { impacts: (data ?? []).map(mapBlockImpact) }
+}
+
+export async function markBlockImpactHandled(input: {
+  timeOffId: string
+  bookingId: string
+  resolution: 'contacted' | 'rescheduled' | 'cancelled' | 'handled'
+  note?: string
+}): Promise<BlockState> {
+  const user = await requireAdminArea('bokningar')
+  const tenant = await getAdminTenant(user)
+  if (!tenant || !input.timeOffId || !input.bookingId) return { error: 'Bokningen saknas.' }
+  const supabase = await createClient()
+  const impactRpc = supabase as unknown as {
+    rpc(
+      name: 'mark_admin_time_off_booking_handled',
+      args: {
+        p_time_off: string
+        p_booking: string
+        p_resolution: string
+        p_note: string | null
+      },
+    ): PromiseLike<{ data: null; error: { message: string } | null }>
+  }
+  const { error } = await impactRpc.rpc('mark_admin_time_off_booking_handled', {
+    p_time_off: input.timeOffId,
+    p_booking: input.bookingId,
+    p_resolution: input.resolution,
+    p_note: input.note?.trim().slice(0, 200) || null,
+  })
+  if (error) {
+    if (error.message.includes('absence_booking_not_active')) {
+      return { error: 'Bokningen är redan flyttad eller avbokad. Ladda om kön.' }
+    }
+    return { error: 'Hanteringen kunde inte sparas.' }
+  }
+  revalidatePath('/admin/bokningar')
+  return { success: 'Bokningen är markerad som hanterad.' }
+}
 
 /**
  * Blockera tid (rast, frånvaro, avvikande arbetstid) — EN mekanism för allt som gör
@@ -276,9 +384,11 @@ export type BlockState = { success?: string; error?: string }
  * seriesOccurrences och är DST-testad.
  */
 export async function createBlock(input: {
+  locationId: string
   staffId: string
   startIso: string
   endIso: string
+  kind: 'break' | 'leave' | 'sick' | 'other'
   reason: string
   repeat?: RepeatKind
 }): Promise<BlockState> {
@@ -288,7 +398,13 @@ export async function createBlock(input: {
 
   const start = new Date(input.startIso)
   const end = new Date(input.endIso)
-  if (!input.staffId || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+  if (
+    !input.locationId ||
+    !input.staffId ||
+    !['break', 'leave', 'sick', 'other'].includes(input.kind) ||
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime())
+  ) {
     return { error: 'Ogiltig tid — ladda om och försök igen.' }
   }
   if (end <= start) return { error: 'Sluttiden måste vara efter starttiden.' }
@@ -296,31 +412,54 @@ export async function createBlock(input: {
   const repeat: RepeatKind = REPEAT_KINDS.includes(input.repeat as RepeatKind)
     ? (input.repeat as RepeatKind)
     : 'ingen'
+
+  const supabase = await createClient()
+  const { data: location, error: locationError } = await supabase
+    .from('locations')
+    .select('timezone')
+    .eq('id', input.locationId)
+    .eq('tenant_id', tenant.id)
+    .maybeSingle<{ timezone: string | null }>()
+  if (locationError || !location) {
+    return { error: 'Platsen kunde inte verifieras. Ladda om och försök igen.' }
+  }
+
   const occurrences = seriesOccurrences({
     startIso: start.toISOString(),
     endIso: end.toISOString(),
     repeat,
-    tz: tenant.timeZone,
+    tz: location.timezone ?? tenant.timeZone,
   })
   const seriesId = occurrences.length > 1 ? crypto.randomUUID() : null
   const reason = input.reason.trim() || 'Blockerad'
 
-  const supabase = await createClient()
-  const { error } = await supabase.from('time_off').insert(
-    occurrences.map((o) => ({
-      tenant_id: tenant.id,
-      staff_id: input.staffId,
-      start_ts: o.startIso,
-      end_ts: o.endIso,
-      reason,
-      series_id: seriesId,
-    })),
-  )
+  const timeOffRpc = supabase as unknown as {
+    rpc(
+      name: 'create_admin_time_off_series',
+      args: {
+        p_location: string
+        p_staff: string
+        p_occurrences: { start_ts: string; end_ts: string }[]
+        p_kind: 'break' | 'leave' | 'sick' | 'other'
+        p_reason: string
+        p_series_id: string | null
+      },
+    ): PromiseLike<{ data: string[] | null; error: { message: string } | null }>
+  }
+  const { data: blockIds, error } = await timeOffRpc.rpc('create_admin_time_off_series', {
+    p_location: input.locationId,
+    p_staff: input.staffId,
+    p_occurrences: occurrences.map((o) => ({ start_ts: o.startIso, end_ts: o.endIso })),
+    p_kind: input.kind,
+    p_reason: reason,
+    p_series_id: seriesId,
+  })
   if (error) return { error: 'Blockeringen gick inte att spara. Försök igen.' }
 
   revalidatePath('/admin/bokningar')
   revalidatePath('/admin')
   return {
+    blockId: blockIds?.[0],
     success:
       occurrences.length > 1
         ? `Tiden är blockerad och upprepas — ${occurrences.length} tillfällen inlagda (12 månader framåt).`
@@ -344,46 +483,31 @@ export async function removeBlock(
   if (!blockId) return { error: 'Ogiltig blockering.' }
 
   const supabase = await createClient()
-
-  if (scope === 'framat') {
-    // Läs den valda radens serie + start (RLS-fencad). Utan serie faller vi ner
-    // till singel-borttagning — knappen ska aldrig kunna radera mer än den lovar.
-    const { data: row } = await supabase
-      .from('time_off')
-      .select('series_id, start_ts')
-      .eq('id', blockId)
-      .eq('tenant_id', tenant.id)
-      .maybeSingle()
-    if (!row) return { error: 'Blockeringen finns inte längre.' }
-
-    if (row.series_id) {
-      const { data: gone, error } = await supabase
-        .from('time_off')
-        .delete()
-        .eq('tenant_id', tenant.id)
-        .eq('series_id', row.series_id)
-        .gte('start_ts', row.start_ts)
-        .select('id')
-      if (error) return { error: 'Blockeringarna gick inte att ta bort. Försök igen.' }
-
-      revalidatePath('/admin/bokningar')
-      revalidatePath('/admin')
-      return {
-        success: `${gone?.length ?? 0} blockeringar borttagna — denna och alla framåt. Tidigare tillfällen ligger kvar.`,
-      }
-    }
+  const timeOffRpc = supabase as unknown as {
+    rpc(
+      name: 'delete_admin_time_off',
+      args: { p_time_off: string; p_delete_series: boolean },
+    ): PromiseLike<{ data: number | null; error: { message: string } | null }>
   }
-
-  const { error } = await supabase
-    .from('time_off')
-    .delete()
-    .eq('id', blockId)
-    .eq('tenant_id', tenant.id)
-  if (error) return { error: 'Blockeringen gick inte att ta bort. Försök igen.' }
+  const { data: deleted, error } = await timeOffRpc.rpc('delete_admin_time_off', {
+    p_time_off: blockId,
+    p_delete_series: scope === 'framat',
+  })
+  if (error) {
+    if (error.message.includes('time_off_not_found')) {
+      return { error: 'Blockeringen finns inte längre.' }
+    }
+    return { error: 'Blockeringen gick inte att ta bort. Försök igen.' }
+  }
 
   revalidatePath('/admin/bokningar')
   revalidatePath('/admin')
-  return { success: 'Blockeringen är borttagen — tiden går att boka igen.' }
+  return {
+    success:
+      scope === 'framat' && (deleted ?? 0) > 1
+        ? `${deleted} blockeringar borttagna — denna och alla framåt. Tidigare tillfällen ligger kvar.`
+        : 'Blockeringen är borttagen — tiden går att boka igen.',
+  }
 }
 
 // ── Sök ───────────────────────────────────────────────────────────────────────
@@ -619,6 +743,7 @@ export async function createAdminBooking(
   if (
     !serviceId ||
     !staffId ||
+    !locationId ||
     Number.isNaN(Date.parse(start)) ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)
   ) {
@@ -638,7 +763,7 @@ export async function createAdminBooking(
   const { data: bookingResultRaw, error } = await supabase.rpc('create_admin_booking', {
     p_service: serviceId,
     p_staff: staffId,
-    p_location: locationId || undefined,
+    p_location: locationId,
     p_start: start,
     p_customer_id: customerId || undefined,
     p_guest_name: guestName || undefined,
@@ -659,7 +784,11 @@ export async function createAdminBooking(
     if (msg.includes('no_double_booking') || error?.code === '23P01') {
       return { error: 'Tiden hann bli tagen. Välj en annan tid — dina uppgifter är kvar.' }
     }
-    if (msg.includes('invalid_staff_location')) {
+    if (
+      msg.includes('invalid_staff_location') ||
+      msg.includes('invalid_booking_staff_location') ||
+      msg.includes('admin_booking_location_required')
+    ) {
       return { error: 'Medarbetaren har inga tider på den platsen.' }
     }
     if (msg.includes('invalid_customer')) {
@@ -697,7 +826,7 @@ export async function createAdminBooking(
 
   const { data: fresh } = await supabase
     .from('bookings')
-    .select('start_ts, services(name), staff(title), customers(email)')
+    .select('start_ts, services(name), staff(title), customers(email), locations(timezone)')
     .eq('id', bookingId)
     .eq('tenant_id', tenant.id)
     .maybeSingle<{
@@ -705,6 +834,7 @@ export async function createAdminBooking(
       services: { name: string } | null
       staff: { title: string | null } | null
       customers: { email: string | null } | null
+      locations: { timezone: string } | null
     }>()
 
   const to = fresh?.customers?.email ?? (customerId ? null : guestEmail || null)
@@ -725,7 +855,7 @@ export async function createAdminBooking(
         startISO: fresh.start_ts,
         // Tiden i mejlet ska stå i SALONGENS tidszon — kunden bryr sig om väggklockan,
         // inte om UTC.
-        timeZone: tenant.timeZone,
+        timeZone: fresh.locations?.timezone ?? tenant.timeZone,
       },
       {
         supabase,

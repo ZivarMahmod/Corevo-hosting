@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requireAdminArea } from '@/lib/auth/session'
+import { requireOrganizationOwner } from '@/lib/admin/owner-guard'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getSettingsRow } from '@/lib/admin/data'
 import { createClient } from '@/lib/supabase/server'
@@ -17,7 +17,7 @@ export default async function BetalningPage({
 }: {
   searchParams: Promise<{ stripe?: string }>
 }) {
-  const user = await requireAdminArea('installningar')
+  const user = await requireOrganizationOwner('installningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

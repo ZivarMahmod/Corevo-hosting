@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requireAdminArea } from '@/lib/auth/session'
+import { requireOrganizationOwner } from '@/lib/admin/owner-guard'
 import { createClient } from '@/lib/supabase/server'
 import { AccountSecurity } from '@/components/admin/AccountSecurity'
 import { PageHead, Button } from '@/components/portal/ui'
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Konto och säkerhet · Adminpanel' }
 
 export default async function KontoPage() {
-  await requireAdminArea('installningar')
+  await requireOrganizationOwner('installningar')
   const supabase = await createClient()
   const { data } = await supabase.auth.getUser()
 

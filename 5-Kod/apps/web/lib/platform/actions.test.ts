@@ -15,7 +15,8 @@ function makeSupabase(results: Record<string, { data?: unknown; error?: unknown 
     ;(captured[k] ??= []).push(v)
   }
   const from = (table: string) => {
-    const r = results[table] ?? { data: null, error: null }
+    const r = results[table] ??
+      (table === 'locations' ? { data: { id: 'location-1' }, error: null } : { data: null, error: null })
     const chain: Record<string, unknown> = {
       insert: (p: unknown) => (push(table, p), chain),
       upsert: (p: unknown) => (push(`${table}.upsert`, p), chain),
@@ -208,6 +209,8 @@ describe('createTenant writes the goal-20 columns', () => {
       full_name: 'Anna Berg',
       role_id: 'role-1',
       status: 'active',
+      access_scope: 'organization',
+      primary_location_id: 'location-1',
     })
   })
 

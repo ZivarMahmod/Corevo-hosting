@@ -24,7 +24,9 @@ describe('kundsökningen i Ny bokning', () => {
     const drawer = read('components/admin/NewBookingDrawer.tsx')
 
     expect(drawer).toContain('const customerResolved = Boolean(chosen) || customerSearchStatus ===')
-    expect(drawer).toContain('service && picked && customerResolved && customerQuery.trim().length >= 2')
+    expect(drawer).toContain('slotMatchesPicked(picked, slots) &&')
+    expect(drawer).toContain('customerResolved &&')
+    expect(drawer).toContain('customerQuery.trim().length >= 2')
     expect(drawer).not.toContain('hits.length === 0 && !slotsLoading')
   })
 })

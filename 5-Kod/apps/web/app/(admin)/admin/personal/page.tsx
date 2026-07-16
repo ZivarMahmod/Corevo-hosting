@@ -3,6 +3,8 @@ import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm, termPlural } from '@/lib/platform/verticals-shared'
 import { listServices, listStaff, listLocations } from '@/lib/admin/data'
+import { listAllWorkingHours, listLocationOpeningHours } from '@/lib/admin/schedule-data'
+import { staffReadiness } from '@/lib/admin/staff-readiness'
 import { getStaffScheduleWithNotes, dayRangeUtc } from '@/lib/personal/calendar'
 import { todayInTz } from '@/lib/personal/format'
 import {
@@ -29,11 +31,19 @@ export default async function StaffPage() {
     )
   }
 
-  const [staff, services, locations] = await Promise.all([
+  const [staff, services, locations, openingHours, workingHours] = await Promise.all([
     listStaff(tenant.id),
     listServices(tenant.id),
     listLocations(tenant.id),
+    listLocationOpeningHours(tenant.id),
+    listAllWorkingHours(tenant.id),
   ])
+  const activeLocations = locations.filter((location) => location.active)
+  const defaultStaffLocationId = activeLocations.some(
+    (location) => location.id === tenant.locationId,
+  )
+    ? tenant.locationId!
+    : (activeLocations[0]?.id ?? '')
 
   // Each staff member's REAL day — one batched read for the whole roster, then
   // grouped by staff_id. getStaffScheduleWithNotes is RLS-tenant-fenced; cancelled
@@ -66,7 +76,15 @@ export default async function StaffPage() {
   // (the mock's specialty chips bound to staff_services). The full {id,name} set
   // also feeds the Drawer's tjänst-coupling checkboxes (setStaffServices).
   const serviceName = new Map<string, string>(services.map((sv) => [sv.id, sv.name]))
-  const serviceOptions: ServiceOption[] = services.map((sv) => ({ id: sv.id, name: sv.name }))
+  const serviceOptions: ServiceOption[] = services.map((sv) => ({
+    id: sv.id,
+    name: sv.name,
+    active: sv.active,
+    locationId: sv.location_id,
+  }))
+  const confirmedLocations = new Set(
+    openingHours.filter((row) => row.confirmed_at !== null).map((row) => row.location_id),
+  )
 
   const cards: StaffCard[] = staff.map((s) => ({
     id: s.id,
@@ -83,14 +101,22 @@ export default async function StaffPage() {
     hasAccount: Boolean(s.profile_id),
     locationName: (s.location_id && locationName.get(s.location_id)) || null,
     locationId: s.location_id,
+    readiness: staffReadiness({
+      active: s.active,
+      locationId: s.location_id,
+      openingHoursConfirmed: Boolean(s.location_id && confirmedLocations.has(s.location_id)),
+      workingHoursCount: workingHours.filter(
+        (row) => row.staff_id === s.id && row.location_id === s.location_id,
+      ).length,
+      serviceIds: s.serviceIds,
+      services: serviceOptions,
+    }),
     // Foto + synlighet på publika team-sektionen (0049) — redigeras i drawerns
     // "Foto & synlighet på sidan" (updateStaff-partialpatch).
     avatarUrl: s.avatar_url,
     showOnSite: s.show_on_site,
     color: s.color ?? null,
-    today: (
-      dayByStaff.get(s.id) ?? []
-    ).sort((a, b) => (a.startTs < b.startTs ? -1 : 1)),
+    today: (dayByStaff.get(s.id) ?? []).sort((a, b) => (a.startTs < b.startTs ? -1 : 1)),
   }))
 
   return (
@@ -98,9 +124,12 @@ export default async function StaffPage() {
       <PageHead
         eyebrow={tenant.name}
         title={termPlural(tenant.terminology, 'staff', 'Personal')}
-        lede="Varje medarbetares riktiga dag — speglad live. Ge dem ett eget konto med egen vy, eller hantera dem härifrån. Endast aktiv personal med minst en kopplad tjänst går att boka."
+        lede="Varje medarbetares riktiga dag — speglad live. Bokningsstatusen visar nästa sak som behöver bli klar: plats, öppettider, tjänster, arbetstider eller aktivering."
       >
-        <AddStaffButton />
+        <AddStaffButton
+          locations={activeLocations}
+          defaultLocationId={defaultStaffLocationId}
+        />
       </PageHead>
 
       {/* Personalöversikt — RICH kort per medarbetare (forest-avatar, namn, roll-rad,
@@ -123,7 +152,7 @@ export default async function StaffPage() {
         <StaffRoster
           staff={cards}
           services={serviceOptions}
-          locations={locations.filter((l) => l.active).map((l) => ({ id: l.id, name: l.name }))}
+          locations={activeLocations.map((l) => ({ id: l.id, name: l.name }))}
           tz={tenant.timeZone}
           staffNoun={resolveTerm(tenant.terminology, 'staff', 'Medarbetare')}
         />

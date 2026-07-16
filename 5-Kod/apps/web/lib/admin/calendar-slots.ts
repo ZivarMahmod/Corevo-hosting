@@ -1,6 +1,7 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import { computeSlots, type Interval } from '@/lib/booking/availability'
+import { computeSlots, intersectWorkingWindows, type Interval } from '@/lib/booking/availability'
+import { loadLocationAvailability } from '@/lib/booking/location-rules'
 import { weekdayOf, zonedTimeToUtc } from '@/lib/booking/tz'
 
 /** Lediga tider för ADMIN — kalenderns "visa bokningsbar tid".
@@ -42,21 +43,30 @@ export async function adminDaySlots({
   date: string
   timeZone: string
   serviceId: string
-  locationId?: string
+  locationId: string
   /** Begränsa till vissa resurser (kalenderns resursfilter). Tom/utelämnad = alla. */
   staffIds?: string[]
   now?: Date
 }): Promise<AdminSlot[]> {
   const supabase = await createClient()
 
+  const locationAvailability = await loadLocationAvailability(supabase, tenantId, locationId)
+  if (!locationAvailability) return []
+  const { location, confirmedHours: confirmedLocationHours } = locationAvailability
+  const locationTimeZone = location.timezone ?? timeZone
+
   const { data: service } = await supabase
     .from('services')
-    .select('duration_min, slot_step_min, buffer_min')
+    .select('duration_min, slot_step_min, buffer_min, location_id')
     .eq('id', serviceId)
     .eq('tenant_id', tenantId)
     .eq('active', true)
     .maybeSingle()
-  if (!service?.duration_min) return []
+  if (
+    !service?.duration_min ||
+    (service.location_id !== null && service.location_id !== locationId)
+  )
+    return []
 
   // Vilka resurser KAN utföra tjänsten? En tid är inte ledig hos någon som inte gör
   // jobbet — det vore en lucka som inte går att boka.
@@ -76,6 +86,7 @@ export async function adminDaySlots({
     .from('staff')
     .select('id, slot_step_min, buffer_min')
     .eq('tenant_id', tenantId)
+    .eq('location_id', locationId)
     .eq('active', true)
     .in('id', candidates)
   const active = (staffRows ?? []).map((s) => s.id)
@@ -84,27 +95,33 @@ export async function adminDaySlots({
   const bufferByStaff = new Map((staffRows ?? []).map((s) => [s.id, s.buffer_min]))
 
   const weekday = weekdayOf(date)
-  let hoursQuery = supabase
+  const hoursQuery = supabase
     .from('working_hours')
     .select('staff_id, start_time, end_time')
     .eq('tenant_id', tenantId)
+    .eq('location_id', locationId)
     .eq('weekday', weekday)
     .in('staff_id', active)
-  if (locationId) hoursQuery = hoursQuery.eq('location_id', locationId)
   const { data: hours } = await hoursQuery
+
+  const hasConfirmedLocationHours = confirmedLocationHours.length > 0
+  const locationWindows = confirmedLocationHours
+    .filter((window) => window.weekday === weekday)
+    .map((window) => ({ start: window.start_time, end: window.end_time }))
 
   // Upptagen tid = bokningar + blockeringar, via samma RPC som publika flödet. En
   // andra beräkning här hade kunnat säga något annat än sajten — det är precis den
   // sortens andra sanning vi tar bort.
-  const dayStart = zonedTimeToUtc(date, '00:00', timeZone)
+  const dayStart = zonedTimeToUtc(date, '00:00', locationTimeZone)
   // +26h täcker en 25-timmarsdag vid vinterttidsomställning utan att missa sen busy-tid.
   const dayEnd = new Date(dayStart.getTime() + 26 * 60 * 60 * 1000)
-  const { data: busyRows } = await supabase.rpc('get_busy_intervals', {
+  const { data: busyRows, error: busyError } = await supabase.rpc('get_busy_intervals', {
     p_tenant: tenantId,
     p_staff_ids: active,
     p_from: dayStart.toISOString(),
     p_to: dayEnd.toISOString(),
   })
+  if (busyError) throw new Error('busy_intervals_unavailable')
 
   const windowsByStaff = new Map<string, { start: string; end: string }[]>()
   for (const w of hours ?? []) {
@@ -121,21 +138,32 @@ export async function adminDaySlots({
   }
 
   const out: AdminSlot[] = []
+  const minimumStart = new Date(now.getTime() + location.min_notice_min * 60_000)
+  const maximumStart = new Date(now.getTime() + location.max_advance_days * 86_400_000)
+  if (dayStart.getTime() > maximumStart.getTime()) return out
   for (const staffId of active) {
     const windows = windowsByStaff.get(staffId)
     if (!windows || windows.length === 0) continue // arbetar inte den dagen
     const starts = computeSlots({
       date,
-      timeZone,
-      workingWindows: windows,
+      timeZone: locationTimeZone,
+      workingWindows: hasConfirmedLocationHours
+        ? intersectWorkingWindows(windows, locationWindows)
+        : windows,
       busy: busyByStaff.get(staffId) ?? [],
       durationMin: service.duration_min,
-      slotStepMin: service.slot_step_min ?? stepByStaff.get(staffId) ?? DEFAULT_STEP_MIN,
+      slotStepMin:
+        service.slot_step_min ??
+        stepByStaff.get(staffId) ??
+        location.slot_step_min ??
+        DEFAULT_STEP_MIN,
       bufferMin: service.buffer_min ?? bufferByStaff.get(staffId) ?? 0,
       // INGA explicitStarts — se filhuvudet. Ägaren bokar fritt i sin arbetstid.
-      now,
+      now: minimumStart,
     })
-    for (const s of starts) out.push({ staffId, startIso: s.toISOString() })
+    for (const s of starts) {
+      if (s <= maximumStart) out.push({ staffId, startIso: s.toISOString() })
+    }
   }
   return out
 }

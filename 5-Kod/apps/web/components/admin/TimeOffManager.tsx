@@ -144,13 +144,17 @@ function AddTimeOffForm({
         <input name="to" type="date" required min={fromDate || undefined} style={inputStyle} />
       </label>
       <label style={{ ...fieldStyle, flex: '1 1 160px' }}>
-        <span>Orsak (valfritt)</span>
-        <input
-          name="reason"
-          type="text"
-          placeholder="t.ex. Semester"
+        <span>Typ av frånvaro</span>
+        <select
+          name="kind"
+          defaultValue="leave"
+          required
           style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
-        />
+        >
+          <option value="leave">Ledighet</option>
+          <option value="sick">Sjukfrånvaro</option>
+          <option value="other">Annat</option>
+        </select>
       </label>
       <Button variant="ghost" size="sm" icon="plus" type="submit" disabled={pending}>
         {pending ? 'Sparar…' : 'Lägg till frånvaro'}

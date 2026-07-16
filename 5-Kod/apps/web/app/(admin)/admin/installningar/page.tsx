@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/server'
 import { todayInTz } from '@/lib/admin/dates'
 import { weekdayOf } from '@/lib/booking/tz'
 import { PageHead, Card, Badge, Icon, type BadgeTone } from '@/components/portal/ui'
+import { getAdminLocationPreferences } from '@/lib/admin/location-context'
 
 /** L3 C-01 — Inställningar = KARTAN över de ytor som redan finns. Nio kategorier:
  *  varje kort säger VAD det är, VAD läget är just nu, och tar dig dit i ETT klick.
@@ -41,20 +42,24 @@ export default async function SettingsPage() {
   }
 
   const supabase = await createClient()
+  const preferences = await getAdminLocationPreferences(user.id)
+  const organizationOwner = preferences.accessScope === 'organization'
   const [settings, services, staff, locations, domains, moduleStates, today, { data: tRow }] =
     await Promise.all([
       getSettingsRow(tenant.id),
       listServices(tenant.id),
       listStaff(tenant.id),
       listLocations(tenant.id),
-      listDomains(tenant.id),
+      organizationOwner ? listDomains(tenant.id) : Promise.resolve([]),
       getAdminModuleStates(tenant.id),
       staffDay(tenant.id, weekdayOf(todayInTz(tenant.timeZone))),
-      supabase
-        .from('tenants')
-        .select('status, stripe_charges_enabled')
-        .eq('id', tenant.id)
-        .maybeSingle(),
+      organizationOwner
+        ? supabase
+            .from('tenants')
+            .select('status, stripe_charges_enabled')
+            .eq('id', tenant.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
     ])
 
   const sjson = (settings?.settings ?? {}) as {
@@ -110,7 +115,10 @@ export default async function SettingsPage() {
     konto: { text: user.email ?? 'Inloggad', tone: 'neutral' },
   }
 
-  const categories = settingsCategories(tenant.terminology)
+  const categories = settingsCategories(tenant.terminology).filter(
+    (category) =>
+      organizationOwner || !(['foretag', 'platser', 'betalning', 'konto'] as string[]).includes(category.id),
+  )
 
   return (
     <section className="portal-section">

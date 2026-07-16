@@ -194,10 +194,12 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // 3) primary location — LOAD-BEARING: create_public_booking inserts
   //    bookings.location_id (NOT NULL) from the primary location, so without it
   //    the tenant can never take a booking.
-  const { error: lErr } = await supabase
+  const { data: primaryLocation, error: lErr } = await supabase
     .from('locations')
     .insert({ tenant_id: tenantId, name, timezone: DEFAULT_TZ, is_primary: true })
-  if (lErr) {
+    .select('id')
+    .single()
+  if (lErr || !primaryLocation) {
     await rollback()
     await reportActionError('createTenant.location_insert', lErr, { tenantId })
     return { error: GENERIC }
@@ -299,16 +301,19 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
         // #10: owner name is a READABLE column now (users.full_name), not just dead
         // auth user_metadata — the platform Ägare-card reads it. Keep the metadata
         // write above too (harmless). Empty name → null (never store '').
-        const { error: uErr } = await supabase
-          .from('users')
-          .insert({
-            id: authId,
-            tenant_id: tenantId,
-            email: ownerEmail,
-            full_name: ownerName || null,
-            role_id: role.id,
-            status: 'active',
-          })
+        const ownerProfile = {
+          id: authId,
+          tenant_id: tenantId,
+          email: ownerEmail,
+          full_name: ownerName || null,
+          role_id: role.id,
+          status: 'active' as const,
+          access_scope: 'organization',
+          primary_location_id: primaryLocation.id,
+        }
+        // 0076-kolumnerna finns i migrationen men schema-genereringen sker först
+        // efter apply. Håll den tillfälliga typbryggan vid just denna insert.
+        const { error: uErr } = await supabase.from('users').insert(ownerProfile as never)
         if (uErr) {
           // The auth user WAS created but couldn't be linked (most likely the email
           // already has an account). Best-effort delete it so the rollback below doesn't

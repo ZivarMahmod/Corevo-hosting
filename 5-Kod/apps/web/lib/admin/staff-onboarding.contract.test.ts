@@ -43,11 +43,68 @@ describe('personalens bokningsbara onboarding', () => {
 
   it('visar hela bokningsbarhetsregeln, inklusive schema', () => {
     const card = readWeb('components/admin/StaffBookability.tsx')
-    const page = readWeb("app/(admin)/admin/scheman/page.tsx")
+    const page = readWeb('app/(admin)/admin/scheman/page.tsx')
 
     expect(card).toContain('workingDays')
-    expect(card).toContain('Schematider')
-    expect(card).toContain("workingDays > 0")
+    expect(card).toContain('Arbetstider')
+    expect(card).toContain('workingHoursCount: workingDays')
     expect(page).toContain('workingDays={new Set(rows.map((row) => row.weekday)).size}')
+  })
+
+  it('validerar vald aktiv plats innan personal skapas eller auth-inbjudan skickas', () => {
+    const actions = readWeb('lib/admin/actions.ts')
+    const createStart = actions.indexOf('export async function createStaff')
+    const inviteStart = actions.indexOf('export async function inviteStaff')
+    const inviteAuth = actions.indexOf('inviteUserByEmail', inviteStart)
+
+    expect(actions).toContain('async function resolveActiveStaffLocation')
+    expect(actions.slice(createStart, inviteStart)).toContain("fd.get('location_id')")
+    expect(actions.slice(createStart, inviteStart)).toContain('p_location: locationId')
+    expect(actions.slice(inviteStart, inviteAuth)).toContain("fd.get('location_id')")
+    expect(actions.slice(inviteStart, inviteAuth)).toContain('resolveActiveStaffLocation')
+    expect(actions.slice(inviteStart)).toContain('p_location: locationId')
+  })
+
+  it('erbjuder platsval i båda flödena för ny personal', () => {
+    const roster = readWeb('components/admin/StaffRoster.tsx')
+    const page = readWeb('app/(admin)/admin/personal/page.tsx')
+
+    expect(roster).toContain('export function AddStaffButton({')
+    expect(roster).toContain('defaultLocationId')
+    expect(roster.match(/name="location_id"/g)?.length ?? 0).toBeGreaterThanOrEqual(3)
+    expect(page).toContain('<AddStaffButton')
+    expect(page).toContain('locations={activeLocations}')
+    expect(page).toContain('const defaultStaffLocationId = activeLocations.some')
+    expect(page).toContain('defaultLocationId={defaultStaffLocationId}')
+  })
+
+  it('fencar tjänster till aktiva globala eller personalens plats', () => {
+    const actions = readWeb('lib/admin/actions.ts')
+    const start = actions.indexOf('export async function setStaffServices')
+    const end = actions.indexOf('export async function inviteStaff', start)
+    const section = actions.slice(start, end)
+
+    expect(section).toContain(".select('id, location_id')")
+    expect(section).toContain(".eq('active', true)")
+    expect(section).toContain('location_id.is.null')
+    expect(section).toContain('member.location_id')
+  })
+
+  it('visar samma prioriterade readiness på Personal och Schema', () => {
+    const roster = readWeb('components/admin/StaffRoster.tsx')
+    const bookability = readWeb('components/admin/StaffBookability.tsx')
+    const page = readWeb('app/(admin)/admin/personal/page.tsx')
+
+    expect(page).toContain('listLocationOpeningHours')
+    expect(page).toContain('listAllWorkingHours')
+    expect(page).toContain('staffReadiness({')
+    expect(roster).toContain('readiness: StaffReadiness')
+    expect(roster).toContain('member.readiness.label')
+    expect(roster).toContain('locations.length > 0 && (locations.length > 1 || !member.locationId)')
+    expect(roster).toContain('Välj plats innan du kopplar tjänster.')
+    expect(bookability).toContain('staffReadiness({')
+    expect(bookability).toContain('openingHoursConfirmed')
+    expect(bookability).toContain('locationId')
+    expect(bookability).toContain('Inga aktiva tjänster finns för den valda platsen')
   })
 })

@@ -233,6 +233,8 @@ export function BookingDrawer({
   staffColor,
   staff,
   onlinePaymentsActive,
+  canManage,
+  absenceTimeOffId,
 }: {
   booking: BookingRow
   tz: string
@@ -244,6 +246,9 @@ export function BookingDrawer({
   staff: ReadonlyArray<{ id: string; name: string }>
   /** Sann endast när ägartoggle + Stripe charges_enabled båda är aktiva. */
   onlinePaymentsActive: boolean
+  canManage: boolean
+  /** Satt när bokningen öppnats från en frånvarokö. */
+  absenceTimeOffId?: string | null
 }) {
   const { notify } = useToast()
   const router = useRouter()
@@ -288,7 +293,7 @@ export function BookingDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state])
 
-  const actions = actionsFor(booking.status, booking.isPast)
+  const actions = canManage ? actionsFor(booking.status, booking.isPast) : []
   // En avbokad tid i det FÖRFLUTNA kan inte återställas — det vore att boka in någon
   // igår. (no_show får däremot rättas bakåt: "hen kom visst" är en korrigering av
   // historien, inte en ny bokning.) Samma regel som ångraloggen.
@@ -297,10 +302,8 @@ export function BookingDrawer({
   // Payment-guard: en ej betald, ej avbokad bokning får ALDRIG auto-markeras
   // "klar + betald" (sen kund / no-show).
   const showPaymentGuard =
-    onlinePaymentsActive &&
-    booking.paymentStatus !== 'succeeded' &&
-    !isAvbokad(booking.status)
-  const canReschedule = isBokad(booking.status) && staff.length > 0
+    onlinePaymentsActive && booking.paymentStatus !== 'succeeded' && !isAvbokad(booking.status)
+  const canReschedule = canManage && isBokad(booking.status) && staff.length > 0
 
   const submitReschedule = () => {
     if (!rescheduleStaffId || !rescheduleDate || !rescheduleTime) {
@@ -313,6 +316,11 @@ export function BookingDrawer({
         bookingId: booking.id,
         staffId: rescheduleStaffId,
         startIso: rescheduleStartIso(rescheduleDate, rescheduleTime, tz),
+        locationId: booking.locationId,
+        serviceId: booking.serviceId,
+        expectedStartIso: booking.startTs,
+        expectedStaffId: booking.staffId,
+        absenceTimeOffId: absenceTimeOffId || undefined,
       })
       if (result.error) {
         setMoveError(result.error)

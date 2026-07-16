@@ -1,6 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@corevo/db'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
 import type { AdminArea } from '@/lib/auth/admin-areas'
@@ -14,10 +16,7 @@ import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { refundBookingPayment } from '@/lib/stripe/refund'
 import {
   BOOKING_STATUSES,
-  ALLOWED_FROM,
   restoreBlockedByRefund,
-  cancellationTrace,
-  type BookingStatus,
 } from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
@@ -29,6 +28,19 @@ export type ActionState = { error?: string; success?: string }
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
+
+function staffActivationErrorMessage(message: string): string {
+  if (message.includes('staff_activation_requires_confirmed_opening_hours')) {
+    return 'Bekräfta platsens öppettider under Öppettider och schema innan du aktiverar medarbetaren.'
+  }
+  if (message.includes('staff_activation_requires_working_hours')) {
+    return 'Lägg till arbetstider under Öppettider och schema innan du aktiverar medarbetaren.'
+  }
+  if (message.includes('staff_activation_requires_matching_service')) {
+    return 'Koppla minst en aktiv tjänst för medarbetarens plats innan du aktiverar medarbetaren.'
+  }
+  return GENERIC
+}
 
 type AdminServiceClient = NonNullable<ReturnType<typeof createAdminServiceClient>>
 
@@ -359,6 +371,22 @@ function revalidateStaff(slug: string) {
   revalidatePath('/admin/scheman')
 }
 
+async function resolveActiveStaffLocation(
+  supabase: SupabaseClient<Database>,
+  tenantId: string,
+  requestedLocation: string,
+): Promise<string | null> {
+  if (!requestedLocation) return null
+  const { data } = await supabase
+    .from('locations')
+    .select('id')
+    .eq('id', requestedLocation)
+    .eq('tenant_id', tenantId)
+    .eq('active', true)
+    .maybeSingle()
+  return data?.id ?? null
+}
+
 export async function createStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
@@ -367,16 +395,19 @@ export async function createStaff(_p: ActionState, fd: FormData): Promise<Action
   if (!title) return { error: 'Ange ett namn/en titel.' }
 
   const supabase = await createClient()
+  const requestedLocation = String(fd.get('location_id') ?? '').trim()
+  const locationId = await resolveActiveStaffLocation(supabase, ctx.tenant.id, requestedLocation)
+  if (!locationId) return { error: 'Välj en aktiv plats.' }
   const { error } = await supabase.rpc('create_staff_with_defaults', {
     p_title: title,
-    p_location: ctx.tenant.locationId ?? undefined,
+    p_location: locationId,
   })
   if (error) return { error: GENERIC }
 
   revalidateStaff(ctx.tenant.slug)
   // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
   revalidateTenant(ctx.tenant.slug)
-  return { success: 'Medarbetare tillagd med aktiva tjänster och vardagsschema 09–17.' }
+  return { success: 'Medarbetare tillagd. Bokningsstatusen visar om något behöver slutföras.' }
 }
 
 export async function updateStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
@@ -501,7 +532,7 @@ export async function toggleStaffActive(_p: ActionState, fd: FormData): Promise<
     p_staff: id,
     p_active: active,
   })
-  if (error) return { error: GENERIC }
+  if (error) return { error: staffActivationErrorMessage(error.message) }
 
   revalidateStaff(ctx.tenant.slug)
   // goal-61 preview-parity: location/personal syns på publika sajten (kontakt/bokning) — busta tenant-cachen.
@@ -553,11 +584,12 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   // and RLS does not isolate roles within a tenant. Same fence as addStaffWorkingHours.
   const { data: member } = await supabase
     .from('staff')
-    .select('id')
+    .select('id, location_id')
     .eq('id', staffId)
     .eq('tenant_id', ctx.tenant.id)
     .maybeSingle()
   if (!member) return { error: 'Okänd medarbetare.' }
+  if (!member.location_id) return { error: 'Välj en plats för medarbetaren först.' }
 
   // Keep only service ids that actually belong to this tenant (defence-in-depth:
   // staff_services.service_id has no same-tenant FK constraint).
@@ -565,6 +597,8 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
     .from('services')
     .select('id')
     .eq('tenant_id', ctx.tenant.id)
+    .eq('active', true)
+    .or(`location_id.is.null,location_id.eq.${member.location_id}`)
     .in('id', requested.length ? requested : ['00000000-0000-0000-0000-000000000000'])
   const valid = new Set((own ?? []).map((r) => r.id))
   const toInsert = requested.filter((id) => valid.has(id))
@@ -605,6 +639,13 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   const staffId = String(fd.get('staff_id') ?? '').trim()
   if (!email || !EMAIL_RE.test(email)) return { error: 'Ange en giltig e-postadress.' }
 
+  const supabase = await createClient()
+  const requestedLocation = String(fd.get('location_id') ?? '').trim()
+  const locationId = staffId
+    ? null
+    : await resolveActiveStaffLocation(supabase, ctx.tenant.id, requestedLocation)
+  if (!staffId && !locationId) return { error: 'Välj en aktiv plats.' }
+
   const svc = createAdminServiceClient()
   if (!svc) {
     return {
@@ -612,8 +653,6 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
         'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av drift). Medarbetaren kan läggas till utan konto under tiden.',
     }
   }
-
-  const supabase = await createClient()
 
   // 1) Tenant-scoped `staff` role (level 3). Roller är plattformsdata efter 0071,
   //    så den redan obligatoriska service-klienten skapar/läser rollen server-side.
@@ -676,7 +715,7 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   } else {
     const { error: insErr } = await supabase.rpc('create_staff_with_defaults', {
       p_title: title || email,
-      p_location: ctx.tenant.locationId ?? undefined,
+      p_location: locationId!,
       p_profile: authId,
     })
     if (insErr) {
@@ -691,7 +730,7 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   return {
     success: staffId
       ? `Inbjudan skickad till ${email}. Kontot är kopplat till den befintliga medarbetaren.`
-      : `Inbjudan skickad till ${email}. Ny personal får aktiva tjänster och vardagsschema 09–17.`,
+      : `Inbjudan skickad till ${email}. Ny personal är skapad. Kontrollera tjänster, arbetstider och bokningsstatus under Personal.`,
   }
 }
 
@@ -1612,7 +1651,6 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
   // uteblivit. Vakten sitter på servern, inte bara i knapp-logiken — UI:t kan inte vara
   // enda sanningen om vad en status betyder. (Ångerbart: no_show → confirmed, se
   // ALLOWED_FROM — receptionen felklickar och priset ska inte bli en lögn.)
-  const nowIso = new Date().toISOString()
   if (
     (status === 'no_show' || status === 'completed') &&
     new Date(current.start_ts).getTime() > Date.now()
@@ -1624,8 +1662,6 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
           : 'Tiden har inte börjat än — en framtida bokning kan inte markeras klar.',
     }
   }
-
-  const allowedFrom = ALLOWED_FROM[status as BookingStatus]
 
   // Ångra en avbokning (B-24). PENGARNA styr, inte klicket: har betalningen
   // återbetalats är den bokningen slut — att väcka den skulle säga "betald" om en
@@ -1642,35 +1678,35 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
       return { error: 'Bokningen är återbetald och kan inte återställas. Boka en ny tid.' }
   }
 
-  // Avbokningsspåret: vem och när (cancellationTrace, unit-låst i format.test).
-  const trace = cancellationTrace(current.status, status)
-
-  // Gate the write on the current status: .in('status', allowedFrom) means the
-  // UPDATE only matches when the transition is permitted. Zero rows back ⇒ the
-  // booking was in a status this target can't be reached from.
-  const writer = createAdminServiceClient()
-  if (!writer) return { error: 'Bokningsändringar är inte tillgängliga just nu. Försök igen senare.' }
-
-  const statusUpdate = writer
-    .from('bookings')
-    .update({ status, ...trace })
-    .eq('id', bookingId)
-    .eq('tenant_id', ctx.tenant.id)
-    .in('status', allowedFrom)
-  const guardedUpdate =
-    status === 'no_show' || status === 'completed'
-      ? statusUpdate.lte('start_ts', nowIso)
-      : statusUpdate
-  const { data: updated, error } = await guardedUpdate
-    .select('id')
-    .maybeSingle()
+  const statusRpc = supabase as unknown as {
+    rpc(
+      name: 'set_admin_booking_status',
+      args: { p_booking: string; p_status: string },
+    ): PromiseLike<{
+      data: unknown
+      error: { code?: string; message: string } | null
+    }>
+  }
+  const { error } = await statusRpc.rpc('set_admin_booking_status', {
+    p_booking: bookingId,
+    p_status: status,
+  })
   if (error) {
     // Reactivating a booking can collide with the no_double_booking EXCLUDE.
     if (error.code === '23P01')
       return { error: 'Tiden krockar med en annan aktiv bokning för medarbetaren.' }
+    if (error.message.includes('future_booking_cannot_be_no_show'))
+      return { error: 'Tiden har inte börjat än — en framtida bokning kan inte ha uteblivit.' }
+    if (error.message.includes('future_booking_cannot_be_completed'))
+      return { error: 'Tiden har inte börjat än — en framtida bokning kan inte markeras klar.' }
+    if (error.message.includes('refunded_booking_cannot_be_restored'))
+      return { error: 'Bokningen är återbetald och kan inte återställas. Boka en ny tid.' }
+    if (
+      error.message.includes('invalid_booking_status_transition') ||
+      error.message.includes('booking_changed_concurrently')
+    ) return { error: 'Bokningen ändrades av någon annan. Ladda om och försök igen.' }
     return { error: GENERIC }
   }
-  if (!updated) return { error: 'Otillåten statusövergång.' }
 
   // Visit done → Google-review nudge (M9). Best-effort: never throws, so it can't
   // fail the status the admin just set. Only fires on a real transition.

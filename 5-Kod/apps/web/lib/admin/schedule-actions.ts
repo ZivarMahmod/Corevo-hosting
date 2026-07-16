@@ -25,6 +25,125 @@ async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | 
   return { user, tenant }
 }
 
+type LocationBookingHourInput = {
+  weekday: number
+  start_time: string
+  end_time: string
+}
+
+type LocationSettingsRpc = {
+  rpc(
+    fn: 'save_location_booking_settings',
+    args: {
+      p_location: string
+      p_hours: LocationBookingHourInput[]
+      p_slot_step_min: number
+      p_min_notice_min: number
+      p_max_advance_days: number
+    },
+  ): Promise<{ error: { message: string; code?: string } | null }>
+}
+
+const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/
+
+function parseLocationBookingSettings(fd: FormData):
+  | { error: string }
+  | {
+      locationId: string
+      hours: LocationBookingHourInput[]
+      slotStepMin: number
+      minNoticeMin: number
+      maxAdvanceDays: number
+    } {
+  const locationId = String(fd.get('location_id') ?? '')
+  if (!locationId) return { error: 'Välj vilken plats tiderna gäller.' }
+
+  const weekdays = fd.getAll('weekday').map(Number)
+  const starts = fd.getAll('start_time').map(String)
+  const ends = fd.getAll('end_time').map(String)
+  if (weekdays.length !== starts.length || weekdays.length !== ends.length || weekdays.length > 28) {
+    return { error: 'Kontrollera veckans öppettider och försök igen.' }
+  }
+
+  const hours = weekdays
+    .map((weekday, index) => ({
+      weekday,
+      start_time: starts[index] ?? '',
+      end_time: ends[index] ?? '',
+    }))
+    .sort((a, b) => a.weekday - b.weekday || a.start_time.localeCompare(b.start_time))
+
+  if (hours.length === 0) {
+    return { error: 'Lägg in minst ett öppet pass innan tiderna kan bekräftas.' }
+  }
+
+  for (let index = 0; index < hours.length; index += 1) {
+    const row = hours[index]!
+    if (
+      !Number.isInteger(row.weekday) ||
+      row.weekday < 0 ||
+      row.weekday > 6 ||
+      !TIME_RE.test(row.start_time) ||
+      !TIME_RE.test(row.end_time) ||
+      row.end_time <= row.start_time
+    ) {
+      return { error: 'Varje öppet pass måste ha en giltig start- och sluttid.' }
+    }
+    const previous = hours[index - 1]
+    if (previous?.weekday === row.weekday && row.start_time < previous.end_time) {
+      return { error: 'Öppettider samma dag får inte överlappa varandra.' }
+    }
+  }
+
+  const slotStepMin = Number(fd.get('slot_step_min'))
+  const minNoticeMin = Number(fd.get('min_notice_min'))
+  const maxAdvanceDays = Number(fd.get('max_advance_days'))
+  if (!Number.isInteger(slotStepMin) || slotStepMin < 1 || slotStepMin > 240) {
+    return { error: 'Tidsintervallet måste vara mellan 1 och 240 minuter.' }
+  }
+  if (!Number.isInteger(minNoticeMin) || minNoticeMin < 0 || minNoticeMin > 525_600) {
+    return { error: 'Framförhållningen måste vara mellan 0 och 525 600 minuter.' }
+  }
+  if (!Number.isInteger(maxAdvanceDays) || maxAdvanceDays < 1 || maxAdvanceDays > 1095) {
+    return { error: 'Bokningshorisonten måste vara mellan 1 och 1 095 dagar.' }
+  }
+
+  return { locationId, hours, slotStepMin, minNoticeMin, maxAdvanceDays }
+}
+
+/** Sparar platsens bokningsfönster atomiskt i 0076-RPC:n: regler och alla
+ *  veckointervall lyckas tillsammans eller inte alls. */
+export async function saveLocationBookingSettings(
+  _p: ActionState,
+  fd: FormData,
+): Promise<ActionState> {
+  const ctx = await adminCtx()
+  if (!ctx) return { error: NO_TENANT }
+
+  const parsed = parseLocationBookingSettings(fd)
+  if ('error' in parsed) return { error: parsed.error }
+  const { locationId, hours, slotStepMin, minNoticeMin, maxAdvanceDays } = parsed
+
+  const supabase = await createClient()
+  const { error } = await (supabase as unknown as LocationSettingsRpc).rpc(
+    'save_location_booking_settings',
+    {
+      p_location: locationId,
+      p_hours: hours,
+      p_slot_step_min: slotStepMin,
+      p_min_notice_min: minNoticeMin,
+      p_max_advance_days: maxAdvanceDays,
+    },
+  )
+  if (error) return { error: GENERIC }
+
+  revalidatePath('/admin/scheman')
+  revalidatePath('/personal/arbetstider')
+  revalidatePath('/boka')
+  revalidateTenant(ctx.tenant.slug)
+  return { success: 'Öppettider och bokningsregler sparade.' }
+}
+
 /**
  * Lägg frånvaro för en medarbetare (heldagar). Datumen tolkas i TENANTENS tz:
  * från-dagens 00:00 → dagen EFTER till-dagens 00:00 ("24:00"), via den delade
@@ -39,8 +158,10 @@ export async function addStaffTimeOff(_p: ActionState, fd: FormData): Promise<Ac
   const from = String(fd.get('from') ?? '')
   const to = String(fd.get('to') ?? '')
   const reason = String(fd.get('reason') ?? '').trim()
+  const kind = String(fd.get('kind') ?? '')
 
   if (!staffId) return { error: 'Välj en medarbetare.' }
+  if (!['leave', 'sick', 'other'].includes(kind)) return { error: 'Välj typ av frånvaro.' }
   if (!DATE_RE.test(from) || !DATE_RE.test(to)) return { error: 'Ange både från- och till-datum.' }
   if (to < from) return { error: 'Till-datumet måste vara samma dag som eller efter från-datumet.' }
 
@@ -57,16 +178,41 @@ export async function addStaffTimeOff(_p: ActionState, fd: FormData): Promise<Ac
     .maybeSingle()
   if (!staff) return { error: 'Medarbetaren hittades inte.' }
 
-  const startUtc = zonedTimeToUtc(from, '00:00', ctx.tenant.timeZone)
-  const endUtc = zonedTimeToUtc(addDays(to, 1), '00:00', ctx.tenant.timeZone)
+  if (!staff.location_id) return { error: 'Medarbetaren saknar en giltig plats.' }
+  const { data: location } = await supabase
+    .from('locations')
+    .select('timezone')
+    .eq('id', staff.location_id)
+    .eq('tenant_id', ctx.tenant.id)
+    .eq('active', true)
+    .maybeSingle()
+  if (!location) return { error: 'Medarbetarens plats är inte tillgänglig.' }
 
-  const { error } = await supabase.from('time_off').insert({
-    tenant_id: ctx.tenant.id,
-    staff_id: staff.id,
-    location_id: staff.location_id,
-    start_ts: startUtc.toISOString(),
-    end_ts: endUtc.toISOString(),
-    reason: reason || null,
+  const startUtc = zonedTimeToUtc(from, '00:00', location.timezone)
+  const endUtc = zonedTimeToUtc(addDays(to, 1), '00:00', location.timezone)
+
+  const timeOffRpc = supabase as unknown as {
+    rpc(
+      name: 'create_admin_time_off',
+      args: {
+        p_location: string
+        p_staff: string
+        p_start: string
+        p_end: string
+        p_kind: string
+        p_reason: string
+        p_series_id: null
+      },
+    ): PromiseLike<{ data: string | null; error: { message: string } | null }>
+  }
+  const { error } = await timeOffRpc.rpc('create_admin_time_off', {
+    p_location: staff.location_id,
+    p_staff: staff.id,
+    p_start: startUtc.toISOString(),
+    p_end: endUtc.toISOString(),
+    p_kind: kind,
+    p_reason: reason || (kind === 'sick' ? 'Sjukfrånvaro' : kind === 'leave' ? 'Ledighet' : 'Annat'),
+    p_series_id: null,
   })
   if (error) return { error: GENERIC }
 
@@ -86,14 +232,18 @@ export async function removeStaffTimeOff(_p: ActionState, fd: FormData): Promise
   if (!id) return { error: 'Saknar rad.' }
 
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('time_off')
-    .delete()
-    .eq('id', id)
-    .eq('tenant_id', ctx.tenant.id)
-    .select('id')
+  const timeOffRpc = supabase as unknown as {
+    rpc(
+      name: 'delete_admin_time_off',
+      args: { p_time_off: string; p_delete_series: false },
+    ): PromiseLike<{ data: number | null; error: { message: string } | null }>
+  }
+  const { data, error } = await timeOffRpc.rpc('delete_admin_time_off', {
+    p_time_off: id,
+    p_delete_series: false,
+  })
   if (error) return { error: GENERIC }
-  if (!data || data.length === 0) return { error: 'Frånvaron hittades inte.' }
+  if (!data) return { error: 'Frånvaron hittades inte.' }
 
   revalidatePath('/admin/scheman')
   revalidateTenant(ctx.tenant.slug)

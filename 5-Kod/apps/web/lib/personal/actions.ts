@@ -7,7 +7,12 @@ import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { refundBookingPayment } from '@/lib/stripe/refund'
 import { getMyStaff } from './staff'
-import { getCustomerCard, getCustomerNotes, type CustomerCard, type CustomerNotes } from './customer'
+import {
+  getCustomerCard,
+  getCustomerNotes,
+  type CustomerCard,
+  type CustomerNotes,
+} from './customer'
 import { createAdminServiceClient } from '@/lib/admin/service'
 
 export type ActionState = { error?: string; success?: string }
@@ -27,7 +32,10 @@ const SENSITIVITIES = new Set(['normal', 'känslig hårbotten', 'känslig hud'])
 // status to active, so a staff can never mutate a colleague's or another
 // tenant's booking. completed keeps the slot blocked; no_show frees it (the
 // no_double_booking EXCLUDE excludes no_show).
-export async function setBookingStatus(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function setBookingStatus(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const user = await requirePortal('personal')
   const bookingId = String(formData.get('bookingId') ?? '')
   const status = String(formData.get('status') ?? '')
@@ -104,7 +112,8 @@ export async function createWalkIn(_prev: ActionState, formData: FormData): Prom
   // bookings.location_id is NOT NULL — a walk-in is anchored to the staff's own
   // location (the public booking RPC sets this for normal bookings). No location
   // link → can't place the row, so surface it rather than insert a bad row.
-  if (!me.locationId) return { error: 'Din profil saknar en kopplad plats. Kontakta din administratör.' }
+  if (!me.locationId)
+    return { error: 'Din profil saknar en kopplad plats. Kontakta din administratör.' }
 
   const supabase = await createClient()
 
@@ -136,7 +145,8 @@ export async function createWalkIn(_prev: ActionState, formData: FormData): Prom
     note,
   })
   if (error) {
-    if (error.code === '23P01') return { error: 'Tiden krockar med en annan bokning. Välj en annan tid.' }
+    if (error.code === '23P01')
+      return { error: 'Tiden krockar med en annan bokning. Välj en annan tid.' }
     return { error: 'Kunde inte lägga in besöket. Försök igen.' }
   }
 
@@ -150,7 +160,10 @@ export async function createWalkIn(_prev: ActionState, formData: FormData): Prom
 // simpler than create-new-then-cancel-old (a row can't conflict with itself, and
 // the EXCLUDE still guards against colliding with a DIFFERENT booking). Preserve
 // the duration snapshot stored on the booking even if the service changes later.
-export async function rebookOwnBooking(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function rebookOwnBooking(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const user = await requirePortal('personal')
   const bookingId = String(formData.get('bookingId') ?? '')
   const startLocal = String(formData.get('start') ?? '')
@@ -194,7 +207,8 @@ export async function rebookOwnBooking(_prev: ActionState, formData: FormData): 
     .in('status', [...ACTIVE_STATUSES])
     .select('id')
   if (error) {
-    if (error.code === '23P01') return { error: 'Tiden krockar med en annan bokning. Välj en annan tid.' }
+    if (error.code === '23P01')
+      return { error: 'Tiden krockar med en annan bokning. Välj en annan tid.' }
     return { error: 'Kunde inte omboka. Försök igen.' }
   }
   if (!updated || updated.length === 0) return { error: 'Bokningen kan inte ombokas.' }
@@ -208,7 +222,10 @@ export async function rebookOwnBooking(_prev: ActionState, formData: FormData): 
 // completed). Own-scope via staff_id + active-status re-asserted in the UPDATE.
 // Refund + cancellation mail are best-effort so a paid booking the staff cancels
 // can never strand the customer's money — but never block the status flip.
-export async function cancelOwnBooking(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function cancelOwnBooking(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const user = await requirePortal('personal')
   const bookingId = String(formData.get('bookingId') ?? '')
   if (!bookingId) return { error: 'Saknar bokning.' }
@@ -224,7 +241,11 @@ export async function cancelOwnBooking(_prev: ActionState, formData: FormData): 
     .from('bookings')
     // cancelled_by: 'business' — personalen ÄR salongen sett från kunden. Loggen
     // skiljer på "kunden avbokade" och "vi avbokade", inte på vilken anställd.
-    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancelled_by: 'business' })
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancelled_by: 'business',
+    })
     .eq('id', bookingId)
     .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
@@ -246,7 +267,10 @@ export async function cancelOwnBooking(_prev: ActionState, formData: FormData): 
 // ONE row per (tenant, customer) — upsert on the unique key. Staff-only via RLS
 // (customer_notes has no kund-self-scope branch). Structured arrays + guarded
 // enums + a vaktad internal note. NEVER customer-facing.
-export async function upsertCustomerNotes(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function upsertCustomerNotes(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const user = await requirePortal('personal')
   const customerId = String(formData.get('customerId') ?? '')
   if (!customerId) return { error: 'Saknar kund.' }
@@ -307,7 +331,9 @@ export type ContactResult = {
 
 // Full client card + notes for one customer, loaded lazily when a card opens.
 // No contact-PII here (that's getCustomerContact, window-gated, fetched on reveal).
-export type ClientCardResult = { ok: true; card: CustomerCard; notes: CustomerNotes } | { ok: false }
+export type ClientCardResult =
+  | { ok: true; card: CustomerCard; notes: CustomerNotes }
+  | { ok: false }
 
 export async function getClientCard(customerId: string): Promise<ClientCardResult> {
   const user = await requirePortal('personal')
@@ -359,6 +385,7 @@ export async function addTimeOff(_prev: ActionState, formData: FormData): Promis
 
   const me = (await getMyStaff(user.id))[0]
   if (!me) return { error: NO_PROFILE }
+  if (!me.locationId) return { error: 'Din personalprofil saknar plats. Kontakta administratören.' }
 
   const startUtc = localToUtc(startLocal, me.timeZone)
   const endUtc = localToUtc(endLocal, me.timeZone)
@@ -366,13 +393,24 @@ export async function addTimeOff(_prev: ActionState, formData: FormData): Promis
   if (endUtc.getTime() <= startUtc.getTime()) return { error: 'Slutet måste vara efter starten.' }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('time_off').insert({
-    tenant_id: user.tenantId ?? '',
-    staff_id: me.id,
-    location_id: me.locationId,
-    start_ts: startUtc.toISOString(),
-    end_ts: endUtc.toISOString(),
-    reason: reason || null,
+  const timeOffRpc = supabase as unknown as {
+    rpc(
+      name: 'create_my_time_off',
+      args: {
+        p_staff: string
+        p_location: string
+        p_start: string
+        p_end: string
+        p_reason: string | null
+      },
+    ): PromiseLike<{ data: string | null; error: { message: string } | null }>
+  }
+  const { error } = await timeOffRpc.rpc('create_my_time_off', {
+    p_staff: me.id,
+    p_location: me.locationId,
+    p_start: startUtc.toISOString(),
+    p_end: endUtc.toISOString(),
+    p_reason: reason || null,
   })
   if (error) return { error: 'Kunde inte spara frånvaron. Försök igen.' }
 
@@ -389,11 +427,13 @@ export async function deleteTimeOff(_prev: ActionState, formData: FormData): Pro
   if (staff.length === 0) return { error: NO_PROFILE }
 
   const supabase = await createClient()
-  const { error } = await supabase
-    .from('time_off')
-    .delete()
-    .eq('id', id)
-    .in('staff_id', staff.map((s) => s.id))
+  const timeOffRpc = supabase as unknown as {
+    rpc(
+      name: 'delete_my_time_off',
+      args: { p_time_off: string },
+    ): PromiseLike<{ data: boolean | null; error: { message: string } | null }>
+  }
+  const { error } = await timeOffRpc.rpc('delete_my_time_off', { p_time_off: id })
   if (error) return { error: 'Kunde inte ta bort frånvaron. Försök igen.' }
 
   revalidatePath('/personal/franvaro')

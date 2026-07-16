@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requireAdminArea } from '@/lib/auth/session'
+import { requireOrganizationOwner } from '@/lib/admin/owner-guard'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { listLocations } from '@/lib/admin/data'
 import { LocationsManager } from '@/components/admin/LocationsManager'
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Platser · Adminpanel' }
 
 export default async function LocationsPage() {
-  const user = await requireAdminArea('platser')
+  const user = await requireOrganizationOwner('platser')
   const tenant = await getAdminTenant(user)
   if (!tenant) return <NoTenant />
 

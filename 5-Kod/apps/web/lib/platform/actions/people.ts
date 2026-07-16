@@ -18,7 +18,9 @@ import { revalidateTenantById } from '@/lib/admin/tenant'
 export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
-  const email = String(fd.get('email') ?? '').trim().toLowerCase()
+  const email = String(fd.get('email') ?? '')
+    .trim()
+    .toLowerCase()
   if (!tenantId) return { error: 'Saknar kund.' }
   if (!email || !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
 
@@ -71,7 +73,7 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
     tenant_id: tenantId,
     location_id: loc?.id ?? null,
     title,
-    active: true,
+    active: false,
   })
   if (error) {
     await reportActionError('createTenantStaff.insert', error, { tenantId })
@@ -103,24 +105,36 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
 export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
-  const email = String(fd.get('email') ?? '').trim().toLowerCase()
+  const email = String(fd.get('email') ?? '')
+    .trim()
+    .toLowerCase()
   const title = String(fd.get('title') ?? '').trim()
   const staffId = String(fd.get('staffId') ?? '').trim() // optional: link an existing staff row
   if (!tenantId) return { error: 'Saknar kund.' }
   if (!email || !EMAIL_RE.test(email)) return { error: 'Ange en giltig e-postadress.' }
 
   if (!hasServiceRole())
-    return { error: 'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops). Lägg till utan konto under tiden.' }
+    return {
+      error:
+        'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops). Lägg till utan konto under tiden.',
+    }
   const svc = createServiceClient()
   if (!svc) return { error: 'Inbjudan kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
 
-  const { data: tenant } = await supabase.from('tenants').select('id').eq('id', tenantId).maybeSingle()
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('id', tenantId)
+    .maybeSingle()
   if (!tenant) return { error: 'Kunden finns inte.' }
 
   // 1) Tenant-scoped `staff` role (level 3), idempotent. Platform bypass admits it.
   await supabase
     .from('roles')
-    .upsert({ tenant_id: tenantId, name: 'staff', level: 3 }, { onConflict: 'tenant_id,name', ignoreDuplicates: true })
+    .upsert(
+      { tenant_id: tenantId, name: 'staff', level: 3 },
+      { onConflict: 'tenant_id,name', ignoreDuplicates: true },
+    )
   const { data: role } = await supabase
     .from('roles')
     .select('id')
@@ -140,7 +154,9 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
   const authId = invited.user.id
 
   // 3) Bake tenant_id into app_metadata (JWT belt-and-suspenders).
-  await svc.auth.admin.updateUserById(authId, { app_metadata: { tenant_id: tenantId, platform_admin: false } })
+  await svc.auth.admin.updateUserById(authId, {
+    app_metadata: { tenant_id: tenantId, platform_admin: false },
+  })
 
   // 4) public.users row.
   const { error: uErr } = await supabase
@@ -167,7 +183,13 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
       .maybeSingle()
     const { error: insErr } = await supabase
       .from('staff')
-      .insert({ tenant_id: tenantId, location_id: loc?.id ?? null, profile_id: authId, title: title || email, active: true })
+      .insert({
+        tenant_id: tenantId,
+        location_id: loc?.id ?? null,
+        profile_id: authId,
+        title: title || email,
+        active: false,
+      })
     if (insErr) return { error: GENERIC }
   }
 
@@ -194,7 +216,9 @@ export async function updateTenantStaff(_p: ActionState, fd: FormData): Promise<
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const staffId = String(fd.get('staffId') ?? '')
-  const title = String(fd.get('title') ?? '').trim().slice(0, 120)
+  const title = String(fd.get('title') ?? '')
+    .trim()
+    .slice(0, 120)
   const active = fd.get('active') === 'on'
 
   if (!tenantId) return { error: 'Saknar kund.' }
@@ -246,7 +270,10 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
     .maybeSingle()
   if (!st) return { error: 'Medarbetaren finns inte.' }
 
-  const submitted = fd.getAll('serviceId').map((v) => String(v)).filter(Boolean)
+  const submitted = fd
+    .getAll('serviceId')
+    .map((v) => String(v))
+    .filter(Boolean)
   const { data: validSvc } = await supabase.from('services').select('id').eq('tenant_id', tenantId)
   const allowed = new Set((validSvc ?? []).map((s) => s.id))
   const serviceIds = [...new Set(submitted)].filter((id) => allowed.has(id))
@@ -261,7 +288,11 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
     return { error: GENERIC }
   }
   if (serviceIds.length > 0) {
-    const rows = serviceIds.map((service_id) => ({ tenant_id: tenantId, service_id, staff_id: staffId }))
+    const rows = serviceIds.map((service_id) => ({
+      tenant_id: tenantId,
+      service_id,
+      staff_id: staffId,
+    }))
     const { error: insErr } = await supabase.from('staff_services').insert(rows)
     if (insErr) {
       await reportActionError('setStaffServices.insert', insErr, { tenantId })
@@ -441,9 +472,16 @@ export async function createPlatformCustomer(_p: ActionState, fd: FormData): Pro
   const { user, supabase } = await platformCtx()
 
   const tenantId = String(fd.get('tenantId') ?? '')
-  const fullName = String(fd.get('full_name') ?? '').trim().slice(0, 120)
-  const email = String(fd.get('email') ?? '').trim().toLowerCase().slice(0, 254) // RFC max
-  const phone = String(fd.get('phone') ?? '').trim().slice(0, 40)
+  const fullName = String(fd.get('full_name') ?? '')
+    .trim()
+    .slice(0, 120)
+  const email = String(fd.get('email') ?? '')
+    .trim()
+    .toLowerCase()
+    .slice(0, 254) // RFC max
+  const phone = String(fd.get('phone') ?? '')
+    .trim()
+    .slice(0, 40)
 
   if (!tenantId) return { error: 'Välj ett företag.' }
   if (!fullName) return { error: 'Ange kundens namn.' }

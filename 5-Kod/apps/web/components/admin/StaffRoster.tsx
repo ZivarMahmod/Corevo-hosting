@@ -14,6 +14,7 @@ import {
 } from '@/lib/admin/actions'
 import { statusLabel } from '@/lib/admin/format'
 import { STAFF_PALETTE, staffColor } from '@/lib/admin/staff-colors'
+import { matchingBookableServices, type StaffReadiness } from '@/lib/admin/staff-readiness'
 import {
   Badge,
   Button,
@@ -37,11 +38,16 @@ export type StaffDayRow = {
 
 /** The set of tjänster the salon offers, for the per-staff service-coupling form
  *  inside the Drawer (setStaffServices). Mirrors ServiceRow's used fields. */
-export type ServiceOption = { id: string; name: string }
+export type ServiceOption = {
+  id: string
+  name: string
+  active: boolean
+  locationId: string | null
+}
 
 /** ACTIVE locations, for the Drawer's plats-select (updateStaff → staff.location_id).
- *  The select only renders when the tenant has >1 plats — with a single plats there
- *  is nothing to choose and the section stays hidden. */
+ *  The select renders for several places and as a repair path when a legacy member
+ *  has no place even though the tenant has one. */
 export type LocationOption = { id: string; name: string }
 
 /** Per-staff display bundle the server page hands down. `locationName` is resolved
@@ -64,6 +70,7 @@ export type StaffCard = {
   /** Raw staff.location_id — backs the Drawer's plats-select default. Optional so
    *  callers without multi-plats wiring keep compiling; null = ingen plats satt. */
   locationId?: string | null
+  readiness: StaffReadiness
   /** Foto på publika sajten (staff.avatar_url, 0049) — null = initial-avatar här
    *  och standard-silhuett på sidan. Optional så äldre callers kompilerar. */
   avatarUrl?: string | null
@@ -176,14 +183,26 @@ export function StaffRoster({
  * create Drawer (createStaff + invite-with-title), keeping the onClick out of the
  * async server page.
  */
-export function AddStaffButton() {
+export function AddStaffButton({
+  locations,
+  defaultLocationId,
+}: {
+  locations: LocationOption[]
+  defaultLocationId: string
+}) {
   const [open, setOpen] = useState(false)
   return (
     <>
       <Button variant="primary" icon="plus" onClick={() => setOpen(true)}>
         Lägg till
       </Button>
-      {open && <AddStaffDrawer onClose={() => setOpen(false)} />}
+      {open && (
+        <AddStaffDrawer
+          locations={locations}
+          defaultLocationId={defaultLocationId}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   )
 }
@@ -202,7 +221,7 @@ function StaffGridCard({
   const extra = member.serviceNames.length - chips.length
 
   return (
-    <Card style={member.active ? undefined : { opacity: 0.62 }}>
+    <Card>
       <button
         type="button"
         onClick={onOpen}
@@ -271,6 +290,12 @@ function StaffGridCard({
           </div>
           <Badge tone={member.hasAccount ? 'success' : 'neutral'} dot={false}>
             {member.hasAccount ? 'Eget konto' : 'Hanteras här'}
+          </Badge>
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <Badge tone={member.readiness.bookable ? 'success' : 'warning'}>
+            {member.readiness.label}
           </Badge>
         </div>
 
@@ -391,6 +416,9 @@ function StaffDrawer({
           <Badge tone={member.active ? 'success' : 'neutral'}>
             {member.active ? 'Aktiv' : 'Inaktiv'}
           </Badge>
+          <Badge tone={member.readiness.bookable ? 'success' : 'warning'}>
+            {member.readiness.label}
+          </Badge>
           <Badge tone="gold" dot={false}>
             {member.serviceCount} {member.serviceCount === 1 ? 'tjänst' : 'tjänster'}
           </Badge>
@@ -446,12 +474,9 @@ function StaffDrawer({
 
         <EgetKontoSection member={member} onInvited={onClose} />
 
-        {/* Multi-location — KEEP: location_id is a real FK, the name is resolved
-            server-side. Callout + plats-select render ONLY when the tenant has >1
-            aktiv plats: with a single plats there is nothing to choose, and the old
-            "Sätt en plats i panelen nedan"-line pointed at a panel that didn't
-            exist (the lie is gone — now the panel is real, or the text is absent). */}
-        {locations.length > 1 && (
+        {/* Multi-place selector, also shown as a repair path for legacy staff with
+            no place. With one already-selected place there is nothing to choose. */}
+        {locations.length > 0 && (locations.length > 1 || !member.locationId) && (
           <>
             <Callout tone="info" icon="mapPin">
               {member.locationName ? (
@@ -611,6 +636,7 @@ function ColorPicker({ member, onSaved }: { member: StaffCard; onSaved: () => vo
   const router = useRouter()
   const [state, action, pending] = useActionState<ActionState, FormData>(updateStaff, {})
   const current = staffColor(member.id, member.color)
+  const automatic = member.color == null
 
   useEffect(() => {
     if (state.success) {
@@ -626,10 +652,26 @@ function ColorPicker({ member, onSaved }: { member: StaffCard; onSaved: () => vo
       <div className="eyebrow" style={{ marginBottom: 8 }}>
         Färg i kalendern
       </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 8,
+          color: 'var(--c-ink-2)',
+          fontSize: 12.5,
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{ width: 14, height: 14, borderRadius: 4, background: current, flex: 'none' }}
+        />
+        {automatic ? 'Automatisk' : 'Vald färg'}
+      </div>
       <form action={action} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <input type="hidden" name="id" value={member.id} />
         {STAFF_PALETTE.map((c) => {
-          const chosen = c.toLowerCase() === current.toLowerCase()
+          const chosen = !automatic && c.toLowerCase() === current.toLowerCase()
           return (
             <button
               key={c}
@@ -641,8 +683,8 @@ function ColorPicker({ member, onSaved }: { member: StaffCard; onSaved: () => vo
               aria-pressed={chosen}
               title={c}
               style={{
-                width: 26,
-                height: 26,
+                width: 44,
+                height: 44,
                 padding: 0,
                 borderRadius: 8,
                 background: c,
@@ -819,6 +861,7 @@ function ServicesSection({
   const { notify } = useToast()
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(setStaffServices, {})
+  const availableServices = matchingBookableServices(member.locationId ?? null, services)
 
   useEffect(() => {
     if (state.success) {
@@ -834,19 +877,25 @@ function ServicesSection({
       <div className="eyebrow" style={{ marginBottom: 8 }}>
         Tjänster
       </div>
-      {services.length === 0 ? (
+      {availableServices.length === 0 ? (
         <p style={{ fontSize: 13, color: 'var(--c-ink-3)', margin: 0, lineHeight: 1.55 }}>
-          Inga tjänster att koppla ännu —{' '}
-          <Link href="/admin/tjanster" style={{ color: 'var(--c-forest)', fontWeight: 600 }}>
-            skapa tjänster först
-          </Link>
-          .
+          {!member.locationId ? (
+            'Välj plats innan du kopplar tjänster.'
+          ) : (
+            <>
+              Inga aktiva tjänster finns för den valda platsen —{' '}
+              <Link href="/admin/tjanster" style={{ color: 'var(--c-forest)', fontWeight: 600 }}>
+                hantera tjänster
+              </Link>
+              .
+            </>
+          )}
         </p>
       ) : (
         <form action={formAction}>
           <input type="hidden" name="staff_id" value={member.id} />
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
-            {services.map((svc) => (
+            {availableServices.map((svc) => (
               <label
                 key={svc.id}
                 style={{
@@ -1107,7 +1156,15 @@ function EgetKontoSection({ member, onInvited }: { member: StaffCard; onInvited:
  *  - inviteStaff (with title): magic-link a new staff member into their own login.
  * Both are real server actions; each fires one consequence toast + refresh.
  */
-function AddStaffDrawer({ onClose }: { onClose: () => void }) {
+function AddStaffDrawer({
+  locations,
+  defaultLocationId,
+  onClose,
+}: {
+  locations: LocationOption[]
+  defaultLocationId: string
+  onClose: () => void
+}) {
   const { notify } = useToast()
   const router = useRouter()
   const [createState, createAction, createPending] = useActionState<ActionState, FormData>(
@@ -1135,17 +1192,24 @@ function AddStaffDrawer({ onClose }: { onClose: () => void }) {
   }, [invState.success])
 
   return (
-    <Drawer title="Lägg till medarbetare" sub="Lägg till en rad eller bjud in med eget konto" onClose={onClose}>
+    <Drawer
+      title="Lägg till medarbetare"
+      sub="Lägg till en rad eller bjud in med eget konto"
+      onClose={onClose}
+    >
       <div style={{ display: 'grid', gap: 24 }}>
         <section>
           <div className="eyebrow" style={{ marginBottom: 8 }}>
             Lägg till i företaget
           </div>
-          <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
-            Skapar en aktiv medarbetare med alla aktiva tjänster och ett tydligt standardschema:
-            måndag–fredag 09–17 på primär plats. Allt kan justeras direkt under Schema.
+          <p
+            style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '0 0 12px', lineHeight: 1.5 }}
+          >
+            Skapar medarbetaren på vald plats och kopplar platsens aktiva tjänster. Bekräftade
+            öppettider blir första arbetsschemat; annars visas nästa åtgärd direkt.
           </p>
           <form action={createAction} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <NewStaffLocationField locations={locations} defaultLocationId={defaultLocationId} />
             <input
               name="title"
               required
@@ -1153,7 +1217,13 @@ function AddStaffDrawer({ onClose }: { onClose: () => void }) {
               aria-label="Namn / titel"
               style={{ ...fieldStyle, flex: '1 1 14rem' }}
             />
-            <Button variant="primary" type="submit" icon="plus" size="sm" disabled={createPending}>
+            <Button
+              variant="primary"
+              type="submit"
+              icon="plus"
+              size="sm"
+              disabled={createPending || locations.length === 0}
+            >
               {createPending ? 'Sparar…' : 'Lägg till'}
             </Button>
           </form>
@@ -1168,11 +1238,14 @@ function AddStaffDrawer({ onClose }: { onClose: () => void }) {
           <div className="eyebrow" style={{ marginBottom: 8 }}>
             Bjud in med eget konto
           </div>
-          <p style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '0 0 12px', lineHeight: 1.5 }}>
+          <p
+            style={{ fontSize: 12.5, color: 'var(--c-ink-2)', margin: '0 0 12px', lineHeight: 1.5 }}
+          >
             Medarbetaren får en engångslänk, sätter lösenord och får sin egen vy direkt. En
-            medarbetarrad med aktiva tjänster och standardschema måndag–fredag 09–17 skapas samtidigt.
+            medarbetarrad på vald plats skapas samtidigt.
           </p>
           <form action={invAction} style={{ display: 'grid', gap: 8 }}>
+            <NewStaffLocationField locations={locations} defaultLocationId={defaultLocationId} />
             <input
               name="email"
               type="email"
@@ -1188,7 +1261,13 @@ function AddStaffDrawer({ onClose }: { onClose: () => void }) {
               style={fieldStyle}
             />
             <div>
-              <Button variant="subtle" type="submit" icon="mail" size="sm" disabled={invPending}>
+              <Button
+                variant="subtle"
+                type="submit"
+                icon="mail"
+                size="sm"
+                disabled={invPending || locations.length === 0}
+              >
                 {invPending ? 'Skickar…' : 'Skicka inbjudan'}
               </Button>
             </div>
@@ -1201,6 +1280,37 @@ function AddStaffDrawer({ onClose }: { onClose: () => void }) {
         </section>
       </div>
     </Drawer>
+  )
+}
+
+function NewStaffLocationField({
+  locations,
+  defaultLocationId,
+}: {
+  locations: LocationOption[]
+  defaultLocationId: string
+}) {
+  if (locations.length === 1) {
+    return <input type="hidden" name="location_id" value={locations[0]!.id} />
+  }
+  if (locations.length === 0) {
+    return (
+      <p style={{ margin: 0, color: 'var(--c-danger)', fontSize: 12.5 }} role="alert">
+        Skapa och aktivera en plats innan du lägger till personal.
+      </p>
+    )
+  }
+  return (
+    <label style={{ display: 'grid', gap: 5, flex: '1 1 12rem', fontSize: 12.5 }}>
+      Plats
+      <select name="location_id" required defaultValue={defaultLocationId} style={fieldStyle}>
+        {locations.map((location) => (
+          <option key={location.id} value={location.id}>
+            {location.name}
+          </option>
+        ))}
+      </select>
+    </label>
   )
 }
 

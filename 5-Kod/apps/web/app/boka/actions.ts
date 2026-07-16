@@ -3,7 +3,11 @@
 import { headers } from 'next/headers'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createServiceClient } from '@/lib/platform/service'
-import { computeSlots, type Interval } from '@/lib/booking/availability'
+import {
+  computeSlots,
+  intersectWorkingWindows,
+} from '@/lib/booking/availability'
+import { loadLocationAvailability } from '@/lib/booking/location-rules'
 import { weekdayOf, zonedTimeToUtc } from '@/lib/booking/tz'
 import { getPaymentGate } from '@/lib/booking/payment-gate'
 import { getStripe } from '@/lib/stripe/client'
@@ -13,10 +17,10 @@ import { getEnabledNotifications } from '@/lib/notifications/settings'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 
 // The public booking flow runs as the anon role. Reads of staff/services/
-// working_hours are gated by the anon RLS policies; busy times come from the
-// get_busy_intervals RPC (no PII) and the insert goes through create_public_booking
-// (validates tenant/service/staff server-side). Tenant identity is taken from the
-// middleware-resolved header — NEVER from the client.
+// working_hours are gated by the anon RLS policies; proposed starts are filtered
+// through get_public_bookable_starts, which returns only bookable staff/start pairs
+// (never raw busy intervals). Inserts go through create_public_booking. Tenant
+// identity is taken from the middleware-resolved header — NEVER from the client.
 
 export type SlotOption = { start: string; staffId: string; staffTitle: string | null }
 export type SlotsResult =
@@ -113,16 +117,23 @@ export async function getAvailableSlots(
   const loc = locationId ?? ctx.locationId
   if (!loc) return { ok: true, timeZone: ctx.timeZone, slots: [] }
 
+  const locationAvailability = await loadLocationAvailability(supabase, ctx.tenantId, loc)
+  if (!locationAvailability) return { ok: true, timeZone: ctx.timeZone, slots: [] }
+  const { location, confirmedHours: confirmedLocationHours } = locationAvailability
+  const timeZone = location.timezone ?? ctx.timeZone
+
   const { data: service } = await supabase
     .from('services')
     // slot_step_min / buffer_min (migr 0011): per-service raster + buffert. NULL på
     // alla befintliga rader → faller tillbaka på staff-värdet, sen på konstanten.
-    .select('duration_min, slot_step_min, buffer_min')
+    .select('duration_min, slot_step_min, buffer_min, location_id')
     .eq('id', serviceId)
     .eq('tenant_id', ctx.tenantId)
     .eq('active', true)
     .maybeSingle()
-  if (!service) return { ok: false, error: 'Tjänsten hittades inte.' }
+  if (!service || (service.location_id !== null && service.location_id !== loc)) {
+    return { ok: false, error: 'Tjänsten finns inte på den valda platsen.' }
+  }
 
   // staff who offer this service (tenant-global: staff_services has no location)
   const { data: offers } = await supabase
@@ -134,26 +145,13 @@ export async function getAvailableSlots(
   if (staffId) candidateIds = candidateIds.filter((id) => id === staffId)
   if (candidateIds.length === 0) return { ok: true, timeZone: ctx.timeZone, slots: [] }
 
-  // LOCATION SCOPE: a staff member is bookable at `loc` iff they have ≥1
-  // working_hours row there (any weekday — this defines "stationed at L", not the
-  // day's window). Restrict the candidate set to those; a person with no hours at
-  // this location must NOT surface. Weekday/window filtering happens below.
-  const { data: locStaffRows } = await supabase
-    .from('working_hours')
-    .select('staff_id')
-    .eq('tenant_id', ctx.tenantId)
-    .eq('location_id', loc)
-    .in('staff_id', candidateIds)
-  const locStaffIds = new Set((locStaffRows ?? []).map((r) => r.staff_id))
-  candidateIds = candidateIds.filter((id) => locStaffIds.has(id))
-  if (candidateIds.length === 0) return { ok: true, timeZone: ctx.timeZone, slots: [] }
-
   const { data: staffRows } = await supabase
     .from('staff')
     // slot_step_min / buffer_min (migr 0011): per-frisör raster + buffert. NULL →
     // service-värdet om satt, annars konstanten (SLOT_STEP_MIN / 0).
     .select('id, title, slot_step_min, buffer_min')
     .eq('tenant_id', ctx.tenantId)
+    .eq('location_id', loc)
     .eq('active', true)
     .in('id', candidateIds)
   const staffIds = (staffRows ?? []).map((s) => s.id)
@@ -172,6 +170,11 @@ export async function getAvailableSlots(
     .eq('weekday', weekday)
     .in('staff_id', staffIds)
 
+  const hasConfirmedLocationHours = confirmedLocationHours.length > 0
+  const locationWindows = confirmedLocationHours
+    .filter((window) => window.weekday === weekday)
+    .map((window) => ({ start: window.start_time, end: window.end_time }))
+
   // working_hour_slots (migr 0011) — explicit bokbara starttider, OPT-IN per
   // (frisör, veckodag). Tom lista för en frisör denna dag → motorn faller tillbaka
   // på working_hours-rastret (range-vägen). KRITISKT: de flesta live-frisörer har
@@ -186,27 +189,15 @@ export async function getAvailableSlots(
     .eq('active', true)
     .in('staff_id', staffIds)
 
-  // busy intervals for the whole day (+margin for DST-long days) via RPC
-  const dayStart = zonedTimeToUtc(date, '00:00', ctx.timeZone)
-  const dayEnd = new Date(dayStart.getTime() + 26 * 60 * 60 * 1000)
-  const { data: busyRows } = await supabase.rpc('get_busy_intervals', {
-    p_tenant: ctx.tenantId,
-    p_staff_ids: staffIds,
-    p_from: dayStart.toISOString(),
-    p_to: dayEnd.toISOString(),
-  })
+  // A bounded local day is still used for max-advance handling below. Collision,
+  // closure and absence filtering happens in the DB after candidate generation.
+  const dayStart = zonedTimeToUtc(date, '00:00', timeZone)
 
   const windowsByStaff = new Map<string, { start: string; end: string }[]>()
   for (const w of hours ?? []) {
     const list = windowsByStaff.get(w.staff_id) ?? []
     list.push({ start: w.start_time, end: w.end_time })
     windowsByStaff.set(w.staff_id, list)
-  }
-  const busyByStaff = new Map<string, Interval[]>()
-  for (const b of busyRows ?? []) {
-    const list = busyByStaff.get(b.staff_id) ?? []
-    list.push({ start: new Date(b.start_ts), end: new Date(b.end_ts) })
-    busyByStaff.set(b.staff_id, list)
   }
   // Explicit starttider per frisör för dagen (tom map → alla tar range-vägen).
   const explicitByStaff = new Map<string, string[]>()
@@ -216,23 +207,31 @@ export async function getAvailableSlots(
     explicitByStaff.set(r.staff_id, list)
   }
 
-  const now = new Date()
+  const requestNow = Date.now()
+  const now = new Date(requestNow + location.min_notice_min * 60_000)
+  const maximumStart = new Date(requestNow + location.max_advance_days * 86_400_000)
+  if (dayStart.getTime() > maximumStart.getTime()) {
+    return { ok: true, timeZone, slots: [] }
+  }
   // start ISO → alla lediga frisörer den tiden. Vid "Alla" väljs sedan den med
   // minst bokad tid den dagen (Zivar 2026-07-10: systemet fördelar jobbet jämnt,
   // kunden ska inte se vem). RPC:ns dubbelboknings-skydd gäller oavsett.
-  const byStart = new Map<string, string[]>()
+  const candidateByStart = new Map<string, string[]>()
   for (const id of staffIds) {
     // Fallback-ordning (3a): service-värde ?? staff-värde ?? konstant. NULL i DB
     // (default för befintliga rader) → exakt dagens beteende (15 / 0).
-    const stepMin = service.slot_step_min ?? stepByStaff.get(id) ?? SLOT_STEP_MIN
+    const stepMin =
+      service.slot_step_min ?? stepByStaff.get(id) ?? location.slot_step_min ?? SLOT_STEP_MIN
     const bufferMin = service.buffer_min ?? bufferByStaff.get(id) ?? 0
     // Explicit-slots för just denna frisör denna dag; undefined/tom → range-vägen.
     const explicitStarts = explicitByStaff.get(id)
     const slots = computeSlots({
       date,
-      timeZone: ctx.timeZone,
-      workingWindows: windowsByStaff.get(id) ?? [],
-      busy: busyByStaff.get(id) ?? [],
+      timeZone,
+      workingWindows: hasConfirmedLocationHours
+        ? intersectWorkingWindows(windowsByStaff.get(id) ?? [], locationWindows)
+        : windowsByStaff.get(id) ?? [],
+      busy: [],
       durationMin: service.duration_min,
       slotStepMin: stepMin,
       bufferMin,
@@ -240,20 +239,55 @@ export async function getAvailableSlots(
       now,
     })
     for (const d of slots) {
+      if (d > maximumStart) continue
       const iso = d.toISOString()
-      const list = byStart.get(iso)
+      const list = candidateByStart.get(iso)
       if (list) list.push(id)
-      else byStart.set(iso, [id])
+      else candidateByStart.set(iso, [id])
     }
   }
 
-  // Bokade minuter per frisör idag — fördelningsnyckeln vid "Alla".
-  const bookedMin = new Map<string, number>()
-  for (const [id, list] of busyByStaff) {
-    bookedMin.set(
-      id,
-      list.reduce((sum, b) => sum + (b.end.getTime() - b.start.getTime()) / 60000, 0),
-    )
+  const candidateStarts = [...candidateByStart.keys()]
+  if (candidateStarts.length === 0) return { ok: true, timeZone, slots: [] }
+  type PublicBookableRow = { staff_id: string; start_ts: string }
+  type PublicBookableRpc = {
+    rpc: (
+      name: 'get_public_bookable_starts',
+      args: {
+        p_tenant: string
+        p_location: string
+        p_service: string
+        p_staff_ids: string[]
+        p_starts: string[]
+      },
+    ) => Promise<{ data: PublicBookableRow[] | null; error: { message?: string } | null }>
+  }
+  const { data: bookableRows, error: bookableError } = await (
+    supabase as unknown as PublicBookableRpc
+  ).rpc('get_public_bookable_starts', {
+    p_tenant: ctx.tenantId,
+    p_location: loc,
+    p_service: serviceId,
+    p_staff_ids: staffIds,
+    p_starts: candidateStarts,
+  })
+  if (bookableError) {
+    return { ok: false, error: 'Kunde inte läsa lediga tider. Försök igen.' }
+  }
+
+  const byStart = new Map<string, string[]>()
+  for (const row of bookableRows ?? []) {
+    if (!candidateByStart.get(row.start_ts)?.includes(row.staff_id)) continue
+    const list = byStart.get(row.start_ts)
+    if (list) list.push(row.staff_id)
+    else byStart.set(row.start_ts, [row.staff_id])
+  }
+
+  // Fler kvarvarande lediga starter betyder lägre belastning utan att exponera
+  // råa bokningsintervall. Vid lika läge fördelar vi deterministiskt i denna lista.
+  const availableCount = new Map<string, number>()
+  for (const ids of byStart.values()) {
+    for (const id of ids) availableCount.set(id, (availableCount.get(id) ?? 0) + 1)
   }
   // ponytail: greedy per slot-lista (minst bokad + minst tilldelad hittills) —
   // ingen global optimering, räcker för jämn fördelning över en dag.
@@ -262,7 +296,7 @@ export async function getAvailableSlots(
     let best = ids[0]!
     let bestScore = Infinity
     for (const id of ids) {
-      const score = (bookedMin.get(id) ?? 0) + (assignedHere.get(id) ?? 0) * 0.001
+      const score = -(availableCount.get(id) ?? 0) + (assignedHere.get(id) ?? 0) * 0.001
       if (score < bestScore) {
         bestScore = score
         best = id
@@ -279,7 +313,7 @@ export async function getAvailableSlots(
       return { start, staffId: sId, staffTitle: titleById.get(sId) ?? null }
     })
 
-  return { ok: true, timeZone: ctx.timeZone, slots }
+  return { ok: true, timeZone, slots }
 }
 
 /** Create a booking from the public flow. Leans on the EXCLUDE constraint. */

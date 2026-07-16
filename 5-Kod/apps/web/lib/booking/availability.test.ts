@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeSlots, type Interval } from './availability'
+import { computeSlots, intersectWorkingWindows, type Interval } from './availability'
 import { zonedTimeToUtc } from './tz'
 
 const TZ = 'Europe/Stockholm'
@@ -173,6 +173,42 @@ describe('computeSlots', () => {
         durationMin: 30,
       }),
     ).toEqual([])
+  })
+})
+
+describe('intersectWorkingWindows', () => {
+  it('behåller bara tiden då både platsen och personen är öppna', () => {
+    expect(
+      intersectWorkingWindows(
+        [
+          { start: '08:00', end: '12:00' },
+          { start: '13:00', end: '18:00' },
+        ],
+        [
+          { start: '09:00', end: '11:00' },
+          { start: '14:00', end: '17:00' },
+        ],
+      ),
+    ).toEqual([
+      { start: '09:00', end: '11:00' },
+      { start: '14:00', end: '17:00' },
+    ])
+  })
+
+  it('bevarar split shifts och tar bort berörande kanter utan faktisk tid', () => {
+    expect(
+      intersectWorkingWindows(
+        [{ start: '09:00:00', end: '17:00:00' }],
+        [
+          { start: '08:00', end: '09:00' },
+          { start: '10:00', end: '12:00' },
+          { start: '13:00', end: '15:30' },
+        ],
+      ),
+    ).toEqual([
+      { start: '10:00', end: '12:00' },
+      { start: '13:00', end: '15:30' },
+    ])
   })
 })
 

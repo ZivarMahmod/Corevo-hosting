@@ -11,6 +11,59 @@ import type { WorkingHourRow } from './data'
 
 export type TimeOffAdminRow = Tables<'time_off'>
 
+// Migration 0076 är additiv och de genererade Supabase-typerna uppdateras först
+// när hela schemaändringen är låst. Håll den smala radtypen här tills dess så
+// adminytan inte behöver kasta hela klienten till `any`.
+export type LocationOpeningHourRow = {
+  id: string
+  tenant_id: string
+  location_id: string
+  weekday: number
+  start_time: string
+  end_time: string
+  source: 'confirmed' | 'staff_union' | 'default'
+  confirmed_at: string | null
+  confirmed_by: string | null
+}
+
+type LocationHoursResult = {
+  data: LocationOpeningHourRow[] | null
+  error: { message: string } | null
+}
+
+type LocationHoursQuery = PromiseLike<LocationHoursResult> & {
+  eq(column: string, value: string): LocationHoursQuery
+  order(column: string, options: { ascending: boolean }): LocationHoursQuery
+}
+
+type LocationHoursClient = {
+  from(table: string): {
+    select(columns: string): LocationHoursQuery
+  }
+}
+
+/** Platsens egna öppettider. `locationId` används alltid på schemasidan;
+ *  utan id får interna batchläsare tenantens RLS-tillåtna rader i en fråga. */
+export async function listLocationOpeningHours(
+  tenantId: string,
+  locationId?: string,
+): Promise<LocationOpeningHourRow[]> {
+  const supabase = await createClient()
+  const locationHours = supabase as unknown as LocationHoursClient
+  let query = locationHours
+    .from('location_opening_hours')
+    .select(
+      'id, tenant_id, location_id, weekday, start_time, end_time, source, confirmed_at, confirmed_by',
+    )
+    .eq('tenant_id', tenantId)
+  if (locationId) query = query.eq('location_id', locationId)
+  const { data, error } = await query
+    .order('weekday', { ascending: true })
+    .order('start_time', { ascending: true })
+  if (error) throw new Error(`listLocationOpeningHours: ${error.message}`)
+  return data ?? []
+}
+
 /** Alla veckodags-mallar (working_hours) för hela teamet — griden grupperar dem
  *  per staff+weekday app-side, så en enda läsning räcker för hela veckovyn. */
 export async function listAllWorkingHours(tenantId: string): Promise<WorkingHourRow[]> {
@@ -31,15 +84,18 @@ export async function listTimeOffOverlapping(
   tenantId: string,
   fromUtc: string,
   toUtc: string,
+  locationId?: string,
 ): Promise<TimeOffAdminRow[]> {
   const supabase = await createClient()
-  const { data, error } = await supabase
+  let query = supabase
     .from('time_off')
     .select('*')
     .eq('tenant_id', tenantId)
     .lt('start_ts', toUtc)
     .gt('end_ts', fromUtc)
     .order('start_ts', { ascending: true })
+  if (locationId) query = query.eq('location_id', locationId)
+  const { data, error } = await query
   // Kasta, svälj inte (B-10): osynliga blockeringar p.g.a. datafel gör att en rast
   // ser bokningsbar ut i kalendern — tyst fel på exakt fel ställe.
   if (error) throw new Error(`listTimeOffOverlapping: ${error.message}`)
@@ -52,14 +108,17 @@ export async function listTimeOffOverlapping(
 export async function listCurrentAndUpcomingTimeOff(
   tenantId: string,
   nowIso: string,
+  locationId?: string,
 ): Promise<TimeOffAdminRow[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  let query = supabase
     .from('time_off')
     .select('*')
     .eq('tenant_id', tenantId)
     .gte('end_ts', nowIso)
     .order('start_ts', { ascending: true })
+  if (locationId) query = query.eq('location_id', locationId)
+  const { data } = await query
   return data ?? []
 }
 

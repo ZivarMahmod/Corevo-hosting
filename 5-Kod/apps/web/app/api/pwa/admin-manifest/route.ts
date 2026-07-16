@@ -17,6 +17,9 @@ export function GET(): Response {
       name: 'Corevo Admin',
       short_name: 'Corevo',
       description: 'Din kalender, dina kunder och din sida — direkt på hemskärmen.',
+      // Stabil identitet så Android inte skapar en ny installation när start_url
+      // får fler kalenderparametrar i en senare release.
+      id: '/admin',
       start_url: '/admin/bokningar?vy=dag',
       scope: '/',
       display: 'standalone',

@@ -92,13 +92,6 @@ const VIEWS: { value: CalendarView; label: string }[] = [
  *  09:20-höjd ger 09:15, aldrig 09:20. */
 const SNAP_MIN = 15
 
-/** Vilken bokning som dras just nu.
- *
- *  Varför en modulvariabel och inte state: webbläsaren tillåter INTE att man läser
- *  dataTransfer under `dragover` (bara vid drop) — men förhandsvisningen måste veta
- *  hur lång bokningen är för att kunna rita var den slutar. Ett drag åt gången, så en
- *  enkel variabel räcker; state hade orsakat en omrendering per musrörelse. */
-let draggingId: string | null = null
 /** Pixlar per minut. Styr höjden på en bokning: 60 min = 84 px. Räcker för att läsa
  *  kund + tjänst i ett 30-minuterspass utan att dagen blir orimligt lång. */
 const PX_PER_MIN = 1.4
@@ -230,6 +223,7 @@ export function CalendarBoard({
   today,
   openBookingId,
   onlinePaymentsActive,
+  canManageBookings,
 }: {
   bookings: BookingRow[]
   blocks: CalendarBlock[]
@@ -243,9 +237,12 @@ export function CalendarBoard({
   today: string
   openBookingId?: string
   onlinePaymentsActive: boolean
+  /** 0077-mutationerna kräver organisations-/platsadmin. Personal får läsa arbetsdagen. */
+  canManageBookings: boolean
 }) {
   const router = useRouter()
   const params = useSearchParams()
+  const absenceTimeOffId = params.get('absence')
   const scrollRef = useRef<HTMLDivElement>(null)
   const lastAutoScrollKey = useRef<string | null>(null)
   const [open, setOpen] = useState<BookingRow | null>(
@@ -254,7 +251,7 @@ export function CalendarBoard({
   /** null = stängd. Ett objekt (ev. med seed) = skapa-läge. Översiktens genväg
    *  "Ny bokning" djuplänkar hit med ?ny → drawern öppnas direkt vid landning. */
   const [creating, setCreating] = useState<{ seed: NewBookingSeed | null } | null>(() =>
-    calendarLaunchMode(params) === 'new' ? { seed: null } : null,
+    canManageBookings && calendarLaunchMode(params) === 'new' ? { seed: null } : null,
   )
   /** Blockera tid: ny (seed från gridklick eller tom) eller befintlig (öppnad blockering).
    *  Genvägen "Blockera tid" djuplänkar hit med ?blockera. Ömsesidigt uteslutande med
@@ -262,7 +259,11 @@ export function CalendarBoard({
   const [blocking, setBlocking] = useState<{
     seed: { staffId: string; startMinute: number } | null
     existing: CalendarBlock | null
-  } | null>(() => (calendarLaunchMode(params) === 'block' ? { seed: null, existing: null } : null))
+  } | null>(() =>
+    canManageBookings && calendarLaunchMode(params) === 'block'
+      ? { seed: null, existing: null }
+      : null,
+  )
   const [mobileDateOpen, setMobileDateOpen] = useState(false)
 
   // router.refresh() levererar en ny bookings-array efter statusändring. Den öppna
@@ -274,6 +275,21 @@ export function CalendarBoard({
       return bookings.find((booking) => booking.id === current.id) ?? null
     })
   }, [bookings])
+
+  useEffect(() => {
+    if (!openBookingId) return
+    setOpen(bookings.find((booking) => booking.id === openBookingId) ?? null)
+  }, [bookings, openBookingId])
+
+  const closeBooking = () => {
+    setOpen(null)
+    if (!params.has('open') && !params.has('absence')) return
+    const sp = new URLSearchParams(params.toString())
+    sp.delete('open')
+    sp.delete('absence')
+    const qs = sp.toString()
+    router.replace(qs ? `/admin/bokningar?${qs}` : '/admin/bokningar', { scroll: false })
+  }
 
   useEffect(() => {
     if (!mobileDateOpen) return
@@ -289,7 +305,10 @@ export function CalendarBoard({
   useEffect(() => {
     const mode = calendarLaunchMode(params)
     if (!mode) return
-    if (mode === 'new') {
+    if (!canManageBookings) {
+      setCreating(null)
+      setBlocking(null)
+    } else if (mode === 'new') {
       setBlocking(null)
       setCreating({ seed: null })
     } else {
@@ -301,7 +320,7 @@ export function CalendarBoard({
     sp.delete('blockera')
     const qs = sp.toString()
     router.replace(qs ? `/admin/bokningar?${qs}` : '/admin/bokningar', { scroll: false })
-  }, [params, router])
+  }, [canManageBookings, params, router])
 
   // När dagens dagvy öppnas ska personalen landa vid NU, inte vid arbetsdagens
   // första timme. Vi scrollar kalenderns egen yta (aldrig dokumentet) och centrerar
@@ -363,7 +382,15 @@ export function CalendarBoard({
     if (!pendingMove) return
     const { booking, staffId, startIso } = pendingMove
     startMove(async () => {
-      const res = await moveBooking({ bookingId: booking.id, staffId, startIso })
+      const res = await moveBooking({
+        bookingId: booking.id,
+        staffId,
+        startIso,
+        locationId: booking.locationId,
+        serviceId: booking.serviceId,
+        expectedStartIso: booking.startTs,
+        expectedStaffId: booking.staffId,
+      })
       if (res.error) notify(res.error, 'warning')
       else {
         notify(res.success ?? 'Bokningen är flyttad.', 'success')
@@ -419,18 +446,14 @@ export function CalendarBoard({
       0,
     )
     const workedMin = vStaff.reduce((sum, s) => sum + s.workedMinutes, 0)
-    // Beläggning döljs när ett platsfilter är aktivt: arbetsminuterna (workedMinutes) är
-    // hela personens arbetsdag, inte platsavgränsade, medan bokningarna ovan ÄR filtrerade
-    // per plats → nämnaren skulle bli för stor och siffran ljuga för lågt. Hellre ingen
-    // siffra än en felaktig. (Codex-granskning, MEDEL.)
-    const occupancy = locationId ? null : occupancyPct(bookedMin, workedMin)
+    const occupancy = occupancyPct(bookedMin, workedMin)
     return {
       week: isoWeekNumber(date),
       count: live.length,
       occupancy,
       cancelled,
     }
-  }, [view, vBookings, vStaff, date, locationId])
+  }, [view, vBookings, vStaff, date])
 
   // Arbetsdagens fönster = union av resursernas arbetstider. Tom dag (ingen arbetar)
   // faller tillbaka på 08–18 så rutnätet aldrig kollapsar till en tom remsa.
@@ -560,6 +583,7 @@ export function CalendarBoard({
   // ger 09:15, aldrig 09:20) och resurs + tid ärvs in i drawern — användaren ska aldrig
   // mata in en kontext hen just pekade på.
   const onEmptyClick = (staffId: string, staffName: string, minute: number) => {
+    if (!canManageBookings) return
     const snapped = Math.round(minute / SNAP_MIN) * SNAP_MIN
     // Väggklockan (snapped) → UTC-instant för salongens dag. Att räkna på lokal tid och
     // konvertera EN gång är det enda som håller över sommartidsskiftet.
@@ -570,6 +594,7 @@ export function CalendarBoard({
   /** Släpp av ett draget block. Skriver INTE direkt — en flytt är en handling kunden
    *  märker av, så den bekräftas först, med konsekvensen utskriven. */
   const onDropBooking = (booking: BookingRow, staffId: string, minute: number) => {
+    if (!canManageBookings) return
     const snapped = Math.round(minute / SNAP_MIN) * SNAP_MIN
     const startIso = wallClockToUtcIso(date, snapped, tz)
     // Släppte man tillbaka på exakt samma tid och resurs har inget hänt — fråga inte.
@@ -650,14 +675,16 @@ export function CalendarBoard({
               </div>
             )}
           </div>
-          <button
-            type="button"
-            className={`${styles.blockBtn} ${styles.mobileBlockBtn}`}
-            onClick={() => setBlocking({ seed: null, existing: null })}
-            aria-label="Blockera tid"
-          >
-            <Icon name="clock" size={14} />
-          </button>
+          {canManageBookings && (
+            <button
+              type="button"
+              className={`${styles.blockBtn} ${styles.mobileBlockBtn}`}
+              onClick={() => setBlocking({ seed: null, existing: null })}
+              aria-label="Blockera tid"
+            >
+              <Icon name="clock" size={14} />
+            </button>
+          )}
         </div>
 
         <div className={styles.toolbarRight}>
@@ -710,25 +737,29 @@ export function CalendarBoard({
 
           {/* Blockera tid har samma mentala modell som att boka: välj vem, när och hur
               länge. Sekundär knapp — det är inte dagens huvudhandling. */}
-          <button
-            type="button"
-            className={`${styles.blockBtn} ${styles.desktopBlockBtn}`}
-            onClick={() => setBlocking({ seed: null, existing: null })}
-          >
-            <Icon name="clock" size={14} />
-            <span>Blockera tid</span>
-          </button>
+          {canManageBookings && (
+            <button
+              type="button"
+              className={`${styles.blockBtn} ${styles.desktopBlockBtn}`}
+              onClick={() => setBlocking({ seed: null, existing: null })}
+            >
+              <Icon name="clock" size={14} />
+              <span>Blockera tid</span>
+            </button>
+          )}
 
           {/* Utan seed: drawern börjar på tjänstevalet och erbjuder dagens luckor.
               Med ett gridklick ärvs tid + resurs i stället. Två vägar in, EN yta. */}
-          <button
-            type="button"
-            className={styles.newBtn}
-            onClick={() => setCreating({ seed: null })}
-          >
-            <Icon name="plus" size={15} />
-            <span>Ny bokning</span>
-          </button>
+          {canManageBookings && (
+            <button
+              type="button"
+              className={styles.newBtn}
+              onClick={() => setCreating({ seed: null })}
+            >
+              <Icon name="plus" size={15} />
+              <span>Ny bokning</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -751,7 +782,9 @@ export function CalendarBoard({
             onBubble={openBubble}
             onEmptyClick={onEmptyClick}
             onDropBooking={onDropBooking}
-            onOpenBlock={(block) => setBlocking({ seed: null, existing: block })}
+            onOpenBlock={(block) => {
+              if (canManageBookings) setBlocking({ seed: null, existing: block })
+            }}
             focusedStaffId={resursValid ? resurs : null}
             onStaffToggle={(staffId) => go({ resurs: resurs === staffId ? '' : staffId })}
             dragOver={dragOver}
@@ -788,19 +821,21 @@ export function CalendarBoard({
 
       <div className={styles.mobileCalendarDock}>
         <div className={styles.mobileCalendarDateRow}>
-          <button
-            type="button"
-            className={styles.mobileDateToggle}
-            onClick={() => setMobileDateOpen((open) => !open)}
-            aria-expanded={mobileDateOpen}
-            aria-haspopup="dialog"
-          >
-            <span className={styles.mobileDateTitle}>
-              {mobilePeriodLabel}
-              <span aria-hidden="true">{mobileDateOpen ? '▾' : '▴'}</span>
-            </span>
-            <span className={`num ${styles.mobileDateStats}`}>{mobilePeriodStats}</span>
-          </button>
+          {canManageBookings && (
+            <button
+              type="button"
+              className={styles.mobileDateToggle}
+              onClick={() => setMobileDateOpen((open) => !open)}
+              aria-expanded={mobileDateOpen}
+              aria-haspopup="dialog"
+            >
+              <span className={styles.mobileDateTitle}>
+                {mobilePeriodLabel}
+                <span aria-hidden="true">{mobileDateOpen ? '▾' : '▴'}</span>
+              </span>
+              <span className={`num ${styles.mobileDateStats}`}>{mobilePeriodStats}</span>
+            </button>
+          )}
           {(date !== today || view !== 'dag' || resursValid) && (
             <button
               type="button"
@@ -919,11 +954,13 @@ export function CalendarBoard({
           staffColor={colorOf(open.staffId)}
           staff={eligibleRescheduleStaff(staff, open.serviceId, open.locationId)}
           onlinePaymentsActive={onlinePaymentsActive}
-          onClose={() => setOpen(null)}
+          canManage={canManageBookings}
+          absenceTimeOffId={absenceTimeOffId}
+          onClose={closeBooking}
         />
       )}
 
-      {creating && (
+      {canManageBookings && creating && (
         <NewBookingDrawer
           services={services}
           staffNames={staffNames}
@@ -935,11 +972,12 @@ export function CalendarBoard({
         />
       )}
 
-      {blocking && (
+      {canManageBookings && blocking && (
         <BlockDrawer
           staff={staff}
           date={date}
           tz={tz}
+          locationId={locationId}
           seed={blocking.seed}
           existing={blocking.existing}
           onClose={() => setBlocking(null)}
@@ -949,7 +987,7 @@ export function CalendarBoard({
       {/* Flytt-bekräftelse. Texten beskriver KONSEKVENSEN — vem, från vad, till vad —
           aldrig ett innehållslöst "Är du säker?". Wavys copy-mönster, för det är det
           enda som gör att man vågar dra utan att tveka. */}
-      {pendingMove && (
+      {canManageBookings && pendingMove && (
         <Modal
           title="Flytta bokningen?"
           size="sm"
@@ -1207,7 +1245,10 @@ function BookingBlock({
   lanes,
   onOpen,
   onBubble,
-  draggable,
+  movable,
+  onPointerPreview,
+  onPointerDrop,
+  onPointerAbort,
   showPhone,
   color,
 }: {
@@ -1226,13 +1267,30 @@ function BookingBlock({
   color: string
   /** Avbokade tider går inte att flytta — och veckovyn saknar resurskolumner att
    *  släppa i, så dragning är avstängd där. */
-  draggable?: boolean
+  movable?: boolean
+  onPointerPreview?: (booking: BookingRow, clientX: number, clientY: number) => void
+  onPointerDrop?: (booking: BookingRow, clientX: number, clientY: number) => void
+  onPointerAbort?: () => void
   /** Dagvyn: blocken är breda nog för kundens telefonnummer. I vecko-/månadsvyn
    *  finns inte pixlarna — och där jobbar man inte heller "ring nästa kund". */
   showPhone?: boolean
 }) {
   const dim = isAvbokad(booking.status)
   const name = booking.customerName?.trim() || 'Gäst'
+  const pointerDrag = useRef<{
+    pointerId: number
+    startX: number
+    startY: number
+    active: boolean
+  } | null>(null)
+  const suppressClick = useRef(false)
+
+  const suppressSyntheticClick = () => {
+    suppressClick.current = true
+    window.setTimeout(() => {
+      suppressClick.current = false
+    }, 0)
+  }
 
   // Ett block är bara så högt som tiden är lång — texten måste anpassa sig, inte
   // klippas mitt i en rad.
@@ -1274,7 +1332,7 @@ function BookingBlock({
   return (
     <button
       type="button"
-      className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${draggable ? ` ${styles.blockDrag}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
+      className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${movable ? ` ${styles.blockDrag}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
       style={{
         top,
         height: h,
@@ -1285,16 +1343,61 @@ function BookingBlock({
         ['--bk' as string]: color,
         ['--bk-status' as string]: statusAccent(booking.status),
       }}
-      draggable={draggable}
-      onDragStart={(e) => {
-        e.dataTransfer.setData('text/plain', booking.id)
-        e.dataTransfer.effectAllowed = 'move'
-        draggingId = booking.id
+      onPointerDown={(e) => {
+        if (
+          !movable ||
+          e.pointerType !== 'mouse' ||
+          e.button !== 0 ||
+          !e.isPrimary ||
+          !window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
+        ) {
+          return
+        }
+        pointerDrag.current = {
+          pointerId: e.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          active: false,
+        }
+        e.currentTarget.setPointerCapture(e.pointerId)
       }}
-      onDragEnd={() => {
-        draggingId = null
+      onPointerMove={(e) => {
+        const drag = pointerDrag.current
+        if (!drag || drag.pointerId !== e.pointerId) return
+        if (
+          !drag.active &&
+          Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < SLOP_PX
+        ) {
+          return
+        }
+        drag.active = true
+        onPointerPreview?.(booking, e.clientX, e.clientY)
+      }}
+      onPointerUp={(e) => {
+        const drag = pointerDrag.current
+        if (!drag || drag.pointerId !== e.pointerId) return
+        pointerDrag.current = null
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }
+        if (!drag.active) return
+        suppressSyntheticClick()
+        onPointerDrop?.(booking, e.clientX, e.clientY)
+      }}
+      onPointerCancel={(e) => {
+        const drag = pointerDrag.current
+        if (!drag || drag.pointerId !== e.pointerId) return
+        pointerDrag.current = null
+        suppressSyntheticClick()
+        onPointerAbort?.()
+      }}
+      onLostPointerCapture={(e) => {
+        if (pointerDrag.current?.pointerId !== e.pointerId) return
+        pointerDrag.current = null
+        onPointerAbort?.()
       }}
       onClick={(e) => {
+        if (suppressClick.current) return
         // Tangentbord (Enter/Space) ger detail===0 → öppna drawern direkt: en bubbla
         // finns ingen pekare att sikta med. Pekare/touch → bubblan vid klickpunkten.
         if (e.detail === 0 || !onBubble) onOpen(booking)
@@ -1423,6 +1526,40 @@ function DayGrid({
     )
   }
 
+  const pointerTarget = (clientX: number, clientY: number) => {
+    const target = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>('[data-calendar-staff-id]')
+    if (!target) return null
+    const staffId = target.dataset.calendarStaffId
+    if (!staffId || !staff.some((person) => person.id === staffId)) return null
+    const box = target.getBoundingClientRect()
+    return { staffId, minute: dayStart + (clientY - box.top) / PX_PER_MIN }
+  }
+
+  const previewPointerMove = (booking: BookingRow, clientX: number, clientY: number) => {
+    const target = pointerTarget(clientX, clientY)
+    if (!target) {
+      setDragOver(null)
+      return
+    }
+    const minute = Math.round(target.minute / SNAP_MIN) * SNAP_MIN
+    const durationMin = minutesInTz(booking.endTs, tz) - minutesInTz(booking.startTs, tz)
+    if (
+      dragOver?.staffId !== target.staffId ||
+      dragOver.minute !== minute ||
+      dragOver.durationMin !== durationMin
+    ) {
+      setDragOver({ staffId: target.staffId, minute, durationMin })
+    }
+  }
+
+  const finishPointerMove = (booking: BookingRow, clientX: number, clientY: number) => {
+    const target = pointerTarget(clientX, clientY)
+    setDragOver(null)
+    if (target) onDropBooking(booking, target.staffId, target.minute)
+  }
+
   return (
     <div className={styles.dayWrap} style={{ ['--cols' as string]: staff.length }}>
       {/* Resurshuvudena är sticky: scrollar man ner i dagen ser man fortfarande vems
@@ -1476,48 +1613,7 @@ function DayGrid({
           const workStart = s.start ? toMin(s.start) : null
           const workEnd = s.end ? toMin(s.end) : null
           return (
-            <div
-              key={s.id}
-              className={styles.col}
-              onDragOver={(e) => {
-                // Utan preventDefault vägrar webbläsaren ta emot släppet.
-                e.preventDefault()
-                e.dataTransfer.dropEffect = 'move'
-                const box = e.currentTarget.getBoundingClientRect()
-                const raw = dayStart + (e.clientY - box.top) / PX_PER_MIN
-                const snapped = Math.round(raw / SNAP_MIN) * SNAP_MIN
-                // Längden på det dragna blocket måste vara känd redan här, annars kan
-                // förhandsvisningen inte visa var tiden SLUTAR. Den läses ur draget.
-                const dragged = bookings.find((b) => b.id === draggingId)
-                const durationMin = dragged
-                  ? minutesInTz(dragged.endTs, tz) - minutesInTz(dragged.startTs, tz)
-                  : 30
-                if (
-                  !dragOver ||
-                  dragOver.staffId !== s.id ||
-                  dragOver.minute !== snapped ||
-                  dragOver.durationMin !== durationMin
-                ) {
-                  setDragOver({ staffId: s.id, minute: snapped, durationMin })
-                }
-              }}
-              onDragLeave={(e) => {
-                // Bara när markören lämnar KOLUMNEN, inte när den passerar ett barn.
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                  if (dragOver?.staffId === s.id) setDragOver(null)
-                }
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                setDragOver(null)
-                const id = e.dataTransfer.getData('text/plain')
-                const dropped = bookings.find((b) => b.id === id)
-                if (!dropped) return
-                const box = e.currentTarget.getBoundingClientRect()
-                const minute = dayStart + (e.clientY - box.top) / PX_PER_MIN
-                onDropBooking(dropped, s.id, minute)
-              }}
-            >
+            <div key={s.id} className={styles.col} data-calendar-staff-id={s.id}>
               {/* Ej arbetstid skuggas — men kolumnen finns kvar. En ledig resurs är
                   information, inte en tom lucka i rutnätet. */}
               {workStart != null && workEnd != null ? (
@@ -1579,7 +1675,10 @@ function DayGrid({
                   lanes={lanes}
                   onOpen={onOpen}
                   onBubble={onBubble}
-                  draggable={isBokad(booking.status)}
+                  movable={isBokad(booking.status)}
+                  onPointerPreview={previewPointerMove}
+                  onPointerDrop={finishPointerMove}
+                  onPointerAbort={() => setDragOver(null)}
                   showPhone
                   color={s.color}
                 />

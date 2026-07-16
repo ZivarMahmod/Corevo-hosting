@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requireAdminArea } from '@/lib/auth/session'
+import { requireOrganizationOwner } from '@/lib/admin/owner-guard'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getSettingsRow, listLocations, listDomains } from '@/lib/admin/data'
 import { SettingsForm } from '@/components/admin/SettingsForm'
@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: 'Företag och profil · Adminpanel' }
 const ROOT_DOMAIN = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se').replace(/:\d+$/, '')
 
 export default async function ForetagPage() {
-  const user = await requireAdminArea('installningar')
+  const user = await requireOrganizationOwner('installningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

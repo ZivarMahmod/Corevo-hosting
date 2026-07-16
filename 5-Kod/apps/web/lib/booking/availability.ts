@@ -12,6 +12,34 @@ export type Interval = { start: Date; end: Date }
 /** A wall-clock opening window in the location's timezone, e.g. 09:00–17:00. */
 export type WorkingWindow = { start: string; end: string }
 
+const wallMinutes = (value: string): number => {
+  const [hours = '0', minutes = '0'] = value.split(':')
+  return Number(hours) * 60 + Number(minutes)
+}
+
+const wallTime = (minutes: number): string =>
+  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+
+/** Intersect staff hours with the location's confirmed opening windows. */
+export function intersectWorkingWindows(
+  staffWindows: WorkingWindow[],
+  locationWindows: WorkingWindow[],
+): WorkingWindow[] {
+  const intersections: WorkingWindow[] = []
+  for (const staff of staffWindows) {
+    for (const location of locationWindows) {
+      const start = Math.max(wallMinutes(staff.start), wallMinutes(location.start))
+      const end = Math.min(wallMinutes(staff.end), wallMinutes(location.end))
+      if (start < end) intersections.push({ start: wallTime(start), end: wallTime(end) })
+    }
+  }
+  return [...new Map(
+    intersections
+      .sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end))
+      .map((window) => [`${window.start}-${window.end}`, window]),
+  ).values()]
+}
+
 export type ComputeSlotsInput = {
   /** The day being booked, 'YYYY-MM-DD', interpreted in `timeZone`. */
   date: string

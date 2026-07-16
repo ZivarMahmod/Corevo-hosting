@@ -14,6 +14,7 @@ import { NAV, isGroup, paletteFromNav } from './nav-items'
 import { getAdminModuleStates, isModuleActivated, isBookingActivated } from '@/lib/admin/modules'
 import { listLocations } from '@/lib/admin/data'
 import { PLATS_COOKIE } from '@/lib/admin/plats'
+import { getAdminLocationPreferences } from '@/lib/admin/location-context'
 import { PortalTopbar } from './PortalTopbar'
 import { Topnav } from './Topnav'
 import topnavStyles from './Topnav.module.css'
@@ -191,13 +192,20 @@ export async function PortalShell({
     if (adminLocations) {
       const activeLocations = adminLocations.filter((l) => l.active)
       if (activeLocations.length > 1) {
+        const locationPreferences = await getAdminLocationPreferences(user.id)
         const jar = await cookies()
         const saved = jar.get(PLATS_COOKIE)?.value ?? ''
-        const value = activeLocations.some((l) => l.id === saved) ? saved : ''
+        const value = activeLocations.some((l) => l.id === saved)
+          ? saved
+          : saved === 'alla' && locationPreferences.accessScope === 'organization'
+            ? 'alla'
+            : locationPreferences.primaryLocationId ?? ''
         locationSwitcher = (
           <LocationSwitcher
             locations={activeLocations.map((l) => ({ id: l.id, name: l.name }))}
             value={value}
+            primaryLocationId={locationPreferences.primaryLocationId}
+            allowAll={locationPreferences.accessScope === 'organization'}
           />
         )
       }

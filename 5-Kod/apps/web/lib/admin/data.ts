@@ -122,8 +122,8 @@ export async function listStaffBookingResources(
   const [servicesRes, locationsRes] = await Promise.all([
     supabase.from('staff_services').select('staff_id, service_id').eq('tenant_id', tenantId),
     supabase
-      .from('working_hours')
-      .select('staff_id, location_id')
+      .from('staff')
+      .select('id, location_id')
       .eq('tenant_id', tenantId)
       .not('location_id', 'is', null),
   ])
@@ -144,7 +144,7 @@ export async function listStaffBookingResources(
   }
   for (const row of servicesRes.data ?? []) resource(row.staff_id).serviceIds.add(row.service_id)
   for (const row of locationsRes.data ?? []) {
-    if (row.location_id) resource(row.staff_id).locationIds.add(row.location_id)
+    if (row.location_id) resource(row.id).locationIds.add(row.location_id)
   }
 
   return [...byStaff.entries()].map(([staffId, links]) => ({
@@ -644,19 +644,21 @@ export async function staffDay(
     .from('working_hours')
     .select('staff_id, weekday, start_time, end_time')
     .eq('tenant_id', tenantId)
+    .eq('weekday', weekday)
     .order('start_time', { ascending: true })
   if (locationId) hoursQuery = hoursQuery.eq('location_id', locationId)
-  else hoursQuery = hoursQuery.eq('weekday', weekday)
 
-  const [staffRes, hoursRes] = await Promise.all([
-    supabase
+  let staffQuery = supabase
       .from('staff')
-      .select('id, title, color')
+      .select('id, title, color, location_id')
       .eq('tenant_id', tenantId)
       .eq('active', true)
       // Stabil kolumnordning i kalendern kräver en deterministisk sortering — samma
       // ordning varje ladd, annars hoppar resurserna mellan kolumner.
-      .order('created_at', { ascending: true }),
+      .order('created_at', { ascending: true })
+  if (locationId) staffQuery = staffQuery.eq('location_id', locationId)
+  const [staffRes, hoursRes] = await Promise.all([
+    staffQuery,
     hoursQuery,
   ])
   // Kasta, svälj inte (B-10): noll resurser p.g.a. datafel skulle rita en kalender
@@ -665,9 +667,6 @@ export async function staffDay(
   if (hoursRes.error) throw new Error(`staffDay: ${hoursRes.error.message}`)
   const { data: staffRows } = staffRes
   const { data: hourRows } = hoursRes
-  const locationStaffIds = locationId
-    ? new Set((hourRows ?? []).map((row: { staff_id: string }) => row.staff_id))
-    : null
 
   // Flera pass samma dag (t.ex. förmiddag + kväll) → resursens dag spänner från
   // första starten till sista slutet. Luckan mellan passen ritas som ej tillgänglig
@@ -696,7 +695,6 @@ export async function staffDay(
   for (const [id, ivs] of passes) worked.set(id, sumMergedMinutes(ivs))
 
   return ((staffRows ?? []) as { id: string; title: string | null; color: string | null }[])
-    .filter((staffRow) => !locationStaffIds || locationStaffIds.has(staffRow.id))
     .map((s) => {
       const hours = span.get(s.id)
       return {

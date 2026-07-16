@@ -44,6 +44,15 @@ const priceLabel = (cents: number | null) =>
 
 type CustomerSearchStatus = 'idle' | 'debouncing' | 'searching' | 'settled' | 'error'
 
+const slotMatchesPicked = (
+  picked: { staffId: string; startIso: string } | null,
+  slots: AdminSlot[],
+) =>
+  Boolean(
+    picked &&
+    slots.some((slot) => slot.staffId === picked.staffId && slot.startIso === picked.startIso),
+  )
+
 export function NewBookingDrawer({
   services,
   staffNames,
@@ -72,6 +81,7 @@ export function NewBookingDrawer({
   const [serviceId, setServiceId] = useState('')
   const [slots, setSlots] = useState<AdminSlot[]>([])
   const [slotsLoading, startSlots] = useTransition()
+  const slotLoadSeq = useRef(0)
   // Vald tid. Kommer från gridklicket (seed) eller från en luckchip.
   const [picked, setPicked] = useState<{ staffId: string; startIso: string } | null>(
     seed ? { staffId: seed.staffId, startIso: seed.startIso } : null,
@@ -95,17 +105,22 @@ export function NewBookingDrawer({
   // Luckor laddas när tjänsten valts — inte innan. Utan tjänst vet vi inte hur lång
   // tiden är, och kan alltså inte veta vad som får plats.
   useEffect(() => {
+    const sequence = ++slotLoadSeq.current
     if (!serviceId) {
       setSlots([])
       return
     }
     startSlots(async () => {
       const res = await loadDaySlots({ serviceId, date, locationId })
+      if (slotLoadSeq.current !== sequence) return
       if (res.error) {
         notify(res.error, 'warning')
         setSlots([])
+        setPicked(null)
       } else {
-        setSlots(res.slots ?? [])
+        const nextSlots = res.slots ?? []
+        setSlots(nextSlots)
+        if (!slotMatchesPicked(picked, nextSlots)) setPicked(null)
       }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -191,7 +206,10 @@ export function NewBookingDrawer({
 
   const customerResolved = Boolean(chosen) || customerSearchStatus === 'settled'
   const readyToSave = Boolean(
-    service && picked && customerResolved && customerQuery.trim().length >= 2,
+    service &&
+    slotMatchesPicked(picked, slots) &&
+    customerResolved &&
+    customerQuery.trim().length >= 2,
   )
 
   return (
@@ -251,6 +269,7 @@ export function NewBookingDrawer({
                 className={`${styles.chip}${serviceId === s.id ? ` ${styles.chipOn}` : ''}`}
                 onClick={() => {
                   setServiceId(s.id)
+                  setSlots([])
                   // Byter man tjänst kan den gamla tiden vara för kort — men en tid som
                   // ärvts från ett gridklick behålls: den är användarens uttryckliga val.
                   if (!seed) setPicked(null)
@@ -380,8 +399,8 @@ export function NewBookingDrawer({
               )}
               {customerSearchStatus === 'error' && (
                 <Callout tone="warning" icon="alert">
-                  {customerSearchError ?? 'Kundsökningen gick inte att genomföra.'} Försök igen innan
-                  du bokar, så att ingen dubblett skapas.
+                  {customerSearchError ?? 'Kundsökningen gick inte att genomföra.'} Försök igen
+                  innan du bokar, så att ingen dubblett skapas.
                 </Callout>
               )}
               {customerSearchStatus === 'settled' && hits.length === 0 && (

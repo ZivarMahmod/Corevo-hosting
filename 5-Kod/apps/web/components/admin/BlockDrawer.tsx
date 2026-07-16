@@ -1,8 +1,16 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBlock, removeBlock } from '@/lib/admin/calendar-actions'
+import {
+  createBlock,
+  loadBlockImpacts,
+  markBlockImpactHandled,
+  previewBlockImpacts,
+  removeBlock,
+  type BlockImpact,
+} from '@/lib/admin/calendar-actions'
+import { setBookingStatus } from '@/lib/admin/actions'
 import { REPEAT_KINDS, REPEAT_LABELS, type RepeatKind } from '@/lib/admin/block-series'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { Button, Callout, Modal, useToast } from '@/components/portal/ui'
@@ -15,8 +23,12 @@ import styles from './calendar.module.css'
  *  omedelbart ur den publika bokningen: det är samma time_off-rader som bokningsmotorn
  *  redan räknar som upptagna. Ingen parallell "schemaundantag"-modell. */
 
-/** Snabbval — de tre orsaker som faktiskt används dagligen. Fritext för resten. */
-const REASONS = ['Rast', 'Frånvaro', 'Möte']
+const REASONS = [
+  { label: 'Rast', kind: 'break' },
+  { label: 'Ledighet', kind: 'leave' },
+  { label: 'Sjukfrånvaro', kind: 'sick' },
+  { label: 'Annat', kind: 'other' },
+] as const
 
 /** Snabbval för längd. GENVÄGAR, inte gränser: de sätter bara sluttiden, som sedan går
  *  att ändra fritt. Förut VAR de gränsen — man kunde inte blockera 3 timmar, och inte
@@ -42,6 +54,7 @@ export function BlockDrawer({
   staff,
   date,
   tz,
+  locationId,
   /** Förifyllt från ett klick i gridet: resurs + starttid (minuter efter midnatt). */
   seed,
   /** Satt när en BEFINTLIG blockering öppnats — då visas ta bort-vägen i stället. */
@@ -51,6 +64,7 @@ export function BlockDrawer({
   staff: CalendarStaff[]
   date: string
   tz: string
+  locationId?: string
   seed: { staffId: string; startMinute: number } | null
   existing: CalendarBlock | null
   onClose: () => void
@@ -70,8 +84,13 @@ export function BlockDrawer({
   const seedEnd = addMinutes(date, seedTime, 60)
   const [endDate, setEndDate] = useState(seedEnd.date)
   const [endTime, setEndTime] = useState(seedEnd.time)
-  const [reason, setReason] = useState('Rast')
+  const [reasonKind, setReasonKind] = useState<(typeof REASONS)[number]['kind']>('break')
   const [repeat, setRepeat] = useState<RepeatKind>('ingen')
+  const [preview, setPreview] = useState<BlockImpact[]>([])
+  const [previewSignature, setPreviewSignature] = useState('')
+  const [impactQueue, setImpactQueue] = useState<BlockImpact[]>([])
+  const [impactError, setImpactError] = useState('')
+  const [impactLoading, setImpactLoading] = useState(false)
 
   /** Snabbval: sätt sluttiden till start + n minuter. Bara en genväg — fälten går att
    *  ändra efteråt. */
@@ -87,6 +106,25 @@ export function BlockDrawer({
   const endsAt = new Date(`${endDate}T${endTime}`)
   const invalid = !(endsAt > startsAt)
   const spansDays = startDate !== endDate
+  const selectedStaff = staff.find((person) => person.id === staffId)
+  const resolvedLocationId =
+    locationId && selectedStaff?.locationIds.includes(locationId) ? locationId : undefined
+
+  useEffect(() => {
+    if (!existing) return
+    let cancelled = false
+    setImpactLoading(true)
+    setImpactError('')
+    void loadBlockImpacts(existing.id).then((result) => {
+      if (cancelled) return
+      setImpactQueue(result.impacts)
+      setImpactError(result.error ?? '')
+      setImpactLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [existing])
 
   const timeOf = (iso: string) =>
     new Intl.DateTimeFormat('sv-SE', { timeZone: tz, hour: '2-digit', minute: '2-digit' }).format(
@@ -98,7 +136,32 @@ export function BlockDrawer({
       // Varje ände har sitt EGET datum — det är det som gör flerdygnsblockeringen möjlig.
       const startIso = zonedTimeToUtc(startDate, startTime, tz).toISOString()
       const endIso = zonedTimeToUtc(endDate, endTime, tz).toISOString()
-      const res = await createBlock({ staffId, startIso, endIso, reason, repeat })
+      const signature = [resolvedLocationId, staffId, startIso, endIso].join(':')
+      if (previewSignature !== signature) {
+        const checked = await previewBlockImpacts({
+          locationId: resolvedLocationId ?? '',
+          staffId,
+          startIso,
+          endIso,
+        })
+        if (checked.error) {
+          notify(checked.error, 'warning')
+          return
+        }
+        setPreview(checked.impacts)
+        setPreviewSignature(signature)
+        if (checked.impacts.length > 0) return
+      }
+      const reason = REASONS.find((item) => item.kind === reasonKind)?.label ?? 'Annat'
+      const res = await createBlock({
+        locationId: resolvedLocationId ?? '',
+        staffId,
+        startIso,
+        endIso,
+        kind: reasonKind,
+        reason,
+        repeat,
+      })
       if (res.error) notify(res.error, 'warning')
       else {
         notify(res.success ?? 'Tiden är blockerad.', 'success')
@@ -106,6 +169,58 @@ export function BlockDrawer({
         onClose()
       }
     })
+  }
+
+  const markImpact = (
+    impact: BlockImpact,
+    resolution: 'contacted' | 'cancelled' | 'handled',
+    contactHref?: string,
+  ) => {
+    if (!existing) return
+    startAction(async () => {
+      if (resolution === 'cancelled') {
+        const form = new FormData()
+        form.set('bookingId', impact.bookingId)
+        form.set('status', 'cancelled')
+        const cancelled = await setBookingStatus({}, form)
+        if (cancelled.error) {
+          notify(cancelled.error, 'warning')
+          return
+        }
+      }
+      const result = await markBlockImpactHandled({
+        timeOffId: existing.id,
+        bookingId: impact.bookingId,
+        resolution,
+      })
+      if (result.error) {
+        notify(result.error, 'warning')
+        return
+      }
+      setImpactQueue((rows) =>
+        rows.map((row) =>
+          row.bookingId === impact.bookingId ? { ...row, handled: true, resolution } : row,
+        ),
+      )
+      notify(
+        resolution === 'cancelled'
+          ? 'Bokningen är avbokad.'
+          : 'Bokningen är markerad som hanterad.',
+        'success',
+      )
+      if (contactHref) window.location.assign(contactHref)
+    })
+  }
+
+  const openImpactBooking = (impact: BlockImpact) => {
+    if (!existing) return
+    const impactDate = new Intl.DateTimeFormat('sv-SE', { timeZone: tz }).format(
+      new Date(impact.startTs),
+    )
+    router.push(
+      `/admin/bokningar?vy=dag&datum=${impactDate}&open=${impact.bookingId}&absence=${existing.id}`,
+    )
+    onClose()
   }
 
   const remove = (scope: 'en' | 'framat') => {
@@ -194,6 +309,88 @@ export function BlockDrawer({
             blockeringen blir den bokningsbar igen. Bokningar som redan ligger i tiden påverkas
             inte.
           </Callout>
+
+          <section aria-live="polite">
+            <div className="eyebrow" style={{ marginBottom: 8 }}>
+              Berörda bokningar
+            </div>
+            {impactLoading ? (
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--c-ink-3)' }}>Laddar arbetskö…</p>
+            ) : impactError ? (
+              <Callout tone="warning" icon="info">
+                {impactError}
+              </Callout>
+            ) : impactQueue.length === 0 ? (
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--c-ink-3)' }}>
+                Inga aktiva bokningar behöver hanteras.
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {impactQueue.map((impact) => (
+                  <div
+                    key={impact.bookingId}
+                    style={{
+                      border: '1px solid var(--c-line)',
+                      borderRadius: 10,
+                      padding: 10,
+                      opacity: impact.handled ? 0.62 : 1,
+                    }}
+                  >
+                    <div style={{ fontWeight: 650, fontSize: 13 }}>
+                      {timeOf(impact.startTs)} · {impact.customerName}
+                    </div>
+                    <div style={{ color: 'var(--c-ink-3)', fontSize: 12, marginTop: 2 }}>
+                      {impact.serviceName}
+                      {impact.handled ? ` · Hanterad (${impact.resolution ?? 'klar'})` : ''}
+                    </div>
+                    {!impact.handled && (
+                      <div className={styles.chipRow} style={{ marginTop: 8 }}>
+                        {(impact.customerPhone || impact.customerEmail) && (
+                          <a
+                            className={styles.slotChip}
+                            href={
+                              impact.customerPhone
+                                ? `tel:${impact.customerPhone}`
+                                : `mailto:${impact.customerEmail}`
+                            }
+                            onClick={(event) => {
+                              event.preventDefault()
+                              markImpact(impact, 'contacted', event.currentTarget.href)
+                            }}
+                          >
+                            Kontakta
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          className={styles.slotChip}
+                          onClick={() => openImpactBooking(impact)}
+                        >
+                          Omboka
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.slotChip}
+                          onClick={() => markImpact(impact, 'cancelled')}
+                          disabled={busy}
+                        >
+                          Avboka
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.slotChip}
+                          onClick={() => markImpact(impact, 'handled')}
+                          disabled={busy}
+                        >
+                          Markera hanterad
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </Modal>
     )
@@ -217,10 +414,10 @@ export function BlockDrawer({
           variant="primary"
           icon="check"
           onClick={save}
-          disabled={busy || !staffId || invalid}
+          disabled={busy || !staffId || !resolvedLocationId || invalid}
           style={{ width: '100%', justifyContent: 'center' }}
         >
-          {busy ? 'Sparar…' : 'Blockera'}
+          {busy ? 'Sparar…' : preview.length > 0 ? 'Blockera ändå' : 'Blockera'}
         </Button>
       }
     >
@@ -316,25 +513,21 @@ export function BlockDrawer({
             Orsak <span style={{ textTransform: 'none' }}>(syns aldrig för kunden)</span>
           </div>
           <div className={styles.chipRow} style={{ marginBottom: 8 }}>
-            {REASONS.map((r) => (
+            {REASONS.map((item) => (
               <button
-                key={r}
+                key={item.kind}
                 type="button"
-                className={`${styles.slotChip}${reason === r ? ` ${styles.chipOn}` : ''}`}
-                onClick={() => setReason(r)}
-                aria-pressed={reason === r}
+                className={`${styles.slotChip}${reasonKind === item.kind ? ` ${styles.chipOn}` : ''}`}
+                onClick={() => setReasonKind(item.kind)}
+                aria-pressed={reasonKind === item.kind}
               >
-                {r}
+                {item.label}
               </button>
             ))}
           </div>
-          <input
-            className={styles.input}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Egen text"
-            aria-label="Orsak"
-          />
+          <p style={{ margin: 0, color: 'var(--c-ink-3)', fontSize: 13 }}>
+            Spara bara kategori här — inga medicinska eller privata detaljer.
+          </p>
         </section>
 
         <section>
@@ -360,6 +553,14 @@ export function BlockDrawer({
         {spansDays && !invalid && (
           <Callout tone="info" icon="info">
             Blockeringen sträcker sig över flera dagar — hela perioden går inte att boka.
+          </Callout>
+        )}
+
+        {preview.length > 0 && (
+          <Callout tone="warning" icon="info">
+            <strong>{preview.length} aktiva bokningar berörs.</strong> Blockera igen för att
+            bekräfta. Därefter finns de i blockeringens arbetskö för kontakt, ombokning eller
+            avbokning.
           </Callout>
         )}
       </div>

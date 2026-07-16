@@ -21,6 +21,8 @@ import {
 } from '@/lib/admin/dates'
 import { listTimeOffOverlapping } from '@/lib/admin/schedule-data'
 import { resolvePlats } from '@/lib/admin/plats'
+import { requiredLocationId } from '@/lib/admin/location-scope'
+import { getAdminLocationPreferences } from '@/lib/admin/location-context'
 import { PageHead } from '@/components/portal/ui'
 import {
   CalendarBoard,
@@ -58,21 +60,31 @@ export default async function KalenderPage({
     )
   }
 
-  const tz = tenant.timeZone
+  const locations = (await listLocations(tenant.id)).filter((l) => l.active)
+  const allowedLocationIds = locations.map((location) => location.id)
+  const [requestedLocation, preferences] = await Promise.all([
+    resolvePlats(sp.plats, allowedLocationIds),
+    getAdminLocationPreferences(user.id),
+  ])
+  const locationId = requiredLocationId(
+    requestedLocation,
+    allowedLocationIds,
+    preferences.primaryLocationId,
+  )
+  const location = locations.find((candidate) => candidate.id === locationId)
+  if (!locationId || !location) {
+    return (
+      <section className="portal-section">
+        <PageHead eyebrow={tenant.name} title="Kalender" />
+        <p className="prose">Välj en tillåten primär plats innan kalendern kan öppnas.</p>
+      </section>
+    )
+  }
+
+  const tz = location.timezone || tenant.timeZone
   const today = todayInTz(tz)
   const view: CalendarView = VIEWS.includes(sp.vy as CalendarView) ? (sp.vy as CalendarView) : 'dag'
   const date = isValidDate(sp.datum) ? sp.datum : today
-
-  // Plats-filtret finns bara som yta när tenanten har >1 AKTIV plats. Ett påhittat
-  // ?plats= kan aldrig peka utanför RLS-fencet — det blir bara "alla platser".
-  const locations = (await listLocations(tenant.id)).filter((l) => l.active)
-  const locationFilter =
-    locations.length > 1
-      ? await resolvePlats(
-          sp.plats,
-          locations.map((l) => l.id),
-        )
-      : ''
 
   // Fönstret följer vyn. Månadsvyn hämtar HELA rutnätet (inkl. randdagarna från
   // grannmånaderna) — annars ser rutnätets kanter tomma ut fast de har bokningar.
@@ -94,14 +106,14 @@ export default async function KalenderPage({
     listBookings(tenant.id, {
       fromUtc: range.fromUtc,
       toUtc: range.toUtc,
-      locationId: locationFilter || undefined,
+      locationId,
     }),
-    staffDay(tenant.id, weekday),
+    staffDay(tenant.id, weekday, locationId),
     // Blockeringar ritas bara i dag- och veckovyn. Månadsvyn visar antal per dag, så
     // en 42-dagars frånvarofråga där vore ren spilld last.
     view === 'manad'
       ? Promise.resolve([])
-      : listTimeOffOverlapping(tenant.id, range.fromUtc, range.toUtc),
+      : listTimeOffOverlapping(tenant.id, range.fromUtc, range.toUtc, locationId),
     listServices(tenant.id),
     listStaffBookingResources(tenant.id),
   ])
@@ -181,7 +193,7 @@ export default async function KalenderPage({
       // Bara aktiva tjänster kan bokas — en inaktiv tjänst ska inte gå att välja i
       // drawern och sedan avvisas av servern.
       services={allServices
-        .filter((s) => s.active)
+        .filter((s) => s.active && (s.location_id === null || s.location_id === locationId))
         .map((s) => ({
           id: s.id,
           name: s.name,
@@ -192,10 +204,11 @@ export default async function KalenderPage({
       view={view}
       date={date}
       today={today}
-      locationId={locationFilter || undefined}
+      locationId={locationId}
       staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
       openBookingId={sp.open}
       onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
+      canManageBookings={user.roleLevel >= 6}
     />
   )
 }
