@@ -1,8 +1,8 @@
 # Goal 69 — Kundadmin booking foundation före del 03
 
-**Status:** aktiv  
+**Status:** verifierad live 2026-07-16  
 **Plan:** `1-Planering/10-kundadmin-bokningsarbetsbord/BOOKING-FOUNDATION-PONYTAIL-PLAN.md`  
-**Branch:** `codex/kundadmin-booking-foundation`
+**Release:** `v1.35.0` · implementation `7241120`
 
 ## Mål
 
@@ -39,9 +39,16 @@ Gör kalender, adminbokning, personalens bokningsbarhet, schema, frånvaro, plat
 - Testlistan i `6-Testing/goal-69-kundadmin-booking-foundation-testlista.md` är mekaniskt och manuellt verifierad.
 - DB-, RLS-, kontrakts-, unit-, integration-, E2E-, typecheck- och buildgates är gröna.
 - `v1.35.0` är deployad och produktionssmokad efter migration 0076–0079.
-- Taggar och `origin/main` pekar på avsedda commits.
-- Goal flyttas till rätt kategori under `2-Byggplan/klart/` först efter livebevis.
+- Releasetaggen pekar på implementationscommitten, som ingår i `origin/main`.
+- Goal ligger i rätt kategori under `2-Byggplan/klart/` efter livebevis.
 
 ## Utanför scope
 
 Del 03, del 05 Kundportal, offline/service worker, TWA/APK, auto-SMS/mejl, automatisk omplacering och personal som samtidigt arbetar på flera platser.
+
+## Livebevis
+
+- Supabase: `location_schedule_access_foundation`, `atomic_location_admin_booking_flows`, `booking_foundation_ship_hardening` och `staff_readiness_invariant` registrerade i produktion.
+- CI: run `29498486751` godkänd inklusive lint, typecheck, 1 269 tester, bransch-/kontrastvakter och build.
+- Deploy: run `29498705127` godkänd via `deploy-prod.mjs`.
+- Domänsmoke: booking, superbooking, minbooking, freshcut, florist och zentum är uppe; admin-, tenant-, staff- och superadmin-headers är korrekta.

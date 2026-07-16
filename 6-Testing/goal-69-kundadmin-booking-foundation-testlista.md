@@ -57,4 +57,4 @@
 - [x] Android Chrome på riktig enhet: installera, starta, logga in, öppna dagens kalender.
 - [x] Samsung Internet-genererad WebAPK dokumenteras separat; ingen Corevo-APK utlovas.
 - [x] Unit, DB/RLS, lint, typecheck, build och relevanta E2E går grönt.
-- [ ] `v1.35.0` produktionssmoke passerar efter att migration 0076–0079 och samtliga lokala gates är gröna.
+- [x] `v1.35.0` produktionssmoke passerar efter att migration 0076–0079 och samtliga lokala gates är gröna.

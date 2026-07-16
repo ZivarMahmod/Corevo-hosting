@@ -34,3 +34,12 @@ orörda tills de har explicit proveniens.
 - ESLint: 0 fel; 7 sedan tidigare orelaterade varningar.
 - Webbläsare: mobil 390 px och desktop 1440 px, kalender/schema/personal, rena konsolloggar.
 - Ny adminbokning: tom kalendercell → tjänst → ny kund → giltig tid gjorde `Boka` aktiv utan att testet skrev produktionsdata.
+
+## Produktionsbevis
+
+- Implementation: commit `7241120`, tagg `v1.35.0`.
+- Supabase: migration 0076–0079 registrerade; 0079-funktioner, triggers och privilegier kontrollerade live.
+- GitHub CI `29498486751`: godkänd.
+- GitHub Deploy `29498705127`: godkänd via den domänsäkra `deploy-prod.mjs`-vägen.
+- `check_domains.mjs`: 6 av 6 hostar uppe.
+- HTTP-smoke: `booking.corevo.se/admin/bokningar`, `freshcut.corevo.se`, `minbooking.corevo.se` och `superbooking.corevo.se` returnerar 200 med rätt `x-corevo-tenant-kind`.
