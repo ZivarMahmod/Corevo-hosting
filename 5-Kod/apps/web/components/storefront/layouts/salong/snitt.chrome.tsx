@@ -3,6 +3,7 @@ import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { StorefrontIcon } from '@/components/storefront/StorefrontIcon'
 import { CartNavButton } from '@/components/storefront/shop/CartNavButton'
+import { SocialButtons, socialLinks } from '@/components/storefront/SocialButtons'
 import shell from '@/components/brand/nav-shell.module.css'
 import type { ThemeNavProps, ThemeFooterProps } from './types'
 import styles from './snitt.module.css'
@@ -81,13 +82,20 @@ export function SnittFooter(p: ThemeFooterProps) {
       <div className={styles.snFootRow}>
         <div>
           <p className={styles.snFootMark}>
-            {p.tenant.name}
+            <span data-tenant-name data-corevo-editor-field="tenant.name"
+              data-corevo-editor-stable-field="tenant.name">{p.tenant.name}</span>
             <span className={styles.snDot}>.</span>
           </p>
           <p className={styles.snFootTagline}>
-            {p.tagline}
-            {p.location?.address ? ` · ${p.location.address}` : ''}
+            <span data-corevo-editor-field="tagline"
+              data-corevo-editor-stable-field="tagline">{p.tagline}</span>
+            <span data-corevo-fact-group="location.address" hidden={!p.location?.address}>
+              {' · '}
+              <span data-corevo-editor-field="location.address"
+                data-corevo-editor-stable-field="location.address">{p.location?.address ?? ''}</span>
+            </span>
           </p>
+          <SocialButtons links={socialLinks(p.social, true)} editorStable />
         </div>
 
         <nav className={styles.snFootNav} aria-label="Sidfotsmeny">
@@ -99,7 +107,9 @@ export function SnittFooter(p: ThemeFooterProps) {
         </nav>
 
         <p className={styles.snFootMeta}>
-          © {new Date().getFullYear()} {p.tenant.name} · Byggd med Corevo
+          © {new Date().getFullYear()}{' '}
+          <span data-tenant-name data-corevo-editor-field="tenant.name"
+            data-corevo-editor-stable-field="tenant.name">{p.tenant.name}</span> · Byggd med Corevo
         </p>
       </div>
     </footer>

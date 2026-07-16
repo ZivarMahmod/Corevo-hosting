@@ -6,6 +6,8 @@ import type { ResolvedThemeContent } from './theme-content'
 import { unsplashSrcSet } from './img'
 import styles from './storefront.module.css'
 
+const EDITOR_DAYS = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'] as const
+
 /* Editorial section building blocks (server components). Each leads with type or
    a photo, keeps magazine rhythm + generous whitespace, and restyles per
    template via the [data-template] scope in storefront.module.css.
@@ -138,6 +140,8 @@ export function AboutSplit({
             sizes="(max-width: 900px) 100vw, 50vw"
             alt={`Miljön hos ${salonName}`}
             loading="lazy"
+            data-corevo-editor-field="about_image"
+            data-corevo-editor-stable-field="about_image"
           />
         </Reveal>
         <Reveal className={styles.aboutCopy} delay={80}>
@@ -171,6 +175,11 @@ export async function LocationHours({
   const map = bundle?.settings.map ?? null
   const address = location?.address ?? null
   const hours = location?.hours ?? null
+  const editorHours = EDITOR_DAYS.map((day) => ({
+    day,
+    time: hours?.find((row) => row.day === day)?.time ?? '',
+  }))
+  const hasHours = editorHours.some((row) => row.time)
   const hasContact = !!contact.email || !!contact.phone
   const hasSocial = !!social.instagram || !!social.facebook || !!social.tiktok
 
@@ -195,111 +204,106 @@ export async function LocationHours({
           <Reveal className={styles.locInfo}>
             <div className={styles.locBlock}>
               <p className={styles.locLabel}>Adress</p>
-              {address ? (
+              <p className={styles.locValue} data-corevo-fact-group="location.address"
+                data-corevo-editor-field="location.address"
+                data-corevo-editor-stable-field="location.address"
+                hidden={!address}>{address ?? ''}</p>
+              <p className={styles.locContactValue} data-corevo-map-link-group hidden={!mapHref}>
+                <a
+                  href={mapHref ?? '#'}
+                  className={styles.moreLink}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  data-corevo-map-link
+                >
+                  Visa på karta <span aria-hidden="true">→</span>
+                </a>
+              </p>
+              {!address ? (
                 <>
-                  <p className={styles.locValue}>{address}</p>
-                  {mapHref ? (
-                    <p className={styles.locContactValue}>
-                      <a
-                        href={mapHref}
-                        className={styles.moreLink}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                      >
-                        Visa på karta <span aria-hidden="true">→</span>
-                      </a>
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <p className={styles.locValue}>Visas snart</p>
-                  <p className={styles.locHint}>
+                  <p className={styles.locValue} data-corevo-address-placeholder>Visas snart</p>
+                  <p className={styles.locHint} data-corevo-address-placeholder>
                     {salonName} lägger till adress och vägbeskrivning i sin profil.
                   </p>
                 </>
-              )}
+              ) : null}
             </div>
 
             <div className={styles.locBlock}>
               <p className={styles.locLabel}>Öppettider</p>
-              {hours ? (
-                <table className={styles.hoursTable}>
-                  <tbody>
-                    {hours.map((h) => (
-                      <tr key={h.day}>
-                        <th scope="row">{h.day}</th>
-                        <td>{h.time}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p className={styles.locValue}>Visas snart</p>
-              )}
+              <table className={styles.hoursTable} data-corevo-opening-group hidden={!hasHours}>
+                <tbody>
+                  {editorHours.map((h, index) => (
+                    <tr key={h.day} data-corevo-opening-row={index} hidden={!h.time}>
+                      <th scope="row">{h.day}</th>
+                      <td data-corevo-editor-field={`opening_hours.${index}.time`}
+                        data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className={styles.locValue} data-corevo-opening-placeholder hidden={hasHours}>Visas snart</p>
               <p className={styles.locHint}>
                 Lediga tider syns alltid i bokningen — välj den som passar dig.
               </p>
             </div>
 
-            {hasSocial ? (
-              <div className={styles.locBlock}>
-                <p className={styles.locLabel}>Följ oss</p>
-                <p className={`${styles.locContactValue} ${styles.locSocialRow}`}>
-                  {social.instagram ? (
-                    <a href={social.instagram} className={styles.locContactLink} target="_blank" rel="noreferrer noopener">
-                      Instagram
-                    </a>
-                  ) : null}
-                  {social.facebook ? (
-                    <a href={social.facebook} className={styles.locContactLink} target="_blank" rel="noreferrer noopener">
-                      Facebook
-                    </a>
-                  ) : null}
-                  {social.tiktok ? (
-                    <a href={social.tiktok} className={styles.locContactLink} target="_blank" rel="noreferrer noopener">
-                      TikTok
-                    </a>
-                  ) : null}
-                </p>
-              </div>
-            ) : null}
+            {/* Behåll tre dolda ankare i preview-DOM:en. De ändrar inte den publicerade
+                layouten, men gör att den allra första sociala länken kan visas direkt
+                medan ägaren skriver — utan att bryggan skapar egen design-markup. */}
+            <div className={styles.locBlock} data-corevo-social-group hidden={!hasSocial}>
+              <p className={styles.locLabel}>Följ oss</p>
+              <p className={`${styles.locContactValue} ${styles.locSocialRow}`}>
+                <a href={social.instagram ?? '#'} className={styles.locContactLink}
+                  target="_blank" rel="noreferrer noopener" hidden={!social.instagram}
+                  data-corevo-editor-field="social.instagram"
+                  data-corevo-editor-stable-field="social.instagram">
+                  Instagram
+                </a>
+                <a href={social.facebook ?? '#'} className={styles.locContactLink}
+                  target="_blank" rel="noreferrer noopener" hidden={!social.facebook}
+                  data-corevo-editor-field="social.facebook"
+                  data-corevo-editor-stable-field="social.facebook">
+                  Facebook
+                </a>
+                <a href={social.tiktok ?? '#'} className={styles.locContactLink}
+                  target="_blank" rel="noreferrer noopener" hidden={!social.tiktok}
+                  data-corevo-editor-field="social.tiktok"
+                  data-corevo-editor-stable-field="social.tiktok">
+                  TikTok
+                </a>
+              </p>
+            </div>
 
-            {hasContact ? (
-              <div className={styles.locBlock}>
-                <p className={styles.locLabel}>Kontakt</p>
-                {contact.phone ? (
-                  <p className={styles.locValue}>
-                    <a
-                      href={`tel:${contact.phone.replace(/\s+/g, '')}`}
-                      className={styles.locContactLink}
-                    >
-                      {contact.phone}
-                    </a>
-                  </p>
-                ) : null}
-                {contact.email ? (
-                  <p className={styles.locContactValue}>
-                    <a href={`mailto:${contact.email}`} className={styles.locContactLink}>
-                      {contact.email}
-                    </a>
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
+            <div className={styles.locBlock} data-corevo-contact-group hidden={!hasContact}>
+              <p className={styles.locLabel}>Kontakt</p>
+              <p className={styles.locValue} data-corevo-contact-phone-row hidden={!contact.phone}>
+                <a href={contact.phone ? `tel:${contact.phone.replace(/\s+/g, '')}` : '#'}
+                  className={styles.locContactLink} hidden={!contact.phone}
+                  data-corevo-editor-field="contact.phone"
+                  data-corevo-editor-stable-field="contact.phone">{contact.phone ?? ''}</a>
+              </p>
+              <p className={styles.locContactValue} data-corevo-contact-email-row hidden={!contact.email}>
+                <a href={contact.email ? `mailto:${contact.email}` : '#'}
+                  className={styles.locContactLink} hidden={!contact.email}
+                  data-corevo-editor-field="contact.email"
+                  data-corevo-editor-stable-field="contact.email">{contact.email ?? ''}</a>
+              </p>
+            </div>
           </Reveal>
 
-          {mapEmbed ? (
-            <Reveal delay={80}>
-              {/* OSM-embed på den geokodade adressen — frame-src tillåter openstreetmap.org. */}
-              <iframe
-                src={mapEmbed}
-                title={`Karta till ${salonName}`}
-                className={styles.locMap}
-                loading="lazy"
-              />
-            </Reveal>
-          ) : null}
+          <Reveal delay={80} hidden={!mapEmbed} data-corevo-map-group>
+            {/* OSM-embed på den geokodade adressen — frame-src tillåter openstreetmap.org.
+                Iframen är latent så första sparade karta kan visas utan ny DOM. */}
+            <iframe
+              src={mapEmbed ?? undefined}
+              title={`Karta till ${salonName}`}
+              className={styles.locMap}
+              loading="lazy"
+              data-corevo-map-embed
+              hidden={!mapEmbed}
+            />
+          </Reveal>
         </div>
       </div>
     </section>
@@ -312,7 +316,7 @@ export async function LocationHours({
 export function ClosingCta({ content }: { content: ResolvedThemeContent }) {
   return (
     <section className={styles.closing} aria-label="Boka tid">
-      <Parallax src={content.closingImage} alt="Välkomnande miljö redo att ta emot dig">
+      <Parallax src={content.closingImage} alt="Välkomnande miljö redo att ta emot dig" editorField="closing_image">
         <p className={styles.closingEyebrow}>{content.closingEyebrow ?? 'Redo när du är'}</p>
         <h2 className={styles.closingTitle}>{content.closingTitle ?? 'Redo för en ny stil?'}</h2>
         <p className={styles.closingLead}>

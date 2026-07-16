@@ -90,6 +90,8 @@ export function HeroCarousel({
               loading={i === 0 ? 'eager' : 'lazy'}
               fetchPriority={i === 0 ? 'high' : undefined}
               draggable={false}
+              data-corevo-editor-field={`hero_images.${i}`}
+              data-corevo-editor-stable-field={`hero_images.${i}`}
               // CDN/offline fallback: hide a broken photo so the tinted slide +
               // dark overlay + server-rendered headline/CTA stay legible (never a
               // blank white box). The slide carries a background-color fallback.

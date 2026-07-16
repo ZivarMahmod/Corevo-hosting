@@ -52,12 +52,13 @@ export function SnittLayout({ content, services, location }: StorefrontLayoutPro
             <p className={styles.snHeroEyebrow}>{content.heroEyebrow}</p>
             <h1 className={styles.snHeroTitle}>
               {heroHead.map((line) => (
-                <span key={line}>
+                <span key={line} data-corevo-editor-line>
                   {line}
                   <br />
                 </span>
               ))}
-              <span className={styles.snHeroAccent}>{heroTail}</span>
+              <span className={styles.snHeroAccent} data-corevo-editor-line
+                data-corevo-editor-line-tail>{heroTail}</span>
             </h1>
             <div className={styles.snHeroFoot}>
               <p className={styles.snHeroLede}>{content.heroLede}</p>
@@ -75,16 +76,16 @@ export function SnittLayout({ content, services, location }: StorefrontLayoutPro
         {heroWide ? (
           <Reveal delay={120}>
             <section className={styles.snTriptych}>
-              <div className={styles.snPhotoWide} style={{ backgroundImage: `url(${heroWide})` }} />
-              {heroDrop ? (
-                <div
-                  className={`${styles.snPhotoTall} ${styles.snPhotoDrop}`}
-                  style={{ backgroundImage: `url(${heroDrop})` }}
-                />
-              ) : null}
-              {heroTall ? (
-                <div className={styles.snPhotoTall} style={{ backgroundImage: `url(${heroTall})` }} />
-              ) : null}
+              <div className={styles.snPhotoWide} data-corevo-editor-field="hero_images.0"
+                data-corevo-editor-stable-field="hero_images.0"
+                style={{ backgroundImage: `url(${heroWide})` }} />
+              <div className={`${styles.snPhotoTall} ${styles.snPhotoDrop}`}
+                data-corevo-editor-field="hero_images.1" data-corevo-editor-stable-field="hero_images.1"
+                hidden={!heroDrop}
+                style={heroDrop ? { backgroundImage: `url(${heroDrop})` } : undefined} />
+              <div className={styles.snPhotoTall} data-corevo-editor-field="hero_images.2"
+                data-corevo-editor-stable-field="hero_images.2"
+                hidden={!heroTall} style={heroTall ? { backgroundImage: `url(${heroTall})` } : undefined} />
             </section>
           </Reveal>
         ) : null}
@@ -138,6 +139,8 @@ export function SnittLayout({ content, services, location }: StorefrontLayoutPro
             <Reveal>
               <div
                 className={styles.snAboutPhoto}
+                data-corevo-editor-field="about_image"
+                data-corevo-editor-stable-field="about_image"
                 style={
                   content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined
                 }
@@ -216,16 +219,19 @@ export function SnittLayout({ content, services, location }: StorefrontLayoutPro
               {location?.address ? (
                 <div className={styles.snFact}>
                   <p className={styles.snFactLabel}>Adress</p>
-                  <p className={styles.snFactValue}>{location.address}</p>
+                  <p className={styles.snFactValue} data-corevo-editor-field="location.address"
+                    data-corevo-editor-stable-field="location.address">{location.address}</p>
                 </div>
               ) : null}
               {hours && hours.length > 0 ? (
                 <div className={styles.snFact}>
                   <p className={styles.snFactLabel}>Öppettider</p>
                   <p className={styles.snFactValue}>
-                    {hours.map((h) => (
+                    {hours.map((h, index) => (
                       <span key={h.day}>
-                        {h.day} {h.time}
+                        {h.day}{' '}
+                        <span data-corevo-editor-field={`opening_hours.${index}.time`}
+                          data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span>
                         <br />
                       </span>
                     ))}
@@ -243,7 +249,10 @@ export function SnittLayout({ content, services, location }: StorefrontLayoutPro
             </div>
             {location?.address ? (
               <div className={styles.snMap}>
-                <p className={styles.snMapText}>[ karta — {location.address} ]</p>
+                <p className={styles.snMapText}>[ karta —{' '}
+                  <span data-corevo-editor-field="location.address"
+                    data-corevo-editor-stable-field="location.address">{location.address}</span> ]
+                </p>
               </div>
             ) : null}
           </section>

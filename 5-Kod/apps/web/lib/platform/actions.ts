@@ -46,6 +46,13 @@ export { saveTenantContact, saveTenantOpeningHours, setContactMessageStatus } fr
 // goal-64: offertens förfrågningstyper (tenant_modules.config.subjects) — chipsen mallen ritar.
 export { saveOffertSubjects } from './actions/offert'
 export {
+  saveSiteDraft,
+  publishSiteDraft,
+  discardSiteDraft,
+  restoreSiteRevision,
+} from './actions/site-revisions'
+export type { SiteRevisionActionState } from './actions/site-revisions'
+export {
   saveTenantSingleImage,
   saveTenantStats,
   saveTenantTeamMember,

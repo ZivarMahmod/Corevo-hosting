@@ -105,6 +105,8 @@ export function Gallery({ photos }: { photos: StorePhoto[] }) {
                 alt={p.alt}
                 loading="lazy"
                 className={styles.galleryImg}
+                data-corevo-editor-field={`gallery_images.${i}`}
+                data-corevo-editor-stable-field={`gallery_images.${i}`}
                 onError={(e) => {
                   e.currentTarget.style.visibility = 'hidden'
                 }}

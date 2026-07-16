@@ -226,7 +226,7 @@ export async function PreviewShell({
           />
         )}
         <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
-        {settings.bookingVariant === 'inline' && wizardServices.length > 0 ? (
+        {wizardServices.length > 0 ? (
           <InlineBooking
             services={wizardServices}
             locations={wizardLocations}
@@ -236,6 +236,7 @@ export async function PreviewShell({
             bokaOnline={bokning.online}
             pickerMode={bookingPrefs.pickerMode}
             staffAvatarMode={bookingPrefs.staffAvatarMode}
+            previewControlled
           />
         ) : null}
         {chrome.Footer ? (

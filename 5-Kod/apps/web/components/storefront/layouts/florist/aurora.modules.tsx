@@ -227,7 +227,10 @@ export function AuroraGalleri({ items, content }: ThemeGalleriViewProps) {
         </div>
       )}
 
-      {content.galleryLede ? <p className={styles.auGalFoot}>{content.galleryLede}</p> : null}
+      <p className={styles.auGalFoot}
+        data-corevo-editor-field="galleryLede"
+        data-corevo-editor-stable-field="galleryLede"
+        hidden={!content.galleryLede}>{content.galleryLede ?? ''}</p>
     </section>
   )
 }

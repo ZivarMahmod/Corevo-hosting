@@ -3,6 +3,7 @@ import { Logo } from '@/components/brand/Logo'
 import { BookCta } from '@/components/brand/BookCta'
 import { StorefrontIcon } from '@/components/storefront/StorefrontIcon'
 import { CartNavButton } from '@/components/storefront/shop/CartNavButton'
+import { SocialButtons, socialLinks } from '@/components/storefront/SocialButtons'
 import shell from '@/components/brand/nav-shell.module.css'
 import type { ThemeNavProps, ThemeFooterProps } from './types'
 import styles from './kalla.module.css'
@@ -69,8 +70,13 @@ export function KallaFooter(p: ThemeFooterProps) {
     <footer className={styles.kaFoot}>
       <div className={styles.kaFootRow}>
         <div>
-          <p className={styles.kaFootMark}>{p.tenant.name}</p>
-          <p className={styles.kaFootTagline}>{p.tagline}</p>
+          <p className={styles.kaFootMark}>
+            <span data-tenant-name data-corevo-editor-field="tenant.name"
+              data-corevo-editor-stable-field="tenant.name">{p.tenant.name}</span>
+          </p>
+          <p className={styles.kaFootTagline} data-corevo-editor-field="tagline"
+            data-corevo-editor-stable-field="tagline">{p.tagline}</p>
+          <SocialButtons links={socialLinks(p.social, true)} editorStable />
         </div>
         <nav className={styles.kaFootNav} aria-label="Sidfotsmeny">
           {p.links.map((l) => (
@@ -80,7 +86,9 @@ export function KallaFooter(p: ThemeFooterProps) {
           ))}
         </nav>
         <p className={styles.kaFootMeta}>
-          © {new Date().getFullYear()} {p.tenant.name} · Byggd med Corevo
+          © {new Date().getFullYear()}{' '}
+          <span data-tenant-name data-corevo-editor-field="tenant.name"
+            data-corevo-editor-stable-field="tenant.name">{p.tenant.name}</span> · Byggd med Corevo
         </p>
       </div>
     </footer>

@@ -10,6 +10,11 @@ describe('classifyAuditActor', () => {
     expect(classifyAuditActor('tenant.suspend', 'uid')).toBe('Zivar')
     expect(classifyAuditActor('tenant.create', null)).toBe('Zivar')
   })
+  it('attributes customer site-editor revisions to the customer actor', () => {
+    expect(classifyAuditActor('tenant.site_draft_save', 'owner')).toBe('Kund')
+    expect(classifyAuditActor('tenant.site_draft_publish', 'owner')).toBe('Kund')
+    expect(classifyAuditActor('tenant.site_revision_restore', null)).toBe('System')
+  })
   it('booking/customer actions are Kund when there is an actor, else System', () => {
     expect(classifyAuditActor('booking.cancelled', 'cust')).toBe('Kund')
     expect(classifyAuditActor('booking.status.pending', null)).toBe('System')

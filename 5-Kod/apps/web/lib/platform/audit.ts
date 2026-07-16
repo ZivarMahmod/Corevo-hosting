@@ -47,6 +47,11 @@ export type PlatformAuditAction =
   | 'tenant.storefront_image_add' // super-admin uploads a hero/gallery storefront photo (branding.{hero,gallery}_images) on /salonger/[id]
   | 'tenant.storefront_image_remove' // super-admin removes a hero/gallery storefront photo on /salonger/[id]
   | 'tenant.theme' // super-admin bytte storefront-mall (settings.theme) på /salonger/[id]
+  | 'tenant.site_draft_save'
+  | 'tenant.site_draft_image_upload'
+  | 'tenant.site_draft_publish'
+  | 'tenant.site_draft_discard'
+  | 'tenant.site_revision_restore'
   | 'tenant.contact' // super-admin edits a tenant's public contact (settings.contact email/phone + primär location-adress) on /salonger/[id]
   | 'platform.help_mode_open' // platform admin opens help-mode for a tenant (logged platform-side)
   | 'platform.role_permissions_save' // goal-21: edit the global RBAC permission matrix
@@ -105,10 +110,12 @@ export type PlatformAuditEntry = {
 
 /**
  * Classify who an audit row is attributable to, for the actor filter
- * (Alla/Zivar/System/Kund). A platform action (tenant.*) with an actor is Zivar;
- * a customer-driven booking change is Kund; everything actor-less is System.
+ * (Alla/Zivar/System/Kund). Customer-owned site-editor revisions retain their
+ * historical tenant.site_* action keys but are attributed to the customer;
+ * other platform tenant actions are Zivar and actor-less events are System.
  */
 export function classifyAuditActor(action: string, actorId: string | null): AuditActor {
+  if (action.startsWith('tenant.site_')) return actorId ? 'Kund' : 'System'
   if (action.startsWith('tenant.')) return 'Zivar'
   if (action.startsWith('booking.') || action.startsWith('customer.')) {
     return actorId ? 'Kund' : 'System'

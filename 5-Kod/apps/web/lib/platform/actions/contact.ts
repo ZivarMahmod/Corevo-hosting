@@ -6,66 +6,29 @@ import { logPlatformAction } from '../audit'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
+import { geocodeAddress } from './geocode'
+import { normalizeContactEmail, normalizeSocialUrl } from '../contact-validation'
 
 // ── Publik kontakt: e-post + telefon (settings.contact) + adress (primär location) ──
 // Super-admin redigerar det som visas i storefrontens footer, utan att logga in i
 // kundens egen admin. Öppettider redigeras INTE här — de härleds ur personalens
 // veckoscheman (Personal-fliken). Merge, never clobber: settings är co-owned jsonb.
 
-// Loose e-postkoll: tom → null (rensa); annars måste den se ut som en adress.
-function emailOrNull(raw: FormDataEntryValue | null): string | null | undefined {
-  const v = String(raw ?? '').trim()
-  if (v === '') return null
-  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? v.slice(0, 200) : undefined
-}
-
-// Social-länk: tom → null; "instagram.com/…" utan schema får https:// påsatt.
-function socialUrlOrNull(raw: FormDataEntryValue | null): string | null {
-  let v = String(raw ?? '').trim().slice(0, 300)
-  if (!v) return null
-  if (!/^https?:\/\//i.test(v)) v = `https://${v}`
-  try {
-    return new URL(v).protocol.startsWith('http') ? v : null
-  } catch {
-    return null
-  }
-}
-
-/**
- * Best-effort geokodning av adressen via OSM Nominatim → {lat, lon} för kart-
- * embedden på Kontakt-sidan. Får ALDRIG blocka spar: timeout 4 s, fel → null.
- * `q` sparas bredvid koordinaterna så en oförändrad adress inte geokodas om.
- */
-async function geocode(address: string): Promise<{ lat: number; lon: number } | null> {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=se&q=${encodeURIComponent(address)}`,
-      { headers: { 'User-Agent': 'corevo-hosting (booking@corevo.se)' }, signal: AbortSignal.timeout(4000) },
-    )
-    if (!res.ok) return null
-    const rows = (await res.json()) as { lat?: string; lon?: string }[]
-    const hit = rows?.[0]
-    const lat = Number(hit?.lat)
-    const lon = Number(hit?.lon)
-    return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null
-  } catch {
-    return null
-  }
-}
-
 export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<ActionState> {
   const { user, supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar kund.' }
 
-  const email = emailOrNull(fd.get('email'))
+  const email = normalizeContactEmail(fd.get('email'))
   if (email === undefined) return { error: 'Ogiltig e-postadress.' }
   const phone = String(fd.get('phone') ?? '').trim().slice(0, 40) || null
   const address = String(fd.get('address') ?? '').trim().slice(0, 300) || null
-  const social = {
-    instagram: socialUrlOrNull(fd.get('instagram')),
-    facebook: socialUrlOrNull(fd.get('facebook')),
-    tiktok: socialUrlOrNull(fd.get('tiktok')),
+  const instagram = normalizeSocialUrl(fd.get('instagram'))
+  const facebook = normalizeSocialUrl(fd.get('facebook'))
+  const tiktok = normalizeSocialUrl(fd.get('tiktok'))
+  if (instagram === undefined || facebook === undefined || tiktok === undefined) {
+    return { error: 'Ogiltig länk till sociala medier.' }
   }
+  const social = { instagram, facebook, tiktok }
 
   const { data: tenant } = await supabase
     .from('tenants')
@@ -90,7 +53,7 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
       ? { lat: prevMap.lat, lon: prevMap.lon, q: address ?? '' }
       : null
   if (address && !map) {
-    const hit = await geocode(address)
+    const hit = await geocodeAddress(address)
     if (hit) map = { ...hit, q: address }
   }
   if (!address) map = null

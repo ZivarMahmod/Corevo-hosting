@@ -14,9 +14,9 @@ describe('kundadminens publika länk', () => {
     expect(shell).toContain('tenantStorefrontUrl(bundle?.tenant.slug, adminDomain?.domain)')
 
     const studio = fs.readFileSync(
-      path.join(WEB_ROOT, 'app', '(admin)', 'admin', 'sida', 'redigera', 'page.tsx'),
+      path.join(WEB_ROOT, 'app', '(admin)', 'admin', 'sida', 'page.tsx'),
       'utf8',
     )
-    expect(studio).toContain('tenantStorefrontUrl(row.slug, detail.primaryDomain)')
+    expect(studio).toContain('tenantStorefrontUrl(detail.tenant.slug, detail.primaryDomain)')
   })
 })

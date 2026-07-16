@@ -656,6 +656,18 @@
   overflow: hidden;
 }
 
+/* Redigera sidan v2 är en arbetsyta, inte en läsbar 1320px-dokumentspalt.
+   Den delade toppnav-raden ligger kvar; editorn äger exakt resten av viewporten. */
+.shell[data-world='backoffice']:has(.main > :global(.sida-studio-host)) .main {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 60px);
+  overflow: hidden;
+}
+
 /* Arbetsbord (kalendern) tar HELA ytan. 1320px-spalten är gjord för läsbar text —
    ett schema med fem resurskolumner ska i stället använda varje pixel skärmen har.
    Utan detta blir det en smal remsa mitt på en tom sida (Zivar 2026-07-14). */
@@ -904,6 +916,11 @@
   .shell[data-world='backoffice']:has(.main > :global(.workbench)) .main {
     padding: 10px 0 calc(78px + env(safe-area-inset-bottom));
     min-height: calc(100dvh - 52px - env(safe-area-inset-top));
+  }
+
+  .shell[data-world='backoffice']:has(.main > :global(.sida-studio-host)) .main {
+    min-height: calc(100dvh - 52px - env(safe-area-inset-top));
+    padding: 0;
   }
 
   .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileAdmin .brandSub {

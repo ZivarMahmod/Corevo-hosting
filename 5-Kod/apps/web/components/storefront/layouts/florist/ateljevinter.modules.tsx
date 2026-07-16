@@ -247,7 +247,10 @@ export function AteljeVinterLojalitet({ config, plans, content }: ThemeLojalitet
         </div>
       </div>
 
-      {content.clubNote ? <p className={styles.avClubNote}>{content.clubNote}</p> : null}
+      <p className={styles.avClubNote}
+        data-corevo-editor-field="clubNote"
+        data-corevo-editor-stable-field="clubNote"
+        hidden={!content.clubNote}>{content.clubNote ?? ''}</p>
     </section>
   )
 }

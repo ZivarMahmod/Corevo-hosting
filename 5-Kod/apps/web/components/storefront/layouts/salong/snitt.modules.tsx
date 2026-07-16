@@ -55,7 +55,7 @@ export function SnittShop({ data, paused, limit, moreHref, content }: ThemeShopV
       </p>
       <h1 className={styles.snPageTitle}>
         {content.shopTitle ?? 'Hyllan'}
-        <span className={styles.snDot}>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
       </h1>
       <p className={styles.snPageLede}>
         Det vi jobbar med vid stolarna. Inget vi inte själva har hemma.
@@ -147,7 +147,7 @@ export function SnittBlogg({ posts: allPosts, limit, moreHref, content }: ThemeB
       </p>
       <h1 className={styles.snPageTitleAlone}>
         {content.blogTitle ?? 'Journal'}
-        <span className={styles.snDot}>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
       </h1>
 
       {posts.length === 0 ? (
@@ -213,7 +213,7 @@ export function SnittTeam({ members, content }: ThemeTeamViewProps) {
       </p>
       <h1 className={styles.snPageTitle}>
         {content.teamTitle}
-        <span className={styles.snDot}>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
       </h1>
       <div className={styles.snTeamGrid}>
         {members.map((m) => (
@@ -261,7 +261,7 @@ export function SnittGalleri({ items, content }: ThemeGalleriViewProps) {
       </p>
       <h1 className={styles.snPageTitle}>
         {content.galleryTitle ?? 'Galleri'}
-        <span className={styles.snDot}>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
       </h1>
 
       {items.length === 0 ? (
@@ -312,7 +312,7 @@ export function SnittLojalitet({ config, plans, content, tenantName }: ThemeLoja
       </p>
       <h1 className={styles.snPageTitle}>
         {title}
-        <span className={styles.snDot}>.</span>
+        <span className={styles.snDot} data-corevo-editor-decoration>.</span>
       </h1>
       <p className={styles.snClubLede}>
         {content.clubLede ??
@@ -327,7 +327,10 @@ export function SnittLojalitet({ config, plans, content, tenantName }: ThemeLoja
             </p>
           </div>
           <p className={styles.snCardBig}>Stamkort</p>
-          {content.clubNote ? <p className={styles.snCardSub}>{content.clubNote}</p> : null}
+          <p className={styles.snCardSub}
+            data-corevo-editor-field="clubNote"
+            data-corevo-editor-stable-field="clubNote"
+            hidden={!content.clubNote}>{content.clubNote ?? ''}</p>
         </div>
 
         <div>

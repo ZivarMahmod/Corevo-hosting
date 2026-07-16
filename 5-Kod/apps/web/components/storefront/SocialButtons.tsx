@@ -48,12 +48,16 @@ export type SocialLink = {
 }
 
 /** Bygger listan ur tenantens ifyllda social-fält (tomma fält renderas aldrig). */
-export function socialLinks(social: Partial<Record<SocialKey, string | null>>): SocialLink[] {
-  return [
+export function socialLinks(
+  social: Partial<Record<SocialKey, string | null>>,
+  includeEmpty = false,
+): SocialLink[] {
+  const links = [
     { key: 'instagram' as const, href: social.instagram, label: 'Instagram' },
     { key: 'facebook' as const, href: social.facebook, label: 'Facebook' },
     { key: 'tiktok' as const, href: social.tiktok, label: 'TikTok' },
-  ].filter((x) => typeof x.href === 'string' && x.href.length > 0)
+  ]
+  return includeEmpty ? links : links.filter((x) => typeof x.href === 'string' && x.href.length > 0)
 }
 
 /** Nyckeln kan heta `key` eller `icon`; sista utvägen är etiketten. Okänd → instagram-ram. */
@@ -67,24 +71,32 @@ function keyOf(l: SocialLink): SocialKey {
 export function SocialButtons({
   links,
   className,
+  editorStable = false,
 }: {
   links: SocialLink[]
   className?: string
+  editorStable?: boolean
 }) {
-  if (links.length === 0) return null
+  const visibleLinks = links.filter((l): l is SocialLink & { href: string } =>
+    typeof l.href === 'string' && l.href.length > 0)
+  if (!editorStable && visibleLinks.length === 0) return null
 
   return (
-    <ul className={className ? `${s.row} ${className}` : s.row}>
-      {links
-        .filter((l): l is SocialLink & { href: string } => typeof l.href === 'string' && l.href.length > 0)
-        .map((l) => (
-        <li key={keyOf(l)}>
+    <ul className={className ? `${s.row} ${className}` : s.row}
+      data-corevo-social-group={editorStable || undefined} hidden={editorStable && visibleLinks.length === 0}>
+      {(editorStable ? links : visibleLinks).map((l) => {
+        const key = keyOf(l)
+        const href = typeof l.href === 'string' && l.href.length > 0 ? l.href : null
+        return <li key={key}>
           <a
-            href={l.href}
+            href={href ?? '#'}
             target="_blank"
             rel="noreferrer noopener"
             aria-label={`${l.label} — öppnas i ny flik`}
             className={s.btn}
+            hidden={!href}
+            data-corevo-editor-field={editorStable ? `social.${key}` : undefined}
+            data-corevo-editor-stable-field={editorStable ? `social.${key}` : undefined}
           >
             <svg
               viewBox="0 0 24 24"
@@ -97,11 +109,11 @@ export function SocialButtons({
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              {ICONS[keyOf(l)]}
+              {ICONS[key]}
             </svg>
           </a>
         </li>
-      ))}
+      })}
     </ul>
   )
 }

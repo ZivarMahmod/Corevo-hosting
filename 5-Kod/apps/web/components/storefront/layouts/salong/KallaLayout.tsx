@@ -83,6 +83,8 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
         <Reveal delay={100}>
           <div
             className={styles.kaBandPhoto}
+            data-corevo-editor-field="hero_images.0"
+            data-corevo-editor-stable-field="hero_images.0"
             style={bandPhoto ? { backgroundImage: `url(${bandPhoto})` } : undefined}
           />
           <p className={styles.kaBandCaption}>{content.homeGalleryEyebrow ?? 'Behandlingsrummet'}</p>
@@ -143,6 +145,8 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
           </div>
           <div
             className={styles.kaAboutPhoto}
+            data-corevo-editor-field="about_image"
+            data-corevo-editor-stable-field="about_image"
             style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
           />
         </Reveal>

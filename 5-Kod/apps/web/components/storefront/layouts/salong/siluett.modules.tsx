@@ -309,7 +309,10 @@ export function SiluettLojalitet({ config, plans, content, tenantName }: ThemeLo
             <p className={styles.siCardEyebrow}>{title}</p>
           </div>
           <p className={styles.siCardName}>{tenantName}</p>
-          {content.clubNote ? <p className={styles.siCardSub}>{content.clubNote}</p> : null}
+          <p className={styles.siCardSub}
+            data-corevo-editor-field="clubNote"
+            data-corevo-editor-stable-field="clubNote"
+            hidden={!content.clubNote}>{content.clubNote ?? ''}</p>
         </div>
 
         <div>

@@ -5,6 +5,8 @@ import type { Service } from '@/lib/tenant-data'
 import type { ThemePageProps } from './types'
 import styles from './kalla.module.css'
 
+const EDITOR_DAYS = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'] as const
+
 /**
  * KÄLLA — undersidorna (goal-64, exakt kopia ur .dc.html).
  *
@@ -31,6 +33,8 @@ export function KallaOm({ content }: ThemePageProps) {
       <div className={styles.kaOmSplit}>
         <div
           className={styles.kaOmPhoto}
+          data-corevo-editor-field="about_image"
+          data-corevo-editor-stable-field="about_image"
           style={content.aboutImage ? { backgroundImage: `url(${content.aboutImage})` } : undefined}
         />
         <div>
@@ -121,6 +125,8 @@ export function KallaTjanster({ content, services }: ThemePageProps) {
 
 export function KallaKontakt({ content, location, contact }: ThemePageProps) {
   const hours = location?.hours ?? null
+  const editorHours = EDITOR_DAYS.map((day) => ({ day, time: hours?.find((row) => row.day === day)?.time ?? '' }))
+  const hasHours = editorHours.some((row) => row.time)
 
   return (
     <section className={styles.kaPageWide}>
@@ -130,41 +136,35 @@ export function KallaKontakt({ content, location, contact }: ThemePageProps) {
 
       <div className={styles.kaKontakt}>
         <div className={styles.kaKontaktCard}>
-          {location?.address ? (
-            <>
-              <p className={styles.kaKontaktLabel}>Rummet</p>
-              <p className={styles.kaKontaktValue}>{location.address}</p>
-            </>
-          ) : null}
-          {contact.email || contact.phone ? (
-            <>
-              <p className={styles.kaKontaktLabel}>Nås på</p>
-              <p className={styles.kaKontaktValue}>
-                {contact.email ? (
-                  <>
-                    <a href={`mailto:${contact.email}`}>{contact.email}</a>
-                    <br />
-                  </>
-                ) : null}
-                {contact.phone ? (
-                  <a href={`tel:${contact.phone.replace(/\s+/g, '')}`}>{contact.phone}</a>
-                ) : null}
-              </p>
-            </>
-          ) : null}
-          {hours && hours.length > 0 ? (
-            <>
-              <p className={styles.kaKontaktLabel}>Öppet</p>
-              <p className={styles.kaKontaktValue}>
-                {hours.map((h) => (
-                  <span key={h.day}>
-                    {h.day} {h.time}
-                    <br />
-                  </span>
-                ))}
-              </p>
-            </>
-          ) : null}
+          <p className={styles.kaKontaktLabel} data-corevo-fact-group="location.address"
+            hidden={!location?.address}>Rummet</p>
+          <p className={styles.kaKontaktValue} data-corevo-fact-group="location.address"
+            data-corevo-editor-field="location.address"
+            data-corevo-editor-stable-field="location.address"
+            hidden={!location?.address}>{location?.address ?? ''}</p>
+          <p className={styles.kaKontaktLabel} data-corevo-contact-group
+            hidden={!contact.email && !contact.phone}>Nås på</p>
+          <p className={styles.kaKontaktValue} data-corevo-contact-group
+            hidden={!contact.email && !contact.phone}>
+            <a href={contact.email ? `mailto:${contact.email}` : '#'} hidden={!contact.email}
+              data-corevo-editor-field="contact.email"
+              data-corevo-editor-stable-field="contact.email">{contact.email ?? ''}</a>
+            <br data-corevo-contact-email-break hidden={!contact.email} />
+            <a href={contact.phone ? `tel:${contact.phone.replace(/\s+/g, '')}` : '#'} hidden={!contact.phone}
+              data-corevo-editor-field="contact.phone"
+              data-corevo-editor-stable-field="contact.phone">{contact.phone ?? ''}</a>
+          </p>
+          <p className={styles.kaKontaktLabel} data-corevo-opening-group hidden={!hasHours}>Öppet</p>
+          <p className={styles.kaKontaktValue} data-corevo-opening-group hidden={!hasHours}>
+            {editorHours.map((h, index) => (
+              <span key={h.day} data-corevo-opening-row={index} hidden={!h.time}>
+                {h.day}{' '}
+                <span data-corevo-editor-field={`opening_hours.${index}.time`}
+                  data-corevo-editor-stable-field={`opening_hours.${index}.time`}>{h.time}</span>
+                <br />
+              </span>
+            ))}
+          </p>
         </div>
 
         <div>

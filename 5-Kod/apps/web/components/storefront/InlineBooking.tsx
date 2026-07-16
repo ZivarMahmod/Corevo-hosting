@@ -2,6 +2,7 @@
 
 import { BookingWizard, type WizardService, type WizardLocation } from '@/components/booking/BookingWizard'
 import type { PickerMode, StaffAvatarMode } from '@/lib/platform/booking-variant'
+import { useBooking } from './BookingProvider'
 
 /**
  * Boknings-vy "inline" (design-paketet, README §The four presentations):
@@ -19,6 +20,7 @@ export function InlineBooking({
   bokaOnline = 'Boka online',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
+  previewControlled = false,
 }: {
   services: WizardService[]
   locations?: WizardLocation[]
@@ -30,12 +32,23 @@ export function InlineBooking({
   bokaOnline?: string
   pickerMode?: PickerMode
   staffAvatarMode?: StaffAvatarMode
+  /** Editor-preview only: follow the provider's live variant instead of the
+   * server-resolved published variant. Public callers keep the old behaviour. */
+  previewControlled?: boolean
 }) {
+  const booking = useBooking()
+  if (previewControlled && booking?.variant !== 'inline') return null
+  const activePickerMode = previewControlled && booking ? booking.pickerMode : pickerMode
+  const activeStaffAvatarMode = previewControlled && booking
+    ? booking.staffAvatarMode
+    : staffAvatarMode
+  const activeTenantName = previewControlled && booking ? booking.tenantName : tenantName
+
   return (
     <section
       id="boka-inline"
       className="fc-scope fc-inline"
-      aria-label={`${bokaCta} hos ${tenantName}`}
+      aria-label={`${bokaCta} hos ${activeTenantName}`}
     >
       <div className="fc-inline-band">
         <div className="fc-inline-eyebrow">{bokaOnline}</div>
@@ -48,9 +61,9 @@ export function InlineBooking({
           mode="compact"
           staffNoun={staffNoun}
           bokaCta={bokaCta}
-          pickerMode={pickerMode}
-          staffAvatarMode={staffAvatarMode}
-          brandName={tenantName}
+          pickerMode={activePickerMode}
+          staffAvatarMode={activeStaffAvatarMode}
+          brandName={activeTenantName}
           open
         />
       </div>

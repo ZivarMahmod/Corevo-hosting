@@ -251,9 +251,10 @@ export function KallaGalleri({ items, content }: ThemeGalleriViewProps) {
   return (
     <section className={styles.kaGalleri} data-module="galleri">
       <div className={styles.kaPageHead}>
-        {content.galleryEyebrow ? (
-          <p className={styles.kaPageEyebrow}>{content.galleryEyebrow}</p>
-        ) : null}
+        <p className={styles.kaPageEyebrow}
+          data-corevo-editor-field="galleryEyebrow"
+          data-corevo-editor-stable-field="galleryEyebrow"
+          hidden={!content.galleryEyebrow}>{content.galleryEyebrow ?? ''}</p>
         <h1 className={styles.kaPageTitle}>{content.galleryTitle ?? 'Rummet'}</h1>
       </div>
 

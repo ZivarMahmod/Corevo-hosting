@@ -23,6 +23,8 @@ export function Reveal({
   delay = 0,
   className = '',
   style,
+  hidden,
+  'data-corevo-map-group': mapGroup,
 }: {
   children: ReactNode
   as?: ElementType
@@ -31,6 +33,8 @@ export function Reveal({
   /** Extra inline styles merged with the reveal transition-delay (layouts use it
    *  for one-off alignment like centered section heads). */
   style?: CSSProperties
+  hidden?: boolean
+  'data-corevo-map-group'?: boolean
 }) {
   const ref = useRef<HTMLElement | null>(null)
   const [shown, setShown] = useState(false)
@@ -65,6 +69,8 @@ export function Reveal({
       ref={setNode}
       className={`${styles.reveal} ${shown ? styles.revealShown : ''} ${className}`}
       style={delay ? { transitionDelay: `${delay}ms`, ...style } : style}
+      hidden={hidden}
+      data-corevo-map-group={mapGroup}
     >
       {children}
     </Tag>

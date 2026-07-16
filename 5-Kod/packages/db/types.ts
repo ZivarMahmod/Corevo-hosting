@@ -2336,6 +2336,66 @@ export type Database = {
           },
         ]
       }
+      site_revisions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          lock_version: number
+          published_at: string | null
+          published_by: string | null
+          snapshot: Json
+          source_revision_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lock_version?: number
+          published_at?: string | null
+          published_by?: string | null
+          snapshot: Json
+          source_revision_id?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lock_version?: number
+          published_at?: string | null
+          published_by?: string | null
+          snapshot?: Json
+          source_revision_id?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_revisions_source_revision_id_fkey"
+            columns: ["source_revision_id"]
+            isOneToOne: false
+            referencedRelation: "site_revisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_revisions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           city: string | null
@@ -2837,6 +2897,40 @@ export type Database = {
       seed_explicit_slots_from_hours: {
         Args: { p_staff: string; p_step?: number }
         Returns: number
+      }
+      discard_site_draft: {
+        Args: { p_expected_lock_version: number; p_tenant: string }
+        Returns: string
+      }
+      publish_site_draft: {
+        Args: { p_expected_lock_version: number; p_tenant: string }
+        Returns: {
+          lock_version: number
+          revision_id: string
+          snapshot: Json
+        }[]
+      }
+      restore_site_revision: {
+        Args: {
+          p_expected_lock_version?: number
+          p_source_revision_id: string
+          p_tenant: string
+        }
+        Returns: {
+          lock_version: number
+          revision_id: string
+        }[]
+      }
+      save_site_draft: {
+        Args: {
+          p_expected_lock_version?: number
+          p_snapshot: Json
+          p_tenant: string
+        }
+        Returns: {
+          lock_version: number
+          revision_id: string
+        }[]
       }
       set_primary_location: { Args: { p_location: string }; Returns: undefined }
     }

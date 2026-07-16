@@ -41,3 +41,19 @@ export async function sidaCtx(fd: FormData): Promise<{
     : (user.tenantId ?? '')
   return { user, supabase, tenantId }
 }
+
+/** Object-input twin of sidaCtx for the snapshot editor server actions.
+ * Platform admins may choose a tenant; salon admins are always forced back to
+ * the tenant id in their verified session, regardless of client input. */
+export async function siteRevisionCtx(input: { tenantId?: string | null }): Promise<{
+  user: CurrentUser
+  supabase: Awaited<ReturnType<typeof createClient>>
+  tenantId: string
+}> {
+  const user = await requirePortal('admin')
+  const supabase = await createClient()
+  const tenantId = user.platformAdmin
+    ? String(input.tenantId ?? '')
+    : (user.tenantId ?? '')
+  return { user, supabase, tenantId }
+}

@@ -15,10 +15,12 @@ import styles from './storefront.module.css'
 export function Parallax({
   src,
   alt,
+  editorField,
   children,
 }: {
   src: string
   alt: string
+  editorField?: string
   children: ReactNode
 }) {
   const imgRef = useRef<HTMLImageElement>(null)
@@ -56,7 +58,9 @@ export function Parallax({
   return (
     <div ref={frameRef} className={styles.parallaxFrame}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img ref={imgRef} src={src} alt={alt} className={styles.parallaxImg} loading="lazy" />
+      <img ref={imgRef} src={src} alt={alt} className={styles.parallaxImg} loading="lazy"
+        data-corevo-editor-field={editorField}
+        data-corevo-editor-stable-field={editorField} />
       <span className={styles.parallaxOverlay} aria-hidden="true" />
       <div className={styles.parallaxContent}>{children}</div>
     </div>

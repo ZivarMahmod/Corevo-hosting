@@ -672,10 +672,15 @@ export function resolveThemeContent(
       ? cRaw.aboutCopyHome
       : null
   const resolvedCopy = resolveTenantCopy(theme, copy)
-  // Mall-egna extrafält: bara med när ägaren skrivit något (layouten har egna defaults).
+  // Mall-egna extrafält: ägaren vinner, annars följer temats exakta default med.
+  // Flera nya teman deklarerar dessa i sin .theme.ts; att skriva `undefined` här
+  // efter `...base` tappade tidigare t.ex. Kallas contactTitle och Snitts ingress.
+  const baseFields = base as ThemeContentDefaults & Record<string, unknown>
   const extra = (key: string): string | undefined => {
     const v = cRaw[key]
-    return typeof v === 'string' && v.trim().length > 0 ? v : undefined
+    if (typeof v === 'string' && v.trim().length > 0) return v
+    const fallback = baseFields[key]
+    return typeof fallback === 'string' ? fallback : undefined
   }
   return {
     ...base,

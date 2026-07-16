@@ -37,6 +37,14 @@ export type BookingMode = 'wizard' | 'compact'
 type BookingContextValue = {
   /** True when the salon has bookable services AND a provider is mounted. */
   available: boolean
+  /** Active presentation, including iframe-only editor preview changes. */
+  variant: BookingVariant
+  /** Active date-picker mode, including iframe-only editor preview changes. */
+  pickerMode: PickerMode
+  /** Active staff-avatar mode, including iframe-only editor preview changes. */
+  staffAvatarMode: StaffAvatarMode
+  /** Active company name, including iframe-only editor preview changes. */
+  tenantName: string
   /** Open the drawer in the default steg-för-steg wizard (Variant 3). */
   open: () => void
   /** Open the drawer in kompakt snabbboka-läge (Variant 4). SF-A wires this to
@@ -89,10 +97,12 @@ export function BookingProvider({
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  const [previewPrefs, setPreviewPrefs] = useState({ variant, pickerMode, staffAvatarMode })
+  const [previewTenantName, setPreviewTenantName] = useState(tenantName)
   // Innehålls-läge i overlayen. Startar på variantens; en "Snabbboka"-CTA kan
   // fortfarande öppna kompakt-läget explicit.
-  const variantMode: BookingMode = variant === 'compact' || variant === 'inline' ? 'compact' : 'wizard'
-  const presentation: 'modal' | 'drawer' = variant === 'wizard' ? 'modal' : 'drawer'
+  const variantMode: BookingMode = previewPrefs.variant === 'compact' || previewPrefs.variant === 'inline' ? 'compact' : 'wizard'
+  const presentation: 'modal' | 'drawer' = previewPrefs.variant === 'wizard' ? 'modal' : 'drawer'
   const [mode, setMode] = useState<BookingMode>(variantMode)
   // Render the (potentially heavy) wizard only after the drawer is first opened.
   const [mounted, setMounted] = useState(false)
@@ -111,7 +121,7 @@ export function BookingProvider({
   const openDrawer = useCallback(() => {
     // Inline-varianten: bokningen ligger I sidan — CTA scrollar dit i stället för
     // att öppna en overlay. Saknas sektionen (t.ex. bokning ej live) → overlay-fallback.
-    if (variant === 'inline') {
+    if (previewPrefs.variant === 'inline') {
       const el = document.getElementById('boka-inline')
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -119,7 +129,7 @@ export function BookingProvider({
       }
     }
     openWith(variantMode)
-  }, [openWith, variant, variantMode])
+  }, [openWith, previewPrefs.variant, variantMode])
   const openQuickBook = useCallback(() => openWith('compact'), [openWith])
 
   const closeDrawer = useCallback(() => {
@@ -143,6 +153,43 @@ export function BookingProvider({
     else if (boka === '1' || window.location.hash === '#boka') openDrawer()
   }, [available, openDrawer, openQuickBook])
 
+  // The same-origin site editor dispatches this event inside its isolated preview
+  // iframe. Public pages never dispatch it, so their server-resolved preferences
+  // remain unchanged.
+  useEffect(() => {
+    const onPreview = (event: Event) => {
+      const detail = (event as CustomEvent<Record<string, unknown>>).detail
+      if (!detail) return
+      const nextVariant = detail.variant
+      const nextPickerMode = detail.pickerMode
+      const nextStaffAvatarMode = detail.staffAvatars
+      if (typeof detail.tenantName === 'string' && detail.tenantName.trim()) {
+        setPreviewTenantName(detail.tenantName)
+      }
+      if (!['wizard', 'drawer', 'compact', 'inline'].includes(String(nextVariant)) ||
+          !['calendar', 'strip'].includes(String(nextPickerMode)) ||
+          !['initialer', 'foto', 'namn'].includes(String(nextStaffAvatarMode))) return
+      setPreviewPrefs({
+        variant: nextVariant as BookingVariant,
+        pickerMode: nextPickerMode as PickerMode,
+        staffAvatarMode: nextStaffAvatarMode as StaffAvatarMode,
+      })
+      setMode(nextVariant === 'compact' || nextVariant === 'inline' ? 'compact' : 'wizard')
+      const search = new URLSearchParams(window.location.search)
+      const previewShouldOpen = nextVariant !== 'inline' &&
+        (search.get('boka') === '1' || window.location.hash === '#boka')
+      setMounted((current) => current || previewShouldOpen)
+      setOpen(previewShouldOpen)
+      if (nextVariant === 'inline') {
+        window.setTimeout(() => {
+          document.getElementById('boka-inline')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 0)
+      }
+    }
+    window.addEventListener('corevo-booking-preview', onPreview)
+    return () => window.removeEventListener('corevo-booking-preview', onPreview)
+  }, [])
+
   // Reflect open-state in the URL so it is shareable / back-button friendly,
   // without ever navigating to a foreign route.
   const lastOpen = useRef(false)
@@ -150,6 +197,7 @@ export function BookingProvider({
     if (open === lastOpen.current) return
     lastOpen.current = open
     if (typeof window === 'undefined') return
+    if (window.parent !== window && window.location.pathname.startsWith('/salong-preview/')) return
     const url = new URL(window.location.href)
     if (open) {
       url.searchParams.set('boka', '1')
@@ -160,8 +208,16 @@ export function BookingProvider({
   }, [open])
 
   const value = useMemo<BookingContextValue>(
-    () => ({ available, open: openDrawer, openQuickBook }),
-    [available, openDrawer, openQuickBook],
+    () => ({
+      available,
+      variant: previewPrefs.variant,
+      pickerMode: previewPrefs.pickerMode,
+      staffAvatarMode: previewPrefs.staffAvatarMode,
+      tenantName: previewTenantName,
+      open: openDrawer,
+      openQuickBook,
+    }),
+    [available, openDrawer, openQuickBook, previewPrefs, previewTenantName],
   )
 
   return (
@@ -173,13 +229,13 @@ export function BookingProvider({
           onClose={closeDrawer}
           services={services}
           locations={locations}
-          tenantName={tenantName}
+          tenantName={previewTenantName}
           staffNoun={staffNoun}
           bokaCta={bokaCta}
           mode={mode}
           presentation={presentation}
-          pickerMode={pickerMode}
-          staffAvatarMode={staffAvatarMode}
+          pickerMode={previewPrefs.pickerMode}
+          staffAvatarMode={previewPrefs.staffAvatarMode}
         />
       ) : null}
     </BookingContext.Provider>
