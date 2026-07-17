@@ -113,7 +113,7 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
       )
     }
     if (phone && (await getSmsEnabled(admin, b.tenant_id))) {
-      await sendSms({ to: phone, body: `${tenantName}: din tid för ${serviceName} är avbokad.` })
+      await sendSms({ to: phone, body: `${tenantName}: din tid för ${serviceName} är avbokad.`, from: tenantName })
     }
   } catch (err) {
     logger.warn('avboka.cancel_notify_failed', { bookingId, error: err instanceof Error ? err.message : String(err) })

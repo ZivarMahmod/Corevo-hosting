@@ -183,7 +183,7 @@ export async function sendDueReminders(): Promise<ReminderRun> {
         }
         if (sms) {
           try {
-            await sendSms({ to: phone, body: reminderSmsBody(tenantName, serviceName, b.start_ts, timeZone) })
+            await sendSms({ to: phone, body: reminderSmsBody(tenantName, serviceName, b.start_ts, timeZone), from: tenantName })
           } catch {
             // SMS is best-effort — never abort the batch on a send error.
           }
