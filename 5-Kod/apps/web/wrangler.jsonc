@@ -110,7 +110,8 @@
     { "pattern": "*.boka.corevo.se/*", "zone_name": "corevo.se" },
     { "pattern": "freshcut.corevo.se", "custom_domain": true },
     { "pattern": "florist.corevo.se", "custom_domain": true },
-    { "pattern": "zentum.corevo.se", "custom_domain": true }
+    { "pattern": "zentum.corevo.se", "custom_domain": true },
+    { "pattern": "demo.corevo.se", "custom_domain": true }
   ],
   //
   // ── Named environments (G11) ────────────────────────────────────────────────
