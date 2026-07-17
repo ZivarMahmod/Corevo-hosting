@@ -40,9 +40,20 @@ const SECRET_KEY = /(secret|token|password|api[_-]?key|authorization|service[_-]
 function redact(fields: LogFields): LogFields {
   const out: LogFields = {}
   for (const [k, v] of Object.entries(fields)) {
-    out[k] = SECRET_KEY.test(k) ? '[redacted]' : v
+    out[k] = SECRET_KEY.test(k) ? '[redacted]' : typeof v === 'string' ? scrubPII(v) : v
   }
   return out
+}
+
+// Plan 002 steg 4: VÄRDE-scrub, inte bara nyckel-scrub. Ett kastat fel med
+// interpolerad användardata (mejl/telefon i Error.message) får aldrig loggas rått.
+const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.]+/g
+// Telefonmönster: 7+ tecken av siffror/mellanslag/bindestreck med valfritt +läge —
+// medvetet snålt (fångar +46 70-123 45 67 / 0701234567, inte order-id:n med bokstäver).
+const PHONE_RE = /\+?\d[\d\s-]{6,}\d/g
+const MAX_MESSAGE_LEN = 500
+export function scrubPII(text: string): string {
+  return text.replace(EMAIL_RE, '[email]').replace(PHONE_RE, '[tel]')
 }
 
 /**
@@ -51,14 +62,27 @@ function redact(fields: LogFields): LogFields {
  * and forget. Swallows every internal failure.
  */
 export async function captureException(err: unknown, context: LogFields = {}): Promise<void> {
-  const message = err instanceof Error ? err.message : String(err)
+  // Trunkera + värde-scrubba felmeddelandet: Error.message är fri text och kan
+  // bära PII; loggen och Sentry får den sanerade formen.
+  const message = scrubPII(err instanceof Error ? err.message : String(err)).slice(
+    0,
+    MAX_MESSAGE_LEN,
+  )
   const stack = err instanceof Error ? err.stack : undefined
-  log('error', message, { ...context, ...(stack ? { stack } : {}) })
+  // Stacken utelämnas ur konsolloggen i produktion (kodvägar är inte hemliga, men
+  // stackar bär interpolerade värden); Sentry-payloaden behåller den — det är
+  // poängen med Sentry, och den scrubbas nedan.
+  const includeStack = process.env.NODE_ENV !== 'production'
+  log('error', message, { ...context, ...(stack && includeStack ? { stack } : {}) })
 
   const dsn = process.env.SENTRY_DSN
   if (!dsn) return
   try {
-    await sendToSentry(dsn, { message, stack, context: redact(context) })
+    await sendToSentry(dsn, {
+      message,
+      stack: stack ? scrubPII(stack) : undefined,
+      context: redact(context),
+    })
   } catch {
     // reporting is best-effort — a Sentry outage must not surface here.
   }

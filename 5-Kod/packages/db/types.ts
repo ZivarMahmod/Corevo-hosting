@@ -2985,6 +2985,7 @@ export type Database = {
       }
       mark_shop_order_paid: { Args: { p_order_id: string }; Returns: undefined }
       prune_expired_shop_reserves: { Args: never; Returns: number }
+      prune_contact_messages: { Args: { p_months?: number }; Returns: number }
       prune_expired_slot_holds: { Args: never; Returns: number }
       record_shop_order_refund: { Args: { p_order_id: string }; Returns: boolean }
       release_shop_order: {

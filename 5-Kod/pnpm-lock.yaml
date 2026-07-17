@@ -51,7 +51,7 @@ importers:
         specifier: ^19.0.0
         version: 19.2.6(react@19.2.6)
       stripe:
-        specifier: ^22.2.0
+        specifier: 22.2.0
         version: 22.2.0(@types/node@22.19.19)
     devDependencies:
       '@corevo/config':

@@ -1,6 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/platform/service'
+import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import { verifyCancelToken } from '@/lib/booking/cancel-token'
 import { getCancellationCutoffHours, withinCancellationWindow } from '@/lib/kund/settings'
 import { sendBookingCancellation, parseGuestEmail } from '@/lib/notifications/booking'
@@ -24,6 +25,13 @@ export type CancelResult =
   | { ok: false; reason: 'invalid_token' | 'not_found' | 'already_cancelled' | 'too_late' | 'error'; message: string }
 
 export async function cancelByToken(bookingId: string, token: string): Promise<CancelResult> {
+  // Plan 009 SÄK-06: snål gräns per IP FÖRE token-verifieringen — bromsar
+  // brute force mot HMAC-token och massavbokningsförsök. Publikt anrop utan
+  // tenant-kontext, så hinken är per IP.
+  const ip = await getClientIp()
+  if (!(await checkRateLimit(rateLimitKey('avboka', ip), LIMITS.kontakt))) {
+    return { ok: false, reason: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
+  }
   // 1. Capability check FIRST — before any DB access.
   if (!bookingId || !(await verifyCancelToken(bookingId, token))) {
     return { ok: false, reason: 'invalid_token', message: 'Ogiltig eller utgången länk.' }

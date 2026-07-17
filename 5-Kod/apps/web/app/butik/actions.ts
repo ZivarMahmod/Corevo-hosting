@@ -169,6 +169,12 @@ export type ConfirmResult =
 export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> {
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'invalid', message: 'Okänd butik.' }
+  // Plan 009 SÄK-06: nedströms-actionen skickar orderbekräftelse-mejl per anrop —
+  // samma hink som reserveOrder så hela köpkedjan delar budget per IP+tenant.
+  const confirmIp = await getClientIp()
+  if (!(await checkRateLimit(rateLimitKey('shop_order', ctx.tenantId, confirmIp), LIMITS.booking))) {
+    return { ok: false, reason: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
+  }
 
   const name = input.name.trim()
   const email = input.email.trim()
@@ -384,6 +390,11 @@ export async function startShopCheckout(
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'error', message: 'Okänd butik.' }
   if (!orderId) return { ok: false, reason: 'error', message: 'Saknar beställning.' }
+  // Plan 009 SÄK-06: varje anrop skapar en Stripe Checkout-session — begränsa.
+  const checkoutIp = await getClientIp()
+  if (!(await checkRateLimit(rateLimitKey('shop_order', ctx.tenantId, checkoutIp), LIMITS.booking))) {
+    return { ok: false, reason: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
+  }
 
   const stripe = getStripe()
   const admin = createServiceClient()
@@ -498,6 +509,11 @@ export async function startPaypalCheckout(orderId: string): Promise<CheckoutResu
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'error', message: 'Okänd butik.' }
   if (!orderId) return { ok: false, reason: 'error', message: 'Saknar beställning.' }
+  // Plan 009 SÄK-06: varje anrop skapar en PayPal-order hos providern — begränsa.
+  const paypalIp = await getClientIp()
+  if (!(await checkRateLimit(rateLimitKey('shop_order', ctx.tenantId, paypalIp), LIMITS.booking))) {
+    return { ok: false, reason: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
+  }
   if (!paypalReady()) {
     return { ok: false, reason: 'unavailable', message: 'PayPal är inte tillgängligt.' }
   }

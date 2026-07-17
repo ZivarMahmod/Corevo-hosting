@@ -29,10 +29,14 @@ async function run(req: Request): Promise<Response> {
     })
   }
 
-  const [bookings, shop, slotHolds] = await Promise.all([
+  const [bookings, shop, slotHolds, contactRetention] = await Promise.all([
     admin.rpc('expire_abandoned_pending_bookings', { p_ttl_min: 30 }),
     admin.rpc('prune_expired_shop_reserves'),
     admin.rpc('prune_expired_slot_holds'),
+    // GDPR-retention (0089): kontaktmeddelanden äldre än 18 mån. BEST-EFFORT —
+    // fel här (t.ex. migrationen ej applicerad än) får ALDRIG fälla bokningssvepen,
+    // därför ingår den inte i cron_failed-grinden nedan.
+    admin.rpc('prune_contact_messages', { p_months: 18 }),
   ])
   if (bookings.error || shop.error || slotHolds.error) {
     return new Response(JSON.stringify({ error: 'cron_failed' }), {
@@ -45,6 +49,7 @@ async function run(req: Request): Promise<Response> {
     swept: bookings.data ?? 0,
     shopReservationsPruned: shop.data ?? 0,
     slotHoldsPruned: slotHolds.data ?? 0,
+    contactMessagesPruned: contactRetention.error ? null : (contactRetention.data ?? 0),
   }), {
     status: 200,
     headers: { 'content-type': 'application/json' },
