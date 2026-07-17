@@ -15,6 +15,10 @@ import { SALONG_THEME_CSS } from './salong/registry'
 
 const GEN_PATH = fileURLToPath(new URL('./theme-css.generated.ts', import.meta.url))
 
+function normalizeLineEndings(value: string): string {
+  return value.replace(/\r\n/g, '\n')
+}
+
 function render(): string {
   const q = (s: string) => JSON.stringify(s)
   return `// AUTO-GENERAT — redigera INTE for hand.
@@ -44,7 +48,7 @@ test('theme-css.generated.ts är i synk med registryn', () => {
     return
   }
   const actual = readFileSync(GEN_PATH, 'utf8')
-  expect(actual).toBe(expected)
+  expect(normalizeLineEndings(actual)).toBe(normalizeLineEndings(expected))
 })
 
 // Auditens grep-test, gjord till en riktig invariant: den genererade filen som
