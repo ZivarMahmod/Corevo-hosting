@@ -37,7 +37,7 @@ export function CustomerDangerZone({ customerId }: { customerId: string }) {
       <strong>Radera kunddata (GDPR)</strong>
       <p style={{ margin: '4px 0 10px' }}>
         Anonymiserar kundkortet, rensar bokningsnoteringar och tar bort favoriter i din
-        salong. Bokningshistoriken finns kvar utan personuppgifter. Kan inte ångras.
+        verksamhet. Bokningshistoriken finns kvar utan personuppgifter. Kan inte ångras.
       </p>
       <form action={formAction} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
         <input type="hidden" name="customer_id" value={customerId} />

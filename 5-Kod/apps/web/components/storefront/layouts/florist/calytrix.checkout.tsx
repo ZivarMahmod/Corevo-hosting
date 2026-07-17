@@ -63,6 +63,8 @@ export function CalytrixCheckout({
 
   const [formError, setFormError] = useState<string | null>(null)
   const [fields, setFields] = useState({ name: '', email: '', phone: '', address: '', note: '' })
+  // Plan 003: aktivt godkännande (distansavtalslagen) — servern kräver flaggan också.
+  const [acceptTerms, setAcceptTerms] = useState(false)
 
   const needsAddress = fulfilment === 'ship'
 
@@ -90,6 +92,7 @@ export function CalytrixCheckout({
     if (!name || !email || !phone) return setFormError('Fyll i namn, e-post och telefon.')
     if (!/.+@.+\..+/.test(email)) return setFormError('Kontrollera e-postadressen.')
     if (needsAddress && !fields.address.trim()) return setFormError('Fyll i leveransadress.')
+    if (!acceptTerms) return setFormError('Godkänn köpvillkoren för att slutföra köpet.')
 
     const err = await placeOrder({
       name,
@@ -97,6 +100,7 @@ export function CalytrixCheckout({
       phone,
       shipAddress: needsAddress ? fields.address.trim() : undefined,
       note: fields.note.trim() || undefined,
+      acceptTerms,
     })
     if (err) setFormError(err)
   }
@@ -358,6 +362,20 @@ export function CalytrixCheckout({
           ) : null}
 
           {submitting ? <CheckoutLoader /> : null}
+
+          {/* Plan 003: obligatoriskt aktivt godkännande vid varuköp på distans. */}
+          <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, margin: '12px 0' }}>
+            <input
+              type="checkbox"
+              checked={acceptTerms}
+              onChange={(e) => setAcceptTerms(e.target.checked)}
+              style={{ marginTop: 2 }}
+            />
+            <span>
+              Jag godkänner <a href="/villkor" target="_blank" rel="noreferrer">köpvillkoren</a> och
+              har tagit del av <a href="/villkor#angerratt" target="_blank" rel="noreferrer">ångerrätten</a>.
+            </span>
+          </label>
 
           <button
             type="submit"

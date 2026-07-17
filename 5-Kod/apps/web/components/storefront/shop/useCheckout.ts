@@ -40,6 +40,9 @@ export type CheckoutCustomer = {
   phone: string
   shipAddress?: string
   note?: string
+  /** Plan 003: varuköp på distans kräver aktivt godkännande av köpvillkor +
+   *  ångerrättsinfo. Servern (confirmOrder) validerar — UI:t kan aldrig hoppa över. */
+  acceptTerms?: boolean
 }
 
 export type UseCheckout = {
@@ -141,6 +144,7 @@ export function useCheckout(args: {
       note: customer.note,
       shippingOptionId: shippingId, // BARA id:t — priset är serverns
       paymentMethod,
+      acceptTerms: customer.acceptTerms === true,
     })
     if (!res.ok) {
       inFlight.current = false

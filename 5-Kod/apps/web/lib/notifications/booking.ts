@@ -213,12 +213,26 @@ export async function sendBookingRebook(
 
 export async function sendPaymentReceipt(
   to: string | null,
-  d: BookingEmailData & { amountCents: number; currency: string },
+  d: BookingEmailData & {
+    amountCents: number
+    currency: string
+    /** Plan 003: org-nr + momssats (settings.legal) — utelämnade → kvittot utan raderna. */
+    orgNr?: string | null
+    vatRate?: number | null
+  },
   ctx?: BrandCtx,
 ): Promise<void> {
   const { data, from, replyTo } = await applyBrand(d, ctx)
-  await safeSend('payment.receipt', to, receiptEmail({ ...data, amountCents: d.amountCents, currency: d.currency }), {
-    from,
-    replyTo,
-  })
+  await safeSend(
+    'payment.receipt',
+    to,
+    receiptEmail({
+      ...data,
+      amountCents: d.amountCents,
+      currency: d.currency,
+      orgNr: d.orgNr,
+      vatRate: d.vatRate,
+    }),
+    { from, replyTo },
+  )
 }

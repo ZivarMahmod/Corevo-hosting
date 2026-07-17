@@ -157,6 +157,9 @@ export type ConfirmInput = {
   /** goal-64: ID:t på det VALDA leveranssättet. Bara id:t — priset slår servern upp
    *  ur shop_shipping_options (confirm_shop_order). Klienten kan inte sätta ett belopp. */
   shippingOptionId?: string | null
+  /** Plan 003: aktivt godkännande av köpvillkor + ångerrätt (distansavtalslagen).
+   *  Valideras SERVER-SIDE — en order utan godkännande skapas aldrig. */
+  acceptTerms?: boolean
   /** goal-64: valt betalsätt ('card'|'swish'|'klarna'|'paypal'|'applepay'). */
   paymentMethod?: ShopPaymentMethod | null
 }
@@ -181,6 +184,11 @@ export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> 
   const phone = input.phone.trim()
   if (!name || !email || !phone) {
     return { ok: false, reason: 'invalid', message: 'Fyll i namn, e-post och telefon.' }
+  }
+  // Plan 003: distansköp av varor kräver AKTIVT godkännande av köpvillkor +
+  // ångerrättsinfo. Servervalidering — ordern skapas inte utan flaggan.
+  if (input.acceptTerms !== true) {
+    return { ok: false, reason: 'invalid', message: 'Godkänn köpvillkoren för att slutföra köpet.' }
   }
   if (!input.orderId || !input.token) {
     return { ok: false, reason: 'error', message: 'Sessionen saknas. Börja om.' }
