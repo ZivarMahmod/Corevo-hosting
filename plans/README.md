@@ -17,18 +17,18 @@ de ska bli GitHub-issues.
 
 | Plan | Titel | Prio | Effort | Beror på | Status |
 |------|-------|------|--------|----------|--------|
-| 001  | Betal-/notisräls-buggar (PayPal-presentkort, reservationssvep, påminnelse-CAS) | P1 | S | — | TODO |
-| 002  | Säkerhetshärdning runda 1 (anon-inserts, CSS-sink, cookieflaggor, loggscrub) | P1 | M | — | TODO |
-| 003  | Juridikpaketet (villkor, integritetspolicy, samtycke, ångerrätt, org-nr/moms) | P1 | L | — | TODO |
-| 009  | Säkerhet runda 2 (**open redirect HIGH**, boknings-backstop, SVG-upload, R2-utkast, fail-open rate-limit) | P1→P3 | M | mjuk: 008 | TODO |
-| 004  | Självservice-lösenordsåterställning (alla tre dörrar) | P2 | M | — | TODO |
-| 006  | SMS via 46elks (provider-fetch, E.164, avsändar-ID, opt-out) | P2 | M | — | TODO |
-| 007  | UX/CRUD-luckor (kontaktinkorg, GDPR-radera, skapa kund, window.confirm) | P2 | M | — | TODO |
-| 008  | Tidsrobusthet (prune-svep, retention, Node 22, Stripe-pin, DB-testdatum) | P2 | M | mjuk: 001,005 | TODO |
-| 010  | **Behörighetsmatris + falska UI-kontrakt (Codex-fynd, goal-71-följd)** | P1 | M | — | TODO |
-| 011  | **Admin/sajt-prestanda — döda auth-round-trips (getClaims)** | P1 | M | — | TODO |
-| 012  | **Durabel infra — pg_cron + DB-webhooks → edge functions** | P1 | L | mjuk: 005,006 | TODO |
-| 005  | Driftgrind (post-deploy-smoke + härdad cron) | P2 | M | ersätts delvis av 012 | TODO |
+| 001  | Betal-/notisräls-buggar (PayPal-presentkort, reservationssvep, påminnelse-CAS) | P1 | S | — | DONE (Codex-sweep `9d47424`: leverans+prune+atomic claims 0088) |
+| 002  | Säkerhetshärdning runda 1 (anon-inserts, CSS-sink, cookieflaggor, loggscrub) | P1 | M | — | DONE (sweep 0084+sinks; rester `2691bfb`: cookies+värde-scrub) |
+| 003  | Juridikpaketet (villkor, integritetspolicy, samtycke, ångerrätt, org-nr/moms) | P1 | L | — | DONE `7ff5709` — JURIDIK-TEXT = platshållare (operatör granskar); admin-skrivfält deferrade tills goal-71-acceptans |
+| 009  | Säkerhet runda 2 (open redirect, boknings-backstop, SVG, R2-utkast, rate-limit) | P1→P3 | M | mjuk: 008 | DONE (sweep: redirect/SVG/fail-closed/0085; `2691bfb`: shop+avboka-limits). R2-utkast = ops-dokumenterad rest |
+| 004  | Självservice-lösenordsåterställning (alla tre dörrar) | P2 | M | — | DONE (sweep: glomt-losenord + aterstall-losenord + ops-doc) |
+| 006  | SMS via 46elks (provider-fetch, E.164, avsändar-ID, opt-out) | P2 | M | — | DONE `df4720d` — vilande tills `wrangler secret put SMS_46ELKS_*` |
+| 007  | UX/CRUD-luckor (kontaktinkorg, GDPR-radera, skapa kund, window.confirm) | P2 | M | — | DONE `7a7710b` |
+| 008  | Tidsrobusthet (prune-svep, retention, Node 22, Stripe-pin, DB-testdatum) | P2 | M | mjuk: 001,005 | DONE (sweep + `2691bfb`: 0089-retention+pin). site_revisions-cap = BLOCKED produktbeslut (0080-triggern) |
+| 010  | Behörighetsmatris + falska UI-kontrakt (Codex-fynd, goal-71-följd) | P1 | M | — | DONE `ca2ad9c` |
+| 011  | Admin/sajt-prestanda — döda auth-round-trips (getClaims) | P1 | M | — | TODO — VÄNTAR operatör: aktivera asymmetriska JWT Signing Keys i dashboard |
+| 012  | Durabel infra — pg_cron + DB-webhooks → edge functions | P1 | L | mjuk: 005,006 | HALV: pg_cron-migr 0090 KLAR `2691bfb` (parallellt m. GH tills job_run_details grönt); webhook/edge-halvan = post-launch (ponytail-cut) |
+| 005  | Driftgrind (post-deploy-smoke + härdad cron) | P2 | M | ersätts delvis av 012 | DONE (sweep: smoke+dispatch+migrationsgrind; CF-Triggers-utredning REJECTED — pg_cron vann) |
 
 ### Engagemangsmotorn (kund-CRM/kommunikation) — se `DIREKTION-engagemangsmotor.md`
 
