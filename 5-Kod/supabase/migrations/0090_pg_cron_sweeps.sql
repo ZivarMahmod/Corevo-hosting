@@ -31,10 +31,17 @@ begin
     '*/15 * * * *',
     $job$select public.prune_expired_shop_reserves()$job$
   );
+  -- OBS: 0014_slot_holds är INTE applicerad i prod (bekräftat 2026-07-17: första
+  -- körningen felade med "function does not exist"). to_regproc-vakten gör jobbet
+  -- till en tyst no-op tills funktionen finns — aldrig en röd körning var 15:e min.
   perform cron.schedule(
     'corevo-prune-slot-holds',
     '*/15 * * * *',
-    $job$select public.prune_expired_slot_holds()$job$
+    $job$do $guard$ begin
+      if to_regproc('public.prune_expired_slot_holds()') is not null then
+        perform public.prune_expired_slot_holds();
+      end if;
+    end $guard$$job$
   );
   -- Retention är daglig (04:10 UTC — lågtrafik i svensk natt), inte var 15:e minut.
   perform cron.schedule(

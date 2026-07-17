@@ -22,7 +22,7 @@ function completedRequest(): Request {
       resource: {
         id: 'CAPTURE-1',
         custom_id: 'order-1',
-        amount: { value: '529.00' },
+        amount: { value: '529.00', currency_code: 'SEK' },
       },
     }),
   })
@@ -57,6 +57,7 @@ describe('PayPal webhook', () => {
     expect(settleShopOrderPaid).toHaveBeenCalledWith({
       orderId: 'order-1',
       amountCents: 52900,
+      currency: 'SEK',
       providerRef: 'CAPTURE-1',
     })
   })

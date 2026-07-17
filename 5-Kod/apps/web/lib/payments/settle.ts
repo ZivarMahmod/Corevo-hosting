@@ -32,8 +32,11 @@ async function deliverGiftCardsAfterSettlement(
   orderId: string,
 ): Promise<boolean> {
   try {
-    await deliverIssuedGiftCards(admin, tenantId, orderId)
-    return true
+    // failed > 0 = retry-bara leveransmissar (claim släppt) → giftDeliveryPending →
+    // PayPal-webhooken 500:ar och providern levererar om eventet (CodeRabbit-fynd:
+    // tidigare returnerade deliver void och flaggan kunde aldrig bli sann).
+    const result = await deliverIssuedGiftCards(admin, tenantId, orderId)
+    return result.failed === 0
   } catch (error) {
     // Betalning/lager är redan durabelt. Ett transportfel får aldrig göra kundens
     // lyckade betalning "avbruten"; webhooken använder flaggan för att begära retry.
@@ -55,6 +58,8 @@ async function deliverGiftCardsAfterSettlement(
 export async function settleShopOrderPaid(args: {
   orderId: string
   amountCents: number | null
+  /** Capture-valutan (t.ex. 'SEK'). null = okänd → behandlas som mismatch. */
+  currency?: string | null
   providerRef: string
 }): Promise<SettleResult> {
   const admin = createServiceClient()
@@ -62,7 +67,7 @@ export async function settleShopOrderPaid(args: {
 
   const { data: order, error: orderError } = await admin
     .from('shop_orders')
-    .select('id, tenant_id, total_cents, payment_status, status')
+    .select('id, tenant_id, total_cents, currency, payment_status, status')
     .eq('id', args.orderId)
     .maybeSingle()
   if (orderError) {
@@ -94,13 +99,29 @@ export async function settleShopOrderPaid(args: {
     return delivered ? { ok: true } : { ok: true, giftDeliveryPending: true }
   }
 
-  // BELOPPSGRIND: en capture som inte täcker orderns total får aldrig markera den betald.
-  if (args.amountCents != null && args.amountCents < (order.total_cents ?? 0)) {
+  // BELOPPSGRIND (skärpt, CodeRabbit-fynd): en capture som inte täcker orderns total
+  // får aldrig markera den betald — och ett SAKNAT belopp i provider-svaret är en
+  // mismatch, inte ett frikort (tidigare hoppade null-belopp över hela grinden).
+  if (args.amountCents == null || args.amountCents < (order.total_cents ?? 0)) {
     await captureException(new Error('paypal capture amount mismatch'), {
       where: 'payments.settle',
       orderId: args.orderId,
       captured: args.amountCents,
       expected: order.total_cents,
+    })
+    return { ok: false, reason: 'amount_mismatch' }
+  }
+
+  // VALUTAGRIND (CodeRabbit-fynd): 189 USD passerade tidigare för en 189 SEK-order.
+  // Capture-valutan MÅSTE matcha orderns; okänd valuta behandlas som mismatch.
+  const orderCurrency = (order.currency ?? '').toUpperCase()
+  const capturedCurrency = (args.currency ?? '').toUpperCase()
+  if (!capturedCurrency || (orderCurrency && capturedCurrency !== orderCurrency)) {
+    await captureException(new Error('paypal capture currency mismatch'), {
+      where: 'payments.settle',
+      orderId: args.orderId,
+      captured: capturedCurrency || null,
+      expected: orderCurrency || null,
     })
     return { ok: false, reason: 'amount_mismatch' }
   }

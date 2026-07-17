@@ -43,7 +43,7 @@ export async function POST(req: Request): Promise<Response> {
       resource?: {
         id?: string
         custom_id?: string
-        amount?: { value?: string }
+        amount?: { value?: string; currency_code?: string }
         status?: string
       }
     }
@@ -59,6 +59,8 @@ export async function POST(req: Request): Promise<Response> {
       const settled = await settleShopOrderPaid({
         orderId,
         amountCents,
+        // Valutan valideras i settle (CodeRabbit-fynd: 189 USD ≠ 189 SEK).
+        currency: res?.amount?.currency_code ?? null,
         providerRef: res?.id ?? 'paypal',
       })
       if (settled.ok && settled.giftDeliveryPending) {

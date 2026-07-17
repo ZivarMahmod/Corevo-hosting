@@ -50,11 +50,12 @@ describe('pending-expiry cron', () => {
     await expect(response.json()).resolves.toEqual({ error: 'cron_failed' })
   })
 
-  it('retention-fel fäller ALDRIG bokningssvepen (best-effort, null i svaret)', async () => {
+  it('retention- och slot-holds-fel fäller ALDRIG bokningssvepen (best-effort, null i svaret)', async () => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: 3, error: null })
       .mockResolvedValueOnce({ data: 5, error: null })
-      .mockResolvedValueOnce({ data: 7, error: null })
+      // 0014_slot_holds ej applicerad i prod → funktionen saknas; svepet ska ändå gå.
+      .mockResolvedValueOnce({ data: null, error: { message: 'function does not exist' } })
       .mockResolvedValueOnce({ data: null, error: { message: 'function missing' } })
     mocks.createServiceClient.mockReturnValue({ rpc })
     const response = await GET(request())
@@ -62,7 +63,7 @@ describe('pending-expiry cron', () => {
     await expect(response.json()).resolves.toEqual({
       swept: 3,
       shopReservationsPruned: 5,
-      slotHoldsPruned: 7,
+      slotHoldsPruned: null,
       contactMessagesPruned: null,
     })
   })

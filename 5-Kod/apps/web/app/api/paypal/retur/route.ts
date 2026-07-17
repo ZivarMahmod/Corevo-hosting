@@ -30,7 +30,15 @@ export async function GET(req: Request): Promise<Response> {
 
   try {
     const cap = await capturePaypalOrder(paypalOrderId)
-    if (!cap || cap.status !== 'COMPLETED' || !cap.reference) {
+    // CAPTURE-NIVÅNS status kollas också (CodeRabbit-fynd): en COMPLETED order kan
+    // bära en PENDING capture (eCheck-liknande) — då är pengarna INTE tagna än och
+    // webhooken (capture-nivå-event) blir sanningen när den landar.
+    if (
+      !cap ||
+      cap.status !== 'COMPLETED' ||
+      (cap.captureStatus != null && cap.captureStatus !== 'COMPLETED') ||
+      !cap.reference
+    ) {
       // Inte fångad = inte betald. Kunden landar på bekräftelsen med obetald order
       // (som visar sitt "väntar på betalning"-läge) — vi ljuger aldrig om ett kvitto.
       return NextResponse.redirect(new URL(`/bekraftelse/${backTo}?avbruten=1`, url.origin))
@@ -40,6 +48,7 @@ export async function GET(req: Request): Promise<Response> {
     const settled = await settleShopOrderPaid({
       orderId: cap.reference,
       amountCents: cap.amountCents,
+      currency: cap.currency,
       providerRef: cap.captureId ?? paypalOrderId,
     })
     if (

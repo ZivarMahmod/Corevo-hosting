@@ -31,6 +31,59 @@ type ReminderRow = {
 }
 
 // Short Swedish reminder SMS — plain text, no links/PII.
+/**
+ * Stämpla en påminnelse som skickad — anropas ENDAST efter en lyckad leverans.
+ *
+ * Primärt: claim-ägar-CAS (token). DUBBLETT-SKYDDET (CodeRabbit-fynd): misslyckas
+ * token-CAS:en har utskicket REDAN skett — att lämna raden ostämplad betyder
+ * garanterad dubblett när leasen löper ut. Fallback därför: stämpla via CAS på
+ * `reminded_at IS NULL` (tokenlöst). Slår även den fallbacken fel verifieras om
+ * raden redan stämplats av en annan körning; först när raden bevisligen är
+ * ostämplad OCH ostämplingsbar kastar vi (claim bevaras → lease-fördröjd retry
+ * hellre än tyst tappad rad).
+ */
+async function stampReminded(
+  client: NonNullable<ReturnType<typeof createServiceClient>>,
+  bookingId: string,
+  claimToken: string,
+  now: Date,
+): Promise<void> {
+  const patch = {
+    reminded_at: now.toISOString(),
+    reminder_claim_token: null,
+    reminder_claimed_at: null,
+  }
+  const { data: stamped, error: stampError } = await client
+    .from('bookings')
+    .update(patch)
+    .eq('id', bookingId)
+    .eq('reminder_claim_token', claimToken)
+    .select('id')
+    .maybeSingle()
+  if (!stampError && stamped) return
+
+  const { data: fallback } = await client
+    .from('bookings')
+    .update(patch)
+    .eq('id', bookingId)
+    .is('reminded_at', null)
+    .select('id')
+    .maybeSingle()
+  if (fallback) {
+    logger.warn('reminders.stamp_fallback_used', { bookingId })
+    return
+  }
+
+  // Ingen rad matchade — antingen redan stämplad av annan körning (OK) eller DB-fel.
+  const { data: current } = await client
+    .from('bookings')
+    .select('reminded_at')
+    .eq('id', bookingId)
+    .maybeSingle()
+  if (current?.reminded_at) return
+  throw new Error('reminders_stamp_failed')
+}
+
 function reminderSmsBody(tenantName: string, serviceName: string, startISO: string, timeZone: string): string {
   let when = startISO
   try {
@@ -147,16 +200,50 @@ export async function sendDueReminders(): Promise<ReminderRun> {
         to = to ?? u?.email ?? null
         phone = phone ?? u?.phone ?? null
       }
-      if (!to) {
-        skipped++
-        await releaseClaims([b.id])
-        pendingClaims.delete(b.id)
-        currentBookingId = null
-        continue
-      }
       const tenantName = b.tenants?.name ?? 'Företaget'
       const serviceName = b.services?.name ?? 'Behandling'
       const timeZone = b.locations?.timezone ?? 'Europe/Stockholm'
+
+      if (!to) {
+        // SMS-ONLY-MOTTAGARE (CodeRabbit-fynd): en gäst med telefon men utan mejl
+        // fick tidigare ALDRIG någon påminnelse — raden släpptes och åter-claimades
+        // var 15:e minut i hela 30-timmarsfönstret. Nu: skicka påminnelsen via SMS
+        // (om ägaren slagit på SMS) och STÄMPLA. Utan telefon/SMS: släpp som förut.
+        let smsOnlyDelivered = false
+        if (phone) {
+          let sms = smsEnabled.get(b.tenant_id)
+          if (sms === undefined) {
+            sms = await getSmsEnabled(client, b.tenant_id)
+            smsEnabled.set(b.tenant_id, sms)
+          }
+          if (sms) {
+            // Från transportanropet kan providern ha tagit emot meddelandet —
+            // behåll leasen vid osäkerhet (samma resonemang som mejlvägen nedan).
+            preserveCurrentClaim = true
+            const smsResult = await sendSms({
+              to: phone,
+              body: reminderSmsBody(tenantName, serviceName, b.start_ts, timeZone),
+              from: tenantName,
+            })
+            smsOnlyDelivered = smsResult.ok
+            if (!smsOnlyDelivered) preserveCurrentClaim = false
+          }
+        }
+        if (!smsOnlyDelivered) {
+          skipped++
+          await releaseClaims([b.id])
+          pendingClaims.delete(b.id)
+          currentBookingId = null
+          continue
+        }
+        // Levererad via SMS → stämpla via samma claim-ägar-CAS som mejlvägen.
+        await stampReminded(client, b.id, claimToken, now)
+        pendingClaims.delete(b.id)
+        currentBookingId = null
+        preserveCurrentClaim = false
+        sent++
+        continue
+      }
       // Från och med transportanropet kan ett kast betyda att leverantören tog emot
       // mailet. Behåll då just denna lease för att undvika en omedelbar dublett.
       preserveCurrentClaim = true
@@ -192,18 +279,7 @@ export async function sendDueReminders(): Promise<ReminderRun> {
 
       // Bara claim-ägaren får finalisera raden. Överlappande körningar får aldrig
       // samma token och kan därför inte dubbelstämpla eller dubbelskicka.
-      const { data: stamped, error: stampError } = await client
-        .from('bookings')
-        .update({
-          reminded_at: now.toISOString(),
-          reminder_claim_token: null,
-          reminder_claimed_at: null,
-        })
-        .eq('id', b.id)
-        .eq('reminder_claim_token', claimToken)
-        .select('id')
-        .maybeSingle()
-      if (stampError || !stamped) throw new Error('reminders_stamp_failed')
+      await stampReminded(client, b.id, claimToken, now)
       pendingClaims.delete(b.id)
       currentBookingId = null
       preserveCurrentClaim = false
