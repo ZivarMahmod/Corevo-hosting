@@ -462,6 +462,75 @@ export type Database = {
           },
         ]
       }
+      customer_notification_prefs: {
+        Row: {
+          created_at: string
+          customer_id: string
+          email_enabled: boolean
+          marketing_consent: boolean
+          marketing_consent_at: string | null
+          marketing_consent_source: string | null
+          preferred_channel: string | null
+          push_enabled: boolean
+          sms_enabled: boolean
+          tenant_id: string
+          updated_at: string
+          want_offers: boolean
+          want_open_slots: boolean
+          want_recommendations: boolean
+          want_reminders: boolean
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          email_enabled?: boolean
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
+          marketing_consent_source?: string | null
+          preferred_channel?: string | null
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          tenant_id: string
+          updated_at?: string
+          want_offers?: boolean
+          want_open_slots?: boolean
+          want_recommendations?: boolean
+          want_reminders?: boolean
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          email_enabled?: boolean
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
+          marketing_consent_source?: string | null
+          preferred_channel?: string | null
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          tenant_id?: string
+          updated_at?: string
+          want_offers?: boolean
+          want_open_slots?: boolean
+          want_recommendations?: boolean
+          want_reminders?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notification_prefs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notification_prefs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_notes: {
         Row: {
           allergies: string[]
@@ -1097,6 +1166,95 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications_outbox: {
+        Row: {
+          booking_id: string | null
+          category: string
+          chosen_channel: string | null
+          consent_state: Json | null
+          cost_ore: number | null
+          created_at: string
+          customer_id: string | null
+          delivered_at: string | null
+          event_type: string
+          fallback_channel: string | null
+          id: string
+          provider_ref: string | null
+          sent_at: string | null
+          skip_reason: string | null
+          staff_id: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          category: string
+          chosen_channel?: string | null
+          consent_state?: Json | null
+          cost_ore?: number | null
+          created_at?: string
+          customer_id?: string | null
+          delivered_at?: string | null
+          event_type: string
+          fallback_channel?: string | null
+          id?: string
+          provider_ref?: string | null
+          sent_at?: string | null
+          skip_reason?: string | null
+          staff_id?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          category?: string
+          chosen_channel?: string | null
+          consent_state?: Json | null
+          cost_ore?: number | null
+          created_at?: string
+          customer_id?: string | null
+          delivered_at?: string | null
+          event_type?: string
+          fallback_channel?: string | null
+          id?: string
+          provider_ref?: string | null
+          sent_at?: string | null
+          skip_reason?: string | null
+          staff_id?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_outbox_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_outbox_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_outbox_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_outbox_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offert_requests: {
         Row: {
           created_at: string
@@ -1292,6 +1450,60 @@ export type Database = {
           },
           {
             foreignKeyName: "payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          customer_id: string
+          endpoint: string
+          id: string
+          last_seen_at: string
+          p256dh: string
+          revoked_at: string | null
+          tenant_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          customer_id: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string
+          p256dh: string
+          revoked_at?: string | null
+          tenant_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          customer_id?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string
+          p256dh?: string
+          revoked_at?: string | null
+          tenant_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

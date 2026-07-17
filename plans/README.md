@@ -27,7 +27,7 @@ de ska bli GitHub-issues.
 | 008  | Tidsrobusthet (prune-svep, retention, Node 22, Stripe-pin, DB-testdatum) | P2 | M | mjuk: 001,005 | DONE (sweep + `2691bfb`: 0089-retention+pin). site_revisions-cap = BLOCKED produktbeslut (0080-triggern) |
 | 010  | Behörighetsmatris + falska UI-kontrakt (Codex-fynd, goal-71-följd) | P1 | M | — | DONE `ca2ad9c` |
 | 011  | Admin/sajt-prestanda — döda auth-round-trips (getClaims) | P1 | M | — | DONE (signing keys var redan aktiva: ECC P-256) — rök efter deploy: ingen utloggningsloop |
-| 012  | Durabel infra — pg_cron + DB-webhooks → edge functions | P1 | L | mjuk: 005,006 | HALV: pg_cron-migr 0090 KLAR `2691bfb` (parallellt m. GH tills job_run_details grönt); webhook/edge-halvan = post-launch (ponytail-cut) |
+| 012  | Durabel infra — pg_cron + DB-webhooks → edge functions | P1 | L | mjuk: 005,006 | HALV: pg_cron-migr 0090 KLAR; retry-sömmen finns nu i outboxen (status='queued' + partial index, 0091) — sändarna skriver facit direkt, queued-producenter + svepet är post-launch (ponytail-cut) |
 | 005  | Driftgrind (post-deploy-smoke + härdad cron) | P2 | M | ersätts delvis av 012 | DONE (sweep: smoke+dispatch+migrationsgrind; CF-Triggers-utredning REJECTED — pg_cron vann) |
 
 ### Engagemangsmotorn (kund-CRM/kommunikation) — se `DIREKTION-engagemangsmotor.md`
@@ -38,8 +38,8 @@ Beroende-styrd fasordning. 013–015 = fulla planer; 016–020 scope:ade i DIREK
 | Plan | Titel | Prio | Effort | Beror på | Status |
 |------|-------|------|--------|----------|--------|
 | 013  | **Identitets-keystone — claim/merge gäst↔konto + telefondedup** | P1 | L | — | TODO |
-| 014  | **Kommunikationsryggrad — samtycke + kanalrouting + notifications_outbox** | P1 | L | 013, 006, 012; mjuk 003 | TODO |
-| 015  | **Push-pipeline + PWA** | P2 | L | 013, 014 | TODO |
+| 014  | **Kommunikationsryggrad — samtycke + kanalrouting + notifications_outbox** | P1 | L | 013, 006, 012; mjuk 003 | KLAR 2026-07-18 (migr 0091: prefs+outbox; router m. enhetstester; pilotkanal bokningsbekräftelse genom router+outbox, dubbelvägen borttagen; SMS-kostnad→outbox; erase når prefs. 013-claim ej byggd — gäster routas via tenant-fallback, app-kund-vägen redo) |
+| 015  | **Push-pipeline + PWA** | P2 | L | 013, 014 | KLAR 2026-07-18 (migr 0091: push_subscriptions; kund-manifest + kund-sw.js; PushOptIn på /konto + savePushSubscription; send-push edge fn (VAPID, 410/404-revoke); routern väljer push först; erase når subs. SOVER tills VAPID sätts — docs/ops/push-vapid.md) |
 | 016  | Kundpreferenser (kadens/intresse/kanalval) — *scope i DIREKTION* | P2 | M | 013, 014 | PLANERAD |
 | 017  | Reko + slot-fill-motor (regler, due-prediktor, stegvis dispatch) — *scope* | P2 | L | 014, 016 | PLANERAD |
 | 018  | Lojalitet klar (redeem + klippkort + referral + rabattkod) — *scope* | P2 | L | 013 | PLANERAD |

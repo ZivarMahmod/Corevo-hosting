@@ -107,16 +107,16 @@ jobs:
 
       # Migrationer körs OUT-OF-BAND (via Supabase MCP / manuellt med granskning),
       # INTE i CI — undviker dubbelt DB-ägarskap + tar bort behovet av Supabase-secrets.
-      # Koden i denna release kräver 0088 hårt; 0089 (kontaktretention) + 0090
-      # (pg_cron-svep) är additiva och best-effort i koden, men grinden kräver hela
-      # setet applicerat så schema och kod aldrig glider. Operatören sätter
+      # Koden i denna release kräver 0091 (engagemangsryggraden: prefs/outbox/push-
+      # subs — bekräftelsesändaren läser tabellerna, best-effort men grinden kräver
+      # hela setet applicerat så schema och kod aldrig glider). Operatören sätter
       # PROD_DB_MIGRATION först EFTER verifierad apply.
       - name: Verify production database migration checkpoint
         env:
           PROD_DB_MIGRATION: ${{ vars.PROD_DB_MIGRATION }}
         run: |
-          if [ "$PROD_DB_MIGRATION" != "0090" ]; then
-            echo "::error::Prod DB must be verified through migration 0090 (PROD_DB_MIGRATION=$PROD_DB_MIGRATION)."
+          if [ "$PROD_DB_MIGRATION" != "0091" ]; then
+            echo "::error::Prod DB must be verified through migration 0091 (PROD_DB_MIGRATION=$PROD_DB_MIGRATION)."
             exit 1
           fi
 

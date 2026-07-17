@@ -26,8 +26,9 @@ describe('notification log privacy', () => {
     expect(sms).toContain("return { ok: false, skipped: true, error: 'transport_unavailable' }")
     // Sedan 46elks kopplades in (plan 006) får ok:true bara förekomma EN gång —
     // efter provider-svarets res.ok-vakt. Ett ok utan vakt vore ett falskt leveransbesked.
-    expect(sms.match(/return \{ ok: true \}/g)).toHaveLength(1)
+    // (Plan 014: ok-returen bär nu även providerId/costOre till outboxen.)
+    expect(sms.match(/ok: true,/g)).toHaveLength(1)
     expect(sms).toContain('if (!res.ok) {')
-    expect(sms.indexOf('if (!res.ok) {')).toBeLessThan(sms.indexOf('return { ok: true }'))
+    expect(sms.indexOf('if (!res.ok) {')).toBeLessThan(sms.indexOf('ok: true,'))
   })
 })

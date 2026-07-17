@@ -87,10 +87,15 @@ describe('sendSms (46elks-transport)', () => {
   it('POSTar till 46elks med Basic auth + form-encoding + sanerad avsändare', async () => {
     process.env.SMS_46ELKS_USERNAME = 'user'
     process.env.SMS_46ELKS_PASSWORD = 'pass'
-    fetchMock.mockResolvedValueOnce({ ok: true, status: 200 })
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: 's70df59406a1b4643b96f3f91e6bfa5e5', cost: 3500 }),
+    })
 
     const res = await sendSms({ to: '070-123 45 67', body: 'Din tid är bokad', from: 'Fresh Cut!' })
-    expect(res).toEqual({ ok: true })
+    // Plan 014: ok-resultatet bär providerns id + kostnad i öre (46elks cost = 1/10000 SEK).
+    expect(res).toEqual({ ok: true, providerId: 's70df59406a1b4643b96f3f91e6bfa5e5', costOre: 35 })
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [url, init] = fetchMock.mock.calls[0]!

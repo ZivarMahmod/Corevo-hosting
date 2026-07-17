@@ -17,7 +17,15 @@ import { logger } from '@/lib/observability'
 // confirmation/reminder regardless, so a missing/failed SMS must never block a
 // booking, reminder, or cancellation.
 
-export type SmsResult = { ok: boolean; skipped?: boolean; error?: string }
+export type SmsResult = {
+  ok: boolean
+  skipped?: boolean
+  error?: string
+  /** 46elks meddelande-id — outbox.provider_ref (plan 014). */
+  providerId?: string
+  /** Kostnad i öre ur provider-svaret (46elks `cost` är i 1/10000 SEK). */
+  costOre?: number
+}
 
 const ELKS_ENDPOINT = 'https://api.46elks.com/a1/sms'
 const DEFAULT_SENDER = 'Corevo'
@@ -102,7 +110,13 @@ export async function sendSms(args: { to: string; body: string; from?: string })
       return { ok: false, error: `http_${res.status}` }
     }
     logger.info('sms.sent_provider_ok')
-    return { ok: true }
+    // Kostnad + id ur svaret (best-effort — ett oparsebart svar ändrar inte ok).
+    const body = (await res.json().catch(() => null)) as { id?: string; cost?: number } | null
+    return {
+      ok: true,
+      providerId: typeof body?.id === 'string' ? body.id : undefined,
+      costOre: typeof body?.cost === 'number' ? Math.round(body.cost / 100) : undefined,
+    }
   } catch (err) {
     logger.warn('sms.send_threw', { error: err instanceof Error ? err.message : String(err) })
     return { ok: false, error: 'exception' }

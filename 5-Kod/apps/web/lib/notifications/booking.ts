@@ -3,6 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
 import { sendEmail, buildFrom, type SendResult } from './email'
 import { sendSms } from './sms'
+import { sendPushToCustomer } from './push'
+import { resolveChannel, type CustomerPrefs, type NotificationChannel } from './router'
+import { logOutbox } from './outbox'
 import { logger } from '@/lib/observability'
 import { getSmsEnabled } from './settings'
 import { loadEmailBrand } from './brand'
@@ -82,25 +85,6 @@ async function safeSend(
   return res
 }
 
-// Best-effort SMS (secondary channel). Never throws; sendSms already degrades to a
-// logged no-op when no provider key is set. Email stays primary in every caller.
-// `from` = salongsnamnet → 46elks avsändar-ID (saneras i transporten, default Corevo).
-async function safeSms(
-  kind: string,
-  phone: string | null | undefined,
-  body: string,
-  from?: string,
-): Promise<void> {
-  const to = phone?.trim()
-  if (!to) return
-  try {
-    const res = await sendSms({ to, body, from })
-    if (res.ok) logger.info('sms.sent', { kind })
-  } catch (err) {
-    logger.warn('sms.threw', { kind, error: err instanceof Error ? err.message : String(err) })
-  }
-}
-
 // Short Swedish SMS body for a booking confirmation. Plain text, no links/PII.
 function confirmationSmsBody(d: BookingEmailData): string {
   let when = d.startISO
@@ -119,12 +103,52 @@ function confirmationSmsBody(d: BookingEmailData): string {
   return `${d.tenantName}: din tid för ${d.serviceName} är bokad ${when}. Välkommen!`
 }
 
+/** Kundens routing-kontext (plan 014): prefs-rad, aktiv push-sub och kund-id.
+ *  Best-effort — varje miss ⇒ gäst-defaults (null/false), aldrig ett kast.
+ *  RLS gör grovjobbet: en anon-klient kan inte läsa prefs ⇒ gäst-vägen. */
+async function loadRoutingContext(
+  supabase: SupabaseClient<Database>,
+  bookingId: string | undefined,
+): Promise<{ customerId: string | null; prefs: CustomerPrefs | null; hasPush: boolean }> {
+  const none = { customerId: null, prefs: null, hasPush: false }
+  if (!bookingId) return none
+  try {
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('customer_id')
+      .eq('id', bookingId)
+      .maybeSingle()
+    const customerId = booking?.customer_id ?? null
+    if (!customerId) return none
+    const [{ data: prefsRow }, { count }] = await Promise.all([
+      supabase
+        .from('customer_notification_prefs')
+        .select('*')
+        .eq('customer_id', customerId)
+        .maybeSingle(),
+      supabase
+        .from('push_subscriptions')
+        .select('id', { count: 'exact', head: true })
+        .eq('customer_id', customerId)
+        .is('revoked_at', null),
+    ])
+    return {
+      customerId,
+      prefs: (prefsRow as CustomerPrefs | null) ?? null,
+      hasPush: (count ?? 0) > 0,
+    }
+  } catch {
+    return none
+  }
+}
+
 /**
- * Booking confirmation. Email is ALWAYS the primary channel. When `ctx` carries a
- * client + tenant + bookingId, this ALSO: (1) mints an HMAC self-service cancel link
- * and reads the cancellation cutoff, folding both into the email template, and
- * (2) when the owner has sms_enabled AND a phone is available, dispatches a short
- * best-effort SMS. With no `ctx` (legacy callers) it sends the plain email as before.
+ * Booking confirmation — pilotkanalen genom kanalroutern + outboxen (plan 014).
+ * EN kanal väljs (push → e-post → SMS efter samtycke/opt-in); fallback provas
+ * bara när primärkanalen FAILAR. Den gamla "e-post + extra-SMS"-dubbelvägen är
+ * borttagen (plan 012/014 STOP: aldrig två kanaler för samma händelse).
+ * Varje beslut skrivs till notifications_outbox (best-effort, service-role).
+ * Utan `ctx` (legacy-anropare) skickas e-posten precis som förr, utan ledger.
  */
 export async function sendBookingConfirmation(
   to: string,
@@ -164,20 +188,91 @@ export async function sendBookingConfirmation(
     }
   }
 
-  await safeSend('booking.confirmation', to, confirmationEmail(data), { from, replyTo })
-
-  // Best-effort SMS — only when the owner opted in and we have a number.
-  if (ctx?.supabase && ctx.tenantId && phone) {
-    try {
-      if (await getSmsEnabled(ctx.supabase, ctx.tenantId)) {
-        await safeSms('booking.confirmation', phone, confirmationSmsBody(data), data.tenantName)
-      }
-    } catch (err) {
-      logger.warn('sms.confirmation_check_failed', {
-        error: err instanceof Error ? err.message : String(err),
-      })
-    }
+  // Legacy-väg utan tenant-kontext: e-post rakt av, ingen router/ledger.
+  if (!ctx?.supabase || !ctx.tenantId) {
+    await safeSend('booking.confirmation', to, confirmationEmail(data), { from, replyTo })
+    return
   }
+
+  const tenantId = ctx.tenantId
+  let tenantSmsEnabled = false
+  try {
+    tenantSmsEnabled = await getSmsEnabled(ctx.supabase, tenantId)
+  } catch {
+    /* gäst-SMS-fallback stängd vid läsfel — e-posten bär bekräftelsen */
+  }
+  const routing = await loadRoutingContext(ctx.supabase, ctx.bookingId)
+  const decision = resolveChannel({
+    category: 'transactional',
+    type: 'booking_confirmation',
+    prefs: routing.prefs,
+    hasPushSubscription: routing.hasPush,
+    hasEmail: !!to,
+    hasPhone: !!phone?.trim(),
+    tenantSmsEnabled,
+  })
+
+  if (!decision.allowed || !decision.channel) {
+    await logOutbox({
+      tenantId,
+      customerId: routing.customerId,
+      bookingId: ctx.bookingId ?? null,
+      eventType: 'booking_confirmation',
+      category: 'transactional',
+      decision,
+      status: 'skipped',
+    })
+    return
+  }
+
+  // Skicka på vald kanal; fallback provas ENDAST när primären failar.
+  const attempt = async (
+    channel: NotificationChannel,
+  ): Promise<{ ok: boolean; costOre?: number; providerRef?: string }> => {
+    if (channel === 'push' && routing.customerId) {
+      const res = await sendPushToCustomer({
+        customerId: routing.customerId,
+        title: data.tenantName,
+        body: confirmationSmsBody(data),
+      })
+      return { ok: res.ok }
+    }
+    if (channel === 'sms' && phone) {
+      try {
+        const res = await sendSms({ to: phone, body: confirmationSmsBody(data), from: data.tenantName })
+        if (res.ok) logger.info('sms.sent', { kind: 'booking.confirmation' })
+        return { ok: res.ok, costOre: res.costOre, providerRef: res.providerId }
+      } catch (err) {
+        logger.warn('sms.threw', {
+          kind: 'booking.confirmation',
+          error: err instanceof Error ? err.message : String(err),
+        })
+        return { ok: false }
+      }
+    }
+    const res = await safeSend('booking.confirmation', to, confirmationEmail(data), { from, replyTo })
+    return { ok: res.ok }
+  }
+
+  let usedChannel = decision.channel
+  let result = await attempt(decision.channel)
+  if (!result.ok && decision.fallback) {
+    usedChannel = decision.fallback
+    result = await attempt(decision.fallback)
+  }
+
+  await logOutbox({
+    tenantId,
+    customerId: routing.customerId,
+    bookingId: ctx.bookingId ?? null,
+    eventType: 'booking_confirmation',
+    category: 'transactional',
+    decision,
+    status: result.ok ? 'sent' : 'failed',
+    usedChannel,
+    costOre: result.costOre ?? null,
+    providerRef: result.providerRef ?? null,
+  })
 }
 
 export async function sendBookingCancellation(

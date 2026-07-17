@@ -108,6 +108,24 @@ export async function eraseCustomerData(args: {
       }
     }
 
+    // 3b. Plan 014/015: samtyckesrader + push-prenumerationer är personliga —
+    //     raderas. Outboxen behålls (PII-fri statistik: flaggor/kanal/kostnad, ingen
+    //     kontaktinfo), men kopplingen bryts via customers on delete set null-fencen
+    //     och kundraden är redan anonymiserad. Best-effort: tabellsaknad (migration
+    //     ej applicerad) får inte stoppa raderingen av allt annat.
+    if (ids.length > 0) {
+      const { error: pErr } = await admin
+        .from('customer_notification_prefs')
+        .delete()
+        .in('customer_id', ids)
+      if (pErr) logger.warn('gdpr.erase.prefs_failed', { userId, error: pErr.message })
+      const { error: sErr } = await admin
+        .from('push_subscriptions')
+        .delete()
+        .in('customer_id', ids)
+      if (sErr) logger.warn('gdpr.erase.push_subs_failed', { userId, error: sErr.message })
+    }
+
     // 4. Anonymize bookings ACROSS ALL TENANTS — drop the PII note + unlink,
     //    keep the row (schedule/financial history). Reached two ways:
     //      (a) customer_profile_id = userId → the logged-in account's bookings
@@ -231,6 +249,23 @@ export async function eraseTenantCustomerData(args: {
     if (fErr) {
       logger.warn('gdpr.tenant_erase.favorites_failed', { customerId, error: fErr.message })
       return { ok: false, reason: 'error' }
+    }
+
+    // 3b. Samtyckesrad + push-prenumerationer (plan 014/015) — persondata, radera.
+    //     Best-effort: saknad tabell får inte stoppa resten av raderingen.
+    {
+      const { error } = await admin
+        .from('customer_notification_prefs')
+        .delete()
+        .eq('customer_id', customerId)
+      if (error) logger.warn('gdpr.tenant_erase.prefs_failed', { customerId, error: error.message })
+    }
+    {
+      const { error } = await admin
+        .from('push_subscriptions')
+        .delete()
+        .eq('customer_id', customerId)
+      if (error) logger.warn('gdpr.tenant_erase.push_subs_failed', { customerId, error: error.message })
     }
 
     // 4. Bokningar i DENNA tenant: scrubba PII-noten + släpp auth-länken, behåll

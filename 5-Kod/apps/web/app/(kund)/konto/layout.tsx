@@ -1,9 +1,14 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { requirePortal } from '@/lib/auth/session'
 import { currentTenant } from '@/lib/tenant-data'
 import { PortalShell } from '@/components/portal/PortalShell'
 
 export const dynamic = 'force-dynamic'
+
+// Plan 015: kund-PWA:n — manifestet gör /konto installerbart ("Lägg till på
+// hemskärmen"); service workern registreras av PushOptIn först vid opt-in.
+export const metadata: Metadata = { manifest: '/api/pwa/kund-manifest' }
 
 /**
  * Auth fence for the whole /konto/* subtree: requires a logged-in customer

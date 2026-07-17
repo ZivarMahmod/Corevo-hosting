@@ -13,6 +13,7 @@ import { UsualCard } from '@/components/kund/UsualCard'
 import { AccountBookings, CancelledBookings } from '@/components/kund/AccountBookings'
 import { AccountHistory } from '@/components/kund/AccountHistory'
 import { AccountPrivacy, type NameMode } from '@/components/kund/AccountPrivacy'
+import { PushOptIn } from '@/components/kund/PushOptIn'
 import { FavoritesList } from '@/components/kund/FavoritesList'
 import { getMyOrders, type KundOrder } from '@/lib/kund/shop-orders'
 import { getTenantModuleStates, isModuleLive } from '@/lib/tenant-modules'
@@ -142,6 +143,10 @@ export default async function KontoPage() {
   return (
     <div className={account.page}>
       <IdentityHero firstName={firstName} next={next} />
+
+      {/* Plan 015: push-nudgen — renderar sig själv bara när push är möjligt
+          (VAPID byggd, webbläsarstöd, ej redan prenumererad). */}
+      <PushOptIn />
 
       {/* Butik-vinkel (körning 9): "Mina beställningar" som eget kort HÖGT upp när
           shop-modulen är live. Ej live → kortet finns inte alls (dagens ordning). */}
