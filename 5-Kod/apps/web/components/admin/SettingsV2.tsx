@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Icon } from '@/components/portal/ui'
 import {
   SETTINGS_GROUPS,
+  settingsSearchEntries,
   type SettingsCategory,
   type SettingsCategoryId,
 } from '@/lib/admin/settings-map'
@@ -14,6 +15,106 @@ import styles from './settings-v2.module.css'
 export type SettingsV2Status = {
   label: string
   tone: 'neutral' | 'success' | 'warning' | 'danger'
+}
+
+export function SettingsNavigation({
+  categories,
+  statuses,
+  selectedId,
+  onChoose,
+  className,
+}: {
+  categories: SettingsCategory[]
+  statuses?: Partial<Record<SettingsCategoryId, SettingsV2Status>>
+  selectedId: SettingsCategoryId
+  onChoose: (category: SettingsCategory) => void
+  className?: string
+}) {
+  const [query, setQuery] = useState('')
+  const normalized = query.trim().toLocaleLowerCase('sv')
+  const searchEntries = useMemo(() => settingsSearchEntries(categories), [categories])
+  const hits = useMemo(
+    () =>
+      normalized
+        ? searchEntries.filter((entry) =>
+            `${entry.label} ${entry.hint} ${entry.keywords}`
+              .toLocaleLowerCase('sv')
+              .includes(normalized),
+          )
+        : [],
+    [normalized, searchEntries],
+  )
+
+  function choose(category: SettingsCategory) {
+    setQuery('')
+    onChoose(category)
+  }
+
+  return (
+    <aside className={`${styles.nav} ${className ?? ''}`} data-accept="settings-nav">
+      <h1>Inställningar</h1>
+      <label className={styles.search} data-accept="settings-search">
+        <Icon name="search" size={15} />
+        <span className={styles.srOnly}>Sök i inställningar</span>
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Sök — öppettider, pris, behörighet…"
+        />
+      </label>
+
+      {normalized ? (
+        <div className={styles.hits} aria-live="polite">
+          {hits.length ? (
+            hits.slice(0, 7).map((hit) => (
+              <button
+                key={hit.id}
+                type="button"
+                onClick={() => choose({ ...hit.category, href: hit.href })}
+              >
+                <strong>{hit.label}</strong>
+                <span>{hit.hint}</span>
+              </button>
+            ))
+          ) : (
+            <p>Inget hittat — testa ”pris”, ”frånvaro”, ”lösenord”…</p>
+          )}
+        </div>
+      ) : (
+        SETTINGS_GROUPS.map((group) => (
+          <div key={group} className={styles.group}>
+            <h2>{group}</h2>
+            {categories
+              .filter((category) => category.group === group)
+              .map((category) => {
+                const status = statuses?.[category.id]
+                const warns = status?.tone === 'warning' || status?.tone === 'danger'
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    className={selectedId === category.id ? styles.active : undefined}
+                    onClick={() => choose(category)}
+                  >
+                    <span className={styles.iconBox}><Icon name={category.icon} size={14} /></span>
+                    <span className={styles.navCopy}>
+                      <strong>{category.label}</strong>
+                      <span>{category.hint}</span>
+                    </span>
+                    {warns && status ? (
+                      <span
+                        className={`${styles.warningDot} ${status.tone === 'danger' ? styles.dangerDot : ''}`}
+                        title={status.label}
+                      />
+                    ) : null}
+                  </button>
+                )
+              })}
+          </div>
+        ))
+      )}
+    </aside>
+  )
 }
 
 export function SettingsV2({
@@ -29,105 +130,43 @@ export function SettingsV2({
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [selectedId, setSelectedId] = useState<SettingsCategoryId>(initialCategory)
-  const [query, setQuery] = useState('')
-  const [mobilePaneOpen, setMobilePaneOpen] = useState(false)
+  const selectedFromUrl = categories.find(
+    (category) => category.id === searchParams.get('kategori'),
+  )?.id ?? null
+  const selectedId = selectedFromUrl ?? initialCategory
+  const mobilePaneOpen = selectedFromUrl !== null
   const selected = categories.find((category) => category.id === selectedId) ?? categories[0]!
-  const normalized = query.trim().toLocaleLowerCase('sv')
-  const hits = useMemo(
-    () =>
-      normalized
-        ? categories.filter((category) =>
-            `${category.label} ${category.hint} ${category.keywords}`
-              .toLocaleLowerCase('sv')
-              .includes(normalized),
-          )
-        : [],
-    [categories, normalized],
-  )
 
-  function choose(id: SettingsCategoryId) {
-    setSelectedId(id)
-    setQuery('')
-    setMobilePaneOpen(true)
+  function choose(category: SettingsCategory) {
+    if (category.id !== 'roller') {
+      router.push(category.href)
+      return
+    }
     const params = new URLSearchParams(searchParams.toString())
-    params.set('kategori', id)
+    params.set('kategori', category.id)
     router.push(`/admin/installningar?${params.toString()}`, { scroll: false })
   }
 
-  useEffect(() => {
-    const fromUrl = searchParams.get('kategori') as SettingsCategoryId | null
-    if (fromUrl && categories.some((category) => category.id === fromUrl)) setSelectedId(fromUrl)
-  }, [categories, searchParams])
+  function closeMobilePane() {
+    router.replace('/admin/installningar', { scroll: false })
+  }
 
   return (
     <section className={styles.root} aria-label="Inställningar" data-accept="settings-shell">
-      <aside className={`${styles.nav} ${mobilePaneOpen ? styles.mobileHidden : ''}`} data-accept="settings-nav">
-        <h1>Inställningar</h1>
-        <label className={styles.search} data-accept="settings-search">
-          <Icon name="search" size={15} />
-          <span className={styles.srOnly}>Sök i inställningar</span>
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Sök — öppettider, pris, behörighet…"
-          />
-        </label>
-
-        {normalized ? (
-          <div className={styles.hits} aria-live="polite">
-            {hits.length ? (
-              hits.slice(0, 7).map((category) => (
-                <button key={category.id} type="button" onClick={() => choose(category.id)}>
-                  <strong>{category.label}</strong>
-                  <span>{category.hint}</span>
-                </button>
-              ))
-            ) : (
-              <p>Inget hittat — testa ”pris”, ”frånvaro”, ”lösenord”…</p>
-            )}
-          </div>
-        ) : (
-          SETTINGS_GROUPS.map((group) => (
-            <div key={group} className={styles.group}>
-              <h2>{group}</h2>
-              {categories
-                .filter((category) => category.group === group)
-                .map((category) => {
-                  const status = statuses[category.id]
-                  const warns = status.tone === 'warning' || status.tone === 'danger'
-                  return (
-                    <button
-                      key={category.id}
-                      type="button"
-                      className={selected.id === category.id ? styles.active : undefined}
-                      onClick={() => choose(category.id)}
-                    >
-                      <span className={styles.iconBox}><Icon name={category.icon} size={14} /></span>
-                      <span className={styles.navCopy}>
-                        <strong>{category.label}</strong>
-                        <span>{category.hint}</span>
-                      </span>
-                      {warns ? (
-                        <span
-                          className={`${styles.warningDot} ${status.tone === 'danger' ? styles.dangerDot : ''}`}
-                          title={status.label}
-                        />
-                      ) : null}
-                    </button>
-                  )
-                })}
-            </div>
-          ))
-        )}
-      </aside>
+      <SettingsNavigation
+        categories={categories}
+        statuses={statuses}
+        selectedId={selected.id}
+        onChoose={choose}
+        className={mobilePaneOpen ? styles.mobileHidden : undefined}
+      />
 
       <div className={`${styles.paneWrap} ${mobilePaneOpen ? styles.mobilePaneOpen : ''}`} data-accept="settings-pane">
         <div className={styles.pane}>
           <button
             type="button"
             className={styles.mobileBack}
-            onClick={() => setMobilePaneOpen(false)}
+            onClick={closeMobilePane}
           >
             <Icon name="arrowLeft" size={15} /> Tillbaka till inställningar
           </button>

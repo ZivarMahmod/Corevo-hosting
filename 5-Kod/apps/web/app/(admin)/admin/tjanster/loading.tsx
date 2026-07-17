@@ -1,5 +1,5 @@
-import { AdminSkeleton } from '@/components/admin/AdminSkeleton'
+import { SettingsWorkspaceLoading } from '@/components/admin/SettingsWorkspaceLoading'
 
 export default function Loading() {
-  return <AdminSkeleton title="Tjänster" rows={4} />
+  return <SettingsWorkspaceLoading />
 }

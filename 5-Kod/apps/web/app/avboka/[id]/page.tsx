@@ -45,7 +45,6 @@ function Shell({
 }) {
   const Nav = pickNav(settings.layout.nav_variant)
   const template = pickTemplate(settings.layout.nav_variant)
-  const overrideCss = settings.customOverride?.css
   const brandProps = {
     tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
     branding: settings.branding,
@@ -59,9 +58,6 @@ function Shell({
       data-template={template}
       style={injectTenantTokens(settings.branding) as CSSProperties}
     >
-      {overrideCss ? (
-        <style dangerouslySetInnerHTML={{ __html: `[data-tenant="${tenant.id}"]{${overrideCss}}` }} />
-      ) : null}
       <Nav {...brandProps} customerAccountsEnabled={customerAccountsEnabled} />
       <main className={`tenant-main ${storefront.shellMain}`}>{children}</main>
       <Footer tenant={{ name: tenant.name }} />

@@ -412,7 +412,13 @@ function manifestFor(kind: EditorManifestKind, defaults: ResolvedThemeContent, t
   return manifest
 }
 
-export default async function AdminSidaPage() {
+type AdminSidaPageProps = {
+  searchParams: Promise<{ flik?: string | string[] }>
+}
+
+export default async function AdminSidaPage({ searchParams }: AdminSidaPageProps) {
+  const query = await searchParams
+  const requestedTabId = Array.isArray(query.flik) ? query.flik[0] : query.flik
   const user = await requireAdminArea('sida')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
@@ -469,6 +475,7 @@ export default async function AdminSidaPage() {
       storefrontHost={storefrontHost}
       storefrontUrl={storefrontUrl}
       isActive={detail.tenant.status === 'active'}
+      initialTabId={requestedTabId}
       manifestData={manifestFor(manifestKind, defaults, storefrontTheme)}
       liveModules={liveModules}
       scheduleHours={deriveSiteScheduleHours(detail)}

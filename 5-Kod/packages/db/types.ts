@@ -203,6 +203,8 @@ export type Database = {
           note: string | null
           price_cents: number | null
           reminded_at: string | null
+          reminder_claim_token: string | null
+          reminder_claimed_at: string | null
           request_id: string | null
           service_id: string
           staff_id: string
@@ -223,6 +225,8 @@ export type Database = {
           note?: string | null
           price_cents?: number | null
           reminded_at?: string | null
+          reminder_claim_token?: string | null
+          reminder_claimed_at?: string | null
           request_id?: string | null
           service_id: string
           staff_id: string
@@ -243,6 +247,8 @@ export type Database = {
           note?: string | null
           price_cents?: number | null
           reminded_at?: string | null
+          reminder_claim_token?: string | null
+          reminder_claimed_at?: string | null
           request_id?: string | null
           service_id?: string
           staff_id?: string
@@ -2871,6 +2877,27 @@ export type Database = {
         Returns: string
       }
       event_seats_left: { Args: { p_event: string }; Returns: number }
+      create_onsite_event_registration: {
+        Args: {
+          p_email: string
+          p_event: string
+          p_message: string
+          p_name: string
+          p_party_size: number
+          p_phone: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      claim_due_booking_reminders: {
+        Args: {
+          p_claim: string
+          p_horizon: string
+          p_limit?: number
+          p_now: string
+        }
+        Returns: string[]
+      }
       expire_abandoned_pending_bookings: {
         Args: { p_ttl_min?: number }
         Returns: number
@@ -2958,6 +2985,8 @@ export type Database = {
       }
       mark_shop_order_paid: { Args: { p_order_id: string }; Returns: undefined }
       prune_expired_shop_reserves: { Args: never; Returns: number }
+      prune_expired_slot_holds: { Args: never; Returns: number }
+      record_shop_order_refund: { Args: { p_order_id: string }; Returns: boolean }
       release_shop_order: {
         Args: { p_order_id: string; p_status?: string; p_token?: string }
         Returns: undefined

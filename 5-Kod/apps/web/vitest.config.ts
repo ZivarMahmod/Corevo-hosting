@@ -24,6 +24,11 @@ export default defineConfig({
     // goal-47: + component render tests (.tsx via renderToStaticMarkup, node env).
     // goal-65: .ts under components/ täcktes inte av mönstret ovan — ren
     // navigationslogik (admin-navigation) behöver ingen JSX och tystades bort.
-    include: ['lib/**/*.test.ts', 'scripts/**/*.test.mjs', 'components/**/*.test.{ts,tsx}'],
+    include: [
+      'app/**/*.test.{ts,tsx}',
+      'lib/**/*.test.ts',
+      'scripts/**/*.test.mjs',
+      'components/**/*.test.{ts,tsx}',
+    ],
   },
 })

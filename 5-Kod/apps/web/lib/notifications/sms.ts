@@ -6,9 +6,9 @@ import { logger } from '@/lib/observability'
 // provider is wired this wave; this is the hook so callers can dispatch best-effort
 // SMS today and a real provider drops in behind a single fetch later.
 //
-// Graceful degrade (mirrors email.ts / lib/platform/service): with SMS_PROVIDER_API_KEY
-// unset (local/dev/CI and — for now — prod too), sendSms logs the intent and returns
-// { ok:false, skipped:true } instead of throwing. SMS is ALWAYS best-effort and a
+// Graceful degrade (mirrors email.ts / lib/platform/service): while the transport is
+// unavailable, sendSms logs a non-PII status and returns an explicit skipped result.
+// SMS is ALWAYS best-effort and a
 // SECONDARY channel: email stays the primary confirmation/reminder regardless, so a
 // missing/failed SMS must never block a booking, reminder, or cancellation.
 
@@ -16,14 +16,13 @@ export type SmsResult = { ok: boolean; skipped?: boolean; error?: string }
 
 /**
  * Send a single SMS. NEVER throws — every failure path returns a typed result so
- * callers can treat it as fire-and-forget. With no provider configured it degrades
- * to a logged no-op ({ skipped:true }).
+ * callers can treat it as fire-and-forget. Until a provider has been implemented it
+ * always degrades to an explicit logged no-op.
  *
  * `to` is a phone number (loosely validated — provider does the real E.164 work);
  * `body` is a short plain-text Swedish message.
  */
 export async function sendSms(args: { to: string; body: string }): Promise<SmsResult> {
-  const key = process.env.SMS_PROVIDER_API_KEY
   const to = args.to?.trim()
   // Loose guard: at least a few digits. The provider normalises/validates E.164.
   if (!to || !/\d{4,}/.test(to)) {
@@ -32,29 +31,8 @@ export async function sendSms(args: { to: string; body: string }): Promise<SmsRe
   if (!args.body?.trim()) {
     return { ok: false, error: 'empty_body' }
   }
-  if (!key) {
-    // No transport configured → degrade. Log so the intent is observable in dev.
-    logger.info('sms.skipped (SMS_PROVIDER_API_KEY unset)', { to })
-    return { ok: false, skipped: true }
-  }
-
-  try {
-    // TODO(provider): wire the real SMS provider fetch here, e.g.
-    //   const res = await fetch('https://api.<provider>.com/sms', {
-    //     method: 'POST',
-    //     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-    //     body: JSON.stringify({ to, from: process.env.SMS_FROM, text: args.body }),
-    //   })
-    //   if (!res.ok) { logger.warn('sms.send_failed', { to, status: res.status }); return { ok:false, error:`http_${res.status}` } }
-    //   return { ok: true }
-    // Until a provider is selected, treat a configured-but-unimplemented key as a
-    // skip rather than a hard failure, so prod never errors on this path.
-    logger.info('sms.skipped (provider not yet implemented)', { to })
-    return { ok: false, skipped: true }
-  } catch (err) {
-    logger.warn('sms.send_threw', { to, error: err instanceof Error ? err.message : String(err) })
-    return { ok: false, error: 'exception' }
-  }
+  logger.info('sms.skipped_transport_unavailable')
+  return { ok: false, skipped: true, error: 'transport_unavailable' }
 }
 
 /**

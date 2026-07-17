@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireAdminArea } from '@/lib/auth/session'
+import { requireOrganizationOwner } from '@/lib/admin/owner-guard'
 import { createClient } from '@/lib/supabase/server'
 
 export type MemberPermissionActionState = { success?: string; error?: string }
@@ -10,7 +10,7 @@ export async function saveMemberPermissions(
   _previous: MemberPermissionActionState,
   formData: FormData,
 ): Promise<MemberPermissionActionState> {
-  await requireAdminArea('installningar')
+  await requireOrganizationOwner('installningar')
   const staffId = String(formData.get('staff_id') ?? '').trim()
   const operationalRole = String(formData.get('operational_role') ?? '')
   if (!/^[0-9a-f-]{36}$/i.test(staffId)) return { error: 'Ogiltig medarbetare.' }

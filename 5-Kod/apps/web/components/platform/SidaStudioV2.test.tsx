@@ -7,7 +7,38 @@ const cssPath = path.resolve(__dirname, 'SidaStudioV2.module.css')
 const component = existsSync(componentPath) ? readFileSync(componentPath, 'utf8') : ''
 const css = existsSync(cssPath) ? readFileSync(cssPath, 'utf8') : ''
 
+type TabResolver = (
+  tabs: ReadonlyArray<{ id: string }>,
+  requestedTabId: string | null | undefined,
+) => string
+type TabHrefBuilder = (tabId: string, currentSearch: string) => string
+
 describe('SidaStudioV2 acceptance shell', () => {
+  it('resolves valid deep-linked tabs and preserves the URL contract', async () => {
+    const studio = await import('./SidaStudioV2') as unknown as {
+      resolveSiteEditorTabId?: TabResolver
+      siteEditorTabHref?: TabHrefBuilder
+    }
+    expect(studio.resolveSiteEditorTabId).toBeTypeOf('function')
+    expect(studio.siteEditorTabHref).toBeTypeOf('function')
+
+    const tabs = [{ id: 'allmant' }, { id: 'kontakt' }, { id: 'bokning' }]
+    expect(studio.resolveSiteEditorTabId!(tabs, 'bokning')).toBe('bokning')
+    expect(studio.resolveSiteEditorTabId!(tabs, 'kontakt')).toBe('kontakt')
+    expect(studio.resolveSiteEditorTabId!(tabs, 'saknas')).toBe('allmant')
+    expect(studio.resolveSiteEditorTabId!(tabs, null)).toBe('allmant')
+    expect(studio.siteEditorTabHref!('bokning', 'kampanj=sommar&flik=kontakt'))
+      .toBe('/admin/sida?kampanj=sommar&flik=bokning')
+  })
+
+  it('synchronizes tab clicks and browser URL navigation without a second editor', () => {
+    expect(component).toContain('initialTabId?: string')
+    expect(component).toContain("useSearchParams")
+    expect(component).toContain("searchParams.get('flik')")
+    expect(component).toContain('setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))')
+    expect(component).toContain('router.push(siteEditorTabHref(nextTabId, searchParams.toString())')
+  })
+
   it('owns one aggregate working snapshot and all four revision actions', () => {
     expect(component).toContain('useState<SiteSnapshot>(effectiveSnapshot)')
     expect(component).toContain('saveSiteDraft')
@@ -103,7 +134,7 @@ describe('SidaStudioV2 acceptance shell', () => {
 
   it('keeps iframe navigation, active tab and editor field scan on one route', () => {
     expect(component).toContain("data.type === 'preview-route'")
-    expect(component).toContain('setTabId(target.id)')
+    expect(component).toContain('selectTab(target.id)')
   })
 
   it('shows only module tabs backed by active modules', () => {

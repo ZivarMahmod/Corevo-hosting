@@ -1,7 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
-import { sendEmail, buildFrom } from './email'
+import { sendEmail, buildFrom, type SendResult } from './email'
 import { sendSms } from './sms'
 import { logger } from '@/lib/observability'
 import { getSmsEnabled } from './settings'
@@ -71,14 +71,15 @@ async function safeSend(
   to: string | null | undefined,
   mail: { subject: string; html: string },
   opts?: { from?: string; replyTo?: string },
-): Promise<void> {
+): Promise<SendResult> {
   if (!to) {
     logger.info('notify.skipped_no_recipient', { kind })
-    return
+    return { ok: false, error: 'missing_recipient' }
   }
   const res = await sendEmail({ to, subject: mail.subject, html: mail.html, from: opts?.from, replyTo: opts?.replyTo })
-  if (res.ok) logger.info('notify.sent', { kind, to })
-  else if (!res.skipped) logger.warn('notify.failed', { kind, to, error: res.error })
+  if (res.ok) logger.info('notify.sent', { kind })
+  else if (!res.skipped) logger.warn('notify.failed', { kind, error: res.error })
+  return res
 }
 
 // Best-effort SMS (secondary channel). Never throws; sendSms already degrades to a
@@ -88,7 +89,7 @@ async function safeSms(kind: string, phone: string | null | undefined, body: str
   if (!to) return
   try {
     const res = await sendSms({ to, body })
-    if (res.ok) logger.info('sms.sent', { kind, to })
+    if (res.ok) logger.info('sms.sent', { kind })
   } catch (err) {
     logger.warn('sms.threw', { kind, error: err instanceof Error ? err.message : String(err) })
   }
@@ -186,9 +187,9 @@ export async function sendBookingReminder(
   to: string,
   d: BookingEmailData,
   ctx?: BrandCtx,
-): Promise<void> {
+): Promise<SendResult> {
   const { data, from, replyTo } = await applyBrand(d, ctx)
-  await safeSend('booking.reminder', to, reminderEmail(data), { from, replyTo })
+  return safeSend('booking.reminder', to, reminderEmail(data), { from, replyTo })
 }
 
 // Rebook / "ny tid"-bekräftelse (M9, additive). Today rebookBooking() reuses

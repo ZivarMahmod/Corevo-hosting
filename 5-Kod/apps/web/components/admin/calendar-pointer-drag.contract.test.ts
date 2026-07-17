@@ -5,8 +5,9 @@ import { describe, expect, it } from 'vitest'
 
 const WEB_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const component = fs.readFileSync(path.join(WEB_ROOT, 'components/admin/CalendarBoard.tsx'), 'utf8')
+const css = fs.readFileSync(path.join(WEB_ROOT, 'components/admin/calendar.module.css'), 'utf8')
 
-describe('kalenderns draggenväg med muspekare', () => {
+describe('kalenderns draggenväg med mus och touch', () => {
   it('använder pointer capture i stället för native HTML5 drag and drop', () => {
     expect(component).not.toContain('draggable=')
     expect(component).not.toContain('onDragStart=')
@@ -16,9 +17,19 @@ describe('kalenderns draggenväg med muspekare', () => {
     expect(component).toContain('onPointerCancel')
   })
 
-  it('aktiveras bara för en fin muspekare på desktop', () => {
-    expect(component).toContain("e.pointerType !== 'mouse'")
+  it('aktiveras för fin muspekare eller touch via bokningens draghandtag', () => {
+    expect(component).toContain("e.pointerType === 'mouse'")
     expect(component).toContain("matchMedia('(min-width: 768px) and (pointer: fine)')")
+    expect(component).toContain("e.pointerType === 'touch' || e.pointerType === 'pen'")
+    expect(component).toContain("closest('[data-booking-drag-handle]')")
+    expect(component).toContain('data-booking-drag-handle')
+  })
+
+  it('låter bara draghandtaget ta touchgesten och visar aktiv återkoppling', () => {
+    expect(css).toMatch(/\.touchDragHandle\s*\{[\s\S]*?touch-action:\s*none;/)
+    expect(css).toMatch(/@media \(pointer:\s*coarse\)[\s\S]*?\.touchDragHandle\s*\{[\s\S]*?display:\s*inline-flex;/)
+    expect(component).toContain('styles.blockTouchDragging')
+    expect(component).toContain('<Icon name="grip"')
   })
 
   it('släpper bara i en faktisk personalkolumn under pekaren', () => {

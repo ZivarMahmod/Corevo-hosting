@@ -8,6 +8,12 @@ const canonical = readFileSync(path.join(WEB_ROOT, 'app/(admin)/admin/sida/page.
 const legacy = readFileSync(path.join(WEB_ROOT, 'app/(admin)/admin/sida/redigera/page.tsx'), 'utf8')
 
 describe('admin site editor routes', () => {
+  it('passes the flik query to the editor for the first render', () => {
+    expect(canonical).toContain('searchParams: Promise<')
+    expect(canonical).toContain('const query = await searchParams')
+    expect(canonical).toContain('initialTabId={requestedTabId}')
+  })
+
   it('mounts the revision-backed editor directly on /admin/sida', () => {
     expect(canonical).toContain('SidaStudioV2')
     expect(canonical).toContain('getTenantDetail')

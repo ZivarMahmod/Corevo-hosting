@@ -3,6 +3,7 @@
 import { headers } from 'next/headers'
 import { revalidateTag } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
+import { createServiceClient } from '@/lib/platform/service'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import type { JoinClubState } from './types'
 
@@ -26,8 +27,8 @@ import type { JoinClubState } from './types'
 // public.customers, vars RLS är `for all to authenticated`: anon får varken läsa eller
 // skapa en kund. Att ge anon en insert-policy på hela PII-kundregistret för att få in en
 // e-postadress vore att riva ner huset för att öppna ett fönster. Vägen in är i stället
-// public.join_loyalty_club() (migration 0057) — SECURITY DEFINER, granted to anon, exakt
-// samma konstruktion som create_public_booking (0015) redan använder för gästbokningen.
+// public.join_loyalty_club() (migration 0057) — SECURITY DEFINER, men efter 0085 endast
+// anropbar genom serverns service-role-klient. Direkt anon-EXECUTE är stängd.
 // Funktionen resolverar tenanten ur slug:en, GATAR MODULEN EN GÅNG TILL (app-lagret är
 // bypassbart — funktionen är det inte), återanvänder private.resolve_customer_id() (samma
 // contact_hash-dedup som bokningen: en e-post som redan bokat blir ingen andra kundrad)
@@ -105,7 +106,9 @@ export async function joinLoyaltyClub(
 
   // e. EN rad, via definer-funktionen. p_plan valideras DÄR mot kundens egna aktiva nivåer
   //    — en tampererad plan_id från en annan tenant kan aldrig fastna på raden.
-  const { error } = await supabase.rpc('join_loyalty_club', {
+  const writer = createServiceClient()
+  if (!writer) return { phase: 'error', message: 'Något gick fel. Försök igen.' }
+  const { error } = await writer.rpc('join_loyalty_club', {
     p_tenant_slug: ctx.slug,
     p_email: email,
     ...(name ? { p_name: name } : {}),

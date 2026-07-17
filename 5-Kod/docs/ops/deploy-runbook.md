@@ -4,13 +4,11 @@ CI/CD, environments, secrets, the live-blocker checklist, and rollback. Pipeline
 files: `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`. Worker config:
 `5-Kod/apps/web/wrangler.jsonc`.
 
-> **Verified state (2026-06-01, via MCP)** — Worker `bokningsplatformen` is
-> deployed; R2 bucket `corevo-media` **exists**; Supabase `clylvowtowbtotrahuad`
-> has migrations 0001–0008 applied; `pnpm build` / lint / typecheck / 43 unit
-> tests are green; security advisors show only known WARN-level items (the anon
-> RPCs are SECURITY DEFINER by design; `btree_gist`-in-public + leaked-password
-> toggle are pre-existing/pending). Everything tagged **OPS** below requires
-> Zivar's hands on a dashboard/DNS and is not done by this pipeline alone.
+> **Verifierat 2026-07-17 (read-only mot prod)** — Worker `bokningsplatformen` är
+> live; Supabase-projektet `clylvowtowbtotrahuad` är ACTIVE_HEALTHY på Pro och har
+> migrationer till och med **0082** registrerade. R2 används för media men backup/
+> versionering är inte verifierad. Den aktuella kodrundan kräver 0083–0088 och får
+> inte deployas före separat migrationsapply + checkpoint enligt §3.
 
 ---
 
@@ -26,9 +24,9 @@ Account: `0be2655be66efbfa5d9b36721ddae008` (Zivar68). R2 binding `BUCKET` →
 
 ## 2. CI (`ci.yml`) — PR gate
 
-`pull_request` + `push:main` run **lint → typecheck → unit → build**. Any failure
-blocks the PR (DoD). `next build` runs with the production-shaped `NEXT_PUBLIC_*`
-so a wrong-host default can't ship.
+`pull_request` + `push:main` kör **lint → typecheck → unit → build** samt en separat
+lokal Supabase-jobb som applicerar migrationer och kör pgTAP/RLS. Fel blockerar PR.
+`next build` kör produktionsformade `NEXT_PUBLIC_*` så fel host-default inte kan gå ut.
 
 Full Playwright E2E (`e2e` job) runs only when repo **variable** `E2E_ENABLED=true`
 (set it after staging secrets exist). It builds with staging env, `next start`s the
@@ -38,11 +36,13 @@ red-washed.
 
 ## 3. CD (`deploy.yml`)
 
-- **Staging** — auto on `push:main` (or manual dispatch → staging). Runs Supabase
+- **Staging** — endast manual dispatch → staging. Runs Supabase
   migrations against staging, OpenNext build (staging env), `wrangler deploy --env staging`.
 - **Production** — only on a `v*` **tag** or manual dispatch → production, behind the
   `production` GitHub Environment approval gate. **Never auto from a PR** (DoD).
-  Migrations → prod, OpenNext build (prod env), then **`node scripts/deploy-prod.mjs`**
+  Production migrations appliceras **out-of-band** efter granskning. Workflowen
+  kräver därefter GitHub Environment-variabeln `PROD_DB_MIGRATION=0088` innan
+  OpenNext build (prod env), sedan **`node scripts/deploy-prod.mjs`**
   — NOT bare `wrangler deploy`. Since **fix-35** the per-customer storefront domains
   (`<slug>.corevo.se`) live in **committed `wrangler.jsonc`** top-level `routes[]`
   (alongside the 3 fixed back-office hosts), so deploying that file re-asserts every
@@ -120,7 +120,8 @@ Rules:
 ## 4. Secrets & variables (OPS — set once)
 
 ### GitHub → repo Settings → Secrets and variables → Actions
-**Variables:** `E2E_ENABLED` = `true` (after staging is seeded).
+**Variables:** `E2E_ENABLED=true` (efter seedad staging) och
+`PROD_DB_MIGRATION=0088` i production-miljön **först efter verifierad DB-apply**.
 **Secrets:**
 
 | Secret | Used by |
@@ -128,9 +129,9 @@ Rules:
 | `CLOUDFLARE_API_TOKEN` (Workers Scripts:Edit + Workers R2:Edit + Workers Routes:Edit) | deploy |
 | `CLOUDFLARE_ACCOUNT_ID` = `0be2655be66efbfa5d9b36721ddae008` | deploy |
 | `CF_WORKERS_SUBDOMAIN` (your `*.workers.dev` subdomain) | staging SITE_URL |
-| `SUPABASE_ACCESS_TOKEN` | migrations (both envs) |
-| `STAGING_SUPABASE_PROJECT_REF` / `PROD_SUPABASE_PROJECT_REF` | migrations |
-| `STAGING_SUPABASE_DB_PASSWORD` / `PROD_SUPABASE_DB_PASSWORD` | migrations |
+| `SUPABASE_ACCESS_TOKEN` | staging-migrationer |
+| `STAGING_SUPABASE_PROJECT_REF` | staging-migrationer |
+| `STAGING_SUPABASE_DB_PASSWORD` | staging-migrationer |
 | `STAGING_SUPABASE_URL` / `PROD_SUPABASE_URL` | build (NEXT_PUBLIC) |
 | `STAGING_SUPABASE_ANON_KEY` / `PROD_SUPABASE_ANON_KEY` | build (NEXT_PUBLIC) |
 | `STAGING_SUPABASE_SERVICE_ROLE_KEY` | E2E runtime |
@@ -166,6 +167,7 @@ dashboard-only value is wiped on the next deploy. Change them in `wrangler.jsonc
 | 4 | Stripe `STRIPE_SECRET_KEY` (test) + `STRIPE_WEBHOOK_SECRET` | **OPS.** Webhook **MUST** be a Stripe **Connect** endpoint at `/api/stripe/webhook` (events carry `account`); a plain account endpoint silently never flips bookings to `confirmed`. Verify test-mode: onboarding · payment (`application_fee`=0) · refund · idempotency. |
 | 5 | Activate G10: email relay (`EMAIL_RELAY_URL`/`EMAIL_RELAY_SECRET`/`NOTIFICATIONS_FROM` + one.com Edge Function secrets, goal-14), Sentry DSN, CF WAF rate-limit (login/boka), Cron `/api/cron/reminders` | **OPS.** Email = Worker + Edge Function secrets (`docs/ops/mejl-egen-smtp.md`). Sentry = Worker secret. WAF rule = dashboard. Cron = a CF Cron Trigger or external scheduler hitting the route. |
 | 6 | R2 binding `corevo-media` | ✅ **Bucket exists** (verified). Binding present in both envs in `wrangler.jsonc`. `R2_PUBLIC_BASE_URL` set as a committed var in `wrangler.jsonc` (r2.dev origin, FX-14) so public image URLs resolve and survive deploys. |
+| 7 | Prod-schema matchar Worker-koden | ⛔ Prod är på 0082; applicera och verifiera 0083–0088, därefter `PROD_DB_MIGRATION=0088`. Workflowen stoppar annars före build. |
 
 ## 6. Stripe Connect webhook (live-blocker #4 detail)
 
@@ -199,7 +201,8 @@ See `docs/ops/backup-restore.md`.
 ## 8. First production cutover (one-time, OPS)
 
 1. Set all GitHub secrets (§4) + Worker secrets for production.
-2. Confirm migrations 0001–0008 applied on prod (they are).
+2. Ta backup-checkpoint, granska/applicera 0083–0088 på prod och verifiera
+   `supabase_migrations.schema_migrations`; sätt därefter `PROD_DB_MIGRATION=0088`.
 3. Decide tenant routing (#2) with Zivar; add Custom Domains or the wildcard route.
 4. Register the Stripe **Connect** webhook (§6); set `STRIPE_WEBHOOK_SECRET`.
 5. Tag `vX.Y.Z` → approve the `production` environment → CD deploys.

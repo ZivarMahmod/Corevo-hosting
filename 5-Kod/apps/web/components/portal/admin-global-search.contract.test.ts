@@ -19,4 +19,15 @@ describe('kundadminens globala sök', () => {
     expect(palette).toContain('searchAdminPalette(term)')
     expect(shell).toContain('remoteAdminSearch={!isPlatform}')
   })
+
+  it('använder samma sökord för inställningar i Ctrl-K som i inställningsnavet', () => {
+    const palette = read('components/portal/ui/CommandPalette.tsx')
+    const shell = read('components/portal/PortalShell.tsx')
+
+    expect(palette).toContain('keywords?: string')
+    expect(palette).toContain("it.keywords ?? ''")
+    expect(shell).toContain('settingsSearchEntries(categories)')
+    expect(shell).toContain("kind: 'Inställning'")
+    expect(shell).toContain('keywords: entry.keywords')
+  })
 })

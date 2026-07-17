@@ -20,6 +20,10 @@ const createPublicClientMock = vi.fn()
 vi.mock('@/lib/supabase/public', () => ({
   createPublicClient: () => createPublicClientMock(),
 }))
+const createServiceClientMock = vi.fn()
+vi.mock('@/lib/platform/service', () => ({
+  createServiceClient: () => createServiceClientMock(),
+}))
 
 const checkRateLimitMock = vi.fn()
 vi.mock('@/lib/security/rate-limit', () => ({
@@ -67,6 +71,9 @@ beforeEach(() => {
   vi.clearAllMocks()
   headersMock.mockReturnValue({ get: (k: string) => (k === 'x-corevo-tenant-slug' ? 'aurora' : null) })
   createPublicClientMock.mockReturnValue(stubClient(TENANT))
+  createServiceClientMock.mockReturnValue({
+    from: () => ({ insert: (row: unknown) => insertMock(row) }),
+  })
   checkRateLimitMock.mockResolvedValue(true)
   insertMock.mockResolvedValue({ error: null })
   sendMock.mockResolvedValue({ ok: true })
@@ -81,6 +88,13 @@ describe('submitContactMessage — tenant-isolering', () => {
     expect(insertMock).toHaveBeenCalledTimes(1)
     // Raden bär det SERVER-resolvade id:t — inte klientens.
     expect(insertMock.mock.calls[0]?.[0]).toMatchObject({ tenant_id: 'tenant-A' })
+  })
+
+  it('failar stängt när den server-only skrivklienten saknas', async () => {
+    createServiceClientMock.mockReturnValue(null)
+    const res = await submitContactMessage(CONTACT_SUBMIT_INITIAL, fd(VALID))
+    expect(res.phase).toBe('error')
+    expect(insertMock).not.toHaveBeenCalled()
   })
 
   it('avvisar när middleware-headern saknas (okänd värd → ingen skrivning)', async () => {

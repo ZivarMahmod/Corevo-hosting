@@ -343,8 +343,12 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
   const contactNote =
     `Gäst: ${name} <${email}> ${phone}` + (input.note?.trim() ? ` — ${input.note.trim()}` : '')
 
+  const writer = createServiceClient()
+  if (!writer) {
+    return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
+  }
   const supabase = createPublicClient()
-  const { data: bookingId, error } = await supabase.rpc('create_public_booking', {
+  const { data: bookingId, error } = await writer.rpc('create_public_booking', {
     p_tenant_slug: ctx.slug,
     p_service: input.serviceId,
     p_staff: input.staffId,

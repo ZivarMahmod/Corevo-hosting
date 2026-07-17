@@ -19,10 +19,10 @@ import { logger } from '@/lib/observability'
 // UPDATE fick tillbaka: databasen utser en vinnare, förloraren får noll rader och
 // skickar ingenting.
 //
-// Priset för det: kraschar processen mellan UPDATE och sendEmail är kortet märkt som
-// skickat utan att ha skickats. Det är MEDVETET valt framför risken att mejla ut ett
-// värdebevis två gånger — kunden ser ändå sin kod på bekräftelsesidan, och en
-// utebliven kopia går att rädda från admin. En dubbel utskickad kod går inte.
+// Om relayen uttryckligen nekar leveransen släpper vi just VÅR claim med CAS
+// (`emailed_at = claimedAt`). En annan körning kan då försöka igen, men vi kan aldrig
+// nollställa en senare lyckad claim. Fönstret mellan claim och transport är fortfarande
+// avsiktligt låst så parallella callbacks inte mejlar samma värdebevis två gånger.
 //
 // Best-effort by contract: kastar aldrig, blockerar aldrig ett genomfört köp.
 
@@ -55,15 +55,18 @@ export async function deliverIssuedGiftCards(
   orderId: string,
 ): Promise<void> {
   try {
+    const claimedAt = new Date().toISOString()
     // Ta ALLA omejlade kort för ordern i ETT villkorat UPDATE. `.is('emailed_at', null)`
     // är låset: bara en samtidig körning kan matcha raden och få den i sitt RETURNING.
     const { data: claimed, error } = await supabase
       .from('gift_cards')
-      .update({ emailed_at: new Date().toISOString() })
+      .update({ emailed_at: claimedAt })
       .eq('tenant_id', tenantId) // app-lager-fence utöver RLS (service-rollen bypassar RLS)
       .eq('order_id', orderId)
       .is('emailed_at', null)
-      .select('id, code, initial_amount_cents, currency, delivery_mode, recipient_name, recipient_email, message')
+      .select(
+        'id, code, initial_amount_cents, currency, delivery_mode, recipient_name, recipient_email, message',
+      )
 
     if (error) {
       logger.warn('gift.deliver.claim_failed', { orderId, error: error.message })
@@ -72,9 +75,30 @@ export async function deliverIssuedGiftCards(
     const rows = (claimed ?? []) as GiftRow[]
     if (rows.length === 0) return // inget att skicka (eller redan skickat av den andra webhook-leveransen)
 
-    const { data: tenant } = await supabase.from('tenants').select('name').eq('id', tenantId).maybeSingle()
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('name')
+      .eq('id', tenantId)
+      .maybeSingle()
     const tenantName = tenant?.name ?? 'Företaget'
     const brand = await loadEmailBrand(supabase, tenantId, tenantName)
+
+    async function releaseClaim(giftCardId: string): Promise<void> {
+      const { error: releaseError } = await supabase
+        .from('gift_cards')
+        .update({ emailed_at: null })
+        .eq('id', giftCardId)
+        .eq('tenant_id', tenantId)
+        .eq('order_id', orderId)
+        .eq('emailed_at', claimedAt)
+      if (releaseError) {
+        logger.warn('gift.deliver.release_failed', {
+          orderId,
+          giftCardId,
+          error: releaseError.message,
+        })
+      }
+    }
 
     for (const g of rows) {
       // Fysiskt kort → hämtas i butik. Ingen kod på mejl (se headern).
@@ -114,17 +138,30 @@ export async function deliverIssuedGiftCards(
         brand,
       )
 
-      const res = await sendEmail({
-        to,
-        subject: `Ditt presentkort hos ${tenantName}`,
-        html,
-        from: brand.from,
-        replyTo: brand.replyTo,
-      })
+      let res
+      try {
+        res = await sendEmail({
+          to,
+          subject: `Ditt presentkort hos ${tenantName}`,
+          html,
+          from: brand.from,
+          replyTo: brand.replyTo,
+        })
+      } catch (err) {
+        // sendEmail:s kontrakt fångar normala transportfel och returnerar !ok.
+        // Ett oväntat kast har okänd leveransstatus; behåll därför claimen så en
+        // retry aldrig riskerar att mejla samma värdebevis två gånger.
+        logger.warn('gift.deliver.send_threw', {
+          orderId,
+          giftCardId: g.id,
+          error: err instanceof Error ? err.message : String(err),
+        })
+        continue
+      }
       if (!res.ok) {
-        // Mejlet gick inte fram. Vi ÅTERSTÄLLER inte emailed_at: en retry-loop som kan
-        // mejla dubbelt är farligare än ett uteblivet mejl (koden finns kvar i admin och
-        // på bekräftelsesidan). Logga så det syns.
+        // Relayen bekräftade ingen leverans. Släpp bara vår egen tidsstämplade
+        // claim; CAS-villkoret skyddar en eventuell senare vinnare.
+        await releaseClaim(g.id)
         logger.warn('gift.deliver.send_failed', { orderId, giftCardId: g.id, error: res.error })
       }
     }

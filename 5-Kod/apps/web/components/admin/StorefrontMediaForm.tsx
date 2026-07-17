@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState } from 'react'
 import { saveStorefrontMedia, type ActionState } from '@/lib/admin/actions'
 import styles from './admin.module.css'
 
-const ACCEPT = 'image/png,image/jpeg,image/webp,image/svg+xml,image/gif'
+const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif'
 const HERO_MAX = 5
 const GALLERY_MAX = 8
 const TEAM_MAX = 12
@@ -226,7 +226,7 @@ function GallerySection({
         }}
       />
       <span className={styles.muted}>
-        PNG/JPG/WEBP/SVG/GIF, max 8 MB per bild. Max {max} bilder ({remaining} platser kvar utöver
+        PNG/JPG/WEBP/GIF, max 8 MB per bild. Max {max} bilder ({remaining} platser kvar utöver
         nya). Väljer du flera ersätter de tidigare valda (osparade) bilderna.
       </span>
     </div>
@@ -299,7 +299,7 @@ function SingleImageSection({
           if (f) setRemoved(false)
         }}
       />
-      <span className={styles.muted}>PNG/JPG/WEBP/SVG/GIF, max 8 MB.</span>
+      <span className={styles.muted}>PNG/JPG/WEBP/GIF, max 8 MB.</span>
     </div>
   )
 }

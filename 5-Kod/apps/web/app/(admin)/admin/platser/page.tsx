@@ -3,7 +3,9 @@ import { requireOrganizationOwner } from '@/lib/admin/owner-guard'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { listLocations } from '@/lib/admin/data'
 import { LocationsManager } from '@/components/admin/LocationsManager'
-import { PageHead } from '@/components/portal/ui'
+import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
+import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
+import { settingsCategories } from '@/lib/admin/settings-map'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Platser · Adminpanel' }
@@ -11,7 +13,7 @@ export const metadata: Metadata = { title: 'Platser · Adminpanel' }
 export default async function LocationsPage() {
   const user = await requireOrganizationOwner('platser')
   const tenant = await getAdminTenant(user)
-  if (!tenant) return <NoTenant />
+  if (!tenant) return <SettingsWorkspaceEmpty currentCategory="platser" title="Platser" />
 
   const locations = await listLocations(tenant.id)
 
@@ -19,17 +21,10 @@ export default async function LocationsPage() {
   // skapa-Drawern (kräver onClick) och kan inte korsa server→klient-gränsen härifrån.
   // Samma mönster som tjanster/page.tsx.
   return (
-    <section className="portal-section">
-      <LocationsManager locations={locations} tenantName={tenant.name} />
-    </section>
-  )
-}
-
-function NoTenant() {
-  return (
-    <section className="portal-section">
-      <PageHead eyebrow="Adminpanel" title="Platser" />
-      <p className="prose">Inget företag är kopplat till ditt konto.</p>
-    </section>
+    <SettingsWorkspace categories={settingsCategories(tenant.terminology)} currentCategory="platser">
+      <section className="portal-section">
+        <LocationsManager locations={locations} tenantName={tenant.name} />
+      </section>
+    </SettingsWorkspace>
   )
 }

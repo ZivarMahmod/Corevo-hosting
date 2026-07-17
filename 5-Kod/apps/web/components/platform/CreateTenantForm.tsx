@@ -342,7 +342,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
           ref={logoRef}
           type="file"
           name="logo"
-          accept="image/png,image/svg+xml,image/jpeg"
+          accept="image/png,image/jpeg"
           hidden
           onChange={(e) => setLogoName(e.target.files?.[0]?.name ?? '')}
         />
@@ -638,7 +638,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                     {logoName || 'Ladda upp logga'}
                   </span>
                   <span style={{ display: 'block', fontSize: 12.5, color: 'var(--c-ink-3)', marginTop: 2 }}>
-                    {logoName ? 'Klicka för att byta' : 'PNG/SVG → R2 · valfritt'}
+                    {logoName ? 'Klicka för att byta' : 'PNG/JPG/WEBP/GIF → R2 · valfritt'}
                   </span>
                 </span>
               </button>

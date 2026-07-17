@@ -56,6 +56,11 @@ vi.mock('@/lib/supabase/public', () => ({
       }
       return q
     },
+  }),
+}))
+
+vi.mock('@/lib/platform/service', () => ({
+  createServiceClient: () => ({
     async rpc(fn: string, args: Record<string, unknown>) {
       rpcCalls.push({ fn, args })
       if (state.rpcError) return { data: null, error: state.rpcError }

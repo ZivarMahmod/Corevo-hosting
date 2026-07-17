@@ -1287,8 +1287,10 @@ function BookingBlock({
     startX: number
     startY: number
     active: boolean
+    touch: boolean
   } | null>(null)
   const suppressClick = useRef(false)
+  const [touchDragging, setTouchDragging] = useState(false)
 
   const suppressSyntheticClick = () => {
     suppressClick.current = true
@@ -1337,7 +1339,7 @@ function BookingBlock({
   return (
     <button
       type="button"
-      className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${movable ? ` ${styles.blockDrag}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
+      className={`${styles.block}${dim ? ` ${styles.blockDim}` : ''}${movable ? ` ${styles.blockDrag}` : ''}${touchDragging ? ` ${styles.blockTouchDragging}` : ''}${tier === 'tiny' ? ` ${styles.blockTiny}` : ''}`}
       style={{
         top,
         height: h,
@@ -1349,12 +1351,18 @@ function BookingBlock({
         ['--bk-status' as string]: statusAccent(booking.status),
       }}
       onPointerDown={(e) => {
+        const fromTouchHandle =
+          (e.pointerType === 'touch' || e.pointerType === 'pen') &&
+          e.target instanceof Element &&
+          Boolean(e.target.closest('[data-booking-drag-handle]'))
+        const fromDesktopMouse =
+          e.pointerType === 'mouse' &&
+          e.button === 0 &&
+          window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
         if (
           !movable ||
-          e.pointerType !== 'mouse' ||
-          e.button !== 0 ||
           !e.isPrimary ||
-          !window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
+          (!fromDesktopMouse && !fromTouchHandle)
         ) {
           return
         }
@@ -1363,7 +1371,9 @@ function BookingBlock({
           startX: e.clientX,
           startY: e.clientY,
           active: false,
+          touch: fromTouchHandle,
         }
+        setTouchDragging(fromTouchHandle)
         e.currentTarget.setPointerCapture(e.pointerId)
       }}
       onPointerMove={(e) => {
@@ -1376,16 +1386,21 @@ function BookingBlock({
           return
         }
         drag.active = true
+        if (drag.touch) e.preventDefault()
         onPointerPreview?.(booking, e.clientX, e.clientY)
       }}
       onPointerUp={(e) => {
         const drag = pointerDrag.current
         if (!drag || drag.pointerId !== e.pointerId) return
         pointerDrag.current = null
+        setTouchDragging(false)
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.releasePointerCapture(e.pointerId)
         }
-        if (!drag.active) return
+        if (!drag.active) {
+          if (drag.touch) suppressSyntheticClick()
+          return
+        }
         suppressSyntheticClick()
         onPointerDrop?.(booking, e.clientX, e.clientY)
       }}
@@ -1393,12 +1408,14 @@ function BookingBlock({
         const drag = pointerDrag.current
         if (!drag || drag.pointerId !== e.pointerId) return
         pointerDrag.current = null
+        setTouchDragging(false)
         suppressSyntheticClick()
         onPointerAbort?.()
       }}
       onLostPointerCapture={(e) => {
         if (pointerDrag.current?.pointerId !== e.pointerId) return
         pointerDrag.current = null
+        setTouchDragging(false)
         onPointerAbort?.()
       }}
       onClick={(e) => {
@@ -1421,6 +1438,16 @@ function BookingBlock({
         <span className={`num ${styles.blockPhone}`}>
           <Icon name="phone" size={10} />
           {phone}
+        </span>
+      )}
+      {movable && (
+        <span
+          className={styles.touchDragHandle}
+          data-booking-drag-handle
+          title="Dra för att flytta bokningen"
+          aria-hidden="true"
+        >
+          <Icon name="grip" size={16} />
         </span>
       )}
       {/* Status bärs av ikon (+ text när kortet är stort nog), aldrig av färgen ensam

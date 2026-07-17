@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers'
 import { createPublicClient } from '@/lib/supabase/public'
+import { createServiceClient } from '@/lib/platform/service'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import { sendContactMessageEmail } from '@/lib/notifications/kontakt'
 import {
@@ -12,11 +13,10 @@ import {
 
 // Anonym KONTAKT-INTAKE (goal-64). Alla 12 Claude Design-mallar ritar ett kontakt-
 // formulär; motorn hade ingen endpoint, så agenterna amputerade det ("en submit som
-// inte skickar något är värre än inget formulär"). Det här är rälsen. Kör som anon —
-// EXAKT samma fence som offert-intaken (lib/storefront/offert/intake.ts):
+// inte skickar något är värre än inget formulär"). Det här är rälsen:
 //   • tenant kommer ur middleware-headern `x-corevo-tenant-slug`, ALDRIG från klienten.
-//     App-lagret sätter tenant_id; anon-RLS isolerar INTE (public-insert-policyn i 0057
-//     är `with check (true)`), så det server-resolvade id:t är den ENDA isoleringen.
+//     App-lagret sätter tenant_id och en server-only writer gör den validerade skrivningen.
+//     Anon-rollen har ingen direkt INSERT-rätt på PII-tabellen.
 //   • rate-limit på varje anonym skrivning.
 //   • honeypot mot bottar.
 //
@@ -102,10 +102,11 @@ export async function submitContactMessage(
     return { phase: 'error', message: `Meddelandet är för långt (max ${CONTACT_MAX.message} tecken).` }
   }
 
-  // e. Skriv EXAKT en rad. DB:n sätter status ('new')/created_at. tenant_id är det
-  //    server-resolvade id:t — den enda isoleringen, eftersom anon-RLS är permissiv.
-  const supabase = createPublicClient()
-  const { error } = await supabase.from('contact_messages').insert({
+  // e. Skriv EXAKT en rad genom server-only serviceklient. Direkt anon-INSERT är
+  //    revokad i DB; tenant-id kommer fortsatt enbart från den verifierade hosten.
+  const writer = createServiceClient()
+  if (!writer) return { phase: 'error', message: 'Något gick fel. Försök igen.' }
+  const { error } = await writer.from('contact_messages').insert({
     tenant_id: ctx.id,
     name,
     email: email || null,
@@ -123,7 +124,7 @@ export async function submitContactMessage(
   //    submiten ska lyckas även om mejlrälsen är nere. Ingen PII loggas.
   try {
     await sendContactMessageEmail({
-      supabase,
+      supabase: writer,
       tenantId: ctx.id,
       tenantName: ctx.name,
       name,

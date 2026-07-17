@@ -62,6 +62,7 @@ export type StaffCard = {
   displayName: string
   title: string | null
   active: boolean
+  bookingCount: number
   serviceCount: number
   serviceIds: string[]
   serviceNames: string[]
@@ -109,8 +110,7 @@ const CHIP_CAP = 3
  * Personal-admin roster island (SalonStaff §3.4) — the client surface over the
  * server-fetched staff. A clean ROSTER: the PageHead's "+ Lägg till" opens a
  * create Drawer; below it a forest-avatar card grid (auto-fill 300) of RICH
- * profile cards — avatar + name + role line + a bio paragraph (honest empty-state,
- * no bio column in the schema) + the member's services as chips (real
+ * profile cards — avatar + name + role line + the member's services as chips (real
  * staff_services data) + a muted Aktiv/Inaktiv pill + a location · idag footer.
  *
  * Clicking a card opens a shared Drawer that holds ALL the per-staff editing that
@@ -120,8 +120,7 @@ const CHIP_CAP = 3
  *   • eget-konto magic-link invite (inviteStaff) for un-linked staff
  * plus the multi-location reminder and the staff member's real "Verklig dag · idag".
  *
- * No fabricated fields: bio/specialties have no backing column, so they render
- * honest empty-states; the chips bind to the real coupled services.
+ * No fabricated profile fields: the chips bind to the real coupled services.
  */
 export function StaffRoster({
   staff,
@@ -299,10 +298,6 @@ function StaffGridCard({
           </Badge>
         </div>
 
-        {/* NO bio paragraph: staff has no bio column (verified: title/active/
-            location_id/profile_id only). A repeated "Ingen presentation sparad
-            ännu."-line on every card was pure noise — render nothing instead. */}
-
         {/* Specialty chips = the member's coupled services (real staff_services
             data). Absent → a calm one-liner instead of an empty row. */}
         {chips.length > 0 ? (
@@ -410,7 +405,7 @@ function StaffDrawer({
   return (
     <Drawer
       title={member.displayName}
-      sub={member.hasAccount ? 'Eget konto · egen vy' : 'Hanteras i företagets sida'}
+      sub={member.hasAccount ? 'Eget konto · egen vy' : 'Personalinställningar'}
       accent={
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
           <Badge tone={member.active ? 'success' : 'neutral'}>
@@ -428,20 +423,7 @@ function StaffDrawer({
       ariaLabel={`${staffNoun} ${member.displayName}`}
     >
       <div style={{ display: 'grid', gap: 20 }}>
-        {/* Om — staff has no bio column in the schema (verified: staff Row =
-            active/buffer_min/created_at/id/location_id/profile_id/slot_step_min/
-            tenant_id/title/updated_at). Honest empty-state, never fabricated. */}
-        <section>
-          <div className="eyebrow" style={{ marginBottom: 8 }}>
-            Om
-          </div>
-          <p style={{ fontSize: 13.5, color: 'var(--c-ink-3)', lineHeight: 1.6, margin: 0 }}>
-            Ingen presentation sparad ännu. En bio-text per medarbetare finns inte i datamodellen
-            ännu — när fältet läggs till syns det här.
-          </p>
-        </section>
-
-        {/* Namn / titel — the real updateStaff edit (was inline in the StaffManager
+        {/* Namn — the real updateStaff edit (was inline in the StaffManager
             list, now folded into the Drawer; same server action). */}
         <RenameSection member={member} onSaved={onClose} />
 
@@ -465,7 +447,7 @@ function StaffDrawer({
             och frånvaro på ett ställe.
           </p>
           <Link
-            href={`/admin/scheman?staff=${member.id}#mallar`}
+            href={`/admin/scheman?staff=${member.id}${member.locationId ? `&plats=${member.locationId}` : ''}#mallar`}
             style={{ color: 'var(--c-forest)', fontWeight: 600, fontSize: 13.5 }}
           >
             Öppna {member.displayName}s tider →
@@ -543,15 +525,15 @@ function StaffDrawer({
           )}
         </section>
 
-        {/* Ta bort — the real deleteStaff (was the StaffManager row's "Ta bort").
-            Refuses on FK (member with bookings) → inaktivera instead; kept honest. */}
+        {/* Ta bort visas bara för en felaktigt skapad rad utan bokningshistorik.
+            Personal med historik bevaras och inaktiveras i stället. */}
         <DangerSection member={member} onDeleted={onClose} />
       </div>
     </Drawer>
   )
 }
 
-/** Namn/titel edit + activate/deactivate (updateStaff + toggleStaffActive). Two
+/** Namn edit + activate/deactivate (updateStaff + toggleStaffActive). Two
  *  real server actions folded out of the old StaffManager list, restyled to the
  *  Drawer grammar. Each fires one Swedish consequence toast + router.refresh(). */
 function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => void }) {
@@ -562,6 +544,8 @@ function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => 
     toggleStaffActive,
     {},
   )
+  const [name, setName] = useState(member.title ?? '')
+  const nameDirty = name.trim() !== (member.title ?? '').trim()
 
   useEffect(() => {
     if (nameState.success) {
@@ -584,18 +568,25 @@ function RenameSection({ member, onSaved }: { member: StaffCard; onSaved: () => 
   return (
     <section>
       <div className="eyebrow" style={{ marginBottom: 8 }}>
-        Namn &amp; titel
+        Namn
       </div>
       <form action={nameAction} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <input type="hidden" name="id" value={member.id} />
         <input
           name="title"
           required
-          defaultValue={member.title ?? ''}
-          aria-label="Namn / titel"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          aria-label="Namn"
           style={fieldStyle}
         />
-        <Button variant="subtle" type="submit" icon="check" size="sm" disabled={namePending}>
+        <Button
+          variant="subtle"
+          type="submit"
+          icon="check"
+          size="sm"
+          disabled={namePending || !nameDirty}
+        >
           {namePending ? 'Sparar…' : 'Spara'}
         </Button>
       </form>
@@ -668,42 +659,42 @@ function ColorPicker({ member, onSaved }: { member: StaffCard; onSaved: () => vo
         />
         {automatic ? 'Automatisk' : 'Vald färg'}
       </div>
-      <form action={action} style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        <input type="hidden" name="id" value={member.id} />
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {STAFF_PALETTE.map((c) => {
           const chosen = !automatic && c.toLowerCase() === current.toLowerCase()
           return (
-            <button
-              key={c}
-              type="submit"
-              name="color"
-              value={c}
-              disabled={pending}
-              aria-label={`Välj färg ${c}`}
-              aria-pressed={chosen}
-              title={c}
-              style={{
-                width: 44,
-                height: 44,
-                padding: 0,
-                borderRadius: 8,
-                background: c,
-                // Vald färg bärs av en ring + bock, inte av färgen ensam — annars är
-                // "vilken är vald?" osynlig för en färgblind användare.
-                border: chosen ? '2px solid var(--c-ink)' : '1px solid var(--c-line)',
-                boxShadow: chosen ? '0 0 0 2px var(--c-paper) inset' : 'none',
-                cursor: pending ? 'wait' : 'pointer',
-                color: '#fff',
-                fontSize: 13,
-                fontWeight: 700,
-                lineHeight: 1,
-              }}
-            >
-              {chosen ? '✓' : ''}
-            </button>
+            <form key={c} action={action}>
+              <input type="hidden" name="id" value={member.id} />
+              <input type="hidden" name="color" value={c} />
+              <button
+                type="submit"
+                disabled={pending || chosen}
+                aria-label={`Välj färg ${c}`}
+                aria-pressed={chosen}
+                title={c}
+                style={{
+                  width: 44,
+                  height: 44,
+                  padding: 0,
+                  borderRadius: 8,
+                  background: c,
+                  // Vald färg bärs av en ring + bock, inte av färgen ensam — annars är
+                  // "vilken är vald?" osynlig för en färgblind användare.
+                  border: chosen ? '2px solid var(--c-ink)' : '1px solid var(--c-line)',
+                  boxShadow: chosen ? '0 0 0 2px var(--c-paper) inset' : 'none',
+                  cursor: pending ? 'wait' : chosen ? 'default' : 'pointer',
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                }}
+              >
+                {chosen ? '✓' : ''}
+              </button>
+            </form>
           )
         })}
-      </form>
+      </div>
       {state.error && (
         <p className="auth-error" role="alert" style={{ margin: '8px 0 0', fontSize: 12.5 }}>
           {state.error}
@@ -951,6 +942,8 @@ function LocationSection({
   const { notify } = useToast()
   const router = useRouter()
   const [state, formAction, pending] = useActionState<ActionState, FormData>(updateStaff, {})
+  const [locationId, setLocationId] = useState(member.locationId ?? '')
+  const locationDirty = locationId !== (member.locationId ?? '')
 
   useEffect(() => {
     if (state.success) {
@@ -970,7 +963,8 @@ function LocationSection({
         <input type="hidden" name="id" value={member.id} />
         <select
           name="location_id"
-          defaultValue={member.locationId ?? ''}
+          value={locationId}
+          onChange={(event) => setLocationId(event.target.value)}
           aria-label="Plats"
           style={{ ...fieldStyle, flex: '1 1 12rem' }}
         >
@@ -981,7 +975,13 @@ function LocationSection({
             </option>
           ))}
         </select>
-        <Button variant="subtle" type="submit" icon="check" size="sm" disabled={pending}>
+        <Button
+          variant="subtle"
+          type="submit"
+          icon="check"
+          size="sm"
+          disabled={pending || !locationDirty}
+        >
           {pending ? 'Sparar…' : 'Spara plats'}
         </Button>
       </form>
@@ -994,10 +994,9 @@ function LocationSection({
   )
 }
 
-/** Delete a staff member (deleteStaff). FK-guarded server-side — a member with
- *  bookings can't be hard-deleted; the action returns a clear "inaktivera"
- *  message, surfaced here. Två-stegs-arm som tjänste-borttagningen (klick 1
- *  armar "Säker? Ta bort permanent" + Ångra) — ett enda klick ska aldrig radera. */
+/** Delete a staff member only when the DB-backed booking count is zero. Historical
+ * identities are immutable from this surface: deactivate preserves reports,
+ * customer history and the audit trail. A final FK guard remains server-side. */
 function DangerSection({ member, onDeleted }: { member: StaffCard; onDeleted: () => void }) {
   const { notify } = useToast()
   const router = useRouter()
@@ -1012,6 +1011,20 @@ function DangerSection({ member, onDeleted }: { member: StaffCard; onDeleted: ()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.success])
+
+  if (member.bookingCount > 0) {
+    return (
+      <section style={{ borderTop: '1px solid var(--c-line)', paddingTop: 16 }}>
+        <div className="eyebrow" style={{ marginBottom: 6 }}>
+          Bokningshistorik finns
+        </div>
+        <p style={{ fontSize: 12.5, color: 'var(--c-ink-3)', margin: 0, lineHeight: 1.55 }}>
+          Bokningshistoriken ska bevaras. Inaktivera medarbetaren ovan om personen inte längre ska
+          synas eller kunna bokas.
+        </p>
+      </section>
+    )
+  }
 
   return (
     <section style={{ borderTop: '1px solid var(--c-line)', paddingTop: 16 }}>

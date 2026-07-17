@@ -30,13 +30,32 @@ tenant och ett testfall, aldrig produktdefinitionen.
   personalbehörighet. Personalens primära dörr är `booking.corevo.se/personal`;
   `minbooking.corevo.se/personal` är avsiktligt kvar parallellt med värdseparerad
   session. Kundportalpaket 05 är inte byggt eller ändrat.
+- Paket 04 är tekniskt komplett på den odriftsatta slutgenomgångsgrenen. Enligt
+  `04-installningar-v2/INSTALLNINGAR-V2-NOTES.md` ska bara tre kategorier vara
+  fullbyggda mönsterexempel; Personal och Schema behåller avsiktligt sina verkliga
+  befintliga funktioner i det nya skalet. Deras framtida individuella omdesign är
+  ett separat designpaket och ska inte beskrivas som en 04-lucka.
+- En samlad slutgenomgång finns på grenen `codex/corevo-final-sweep` men är ännu
+  **inte driftsatt**. Den samlar Inställningar i ett vertikalt workspace, härdar
+  publika skrivvägar/betalningar/cron och lägger migrationerna 0083–0088.
+  Produktionsdatabasen är fortfarande verifierad till 0082. Produktionens deploy
+  spärras därför tills 0083–0088 har granskats, applicerats och GitHub-variabeln
+  `PROD_DB_MIGRATION` satts till `0088`. Full rapport:
+  `5-Kod/docs/corevo-slutgenomgang-2026-07-17.md`.
+- Samma odriftsatta gren härdar Personalpanelen: oförändrade formulär ger inget
+  falskt fel, kalenderfärg skickas explicit, historisk personal kan inte erbjudas
+  permanent radering och schemahoppet behåller plats. Panelen och Schemas innehåll
+  är avsiktligt befintliga implementationer inne i nya Inställningar-workspacet;
+  individuell nydesign ingår inte i paket 04.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 
 ## Nästa del
 
-Goal 71 är tekniskt verifierad och driftsatt men står kvar som `pågår` tills Zivar
-har kört den autentiserade manuella acceptansen i
+Goal 71:s tidigare grundversion är driftsatt. Den kompletta 04-härdningen på
+`codex/corevo-final-sweep` är lokalt verifierad men inte driftsatt och står kvar
+som `pågår` tills den säkra deploygrinden är passerad och Zivar har kört den
+autentiserade manuella acceptansen i
 `6-Testing/goal-71-installningar-frisoradmin-testlista.md`. Flytta inte goal eller
 designpaket till `klart/` före den acceptansen.
 

@@ -266,8 +266,8 @@ export function PlatformBrandingForm({
         ) : (
           <span className={styles.muted}>Ingen logotyp uppladdad — företagsnamnet visas i sidhuvudet.</span>
         )}
-        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" />
-        <span className={styles.hint}>PNG/JPG/WEBP/SVG/GIF.</span>
+        <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/gif" />
+        <span className={styles.hint}>PNG/JPG/WEBP/GIF.</span>
       </div>
 
       {dirty ? (

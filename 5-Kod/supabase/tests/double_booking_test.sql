@@ -7,7 +7,9 @@ declare
   tenant_a uuid := '11111111-1111-1111-1111-111111111111';
   staff_a  uuid := '44444444-0000-0000-0000-000000000001';
   svc_a    uuid := '55555555-0000-0000-0000-000000000001';
-  t0       timestamptz := timestamptz '2030-01-01 10:00:00+00';
+  t0       timestamptz := (
+    date_trunc('week', current_timestamp at time zone 'UTC') + interval '14 days 10 hours'
+  ) at time zone 'UTC';
 begin
   insert into public.bookings (tenant_id, staff_id, service_id, start_ts, end_ts, status)
     values (tenant_a, staff_a, svc_a, t0, t0 + interval '30 min', 'confirmed');

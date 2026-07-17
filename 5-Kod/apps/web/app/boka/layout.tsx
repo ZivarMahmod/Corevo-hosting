@@ -29,7 +29,6 @@ export default async function BokaLayout({ children }: { children: React.ReactNo
     tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
     branding: settings.branding,
   }
-  const overrideCss = settings.customOverride?.css
   // BRANSCH-REGELN: footerns tagline kommer ur bransch-lagret, aldrig hardkodad.
   const bokning = branschBokning(tenant.vertical_id)
 
@@ -42,15 +41,6 @@ export default async function BokaLayout({ children }: { children: React.ReactNo
       data-template={template}
       style={injectTenantTokens(settings.branding) as CSSProperties}
     >
-      {/* Nivå 3 — tenant-isolated custom CSS, scoped under [data-tenant]. */}
-      {overrideCss ? (
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `[data-tenant="${tenant.id}"]{${overrideCss}}`,
-          }}
-        />
-      ) : null}
-
       <Nav {...brandProps} customerAccountsEnabled={settings.customerAccountsEnabled} />
       {/* `.shellMain` reserves space for the fixed top cluster (--nav-h). Safe on
           these non-hero pages — only adds whitespace below the fixed nav. */}

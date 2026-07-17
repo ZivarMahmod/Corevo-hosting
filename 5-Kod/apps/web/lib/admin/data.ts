@@ -20,7 +20,13 @@ export type WorkingHourRow = Tables<'working_hours'>
 
 export type SlotRow = Tables<'working_hour_slots'>
 
-export type StaffWithServices = StaffRow & { serviceIds: string[]; displayName: string }
+export type StaffWithServices = StaffRow & {
+  serviceIds: string[]
+  displayName: string
+  /** All historical bookings, including cancelled ones. Any history means the
+   * staff identity must be archived through active=false instead of deleted. */
+  bookingCount: number
+}
 
 export type AdminBooking = {
   id: string
@@ -85,23 +91,31 @@ export async function listServices(tenantId: string): Promise<ServiceRow[]> {
   return data ?? []
 }
 
-/** Staff with the set of service ids each one performs (staff_services join). */
-export async function listStaff(tenantId: string): Promise<StaffWithServices[]> {
+/** Staff with the set of service ids each one performs (staff_services join).
+ * Booking aggregation is opt-in because only the Personal settings surface needs
+ * the hard-delete decision; calendar and schedule must keep the lighter query. */
+export async function listStaff(
+  tenantId: string,
+  { includeBookingCount = false }: { includeBookingCount?: boolean } = {},
+): Promise<StaffWithServices[]> {
   const supabase = await createClient()
-  const { data } = await supabase
-    .from('staff')
-    .select('*, staff_services(service_id)')
+  const query = includeBookingCount
+    ? supabase.from('staff').select('*, staff_services(service_id), bookings(count)')
+    : supabase.from('staff').select('*, staff_services(service_id)')
+  const { data } = await query
     .eq('tenant_id', tenantId)
     .order('active', { ascending: false })
     .order('created_at', { ascending: true })
   return (data ?? []).map((s) => {
-    const { staff_services, ...row } = s as StaffRow & {
+    const { staff_services, bookings, ...row } = s as StaffRow & {
       staff_services: { service_id: string }[] | null
+      bookings?: { count: number }[] | null
     }
     return {
       ...row,
       serviceIds: (staff_services ?? []).map((x) => x.service_id),
       displayName: row.title?.trim() || 'Namnlös medarbetare',
+      bookingCount: bookings?.[0]?.count ?? 0,
     }
   })
 }

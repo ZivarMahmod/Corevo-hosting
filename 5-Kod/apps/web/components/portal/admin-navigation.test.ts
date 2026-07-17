@@ -64,29 +64,22 @@ describe('aktivt område', () => {
       '/admin/tjanster',
       '/admin/scheman',
       '/admin/platser',
+      '/admin/installningar/bokningsflode',
     ]) {
       expect(activeId(path)).toBe('installningar')
     }
   })
 
-  it('markerar bara en inställningsflik åt gången', async () => {
-    const { activeTopnavSubitem } = await import('./Topnav')
-    const settings = areas.find((a) => a.id === 'installningar')
-    expect(activeTopnavSubitem('/admin/personal', settings?.subnav ?? [])?.href).toBe(
-      '/admin/personal',
-    )
-    expect(activeTopnavSubitem('/admin/installningar/konto', settings?.subnav ?? [])?.href).toBe(
-      '/admin/installningar/konto',
-    )
+  it('låter Redigera sidan äga sin egen route även när bokningsflödet länkar dit', () => {
+    expect(activeId('/admin/sida')).toBe('sida')
   })
 
-  it('ger Inställningar en subnav och de andra områdena ingen', () => {
+  it('använder 04-paketets enda vertikala inställningsnav', () => {
     const settings = areas.find((a) => a.id === 'installningar')
-    // Inställningar v2: kartans tolv kategorier minus Redigera sidan (egen yta),
-    // härledda ur settings-map.ts och med navets samlingsingång = 11 poster.
-    expect(settings?.subnav?.length).toBe(11)
-    expect(settings?.subnav?.[0]?.href).toBe('/admin/installningar')
-    expect(settings?.subnav?.some((i) => i.href === '/admin/sida')).toBe(false)
+    // Designpaket 04 har ett kategorinav inne i Inställningar. En andra horisontell
+    // flikrad duplicerar samma routes och gör övergången till ägandeytorna oklar.
+    expect(settings).toBeDefined()
+    expect(settings?.subnav).toBeUndefined()
     expect(areas.find((a) => a.id === 'kalender')?.subnav).toBeUndefined()
   })
 })

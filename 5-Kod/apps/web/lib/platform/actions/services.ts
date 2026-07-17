@@ -308,7 +308,7 @@ export async function uploadServiceImage(_p: ActionState, fd: FormData): Promise
         res.reason === 'too_large'
           ? 'Bilden är för stor (max 8 MB).'
           : res.reason === 'bad_type'
-            ? 'Bilden måste vara PNG, JPG, WEBP, SVG eller GIF.'
+            ? 'Bilden måste vara PNG, JPG, WEBP eller GIF.'
             : res.reason === 'no_public_base' || res.reason === 'no_binding'
               ? 'Bilduppladdning är inte aktiverad i denna miljö (kräver R2).'
               : 'Uppladdningen misslyckades. Försök igen.',

@@ -30,6 +30,16 @@ export type SettingsCategory = {
   warning?: 'warning' | 'danger'
 }
 
+export type SettingsSearchEntry = {
+  id: string
+  label: string
+  hint: string
+  categoryId: SettingsCategoryId
+  href: string
+  keywords: string
+  category: SettingsCategory
+}
+
 export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
   'VERKSAMHET',
   'BOKNING',
@@ -73,7 +83,7 @@ export function settingsCategories(terminology?: Terminology | null): SettingsCa
       keywords: 'onlinebokning pausa av boka bokningsfönster avbokningsgräns nya kunder',
     },
     {
-      id: 'bokningsflode', group: 'BOKNING', href: '/admin/sida?flik=bokning', label: 'Bokningsflöde',
+      id: 'bokningsflode', group: 'BOKNING', href: '/admin/installningar/bokningsflode', label: 'Bokningsflöde',
       hint: 'Kalender, tidsväljare och utseende', icon: 'arrowRight', area: 'sida',
       keywords: 'bokningssätt kalender avatar färg tidsväljare utseende',
     },
@@ -83,12 +93,12 @@ export function settingsCategories(terminology?: Terminology | null): SettingsCa
       keywords: 'stripe betalning kort swish utbetalning pengar',
     },
     {
-      id: 'paminnelser', group: 'KOMMUNIKATION', href: '/admin/installningar/foretag#paminnelser', label: 'Påminnelser & utskick',
+      id: 'paminnelser', group: 'KOMMUNIKATION', href: '/admin/installningar/paminnelser', label: 'Påminnelser & utskick',
       hint: 'Bekräftelser, påminnelser och kanaler', icon: 'mail', area: 'installningar',
       keywords: 'påminnelse sms mejl e-post utskick notis bekräftelse',
     },
     {
-      id: 'integrationer', group: 'KOMMUNIKATION', href: '/admin/sida?flik=kontakt', label: 'Integrationer',
+      id: 'integrationer', group: 'KOMMUNIKATION', href: '/admin/installningar/integrationer', label: 'Integrationer',
       hint: 'Externa kopplingar och recensioner', icon: 'link', area: 'sida',
       keywords: 'google recension betyg stjärnor integration koppla',
     },
@@ -103,9 +113,52 @@ export function settingsCategories(terminology?: Terminology | null): SettingsCa
       keywords: 'lösenord byta säkerhet logga ut enhet session e-post',
     },
     {
-      id: 'sekretess', group: 'KONTO', href: '/admin/kunder', label: 'Sekretess & GDPR',
+      id: 'sekretess', group: 'KONTO', href: '/admin/installningar/sekretess', label: 'Sekretess & GDPR',
       hint: 'Kunddata, export och anonymisering', icon: 'lock', area: 'kunder',
       keywords: 'gdpr sekretess export radera anonymisera kunddata biträdesavtal',
     },
   ]
+}
+
+const SETTINGS_SEARCH_DEFS: ReadonlyArray<{
+  id: string
+  label: string
+  hint: string
+  categoryId: SettingsCategoryId
+  keywords: string
+  href?: string
+}> = [
+  { id: 'site-hours', label: 'Öppettider på sidan', hint: 'Redigera sidan → Kontakt', categoryId: 'bokningsregler', href: '/admin/sida?flik=kontakt', keywords: 'öppettider öppet tider kontakt hemsida' },
+  { id: 'bookable-hours', label: 'Bokningsbara tider', hint: 'Scheman & frånvaro — personalens arbetstider', categoryId: 'scheman', keywords: 'öppettider tider arbetstid schema bokningsbar' },
+  { id: 'service-price', label: 'Pris på en tjänst', hint: 'Tjänster & priser', categoryId: 'tjanster', keywords: 'pris tjänst utbud längd ändra pris' },
+  { id: 'add-staff', label: 'Lägg till medarbetare', hint: 'Personal', categoryId: 'personal', keywords: 'personal medarbetare anställd konto lägg till' },
+  { id: 'time-off', label: 'Semester / frånvaro', hint: 'Scheman & frånvaro', categoryId: 'scheman', keywords: 'semester frånvaro ledig sjuk' },
+  { id: 'pause-booking', label: 'Pausa onlinebokningen', hint: 'Bokningsregler', categoryId: 'bokningsregler', keywords: 'pausa stäng bokning på av' },
+  { id: 'cancellation', label: 'Avbokningsregler', hint: 'Bokningsregler', categoryId: 'bokningsregler', keywords: 'avboka avbokning regler timmar' },
+  { id: 'booking-appearance', label: 'Bokningens utseende', hint: 'Bokningsflöde', categoryId: 'bokningsflode', keywords: 'utseende kalender avatar färg bokningsflöde presentation datumväljare' },
+  { id: 'stripe', label: 'Koppla Stripe / kortbetalning', hint: 'Betalning', categoryId: 'betalning', keywords: 'stripe betalning kort swish utbetalning pengar' },
+  { id: 'reminders', label: 'Påminnelser till kunder', hint: 'Påminnelser & utskick', categoryId: 'paminnelser', keywords: 'påminnelse sms mejl e-post utskick notis bekräftelse' },
+  { id: 'reviews', label: 'Google-recensioner', hint: 'Integrationer', categoryId: 'integrationer', keywords: 'google recension betyg stjärnor integration koppla' },
+  { id: 'password', label: 'Byt lösenord', hint: 'Konto & säkerhet', categoryId: 'konto', keywords: 'lösenord byta säkerhet konto' },
+  { id: 'sessions', label: 'Logga ut en enhet', hint: 'Konto & säkerhet', categoryId: 'konto', keywords: 'logga ut enhet session säkerhet' },
+  { id: 'customer-data', label: 'Exportera / radera kunddata', hint: 'Sekretess & GDPR', categoryId: 'sekretess', keywords: 'gdpr export radera kunddata sekretess anonymisera' },
+  { id: 'site-copy', label: 'Färger & texter på sidan', hint: 'Redigera sidan', categoryId: 'bokningsflode', href: '/admin/sida', keywords: 'färg text bild hemsida logga redigera sidan' },
+  { id: 'location', label: 'Ny plats / adress', hint: 'Platser', categoryId: 'platser', keywords: 'plats adress lokal filial tidszon ny' },
+  { id: 'permissions', label: 'Ge en anställd behörighet', hint: 'Roller & behörigheter', categoryId: 'roller', keywords: 'roll behörighet rättighet ägare platschef anställd' },
+  { id: 'activity-log', label: 'Vem gjorde vad? (logg)', hint: 'Roller & behörigheter', categoryId: 'roller', keywords: 'logg spåra aktivitet historik vem' },
+]
+
+/** Samma sökindex driver både inställningsnavet och den globala Ctrl-K-paletten. */
+export function settingsSearchEntries(categories: SettingsCategory[]): SettingsSearchEntry[] {
+  const byId = new Map(categories.map((category) => [category.id, category]))
+  return SETTINGS_SEARCH_DEFS.flatMap((entry) => {
+    const category = byId.get(entry.categoryId)
+    if (!category) return []
+    return [{
+      ...entry,
+      href: entry.href ?? category.href,
+      keywords: `${entry.keywords} ${category.label} ${category.hint} ${category.keywords}`,
+      category,
+    }]
+  })
 }

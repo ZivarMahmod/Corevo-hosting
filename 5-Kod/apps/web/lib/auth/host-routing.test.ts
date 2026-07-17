@@ -94,9 +94,11 @@ describe('staff_portal host (minbooking) — staff schedule only', () => {
 describe('auth + api are always allowed on every back-office host', () => {
   const hosts: BackofficeHostKind[] = ['superadmin', 'platform', 'staff_portal']
   for (const h of hosts) {
-    it(`${h}: /login, /ingen-atkomst, /api/* pass`, () => {
+    it(`${h}: auth recovery pages and /api/* pass`, () => {
       expect(decide(h, '/login')).toEqual({ action: 'pass' })
       expect(decide(h, '/ingen-atkomst')).toEqual({ action: 'pass' })
+      expect(decide(h, '/glomt-losenord')).toEqual({ action: 'pass' })
+      expect(decide(h, '/aterstall-losenord')).toEqual({ action: 'pass' })
       expect(decide(h, '/api/stripe/webhook')).toEqual({ action: 'pass' })
       expect(decide(h, '/api')).toEqual({ action: 'pass' })
     })

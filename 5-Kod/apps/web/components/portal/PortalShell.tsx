@@ -23,6 +23,8 @@ import { adminAreas, adminMobileNavigation } from './admin-navigation'
 import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
+import { settingsCategories, settingsSearchEntries } from '@/lib/admin/settings-map'
+import { canAccessAdminArea } from '@/lib/auth/admin-areas'
 
 const ADMIN_ACCOUNT_LINKS = [
   { href: '/admin/installningar/konto', label: 'Mitt konto' },
@@ -161,6 +163,20 @@ export async function PortalShell({
     const terminology: ReturnType<typeof cleanTerminology> = verticalRow
       ? cleanTerminology(verticalRow.terminology)
       : {}
+    if (portal === 'admin' && canAccessAdminArea('installningar', user)) {
+      const categories = settingsCategories(terminology)
+      paletteItems = [
+        ...paletteItems,
+        ...settingsSearchEntries(categories).map((entry) => ({
+          href: entry.href,
+          label: entry.label,
+          sub: entry.hint,
+          icon: entry.category.icon,
+          kind: 'Inställning',
+          keywords: entry.keywords,
+        })),
+      ]
+    }
     // Humanize the raw role enum for the sidebar identity cell (mock shows
     // "Ägare", not "salon_admin"). Falls back to the raw name for unmapped roles.
     // 'staff' speaks the tenant's bransch via terminology (fallback 'Frisör' = the

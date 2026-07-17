@@ -8,6 +8,7 @@ import { getCustomerDetail, getCustomerContact, getCustomerLoyalty } from '@/lib
 import { getMyFavorites } from '@/lib/kund/favorites'
 import { getCustomerNotes } from '@/lib/personal/customer'
 import { formatDateTime, formatPrice, statusLabel } from '@/lib/admin/format'
+import { todayInTz } from '@/lib/admin/dates'
 import { staffColor } from '@/lib/admin/staff-colors'
 import { CustomerNoteEditor } from '@/components/admin/CustomerNoteEditor'
 import { CustomerFlags } from '@/components/admin/CustomerFlags'
@@ -71,7 +72,7 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
   const favService = favs.find((f) => f.kind === 'service')
 
   const initial = (customer.shownName.trim()[0] ?? '?').toUpperCase()
-  const isNew = customer.firstSeenAt.slice(0, 7) === new Date().toISOString().slice(0, 7)
+  const isNew = customer.firstSeenAt.slice(0, 7) === todayInTz(tz).slice(0, 7)
 
   const chips: Array<{ label: string; color: string }> = []
   if (customer.hidden) chips.push({ label: 'DOLD', color: 'var(--c-danger)' })

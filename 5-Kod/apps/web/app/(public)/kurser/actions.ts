@@ -3,10 +3,9 @@
 import { headers } from 'next/headers'
 import { revalidateTag } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import { createServiceClient, hasServiceRole } from '@/lib/platform/service'
+import { createServiceClient } from '@/lib/platform/service'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import { sendEventConfirmationEmail } from '@/lib/notifications/events'
-import { logger } from '@/lib/observability'
 import { formatEventStart, type KursSubmitState } from '@/lib/storefront/kurser/types'
 
 // Anonym kurs-ANMÄLAN (goal-54 körning 4). EXAKT intake-mönstret från
@@ -102,56 +101,37 @@ export async function submitEventRegistration(
     return { phase: 'error', message: 'Tillfället är inte öppet för anmälan längre.' }
   }
 
-  // f. KAPACITETSVAKT: sum confirmed party_size via the SERVICE client (anon may
-  //    not read event_registrations — same choice as loadUpcomingEvents). When
-  //    the service key is missing (local dev) we let the insert through with a
-  //    structured warn instead of blocking legitimate anmälningar.
-  //    ponytail-ceiling: check-then-insert is not transactional — two samtidiga
-  //    anmälningar kan tillsammans överboka med några platser. Acceptabelt för
-  //    kurs-skala; en DB-side vakt (RPC/constraint) är nästa steg om det bränns.
-  if (hasServiceRole()) {
-    const svc = createServiceClient()
-    if (svc) {
-      const { data: regs } = await svc
-        .from('event_registrations')
-        .select('party_size')
-        .eq('tenant_id', ctx.id)
-        .eq('event_id', event.id)
-        .eq('status', 'confirmed')
-      const taken = (regs ?? []).reduce((sum, r) => sum + r.party_size, 0)
-      const left = event.capacity - taken
-      if (partySize > left) {
-        return {
-          phase: 'error',
-          message:
-            left <= 0
-              ? 'Tyvärr, tillfället är fullbokat.'
-              : `Tyvärr, det finns bara ${left} ${left === 1 ? 'plats' : 'platser'} kvar.`,
-        }
-      }
-    }
-  } else {
-    logger.warn('event.registration.capacity_guard_skipped', { tenantId: ctx.id, eventId: event.id })
-  }
-
-  // g. Insert exactly ONE row (DB defaults handle status/created_at). tenant_id
-  //    is the server-resolved id (the only isolation; anon RLS is insert-only).
-  const { error } = await supabase.from('event_registrations').insert({
-    tenant_id: ctx.id,
-    event_id: event.id,
-    name,
-    email,
-    phone: phone || null,
-    party_size: partySize,
-    message: message || null,
+  // f. Atomisk kapacitetsvakt + insert genom en server-only RPC. Funktionen
+  //    låser eventraden och räknar både bekräftade platser och checkout-holds,
+  //    så två samtidiga anmälningar kan aldrig överboka eventet.
+  const writer = createServiceClient()
+  if (!writer) return { phase: 'error', message: 'Något gick fel. Försök igen.' }
+  const { error } = await writer.rpc('create_onsite_event_registration', {
+    p_tenant: ctx.id,
+    p_event: event.id,
+    p_name: name,
+    p_email: email,
+    p_phone: phone || '',
+    p_party_size: partySize,
+    p_message: message || '',
   })
+  if (error?.code === '23P01') {
+    const left = Number.parseInt(error.details ?? '', 10)
+    return {
+      phase: 'error',
+      message:
+        !Number.isFinite(left) || left <= 0
+          ? 'Tyvärr, tillfället är fullbokat.'
+          : `Tyvärr, det finns bara ${left} ${left === 1 ? 'plats' : 'platser'} kvar.`,
+    }
+  }
   if (error) {
     return { phase: 'error', message: 'Något gick fel. Försök igen.' }
   }
 
   // h. Bekräftelsemejl — best-effort by contract, never blocks the anmälan.
   await sendEventConfirmationEmail({
-    supabase,
+    supabase: writer,
     tenantId: ctx.id,
     tenantName: ctx.name,
     to: email,

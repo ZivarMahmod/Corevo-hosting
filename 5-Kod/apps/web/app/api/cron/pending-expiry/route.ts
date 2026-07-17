@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/platform/service'
+import { authorizedCronRequest } from '@/lib/security/cron-auth'
 
 // Pending-expiry cron endpoint. Invoked by an EXTERNAL scheduler — a Cloudflare
 // Cron Trigger hitting this URL, or any scheduler that can send the shared-secret
@@ -12,15 +13,8 @@ import { createServiceClient } from '@/lib/platform/service'
 
 export const dynamic = 'force-dynamic'
 
-function authorized(req: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return false // unconfigured → closed (never open)
-  const header = req.headers.get('authorization') ?? ''
-  return header === `Bearer ${secret}`
-}
-
 async function run(req: Request): Promise<Response> {
-  if (!authorized(req)) {
+  if (!(await authorizedCronRequest(req))) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401,
       headers: { 'content-type': 'application/json' },
@@ -29,22 +23,29 @@ async function run(req: Request): Promise<Response> {
 
   const admin = createServiceClient()
   if (!admin) {
-    // No service role configured (local/dev) → degrade to a no-op, same as reminders.
-    return new Response(JSON.stringify({ swept: 0 }), {
-      status: 200,
+    return new Response(JSON.stringify({ error: 'service_unavailable' }), {
+      status: 503,
       headers: { 'content-type': 'application/json' },
     })
   }
 
-  const { data, error } = await admin.rpc('expire_abandoned_pending_bookings', { p_ttl_min: 30 })
-  if (error) {
-    return new Response(JSON.stringify({ swept: 0 }), {
-      status: 200,
+  const [bookings, shop, slotHolds] = await Promise.all([
+    admin.rpc('expire_abandoned_pending_bookings', { p_ttl_min: 30 }),
+    admin.rpc('prune_expired_shop_reserves'),
+    admin.rpc('prune_expired_slot_holds'),
+  ])
+  if (bookings.error || shop.error || slotHolds.error) {
+    return new Response(JSON.stringify({ error: 'cron_failed' }), {
+      status: 500,
       headers: { 'content-type': 'application/json' },
     })
   }
 
-  return new Response(JSON.stringify({ swept: data ?? 0 }), {
+  return new Response(JSON.stringify({
+    swept: bookings.data ?? 0,
+    shopReservationsPruned: shop.data ?? 0,
+    slotHoldsPruned: slotHolds.data ?? 0,
+  }), {
     status: 200,
     headers: { 'content-type': 'application/json' },
   })

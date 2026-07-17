@@ -1,6 +1,17 @@
 -- 0077 runtime: riktiga triggers, RPC:er och scope-helpers. Allt rullas tillbaka.
 begin;
 
+-- Keep every calendar-sensitive assertion on the same future Monday. The
+-- transaction timestamp is stable, so all later expressions share one clock.
+select set_config(
+  'corevo.test_base_monday',
+  (
+    (date_trunc('week', current_timestamp at time zone 'UTC') + interval '14 days')
+    at time zone 'UTC'
+  )::text,
+  true
+);
+
 grant select, insert, update, delete on public.locations, public.services,
   public.staff, public.staff_services, public.working_hours, public.time_off,
   public.customers, public.bookings, public.user_location_access,
@@ -50,7 +61,9 @@ insert into public.location_closures (
   '77000000-0000-0000-0000-000000000051',
   '77000000-0000-0000-0000-000000000001',
   '77000000-0000-0000-0000-000000000011',
-  '2027-01-04 14:00+00', '2027-01-04 15:00+00', 'Closed'
+  current_setting('corevo.test_base_monday')::timestamptz + interval '14 hours',
+  current_setting('corevo.test_base_monday')::timestamptz + interval '15 hours',
+  'Closed'
 );
 insert into public.customers (id, tenant_id, full_name) values
   ('77000000-0000-0000-0000-000000000061', '77000000-0000-0000-0000-000000000001', 'Customer A'),
@@ -59,8 +72,8 @@ insert into public.bookings (
   id, tenant_id, location_id, staff_id, service_id, customer_id,
   start_ts, end_ts, status, price_cents
 ) values
-  ('77000000-0000-0000-0000-000000000071', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000011', '77000000-0000-0000-0000-000000000041', '77000000-0000-0000-0000-000000000031', '77000000-0000-0000-0000-000000000061', '2027-01-04 08:00+00', '2027-01-04 08:30+00', 'confirmed', 0),
-  ('77000000-0000-0000-0000-000000000072', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000012', '77000000-0000-0000-0000-000000000042', '77000000-0000-0000-0000-000000000032', '77000000-0000-0000-0000-000000000062', '2027-01-04 08:00+00', '2027-01-04 08:30+00', 'confirmed', 0);
+  ('77000000-0000-0000-0000-000000000071', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000011', '77000000-0000-0000-0000-000000000041', '77000000-0000-0000-0000-000000000031', '77000000-0000-0000-0000-000000000061', current_setting('corevo.test_base_monday')::timestamptz + interval '8 hours', current_setting('corevo.test_base_monday')::timestamptz + interval '8 hours 30 minutes', 'confirmed', 0),
+  ('77000000-0000-0000-0000-000000000072', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000012', '77000000-0000-0000-0000-000000000042', '77000000-0000-0000-0000-000000000032', '77000000-0000-0000-0000-000000000062', current_setting('corevo.test_base_monday')::timestamptz + interval '8 hours', current_setting('corevo.test_base_monday')::timestamptz + interval '8 hours 30 minutes', 'confirmed', 0);
 
 -- Publiken får bara godkända staff/start-par, aldrig de råa intervallen.
 reset role;
@@ -85,12 +98,12 @@ begin
       '77000000-0000-0000-0000-000000000031',
       array['77000000-0000-0000-0000-000000000041'::uuid],
       array[
-        '2027-01-04 08:00+00'::timestamptz,
-        '2027-01-04 09:00+00'::timestamptz,
-        '2027-01-04 14:00+00'::timestamptz
+        current_setting('corevo.test_base_monday')::timestamptz + interval '8 hours',
+        current_setting('corevo.test_base_monday')::timestamptz + interval '9 hours',
+        current_setting('corevo.test_base_monday')::timestamptz + interval '14 hours'
       ]
     );
-  if n <> 1 or only_start <> '2027-01-04 09:00+00'::timestamptz then
+  if n <> 1 or only_start <> current_setting('corevo.test_base_monday')::timestamptz + interval '9 hours' then
     raise exception 'public_bookable_projection_wrong: %, %', n, only_start;
   end if;
 end $$;
@@ -109,7 +122,7 @@ begin
   r := public.create_admin_booking(
     '77000000-0000-0000-0000-000000000031',
     '77000000-0000-0000-0000-000000000041',
-    '2027-01-04 10:00+00',
+    current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours',
     '77000000-0000-0000-0000-000000000081',
     '77000000-0000-0000-0000-000000000061',
     null, null, null, 'existing',
@@ -126,13 +139,15 @@ begin
   ) values (
     '77000000-0000-0000-0000-000000000001',
     '77000000-0000-0000-0000-000000000011',
-    '2027-01-04 10:00+00', '2027-01-04 10:30+00', 'Added after booking'
+    current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours',
+    current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours 30 minutes',
+    'Added after booking'
   );
 
   r := public.create_admin_booking(
     '77000000-0000-0000-0000-000000000031',
     '77000000-0000-0000-0000-000000000041',
-    '2027-01-04 10:00+00',
+    current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours',
     '77000000-0000-0000-0000-000000000081',
     '77000000-0000-0000-0000-000000000061',
     null, null, null, 'retry',
@@ -150,7 +165,7 @@ begin
   r := public.create_admin_booking(
     '77000000-0000-0000-0000-000000000031',
     '77000000-0000-0000-0000-000000000041',
-    '2027-01-04 11:00+00',
+    current_setting('corevo.test_base_monday')::timestamptz + interval '11 hours',
     '77000000-0000-0000-0000-000000000082',
     null, 'New Customer', null, null, null,
     '77000000-0000-0000-0000-000000000011'
@@ -166,7 +181,7 @@ do $$ begin
     perform public.create_admin_booking(
       '77000000-0000-0000-0000-000000000031',
       '77000000-0000-0000-0000-000000000041',
-      '2027-01-04 12:00+00',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '12 hours',
       '77000000-0000-0000-0000-000000000083',
       '77000000-0000-0000-0000-000000000062',
       null, null, null, null,
@@ -178,7 +193,7 @@ do $$ begin
     perform public.create_admin_booking(
       '77000000-0000-0000-0000-000000000032',
       '77000000-0000-0000-0000-000000000042',
-      '2027-01-04 12:00+00',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '12 hours',
       '77000000-0000-0000-0000-000000000084',
       null, 'Forbidden', null, null, null,
       '77000000-0000-0000-0000-000000000012'
@@ -197,11 +212,11 @@ begin
     '77000000-0000-0000-0000-000000000011',
     '77000000-0000-0000-0000-000000000041',
     '77000000-0000-0000-0000-000000000031',
-    '2027-01-04 13:00+00',
-    '2027-01-04 10:00+00',
+    current_setting('corevo.test_base_monday')::timestamptz + interval '13 hours',
+    current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours',
     '77000000-0000-0000-0000-000000000041'
   );
-  if (r->>'start')::timestamptz <> '2027-01-04 13:00+00'::timestamptz then raise exception 'reschedule_start_wrong'; end if;
+  if (r->>'start')::timestamptz <> current_setting('corevo.test_base_monday')::timestamptz + interval '13 hours' then raise exception 'reschedule_start_wrong'; end if;
   if not exists (select 1 from public.bookings b where b.id=bid and b.end_ts-b.start_ts=interval '30 minutes') then raise exception 'reschedule_duration_changed'; end if;
   begin
     perform public.reschedule_admin_booking(
@@ -209,8 +224,8 @@ begin
       '77000000-0000-0000-0000-000000000012',
       '77000000-0000-0000-0000-000000000042',
       '77000000-0000-0000-0000-000000000031',
-      '2027-01-04 13:00+00',
-      '2027-01-04 13:00+00',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '13 hours',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '13 hours',
       '77000000-0000-0000-0000-000000000041'
     );
     raise exception 'cross_location_reschedule_succeeded';
@@ -221,8 +236,8 @@ begin
       '77000000-0000-0000-0000-000000000011',
       '77000000-0000-0000-0000-000000000041',
       '77000000-0000-0000-0000-000000000031',
-      '2027-01-04 13:30+00',
-      '2027-01-04 10:00+00',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '13 hours 30 minutes',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours',
       '77000000-0000-0000-0000-000000000041'
     );
     raise exception 'stale_reschedule_succeeded';
@@ -233,8 +248,8 @@ begin
       '77000000-0000-0000-0000-000000000011',
       '77000000-0000-0000-0000-000000000041',
       '77000000-0000-0000-0000-000000000031',
-      '2027-01-04 14:00+00',
-      '2027-01-04 13:00+00',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '14 hours',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '13 hours',
       '77000000-0000-0000-0000-000000000041'
     );
     raise exception 'closure_reschedule_succeeded';
@@ -267,7 +282,8 @@ begin
   tid := public.create_admin_time_off(
     '77000000-0000-0000-0000-000000000011',
     '77000000-0000-0000-0000-000000000041',
-    '2027-01-04 16:00+00', '2027-01-04 16:30+00',
+    current_setting('corevo.test_base_monday')::timestamptz + interval '16 hours',
+    current_setting('corevo.test_base_monday')::timestamptz + interval '16 hours 30 minutes',
     'leave', 'Appointment', null
   );
   if not exists (select 1 from public.time_off t where t.id=tid and t.kind='leave' and t.reason='Appointment') then raise exception 'structured_time_off_missing'; end if;
@@ -277,7 +293,8 @@ begin
     perform public.create_admin_time_off(
       '77000000-0000-0000-0000-000000000011',
       '77000000-0000-0000-0000-000000000041',
-      '2027-01-04 16:00+00', '2027-01-04 16:30+00',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '16 hours',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '16 hours 30 minutes',
       'holiday', null, null
     );
     raise exception 'invalid_time_off_kind_succeeded';
@@ -292,15 +309,24 @@ begin
     from public.preview_admin_time_off_impacts(
       '77000000-0000-0000-0000-000000000011',
       '77000000-0000-0000-0000-000000000041',
-      '2027-01-04 10:50+00', '2027-01-04 11:40+00'
+      current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours 50 minutes',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '11 hours 40 minutes'
     );
   if impact_count <> 1 then raise exception 'absence_preview_count_%', impact_count; end if;
 
   ids := public.create_admin_time_off_series(
     '77000000-0000-0000-0000-000000000011',
     '77000000-0000-0000-0000-000000000041',
-    '[{"start_ts":"2027-01-04T10:50:00Z","end_ts":"2027-01-04T11:40:00Z"},
-      {"start_ts":"2027-01-11T10:50:00Z","end_ts":"2027-01-11T11:40:00Z"}]'::jsonb,
+    jsonb_build_array(
+      jsonb_build_object(
+        'start_ts', current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours 50 minutes',
+        'end_ts', current_setting('corevo.test_base_monday')::timestamptz + interval '11 hours 40 minutes'
+      ),
+      jsonb_build_object(
+        'start_ts', current_setting('corevo.test_base_monday')::timestamptz + interval '7 days 10 hours 50 minutes',
+        'end_ts', current_setting('corevo.test_base_monday')::timestamptz + interval '7 days 11 hours 40 minutes'
+      )
+    ),
     'sick', 'Sjukfrånvaro', '77000000-0000-0000-0000-000000000091'
   );
   if cardinality(ids) <> 2 then raise exception 'time_off_series_not_atomic'; end if;
@@ -325,7 +351,7 @@ do $$ begin
     perform public.create_admin_booking(
       '77000000-0000-0000-0000-000000000031',
       '77000000-0000-0000-0000-000000000041',
-      '2027-01-04 12:30+00',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '12 hours 30 minutes',
       '77000000-0000-0000-0000-000000000085',
       null, 'Missing location', null, null, null, null
     );
@@ -344,7 +370,8 @@ do $$ begin
     perform public.create_admin_time_off(
       '77000000-0000-0000-0000-000000000011',
       '77000000-0000-0000-0000-000000000041',
-      '2027-01-04 16:00+00', '2027-01-04 16:30+00',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '16 hours',
+      current_setting('corevo.test_base_monday')::timestamptz + interval '16 hours 30 minutes',
       'other', null, null
     );
     raise exception 'empty_admin_time_off_succeeded';

@@ -22,6 +22,7 @@ jobs:
           cat /tmp/out
           [ "$code" = "200" ] || { echo "pending-expiry HTTP $code"; exit 1; }
       - name: Send due reminders
+        if: ${{ !cancelled() }}
         run: |
           code=$(curl -s -o /tmp/out -w '%{http_code}' \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \

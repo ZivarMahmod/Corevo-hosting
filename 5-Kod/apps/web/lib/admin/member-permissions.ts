@@ -35,7 +35,7 @@ export async function getMemberPermissions(params: {
   staffId: string
 }): Promise<MemberPermissions> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('tenant_member_permissions')
     .select(
       'operational_role, can_view_all_calendars, can_manage_customers, can_edit_site, can_view_daily_metrics',
@@ -44,6 +44,7 @@ export async function getMemberPermissions(params: {
     .eq('staff_id', params.staffId)
     .maybeSingle()
 
+  if (error) throw new Error('member_permissions_load_failed')
   if (!data) return DEFAULT_MEMBER_PERMISSIONS
   return {
     operationalRole: data.operational_role === 'manager' ? 'manager' : 'staff',
@@ -56,12 +57,14 @@ export async function getMemberPermissions(params: {
 
 export async function listTenantMemberPermissions(tenantId: string) {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('tenant_member_permissions')
     .select(
       'staff_id, operational_role, can_view_all_calendars, can_manage_customers, can_edit_site, can_view_daily_metrics',
     )
     .eq('tenant_id', tenantId)
+
+  if (error) throw new Error('member_permissions_load_failed')
 
   return new Map(
     (data ?? []).map((row) => [

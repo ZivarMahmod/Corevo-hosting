@@ -63,14 +63,14 @@ export function StorefrontPreview({
   // → undefined → attrapperna nedan, byte-identiskt med förr.
   const chrome = themeChrome(theme)
   const activeKeys = activeModuleKeys(cfg)
-  const cartEnabled = activeKeys.includes('webshop')
+  const cartEnabled = activeKeys.includes('shop')
   const customerAccountsEnabled = activeKeys.includes('kundkonton')
   const fullFooter = theme === 'salvia' || theme === 'freshcut'
   // Modulstyrd meny, samma regel som (public)/layout: en modul som är av får ingen länk.
   // Kapad till 6 av mallens chrome självt (nio bryter till två rader).
   const previewNavLinks = [
     { href: '/', label: 'Hem' },
-    ...(activeKeys.includes('webshop') ? [{ href: '/shop', label: 'Butik' }] : []),
+    ...(activeKeys.includes('shop') ? [{ href: '/shop', label: 'Butik' }] : []),
     { href: '/tjanster', label: 'Tjänster' },
     ...(activeKeys.includes('blogg') ? [{ href: '/blogg', label: 'Blogg' }] : []),
     { href: '/om', label: 'Om oss' },

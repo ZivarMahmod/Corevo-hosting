@@ -127,6 +127,8 @@ export type PaypalCapture = {
   reference: string | null
   amountCents: number | null
   currency: string | null
+  /** Capture-id:t krävs för en idempotent refund om vår order redan är terminal. */
+  captureId: string | null
 }
 
 /**
@@ -170,17 +172,41 @@ function readOrder(raw: unknown): PaypalCapture {
       reference_id?: string
       custom_id?: string
       amount?: { value?: string; currency_code?: string }
-      payments?: { captures?: { amount?: { value?: string; currency_code?: string } }[] }
+      payments?: { captures?: { id?: string; amount?: { value?: string; currency_code?: string } }[] }
     }[]
   }
   const pu = o.purchase_units?.[0]
-  const amt = pu?.payments?.captures?.[0]?.amount ?? pu?.amount
+  const capture = pu?.payments?.captures?.[0]
+  const amt = capture?.amount ?? pu?.amount
   return {
     status: o.status ?? 'UNKNOWN',
     reference: pu?.custom_id ?? pu?.reference_id ?? null,
     amountCents: amt?.value ? Math.round(Number(amt.value) * 100) : null,
     currency: amt?.currency_code ?? null,
+    captureId: capture?.id ?? null,
   }
+}
+
+/** Återbetala en PayPal-capture. `paypal-request-id` gör retries idempotenta. */
+export async function refundPaypalCapture(captureId: string): Promise<boolean> {
+  const c = creds()
+  if (!c || !captureId) return false
+  const token = await accessToken(c)
+  if (!token) return false
+
+  const res = await fetch(
+    `${c.base}/v2/payments/captures/${encodeURIComponent(captureId)}/refund`,
+    {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        'paypal-request-id': `refund-${captureId}`,
+      },
+      body: '{}',
+    },
+  )
+  return res.ok
 }
 
 /**

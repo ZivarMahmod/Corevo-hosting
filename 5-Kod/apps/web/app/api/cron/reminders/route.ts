@@ -1,4 +1,5 @@
 import { sendDueReminders } from '@/lib/notifications/reminders'
+import { authorizedCronRequest } from '@/lib/security/cron-auth'
 
 // Reminder cron endpoint (G10 step 3). Invoked by an EXTERNAL scheduler — a
 // Cloudflare Cron Trigger (recommended; see docs/ops/backup-restore.md) hitting
@@ -11,25 +12,25 @@ import { sendDueReminders } from '@/lib/notifications/reminders'
 
 export const dynamic = 'force-dynamic'
 
-function authorized(req: Request): boolean {
-  const secret = process.env.CRON_SECRET
-  if (!secret) return false // unconfigured → closed (never open)
-  const header = req.headers.get('authorization') ?? ''
-  return header === `Bearer ${secret}`
-}
-
 async function run(req: Request): Promise<Response> {
-  if (!authorized(req)) {
+  if (!(await authorizedCronRequest(req))) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401,
       headers: { 'content-type': 'application/json' },
     })
   }
-  const result = await sendDueReminders()
-  return new Response(JSON.stringify({ ok: true, ...result }), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
-  })
+  try {
+    const result = await sendDueReminders()
+    return new Response(JSON.stringify({ ok: true, ...result }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  } catch {
+    return new Response(JSON.stringify({ error: 'cron_failed' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
 }
 
 export async function POST(req: Request): Promise<Response> {

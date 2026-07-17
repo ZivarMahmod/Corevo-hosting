@@ -69,6 +69,8 @@ describe('W2 StorefrontPreview', () => {
     }
     const html = render(cfgWith({ branch: 'frisor', moduleStates: states }))
     expect(html).toContain('Webshop') // shop live → section present
+    expect(html).toContain('href="/shop"')
+    expect(html).toContain('Varukorg')
     expect(html).not.toContain('Begär offert') // offert off → absent
     expect(html).toContain('Stammis') // lojalitet paused → present
     expect(html).toContain('Pausad') // …with the read-only paused notice
@@ -86,5 +88,7 @@ describe('W2 StorefrontPreview', () => {
     expect(html).toContain('data-world="storefront"')
     // no module states seeded → no main sections, bare layout chrome only
     expect(html).not.toContain('Webshop')
+    expect(html).not.toContain('href="/shop"')
+    expect(html).not.toContain('Varukorg')
   })
 })

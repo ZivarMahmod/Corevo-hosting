@@ -4,13 +4,16 @@ import { describe, expect, it } from 'vitest'
 
 const webRoot = resolve(import.meta.dirname, '../..')
 const repoRoot = resolve(webRoot, '../..')
-const readWeb = (path: string) => readFileSync(resolve(webRoot, path), 'utf8')
-const readRepo = (path: string) => readFileSync(resolve(repoRoot, path), 'utf8')
+const normalizedFile = (path: string) => readFileSync(path, 'utf8').replaceAll('\r\n', '\n')
+const readWeb = (path: string) => normalizedFile(resolve(webRoot, path))
+const readRepo = (path: string) => normalizedFile(resolve(repoRoot, path))
 
 describe('Inställningar v2 design- och säkerhetskontrakt', () => {
   it('renderar paketets exakta desktop- och mobilskal', () => {
     const component = readWeb('components/admin/SettingsV2.tsx')
     const css = readWeb('components/admin/settings-v2.module.css')
+    const loading = readWeb('components/admin/SettingsWorkspaceLoading.tsx')
+    const errorBoundary = readWeb('app/(admin)/error.tsx')
 
     expect(css).toContain('grid-template-columns: 308px minmax(0, 1fr)')
     expect(css).toContain('max-width: 760px')
@@ -19,6 +22,11 @@ describe('Inställningar v2 design- och säkerhetskontrakt', () => {
     expect(css).toContain('--settings-line: #33332c')
     expect(component).toContain('Tillbaka till inställningar')
     expect(component).toContain('Sök — öppettider, pris, behörighet…')
+    expect(component).toContain('settingsSearchEntries(categories)')
+    expect(component).toContain('const mobilePaneOpen = selectedFromUrl !== null')
+    expect(component).toContain("router.replace('/admin/installningar'")
+    expect(loading).toContain('settings-loading')
+    expect(errorBoundary).not.toContain('Kalendern kunde inte laddas')
   })
 
   it('har paketets grupper, söksynonymer och varnings-only-status', () => {
@@ -50,23 +58,105 @@ describe('Inställningar v2 design- och säkerhetskontrakt', () => {
   })
 
   it('kopplar sidan till central behörighets-DAL och befintliga äganderoutes', () => {
+    const component = readWeb('components/admin/SettingsV2.tsx')
     const session = readWeb('lib/auth/session.ts')
     const page = readWeb('app/(admin)/admin/installningar/page.tsx')
     const map = readWeb('lib/admin/settings-map.ts')
 
     expect(session).toContain('hasAdminAreaPermission')
+    expect(component).toContain("category.id !== 'roller'")
+    expect(component).toContain('router.push(category.href)')
     expect(page).toContain('<SettingsV2')
+    expect(page).toContain('redirect(category.href)')
+    expect(page).toContain("requested === 'roller'")
+    expect(page).toContain("requested === 'roller'\n      ? listTenantMemberPermissions(tenant.id)")
+    expect(page).toContain("requireOrganizationOwner('installningar')")
+    expect(page).not.toContain("if (!requested) redirect('/admin/tjanster')")
+    expect(page).toContain("initialCategory={requested ?? 'tjanster'}")
     for (const route of [
       '/admin/tjanster',
       '/admin/personal',
       '/admin/scheman',
       '/admin/platser',
       '/admin/installningar/bokning',
-      '/admin/sida',
+      '/admin/installningar/bokningsflode',
       '/admin/installningar/betalning',
       '/admin/installningar/konto',
     ]) {
       expect(map).toContain(route)
+    }
+    expect(map).not.toContain("href: '/admin/sida?flik=bokning'")
+  })
+
+  it('håller de verkliga ägandeytorna i samma vertikala inställningsskal', () => {
+    const workspace = readWeb('components/admin/SettingsWorkspace.tsx')
+    expect(workspace).toContain('SettingsNavigation')
+    expect(workspace).toContain('Tillbaka till inställningar')
+
+    const owners = {
+      'app/(admin)/admin/tjanster/page.tsx': 'tjanster',
+      'app/(admin)/admin/personal/page.tsx': 'personal',
+      'app/(admin)/admin/scheman/page.tsx': 'scheman',
+      'app/(admin)/admin/platser/page.tsx': 'platser',
+      'app/(admin)/admin/installningar/bokning/page.tsx': 'bokningsregler',
+      'app/(admin)/admin/installningar/bokningsflode/page.tsx': 'bokningsflode',
+      'app/(admin)/admin/installningar/betalning/page.tsx': 'betalning',
+      'app/(admin)/admin/installningar/paminnelser/page.tsx': 'paminnelser',
+      'app/(admin)/admin/installningar/integrationer/page.tsx': 'integrationer',
+      'app/(admin)/admin/installningar/konto/page.tsx': 'konto',
+      'app/(admin)/admin/installningar/sekretess/page.tsx': 'sekretess',
+    } as const
+
+    for (const [path, category] of Object.entries(owners)) {
+      const page = readWeb(path)
+      expect(page).toContain('<SettingsWorkspace')
+      expect(page).toContain(`currentCategory="${category}"`)
+      expect(page).not.toContain('Alla inställningar')
+    }
+
+    const legacyCompany = readWeb('app/(admin)/admin/installningar/foretag/page.tsx')
+    expect(legacyCompany).toContain("redirect('/admin/installningar/paminnelser')")
+
+    const bookingFlow = readWeb('app/(admin)/admin/installningar/bokningsflode/page.tsx')
+    expect(bookingFlow).toContain('href="/admin/sida?flik=bokning"')
+  })
+
+  it('behåller inställningsskalet i laddningslägen för alla fristående ägandeytor', () => {
+    for (const path of [
+      'app/(admin)/admin/installningar/loading.tsx',
+      'app/(admin)/admin/tjanster/loading.tsx',
+      'app/(admin)/admin/personal/loading.tsx',
+      'app/(admin)/admin/scheman/loading.tsx',
+      'app/(admin)/admin/platser/loading.tsx',
+    ]) {
+      expect(readWeb(path)).toContain('SettingsWorkspaceLoading')
+    }
+  })
+
+  it('behåller inställningsskalet i fel- och saknar-företag-lägen', () => {
+    expect(readWeb('components/admin/SettingsRouteError.tsx')).toContain('<SettingsWorkspace')
+    for (const path of [
+      'app/(admin)/admin/installningar/error.tsx',
+      'app/(admin)/admin/tjanster/error.tsx',
+      'app/(admin)/admin/personal/error.tsx',
+      'app/(admin)/admin/scheman/error.tsx',
+      'app/(admin)/admin/platser/error.tsx',
+    ]) {
+      expect(readWeb(path)).toContain('SettingsRouteError')
+    }
+    for (const path of [
+      'app/(admin)/admin/tjanster/page.tsx',
+      'app/(admin)/admin/personal/page.tsx',
+      'app/(admin)/admin/scheman/page.tsx',
+      'app/(admin)/admin/platser/page.tsx',
+      'app/(admin)/admin/installningar/bokning/page.tsx',
+      'app/(admin)/admin/installningar/betalning/page.tsx',
+      'app/(admin)/admin/installningar/paminnelser/page.tsx',
+      'app/(admin)/admin/installningar/integrationer/page.tsx',
+      'app/(admin)/admin/installningar/konto/page.tsx',
+      'app/(admin)/admin/installningar/sekretess/page.tsx',
+    ]) {
+      expect(readWeb(path)).toContain('<SettingsWorkspaceEmpty')
     }
   })
 })
