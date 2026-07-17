@@ -2,12 +2,13 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { currentTenant } from '@/lib/tenant-data'
 
-// INTEGRITETSPOLICY (plan 003 — juridikpaketet, GDPR art. 13). Tenanten är
+// INTEGRITETSPOLICY (plan 003 — juridikpaketet, GDPR art. 13/14). Tenanten är
 // personuppgiftsansvarig, Corevo är personuppgiftsbiträde/plattform. Per-tenant-sida
 // (namn/org-nr/kontakt ur settings), teman-neutral typografi.
 //
-// TEXTERNA ÄR STRUKTURELLA PLATSHÅLLARE: juridiskt granskad text är operatörens
-// ansvar före lansering (sök JURIDIK-TEXT i koden).
+// TEXTSTATUS 2026-07-17: fullständig standardtext enligt GDPR + bokföringslagen —
+// skriven av Corevo, INTE advokatgranskad. Rekommendation: juridisk genomläsning
+// innan plattformen skalar förbi de första kunderna.
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Integritetspolicy' }
@@ -27,47 +28,93 @@ export default async function IntegritetspolicyPage() {
       <p>
         <strong>{tenant.name}</strong>
         {orgNr ? <> (org.nr {orgNr})</> : null} är personuppgiftsansvarig för de
-        personuppgifter som samlas in via bokningar och köp på den här webbplatsen.
-        Corevo är plattformsleverantör och behandlar uppgifterna som
-        personuppgiftsbiträde på uppdrag av {tenant.name}.
+        personuppgifter som samlas in via bokningar, köp och kontaktformulär på den här
+        webbplatsen. Plattformen drivs av Corevo, som behandlar uppgifterna som
+        personuppgiftsbiträde på uppdrag av {tenant.name} enligt ett
+        personuppgiftsbiträdesavtal.
       </p>
 
-      <h2>Vilka uppgifter samlas in</h2>
-      {/* JURIDIK-TEXT: granskas av operatör */}
-      <p>
-        Vid bokning och köp samlar vi in namn, e-postadress och telefonnummer samt
-        uppgifter om din bokning eller beställning. Betalningsuppgifter hanteras av vår
-        betalleverantör och lagras inte av oss.
-      </p>
+      <h2>Vilka uppgifter vi behandlar</h2>
+      <ul>
+        <li>
+          <strong>Bokning:</strong> namn, e-postadress, telefonnummer, vald tjänst och
+          tid, samt eventuella önskemål du lämnar.
+        </li>
+        <li>
+          <strong>Köp:</strong> namn, kontaktuppgifter, leveransadress och orderinnehåll.
+          Kortuppgifter hanteras av vår betalleverantör (t.ex. Stripe eller PayPal) och
+          lagras aldrig hos oss.
+        </li>
+        <li>
+          <strong>Konto:</strong> inloggningsuppgifter, bokningshistorik och de
+          preferenser du själv anger.
+        </li>
+        <li>
+          <strong>Kontaktformulär:</strong> namn, kontaktuppgifter och ditt meddelande.
+        </li>
+      </ul>
 
       <h2>Ändamål och rättslig grund</h2>
-      {/* JURIDIK-TEXT: granskas av operatör */}
-      <p>
-        Uppgifterna används för att hantera din bokning eller ditt köp (fullgörande av
-        avtal), skicka bekräftelser och påminnelser, samt uppfylla bokförings- och andra
-        rättsliga skyldigheter. Marknadsföring skickas endast med ditt samtycke.
-      </p>
+      <ul>
+        <li>
+          Hantera bokningar och köp, skicka bekräftelser, påminnelser och kvitton —{' '}
+          <em>fullgörande av avtal</em> (art. 6.1 b GDPR).
+        </li>
+        <li>
+          Bokföring och redovisning — <em>rättslig förpliktelse</em> (art. 6.1 c,
+          bokföringslagen).
+        </li>
+        <li>
+          Svara på förfrågningar och ge kundservice — <em>berättigat intresse</em>{' '}
+          (art. 6.1 f).
+        </li>
+        <li>
+          Erbjudanden och marknadsföring — endast med ditt <em>samtycke</em> (art. 6.1 a),
+          som du när som helst kan återkalla utan att det påverkar bokningsbekräftelser
+          eller annan nödvändig kommunikation.
+        </li>
+      </ul>
 
-      <h2>Lagringstid</h2>
-      {/* JURIDIK-TEXT: granskas av operatör */}
+      <h2>Lagringstider</h2>
+      <ul>
+        <li>Boknings- och kunduppgifter: så länge kundrelationen är aktiv.</li>
+        <li>Bokföringsunderlag (kvitton, ordrar): 7 år enligt bokföringslagen.</li>
+        <li>Kontaktmeddelanden: gallras automatiskt efter 18 månader.</li>
+      </ul>
+
+      <h2>Vilka som tar del av uppgifterna</h2>
       <p>
-        Uppgifter sparas så länge de behövs för ändamålet. Bokföringsunderlag sparas
-        enligt bokföringslagen (7 år). Kontaktmeddelanden gallras löpande.
+        Uppgifterna delas endast med de leverantörer som krävs för driften: Corevo
+        (plattform och drift), betalleverantör (Stripe/PayPal) vid onlinebetalning samt
+        e-post-/SMS-leverantör för bekräftelser och påminnelser. Samtliga behandlar
+        uppgifterna på uppdrag och enligt avtal. Uppgifter säljs aldrig vidare.
       </p>
 
       <h2>Dina rättigheter</h2>
-      {/* JURIDIK-TEXT: granskas av operatör */}
       <p>
-        Du har rätt att begära registerutdrag, rättelse och radering av dina uppgifter,
-        samt att invända mot behandling. Kontakta oss
+        Du har rätt att få tillgång till dina uppgifter (registerutdrag), få felaktiga
+        uppgifter rättade, bli raderad ("rätten att bli glömd"), invända mot behandling
+        som stödjer sig på berättigat intresse, samt få ut dina uppgifter i ett
+        maskinläsbart format (dataportabilitet). Har du ett konto kan du själv ladda ner
+        och radera dina uppgifter från kontosidan; annars kontaktar du oss
         {email ? (
           <>
             {' '}
             på <a href={`mailto:${email}`}>{email}</a>
           </>
         ) : null}{' '}
-        så hjälper vi dig. Du har också rätt att lämna klagomål till
-        Integritetsskyddsmyndigheten (IMY).
+        så hjälper vi dig utan onödigt dröjsmål. Radering påverkar inte uppgifter vi
+        enligt lag måste spara (t.ex. bokföringsunderlag).
+      </p>
+      <p>
+        Anser du att vi behandlar dina uppgifter felaktigt har du rätt att lämna
+        klagomål till Integritetsskyddsmyndigheten (IMY, imy.se).
+      </p>
+
+      <h2>Cookies</h2>
+      <p>
+        Webbplatsen använder endast nödvändiga cookies för inloggning och
+        bokningsflödet. Inga spårnings- eller marknadsföringscookies sätts.
       </p>
 
       <h2>Villkor</h2>
