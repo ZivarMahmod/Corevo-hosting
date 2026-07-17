@@ -5,6 +5,7 @@ import { listCustomers, customerStats } from '@/lib/admin/data'
 import { getCustomerStaffFavorite } from '@/lib/kund/favorites'
 import { formatDateTime } from '@/lib/admin/format'
 import { CustomerExport, type ExportRow } from './CustomerExport'
+import { CreateCustomerForm } from '@/components/admin/CreateCustomerForm'
 import styles from '@/components/admin/kunder-v2.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -85,10 +86,11 @@ export default async function CustomersIndexPage() {
             <div className={styles.eyebrow}>SÅ BYGGS REGISTRET</div>
             <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--c-ink-2)' }}>
               Kunddatabasen byggs automatiskt från bokningarna — varje återkommande gäst får
-              en stabil rad. Det finns ingen manuell &quot;skapa kund&quot;; en ny kund uppstår
-              när första bokningen görs på din publika sajt eller i kalendern.
+              en stabil rad. Du kan också lägga in en stamkund manuellt, utan att först
+              skapa en bokning.
             </p>
-            <div style={{ marginTop: 14 }}>
+            <div style={{ marginTop: 14, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+              <CreateCustomerForm />
               <CustomerExport rows={exportRows} />
             </div>
           </div>

@@ -28,6 +28,7 @@ const STAFF_DENIED: AdminArea[] = [
   'platser',
   'kurser',
   'offerter',
+  'kontakt',
   'statistik',
 ]
 

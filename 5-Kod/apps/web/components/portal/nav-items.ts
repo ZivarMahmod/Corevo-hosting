@@ -83,6 +83,9 @@ export const NAV: Record<PortalRole, NavConfig> = {
       { href: '/admin/statistik', label: 'Statistik', icon: 'trendUp', minLevel: A.statistik },
       { group: 'Hantera' },
       { href: '/admin/kunder', label: 'Kunder', icon: 'user', minLevel: A.kunder },
+      // Kontaktformuläret finns på VARJE mall (ingen modul, kan aldrig stängas av) —
+      // inkorgen är därför en fast Hantera-post, inte en modulpost (plan 007).
+      { href: '/admin/kontakt', label: 'Meddelanden', icon: 'mail', minLevel: A.kontakt },
       { href: '/admin/tjanster', label: 'Tjänster', icon: 'scissors', minLevel: A.tjanster },
       { href: '/admin/personal', label: 'Personal', icon: 'users', minLevel: A.personal },
       { href: '/admin/platser', label: 'Platser', icon: 'building', minLevel: A.platser },

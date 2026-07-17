@@ -167,3 +167,103 @@ export async function eraseCustomerData(args: {
     return { ok: false, reason: 'error' }
   }
 }
+
+/**
+ * ÄGAR-INITIERAD radering (plan 007, art. 17 via salongen): TENANT-SCOPAD variant.
+ * Skillnader mot eraseCustomerData (kundens självbetjäning) är avsiktliga:
+ *   · Nyckeln är CUSTOMER_ID (kundkortet) — de flesta salongskunder är gäster utan
+ *     auth-konto, så en userId-nyckel hade inte nått dem.
+ *   · Endast DENNA tenants rader röres. En ägare har inget mandat över samma persons
+ *     data hos andra salonger (white-label) — cross-tenant-radering är kundens egen
+ *     självbetjäningsväg (eller ett framtida plattformsverktyg, medvetet uppskjutet).
+ *   · auth-användaren raderas ALDRIG här (kontot kan bära andra salongers relationer).
+ * Samma retention-policy i övrigt: bokningar anonymiseras (aldrig raderas),
+ * betalningar orörda (bokföringslagen), favorites raderas, audit får en PII-fri rad.
+ */
+export async function eraseTenantCustomerData(args: {
+  customerId: string
+  tenantId: string
+  actorId: string
+}): Promise<EraseResult> {
+  const { customerId, tenantId, actorId } = args
+  if (!customerId || !tenantId) return { ok: false, reason: 'error' }
+
+  const admin = createServiceClient()
+  if (!admin) {
+    logger.warn('gdpr.tenant_erase.unavailable (no service role)', { customerId })
+    return { ok: false, reason: 'unavailable' }
+  }
+
+  try {
+    // 1. Tenant-fence FÖRST: kortet måste tillhöra ägarens tenant. Service-rollen
+    //    ser allt, så vakten bor här — aldrig i klientens ord.
+    const { data: customer } = await admin
+      .from('customers')
+      .select('id, auth_user_id, status')
+      .eq('id', customerId)
+      .eq('tenant_id', tenantId)
+      .maybeSingle()
+    if (!customer) return { ok: false, reason: 'error' }
+
+    // 2. Anonymisera kortet (status → 'anonymized' triggar customer_notes-scrubben).
+    const { error: cErr } = await admin
+      .from('customers')
+      .update({
+        full_name: null,
+        email: null,
+        phone: null,
+        contact_hash: null,
+        display_name: null,
+        status: 'anonymized',
+      })
+      .eq('id', customerId)
+      .eq('tenant_id', tenantId)
+    if (cErr) {
+      logger.warn('gdpr.tenant_erase.customer_failed', { customerId, error: cErr.message })
+      return { ok: false, reason: 'error' }
+    }
+
+    // 3. Favoriter = persondata utan retention-grund → radera.
+    const { error: fErr } = await admin
+      .from('customer_favorites')
+      .delete()
+      .eq('customer_id', customerId)
+    if (fErr) {
+      logger.warn('gdpr.tenant_erase.favorites_failed', { customerId, error: fErr.message })
+      return { ok: false, reason: 'error' }
+    }
+
+    // 4. Bokningar i DENNA tenant: scrubba PII-noten + släpp auth-länken, behåll
+    //    raden (schema-/ekonomihistorik). loyalty_ledger orörd (append-only, PII-fri).
+    const { data: bookingRows, error: bErr } = await admin
+      .from('bookings')
+      .update({ note: null, customer_profile_id: null })
+      .eq('tenant_id', tenantId)
+      .eq('customer_id', customerId)
+      .select('id')
+    if (bErr) {
+      logger.warn('gdpr.tenant_erase.bookings_failed', { customerId, error: bErr.message })
+      return { ok: false, reason: 'error' }
+    }
+    const erasedBookings = bookingRows?.length ?? 0
+
+    // 5. PII-FRI audit-rad (append-only — id + antal, aldrig namn/mejl).
+    await admin.from('audit_log').insert({
+      tenant_id: tenantId,
+      actor_profile_id: actorId,
+      action: 'gdpr.tenant_erase',
+      entity: 'customer',
+      entity_id: customerId,
+      meta: { erased_bookings: erasedBookings } as never,
+    })
+
+    logger.info('gdpr.tenant_erase.done', { customerId, erasedBookings })
+    return { ok: true, erasedBookings }
+  } catch (e) {
+    logger.error('gdpr.tenant_erase.threw', {
+      customerId,
+      error: e instanceof Error ? e.message : String(e),
+    })
+    return { ok: false, reason: 'error' }
+  }
+}
