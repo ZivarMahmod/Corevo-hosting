@@ -62,5 +62,8 @@ describe('06 Frisöradmin mobil PWA contract', () => {
     expect(auth.indexOf('staffOnLegacyDoor =')).toBeLessThan(
       auth.indexOf('if (door !== hostKind && !staffOnLegacyDoor)'),
     )
+    expect(auth.indexOf("if (staffOnLegacyDoor) redirect('/personal')")).toBeLessThan(
+      auth.indexOf('if (next) redirect(next)'),
+    )
   })
 })

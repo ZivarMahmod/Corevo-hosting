@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { capturePaypalOrder, paypalReady } from '@/lib/payments/paypal'
-import { settleShopOrderPaid } from '@/lib/payments/settle'
+import { capturePaypalOrder, paypalReady, refundPaypalCapture } from '@/lib/payments/paypal'
+import { recordShopOrderRefunded, settleShopOrderPaid } from '@/lib/payments/settle'
 import { captureException } from '@/lib/observability'
 
 // PAYPAL — RETUREN (goal-64). Kunden har godkänt betalningen hos PayPal och skickas
@@ -40,8 +40,22 @@ export async function GET(req: Request): Promise<Response> {
     const settled = await settleShopOrderPaid({
       orderId: cap.reference,
       amountCents: cap.amountCents,
-      providerRef: paypalOrderId,
+      providerRef: cap.captureId ?? paypalOrderId,
     })
+    if (
+      !settled.ok &&
+      ['terminal_order', 'amount_mismatch', 'unknown_order'].includes(settled.reason ?? '')
+    ) {
+      const refunded = cap.captureId ? await refundPaypalCapture(cap.captureId) : false
+      const persisted =
+        refunded &&
+        (settled.reason === 'unknown_order'
+          ? true
+          : await recordShopOrderRefunded(cap.reference))
+      if (!refunded || !persisted) {
+        throw new Error(`paypal auto-refund failed: ${settled.reason}`)
+      }
+    }
     const target = settled.ok
       ? `/bekraftelse/${cap.reference}?betald=1`
       : `/bekraftelse/${cap.reference}?avbruten=1`

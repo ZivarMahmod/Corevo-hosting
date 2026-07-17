@@ -36,7 +36,6 @@ const EXT: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/webp': 'webp',
-  'image/svg+xml': 'svg',
   'image/gif': 'gif',
 }
 
@@ -162,7 +161,7 @@ export async function pruneRemovedImages(
 export function uploadErrorMessage(reason: Exclude<UploadResult, { ok: true }>['reason']): string {
   switch (reason) {
     case 'bad_type':
-      return 'Bilden måste vara PNG, JPG, WEBP, SVG eller GIF.'
+      return 'Bilden måste vara PNG, JPG, WEBP eller GIF.'
     case 'too_large':
       return 'Bilden är för stor (max 8 MB).'
     case 'no_public_base':

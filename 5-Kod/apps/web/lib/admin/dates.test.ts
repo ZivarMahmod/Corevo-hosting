@@ -1,5 +1,22 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it, expect } from 'vitest'
-import { isoWeekNumber } from './dates'
+import { isoWeekNumber, todayInTz } from './dates'
+
+describe('tenant-local today', () => {
+  it('uses the tenant month at a UTC month boundary', () => {
+    expect(todayInTz('Europe/Stockholm', new Date('2026-01-31T23:30:00.000Z'))).toBe('2026-02-01')
+  })
+
+  it('drives the customer new-month chip without a UTC shortcut', () => {
+    const page = readFileSync(
+      resolve(import.meta.dirname, '../../app/(admin)/admin/kunder/[id]/page.tsx'),
+      'utf8',
+    )
+    expect(page).toContain('todayInTz(tz).slice(0, 7)')
+    expect(page).not.toContain('new Date().toISOString().slice(0, 7)')
+  })
+})
 
 describe('isoWeekNumber', () => {
   it('räknar mitt i året', () => {

@@ -15,6 +15,9 @@ import {
   type ServiceOption,
 } from '@/components/admin/StaffRoster'
 import { PageHead, Card } from '@/components/portal/ui'
+import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
+import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
+import { settingsCategories } from '@/lib/admin/settings-map'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Personal · Adminpanel' }
@@ -23,16 +26,11 @@ export default async function StaffPage() {
   const user = await requireAdminArea('personal')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
-    return (
-      <section className="portal-section">
-        <PageHead eyebrow="Adminpanel" title="Personal" />
-        <p className="prose">Inget företag är kopplat till ditt konto.</p>
-      </section>
-    )
+    return <SettingsWorkspaceEmpty currentCategory="personal" title="Personal" />
   }
 
   const [staff, services, locations, openingHours, workingHours] = await Promise.all([
-    listStaff(tenant.id),
+    listStaff(tenant.id, { includeBookingCount: true }),
     listServices(tenant.id),
     listLocations(tenant.id),
     listLocationOpeningHours(tenant.id),
@@ -91,6 +89,7 @@ export default async function StaffPage() {
     displayName: s.displayName,
     title: s.title,
     active: s.active,
+    bookingCount: s.bookingCount,
     serviceCount: s.serviceIds.length,
     serviceIds: s.serviceIds,
     serviceNames: s.serviceIds
@@ -120,6 +119,7 @@ export default async function StaffPage() {
   }))
 
   return (
+    <SettingsWorkspace categories={settingsCategories(tenant.terminology)} currentCategory="personal">
     <section className="portal-section">
       <PageHead
         eyebrow={tenant.name}
@@ -133,11 +133,11 @@ export default async function StaffPage() {
       </PageHead>
 
       {/* Personalöversikt — RICH kort per medarbetare (forest-avatar, namn, roll-rad,
-          bio-tomtillstånd, tjänst-chips ur staff_services, muted Aktiv-pill, plats ·
-          idag-antal). Klick öppnar Drawer med Om (tomtillstånd), namn/titel-redigering,
+          tjänst-chips ur staff_services, muted Aktiv-pill, plats · idag-antal).
+          Klick öppnar Drawer med namnredigering,
           tjänst-koppling, eget-konto + magic-link, multi-location, verklig dag och
-          borttagning — all redigering som tidigare låg i StaffManager, nu samlad här.
-          Inga påhittade fält. */}
+          säker arkivering/borttagning — all redigering som tidigare låg i StaffManager,
+          nu samlad här. Inga påhittade fält. */}
       {staff.length === 0 ? (
         <Card>
           <div style={{ textAlign: 'center', padding: '14px 8px', color: 'var(--c-ink-2)' }}>
@@ -158,5 +158,6 @@ export default async function StaffPage() {
         />
       )}
     </section>
+    </SettingsWorkspace>
   )
 }

@@ -71,7 +71,6 @@ export default async function PublicLayout({ children }: { children: React.React
     tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
     branding: settings.branding,
   }
-  const overrideCss = settings.customOverride?.css
   // Prestanda C1: allt nedan behöver bara tenant.id/slug/vertical_id ur bundlen och är
   // inbördes OBEROENDE — det kördes tidigare som sex seriella await-hopp på varje
   // storefront-sidvisning (auditens vattenfall). Ett Promise.all gör dem parallella.
@@ -209,15 +208,6 @@ export default async function PublicLayout({ children }: { children: React.React
         contact={settings.contact}
         logoUrl={settings.branding.logo_url ?? null}
       />
-
-      {/* Nivå 3 — tenant-isolated custom CSS, scoped under [data-tenant]. */}
-      {overrideCss ? (
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `[data-tenant="${tenant.id}"]{${overrideCss}}`,
-          }}
-        />
-      ) : null}
 
       {/* In-page booking embed (Zivar's #1): the WHOLE shell — nav, main, footer
           — sits inside the provider, so every "Boka tid" CTA opens the same

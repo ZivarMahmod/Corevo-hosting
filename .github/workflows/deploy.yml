@@ -1,7 +1,8 @@
 name: Deploy
 
-# CD (G11). Builds Next→Cloudflare via OpenNext and deploys the Worker, and runs
-# Supabase migrations against the matching environment.
+# CD (G11). Builds Next→Cloudflare via OpenNext and deploys the Worker. Staging
+# pushes migrations; production migrations are reviewed/applied out-of-band and
+# guarded by an explicit schema checkpoint before a Worker can be built.
 #
 #   push tag v*          → PRODUCTION (gated)     worker: bokningsplatformen
 #   workflow_dispatch    → choose target manually (staging | production)
@@ -106,8 +107,16 @@ jobs:
 
       # Migrationer körs OUT-OF-BAND (via Supabase MCP / manuellt med granskning),
       # INTE i CI — undviker dubbelt DB-ägarskap + tar bort behovet av Supabase-secrets.
-      # DB-grunden 0026-0030 är redan applicerad på prod. Lägg tillbaka ett push-steg
-      # först när ett dedikerat migrations-secret + flöde finns.
+      # Koden i denna release kräver 0088. Operatören sätter PROD_DB_MIGRATION först
+      # EFTER verifierad apply; annars får gammalt schema aldrig möta ny Worker-kod.
+      - name: Verify production database migration checkpoint
+        env:
+          PROD_DB_MIGRATION: ${{ vars.PROD_DB_MIGRATION }}
+        run: |
+          if [ "$PROD_DB_MIGRATION" != "0088" ]; then
+            echo "::error::Prod DB must be verified through migration 0088 (PROD_DB_MIGRATION=$PROD_DB_MIGRATION)."
+            exit 1
+          fi
 
       - name: Build (OpenNext, production env)
         run: pnpm --filter @corevo/web exec opennextjs-cloudflare build
@@ -134,3 +143,14 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Faila deploy-runnen synligt om routning eller den publika login-dörren är
+      # trasig efter publiceringen. Ingen automatisk rollback görs här.
+      - name: Post-deploy smoke
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+        run: |
+          node apps/web/scripts/check_domains.mjs
+          body=$(curl --silent --show-error --fail --max-time 30 https://booking.corevo.se/login)
+          echo "$body" | grep -qi "logga in" || { echo "::error::login-sidan renderar inte"; exit 1; }

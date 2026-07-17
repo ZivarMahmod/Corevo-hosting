@@ -3,17 +3,16 @@
 import { headers } from 'next/headers'
 import { revalidateTag } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
+import { createServiceClient } from '@/lib/platform/service'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import { parseOffertConfig, type OffertSubmitState } from './types'
 
 // Anonymous offert INTAKE (multi-bransch spår 5). Turns the storefront offert form
 // into a working guest submission that inserts ONE row into offert_requests, which
-// the admin OffertInbox then triages. Runs as the anon role — the SAME fence as the
-// public booking flow (app/boka/actions.ts):
+// the admin OffertInbox then triages. Reads public module state as anon, but writes
+// through a server-only service client after every app-layer guard has passed:
 //   • tenant identity comes from the middleware header `x-corevo-tenant-slug`, NEVER
-//     from the client. The app layer sets tenant_id; anon RLS does NOT isolate it
-//     (the public-insert policy is with_check TRUE), so the .eq filters + the
-//     server-resolved id are the ONLY isolation.
+//     from the client. Anon has no direct INSERT grant on the request table.
 //   • the variant (mode) is re-resolved SERVER-side from tenant_modules.config — a
 //     client never dictates it.
 //   • BETAL-RAILS PAUSADE (beslut 14.2): an offert is an underlag. payment_status is
@@ -106,11 +105,13 @@ export async function submitOffertRequest(
     return { phase: 'error', message: 'Meddelandet är för långt (max 4000 tecken).' }
   }
 
-  // f. Insert exactly ONE row. ONLY these columns — DB defaults handle
+  // f. Insert exactly ONE row through the server-only writer. ONLY these columns — DB defaults handle
   //    status/payment_status/currency/details/created_at; estimate_cents/note/
   //    customer_id stay untouched (admin-only / guest). tenant_id is the
   //    server-resolved id (the only isolation, since anon RLS is permissive).
-  const { error } = await supabase.from('offert_requests').insert({
+  const writer = createServiceClient()
+  if (!writer) return { phase: 'error', message: 'Något gick fel. Försök igen.' }
+  const { error } = await writer.from('offert_requests').insert({
     tenant_id: ctx.id,
     mode,
     customer_name: name,

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { portalHomeFor, backofficeHostKindForRole, PORTAL_MIN_LEVEL } from '@/lib/auth/roles'
+import { safeInternalRedirectPath } from '@/lib/auth/internal-redirect'
 import {
   getTenantFromHost,
   isPreviewHost,
@@ -11,7 +12,12 @@ import {
   getPlatformHost,
   getStaffHost,
 } from '@/lib/tenant'
-import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
+import {
+  checkRateLimitFailClosed,
+  getClientIp,
+  rateLimitKey,
+  LIMITS,
+} from '@/lib/security/rate-limit'
 
 export type SignInState = { error?: string }
 
@@ -23,14 +29,15 @@ export type SignInState = { error?: string }
 export async function signIn(_prev: SignInState, formData: FormData): Promise<SignInState> {
   const email = String(formData.get('email') ?? '').trim()
   const password = String(formData.get('password') ?? '')
-  const next = String(formData.get('next') ?? '')
+  const next = safeInternalRedirectPath(String(formData.get('next') ?? ''))
 
   if (!email || !password) return { error: 'Fyll i både e-post och lösenord.' }
 
   // Rate-limit by IP (G10) — slows credential-stuffing. App-layer complement to
-  // the Cloudflare WAF rule (primary, documented in ops). Fails open on DB error.
+  // the Cloudflare WAF rule (primary, documented in ops). Login fails closed if
+  // the limiter is unavailable so credential-stuffing protection cannot vanish.
   const ip = await getClientIp()
-  if (!(await checkRateLimit(rateLimitKey('login', ip), LIMITS.login))) {
+  if (!(await checkRateLimitFailClosed(rateLimitKey('login', ip), LIMITS.login))) {
     return { error: 'För många inloggningsförsök. Vänta en stund och försök igen.' }
   }
 
@@ -41,7 +48,8 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   }
 
   // Role level from the just-authenticated client (RLS: own row + role).
-  const platformAdmin = (data.user.app_metadata as { platform_admin?: boolean })?.platform_admin === true
+  const platformAdmin =
+    (data.user.app_metadata as { platform_admin?: boolean })?.platform_admin === true
   let roleLevel = 0
   const { data: profile } = await supabase
     .from('users')
@@ -100,11 +108,11 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
     }
   }
 
-  // Honor the originally requested page (same host) only AFTER the door check.
-  if (next && next.startsWith('/')) redirect(next)
   // Personal som loggade in på den gamla minbooking-dörren stannar i /personal —
   // deras hemadress i adminkalendern ligger på en annan värd (ingen session där).
   if (staffOnLegacyDoor) redirect('/personal')
+  // Honor the originally requested page (same host) only AFTER the door check.
+  if (next) redirect(next)
   redirect(portalHomeFor({ roleLevel, platformAdmin }))
 }
 

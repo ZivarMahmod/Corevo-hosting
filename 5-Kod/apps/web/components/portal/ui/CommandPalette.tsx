@@ -18,6 +18,8 @@ export type CommandItem = {
   kind?: string
   /** Optional secondary text after the label (e.g. a subdomain). */
   sub?: string
+  /** Extra search terms that are not rendered, shared with contextual indexes. */
+  keywords?: string
 }
 
 /**
@@ -95,11 +97,18 @@ export function CommandPalette({
     const ql = q.trim().toLowerCase()
     const matchedStatic = ql
       ? items.filter((it) =>
-          `${it.label} ${it.kind ?? ''} ${it.sub ?? ''}`.toLowerCase().includes(ql),
+          `${it.label} ${it.kind ?? ''} ${it.sub ?? ''} ${it.keywords ?? ''}`
+            .toLowerCase()
+            .includes(ql),
         )
       : items
     const combined = ql ? [...remoteItems, ...matchedStatic] : matchedStatic
-    return combined.filter((item, index) => combined.findIndex((x) => x.href === item.href) === index).slice(0, 9)
+    const seen = new Set<string>()
+    return combined.filter((item) => {
+      if (seen.has(item.href)) return false
+      seen.add(item.href)
+      return true
+    }).slice(0, 9)
   }, [q, items, remoteItems])
 
   function run(it: CommandItem) {

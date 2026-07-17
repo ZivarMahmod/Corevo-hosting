@@ -28,7 +28,10 @@ import { TimeOffManager, type TimeOffItem } from '@/components/admin/TimeOffMana
 import { ScheduleLock } from '@/components/admin/ScheduleLock'
 import { StaffBookability } from '@/components/admin/StaffBookability'
 import { LocationOpeningHours } from '@/components/admin/LocationOpeningHours'
+import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
+import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
 import { PageHead, Card } from '@/components/portal/ui'
+import { settingsCategories } from '@/lib/admin/settings-map'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Schema · Adminpanel' }
@@ -68,16 +71,12 @@ export default async function SchedulesPage({
   const canManageStaff = user.platformAdmin || user.roleLevel >= 6
   const tenant = await getAdminTenant(user)
   if (!tenant) {
-    return (
-      <section className="portal-section">
-        <PageHead eyebrow="Adminpanel" title="Schema" />
-        <p className="prose">Inget företag är kopplat till ditt konto.</p>
-      </section>
-    )
+    return <SettingsWorkspaceEmpty currentCategory="scheman" title="Schema" />
   }
 
   const staffNoun = resolveTerm(tenant.terminology, 'staff', 'Medarbetare')
   const staffPlural = termPlural(tenant.terminology, 'staff', 'Personal')
+  const settings = settingsCategories(tenant.terminology)
 
   const [allStaff, allLocations, allLocationHours, preferences] = await Promise.all([
     listStaff(tenant.id),
@@ -101,10 +100,12 @@ export default async function SchedulesPage({
   const openingLocation = locations.find((location) => location.id === resolvedLocationId)
   if (!resolvedLocationId || !openingLocation) {
     return (
+      <SettingsWorkspace categories={settings} currentCategory="scheman">
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Schema" />
         <p className="prose">Välj en tillåten primär plats innan schemat kan öppnas.</p>
       </section>
+      </SettingsWorkspace>
     )
   }
   const timeZone = openingLocation.timezone || tenant.timeZone
@@ -133,6 +134,7 @@ export default async function SchedulesPage({
 
   if (staff.length === 0) {
     return (
+      <SettingsWorkspace categories={settings} currentCategory="scheman">
       <section className="portal-section">
         <PageHead eyebrow={tenant.name} title="Schema" />
         {locationOpeningHours}
@@ -146,6 +148,7 @@ export default async function SchedulesPage({
           </p>
         </Card>
       </section>
+      </SettingsWorkspace>
     )
   }
 
@@ -207,6 +210,7 @@ export default async function SchedulesPage({
   }))
 
   return (
+    <SettingsWorkspace categories={settings} currentCategory="scheman">
     <section className="portal-section">
       <PageHead
         eyebrow={`${tenant.name} · Schema`}
@@ -328,5 +332,6 @@ export default async function SchedulesPage({
         </ScheduleLock>
       </section>
     </section>
+    </SettingsWorkspace>
   )
 }

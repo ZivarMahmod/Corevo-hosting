@@ -1,6 +1,6 @@
 import 'server-only'
 import { headers } from 'next/headers'
-import { createPublicClient } from '@/lib/supabase/public'
+import { createServiceClient } from '@/lib/platform/service'
 import { logger } from '@/lib/observability'
 
 // App-layer rate limiting (G10 step 5). Backed by the Postgres check_rate_limit
@@ -9,8 +9,8 @@ import { logger } from '@/lib/observability'
 // Cloudflare WAF layer (see docs/ops/backup-restore.md §rate-limiting), which is
 // documented-only for now (the live CF config is on hold until G11 + Zivar's ok).
 //
-// Fails OPEN: any RPC/transport error returns "allowed". A limiter that locks
-// every customer out when the DB hiccups is worse than the abuse it prevents.
+// Low-risk public forms fail open on limiter outages; credential attempts fail
+// closed. A malformed RPC response follows the same explicit policy as an error.
 
 export type RateLimit = { max: number; windowSecs: number }
 
@@ -41,24 +41,47 @@ export async function getClientIp(): Promise<string> {
   )
 }
 
-/** True when the action is ALLOWED under `key`'s window. Fails open on error. */
-export async function checkRateLimit(key: string, limit: RateLimit): Promise<boolean> {
+async function rateLimitDecision(
+  key: string,
+  limit: RateLimit,
+  allowOnError: boolean,
+): Promise<boolean> {
+  const bucket = key.split(':', 1)[0] ?? 'unknown'
   try {
-    const supabase = createPublicClient()
-    const { data, error } = await supabase.rpc('check_rate_limit', {
+    // Server-only writer: the SECURITY DEFINER limiter is not exposed to anon,
+    // so callers cannot poison another visitor's predictable bucket directly.
+    const writer = createServiceClient()
+    if (!writer) return allowOnError
+    const { data, error } = await writer.rpc('check_rate_limit', {
       p_key: key,
       p_max: limit.max,
       p_window_secs: limit.windowSecs,
     })
     if (error) {
-      logger.warn('ratelimit.rpc_error', { key, error: error.message })
-      return true
+      logger.warn('ratelimit.rpc_error', { bucket, error: error.message })
+      return allowOnError
     }
-    return data !== false
+    return typeof data === 'boolean' ? data : allowOnError
   } catch (e) {
-    logger.warn('ratelimit.threw', { key, error: e instanceof Error ? e.message : String(e) })
-    return true
+    logger.warn('ratelimit.threw', {
+      bucket,
+      error: e instanceof Error ? e.message : String(e),
+    })
+    return allowOnError
   }
+}
+
+/** True when the action is ALLOWED under `key`'s window. Fails open on error. */
+export async function checkRateLimit(key: string, limit: RateLimit): Promise<boolean> {
+  return rateLimitDecision(key, limit, true)
+}
+
+/** Credential-försök får aldrig bli obegränsade bara för att limiter-DB:n felar. */
+export async function checkRateLimitFailClosed(
+  key: string,
+  limit: RateLimit,
+): Promise<boolean> {
+  return rateLimitDecision(key, limit, false)
 }
 
 /** Convenience: build a stable bucket key from an action + parts. */

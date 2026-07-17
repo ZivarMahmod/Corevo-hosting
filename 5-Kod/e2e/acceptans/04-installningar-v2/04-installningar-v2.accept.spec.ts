@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 const repo = path.resolve(__dirname, '../../..')
-const read = (relativePath: string) => readFileSync(path.join(repo, relativePath), 'utf8')
+const read = (relativePath: string) =>
+  readFileSync(path.join(repo, relativePath), 'utf8').replaceAll('\r\n', '\n')
 
 test.describe('04 Inställningar v2 — source contract @readonly @contract', () => {
   test('04-C01 canonical geometry and dark tokens', () => {
@@ -23,8 +24,9 @@ test.describe('04 Inställningar v2 — source contract @readonly @contract', ()
     for (const group of ['VERKSAMHET', 'BOKNING', 'PENGAR', 'KOMMUNIKATION', 'KONTO']) {
       expect(map).toContain(`'${group}'`)
     }
-    expect(map.match(/id:\s*'/g)).toHaveLength(12)
-    expect(component).toContain('status.tone === \'warning\' || status.tone === \'danger\'')
+    const categoryMap = map.split('const SETTINGS_SEARCH_DEFS')[0]
+    expect(categoryMap.match(/id:\s*'/g)).toHaveLength(12)
+    expect(component).toMatch(/status\?\.tone === 'warning' \|\| status\?\.tone === 'danger'/)
     expect(component).toContain('Sök — öppettider, pris, behörighet…')
     expect(component).toContain('Tillbaka till inställningar')
   })
@@ -34,7 +36,8 @@ test.describe('04 Inställningar v2 — source contract @readonly @contract', ()
     for (const route of ['/admin/tjanster', '/admin/personal', '/admin/scheman', '/admin/platser', '/admin/installningar/bokning', '/admin/sida', '/admin/installningar/betalning', '/admin/installningar/konto']) {
       expect(map).toContain(route)
     }
-    expect(read('apps/web/components/admin/SettingsV2.tsx')).toContain('Ändra på ytans enda ägande sida.')
+    expect(read('apps/web/components/admin/SettingsWorkspace.tsx')).toContain('SettingsNavigation')
+    expect(read('apps/web/components/admin/SettingsV2.tsx')).toContain('router.push(category.href)')
   })
 
   test('04-C04 member permissions are tenant-bound and server enforced', () => {
@@ -46,7 +49,7 @@ test.describe('04 Inställningar v2 — source contract @readonly @contract', ()
     expect(sql).toContain("security definer\nset search_path = ''")
     expect(sql).toContain('revoke insert, update, delete on table public.tenant_member_permissions from authenticated')
     expect(sql).toContain('tenant.member_permissions_save')
-    expect(action).toContain("requireAdminArea('installningar')")
+    expect(action).toContain("requireOrganizationOwner('installningar')")
     expect(action).toContain("rpc('set_tenant_member_permissions'")
   })
 })
@@ -80,7 +83,7 @@ test.describe('04 Inställningar v2 — browser oracle @readonly @browser', () =
     await page.setViewportSize({ width: 390, height: 844 })
     await page.locator('[data-accept="settings-search"] input').fill('')
     await page.getByRole('button', { name: /Bokningsregler/ }).click()
-    await expect(page.getByRole('button', { name: /Tillbaka till inställningar/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Tillbaka till inställningar/ })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   })
 })

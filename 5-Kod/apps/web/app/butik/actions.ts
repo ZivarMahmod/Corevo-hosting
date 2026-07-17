@@ -91,7 +91,9 @@ export async function reserveOrder(input: ReserveInput): Promise<ReserveResult> 
     .maybeSingle()
   const fulfilment = parseShopConfig(moduleRow?.config).fulfilment
 
-  const { data: orderId, error } = await supabase.rpc('reserve_shop_order', {
+  const writer = createServiceClient()
+  if (!writer) return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
+  const { data: orderId, error } = await writer.rpc('reserve_shop_order', {
     p_tenant_slug: ctx.slug,
     // Radens form per typ (0059). En produktrad ser EXAKT ut som förut — `kind`
     // defaultar till 'product' i RPC:n, så gamla klienter/korgar är oförändrade.
@@ -413,10 +415,13 @@ export async function startShopCheckout(
   if (amount <= 0) return { ok: false, reason: 'unavailable', message: 'Inget belopp att betala.' }
 
   // En payment-rad per order (UNIQUE(order_id) → idempotensgrund för webhooken).
-  await admin.from('payments').upsert(
+  const { error: stripePaymentError } = await admin.from('payments').upsert(
     { tenant_id: ctx.tenantId, order_id: orderId, amount_cents: amount, currency: 'sek', status: 'pending' },
     { onConflict: 'order_id' },
   )
+  if (stripePaymentError) {
+    return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+  }
 
   const items = (order.shop_order_items ?? []) as { product_name: string; unit_price_cents: number; quantity: number }[]
   const lineItems = items.length
@@ -467,7 +472,13 @@ export async function startShopCheckout(
     return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
   }
   if (!session.url) return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
-  await admin.from('payments').update({ stripe_checkout_session_id: session.id }).eq('order_id', orderId)
+  const { error: stripeSessionError } = await admin
+    .from('payments')
+    .update({ stripe_checkout_session_id: session.id })
+    .eq('order_id', orderId)
+  if (stripeSessionError) {
+    return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+  }
   return { ok: true, url: session.url }
 }
 
@@ -511,10 +522,13 @@ export async function startPaypalCheckout(orderId: string): Promise<CheckoutResu
   const amount = order.total_cents ?? 0
   if (amount <= 0) return { ok: false, reason: 'unavailable', message: 'Inget belopp att betala.' }
 
-  await admin.from('payments').upsert(
+  const { error: paypalPaymentError } = await admin.from('payments').upsert(
     { tenant_id: ctx.tenantId, order_id: orderId, amount_cents: amount, currency: 'sek', status: 'pending' },
     { onConflict: 'order_id' }, // UNIQUE(order_id) = idempotensgrunden, samma som Stripe
   )
+  if (paypalPaymentError) {
+    return { ok: false, reason: 'error', message: 'Kunde inte starta betalning. Försök igen.' }
+  }
 
   const origin = await requestOrigin()
   const pp = await createPaypalOrder({

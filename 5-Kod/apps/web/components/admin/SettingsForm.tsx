@@ -3,6 +3,7 @@
 import { useActionState, useState, type ReactNode } from 'react'
 import { saveSettings, type ActionState } from '@/lib/admin/actions'
 import { Card, Callout } from '@/components/portal/ui'
+import type { SettingsScope } from '@/lib/admin/scoped-settings'
 import styles from './admin.module.css'
 
 const TIMEZONES = [
@@ -21,6 +22,7 @@ export type NotificationToggles = {
 }
 
 export type SettingsFormProps = {
+  scope?: SettingsScope
   name: string
   paymentMode: string
   cancellationHours: number
@@ -108,6 +110,7 @@ function LiveToggleRow({
 }
 
 export function SettingsForm({
+  scope = 'all',
   notifications = { confirmation: true, reminder: true, review: true },
   googleReviewUrl = '',
   cookieBannerEnabled = true,
@@ -127,13 +130,15 @@ export function SettingsForm({
         margin: '1rem 0 1.75rem',
       }}
     >
+      <input type="hidden" name="settings_scope" value={scope} />
       {/* ── Bokning ── salongsuppgifter + bokningsreglagen (mock: Card "Bokning") ── */}
+      {scope === 'all' || scope === 'booking' ? (
       <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <h2 className="h2" style={{ margin: 0 }}>
           Bokning
         </h2>
 
-        <label className={styles.field}>
+        {scope === 'all' ? <><label className={styles.field}>
           <span>Företagsnamn</span>
           <input name="name" defaultValue={props.name} required />
         </label>
@@ -169,13 +174,13 @@ export function SettingsForm({
               ))}
             </select>
           </label>
-        </div>
+        </div></> : null}
 
         {/* Bokningsbekräftelse — live green proof-Callout when ON. Mock claims
             "e-post + SMS testad", but actions.ts proves SMS was deliberately
             removed (ingen kopplad leverantör). E-post IS wired (booking@corevo.se),
             so the proof is e-post-only behaviour — never a fabricated SMS-QA claim. */}
-        <LiveToggleRow
+        {scope === 'all' ? <LiveToggleRow
           name="notify_confirmation"
           defaultOn={notifications.confirmation}
           title="Bokningsbekräftelse"
@@ -185,7 +190,7 @@ export function SettingsForm({
               Aktiv: kunden får en bokningsbekräftelse via e-post direkt vid bokning.
             </Callout>
           }
-        />
+        /> : null}
 
         {/* G12: storefront customer accounts (login + "Mitt konto" + signup). */}
         <LiveToggleRow
@@ -193,18 +198,6 @@ export function SettingsForm({
           defaultOn={props.customerAccountsEnabled}
           title="Kund-konton"
           desc="Visar inloggning + ”Mitt konto” på din publika sajt (annars endast gästbokning)."
-        />
-
-        {/* Drop-in synligt (mock gap) — there is no settings key for this yet, and the
-            save path (lib/admin/actions.ts → saveSettings) is FROZEN, so a live toggle
-            would silently fail to persist. Per "no dead toggles" it is rendered DISABLED
-            with honest "kommer snart" copy. FLAGGED in the manifest notes for the orchestrator. */}
-        <LiveToggleRow
-          name="dropin_visible"
-          defaultOn={false}
-          disabled
-          title="Drop-in synligt"
-          desc="Visa ”Drop in eller boka online” i topp-baren på hemsidan. Kopplas på snart."
         />
 
         <label className={styles.field}>
@@ -219,35 +212,52 @@ export function SettingsForm({
           />
         </label>
       </Card>
+      ) : null}
 
       {/* Betalningsläget styrs i dag av Stripe-kortet (payment_mode + Connect-kontot),
           inte av ett fält här. Den synliga "Betalning"-sektionen + Stripe-kopplingen
           bor i page.tsx (mockens Betalning-kort). Detta dolda fält bevarar bara det
           sparade payment_mode-värdet oförändrat när formuläret sparas batchat. */}
-      <input type="hidden" name="payment_mode" value={props.paymentMode} />
+      {scope === 'all' ? <input type="hidden" name="payment_mode" value={props.paymentMode} /> : null}
 
       {/* ── Notiser & integritet ── shipped extras, behållna (additivt) ── */}
+      {scope === 'all' || scope === 'notifications' || scope === 'integrations' || scope === 'privacy' ? (
       <Card style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <h2 className="h2" style={{ margin: 0 }}>
-          Notiser &amp; integritet
+          {scope === 'notifications'
+            ? 'Påminnelser & utskick'
+            : scope === 'integrations'
+              ? 'Integrationer'
+              : scope === 'privacy'
+                ? 'Sekretess'
+                : 'Notiser & integritet'}
         </h2>
 
+        {scope === 'notifications' ? (
+          <LiveToggleRow
+            name="notify_confirmation"
+            defaultOn={notifications.confirmation}
+            title="Bokningsbekräftelse"
+            desc="Kunden får en bekräftelse via e-post direkt vid bokning."
+          />
+        ) : null}
+
         {/* Provider-agnostisk formulering (ingen kopplad SMS-leverantör → påstå inte SMS). */}
-        <LiveToggleRow
+        {scope === 'all' || scope === 'notifications' ? <LiveToggleRow
           name="notify_reminder"
           defaultOn={notifications.reminder}
           title="Påminnelse"
           desc="Skicka påminnelse inför bokad tid."
-        />
+        /> : null}
 
-        <LiveToggleRow
+        {scope === 'all' || scope === 'notifications' ? <LiveToggleRow
           name="notify_review"
           defaultOn={notifications.review}
           title="Recensions-förfrågan"
           desc="Skicka recensions-förfrågan efter besök."
-        />
+        /> : null}
 
-        <label className={styles.field}>
+        {scope === 'all' || scope === 'integrations' ? <label className={styles.field}>
           <span>Google-recension-länk</span>
           <input
             name="google_review_url"
@@ -258,19 +268,20 @@ export function SettingsForm({
           <span className={styles.muted}>
             Klistra in företagets Google-recensionslänk. Lämna tomt för att stänga av.
           </span>
-        </label>
+        </label> : null}
 
         {/* SMS-notiser borttaget (M6 §3.7 — inga döda toggles): ingen kopplad
             leverantör. saveSettings rör inte sms_enabled → ev. tidigare sparat
             värde bevaras orört via settings-mergen. */}
 
-        <LiveToggleRow
+        {scope === 'all' || scope === 'privacy' ? <LiveToggleRow
           name="cookie_banner_enabled"
           defaultOn={cookieBannerEnabled}
           title="Cookie-banner"
           desc="Visa cookie-banner på din publika sajt."
-        />
+        /> : null}
       </Card>
+      ) : null}
 
       <div className={styles.actions}>
         <button type="submit" className="btn-primary" disabled={pending}>

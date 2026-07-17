@@ -1,6 +1,16 @@
 -- 0076 runtime-matris: riktig RLS/RPC, inga mocks. All fixturedata rullas tillbaka.
 begin;
 
+-- Keep fixture weekdays stable while ensuring booking rows stay in the future.
+select set_config(
+  'corevo.test_base_monday',
+  (
+    (date_trunc('week', current_timestamp at time zone 'UTC') + interval '14 days')
+    at time zone 'UTC'
+  )::text,
+  true
+);
+
 -- Supabase ger Data API-roller tabellrättigheter via default privileges. Den
 -- lokala rena PostgreSQL-verifieringen saknar de plattform-defaultarna, så
 -- normalisera dem transaktionellt; RLS avgör fortfarande varje rad.
@@ -71,15 +81,15 @@ insert into public.location_opening_hours (tenant_id, location_id, weekday, star
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', 1, '09:00', '18:00', 'confirmed', now()),
   ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000013', 1, '09:00', '18:00', 'confirmed', now());
 insert into public.location_closures (id, tenant_id, location_id, start_ts, end_ts) values
-  ('00000000-0000-0000-0000-000000000051', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000011', '2027-02-01 09:00+00', '2027-02-01 10:00+00'),
-  ('00000000-0000-0000-0000-000000000052', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', '2027-02-01 09:00+00', '2027-02-01 10:00+00');
+  ('00000000-0000-0000-0000-000000000051', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000011', current_setting('corevo.test_base_monday')::timestamptz + interval '28 days 9 hours', current_setting('corevo.test_base_monday')::timestamptz + interval '28 days 10 hours'),
+  ('00000000-0000-0000-0000-000000000052', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', current_setting('corevo.test_base_monday')::timestamptz + interval '28 days 9 hours', current_setting('corevo.test_base_monday')::timestamptz + interval '28 days 10 hours');
 
 insert into public.customers (id, tenant_id, full_name) values
   ('00000000-0000-0000-0000-000000000061', '00000000-0000-0000-0000-000000000001', 'Customer A'),
   ('00000000-0000-0000-0000-000000000062', '00000000-0000-0000-0000-000000000001', 'Customer B');
 insert into public.bookings (id, tenant_id, location_id, staff_id, service_id, customer_id, start_ts, end_ts, status, price_cents) values
-  ('00000000-0000-0000-0000-000000000071', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000032', '00000000-0000-0000-0000-000000000061', '2027-01-04 10:00+00', '2027-01-04 10:30+00', 'confirmed', 0),
-  ('00000000-0000-0000-0000-000000000072', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000042', '00000000-0000-0000-0000-000000000033', '00000000-0000-0000-0000-000000000062', '2027-01-04 10:00+00', '2027-01-04 10:30+00', 'confirmed', 0);
+  ('00000000-0000-0000-0000-000000000071', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000032', '00000000-0000-0000-0000-000000000061', current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours', current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours 30 minutes', 'confirmed', 0),
+  ('00000000-0000-0000-0000-000000000072', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000042', '00000000-0000-0000-0000-000000000033', '00000000-0000-0000-0000-000000000062', current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours', current_setting('corevo.test_base_monday')::timestamptz + interval '10 hours 30 minutes', 'confirmed', 0);
 insert into public.customer_notes (tenant_id, customer_id, location_id, internal_note) values
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000061', '00000000-0000-0000-0000-000000000011', 'A'),
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000062', '00000000-0000-0000-0000-000000000012', 'B');

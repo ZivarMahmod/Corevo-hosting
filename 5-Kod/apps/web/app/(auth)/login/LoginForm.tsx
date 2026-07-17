@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useActionState, useEffect } from 'react'
 import { signIn, type SignInState } from '../actions'
 
@@ -49,6 +50,10 @@ export function LoginForm({ next }: { next: string }) {
         <span>Lösenord</span>
         <input name="password" type="password" autoComplete="current-password" required />
       </label>
+
+      <p className="auth-links">
+        <Link href="/glomt-losenord">Glömt lösenordet?</Link>
+      </p>
 
       {state.error ? (
         <p className="auth-error" role="alert">

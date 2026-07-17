@@ -450,7 +450,7 @@ function UploadDrawer({ onClose }: { onClose: () => void }) {
   return (
     <Drawer
       title="Ladda upp bilder"
-      sub="PNG, JPG, WEBP, SVG eller GIF. Max 8 MB per bild."
+      sub="PNG, JPG, WEBP eller GIF. Max 8 MB per bild."
       onClose={onClose}
       ariaLabel="Ladda upp bilder"
       footer={
@@ -504,7 +504,7 @@ function UploadDrawer({ onClose }: { onClose: () => void }) {
                   ? 'Släpp bilderna här'
                   : 'Dra hit bilder eller klicka för att välja'}
             </span>
-            <p className={drop.hint}>PNG, JPG, WEBP, SVG eller GIF · max 8 MB per bild</p>
+            <p className={drop.hint}>PNG, JPG, WEBP eller GIF · max 8 MB per bild</p>
           </label>
         </div>
 

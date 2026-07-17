@@ -4,7 +4,10 @@ import { getAdminTenant } from '@/lib/admin/tenant'
 import { getSettingsRow } from '@/lib/admin/data'
 import { createClient } from '@/lib/supabase/server'
 import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
-import { PageHead, Button } from '@/components/portal/ui'
+import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
+import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
+import { PageHead } from '@/components/portal/ui'
+import { settingsCategories } from '@/lib/admin/settings-map'
 
 /** L3 C-01 — Betalning. StripeConnectCard är ORÖRD, den flyttade bara hit från
  *  inställningsroten (som nu är kartan). Stripes retur-URL pekar hit (lib/admin/stripe.ts). */
@@ -20,12 +23,7 @@ export default async function BetalningPage({
   const user = await requireOrganizationOwner('installningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
-    return (
-      <section className="portal-section">
-        <PageHead eyebrow="Inställningar" title="Betalning" />
-        <p className="prose">Inget företag är kopplat till ditt konto.</p>
-      </section>
-    )
+    return <SettingsWorkspaceEmpty currentCategory="betalning" title="Betalning" />
   }
 
   const supabase = await createClient()
@@ -40,18 +38,13 @@ export default async function BetalningPage({
   ])
 
   return (
+    <SettingsWorkspace categories={settingsCategories(tenant.terminology)} currentCategory="betalning">
     <section className="portal-section" style={{ maxWidth: '640px' }}>
       <PageHead
         eyebrow="Inställningar"
         title="Betalning"
         lede="Koppla Stripe och välj om kunden betalar vid bokning eller på plats."
       />
-      <p style={{ margin: '0 0 1rem' }}>
-        <Button href="/admin/installningar" variant="ghost" icon="arrowLeft" size="sm">
-          Alla inställningar
-        </Button>
-      </p>
-
       <StripeConnectCard
         hasAccount={Boolean(stripeRow?.stripe_account_id)}
         chargesEnabled={stripeRow?.stripe_charges_enabled ?? false}
@@ -61,5 +54,6 @@ export default async function BetalningPage({
         justReturned={stripe === 'return'}
       />
     </section>
+    </SettingsWorkspace>
   )
 }

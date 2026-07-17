@@ -1,6 +1,6 @@
 name: CI
 
-# PR gate (G11). lint + typecheck + unit + build always block the PR.
+# PR gate (G11). lint + typecheck + unit + contract acceptance + build always block the PR.
 # Full Playwright E2E runs against a seeded STAGING Supabase and is gated on the
 # repo variable E2E_ENABLED=true (set it once staging secrets exist) so that an
 # unconfigured repo skips E2E instead of red-washing every PR.
@@ -19,8 +19,24 @@ defaults:
     working-directory: 5-Kod
 
 jobs:
+  database:
+    name: migrations · pgTAP · RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # Local disposable stack: migrations + seed are applied before the pgTAP
+      # suites run. No production/staging credentials or data are used.
+      - name: Start disposable Supabase
+        run: supabase start
+      - name: Run database and RLS tests
+        run: supabase test db
+
   quality:
-    name: lint · typecheck · unit · build
+    name: lint · typecheck · unit · contract acceptance · build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +45,7 @@ jobs:
           version: 10.33.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: 5-Kod/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
@@ -41,6 +57,8 @@ jobs:
       - run: pnpm typecheck
         if: ${{ !cancelled() }}
       - run: pnpm test
+        if: ${{ !cancelled() }}
+      - run: pnpm test:acceptance:contract
         if: ${{ !cancelled() }}
       # Bransch-vakten (goal-61): failar på NYA hårdkodade bransch-ord (salong/frisör/
       # klippning …) i user-facing strängar. Corevo är multi-bransch — texten ska komma
@@ -78,7 +96,7 @@ jobs:
           version: 10.33.0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: 5-Kod/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile

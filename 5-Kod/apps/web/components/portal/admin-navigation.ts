@@ -1,7 +1,7 @@
 import { NAV, isGroup, isNavItemVisible } from './nav-items'
 import { settingsCategories } from '@/lib/admin/settings-map'
 import { ADMIN_AREA_MIN_LEVEL as A } from '@/lib/auth/admin-areas'
-import type { TopnavArea, TopnavItem } from './Topnav'
+import type { TopnavArea } from './Topnav'
 
 /** Kund-adminens toppnavigation — samma form som platform-navigation.ts, samma
  *  <Topnav>-komponent, samma CSS. Skillnaden är rollen: superadmin styr plattformen,
@@ -12,19 +12,14 @@ import type { TopnavArea, TopnavItem } from './Topnav'
  *  vilket ÄR Wavy-enkelheten. Modulnycklarna och deras hrefs/labels kommer ur
  *  nav-items.ts, som förblir enda sanningen för både sidomeny, ⌘K och detta nav. */
 
-/** Inställningarnas undernavigation. Kategorierna kommer nu ur lib/admin/settings-map.ts
- *  (L3 C-01, enda sanningen — samma lista som kartan på /admin/installningar renderar),
- *  så nav och karta kan inte drifta isär. Bara routes som FINNS ligger här — samma
- *  regel som nav-items.ts: inga 404-platshållare.
- *  "Din sida" är UNDANTAGET: den är ett eget huvudval i toppnaven och upprepas inte här. */
-const SETTINGS_SUBNAV: readonly TopnavItem[] = [
-  { href: '/admin/installningar', label: 'Alla inställningar' },
-  ...settingsCategories()
-    .filter((c) => !c.href.startsWith('/admin/sida'))
-    .map((c) => ({ href: c.href, label: c.label })),
-] as const
-
-const SETTINGS_PREFIXES = SETTINGS_SUBNAV.map((item) => item.href)
+/** Inställningar v2 har ETT kategorinav inne i ytan. Toppnaven behöver fortfarande
+ * känna igen de befintliga äganderouterna som Inställningar, men får inte rendera
+ * samma karta en gång till som en horisontell flikrad. Query/hash tas bort eftersom
+ * aktivmarkeringen arbetar med pathname. */
+const SETTINGS_PREFIXES = [
+  '/admin/installningar',
+  ...new Set(settingsCategories().map((category) => category.href.split(/[?#]/, 1)[0]!)),
+]
 
 /** Modulposterna ur NAV.admin (de som har en `module`-nyckel), filtrerade på kundens
  *  aktiverade moduler. `activeModuleKeys` undefined ⇒ ingen gating (samma kontrakt som
@@ -63,7 +58,6 @@ export function adminAreas(activeModuleKeys?: string[], roleLevel?: number): Top
           href: '/admin/installningar',
           label: 'Inställningar',
           prefixes: SETTINGS_PREFIXES,
-          subnav: SETTINGS_SUBNAV,
         }]
       : []),
   ]

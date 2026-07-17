@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { injectTenantTokens } from '@corevo/ui'
 import {
   discardSiteDraft,
@@ -66,9 +66,25 @@ type Props = {
   storefrontUrl: string
   isActive: boolean
   statusMessage?: string
+  initialTabId?: string
   manifestData: SiteEditorManifest
   liveModules?: string[]
   scheduleHours: { day: string; time: string }[] | null
+}
+
+export function resolveSiteEditorTabId(
+  tabs: ReadonlyArray<Pick<SiteEditorTab, 'id'>>,
+  requestedTabId: string | null | undefined,
+): string {
+  return requestedTabId && tabs.some((tab) => tab.id === requestedTabId)
+    ? requestedTabId
+    : tabs[0]?.id ?? ''
+}
+
+export function siteEditorTabHref(tabId: string, currentSearch: string): string {
+  const params = new URLSearchParams(currentSearch)
+  params.set('flik', tabId)
+  return `/admin/sida?${params.toString()}`
 }
 
 const sameSnapshot = (a: SiteSnapshot, b: SiteSnapshot) => JSON.stringify(a) === JSON.stringify(b)
@@ -160,11 +176,13 @@ export function SidaStudioV2({
   storefrontUrl,
   isActive,
   statusMessage,
+  initialTabId,
   manifestData,
   liveModules = [],
   scheduleHours,
 }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const scanRequestRef = useRef(0)
   const historyGuardRef = useRef(false)
@@ -190,7 +208,8 @@ export function SidaStudioV2({
     ],
     [liveModules, manifestData],
   )
-  const [tabId, setTabId] = useState(manifestData.tabs[0]?.id ?? '')
+  const requestedTabId = searchParams.get('flik')
+  const [tabId, setTabId] = useState(() => resolveSiteEditorTabId(tabs, initialTabId))
   const activeTab = tabs.find((tab) => tab.id === tabId) ?? tabs[0]
   const dirty = !sameSnapshot(working, savedBaseline)
   const status = dirty ? 'Osparat' : hasDraft ? 'Utkast' : 'Live'
@@ -237,6 +256,17 @@ export function SidaStudioV2({
   const displayPath = activeTab?.path.startsWith('?')
     ? `/${activeTab.path}`
     : activeTab?.path || '/'
+  const selectTab = useCallback((nextTabId: string) => {
+    setTabId(nextTabId)
+    setMobileSurface('panel')
+    if (requestedTabId === nextTabId) return
+    router.push(siteEditorTabHref(nextTabId, searchParams.toString()), { scroll: false })
+  }, [requestedTabId, router, searchParams])
+
+  useEffect(() => {
+    setTabId(resolveSiteEditorTabId(tabs, requestedTabId ?? initialTabId))
+    setMobileSurface('panel')
+  }, [initialTabId, requestedTabId, tabs])
 
   const postSnapshot = useCallback(() => {
     iframeRef.current?.contentWindow?.postMessage({
@@ -290,8 +320,7 @@ export function SidaStudioV2({
       if (data.source === MESSAGE_SOURCE && data.type === 'preview-route' && typeof data.path === 'string') {
         const target = tabs.find((tab) => tab.path.split('?')[0] === data.path)
         if (target) {
-          setTabId(target.id)
-          setMobileSurface('panel')
+          selectTab(target.id)
         }
         return
       }
@@ -303,7 +332,7 @@ export function SidaStudioV2({
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [bootstrapPreview, postSnapshot, tabs])
+  }, [bootstrapPreview, postSnapshot, selectTab, tabs])
   useEffect(() => { postSnapshot() }, [postSnapshot])
   useEffect(() => { setVisibleCopyFields(null) }, [previewSrc])
   useEffect(() => {
@@ -497,7 +526,7 @@ export function SidaStudioV2({
         <nav className={styles.tabs} data-accept="editor-tabs" aria-label="Sidans delar">
           {tabs.map((tab) => (
             <button key={tab.id} type="button" className={tab.id === activeTab?.id ? styles.activeTab : ''}
-              onClick={() => { setTabId(tab.id); setMobileSurface('panel') }} title={tab.sub}>
+              onClick={() => selectTab(tab.id)} title={tab.sub}>
               {tab.label}
             </button>
           ))}
@@ -750,7 +779,7 @@ function ImageField({ tenantId, slot, snapshot, defaults, limit, onChange, onSho
     }
   }
   return <div className={styles.images}>
-    <input ref={inputRef} className={styles.fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+    <input ref={inputRef} className={styles.fileInput} type="file" accept="image/png,image/jpeg,image/webp,image/gif"
       onChange={(event) => { selectFile(event.target.files?.[0]); event.target.value = '' }} />
     <span className={hasCustom ? styles.customChip : styles.standardChip}>EGNA BILDER</span>
     {visibleValues.map((url, index) => <div className={styles.imageRow} key={`${url}-${index}`}

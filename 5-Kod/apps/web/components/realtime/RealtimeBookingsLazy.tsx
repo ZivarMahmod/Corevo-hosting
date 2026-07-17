@@ -1,6 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { usePathname } from 'next/navigation'
+import { shouldLoadBookingRealtime } from './realtime-routes'
 
 // Prestanda B3: RealtimeBookings är en osynlig prenumerant (return null) som drar in
 // HELA Supabase-browserklienten inkl. realtidstransporten (~200 kB okomprimerat /
@@ -16,5 +18,7 @@ const RealtimeBookings = dynamic(
 )
 
 export function RealtimeBookingsLazy({ tenantId }: { tenantId?: string }) {
+  const pathname = usePathname()
+  if (!shouldLoadBookingRealtime(pathname)) return null
   return <RealtimeBookings tenantId={tenantId} />
 }

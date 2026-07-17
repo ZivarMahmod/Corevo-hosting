@@ -8,7 +8,7 @@ const read = (path: string) => readFileSync(resolve(webRoot, path), 'utf8')
 describe('tenantens personliga behörighetsaction', () => {
   it('gatar owner på servern och skriver bara genom den smala RPC:n', () => {
     const action = read('lib/admin/member-permission-actions.ts')
-    expect(action).toContain("requireAdminArea('installningar')")
+    expect(action).toContain("requireOrganizationOwner('installningar')")
     expect(action).toContain("rpc('set_tenant_member_permissions'")
     expect(action).not.toContain(".from('tenant_member_permissions').upsert")
     expect(action).toContain("revalidatePath('/admin/installningar')")

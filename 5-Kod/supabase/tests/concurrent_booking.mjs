@@ -20,9 +20,44 @@ const supabase = createClient(url, anon, { auth: { persistSession: false } })
 
 // Seeded frisor1 data.
 const SLUG = 'frisor1'
+const TENANT = '11111111-1111-1111-1111-111111111111'
+const LOCATION = '77777777-0000-0000-0000-000000000001'
 const SERVICE = '55555555-0000-0000-0000-000000000001' // Klippning, 30 min
 const STAFF = '44444444-0000-0000-0000-000000000001'
-const START = '2031-01-06T10:00:00.000Z' // far-future, unlikely to collide
+
+// Ask the database for a genuinely free future Monday instead of letting a
+// fixed calendar date expire (or collide with a previous test run).
+const firstCandidate = new Date()
+firstCandidate.setUTCHours(10, 0, 0, 0)
+const daysUntilMonday = (8 - firstCandidate.getUTCDay()) % 7 || 7
+firstCandidate.setUTCDate(firstCandidate.getUTCDate() + daysUntilMonday + 14)
+
+const candidates = Array.from({ length: 40 }, (_, index) => {
+  const candidate = new Date(firstCandidate)
+  candidate.setUTCDate(candidate.getUTCDate() + index * 7)
+  return candidate.toISOString()
+})
+
+const { data: bookableStarts, error: availabilityError } = await supabase.rpc(
+  'get_public_bookable_starts',
+  {
+    p_tenant: TENANT,
+    p_location: LOCATION,
+    p_service: SERVICE,
+    p_staff_ids: [STAFF],
+    p_starts: candidates,
+  },
+)
+
+if (availabilityError) {
+  throw new Error(`Could not find a concurrency-test slot: ${availabilityError.code}`)
+}
+
+const START = bookableStarts?.find((row) => row.staff_id === STAFF)?.start_ts
+
+if (!START) {
+  throw new Error('Could not find a bookable concurrency-test slot in the next 40 Mondays.')
+}
 
 function callOnce(tag) {
   return supabase

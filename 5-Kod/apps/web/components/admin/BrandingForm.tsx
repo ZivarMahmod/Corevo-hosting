@@ -276,7 +276,7 @@ export function BrandingForm({
                 type="file"
                 name="logo"
                 className={styles.visuallyHidden}
-                accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+                accept="image/png,image/jpeg,image/webp,image/gif"
                 onChange={(e) => {
                   const f = e.target.files?.[0]
                   setLocalLogo((prev) => {
@@ -306,7 +306,7 @@ export function BrandingForm({
                 Ta bort logotyp
               </label>
             ) : null}
-            <span className={styles.muted}>PNG/JPG/WEBP/SVG/GIF, max 8 MB.</span>
+            <span className={styles.muted}>PNG/JPG/WEBP/GIF, max 8 MB.</span>
           </div>
         </div>
 

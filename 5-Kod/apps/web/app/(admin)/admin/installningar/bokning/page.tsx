@@ -2,9 +2,14 @@ import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getAdminModuleStates, moduleAdminState } from '@/lib/admin/modules'
+import { getSettingsRow } from '@/lib/admin/data'
 import { bookingModeFromState } from '@/lib/admin/booking-mode'
 import { BookingModeCard } from '@/components/admin/BookingModeCard'
-import { PageHead, Button } from '@/components/portal/ui'
+import { SettingsForm } from '@/components/admin/SettingsForm'
+import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
+import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
+import { PageHead } from '@/components/portal/ui'
+import { settingsCategories } from '@/lib/admin/settings-map'
 
 /** L3 C-03 — bokningsregler som lägen. Läget ÄR tenant_modules.state för `booking`
  *  (samma mekanism som storefronten läser), aldrig en ny flagga. */
@@ -16,38 +21,47 @@ export default async function BokningsreglerPage() {
   const user = await requireAdminArea('installningar')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
-    return (
-      <section className="portal-section">
-        <PageHead eyebrow="Inställningar" title="Bokningsregler" />
-        <p className="prose">Inget företag är kopplat till ditt konto.</p>
-      </section>
-    )
+    return <SettingsWorkspaceEmpty currentCategory="bokningsregler" title="Bokningsregler" />
   }
 
-  const states = await getAdminModuleStates(tenant.id)
+  const [states, settings] = await Promise.all([
+    getAdminModuleStates(tenant.id),
+    getSettingsRow(tenant.id),
+  ])
   const current = bookingModeFromState(
     'booking' in states ? moduleAdminState(states, 'booking') : undefined,
   )
+  const values = (settings?.settings ?? {}) as {
+    cancellation_cutoff_hours?: number
+    customer_accounts_enabled?: boolean
+  }
 
   return (
+    <SettingsWorkspace categories={settingsCategories(tenant.terminology)} currentCategory="bokningsregler">
     <section className="portal-section" style={{ maxWidth: '640px' }}>
       <PageHead
         eyebrow="Inställningar"
         title="Bokningsregler"
         lede="Ett val: tar du emot bokningar just nu?"
       />
-      <p style={{ margin: '0 0 1rem' }}>
-        <Button href="/admin/installningar" variant="ghost" icon="arrowLeft" size="sm">
-          Alla inställningar
-        </Button>
-      </p>
-
       <BookingModeCard current={current} />
-
-      <p className="body" style={{ marginTop: '1.25rem', color: 'var(--c-ink-2)' }}>
-        Avbokningsregeln (hur nära inpå kunden får avboka) ligger under{' '}
-        <a href="/admin/installningar/foretag">Företag och profil</a>.
-      </p>
+      <SettingsForm
+        scope="booking"
+        name={tenant.name}
+        paymentMode={settings?.payment_mode ?? 'on_site'}
+        cancellationHours={
+          typeof values.cancellation_cutoff_hours === 'number'
+            ? values.cancellation_cutoff_hours
+            : 24
+        }
+        timezone={tenant.timeZone}
+        locationName={tenant.name}
+        address=""
+        contactEmail=""
+        contactPhone=""
+        customerAccountsEnabled={values.customer_accounts_enabled === true}
+      />
     </section>
+    </SettingsWorkspace>
   )
 }

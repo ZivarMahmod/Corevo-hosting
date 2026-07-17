@@ -116,7 +116,7 @@ function isSlot(v: string): v is Slot {
 function photoUploadError(reason: string): string {
   switch (reason) {
     case 'bad_type':
-      return 'Bilden måste vara PNG, JPG, WEBP, SVG eller GIF.'
+      return 'Bilden måste vara PNG, JPG, WEBP eller GIF.'
     case 'too_large':
       return 'Bilden är för stor (max 8 MB).'
     case 'no_public_base':

@@ -2,6 +2,16 @@
 -- Everything is rolled back.
 begin;
 
+-- One transaction-stable future instant keeps the runtime checks from expiring.
+select set_config(
+  'corevo.test_base_utc',
+  (
+    (date_trunc('day', current_timestamp at time zone 'UTC') + interval '14 days')
+    at time zone 'UTC'
+  )::text,
+  true
+);
+
 grant select, insert, update, delete on public.locations, public.services,
   public.staff, public.staff_services, public.working_hours,
   public.customers, public.bookings, public.user_location_access,
@@ -75,7 +85,8 @@ do $$ begin
   perform public.get_busy_intervals(
     '78000000-0000-0000-0000-000000000001',
     array['78000000-0000-0000-0000-000000000042'::uuid],
-    '2027-01-01', '2027-01-02'
+    current_setting('corevo.test_base_utc')::timestamptz,
+    current_setting('corevo.test_base_utc')::timestamptz + interval '1 day'
   );
   raise exception 'cross_location_busy_read_succeeded';
 exception when insufficient_privilege then null; end $$;
@@ -144,7 +155,10 @@ do $$ begin
       '78000000-0000-0000-0000-000000000042'::uuid,
       '78000000-0000-0000-0000-000000000043'::uuid
     ],
-    array_fill('2027-01-01 09:00+00'::timestamptz, array[400])
+    array_fill(
+      current_setting('corevo.test_base_utc')::timestamptz + interval '9 hours',
+      array[400]
+    )
   );
   raise exception 'public_pair_cap_missing';
 exception when invalid_parameter_value then null; end $$;
@@ -162,7 +176,9 @@ do $$ begin
     '78000000-0000-0000-0000-000000000001',
     '78000000-0000-0000-0000-000000000011',
     '78000000-0000-0000-0000-000000000041',
-    '2027-06-01 09:00+00', '2027-06-01 10:00+00', 'other'
+    current_setting('corevo.test_base_utc')::timestamptz + interval '150 days 9 hours',
+    current_setting('corevo.test_base_utc')::timestamptz + interval '150 days 10 hours',
+    'other'
   );
   raise exception 'direct_time_off_insert_succeeded';
 exception when insufficient_privilege then null; end $$;
@@ -170,7 +186,9 @@ do $$ declare v_id uuid; begin
   v_id := public.create_my_time_off(
     '78000000-0000-0000-0000-000000000041',
     '78000000-0000-0000-0000-000000000011',
-    '2027-06-01 09:00+00', '2027-06-01 10:00+00', 'Egen frånvaro'
+    current_setting('corevo.test_base_utc')::timestamptz + interval '150 days 9 hours',
+    current_setting('corevo.test_base_utc')::timestamptz + interval '150 days 10 hours',
+    'Egen frånvaro'
   );
   if not public.delete_my_time_off(v_id) then raise exception 'self_time_off_delete_failed'; end if;
 end $$;
@@ -188,8 +206,10 @@ select extensions.gen_random_uuid(),
        '78000000-0000-0000-0000-000000000041',
        '78000000-0000-0000-0000-000000000031',
        '78000000-0000-0000-0000-000000000061',
-       ('2027-01-01 10:00+00'::timestamptz + make_interval(days => g)),
-       ('2027-01-01 10:30+00'::timestamptz + make_interval(days => g)),
+       (current_setting('corevo.test_base_utc')::timestamptz
+         + interval '10 hours' + make_interval(days => g)),
+       (current_setting('corevo.test_base_utc')::timestamptz
+         + interval '10 hours 30 minutes' + make_interval(days => g)),
        'confirmed', 0
   from generate_series(0, 100) g;
 
@@ -210,14 +230,17 @@ begin
     from public.preview_admin_time_off_impacts(
       '78000000-0000-0000-0000-000000000011',
       '78000000-0000-0000-0000-000000000041',
-      '2027-01-01 00:00+00', '2027-05-01 00:00+00'
+      current_setting('corevo.test_base_utc')::timestamptz,
+      current_setting('corevo.test_base_utc')::timestamptz + interval '120 days'
     );
   if v_preview <> 101 then raise exception 'preview_queue_truncated_%', v_preview; end if;
 
   v_time_off := public.create_admin_time_off(
     '78000000-0000-0000-0000-000000000011',
     '78000000-0000-0000-0000-000000000041',
-    '2027-01-01 00:00+00', '2027-05-01 00:00+00', 'leave', 'Test'
+    current_setting('corevo.test_base_utc')::timestamptz,
+    current_setting('corevo.test_base_utc')::timestamptz + interval '120 days',
+    'leave', 'Test'
   );
   select count(*) into v_queue from public.get_admin_time_off_impacts(v_time_off);
   if v_queue <> 101 then raise exception 'absence_queue_truncated_%', v_queue; end if;
@@ -234,7 +257,7 @@ begin
     '78000000-0000-0000-0000-000000000011',
     '78000000-0000-0000-0000-000000000041',
     '78000000-0000-0000-0000-000000000031',
-    '2027-05-10 10:00+00',
+    current_setting('corevo.test_base_utc')::timestamptz + interval '130 days 10 hours',
     v_booking_start,
     '78000000-0000-0000-0000-000000000041'
   );

@@ -48,7 +48,8 @@ export async function loadKurserConfig(tenantId: string, slug: string): Promise<
 
 /**
  * Load the tenant's upcoming open events (starts_at >= now, ascending), each
- * with `taken` = sum of confirmed party_size (or null when uncountable).
+ * with `taken` = confirmed party_size + active checkout holds (or null when
+ * confirmed registrations cannot be counted).
  * Cached per-tenant with the SAME `tenant:<slug>` tag the rest of the
  * storefront uses, so an anmälan (revalidateTag in the action) refreshes the
  * "platser kvar" counts.
@@ -62,7 +63,7 @@ export async function loadUpcomingEvents(tenantId: string, slug: string): Promis
 
       const { data: rows } = await supabase
         .from('tenant_events')
-        .select('id, title, description, starts_at, duration_min, capacity, price_cents')
+        .select('id, title, description, starts_at, duration_min, capacity, price_cents, reserved_qty')
         .eq('tenant_id', tenantId) // app-layer tenant isolation (RLS does NOT do this for anon)
         .eq('status', 'open')
         .gte('starts_at', nowIso)
@@ -98,7 +99,7 @@ export async function loadUpcomingEvents(tenantId: string, slug: string): Promis
         durationMin: e.duration_min,
         capacity: e.capacity,
         priceCents: e.price_cents,
-        taken: takenByEvent ? (takenByEvent.get(e.id) ?? 0) : null,
+        taken: takenByEvent ? (takenByEvent.get(e.id) ?? 0) + (e.reserved_qty ?? 0) : null,
       }))
     },
     ['kurser-upcoming-by-tenant', tenantId, norm],

@@ -1,5 +1,5 @@
-import { verifyPaypalWebhook, paypalReady } from '@/lib/payments/paypal'
-import { settleShopOrderPaid } from '@/lib/payments/settle'
+import { verifyPaypalWebhook, paypalReady, refundPaypalCapture } from '@/lib/payments/paypal'
+import { recordShopOrderRefunded, settleShopOrderPaid } from '@/lib/payments/settle'
 import { captureException } from '@/lib/observability'
 
 // PAYPAL — WEBHOOKEN (goal-64). Nätet under returen: stänger kunden webbläsaren mitt i
@@ -10,9 +10,9 @@ import { captureException } from '@/lib/observability'
 // "betalt"-event får aldrig markera en order som betald; det vore en gratis-order-bugg.
 //
 // IDEMPOTENS (kravet): PayPal levererar om vid varje icke-200, och kan dubbel-leverera.
-// settleShopOrderPaid är no-op på en redan betald order och mark_shop_order_paid har en
-// stock_committed-latch → dubbel leverans ger EXAKT en effekt. Ingen events-tabell behövs,
-// samma modell som Stripe-webhooken.
+// settleShopOrderPaid är state-no-op på en redan betald order (men försöker
+// idempotent backfilla presentkortsleveransen) och mark_shop_order_paid har en
+// stock_committed-latch → dubbel leverans ger EXAKT en betal-/lagereffekt.
 //
 // Vi svarar 200 även på event vi inte bryr oss om (annars retry-loopar PayPal), men 500
 // på internt fel — då VILL vi ha en retry.
@@ -56,11 +56,36 @@ export async function POST(req: Request): Promise<Response> {
       const orderId = res?.custom_id
       if (!orderId) return ok({ skipped: 'no_reference' })
       const amountCents = res?.amount?.value ? Math.round(Number(res.amount.value) * 100) : null
-      await settleShopOrderPaid({
+      const settled = await settleShopOrderPaid({
         orderId,
         amountCents,
         providerRef: res?.id ?? 'paypal',
       })
+      if (settled.ok && settled.giftDeliveryPending) {
+        // Pengarna är redan korrekt speglade. Be PayPal leverera om eventet så den
+        // idempotenta presentkortsclaimen får ett nytt leveransförsök.
+        throw new Error('paypal gift-card delivery pending')
+      }
+      if (!settled.ok && ['terminal_order', 'amount_mismatch'].includes(settled.reason ?? '')) {
+        if (!res?.id || !(await refundPaypalCapture(res.id))) {
+          throw new Error(`paypal auto-refund failed: ${settled.reason}`)
+        }
+        if (!(await recordShopOrderRefunded(orderId))) {
+          throw new Error(`paypal refund persistence failed: ${settled.reason}`)
+        }
+        return ok({ refunded: true })
+      }
+      if (!settled.ok && settled.reason === 'unknown_order') {
+        if (!res?.id || !(await refundPaypalCapture(res.id))) {
+          throw new Error('paypal unknown-order auto-refund failed')
+        }
+        return ok({ refunded: true })
+      }
+      if (!settled.ok) {
+        // Ett verifierat pengar-event får inte kvitteras förrän vår egen status är
+        // durabel. Kasta in i befintlig 500-väg så PayPal levererar om eventet.
+        throw new Error(`paypal settlement failed: ${settled.reason ?? 'unknown'}`)
+      }
     }
     // Övriga event-typer ignoreras tyst (200 → PayPal slutar leverera om).
     return ok()

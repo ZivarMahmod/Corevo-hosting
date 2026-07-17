@@ -12,7 +12,7 @@ export type UpcomingEvent = {
   capacity: number
   priceCents: number
   /**
-   * Summa bekräftade platser (party_size för status='confirmed').
+   * Summa upptagna platser: bekräftade anmälningar + aktiva checkout-holds.
    * null = kunde inte räknas (service-nyckel saknas) → UI:t visar bara
    * kapaciteten ("Max Y platser") istället för "Y platser kvar".
    */

@@ -24,6 +24,12 @@ import { BOOKING_STATUSES, restoreBlockedByRefund } from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
+import { getAdminLocationPreferences } from './location-context'
+import {
+  mergeScopedSettings,
+  parseSettingsScope,
+  type SettingsScope,
+} from './scoped-settings'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -510,7 +516,7 @@ export async function updateStaff(_p: ActionState, fd: FormData): Promise<Action
     removedAvatar = row.avatar_url
   }
 
-  if (Object.keys(patch).length === 0) return { error: 'Inget att spara.' }
+  if (Object.keys(patch).length === 0) return {}
 
   const { error } = await supabase
     .from('staff')
@@ -1118,7 +1124,7 @@ const STATS_MAX = 6
 function mediaUploadMessage(reason: Exclude<UploadResult, { ok: true }>['reason']): string {
   switch (reason) {
     case 'bad_type':
-      return 'Bilderna måste vara PNG, JPG, WEBP, SVG eller GIF.'
+      return 'Bilderna måste vara PNG, JPG, WEBP eller GIF.'
     case 'too_large':
       return 'Någon bild är för stor (max 8 MB per bild).'
     case 'no_public_base':
@@ -1368,7 +1374,14 @@ function httpsUrlOrNull(raw: FormDataEntryValue | null): string | null | undefin
 export async function saveSettings(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await adminCtx('installningar')
   if (!ctx) return { error: NO_TENANT }
+  const preferences = await getAdminLocationPreferences(ctx.user.id)
+  if (preferences.accessScope !== 'organization') {
+    return { error: 'Endast organisationsägaren får ändra dessa inställningar.' }
+  }
 
+  const scope = parseSettingsScope(fd.get('settings_scope') ?? 'all')
+  if (!scope) return { error: 'Ogiltig inställningssektion. Ladda om sidan och försök igen.' }
+  const includesScope = (candidate: SettingsScope) => scope === 'all' || scope === candidate
   const name = String(fd.get('name') ?? '').trim()
   const paymentMode = String(fd.get('payment_mode') ?? 'on_site')
   const cancelRaw = String(fd.get('cancellation_cutoff_hours') ?? '').trim()
@@ -1379,26 +1392,31 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const contactPhone = String(fd.get('contact_phone') ?? '').trim()
   const customerAccounts = String(fd.get('customer_accounts_enabled') ?? '') === 'true'
 
-  // Notiser & integritet. Checkboxes only appear in FormData when checked, so an
-  // absent key means "unchecked" → persist explicit `false` (the M9 reader treats
-  // an absent jsonb key as ON, so we must write false to actually turn it off).
-  const notifications = {
-    confirmation: String(fd.get('notify_confirmation') ?? '') === 'true',
-    reminder: String(fd.get('notify_reminder') ?? '') === 'true',
-    review: String(fd.get('notify_review') ?? '') === 'true',
-  }
-  const cookieBannerEnabled = String(fd.get('cookie_banner_enabled') ?? '') === 'true'
-  const googleReviewUrl = httpsUrlOrNull(fd.get('google_review_url'))
+  // Checkboxes only appear in FormData when checked. Scope makes absence mean
+  // "off" only for the visible card, never for unrelated settings.
+  const notifications = includesScope('notifications')
+    ? {
+        confirmation: String(fd.get('notify_confirmation') ?? '') === 'true',
+        reminder: String(fd.get('notify_reminder') ?? '') === 'true',
+        review: String(fd.get('notify_review') ?? '') === 'true',
+      }
+    : undefined
+  const cookieBannerEnabled = includesScope('privacy')
+    ? String(fd.get('cookie_banner_enabled') ?? '') === 'true'
+    : undefined
+  const googleReviewUrl = includesScope('integrations')
+    ? httpsUrlOrNull(fd.get('google_review_url'))
+    : undefined
 
-  if (!name) return { error: 'Ange ett företagsnamn.' }
-  if (!PAYMENT_MODES.includes(paymentMode as (typeof PAYMENT_MODES)[number]))
+  if (scope === 'all' && !name) return { error: 'Ange ett företagsnamn.' }
+  if (scope === 'all' && !PAYMENT_MODES.includes(paymentMode as (typeof PAYMENT_MODES)[number]))
     return { error: 'Ogiltigt betalningsläge.' }
   const cancelHours = cancelRaw === '' ? 24 : Number(cancelRaw)
-  if (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760)
+  if (includesScope('booking') && (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760))
     return { error: 'Avbokningsregel måste vara ett antal timmar (0–8760).' }
-  if (timezone && !isValidTz(timezone))
+  if (scope === 'all' && timezone && !isValidTz(timezone))
     return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
-  if (googleReviewUrl === undefined)
+  if (includesScope('integrations') && googleReviewUrl === undefined)
     return {
       error: 'Ogiltig recensionslänk. Använd en https-länk, t.ex. https://g.page/r/.../review.',
     }
@@ -1406,8 +1424,10 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const supabase = await createClient()
 
   // 1) tenant name (feeds the cached public bundle).
-  const t = await supabase.from('tenants').update({ name }).eq('id', ctx.tenant.id)
-  if (t.error) return { error: GENERIC }
+  if (scope === 'all') {
+    const t = await supabase.from('tenants').update({ name }).eq('id', ctx.tenant.id)
+    if (t.error) return { error: GENERIC }
+  }
 
   // 2) tenant_settings: merge into the existing settings jsonb so we never clobber
   //    layout / custom_override that the public theming layer relies on.
@@ -1417,27 +1437,28 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
     .eq('tenant_id', ctx.tenant.id)
     .maybeSingle()
   const prev = (existing?.settings ?? {}) as Record<string, unknown>
-  const settings = {
-    ...prev,
-    cancellation_cutoff_hours: cancelHours, // read by M4 (kund avbokning)
-    contact: { email: contactEmail || null, phone: contactPhone || null },
-    customer_accounts_enabled: customerAccounts, // G12: storefront login/konto toggle
-    notifications, // M9: per-channel toggles (confirmation/reminder/review)
-    google_review_url: googleReviewUrl, // M9: review-nudge link (null = off)
-    // sms_enabled intentionally NOT written here (M6 §3.7 — dead toggle removed
-    // from the UI). Any previously stored value is preserved by the `...prev` spread.
-    cookie_banner_enabled: cookieBannerEnabled, // storefront cookie banner
-  }
+  const settings = mergeScopedSettings(prev, scope, {
+    cancellationHours: includesScope('booking') ? cancelHours : undefined,
+    contact: scope === 'all'
+      ? { email: contactEmail || null, phone: contactPhone || null }
+      : undefined,
+    customerAccountsEnabled: includesScope('booking') ? customerAccounts : undefined,
+    notifications,
+    googleReviewUrl,
+    cookieBannerEnabled,
+  })
+  type TenantSettingsInsert = Database['public']['Tables']['tenant_settings']['Insert']
+  const storedSettings = settings as TenantSettingsInsert['settings']
+  const settingsWrite: TenantSettingsInsert = scope === 'all'
+    ? { tenant_id: ctx.tenant.id, payment_mode: paymentMode, settings: storedSettings }
+    : { tenant_id: ctx.tenant.id, settings: storedSettings }
   const s = await supabase
     .from('tenant_settings')
-    .upsert(
-      { tenant_id: ctx.tenant.id, payment_mode: paymentMode, settings },
-      { onConflict: 'tenant_id' },
-    )
+    .upsert(settingsWrite, { onConflict: 'tenant_id' })
   if (s.error) return { error: GENERIC }
 
   // 3) primary location (timezone + name + address), if the tenant has one.
-  if (ctx.tenant.locationId) {
+  if (scope === 'all' && ctx.tenant.locationId) {
     const locUpdate: { timezone?: string; name?: string; address?: string | null } = {}
     if (timezone) locUpdate.timezone = timezone
     if (locationName) locUpdate.name = locationName
@@ -1451,6 +1472,10 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   }
 
   revalidateTenant(ctx.tenant.slug)
+  revalidatePath('/admin/installningar/bokning')
+  revalidatePath('/admin/installningar/paminnelser')
+  revalidatePath('/admin/installningar/integrationer')
+  revalidatePath('/admin/installningar/sekretess')
   revalidatePath('/admin/installningar/foretag')
   return { success: 'Inställningar sparade.' }
 }

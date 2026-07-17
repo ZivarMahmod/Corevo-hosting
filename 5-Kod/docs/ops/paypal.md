@@ -13,6 +13,12 @@ Ingen kod behöver skrivas den dag Zivar skaffar kontot — bara secrets sättas
 Kunden kan alltså kryssa i "PayPal" i kundkortet redan idag; kassan visar det ändå inte
 förrän rälsen finns. Hellre färre val än en knapp som ljuger.
 
+**Schemaförkrav:** migration 0085 stänger publika betal-RPC:er och 0087 speglar
+externa auto-refunds atomiskt. PayPal får inte aktiveras innan de finns i målmiljön.
+En capture mot terminal/för liten/okänd intern order återbetalas automatiskt.
+Lyckad betalning visas alltid som lyckad även om presentkortsmejlet fallerar;
+webhooken svarar då 500 så den idempotenta leveransen försöks igen.
+
 ---
 
 ## 1. Vad Zivar måste skaffa

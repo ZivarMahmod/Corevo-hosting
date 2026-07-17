@@ -25,8 +25,9 @@ secrets är märkt **OPS** nedan.
 - Aktivera **Object versioning** på R2-bucketen (när bucketen skapas — se memory:
   R2 är ännu ej aktiverad på kontot). Versionering ger återställning av
   överskrivna/raderade objekt.
-- R2-objekt är icke-kritiska (branding); en förlust faller tillbaka på
-  standard-tema. Ingen separat backup-pipeline behövs utöver versioning.
+- R2-bucketen finns och innehåller kundmedia. Versionering/backup är ännu inte
+  verifierad; behandla därför media som återställningskrävande kunddata, inte som
+  ofarlig cache.
 
 ---
 
@@ -40,9 +41,9 @@ komplement").
   backad fönsterräknare i `private.rate_limit_hits`. **Detta är det enda Workers-säkra
   app-lagret**: per-isolate-minne kan inte rate-limita (varje request kan landa i en
   ny isolat). Helper: `lib/security/rate-limit.ts`.
-- Inkopplat på: **login** (`signIn`, 8 försök / 5 min / IP) och **publik bokning**
-  (`createBooking`, 12 / 5 min / IP+tenant). Fail-**open** vid DB-fel (en trasig
-  räknare får aldrig låsa ute riktiga kunder).
+- Inkopplat på: **login** (`signIn`, 8 försök / 5 min / IP) och publika skrivflöden.
+  Login är fail-**closed** vid DB-fel så credential-stuffing-skyddet inte kan
+  försvinna tyst; publika kundflöden använder dokumenterad per-route-policy.
 
 ### Cloudflare WAF (PRIMÄRT, **OPS — ej applicerat**)
 > ⛔ Får INTE appliceras live ännu: HANDOFF spärrar all live CF-DNS/route/config
@@ -100,7 +101,8 @@ Skapa i Cloudflare Dashboard → Security → WAF → Rate limiting rules:
   `payment_intent.succeeded`, gäst-mejl parsas ur `note`), **påminnelse** (cron).
 - **Reminder-cron (BYGGT handler, OPS-schemaläggning):** `app/api/cron/reminders`
   (bearer `CRON_SECRET`) → `sendDueReminders()` skickar för **live bokningar
-  (pending/confirmed)** inom 24 h och stämplar `bookings.reminded_at` (idempotent).
+  (pending/confirmed)** inom 30 h och använder migration 0088:s atomiska lease före
+  transport samt `bookings.reminded_at` efter bekräftad leverans.
   OBS: on-site-bokningar ligger `pending` tills personalen bekräftar — därför inte
   enbart `confirmed` i filtret. Schemalägg via **Cloudflare
   Cron Trigger** (t.ex. var 30:e min) som gör `GET` mot endpointen med

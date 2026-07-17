@@ -1,8 +1,7 @@
 # Notiser — arkitektur (M9 / Modul G)
 
-Kund-notiser (e-post) + Google-recension-nudge för Corevo Booking. All kod ligger
-i `apps/web/lib/notifications/`. Detta är **lib + doc** — inga callers ändras här;
-orkestreraren kopplar in nya anrop (se "Ej inkopplat" nedan).
+Kundnotiser (e-post) + Google-recensionsnudge för Corevo Booking. All kod ligger
+i `apps/web/lib/notifications/` och de produktionsnära call-sites som listas nedan.
 
 > Designspråk i mejl: e-postklienter strippar `<link>`, ignorerar CSS-variabler
 > och laddar inte webfonter. Därför når **varken** `globals.css`-klasser eller
@@ -19,10 +18,11 @@ orkestreraren kopplar in nya anrop (se "Ej inkopplat" nedan).
 | Kanal | Status | Transport |
 |---|---|---|
 | **E-post** | live (M9; transport bytt i goal-14) | **HTTPS → Supabase Edge Function `send-email` → one.com SMTP** (`lib/notifications/email.ts`). Workern POST:ar renderat mejl med `x-relay-secret`; klassisk SMTP går ej på Workers. Per-salong From/Reply-To/brand via `lib/notifications/brand.ts`. (Resend borttaget.) Se `docs/ops/mejl-egen-smtp.md`. |
-| **SMS** | framtid | Ej byggt. Lägg som ny transport bredvid `sendEmail` (t.ex. en `sendSms` mot en HTTP-SMS-leverantör), behåll samma best-effort-kontrakt. |
+| **SMS** | framtid | Transportgränssnitt finns men levererar inte. Aktiveringsgrind och verifierat nuläge: [`docs/ops/sms-activation.md`](ops/sms-activation.md). |
 
-**Best-effort-kontrakt (gäller alla sändare):** en notis får ALDRIG kasta in i,
-eller blockera, flödet den observerar (bokning/avbokning/betalning/besök). Utan
+**Kontrakt:** vanliga bokningsnotiser får aldrig göra bokning/avbokning/betalning
+falskt misslyckad. Durabla batcher (påminnelser och PayPal-presentkort) signalerar
+däremot retry när leveransutfallet är osäkert. Utan
 relä-secrets `EMAIL_RELAY_URL`/`EMAIL_RELAY_SECRET` (lokalt/CI) loggar `sendEmail` avsikten och returnerar
 `{ skipped: true }` i stället för att kasta. `SendResult` är `ok` / `skipped` / `failed`
 — det är notismodulens motsvarighet till laddar/tom/fel/lyckat-tillstånden.
@@ -39,7 +39,7 @@ Alla i `lib/notifications/templates.ts`. Returnerar `{ subject, html }`.
 | Ombokning (**ny**) | `rebookEmail` | Kund flyttar tid (`lib/kund/actions.rebookBooking`) | "Ombokning" |
 | Avbokning | `cancellationEmail` | Kund avbokar (`lib/kund/actions.cancelBooking`) | "Avbokning" |
 | Kvitto | `receiptEmail` | `payment_intent.succeeded` (Stripe-webhook) | "Kvitto" |
-| Påminnelse | `reminderEmail` | Cron ~24h före tid (`lib/notifications/reminders`) | "Påminnelse" |
+| Påminnelse | `reminderEmail` | Cron ~30h före tid (`lib/notifications/reminders`) | "Påminnelse" |
 
 Delad chrome: `shell(title, bodyHtml, tenantName, eyebrow?)` är **exporterad** så
 Google-recension-mejlet återanvänder exakt samma ram. Tjänste-/tidsblocket renderas
@@ -75,8 +75,8 @@ och `googleReviewEmail(...)`.
 Helper: `getEnabledNotifications(supabase, tenantId)` i `lib/notifications/settings.ts`.
 Läser `tenant_settings.settings.notifications.{confirmation,reminder,review}` och
 returnerar `{ confirmation, reminder, review }`. **Default: allt `true`** — en
-okonfigurerad salong behåller full service. Ägaren kan senare slå av en kategori
-genom att sätta flaggan `false` i jsonb (admin-UI byggs i annan modul).
+okonfigurerad tenant behåller full service. Ägaren kan slå av kategorierna under
+Inställningar → Påminnelser & utskick.
 
 Avsiktligt **bara dessa tre** kategorier är på/av-bara. **Kvitto** och
 **avboknings­bekräftelse** är transaktionella/legala och dämpas aldrig.
@@ -113,27 +113,23 @@ if (prefs.review) {
 | Händelse | Var | Notis |
 |---|---|---|
 | Bokning skapad | `app/boka/actions` | `sendBookingConfirmation` |
-| Kund ombokar | `lib/kund/actions.rebookBooking` | i dag `sendBookingConfirmation` → bör bli `sendBookingRebook` |
+| Kund ombokar | `lib/kund/actions.rebookBooking` | `sendBookingRebook` |
 | Kund avbokar | `lib/kund/actions.cancelBooking` | `sendBookingCancellation` |
 | Betalning lyckad | `app/api/stripe/webhook` | `sendPaymentReceipt` |
-| ~24h före tid (cron) | `app/api/cron/reminders` → `reminders.ts` | `sendBookingReminder` (idempotent via `bookings.reminded_at`) |
-| Besök genomfört (`completed`) | **ej inkopplat** | `sendGoogleReviewNudge` |
+| ~30h före tid (cron) | `app/api/cron/reminders` → `reminders.ts` | `sendBookingReminder` (atomisk lease + `bookings.reminded_at`) |
+| Besök genomfört (`completed`) | admin-/personal-action | `sendReviewNudgeForBooking` |
 
 ---
 
-## 6. Ej inkopplat (orkestreraren kopplar) — cross-module
+## 6. Durabilitet
 
-Dessa nya exporter är klara men medvetet **inte** inkopplade (call-sites ligger
-utanför detta revir):
-
-1. **`sendBookingRebook`** — `lib/kund/actions.rebookBooking` anropar i dag
-   `sendBookingConfirmation` för den nya tiden. Byt till `sendBookingRebook` för
-   en korrekt "ombokad"-formulering.
-2. **`sendGoogleReviewNudge`** — koppla in vid `completed`-övergången (markera-klar-
-   action eller cron-svep). Konsultera `getEnabledNotifications(...).review` +
-   `getGoogleReviewUrl(...)` först.
-3. **`getEnabledNotifications`** — konsultera vid varje på/av-bar call-site
-   (bekräftelse, påminnelse, recension) före sändning.
+Migration 0088 claimar påminnelser med `FOR UPDATE SKIP LOCKED`, unik token och
+15 minuters lease. Bara claim-ägaren får stämpla `reminded_at`. Vid batchfel släpps
+alla rader som säkert inte hunnit transporteras; raden vars leveransutfall är
+osäkert behåller leasen för att undvika en omedelbar dublett. En krasch efter att
+SMTP-leverantören accepterat men före DB-stämpeln kan fortfarande ge en senare
+dublett eftersom nuvarande relä saknar provider-idempotency; en durabel outbox är
+det långsiktiga arkitektursteg som återstår.
 
 ---
 

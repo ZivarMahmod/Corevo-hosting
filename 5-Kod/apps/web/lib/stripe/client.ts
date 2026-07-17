@@ -19,6 +19,7 @@ export function getStripe(): Stripe | null {
   if (!key) return null
   if (cached) return cached
   cached = new Stripe(key, {
+    apiVersion: '2026-05-27.dahlia',
     httpClient: Stripe.createFetchHttpClient(),
   })
   return cached

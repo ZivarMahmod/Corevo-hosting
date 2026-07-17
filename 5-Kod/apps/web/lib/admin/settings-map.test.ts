@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { settingsCategories, SETTINGS_GROUPS } from './settings-map'
+import { settingsCategories, settingsSearchEntries, SETTINGS_GROUPS } from './settings-map'
 
 describe('settingsCategories v2', () => {
   const categories = settingsCategories()
@@ -17,13 +17,13 @@ describe('settingsCategories v2', () => {
       scheman: '/admin/scheman',
       platser: '/admin/platser',
       bokningsregler: '/admin/installningar/bokning',
-      bokningsflode: '/admin/sida?flik=bokning',
+      bokningsflode: '/admin/installningar/bokningsflode',
       betalning: '/admin/installningar/betalning',
-      paminnelser: '/admin/installningar/foretag#paminnelser',
-      integrationer: '/admin/sida?flik=kontakt',
+      paminnelser: '/admin/installningar/paminnelser',
+      integrationer: '/admin/installningar/integrationer',
       roller: '/admin/installningar?kategori=roller',
       konto: '/admin/installningar/konto',
-      sekretess: '/admin/kunder',
+      sekretess: '/admin/installningar/sekretess',
     })
   })
 
@@ -38,6 +38,21 @@ describe('settingsCategories v2', () => {
     for (const word of ['öppettider', 'semester', 'lösenord', 'behörighet', 'recension']) {
       expect(index).toContain(word)
     }
+  })
+
+  it('har paketets gemensamma sökindex med träffnamn och verkliga mål', () => {
+    const entries = settingsSearchEntries(categories)
+    expect(entries.find((entry) => entry.label === 'Öppettider på sidan')).toMatchObject({
+      hint: 'Redigera sidan → Kontakt',
+      href: '/admin/sida?flik=kontakt',
+    })
+    expect(entries.find((entry) => entry.label === 'Bokningsbara tider')).toMatchObject({
+      categoryId: 'scheman',
+      href: '/admin/scheman',
+    })
+    expect(entries.find((entry) => entry.label === 'Ge en anställd behörighet')).toMatchObject({
+      categoryId: 'roller',
+    })
   })
 
   it('hårdkodar ingen bransch som plattformens standard', () => {

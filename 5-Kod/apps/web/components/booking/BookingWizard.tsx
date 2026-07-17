@@ -862,7 +862,7 @@ export function BookingWizard({
                   <span className="wizard-card-main">
                     <span className="fc-card-title">{l.name}</span>
                   </span>
-                  {l.isPrimary ? <span className="fc-role">Huvudsalong</span> : null}
+                  {l.isPrimary ? <span className="fc-role">Huvudplats</span> : null}
                   {locationId === l.id ? <span className="fc-ring" aria-hidden /> : null}
                 </button>
               </li>

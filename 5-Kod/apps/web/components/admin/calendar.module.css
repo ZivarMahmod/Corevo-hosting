@@ -1004,6 +1004,25 @@
   transform: scale(0.99);
 }
 
+/* Touch har ett eget grepp. Bara greppet tar över gesten; resten av kortet behåller
+   webbläsarens vanliga pan/scroll. Det gör fingerdrag möjligt utan att en full kalender
+   känns fastlåst när personalen vill scrolla genom dagen. */
+.touchDragHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  border-left: 1px solid color-mix(in srgb, var(--bk, var(--c-gold)) 28%, transparent);
+  background: color-mix(in srgb, var(--c-paper) 58%, transparent);
+  color: var(--c-ink-2);
+  touch-action: none;
+}
+
 /* Avbokad tonas ned OCH får ett kryss i texten — status uttrycks aldrig enbart i färg. */
 .blockDim {
   background: var(--c-paper-2);
@@ -2270,6 +2289,31 @@
   }
 }
 
+/* Telefon, iPad och hybridenheter: visa fingerhandtaget även om enheten också har mus.
+   Aktivt kort lyfts bara med transform/opacity — inga dyra layoutomräkningar under drag. */
+@media (pointer: coarse), (any-pointer: coarse) {
+  .blockDrag {
+    padding-right: 35px;
+  }
+
+  .blockDrag .blockFlag {
+    right: 35px;
+  }
+
+  .touchDragHandle {
+    display: inline-flex;
+  }
+
+  .blockTouchDragging {
+    z-index: 4;
+    transform: scale(1.015);
+    box-shadow:
+      0 10px 24px color-mix(in srgb, var(--c-ink) 18%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--c-forest) 55%, transparent);
+    opacity: 0.9;
+  }
+}
+
 /* ---- iPad / surfplatta (761–1024px) ----
    Egen nivå, inte "stor mobil" och inte "liten desktop". Plattan har gott om bredd men
    används med FINGER: touchmålen måste vara kvar i full storlek, medan kolumnerna får
@@ -2320,6 +2364,9 @@
     transition: none;
   }
   .block:hover {
+    transform: none;
+  }
+  .blockTouchDragging {
     transform: none;
   }
   .confirmBackdrop,
