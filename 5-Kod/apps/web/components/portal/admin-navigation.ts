@@ -21,9 +21,11 @@ const SETTINGS_PREFIXES = [
   ...new Set(settingsCategories().map((category) => category.href.split(/[?#]/, 1)[0]!)),
 ]
 
-/** Modulposterna ur NAV.admin (de som har en `module`-nyckel), filtrerade på kundens
- *  aktiverade moduler. `activeModuleKeys` undefined ⇒ ingen gating (samma kontrakt som
- *  PortalSidebar/paletteFromNav); [] ⇒ inga modulposter alls. */
+/** Modulposterna ur NAV.admin (de som har en `module`-nyckel). En modul som inte är
+ *  AKTIVERAD döljs helt (ej köpt ≠ behörighet). En aktiverad modul som rollen inte
+ *  når visas LÅST (Zivar 2026-07-18: "syns men låst" — frisören/platschefen ska se
+ *  att ytan finns och att ägaren kan bevilja den). `activeModuleKeys` undefined ⇒
+ *  ingen gating (samma kontrakt som PortalSidebar/paletteFromNav). */
 function moduleAreas(
   activeModuleKeys?: string[],
   roleLevel?: number,
@@ -31,13 +33,15 @@ function moduleAreas(
 ): TopnavArea[] {
   return NAV.admin.items.flatMap((entry) => {
     if (isGroup(entry) || !entry.module) return []
-    if (!isNavItemVisible(entry, { activeModuleKeys, roleLevel, grantedAreas })) return []
+    if (activeModuleKeys && !activeModuleKeys.includes(entry.module)) return []
+    const visible = isNavItemVisible(entry, { activeModuleKeys, roleLevel, grantedAreas })
     return [
       {
         id: `modul-${entry.module}`,
         href: entry.href,
         label: entry.label,
         prefixes: [entry.href],
+        ...(visible ? {} : { locked: true }),
       },
     ]
   })
@@ -47,6 +51,9 @@ export function adminAreas(
   activeModuleKeys?: string[],
   roleLevel?: number,
   grantedAreas?: readonly string[],
+  /** Ägargrinden (owner-guard): Inställningar kräver organisations-scope. false ⇒
+   *  posten visas låst även om rollnivån räcker. undefined ⇒ okänd/ej relevant. */
+  organizationScope?: boolean,
 ): TopnavArea[] {
   // Personliga tillägg (goal-71): en yta beviljad i tenant_member_permissions är
   // tillåten fast rollnivån inte når minLevel — samma beslut som sidgrinden.
@@ -54,6 +61,7 @@ export function adminAreas(
     roleLevel === undefined ||
     roleLevel >= minimum ||
     (area !== undefined && (grantedAreas?.includes(area) ?? false))
+  const lockUnless = (ok: boolean) => (ok ? {} : { locked: true as const })
   return [
     // exact: /admin är prefix till varenda annan adminroute — utan detta hade
     // Översikt markerats som aktiv överallt.
@@ -62,17 +70,20 @@ export function adminAreas(
     { id: 'kalender', href: '/admin/bokningar', label: 'Kalender', prefixes: ['/admin/bokningar'] },
     { id: 'kunder', href: '/admin/kunder', label: 'Kunder', prefixes: ['/admin/kunder'] },
     ...moduleAreas(activeModuleKeys, roleLevel, grantedAreas),
-    ...(allowed(A.sida, 'sida')
-      ? [{ id: 'sida', href: '/admin/sida', label: 'Redigera sidan', prefixes: ['/admin/sida'] }]
-      : []),
-    ...(allowed(A.installningar, 'installningar')
-      ? [{
-          id: 'installningar',
-          href: '/admin/installningar',
-          label: 'Inställningar',
-          prefixes: SETTINGS_PREFIXES,
-        }]
-      : []),
+    {
+      id: 'sida',
+      href: '/admin/sida',
+      label: 'Redigera sidan',
+      prefixes: ['/admin/sida'],
+      ...lockUnless(allowed(A.sida, 'sida')),
+    },
+    {
+      id: 'installningar',
+      href: '/admin/installningar',
+      label: 'Inställningar',
+      prefixes: SETTINGS_PREFIXES,
+      ...lockUnless(allowed(A.installningar, 'installningar') && organizationScope !== false),
+    },
   ]
 }
 
@@ -87,11 +98,11 @@ export type AdminMobileNavigation = {
 
 /** Mobilen arrangerar om samma adminnavigation som desktop. Funktionen tar den redan
  * modul- och rollfiltrerade listan, så den kan varken lägga till en otillåten yta eller
- * tappa en aktiverad modul. */
+ * tappa en aktiverad modul. Låsta ytor hamnar aldrig i flikraden — de visas låsta i Mer. */
 export function adminMobileNavigation(areas: readonly TopnavArea[]): AdminMobileNavigation {
   const tabIds = new Set(['oversikt', 'kalender', 'kunder'])
   return {
-    tabs: areas.filter((area) => tabIds.has(area.id)),
+    tabs: areas.filter((area) => tabIds.has(area.id) && !area.locked),
     more: areas.filter((area) => !tabIds.has(area.id)),
     action: { href: '/admin/bokningar?ny', label: 'Ny bokning' },
   }

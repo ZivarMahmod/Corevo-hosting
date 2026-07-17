@@ -269,38 +269,66 @@
   cursor: pointer;
 }
 
+/* Sök är en cirkulär ikonknapp (Zivar 2026-07-18) — ⌘K/Ctrl+K funkar fortfarande,
+   hintet bor i title-attributet i stället för en trång kbd-bricka. */
 .search {
-  min-width: 132px;
-  padding: 0 9px 0 11px;
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   border: 1px solid var(--c-line);
+  border-radius: 50%;
   background: var(--c-cream);
   color: var(--c-ink-3);
-  font-size: 13px;
 }
 
 .search:hover {
   border-color: var(--c-line-strong);
-  color: var(--c-ink-2);
+  background: var(--c-paper-2);
+  color: var(--c-ink);
 }
 
-.searchText {
-  flex: 1;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.search kbd {
-  padding: 2px 5px;
+/* Genvägsraden — cirkulära ikonflikar i en pill, samma tokens som övriga bannern. */
+.quickGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
   border: 1px solid var(--c-line);
-  border-radius: 5px;
-  background: var(--c-paper);
+  border-radius: 999px;
+  background: var(--c-cream);
+}
+
+.quickTab {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
   color: var(--c-ink-3);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  white-space: nowrap;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.quickTab:hover {
+  background: var(--c-paper-2);
+  color: var(--c-ink);
+}
+
+.navLinkLocked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mobileMoreLinkLocked {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .newCustomer {
@@ -738,11 +766,6 @@
     justify-content: center;
   }
 
-  .mobileAdmin .searchText,
-  .mobileAdmin .search kbd {
-    display: none;
-  }
-
   .mobileAdmin .context,
   .mobileAdmin .theme :global(.bo-theme button),
   .mobileAdmin .account > summary {
@@ -764,6 +787,11 @@
     min-height: calc(52px + env(safe-area-inset-top));
     padding-top: env(safe-area-inset-top);
     box-sizing: border-box;
+  }
+
+  /* Mobilen har redan FAB + flikar — genvägsraden är desktop/tablet-yta. */
+  .mobileAdmin .quickGroup {
+    display: none;
   }
 
   .mobileAdmin .bar {

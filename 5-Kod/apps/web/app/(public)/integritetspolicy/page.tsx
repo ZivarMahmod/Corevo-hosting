@@ -93,7 +93,7 @@ export default async function IntegritetspolicyPage() {
       <h2>Dina rättigheter</h2>
       <p>
         Du har rätt att få tillgång till dina uppgifter (registerutdrag), få felaktiga
-        uppgifter rättade, bli raderad ("rätten att bli glömd"), invända mot behandling
+        uppgifter rättade, bli raderad (&rdquo;rätten att bli glömd&rdquo;), invända mot behandling
         som stödjer sig på berättigat intresse, samt få ut dina uppgifter i ett
         maskinläsbart format (dataportabilitet). Har du ett konto kan du själv ladda ner
         och radera dina uppgifter från kontosidan; annars kontaktar du oss

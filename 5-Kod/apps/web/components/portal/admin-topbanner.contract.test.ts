@@ -17,10 +17,33 @@ const adminData = read('lib/admin/data.ts')
 
 describe('del 02: universal toppbanner v2', () => {
   it('behåller en gemensam toppbanner men matchar kundadminens desktopordning', () => {
-    expect(topnav).toContain('Sök kund, bokning…')
+    // v3 (2026-07-18): sök är en cirkulär ikonknapp — ingen textetikett, ingen kbd-bricka.
+    // ⌘K/Ctrl+K lever kvar som global genväg och annonseras i title-attributet.
+    expect(topnav).toContain('aria-label="Sök kund, bokning eller sida"')
+    expect(topnav).not.toContain('<kbd>')
+    expect(topnav).toContain("title={`Sök (${isMac ? '⌘' : 'Ctrl'} K)`}")
     expect(topnav.indexOf('{extra ?')).toBeLessThan(topnav.indexOf('{contextLink ?'))
     expect(topnav).toContain('<ThemeSwitch variant={themeVariant} />')
     expect(topnav).toContain('name="external"')
+  })
+
+  it('bär genvägsraden som cirkulära ikonknappar i bannern, inte som dashboardkort', () => {
+    expect(topnav).toContain('styles.quickGroup')
+    expect(topnav).toContain('styles.quickTab')
+    expect(portalShell).toContain("{ href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' }")
+    expect(portalShell).toContain("{ href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'pause' }")
+    expect(portalShell).toContain("{ href: '/admin/kunder', label: 'Kunder', icon: 'users' }")
+    expect(portalShell).toContain("{ href: '/admin/statistik', label: 'Statistik', icon: 'trendUp' }")
+    expect(dashboardPage).not.toContain('GENVÄGAR')
+    // Mobilen har FAB + flikar — genvägsraden är desktop/tablet.
+    expect(css).toMatch(/\.mobileAdmin \.quickGroup\s*\{[\s\S]*?display:\s*none;/)
+  })
+
+  it('visar otillåtna ytor låsta i stället för att dölja dem', () => {
+    expect(topnav).toContain('styles.navLinkLocked')
+    expect(topnav).toContain('styles.mobileMoreLinkLocked')
+    expect(topnav).toContain('Kräver behörighet från ägaren')
+    expect(topnav).toContain('aria-disabled="true"')
   })
 
   it('har den kompletta kontomenyn och ingen notifieringsyta', () => {
@@ -98,16 +121,12 @@ describe('del 02: universal toppbanner v2', () => {
     expect(css).toMatch(/\.mobileAdmin \.mark\s*\{[\s\S]*?background:\s*var\(--c-paper-3\);/)
     expect(adminCss).toMatch(/\.brandName\s*\{[\s\S]*?font-size:\s*15px;/)
     expect(adminCss).toMatch(/\.brandSub\s*\{[\s\S]*?font-size:\s*8\.5px;/)
-    expect(adminCss).toMatch(/\.search\s*\{[\s\S]*?width:\s*170px;/)
-    expect(adminCss).toMatch(/\.searchWithExtra\s*\{[\s\S]*?width:\s*150px;/)
+    expect(adminCss).toMatch(/\.search\s*\{[\s\S]*?width:\s*34px;[\s\S]*?border-radius:\s*50%;/)
     expect(css).toMatch(
       /@media \(min-width: 768px\) and \(max-width: 1199px\)[\s\S]*?\.mobileAdmin \.bar\s*\{[\s\S]*?padding:\s*0 16px;[\s\S]*?gap:\s*10px;/,
     )
     expect(css).toMatch(
       /@media \(min-width: 768px\) and \(max-width: 1199px\)[\s\S]*?\.mobileAdmin \.nav\s*\{[\s\S]*?gap:\s*2px;/,
-    )
-    expect(adminCss).toMatch(
-      /@media \(min-width: 768px\) and \(max-width: 1199px\)[\s\S]*?\.search,[\s\S]*?width:\s*34px;/,
     )
     expect(adminCss).toMatch(/\.mobileNavIcon\s*\{[\s\S]*?font-size:\s*16px;/)
     expect(css).toMatch(

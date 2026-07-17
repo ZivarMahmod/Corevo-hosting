@@ -42,8 +42,13 @@ describe('adminAreas', () => {
     expect(hrefs).not.toContain('/salonger')
   })
 
-  it('visar personal bara de tre arbetsytor som servern tillåter', () => {
-    expect(label(adminAreas(['shop', 'blogg'], 3))).toEqual(['Översikt', 'Kalender', 'Kunder'])
+  it('visar personal de tre arbetsytorna öppna och resten LÅSTA (2026-07-18)', () => {
+    const areas = adminAreas(['shop', 'blogg'], 3)
+    const open = areas.filter((a) => !a.locked).map((a) => a.label)
+    const locked = areas.filter((a) => a.locked).map((a) => a.label)
+    expect(open).toEqual(['Översikt', 'Kalender', 'Kunder'])
+    // Aktiverade moduler + ägarytor syns men är låsta — de försvinner inte längre.
+    expect(locked).toEqual(['Webshop', 'Blogg', 'Redigera sidan', 'Inställningar'])
   })
 })
 

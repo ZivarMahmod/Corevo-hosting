@@ -237,6 +237,36 @@ h3 {
   border-color: var(--color-primary, #1f3d2e);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #1f3d2e) 16%, transparent);
 }
+/* Chrome/Edge autofill målar annars fälten ljusblå och krockar med cream-designen —
+   inset-skuggan täcker webkits påtvingade bakgrund, text-fill håller bläckfärgen. */
+.auth-field input:-webkit-autofill,
+.auth-field input:-webkit-autofill:hover {
+  -webkit-text-fill-color: #1c1c1a;
+  caret-color: #1c1c1a;
+  -webkit-box-shadow: 0 0 0 1000px #fcfbfa inset;
+  box-shadow: 0 0 0 1000px #fcfbfa inset;
+}
+.auth-field input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #1c1c1a;
+  caret-color: #1c1c1a;
+  -webkit-box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-primary, #1f3d2e) 16%, transparent),
+    0 0 0 1000px #fff inset;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-primary, #1f3d2e) 16%, transparent),
+    0 0 0 1000px #fff inset;
+}
+/* Visa/dölj lösenord */
+.auth-input-wrap { position: relative; display: flex; }
+.auth-input-wrap input { flex: 1; padding-right: 2.9rem; }
+.auth-eye {
+  position: absolute; top: 50%; right: 0.55rem; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; padding: 0;
+  border: none; border-radius: 50%; background: transparent;
+  color: #6b6963; cursor: pointer;
+}
+.auth-eye:hover { background: rgba(28, 28, 26, 0.06); color: #1c1c1a; }
 .auth-error { color: #b00020; background: color-mix(in srgb, #b00020 8%, transparent); padding: 0.6rem 0.8rem; border-radius: 0.5rem; margin: 0; font-size: 0.9rem; }
 .auth-links a { color: var(--color-primary); font-weight: 600; }
 .auth-form .btn-primary {

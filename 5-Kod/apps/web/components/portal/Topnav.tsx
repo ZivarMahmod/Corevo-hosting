@@ -37,6 +37,16 @@ export type TopnavArea = TopnavItem & {
   exact?: boolean
   /** Undernavigation. Superadmin bär sin i PLATFORM_SUBNAV; kund-admin på området självt. */
   subnav?: readonly TopnavItem[]
+  /** Ytan finns men kontot saknar behörighet (Zivar 2026-07-18): visas låst med
+   *  hänglås i stället för att döljas, så en frisör/platschef förstår att ytan
+   *  existerar och att ägaren kan bevilja den. Servergrinden är kvar orörd. */
+  locked?: boolean
+}
+
+export type TopnavQuickAction = {
+  href: string
+  label: string
+  icon: IconName
 }
 
 export type TopnavMobileNavigation = {
@@ -140,6 +150,7 @@ export function Topnav({
   brandSub,
   brandLabel,
   primaryAction,
+  quickActions,
   contextLink,
   themeVariant = 'segmented',
   accountLinks,
@@ -164,6 +175,9 @@ export function Topnav({
   /** aria-label på varumärkeslänken. */
   brandLabel: string
   primaryAction?: { href: string; label: string; icon: IconName }
+  /** Genvägsraden (Zivar 2026-07-18): dashboardens genvägar flyttade till bannern som
+   *  cirkulära ikonknappar för åtkomst från varje adminyta. Ersätter GENVÄGAR-kortet. */
+  quickActions?: readonly TopnavQuickAction[]
   /** "Öppna min sida" — kund-adminens publika sajt. Superadmin har ingen enskild storefront. */
   contextLink?: { href: string; label: string }
   /** Toppbannerens temakontroll: tre direktval eller kanonens kompakta cykelknapp. */
@@ -281,6 +295,19 @@ export function Topnav({
 
           <nav className={styles.nav} aria-label="Huvudnavigering">
             {areas.map((area) => {
+              if (area.locked) {
+                return (
+                  <span
+                    key={area.id}
+                    className={`${styles.navLink} ${styles.navLinkLocked}`}
+                    aria-disabled="true"
+                    title="Kräver behörighet från ägaren"
+                  >
+                    <Icon name="lock" size={11} />
+                    {area.label}
+                  </span>
+                )
+              }
               const active = area.id === activeArea?.id
               return (
                 <Link
@@ -296,16 +323,30 @@ export function Topnav({
           </nav>
 
           <div className={styles.actions}>
+            {quickActions?.length ? (
+              <nav className={styles.quickGroup} aria-label="Genvägar">
+                {quickActions.map((action) => (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className={styles.quickTab}
+                    aria-label={action.label}
+                    title={action.label}
+                  >
+                    <Icon name={action.icon} size={16} />
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
             <button
               type="button"
-              className={`${styles.search}${mobileNavigation ? ` ${adminStyles.search}${extra ? ` ${adminStyles.searchWithExtra}` : ''}` : ''}`}
+              className={`${styles.search}${mobileNavigation ? ` ${adminStyles.search}` : ''}`}
               onClick={openCommandPalette}
               aria-label="Sök kund, bokning eller sida"
               aria-haspopup="dialog"
+              title={`Sök (${isMac ? '⌘' : 'Ctrl'} K)`}
             >
-              <Icon name="search" size={15} />
-              <span className={styles.searchText}>Sök kund, bokning…</span>
-              <kbd>{isMac ? '⌘' : 'Ctrl'} K</kbd>
+              <Icon name="search" size={16} />
             </button>
             {primaryAction ? (
               <Link href={primaryAction.href} className={styles.newCustomer}>
@@ -484,6 +525,20 @@ export function Topnav({
         >
           <nav className={styles.mobileMoreLinks} aria-label="Fler adminytor">
             {mobileNavigation.more.map((area) => {
+              if (area.locked) {
+                return (
+                  <div key={area.id} className={styles.mobileMoreGroup}>
+                    <span
+                      className={`${styles.mobileMoreLink} ${styles.mobileMoreLinkLocked}`}
+                      aria-disabled="true"
+                      title="Kräver behörighet från ägaren"
+                    >
+                      <span>{area.label}</span>
+                      <Icon name="lock" size={15} />
+                    </span>
+                  </div>
+                )
+              }
               const active = area.id === activeArea?.id
               return (
                 <div key={area.id} className={styles.mobileMoreGroup}>

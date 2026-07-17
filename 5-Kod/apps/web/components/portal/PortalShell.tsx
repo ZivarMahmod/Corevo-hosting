@@ -216,14 +216,19 @@ export async function PortalShell({
         : tenantStorefrontUrl(bundle?.tenant.slug, adminDomain?.domain)
     const contextLink = storefrontUrl ? { label: 'Se din sida', href: storefrontUrl } : undefined
 
+    // Ägargrinden till Inställningar (owner-guard) läser access_scope ur users-raden.
+    // Navet behöver samma svar för att visa posten LÅST (inte dold) för platsadmin.
+    const locationPreferences = isAdminTenant
+      ? await getAdminLocationPreferences(user.id)
+      : null
+
     // Global butik-väljare (Zivar 2026-07-10): vid >1 AKTIV plats får salongs-
     // admin en switcher i topbaren; valet bor i corevo-plats-cookien och styr
     // Bokningar/Scheman/Bokningsvyns default (lib/admin/plats.ts).
     let locationSwitcher: ReactNode = null
-    if (adminLocations) {
+    if (adminLocations && locationPreferences) {
       const activeLocations = adminLocations.filter((l) => l.active)
       if (activeLocations.length > 1) {
-        const locationPreferences = await getAdminLocationPreferences(user.id)
         const jar = await cookies()
         const saved = jar.get(PLATS_COOKIE)?.value ?? ''
         const value = activeLocations.some((l) => l.id === saved)
@@ -249,7 +254,12 @@ export async function PortalShell({
       const isPlatform = portal === 'platform'
       const topAreas = isPlatform
         ? PLATFORM_AREAS
-        : adminAreas(activeModuleKeys, navRoleLevel, grantedAreas)
+        : adminAreas(
+            activeModuleKeys,
+            navRoleLevel,
+            grantedAreas,
+            locationPreferences ? locationPreferences.accessScope === 'organization' : undefined,
+          )
       return (
         <div
           className={`tenant-root portal-shell ${topnavStyles.shell}`}
@@ -272,12 +282,20 @@ export async function PortalShell({
             brandSub={isPlatform ? 'Superadmin' : 'via Corevo'}
             brandLabel={isPlatform ? 'Corevo superadmin – översikt' : `${brand} – översikt`}
             primaryAction={
+              isPlatform ? { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' } : undefined
+            }
+            // Genvägsraden (Zivar 2026-07-18): dashboardens GENVÄGAR-kort flyttat hit
+            // som cirkulära ikonknappar — nåbara från varje adminyta, inte bara Översikt.
+            // (Ersätter codex/00 §2-beslutet om att inte dubblera kalenderns skapaflöde.)
+            quickActions={
               isPlatform
-                ? { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' }
-                : // Kund-adminens primärhandling BOR I KALENDERN (den öppnar drawern med
-                  // dagens kontext). En knapp i toppnaven som bara länkar dit blir en
-                  // andra knapp för samma sak — precis det codex/00 §2 förbjuder.
-                  undefined
+                ? undefined
+                : [
+                    { href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' },
+                    { href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'pause' },
+                    { href: '/admin/kunder', label: 'Kunder', icon: 'users' },
+                    { href: '/admin/statistik', label: 'Statistik', icon: 'trendUp' },
+                  ]
             }
             contextLink={
               !isPlatform && contextLink

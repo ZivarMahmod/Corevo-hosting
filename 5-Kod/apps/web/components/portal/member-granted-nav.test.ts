@@ -70,14 +70,25 @@ describe('isNavItemVisible + grantedAreas', () => {
 })
 
 describe('adminAreas (topnav) + grantedAreas', () => {
-  it('nivå 3 utan tillägg får ingen Redigera sidan-flik; med can_edit_site får den', () => {
-    expect(adminAreas([], STAFF).some((a) => a.id === 'sida')).toBe(false)
-    expect(adminAreas([], STAFF, ['sida']).some((a) => a.id === 'sida')).toBe(true)
+  // 2026-07-18 (Zivar): otillåtna ytor DÖLJS inte längre — de visas LÅSTA.
+  // Servergrinden (hasAdminAreaPermission/owner-guard) är oförändrad.
+  it('nivå 3 utan tillägg ser Redigera sidan LÅST; med can_edit_site öppnas den', () => {
+    const sidaWithout = adminAreas([], STAFF).find((a) => a.id === 'sida')
+    const sidaWith = adminAreas([], STAFF, ['sida']).find((a) => a.id === 'sida')
+    expect(sidaWithout?.locked).toBe(true)
+    expect(sidaWith?.locked).toBeUndefined()
   })
 
   it('ägare (6) påverkas inte av grantedAreas-parametern', () => {
-    const withoutParam = adminAreas([], 6).map((a) => a.id)
-    const withParam = adminAreas([], 6, []).map((a) => a.id)
+    const withoutParam = adminAreas([], 6).map((a) => ({ id: a.id, locked: a.locked }))
+    const withParam = adminAreas([], 6, []).map((a) => ({ id: a.id, locked: a.locked }))
     expect(withParam).toEqual(withoutParam)
+  })
+
+  it('platsadmin (utan organisations-scope) ser Inställningar LÅST', () => {
+    const installningar = adminAreas([], 6, undefined, false).find((a) => a.id === 'installningar')
+    expect(installningar?.locked).toBe(true)
+    const owner = adminAreas([], 6, undefined, true).find((a) => a.id === 'installningar')
+    expect(owner?.locked).toBeUndefined()
   })
 })

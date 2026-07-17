@@ -568,28 +568,7 @@ export default async function AdminPage({
             }}
           />
 
-          {/* Genvägar */}
-          <div className={styles.card}>
-            <div className={styles.statsPad}>
-              <div className={`num ${styles.kicker}`} style={{ marginBottom: 14 }}>
-                GENVÄGAR
-              </div>
-              <div className={styles.shortcuts}>
-                <Link href="/admin/bokningar?ny=1" className={styles.shortcut}>
-                  ＋ Ny bokning
-                </Link>
-                <Link href="/admin/bokningar?blockera=1" className={styles.shortcut}>
-                  ◔ Blockera tid
-                </Link>
-                <Link href="/admin/kunder" className={styles.shortcut}>
-                  ◉ Kunder
-                </Link>
-                <Link href="/admin/statistik" className={styles.shortcut}>
-                  ▤ Statistik
-                </Link>
-              </div>
-            </div>
-          </div>
+          {/* Genvägarna bor i toppbannern sedan 2026-07-18 (Zivar) — inget kort här. */}
         </div>
       </div>
     </div>

@@ -519,31 +519,6 @@
 }
 
 /* ── Genvägar ── */
-.shortcuts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.shortcut {
-  padding: 12px;
-  border: 1px solid var(--c-line);
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--c-ink);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
-    background var(--dur-fast) var(--ease-out);
-}
-.shortcut:hover {
-  border-color: var(--c-line-strong);
-  background: var(--c-paper-2);
-}
-
 /* ── delat tomläge ── */
 .emptyState {
   margin: 0 22px 22px;
@@ -721,10 +696,6 @@
     width: 90px;
   }
 
-  .shortcuts {
-    grid-template-columns: 1fr;
-  }
-
   .emptyState {
     margin: 0 16px 16px;
   }
@@ -732,8 +703,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .laterRow,
-  .upRow,
-  .shortcut {
+  .upRow {
     transition: none;
   }
 }
