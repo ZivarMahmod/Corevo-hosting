@@ -145,7 +145,7 @@ export async function setContactMessageStatus(_p: ActionState, fd: FormData): Pr
   }
 
   revalidatePath(`/salonger/${tenantId}`)
-  revalidatePath('/admin/meddelanden')
+  revalidatePath('/admin/kontakt')
   await logPlatformAction(supabase, {
     action: 'tenant.contact',
     tenantId,

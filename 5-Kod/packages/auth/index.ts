@@ -10,8 +10,10 @@ import type { Database } from '@corevo/db'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://localhost:54321'
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'anon-placeholder-key'
-// Session shared across *.corevo.se subdomains (frisorN.corevo.se + booking.corevo.se).
-// Empty in dev. Data isolation is via RLS + tenant_id, NEVER via cookie (ADR 01 §2).
+// HISTORISK kommentar sade "shared across *.corevo.se" — sedan goal-27 är cookien
+// HOST-LOCKED per dörr (superbooking/booking/minbooking) och AUTH_COOKIE_DOMAIN är
+// TOM i prod. Sätt den ALDRIG till `.corevo.se`: det skulle skicka super-admin-
+// sessionen till varenda tenant-storefront. Data isolation via RLS (ADR 01 §2).
 const AUTH_COOKIE_DOMAIN = process.env.AUTH_COOKIE_DOMAIN || undefined
 // Session lifetime is NOT controllable here. @supabase/ssr (0.10.3) hardcodes the
 // auth-cookie max-age to its own DEFAULT_COOKIE_OPTIONS.maxAge (400 days, Chrome's
@@ -27,6 +29,12 @@ const AUTH_COOKIE_DOMAIN = process.env.AUTH_COOKIE_DOMAIN || undefined
 // code. 2FA is the planned step-up auth (see HANDOFF).
 function cookieOptions() {
   return {
+    // Plan 002: explicita flaggor i stället för biblioteks-defaults. `secure` bara
+    // i produktion — localhost-dev kör http och en secure-cookie sätts aldrig där.
+    // `sameSite: 'lax'` = CSRF-grundskydd som ändå överlever normala navigeringar.
+    // (maxAge styrs INTE här — se kommentaren ovan; ssr skriver över den.)
+    ...(process.env.NODE_ENV === 'production' ? { secure: true } : {}),
+    sameSite: 'lax' as const,
     ...(AUTH_COOKIE_DOMAIN ? { domain: AUTH_COOKIE_DOMAIN } : {}),
   }
 }

@@ -1,6 +1,6 @@
 import type { IconName } from './ui/Icon'
 import type { CommandItem } from './ui/CommandPalette'
-import { ADMIN_AREA_MIN_LEVEL as A } from '@/lib/auth/admin-areas'
+import { ADMIN_AREA_MIN_LEVEL as A, adminAreaForPath } from '@/lib/auth/admin-areas'
 
 /** ENDA källan för back-office-navigationen. Både PortalSidebar (railen) och
  *  PortalShell (⌘K-paletten via paletteFromNav) konsumerar SAMMA lista — de kan
@@ -83,6 +83,9 @@ export const NAV: Record<PortalRole, NavConfig> = {
       { href: '/admin/statistik', label: 'Statistik', icon: 'trendUp', minLevel: A.statistik },
       { group: 'Hantera' },
       { href: '/admin/kunder', label: 'Kunder', icon: 'user', minLevel: A.kunder },
+      // Kontaktformuläret finns på VARJE mall (ingen modul, kan aldrig stängas av) —
+      // inkorgen är därför en fast Hantera-post, inte en modulpost (plan 007).
+      { href: '/admin/kontakt', label: 'Meddelanden', icon: 'mail', minLevel: A.kontakt },
       { href: '/admin/tjanster', label: 'Tjänster', icon: 'scissors', minLevel: A.tjanster },
       { href: '/admin/personal', label: 'Personal', icon: 'users', minLevel: A.personal },
       { href: '/admin/platser', label: 'Platser', icon: 'building', minLevel: A.platser },
@@ -115,14 +118,19 @@ export const NAV: Record<PortalRole, NavConfig> = {
 }
 
 /** Syns posten? Modul-gating (aktiverad modul) OCH roll-gating (minLevel).
- *  `roleLevel` undefined → ingen roll-gating (bakåtkompatibelt). */
+ *  `roleLevel` undefined → ingen roll-gating (bakåtkompatibelt).
+ *  `grantedAreas` = personliga tillägg ur tenant_member_permissions (goal-71):
+ *  en yta som beviljats DÄR ska ha en synlig väg fast rollnivån inte räcker —
+ *  samma beslut som sidgrinden (hasAdminAreaPermission), aldrig en egen regel. */
 export function isNavItemVisible(
   item: NavItem,
-  opts: { activeModuleKeys?: string[]; roleLevel?: number },
+  opts: { activeModuleKeys?: string[]; roleLevel?: number; grantedAreas?: readonly string[] },
 ): boolean {
   if (item.module && opts.activeModuleKeys && !opts.activeModuleKeys.includes(item.module)) return false
-  if (item.minLevel !== undefined && opts.roleLevel !== undefined && opts.roleLevel < item.minLevel)
-    return false
+  if (item.minLevel !== undefined && opts.roleLevel !== undefined && opts.roleLevel < item.minLevel) {
+    const area = adminAreaForPath(item.href)
+    return area !== null && (opts.grantedAreas?.includes(area) ?? false)
+  }
   return true
 }
 
@@ -133,8 +141,12 @@ export function paletteFromNav(
   role: PortalRole,
   activeModuleKeys?: string[],
   roleLevel?: number,
+  grantedAreas?: readonly string[],
 ): CommandItem[] {
   return NAV[role].items
-    .filter((e): e is NavItem => !isGroup(e) && isNavItemVisible(e, { activeModuleKeys, roleLevel }))
+    .filter(
+      (e): e is NavItem =>
+        !isGroup(e) && isNavItemVisible(e, { activeModuleKeys, roleLevel, grantedAreas }),
+    )
     .map(({ href, label, icon }) => ({ href, label, icon, kind: 'Gå till' }))
 }

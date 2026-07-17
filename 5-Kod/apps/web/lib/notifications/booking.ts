@@ -84,11 +84,17 @@ async function safeSend(
 
 // Best-effort SMS (secondary channel). Never throws; sendSms already degrades to a
 // logged no-op when no provider key is set. Email stays primary in every caller.
-async function safeSms(kind: string, phone: string | null | undefined, body: string): Promise<void> {
+// `from` = salongsnamnet → 46elks avsändar-ID (saneras i transporten, default Corevo).
+async function safeSms(
+  kind: string,
+  phone: string | null | undefined,
+  body: string,
+  from?: string,
+): Promise<void> {
   const to = phone?.trim()
   if (!to) return
   try {
-    const res = await sendSms({ to, body })
+    const res = await sendSms({ to, body, from })
     if (res.ok) logger.info('sms.sent', { kind })
   } catch (err) {
     logger.warn('sms.threw', { kind, error: err instanceof Error ? err.message : String(err) })
@@ -164,7 +170,7 @@ export async function sendBookingConfirmation(
   if (ctx?.supabase && ctx.tenantId && phone) {
     try {
       if (await getSmsEnabled(ctx.supabase, ctx.tenantId)) {
-        await safeSms('booking.confirmation', phone, confirmationSmsBody(data))
+        await safeSms('booking.confirmation', phone, confirmationSmsBody(data), data.tenantName)
       }
     } catch (err) {
       logger.warn('sms.confirmation_check_failed', {
@@ -207,12 +213,26 @@ export async function sendBookingRebook(
 
 export async function sendPaymentReceipt(
   to: string | null,
-  d: BookingEmailData & { amountCents: number; currency: string },
+  d: BookingEmailData & {
+    amountCents: number
+    currency: string
+    /** Plan 003: org-nr + momssats (settings.legal) — utelämnade → kvittot utan raderna. */
+    orgNr?: string | null
+    vatRate?: number | null
+  },
   ctx?: BrandCtx,
 ): Promise<void> {
   const { data, from, replyTo } = await applyBrand(d, ctx)
-  await safeSend('payment.receipt', to, receiptEmail({ ...data, amountCents: d.amountCents, currency: d.currency }), {
-    from,
-    replyTo,
-  })
+  await safeSend(
+    'payment.receipt',
+    to,
+    receiptEmail({
+      ...data,
+      amountCents: d.amountCents,
+      currency: d.currency,
+      orgNr: d.orgNr,
+      vatRate: d.vatRate,
+    }),
+    { from, replyTo },
+  )
 }

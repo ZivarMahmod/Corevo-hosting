@@ -50,6 +50,8 @@ export function AteljeVinterCheckout({
 
   const [formError, setFormError] = useState<string | null>(null)
   const [fields, setFields] = useState({ name: '', email: '', phone: '', address: '', note: '' })
+  // Plan 003: aktivt godkännande (distansavtalslagen) — servern kräver flaggan också.
+  const [acceptTerms, setAcceptTerms] = useState(false)
   const needsAddress = fulfilment === 'ship'
   const count = lines.reduce((a, l) => a + l.quantity, 0)
 
@@ -76,6 +78,7 @@ export function AteljeVinterCheckout({
     const phone = fields.phone.trim()
     if (!name || !phone) return setFormError('fyll i namn och telefon.')
     if (needsAddress && !fields.address.trim()) return setFormError('fyll i leveransadress.')
+    if (!acceptTerms) return setFormError('godkänn köpvillkoren för att slutföra köpet.')
 
     const err = await placeOrder({
       name,
@@ -83,6 +86,7 @@ export function AteljeVinterCheckout({
       phone,
       shipAddress: needsAddress ? fields.address.trim() : undefined,
       note: fields.note.trim() || undefined,
+      acceptTerms,
     })
     if (err) setFormError(err)
   }
@@ -210,6 +214,20 @@ export function AteljeVinterCheckout({
 
         {reserveError ? <p className={styles.avFormError}>{reserveError}</p> : null}
         {formError ? <p className={styles.avFormError}>{formError}</p> : null}
+
+        {/* Plan 003: obligatoriskt aktivt godkännande vid varuköp på distans. */}
+        <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, margin: '12px 0' }}>
+          <input
+            type="checkbox"
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
+            style={{ marginTop: 2 }}
+          />
+          <span>
+            jag godkänner <a href="/villkor" target="_blank" rel="noreferrer">köpvillkoren</a> och har
+            tagit del av <a href="/villkor#angerratt" target="_blank" rel="noreferrer">ångerrätten</a>.
+          </span>
+        </label>
 
         <button type="submit" className={styles.avSolidWide} disabled={pending}>
           {submitting

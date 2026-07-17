@@ -311,7 +311,14 @@ export function reminderEmail(d: BookingEmailData): { subject: string; html: str
 }
 
 export function receiptEmail(
-  d: BookingEmailData & { amountCents: number; currency: string },
+  d: BookingEmailData & {
+    amountCents: number
+    currency: string
+    /** Plan 003 (momslagen/bokföring): org-nr + momssats ur tenantens settings.legal.
+     *  null/undefined → raderna UTELÄMNAS (aldrig "varav moms (null %)"). */
+    orgNr?: string | null
+    vatRate?: number | null
+  },
 ): { subject: string; html: string } {
   const amount = (d.amountCents / 100).toLocaleString('sv-SE', { minimumFractionDigits: 2 })
   const cur = d.currency.toUpperCase()
@@ -320,12 +327,24 @@ export function receiptEmail(
     'Betalt',
     `<span style="font-family:${MONO};font-size:15px;font-weight:600;color:${accent}">${amount} ${esc(cur)}</span>`,
   )
+  // Momsspecifikation: moms ingår i totalen → moms = total × sats/(100+sats), öresavrundat.
+  const vatLine =
+    typeof d.vatRate === 'number' && d.vatRate > 0
+      ? (() => {
+          const vatCents = Math.round((d.amountCents * d.vatRate) / (100 + d.vatRate))
+          const vat = (vatCents / 100).toLocaleString('sv-SE', { minimumFractionDigits: 2 })
+          return `<p style="margin:6px 0 0;font-size:12px;color:${C.ink2}">varav moms (${d.vatRate.toLocaleString('sv-SE')} %): ${vat} ${esc(cur)}</p>`
+        })()
+      : ''
+  const orgLine = d.orgNr
+    ? `<p style="margin:6px 0 0;font-size:12px;color:${C.ink2}">${esc(d.tenantName)} · Org.nr ${esc(d.orgNr)}</p>`
+    : ''
   return {
     subject: `Kvitto — ${d.tenantName}`,
     html: shell(
       'Tack för din betalning',
       `${ticket(d, paid)}
-       <p style="margin:14px 0 0;font-family:${MONO};font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:${C.forest}">&#10003; Betald</p>`,
+       <p style="margin:14px 0 0;font-family:${MONO};font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:${C.forest}">&#10003; Betald</p>${vatLine}${orgLine}`,
       d.tenantName,
       'Kvitto',
       brandOf(d),

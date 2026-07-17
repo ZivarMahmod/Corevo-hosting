@@ -49,18 +49,22 @@ applicerat migrationerna och satt `PROD_DB_MIGRATION=0088`.
   kan inte skickas, kalenderfärgen skickas explicit och vald färg är låst.
   Permanent radering erbjuds bara när bokningsantalet är noll; annars bevaras
   historiken och inaktivering förklaras. Schemahoppet behåller personens plats.
+- Bokningar kan flyttas med finger i mobil-/iPadkalendern via ett synligt
+  touch-handtag. Bara handtaget tar över gesten så vanlig scroll behålls på resten
+  av kortet. Landningstid förhandsvisas och den befintliga bekräftelsen krävs innan
+  flytten skrivs.
 
 ## Verifiering
 
 | Kontroll | Resultat |
 |---|---|
-| Unit/contract | 177 filer, 1 500 tester, alla gröna |
+| Unit/contract | 177 filer, 1 501 tester, alla gröna |
 | Acceptanskontrakt 03/04/06 | 5/5 + 4/4 + 3/3 |
 | TypeScript | Grön |
 | ESLint | 0 fel, 7 äldre orelaterade varningar |
 | Branschvakt | 0 nya fynd, 34 baseline |
 | Kontrastvakt | 16 mallar, 0 brott |
-| Production build | Grön, 59,1 s; kompilering 15,6 s |
+| Production build | Grön, 39,1 s; kompilering 10,2 s |
 | Diffkontroll | Grön |
 | CodeRabbit | Webbappen granskad: 10 issues (6 major, 4 minor). Ett verifierat 04-major om destruktiv notis-merge är rättat och regressionstestat; 9 issues utanför 04 är kvar nedan. |
 | Lokal pgTAP/RLS | Ej körbar: Supabase CLI och Docker saknas lokalt. CI-jobb tillagt. |

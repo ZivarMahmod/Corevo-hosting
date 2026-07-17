@@ -244,6 +244,24 @@ export async function POST(req: Request): Promise<Response> {
                   tenants: { name?: string } | null
                   locations: { timezone?: string } | null
                 }
+                // Plan 003: org-nr + momssats ur settings.legal → kvittoraderna
+                // (momslagen). Best-effort — saknade fält ger kvitto utan raderna.
+                let orgNr: string | null = null
+                let vatRate: number | null = null
+                try {
+                  const { data: ts } = await admin
+                    .from('tenant_settings')
+                    .select('settings')
+                    .eq('tenant_id', tenantId)
+                    .maybeSingle()
+                  const legal = (ts?.settings as { legal?: { org_nr?: unknown; vat_rate?: unknown } } | null)
+                    ?.legal
+                  orgNr = typeof legal?.org_nr === 'string' && legal.org_nr.trim() ? legal.org_nr.trim() : null
+                  const vr = legal?.vat_rate
+                  vatRate = typeof vr === 'number' && vr >= 0 && vr <= 100 ? vr : null
+                } catch {
+                  /* kvitto utan juridikrader är bättre än inget kvitto */
+                }
                 await sendPaymentReceipt(
                   to,
                   {
@@ -253,6 +271,8 @@ export async function POST(req: Request): Promise<Response> {
                     timeZone: rel.locations?.timezone ?? 'Europe/Stockholm',
                     amountCents: pi.amount_received ?? pi.amount ?? 0,
                     currency: pi.currency ?? 'sek',
+                    orgNr,
+                    vatRate,
                   },
                   { supabase: admin, tenantId },
                 )

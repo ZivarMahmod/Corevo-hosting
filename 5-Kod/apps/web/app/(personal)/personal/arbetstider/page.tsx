@@ -9,7 +9,7 @@ import {
   type StaffBooking,
 } from '@/lib/personal/calendar'
 import { mondayOf, todayInTz, addDays } from '@/lib/personal/format'
-import { PageHead, Card, Button } from '@/components/portal/ui'
+import { PageHead, Card } from '@/components/portal/ui'
 import { ScheduleGrid, type ScheduleDay } from './ScheduleGrid'
 import styles from '@/components/personal/personal.module.css'
 
@@ -107,9 +107,11 @@ export default async function ArbetstiderPage() {
           cells already carry the weekly baseline ("Ledig"/"Stängt"), so the old
           read-only Veckoschema list was a duplicate of the same data → removed. */}
       <PageHead eyebrow={meLabel} title="Mitt schema">
-        <Button variant="ghost" size="sm">
+        {/* Ren etikett i ghost-knappens dräkt — ingen handling finns (veckan är
+            alltid innevarande), så inget interaktivt element som inte gör något. */}
+        <span className="pbtn pbtn--ghost pbtn--sm">
           Vecka {weekRangeLabel(monday, sunday)}
-        </Button>
+        </span>
       </PageHead>
 
       <Card pad={0} style={{ overflow: 'hidden' }}>

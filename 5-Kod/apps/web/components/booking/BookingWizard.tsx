@@ -829,6 +829,7 @@ export function BookingWizard({
                 <span className="wizard-cta-sub">Välj tjänst, tid &amp; fyll i namn + telefon</span>
               )}
             </button>
+            <ConsentLine />
           </div>
         )}
       </div>
@@ -1363,8 +1364,31 @@ export function BookingWizard({
               <span className="wizard-cta-sub">{blockedHint}</span>
             ) : null}
           </button>
+          {/* Samtyckesraden bara på bekräftelsesteget — informativ, aldrig en
+              blockerande kryssruta (friktion i bokningsflödet är dyr; plan 003). */}
+          {step === 4 ? <ConsentLine /> : null}
         </div>
       )}
     </div>
+  )
+}
+
+/** Villkorsraden vid bokningens submit (plan 003 — informationsplikten för
+ *  tjänstebokning). En rad, inte en kryssruta: att trycka på boka ÄR handlingen. */
+function ConsentLine() {
+  return (
+    <p
+      style={{
+        margin: '8px 0 0',
+        fontSize: 11,
+        lineHeight: 1.4,
+        textAlign: 'center',
+        opacity: 0.75,
+        width: '100%',
+      }}
+    >
+      Genom att boka godkänner du våra <a href="/villkor">villkor</a> och{' '}
+      <a href="/integritetspolicy">integritetspolicy</a>.
+    </p>
   )
 }

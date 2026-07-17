@@ -528,6 +528,13 @@
   color: var(--pwa-ink-3);
   font-size: 10.5px;
 }
+.notificationNote {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--pwa-line);
+  color: var(--pwa-ink-3);
+  font-size: 10.5px;
+}
 .notificationRow input {
   width: 38px;
   height: 23px;

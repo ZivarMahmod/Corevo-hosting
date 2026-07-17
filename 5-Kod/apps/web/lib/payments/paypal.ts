@@ -22,6 +22,18 @@ import 'server-only'
 const LIVE = 'https://api-m.paypal.com'
 const SANDBOX = 'https://api-m.sandbox.paypal.com'
 
+// TIMEOUT på varje PayPal-anrop (CodeRabbit-fynd): retur-routen är USER-FACING —
+// en hängande capture höll kundens redirect gisslan tills plattformen dödade
+// requesten. Timeout/nätfel → null, samma degrade-väg som ett providerfel.
+const PAYPAL_TIMEOUT_MS = 10_000
+async function paypalFetch(url: string, init: RequestInit): Promise<Response | null> {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(PAYPAL_TIMEOUT_MS) })
+  } catch {
+    return null
+  }
+}
+
 type PaypalCreds = { clientId: string; secret: string; base: string }
 
 /** Nycklarna ur miljön, eller null. ENDA stället som avgör om PayPal finns. */
@@ -44,7 +56,7 @@ export function paypalReady(): boolean {
  *  (Workers har ingen delad process-cache mellan isolat att lita på). */
 async function accessToken(c: PaypalCreds): Promise<string | null> {
   const basic = btoa(`${c.clientId}:${c.secret}`)
-  const res = await fetch(`${c.base}/v1/oauth2/token`, {
+  const res = await paypalFetch(`${c.base}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
       authorization: `Basic ${basic}`,
@@ -52,7 +64,7 @@ async function accessToken(c: PaypalCreds): Promise<string | null> {
     },
     body: 'grant_type=client_credentials',
   })
-  if (!res.ok) return null
+  if (!res || !res.ok) return null
   const json = (await res.json()) as { access_token?: string }
   return json.access_token ?? null
 }
@@ -78,7 +90,7 @@ export async function createPaypalOrder(args: {
   const token = await accessToken(c)
   if (!token) return null
 
-  const res = await fetch(`${c.base}/v2/checkout/orders`, {
+  const res = await paypalFetch(`${c.base}/v2/checkout/orders`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${token}`,
@@ -110,7 +122,7 @@ export async function createPaypalOrder(args: {
       },
     }),
   })
-  if (!res.ok) return null
+  if (!res || !res.ok) return null
   const json = (await res.json()) as {
     id?: string
     links?: { rel?: string; href?: string }[]
@@ -123,6 +135,10 @@ export async function createPaypalOrder(args: {
 export type PaypalCapture = {
   /** COMPLETED = pengarna är tagna. Allt annat → vi markerar ALDRIG ordern som betald. */
   status: string
+  /** CAPTURE-NIVÅNS status (CodeRabbit-fynd): en order kan vara COMPLETED med en
+   *  PENDING capture (eCheck-liknande). null = ingen capture i svaret. Betald kräver
+   *  att ÄVEN denna är COMPLETED när den finns. */
+  captureStatus: string | null
   /** Vår shop_orders.id (custom_id) — sanningen om vilken order som betalades. */
   reference: string | null
   amountCents: number | null
@@ -143,7 +159,7 @@ export async function capturePaypalOrder(paypalOrderId: string): Promise<PaypalC
   const token = await accessToken(c)
   if (!token) return null
 
-  const res = await fetch(`${c.base}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {
+  const res = await paypalFetch(`${c.base}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${token}`,
@@ -152,14 +168,14 @@ export async function capturePaypalOrder(paypalOrderId: string): Promise<PaypalC
     },
   })
 
-  if (res.ok) return readOrder(await res.json())
+  if (res?.ok) return readOrder(await res.json())
 
   // Redan fångad → hämta ordern och läs dess sanna status (idempotens, inte ett fel).
-  if (res.status === 422) {
-    const get = await fetch(`${c.base}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}`, {
+  if (res?.status === 422) {
+    const get = await paypalFetch(`${c.base}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}`, {
       headers: { authorization: `Bearer ${token}` },
     })
-    if (get.ok) return readOrder(await get.json())
+    if (get?.ok) return readOrder(await get.json())
   }
   return null
 }
@@ -172,7 +188,13 @@ function readOrder(raw: unknown): PaypalCapture {
       reference_id?: string
       custom_id?: string
       amount?: { value?: string; currency_code?: string }
-      payments?: { captures?: { id?: string; amount?: { value?: string; currency_code?: string } }[] }
+      payments?: {
+        captures?: {
+          id?: string
+          status?: string
+          amount?: { value?: string; currency_code?: string }
+        }[]
+      }
     }[]
   }
   const pu = o.purchase_units?.[0]
@@ -180,6 +202,7 @@ function readOrder(raw: unknown): PaypalCapture {
   const amt = capture?.amount ?? pu?.amount
   return {
     status: o.status ?? 'UNKNOWN',
+    captureStatus: capture?.status ?? null,
     reference: pu?.custom_id ?? pu?.reference_id ?? null,
     amountCents: amt?.value ? Math.round(Number(amt.value) * 100) : null,
     currency: amt?.currency_code ?? null,
@@ -194,7 +217,7 @@ export async function refundPaypalCapture(captureId: string): Promise<boolean> {
   const token = await accessToken(c)
   if (!token) return false
 
-  const res = await fetch(
+  const res = await paypalFetch(
     `${c.base}/v2/payments/captures/${encodeURIComponent(captureId)}/refund`,
     {
       method: 'POST',
@@ -206,7 +229,7 @@ export async function refundPaypalCapture(captureId: string): Promise<boolean> {
       body: '{}',
     },
   )
-  return res.ok
+  return res?.ok ?? false
 }
 
 /**
@@ -224,7 +247,7 @@ export async function verifyPaypalWebhook(headers: Headers, rawBody: string): Pr
   const token = await accessToken(c)
   if (!token) return false
 
-  const res = await fetch(`${c.base}/v1/notifications/verify-webhook-signature`, {
+  const res = await paypalFetch(`${c.base}/v1/notifications/verify-webhook-signature`, {
     method: 'POST',
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -237,7 +260,7 @@ export async function verifyPaypalWebhook(headers: Headers, rawBody: string): Pr
       webhook_event: JSON.parse(rawBody),
     }),
   })
-  if (!res.ok) return false
+  if (!res || !res.ok) return false
   const json = (await res.json()) as { verification_status?: string }
   return json.verification_status === 'SUCCESS'
 }

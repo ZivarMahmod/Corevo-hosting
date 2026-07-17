@@ -95,6 +95,11 @@ export function FooterFull({
       <div className={styles.fullBottom}>
         <span>
           © {new Date().getFullYear()} {tenant.name}
+          {/* Juridiklänkar (plan 003) — nås från varje sida, ärver bottom-typografin. */}
+          {' · '}
+          <a href="/villkor">Villkor</a>
+          {' · '}
+          <a href="/integritetspolicy">Integritetspolicy</a>
         </span>
         <span className={styles.fullSign}>Designad med omsorg</span>
       </div>

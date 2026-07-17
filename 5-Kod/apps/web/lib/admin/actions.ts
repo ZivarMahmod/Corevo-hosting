@@ -23,6 +23,7 @@ import { refundBookingPayment } from '@/lib/stripe/refund'
 import { BOOKING_STATUSES, restoreBlockedByRefund } from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
+import { eraseTenantCustomerData } from '@/lib/gdpr/erase'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
 import { getAdminLocationPreferences } from './location-context'
 import {
@@ -1550,6 +1551,79 @@ export async function setCustomerHidden(_p: ActionState, fd: FormData): Promise<
     success: hide
       ? 'Kunden är dold — historiken finns kvar, och kunden kan visas igen härifrån.'
       : 'Kunden syns igen i listor och sök.',
+  }
+}
+
+/** Skapa kund direkt i admin (plan 007 — CRUD-symmetri: front-desk ska inte behöva
+ *  skapa en bokning för att få in en stamkund). Tenant TVINGAS ur JWT-kontexten
+ *  (aldrig formData — mass-assignment-vakten), RLS (customers_staff_write, 0071) är
+ *  andra stängslet. contact_hash lämnas null: dedup-nyckeln ägs av gästboknings-
+ *  vägen (resolve_customer_id); ihopslagning av ev. dubblett är plan 013:s merge. */
+export async function createCustomer(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx('kunder')
+  if (!ctx) return { error: NO_TENANT }
+
+  const fullName = String(fd.get('full_name') ?? '').trim().slice(0, 120)
+  const email = String(fd.get('email') ?? '').trim().toLowerCase().slice(0, 160)
+  const phone = String(fd.get('phone') ?? '').trim().slice(0, 40)
+  if (!fullName) return { error: 'Ange kundens namn.' }
+  if (email && !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
+
+  const supabase = await createClient()
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from('customers')
+    .insert({
+      tenant_id: ctx.tenant.id,
+      full_name: fullName,
+      email: email || null,
+      phone: phone || null,
+      status: 'active',
+      first_seen_at: now,
+      last_seen_at: now,
+    })
+    .select('id')
+    .maybeSingle()
+  if (error || !data) return { error: GENERIC }
+
+  revalidatePath('/admin/kunder')
+  return { success: 'Kund skapad.' }
+}
+
+/** GDPR-radering från ägaradmin (plan 007 — art. 17-begäran via salongen). Stänger
+ *  SettingsV2:s "Radera kunddata"-återvändsgränd. ÄGAR-GUARD utöver områdesgrinden:
+ *  personal (nivå 3, även PLATSCHEF) kan aldrig radera kunddata. Irreversibel —
+ *  UI:t kräver tvåstegs-arm; servern kräver dessutom explicit confirm-fält. */
+export async function eraseCustomer(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const ctx = await adminCtx('kunder')
+  if (!ctx) return { error: NO_TENANT }
+  if (ctx.user.roleLevel < 6 && !ctx.user.platformAdmin) {
+    return { error: 'Endast ägaren/administratören kan radera kunddata.' }
+  }
+
+  const customerId = String(fd.get('customer_id') ?? '').trim()
+  const confirmed = String(fd.get('confirm') ?? '') === 'radera'
+  if (!customerId) return { error: 'Saknar kund.' }
+  if (!confirmed) return { error: 'Bekräftelsen saknas.' }
+
+  const result = await eraseTenantCustomerData({
+    customerId,
+    tenantId: ctx.tenant.id,
+    actorId: ctx.user.id,
+  })
+  if (!result.ok) {
+    return {
+      error:
+        result.reason === 'unavailable'
+          ? 'Radering är inte tillgänglig i den här miljön.'
+          : GENERIC,
+    }
+  }
+
+  revalidatePath('/admin/kunder')
+  revalidatePath(`/admin/kunder/${customerId}`)
+  return {
+    success: `Kunddatan är anonymiserad (${result.erasedBookings} bokningsnoteringar rensade). Bokningshistoriken finns kvar utan personuppgifter.`,
   }
 }
 

@@ -12,6 +12,7 @@ type OrderRow = {
   id: string
   tenant_id: string
   total_cents: number
+  currency: string
   payment_status: string
   status: string
 }
@@ -63,8 +64,10 @@ const { settleShopOrderPaid } = await import('./settle')
 
 beforeEach(() => {
   rpc.mockClear()
+  deliverIssuedGiftCards.mockReset()
+  // Nya kontraktet: deliver returnerar utfall — failed>0 ⇒ giftDeliveryPending.
+  deliverIssuedGiftCards.mockResolvedValue({ attempted: 1, failed: 0 })
   paymentsUpdate.mockClear()
-  deliverIssuedGiftCards.mockClear()
   orderLookupError = null
   paymentUpdateError = null
   paymentUpdateRow = { id: 'payment_1' }
@@ -73,6 +76,7 @@ beforeEach(() => {
     id: 'o1',
     tenant_id: 't1',
     total_cents: 52900,
+    currency: 'SEK',
     payment_status: 'unpaid',
     status: 'awaiting_payment',
   }
@@ -83,6 +87,7 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
     const res = await settleShopOrderPaid({
       orderId: 'o1',
       amountCents: 52900,
+      currency: 'SEK',
       providerRef: 'PP-1',
     })
     expect(res.ok).toBe(true)
@@ -96,12 +101,14 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
       id: 'o1',
       tenant_id: 't1',
       total_cents: 52900,
+      currency: 'SEK',
       payment_status: 'paid',
       status: 'pending',
     }
     const res = await settleShopOrderPaid({
       orderId: 'o1',
       amountCents: 52900,
+      currency: 'SEK',
       providerRef: 'PP-1',
     })
     expect(res.ok).toBe(true)
@@ -116,6 +123,7 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
     const res = await settleShopOrderPaid({
       orderId: 'o1',
       amountCents: 52900,
+      currency: 'SEK',
       providerRef: 'PP-1',
     })
 
@@ -124,10 +132,34 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
   })
 
   it('en capture på FÖR LITET belopp markerar aldrig ordern som betald', async () => {
-    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: 100, providerRef: 'PP-1' })
+    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: 100, currency: 'SEK', providerRef: 'PP-1' })
     expect(res.ok).toBe(false)
     expect(res.reason).toBe('amount_mismatch')
     expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('SAKNAT belopp i provider-svaret är en mismatch — aldrig ett frikort (CodeRabbit)', async () => {
+    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: null, currency: 'SEK', providerRef: 'PP-1' })
+    expect(res).toEqual({ ok: false, reason: 'amount_mismatch' })
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('FEL VALUTA markerar aldrig ordern som betald — 189 USD ≠ 189 SEK (CodeRabbit)', async () => {
+    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: 52900, currency: 'USD', providerRef: 'PP-1' })
+    expect(res).toEqual({ ok: false, reason: 'amount_mismatch' })
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('SAKNAD valuta i provider-svaret är också en mismatch', async () => {
+    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: 52900, currency: null, providerRef: 'PP-1' })
+    expect(res).toEqual({ ok: false, reason: 'amount_mismatch' })
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('retry-bara leveransmissar (failed>0) ger giftDeliveryPending', async () => {
+    deliverIssuedGiftCards.mockResolvedValueOnce({ attempted: 1, failed: 1 })
+    const res = await settleShopOrderPaid({ orderId: 'o1', amountCents: 52900, currency: 'SEK', providerRef: 'PP-1' })
+    expect(res).toEqual({ ok: true, giftDeliveryPending: true })
   })
 
   it('återupplivar aldrig en order vars hold redan har släppts', async () => {
@@ -136,6 +168,7 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
     const res = await settleShopOrderPaid({
       orderId: 'o1',
       amountCents: 52900,
+      currency: 'SEK',
       providerRef: 'CAPTURE-1',
     })
 
@@ -153,7 +186,7 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
   })
 
   it('skriver ALDRIG PayPal-referensen i Stripes PI-kolumn (refund-vägen slår upp på den)', async () => {
-    await settleShopOrderPaid({ orderId: 'o1', amountCents: 52900, providerRef: 'PP-1' })
+    await settleShopOrderPaid({ orderId: 'o1', amountCents: 52900, currency: 'SEK', providerRef: 'PP-1' })
     const patch = paymentsUpdate.mock.calls[0][0] as Record<string, unknown>
     expect(patch).not.toHaveProperty('stripe_payment_intent_id')
   })
@@ -164,6 +197,7 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
     const res = await settleShopOrderPaid({
       orderId: 'o1',
       amountCents: 52900,
+      currency: 'SEK',
       providerRef: 'PP-1',
     })
 
@@ -179,6 +213,7 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
     const res = await settleShopOrderPaid({
       orderId: 'o1',
       amountCents: 52900,
+      currency: 'SEK',
       providerRef: 'PP-1',
     })
 
@@ -193,6 +228,7 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
     const res = await settleShopOrderPaid({
       orderId: 'o1',
       amountCents: 52900,
+      currency: 'SEK',
       providerRef: 'PP-1',
     })
 
@@ -207,6 +243,7 @@ describe('settleShopOrderPaid — idempotent betal-callback', () => {
     const res = await settleShopOrderPaid({
       orderId: 'o1',
       amountCents: 52900,
+      currency: 'SEK',
       providerRef: 'PP-1',
     })
 

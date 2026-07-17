@@ -157,6 +157,9 @@ export type ConfirmInput = {
   /** goal-64: ID:t på det VALDA leveranssättet. Bara id:t — priset slår servern upp
    *  ur shop_shipping_options (confirm_shop_order). Klienten kan inte sätta ett belopp. */
   shippingOptionId?: string | null
+  /** Plan 003: aktivt godkännande av köpvillkor + ångerrätt (distansavtalslagen).
+   *  Valideras SERVER-SIDE — en order utan godkännande skapas aldrig. */
+  acceptTerms?: boolean
   /** goal-64: valt betalsätt ('card'|'swish'|'klarna'|'paypal'|'applepay'). */
   paymentMethod?: ShopPaymentMethod | null
 }
@@ -169,12 +172,23 @@ export type ConfirmResult =
 export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> {
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'invalid', message: 'Okänd butik.' }
+  // Plan 009 SÄK-06: nedströms-actionen skickar orderbekräftelse-mejl per anrop —
+  // samma hink som reserveOrder så hela köpkedjan delar budget per IP+tenant.
+  const confirmIp = await getClientIp()
+  if (!(await checkRateLimit(rateLimitKey('shop_order', ctx.tenantId, confirmIp), LIMITS.booking))) {
+    return { ok: false, reason: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
+  }
 
   const name = input.name.trim()
   const email = input.email.trim()
   const phone = input.phone.trim()
   if (!name || !email || !phone) {
     return { ok: false, reason: 'invalid', message: 'Fyll i namn, e-post och telefon.' }
+  }
+  // Plan 003: distansköp av varor kräver AKTIVT godkännande av köpvillkor +
+  // ångerrättsinfo. Servervalidering — ordern skapas inte utan flaggan.
+  if (input.acceptTerms !== true) {
+    return { ok: false, reason: 'invalid', message: 'Godkänn köpvillkoren för att slutföra köpet.' }
   }
   if (!input.orderId || !input.token) {
     return { ok: false, reason: 'error', message: 'Sessionen saknas. Börja om.' }
@@ -384,6 +398,11 @@ export async function startShopCheckout(
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'error', message: 'Okänd butik.' }
   if (!orderId) return { ok: false, reason: 'error', message: 'Saknar beställning.' }
+  // Plan 009 SÄK-06: varje anrop skapar en Stripe Checkout-session — begränsa.
+  const checkoutIp = await getClientIp()
+  if (!(await checkRateLimit(rateLimitKey('shop_order', ctx.tenantId, checkoutIp), LIMITS.booking))) {
+    return { ok: false, reason: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
+  }
 
   const stripe = getStripe()
   const admin = createServiceClient()
@@ -498,6 +517,11 @@ export async function startPaypalCheckout(orderId: string): Promise<CheckoutResu
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'error', message: 'Okänd butik.' }
   if (!orderId) return { ok: false, reason: 'error', message: 'Saknar beställning.' }
+  // Plan 009 SÄK-06: varje anrop skapar en PayPal-order hos providern — begränsa.
+  const paypalIp = await getClientIp()
+  if (!(await checkRateLimit(rateLimitKey('shop_order', ctx.tenantId, paypalIp), LIMITS.booking))) {
+    return { ok: false, reason: 'error', message: 'För många försök. Vänta en stund och försök igen.' }
+  }
   if (!paypalReady()) {
     return { ok: false, reason: 'unavailable', message: 'PayPal är inte tillgängligt.' }
   }

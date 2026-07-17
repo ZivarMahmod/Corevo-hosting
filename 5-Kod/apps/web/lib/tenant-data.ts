@@ -89,6 +89,9 @@ export type TenantSettings = {
   /** Manuella öppettider (settings.opening_hours, Sida-fliken) — vinner över de
    *  scheman-härledda. null = härled ur personalens veckoscheman som förut. */
   openingHours: OpeningHour[] | null
+  /** Juridikfält (settings.legal, plan 003): org-nr + moms-sats för villkor/kvitto.
+   *  null tills ägaren fyllt i — konsumenter renderar villkorligt. */
+  legal: { orgNr: string | null; vatRate: number | null }
   /** Sociala medier-länkar (settings.social) — null per fält tills ägaren fyllt i. */
   social: { instagram: string | null; facebook: string | null; tiktok: string | null }
   /** Geokodad position för primäradressen (settings.map, skrivs best-effort av
@@ -165,6 +168,17 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
       tiktok: cleanStr((raw.social as Record<string, unknown> | undefined)?.tiktok),
     },
     map: parseMap(raw.map),
+    // Juridikfält (plan 003): settings.legal = { org_nr, vat_rate }. Samma
+    // jsonb-nyckel-seam som contact/social — ingen schemaändring. null = ej satt →
+    // konsumenterna (villkorssidan, kvittot) utelämnar raden, aldrig "org.nr: null".
+    legal: {
+      orgNr: cleanStr((raw.legal as Record<string, unknown> | undefined)?.org_nr),
+      vatRate: (() => {
+        const v = (raw.legal as Record<string, unknown> | undefined)?.vat_rate
+        const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN
+        return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null
+      })(),
+    },
   }
 }
 

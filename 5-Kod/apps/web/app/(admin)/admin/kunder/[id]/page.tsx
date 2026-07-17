@@ -14,6 +14,7 @@ import { CustomerNoteEditor } from '@/components/admin/CustomerNoteEditor'
 import { CustomerFlags } from '@/components/admin/CustomerFlags'
 import { CustomerPrivacyForm } from '@/components/admin/CustomerPrivacyForm'
 import { CustomerContactCard } from '@/components/admin/CustomerContactCard'
+import { CustomerDangerZone } from '@/components/admin/CustomerDangerZone'
 import { CustomerExport, type ExportRow } from '../CustomerExport'
 import styles from '@/components/admin/kunder-v2.module.css'
 
@@ -348,6 +349,17 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
               </div>
               <CustomerExport rows={exportRow} />
             </div>
+            {/* FAROZON (plan 007): GDPR-radera — ENDAST ägaren ser den (personal har
+                ingen raderingsrätt; servern vaktar dessutom i eraseCustomer). Döljs
+                för redan anonymiserade kort — radering är enkelriktad. */}
+            {(user.roleLevel >= 6 || user.platformAdmin) && customer.status === 'active' ? (
+              <div className={styles.card}>
+                <div className={styles.eyebrow} style={{ marginBottom: 12 }}>
+                  FAROZON · GDPR
+                </div>
+                <CustomerDangerZone customerId={customer.id} />
+              </div>
+            ) : null}
           </div>
         </details>
       </div>

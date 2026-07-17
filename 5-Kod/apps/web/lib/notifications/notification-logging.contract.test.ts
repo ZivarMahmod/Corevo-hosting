@@ -21,7 +21,13 @@ describe('notification log privacy', () => {
   it('keeps skipped SMS explicitly unavailable instead of reporting delivery', () => {
     const sms = sourceAt('lib/notifications/sms.ts')
 
+    // Utan credentials degraderar transporten till ett EXPLICIT skipped-resultat —
+    // aldrig ett tyst "levererat".
     expect(sms).toContain("return { ok: false, skipped: true, error: 'transport_unavailable' }")
-    expect(sms).not.toContain('return { ok: true }')
+    // Sedan 46elks kopplades in (plan 006) får ok:true bara förekomma EN gång —
+    // efter provider-svarets res.ok-vakt. Ett ok utan vakt vore ett falskt leveransbesked.
+    expect(sms.match(/return \{ ok: true \}/g)).toHaveLength(1)
+    expect(sms).toContain('if (!res.ok) {')
+    expect(sms.indexOf('if (!res.ok) {')).toBeLessThan(sms.indexOf('return { ok: true }'))
   })
 })

@@ -33,6 +33,12 @@ export function Footer({
       <div className={styles.miniSign}>Designad med omsorg</div>
       <p className={styles.miniLegal}>
         © {new Date().getFullYear()} {tenant.name}
+        {/* Juridiklänkar (plan 003) — informationsplikten kräver att villkor/policy
+            går att nå från varje sida. Ärver miniLegal-typografin. */}
+        {' · '}
+        <a href="/villkor">Villkor</a>
+        {' · '}
+        <a href="/integritetspolicy">Integritetspolicy</a>
       </p>
     </footer>
   )

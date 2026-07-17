@@ -18,8 +18,12 @@ type GiftState = {
   mode: GiftDeliveryMode
   modes: GiftDeliveryMode[]
   added: boolean
+  /** Mottagarens mejl (digital leverans) — följer med kundvagnsraden så ordern
+   *  kan leverera koden till RÄTT adress, inte köparens (0059:480-fallbacken). */
+  recipientEmail: string
   pickAmount: (amount: number) => void
   pickMode: (mode: GiftDeliveryMode) => void
+  setRecipientEmail: (email: string) => void
   add: () => void
 }
 
@@ -30,6 +34,7 @@ function useGiftState({ config }: ThemePresentkortViewProps): GiftState | null {
   const [amount, setAmount] = useState(amounts[0] ?? 0)
   const [mode, setMode] = useState<GiftDeliveryMode>(modes[0] ?? 'digital')
   const [added, setAdded] = useState(false)
+  const [recipientEmail, setRecipientEmail] = useState('')
 
   if (!amounts.includes(amount)) return null
 
@@ -42,12 +47,17 @@ function useGiftState({ config }: ThemePresentkortViewProps): GiftState | null {
     mode,
     modes,
     added,
+    recipientEmail,
     pickAmount(next) {
       setAmount(next)
       setAdded(false)
     },
     pickMode(next) {
       setMode(next)
+      setAdded(false)
+    },
+    setRecipientEmail(next) {
+      setRecipientEmail(next)
       setAdded(false)
     },
     add() {
@@ -64,6 +74,9 @@ function useGiftState({ config }: ThemePresentkortViewProps): GiftState | null {
           kind: 'giftcard',
           giftAmount: amount,
           giftDeliveryMode: mode,
+          // Samma kontrakt som GiftCardBuy.tsx: tomt fält → undefined → ordern
+          // faller tillbaka på köparens mejl (0059:480).
+          giftRecipientEmail: recipientEmail.trim() || undefined,
         },
         1,
       )
@@ -167,7 +180,7 @@ function Calytrix({ config, paused, tenantName }: ThemePresentkortViewProps) {
     {gift ? <div className={grid} style={{ gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
       <div style={{ background: '#4a0e2e', padding: '44px 40px', textAlign: 'center' }}><p style={{ margin: '0 0 4px', fontFamily: "'Instrument Serif'", fontSize: 30, color: '#fff' }}>{tenantName.toUpperCase()}</p><p style={{ margin: '0 0 30px', color: '#e8d9de', fontSize: 11.5, letterSpacing: '0.24em', textTransform: 'uppercase' }}>Digitalt presentkort</p><p style={{ margin: 0, fontFamily: "'Instrument Serif'", fontSize: 52, color: '#fff' }}>{gift.amountLabel}</p><p style={{ margin: '26px 0 0', color: 'rgba(255,255,255,0.6)', fontSize: 12.5, letterSpacing: '0.08em' }}>GILTIGT 12 MÅN · KOD SKICKAS VIA MEJL</p></div>
       <div>{paused ? <Empty paused /> : <><p style={{ margin: '0 0 10px', fontWeight: 700, fontSize: 12.5, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Välj belopp</p><div style={{ display: 'inline-flex', flexWrap: 'wrap', border: '1px solid #241019', background: '#fff', marginBottom: 22 }}><AmountButtons gift={gift} className={styles.calytrix} style={(on) => ({ border: 'none', cursor: 'pointer', fontSize: 14.5, fontWeight: 700, padding: '12px 20px', borderRight: '1px solid #e8d9de', color: on ? '#fff' : '#241019', background: on ? '#7d1f46' : '#fff' })} /></div>
-        <div style={{ marginBottom: 26 }}><label htmlFor="calytrix-gift-email" style={{ display: 'block', fontWeight: 700, fontSize: 12.5, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6 }}>Mottagarens mejl</label><input id="calytrix-gift-email" type="email" placeholder="namn@mail.se" className={styles.input} style={{ width: '100%', boxSizing: 'border-box', border: '2px solid #241019', padding: '12px 14px', fontFamily: "'Instrument Sans'", fontSize: 14.5, background: '#fbf6f4' }} /></div>
+        <div style={{ marginBottom: 26 }}><label htmlFor="calytrix-gift-email" style={{ display: 'block', fontWeight: 700, fontSize: 12.5, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6 }}>Mottagarens mejl</label><input id="calytrix-gift-email" type="email" placeholder="namn@mail.se" value={gift.recipientEmail} onChange={(e) => gift.setRecipientEmail(e.target.value)} className={styles.input} style={{ width: '100%', boxSizing: 'border-box', border: '2px solid #241019', padding: '12px 14px', fontFamily: "'Instrument Sans'", fontSize: 14.5, background: '#fbf6f4' }} /></div>
         <button type="button" className={button(styles.calytrixBuy)} onClick={gift.add} style={{ cursor: 'pointer', border: '2px solid #241019', color: '#241019', background: 'transparent', fontWeight: 700, fontSize: 14, padding: '13px 30px', letterSpacing: '0.03em' }}>{gift.added ? 'I KORGEN ✓' : `LÄGG I KORG — ${gift.amountLabel}`}</button></>}</div>
     </div> : <Empty paused={paused} />}
   </section>

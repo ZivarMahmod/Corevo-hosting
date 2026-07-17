@@ -53,8 +53,26 @@ export async function deliverIssuedGiftCards(
   supabase: SupabaseClient<Database>,
   tenantId: string,
   orderId: string,
-): Promise<void> {
+): Promise<{ attempted: number; failed: number }> {
+  // failed = RETRY-BARA misslyckanden (claim släppt → nästa försök kan claima om).
+  // Anroparen (settle) använder det för giftDeliveryPending → PayPal-webhooken
+  // begär re-leverans. Tidigare returnerade funktionen void och svalde allt —
+  // pending-flaggan kunde ALDRIG bli sann och ett relayfel = tyst aldrig-levererat
+  // presentkort (CodeRabbit-fynd).
+  let failed = 0
+  let attempted = 0
   try {
+    // Varumärke + tenant-namn läses FÖRE claimen: fönstret claim→send ska vara så
+    // smalt som möjligt (en krasch däremellan lämnar kortet märkt som mejlat utan
+    // mejl — claimen saknar lease, se maintenance-notering).
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('name')
+      .eq('id', tenantId)
+      .maybeSingle()
+    const tenantName = tenant?.name ?? 'Företaget'
+    const brand = await loadEmailBrand(supabase, tenantId, tenantName)
+
     const claimedAt = new Date().toISOString()
     // Ta ALLA omejlade kort för ordern i ETT villkorat UPDATE. `.is('emailed_at', null)`
     // är låset: bara en samtidig körning kan matcha raden och få den i sitt RETURNING.
@@ -70,18 +88,11 @@ export async function deliverIssuedGiftCards(
 
     if (error) {
       logger.warn('gift.deliver.claim_failed', { orderId, error: error.message })
-      return
+      // Claim-fel = inget claimat = helt retry-bart.
+      return { attempted: 0, failed: 1 }
     }
     const rows = (claimed ?? []) as GiftRow[]
-    if (rows.length === 0) return // inget att skicka (eller redan skickat av den andra webhook-leveransen)
-
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('name')
-      .eq('id', tenantId)
-      .maybeSingle()
-    const tenantName = tenant?.name ?? 'Företaget'
-    const brand = await loadEmailBrand(supabase, tenantId, tenantName)
+    if (rows.length === 0) return { attempted: 0, failed: 0 } // inget att skicka (eller redan skickat)
 
     async function releaseClaim(giftCardId: string): Promise<void> {
       const { error: releaseError } = await supabase
@@ -108,6 +119,7 @@ export async function deliverIssuedGiftCards(
         logger.warn('gift.deliver.no_recipient', { orderId, giftCardId: g.id })
         continue
       }
+      attempted++
 
       const amount = `${Math.round(g.initial_amount_cents / 100).toLocaleString('sv-SE')} ${
         g.currency === 'SEK' ? 'kr' : g.currency
@@ -160,8 +172,10 @@ export async function deliverIssuedGiftCards(
       }
       if (!res.ok) {
         // Relayen bekräftade ingen leverans. Släpp bara vår egen tidsstämplade
-        // claim; CAS-villkoret skyddar en eventuell senare vinnare.
+        // claim; CAS-villkoret skyddar en eventuell senare vinnare. RETRY-BART →
+        // räknas som failed så webhooken kan begära re-leverans.
         await releaseClaim(g.id)
+        failed++
         logger.warn('gift.deliver.send_failed', { orderId, giftCardId: g.id, error: res.error })
       }
     }
@@ -170,5 +184,8 @@ export async function deliverIssuedGiftCards(
       orderId,
       error: err instanceof Error ? err.message : String(err),
     })
+    // Oväntat kast: leveransstatus okänd, claims kan sitta kvar (ej retry-bara).
+    // Räknas INTE som failed — en pending-retry skulle ändå no-op:a mot claimen.
   }
+  return { attempted, failed }
 }

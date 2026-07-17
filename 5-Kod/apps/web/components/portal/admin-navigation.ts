@@ -24,10 +24,14 @@ const SETTINGS_PREFIXES = [
 /** Modulposterna ur NAV.admin (de som har en `module`-nyckel), filtrerade på kundens
  *  aktiverade moduler. `activeModuleKeys` undefined ⇒ ingen gating (samma kontrakt som
  *  PortalSidebar/paletteFromNav); [] ⇒ inga modulposter alls. */
-function moduleAreas(activeModuleKeys?: string[], roleLevel?: number): TopnavArea[] {
+function moduleAreas(
+  activeModuleKeys?: string[],
+  roleLevel?: number,
+  grantedAreas?: readonly string[],
+): TopnavArea[] {
   return NAV.admin.items.flatMap((entry) => {
     if (isGroup(entry) || !entry.module) return []
-    if (!isNavItemVisible(entry, { activeModuleKeys, roleLevel })) return []
+    if (!isNavItemVisible(entry, { activeModuleKeys, roleLevel, grantedAreas })) return []
     return [
       {
         id: `modul-${entry.module}`,
@@ -39,8 +43,17 @@ function moduleAreas(activeModuleKeys?: string[], roleLevel?: number): TopnavAre
   })
 }
 
-export function adminAreas(activeModuleKeys?: string[], roleLevel?: number): TopnavArea[] {
-  const allowed = (minimum: number) => roleLevel === undefined || roleLevel >= minimum
+export function adminAreas(
+  activeModuleKeys?: string[],
+  roleLevel?: number,
+  grantedAreas?: readonly string[],
+): TopnavArea[] {
+  // Personliga tillägg (goal-71): en yta beviljad i tenant_member_permissions är
+  // tillåten fast rollnivån inte når minLevel — samma beslut som sidgrinden.
+  const allowed = (minimum: number, area?: string) =>
+    roleLevel === undefined ||
+    roleLevel >= minimum ||
+    (area !== undefined && (grantedAreas?.includes(area) ?? false))
   return [
     // exact: /admin är prefix till varenda annan adminroute — utan detta hade
     // Översikt markerats som aktiv överallt.
@@ -48,11 +61,11 @@ export function adminAreas(activeModuleKeys?: string[], roleLevel?: number): Top
     // Bokningsytan ÄR kalendern (goal-66 byter innehållet på routen, inte routen).
     { id: 'kalender', href: '/admin/bokningar', label: 'Kalender', prefixes: ['/admin/bokningar'] },
     { id: 'kunder', href: '/admin/kunder', label: 'Kunder', prefixes: ['/admin/kunder'] },
-    ...moduleAreas(activeModuleKeys, roleLevel),
-    ...(allowed(A.sida)
+    ...moduleAreas(activeModuleKeys, roleLevel, grantedAreas),
+    ...(allowed(A.sida, 'sida')
       ? [{ id: 'sida', href: '/admin/sida', label: 'Redigera sidan', prefixes: ['/admin/sida'] }]
       : []),
-    ...(allowed(A.installningar)
+    ...(allowed(A.installningar, 'installningar')
       ? [{
           id: 'installningar',
           href: '/admin/installningar',
