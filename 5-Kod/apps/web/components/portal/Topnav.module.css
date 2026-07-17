@@ -801,7 +801,9 @@
   }
 
   .mobileAdmin .brandSub {
-    display: none;
+    display: block;
+    font-size: 7.5px;
+    line-height: 1;
   }
 
   .mobileAdmin .nav,

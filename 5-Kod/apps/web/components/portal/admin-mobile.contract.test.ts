@@ -30,6 +30,15 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
       /\.mobileFabButton\s*\{[\s\S]*?width:\s*46px;[\s\S]*?height:\s*46px;[\s\S]*?background:\s*#2f5f47;/i,
     )
     expect(css).toContain('env(safe-area-inset-top)')
+    const mobileHeaderStart = css.indexOf('@media (max-width: 767px)')
+    const calendarHeaderOverride = css.indexOf(
+      ".shell[data-portal='admin']:has(.main > :global(.workbench))",
+      mobileHeaderStart,
+    )
+    const sharedMobileHeader = css.slice(mobileHeaderStart, calendarHeaderOverride)
+    expect(sharedMobileHeader).toMatch(
+      /\.mobileAdmin \.brandSub\s*\{[\s\S]*?display:\s*block;[\s\S]*?font-size:\s*7\.5px;/,
+    )
     expect(theme).toContain('THEME_EVENT')
     expect(theme).toContain('dispatchEvent')
     expect(css).not.toContain('padding: 20px 14px 72px;')

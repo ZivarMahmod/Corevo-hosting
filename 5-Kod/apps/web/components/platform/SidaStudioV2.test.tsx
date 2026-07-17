@@ -158,6 +158,7 @@ describe('SidaStudioV2 acceptance shell', () => {
     expect(css).toMatch(/--editor-line:\s*#33332c/i)
     expect(css).toMatch(/--editor-text:\s*#f0f0ea/i)
     expect(css).toMatch(/\.mobileDevice[^}]*width:\s*390px/is)
+    expect(css).toMatch(/\.mobileDevice[^}]*flex:\s*1(?:\s+1\s+auto)?\s*;/is)
     expect(css).toMatch(/\.mobilePublish[^}]*min-height:\s*(?:4[4-9]|[5-9]\d)px/is)
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?\.tabs button[^}]*min-height:\s*44px/is)
     expect(css).toMatch(/@media \(max-width: 767px\)[\s\S]*?\.draftBanner button,[\s\S]*?\.showButton[^}]*min-height:\s*44px/is)
