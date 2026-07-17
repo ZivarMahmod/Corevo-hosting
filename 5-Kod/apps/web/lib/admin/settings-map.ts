@@ -2,119 +2,110 @@ import type { IconName } from '@/components/portal/ui/Icon'
 import type { AdminArea } from '@/lib/auth/admin-areas'
 import { resolveTerm, termPlural, type Terminology } from '@/lib/platform/verticals-shared'
 
-/** L3 C-01 — Inställningar är en KARTA över de ytor som redan finns, inte en ny
- *  yta. Varje kategori pekar på en RIKTIG route. Ingen sida flyttas, inget byggs om.
- *
- *  Regeln från nav-items.ts gäller här också: inga 404-platshållare. Kategorier vi
- *  STRÖK för att sidan inte finns:
- *   · "Moduler" — vilka moduler som är på ägs av plattformen (tenant_modules-vakten
- *     i migration 0026 gör off→på super-admin-only). Kunden har ingen modul-yta.
- *   · "Drift" — finns bara i super-adminens kundkort (/salonger/[id]), aldrig här.
- *   · "Notiser" — bor som reglage INNE i Företag och profil (SettingsForm), inte
- *     som egen sida. En kategori utan sida bakom är precis den utfyllnad Zivar
- *     förbjuder. */
+export type SettingsGroup = 'VERKSAMHET' | 'BOKNING' | 'PENGAR' | 'KOMMUNIKATION' | 'KONTO'
 
 export type SettingsCategoryId =
-  | 'foretag'
-  | 'bokning'
   | 'tjanster'
   | 'personal'
   | 'scheman'
   | 'platser'
-  | 'sida'
+  | 'bokningsregler'
+  | 'bokningsflode'
   | 'betalning'
+  | 'paminnelser'
+  | 'integrationer'
+  | 'roller'
   | 'konto'
+  | 'sekretess'
 
 export type SettingsCategory = {
   id: SettingsCategoryId
+  group: SettingsGroup
   href: string
   label: string
-  /** En rad. Kortet ska gå att förstå UTAN brödtext. */
   hint: string
   icon: IconName
-  /** Ytan som routen gatas på (lib/auth/admin-areas.ts) — alla nio kräver nivå 6. */
   area: AdminArea
+  keywords: string
+  warning?: 'warning' | 'danger'
 }
 
+export const SETTINGS_GROUPS: readonly SettingsGroup[] = [
+  'VERKSAMHET',
+  'BOKNING',
+  'PENGAR',
+  'KOMMUNIKATION',
+  'KONTO',
+]
+
 /**
- * De nio kategorierna. Etiketterna för personal/tjänster går genom branschlagret
- * (resolveTerm/termPlural) — en restaurang ser sina ord, aldrig frisörns.
+ * Inställningar är en karta, inte en andra skrivyta. Varje kategori pekar till den
+ * befintliga route som äger datan. Samma lista matar nav, sök och Ctrl-K.
  */
 export function settingsCategories(terminology?: Terminology | null): SettingsCategory[] {
   const staff = termPlural(terminology, 'staff', resolveTerm(terminology, 'staff', 'Personal'))
-  const service = termPlural(terminology, 'service', 'Tjänster')
+  const services = termPlural(terminology, 'service', 'Tjänster')
+
   return [
     {
-      id: 'foretag',
-      href: '/admin/installningar/foretag',
-      label: 'Företag och profil',
-      hint: 'Namn, kontakt, tidszon, adress och domän',
-      icon: 'building',
-      area: 'installningar',
+      id: 'tjanster', group: 'VERKSAMHET', href: '/admin/tjanster', label: `${services} & priser`,
+      hint: 'Utbud, längder och priser', icon: 'scissors', area: 'tjanster',
+      keywords: 'pris tjänst utbud längd ordning populär',
     },
     {
-      id: 'bokning',
-      href: '/admin/installningar/bokning',
-      label: 'Bokningsregler',
-      hint: 'På, pausad eller av — och avbokningsregeln',
-      icon: 'calendar',
-      area: 'installningar',
+      id: 'personal', group: 'VERKSAMHET', href: '/admin/personal', label: staff,
+      hint: 'Medarbetare, foton och synlighet', icon: 'users', area: 'personal',
+      keywords: 'personal medarbetare anställd konto foto visa ta bort',
     },
     {
-      id: 'tjanster',
-      href: '/admin/tjanster',
-      label: service,
-      hint: 'Vad kunderna kan boka, pris och längd',
-      icon: 'scissors',
-      area: 'tjanster',
+      id: 'scheman', group: 'VERKSAMHET', href: '/admin/scheman', label: 'Scheman & frånvaro',
+      hint: 'Arbetstider, semester och schemalås', icon: 'clock', area: 'scheman',
+      keywords: 'öppettider arbetstid schema semester frånvaro ledig sjuk pass',
     },
     {
-      id: 'personal',
-      href: '/admin/personal',
-      label: staff,
-      hint: 'Vilka som tar emot bokningar',
-      icon: 'users',
-      area: 'personal',
+      id: 'platser', group: 'VERKSAMHET', href: '/admin/platser', label: 'Platser',
+      hint: 'Adresser och tidszon', icon: 'mapPin', area: 'platser',
+      keywords: 'plats adress tidszon filial lokal',
     },
     {
-      id: 'scheman',
-      href: '/admin/scheman',
-      label: 'Öppettider och schema',
-      hint: 'Arbetstider och frånvaro',
-      icon: 'clock',
-      area: 'scheman',
+      id: 'bokningsregler', group: 'BOKNING', href: '/admin/installningar/bokning', label: 'Bokningsregler',
+      hint: 'På, pausad, av och avbokning', icon: 'calendar', area: 'installningar',
+      keywords: 'onlinebokning pausa av boka bokningsfönster avbokningsgräns nya kunder',
     },
     {
-      id: 'platser',
-      href: '/admin/platser',
-      label: 'Platser',
-      hint: 'Adresser kunderna kan besöka',
-      icon: 'mapPin',
-      area: 'platser',
+      id: 'bokningsflode', group: 'BOKNING', href: '/admin/sida?flik=bokning', label: 'Bokningsflöde',
+      hint: 'Kalender, tidsväljare och utseende', icon: 'arrowRight', area: 'sida',
+      keywords: 'bokningssätt kalender avatar färg tidsväljare utseende',
     },
     {
-      id: 'sida',
-      href: '/admin/sida',
-      label: 'Din sida',
-      hint: 'Färger, texter och bilder på hemsidan',
-      icon: 'palette',
-      area: 'sida',
+      id: 'betalning', group: 'PENGAR', href: '/admin/installningar/betalning', label: 'Betalning',
+      hint: 'Stripe, betala vid bokning och utbetalning', icon: 'creditCard', area: 'installningar',
+      keywords: 'stripe betalning kort swish utbetalning pengar',
     },
     {
-      id: 'betalning',
-      href: '/admin/installningar/betalning',
-      label: 'Betalning',
-      hint: 'Stripe-konto och betalning vid bokning',
-      icon: 'creditCard',
-      area: 'installningar',
+      id: 'paminnelser', group: 'KOMMUNIKATION', href: '/admin/installningar/foretag#paminnelser', label: 'Påminnelser & utskick',
+      hint: 'Bekräftelser, påminnelser och kanaler', icon: 'mail', area: 'installningar',
+      keywords: 'påminnelse sms mejl e-post utskick notis bekräftelse',
     },
     {
-      id: 'konto',
-      href: '/admin/installningar/konto',
-      label: 'Konto och säkerhet',
-      hint: 'Lösenord och utloggning av andra enheter',
-      icon: 'shield',
-      area: 'installningar',
+      id: 'integrationer', group: 'KOMMUNIKATION', href: '/admin/sida?flik=kontakt', label: 'Integrationer',
+      hint: 'Externa kopplingar och recensioner', icon: 'link', area: 'sida',
+      keywords: 'google recension betyg stjärnor integration koppla',
+    },
+    {
+      id: 'roller', group: 'KONTO', href: '/admin/installningar?kategori=roller', label: 'Roller & behörigheter',
+      hint: 'Vem får göra vad — allt loggas', icon: 'shield', area: 'installningar',
+      keywords: 'roll behörighet rättighet ägare platschef anställd logg aktivitet vem',
+    },
+    {
+      id: 'konto', group: 'KONTO', href: '/admin/installningar/konto', label: 'Konto & säkerhet',
+      hint: 'Lösenord och aktiva enheter', icon: 'user', area: 'installningar',
+      keywords: 'lösenord byta säkerhet logga ut enhet session e-post',
+    },
+    {
+      id: 'sekretess', group: 'KONTO', href: '/admin/kunder', label: 'Sekretess & GDPR',
+      hint: 'Kunddata, export och anonymisering', icon: 'lock', area: 'kunder',
+      keywords: 'gdpr sekretess export radera anonymisera kunddata biträdesavtal',
     },
   ]
 }

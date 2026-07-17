@@ -54,10 +54,9 @@ export const PROTECTED_PREFIXES = [
 export function portalHomeFor(opts: { roleLevel: number; platformAdmin: boolean }): string {
   if (opts.platformAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return '/'
   if (opts.roleLevel >= PORTAL_MIN_LEVEL.admin) return '/admin'
-  // ROLL-SEPARATION: personalens arbetsdag ÄR kalendern. De landar direkt i
-  // bokningsarbetsbordet (adminportalens kalenderyta släpper in nivå 3 —
-  // lib/auth/admin-areas.ts); /personal (schema/frånvaro) finns kvar i menyn.
-  if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return '/admin/bokningar'
+  // Paket 06: personalens egen mobil-PWA är primär på booking.corevo.se.
+  // Kundadminens kalender finns kvar för uttryckligen delegerade adminytor.
+  if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return '/personal'
   return '/konto'
 }
 

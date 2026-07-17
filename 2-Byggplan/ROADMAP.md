@@ -13,9 +13,11 @@ avslutade goals; skapa inte nya parallella roadmap-filer.
 
 ## Byggordning
 
-1. **04 Inställningar v2** — nästa aktiva byggdel.
-2. **05 Kundportal** — egen desktop-/mobilyta med funktionsparitet.
-3. **06 Personaladmin mobil-PWA** — separat personalspår; aldrig grund för hela produkten.
+1. **04 Inställningar v2** — aktiv byggdel.
+2. **06 Personaladmin mobil-PWA** — byggs direkt efter 04 och kopplas till
+   `booking.corevo.se`; `minbooking.corevo.se` behålls som parallell legacy-dörr tills
+   Zivar uttryckligen stänger den.
+3. **05 Kundportal** — överhoppad i denna byggomgång; paketet ligger kvar orört.
 4. **Lanseringsgrindar** — betalning, juridik, secrets, domänsmoke och driftbevis.
 
 Designpaketen ligger i `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/`.

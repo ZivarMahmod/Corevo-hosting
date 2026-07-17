@@ -12,9 +12,8 @@ describe('role thresholds (pinned to real DB levels {2,3,6,8})', () => {
 
   it('portalHomeFor routes every real role to its own portal', () => {
     expect(portalHomeFor({ roleLevel: 2, platformAdmin: false })).toBe('/konto')
-    // ROLL-SEPARATION: personalens arbetsdag ÄR kalendern → de landar i
-    // adminportalens bokningsyta (som släpper in nivå 3), inte i /personal.
-    expect(portalHomeFor({ roleLevel: 3, platformAdmin: false })).toBe('/admin/bokningar')
+    // Paket 06: personalens egen mobil-PWA är den primära landningen på booking.
+    expect(portalHomeFor({ roleLevel: 3, platformAdmin: false })).toBe('/personal')
     expect(portalHomeFor({ roleLevel: 6, platformAdmin: false })).toBe('/admin')
     // super_admin: the platform_admin flag drives the landing regardless of level.
     expect(portalHomeFor({ roleLevel: 8, platformAdmin: true })).toBe('/')

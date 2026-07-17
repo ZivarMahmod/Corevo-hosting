@@ -2,11 +2,14 @@ import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { resolveTerm, termPlural } from '@/lib/platform/verticals-shared'
-import { listStaff, listWorkingHours, listWorkingHourSlots, listLocations, listServices } from '@/lib/admin/data'
 import {
-  listCurrentAndUpcomingTimeOff,
-  listLocationOpeningHours,
-} from '@/lib/admin/schedule-data'
+  listStaff,
+  listWorkingHours,
+  listWorkingHourSlots,
+  listLocations,
+  listServices,
+} from '@/lib/admin/data'
+import { listCurrentAndUpcomingTimeOff, listLocationOpeningHours } from '@/lib/admin/schedule-data'
 import { buildWeekBoard } from '@/lib/admin/schedule-board'
 import { resolvePlats } from '@/lib/admin/plats'
 import { requiredLocationId } from '@/lib/admin/location-scope'
@@ -34,11 +37,19 @@ export const metadata: Metadata = { title: 'Schema · Adminpanel' }
  *  som inklusiva dagar; udda tider (personal-anmäld frånvaro) behåller klockslag
  *  — ärlig visning av det lagrade intervallet. */
 function timeOffRangeLabel(startTs: string, endTs: string, timeZone: string): string {
-  const day = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'short', year: 'numeric', timeZone })
+  const day = new Intl.DateTimeFormat('sv-SE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone,
+  })
   const time = new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone })
   const start = new Date(startTs)
   const end = new Date(endTs)
-  const startLabel = time.format(start) === '00:00' ? day.format(start) : `${day.format(start)} ${time.format(start)}`
+  const startLabel =
+    time.format(start) === '00:00'
+      ? day.format(start)
+      : `${day.format(start)} ${time.format(start)}`
   // Slut vid midnatt = exklusiv gräns → visa föregående dag som inklusiv sista dag.
   const endLabel =
     time.format(end) === '00:00'
@@ -54,6 +65,7 @@ export default async function SchedulesPage({
 }) {
   const sp = await searchParams
   const user = await requireAdminArea('scheman')
+  const canManageStaff = user.platformAdmin || user.roleLevel >= 6
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (
@@ -100,12 +112,11 @@ export default async function SchedulesPage({
   const openingRows = openingLocation
     ? allLocationHours.filter((row) => row.location_id === openingLocation.id)
     : []
-  const openingLocationRecord = openingLocation as
-    (typeof openingLocation & {
-        slot_step_min?: number
-        min_notice_min?: number
-        max_advance_days?: number
-      })
+  const openingLocationRecord = openingLocation as typeof openingLocation & {
+    slot_step_min?: number
+    min_notice_min?: number
+    max_advance_days?: number
+  }
   const locationOpeningHours = (
     <LocationOpeningHours
       key={openingLocationRecord.id}
@@ -130,8 +141,8 @@ export default async function SchedulesPage({
             <strong>Lägg till {staffNoun.toLowerCase()} först.</strong>
           </p>
           <p className="small" style={{ marginTop: 6 }}>
-            Schemat sätts per {staffNoun.toLowerCase()} — skapa minst en under <em>{staffPlural}</em>, så fylls
-            veckoöversikten här.
+            Schemat sätts per {staffNoun.toLowerCase()} — skapa minst en under{' '}
+            <em>{staffPlural}</em>, så fylls veckoöversikten här.
           </p>
         </Card>
       </section>
@@ -229,13 +240,18 @@ export default async function SchedulesPage({
         <h2 className="h2" style={{ margin: '6px 0 0' }}>
           Frånvaro
         </h2>
-        <p className="small" style={{ margin: '4px 0 12px', maxWidth: 560, color: 'var(--c-ink-3)' }}>
+        <p
+          className="small"
+          style={{ margin: '4px 0 12px', maxWidth: 560, color: 'var(--c-ink-3)' }}
+        >
           Semester, sjukdom och annan ledighet — blockerar bokningar för perioden och visas som
           overlay i veckoöversikten. Heldagar anges i tidszonen {timeZone}.
         </p>
         <TimeOffManager
           items={timeOffItems}
-          staffOptions={staff.filter((s) => s.active).map((s) => ({ id: s.id, name: s.displayName }))}
+          staffOptions={staff
+            .filter((s) => s.active)
+            .map((s) => ({ id: s.id, name: s.displayName }))}
           staffNoun={staffNoun}
         />
       </section>
@@ -250,10 +266,13 @@ export default async function SchedulesPage({
           <h2 className="h2" style={{ margin: '6px 0 0' }}>
             Veckoschema (mall)
           </h2>
-          <p className="small" style={{ margin: '4px 0 0', maxWidth: 560, color: 'var(--c-ink-3)' }}>
-            Mallen gäller alla veckor och visar när den valda medarbetaren arbetar.
-            Avvikelser (semester, sjukdom) läggs som frånvaro ovan. En tid kan bokas när
-            både platsens öppettider och medarbetarens arbetstid tillåter det.
+          <p
+            className="small"
+            style={{ margin: '4px 0 0', maxWidth: 560, color: 'var(--c-ink-3)' }}
+          >
+            Mallen gäller alla veckor och visar när den valda medarbetaren arbetar. Avvikelser
+            (semester, sjukdom) läggs som frånvaro ovan. En tid kan bokas när både platsens
+            öppettider och medarbetarens arbetstid tillåter det.
           </p>
         </div>
 
@@ -261,28 +280,30 @@ export default async function SchedulesPage({
             "vem kan bokas när"-regeln syns och ändras här (Zivar 2026-07-11).
             Ligger UTANFÖR schemalåset: att inaktivera någon akut ska inte kräva
             "Lås upp". */}
-        <StaffBookability
-          key={selected.id}
-          staffId={selected.id}
-          staffName={selected.displayName}
-          active={selected.active}
-          serviceIds={selected.serviceIds}
-          locationId={selected.location_id}
-          openingHoursConfirmed={allLocationHours
-            .filter((row) => row.location_id === selected.location_id)
-            .some((row) => row.confirmed_at !== null)}
-          services={services.map((s) => ({
-            id: s.id,
-            name: s.name,
-            active: s.active,
-            locationId: s.location_id,
-          }))}
-          workingDays={new Set(rows.map((row) => row.weekday)).size}
-        />
+        {canManageStaff ? (
+          <StaffBookability
+            key={selected.id}
+            staffId={selected.id}
+            staffName={selected.displayName}
+            active={selected.active}
+            serviceIds={selected.serviceIds}
+            locationId={selected.location_id}
+            openingHoursConfirmed={allLocationHours
+              .filter((row) => row.location_id === selected.location_id)
+              .some((row) => row.confirmed_at !== null)}
+            services={services.map((s) => ({
+              id: s.id,
+              name: s.name,
+              active: s.active,
+              locationId: s.location_id,
+            }))}
+            workingDays={new Set(rows.map((row) => row.weekday)).size}
+          />
+        ) : null}
 
         {/* Grundtiderna läggs en gång — låset kräver ett uttryckligt "Lås upp"
             (med bekräftelse + automatisk kopia) innan något går att ändra. */}
-        <ScheduleLock>
+        <ScheduleLock hasBackup={canManageStaff}>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
             <ScheduleActions staffId={selected.id} />
           </div>

@@ -8,14 +8,14 @@ export const dynamic = 'force-static'
 export function GET(): Response {
   return Response.json(
     {
-      name: 'Min bokning — Corevo',
-      short_name: 'Min bokning',
-      description: 'Dina bokningar och tider — direkt på hemskärmen.',
+      name: 'Corevo Personal',
+      short_name: 'Corevo',
+      description: 'Din kalender och profil — direkt på hemskärmen.',
       start_url: '/personal',
-      scope: '/',
+      scope: '/personal',
       display: 'standalone',
-      background_color: '#faf8f4',
-      theme_color: '#1F4636',
+      background_color: '#121210',
+      theme_color: '#121210',
       icons: [
         { src: '/pwa/personal-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
         { src: '/pwa/personal-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

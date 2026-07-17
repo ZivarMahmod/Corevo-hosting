@@ -20,7 +20,7 @@ import type { TopnavArea, TopnavItem } from './Topnav'
 const SETTINGS_SUBNAV: readonly TopnavItem[] = [
   { href: '/admin/installningar', label: 'Alla inställningar' },
   ...settingsCategories()
-    .filter((c) => c.id !== 'sida')
+    .filter((c) => !c.href.startsWith('/admin/sida'))
     .map((c) => ({ href: c.href, label: c.label })),
 ] as const
 

@@ -1,50 +1,47 @@
-import { describe, it, expect } from 'vitest'
-import { settingsCategories } from './settings-map'
-import { ADMIN_AREA_MIN_LEVEL, adminAreaForPath, ROLE_LEVEL } from '@/lib/auth/admin-areas'
+import { describe, expect, it } from 'vitest'
+import { settingsCategories, SETTINGS_GROUPS } from './settings-map'
 
-/** L3 C-01 — kartan får bara peka på ytor som FINNS, och ingen av dem får släppa in
- *  personal. Testet är vakten mot 404-platshållare och mot en rollglidning. */
-describe('settingsCategories', () => {
-  const cats = settingsCategories()
+describe('settingsCategories v2', () => {
+  const categories = settingsCategories()
 
-  it('är exakt nio kategorier', () => {
-    expect(cats).toHaveLength(9)
+  it('har paketets tolv kategorier i fem grupper', () => {
+    expect(categories).toHaveLength(12)
+    expect(SETTINGS_GROUPS).toEqual(['VERKSAMHET', 'BOKNING', 'PENGAR', 'KOMMUNIKATION', 'KONTO'])
+    expect(new Set(categories.map((category) => category.id)).size).toBe(12)
   })
 
-  it('varje href ligger under /admin och är unik', () => {
-    const hrefs = cats.map((c) => c.href)
-    expect(new Set(hrefs).size).toBe(hrefs.length)
-    for (const h of hrefs) expect(h.startsWith('/admin/')).toBe(true)
-  })
-
-  it('varje href hör till den yta kategorin deklarerar (admin-areas.ts)', () => {
-    for (const c of cats) expect(adminAreaForPath(c.href)).toBe(c.area)
-  })
-
-  it('ingen kategori släpper in personal — allihop kräver salon_admin (6)', () => {
-    for (const c of cats) {
-      expect(ADMIN_AREA_MIN_LEVEL[c.area]).toBe(ROLE_LEVEL.salonAdmin)
-    }
-  })
-
-  it('branschlagret styr etiketterna för personal/tjänst — aldrig hårdkodat', () => {
-    const restaurang = settingsCategories({
-      staff_plural: 'Kockar',
-      service_plural: 'Rätter',
+  it('pekar varje kategori på sin exakta ägande route', () => {
+    expect(Object.fromEntries(categories.map((category) => [category.id, category.href]))).toEqual({
+      tjanster: '/admin/tjanster',
+      personal: '/admin/personal',
+      scheman: '/admin/scheman',
+      platser: '/admin/platser',
+      bokningsregler: '/admin/installningar/bokning',
+      bokningsflode: '/admin/sida?flik=bokning',
+      betalning: '/admin/installningar/betalning',
+      paminnelser: '/admin/installningar/foretag#paminnelser',
+      integrationer: '/admin/sida?flik=kontakt',
+      roller: '/admin/installningar?kategori=roller',
+      konto: '/admin/installningar/konto',
+      sekretess: '/admin/kunder',
     })
-    expect(restaurang.find((c) => c.id === 'personal')?.label).toBe('Kockar')
-    expect(restaurang.find((c) => c.id === 'tjanster')?.label).toBe('Rätter')
   })
 
-  it('utan bransch faller etiketterna tillbaka på de generella orden', () => {
-    expect(cats.find((c) => c.id === 'personal')?.label).toBe('Personal')
-    expect(cats.find((c) => c.id === 'tjanster')?.label).toBe('Tjänster')
+  it('låter verticalens terminologi styra personal och tjänster', () => {
+    const restaurant = settingsCategories({ staff_plural: 'Kockar', service_plural: 'Rätter' })
+    expect(restaurant.find((category) => category.id === 'personal')?.label).toBe('Kockar')
+    expect(restaurant.find((category) => category.id === 'tjanster')?.label).toBe('Rätter & priser')
   })
 
-  it('inga bransch-ord i kategoritexterna', () => {
-    const text = cats.map((c) => `${c.label} ${c.hint}`).join(' ').toLowerCase()
-    for (const w of ['salong', 'frisör', 'klippning', 'stylist', 'barber']) {
-      expect(text).not.toContain(w)
+  it('indexerar designpaketets viktigaste synonymer', () => {
+    const index = categories.map((category) => `${category.label} ${category.hint} ${category.keywords}`).join(' ').toLowerCase()
+    for (const word of ['öppettider', 'semester', 'lösenord', 'behörighet', 'recension']) {
+      expect(index).toContain(word)
     }
+  })
+
+  it('hårdkodar ingen bransch som plattformens standard', () => {
+    const text = categories.map((category) => `${category.label} ${category.hint} ${category.keywords}`).join(' ').toLowerCase()
+    for (const word of ['salong', 'frisör', 'barber', 'klippning']) expect(text).not.toContain(word)
   })
 })

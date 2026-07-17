@@ -8,16 +8,19 @@ import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
 import type { AdminArea } from '@/lib/auth/admin-areas'
 import { getAdminTenant, revalidateTenant, type AdminTenant } from './tenant'
 import { kronorToCents } from './format'
-import { uploadImage, uploadErrorMessage, deleteByPublicUrl, pruneRemovedImages, type UploadResult } from '@/lib/r2/upload'
+import {
+  uploadImage,
+  uploadErrorMessage,
+  deleteByPublicUrl,
+  pruneRemovedImages,
+  type UploadResult,
+} from '@/lib/r2/upload'
 import { mergeBranding } from '@/lib/branding/merge'
 import { resolveRoleMatrix } from '@/lib/platform/roles-permissions'
 import { canWrite } from '@/lib/platform/catalog-shared'
 import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { refundBookingPayment } from '@/lib/stripe/refund'
-import {
-  BOOKING_STATUSES,
-  restoreBlockedByRefund,
-} from './format'
+import { BOOKING_STATUSES, restoreBlockedByRefund } from './format'
 import type { CopyOverride } from '@/components/storefront/theme-content'
 import { createAdminServiceClient } from './service'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
@@ -59,7 +62,9 @@ async function removeInvitedStaffUser(service: AdminServiceClient, authId: strin
  * Personal (nivå 3) släpps igenom på kalender-/kundytorna men NEKAS på systemytorna
  * (tjänster, personal, platser, sida, inställningar …) — samma tabell som sidorna läser.
  */
-async function adminCtx(area: AdminArea): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
+async function adminCtx(
+  area: AdminArea,
+): Promise<{ user: CurrentUser; tenant: AdminTenant } | null> {
   const user = await requireAdminArea(area)
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
@@ -77,7 +82,8 @@ export async function createService(_p: ActionState, fd: FormData): Promise<Acti
   const priceCents = kronorToCents(String(fd.get('price') ?? '')) ?? 0
 
   if (!name) return { error: 'Ange ett namn.' }
-  if (!Number.isInteger(duration) || duration <= 0) return { error: 'Ange en giltig varaktighet (minuter).' }
+  if (!Number.isInteger(duration) || duration <= 0)
+    return { error: 'Ange en giltig varaktighet (minuter).' }
 
   const supabase = await createClient()
   const { error } = await supabase.from('services').insert({
@@ -108,7 +114,8 @@ export async function updateService(_p: ActionState, fd: FormData): Promise<Acti
 
   if (!id) return { error: 'Saknar tjänst.' }
   if (!name) return { error: 'Ange ett namn.' }
-  if (!Number.isInteger(duration) || duration <= 0) return { error: 'Ange en giltig varaktighet (minuter).' }
+  if (!Number.isInteger(duration) || duration <= 0)
+    return { error: 'Ange en giltig varaktighet (minuter).' }
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -152,7 +159,11 @@ export async function deleteService(_p: ActionState, fd: FormData): Promise<Acti
   if (!id) return { error: 'Saknar tjänst.' }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('services').delete().eq('id', id).eq('tenant_id', ctx.tenant.id)
+  const { error } = await supabase
+    .from('services')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
   if (error) {
     // FK from bookings(service_id) → can't delete a service with history.
     if (error.code === '23503')
@@ -188,7 +199,8 @@ export async function createLocation(_p: ActionState, fd: FormData): Promise<Act
   const address = String(fd.get('address') ?? '').trim()
   const timezone = String(fd.get('timezone') ?? '').trim()
   if (!name) return { error: 'Ange ett namn.' }
-  if (timezone && !isValidTz(timezone)) return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
+  if (timezone && !isValidTz(timezone))
+    return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
 
   const supabase = await createClient()
   const { data: created, error } = await supabase
@@ -267,7 +279,8 @@ export async function updateLocation(_p: ActionState, fd: FormData): Promise<Act
   const timezone = String(fd.get('timezone') ?? '').trim()
   if (!id) return { error: 'Saknar plats.' }
   if (!name) return { error: 'Ange ett namn.' }
-  if (timezone && !isValidTz(timezone)) return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
+  if (timezone && !isValidTz(timezone))
+    return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
 
   const supabase = await createClient()
   const patch: { name: string; address: string | null; timezone?: string } = {
@@ -556,7 +569,11 @@ export async function deleteStaff(_p: ActionState, fd: FormData): Promise<Action
   if (!id) return { error: 'Saknar medarbetare.' }
 
   const supabase = await createClient()
-  const { error } = await supabase.from('staff').delete().eq('id', id).eq('tenant_id', ctx.tenant.id)
+  const { error } = await supabase
+    .from('staff')
+    .delete()
+    .eq('id', id)
+    .eq('tenant_id', ctx.tenant.id)
   if (error) {
     if (error.code === '23503')
       return { error: 'Medarbetaren har bokningar och kan inte tas bort. Inaktivera i stället.' }
@@ -633,7 +650,9 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   const ctx = await adminCtx('personal')
   if (!ctx) return { error: NO_TENANT }
 
-  const email = String(fd.get('email') ?? '').trim().toLowerCase()
+  const email = String(fd.get('email') ?? '')
+    .trim()
+    .toLowerCase()
   const title = String(fd.get('title') ?? '').trim()
   // Optional: invite into an EXISTING staff row (link it) instead of a new one.
   const staffId = String(fd.get('staff_id') ?? '').trim()
@@ -659,7 +678,10 @@ export async function inviteStaff(_p: ActionState, fd: FormData): Promise<Action
   //    Detta görs före Auth-inbjudan så ett DB-fel inte skapar ett föräldralöst konto.
   await svc
     .from('roles')
-    .upsert({ tenant_id: ctx.tenant.id, name: 'staff', level: 3 }, { onConflict: 'tenant_id,name', ignoreDuplicates: true })
+    .upsert(
+      { tenant_id: ctx.tenant.id, name: 'staff', level: 3 },
+      { onConflict: 'tenant_id,name', ignoreDuplicates: true },
+    )
   const { data: role, error: rErr } = await svc
     .from('roles')
     .select('id')
@@ -767,7 +789,7 @@ async function resolveScheduleLocation(
 }
 
 export async function addStaffWorkingHours(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx('personal')
+  const ctx = await adminCtx('scheman')
   if (!ctx) return { error: NO_TENANT }
 
   const staffId = String(fd.get('staff_id') ?? '')
@@ -777,7 +799,8 @@ export async function addStaffWorkingHours(_p: ActionState, fd: FormData): Promi
   const requestedLocation = String(fd.get('location_id') ?? '')
 
   if (!staffId) return { error: 'Välj en medarbetare.' }
-  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return { error: 'Välj en veckodag.' }
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6)
+    return { error: 'Välj en veckodag.' }
   if (!TIME_RE.test(start) || !TIME_RE.test(end)) return { error: 'Ange giltiga tider (HH:MM).' }
   if (end <= start) return { error: 'Sluttiden måste vara efter starttiden.' }
 
@@ -816,7 +839,7 @@ export async function addStaffWorkingHours(_p: ActionState, fd: FormData): Promi
 }
 
 export async function deleteStaffWorkingHours(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx('personal')
+  const ctx = await adminCtx('scheman')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -847,7 +870,7 @@ export async function deleteStaffWorkingHours(_p: ActionState, fd: FormData): Pr
 // editable here but do not yet change the public bookable times. Copy reflects that.
 
 export async function addStaffSlots(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx('personal')
+  const ctx = await adminCtx('scheman')
   if (!ctx) return { error: NO_TENANT }
 
   const staffId = String(fd.get('staff_id') ?? '')
@@ -862,7 +885,8 @@ export async function addStaffSlots(_p: ActionState, fd: FormData): Promise<Acti
     .filter(Boolean)
 
   if (!staffId) return { error: 'Välj en medarbetare.' }
-  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return { error: 'Välj en veckodag.' }
+  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6)
+    return { error: 'Välj en veckodag.' }
   if (raw.length === 0) return { error: 'Ange minst en starttid (HH:MM).' }
   const times = [...new Set(raw)]
   if (!times.every((t) => TIME_RE.test(t)))
@@ -908,7 +932,7 @@ export async function addStaffSlots(_p: ActionState, fd: FormData): Promise<Acti
 }
 
 export async function deleteStaffSlot(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx('personal')
+  const ctx = await adminCtx('scheman')
   if (!ctx) return { error: NO_TENANT }
 
   const id = String(fd.get('id') ?? '')
@@ -934,7 +958,7 @@ export async function deleteStaffSlot(_p: ActionState, fd: FormData): Promise<Ac
  * then tweaks the generated list. p_step = the raster used during generation only.
  */
 export async function seedStaffSlots(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const ctx = await adminCtx('personal')
+  const ctx = await adminCtx('scheman')
   if (!ctx) return { error: NO_TENANT }
 
   const staffId = String(fd.get('staff_id') ?? '')
@@ -1030,7 +1054,9 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
     colorAccent === undefined
   )
     return { error: 'Ogiltig färgkod. Använd hex, t.ex. #1f6feb.' }
-  const fontBody = String(fd.get('font_body') ?? '').trim().slice(0, 120)
+  const fontBody = String(fd.get('font_body') ?? '')
+    .trim()
+    .slice(0, 120)
   const removeLogo = String(fd.get('remove_logo') ?? '') === 'true'
   const logo = fd.get('logo')
 
@@ -1074,7 +1100,9 @@ export async function saveBranding(_p: ActionState, fd: FormData): Promise<Actio
 
   revalidateTenant(ctx.tenant.slug)
   revalidatePath('/admin/sida')
-  return warning ? { error: warning } : { success: 'Varumärke sparat. Publika webbplatsen uppdaterad.' }
+  return warning
+    ? { error: warning }
+    : { success: 'Varumärke sparat. Publika webbplatsen uppdaterad.' }
 }
 
 // ── Storefront media (hero/gallery/about/closing + team + stats) ───────────────
@@ -1149,7 +1177,11 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
   }
   const heroImages = [...heroRetained, ...heroUploaded]
 
-  const galleryRetained = fd.getAll('gallery_existing').map(String).filter(Boolean).slice(0, GALLERY_MAX)
+  const galleryRetained = fd
+    .getAll('gallery_existing')
+    .map(String)
+    .filter(Boolean)
+    .slice(0, GALLERY_MAX)
   const galleryFiles = fd
     .getAll('gallery_files')
     .filter((f): f is File => f instanceof File && f.size > 0)
@@ -1263,7 +1295,14 @@ export async function saveStorefrontMedia(_p: ActionState, fd: FormData): Promis
 // a non-empty string per field overrides the theme default; empty/missing reverts
 // to the theme copy. We MERGE onto the existing settings jsonb (...prev) so we never
 // clobber layout/theme/contact/notifications — same seam saveSettings uses.
-const COPY_FIELDS = ['heroEyebrow', 'heroTitle', 'heroLede', 'aboutCopy', 'tagline', 'italic'] as const
+const COPY_FIELDS = [
+  'heroEyebrow',
+  'heroTitle',
+  'heroLede',
+  'aboutCopy',
+  'tagline',
+  'italic',
+] as const
 
 export async function saveStorefrontCopy(_p: ActionState, fd: FormData): Promise<ActionState> {
   const ctx = await adminCtx('sida')
@@ -1357,9 +1396,12 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   const cancelHours = cancelRaw === '' ? 24 : Number(cancelRaw)
   if (!Number.isFinite(cancelHours) || cancelHours < 0 || cancelHours > 8760)
     return { error: 'Avbokningsregel måste vara ett antal timmar (0–8760).' }
-  if (timezone && !isValidTz(timezone)) return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
+  if (timezone && !isValidTz(timezone))
+    return { error: 'Ogiltig tidszon (IANA, t.ex. Europe/Stockholm).' }
   if (googleReviewUrl === undefined)
-    return { error: 'Ogiltig recensionslänk. Använd en https-länk, t.ex. https://g.page/r/.../review.' }
+    return {
+      error: 'Ogiltig recensionslänk. Använd en https-länk, t.ex. https://g.page/r/.../review.',
+    }
 
   const supabase = await createClient()
 
@@ -1388,7 +1430,10 @@ export async function saveSettings(_p: ActionState, fd: FormData): Promise<Actio
   }
   const s = await supabase
     .from('tenant_settings')
-    .upsert({ tenant_id: ctx.tenant.id, payment_mode: paymentMode, settings }, { onConflict: 'tenant_id' })
+    .upsert(
+      { tenant_id: ctx.tenant.id, payment_mode: paymentMode, settings },
+      { onConflict: 'tenant_id' },
+    )
   if (s.error) return { error: GENERIC }
 
   // 3) primary location (timezone + name + address), if the tenant has one.
@@ -1425,7 +1470,9 @@ export async function setCustomerPrivacy(_p: ActionState, fd: FormData): Promise
 
   const customerId = String(fd.get('customer_id') ?? '')
   const mode = String(fd.get('mode') ?? 'full')
-  const displayName = String(fd.get('display_name') ?? '').trim().slice(0, 80)
+  const displayName = String(fd.get('display_name') ?? '')
+    .trim()
+    .slice(0, 80)
   if (!customerId) return { error: 'Saknar kund.' }
   if (!['full', 'chosen', 'initial'].includes(mode)) return { error: 'Ogiltigt val.' }
 
@@ -1562,8 +1609,12 @@ export async function saveCustomerContact(_p: ActionState, fd: FormData): Promis
   if (!ctx) return { error: NO_TENANT }
 
   const customerId = String(fd.get('customer_id') ?? '')
-  const email = String(fd.get('email') ?? '').trim().slice(0, 160)
-  const phone = String(fd.get('phone') ?? '').trim().slice(0, 40)
+  const email = String(fd.get('email') ?? '')
+    .trim()
+    .slice(0, 160)
+  const phone = String(fd.get('phone') ?? '')
+    .trim()
+    .slice(0, 40)
   if (!customerId) return { error: 'Saknar kund.' }
   if (email && !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
   if (phone && phone.replace(/\D/g, '').length < 6) return { error: 'Ogiltigt telefonnummer.' }
@@ -1608,8 +1659,7 @@ export async function saveCustomerContact(_p: ActionState, fd: FormData): Promis
   if (error) {
     // 23505 = unique (tenant_id, contact_hash): uppgifterna tillhör redan en
     // annan kund i tenanten. Ärligt fel — vi slår INTE ihop två identiteter här.
-    if (error.code === '23505')
-      return { error: 'En annan kund har redan den e-posten/telefonen.' }
+    if (error.code === '23505') return { error: 'En annan kund har redan den e-posten/telefonen.' }
     return { error: GENERIC }
   }
 
@@ -1704,7 +1754,8 @@ export async function setBookingStatus(_p: ActionState, fd: FormData): Promise<A
     if (
       error.message.includes('invalid_booking_status_transition') ||
       error.message.includes('booking_changed_concurrently')
-    ) return { error: 'Bokningen ändrades av någon annan. Ladda om och försök igen.' }
+    )
+      return { error: 'Bokningen ändrades av någon annan. Ladda om och försök igen.' }
     return { error: GENERIC }
   }
 

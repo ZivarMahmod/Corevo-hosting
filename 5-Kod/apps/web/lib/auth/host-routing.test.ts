@@ -34,7 +34,7 @@ describe('superadmin host (superbooking) — platform surfaces only', () => {
       host: HOSTS.platform,
       to: '/admin/installningar',
     })
-    expect(decide('superadmin', '/personal')).toEqual({ action: 'redirectHost', host: HOSTS.staff, to: '/personal' })
+    expect(decide('superadmin', '/personal')).toEqual({ action: 'redirectHost', host: HOSTS.platform, to: '/personal' })
   })
   it('bounces anything else (storefront) to the dashboard home', () => {
     expect(decide('superadmin', '/boka')).toEqual({ action: 'redirect', to: '/' })

@@ -8,7 +8,8 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PORTAL_MIN_LEVEL, type Portal } from '@/lib/auth/roles'
-import { canAccessAdminArea, type AdminArea } from '@/lib/auth/admin-areas'
+import type { AdminArea } from '@/lib/auth/admin-areas'
+import { hasAdminAreaPermission } from '@/lib/admin/member-permissions'
 import { logAuthDenied } from '@/lib/observability'
 
 export type CurrentUser = {
@@ -18,6 +19,7 @@ export type CurrentUser = {
    *  Kosmetiskt (hälsningar) — aldrig en behörighetssignal. */
   name: string | null
   tenantId: string | null
+  staffId: string | null
   platformAdmin: boolean
   roleLevel: number
   roleName: string | null
@@ -81,6 +83,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     email: user.email ?? null,
     name,
     tenantId: profile ? profile.tenant_id : (appMeta.tenant_id ?? null),
+    staffId: activeStaff?.id ?? null,
     platformAdmin:
       accountAuthorized &&
       appMeta.platform_admin === true &&
@@ -119,7 +122,7 @@ export async function requirePortal(portal: Portal): Promise<CurrentUser> {
  */
 export async function requireAdminArea(area: AdminArea): Promise<CurrentUser> {
   const user = await requireUser()
-  if (!canAccessAdminArea(area, user)) {
+  if (!(await hasAdminAreaPermission(area, user))) {
     logAuthDenied({ userId: user.id, roleLevel: user.roleLevel, need: `admin:${area}` })
     redirect('/ingen-atkomst')
   }

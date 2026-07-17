@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { requirePortal } from '@/lib/auth/session'
-import { PortalShell } from '@/components/portal/PortalShell'
 import { RealtimeBookingsLazy } from '@/components/realtime/RealtimeBookingsLazy'
+import { PersonalPwaShell } from '@/components/personal/PersonalPwaShell'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,22 +10,18 @@ export const dynamic = 'force-dynamic'
 // bara här — aldrig globalt, annars blir storefronts installerbara som appen.
 export const metadata: Metadata = {
   manifest: '/api/pwa/personal-manifest',
-  appleWebApp: { capable: true, title: 'Min bokning', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'Corevo Personal', statusBarStyle: 'black-translucent' },
   // iPhone läser inte manifest-ikoner — hemskärmen kräver apple-touch-icon (PNG).
   icons: { apple: '/pwa/personal-icon-180.png' },
 }
-export const viewport: Viewport = { themeColor: '#1F4636' }
+export const viewport: Viewport = { themeColor: '#121210' }
 
 export default async function PersonalLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePortal('personal')
-  // Nav now lives in the back-office sidebar (PortalShell → PortalSidebar,
-  // role="personal"). The old in-content <PersonalNav> is removed.
   return (
-    <PortalShell user={user} title="Personal" world="backoffice" portal="personal">
-      {/* Live-refresh the staff member's own bookings views; RLS fences the channel
-          to this tenant (tenantId is the server-resolved JWT tenant). */}
+    <PersonalPwaShell>
       <RealtimeBookingsLazy tenantId={user.tenantId ?? undefined} />
       {children}
-    </PortalShell>
+    </PersonalPwaShell>
   )
 }

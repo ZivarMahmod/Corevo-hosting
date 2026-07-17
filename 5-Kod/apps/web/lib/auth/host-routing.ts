@@ -3,10 +3,11 @@ import { PLATFORM_ROUTE_PREFIXES } from './platform-routes'
 // goal-27 — host-based 3-door back-office split (PRODUCTION hosts only). Pure +
 // dependency-free so it runs in middleware (edge) and a plain vitest.
 //
-// Three back-office hosts, each serving exactly ONE surface family:
+// Three back-office hosts. booking is now the primary home for BOTH tenant admin
+// and personal PWA; minbooking remains a parallel legacy door until explicit removal:
 //   superbooking.corevo.se  (kind 'superadmin')   → app/(platform)  PLATFORM_GROUP
 //   booking.corevo.se       (kind 'platform')      → app/(admin)     ADMIN_GROUP
-//   minbooking.corevo.se    (kind 'staff_portal')  → app/(personal)  STAFF_GROUP
+//   minbooking.corevo.se    (kind 'staff_portal')  → legacy alias for STAFF_GROUP
 //
 // A request for a surface that belongs to ANOTHER door is redirected to that
 // host. Cookies are host-locked (AUTH_COOKIE_DOMAIN unset), so there is no session
@@ -77,7 +78,7 @@ export function decideBackofficeRoute(params: {
       if (path === '/') return { action: 'rewrite', to: DASHBOARD }
       if (isPrefix(path, PLATFORM_GROUP)) return { action: 'pass' }
       if (isPrefix(path, ADMIN_GROUP)) return { action: 'redirectHost', host: hosts.platform, to: path }
-      if (isPrefix(path, STAFF_GROUP)) return { action: 'redirectHost', host: hosts.staff, to: path }
+      if (isPrefix(path, STAFF_GROUP)) return { action: 'redirectHost', host: hosts.platform, to: path }
       return { action: 'redirect', to: '/' }
 
     case 'platform':

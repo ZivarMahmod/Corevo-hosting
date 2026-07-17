@@ -2277,6 +2277,66 @@ export type Database = {
           },
         ]
       }
+      tenant_member_permissions: {
+        Row: {
+          can_edit_site: boolean
+          can_manage_customers: boolean
+          can_view_all_calendars: boolean
+          can_view_daily_metrics: boolean
+          notify_booking_changes: boolean
+          notify_daily_reminder: boolean
+          notify_new_booking: boolean
+          id: string
+          operational_role: string
+          staff_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          can_edit_site?: boolean
+          can_manage_customers?: boolean
+          can_view_all_calendars?: boolean
+          can_view_daily_metrics?: boolean
+          notify_booking_changes?: boolean
+          notify_daily_reminder?: boolean
+          notify_new_booking?: boolean
+          id?: string
+          operational_role?: string
+          staff_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          can_edit_site?: boolean
+          can_manage_customers?: boolean
+          can_view_all_calendars?: boolean
+          can_view_daily_metrics?: boolean
+          notify_booking_changes?: boolean
+          notify_daily_reminder?: boolean
+          notify_new_booking?: boolean
+          id?: string
+          operational_role?: string
+          staff_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_member_permissions_tenant_id_staff_id_fkey"
+            columns: ["tenant_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "tenant_member_permissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_settings: {
         Row: {
           billing_model: string
@@ -2723,6 +2783,25 @@ export type Database = {
       check_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_secs: number }
         Returns: boolean
+      }
+      set_tenant_member_permissions: {
+        Args: {
+          p_can_edit_site: boolean
+          p_can_manage_customers: boolean
+          p_can_view_all_calendars: boolean
+          p_can_view_daily_metrics: boolean
+          p_operational_role: string
+          p_staff: string
+        }
+        Returns: undefined
+      }
+      set_my_notification_preferences: {
+        Args: {
+          p_notify_booking_changes: boolean
+          p_notify_daily_reminder: boolean
+          p_notify_new_booking: boolean
+        }
+        Returns: undefined
       }
       confirm_shop_order: {
         Args: {

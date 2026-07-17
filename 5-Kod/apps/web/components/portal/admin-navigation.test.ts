@@ -82,9 +82,9 @@ describe('aktivt område', () => {
 
   it('ger Inställningar en subnav och de andra områdena ingen', () => {
     const settings = areas.find((a) => a.id === 'installningar')
-    // L3 C-01: subnaven = kartans nio kategorier minus "Din sida" (eget huvudval)
-    // plus ingången "Alla inställningar" = 9 poster, härledda ur settings-map.ts.
-    expect(settings?.subnav?.length).toBe(9)
+    // Inställningar v2: kartans tolv kategorier minus Redigera sidan (egen yta),
+    // härledda ur settings-map.ts och med navets samlingsingång = 11 poster.
+    expect(settings?.subnav?.length).toBe(11)
     expect(settings?.subnav?.[0]?.href).toBe('/admin/installningar')
     expect(settings?.subnav?.some((i) => i.href === '/admin/sida')).toBe(false)
     expect(areas.find((a) => a.id === 'kalender')?.subnav).toBeUndefined()

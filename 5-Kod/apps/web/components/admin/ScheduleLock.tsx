@@ -12,7 +12,13 @@ import { Button, Icon, useToast } from '@/components/portal/ui'
  * alla tider (unlockScheduleWithBackup) så "Återställ" alltid kan ta ägaren
  * tillbaka till exakt läget innan upplåsningen.
  */
-export function ScheduleLock({ children }: { children: ReactNode }) {
+export function ScheduleLock({
+  children,
+  hasBackup = true,
+}: {
+  children: ReactNode
+  hasBackup?: boolean
+}) {
   const router = useRouter()
   const { notify } = useToast()
   const [unlocked, setUnlocked] = useState(false)
@@ -21,6 +27,12 @@ export function ScheduleLock({ children }: { children: ReactNode }) {
 
   const runUnlock = () =>
     start(async () => {
+      if (!hasBackup) {
+        notify('Upplåst. Ändringar sparas direkt.', 'success')
+        setUnlocked(true)
+        setConfirming(null)
+        return
+      }
       const res = await unlockScheduleWithBackup()
       if (res.error) {
         notify(res.error, 'warning')
@@ -60,12 +72,24 @@ export function ScheduleLock({ children }: { children: ReactNode }) {
   return (
     <div>
       <div style={bar} role="group" aria-label="Schemalås">
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9, fontSize: 13.5, color: 'var(--c-ink-2)' }}>
-          <Icon name="lock" size={16} style={{ color: unlocked ? 'var(--c-gold-600)' : 'var(--c-ink-3)', flex: 'none' }} />
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 9,
+            fontSize: 13.5,
+            color: 'var(--c-ink-2)',
+          }}
+        >
+          <Icon
+            name="lock"
+            size={16}
+            style={{ color: unlocked ? 'var(--c-gold-600)' : 'var(--c-ink-3)', flex: 'none' }}
+          />
           {unlocked ? (
             <span>
-              <strong style={{ fontWeight: 650 }}>Upplåst</strong> — ändringar sparas direkt. En
-              kopia togs när du låste upp, så du kan alltid återställa.
+              <strong style={{ fontWeight: 650 }}>Upplåst</strong> — ändringar sparas direkt.
+              {hasBackup ? ' En kopia togs när du låste upp, så du kan alltid återställa.' : ''}
             </span>
           ) : (
             <span>
@@ -79,15 +103,35 @@ export function ScheduleLock({ children }: { children: ReactNode }) {
           <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {unlocked ? (
               <>
-                <Button variant="ghost" size="sm" icon="undo" disabled={pending} onClick={() => setConfirming('restore')}>
-                  Återställ till innan upplåsningen
-                </Button>
-                <Button variant="ghost" size="sm" icon="lock" disabled={pending} onClick={() => setUnlocked(false)}>
+                {hasBackup ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon="undo"
+                    disabled={pending}
+                    onClick={() => setConfirming('restore')}
+                  >
+                    Återställ till innan upplåsningen
+                  </Button>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon="lock"
+                  disabled={pending}
+                  onClick={() => setUnlocked(false)}
+                >
                   Lås igen
                 </Button>
               </>
             ) : (
-              <Button variant="primary" size="sm" icon="lock" disabled={pending} onClick={() => setConfirming('unlock')}>
+              <Button
+                variant="primary"
+                size="sm"
+                icon="lock"
+                disabled={pending}
+                onClick={() => setConfirming('unlock')}
+              >
                 Lås upp
               </Button>
             )}
@@ -96,7 +140,9 @@ export function ScheduleLock({ children }: { children: ReactNode }) {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-ink)' }}>
               {confirming === 'unlock'
-                ? 'Är du säker? En kopia av tiderna sparas så du kan ångra.'
+                ? hasBackup
+                  ? 'Är du säker? En kopia av tiderna sparas så du kan ångra.'
+                  : 'Är du säker? Ändringar i tiderna sparas direkt.'
                 : 'Detta tar tillbaka ALLA tider till som de var när du låste upp. Fortsätt?'}
             </span>
             <Button
@@ -107,7 +153,12 @@ export function ScheduleLock({ children }: { children: ReactNode }) {
             >
               {pending ? 'Vänta…' : 'Ja'}
             </Button>
-            <Button variant="ghost" size="sm" disabled={pending} onClick={() => setConfirming(null)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pending}
+              onClick={() => setConfirming(null)}
+            >
               Nej
             </Button>
           </span>
@@ -115,7 +166,10 @@ export function ScheduleLock({ children }: { children: ReactNode }) {
       </div>
 
       {/* inert (React 19): blockerar klick, fokus OCH tab-navigering när låst. */}
-      <div inert={!unlocked || undefined} style={{ opacity: unlocked ? 1 : 0.55, transition: 'opacity 0.15s' }}>
+      <div
+        inert={!unlocked || undefined}
+        style={{ opacity: unlocked ? 1 : 0.55, transition: 'opacity 0.15s' }}
+      >
         {children}
       </div>
     </div>

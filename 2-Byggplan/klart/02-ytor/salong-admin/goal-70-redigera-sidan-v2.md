@@ -1,7 +1,7 @@
 # Goal 70 — Kundadmin: Redigera sidan v2
 
 **Skapad:** 2026-07-16  
-**Status:** pågår  
+**Status:** klar — verifierad och driftsatt 2026-07-16
 **Kanon:** `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/03-redigera-sidan-v2/`  
 **Plan:** `1-Planering/14-redigera-sidan-v2/IMPLEMENTATIONSPLAN.md`
 
