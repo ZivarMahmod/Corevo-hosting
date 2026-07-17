@@ -32,6 +32,13 @@ export function NotificationPreferences({ values }: { values: Values }) {
           <input type="checkbox" name={name} value="true" defaultChecked={checked[name]} />
         </label>
       ))}
+      {/* ÄRLIGT KONTRAKT: valen sparas men utskickskanalen för personalnotiser är
+          inte inkopplad än (plan 014 — notiser via router/outbox). Säg det, i
+          stället för att låta ett sparat val se ut att styra något som inte skickas. */}
+      <p className={styles.notificationNote} role="note">
+        Dina val sparas nu och börjar gälla när personalnotiserna aktiveras — utskicken är
+        inte påslagna än.
+      </p>
       <div className={styles.notificationSave}>
         <span role="status">{state.error ?? state.success ?? ''}</span>
         <button type="submit" disabled={pending}>{pending ? 'Sparar…' : 'Spara'}</button>

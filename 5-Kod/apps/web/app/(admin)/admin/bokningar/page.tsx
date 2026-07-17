@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
+import { DEFAULT_MEMBER_PERMISSIONS, getMemberPermissions } from '@/lib/admin/member-permissions'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
 import {
   listBookings,
@@ -50,6 +51,24 @@ export default async function KalenderPage({
 }) {
   const sp = await searchParams
   const user = await requireAdminArea('bokningar')
+  // Personalens tillägg (tenant_member_permissions, goal-71) styr kalenderns
+  // handlingsrätt + synfält. Ägare (6+) behöver ingen rad — full rätt.
+  const memberPermissions =
+    user.roleLevel === 3 && user.tenantId && user.staffId
+      ? await getMemberPermissions({ tenantId: user.tenantId, staffId: user.staffId }).catch(
+          () => DEFAULT_MEMBER_PERMISSIONS,
+        )
+      : null
+  // PLATSCHEF (operational_role='manager') får skapa/flytta/blockera — servern
+  // stödjer det redan (require_location_admin, migr 0081); UI:t ska inte låsa ute.
+  const canManageBookings = user.roleLevel >= 6 || memberPermissions?.operationalRole === 'manager'
+  // "Ser alla kalendrar — annars bara sin egen" (MemberPermissions-löftet): utan
+  // flaggan filtreras vyn till egna kolumnen. Manager ser alltid alla.
+  const ownCalendarOnly =
+    memberPermissions !== null &&
+    memberPermissions.operationalRole !== 'manager' &&
+    !memberPermissions.canViewAllCalendars &&
+    user.staffId !== null
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (
@@ -136,17 +155,25 @@ export default async function KalenderPage({
   // betalstatus — och fönstret är 42 dagar. Att slå upp betalningar för hela månaden
   // för att sedan inte visa dem är den dyraste sortens död kod: den syns inte, men
   // databasen betalar för den vid varje månadsbläddring.
+  // "Bara sin egen": filtrera bokningar, blockeringar och personalkolumner till den
+  // inloggades staff-rad. Endast nivå 3 utan can_view_all_calendars — ägaren ser allt.
+  const visibleBookings = ownCalendarOnly
+    ? bookings.filter((b) => b.staffId === user.staffId)
+    : bookings
+  const visibleBlocks = ownCalendarOnly ? blocks.filter((b) => b.staffId === user.staffId) : blocks
+  const visibleRoster = ownCalendarOnly ? roster.filter((s) => s.staffId === user.staffId) : roster
+
   const payments =
     view === 'manad'
       ? new Map<string, BookingPayment>()
       : await listBookingPayments(
           tenant.id,
-          bookings.map((b) => b.id),
+          visibleBookings.map((b) => b.id),
         )
 
   const now = Date.now()
   const NO_PAYMENT: BookingPayment = { status: null, amountCents: null }
-  const rows: BookingRow[] = bookings.map((b: AdminBooking) => {
+  const rows: BookingRow[] = visibleBookings.map((b: AdminBooking) => {
     const pay = payments.get(b.id) ?? NO_PAYMENT
     return {
       id: b.id,
@@ -174,8 +201,8 @@ export default async function KalenderPage({
   return (
     <CalendarBoard
       bookings={rows}
-      blocks={blocks}
-      staff={roster.map((s) => ({
+      blocks={visibleBlocks}
+      staff={visibleRoster.map((s) => ({
         id: s.staffId,
         name: s.name,
         start: s.start,
@@ -208,7 +235,7 @@ export default async function KalenderPage({
       staffNoun={resolveTerm(tenant.terminology, 'staff', 'Personal')}
       openBookingId={sp.open}
       onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
-      canManageBookings={user.roleLevel >= 6}
+      canManageBookings={canManageBookings}
     />
   )
 }

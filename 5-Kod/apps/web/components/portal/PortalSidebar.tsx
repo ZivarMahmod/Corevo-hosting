@@ -32,6 +32,7 @@ export function PortalSidebar({
   signOut,
   activeModuleKeys,
   roleLevel,
+  grantedAreas,
 }: {
   role: PortalRole
   brand: string
@@ -45,13 +46,17 @@ export function PortalSidebar({
   /** Rollnivå (roll-separationen): poster med högre minLevel döljs. undefined →
    *  ingen roll-gating. Servern gatar ändå (requireAdminArea) — detta är bara UI. */
   roleLevel?: number
+  /** Personliga tillägg (tenant_member_permissions, goal-71): ytor beviljade
+   *  UTÖVER rollnivån får en synlig menyväg. Servern är fortfarande sanningen. */
+  grantedAreas?: readonly string[]
 }) {
   const pathname = usePathname()
   const cfg = NAV[role]
   // Modul- och rollstyrd meny: dölj poster vars modul inte är aktiverad för kunden
-  // eller vars minLevel rollen inte når, och dölj grupprubriker som blivit tomma.
+  // eller vars minLevel rollen inte når (om ytan inte beviljats personligen),
+  // och dölj grupprubriker som blivit tomma.
   const filtered = cfg.items.filter(
-    (e) => isGroup(e) || isNavItemVisible(e, { activeModuleKeys, roleLevel }),
+    (e) => isGroup(e) || isNavItemVisible(e, { activeModuleKeys, roleLevel, grantedAreas }),
   )
   const items = filtered.filter((e, i) => {
     if (!isGroup(e)) return true

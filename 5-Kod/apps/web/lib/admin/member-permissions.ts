@@ -30,6 +30,23 @@ export function memberGrantsArea(area: AdminArea, permissions: MemberPermissions
   return false
 }
 
+/** Ytorna som ÖVER HUVUD TAGET kan beviljas via tenant_member_permissions —
+ *  håll i synk med grenarna i memberGrantsArea ovan. */
+const MEMBER_GRANTABLE_AREAS: readonly AdminArea[] = [
+  'kunder',
+  'tjanster',
+  'scheman',
+  'sida',
+  'statistik',
+]
+
+/** Vilka admin-ytor de här behörigheterna beviljar UTÖVER rollnivån. Navigationen
+ *  konsumerar detta så att en beviljad yta också får en synlig väg — samma
+ *  memberGrantsArea-beslut som sidgrinden (requireAdminArea), aldrig en egen regel. */
+export function grantedAdminAreas(permissions: MemberPermissions): AdminArea[] {
+  return MEMBER_GRANTABLE_AREAS.filter((area) => memberGrantsArea(area, permissions))
+}
+
 export async function getMemberPermissions(params: {
   tenantId: string
   staffId: string

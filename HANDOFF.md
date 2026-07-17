@@ -47,6 +47,9 @@ tenant och ett testfall, aldrig produktdefinitionen.
   permanent radering och schemahoppet behåller plats. Panelen och Schemas innehåll
   är avsiktligt befintliga implementationer inne i nya Inställningar-workspacet;
   individuell nydesign ingår inte i paket 04.
+- Mobil-/iPadkalendern kan flytta bokningar med finger via ett separat touch-handtag.
+  Kalendern visar måltid/resurs under draget och kräver bekräftelse innan skrivning;
+  vanlig scroll startas utanför handtaget.
 - Historiska goals, arbetsloggar, researchkopior och gamla skärmdumpar är rensade.
   Git-historiken är arkivet; de ska inte återskapas som lösa statusdokument.
 

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { requirePortal } from '@/lib/auth/session'
+import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { getStats, isPeriod, periodRange, PERIODS, PERIOD_LABEL, type Period, type Stats } from '@/lib/admin/stats'
 import { formatPrice } from '@/lib/admin/format'
@@ -89,7 +89,9 @@ export default async function StatistikPage({
   searchParams: Promise<{ period?: string }>
 }) {
   const sp = await searchParams
-  const user = await requirePortal('admin')
+  // Områdesgrind, inte bara portalgolv: statistik läser verklig omsättningsdata och
+  // kräver ägare (6) ELLER personligt beviljad can_view_daily_metrics (goal-71).
+  const user = await requireAdminArea('statistik')
   const tenant = await getAdminTenant(user)
   if (!tenant) {
     return (

@@ -25,6 +25,7 @@ import type { CommandItem } from './ui/CommandPalette'
 import { ToastProvider } from './ui/Toast'
 import { settingsCategories, settingsSearchEntries } from '@/lib/admin/settings-map'
 import { canAccessAdminArea } from '@/lib/auth/admin-areas'
+import { getMemberPermissions, grantedAdminAreas } from '@/lib/admin/member-permissions'
 
 const ADMIN_ACCOUNT_LINKS = [
   { href: '/admin/installningar/konto', label: 'Mitt konto' },
@@ -140,7 +141,21 @@ export async function PortalShell({
     // Roll-separationen: personal (nivå 3) ser bara sin arbetsdag i menyn OCH i
     // ⌘K-paletten. platform_admin passerar allt (räknas som toppnivå).
     const navRoleLevel = user.platformAdmin ? Number.MAX_SAFE_INTEGER : user.roleLevel
-    let paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys, navRoleLevel)
+    // Personliga tillägg (tenant_member_permissions, goal-71): en yta beviljad där
+    // ska ha en synlig väg i meny/topnav/⌘K fast rollnivån inte når minLevel.
+    // Samma memberGrantsArea-beslut som sidgrinden — nav:en hittar aldrig på egna regler.
+    let grantedAreas: readonly string[] | undefined
+    if (portal === 'admin' && !user.platformAdmin && user.roleLevel === 3 && user.tenantId && user.staffId) {
+      try {
+        grantedAreas = grantedAdminAreas(
+          await getMemberPermissions({ tenantId: user.tenantId, staffId: user.staffId }),
+        )
+      } catch {
+        // Behörighetsläsningen får aldrig fälla skalet — utan tillägg gäller rollnivån.
+        grantedAreas = undefined
+      }
+    }
+    let paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys, navRoleLevel, grantedAreas)
     if (portal === 'platform') {
       const tenantOptions = await listTenantNavOptions()
       paletteItems = [
@@ -232,7 +247,9 @@ export async function PortalShell({
     // varje riktig läsning, action och guard. Personal-portalen har kvar sidofältet.
     if (portal === 'platform' || portal === 'admin') {
       const isPlatform = portal === 'platform'
-      const topAreas = isPlatform ? PLATFORM_AREAS : adminAreas(activeModuleKeys, navRoleLevel)
+      const topAreas = isPlatform
+        ? PLATFORM_AREAS
+        : adminAreas(activeModuleKeys, navRoleLevel, grantedAreas)
       return (
         <div
           className={`tenant-root portal-shell ${topnavStyles.shell}`}
@@ -298,6 +315,7 @@ export async function PortalShell({
           signOut={<SignOutButton compact />}
           activeModuleKeys={activeModuleKeys}
           roleLevel={navRoleLevel}
+          grantedAreas={grantedAreas}
         />
         <div className="portal-col">
           <PortalTopbar
