@@ -20,4 +20,11 @@ describe('requiredLocationId', () => {
   it('nekar när en platsbegränsad användare saknar medlemskap', () => {
     expect(requiredLocationId(undefined, [], 'plats-a')).toBeNull()
   })
+
+  it('enplatsverksamhet: enda tillåtna platsen används utan sparad primärplats', () => {
+    // Ny ägare, primary_location_id null, EN plats — ingen välj-plats-spärr.
+    expect(requiredLocationId(undefined, ['plats-a'], null)).toBe('plats-a')
+    // Med FLERA platser gäller fortsatt: ingen tyst uppgradering till första bästa.
+    expect(requiredLocationId(undefined, allowed, null)).toBeNull()
+  })
 })

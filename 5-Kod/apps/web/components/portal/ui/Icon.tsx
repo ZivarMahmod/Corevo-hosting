@@ -65,6 +65,8 @@ export type IconName =
   | 'globe'
   | 'grip'
   | 'lock'
+  | 'block'
+  | 'chartBars'
   | 'moon'
   | 'monitor'
 
@@ -226,6 +228,19 @@ const PATHS: Record<IconName, ReactElement> = {
     <>
       <rect x="6" y="4" width="4" height="16" rx="1" />
       <rect x="14" y="4" width="4" height="16" rx="1" />
+    </>
+  ),
+  // css.gg-inspirerade (Zivar 2026-07-18, MIT) — omritade i husets stroke-språk.
+  block: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M6 18 18 6" />
+    </>
+  ),
+  chartBars: (
+    <>
+      <path d="M6 20v-7M12 20V5M18 20v-10" />
+      <path d="M3.5 20h17" />
     </>
   ),
   coffee: (

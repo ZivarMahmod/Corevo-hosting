@@ -292,9 +292,9 @@ export async function PortalShell({
                 ? undefined
                 : [
                     { href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' },
-                    { href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'pause' },
+                    { href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'block' },
                     { href: '/admin/kunder', label: 'Kunder', icon: 'users' },
-                    { href: '/admin/statistik', label: 'Statistik', icon: 'trendUp' },
+                    { href: '/admin/statistik', label: 'Statistik', icon: 'chartBars' },
                   ]
             }
             contextLink={

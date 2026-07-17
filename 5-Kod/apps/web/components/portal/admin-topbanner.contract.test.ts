@@ -31,9 +31,9 @@ describe('del 02: universal toppbanner v2', () => {
     expect(topnav).toContain('styles.quickGroup')
     expect(topnav).toContain('styles.quickTab')
     expect(portalShell).toContain("{ href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' }")
-    expect(portalShell).toContain("{ href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'pause' }")
+    expect(portalShell).toContain("{ href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'block' }")
     expect(portalShell).toContain("{ href: '/admin/kunder', label: 'Kunder', icon: 'users' }")
-    expect(portalShell).toContain("{ href: '/admin/statistik', label: 'Statistik', icon: 'trendUp' }")
+    expect(portalShell).toContain("{ href: '/admin/statistik', label: 'Statistik', icon: 'chartBars' }")
     expect(dashboardPage).not.toContain('GENVÄGAR')
     // Mobilen har FAB + flikar — genvägsraden är desktop/tablet.
     expect(css).toMatch(/\.mobileAdmin \.quickGroup\s*\{[\s\S]*?display:\s*none;/)
