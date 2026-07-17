@@ -33,13 +33,18 @@ export type CurrentUser = {
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
+  // PLAN 011: getClaims() i stället för getUser() — verifierar JWT-signaturen
+  // LOKALT (asymmetriska nycklar aktiva) i stället för en GoTrue-nätverksrunda
+  // per render. Allt DAL:en behöver (sub/email/app_metadata/user_metadata) finns
+  // i claims; refresh-punkten bor kvar i middleware (lib/supabase/middleware.ts).
+  const { data } = await supabase.auth.getClaims()
+  const claims = data?.claims
+  if (!claims?.sub) return null
+  const userId = claims.sub
+  const userEmail = (claims.email as string | undefined) ?? null
 
-  const appMeta = (user.app_metadata ?? {}) as { tenant_id?: string; platform_admin?: boolean }
-  const userMeta = (user.user_metadata ?? {}) as { full_name?: string; name?: string }
+  const appMeta = (claims.app_metadata ?? {}) as { tenant_id?: string; platform_admin?: boolean }
+  const userMeta = (claims.user_metadata ?? {}) as { full_name?: string; name?: string }
   const name = userMeta.full_name?.trim() || userMeta.name?.trim() || null
 
   // Prestanda C3: rollnivån hämtas via en FK-embed (users.role_id → roles) i STÄLLET
@@ -49,7 +54,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const { data: profile } = await supabase
     .from('users')
     .select('tenant_id, role_id, status, roles:role_id(level, name, tenant_id)')
-    .eq('id', user.id)
+    .eq('id', userId)
     .maybeSingle()
 
   const roleEmbed = (profile as { roles?: unknown } | null)?.roles
@@ -67,7 +72,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       .from('staff')
       .select('id')
       .eq('tenant_id', profile.tenant_id)
-      .eq('profile_id', user.id)
+      .eq('profile_id', userId)
       .eq('active', true)
       .limit(1)
       .maybeSingle()
@@ -79,8 +84,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const roleName = accountAuthorized ? (role?.name ?? null) : null
 
   return {
-    id: user.id,
-    email: user.email ?? null,
+    id: userId,
+    email: userEmail,
     name,
     tenantId: profile ? profile.tenant_id : (appMeta.tenant_id ?? null),
     staffId: activeStaff?.id ?? null,

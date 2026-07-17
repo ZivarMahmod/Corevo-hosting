@@ -25,8 +25,10 @@ export async function collectCustomerData(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<CustomerExport> {
+  // Plan 011: getClaims räcker — bara user_metadata.full_name läses, och den finns
+  // i JWT-claims (lokal verifiering, ingen GoTrue-runda).
   const [{ data: authData }, { data: profile }, { data: bookings }] = await Promise.all([
-    supabase.auth.getUser(),
+    supabase.auth.getClaims(),
     supabase.from('users').select('id, email, phone, status, created_at').eq('id', userId).maybeSingle(),
     supabase
       .from('bookings')
@@ -46,13 +48,14 @@ export async function collectCustomerData(
     payments = (pay ?? []) as Array<Record<string, unknown>>
   }
 
-  const fullName = ((authData?.user?.user_metadata ?? {}) as { full_name?: string }).full_name ?? null
+  const fullName =
+    ((authData?.claims?.user_metadata ?? {}) as { full_name?: string }).full_name ?? null
 
   return {
     exportedAt: new Date().toISOString(),
     profile: {
       id: userId,
-      email: profile?.email ?? authData?.user?.email ?? null,
+      email: profile?.email ?? (authData?.claims?.email as string | undefined) ?? null,
       phone: profile?.phone ?? null,
       name: fullName,
       status: profile?.status ?? null,

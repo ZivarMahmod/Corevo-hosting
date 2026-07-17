@@ -11,7 +11,8 @@ describe('inaktiv personal förlorar adminåtkomst', () => {
 
     expect(source).toContain(".select('tenant_id, role_id, status, roles:role_id(level, name, tenant_id)')")
     expect(source).toContain(".from('staff')")
-    expect(source).toContain(".eq('profile_id', user.id)")
+    // Plan 011: DAL:en läser identiteten ur verifierade JWT-claims (userId = claims.sub).
+    expect(source).toContain(".eq('profile_id', userId)")
     expect(source).toContain(".eq('active', true)")
     expect(source).toContain("profile?.status === 'active'")
     expect(source).toContain('role?.level !== 3 || Boolean(activeStaff)')
