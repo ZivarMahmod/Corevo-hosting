@@ -11,6 +11,7 @@ export { setTenantStatus } from './actions/status'
 export { saveBilling } from './actions/billing'
 export {
   saveTenantData,
+  saveTenantLegal,
   saveTenantName,
   updateBookingSettings,
   setTenantCustomerAccounts,

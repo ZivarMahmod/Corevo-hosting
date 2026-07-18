@@ -16,6 +16,7 @@ import { ServicesCard } from '@/components/platform/ServicesCard'
 import { PersonalCard } from '@/components/platform/PersonalCard'
 import { ModulesCard } from '@/components/platform/ModulesCard'
 import { CustomerAccountsCard } from '@/components/platform/CustomerAccountsCard'
+import { TenantLegalCard } from '@/components/platform/TenantLegalCard'
 import { listTenantModules } from '@/lib/platform/tenant-modules-admin'
 import { getAdminModuleStates, isModuleActivated, moduleAdminConfig } from '@/lib/admin/modules'
 import { listShopProducts, listShopOrders, listShippingOptions } from '@/lib/admin/shop/data'
@@ -58,6 +59,7 @@ import { hasServiceRole } from '@/lib/platform/service'
 import { Badge, Button, Card, Icon, type BadgeTone, type IconName } from '@/components/portal/ui'
 import type { TenantBranding } from '@corevo/ui'
 import styles from '@/components/platform/tenant-detail.module.css'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Kund' }
@@ -234,6 +236,16 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // the Aktiv/Onboarding pill on the card grid. Bransch/kontakt read the raw settings
   // jsonb (same seam as theme/booking above).
   const rawSettings = (settings?.settings ?? {}) as Record<string, unknown>
+  // goal-72 1c: juridikfälten (settings.legal) — samma parse-regler som lib/tenant-data.
+  const rawLegal = (rawSettings.legal ?? {}) as Record<string, unknown>
+  const tenantLegal = {
+    orgNr: typeof rawLegal.org_nr === 'string' && rawLegal.org_nr.trim() ? rawLegal.org_nr.trim() : null,
+    vatRate: (() => {
+      const v = rawLegal.vat_rate
+      const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN
+      return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null
+    })(),
+  }
   // Bransch läses ur SANNINGSKÄLLAN tenants.vertical_id (styr admin-terminologin,
   // 0026) — inte settings.vertical-jsonben som kunde glida isär (rapport 02 §1.7).
   const verticalId = (tenant as { vertical_id?: string | null }).vertical_id ?? null
@@ -664,6 +676,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           payoutsEnabled={stripeRow?.stripe_payouts_enabled ?? false}
           detailsSubmitted={stripeRow?.stripe_details_submitted ?? false}
           paymentsEnabled={paymentsRow?.payments_enabled ?? false}
+          releaseEnabled={commerceReleaseGate(tenant.id).bookingPayment}
           justReturned={false}
         />
         {/* Google-recensionslänken bor HÄR (det är en integration) — flyttad från
@@ -736,6 +749,20 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           <CustomerAccountsCard
             tenantId={tenant.id}
             enabled={rawSettings.customer_accounts_enabled === true}
+          />
+        </Card>
+
+        {/* goal-72 etapp 1c: juridikuppgifter (settings.legal) — org-nr + moms för
+            villkorssidan och kvittot. Tidigare bara via SQL. */}
+        <Card>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.h2}>Juridik</h2>
+            <span className={styles.chip}>settings.legal</span>
+          </div>
+          <TenantLegalCard
+            tenantId={tenant.id}
+            orgNr={tenantLegal.orgNr}
+            vatRate={tenantLegal.vatRate}
           />
         </Card>
 

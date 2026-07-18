@@ -111,6 +111,59 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
 }
 
 /**
+ * Juridikfält (goal-72 etapp 1c, plan 003-slutet): org-nr + moms-sats till
+ * settings.legal ({ org_nr, vat_rate } — samma seam som lib/tenant-data parsar
+ * för villkorssidan och kvittot). MERGE, aldrig clobber. Tomt fält = null =
+ * konsumenterna utelämnar raden.
+ */
+export async function saveTenantLegal(_p: ActionState, fd: FormData): Promise<ActionState> {
+  const { user, supabase } = await platformCtx()
+  const tenantId = String(fd.get('tenantId') ?? '')
+  if (!tenantId) return { error: 'Saknar kund.' }
+
+  const orgNr = String(fd.get('org_nr') ?? '').trim().slice(0, 40) || null
+  const vatRaw = String(fd.get('vat_rate') ?? '').trim().replace(',', '.')
+  let vatRate: number | null = null
+  if (vatRaw) {
+    const n = Number(vatRaw)
+    if (!Number.isFinite(n) || n < 0 || n > 100) {
+      return { error: 'Momssatsen ska vara ett tal mellan 0 och 100 (t.ex. 25).' }
+    }
+    vatRate = n
+  }
+
+  const { data: tenant } = await supabase.from('tenants').select('slug').eq('id', tenantId).maybeSingle()
+  if (!tenant) return { error: 'Okänd kund.' }
+
+  const { data: existing } = await supabase
+    .from('tenant_settings')
+    .select('settings')
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  const prev = (existing?.settings ?? {}) as Record<string, unknown>
+  const prevLegal = (prev.legal ?? {}) as Record<string, unknown>
+  const settings = { ...prev, legal: { ...prevLegal, org_nr: orgNr, vat_rate: vatRate } }
+
+  const { error } = await supabase
+    .from('tenant_settings')
+    .upsert({ tenant_id: tenantId, settings }, { onConflict: 'tenant_id' })
+  if (error) {
+    await reportActionError('saveTenantLegal.settings_upsert', error, { tenantId })
+    return { error: GENERIC }
+  }
+
+  revalidateTenant(tenant.slug)
+  revalidatePath(`/salonger/${tenantId}`)
+  await logPlatformAction(supabase, {
+    action: 'tenant.update',
+    tenantId,
+    actorId: user.id,
+    meta: { legal_org_nr: orgNr ? 'set' : 'cleared', legal_vat_rate: vatRate },
+  })
+  return { success: 'Juridikuppgifter sparade. Villkor och kvitton uppdaterade.' }
+}
+
+/**
  * Salongsnamn — eget thin-kort i Sida-flikens Allmänt (Zivar: "salongsnamnet från
  * Drift ska komma in här — det är högst upp på sidan om ingen logga finns").
  * Sparar ENDAST tenants.name så det inte drar med sig recensionslänk/variant

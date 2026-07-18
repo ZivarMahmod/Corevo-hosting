@@ -4,10 +4,12 @@ import { getAdminTenant } from '@/lib/admin/tenant'
 import { getSettingsRow } from '@/lib/admin/data'
 import { createClient } from '@/lib/supabase/server'
 import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
+import { LegalSettingsCard } from '@/components/admin/LegalSettingsCard'
 import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
 import { SettingsWorkspaceEmpty } from '@/components/admin/SettingsWorkspaceEmpty'
 import { PageHead } from '@/components/portal/ui'
 import { settingsCategories } from '@/lib/admin/settings-map'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 /** L3 C-01 — Betalning. StripeConnectCard är ORÖRD, den flyttade bara hit från
  *  inställningsroten (som nu är kartan). Stripes retur-URL pekar hit (lib/admin/stripe.ts). */
@@ -27,7 +29,7 @@ export default async function BetalningPage({
   }
 
   const supabase = await createClient()
-  const [settings, { data: stripeRow }, { stripe }] = await Promise.all([
+  const [settingsRow, { data: stripeRow }, { stripe }] = await Promise.all([
     getSettingsRow(tenant.id),
     supabase
       .from('tenants')
@@ -36,6 +38,18 @@ export default async function BetalningPage({
       .maybeSingle(),
     searchParams.then((s) => ({ stripe: s.stripe })),
   ])
+
+  // goal-72 1c: settings.legal ({ org_nr, vat_rate }) — samma parse som lib/tenant-data.
+  const rawLegal = ((settingsRow?.settings as Record<string, unknown> | null)?.legal ?? {}) as Record<string, unknown>
+  const legal = {
+    orgNr:
+      typeof rawLegal.org_nr === 'string' && rawLegal.org_nr.trim() ? rawLegal.org_nr.trim() : null,
+    vatRate: (() => {
+      const v = rawLegal.vat_rate
+      const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN
+      return Number.isFinite(n) && n >= 0 && n <= 100 ? n : null
+    })(),
+  }
 
   return (
     <SettingsWorkspace categories={settingsCategories(tenant.terminology)} currentCategory="betalning">
@@ -50,9 +64,12 @@ export default async function BetalningPage({
         chargesEnabled={stripeRow?.stripe_charges_enabled ?? false}
         payoutsEnabled={stripeRow?.stripe_payouts_enabled ?? false}
         detailsSubmitted={stripeRow?.stripe_details_submitted ?? false}
-        paymentsEnabled={settings?.payments_enabled ?? false}
+        paymentsEnabled={settingsRow?.payments_enabled ?? false}
+        releaseEnabled={commerceReleaseGate(tenant.id).bookingPayment}
         justReturned={stripe === 'return'}
       />
+      {/* goal-72 1c: org-nr + moms (settings.legal) — kvittot/villkoren konsumerar. */}
+      <LegalSettingsCard orgNr={legal.orgNr} vatRate={legal.vatRate} />
     </section>
     </SettingsWorkspace>
   )
