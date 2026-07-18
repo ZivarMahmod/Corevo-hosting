@@ -41,7 +41,7 @@ import { KursAdmin } from '@/components/admin/KursAdmin'
 import { MediaLibrary } from '@/components/admin/MediaLibrary'
 import { OffertInbox } from '@/components/admin/OffertInbox'
 import { StripeConnectCard } from '@/components/admin/StripeConnectCard'
-import { SidaStudio } from '@/components/platform/SidaStudio'
+import { SidaStudioLazy } from '@/components/platform/SidaStudioLazy'
 import { getVerticalCopy } from '@/components/storefront/vertical-copy'
 import { readPickerMode, readStaffAvatarMode } from '@/lib/platform/booking-variant'
 import { createClient } from '@/lib/supabase/server'
@@ -627,7 +627,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     // editor-reglaget. Drift hålls fri från sido-grejer (ren drift).
     Sida: (
       <>
-        <SidaStudio
+        <SidaStudioLazy
           tenantId={tenant.id}
           previewPath={`/salong-preview/${tenant.slug}`}
           storefrontUrl={storefrontUrl}

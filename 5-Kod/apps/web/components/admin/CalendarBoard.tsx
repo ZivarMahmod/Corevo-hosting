@@ -209,6 +209,23 @@ export function placeOverlaps(items: BookingRow[], tz: string): Placed[] {
   })
 }
 
+export type CalendarBoardProps = {
+  bookings: BookingRow[]
+  blocks: CalendarBlock[]
+  staff: CalendarStaff[]
+  services: CalendarService[]
+  tz: string
+  view: CalendarView
+  date: string
+  staffNoun: string
+  locationId?: string
+  today: string
+  openBookingId?: string
+  onlinePaymentsActive: boolean
+  /** 0077-mutationerna kräver organisations-/platsadmin. Personal får läsa arbetsdagen. */
+  canManageBookings: boolean
+}
+
 export function CalendarBoard({
   bookings,
   blocks,
@@ -224,22 +241,7 @@ export function CalendarBoard({
   openBookingId,
   onlinePaymentsActive,
   canManageBookings,
-}: {
-  bookings: BookingRow[]
-  blocks: CalendarBlock[]
-  staff: CalendarStaff[]
-  services: CalendarService[]
-  tz: string
-  view: CalendarView
-  date: string
-  staffNoun: string
-  locationId?: string
-  today: string
-  openBookingId?: string
-  onlinePaymentsActive: boolean
-  /** 0077-mutationerna kräver organisations-/platsadmin. Personal får läsa arbetsdagen. */
-  canManageBookings: boolean
-}) {
+}: CalendarBoardProps) {
   const router = useRouter()
   const params = useSearchParams()
   const absenceTimeOffId = params.get('absence')
