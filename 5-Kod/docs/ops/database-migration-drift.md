@@ -31,8 +31,11 @@
   historikrader normaliserades omedelbart, en i taget och med exakta radgrindar, till
   repots kanonversioner `0110–0117`.
 - Efterkontroll: 116 historikrader, senaste `0117`, inga ogiltiga versionsnamn.
-- Hela katalogen med 36 SQL/RLS-prov passerade mot det skarpa schemat; muterande
-  prov använde egna `BEGIN/ROLLBACK` och ingen fixturedata lämnades kvar.
+- De åtta nya SQL/RLS-proven för `0110–0117` passerade mot det skarpa schemat;
+  proven använde egna `BEGIN/ROLLBACK` och ingen fixturedata lämnades kvar.
+- Hela katalogen med 36 SQL/RLS-prov körs mot en tom, reproducerbar CI-databas.
+  Äldre prov körs inte som produktionsbevis eftersom vissa bygger deterministisk
+  testdata som inte kan garanteras i en levande kö.
 - Releaseinventeringen verifierades med fingeravtrycket
   `sha256:5f4bb035167da035bf871a2d300ce71945e06a6c11322227e9478c6c4815fddd`.
 - Supabase Advisors: 0 `ERROR` för security och performance. RLS-discoverability,

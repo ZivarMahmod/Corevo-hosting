@@ -14,7 +14,7 @@ insert into public.tenant_settings (tenant_id, settings, branding) values
   ('80000000-0000-0000-0000-000000000002', '{}', '{}');
 insert into public.roles (id, tenant_id, name, level) values
   ('80000000-0000-0000-0000-000000000021', '80000000-0000-0000-0000-000000000001', 'owner', 6),
-  ('80000000-0000-0000-0000-000000000022', null, 'platform', 8),
+  ('80000000-0000-0000-0000-000000000022', null, 'super_admin', 8),
   ('80000000-0000-0000-0000-000000000023', '80000000-0000-0000-0000-000000000001', 'staff', 3);
 insert into auth.users (id, email) values
   ('80000000-0000-0000-0000-000000000101', 'site-owner@example.test'),
