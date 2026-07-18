@@ -52,6 +52,7 @@ export const NAV: Record<PortalRole, NavConfig> = {
       { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
       { href: '/kunder', label: 'Slutkunder', icon: 'users' },
       { href: '/personal-plattform', label: 'Personal', icon: 'scissors' },
+      { href: '/utskick', label: 'Utskick', icon: 'message' },
       { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
       { group: 'Kunder' },
       { href: '/salonger', label: 'Kunder', icon: 'building' },

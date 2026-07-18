@@ -15,6 +15,8 @@ describe('/utskick server route contract', () => {
     expect(page).toContain("supabase.rpc('platform_outbox_summary')")
     expect(page).toContain("supabase.rpc('platform_outbox_rows', rowArgs)")
     expect(page).toContain('searchParams: Promise<')
+    expect(page).toContain('string | string[] | undefined')
+    expect(page).toContain('Array.isArray(value)')
     expect(page).toContain('p_tenant')
     expect(page).toContain('p_channel')
     expect(page).toContain('p_status')

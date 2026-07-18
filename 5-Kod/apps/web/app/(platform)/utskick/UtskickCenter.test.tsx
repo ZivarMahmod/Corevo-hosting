@@ -72,6 +72,8 @@ describe('UtskickCenter', () => {
     expect(html).toContain('Adoption per företag')
     expect(html).toContain('Företag A')
     expect(html).toContain('8 / 10')
+    expect(html).toContain('3 / 10')
+    expect(html).toContain('30 %')
     expect(html).toContain('booking.reminder')
     expect(html).toContain('transactional')
     expect(html).toContain('sms')

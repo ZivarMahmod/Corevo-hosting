@@ -122,7 +122,10 @@ export function UtskickCenter({
                         <span className="num">{NUMBER.format(row.prefs_rows)} / {NUMBER.format(row.customers_total)}</span>
                         <span className={styles.sub}>{adoptionPercent(row.prefs_rows, row.customers_total)}</span>
                       </td>
-                      <td data-last="" className="num">{NUMBER.format(row.push_subs_active)}</td>
+                      <td data-last="">
+                        <span className="num">{NUMBER.format(row.push_subs_active)} / {NUMBER.format(row.customers_total)}</span>
+                        <span className={styles.sub}>{adoptionPercent(row.push_subs_active, row.customers_total)}</span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

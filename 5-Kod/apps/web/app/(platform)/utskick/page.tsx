@@ -8,10 +8,10 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Utskick' }
 
 type SearchParams = {
-  tenant?: string
-  channel?: string
-  status?: string
-  category?: string
+  tenant?: string | string[] | undefined
+  channel?: string | string[] | undefined
+  status?: string | string[] | undefined
+  category?: string | string[] | undefined
 }
 
 export default async function UtskickPage({
@@ -55,6 +55,7 @@ export default async function UtskickPage({
   )
 }
 
-function clean(value: string | undefined): string {
-  return value?.trim() ?? ''
+function clean(value: string | string[] | undefined): string {
+  const first = Array.isArray(value) ? value[0] : value
+  return first?.trim() ?? ''
 }

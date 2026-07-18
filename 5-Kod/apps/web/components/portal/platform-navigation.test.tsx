@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PLATFORM_ROUTE_PREFIXES } from '@/lib/auth/platform-routes'
-import { NAV, isGroup } from './nav-items'
+import { NAV, isGroup, paletteFromNav } from './nav-items'
 import {
   PLATFORM_AREAS,
   PLATFORM_SUBNAV,
@@ -30,6 +30,13 @@ describe('superadmin navigation contract', () => {
 
   it('exposes Kommunikationscenter as Utskick inside Insyn', () => {
     expect(PLATFORM_SUBNAV.insight).toContainEqual({ href: '/utskick', label: 'Utskick' })
+    expect(NAV.platform.items).toContainEqual({ href: '/utskick', label: 'Utskick', icon: 'message' })
+    expect(paletteFromNav('platform')).toContainEqual({
+      href: '/utskick',
+      label: 'Utskick',
+      icon: 'message',
+      kind: 'Gå till',
+    })
   })
 
   it('keeps every visible platform link inside the shared route registry', () => {
