@@ -11,6 +11,7 @@ import { ThemeSwitch } from './ThemeSwitch'
 import styles from './Topnav.module.css'
 import adminStyles from './AdminTopnav.module.css'
 import { closePortalDetails, useDismissibleDetails } from './useDismissibleDetails'
+import { MOBILE_SEARCH_EVENT } from './mobile-search-event'
 
 /**
  * Back-office-skalet från 2026-07-13-handoffen. Var superadmin-only (PlatformTopnav);
@@ -441,7 +442,10 @@ export function Topnav({
         ) : null}
 
         {mobileNavigation ? (
-          <nav className={styles.mobileNav} aria-label="Mobilnavigering">
+          <nav
+            className={`${styles.mobileNav}${pathname.startsWith('/admin/bokningar') ? ` ${styles.mobileNavSixCol}` : ''}`}
+            aria-label="Mobilnavigering"
+          >
             {mobileNavigation.tabs.slice(0, 2).map((area) => {
               const active = area.id === activeArea?.id
               return (
@@ -471,6 +475,21 @@ export function Topnav({
               </span>
               <span className={styles.mobileFabLabel}>{mobileNavigation.action.label}</span>
             </Link>
+            {/* Sök bor BREDVID plus-knappen (Zivar 2026-07-18) — bara på kalendern,
+                arket ägs av CalendarSearch och öppnas via fönster-eventet. */}
+            {pathname.startsWith('/admin/bokningar') && (
+              <button
+                type="button"
+                className={styles.mobileNavSearch}
+                onClick={() => window.dispatchEvent(new Event(MOBILE_SEARCH_EVENT))}
+                aria-label="Sök i kalendern"
+              >
+                <span className={styles.mobileNavSearchCircle} aria-hidden="true">
+                  <Icon name="search" size={16} />
+                </span>
+                <span>Sök</span>
+              </button>
+            )}
             {mobileNavigation.tabs.slice(2).map((area) => {
               const active = area.id === activeArea?.id
               return (

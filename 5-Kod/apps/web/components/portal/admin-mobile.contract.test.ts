@@ -69,10 +69,13 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(css).toMatch(
       /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileFabLabel\s*\{[\s\S]*?display:\s*none;/,
     )
-    // 2026-07-18: sök-triggern lever i dockens verktygsrad (aldrig fixed — den
-    // hamnade bakom bottennavens täckande yta).
+    // 2026-07-18: sök bor i BOTTENNAVEN bredvid FAB:en (Zivars slutliga placering)
+    // — aldrig fixed-floater, aldrig i dockraden. Navknappen öppnar arket via
+    // fönster-eventet.
     expect(calendarCss).not.toContain('.mobileCalendarSearchAction')
-    expect(calendarCss).toMatch(/\.mobileSearchTrigger\s*\{[\s\S]*?border-radius:\s*999px;/)
+    expect(calendarCss).not.toContain('.mobileSearchTrigger')
+    expect(css).toMatch(/\.mobileNavSearchCircle\s*\{[\s\S]*?border-radius:\s*999px;/)
+    expect(component).toContain('MOBILE_SEARCH_EVENT')
     expect(component).toContain('mobileMoreAccountLink')
     expect(component).toContain('openMobileAccount')
     expect(component).toContain('styles.mobileNavIcon')

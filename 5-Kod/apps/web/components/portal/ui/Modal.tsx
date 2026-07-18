@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from './Icon'
 import styles from './modal.module.css'
 
@@ -47,6 +48,13 @@ export function Modal({
   const cardRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const closingRef = useRef(false)
+  // Portalas till <body>: renderad inline ärver dialogen förälderns stacking
+  // context (kalenderdockan z-6 < headerns z-60) och hamnar BAKOM toppraden.
+  // Initialiseras direkt (inte i effect) så mount-effektens fokusflytt hinner
+  // se kortet; på servern finns inget document och Modal renderar null.
+  const [portalHost] = useState<HTMLElement | null>(() =>
+    typeof document === 'undefined' ? null : document.body,
+  )
 
   function close() {
     if (closingRef.current) return
@@ -101,7 +109,9 @@ export function Modal({
 
   const label = ariaLabel ?? (typeof title === 'string' ? title : 'Dialog')
 
-  return (
+  if (!portalHost) return null
+
+  return createPortal(
     <div
       ref={overlayRef}
       className={styles.overlay}
@@ -134,6 +144,7 @@ export function Modal({
 
         {footer && <div className={styles.foot}>{footer}</div>}
       </div>
-    </div>
+    </div>,
+    portalHost,
   )
 }

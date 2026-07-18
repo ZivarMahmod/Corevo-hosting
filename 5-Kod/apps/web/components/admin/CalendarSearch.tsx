@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Icon, Modal } from '@/components/portal/ui'
+import { MOBILE_SEARCH_EVENT } from '@/components/portal/mobile-search-event'
 import { searchBookings, type BookingHit } from '@/lib/admin/calendar-actions'
 import { isAvbokad } from './BookingDrawer'
 import styles from './calendar.module.css'
@@ -131,20 +132,19 @@ export function CalendarSearch({
     </div>
   )
 
+  // Mobil: triggern bor i BOTTENNAVEN bredvid FAB:en (Topnav, Zivar 2026-07-18) —
+  // navens knapp skickar fönster-eventet, arket ägs och renderas här.
+  useEffect(() => {
+    if (!mobileSheet) return
+    const open = () => setSheetOpen(true)
+    window.addEventListener(MOBILE_SEARCH_EVENT, open)
+    return () => window.removeEventListener(MOBILE_SEARCH_EVENT, open)
+  }, [mobileSheet])
+
   if (!mobileSheet) return searchField
 
   return (
     <>
-      <button
-        type="button"
-        className={styles.mobileSearchTrigger}
-        onClick={() => setSheetOpen(true)}
-        aria-label="Sök i kalendern"
-        aria-haspopup="dialog"
-      >
-        <Icon name="search" size={16} />
-      </button>
-
       {sheetOpen && (
         <Modal
           title="Sök i kalendern"

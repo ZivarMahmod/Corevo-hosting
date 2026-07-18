@@ -1117,3 +1117,42 @@
     height: 40px;
   }
 }
+
+/* ── Sök i bottennaven (bredvid FAB:en, bara kalenderrutten) ─────────────────
+   Zivar 2026-07-18: sök ska bo bredvid gröna plus-knappen. Sjätte gridcellen
+   tänds av .mobileNavSixCol; knappen speglar nav-postens anatomi (glyf + ord)
+   men med cirkelram så den läses som handling, inte flik. */
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+  .mobileNavSixCol {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .mobileNavSearch {
+    min-width: 0;
+    min-height: 44px;
+    padding: 4px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    border: 0;
+    background: none;
+    color: var(--c-ink-2);
+    font-family: inherit;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .mobileNavSearchCircle {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--c-line-strong);
+    border-radius: 999px;
+    background: var(--c-paper);
+  }
+}

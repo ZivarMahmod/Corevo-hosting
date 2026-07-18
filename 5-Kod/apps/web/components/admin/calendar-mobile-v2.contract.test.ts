@@ -39,10 +39,12 @@ describe('Kalender Mobil v2', () => {
     const cancelled = read('components/admin/CancelledLog.tsx')
 
     expect(component).toContain('mobileCalendarHeaderHelp')
-    // 2026-07-18: sök-triggern bor i verktygsraden (mobileCalendarActionRow) —
-    // den gamla fixed-floatern (mobileCalendarSearchAction) låg bakom bottennaven.
+    // 2026-07-18: sök-TRIGGERN bor i bottennaven bredvid FAB:en (Topnav) och
+    // öppnar arket via MOBILE_SEARCH_EVENT — CalendarSearch äger bara arket.
     expect(component).not.toContain('mobileCalendarSearchAction')
     expect(component).not.toContain('mobileCalendarUtilities')
+    expect(search).toContain('MOBILE_SEARCH_EVENT')
+    expect(search).not.toContain('mobileSearchTrigger')
     expect(component).toContain('<CalendarHelp mobileHeader>')
     expect(component).toContain('<CancelledLog tz={tz} label="Avbokade tider" embedded />')
     expect(component).toContain('<CalendarSearch tz={tz} mobileSheet />')
