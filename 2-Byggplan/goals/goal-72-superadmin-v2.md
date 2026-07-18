@@ -143,8 +143,19 @@ Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
 - [x] Etapp 1d Domänpanelen tänd — VAR REDAN PÅ i prod (wrangler.jsonc:60, sedan
       2026-06-06, CF-secrets satta). Inventerings-agentens "AV" kom från en stale
       kodkommentar i DomainPanel.tsx.
-- [ ] Etapp 2a–2e Mönster-paritet — 2b genvägsrad är klar. 2a har delat
-      workspace med verkliga Säkerhet-/Faktureringsytor; global branding saknar
-      fortfarande en sann global datakälla och är därför inte fejkat eller avbockat.
+- [ ] Etapp 2a Inställningsworkspace — delat workspace med verkliga
+      Säkerhet-/Faktureringsytor är klart; global branding saknar fortfarande en
+      sann global datakälla och är därför inte fejkat eller avbockat.
+- [x] Etapp 2b Genvägsrad och låsta navmönster (2026-07-18).
+- [x] Etapp 2c PII-hygien — initiala kundmodeller/CSV innehåller bara
+      servermasker; reveal är tenantverifierad, driftfönstergatad, PII-fritt
+      auditerad, fail-closed och auto-maskeras vid serverägd expiry (2026-07-18).
+- [x] Etapp 2d Bekräftelse-svep — paus och domänborttagning kräver två steg,
+      auto-avväpnas och behåller korrekt fokus/pending-beteende (2026-07-18).
+- [x] Etapp 2e Statistik-paritet — delade Stat/EmptyState, aktiv personal och
+      tenant-scopad exakt `no_show`; count-fel degraderas inte till falska nollor
+      (2026-07-18).
+- [ ] Etapp 2f Kundkortets master–detalj.
+- [ ] Etapp 2g Mobilparitet för superadmin.
 - [ ] Etapp 3 IA-svängen
 - [ ] Etapp 4 Partner-rollen (4a–4d — direkt efter 1–3)
