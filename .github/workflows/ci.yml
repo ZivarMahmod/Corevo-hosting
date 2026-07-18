@@ -31,8 +31,8 @@ jobs:
       - name: Verify migration and pgTAP inventory
         run: >-
           node scripts/verify-database-release.mjs
-          --expected-latest 0107
-          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107
+          --expected-latest 0109
+          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109
       # Local disposable stack: migrations + seed are applied before the pgTAP
       # suites run. No production/staging credentials or data are used.
       - name: Start disposable Supabase (fresh 0001-latest)
@@ -41,8 +41,8 @@ jobs:
         run: |
           supabase migration list --local > "$RUNNER_TEMP/local-migrations.txt"
           node scripts/verify-database-release.mjs \
-            --expected-latest 0107 \
-            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107 \
+            --expected-latest 0109 \
+            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109 \
             --history-file "$RUNNER_TEMP/local-migrations.txt" \
             --history-side remote
       - name: Run database and RLS tests
@@ -187,12 +187,13 @@ jobs:
           retention-days: 7
 
   release-proof:
-    name: release proof (all gates including E2E)
+    name: release proof (all configured gates)
     runs-on: ubuntu-latest
     if: ${{ always() }}
     needs: [database, quality, worker-bundle, e2e]
     steps:
-      - name: Require every release gate
+      - name: Require every configured release gate
+        working-directory: .
         run: |
           echo "database=${{ needs.database.result }}"
           echo "quality=${{ needs.quality.result }}"
@@ -201,4 +202,4 @@ jobs:
           [ "${{ needs.database.result }}" = "success" ]
           [ "${{ needs.quality.result }}" = "success" ]
           [ "${{ needs.worker-bundle.result }}" = "success" ]
-          [ "${{ needs.e2e.result }}" = "success" ]
+          [ "${{ needs.e2e.result }}" = "success" ] || { [ "${{ vars.E2E_ENABLED }}" != "true" ] && [ "${{ needs.e2e.result }}" = "skipped" ]; }

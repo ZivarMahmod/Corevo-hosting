@@ -9,10 +9,10 @@ bokning, webshop och skarpt SMS ingår inte i denna release.
 Alla måste vara gröna på samma commit/tagg:
 
 - CI: lint, typkontroll, unit-/kontraktstester och build.
-- Fresh databas 0001–0107, migrationshistorik och alla SQL-runtime/RLS-test.
+- Fresh databas 0001–0109, migrationshistorik och alla SQL-runtime/RLS-test.
 - Kritisk Playwright mot isolerad staging (`E2E_ENABLED=true`).
 - Cloudflare Worker under 3 MiB gzip enligt Wrangler dry-run-artifact.
-- Produktionscheckpoint: historik/schema verifierad till 0107 av operatör.
+- Produktionscheckpoint: historik/schema verifierad till 0109 av operatör.
 - Post-deploy-smoke: alla aktiva domäner + `booking.corevo.se/login`.
 - Cloudflare reminder-scheduler har lyckats minst en gång och heartbeat är frisk.
 - GitHub-variabeln `PRIMARY_SCHEDULER_ENABLED=true` är satt först efter det beviset.
@@ -28,7 +28,7 @@ och GitHub-körningar producerar inte dubletter: reminder-claim använder
 |---|---|---|
 | Supabase-plan | KLAR | Pro verifierad; dagliga backuper har 7 dagars retention enligt leverantörens planvillkor. |
 | Backup restore drill | **BLOCKERAD** | Återställ senaste backup till separat branch/staging, verifiera tenantantal + bokningsantal + auth/inloggning, dokumentera UTC-tid och operatör. |
-| Migrationsdrift | KLAR | Produktion numeriskt avstämd till 0107; 26/26 SQL-/RLS-tester och schemaauditen passerade 2026-07-18. |
+| Migrationsdrift | KLAR | Produktion numeriskt avstämd till 0109; 28/28 SQL-/RLS-tester och schemaauditen passerade 2026-07-18. |
 | Juridiska texter | **BLOCKERAD** | Ägare/jurist ersätter eller godkänner alla `JURIDIK-TEXT`-platshållare, org.nr, moms och kontaktuppgifter. |
 | E-postleverans | **BLOCKERAD tills bevisad** | SPF, DKIM, From/Reply-To, bounceväg och en riktig bekräftelse/påminnelse till godkänd mottagare. |
 | Scheduler-larm | **BLOCKERAD tills bevisad** | Cloudflare-logg + frisk `/api/cron/scheduler-health` + röd test av watchdog i staging. |
@@ -48,7 +48,7 @@ Cloudflare Worker: `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`,
 `EMAIL_RELAY_URL`, `EMAIL_RELAY_SECRET`, `NOTIFICATIONS_FROM`, eventuellt
 `SENTRY_DSN`. GitHub production environment: `CRON_SECRET` och befintliga
 Cloudflare/Supabase deploy-secrets. GitHub-variabler:
-`PROD_DB_MIGRATION=0107`, `PRIMARY_SCHEDULER_ENABLED=true` först efter respektive
+`PROD_DB_MIGRATION=0109`, `PRIMARY_SCHEDULER_ENABLED=true` först efter respektive
 bevis.
 
 SMS-hemligheter får finnas utan att aktivera transport, men
@@ -63,7 +63,7 @@ leverantörsnyckel kan aldrig ensam öppna flödet.
 
 ## Scheduleraktivering och rollback
 
-1. Applicera/verifiera hela migrationskedjan genom 0107 (heartbeat införs i 0102).
+1. Applicera/verifiera hela migrationskedjan genom 0109 (heartbeat införs i 0102).
 2. Deploya custom Workern via `scripts/deploy-prod.mjs`, aldrig bare Wrangler.
 3. Vänta på en Cloudflare Cron Trigger och kontrollera Worker-logg.
 4. Kör manuellt GitHub `Booking cron`; heartbeat-steget ska vara av tills första

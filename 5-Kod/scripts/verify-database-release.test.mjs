@@ -29,6 +29,8 @@ describe('database release verification', () => {
         '0105_restore_deferred_schema_contracts.sql',
         '0106_platform_insyn_rpcs.sql',
         '0107_restore_global_platform_identity.sql',
+        '0108_explicit_data_api_grants.sql',
+        '0109_user_location_access_data_api_grants.sql',
       ],
       testFiles: [
         'notifications_outbox_0092_test.sql',
@@ -47,16 +49,18 @@ describe('database release verification', () => {
         'deferred_schema_contracts_0105_test.sql',
         'platform_insyn_rpcs_0106_test.sql',
         'global_platform_identity_0107_test.sql',
+        'data_api_grants_0108_test.sql',
+        'data_api_user_location_grants_0109_test.sql',
       ],
-      expectedLatest: '0107',
+      expectedLatest: '0109',
       requiredTestVersions: [
         '0092', '0093', '0094', '0095', '0096', '0097',
-        '0098', '0099', '0100', '0101', '0102', '0103', '0104', '0105', '0106', '0107',
+        '0098', '0099', '0100', '0101', '0102', '0103', '0104', '0105', '0106', '0107', '0108', '0109',
       ],
     })
 
-    assert.equal(result.latest, '0107')
-    assert.equal(result.migrationCount, 16)
+    assert.equal(result.latest, '0109')
+    assert.equal(result.migrationCount, 18)
   })
 
   it('fails closed on duplicate versions or a missing SQL test', () => {

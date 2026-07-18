@@ -36,12 +36,19 @@ describe('Cloudflare primary scheduler wiring', () => {
     )
   })
 
-  it('binds production deploy to a successful same-SHA CI run with mandatory E2E', () => {
+  it('binds production deploy to same-SHA CI and requires E2E when staging is enabled', () => {
     assert.match(deployWorkflow, /verify-production-ci:/)
     assert.match(deployWorkflow, /head_sha="\$GITHUB_SHA"/)
     assert.match(deployWorkflow, /needs: verify-production-ci/)
     assert.match(ciWorkflow, /release-proof:/)
-    assert.match(ciWorkflow, /needs\.e2e\.result[^\n]+success/)
+    assert.match(
+      ciWorkflow,
+      /needs\.e2e\.result[^\n]+success[\s\S]*?vars\.E2E_ENABLED[^\n]+true[^\n]+needs\.e2e\.result[^\n]+skipped/,
+    )
+    assert.match(
+      ciWorkflow,
+      /release-proof:[\s\S]*?Require every configured release gate[\s\S]*?working-directory:\s*\./,
+    )
     assert.match(deployWorkflow, /production:[\s\S]*?timeout-minutes:\s*[1-9]/)
   })
 

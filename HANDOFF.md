@@ -19,7 +19,7 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 - Produktionens boknings-, schema- och personalgrund är live. Inställningar v2 och
   Frisöradmin PWA driftsattes 2026-07-17. Produktionsdatabasen är numeriskt
-  avstämd och runtime-verifierad genom migration `0107`; checkpoint och bevis
+  avstämd och runtime-verifierad genom migration `0109`; checkpoint och bevis
   finns i `5-Kod/docs/ops/database-migration-drift.md`.
 - Grundens verkliga delar omfattar platsbehörighet/RLS, öppettider, schema,
   personal-readiness, frånvaro, atomisk adminbokning, ombokning och statusbyte.
