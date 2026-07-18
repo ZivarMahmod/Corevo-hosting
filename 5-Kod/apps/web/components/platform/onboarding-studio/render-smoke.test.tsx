@@ -22,7 +22,6 @@ vi.mock('next/navigation', () => ({
 }))
 
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
-import type { TenantCardItem } from '@/lib/platform/tenants'
 import { initStudioCfg, applyBranch } from '@/lib/platform/onboarding-studio/model'
 import type { StudioAction, StudioStage } from '@/lib/platform/onboarding-studio/state'
 import { FLAT_STEP_ORDER } from '@/lib/platform/onboarding-studio/phases'
@@ -61,25 +60,6 @@ const branched = applyBranch(initStudioCfg('salvia'), 'frisor', presets)
 const fresh = initStudioCfg('salvia')
 // W4: a cfg with a typed service → tjanster panel rows + live preview reflect it.
 const withServices = { ...branched, services: [{ name: 'Klippning', price: '350' }] }
-
-const tenants: TenantCardItem[] = [
-  {
-    id: 't1',
-    name: 'Klippoteket',
-    slug: 'klippoteket',
-    status: 'active',
-    markColor: '#1F4636',
-    owner: 'Ada Ek',
-    themeLabel: 'Salvia',
-    variantLabel: 'Wizard',
-    level: 'standard',
-    bookings: 12,
-    completed: 9,
-    staff: 3,
-    lastActivityAt: null,
-    displayStatus: 'active',
-  } as unknown as TenantCardItem,
-]
 
 /** Render and assert it produced real (non-trivial) markup without throwing. */
 function mounts(node: React.ReactElement): string {
@@ -224,9 +204,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
   })
 
   it('OnboardingStudio (root machine) mounts DIRECTLY in the studio stage', () => {
-    const html = mounts(
-      <OnboardingStudio presets={presets} tenants={tenants} />,
-    )
+    const html = mounts(<OnboardingStudio presets={presets} />)
     expect(html).toContain('Grunden') // step-rail phase 1 → wizarden är startskärmen
   })
 

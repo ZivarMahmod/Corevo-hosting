@@ -64,7 +64,7 @@ describe('pilot commerce release fence', () => {
     expect(read('app/(admin)/admin/installningar/page.tsx')).toContain(
       "commerceReleaseGate(tenant.id).bookingPayment",
     )
-    expect(read('app/(platform)/salonger/[id]/page.tsx')).toContain(
+    expect(read('app/(platform)/salonger/(board)/[id]/page.tsx')).toContain(
       'releaseEnabled={commerceReleaseGate(tenant.id).bookingPayment}',
     )
     expect(source).toContain('p_online_payment_released: commerceReleaseGate(ctx.tenantId).bookingPayment')

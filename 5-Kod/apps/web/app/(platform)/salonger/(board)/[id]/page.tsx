@@ -68,6 +68,7 @@ import {
 } from '@/components/portal/ui'
 import type { TenantBranding } from '@corevo/ui'
 import styles from '@/components/platform/tenant-detail.module.css'
+import boardStyles from '@/components/platform/salonger-v2.module.css'
 import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
@@ -816,9 +817,10 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   }
 
   return (
-    <section className="portal-section">
+    <div className={boardStyles.pane}>
+      <section className={boardStyles.paneInner}>
       <div className={styles.crumb}>
-        <Button href="/salonger" variant="ghost" icon="arrowLeft" size="sm">
+        <Button href="/salonger" variant="ghost" icon="arrowLeft" size="sm" className={boardStyles.back}>
           Kunder
         </Button>
         <span>/ {tenant.slug}.{ROOT}</span>
@@ -866,7 +868,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       </div>
 
       <TenantDetailTabs tabs={tabs} />
-    </section>
+      </section>
+    </div>
   )
 }
 

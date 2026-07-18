@@ -190,33 +190,20 @@ export async function listTenantsWithStats(): Promise<TenantCardItem[]> {
   const rows = (data ?? []) as Row[]
 
   // Batched aggregates: ONE read each for staff / owners / services / hours across
-  // ALL tenants, bucketed in JS by tenant_id. Bookings are NOT row-read any more
-  // (goal-56 A1: grew unbounded with platform booking volume) — per-tenant DB-side
-  // counts + a 1-row latest read instead.
-  // ponytail: 3 tiny index queries per tenant; upgrade = 0054 platform_booking_stats() RPC.
-  const [staffRes, ownersRes, servicesRes, hoursRes, ...perTenant] = await Promise.all([
+  // ALL tenants, bucketed in JS by tenant_id. Booking totals come from the existing
+  // security-invoker aggregate (migration 0054), so the persistent master layout has
+  // a fixed query count instead of issuing three booking requests per tenant.
+  const [staffRes, ownersRes, servicesRes, hoursRes, bookingsRes] = await Promise.all([
     supabase.from('staff').select('tenant_id').eq('active', true),
     supabase.from('users').select('email, full_name, tenant_id, roles!inner(name)').eq('roles.name', 'salon_admin').order('created_at'),
     supabase.from('services').select('tenant_id').eq('active', true),
     supabase.from('working_hours').select('tenant_id'),
-    ...rows.map(async (t) => {
-      const [totalRes, completedRes, lastRes] = await Promise.all([
-        supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id),
-        supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id).eq('status', 'completed'),
-        supabase.from('bookings').select('created_at').eq('tenant_id', t.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      ])
-      return {
-        id: t.id,
-        total: totalRes.count ?? 0,
-        completed: completedRes.count ?? 0,
-        last: (lastRes.data as { created_at: string } | null)?.created_at ?? null,
-      }
-    }),
+    supabase.rpc('platform_booking_stats'),
   ])
 
   const bk = new Map<string, { total: number; completed: number; last: string | null }>()
-  for (const s of perTenant as { id: string; total: number; completed: number; last: string | null }[]) {
-    bk.set(s.id, { total: s.total, completed: s.completed, last: s.last })
+  for (const s of bookingsRes.data ?? []) {
+    bk.set(s.tenant_id, { total: s.total, completed: s.completed, last: s.last_at })
   }
   const staffCount = new Map<string, number>()
   for (const r of (staffRes.data ?? []) as { tenant_id: string }[]) {

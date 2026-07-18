@@ -362,7 +362,10 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   }
 
   revalidatePath('/platform')
-  revalidatePath('/salonger')
+  // The customer list now lives in the shared /salonger layout. Invalidate that
+  // boundary explicitly so a create performed on /salonger/ny cannot leave the
+  // persistent master pane stale during the next client navigation.
+  revalidatePath('/salonger', 'layout')
   // HONEST status (W6): the tenant is created + the booking engine + owner admin work
   // immediately, but the PUBLIC host <slug>.corevo.se is NOT auto-attached (runtime
   // auto-attach is dormant + the next-deploy path was retired in fix-35 → connecting the

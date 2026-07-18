@@ -3,11 +3,9 @@ import styles from '@/components/platform/salonger-v2.module.css'
 
 export default function Loading() {
   return (
-    <div className={`workbench ${styles.board} ${styles.boardState}`}>
-      <div className={styles.pane}>
-        <div className={styles.paneInner}>
-          <PageSkeleton table />
-        </div>
+    <div className={styles.pane}>
+      <div className={styles.paneInner}>
+        <PageSkeleton stats={4} table />
       </div>
     </div>
   )

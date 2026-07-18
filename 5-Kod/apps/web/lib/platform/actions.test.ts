@@ -48,7 +48,8 @@ vi.mock('./service', () => ({
 }))
 
 vi.mock('./audit', () => ({ logPlatformAction: vi.fn(async () => {}) }))
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+const revalidatePathMock = vi.hoisted(() => vi.fn())
+vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }))
 
 // goal-23: control the Cloudflare client so domain-action tests never touch network.
 type CfDcv = { type: string; name: string; value: string; purpose: string }
@@ -178,6 +179,16 @@ describe('createTenant writes the goal-20 columns', () => {
     createServiceClientMock.mockReturnValue(null)
     await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
     expect((captured.tenants?.[0] as { city: unknown }).city).toBeNull()
+  })
+
+  it('invalidates the persistent customer layout after a successful create', async () => {
+    seedCtx()
+    createServiceClientMock.mockReturnValue(null)
+
+    const res = await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
+
+    expect(res.error).toBeUndefined()
+    expect(revalidatePathMock).toHaveBeenCalledWith('/salonger', 'layout')
   })
 
   it('creates the role from the resolved seam — default salon_admin/6 (#11)', async () => {

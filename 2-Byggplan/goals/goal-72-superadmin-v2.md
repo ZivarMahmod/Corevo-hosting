@@ -155,7 +155,9 @@ Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
 - [x] Etapp 2e Statistik-paritet — delade Stat/EmptyState, aktiv personal och
       tenant-scopad exakt `no_show`; count-fel degraderas inte till falska nollor
       (2026-07-18).
-- [ ] Etapp 2f Kundkortets master–detalj.
+- [x] Etapp 2f Kundkortets master–detalj — beständig kundlista, URL-neutral
+      route-group, bevarade flikar/modulgates och race-säker tvåstegsradering;
+      oberoende review utan kvarvarande P0–P2 (2026-07-18).
 - [ ] Etapp 2g Mobilparitet för superadmin.
 - [ ] Etapp 3 IA-svängen
 - [ ] Etapp 4 Partner-rollen (4a–4d — direkt efter 1–3)

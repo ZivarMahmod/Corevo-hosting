@@ -24,7 +24,6 @@ import {
 } from 'react'
 import { Button, Icon } from '@/components/portal/ui'
 import { createTenant } from '@/lib/platform/actions'
-import type { TenantCardItem } from '@/lib/platform/tenants'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { initStudioCfg } from '@/lib/platform/onboarding-studio/model'
 import {
@@ -43,8 +42,6 @@ const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
 export type OnboardingStudioProps = {
   presets: VerticalPresetData
-  /** The real cross-tenant card feed (listTenantsWithStats) → SuperEntry (§8). */
-  tenants: TenantCardItem[]
 }
 
 /**
