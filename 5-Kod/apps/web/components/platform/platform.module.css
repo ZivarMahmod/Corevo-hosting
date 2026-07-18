@@ -113,6 +113,11 @@
   flex-wrap: wrap;
   align-items: center;
 }
+.armWarning {
+  flex-basis: 100%;
+  font-size: 0.82rem;
+  color: var(--c-ink-2);
+}
 
 /* ── filters (search/status on the tenant list) ── */
 .filters {
@@ -227,6 +232,7 @@
 .domainRow {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.55rem;
   padding: 0.55rem 0.7rem;
   border: 1px solid var(--c-line);

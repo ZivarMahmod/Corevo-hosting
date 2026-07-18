@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addCustomDomain, verifyCustomDomain, removeCustomDomain } from '@/lib/platform/actions'
 import type { TenantDomainRow } from '@/lib/platform/domains'
 import type { DcvRecord } from '@/lib/cloudflare/custom-hostnames'
 import { useToast } from '@/components/portal/ui'
 import styles from './platform.module.css'
+
+const ARM_TIMEOUT_MS = 10_000
 
 // goal-23 live DomänPanel (behind DOMAIN_PROVISIONING_ENABLED). Add a custom domain →
 // Cloudflare for SaaS custom hostname → tenant_domains row → show DCV records the
@@ -37,6 +39,39 @@ export function DomainManager({
   // Ta bort permanent" + en Ångra), klick 2 kör removeCustomDomain. Armeringen är keyad
   // på domänen så den aldrig kan läcka till en annan rad.
   const [armed, setArmed] = useState<string | null>(null)
+  const confirmButtonRef = useRef<HTMLButtonElement>(null)
+  const triggerButtonRefs = useRef(new Map<string, HTMLButtonElement>())
+  const restoreTriggerFocusRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (armed) {
+      confirmButtonRef.current?.focus()
+    } else if (restoreTriggerFocusRef.current) {
+      const domain = restoreTriggerFocusRef.current
+      restoreTriggerFocusRef.current = null
+      triggerButtonRefs.current.get(domain)?.focus()
+    }
+  }, [armed])
+
+  useEffect(() => {
+    restoreTriggerFocusRef.current = null
+    setArmed(null)
+  }, [tenantId])
+
+  useEffect(() => {
+    if (!armed || pending) return
+    const armedDomain = armed
+    const timeoutId = setTimeout(() => {
+      restoreTriggerFocusRef.current = armedDomain
+      setArmed(null)
+    }, ARM_TIMEOUT_MS)
+    return () => clearTimeout(timeoutId)
+  }, [armed, pending])
+
+  function disarmAndRestoreFocus() {
+    restoreTriggerFocusRef.current = armed
+    setArmed(null)
+  }
 
   function fd(domain: string): FormData {
     const f = new FormData()
@@ -47,6 +82,8 @@ export function DomainManager({
 
   function add() {
     if (pending) return
+    restoreTriggerFocusRef.current = null
+    setArmed(null)
     const domain = input.trim()
     if (!domain) {
       setError('Ange en domän.')
@@ -75,6 +112,8 @@ export function DomainManager({
 
   function verify(domain: string) {
     if (pending) return
+    restoreTriggerFocusRef.current = null
+    setArmed(null)
     startTransition(async () => {
       const res = await verifyCustomDomain({}, fd(domain))
       if (res.error) {
@@ -101,10 +140,12 @@ export function DomainManager({
       const res = await removeCustomDomain({}, fd(domain))
       if (res.error) {
         // Raden lever kvar → avväpna den, annars står en skarp knapp kvar och väntar.
+        restoreTriggerFocusRef.current = null
         setArmed(null)
         notify(res.error, 'warning')
         return
       }
+      restoreTriggerFocusRef.current = null
       setArmed(null)
       setDomains((d) => d.filter((x) => x.domain !== domain))
       setDcv((cur) => (cur?.domain === domain ? null : cur))
@@ -114,7 +155,14 @@ export function DomainManager({
   }
 
   return (
-    <div>
+    <div
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && armed && !pending) {
+          event.preventDefault()
+          disarmAndRestoreFocus()
+        }
+      }}
+    >
       <p className={styles.muted} style={{ marginTop: 0 }}>
         Sidan körs på <code className={styles.code}>{slug}.corevo.se</code>. Lägg till kundens egna
         domän — den provisioneras som custom hostname och blir live när DNS-posterna är på plats.
@@ -183,24 +231,41 @@ export function DomainManager({
               )}
               {armed === d.domain ? (
                 <>
+                  <span
+                    id={`remove-domain-warning-${d.id}`}
+                    className={styles.armWarning}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    Den egna domänen slutar fungera direkt och måste läggas till igen för att återställas.
+                  </span>
                   <button
+                    ref={confirmButtonRef}
                     type="button"
-                    className={styles.btnDanger}
+                    className={`${styles.btn} ${styles.btnDanger}`}
                     disabled={pending}
+                    aria-describedby={`remove-domain-warning-${d.id}`}
                     onClick={() => remove(d.domain)}
                   >
                     {pending ? '…' : 'Säker? Ta bort permanent'}
                   </button>
-                  <button type="button" className={styles.btn} disabled={pending} onClick={() => setArmed(null)}>
+                  <button type="button" className={styles.btn} disabled={pending} onClick={disarmAndRestoreFocus}>
                     Ångra
                   </button>
                 </>
               ) : (
                 <button
+                  ref={(node) => {
+                    if (node) triggerButtonRefs.current.set(d.domain, node)
+                    else triggerButtonRefs.current.delete(d.domain)
+                  }}
                   type="button"
-                  className={styles.btnDanger}
+                  className={`${styles.btn} ${styles.btnDanger}`}
                   disabled={pending}
-                  onClick={() => setArmed(d.domain)}
+                  onClick={() => {
+                    restoreTriggerFocusRef.current = null
+                    setArmed(d.domain)
+                  }}
                 >
                   Ta bort
                 </button>
