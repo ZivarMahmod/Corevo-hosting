@@ -38,14 +38,14 @@ exception when unique_violation then null; end $$;
 -- Klientroller kan inte gissa provider-id och mutera ledgern.
 do $$ begin
   if has_function_privilege(
-      'anon', 'public.record_sms_delivery(text,text,timestamp with time zone)', 'execute'
+      'anon', 'public.record_sms_delivery(text,text,timestamp with time zone,uuid)', 'execute'
     ) or has_function_privilege(
-      'authenticated', 'public.record_sms_delivery(text,text,timestamp with time zone)', 'execute'
+      'authenticated', 'public.record_sms_delivery(text,text,timestamp with time zone,uuid)', 'execute'
     ) then
     raise exception 'sms_delivery_rpc_exposed_to_client';
   end if;
   if not has_function_privilege(
-      'service_role', 'public.record_sms_delivery(text,text,timestamp with time zone)', 'execute'
+      'service_role', 'public.record_sms_delivery(text,text,timestamp with time zone,uuid)', 'execute'
     ) then
     raise exception 'sms_delivery_rpc_missing_service_grant';
   end if;

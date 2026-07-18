@@ -259,7 +259,7 @@ begin
     'public.enqueue_notification(uuid,uuid,uuid,uuid,text,text,text,text,text,jsonb,jsonb,integer)',
     'public.claim_notification_outbox(uuid,timestamp with time zone,integer,integer)',
     'public.begin_notification_delivery(uuid,uuid)',
-    'public.ack_notification_outbox(uuid,uuid,text,text,integer,text,integer)',
+    'public.ack_notification_outbox(uuid,uuid,text,text,integer,text,integer,text)',
     'public.retry_notification_outbox(uuid,uuid,text,timestamp with time zone)',
     'public.scrub_notification_outbox_customer(uuid[],uuid[])'
   ] loop
