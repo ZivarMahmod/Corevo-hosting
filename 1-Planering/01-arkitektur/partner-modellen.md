@@ -1,8 +1,11 @@
 # Partner-modellen — varför superadmin ska klara ALLT utan backend
 
-> Zivar 2026-07-18 (muntligt, strukturerat här). Detta är RIKTNING, inte en
-> byggorder — partner-systemet byggs senare. Men allt som byggs i superadmin nu
-> (goal-72) ska peka hit och aldrig bygga bort möjligheten.
+> Zivar 2026-07-18 (muntligt, strukturerat här; skärpt samma dag). Sekvensen:
+> **(1) superadmin maxas för Zivar först** (goal-72), **(2) partner-rollen
+> läggs direkt därefter** — den ska INTE vänta. Partnern får nästan identisk
+> yta som Zivars superadmin, bara isolerad till sina kunder (ev. något mindre
+> behörigheter — diskuteras när rollen byggs). Zivar ser och följer partnerns
+> data. Samma produkt, ett scoping-lager till.
 
 ## Modellen
 
@@ -33,7 +36,7 @@ partnern den automatiskt — och kan börja söka sådana kunder i sitt land.
 Branschmotorn (EN kodbas, moduler à la carte) är alltså också partnerns
 tillväxtmotor. Se `multibransch-plattform-arkitektur.md` (kanon).
 
-## Vad detta kräver av arkitekturen (framtida byggen — INTE nu)
+## Vad detta kräver av arkitekturen (byggs som etapp 4 i goal-72, efter v2)
 
 1. **Partner-scoping i DB:** tenants ägs av en partner (partner-organisation
    ovanför tenant). RLS/server-grindar filtrerar allt platform-UI per partner.

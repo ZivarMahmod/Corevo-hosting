@@ -163,6 +163,25 @@ den nya master–detaljen, inte dagens grid).
 200; render-probe på nya rutterna; kund-adminens `/admin/kunder` ORÖRD
 (annan dörr — bara platform-routes byter).
 
+## S7 — Partner-rollen (etapp 4, skiss — designas när S1–S6 landat)
+
+**Mål**: ny roll som ger en partner Zivars superadmin fast isolerad till sina
+kunder. Samma yta — ett scoping-lager, ingen ombyggnad (S1–S6 bygger redan
+"servern bestämmer listan").
+
+1. Migration: partner-tabell + `tenants.partner_id` + RLS-scoping av alla
+   platform-läsare; Zivar = partner noll (ser allt).
+2. Behörighetsgrind: `requirePlatformAdmin` får partner-scope; varje RPC/action
+   i `lib/platform/actions/*` filtrerar på scopet (server, aldrig UI).
+3. Partnervy för Zivar: lista partners, deras aktiva kunder (licensunderlag
+   ~50 kr/mån × aktiv kund), deras SMS-kostnader (outbox-aggregatet per partner).
+4. Per-partner SMS-leverantör (46elks = default; partnerns lokala = konfig).
+
+◆ ÖPPNA FRÅGOR till Zivar när S7 startar: exakta behörighetsskillnader
+partner vs Zivar (hans ord: "lite mindre behörigheter kanske eller något vi
+diskuterar det sen"); "aktiv kund"-definitionen för licensen; hur partnern
+onboardas (inbjudan?).
+
 ## Körordning + beroendekarta
 
 ```

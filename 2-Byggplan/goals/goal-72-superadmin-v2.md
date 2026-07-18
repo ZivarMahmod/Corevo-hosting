@@ -84,6 +84,21 @@ cron-hälsa, juridik-fält, domänpanelen flag-gated AV, fakturering manuell).
   permanenta redirects; nav-etiketter; ⌘K-paletten.
 - **3b** Terminologi-svep (kod-kommentarer/etiketter; branschvakten gäller).
 
+### Etapp 4 — Partner-rollen (direkt efter etapp 1–3, ska INTE vänta)
+> Zivar 2026-07-18: superadmin byggs för honom maxad FÖRST — sen läggs en ny
+> roll som ger partners en isolerad, nästan identisk kopia av samma yta.
+- **4a Datamodell**: partner-entitet + `tenants.partner_id`; Zivar = "partner
+  noll" (ser allt, inkl. partnerdata — kan följa deras verksamhet).
+- **4b Server-scoping**: ALLA platform-läsare/actions/RPC:er filtrerar på
+  inloggad användares partner-scope (RLS + grindar) — UI:t är redan byggt att
+  fråga servern om listan, så ytan behöver inte byggas om.
+- **4c Rollen**: ny nivå mellan platform-full och tenant-ägare; exakta
+  behörighetsskillnader mot Zivars = ◆ DISKUTERAS med Zivar när 4 startar
+  (hans ord: "lite mindre behörigheter kanske eller något vi diskuterar").
+- **4d Kostnads-/licensvyn**: partnerns SMS-kostnader + aktiva kunder synligt
+  per partner (licens ~50 kr/mån × aktiv kund); per-partner SMS-leverantör.
+- Kanon: `1-Planering/01-arkitektur/partner-modellen.md`.
+
 ### Parkerat (medvetet)
 - Fakturagenerering/Stripe-debitering av tenants (betal-rails-beslutet §14.2).
 - Full sidbyggare, mall-katalog-import, kundportal-hub (egna spår).
@@ -125,3 +140,4 @@ Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
       kodkommentar i DomainPanel.tsx.
 - [ ] Etapp 2a–2e Mönster-paritet
 - [ ] Etapp 3 IA-svängen
+- [ ] Etapp 4 Partner-rollen (4a–4d — direkt efter 1–3)
