@@ -109,7 +109,8 @@ cron-hälsa, juridik-fält, domänpanelen flag-gated AV, fakturering manuell).
 ## Status
 - [ ] Etapp 1a Kommunikationscenter
 - [ ] Etapp 1b Drift-hälsa
-- [ ] Etapp 1c Juridik-fält
+- [x] Etapp 1c Juridik-fält — LIVE v1.37.3 (2026-07-18; v1.37.2 föll på
+      parallellsessions-kontaminering, de-kontaminerad i 4557376)
 - [x] Etapp 1d Domänpanelen tänd — VAR REDAN PÅ i prod (wrangler.jsonc:60, sedan
       2026-06-06, CF-secrets satta). Inventerings-agentens "AV" kom från en stale
       kodkommentar i DomainPanel.tsx.
