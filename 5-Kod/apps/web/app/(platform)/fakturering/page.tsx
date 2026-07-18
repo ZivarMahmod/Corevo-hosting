@@ -4,6 +4,9 @@ import { billingUnderlag } from '@/lib/platform/metrics'
 import { BILLING_MODEL_LABELS, formatPrice, type BillingModel } from '@/lib/platform/billing'
 import { PageHead } from '@/components/portal/ui'
 import styles from '@/components/platform/platform.module.css'
+import { requirePlatformOperator } from '@/lib/auth/session'
+import { loadOwnPartnerBilling } from '@/lib/platform/partners'
+import { PartnerBillingClient } from '@/components/platform/partners/PartnerBillingClient'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Fakturering' }
@@ -24,6 +27,24 @@ export default async function FaktureringPage({
 }: {
   searchParams: Promise<{ year?: string; month?: string }>
 }) {
+  const user = await requirePlatformOperator()
+  if (user.partnerAdmin) {
+    const partner = await loadOwnPartnerBilling()
+    return partner.summary ? (
+      <section className="portal-section">
+        <PartnerBillingClient
+          partner={partner.summary}
+          history={partner.history}
+          smsSender={partner.smsSender}
+        />
+      </section>
+    ) : (
+      <section className="portal-section">
+        <PageHead eyebrow="Ekonomi" title="Licens och kommunikation" />
+        <p className="prose">Partnerns kostnadsunderlag kunde inte hämtas.</p>
+      </section>
+    )
+  }
   const sp = await searchParams
   const now = new Date()
   const year = Number(sp.year) || now.getUTCFullYear()

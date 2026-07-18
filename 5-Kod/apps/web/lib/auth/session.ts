@@ -11,6 +11,10 @@ import { PORTAL_MIN_LEVEL, type Portal } from '@/lib/auth/roles'
 import type { AdminArea } from '@/lib/auth/admin-areas'
 import { hasAdminAreaPermission } from '@/lib/admin/member-permissions'
 import { logAuthDenied } from '@/lib/observability'
+import {
+  isRejectedPartnerIdentity,
+  resolvePlatformIdentity,
+} from '@/lib/auth/platform-identity'
 
 export type CurrentUser = {
   id: string
@@ -21,6 +25,8 @@ export type CurrentUser = {
   tenantId: string | null
   staffId: string | null
   platformAdmin: boolean
+  partnerAdmin: boolean
+  partnerId: string | null
   roleLevel: number
   roleName: string | null
 }
@@ -67,7 +73,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   // bär ett gammalt JWT. Samma kontroll finns i private.role_level() för direkt DB-
   // åtkomst; DAL-vakten gör att sidan/actionen dessutom nekar med rätt portalflöde.
   let activeStaff: { id: string } | null = null
-  if (profile?.status === 'active' && role?.level === 3) {
+  if (profile?.status === 'active' && role?.level === 3 && profile.tenant_id) {
     const { data } = await supabase
       .from('staff')
       .select('id')
@@ -83,19 +89,64 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const roleLevel = accountAuthorized ? (role?.level ?? 0) : 0
   const roleName = accountAuthorized ? (role?.name ?? null) : null
 
+  // Partner JWT claims are only routing hints. Authorization is re-resolved from
+  // the live membership and partner rows so suspending either takes effect even
+  // while an older token is still valid.
+  let membership: {
+    partnerId: string
+    memberStatus: string | null
+    partnerStatus: string | null
+  } | null = null
+  if (
+    accountAuthorized &&
+    role?.tenant_id === null &&
+    roleName === 'partner_admin' &&
+    roleLevel === 7
+  ) {
+    const { data: member } = await supabase
+      .from('partner_members')
+      .select('partner_id, status, partners:partner_id(status)')
+      .eq('user_id', userId)
+      .maybeSingle()
+    const partnerEmbed = (member as { partners?: unknown } | null)?.partners
+    const partner = (Array.isArray(partnerEmbed) ? partnerEmbed[0] : partnerEmbed) as
+      | { status: string | null }
+      | null
+      | undefined
+    if (member?.partner_id) {
+      membership = {
+        partnerId: member.partner_id,
+        memberStatus: member.status,
+        partnerStatus: partner?.status ?? null,
+      }
+    }
+  }
+
+  const platformIdentity = resolvePlatformIdentity({
+    accountAuthorized,
+    roleLevel,
+    roleName,
+    roleTenantId: role?.tenant_id ?? null,
+    appPlatformAdmin: appMeta.platform_admin === true,
+    membership,
+  })
+  const rejectedPartner = isRejectedPartnerIdentity({
+    accountAuthorized,
+    roleLevel,
+    roleName,
+    roleTenantId: role?.tenant_id ?? null,
+    partnerAdmin: platformIdentity.partnerAdmin,
+  })
+
   return {
     id: userId,
     email: userEmail,
     name,
     tenantId: profile ? profile.tenant_id : (appMeta.tenant_id ?? null),
     staffId: activeStaff?.id ?? null,
-    platformAdmin:
-      accountAuthorized &&
-      appMeta.platform_admin === true &&
-      roleLevel >= 7 &&
-      role?.tenant_id === null,
-    roleLevel,
-    roleName,
+    ...platformIdentity,
+    roleLevel: rejectedPartner ? 0 : roleLevel,
+    roleName: rejectedPartner ? null : roleName,
   }
 })
 
@@ -106,10 +157,10 @@ export async function requireUser(next?: string): Promise<CurrentUser> {
   return user
 }
 
-/** Require at least `minLevel` (platform_admin always passes). */
+/** Require at least `minLevel` (verified platform operators always pass). */
 export async function requireMinLevel(minLevel: number): Promise<CurrentUser> {
   const user = await requireUser()
-  if (user.platformAdmin) return user
+  if (user.platformAdmin || user.partnerAdmin) return user
   if (user.roleLevel < minLevel) redirect('/ingen-atkomst')
   return user
 }
@@ -141,6 +192,16 @@ export async function requirePlatformAdmin(): Promise<CurrentUser> {
     // goal-44 Spår A: log the cross-tenant denial BEFORE the redirect throws
     // (never wrap NEXT_REDIRECT). uuid + level only — no email/name (PII).
     logAuthDenied({ userId: user.id, roleLevel: user.roleLevel, need: 'platform_admin' })
+    redirect('/ingen-atkomst')
+  }
+  return user
+}
+
+/** Require either global superadmin or a live, DB-verified partner operator. */
+export async function requirePlatformOperator(): Promise<CurrentUser> {
+  const user = await requireUser()
+  if (!user.platformAdmin && !(user.partnerAdmin && user.partnerId)) {
+    logAuthDenied({ userId: user.id, roleLevel: user.roleLevel, need: 'platform_operator' })
     redirect('/ingen-atkomst')
   }
   return user

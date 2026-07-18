@@ -11,7 +11,7 @@ describe('/utskick server route contract', () => {
     if (!existsSync(pagePath)) return
 
     const page = readFileSync(pagePath, 'utf8')
-    expect(page).toContain('await requirePlatformAdmin()')
+    expect(page).toContain('await requirePlatformOperator()')
     expect(page).toContain("supabase.rpc('platform_outbox_summary')")
     expect(page).toContain("supabase.rpc('platform_outbox_rows', rowArgs)")
     expect(page).toContain('searchParams: Promise<')

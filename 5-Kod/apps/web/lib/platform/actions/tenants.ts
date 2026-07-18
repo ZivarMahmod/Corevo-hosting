@@ -61,7 +61,7 @@ type Branding = {
 
 // ── Step 1: create tenant (transaktion via cascade-rollback) ────────────────────
 /**
- * Create a tenant + default settings + primary location + salon_admin role, then
+ * Create a tenant + default settings + primary location + owner/staff roles, then
  * (best-effort) invite the salon_admin. "Transaction": tenants is the parent and
  * every child FKs it ON DELETE CASCADE, so any mid-flow failure deletes the tenant
  * and the partial children vanish with it. All DB writes use the authed platform
@@ -69,7 +69,7 @@ type Branding = {
  * service role — which degrades gracefully when SUPABASE_SERVICE_ROLE_KEY is unset.
  */
 export async function createTenant(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
+  const { user, supabase, scope } = await platformCtx()
 
   const name = String(fd.get('name') ?? '').trim()
   const slugCheck = validateSlug(String(fd.get('slug') ?? ''))
@@ -134,7 +134,14 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   // 1) tenant
   const { data: tenant, error: tErr } = await supabase
     .from('tenants')
-    .insert({ slug, name, status: 'active', plan: 'standard', city })
+    .insert({
+      slug,
+      name,
+      status: 'provisioning',
+      plan: 'standard',
+      city,
+      partner_id: scope.kind === 'partner' ? scope.partnerId : null,
+    })
     .select('id, slug')
     .single()
   if (tErr || !tenant) {
@@ -144,7 +151,11 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   }
   const tenantId = tenant.id
   const rollback = async () => {
-    await supabase.from('tenants').delete().eq('id', tenantId) // cascades to children
+    await supabase
+      .from('tenants')
+      .delete()
+      .eq('id', tenantId)
+      .eq('status', 'provisioning') // never delete an ambiguously committed active tenant
   }
 
   // Optional logo (Token-branding step): upload now that we have the tenant id for the
@@ -215,6 +226,18 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
   if (rErr || !role) {
     await rollback()
     await reportActionError('createTenant.role_insert', rErr, { tenantId })
+    return { error: GENERIC }
+  }
+
+  // Every tenant leaves provisioning with the normal staff role. Partner RLS
+  // deliberately forbids creating roles after activation, so normal staff invites
+  // must not depend on a later SQL/CLI repair.
+  const { error: staffRoleError } = await supabase
+    .from('roles')
+    .insert({ tenant_id: tenantId, name: 'staff', level: 3 })
+  if (staffRoleError) {
+    await rollback()
+    await reportActionError('createTenant.staff_role_insert', staffRoleError, { tenantId })
     return { error: GENERIC }
   }
 
@@ -338,6 +361,34 @@ export async function createTenant(_p: ActionState, fd: FormData): Promise<Actio
       await rollback()
       return { error: `Kunden skapades inte: ${ownerFailed}. Försök igen.` }
     }
+  }
+
+  // Activation is the final transactional boundary. For partner customers this
+  // trigger qualifies the current license month only after the whole tenant and
+  // optional owner account exist. Failed onboarding remains safely deletable.
+  const { error: activateError } = await supabase
+    .from('tenants')
+    .update({ status: 'active' })
+    .eq('id', tenantId)
+    .eq('status', 'provisioning')
+  const serviceReader = createServiceClient()
+  const activationReader = serviceReader && typeof serviceReader.from === 'function'
+    ? serviceReader
+    : supabase
+  const { data: activated, error: activationReadError } = await activationReader
+    .from('tenants')
+    .select('id')
+    .eq('id', tenantId)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (!activated && activationReadError) {
+    await reportActionError('createTenant.activation_reconcile', activationReadError, { tenantId })
+    return { error: 'Kundens aktivering fick ett oklart svar. Kontot lämnades orört för säker avstämning.' }
+  }
+  if (!activated) {
+    await rollback()
+    await reportActionError('createTenant.activate', activateError ?? new Error('activation_not_committed'), { tenantId })
+    return { error: GENERIC }
   }
 
   await logPlatformAction(supabase, {

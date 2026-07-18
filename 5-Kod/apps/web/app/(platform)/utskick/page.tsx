@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { Database } from '@corevo/db'
-import { requirePlatformAdmin } from '@/lib/auth/session'
+import { requirePlatformOperator } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
 import { UtskickCenter, type UtskickFilters } from './UtskickCenter'
 
@@ -19,7 +19,7 @@ export default async function UtskickPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  await requirePlatformAdmin()
+  await requirePlatformOperator()
 
   const sp = await searchParams
   const filters: UtskickFilters = {

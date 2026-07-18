@@ -19,9 +19,10 @@ import { PortalTopbar } from './PortalTopbar'
 import { Topnav } from './Topnav'
 import topnavStyles from './Topnav.module.css'
 import {
-  PLATFORM_AREAS,
-  PLATFORM_SUBNAV,
+  platformAreasForUser,
+  platformLinkAllowed,
   platformMobileNavigation,
+  platformSubnavForUser,
 } from './platform-navigation'
 import { adminAreas, adminMobileNavigation } from './admin-navigation'
 import { LocationSwitcher } from './LocationSwitcher'
@@ -161,6 +162,7 @@ export async function PortalShell({
     }
     let paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys, navRoleLevel, grantedAreas)
     if (portal === 'platform') {
+      paletteItems = paletteItems.filter((item) => platformLinkAllowed(item.href, user.platformAdmin))
       const tenantOptions = await listTenantNavOptions()
       paletteItems = [
         ...paletteItems,
@@ -205,6 +207,7 @@ export async function PortalShell({
       owner: 'Ägare',
       staff: resolveTerm(terminology, 'staff', 'Personal'),
       platform_admin: 'Plattform',
+      partner_admin: 'Partner',
     }
     const userSub = user.platformAdmin
       ? 'Corevo AB'
@@ -257,7 +260,7 @@ export async function PortalShell({
     if (portal === 'platform' || portal === 'admin') {
       const isPlatform = portal === 'platform'
       const topAreas = isPlatform
-        ? PLATFORM_AREAS
+        ? platformAreasForUser(user.platformAdmin)
         : adminAreas(
             activeModuleKeys,
             navRoleLevel,
@@ -277,7 +280,7 @@ export async function PortalShell({
             mobileNavigation={
               isPlatform ? platformMobileNavigation(topAreas) : adminMobileNavigation(topAreas)
             }
-            subnav={isPlatform ? PLATFORM_SUBNAV : undefined}
+            subnav={isPlatform ? platformSubnavForUser(user.platformAdmin) : undefined}
             paletteItems={paletteItems}
             remoteAdminSearch={!isPlatform}
             brandHref={isPlatform ? '/' : '/admin'}
@@ -285,8 +288,8 @@ export async function PortalShell({
             // "via Corevo" bär rollgränsen. Ordet "Superadmin" får aldrig synas här.
             brandMark={isPlatform ? 'C' : brand.charAt(0).toUpperCase() || 'C'}
             brandName={brand}
-            brandSub={isPlatform ? 'Superadmin' : 'via Corevo'}
-            brandLabel={isPlatform ? 'Corevo superadmin – översikt' : `${brand} – översikt`}
+            brandSub={isPlatform ? (user.platformAdmin ? 'Superadmin' : 'Partnerportal') : 'via Corevo'}
+            brandLabel={isPlatform ? `Corevo ${user.platformAdmin ? 'superadmin' : 'partnerportal'} – översikt` : `${brand} – översikt`}
             primaryAction={
               isPlatform ? { href: '/kunder/ny', label: 'Ny kund', icon: 'plus' } : undefined
             }
@@ -318,7 +321,7 @@ export async function PortalShell({
             extra={isPlatform ? null : locationSwitcher}
             userLabel={userLabel}
             email={email}
-            roleLabel={isPlatform ? 'Super admin' : userSub}
+            roleLabel={isPlatform ? (user.platformAdmin ? 'Super admin' : 'Partner') : userSub}
             signOut={<SignOutButton />}
           />
           <main className={`portal-main ${topnavStyles.main}`}>

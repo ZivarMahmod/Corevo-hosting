@@ -16,6 +16,7 @@ import {
   type IconName,
 } from '@/components/portal/ui'
 import styles from './oversikt.module.css'
+import { requirePlatformOperator } from '@/lib/auth/session'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Översikt' }
@@ -107,6 +108,7 @@ function statusBadge(status: string) {
 }
 
 export default async function PlatformOverviewPage() {
+  const user = await requirePlatformOperator()
   // platform_admin → RLS grants cross-tenant read (private.is_platform_admin()).
   // Every figure here aggregates ÖVER alla kunder; seeing more than one is the
   // proof that the platform reaches across. No fabricated numbers — bookings/
@@ -122,9 +124,11 @@ export default async function PlatformOverviewPage() {
   return (
     <section className="portal-section">
       <PageHead
-        eyebrow="Plattform · Zivar"
+        eyebrow={user.platformAdmin ? 'Plattform · Zivar' : 'Partnerportal'}
         title="Översikt"
-        lede="Din insyn över alla kunder — klicka in på vilken som helst och styr allt utan kod."
+        lede={user.platformAdmin
+          ? 'Din insyn över alla kunder — klicka in på vilken som helst och styr allt utan kod.'
+          : 'Din insyn över dina kunder — klicka in på vilken som helst och styr allt utan kod.'}
       >
         <Button href="/kunder/ny" variant="primary" icon="plus">
           Onboarda kund

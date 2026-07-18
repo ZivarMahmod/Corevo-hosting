@@ -25,6 +25,7 @@ const claimed = {
   status: 'attempting',
   skip_reason: null,
   cost_ore: null,
+  cost_currency: null,
   parts: null,
   provider_ref: null,
   attempt_count: 1,
@@ -99,7 +100,9 @@ describe('durable notification outbox', () => {
       .mockResolvedValueOnce({ data: [claimed], error: null })
       .mockResolvedValueOnce({ data: true, error: null })
       .mockResolvedValueOnce({ data: true, error: null })
-    const deliver = vi.fn().mockResolvedValue({ status: 'sent', providerRef: 'provider-1', costOre: 42, parts: 1 })
+    const deliver = vi.fn().mockResolvedValue({
+      status: 'sent', providerRef: 'provider-1', costOre: 42, costCurrency: 'EUR', parts: 1,
+    })
 
     await expect(dispatchNotificationOutbox({ deliver })).resolves.toEqual({
       claimed: 1,
@@ -121,6 +124,7 @@ describe('durable notification outbox', () => {
       p_status: 'sent',
       p_provider_ref: 'provider-1',
       p_cost_ore: 42,
+      p_cost_currency: 'EUR',
       p_parts: 1,
       p_skip_reason: null,
     })
@@ -140,6 +144,7 @@ describe('durable notification outbox', () => {
       p_status: 'failed',
       p_provider_ref: null,
       p_cost_ore: null,
+      p_cost_currency: null,
       p_parts: null,
       p_skip_reason: 'delivery_uncertain',
     })
@@ -205,6 +210,7 @@ describe('durable notification outbox', () => {
       status: 'simulated',
       providerRef: 'dryrun-123',
       costOre: 35,
+      costCurrency: 'SEK',
       parts: 2,
     })
 
@@ -213,6 +219,7 @@ describe('durable notification outbox', () => {
       p_status: 'simulated',
       p_provider_ref: 'dryrun-123',
       p_cost_ore: 35,
+      p_cost_currency: 'SEK',
       p_parts: 2,
     }))
     await expect(dispatchNotificationOutbox({ deliver })).resolves.toMatchObject({ claimed: 0 })
@@ -246,6 +253,7 @@ describe('durable notification outbox', () => {
       p_status: 'failed',
       p_provider_ref: null,
       p_cost_ore: null,
+      p_cost_currency: null,
       p_parts: null,
       p_skip_reason: 'payload_invalid',
     })

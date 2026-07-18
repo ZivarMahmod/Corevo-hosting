@@ -32,10 +32,10 @@ describe('booking notification event coverage', () => {
     expect(reminders).not.toMatch(/\bsendBookingReminder\s*\(/)
   })
 
-  it('keeps the notification cron physically unwired until a full adapter is explicit', () => {
+  it('wires only the explicitly gated SMS worker and leaves other channels unclaimed', () => {
     const route = web('app/api/cron/notifications/route.ts')
-    expect(route).toContain('dispatchNotificationOutbox()')
-    expect(route).not.toMatch(/deliver\s*:/)
+    expect(route).toContain("{ channel: 'sms', deliver: deliverClaimedSmsOutbox }")
+    expect(route).toContain("smsMode === 'off'")
   })
 
   it('does not leave legacy direct booking senders available for future mutations', () => {

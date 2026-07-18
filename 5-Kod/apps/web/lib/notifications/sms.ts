@@ -1,7 +1,9 @@
 import 'server-only'
 import { logger } from '@/lib/observability'
-import type { NotificationDeliveryResult } from './outbox'
-import { parseSmsDeliveryMode, type SmsDeliveryMode } from './settings'
+import { createServiceClient } from '@/lib/platform/service'
+import { prepareBookingDelivery } from './booking-delivery'
+import type { ClaimedNotificationOutboxRow, NotificationDeliveryResult } from './outbox'
+import { getSmsEnabled, parseSmsDeliveryMode, type SmsDeliveryMode } from './settings'
 
 const ELKS_ENDPOINT = 'https://api.46elks.com/a1/sms'
 const DEFAULT_SENDER = 'Corevo'
@@ -20,6 +22,7 @@ export type SmsResult =
       estimatedCost?: number
       /** Kostnad i öre, avrundad från 46elks cost/estimated_cost. */
       costOre?: number
+      costCurrency?: string
     }
   | {
       ok: false
@@ -52,6 +55,18 @@ export type SendSmsArgs = {
   allowProviderDryRun?: boolean
 }
 
+type ResolvedSmsTransport = {
+  providerKey: 'corevo_46elks' | 'partner_46elks'
+  sender: string | null
+  username: string | null
+  password: string | null
+  callbackSecret: string | null
+  callbackUsername: string
+  costCurrency: string
+}
+
+type SmsTransportResolver = () => Promise<ResolvedSmsTransport | null>
+
 export function toE164(raw: string): string | null {
   const cleaned = raw.replace(/[\s\-()]/g, '')
   if (/^\+\d{8,15}$/.test(cleaned)) return cleaned
@@ -65,9 +80,8 @@ export function sanitizeSenderId(name?: string | null): string {
   return cleaned || DEFAULT_SENDER
 }
 
-function callbackUrl(): string | null {
+function callbackUrl(secret: string | null | undefined, username = CALLBACK_USERNAME): string | null {
   const raw = process.env.SMS_46ELKS_CALLBACK_URL
-  const secret = process.env.SMS_46ELKS_CALLBACK_SECRET
   if (!raw || !secret) return null
   try {
     const url = new URL(raw)
@@ -81,11 +95,35 @@ function callbackUrl(): string | null {
     // 46elks dokumenterar Basic Auth via userinfo i whendelivered-URL:en.
     // Providern omvandlar detta till Authorization; request-URL:en som når
     // Workern saknar därför credentials och kan behållas i invocation-loggar.
-    url.username = CALLBACK_USERNAME
+    url.username = username
     url.password = secret
     return url.toString()
   } catch {
     return null
+  }
+}
+
+async function resolveTenantSmsTransport(tenantId: string): Promise<ResolvedSmsTransport | null> {
+  const service = createServiceClient()
+  if (!service) return null
+  const { data, error } = await service.rpc('resolve_partner_sms_config', { p_tenant: tenantId })
+  const row = Array.isArray(data) ? data[0] : null
+  if (
+    error
+    || !row
+    || (row.provider_key !== 'corevo_46elks' && row.provider_key !== 'partner_46elks')
+    || typeof row.callback_username !== 'string'
+    || typeof row.cost_currency !== 'string'
+    || !/^[A-Z]{3}$/.test(row.cost_currency)
+  ) return null
+  return {
+    providerKey: row.provider_key,
+    sender: row.sender,
+    username: row.username,
+    password: row.password,
+    callbackSecret: row.callback_secret,
+    callbackUsername: row.callback_username,
+    costCurrency: row.cost_currency,
   }
 }
 
@@ -117,7 +155,10 @@ function validParts(value: unknown): value is number {
  * enbart slutna koder. `off` kontrolleras innan payload/credentials och kan därför
  * bevisas göra noll nätverkstrafik.
  */
-export async function sendSms(args: SendSmsArgs): Promise<SmsResult> {
+async function sendSmsWithTransport(
+  args: SendSmsArgs,
+  resolveTransport?: SmsTransportResolver,
+): Promise<SmsResult> {
   const mode = parseSmsDeliveryMode(process.env.SMS_DELIVERY_MODE)
   if (mode === 'off') {
     logger.info('sms.transport_off')
@@ -155,16 +196,36 @@ export async function sendSms(args: SendSmsArgs): Promise<SmsResult> {
     return { ok: false, skipped: true, mode, error: 'recipient_not_canary' }
   }
 
-  const user = process.env.SMS_46ELKS_USERNAME
-  const pass = process.env.SMS_46ELKS_PASSWORD
-  const deliveryCallback = mode === 'live' ? callbackUrl() : null
+  let transport: ResolvedSmsTransport | null = null
+  if (resolveTransport) {
+    try {
+      transport = await resolveTransport()
+    } catch {
+      transport = null
+    }
+    if (!transport) {
+      logger.info('sms.skipped_transport_unavailable', { mode })
+      return { ok: false, skipped: true, mode, error: 'transport_unavailable' }
+    }
+  }
+
+  const partnerTransport = transport?.providerKey === 'partner_46elks' ? transport : null
+  const user = partnerTransport ? partnerTransport.username : process.env.SMS_46ELKS_USERNAME
+  const pass = partnerTransport ? partnerTransport.password : process.env.SMS_46ELKS_PASSWORD
+  const callbackSecret = partnerTransport
+    ? partnerTransport.callbackSecret
+    : process.env.SMS_46ELKS_CALLBACK_SECRET
+  const callbackUsername = partnerTransport?.callbackUsername ?? CALLBACK_USERNAME
+  const deliveryCallback = mode === 'live'
+    ? callbackUrl(callbackSecret, callbackUsername)
+    : null
   if (!user || !pass || (mode === 'live' && !deliveryCallback)) {
     logger.info('sms.skipped_transport_unavailable', { mode })
     return { ok: false, skipped: true, mode, error: 'transport_unavailable' }
   }
 
   const form = new URLSearchParams({
-    from: sanitizeSenderId(args.from),
+    from: sanitizeSenderId(transport?.sender ?? args.from),
     to: e164,
     message: args.body,
     dontlog: 'message',
@@ -206,7 +267,8 @@ export async function sendSms(args: SendSmsArgs): Promise<SmsResult> {
         simulated: true,
         parts: provider.parts,
         estimatedCost: provider.estimated_cost,
-        costOre: costOre(provider.estimated_cost),
+      costOre: costOre(provider.estimated_cost),
+      costCurrency: transport?.costCurrency ?? 'SEK',
       }
     }
 
@@ -228,6 +290,9 @@ export async function sendSms(args: SendSmsArgs): Promise<SmsResult> {
       providerId: String(provider.id),
       ...(provider.parts === undefined ? {} : { parts: provider.parts as number }),
       ...(provider.cost === undefined ? {} : { costOre: costOre(provider.cost as number) }),
+      ...(provider.cost === undefined
+        ? {}
+        : { costCurrency: transport?.costCurrency ?? 'SEK' }),
     }
   } catch {
     if (controller.signal.aborted) {
@@ -241,13 +306,23 @@ export async function sendSms(args: SendSmsArgs): Promise<SmsResult> {
   }
 }
 
+export async function sendSms(args: SendSmsArgs): Promise<SmsResult> {
+  return sendSmsWithTransport(args)
+}
+
 /** Typad U1-adapter. U4 kopplar den till en explicit SMS-worker; cron gör det inte här. */
-export async function deliverSmsOutbox(args: SendSmsArgs): Promise<NotificationDeliveryResult> {
-  const result = await sendSms({ ...args, allowProviderDryRun: true })
+export async function deliverSmsOutbox(
+  args: SendSmsArgs & { tenantId: string },
+): Promise<NotificationDeliveryResult> {
+  const result = await sendSmsWithTransport(
+    { ...args, allowProviderDryRun: true },
+    () => resolveTenantSmsTransport(args.tenantId),
+  )
   if (result.ok) {
     const receipt = {
       ...(result.providerId === undefined ? {} : { providerRef: result.providerId }),
       ...(result.costOre === undefined ? {} : { costOre: result.costOre }),
+      ...(result.costCurrency === undefined ? {} : { costCurrency: result.costCurrency }),
       ...(result.parts === undefined ? {} : { parts: result.parts }),
     }
     return result.mode === 'dry_run'
@@ -277,6 +352,31 @@ export async function deliverSmsOutbox(args: SendSmsArgs): Promise<NotificationD
     return { status: 'failed', reason: 'delivery_uncertain' }
   }
   return { status: 'failed', reason: 'provider_rejected' }
+}
+
+export async function deliverClaimedSmsOutbox(
+  row: ClaimedNotificationOutboxRow,
+): Promise<NotificationDeliveryResult> {
+  const prepared = await prepareBookingDelivery(row)
+  if (!prepared.ok) {
+    if (prepared.reason === 'no_recipient') return { status: 'skipped', reason: 'no_recipient' }
+    if (prepared.reason === 'consent_denied') return { status: 'skipped', reason: 'consent_denied' }
+    if (prepared.reason === 'gdpr_erased') return { status: 'skipped', reason: 'gdpr_erased' }
+    if (prepared.reason === 'link_unavailable') return { status: 'retry', error: 'provider_unavailable' }
+    return { status: 'failed', reason: 'payload_invalid' }
+  }
+  if (prepared.channel !== 'sms') return { status: 'failed', reason: 'payload_invalid' }
+
+  const service = createServiceClient()
+  if (!service) return { status: 'retry', error: 'provider_unavailable' }
+  const tenantSmsEnabled = await getSmsEnabled(service, row.tenant_id)
+  return deliverSmsOutbox({
+    tenantId: row.tenant_id,
+    to: prepared.to,
+    body: prepared.body,
+    from: prepared.from,
+    tenantSmsEnabled,
+  })
 }
 
 export function parseGuestPhone(note: string | null | undefined): string | null {

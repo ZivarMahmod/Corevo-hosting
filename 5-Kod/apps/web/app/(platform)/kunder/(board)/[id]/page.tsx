@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { requirePlatformAdmin } from '@/lib/auth/session'
+import { requirePlatformOperator } from '@/lib/auth/session'
 import { getTenantDetail, getTenantAudit, deriveCustomizationLevel } from '@/lib/platform/tenants'
 import { getTenantCustomers } from '@/lib/platform/tenant-customers'
 import { TenantCustomers } from '@/components/platform/TenantCustomers'
@@ -106,7 +106,7 @@ function publicUrl(slug: string): string {
 export default async function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // Self-gate (task): the (platform) layout already gates, and every read re-checks
   // the role in platformCtx — this is belt-and-suspenders parity with the brief.
-  await requirePlatformAdmin()
+  await requirePlatformOperator()
 
   const { id } = await params
   const detail = await getTenantDetail(id)

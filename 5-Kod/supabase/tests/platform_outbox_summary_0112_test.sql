@@ -6,7 +6,7 @@ insert into public.tenants (id, slug, name) values
   ('a1120000-0000-0000-0000-000000000001', 'outbox-0112', 'Outbox 0112');
 
 insert into public.roles (id, tenant_id, name, level) values
-  ('a1120000-0000-0000-0000-000000000011', null, 'platform-0112', 8);
+  ('a1120000-0000-0000-0000-000000000011', null, 'super_admin', 8);
 insert into auth.users (id, email) values
   ('a1120000-0000-0000-0000-000000000012', 'platform-0112@example.test');
 insert into public.users (id, tenant_id, email, role_id, status, access_scope) values

@@ -5,9 +5,11 @@
 // Auth → URL Configuration → Redirect URLs, annars ignoreras den tyst.
 
 const DEFAULT_PLATFORM = 'booking.corevo.se'
+const DEFAULT_SUPERADMIN = 'superbooking.corevo.se'
 /** Staff och admin accepterar invite på den primära booking-dörren. */
-export function inviteRedirectUrl(door: 'staff' | 'admin'): string {
-  void door
-  const host = process.env.NEXT_PUBLIC_PLATFORM_HOST ?? DEFAULT_PLATFORM
+export function inviteRedirectUrl(door: 'staff' | 'admin' | 'partner'): string {
+  const host = door === 'partner'
+    ? process.env.NEXT_PUBLIC_SUPERADMIN_HOST ?? DEFAULT_SUPERADMIN
+    : process.env.NEXT_PUBLIC_PLATFORM_HOST ?? DEFAULT_PLATFORM
   return `https://${host}/valkommen`
 }

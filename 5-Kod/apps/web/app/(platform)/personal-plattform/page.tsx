@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePlatformAdmin } from '@/lib/auth/session'
+import { requirePlatformOperator } from '@/lib/auth/session'
 import { listStaffAllTenants } from '@/lib/platform/people'
 import { listTenants } from '@/lib/platform/tenants'
 import { PersonalClient } from '@/components/platform/PersonalClient'
@@ -25,7 +25,7 @@ export const metadata: Metadata = { title: 'Plattform · Personal' }
  * exact-copy of the law source, not the control row.
  */
 export default async function PersonalPlatformPage() {
-  await requirePlatformAdmin()
+  await requirePlatformOperator()
   // listTenants() feeds the invite-drawer salong dropdown (any salon can be the
   // invite target). Both reads are cross-tenant via the platform_admin JWT.
   const [staff, tenants] = await Promise.all([listStaffAllTenants(), listTenants()])

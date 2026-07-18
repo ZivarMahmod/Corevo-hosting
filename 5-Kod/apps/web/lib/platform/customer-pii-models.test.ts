@@ -38,26 +38,31 @@ describe('plattformens publika kundmodeller är PII-minimerade', () => {
   it('strippar rå kontaktdata ur den tvärgående Insyn-listan före serialisering', async () => {
     const rawEmail = 'anna@example.se'
     const rawPhone = '070-123 45 67'
-    const customers = query({
+    const customers = {
       data: [
         {
           id: 'customer-1',
           full_name: 'Anna',
           display_name: null,
           name_hidden: false,
-          email: rawEmail,
-          phone: rawPhone,
+          masked_email: '•••••@•••',
+          masked_phone: '070- •• •• ••',
+          has_email: true,
+          has_phone: true,
           status: 'active',
           last_seen_at: null,
           auth_user_id: null,
           tenant_id: 'tenant-1',
-          tenants: { slug: 'demo', name: 'Demo' },
-          bookings: [{ count: 2 }],
+          tenant_slug: 'demo',
+          tenant_name: 'Demo',
+          visits: 2,
         },
       ],
       error: null,
+    }
+    platformCtxMock.mockResolvedValue({
+      supabase: { rpc: vi.fn().mockResolvedValue(customers) },
     })
-    platformCtxMock.mockResolvedValue({ supabase: { from: () => customers } })
 
     const [item] = await listCustomersAllTenants()
 
@@ -77,28 +82,37 @@ describe('plattformens publika kundmodeller är PII-minimerade', () => {
     const rawEmail = 'bo@example.se'
     const rawPhone = '073-987 65 43'
     const results: Record<string, DbResult> = {
-      customers: {
-        data: [
-          {
-            id: 'customer-2',
-            full_name: 'Bo',
-            display_name: null,
-            name_hidden: false,
-            email: rawEmail,
-            phone: rawPhone,
-            status: 'active',
-            auth_user_id: null,
-            first_seen_at: '2026-07-01T00:00:00.000Z',
-            last_seen_at: null,
-          },
-        ],
-        error: null,
-      },
       bookings: { data: [], error: null },
       offert_requests: { data: [], error: null },
     }
+    const safeCustomers = {
+      data: [
+        {
+          id: 'customer-2',
+          tenant_id: 'tenant-1',
+          full_name: 'Bo',
+          display_name: null,
+          name_hidden: false,
+          masked_email: '•••••@•••',
+          masked_phone: '073- •• •• ••',
+          has_email: true,
+          has_phone: true,
+          status: 'active',
+          auth_user_id: null,
+          first_seen_at: '2026-07-01T00:00:00.000Z',
+          last_seen_at: null,
+          tenant_slug: 'demo',
+          tenant_name: 'Demo',
+          visits: 0,
+        },
+      ],
+      error: null,
+    }
     platformCtxMock.mockResolvedValue({
-      supabase: { from: (table: string) => query(results[table] ?? { data: [], error: null }) },
+      supabase: {
+        rpc: vi.fn().mockResolvedValue(safeCustomers),
+        from: (table: string) => query(results[table] ?? { data: [], error: null }),
+      },
     })
 
     const data = await getTenantCustomers('tenant-1')

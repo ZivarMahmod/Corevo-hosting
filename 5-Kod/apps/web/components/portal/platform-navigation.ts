@@ -12,6 +12,15 @@ export type PlatformArea = PlatformNavItem & {
   prefixes: readonly string[]
 }
 
+export const ROOT_ONLY_PLATFORM_PREFIXES = [
+  '/partners',
+  '/branscher',
+  '/integrationer',
+  '/domaner',
+  '/roller',
+  '/installningar',
+] as const
+
 /** The five destinations in the superadmin handoff, mapped to today's real URLs. */
 export const PLATFORM_AREAS: readonly PlatformArea[] = [
   { id: 'overview', href: '/', label: 'Översikt', prefixes: ['/', '/platform'] },
@@ -27,7 +36,7 @@ export const PLATFORM_AREAS: readonly PlatformArea[] = [
     id: 'platform',
     href: '/branscher',
     label: 'Plattform',
-    prefixes: ['/branscher', '/integrationer', '/domaner', '/roller', '/installningar'],
+    prefixes: ['/partners', '/branscher', '/integrationer', '/domaner', '/roller', '/installningar'],
   },
 ] as const
 
@@ -39,12 +48,27 @@ export const PLATFORM_SUBNAV: Partial<Record<PlatformAreaId, readonly PlatformNa
     { href: '/drift-och-logg', label: 'Loggar' },
   ],
   platform: [
+    { href: '/partners', label: 'Partners' },
     { href: '/branscher', label: 'Branscher' },
     { href: '/integrationer', label: 'Integrationer' },
     { href: '/domaner', label: 'Domäner' },
     { href: '/roller', label: 'Roller' },
     { href: '/installningar', label: 'Inställningar' },
   ],
+}
+
+export function platformAreasForUser(isRoot: boolean): readonly PlatformArea[] {
+  return isRoot ? PLATFORM_AREAS : PLATFORM_AREAS.filter((area) => area.id !== 'platform')
+}
+
+export function platformSubnavForUser(
+  isRoot: boolean,
+): Partial<Record<PlatformAreaId, readonly PlatformNavItem[]>> {
+  return isRoot ? PLATFORM_SUBNAV : { insight: PLATFORM_SUBNAV.insight }
+}
+
+export function platformLinkAllowed(href: string, isRoot: boolean): boolean {
+  return isRoot || !ROOT_ONLY_PLATFORM_PREFIXES.some((prefix) => platformPathMatches(href, prefix))
 }
 
 export function platformPathMatches(pathname: string, prefix: string): boolean {
@@ -111,6 +135,7 @@ export function platformMobileNavigation(
       : []),
     ...(platform
       ? [
+          { id: 'partners', href: '/partners', label: 'Partners', prefixes: ['/partners'] },
           { id: 'verticals', href: '/branscher', label: 'Branscher', prefixes: ['/branscher'] },
           {
             id: 'integrations',

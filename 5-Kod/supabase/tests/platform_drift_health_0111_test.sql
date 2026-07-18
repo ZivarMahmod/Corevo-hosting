@@ -7,7 +7,7 @@ insert into public.tenants (id, slug, name) values
   ('a1110000-0000-0000-0000-000000000002', 'drift-0111-b', 'Drift 0111 B');
 
 insert into public.roles (id, tenant_id, name, level) values
-  ('a1110000-0000-0000-0000-000000000011', null, 'platform-0111', 8);
+  ('a1110000-0000-0000-0000-000000000011', null, 'super_admin', 8);
 insert into auth.users (id, email) values
   ('a1110000-0000-0000-0000-000000000012', 'platform-0111@example.test');
 insert into public.users (id, tenant_id, email, role_id, status, access_scope) values

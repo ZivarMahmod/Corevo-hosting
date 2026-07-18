@@ -18,6 +18,7 @@ export const CANONICAL_PLATFORM_ROUTE_PREFIXES = [
   '/domaner',
   '/roller',
   '/installningar',
+  '/partners',
 ] as const
 
 /** Retired paths remain protected and owned by the superadmin door until their

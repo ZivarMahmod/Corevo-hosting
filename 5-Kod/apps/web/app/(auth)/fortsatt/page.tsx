@@ -16,6 +16,7 @@ export default async function InviteLandingPage() {
     portalHomeFor({
       roleLevel: user.roleLevel,
       platformAdmin: user.platformAdmin,
+      partnerAdmin: user.partnerAdmin,
     }),
   )
 }

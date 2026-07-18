@@ -5,7 +5,10 @@ import {
   PLATFORM_AREAS,
   PLATFORM_SUBNAV,
   activePlatformArea,
+  platformAreasForUser,
+  platformLinkAllowed,
   platformMobileNavigation,
+  platformSubnavForUser,
   platformPathMatches,
 } from './platform-navigation'
 import { activeTopnavArea } from './Topnav'
@@ -29,6 +32,7 @@ describe('superadmin navigation contract', () => {
     expect(activePlatformArea('/drift-och-logg/events').id).toBe('insight')
     expect(activePlatformArea('/branscher/florist').id).toBe('platform')
     expect(activePlatformArea('/domaner').id).toBe('platform')
+    expect(activePlatformArea('/partners/partner-id').id).toBe('platform')
   })
 
   it('exposes Kommunikationscenter as Utskick inside Insyn', () => {
@@ -87,6 +91,7 @@ describe('superadmin navigation contract', () => {
       '/fakturering',
       '/personal-plattform',
       '/utskick',
+      '/partners',
       '/branscher',
       '/integrationer',
       '/domaner',
@@ -114,5 +119,20 @@ describe('superadmin navigation contract', () => {
 
     expect(scoped.tabs.some((area) => area.id === 'customers')).toBe(false)
     expect(scoped.action).toBeUndefined()
+  })
+
+  it('tar bort alla globala Corevo-ytor för partnern i desktop, mobil och palett', () => {
+    const areas = platformAreasForUser(false)
+    const subnav = platformSubnavForUser(false)
+    const mobile = platformMobileNavigation(areas)
+
+    expect(areas.map((area) => area.id)).toEqual(['overview', 'customers', 'finance', 'insight'])
+    expect(subnav.platform).toBeUndefined()
+    expect(mobile.more.some((area) => area.href === '/partners')).toBe(false)
+    for (const href of ['/partners', '/branscher', '/integrationer', '/domaner', '/roller', '/installningar']) {
+      expect(platformLinkAllowed(href, false), href).toBe(false)
+    }
+    expect(platformLinkAllowed('/kunder/tenant-id', false)).toBe(true)
+    expect(platformLinkAllowed('/utskick', false)).toBe(true)
   })
 })

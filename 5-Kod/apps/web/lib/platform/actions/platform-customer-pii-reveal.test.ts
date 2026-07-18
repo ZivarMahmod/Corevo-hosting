@@ -25,7 +25,6 @@ function client(opts: {
   relationship?: { data: unknown; error: unknown }
   rpc?: { data: unknown; error: unknown }
 } = {}) {
-  const eqCalls: [string, unknown][] = []
   const relationship = opts.relationship ?? {
     data: { id: 'customer-1', tenant_id: 'tenant-1' },
     error: null,
@@ -42,18 +41,15 @@ function client(opts: {
     ],
     error: null,
   }
-  const chain = {
-    select: () => chain,
-    eq: (column: string, value: unknown) => {
-      eqCalls.push([column, value])
-      return chain
-    },
-    maybeSingle: vi.fn(async () => relationship),
-  }
   return {
-    from: vi.fn(() => chain),
-    rpc: vi.fn(async () => rpcResult),
-    eqCalls,
+    rpc: vi.fn(async (name: string) =>
+      name === 'platform_customer_safe_rows'
+        ? {
+            data: relationship.data ? [relationship.data] : [],
+            error: relationship.error,
+          }
+        : rpcResult,
+    ),
   }
 }
 
@@ -85,11 +81,12 @@ describe('revealPlatformCustomerContact', () => {
     })
 
     expect(result).toEqual({ ok: false, error: 'Kunden finns inte hos det här företaget.' })
-    expect(supabase.eqCalls).toEqual([
-      ['id', 'customer-other'],
-      ['tenant_id', 'tenant-1'],
-    ])
-    expect(supabase.rpc).not.toHaveBeenCalled()
+    expect(supabase.rpc).toHaveBeenCalledTimes(1)
+    expect(supabase.rpc).toHaveBeenCalledWith('platform_customer_safe_rows', {
+      p_tenant: 'tenant-1',
+      p_customer: 'customer-other',
+      p_limit: 1,
+    })
     expect(mocks.audit).not.toHaveBeenCalled()
   })
 

@@ -234,9 +234,12 @@ export async function middleware(request: NextRequest) {
   //     client-spoofable). Only fires on the platform host; tenant hosts already
   //     bounced every back-office path above.
   if (user && isPlatformHost && isPrefix(effectivePath, TENANT_SCOPED_BACKOFFICE)) {
-    const isPlatformAdmin =
-      (user.app_metadata as { platform_admin?: boolean } | undefined)?.platform_admin === true
-    if (isPlatformAdmin) {
+    const platformMeta = user.app_metadata as
+      | { platform_admin?: boolean; partner_admin?: boolean }
+      | undefined
+    const isPlatformOperator =
+      platformMeta?.platform_admin === true || platformMeta?.partner_admin === true
+    if (isPlatformOperator) {
       // goal-27 — in the production split, booking `/` redirects to `/admin`, so the
       // old bounce('/') here formed a `/` ⇄ `/admin` loop (ERR_TOO_MANY_REDIRECTS) for
       // a platform_admin holding a stale booking session. Send them to THEIR door

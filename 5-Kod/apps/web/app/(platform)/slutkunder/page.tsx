@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { requirePlatformAdmin } from '@/lib/auth/session'
+import { requirePlatformOperator } from '@/lib/auth/session'
 import { listCustomersAllTenants } from '@/lib/platform/people'
 import { listTenants } from '@/lib/platform/tenants'
 import { hasServiceRole } from '@/lib/platform/service'
@@ -29,7 +29,7 @@ export default async function EndCustomersPage({
 }: {
   searchParams: Promise<{ q?: string; tenant?: string }>
 }) {
-  await requirePlatformAdmin()
+  await requirePlatformOperator()
 
   const sp = await searchParams
   const q = sp.q ?? ''

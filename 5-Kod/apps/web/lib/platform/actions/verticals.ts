@@ -10,7 +10,7 @@
 // kunder). UI:t säger detta i klartext vid varje form.
 
 import { revalidatePath } from 'next/cache'
-import { platformCtx } from '../guard'
+import { platformAdminCtx } from '../guard'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'
 import { isSelectableTheme } from '@/lib/platform/theme-palettes'
 import { COPY_OVERRIDE_KEYS } from '@/components/storefront/theme-content'
@@ -34,7 +34,7 @@ const TERM_KEYS = [
 
 /** Terminologi — live-arv. Tomt fält = tillbaka till standard (nyckeln droppas). */
 export async function saveVerticalTerminology(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { supabase } = await platformCtx()
+  const { supabase } = await platformAdminCtx()
   const key = String(fd.get('vertical') ?? '').trim()
   if (!key) return { error: GENERIC }
 
@@ -58,7 +58,7 @@ export async function saveVerticalTerminology(_p: ActionState, fd: FormData): Pr
  *  terminologin — nycklar utanför formuläret skulle raderas, därför itererar vi
  *  ALLA COPY_OVERRIDE_KEYS). Tomt fält = nyckeln droppas = temats standard. */
 export async function saveVerticalCopy(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { supabase } = await platformCtx()
+  const { supabase } = await platformAdminCtx()
   const key = String(fd.get('vertical') ?? '').trim()
   if (!key) return { error: GENERIC }
 
@@ -78,7 +78,7 @@ export async function saveVerticalCopy(_p: ActionState, fd: FormData): Promise<A
 
 /** Modul-förval + default-mall — kopieras vid onboarding, rör aldrig befintliga. */
 export async function saveVerticalDefaults(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { supabase } = await platformCtx()
+  const { supabase } = await platformAdminCtx()
   const key = String(fd.get('vertical') ?? '').trim()
   if (!key) return { error: GENERIC }
 

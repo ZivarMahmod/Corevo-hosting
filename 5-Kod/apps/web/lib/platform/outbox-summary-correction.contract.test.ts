@@ -19,6 +19,7 @@ describe('platform outbox summary correction', () => {
 
     const sql = readFileSync(migrationPath, 'utf8').toLowerCase()
 
+    expect(sql).not.toContain('pg_catalog.coalesce')
     expect(sql).toContain('create index if not exists notifications_outbox_recent_idx')
     expect(sql).toContain('(created_at desc, id desc)')
     expect(sql).toContain('create index if not exists notifications_outbox_tenant_recent_idx')
@@ -57,9 +58,9 @@ describe('platform outbox summary correction', () => {
     expect(sql).toMatch(/has_function_privilege\(\s*'service_role'/)
   })
 
-  it('keeps 0112 in the database release inventory through migration 0113', () => {
+  it('keeps 0112 in the database release inventory through migration 0116', () => {
     const workflow = readFileSync(ciPath, 'utf8')
-    expect(workflow.match(/--expected-latest 0113/g)).toHaveLength(2)
-    expect(workflow.match(/--required-test-versions .*0112,0113/g)).toHaveLength(2)
+    expect(workflow.match(/--expected-latest 0116/g)).toHaveLength(2)
+    expect(workflow.match(/--required-test-versions .*0112,0113,0114,0115,0116/g)).toHaveLength(2)
   })
 })

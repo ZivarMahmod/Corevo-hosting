@@ -133,7 +133,9 @@ export async function compensateFailedStaffInvite(
           authBoundStaffId: binding.authBoundStaffId,
           profile: profileResult.data
             ? {
-                tenantId: profileResult.data.tenant_id,
+                // Global platform users are never valid staff invite targets.
+                // Normalize a nullable global tenant to a guaranteed mismatch.
+                tenantId: profileResult.data.tenant_id ?? '',
                 // A legacy/null role is deliberately a mismatch, never an exact
                 // provisional profile eligible for deletion.
                 roleId: profileResult.data.role_id ?? '',

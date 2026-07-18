@@ -59,6 +59,7 @@ export const NAV: Record<PortalRole, NavConfig> = {
       { href: '/kunder/ny', label: 'Onboarda kund', icon: 'plus' },
       { href: '/branscher', label: 'Branscher', icon: 'layers' },
       { group: 'Plattform' },
+      { href: '/partners', label: 'Partners', icon: 'building' },
       { href: '/integrationer', label: 'Integrationer', icon: 'layers' },
       { href: '/domaner', label: 'Domäner', icon: 'link' },
       { href: '/roller', label: 'Roller', icon: 'shield' },

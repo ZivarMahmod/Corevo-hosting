@@ -40,7 +40,7 @@ begin
       ) as sent_30d,
       pg_catalog.count(*) filter (where o.status = 'failed') as failed_30d,
       pg_catalog.count(*) filter (where o.status = 'skipped') as skipped_30d,
-      pg_catalog.coalesce(
+      coalesce(
         pg_catalog.sum(o.cost_ore) filter (
           where o.chosen_channel = 'sms'
             and o.status <> 'simulated'
@@ -77,13 +77,13 @@ begin
     t.id,
     t.slug,
     t.name,
-    pg_catalog.coalesce(o.sent_30d, 0::bigint),
-    pg_catalog.coalesce(o.failed_30d, 0::bigint),
-    pg_catalog.coalesce(o.skipped_30d, 0::bigint),
-    pg_catalog.coalesce(o.sms_cost_ore_30d, 0::bigint),
-    pg_catalog.coalesce(c.customers_total, 0::bigint),
-    pg_catalog.coalesce(p.prefs_rows, 0::bigint),
-    pg_catalog.coalesce(s.push_subs_active, 0::bigint)
+    coalesce(o.sent_30d, 0::bigint),
+    coalesce(o.failed_30d, 0::bigint),
+    coalesce(o.skipped_30d, 0::bigint),
+    coalesce(o.sms_cost_ore_30d, 0::bigint),
+    coalesce(c.customers_total, 0::bigint),
+    coalesce(p.prefs_rows, 0::bigint),
+    coalesce(s.push_subs_active, 0::bigint)
   from public.tenants t
   left join recent_outbox o on o.tenant_id = t.id
   left join active_customer_totals c on c.tenant_id = t.id
