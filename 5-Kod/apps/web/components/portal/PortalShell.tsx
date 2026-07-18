@@ -289,7 +289,12 @@ export async function PortalShell({
             // (Ersätter codex/00 §2-beslutet om att inte dubblera kalenderns skapaflöde.)
             quickActions={
               isPlatform
-                ? undefined
+                ? [
+                    { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' },
+                    { href: '/kunder', label: 'Slutkunder', icon: 'users' },
+                    { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
+                    { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
+                  ]
                 : [
                     { href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' },
                     { href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'block' },

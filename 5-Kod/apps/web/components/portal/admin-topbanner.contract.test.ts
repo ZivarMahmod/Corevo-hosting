@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { nextThemeMode } from './ThemeSwitch'
 
@@ -14,6 +15,60 @@ const css = read('components/portal/Topnav.module.css')
 const adminCss = read('components/portal/AdminTopnav.module.css')
 const dashboardPage = read('app/(admin)/admin/page.tsx')
 const adminData = read('lib/admin/data.ts')
+
+type QuickAction = { href: string; label: string; icon: string }
+
+function quickActionsFromPortalShell(source: string): {
+  platform: QuickAction[]
+  admin: QuickAction[]
+} {
+  const sourceFile = ts.createSourceFile('PortalShell.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+  let result: { platform: QuickAction[]; admin: QuickAction[] } | null = null
+
+  function readBranch(expression: ts.Expression): QuickAction[] {
+    if (!ts.isArrayLiteralExpression(expression)) {
+      throw new Error('quickActions branch must be an array literal')
+    }
+
+    return expression.elements.map((element) => {
+      if (!ts.isObjectLiteralExpression(element)) {
+        throw new Error('quickActions entries must be object literals')
+      }
+      const values = Object.fromEntries(element.properties.map((property) => {
+        if (!ts.isPropertyAssignment(property) || !ts.isStringLiteral(property.initializer)) {
+          throw new Error('quickActions properties must use string literals')
+        }
+        return [property.name.getText(sourceFile), property.initializer.text]
+      }))
+      return { href: values.href ?? '', label: values.label ?? '', icon: values.icon ?? '' }
+    })
+  }
+
+  function visit(node: ts.Node) {
+    if (
+      ts.isJsxAttribute(node) &&
+      node.name.getText(sourceFile) === 'quickActions' &&
+      node.initializer &&
+      ts.isJsxExpression(node.initializer) &&
+      node.initializer.expression
+    ) {
+      if (result) throw new Error('PortalShell must declare quickActions exactly once')
+      const expression = node.initializer.expression
+      if (!ts.isConditionalExpression(expression) || expression.condition.getText(sourceFile) !== 'isPlatform') {
+        throw new Error('quickActions must branch directly on isPlatform')
+      }
+      result = {
+        platform: readBranch(expression.whenTrue),
+        admin: readBranch(expression.whenFalse),
+      }
+    }
+    ts.forEachChild(node, visit)
+  }
+
+  visit(sourceFile)
+  if (!result) throw new Error('PortalShell quickActions prop is missing')
+  return result
+}
 
 describe('del 02: universal toppbanner v2', () => {
   it('behåller en gemensam toppbanner men matchar kundadminens desktopordning', () => {
@@ -37,6 +92,23 @@ describe('del 02: universal toppbanner v2', () => {
     expect(dashboardPage).not.toContain('GENVÄGAR')
     // Mobilen har FAB + flikar — genvägsraden är desktop/tablet.
     expect(css).toMatch(/\.mobileAdmin \.quickGroup\s*\{[\s\S]*?display:\s*none;/)
+  })
+
+  it('ger plattformen exakt fyra genvägar utan att ändra kundadminens array', () => {
+    const { platform, admin } = quickActionsFromPortalShell(portalShell)
+
+    expect(platform).toEqual([
+      { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' },
+      { href: '/kunder', label: 'Slutkunder', icon: 'users' },
+      { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
+      { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
+    ])
+    expect(admin).toEqual([
+      { href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' },
+      { href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'block' },
+      { href: '/admin/kunder', label: 'Kunder', icon: 'users' },
+      { href: '/admin/statistik', label: 'Statistik', icon: 'chartBars' },
+    ])
   })
 
   it('visar otillåtna ytor låsta i stället för att dölja dem', () => {

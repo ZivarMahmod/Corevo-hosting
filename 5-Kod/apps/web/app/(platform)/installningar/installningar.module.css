@@ -78,6 +78,18 @@
   margin-top: 16px;
 }
 
+.linkRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.billingAction {
+  margin-top: 18px;
+}
+
 /* honest "ej kopplad" note under a section that holds only unwired reglage. */
 .notWired {
   margin-top: 14px;
