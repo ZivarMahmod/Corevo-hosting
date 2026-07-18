@@ -65,7 +65,7 @@ jobs:
 
       # 1) Supabase migrations → staging project
       - uses: supabase/setup-cli@v1
-        with: { version: latest }
+        with: { version: 2.109.1 }
       - name: Push migrations (staging)
         working-directory: 5-Kod # contains supabase/ (config.toml + migrations)
         env:
