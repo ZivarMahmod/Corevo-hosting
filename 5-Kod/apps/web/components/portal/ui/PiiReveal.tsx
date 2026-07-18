@@ -1,72 +1,113 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from './Icon'
 import { useToast } from './Toast'
 
-/** Mask a phone number to the handoff pattern "070- •• •• ••" (first 4 chars
- *  kept). Pure — exported so list/table cells can show the masked form without
- *  mounting the full reveal control. */
-export function maskPhone(phone: string | null | undefined): string {
-  if (!phone || phone === '—') return '—'
-  return `${phone.slice(0, 4)} •• •• ••`
+export { maskEmail, maskPhone } from './pii'
+
+export type PiiContact = {
+  email: string | null
+  phone: string | null
 }
 
-/** Mask an email to "•••••@•••" (the handoff convention). */
-export function maskEmail(email: string | null | undefined): string {
-  if (!email || email === '—') return '—'
-  return '•••••@•••'
-}
+export type PiiRevealLoadResult =
+  | { ok: true; contact: PiiContact; expiresAt: string }
+  | { ok: false; error: string }
 
 /**
- * Time-bound PII reveal (playbook §4.9 + §6 "Röd tråd"). Contact details are
- * MASKED by default; "Visa" reveals them and fires the logged warning toast
- * ("Kontaktuppgift synlig i 15 min (loggas)"). "Dölj" re-masks. GDPR-minimised
- * by design: nothing is shown until an operator explicitly asks.
- *
- * The toast says "loggas", so the reveal exposes an `onReveal` seam for the data
- * layer to write the real audit-log entry — this primitive does NOT import lib
- * (presentational + the toast only). It also does not run a real 15-minute
- * auto-remask timer (the copy communicates the policy; the actual TTL is enforced
- * server-side via the audit/reveal grant the data agent wires through onReveal).
- *
- * Layout matches the handoff (Bookings.jsx / Customers.jsx PII block): a header
- * row with a label + the Visa/Dölj button, then phone + email columns.
+ * Lazy, time-bound contact reveal. Initial props contain masks only; raw contact
+ * is fetched after an explicit click and kept in local state only until the
+ * server-provided expiry. A loader may claim success only after its audit write
+ * succeeded, so the success toast can truthfully say the reveal was logged.
  */
 export function PiiReveal({
-  phone,
-  email,
+  maskedPhone,
+  maskedEmail,
+  loadContact,
   label = 'Kontaktuppgifter',
   note,
-  onReveal,
-  onHide,
+  onContactChange,
 }: {
-  phone: string | null | undefined
-  email: string | null | undefined
-  /** Header label (e.g. "Kontaktuppgifter" or "Kontakt-PII · tidsbunden"). */
+  maskedPhone: string
+  maskedEmail: string
+  loadContact: () => Promise<PiiRevealLoadResult>
   label?: string
-  /** Optional caption shown under the values while masked (retention copy). */
   note?: string
-  /** Fired when the operator reveals — wire the audit-log write here. */
-  onReveal?: () => void
-  /** Fired when the operator re-hides. */
-  onHide?: () => void
+  onContactChange?: (contact: PiiContact | null) => void
 }) {
-  const [revealed, setRevealed] = useState(false)
+  const [contact, setContact] = useState<PiiContact | null>(null)
+  const [expiresAt, setExpiresAt] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const request = useRef(0)
+  const onContactChangeRef = useRef(onContactChange)
+  onContactChangeRef.current = onContactChange
   const { notify } = useToast()
 
-  const hasPhone = !!phone && phone !== '—'
-  const hasEmail = !!email && email !== '—'
-  const canReveal = hasPhone || hasEmail
+  const canReveal = maskedPhone !== '—' || maskedEmail !== '—'
+  const revealed = contact !== null
 
-  function reveal() {
-    setRevealed(true)
-    onReveal?.()
-    notify('Kontaktuppgift synlig i 15 min (loggas)', 'warning')
+  useEffect(() => {
+    return () => {
+      request.current += 1
+      onContactChangeRef.current?.(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!contact || !expiresAt) return
+    const remaining = Math.max(0, Date.parse(expiresAt) - Date.now())
+    const timer = window.setTimeout(() => {
+      setContact(null)
+      setExpiresAt(null)
+      setError(null)
+      onContactChangeRef.current?.(null)
+    }, remaining)
+    return () => window.clearTimeout(timer)
+  }, [contact, expiresAt])
+
+  async function reveal() {
+    if (loading || revealed) return
+    const requestId = ++request.current
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await loadContact()
+      if (request.current !== requestId) return
+      if (!result.ok) {
+        setError(result.error)
+        notify(result.error, 'warning')
+        return
+      }
+      const expiry = Date.parse(result.expiresAt)
+      if (!Number.isFinite(expiry) || expiry <= Date.now()) {
+        const message = 'Kontaktuppgifternas visningstid har redan löpt ut. Försök igen.'
+        setError(message)
+        notify(message, 'warning')
+        return
+      }
+      setContact(result.contact)
+      setExpiresAt(result.expiresAt)
+      onContactChangeRef.current?.(result.contact)
+      notify('Kontaktuppgift synlig i 15 min (loggad)', 'warning')
+    } catch {
+      if (request.current !== requestId) return
+      const message = 'Kontaktuppgifterna kunde inte hämtas. Försök igen.'
+      setError(message)
+      notify(message, 'warning')
+    } finally {
+      if (request.current === requestId) setLoading(false)
+    }
   }
+
   function hide() {
-    setRevealed(false)
-    onHide?.()
+    request.current += 1
+    setContact(null)
+    setExpiresAt(null)
+    setLoading(false)
+    setError(null)
+    onContactChangeRef.current?.(null)
   }
 
   return (
@@ -106,9 +147,9 @@ export function PiiReveal({
               Dölj
             </button>
           ) : (
-            <button type="button" className="bo-pii-btn" onClick={reveal}>
+            <button type="button" className="bo-pii-btn" onClick={reveal} disabled={loading}>
               <Icon name="eye" size={14} />
-              Visa
+              {loading ? 'Hämtar…' : 'Visa'}
             </button>
           ))}
       </div>
@@ -119,18 +160,23 @@ export function PiiReveal({
             className="num"
             style={{ fontSize: 13.5, fontWeight: 500, marginTop: 2, color: 'var(--c-ink)' }}
           >
-            {revealed && hasPhone ? phone : maskPhone(phone)}
+            {revealed ? (contact.phone ?? '—') : maskedPhone}
           </div>
         </div>
         <div>
           <div style={{ fontSize: 11, color: 'var(--c-ink-3)' }}>E-post</div>
           <div style={{ fontSize: 13.5, fontWeight: 500, marginTop: 2, color: 'var(--c-ink)' }}>
-            {revealed && hasEmail ? email : maskEmail(email)}
+            {revealed ? (contact.email ?? '—') : maskedEmail}
           </div>
         </div>
       </div>
       {note && !revealed && (
         <div style={{ fontSize: 11.5, color: 'var(--c-ink-3)', marginTop: 10 }}>{note}</div>
+      )}
+      {error && (
+        <div role="alert" style={{ fontSize: 11.5, color: 'var(--c-danger)', marginTop: 10 }}>
+          {error}
+        </div>
       )}
     </div>
   )

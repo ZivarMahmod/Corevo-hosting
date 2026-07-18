@@ -4,6 +4,8 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { sendPasswordReset, createPlatformCustomer } from '@/lib/platform/actions'
 import type { CustomerListItem } from '@/lib/platform/people'
+import { PlatformPiiReveal } from '@/components/platform/PlatformPiiReveal'
+import type { PiiContact } from '@/components/portal/ui/PiiReveal'
 import {
   PageHead,
   Stat,
@@ -21,9 +23,9 @@ type TenantOption = { id: string; name: string; slug: string; status: string }
 
 /**
  * Cross-tenant Kunder island (law: SuperData.jsx → SuperCustomers). Search/filter
- * drives a GET navigation so the SERVER re-runs listCustomersAllTenants (the data
- * never round-trips through the client — search is a real cross-tenant query, not
- * a client filter on a partial set). Clicking a row opens the detail Drawer with
+ * drives a GET navigation so the SERVER re-runs listCustomersAllTenants (raw
+ * contact never round-trips through the client; only server-made masks do). Search
+ * is a real cross-tenant query, not a client filter on a partial set. Clicking a row opens the Drawer with
  * the operativa åtgärder; the password-reset action is REAL (wires to the existing
  * sendPasswordReset server action), the copy-e-post action is an honest client-side
  * helper. Every action fires a consequence toast (§6). The mock's "ny magic-link"
@@ -50,6 +52,7 @@ export function KunderView({
   // Controlled search box mirrors the URL; submit (or salon change) navigates.
   const [query, setQuery] = useState(q)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [revealedContact, setRevealedContact] = useState<PiiContact | null>(null)
   const [adding, setAdding] = useState(false)
   // Add-customer form state (goal-22). The view is cross-tenant, so a salong choice is
   // mandatory — prefilled with the active salong filter when one is set.
@@ -63,13 +66,6 @@ export function KunderView({
     () => customers.find((c) => c.id === selectedId) ?? null,
     [customers, selectedId],
   )
-  // slug → tenant id, so a customer row can resolve the tenantId the password-reset
-  // action requires (the foundation read exposes only slug).
-  const tenantIdBySlug = useMemo(() => {
-    const m = new Map<string, string>()
-    for (const t of tenants) m.set(t.slug, t.id)
-    return m
-  }, [tenants])
   // Add-customer can only target an ACTIVE salon (the server rejects others), so the
   // form's salong-select offers only those — the search filter above still lists ALL
   // (you may legitimately filter customers by a suspended salon).
@@ -92,6 +88,16 @@ export function KunderView({
   const guests = customers.filter((c) => c.role === 'Gäst').length
   const salons = new Set(customers.map((c) => c.slug).filter(Boolean)).size
   const scope = isFiltered ? 'i urvalet' : 'totalt'
+
+  function openCustomer(id: string) {
+    setRevealedContact(null)
+    setSelectedId(id)
+  }
+
+  function closeCustomer() {
+    setRevealedContact(null)
+    setSelectedId(null)
+  }
 
   return (
     <div>
@@ -219,7 +225,7 @@ export function KunderView({
                 {customers.map((c) => (
                   <tr
                     key={c.id}
-                    onClick={() => setSelectedId(c.id)}
+                    onClick={() => openCustomer(c.id)}
                     style={{ cursor: 'pointer' }}
                     tabIndex={0}
                     role="button"
@@ -227,7 +233,7 @@ export function KunderView({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
-                        setSelectedId(c.id)
+                        openCustomer(c.id)
                       }
                     }}
                   >
@@ -238,7 +244,9 @@ export function KunderView({
                         </span>
                         <span className={styles.nameCol}>
                           <b className={styles.name}>{c.name}</b>
-                          <span className={styles.sub}>{c.email ?? '—'}</span>
+                          <span className={styles.sub}>
+                            {c.maskedEmail !== '—' ? c.maskedEmail : c.maskedPhone}
+                          </span>
                         </span>
                       </span>
                     </td>
@@ -270,7 +278,7 @@ export function KunderView({
       {/* ── Detail drawer (operativ data-kontroll) ── */}
       {selected && (
         <Drawer
-          onClose={() => setSelectedId(null)}
+          onClose={closeCustomer}
           title={selected.name}
           sub={selected.tenant}
           accent={
@@ -283,8 +291,8 @@ export function KunderView({
               variant="primary"
               icon="mail"
               style={{ flex: 1, justifyContent: 'center' }}
-              disabled={pending || !selected.email}
-              onClick={() => resetPassword(selected)}
+              disabled={pending || !revealedContact?.email}
+              onClick={() => resetPassword(selected, revealedContact?.email ?? null)}
             >
               Skicka lösenordsreset
             </Button>
@@ -295,9 +303,15 @@ export function KunderView({
               <div className="eyebrow" style={{ marginBottom: 10 }}>
                 Konto
               </div>
+              <PlatformPiiReveal
+                key={selected.id}
+                customerId={selected.id}
+                tenantId={selected.tenantId}
+                maskedEmail={selected.maskedEmail}
+                maskedPhone={selected.maskedPhone}
+                onContactChange={setRevealedContact}
+              />
               <div className={styles.kvGrid}>
-                <KV label="E-post" value={selected.email ?? '—'} />
-                <KV label="Telefon" value={selected.phone ?? '—'} mono />
                 <KV label="Auth-metod" value={selected.auth} />
                 <KV label="Besök" value={<span className="num">{selected.visits}</span>} />
                 <KV label="Företag" value={selected.tenant} />
@@ -322,8 +336,8 @@ export function KunderView({
                   variant="subtle"
                   icon="mail"
                   style={{ justifyContent: 'flex-start' }}
-                  disabled={pending || !selected.email || !serviceRoleAvailable}
-                  onClick={() => resetPassword(selected)}
+                  disabled={pending || !revealedContact?.email || !serviceRoleAvailable}
+                  onClick={() => resetPassword(selected, revealedContact?.email ?? null)}
                 >
                   Skicka lösenordsreset
                 </Button>
@@ -331,8 +345,8 @@ export function KunderView({
                   variant="subtle"
                   icon="link"
                   style={{ justifyContent: 'flex-start' }}
-                  disabled={!selected.email}
-                  onClick={() => copyEmail(selected.email)}
+                  disabled={!revealedContact?.email}
+                  onClick={() => copyEmail(revealedContact?.email ?? null)}
                 >
                   Kopiera e-post
                 </Button>
@@ -472,28 +486,23 @@ export function KunderView({
   )
 
   // ── actions ───────────────────────────────────────────────────────────────────
-  function resetPassword(c: CustomerListItem) {
-    if (!c.email) {
-      notify('Kunden saknar e-post — ingen reset att skicka.', 'warning')
+  function resetPassword(c: CustomerListItem, email: string | null) {
+    if (!email) {
+      notify('Visa kundens e-post innan du skickar en reset.', 'warning')
       return
     }
     if (!serviceRoleAvailable) {
       notify('Lösenordsreset kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).', 'warning')
       return
     }
-    const tenantId = tenantIdBySlug.get(c.slug)
-    if (!tenantId) {
-      notify('Kunde inte koppla kunden till ett företag.', 'warning')
-      return
-    }
     const fd = new FormData()
-    fd.set('tenantId', tenantId)
-    fd.set('email', c.email)
+    fd.set('tenantId', c.tenantId)
+    fd.set('email', email)
     startTransition(async () => {
       const res = await sendPasswordReset({}, fd)
       if (res.error) notify(res.error, 'warning')
       else if (res.warning) notify(res.warning, 'warning')
-      else notify(`Återställningslänk skapad för ${c.email}.`, 'success')
+      else notify(`Återställningslänk skapad för ${email}.`, 'success')
     })
   }
 
@@ -559,12 +568,20 @@ export function KunderView({
     })
   }
 
-  // HONEST export: writes a CSV of EXACTLY the rows on screen (the current
-  // cross-tenant query result) — no backend, no fabricated totals. Matches the
-  // mock's "Exportera" affordance without inventing data it can't back.
+  // HONEST export: writes exactly the rows on screen, with the same server-made
+  // contact masks. Export is explicit but does not bypass the reveal/audit gate.
   function exportCsv(rows: CustomerListItem[]) {
     if (rows.length === 0) return
-    const header = ['Namn', 'E-post', 'Telefon', 'Företag', 'Roll', 'Auth', 'Senast inloggad', 'Status']
+    const header = [
+      'Namn',
+      'E-post (maskerad)',
+      'Telefon (maskerad)',
+      'Företag',
+      'Roll',
+      'Auth',
+      'Senast inloggad',
+      'Status',
+    ]
     const cell = (v: string | number | null) => {
       const s = v == null ? '' : String(v)
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
@@ -572,7 +589,7 @@ export function KunderView({
     const lines = [
       header.join(','),
       ...rows.map((c) =>
-        [c.name, c.email, c.phone, c.tenant, c.role, c.auth, formatLastLogin(c.lastLogin), c.status]
+        [c.name, c.maskedEmail, c.maskedPhone, c.tenant, c.role, c.auth, formatLastLogin(c.lastLogin), c.status]
           .map(cell)
           .join(','),
       ),

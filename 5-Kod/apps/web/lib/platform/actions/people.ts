@@ -16,6 +16,14 @@ import { revalidateTenantById } from '@/lib/admin/tenant'
 
 type PlatformServiceClient = NonNullable<ReturnType<typeof createServiceClient>>
 
+export type PlatformCustomerContactResult =
+  | {
+      ok: true
+      contact: { email: string | null; phone: string | null }
+      expiresAt: string
+    }
+  | { ok: false; error: string }
+
 async function compensatePlatformStaffInvite(
   service: PlatformServiceClient,
   args: { authId: string; tenantId: string; roleId: string; targetStaffId?: string },
@@ -52,6 +60,86 @@ function failedTenantInviteState(
     }
   }
   return { error: 'Inbjudan kunde inte slutföras. Det provisoriska kontot städades; försök igen.' }
+}
+
+/**
+ * Lazy platform reveal for customer contact PII. The initial page models never
+ * contain raw contact fields; an explicit click reaches this action instead.
+ * platformCtx is the role gate, the tenant-scoped customer read rejects a
+ * tampered customer/tenant pair, and get_customer_contact remains authoritative
+ * for the operational booking window. Audit is fail-closed: no successful audit,
+ * no contact leaves the server.
+ */
+export async function revealPlatformCustomerContact(input: {
+  customerId: string
+  tenantId: string
+}): Promise<PlatformCustomerContactResult> {
+  const { user, supabase } = await platformCtx()
+  const customerId = String(input.customerId ?? '').trim()
+  const tenantId = String(input.tenantId ?? '').trim()
+  if (!customerId || !tenantId) {
+    return { ok: false, error: 'Saknar kund eller företag.' }
+  }
+
+  const { data: customer, error: relationshipError } = await supabase
+    .from('customers')
+    .select('id, tenant_id')
+    .eq('id', customerId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  if (relationshipError) {
+    await reportActionError('revealPlatformCustomerContact.relationship', relationshipError, {
+      tenantId,
+      customerId,
+    })
+    return { ok: false, error: 'Kontaktuppgifterna kunde inte hämtas. Försök igen.' }
+  }
+  if (!customer) return { ok: false, error: 'Kunden finns inte hos det här företaget.' }
+
+  const { data, error: rpcError } = await supabase.rpc('get_customer_contact', {
+    p_customer: customerId,
+  })
+  if (rpcError || !data || data.length === 0) {
+    await reportActionError('revealPlatformCustomerContact.rpc', rpcError, {
+      tenantId,
+      customerId,
+    })
+    return { ok: false, error: 'Kontaktuppgifterna kunde inte hämtas. Försök igen.' }
+  }
+
+  const row = data[0]
+  if (!row?.pii_visible) {
+    return {
+      ok: false,
+      error: 'Kontaktuppgifterna är inte tillgängliga utanför driftfönstret.',
+    }
+  }
+  if (!row.email && !row.phone) {
+    return { ok: false, error: 'Kunden saknar kontaktuppgifter.' }
+  }
+
+  const audit = await logPlatformAction(supabase, {
+    action: 'tenant.customer_pii_reveal',
+    tenantId,
+    actorId: user.id,
+    entityId: customerId,
+  })
+  if (!audit.ok) {
+    await reportActionError('revealPlatformCustomerContact.audit', new Error('audit_write_failed'), {
+      tenantId,
+      customerId,
+    })
+    return {
+      ok: false,
+      error: 'Kontaktuppgifterna kunde inte loggas och visas därför inte.',
+    }
+  }
+
+  return {
+    ok: true,
+    contact: { email: row.email, phone: row.phone },
+    expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
+  }
 }
 
 /**

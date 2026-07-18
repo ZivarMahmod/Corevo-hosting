@@ -17,6 +17,7 @@ export {
   setTenantCustomerAccounts,
 } from './actions/data'
 export {
+  revealPlatformCustomerContact,
   sendPasswordReset,
   createTenantStaff,
   inviteTenantStaff,
@@ -26,6 +27,7 @@ export {
   setStaffServices,
   createPlatformCustomer,
 } from './actions/people'
+export type { PlatformCustomerContactResult } from './actions/people'
 export {
   createTenantService,
   updateTenantService,

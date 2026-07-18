@@ -1,4 +1,5 @@
 import 'server-only'
+import { maskContact } from '@/components/portal/ui/pii'
 import { platformCtx } from './guard'
 import { customerDisplayName, customerRole, customerAuthLabel, customerStatusLabel } from './people'
 
@@ -33,9 +34,12 @@ export type CustomerInquiry = {
 }
 export type TenantCustomer = {
   id: string
+  tenantId: string
   name: string
-  email: string | null
-  phone: string | null
+  maskedEmail: string
+  maskedPhone: string
+  hasEmail: boolean
+  hasPhone: boolean
   role: string
   auth: string
   status: string
@@ -184,9 +188,9 @@ export async function getTenantCustomers(tenantId: string): Promise<TenantCustom
 
     return {
       id: c.id,
+      tenantId,
       name: customerDisplayName(c),
-      email: c.email,
-      phone: c.phone,
+      ...maskContact(c.email, c.phone),
       role: customerRole(c.auth_user_id),
       auth: customerAuthLabel(c.auth_user_id),
       status: customerStatusLabel(c.status, c.name_hidden),

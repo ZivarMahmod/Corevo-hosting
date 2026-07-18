@@ -1,4 +1,5 @@
 import 'server-only'
+import { maskContact } from '@/components/portal/ui/pii'
 import { platformCtx } from './guard'
 
 // Cross-tenant people reads for the platform control center (M7 §2.1B / §2.4 —
@@ -24,8 +25,11 @@ export type CustomerRole = 'Kund' | 'Gäst'
 export type CustomerListItem = {
   id: string
   name: string
-  email: string | null
-  phone: string | null
+  tenantId: string
+  maskedEmail: string
+  maskedPhone: string
+  hasEmail: boolean
+  hasPhone: boolean
   tenant: string // salon NAME (mock column "Salong")
   slug: string
   role: CustomerRole
@@ -107,8 +111,8 @@ export async function listCustomersAllTenants(
     return {
       id: c.id,
       name: customerDisplayName(c),
-      email: c.email,
-      phone: c.phone,
+      tenantId: c.tenant_id,
+      ...maskContact(c.email, c.phone),
       tenant: t?.name ?? '—',
       slug: t?.slug ?? '',
       role: customerRole(c.auth_user_id),

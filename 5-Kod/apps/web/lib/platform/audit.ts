@@ -40,6 +40,7 @@ export type PlatformAuditAction =
   | 'tenant.service_image_add' // super-admin uploads a service photo (services.image_url)
   | 'tenant.service_image_remove' // super-admin removes a service photo
   | 'tenant.customer_create' // goal-22: manual customer row on a chosen tenant (a Zivar/platform act — NOT a customer.* event, so the actor-classifier reads it as Zivar)
+  | 'tenant.customer_pii_reveal' // explicit, window-gated platform reveal; audit meta must stay PII-free
   | 'tenant.module_state' // multi-bransch spår 5: super-admin set a tenant module's lifecycle state (off/draft/live/paused) on /salonger/[id]
   | 'tenant.module_config' // goal-64: super-admin redigerar en moduls config-jsonb (t.ex. offertens förfrågningstyper) på /salonger/[id]
   | 'tenant.content_slot' // multi-bransch spår 4: super-admin swapped a storefront content slot's image (visual hub) on /salonger/[id]
