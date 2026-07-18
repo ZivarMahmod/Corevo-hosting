@@ -52,6 +52,13 @@ describe('Cloudflare primary scheduler wiring', () => {
     assert.match(deployWorkflow, /production:[\s\S]*?timeout-minutes:\s*[1-9]/)
   })
 
+  it('runs the procedural database suites as raw SQL with fail-fast psql', () => {
+    assert.doesNotMatch(ciWorkflow, /run:\s*supabase test db/)
+    assert.match(ciWorkflow, /docker exec -i "\$db_container" psql/)
+    assert.match(ciWorkflow, /ON_ERROR_STOP=1/)
+    assert.match(ciWorkflow, /supabase\/tests\/\*_test\.sql/)
+  })
+
   it('puts hard network and job timeouts around the fallback cron', () => {
     assert.match(cronWorkflow, /timeout-minutes:\s*[1-9]/)
     assert.ok((cronWorkflow.match(/--connect-timeout/g) ?? []).length >= 3)

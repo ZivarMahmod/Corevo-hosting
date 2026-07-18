@@ -20,7 +20,7 @@ defaults:
 
 jobs:
   database:
-    name: migrations · pgTAP · RLS
+    name: migrations · SQL/RLS
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -28,12 +28,12 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - name: Verify migration and pgTAP inventory
+      - name: Verify migration and SQL test inventory
         run: >-
           node scripts/verify-database-release.mjs
           --expected-latest 0109
           --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109
-      # Local disposable stack: migrations + seed are applied before the pgTAP
+      # Local disposable stack: migrations + seed are applied before the SQL
       # suites run. No production/staging credentials or data are used.
       - name: Start disposable Supabase (fresh 0001-latest)
         run: supabase start
@@ -45,8 +45,24 @@ jobs:
             --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109 \
             --history-file "$RUNNER_TEMP/local-migrations.txt" \
             --history-side remote
-      - name: Run database and RLS tests
-        run: supabase test db
+      # These files are fail-fast procedural SQL suites, not TAP output. Running
+      # them through `supabase test db` became invalid when the CLI switched to
+      # pg_prove ("No plan found"), even though every SQL assertion succeeded.
+      - name: Run procedural database and RLS tests
+        shell: bash
+        run: |
+          mapfile -t db_containers < <(docker ps --filter "name=supabase_db_" --format '{{.Names}}')
+          [ "${#db_containers[@]}" -eq 1 ] || {
+            echo "::error::Expected exactly one local Supabase database container"
+            printf '%s\n' "${db_containers[@]}"
+            exit 1
+          }
+          db_container="${db_containers[0]}"
+          for sql_test in supabase/tests/*_test.sql; do
+            echo "::group::$sql_test"
+            docker exec -i "$db_container" psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres < "$sql_test"
+            echo "::endgroup::"
+          done
 
   quality:
     name: lint · typecheck · unit · contract acceptance · build
