@@ -3468,6 +3468,28 @@ export type Database = {
           schedule: string
         }[]
       }
+      platform_drift_health: {
+        Args: { p_tenant?: string }
+        Returns: {
+          attempting_count: number
+          delivery_started_count: number
+          failed_24h_count: number
+          oldest_ready_at: string | null
+          queued_count: number
+          routing_count: number
+          scheduler_age_seconds: number | null
+          scheduler_healthy: boolean
+          scheduler_last_error_code: string | null
+          scheduler_last_failed_at: string | null
+          scheduler_last_started_at: string | null
+          scheduler_last_status: string | null
+          scheduler_last_succeeded_at: string | null
+          scheduler_name: string | null
+          scheduler_updated_at: string | null
+          stalled_count: number
+          tenant_id: string | null
+        }[]
+      }
       platform_outbox_rows: {
         Args: {
           p_category?: string

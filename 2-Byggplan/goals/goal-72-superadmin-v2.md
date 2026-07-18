@@ -132,8 +132,10 @@ Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
 
 ## Status
 - [ ] Etapp 1a Kommunikationscenter
-- [x] Etapp 1b Drift-hälsa — S1b: typad, server-renderad cron-hälsa över
-      audit-loggen med ärligt tom-/felläge (2026-07-18; kräver migration 0106 i miljön)
+- [x] Etapp 1b Drift-hälsa — serverläst pg_cron-hälsa, PII-fria
+      outbox-köaggregat och Cloudflare-schedulerns heartbeat är byggda med ärliga
+      tom-/partial-/fellägen (2026-07-18; 0111-runtimeprovet körs i CI eftersom
+      lokal Supabase CLI/Docker saknas).
 - [x] Etapp 1c Juridik-fält — LIVE v1.37.3 (2026-07-18; v1.37.2 föll på
       parallellsessions-kontaminering, de-kontaminerad i 4557376)
 - [x] Etapp 1d Domänpanelen tänd — VAR REDAN PÅ i prod (wrangler.jsonc:60, sedan
