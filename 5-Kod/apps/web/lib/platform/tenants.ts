@@ -451,6 +451,14 @@ type ServiceMerchRow = {
   sort_order: number | null
 }
 
+function exactCount(
+  label: string,
+  result: { count: number | null; error: { message: string } | null },
+): number {
+  if (result.error) throw new Error(`getTenantDetail ${label}: ${result.error.message}`)
+  return result.count ?? 0
+}
+
 export async function getTenantDetail(
   tenantId: string,
   // Kund-admin (/admin/sida) reuses this read with the salon admin's OWN cookie
@@ -535,6 +543,15 @@ export async function getTenantDetail(
       .limit(1)
       .maybeSingle(),
   ])
+  // Count-fel får aldrig degraderas till falska nollor i Översikt/onboarding.
+  // Normalisera alla fem count-svar på ett ställe och kasta innan något `?? 0`.
+  const counts = {
+    activeServices: exactCount('active services', servicesRes),
+    activeStaff: exactCount('active staff', staffRes),
+    workingHours: exactCount('working hours', hoursRes),
+    bookings: exactCount('bookings', bookingsRes),
+    completed: exactCount('completed bookings', completedRes),
+  }
   const locAddrRaw = (locationRes.data as { address?: unknown } | null)?.address
   const primaryAddress = typeof locAddrRaw === 'string' && locAddrRaw.trim() ? locAddrRaw.trim() : null
   const domainRaw = (domainRes.data as { domain?: unknown } | null)?.domain
@@ -596,14 +613,6 @@ export async function getTenantDetail(
           !!r && typeof r === 'object' && typeof (r as Record<string, unknown>).day === 'string' && typeof (r as Record<string, unknown>).time === 'string',
       )
     : null
-
-  const counts = {
-    activeServices: servicesRes.count ?? 0,
-    activeStaff: staffRes.count ?? 0,
-    workingHours: hoursRes.count ?? 0,
-    bookings: bookingsRes.count ?? 0,
-    completed: completedRes.count ?? 0,
-  }
 
   // Bucket working_hours by staff_id (one pass), slicing "HH:MM:SS" → "HH:MM" for the
   // <input type="time"> defaults. weekday stays DB semantics (0=Sunday..6=Saturday).

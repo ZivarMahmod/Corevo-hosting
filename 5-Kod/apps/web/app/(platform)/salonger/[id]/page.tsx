@@ -56,7 +56,16 @@ import {
   TenantDangerCard,
 } from '@/components/platform/TenantDetailActions'
 import { hasServiceRole } from '@/lib/platform/service'
-import { Badge, Button, Card, Icon, type BadgeTone, type IconName } from '@/components/portal/ui'
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Icon,
+  Stat,
+  type BadgeTone,
+  type IconName,
+} from '@/components/portal/ui'
 import type { TenantBranding } from '@corevo/ui'
 import styles from '@/components/platform/tenant-detail.module.css'
 import { commerceReleaseGate } from '@/lib/release/commerce'
@@ -185,14 +194,23 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   // med profilbild (staff.avatar_url, migr 0049) — annars visas valet avstängt med
   // hint. Platform-adminens cookie-klient läser cross-tenant via platform_admin-claimet.
   const supabaseForStaffPhoto = await createClient()
-  const { data: staffPhotoRows } = await supabaseForStaffPhoto
-    .from('staff')
-    .select('id')
-    .eq('tenant_id', id)
-    .eq('active', true)
-    .not('avatar_url', 'is', null)
-    .limit(1)
+  const [{ data: staffPhotoRows }, { count: noShowCount, error: noShowError }] = await Promise.all([
+    supabaseForStaffPhoto
+      .from('staff')
+      .select('id')
+      .eq('tenant_id', id)
+      .eq('active', true)
+      .not('avatar_url', 'is', null)
+      .limit(1),
+    supabaseForStaffPhoto
+      .from('bookings')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', id)
+      .eq('status', 'no_show'),
+  ])
+  if (noShowError) throw new Error(`Tenant overview no_show: ${noShowError.message}`)
   const hasStaffPhoto = (staffPhotoRows?.length ?? 0) > 0
+  const noShows = noShowCount ?? 0
 
   // Stripe-läget per kund (goal-54 körning 5): kundkortets Integrationer-flik bär
   // den RIKTIGA Stripe-panelen (samma StripeConnectCard som kund-adminens
@@ -267,6 +285,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   ].filter(Boolean) as string[]
   const launchReady = launchBlockers.length === 0
   const ownerInvited = !!salonAdmin?.email
+  const hasOverviewData = counts.bookings > 0 || noShows > 0 || counts.activeStaff > 0
 
   const tabs: Partial<Record<TenantTabKey, React.ReactNode>> = {
     Översikt: (
@@ -304,41 +323,24 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
           </a>
         </div>
 
-        {/* Premium stat-kort — RIKTIGA siffror. Genomförda visar completed/bokningar-%
-            (härlett, inte påhittat); inga fejk-trendgrafer. */}
-        <div className={styles.statRow}>
-          <div className={styles.statCard}>
-            <div className={styles.statHead}>
-              <span className={styles.statLabel}>Bokningar</span>
-              <Icon name="calendar" size={15} style={{ color: 'var(--c-ink-3)', flex: 'none' }} />
-            </div>
-            <div className={styles.statVal}>{counts.bookings}</div>
+        {/* Samma Stat-kontrakt som kund-adminens statistik. Varje tal kommer från
+            tenant-scopade serverläsningar; inga trender eller jämförelser hittas på. */}
+        {hasOverviewData ? (
+          <div className="bo-stat-grid" style={{ marginBottom: 16 }}>
+            <Stat label="Bokningar" value={counts.bookings} icon="calendar" />
+            <Stat label="Genomförda" value={counts.completed} icon="checkCircle" />
+            <Stat label="Uteblivna" value={noShows} icon="clock" />
+            <Stat label="Personal" value={counts.activeStaff} icon="users" />
           </div>
-          <div className={styles.statCard}>
-            <div className={styles.statHead}>
-              <span className={styles.statLabel}>Genomförda</span>
-              <Icon name="checkCircle" size={15} style={{ color: 'var(--c-ink-3)', flex: 'none' }} />
-            </div>
-            <div className={styles.statVal}>
-              {counts.completed}
-              {counts.bookings > 0 ? <small>{Math.round((counts.completed / counts.bookings) * 100)}%</small> : null}
-            </div>
+        ) : (
+          <div style={{ marginBottom: 16 }}>
+            <EmptyState
+              icon="calendar"
+              title="Ingen statistik ännu"
+              text="Bokningar, genomförda besök och uteblivna visas när verksamheten har kommit igång."
+            />
           </div>
-          <div className={styles.statCard}>
-            <div className={styles.statHead}>
-              <span className={styles.statLabel}>Kunder</span>
-              <Icon name="users" size={15} style={{ color: 'var(--c-ink-3)', flex: 'none' }} />
-            </div>
-            <div className={styles.statVal}>{customerData.summary.total}</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statHead}>
-              <span className={styles.statLabel}>Personal</span>
-              <Icon name="scissors" size={15} style={{ color: 'var(--c-ink-3)', flex: 'none' }} />
-            </div>
-            <div className={styles.statVal}>{staffList.length}</div>
-          </div>
-        </div>
+        )}
 
       <div className={styles.twoCol}>
         <div className={styles.col}>
