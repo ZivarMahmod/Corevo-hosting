@@ -106,6 +106,9 @@ cron-hälsa, juridik-fält, domänpanelen flag-gated AV, fakturering manuell).
   aldrig egna regler (UI-gating är kosmetik, servern är sanningen).
 - Branschvakt: inga hårdkodade branschord i nya ytor.
 
+## Sessionsplan
+Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
+
 ## Status
 - [ ] Etapp 1a Kommunikationscenter
 - [ ] Etapp 1b Drift-hälsa
