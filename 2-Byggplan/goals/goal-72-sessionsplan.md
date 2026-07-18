@@ -1,4 +1,4 @@
-# goal-72 — Sessionsplan (implementationssessioner S1–S6)
+# goal-72 — Sessionsplan (implementationssessioner S1–S7)
 
 > Skriven 2026-07-18 efter fil:rad-inventering av båda världarna. Varje session
 > = ett körbart pass: mål, exakta filer, steg, verifiering. Exekutorn ska aldrig
@@ -181,24 +181,37 @@ cacheinvalidations, nav-/palettposter och berörda E2E-rutter är flyttade;
 245 filer/2 026 tester gröna; fixens 38 riktade tester och typecheck gröna.
 Fable: inga P0–P2. Codex-reviewns enda P2 (preview-legacy-404) är åtgärdad.
 
-## S7 — Partner-rollen (etapp 4, skiss — designas när S1–S6 landat)
+## S7 — Partner-rollen (etapp 4 — komplett och live)
 
 **Mål**: ny roll som ger en partner Zivars superadmin fast isolerad till sina
-kunder. Samma yta — ett scoping-lager, ingen ombyggnad (S1–S6 bygger redan
+kunder. Samma yta — ett scoping-lager, ingen ombyggnad (S1–S6 byggde redan
 "servern bestämmer listan").
 
-1. Migration: partner-tabell + `tenants.partner_id` + RLS-scoping av alla
-   platform-läsare; Zivar = partner noll (ser allt).
-2. Behörighetsgrind: `requirePlatformAdmin` får partner-scope; varje RPC/action
-   i `lib/platform/actions/*` filtrerar på scopet (server, aldrig UI).
-3. Partnervy för Zivar: lista partners, deras aktiva kunder (licensunderlag
-   ~50 kr/mån × aktiv kund), deras SMS-kostnader (outbox-aggregatet per partner).
-4. Per-partner SMS-leverantör (46elks = default; partnerns lokala = konfig).
+1. Migration 0114–0117: partner/member-modell, `tenants.partner_id`, append-only
+   pris-/tenantledger, öppen licensmånad, fryst SMS-kostnadsägare, partner-RLS och
+   service-role-grants. Zivar/root = exakt global `super_admin` nivå 8; partner =
+   exakt aktiv `partner_admin` nivå 7 + aktiv DB-medlemskapspartner.
+2. Behörighet: partner kan arbeta med översikt, kunder/onboarding/detalj,
+   slutkunder, personal, utskick, scoped drift och fakturering för sina tenants.
+   `/partners` och globala branscher/integrationer/domäner/roller/inställningar
+   är root-only i både navigation och servergrind/RLS.
+3. Onboarding: root skapar partnern och mejlar exakt en ägarinbjudan. Partnern
+   kan inte skapa sin organisation, bjuda fler partnermedlemmar eller ändra sitt
+   licenspris. Tvetydiga Auth-fel reconcileras innan kompensation.
+4. Licens: root väljer valfri icke-negativ summa per partner (50,00 är bara
+   formulärförslag). Aktiv någon gång i partnerns lokala månad ger hel månad;
+   paus/avkoppling tar inte bort historiken; aktiv A→B-flytt ger hel månad hos
+   båda. Pris-/kundändringar räknar om öppen månad, stängda månader är
+   DB-immutabla.
+5. SMS: root kan konfigurera valfri partner, partner bara sig själv. Corevos
+   standard-46elks eller partnerägd 46elks stöds; hemligheter ligger i Vault,
+   kostnadsägare/valuta fryses per outboxrad. `SMS_DELIVERY_MODE=off` är fortsatt
+   fysisk grind — inget dry-run/live-anrop ingick.
 
-◆ ÖPPNA FRÅGOR till Zivar när S7 startar: exakta behörighetsskillnader
-partner vs Zivar (hans ord: "lite mindre behörigheter kanske eller något vi
-diskuterar det sen"); "aktiv kund"-definitionen för licensen; hur partnern
-onboardas (inbjudan?).
+**Status 2026-07-18**: live från `main` SHA `88d59b5`, migration 0117 och
+Worker-version `5613f4bb-a4ed-4665-bb6a-b5175ce7cae3`. Deploy-run
+`29662607124`, release proof, 7 domäner, login och oautentiserade host-/route-
+redirects är gröna. Zivars autentiserade root-/partneracceptans återstår.
 
 ## Körordning + beroendekarta
 
@@ -210,7 +223,7 @@ S3 (2c+2d+2e) ── oberoende ───┤
 S4 (2f master–detalj) ────────┤
 S5 (2g mobil) ── efter S4 ────┤
                               ▼
-S6 (IA-svängen) ── SIST, efter att S1–S5 landat
+S6 (IA-svängen) ── SIST, efter att S1–S5 landat ──▶ S7 partnerrollen
 ```
 
 En session = en commit-serie + en v-tagg + prod-rök. Zivar granskar visuellt

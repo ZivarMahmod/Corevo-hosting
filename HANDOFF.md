@@ -19,8 +19,14 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 - Produktionens boknings-, schema- och personalgrund är live. Inställningar v2 och
   Frisöradmin PWA driftsattes 2026-07-17. Produktionsdatabasen är numeriskt
-  avstämd och runtime-verifierad genom migration `0109`; checkpoint och bevis
+  avstämd och runtime-verifierad genom migration `0117`; checkpoint och bevis
   finns i `5-Kod/docs/ops/database-migration-drift.md`.
+- Superadmin v2 och partnerrollen är live på Worker-version
+  `5613f4bb-a4ed-4665-bb6a-b5175ce7cae3` från `main`-SHA `88d59b5`
+  (deploy-run `29662607124`). Partnern är DB-isolerad till sina tenants; root
+  skapar/inbjuder partnerägaren och styr ett valfritt licenspris per partner.
+  Öppen månad räknas om vid pris-/kundändring, stängda månader är immutabla,
+  aktiv någon gång ger hel månad och aktiv A→B-flytt debiterar båda.
 - Grundens verkliga delar omfattar platsbehörighet/RLS, öppettider, schema,
   personal-readiness, frånvaro, atomisk adminbokning, ombokning och statusbyte.
 - Ägaradminens mobil-PWA, översikt och kalender Mobil v2 finns i kod och produktion.
@@ -59,16 +65,16 @@ svarar på boknings- och tenantdörrarna. Zivars autentiserade manuella acceptan
 Inställningar/Frisöradmin och rollflödet gäst→kund→personal→ägare återstår; därför
 ligger goal-71 och dess designpaket kvar utanför `klart/`.
 
-Aktiv koddel enligt Zivars uppdrag 2026-07-18 är goal-72 Superadmin v2. S1–S6
-(kommunikation, drift, workspace/genvägar, PII, tvåstegsarm, sann statistik,
-kundkortets master–detalj, mobilparitet och IA-svängen till `/kunder` +
-`/slutkunder`) är lokalt implementerade, oberoende granskade och verifierade på
-`codex/goal-72-superadmin-v2`. Nästa koddel är S7, men goalen kräver först Zivars
-beslut om partnerns exakta behörigheter, definitionen av licensgrundande aktiv kund
-och onboarding/inbjudan. Det senast inkomna designpaketet
-`Dagens genomgångar/Mobil pwa/` är läst men har ännu inget goal-73; bygg det inte
-parallellt med goal-72. Provider-dry-run och live-SMS är fortsatt ett separat,
-uttryckligen godkänt driftsteg.
+Goal-72 Superadmin v2 S1–S7 är implementerad, oberoende granskad och driftsatt:
+kommunikation, drift, workspace/genvägar, PII, tvåstegsarm, sann statistik,
+kundkortets master–detalj, mobilparitet, IA-svängen till `/kunder` +
+`/slutkunder` samt partnerrollen. Automatisk release proof, migrationscheckpoint
+`0117`, Worker-budget och extern oautentiserad prod-rök är gröna. Zivars
+autentiserade manuella acceptans som superadmin och en verklig partner återstår,
+så goal-72 ligger kvar i `goals/` tills dess. Det senast inkomna designpaketet
+`Dagens genomgångar/Mobil pwa/` har ännu inget goal-73 och är orört. Provider-
+konfigurationen per partner finns, men `SMS_DELIVERY_MODE=off`; provider-dry-run
+och live-SMS är fortsatt separata, uttryckligen godkända driftsteg.
 
 ## Hårda regler
 

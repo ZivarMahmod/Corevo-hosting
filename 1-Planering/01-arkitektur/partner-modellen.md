@@ -3,8 +3,8 @@
 > Zivar 2026-07-18 (muntligt, strukturerat här; skärpt samma dag). Sekvensen:
 > **(1) superadmin maxas för Zivar först** (goal-72), **(2) partner-rollen
 > läggs direkt därefter** — den ska INTE vänta. Partnern får nästan identisk
-> yta som Zivars superadmin, bara isolerad till sina kunder (ev. något mindre
-> behörigheter — diskuteras när rollen byggs). Zivar ser och följer partnerns
+> yta som Zivars superadmin, bara isolerad till sina kunder. Globala kataloger,
+> partnerhantering och pris ligger root-only. Zivar ser och följer partnerns
 > data. Samma produkt, ett scoping-lager till.
 
 ## Modellen
@@ -23,11 +23,18 @@ Grekland) är en super-admin-användare som driver sin egen verksamhet på Corev
 
 ## Affärsmodellen
 
-- **Licens:** ~50 kr/mån per AKTIV kund i partnerns admin → faktureras partnern.
+- **Licens:** root väljer valfri summa per partner och aktiv licensmånad.
+  50,00 är bara formulärets förslag, aldrig ett fast systempris. Partnern kan
+  läsa men inte ändra sitt eget pris.
+- **Månadssanning:** aktiv någon gång i partnerns lokala månad ger hel månad.
+  Paus/avkoppling tar inte bort kvalificeringen; aktiv flytt A→B ger hel månad
+  hos båda. Pris-/kundändringar räknar om den öppna månaden, medan stängda
+  månader är DB-immutabla.
 - Partnern prissätter fritt mot sina egna kunder — mellanskillnaden är deras.
 - **Kostnadsisolering:** rörliga kostnader (främst SMS) landar på PARTNERN,
   aldrig på Zivar. Utomlands används partnerns lokala SMS-tjänst (billigare än
-  att skicka svenskt). Kräver per-partner-providerkonfiguration (senare).
+  att skicka svenskt). Per-partner-providerkonfigurationen är byggd; den globala
+  fysiska grinden `SMS_DELIVERY_MODE=off` ligger kvar tills separat canarybeslut.
 
 ## Branscher × partners
 
@@ -36,18 +43,19 @@ partnern den automatiskt — och kan börja söka sådana kunder i sitt land.
 Branschmotorn (EN kodbas, moduler à la carte) är alltså också partnerns
 tillväxtmotor. Se `multibransch-plattform-arkitektur.md` (kanon).
 
-## Vad detta kräver av arkitekturen (byggs som etapp 4 i goal-72, efter v2)
+## Implementerad arkitektur (etapp 4 i goal-72)
 
 1. **Partner-scoping i DB:** tenants ägs av en partner (partner-organisation
    ovanför tenant). RLS/server-grindar filtrerar allt platform-UI per partner.
    Zivar = "partner noll" som ser allt.
 2. **Roll-nivå mellan platform och ägare:** partnern är platform-admin för sin
    delmängd — aldrig för andras.
-3. **Kostnadsattribution:** `notifications_outbox` bär redan kostnad öre per
-   tenant → aggregeras per partner. SMS-provider blir per-partner-konfig
-   (46elks får inte hårdkodas djupare som enda väg).
-4. **Licensräkning:** "aktiv kund"-definition + månadsaggregat per partner
-   (billingUnderlag-seamen är fröet).
+3. **Kostnadsattribution:** `notifications_outbox` fryser partner, kostnad och
+   valuta när raden köas och aggregerar per partner. Providerkonfiguration och
+   hemlighetsreferenser är partnerbundna; hemligheter ligger i Vault.
+4. **Licensräkning:** append-only kvalificeringsledger + öppen månadsledger
+   per partner. Öppen månad synkas vid skrivning/läsning och timsvep; stängda
+   rader skyddas mot update/delete i DB.
 5. **Isolerade ytor:** partnerns admin ser bara sina kunder, sina kostnader,
    sin fakturering. Ingen läcka mellan partners.
 
@@ -58,7 +66,7 @@ tillväxtmotor. Se `multibransch-plattform-arkitektur.md` (kanon).
   server-ändring, ingen UI-omskrivning.
 - **Ingen ny funktion får kräva SQL/CLI för normal drift.** Varje sådan lucka
   bryter partner-löftet.
-- **Kostnads-/leverantörs-seams hålls öppna:** per-tenant idag, per-partner
-  imorgon — aggregera alltid via tenant_id, hårdkoda aldrig leverantör i UI.
+- **Kostnads-/leverantörs-seams hålls öppna:** kostnad fryses via tenant och
+  partner per outboxrad; hårdkoda aldrig leverantör i UI.
 - **Säker logik i server actions/RPC med behörighetsgrind** (redan lag) — det
   är exakt det som gör att en partner kan släppas in utan backend-risk.

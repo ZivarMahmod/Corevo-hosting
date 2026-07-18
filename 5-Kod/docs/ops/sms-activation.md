@@ -5,6 +5,11 @@ både produktion och staging. `SMS_DELIVERY_MODE` är committad som `off` i
 `apps/web/wrangler.jsonc`. Credentials, tenantinställning eller en kodväg kan
 inte ensamma skicka ett SMS.
 
+Goal-72 S7 har dessutom lagt till Vault-backed providerkonfiguration per partner,
+fryst kostnadsägare/valuta per outboxrad och partnerautentiserad delivery-callback.
+Det ändrar inte den fysiska grinden: partnerkonfiguration kan finnas medan mode
+är `off`, och får inte tolkas som att dry-run eller live är godkänt.
+
 > Kör inget riktigt provider-`dryrun` och inget liveanrop utan Zivars uttryckliga
 > godkännande. Automatiska tester mockar `fetch` och gör noll externa anrop.
 
