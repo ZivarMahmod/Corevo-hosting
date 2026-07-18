@@ -82,8 +82,8 @@ jobs:
         run: |
           supabase migration list --linked > "$RUNNER_TEMP/staging-migrations.txt"
           node scripts/verify-database-release.mjs \
-            --expected-latest 0107 \
-            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107 \
+            --expected-latest 0108 \
+            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108 \
             --history-file "$RUNNER_TEMP/staging-migrations.txt" \
             --history-side remote
 
@@ -137,6 +137,10 @@ jobs:
       (github.event_name == 'workflow_dispatch' && inputs.target == 'production')
     steps:
       - name: Require successful main CI for exact deployment SHA
+        # Ingen checkout i det här jobbet — workflow-defaulten working-directory:
+        # 5-Kod finns inte på disk och får bash-processen att krascha innan
+        # grinden ens utvärderas. gh api behöver inga repofiler.
+        working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -147,7 +151,7 @@ jobs:
             -f per_page=100 \
             --jq '[.workflow_runs[] | select(.head_branch == "main" and .status == "completed" and .conclusion == "success")] | length')
           [ "$count" -gt 0 ] || {
-            echo "::error::No successful main CI (including mandatory E2E) exists for $GITHUB_SHA"
+            echo "::error::No successful main CI with all configured release gates exists for $GITHUB_SHA"
             exit 1
           }
 
@@ -182,8 +186,8 @@ jobs:
           PROD_DB_MIGRATION: ${{ vars.PROD_DB_MIGRATION }}
         run: >-
           node scripts/verify-database-release.mjs
-          --expected-latest 0107
-          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107
+          --expected-latest 0108
+          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108
           --production-checkpoint docs/ops/production-schema-checkpoint.json
           --declared-latest "$PROD_DB_MIGRATION"
 
