@@ -17,9 +17,9 @@ avslutade goals; skapa inte nya parallella roadmap-filer.
    mobil-PWA är driftsatta. Ingen ny koddel återstår, men Zivars autentiserade
    manuella acceptans krävs före flytt till `klart/`. `minbooking.corevo.se`
    behålls tills Zivar uttryckligen stänger dörren.
-2. **Goal-72 Superadmin v2** — aktiv koddel. Kör S1–S6 i
-   `2-Byggplan/goals/goal-72-sessionsplan.md`; därefter S7 partnerrollen när dess
-   tre öppna produktbeslut är låsta.
+2. **Goal-72 Superadmin v2** — S1–S7 är live från `main`-SHA `88d59b5`.
+   Automatisk release proof och oautentiserad prod-rök är gröna; Zivars
+   autentiserade superadmin-/partneracceptans återstår före arkivering.
 3. **Senaste admin-chrome-paketet** — `Dagens genomgångar/Mobil pwa/` är inkommet
    underlag men saknar goal-73. Det blir en egen byggdel efter goal-72, inte ett
    parallellt svep.
@@ -40,4 +40,5 @@ Numrerade paket byggs i ordning; verifierat och deployat paket flyttas till `kla
 
 ## Nästa startpunkt
 
-`2-Byggplan/goals/goal-72-sessionsplan.md` — S1.
+`2-Byggplan/goals/goal-72-superadmin-v2.md` — kör autentiserad slutacceptans;
+därefter skapa goal-73 från det orörda admin-chrome-paketet.

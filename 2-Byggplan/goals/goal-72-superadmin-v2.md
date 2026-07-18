@@ -96,7 +96,8 @@ cron-hälsa, juridik-fält, domänpanelen flag-gated AV, fakturering manuell).
   behörighetsskillnader mot Zivars = ◆ DISKUTERAS med Zivar när 4 startar
   (hans ord: "lite mindre behörigheter kanske eller något vi diskuterar").
 - **4d Kostnads-/licensvyn**: partnerns SMS-kostnader + aktiva kunder synligt
-  per partner (licens ~50 kr/mån × aktiv kund); per-partner SMS-leverantör.
+  per partner. Root väljer och kan ändra valfritt licenspris per partner;
+  per-partner SMS-leverantör.
 - Kanon: `1-Planering/01-arkitektur/partner-modellen.md`.
 
 ### Parkerat (medvetet)
@@ -128,7 +129,7 @@ cron-hälsa, juridik-fält, domänpanelen flag-gated AV, fakturering manuell).
 - Branschvakt: inga hårdkodade branschord i nya ytor.
 
 ## Sessionsplan
-Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
+Körbar plan per etapp (S1–S7, fil:rad-konkret): `goal-72-sessionsplan.md`.
 
 ## Status
 - [x] Etapp 1a Kommunikationscenter — serverfiltrerad, PII-fri utskicksledger,
@@ -143,9 +144,10 @@ Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
 - [x] Etapp 1d Domänpanelen tänd — VAR REDAN PÅ i prod (wrangler.jsonc:60, sedan
       2026-06-06, CF-secrets satta). Inventerings-agentens "AV" kom från en stale
       kodkommentar i DomainPanel.tsx.
-- [ ] Etapp 2a Inställningsworkspace — delat workspace med verkliga
-      Säkerhet-/Faktureringsytor är klart; global branding saknar fortfarande en
-      sann global datakälla och är därför inte fejkat eller avbockat.
+- [x] Etapp 2a Inställningsworkspace — delat workspace med verkliga
+      Säkerhet-/Faktureringsytor. Den planerade globala brandingkategorin
+      utgick medvetet: befintlig `PlatformBrandingForm` är tenantbunden och ingen
+      sann global datakälla finns; ytan visar inga fejkkontroller (2026-07-18).
 - [x] Etapp 2b Genvägsrad och låsta navmönster (2026-07-18).
 - [x] Etapp 2c PII-hygien — initiala kundmodeller/CSV innehåller bara
       servermasker; reveal är tenantverifierad, driftfönstergatad, PII-fritt
@@ -169,4 +171,25 @@ Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
       `/kunder`-betydelsen kan inte redirectas eftersom URL:en nu är den nya kanoniska
       kundytan. Fable-review utan P0–P2; oberoende Codex-reviewns preview-fynd är
       åtgärdat och regressionstestat (2026-07-18).
-- [ ] Etapp 4 Partner-rollen (4a–4d — direkt efter 1–3)
+- [x] Etapp 4 Partner-rollen — migration 0114–0117, exakt root/partner-identitet,
+      DB-/RLS-scopade platformläsare och actions, rootskapad ägarinbjudan,
+      partnerlista/detalj, tenantflytt och kostnads-/SMS-provider-vy är live.
+      Licenspriset är valfritt och rootstyrt per partner; öppen månad räknas om,
+      stängda månader fryses, aktiv någon gång ger hel månad och aktiv A→B-
+      flytt kvalificerar båda. Partner kan inte ändra sitt eget pris (2026-07-18).
+
+## Livebevis 2026-07-18
+
+- Kod: `main` SHA `88d59b55760d7a109ecdcbcc898812b9e81de2f8`.
+- Databas: produktionscheckpoint `0117`; 36 SQL-/RLS-testfiler gröna på fresh CI.
+- App: 257 testfiler / 2 105 tester, typecheck, lint, kontraktsacceptans,
+  bransch-/kontrastvakt och build gröna.
+- Worker: 3 044,1 KiB gzip i produktion (99,1 % av 3 MiB), efter separat
+  bundle-hotfix och oberoende review utan Critical/Important.
+- Deploy: GitHub run `29662607124`, Worker-version
+  `5613f4bb-a4ed-4665-bb6a-b5175ce7cae3`; alla 7 domäner + login gröna.
+- Extern rök: partner/fakturering/inställningsrutter redirectar till login på
+  superadminhosten; fel backoffice-host kanoniseras till `superbooking.corevo.se`.
+- Kvar före arkivering: Zivars autentiserade manuella acceptans som root och med
+  en verklig partner. Live-/dry-run-SMS och automatisk fakturadebitering är fortsatt
+  separata, medvetet parkerade beslut.
