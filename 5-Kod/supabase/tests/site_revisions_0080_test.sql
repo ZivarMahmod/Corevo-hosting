@@ -23,7 +23,7 @@ insert into auth.users (id, email) values
 insert into public.users (id, tenant_id, email, role_id, access_scope, status) values
   ('80000000-0000-0000-0000-000000000101', '80000000-0000-0000-0000-000000000001', 'site-owner@example.test', '80000000-0000-0000-0000-000000000021', 'organization', 'active'),
   ('80000000-0000-0000-0000-000000000102', '80000000-0000-0000-0000-000000000001', 'site-location@example.test', '80000000-0000-0000-0000-000000000023', 'locations', 'active'),
-  ('80000000-0000-0000-0000-000000000103', '80000000-0000-0000-0000-000000000001', 'site-platform@example.test', '80000000-0000-0000-0000-000000000022', 'organization', 'active');
+  ('80000000-0000-0000-0000-000000000103', null, 'site-platform@example.test', '80000000-0000-0000-0000-000000000022', 'organization', 'active');
 
 -- Organization owner: create, update and publish one optimistic draft.
 select set_config('request.jwt.claim.sub', '80000000-0000-0000-0000-000000000101', true);
