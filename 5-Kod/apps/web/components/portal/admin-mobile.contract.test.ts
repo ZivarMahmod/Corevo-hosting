@@ -69,9 +69,10 @@ describe('del 01: ägar-adminens responsiva kontrakt', () => {
     expect(css).toMatch(
       /:has\(\.main > :global\(\.workbench\)\)[\s\S]*?\.mobileFabLabel\s*\{[\s\S]*?display:\s*none;/,
     )
-    expect(calendarCss).toMatch(
-      /\.mobileCalendarSearchAction\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*26;/,
-    )
+    // 2026-07-18: sök-triggern lever i dockens verktygsrad (aldrig fixed — den
+    // hamnade bakom bottennavens täckande yta).
+    expect(calendarCss).not.toContain('.mobileCalendarSearchAction')
+    expect(calendarCss).toMatch(/\.mobileSearchTrigger\s*\{[\s\S]*?border-radius:\s*999px;/)
     expect(component).toContain('mobileMoreAccountLink')
     expect(component).toContain('openMobileAccount')
     expect(component).toContain('styles.mobileNavIcon')

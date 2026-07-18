@@ -67,6 +67,8 @@ cron-hälsa, juridik-fält, domänpanelen flag-gated AV, fakturering manuell).
   är FX-14-härdade) → kundkortets Integrationer får fungerande domänhantering.
 
 ### Etapp 2 — Mönster-paritet (samma system-känsla)
+> Zivar 2026-07-18: gäller ÄVEN mobil — superadmin ska ha samma mobilnivå som
+> kund-adminen (FAB/flikar/dock-mönstret), inte bara desktop-paritet. (2g)
 - **2a Inställningar-workspace** för platform: kategorinav-mönstret från
   kund-adminen. Kategorier: Plattformsbranding (global PlatformBrandingForm),
   Säkerhet, Fakturering (läs + prismodell-defaults), Flaggor, Juridik-defaults.

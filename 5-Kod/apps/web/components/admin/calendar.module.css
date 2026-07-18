@@ -686,8 +686,7 @@
 .mobileCalendarDock,
 .mobileCalendarScrim,
 .mobileCalendarPicker,
-.mobileCalendarHeaderHelp,
-.mobileCalendarSearchAction {
+.mobileCalendarHeaderHelp {
   display: none;
 }
 
@@ -1032,6 +1031,19 @@
   text-decoration: line-through;
 }
 
+/* v2: tid + namn delar EN rad — frigör radhöjd så tjänsten ryms i 30-min-block. */
+.blockHead {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.blockHead .blockName {
+  flex: 1;
+  min-width: 0;
+}
+
 .blockTime {
   color: var(--c-forest);
   font-size: 11px;
@@ -1105,14 +1117,8 @@
 /* Kort block (< 40px, dvs under ~30 min): EN rad — tid, namn, statusikon. Hellre tre
    saker som syns än fyra som klipps. Hela informationen finns i title + drawern. */
 .blockTiny {
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
+  justify-content: center;
   padding: 0 8px;
-}
-.blockTiny .blockName {
-  flex: 1;
-  min-width: 0;
 }
 
 /* ---- klick-bubbla (designens signatur) ----
@@ -2147,24 +2153,17 @@
     font-weight: 650;
   }
 
-  .mobileCalendarSearchAction {
-    position: fixed;
-    bottom: calc(24px + env(safe-area-inset-bottom));
-    left: calc(50% - 49px);
-    z-index: 26;
-    display: block;
-  }
-
+  /* Sök-triggern bor i verktygsraden bredvid Blockera (Zivar 2026-07-18) — den
+     gamla fixed-floatern hamnade bakom bottennavens täckande yta. */
   .mobileSearchTrigger {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     padding: 0;
     display: grid;
     place-items: center;
     border: 1px solid var(--c-line-strong);
     border-radius: 999px;
     background: var(--c-paper);
-    box-shadow: 0 7px 18px color-mix(in srgb, var(--c-ink) 16%, transparent);
     color: var(--c-ink-2);
     cursor: pointer;
   }

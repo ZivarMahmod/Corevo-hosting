@@ -884,12 +884,11 @@ export function CalendarBoard({
             <Icon name="clock" size={13} />
             Blockera
           </button>
+          {/* Sök BOR i verktygsraden (Zivar 2026-07-18: "sökdelen syns inte") — den
+              gamla flytande knappen låg fixed bakom bottennavens täckande yta. */}
+          <CalendarSearch tz={tz} mobileSheet />
         </div>
 
-      </div>
-
-      <div className={styles.mobileCalendarSearchAction}>
-        <CalendarSearch tz={tz} mobileSheet />
       </div>
 
       {mobileDateOpen && (
@@ -1302,24 +1301,20 @@ function BookingBlock({
   // Ett block är bara så högt som tiden är lång — texten måste anpassa sig, inte
   // klippas mitt i en rad.
   //
-  // FIXAT (Zivars mobilskärmdump): nivåerna var gissade, inte räknade. En 30-min-tid är
-  // 42px hög (30 × PX_PER_MIN 1.4). Den föll på "≥ 34 → medium" och fick FYRA rader —
-  // tid (13px) + namn (16) + tjänst (14) + status (13) = 56px text i ett block med 32px
-  // fri höjd (42 minus 10px padding). Resultatet var exakt det på skärmdumpen:
-  // "Gäst" och "Herrklippnin" avhuggna mitt i tecknen.
+  // v2 (Zivar 2026-07-18: "jag kan inte se vad de bokat utan att klicka"): tid och
+  // namn delar EN rad (.blockHead) — det frigör en hel radhöjd, så TJÄNSTEN ryms
+  // redan i ett 30-minutersblock (42px vid PX_PER_MIN 1.4). Nivåerna, räknade ur
+  // radhöjderna med paddingen (10px) avdragen:
+  //   ≥ 56px  full    tid·namn + tjänst + telefon   (15.6+14.4+13.2+gap ≈ 45 + 10)
+  //   ≥ 42px  medium  tid·namn + tjänst             (≈ 31 + 10)  ← 30-min-tiden
+  //   < 42px  tiny    EN rad: tid och namn
   //
-  // Nu räknas nivåerna ur radhöjderna i CSS:en, med paddingen avdragen:
-  //   ≥ 66px  allt        tid + namn + tjänst + telefon   (13+16+14+13 = 56 + 10)
-  //   ≥ 52px  medium      tid + namn + tjänst             (43 + 10)
-  //   ≥ 38px  compact     tid + namn                      (29 + 10)  ← 30-min-tiden
-  //   < 38px  tiny        EN rad: tid och namn sida vid sida
-  //
-  // Statusflaggan tar INGEN höjd längre — den ligger absolut i kortets hörn (.blockFlag)
-  // i stället för att vara en femte rad som trängde ut tjänsten. Texten viker; det gör
-  // aldrig informationen: allt finns i title, aria-label och drawern.
+  // Statusflaggan tar INGEN höjd — den ligger absolut i kortets hörn (.blockFlag).
+  // Telefonnumret visas från 45-min-block (63px ≥ 56); i mindre block är det ETT
+  // klick bort (bubblans Ring). Allt finns alltid i title, aria-label och drawern.
   const h = Math.max(height, 20)
-  const tier = h >= 66 ? 'full' : h >= 52 ? 'medium' : h >= 38 ? 'compact' : 'tiny'
-  const showService = tier === 'full' || tier === 'medium'
+  const tier = h >= 56 ? 'full' : h >= 42 ? 'medium' : 'tiny'
+  const showService = tier !== 'tiny'
   // Avbokad tid → inget nummer. Att ringa någon som redan avbokat är precis det
   // misstag ett synligt nummer inbjuder till.
   const phone = showPhone && !dim ? booking.customerPhone : null
@@ -1428,8 +1423,10 @@ function BookingBlock({
       title={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} · ${name} · ${booking.serviceName}`}
       aria-label={`${timeLabel(booking.startTs, tz)}–${timeLabel(booking.endTs, tz)} ${name}, ${booking.serviceName}, ${booking.staffTitle}${statusFlag ? `, ${statusFlag.text}` : ''}`}
     >
-      <span className={`num ${styles.blockTime}`}>{timeLabel(booking.startTs, tz)}</span>
-      <span className={styles.blockName}>{name}</span>
+      <span className={styles.blockHead}>
+        <span className={`num ${styles.blockTime}`}>{timeLabel(booking.startTs, tz)}</span>
+        <span className={styles.blockName}>{name}</span>
+      </span>
       {showService && <span className={styles.blockService}>{booking.serviceName}</span>}
       {/* Numret står som TEXT här, inte som länk: blocket är redan en <button>, och en
           <a> inuti en <button> är ogiltig HTML som skärmläsare tolkar olika. Ringbart
