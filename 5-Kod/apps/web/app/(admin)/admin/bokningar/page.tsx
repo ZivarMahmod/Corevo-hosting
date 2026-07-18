@@ -27,11 +27,8 @@ import { resolvePlats } from '@/lib/admin/plats'
 import { requiredLocationId } from '@/lib/admin/location-scope'
 import { getAdminLocationPreferences } from '@/lib/admin/location-context'
 import { Callout, PageHead } from '@/components/portal/ui'
-import {
-  CalendarBoard,
-  type CalendarBlock,
-  type CalendarView,
-} from '@/components/admin/CalendarBoard'
+import { CalendarBoardLazy } from '@/components/admin/CalendarBoardLazy'
+import type { CalendarBlock, CalendarView } from '@/components/admin/CalendarBoard'
 import type { BookingRow } from '@/components/admin/BookingDrawer'
 
 export const dynamic = 'force-dynamic'
@@ -251,7 +248,7 @@ export default async function KalenderPage({
           </Callout>
         </div>
       ) : null}
-      <CalendarBoard
+      <CalendarBoardLazy
       bookings={rows}
       blocks={visibleBlocks}
       staff={visibleRoster.map((s) => ({

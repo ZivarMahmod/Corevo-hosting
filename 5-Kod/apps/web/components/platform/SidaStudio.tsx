@@ -102,32 +102,7 @@ const MODULE_PAGES: PageDef[] = [
   { key: 'galleri', label: 'Galleri', sub: 'Gallerisidan · texter', path: '/galleri' },
   { key: 'team', label: 'Team', sub: 'Teamsidan · rubriker', path: '/team' },
 ]
-export function SidaStudio({
-  tenantId,
-  previewPath,
-  storefrontUrl,
-  storefrontHost,
-  templateKey,
-  isActive,
-  branding,
-  copy,
-  heroImages,
-  galleryImages,
-  name,
-  contactEmail,
-  contactPhone,
-  address,
-  social,
-  openingHours,
-  bookingVariant,
-  pickerMode = 'calendar',
-  staffAvatars = 'initialer',
-  hasStaffPhoto = false,
-  staffTeam = [],
-  canChangeTemplate = true,
-  verticalCopy,
-  liveModules = [],
-}: {
+export type SidaStudioProps = {
   tenantId: string
   previewPath: string
   storefrontUrl: string
@@ -169,7 +144,34 @@ export function SidaStudio({
   /** Modulnycklar som är PÅ (live/paused) för kunden — styr vilka modulsid-flikar
    *  som visas. Default [] så äldre mounts kompilerar (inga modulflikar). */
   liveModules?: string[]
-}) {
+}
+
+export function SidaStudio({
+  tenantId,
+  previewPath,
+  storefrontUrl,
+  storefrontHost,
+  templateKey,
+  isActive,
+  branding,
+  copy,
+  heroImages,
+  galleryImages,
+  name,
+  contactEmail,
+  contactPhone,
+  address,
+  social,
+  openingHours,
+  bookingVariant,
+  pickerMode = 'calendar',
+  staffAvatars = 'initialer',
+  hasStaffPhoto = false,
+  staffTeam = [],
+  canChangeTemplate = true,
+  verticalCopy,
+  liveModules = [],
+}: SidaStudioProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [page, setPage] = useState<PageKey>('allmant')
   const [reloadToken, setReloadToken] = useState(0)

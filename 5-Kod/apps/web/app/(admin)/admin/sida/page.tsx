@@ -11,12 +11,12 @@ import {
   type ResolvedThemeContent,
 } from '@/components/storefront/theme-content'
 import {
-  SidaStudioV2,
   type SiteEditorCard,
   type SiteEditorField,
   type SiteEditorManifest,
   type SiteEditorTab,
 } from '@/components/platform/SidaStudioV2'
+import { SidaStudioV2Lazy } from '@/components/platform/SidaStudioV2Lazy'
 import { tenantStorefrontHost, tenantStorefrontUrl } from '@/lib/storefront-url'
 import {
   DEFAULT_STOREFRONT_THEME,
@@ -465,7 +465,7 @@ export default async function AdminSidaPage({ searchParams }: AdminSidaPageProps
   ].filter((key) => isModuleActivated(moduleStates, key))
 
   return (
-    <SidaStudioV2
+    <SidaStudioV2Lazy
       tenantId={detail.tenant.id}
       effectiveSnapshot={effectiveSnapshot}
       publishedSnapshot={publishedSnapshot}

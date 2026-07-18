@@ -55,7 +55,7 @@ export type SiteEditorManifest = {
   swatches: Partial<Record<ColorKey, string[]>>
 }
 
-type Props = {
+export type SidaStudioV2Props = {
   tenantId: string
   effectiveSnapshot: SiteSnapshot
   publishedSnapshot: SiteSnapshot
@@ -180,7 +180,7 @@ export function SidaStudioV2({
   manifestData,
   liveModules = [],
   scheduleHours,
-}: Props) {
+}: SidaStudioV2Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const iframeRef = useRef<HTMLIFrameElement>(null)
