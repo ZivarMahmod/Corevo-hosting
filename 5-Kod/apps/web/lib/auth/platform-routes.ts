@@ -12,6 +12,7 @@ export const PLATFORM_ROUTE_PREFIXES = [
   '/fakturering',
   '/kunder',
   '/personal-plattform',
+  '/utskick',
   '/drift-och-logg',
   '/integrationer',
   '/domaner',

@@ -19,7 +19,7 @@ export const PLATFORM_AREAS: readonly PlatformArea[] = [
     id: 'insight',
     href: '/kunder',
     label: 'Insyn',
-    prefixes: ['/kunder', '/personal-plattform', '/drift-och-logg'],
+    prefixes: ['/kunder', '/personal-plattform', '/utskick', '/drift-och-logg'],
   },
   {
     id: 'platform',
@@ -33,6 +33,7 @@ export const PLATFORM_SUBNAV: Partial<Record<PlatformAreaId, readonly PlatformNa
   insight: [
     { href: '/kunder', label: 'Slutkunder' },
     { href: '/personal-plattform', label: 'Personal' },
+    { href: '/utskick', label: 'Utskick' },
     { href: '/drift-och-logg', label: 'Loggar' },
   ],
   platform: [

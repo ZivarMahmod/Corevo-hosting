@@ -3468,6 +3468,46 @@ export type Database = {
           schedule: string
         }[]
       }
+      platform_outbox_rows: {
+        Args: {
+          p_category?: string
+          p_channel?: string
+          p_limit?: number
+          p_status?: string
+          p_tenant?: string
+        }
+        Returns: {
+          category: string
+          chosen_channel: string | null
+          cost_ore: number | null
+          created_at: string
+          delivered_at: string | null
+          event_type: string
+          id: string
+          provider_ref: string | null
+          sent_at: string | null
+          skip_reason: string | null
+          status: string
+          tenant_id: string
+          tenant_name: string
+          tenant_slug: string
+        }[]
+      }
+      platform_outbox_summary: {
+        Args: never
+        Returns: {
+          customers_total: number
+          failed_30d: number
+          name: string
+          prefs_rows: number
+          push_subs_active: number
+          sent_30d: number
+          skipped_30d: number
+          slug: string
+          sms_cost_ore_30d: number
+          tenant_id: string
+        }[]
+      }
       record_shop_order_refund: { Args: { p_order_id: string }; Returns: boolean }
       release_shop_order: {
         Args: { p_order_id: string; p_status?: string; p_token?: string }

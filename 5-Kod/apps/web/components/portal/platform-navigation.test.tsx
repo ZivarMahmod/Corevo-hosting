@@ -22,9 +22,14 @@ describe('superadmin navigation contract', () => {
     expect(activePlatformArea('/salonger/tenant-id').id).toBe('customers')
     expect(activePlatformArea('/fakturering').id).toBe('finance')
     expect(activePlatformArea('/personal-plattform').id).toBe('insight')
+    expect(activePlatformArea('/utskick').id).toBe('insight')
     expect(activePlatformArea('/drift-och-logg/events').id).toBe('insight')
     expect(activePlatformArea('/branscher/florist').id).toBe('platform')
     expect(activePlatformArea('/domaner').id).toBe('platform')
+  })
+
+  it('exposes Kommunikationscenter as Utskick inside Insyn', () => {
+    expect(PLATFORM_SUBNAV.insight).toContainEqual({ href: '/utskick', label: 'Utskick' })
   })
 
   it('keeps every visible platform link inside the shared route registry', () => {
