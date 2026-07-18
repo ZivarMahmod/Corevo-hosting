@@ -1,0 +1,12 @@
+{
+  "status": "verified",
+  "requiredLatest": "0107",
+  "observedHistoryLatest": "0107",
+  "historyAligned": true,
+  "schemaAligned": true,
+  "verifiedAt": "2026-07-18T08:04:04Z",
+  "verifiedBy": "Codex production operator",
+  "migrationFingerprint": "sha256:a30c5c6f7aac533ba1db62c41e58e9b60b3f5f4727e784081242b2e1941be079",
+  "verificationEvidence": "docs/ops/database-migration-drift.md#produktionsavstamning-2026-07-18",
+  "reason": null
+}

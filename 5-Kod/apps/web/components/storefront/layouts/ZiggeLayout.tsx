@@ -23,6 +23,7 @@ import zg from './zigge.module.css'
  * [data-theme="zigge"] — den enda rot som når nav, sidfot, undersidor OCH modul-rötter.
  */
 export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // ZIGGE ÄGER SINA MODULER (S10): butik/blogg/presentkort vävs in i temats
   // band-grammatik (fullbredds-rader med nummer, uppercase band-etiketter)
   // istället för den generiska sektions-stapeln — page.tsx hoppar över
@@ -32,7 +33,7 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
   // hemmet för hela innehållet (/shop, /blogg, /presentkort).
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
-  const presentkortLive = modules?.presentkortLive ?? false
+  const presentkortReachable = modules?.presentkortReachable ?? false
 
   return (
     <>
@@ -43,7 +44,7 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
           <h1 className={`${styles.sfSplitTitle} ${zg.heroTitle}`}>{content.heroTitle}</h1>
           <p className={`sf-lede ${zg.heroLede}`}>{content.heroLede}</p>
           <div className={styles.sfSplitActions}>
-            <BookCta className={styles.sfSquareCta} />
+            <BookCta enabled={bookingReachable} className={styles.sfSquareCta} />
             <span className={styles.sfSplitNote}>eller drop in</span>
           </div>
         </div>
@@ -61,7 +62,7 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
         <div className={styles.sfBandLabel}>Tjänster</div>
         {services.length > 0 ? (
           services.map((s, i) => (
-            <Bookable key={s.id} className={styles.sfBand} label={`Boka — ${s.name}`}>
+            <Bookable enabled={bookingReachable} key={s.id} className={styles.sfBand} label={`Boka — ${s.name}`}>
               <span className={styles.sfBandNum} aria-hidden="true">
                 {serviceNum(i)}
               </span>
@@ -147,7 +148,7 @@ export function ZiggeLayout({ content, services, modules }: StorefrontLayoutProp
       ) : null}
 
       {/* PRESENTKORT — smal band-rad i temats grammatik: en enda sfBand-rad → /presentkort. */}
-      {presentkortLive ? (
+      {presentkortReachable ? (
         <section>
           <div className={`${styles.sfBandLabel} ${zg.bandLabelSeam}`}>Presentkort</div>
           <Link href="/presentkort" className={styles.sfBand}>

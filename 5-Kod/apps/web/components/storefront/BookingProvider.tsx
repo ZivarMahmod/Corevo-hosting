@@ -35,6 +35,8 @@ import { BookingDrawer } from './BookingDrawer'
 export type BookingMode = 'wizard' | 'compact'
 
 type BookingContextValue = {
+  /** Route-level module gate; false for off/draft, true for live/paused. */
+  reachable: boolean
   /** True when the salon has bookable services AND a provider is mounted. */
   available: boolean
   /** Active presentation, including iframe-only editor preview changes. */
@@ -69,6 +71,7 @@ export function BookingProvider({
   variant = 'wizard',
   pickerMode = 'calendar',
   staffAvatarMode = 'initialer',
+  reachable = true,
   children,
 }: {
   services: WizardService[]
@@ -94,6 +97,8 @@ export function BookingProvider({
   /** Barberarbild-läget (settings.booking.staffAvatars) — rå-läses på servern via
    *  readStaffAvatarMode. Default 'initialer'. */
   staffAvatarMode?: StaffAvatarMode
+  /** Whether /boka may be reached (live/paused). Off/draft must stay inert. */
+  reachable?: boolean
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
@@ -209,6 +214,7 @@ export function BookingProvider({
 
   const value = useMemo<BookingContextValue>(
     () => ({
+      reachable,
       available,
       variant: previewPrefs.variant,
       pickerMode: previewPrefs.pickerMode,
@@ -217,7 +223,7 @@ export function BookingProvider({
       open: openDrawer,
       openQuickBook,
     }),
-    [available, openDrawer, openQuickBook, previewPrefs, previewTenantName],
+    [available, openDrawer, openQuickBook, previewPrefs, previewTenantName, reachable],
   )
 
   return (

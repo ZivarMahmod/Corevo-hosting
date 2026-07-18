@@ -68,9 +68,9 @@ export async function logPlatformAction(
     entityId?: string | null
     meta?: Record<string, unknown>
   },
-): Promise<void> {
+): Promise<{ ok: boolean }> {
   try {
-    await supabase.from('audit_log').insert({
+    const { error } = await supabase.from('audit_log').insert({
       tenant_id: args.tenantId,
       actor_profile_id: args.actorId,
       action: args.action,
@@ -78,8 +78,11 @@ export async function logPlatformAction(
       entity_id: args.entityId ?? args.tenantId,
       meta: (args.meta ?? {}) as Database['public']['Tables']['audit_log']['Insert']['meta'],
     })
+    return { ok: !error }
   } catch {
-    // audit is non-critical telemetry — swallow so the real action still succeeds.
+    // Audit must not roll back an already completed external operation, but the
+    // caller receives an explicit result and can surface/observe the gap.
+    return { ok: false }
   }
 }
 

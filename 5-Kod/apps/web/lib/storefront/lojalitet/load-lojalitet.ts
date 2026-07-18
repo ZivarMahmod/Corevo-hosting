@@ -22,8 +22,8 @@
 // GATING IS THE CALLER'S JOB: this loader does not check module state. The
 // storefront resolves tenant_modules.state via getTenantModuleStates() and only
 // renders LojalitetSection when lojalitet === 'live' (same shape as the booking +
-// shop + offert + blogg gate). A draft/off/paused lojalitet never reaches
-// loadLojalitetData.
+// shop + offert + blogg gate). Off/draft når aldrig loadern; paused laddas för den
+// stängda publika vyn.
 
 // goal-64 TILLÄGG: loadern läser numera OCKSÅ kundens klubb-nivåer (loyalty_plans,
 // migration 0057) — Källas Droppe/Källa/Flod. Samma cache-nyckel, samma `tenant:<slug>`-

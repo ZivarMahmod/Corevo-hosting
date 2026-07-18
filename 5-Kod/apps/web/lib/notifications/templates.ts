@@ -30,6 +30,8 @@ export type BookingEmailData = {
   staffTitle?: string | null
   /** Public self-service manage/cancel link (HMAC-token URL); omit/null = no link. */
   manageUrl?: string | null
+  /** Fresh guest-to-account claim URL, minted only in delivery memory. */
+  accountClaimUrl?: string | null
   /** Hours-before-start the guest may still cancel; null/absent = no cutoff line. */
   cancelCutoffHours?: number | null
   /** Per-salon brand (goal-14). Absent → Corevo gold + wordmark + no slogan. */
@@ -259,11 +261,26 @@ function manageBlock(
     </table>${cutoff}`
 }
 
+function accountClaimBlock(
+  accountClaimUrl: string | null | undefined,
+  accent: string,
+  accentFg: string,
+): string {
+  const url = accountClaimUrl?.trim()
+  if (!url) return ''
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:14px 0 0">
+      <tr><td style="border:1px solid ${accent}">
+        <a href="${esc(url)}" style="display:inline-block;padding:12px 22px;font-family:${SANS};font-size:14px;font-weight:600;color:${accent};text-decoration:none">Skapa kundkonto</a>
+      </td></tr>
+    </table>${note('Med ett kundkonto hittar du dina tider och slipper onödiga SMS.')}`
+}
+
 export function confirmationEmail(d: BookingEmailData): { subject: string; html: string } {
   // With a self-service manage link, show the avboka button (+ optional cutoff line)
   // instead of the generic "logga in"-note; gäster har inget konto att logga in på.
   const { accent, accentFg } = resolveAccent(d.accentColor)
   const manage = manageBlock(d.manageUrl, d.cancelCutoffHours, accent, accentFg)
+  const accountClaim = accountClaimBlock(d.accountClaimUrl, accent, accentFg)
   const tail = manage
     ? manage
     : note('Behöver du ändra eller avboka? Logga in på ditt konto så fixar du det på några sekunder.')
@@ -273,9 +290,28 @@ export function confirmationEmail(d: BookingEmailData): { subject: string; html:
     html: shell(
       first ? `Vi ses, ${first}!` : 'Vi ses snart!',
       `${lead('Tack för din bokning. Här är din tid — visa gärna den här biljetten när du kommer.')}${ticket(d, priceFooter(d, accent))}
-       ${tail}`,
+       ${tail}${accountClaim}`,
       d.tenantName,
       'Bokning bekräftad',
+      brandOf(d),
+    ),
+  }
+}
+
+/** A received request is deliberately distinct from a confirmation. This is used
+ * while owner approval or a released online-payment rail is still outstanding. */
+export function bookingRequestReceivedEmail(d: BookingEmailData): { subject: string; html: string } {
+  const { accent, accentFg } = resolveAccent(d.accentColor)
+  const manage = manageBlock(d.manageUrl, d.cancelCutoffHours, accent, accentFg)
+  const accountClaim = accountClaimBlock(d.accountClaimUrl, accent, accentFg)
+  return {
+    subject: `Bokningsförfrågan mottagen — ${d.tenantName}`,
+    html: shell(
+      'Vi har tagit emot din förfrågan',
+      `${lead('Tiden är inte bekräftad än. Du får ett nytt besked när verksamheten har godkänt bokningen.')}${ticket(d)}
+       ${manage}${accountClaim}`,
+      d.tenantName,
+      'Inväntar bekräftelse',
       brandOf(d),
     ),
   }
@@ -357,14 +393,15 @@ export function receiptEmail(
 // the customer-driven rebook flow (lib/kund/actions.rebookBooking). Exported and
 // branded; the call site is wired by the orchestrator (see crossModuleGaps).
 export function rebookEmail(d: BookingEmailData): { subject: string; html: string } {
-  const { accent } = resolveAccent(d.accentColor)
-  return {
-    subject: `Ny tid bekräftad — ${d.tenantName}`,
-    html: shell(
-      'Din nya tid är bokad',
-      `${lead('Vi har flyttat din tid. Här är din uppdaterade bokning:')}${ticket(d, priceFooter(d, accent))}
-       ${note('Den tidigare tiden är avbokad. Behöver du ändra igen? Logga in på ditt konto.')}`,
-      d.tenantName,
+    const { accent, accentFg } = resolveAccent(d.accentColor)
+    const manage = manageBlock(d.manageUrl, d.cancelCutoffHours, accent, accentFg)
+    return {
+      subject: `Ny tid bekräftad — ${d.tenantName}`,
+      html: shell(
+        'Din nya tid är bokad',
+        `${lead('Vi har flyttat din tid. Här är din uppdaterade bokning:')}${ticket(d, priceFooter(d, accent))}
+         ${manage || note('Den tidigare tiden är avbokad. Behöver du ändra igen? Logga in på ditt konto.')}`,
+        d.tenantName,
       'Ombokning',
       brandOf(d),
     ),

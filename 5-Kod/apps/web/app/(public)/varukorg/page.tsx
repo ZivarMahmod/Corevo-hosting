@@ -6,6 +6,7 @@ import { getTenantModuleStates, isModuleLive, isModulePaused } from '@/lib/tenan
 import { CartPageContents } from '@/components/storefront/shop/CartPageContents'
 import { SubpageHero } from '@/components/storefront/sections'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 import styles from './varukorg.module.css'
 
 // ZIVARS LAG (goal-62): MALLEN ÄGER SIDAN. Varukorgen är inte en delad vy som byter
@@ -30,6 +31,7 @@ export default async function VarukorgPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings } = bundle
+  if (!commerceReleaseGate(tenant.id).shop) notFound()
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   if (!isModuleLive(states, 'shop')) {

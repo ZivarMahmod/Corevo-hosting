@@ -68,25 +68,46 @@ Skapa i Cloudflare Dashboard → Security → WAF → Rate limiting rules:
 
 ### Radering / "rätten att bli glömd" (BYGGT)
 - Självservice: kund → `/konto/profil` → skriv `RADERA` → `eraseMyAccount`.
-  Kod: `lib/gdpr/erase.ts` (kräver service-role — degrade-meddelande utan).
+  Kod: `lib/gdpr/erase.ts` + migration 0099 (kräver service-role —
+  degrade-meddelande utan).
+- Tenantens kunddata raderas av **en** SECURITY DEFINER-RPC med fast
+  `search_path=''`: den låser exakt `(tenant_id, customer_id)`, scrubbar alla
+  kundkopplade PII-band och skriver audit sist i samma transaktion. Ett audit-
+  eller delstegsfel rullar tillbaka allt.
 - **Retentionspolicy (medvetet val):**
   | Data | Åtgärd | Varför |
   |------|--------|--------|
-  | `bookings` | **Anonymiseras** (note → null, `customer_profile_id` → null), raderas EJ | Salongen behåller intakt schema/historik; persondata borta |
+  | `customers` | **Anonymiserad stub**; kontakt, hash, visningsnamn och Auth-länk nollas | Bevarar referensintegritet utan direkt PII |
+  | `bookings` | **Anonymiseras** (`note` och `customer_profile_id` → null), raderas EJ | Salongen behåller schema-/besöks-/ekonomihistorik |
   | `payments` | **Behålls orört** | Bokföringslagen ~7 års retention; raden bär ingen direkt PII (kopplas via `booking_id`) |
-  | `users` + `auth.users` | **Raderas** (cascade) | Tar bort namn/e-post/telefon |
-  | `audit_log` | Append-only rad läggs till | Spårbarhet — **utan PII** (endast user-id + antal) |
+  | `loyalty_ledger` | **Behålls** mot anonymiserad stub | Append-only poäng-/besökshistorik; schemaförbud mot PII i `note` gäller |
+  | Favoriter, kundkort, kanalval, pushnycklar, medlemskap och claim | **Raderas/scrubbas** | Persondata utan redovisningsbehov |
+  | Outbox | Kontakt/payload/samtycke/länkar/lease scrubbas; aktiv leverans terminaliseras | Ingen ny retry eller sen CAS får använda raderad PII |
+  | Shop-/offertkontakt | Orderhuvud, presentkortsmottagare, orderradernas mottagare, ordergenererade eventanmälningar och offertsvar scrubbas; belopp/saldo/kapacitet/status/rader behålls | Skiljer direkt PII från affärs-/redovisningshistorik |
+  | `public.users` + `auth.users` | Självservice: publik profil spärras/scrubbas i DB-transaktionen; Auth raderas därefter externt | Auth kan inte ingå i Postgres-transaktionen |
+  | `audit_log` | Append-only rad läggs till sist | Spårbarhet — **utan namn, e-post, telefon eller fritext** |
 - **Append-only-audit vs raderingsrätt:** `audit_log` kan inte skrubbas (hård
   trigger). Därför skrivs ALDRIG PII dit vid radering — raderingsposten bär bara
-  `entity_id` (user-id) och en bokningsräknare. Behålls på rättslig grund
+  pseudonymt `entity_id`, aktörs-id och slutna räknare. Behålls på rättslig grund
   (spårbarhet av administrativa åtgärder).
-- **Admin-väg:** `eraseCustomerData` / `collectCustomerData` är service-role-anropbara
-  och redo att kopplas till en framtida kundadmin-vy (ingen sådan vy finns denna
-  våg — guest-kunder rider på `note`, registrerade ligger i `users`).
-- **Känd begränsning (på protokoll):** radering matchar på `customer_profile_id`.
-  Rena gästbokningar (endast `note`-sömmen, ingen profil) under samma e-post nås
-  alltså INTE av självservice-raderingen denna våg. När en `customers`-tabell byggs
-  bör erase även skrubba note-matchande gästbokningar.
+- **Auth-tvåfas:** full kontoradering rapporteras bara när Auth Admin-delete och
+  det idempotenta cleanup-acknowledgementet är bekräftade. En service-only
+  claim/fail/ack-kö med radlås + kort lease återupptar tappade svar utan dubbla
+  arbetare. Vid fel stannar profilen i `gdpr_pending_auth_delete`, Auth-användaren
+  bannas best-effort och tenantens direkta PII är redan borta. Aktiv cleanup
+  behåller exakt tenant/customer/Auth-UUID; ack nollar alla tre identifierarna.
+  Felkoder/loggar är slutna och innehåller aldrig leverantörstext eller kontaktdata.
+- **Gammal JWT efter radering:** Supabase access-JWT kan leva till `exp` även när
+  användaren raderats/bannats. Ett DB-triggerbackstop kräver därför en aktuell
+  `public.users.status='active'`, exakt tenant/roll och — för kundrollen — exakt
+  aktivt bundet kundkort innan en autentiserad bokning får skapas. Service-role-
+  storefront utan `auth.uid()` är oförändrad.
+- **Global identitet fail-closed:** om samma Auth UUID har fler än en exakt
+  kundrelation muteras ingenting; Corevo-support måste hantera hela identiteten
+  efter produktbeslut. Ingen matchning sker på e-post/telefon.
+- **Orelaterade intag:** `contact_messages` och eventanmälningar saknar
+  `customer_id`. Tenant-kundradering gissar därför inte identitet från kontakttext;
+  de följer sina separata retention-/raderingsrutiner.
 
 ---
 

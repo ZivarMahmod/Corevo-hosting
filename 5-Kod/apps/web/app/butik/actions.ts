@@ -18,6 +18,7 @@ import { paypalReady, createPaypalOrder } from '@/lib/payments/paypal'
 import { sendOrderPlacedEmail } from '@/lib/notifications/shop'
 import { deliverIssuedGiftCards } from '@/lib/notifications/gift'
 import { logger } from '@/lib/observability'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 // Webshop köp-räls (goal-49). Runs as the anon role — the order INSERT goes
 // through the SECURITY DEFINER RPC:er in migration 0042 (reserve_shop_order /
@@ -45,6 +46,11 @@ async function getTenantContext(): Promise<TenantCtx | null> {
   return { tenantId: tenant.id, slug: tenant.slug }
 }
 
+async function requireReleasedShopContext(): Promise<TenantCtx | null> {
+  const ctx = await getTenantContext()
+  return ctx && commerceReleaseGate(ctx.tenantId).shop ? ctx : null
+}
+
 export type ReserveInput = {
   /** goal-64: raden kan vara en produkt, ett presentkort ELLER en kursplats.
    *  `kind` utelämnad ⇒ 'product' ⇒ oförändrat beteende (gammal kassa, sparad korg). */
@@ -60,8 +66,8 @@ export type ReserveResult =
  *  The fulfilment snapshot is read SERVER-SIDE from the tenant's shop config (never
  *  trusted from the client), then the RPC snapshots it onto the order. */
 export async function reserveOrder(input: ReserveInput): Promise<ReserveResult> {
-  const ctx = await getTenantContext()
-  if (!ctx) return { ok: false, reason: 'invalid', message: 'Okänd butik.' }
+  const ctx = await requireReleasedShopContext()
+  if (!ctx) return { ok: false, reason: 'invalid', message: 'Webshop är inte aktiverad ännu.' }
 
   const ip = await getClientIp()
   if (!(await checkRateLimit(rateLimitKey('shop_order', ctx.tenantId, ip), LIMITS.booking))) {
@@ -170,8 +176,8 @@ export type ConfirmResult =
 /** Confirm the held order with customer details (köp-räls step 2). No-payment →
  *  commits stock + status 'pending'. Payment required → 'awaiting_payment' (Fas 3). */
 export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> {
-  const ctx = await getTenantContext()
-  if (!ctx) return { ok: false, reason: 'invalid', message: 'Okänd butik.' }
+  const ctx = await requireReleasedShopContext()
+  if (!ctx) return { ok: false, reason: 'invalid', message: 'Webshop är inte aktiverad ännu.' }
   // Plan 009 SÄK-06: nedströms-actionen skickar orderbekräftelse-mejl per anrop —
   // samma hink som reserveOrder så hela köpkedjan delar budget per IP+tenant.
   const confirmIp = await getClientIp()
@@ -279,6 +285,8 @@ export async function confirmOrder(input: ConfirmInput): Promise<ConfirmResult> 
 /** Cancel a held order (release stock). Best-effort — abandoning the cart. */
 export async function cancelOrder(orderId: string, token: string): Promise<{ ok: boolean }> {
   if (!orderId || !token) return { ok: false }
+  const ctx = await requireReleasedShopContext()
+  if (!ctx) return { ok: false }
   const supabase = createPublicClient()
   const { error } = await supabase.rpc('release_shop_order', {
     p_order_id: orderId,
@@ -319,6 +327,8 @@ export type PublicShopOrder = {
 /** Token-gated order read for the confirmation page (PII boundary: null token rejected). */
 export async function getShopOrder(orderId: string, token: string): Promise<PublicShopOrder | null> {
   if (!orderId || !token) return null
+  const ctx = await requireReleasedShopContext()
+  if (!ctx) return null
   const supabase = createPublicClient()
   const { data, error } = await supabase.rpc('get_public_shop_order', { p_id: orderId, p_token: token })
   if (error || !data) return null
@@ -357,7 +367,10 @@ async function allowedPaymentMethods(tenantId: string): Promise<ShopPaymentMetho
     ])
     stripeReady = (settings?.payments_enabled ?? false) && (tenant?.stripe_charges_enabled ?? false)
   }
-  return availablePaymentMethods(configured, { stripeReady, paypalReady: paypalReady() })
+  return availablePaymentMethods(configured, {
+    stripeReady,
+    paypalReady: commerceReleaseGate(tenantId).paypal && paypalReady(),
+  })
 }
 
 /**
@@ -395,8 +408,8 @@ export async function startShopCheckout(
    *  (oförändrat beteende för den gamla kassan). */
   method?: ShopPaymentMethod | null,
 ): Promise<CheckoutResult> {
-  const ctx = await getTenantContext()
-  if (!ctx) return { ok: false, reason: 'error', message: 'Okänd butik.' }
+  const ctx = await requireReleasedShopContext()
+  if (!ctx) return { ok: false, reason: 'unavailable', message: 'Webshop är inte aktiverad ännu.' }
   if (!orderId) return { ok: false, reason: 'error', message: 'Saknar beställning.' }
   // Plan 009 SÄK-06: varje anrop skapar en Stripe Checkout-session — begränsa.
   const checkoutIp = await getClientIp()
@@ -514,9 +527,12 @@ export async function startShopCheckout(
  * PayPal går (v1) via plattformens konto. Se lib/payments/paypal.ts + docs/ops/paypal.md.
  */
 export async function startPaypalCheckout(orderId: string): Promise<CheckoutResult> {
-  const ctx = await getTenantContext()
-  if (!ctx) return { ok: false, reason: 'error', message: 'Okänd butik.' }
+  const ctx = await requireReleasedShopContext()
+  if (!ctx) return { ok: false, reason: 'unavailable', message: 'Webshop är inte aktiverad ännu.' }
   if (!orderId) return { ok: false, reason: 'error', message: 'Saknar beställning.' }
+  if (!commerceReleaseGate(ctx.tenantId).paypal) {
+    return { ok: false, reason: 'unavailable', message: 'PayPal är inte tillgängligt.' }
+  }
   // Plan 009 SÄK-06: varje anrop skapar en PayPal-order hos providern — begränsa.
   const paypalIp = await getClientIp()
   if (!(await checkRateLimit(rateLimitKey('shop_order', ctx.tenantId, paypalIp), LIMITS.booking))) {

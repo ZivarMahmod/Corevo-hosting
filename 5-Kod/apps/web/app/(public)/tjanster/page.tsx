@@ -9,6 +9,7 @@ import { pageMetadata } from '@/components/storefront/seo'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { themePages } from '@/components/storefront/layouts/florist/layouts'
+import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,10 @@ export default async function ServicesPage() {
   // Section header varies per theme (data-driven, no longer hardcoded).
   const copy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
   const content = resolveThemeContent(settings.theme, settings.branding, copy)
-  const services = await getServices(tenant.id, tenant.slug)
+  const [services, modules] = await Promise.all([
+    getServices(tenant.id, tenant.slug),
+    loadLayoutModuleTeasers(tenant.id, tenant.slug),
+  ])
 
   // goal-59 TEMA-PAKET: mallens egen prislista när den äger sidan (se om/page.tsx).
   const Page = themePages(settings.theme).tjanster
@@ -35,6 +39,7 @@ export default async function ServicesPage() {
         services={services}
         location={location}
         contact={settings.contact}
+        modules={modules}
       />
     )
   }
@@ -53,7 +58,7 @@ export default async function ServicesPage() {
         <ServiceMenu services={services} />
         {services.length > 0 ? (
           <Reveal className="section-more">
-            <BookCta />
+            <BookCta enabled={modules.bookingReachable} />
           </Reveal>
         ) : null}
       </div>

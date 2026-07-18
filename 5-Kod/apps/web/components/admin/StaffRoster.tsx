@@ -720,7 +720,12 @@ function PhotoSection({ member, onSaved }: { member: StaffCard; onSaved: () => v
 
   useEffect(() => {
     if (photoState.success) {
-      notify('Foto sparat — syns på publika sidan', 'success')
+      notify(
+        member.active && showOnSite
+          ? 'Fotoändringen sparades — den synliga teamprofilen uppdateras'
+          : 'Fotoändringen sparades — profilen är inte publicerad',
+        'success',
+      )
       router.refresh()
       onSaved()
     }
@@ -831,8 +836,10 @@ function PhotoSection({ member, onSaved }: { member: StaffCard; onSaved: () => v
         </p>
       )}
       <p style={{ fontSize: 12, color: 'var(--c-ink-3)', margin: '8px 0 0', lineHeight: 1.5 }}>
-        Fotot visas i team-sektionen på den publika sidan — utan foto visas en standard-silhuett.
-        {' '}{showOnSite ? 'Medarbetaren syns på sidan.' : 'Medarbetaren är dold på sidan men går fortfarande att boka.'}
+        {member.active && showOnSite
+          ? 'Profilen visas i team-sektionen. Utan foto visas en standard-silhuett.'
+          : 'Fotoändringen är sparad, men profilen visas inte så länge medarbetaren är inaktiv eller dold från sidan.'}
+        {' '}{showOnSite ? 'Synlighetsreglaget är på.' : 'Medarbetaren är dold på sidan men kan fortfarande vara bokningsbar.'}
       </p>
     </section>
   )

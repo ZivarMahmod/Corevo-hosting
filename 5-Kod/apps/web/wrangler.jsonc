@@ -3,7 +3,10 @@
   // Standalone preview Worker → bokningsplatformen.zivar68.workers.dev.
   // Isolated from corevo.se + POS (no routes; see commented block below).
   "name": "bokningsplatformen",
-  "main": ".open-next/worker.js",
+  // OpenNext custom Worker: preserves fetch and adds the durable primary
+  // reminder scheduler. The scheduled handler only queues outbox events.
+  "main": "./custom-worker.mjs",
+  "triggers": { "crons": ["*/15 * * * *"] },
   "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
   // Gratisplanens tak är 3 MiB GZIPPAD worker. OpenNext-servern är ominifierad
@@ -43,6 +46,10 @@
     // NOTIFICATIONS_FROM mirrors the live remote value; the address MUST be the
     // real one.com mailbox booking@corevo.se (two o) for SPF/DKIM alignment.
     "NOTIFICATIONS_FROM": "Corevo <booking@corevo.se>",
+    // U3 physical safety gate. Credentials alone can never activate SMS.
+    // Do not change here: controlled dry-run/live activation uses an explicit
+    // deployment decision and the runbook in docs/ops/sms-activation.md.
+    "SMS_DELIVERY_MODE": "off",
     // Public origin of the R2 media bucket (r2.dev). lib/r2/upload.ts builds stored
     // image URLs from this. Production later: swap to a custom subdomain
     // (media.corevo.se) and keep stored links from breaking.
@@ -127,6 +134,9 @@
   "env": {
     "staging": {
       "name": "bokningsplatformen-staging",
+      // Staging shares no production scheduler/data. Deployment remains gated in
+      // deploy.yml until isolated Supabase + R2 resources exist.
+      "triggers": { "crons": [] },
       // Named envs do NOT inherit top-level bindings/vars → assets + vars are
       // repeated here. Without `assets` the staging worker serves no static files
       // (Next chunks 404); without the public Supabase
@@ -135,15 +145,15 @@
       // top-level block), so plaintext here is correct; server secrets still go via
       // `wrangler secret put --env staging`.
       "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
-      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media" }],
+      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "corevo-media-staging" }],
       "observability": { "enabled": true },
       // Staging is workers.dev-only. wrangler 4.95 INHERITS the top-level `routes`
       // into named envs unless overridden → an EMPTY array stops staging from trying
       // to claim *.boka.corevo.se/* (owned by the prod worker) and keeps it isolated.
       "routes": [],
       "vars": {
-        "NEXT_PUBLIC_SUPABASE_URL": "https://clylvowtowbtotrahuad.supabase.co",
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNseWx2b3d0b3didG90cmFodWFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTg4MDcsImV4cCI6MjA5NTc3NDgwN30.ZSm3eMT-PxqfDPN2P584EVBlWfUwpeQ6gKOnKBvqxJU",
+        "NEXT_PUBLIC_SUPABASE_URL": "https://isolated-staging-required.invalid",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY": "staging-not-configured",
         "NEXT_PUBLIC_ROOT_DOMAIN": "corevo.se",
         "NEXT_PUBLIC_PLATFORM_HOST": "booking.corevo.se",
         "NEXT_PUBLIC_SUPERADMIN_HOST": "superbooking.corevo.se",
@@ -154,7 +164,9 @@
         // Mirrored from top-level so wrangler doesn't warn about un-inherited vars and
         // no code reads `undefined`. DomainPanel stays OFF on staging (no CF secrets here).
         "NOTIFICATIONS_FROM": "Corevo <booking@corevo.se>",
-        "R2_PUBLIC_BASE_URL": "https://pub-8f440f10134347eeb2491f9712f5a6f5.r2.dev",
+        // Staging is also physically off; provider dry-run requires Zivar's approval.
+        "SMS_DELIVERY_MODE": "off",
+        "R2_PUBLIC_BASE_URL": "https://staging-media-required.invalid",
         "DOMAIN_PROVISIONING_ENABLED": "false",
         // goal-48 — onboarding-studio ENABLED on staging only.
         "ONBOARDING_STUDIO_ENABLED": "true"

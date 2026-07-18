@@ -16,13 +16,14 @@ import styles from './account.module.css'
 type Derived = { service: string; serviceId: string; cadenceWeeks: number; lastVisit: string }
 
 /** Pure: derive the habitual service + visit cadence from booking history.
- *  `bookings` = the customer's bookings (any status); we use their start times +
+ *  `bookings` = the customer's bookings; only completed visits may establish a habit.
  *  service to find the dominant service and the median gap between consecutive
  *  visits of that service. Returns null when not derivable. */
 export function deriveUsual(bookings: KundBooking[], timeZone: string): Derived | null {
   // Count services; pick the most-booked (ties → most recent wins via order).
   const byService = new Map<string, { name: string; serviceId: string; times: number[] }>()
   for (const b of bookings) {
+    if (b.status !== 'completed') continue
     if (!b.serviceId) continue
     const t = new Date(b.startTs).getTime()
     if (!Number.isFinite(t)) continue

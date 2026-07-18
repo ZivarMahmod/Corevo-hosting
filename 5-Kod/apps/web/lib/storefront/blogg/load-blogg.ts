@@ -18,7 +18,7 @@
 // GATING IS THE CALLER'S JOB: this loader does not check module state. The
 // storefront resolves tenant_modules.state via getTenantModuleStates() and only
 // renders BloggSection when blogg === 'live' (same shape as the booking + shop +
-// offert gate). A draft/off/paused blogg never reaches loadBloggData.
+// offert gate). Off/draft når aldrig loadern; paused laddas som läsbar men stängd modul.
 
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'

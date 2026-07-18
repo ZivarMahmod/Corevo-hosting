@@ -13,7 +13,25 @@ describe('bokningsdetaljen följer kalenderns serverdata', () => {
     expect(source).toContain('bookings.find((booking) => booking.id === current.id)')
   })
 
-  it('erbjuder bara slutförande när besöket faktiskt har börjat', () => {
+  it('erbjuder bara slutförande när besöket faktiskt har nått sluttiden', () => {
     expect(drawer).toContain("if (isPast && can('completed'))")
+    expect(drawer).toContain('Behöver avslutas.')
+    expect(drawer).not.toContain('auto-klar')
+  })
+
+  it('ersätter avboka och omboka med endast utfallsval när en aktiv bokning passerat', () => {
+    expect(drawer).toContain("if (!isPast && can('cancelled'))")
+    expect(drawer).toContain('&& !outcomeReady')
+  })
+
+  it('stänger cancelled-återställning vid starttiden, inte först vid sluttiden', () => {
+    expect(drawer).toContain('bookingStartPassed')
+    expect(drawer).toContain("booking.status === 'cancelled' && bookingStartPassed")
+  })
+
+  it('rättar terminalt utfall direkt utan att återöppna bokningen', () => {
+    expect(drawer).toContain("label: 'Rätta till uteblev', target: 'no_show'")
+    expect(drawer).toContain("label: 'Rätta till genomförd', target: 'completed'")
+    expect(drawer).not.toContain("label: 'Öppna igen', target: 'confirmed'")
   })
 })

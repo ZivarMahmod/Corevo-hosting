@@ -85,13 +85,9 @@ export const snitt: SalongTheme = {
     closingImage: IMG.stolarna,
     // Team är OWNER-ONLY: tom lista → "Stolarna"-sektionen ritas inte alls.
     team: [],
-    // caps.homeStats: true → filens 5,0★-block. Evergreen och ärliga; ägarens egna
-    // siffror (branding.stats) skriver över dem.
-    stats: [
-      ['5,0★', 'Snittbetyg'],
-      ['Tre', 'Stolar'],
-      ['75 min', 'Snitt per besök'],
-    ],
+    // Inga mallvärden får framstå som salongens fakta. Verifierade, ägarsparade
+    // branding.stats kan fortfarande fylla blocket; utan dem ritas det inte.
+    stats: [],
   },
   caps: { heroEyebrow: true, homeStats: true, homeGallery: false, homeAbout: true },
   chrome: { Nav: SnittNav, Footer: SnittFooter, ownsUtility: true },

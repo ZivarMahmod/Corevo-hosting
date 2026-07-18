@@ -46,10 +46,12 @@ function sinceYear(iso: string | null): string | null {
  */
 export function ClientCard({
   customerId,
+  locationId,
   label,
   bookingNote = null,
 }: {
   customerId: string | null
+  locationId: string
   label: string
   /** The customer-channel note on THIS booking (single shared bookings.note). */
   bookingNote?: string | null
@@ -70,6 +72,7 @@ export function ClientCard({
       {open ? (
         <ClientCardDrawer
           customerId={customerId}
+          locationId={locationId}
           fallbackName={label}
           bookingNote={bookingNote}
           onClose={() => setOpen(false)}
@@ -81,11 +84,13 @@ export function ClientCard({
 
 function ClientCardDrawer({
   customerId,
+  locationId,
   fallbackName,
   bookingNote,
   onClose,
 }: {
   customerId: string
+  locationId: string
   fallbackName: string
   bookingNote: string | null
   onClose: () => void
@@ -146,6 +151,7 @@ function ClientCardDrawer({
       ) : (
         <CardBody
           customerId={customerId}
+          locationId={locationId}
           card={ok.card}
           notes={ok.notes}
           bookingNote={bookingNote}
@@ -157,11 +163,13 @@ function ClientCardDrawer({
 
 function CardBody({
   customerId,
+  locationId,
   card,
   notes,
   bookingNote,
 }: {
   customerId: string
+  locationId: string
   card: Extract<ClientCardResult, { ok: true }>['card']
   notes: Extract<ClientCardResult, { ok: true }>['notes']
   bookingNote: string | null
@@ -199,8 +207,11 @@ function CardBody({
           label="Senaste besök"
           value={card.lastVisitTs ? fmtDateTime(card.lastVisitTs, tz) : 'Inget än'}
         />
-        <StripItem label="Brukar komma" value="—" />
-        <StripItem label="Bjuds på" value="—" />
+        <StripItem
+          label="Brukar gå till"
+          value={card.favoriteStaffTitle ?? card.lastStaffTitle ?? 'Inte känt än'}
+        />
+        <StripItem label="Vanlig tjänst" value={card.usualServiceName ?? 'Inte känt än'} />
       </div>
 
       {/* "Inför besöket · från kunden" — the customer's note for THIS booking. */}
@@ -343,7 +354,7 @@ function CardBody({
         <p className="small" style={{ margin: '0 0 4px' }}>
           Endast för dig och verksamheten. Visas aldrig för kunden.
         </p>
-        <CustomerNotesForm customerId={customerId} notes={notes} />
+        <CustomerNotesForm customerId={customerId} locationId={locationId} notes={notes} />
       </section>
     </div>
   )

@@ -56,7 +56,8 @@ export function SolSaltOm({ content, tenant }: ThemePageProps) {
   )
 }
 
-export function SolSaltTjanster({ content, services }: ThemePageProps) {
+export function SolSaltTjanster({ content, services, modules }: ThemePageProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.slPageNarrow}>
       <p className={styles.slEyebrow}>{content.servicesEyebrow}</p>
@@ -73,7 +74,7 @@ export function SolSaltTjanster({ content, services }: ThemePageProps) {
         ) : (
           <div className={styles.slList}>
             {services.map((s) => (
-              <Bookable key={s.id} className={styles.slListRow} label={`Boka — ${s.name}`}>
+              <Bookable enabled={bookingReachable} key={s.id} className={styles.slListRow} label={`Boka — ${s.name}`}>
                 <span>
                   <span className={styles.slListName}>{s.name}</span>
                   <span className={styles.slListDesc}>{serviceDesc(s)}</span>

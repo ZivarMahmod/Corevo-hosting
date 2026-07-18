@@ -8,7 +8,8 @@ import styles from './personal.module.css'
 /**
  * Drop-in / walk-in (M5 §2.1). The frisör logs a customer who walked in — a booking
  * on their OWN staff_id. The no_double_booking EXCLUDE guards the slot server-side
- * (a clash returns a clear inline error). Name is optional and rides the note.
+ * (a clash returns a clear inline error). An optional name becomes a real tenant-
+ * bound customer relation; bookings.note remains reserved for actual messages.
  */
 export function WalkInForm({
   services,
@@ -61,7 +62,7 @@ export function WalkInForm({
           </label>
           <label className={styles.field}>
             <span>Kundnamn (valfritt)</span>
-            <input name="name" type="text" placeholder="t.ex. Drop-in" />
+            <input name="name" type="text" maxLength={200} placeholder="t.ex. Drop-in" />
           </label>
           <button type="submit" className="btn-primary" disabled={pending}>
             {pending ? 'Lägger in…' : 'Lägg in walk-in'}

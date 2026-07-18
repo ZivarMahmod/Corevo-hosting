@@ -13,46 +13,24 @@
 // Plain <img> srcs only (the remote-image config is frozen → never next/image).
 
 import type { TenantBranding } from '@corevo/ui'
+import { withoutLegacySnittStats } from '@/lib/branding/legacy-stats'
 import type { StorefrontTheme } from '@/lib/tenant-data'
+import type {
+  ResolvedThemeContent,
+  ThemeContent,
+  ThemeContentDefaults,
+} from './theme-content.types'
 import { FLORIST_CONTENT } from './layouts/florist/registry'
 import { EKONOMI_CONTENT } from './layouts/ekonomi/registry'
 import { SALONG_CONTENT } from './layouts/salong/registry'
 
-export type ThemeTeamMember = { name: string; role: string; img: string }
-export type ThemeStat = [value: string, label: string]
-
-export type ThemeContent = {
-  /** Small uppercase label above the hero headline (the salon "kind"). */
-  heroEyebrow: string
-  /** Hero headline — may contain a \n for a two-line display break. */
-  heroTitle: string
-  /** Hero supporting paragraph. */
-  heroLede: string
-  /** One-line tagline used in the footer / utility copy. */
-  tagline: string
-  /** Thin top utility-strip micro-copy. */
-  utility: string
-  /** Italic warmth phrase used in About / quote bands. */
-  italic: string
-  /** "Om salongen" body copy. */
-  aboutCopy: string
-  /** Per-theme SECTION HEADERS (theme-default, not owner-editable). These vary the
-   *  editorial voice per theme and replace the previously hardcoded strings in
-   *  sections.tsx / tjanster page. They flow to consumers via `...base` in
-   *  resolveThemeContent; they are NOT part of the owner CopyOverride set. */
-  servicesEyebrow: string
-  servicesTitle: string
-  aboutTitle: string
-  teamEyebrow: string
-  teamTitle: string
-  /** Strong per-theme defaults (used only when the owner hasn't uploaded). */
-  heroImages: string[]
-  galleryImages: string[]
-  aboutImage: string
-  closingImage: string
-  team: ThemeTeamMember[]
-  stats: ThemeStat[]
-}
+export type {
+  ResolvedThemeContent,
+  ThemeContent,
+  ThemeContentDefaults,
+  ThemeStat,
+  ThemeTeamMember,
+} from './theme-content.types'
 
 // Shared Unsplash photography manifest (salon / hair / barber), mirroring the
 // handoff's IMG set so every theme can lead with a fitting photo before upload.
@@ -172,13 +150,7 @@ const FLORA_IMG = {
   field: u('1500382017468-9049fed747ef', 900),
 } as const
 
-export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
-  // FLORIST-SVITEN (goal-58): copy + fotostandard för de 13 mallarna bor i deras
-  // egna <key>.theme.ts (florist/registry.ts). Spridda först — nycklarna nedan är
-  // disjunkta, så ordningen skuggar ingenting.
-  ...(FLORIST_CONTENT as Record<StorefrontTheme, ThemeContent>),
-  ...(EKONOMI_CONTENT as Record<StorefrontTheme, ThemeContent>),
-  ...(SALONG_CONTENT as Record<StorefrontTheme, ThemeContent>),
+const STATIC_THEME_CONTENT = {
   salvia: {
     heroEyebrow: '— Välkommen in',
     heroTitle: 'Varsamt utfört.\nSkönt mottagen.',
@@ -386,7 +358,59 @@ export const THEME_CONTENT: Record<StorefrontTheme, ThemeContent> = {
     team: [],
     stats: [],
   },
+} satisfies Partial<Record<StorefrontTheme, ThemeContent>>
+
+function registeredThemeContent(key: string): ThemeContent | undefined {
+  return FLORIST_CONTENT[key] ?? EKONOMI_CONTENT[key] ?? SALONG_CONTENT[key]
 }
+
+/**
+ * Total theme-content registry, independent of ESM evaluation order.
+ *
+ * The named theme registries also own their React chrome/pages. Loading layouts
+ * before this module can therefore complete this module while one of those
+ * registries is still being evaluated. Spreading the imported objects took a
+ * one-time empty snapshot and permanently dropped those themes. Resolve suite
+ * entries lazily instead, while keeping normal object/index semantics for every
+ * existing consumer (including Object.keys/Object.entries).
+ */
+export const THEME_CONTENT = new Proxy(STATIC_THEME_CONTENT as Record<string, ThemeContent>, {
+  get(target, property, receiver) {
+    const own = Reflect.get(target, property, receiver) as ThemeContent | undefined
+    return own ?? (typeof property === 'string' ? registeredThemeContent(property) : undefined)
+  },
+  has(target, property) {
+    return Reflect.has(target, property)
+      || (typeof property === 'string' && registeredThemeContent(property) !== undefined)
+  },
+  ownKeys(target) {
+    return [
+      ...new Set([
+        ...Reflect.ownKeys(target),
+        ...Object.keys(FLORIST_CONTENT),
+        ...Object.keys(EKONOMI_CONTENT),
+        ...Object.keys(SALONG_CONTENT),
+      ]),
+    ]
+  },
+  getOwnPropertyDescriptor(target, property) {
+    const own = Reflect.getOwnPropertyDescriptor(target, property)
+    if (own) return own
+    const value = typeof property === 'string' ? registeredThemeContent(property) : undefined
+    return value === undefined
+      ? undefined
+      : { configurable: true, enumerable: true, writable: false, value }
+  },
+  set() {
+    return false
+  },
+  deleteProperty() {
+    return false
+  },
+  defineProperty() {
+    return false
+  },
+}) as Readonly<Record<StorefrontTheme, ThemeContent>>
 
 /**
  * Owner-editable storefront COPY (the shared M2↔M6 copy-content contract).
@@ -585,76 +609,13 @@ export function resolveTenantCopy(
  * compile and behave exactly as before. M2 threads `settings.copy` through as the
  * third arg to surface owner-edited copy (see CopyOverride above).
  */
-export type ResolvedThemeContent = ThemeContent & {
-  /** Startsidans om-sektion: aboutCopyHome-override → aboutCopy → temats default. */
-  aboutCopyHome: string
-  /** Mall-egna sektioner (bara satta när ägaren skrivit egna — layouten faller
-   *  annars tillbaka på sina inbyggda texter, t.ex. FreshCuts "Varför Oss?"). */
-  homeSecondTitle?: string
-  whyTitle?: string
-  whySub?: string
-  whyBody?: string
-  /** Sid-texter utan temadefault: satta bara när ägaren skrivit egna — render-
-   *  stället faller annars tillbaka på sin inbyggda text. */
-  servicesIntro?: string
-  teamLead?: string
-  closingEyebrow?: string
-  closingTitle?: string
-  closingLede?: string
-  contactEyebrow?: string
-  contactTitle?: string
-  /** goal-57 körning 13: floras pelare + modul-band (satta bara vid egen text —
-   *  layouten faller annars tillbaka på sina inbyggda strängar). */
-  pillar1Title?: string
-  pillar1Body?: string
-  pillar1Link?: string
-  pillar2Title?: string
-  pillar2Body?: string
-  pillar2Link?: string
-  pillar3Title?: string
-  pillar3Body?: string
-  pillar3Link?: string
-  shopEyebrow?: string
-  shopTitle?: string
-  shopCta?: string
-  blogEyebrow?: string
-  blogTitle?: string
-  blogCta?: string
-  giftEyebrow?: string
-  giftLede?: string
-  giftCta?: string
-  homeGalleryEyebrow?: string
-  galleryEyebrow?: string
-  findEyebrow?: string
-  /** goal-64: klubbens + galleriets rubriker (satta bara vid egen text — mall-vyn
-   *  faller annars tillbaka på designens sträng verbatim). */
-  clubEyebrow?: string
-  clubTitle?: string
-  clubLede?: string
-  clubCta?: string
-  clubNote?: string
-  galleryTitle?: string
-  galleryLede?: string
-}
-
-/**
- * Vad en MALL får leverera som sina standardtexter: bas-kontraktet (ThemeContent)
- * plus de sektions-texter som annars bara kan komma från ägaren (shopEyebrow,
- * blogTitle, giftLede, closingTitle …, goal-57 K13). resolveThemeContent sprider
- * `...base` → sätter mallen dem följer de med hela vägen till layouten, och ägarens
- * settings.copy skriver fortfarande över dem per fält. Utan den här typen tvingas en
- * mall till `as ThemeContent` (excess-property-check), vilket TYST döljer stavfel.
- */
-export type ThemeContentDefaults = ThemeContent &
-  Partial<Omit<ResolvedThemeContent, keyof ThemeContent>>
-
 export function resolveThemeContent(
   theme: StorefrontTheme,
   branding: TenantBranding | null | undefined,
   copy?: CopyOverride | null,
 ): ResolvedThemeContent {
   const base = THEME_CONTENT[theme]
-  const b = branding ?? {}
+  const b = withoutLegacySnittStats(theme, branding ?? {})
   const heroImages = Array.isArray(b.hero_images) && b.hero_images.length ? b.hero_images : base.heroImages
   const galleryImages =
     Array.isArray(b.gallery_images) && b.gallery_images.length ? b.gallery_images : base.galleryImages

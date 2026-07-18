@@ -9,6 +9,7 @@ import { getStripe } from '@/lib/stripe/client'
 import { createExpressAccount, createOnboardingLink, fetchConnectStatus } from '@/lib/stripe/connect'
 import { requestOrigin } from '@/lib/url'
 import { createAdminServiceClient } from './service'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 // Stripe Connect onboarding actions (G09 step 2), delade mellan kund-adminens
 // /admin/installningar och super-admin-kundkortet /salonger/[id] (goal-54 körning 5)
@@ -144,6 +145,9 @@ export async function setPaymentsEnabled(
   const { tenant } = ctx
 
   const enabled = String(fd.get('payments_enabled') ?? '') === 'true'
+  if (enabled && !commerceReleaseGate(tenant.id).bookingPayment) {
+    return { error: 'Onlinebetalning är inte frisläppt ännu. Betala på plats används under pilotdriften.' }
+  }
   const supabase = await createClient()
   const service = createAdminServiceClient()
   if (!service) return { error: 'Betalningsläget kan inte uppdateras just nu. Kontakta Corevo.' }

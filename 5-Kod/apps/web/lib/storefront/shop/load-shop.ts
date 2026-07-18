@@ -15,10 +15,11 @@
 // GATING IS THE CALLER'S JOB: this loader does not check module state. The
 // storefront resolves tenant_modules.state via getTenantModuleStates() and only
 // renders ShopSection when shop === 'live' (same shape as the booking gate in
-// app/(public)/layout.tsx). A draft/off/paused shop never reaches loadShopData.
+// app/(public)/layout.tsx). Off/draft når aldrig loadern; paused laddas som stängd katalog.
 
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 import { parseShopConfig, type ShopConfig, type ShopData, type ShopProduct, type ShopVariant } from './types'
 
 /** Max products pulled for the storefront listing (keeps the section bounded;
@@ -44,6 +45,7 @@ export async function loadShopData(
    */
   category?: string | null,
 ): Promise<ShopData | null> {
+  if (!commerceReleaseGate(tenantId).shop) return null
   const all = await loadAllShopData(tenantId, slug)
   if (!all) return null
 
@@ -173,6 +175,7 @@ export async function loadShopProduct(
   slug: string,
   productId: string,
 ): Promise<ShopProductData | null> {
+  if (!commerceReleaseGate(tenantId).shop) return null
   const norm = slug.trim().toLowerCase()
   const load = unstable_cache(
     async (): Promise<ShopProductData | null> => {

@@ -22,7 +22,18 @@ alter function private.is_platform_admin()            set search_path = '';
 
 -- ── 2. Lock down the SECURITY DEFINER helper exposed via PostgREST RPC ──
 --      (advisor 0028/0029: anon + authenticated could call /rpc/rls_auto_enable)
-revoke execute on function public.rls_auto_enable() from anon, authenticated, public;
+-- The helper was created manually by Supabase's RLS advisor on the original
+-- project and therefore never existed in a database built only from migrations.
+-- Guard the cleanup so both histories converge: revoke it where it exists, and
+-- remain a no-op on a clean branch where there is nothing to expose.
+do $$
+begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    revoke execute on function public.rls_auto_enable()
+      from anon, authenticated, public;
+  end if;
+end
+$$;
 
 -- ── 3. Covering indexes for the 4 unindexed foreign keys (advisor 0001) ──
 create index if not exists users_role_id_idx             on public.users (role_id);

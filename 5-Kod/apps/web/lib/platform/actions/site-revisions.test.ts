@@ -130,13 +130,13 @@ describe('site revision server actions', () => {
     expect(mocks.geocodeAddress).toHaveBeenCalledWith('Nya gatan 2')
     expect(mocks.rpc).toHaveBeenCalledWith('save_site_draft', expect.objectContaining({
       p_snapshot: expect.objectContaining({
-        settings: expect.objectContaining({ map: { lat: 58.4108, lon: 15.6214 } }),
+        settings: expect.objectContaining({ map: { lat: 58.4108, lon: 15.6214, q: 'Nya gatan 2' } }),
         location: { address: 'Nya gatan 2' },
       }),
     }))
     expect(mocks.from).toHaveBeenCalledWith('site_revisions')
     expect(mocks.from).toHaveBeenCalledWith('locations')
-    expect(result.snapshot?.settings.map).toEqual({ lat: 58.4108, lon: 15.6214 })
+    expect(result.snapshot?.settings.map).toEqual({ lat: 58.4108, lon: 15.6214, q: 'Nya gatan 2' })
   })
 
   it('restores the published map when a draft address changes back to the live address', async () => {
@@ -146,7 +146,7 @@ describe('site revision server actions', () => {
             data: {
               snapshot: {
                 ...snapshot,
-                settings: { ...snapshot.settings, map: { lat: 58.4108, lon: 15.6214 } },
+                settings: { ...snapshot.settings, map: { lat: 58.4108, lon: 15.6214, q: 'Utkastgatan 2' } },
                 location: { address: 'Utkastgatan 2' },
               },
             },
@@ -154,7 +154,7 @@ describe('site revision server actions', () => {
           }
         : table === 'locations'
           ? { data: { address: 'Livegatan 1' }, error: null }
-          : { data: { settings: { map: { lat: 59.3293, lon: 18.0686 } } }, error: null }
+          : { data: { settings: { map: { lat: 59.3293, lon: 18.0686, q: 'Livegatan 1' } } }, error: null }
       const builder = {
         select: vi.fn(), eq: vi.fn(), limit: vi.fn(), maybeSingle: vi.fn(async () => result),
       }
@@ -168,14 +168,14 @@ describe('site revision server actions', () => {
       tenantId: 'tenant-1',
       snapshot: {
         ...snapshot,
-        settings: { ...snapshot.settings, map: { lat: 58.4108, lon: 15.6214 } },
+        settings: { ...snapshot.settings, map: { lat: 58.4108, lon: 15.6214, q: 'Utkastgatan 2' } },
         location: { address: 'Livegatan 1' },
       },
     })
 
     expect(mocks.rpc).toHaveBeenCalledWith('save_site_draft', expect.objectContaining({
       p_snapshot: expect.objectContaining({
-        settings: expect.objectContaining({ map: { lat: 59.3293, lon: 18.0686 } }),
+        settings: expect.objectContaining({ map: { lat: 59.3293, lon: 18.0686, q: 'Livegatan 1' } }),
         location: { address: 'Livegatan 1' },
       }),
     }))

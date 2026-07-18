@@ -28,10 +28,23 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+      - name: Verify migration and pgTAP inventory
+        run: >-
+          node scripts/verify-database-release.mjs
+          --expected-latest 0107
+          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107
       # Local disposable stack: migrations + seed are applied before the pgTAP
       # suites run. No production/staging credentials or data are used.
-      - name: Start disposable Supabase
+      - name: Start disposable Supabase (fresh 0001-latest)
         run: supabase start
+      - name: Prove fresh database migration history
+        run: |
+          supabase migration list --local > "$RUNNER_TEMP/local-migrations.txt"
+          node scripts/verify-database-release.mjs \
+            --expected-latest 0107 \
+            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107 \
+            --history-file "$RUNNER_TEMP/local-migrations.txt" \
+            --history-side remote
       - name: Run database and RLS tests
         run: supabase test db
 
@@ -58,6 +71,14 @@ jobs:
         if: ${{ !cancelled() }}
       - run: pnpm test
         if: ${{ !cancelled() }}
+      - name: Test release and scheduler scripts
+        if: ${{ !cancelled() }}
+        run: >-
+          node --test
+          scripts/verify-database-release.test.mjs
+          scripts/check-worker-bundle.test.mjs
+          apps/web/scripts/primary-scheduler.test.mjs
+          apps/web/scripts/primary-scheduler-config.test.mjs
       - run: pnpm test:acceptance:contract
         if: ${{ !cancelled() }}
       # Bransch-vakten (goal-61): failar på NYA hårdkodade bransch-ord (salong/frisör/
@@ -83,6 +104,45 @@ jobs:
           NEXT_PUBLIC_SITE_URL: https://booking.corevo.se
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+
+  worker-bundle:
+    name: Cloudflare Worker gzip budget
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: 5-Kod/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Build OpenNext Worker
+        run: pnpm --filter @corevo/web exec opennextjs-cloudflare build
+        env:
+          NEXT_PUBLIC_ROOT_DOMAIN: corevo.se
+          NEXT_PUBLIC_PLATFORM_HOST: booking.corevo.se
+          NEXT_PUBLIC_TENANT_MODE: live
+          NEXT_PUBLIC_SITE_URL: https://booking.corevo.se
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+      - name: Measure minified Worker upload
+        run: |
+          set -o pipefail
+          pnpm --filter @corevo/web exec wrangler deploy --dry-run \
+            --outdir "$RUNNER_TEMP/worker-bundle" 2>&1 | tee "$RUNNER_TEMP/wrangler-dry-run.txt"
+          node scripts/check-worker-bundle.mjs \
+            --input "$RUNNER_TEMP/wrangler-dry-run.txt" \
+            --max-gzip-bytes 3145728
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: worker-bundle-measurement
+          path: ${{ runner.temp }}/wrangler-dry-run.txt
+          retention-days: 30
 
   e2e:
     name: playwright e2e (staging)
@@ -125,3 +185,20 @@ jobs:
           name: playwright-report
           path: 5-Kod/playwright-report/
           retention-days: 7
+
+  release-proof:
+    name: release proof (all gates including E2E)
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: [database, quality, worker-bundle, e2e]
+    steps:
+      - name: Require every release gate
+        run: |
+          echo "database=${{ needs.database.result }}"
+          echo "quality=${{ needs.quality.result }}"
+          echo "worker-bundle=${{ needs.worker-bundle.result }}"
+          echo "e2e=${{ needs.e2e.result }}"
+          [ "${{ needs.database.result }}" = "success" ]
+          [ "${{ needs.quality.result }}" = "success" ]
+          [ "${{ needs.worker-bundle.result }}" = "success" ]
+          [ "${{ needs.e2e.result }}" = "success" ]

@@ -206,6 +206,7 @@ export type Database = {
           reminder_claim_token: string | null
           reminder_claimed_at: string | null
           request_id: string | null
+          requires_online_payment: boolean
           service_id: string
           staff_id: string
           start_ts: string
@@ -228,6 +229,7 @@ export type Database = {
           reminder_claim_token?: string | null
           reminder_claimed_at?: string | null
           request_id?: string | null
+          requires_online_payment?: boolean
           service_id: string
           staff_id: string
           start_ts: string
@@ -250,6 +252,7 @@ export type Database = {
           reminder_claim_token?: string | null
           reminder_claimed_at?: string | null
           request_id?: string | null
+          requires_online_payment?: boolean
           service_id?: string
           staff_id?: string
           start_ts?: string
@@ -516,11 +519,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "customer_notification_prefs_customer_id_fkey"
-            columns: ["customer_id"]
+            foreignKeyName: "customer_notification_prefs_customer_tenant_fkey"
+            columns: ["customer_id", "tenant_id"]
             isOneToOne: true
             referencedRelation: "customers"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "tenant_id"]
           },
           {
             foreignKeyName: "customer_notification_prefs_tenant_id_fkey"
@@ -541,6 +544,7 @@ export type Database = {
           hair_type: string | null
           id: string
           internal_note: string | null
+          location_id: string | null
           preferences: string[]
           products: string[]
           sensitivity: string | null
@@ -556,6 +560,7 @@ export type Database = {
           hair_type?: string | null
           id?: string
           internal_note?: string | null
+          location_id?: string | null
           preferences?: string[]
           products?: string[]
           sensitivity?: string | null
@@ -571,6 +576,7 @@ export type Database = {
           hair_type?: string | null
           id?: string
           internal_note?: string | null
+          location_id?: string | null
           preferences?: string[]
           products?: string[]
           sensitivity?: string | null
@@ -1168,6 +1174,8 @@ export type Database = {
       }
       notifications_outbox: {
         Row: {
+          attempt_count: number
+          available_at: string
           booking_id: string | null
           category: string
           chosen_channel: string | null
@@ -1176,17 +1184,27 @@ export type Database = {
           created_at: string
           customer_id: string | null
           delivered_at: string | null
+          event_key: string
           event_type: string
           fallback_channel: string | null
           id: string
+          last_error: string | null
+          lease_expires_at: string | null
+          lease_token: string | null
+          max_attempts: number
+          parts: number | null
+          payload: Json
           provider_ref: string | null
           sent_at: string | null
           skip_reason: string | null
           staff_id: string | null
           status: string
           tenant_id: string
+          updated_at: string
         }
         Insert: {
+          attempt_count?: number
+          available_at?: string
           booking_id?: string | null
           category: string
           chosen_channel?: string | null
@@ -1195,17 +1213,27 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           delivered_at?: string | null
+          event_key?: string
           event_type: string
           fallback_channel?: string | null
           id?: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          max_attempts?: number
+          parts?: number | null
+          payload?: Json
           provider_ref?: string | null
           sent_at?: string | null
           skip_reason?: string | null
           staff_id?: string | null
           status?: string
           tenant_id: string
+          updated_at?: string
         }
         Update: {
+          attempt_count?: number
+          available_at?: string
           booking_id?: string | null
           category?: string
           chosen_channel?: string | null
@@ -1214,15 +1242,23 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           delivered_at?: string | null
+          event_key?: string
           event_type?: string
           fallback_channel?: string | null
           id?: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          max_attempts?: number
+          parts?: number | null
+          payload?: Json
           provider_ref?: string | null
           sent_at?: string | null
           skip_reason?: string | null
           staff_id?: string | null
           status?: string
           tenant_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1496,11 +1532,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "push_subscriptions_customer_id_fkey"
-            columns: ["customer_id"]
+            foreignKeyName: "push_subscriptions_customer_tenant_fkey"
+            columns: ["customer_id", "tenant_id"]
             isOneToOne: false
             referencedRelation: "customers"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "tenant_id"]
           },
           {
             foreignKeyName: "push_subscriptions_tenant_id_fkey"
@@ -3002,6 +3038,54 @@ export type Database = {
         Args: { p_key: string; p_max: number; p_window_secs: number }
         Returns: boolean
       }
+      atomic_erase_tenant_customer: {
+        Args: { p_actor: string; p_customer: string; p_tenant: string }
+        Returns: {
+          auth_user_id: string | null
+          erased_bookings: number
+          status: string
+        }[]
+      }
+      atomic_erase_self_customer_account: {
+        Args: { p_auth_user: string; p_tenant: string }
+        Returns: {
+          auth_user_id: string | null
+          erased_bookings: number
+          status: string
+        }[]
+      }
+      claim_customer_erasure_auth_cleanup: {
+        Args: {
+          p_auth_user: string
+          p_claim_token: string
+          p_lease_seconds?: number
+        }
+        Returns: {
+          auth_user_id: string
+          cleanup_id: string
+          customer_id: string
+          erase_status: string
+          erased_bookings: number
+          tenant_id: string
+        }[]
+      }
+      fail_customer_erasure_auth_cleanup: {
+        Args: {
+          p_auth_user: string
+          p_claim_token: string
+          p_cleanup_id: string
+          p_error_code: string
+        }
+        Returns: boolean
+      }
+      ack_customer_erasure_auth_cleanup: {
+        Args: {
+          p_auth_user: string
+          p_claim_token: string
+          p_cleanup_id: string
+        }
+        Returns: boolean
+      }
       set_tenant_member_permissions: {
         Args: {
           p_can_edit_site: boolean
@@ -3063,6 +3147,27 @@ export type Database = {
         }
         Returns: string
       }
+      create_customer_account_claim: {
+        Args: {
+          p_customer: string
+          p_expires_at: string
+          p_purpose: string
+          p_tenant: string
+          p_token_hash: string
+        }
+        Returns: string
+      }
+      customer_loyalty_totals: {
+        Args: {
+          p_customer: string
+          p_tenant: string
+        }
+        Returns: {
+          balance: number
+          entry_count: number
+          lifetime: number
+        }[]
+      }
       confirm_booking_payment: {
         Args: { p_booking: string; p_payment_intent: string; p_tenant: string }
         Returns: Json
@@ -3109,6 +3214,158 @@ export type Database = {
           p_now: string
         }
         Returns: string[]
+      }
+      inspect_customer_account_claim: {
+        Args: {
+          p_purpose: string
+          p_tenant: string
+          p_token_hash: string
+        }
+        Returns: boolean
+      }
+      reconcile_customer_account_claim: {
+        Args: {
+          p_auth_user: string
+          p_purpose: string
+          p_tenant: string
+          p_token_hash: string
+        }
+        Returns: boolean
+      }
+      claim_customer_account: {
+        Args: {
+          p_purpose: string
+          p_tenant: string
+          p_token_hash: string
+        }
+        Returns: {
+          customer_id: string
+          merged: boolean
+          status: string
+        }[]
+      }
+      enqueue_notification: {
+        Args: {
+          p_booking: string | null
+          p_category: string
+          p_channel: string
+          p_consent_state: Json | null
+          p_customer: string | null
+          p_event_key: string
+          p_event_type: string
+          p_fallback_channel: string | null
+          p_max_attempts: number
+          p_payload: Json | null
+          p_staff: string | null
+          p_tenant: string
+        }
+        Returns: {
+          id: string
+          inserted: boolean
+        }[]
+      }
+      route_booking_notification: {
+        Args: {
+          p_allow: boolean
+          p_booking: string
+          p_category: string
+          p_event_key: string
+          p_event_type: string
+          p_expected_statuses: string[]
+          p_outbox_id: string | null
+          p_payload: Json
+          p_skip_reason: string | null
+          p_staff: string | null
+          p_tenant: string
+          p_type_opt_in: string | null
+        }
+        Returns: {
+          chosen_channel: string | null
+          id: string
+          inserted: boolean
+          skip_reason: string | null
+          status: string
+        }[]
+      }
+      claim_notification_outbox: {
+        Args: {
+          p_lease_seconds: number
+          p_lease_token: string
+          p_limit: number
+          p_now: string
+        }
+        Returns: {
+          attempt_count: number
+          available_at: string
+          booking_id: string | null
+          category: string
+          chosen_channel: string | null
+          consent_state: Json | null
+          cost_ore: number | null
+          created_at: string
+          customer_id: string | null
+          delivered_at: string | null
+          event_key: string
+          event_type: string
+          fallback_channel: string | null
+          id: string
+          last_error: string | null
+          lease_expires_at: string | null
+          lease_token: string | null
+          max_attempts: number
+          parts: number | null
+          payload: Json
+          provider_ref: string | null
+          sent_at: string | null
+          skip_reason: string | null
+          staff_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }[]
+      }
+      begin_notification_delivery: {
+        Args: {
+          p_id: string
+          p_lease_token: string
+        }
+        Returns: boolean
+      }
+      ack_notification_outbox: {
+        Args: {
+          p_cost_ore: number | null
+          p_id: string
+          p_lease_token: string
+          p_parts?: number | null
+          p_provider_ref: string | null
+          p_skip_reason: string | null
+          p_status: string
+        }
+        Returns: boolean
+      }
+      retry_notification_outbox: {
+        Args: {
+          p_error: string
+          p_id: string
+          p_lease_token: string
+          p_retry_at: string
+        }
+        Returns: string | null
+      }
+      record_sms_delivery: {
+        Args: {
+          p_delivered_at: string | null
+          p_provider_ref: string
+          p_status: string
+        }
+        Returns: string
+      }
+      scrub_notification_outbox_customer: {
+        Args: {
+          p_booking_ids: string[]
+          p_customer_ids: string[]
+        }
+        Returns: number
       }
       expire_abandoned_pending_bookings: {
         Args: { p_ttl_min?: number }

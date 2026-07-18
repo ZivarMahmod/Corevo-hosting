@@ -2,29 +2,98 @@ import 'server-only'
 import { createServiceClient } from '@/lib/platform/service'
 import { logger } from '@/lib/observability'
 
-// GDPR erasure (G10 step 2 — "rätten att bli glömd"). Requires service-role (it
-// deletes the auth user + writes across rows RLS would not allow); degrades to
-// { unavailable } when SUPABASE_SERVICE_ROLE_KEY is unset (mirrors signup/invite).
+// The database owns the tenant/customer transaction (0099). The application
+// only orchestrates the one operation PostgreSQL cannot include: deleting the
+// Supabase Auth identity. Self-service is therefore a deliberate two-phase flow:
 //
-// Retention policy (deliberate, see docs/ops/backup-restore.md §GDPR):
-//   · bookings  → ANONYMIZED, not deleted. Scrub the note free-text (the guest-PII
-//                 seam) and null customer_profile_id, but KEEP the row so the salon
-//                 keeps an intact schedule/financial history.
-//   · payments  → KEPT untouched. Swedish Bokföringslagen requires ~7-year
-//                 retention; the rows carry no direct PII (linked by booking_id).
-//   · customers  → ANONYMIZED across ALL tenants (white-label: one auth user may
-//                 be a customer in several salons). PII columns nulled + status
-//                 flipped to 'anonymized', which fires the scrub trigger that
-//                 DELETEs the internal customer_notes (right-to-be-forgotten).
-//   · customer_favorites → DELETED (personal data, no retention basis).
-//   · loyalty_ledger → KEPT untouched (append-only + PII-free: points + booking_id).
-//   · users + auth.users → DELETED (cascade). This removes name/email/phone.
-//   · audit_log → an erasure record is appended, but it is append-only and MUST
-//                 NOT carry PII: we log the user id + counts only.
+//  1. atomic_erase_self_customer_account scrubs tenant PII, blocks the public
+//     profile and writes a private pending cleanup marker in one transaction;
+//  2. Auth Admin deletes auth.users; only that explicit success lets the app
+//     report the account erased. Failure stays contained and operationally
+//     retryable, and is returned truthfully as auth_cleanup_required.
+//
+// Global identity remains a product decision. Self-service only proceeds when
+// the Auth UUID has exactly one exact customer relation. It never guesses by
+// matching email or phone across tenants.
 
 export type EraseResult =
-  | { ok: true; erasedBookings: number }
-  | { ok: false; reason: 'unavailable' | 'error' }
+  | { ok: true; erasedBookings: number; status: 'erased' | 'already_erased' }
+  | {
+      ok: false
+      reason:
+        | 'unavailable'
+        | 'error'
+        | 'global_identity_decision_required'
+        | 'auth_cleanup_required'
+    }
+
+type AtomicEraseRow = {
+  status: 'erased' | 'already_erased'
+  erased_bookings: number
+  auth_user_id: string | null
+}
+
+type CleanupClaimRow = {
+  cleanup_id: string
+  tenant_id: string
+  customer_id: string
+  auth_user_id: string
+  erase_status: 'erased' | 'already_erased'
+  erased_bookings: number
+}
+
+type RpcError = { message: string }
+
+function atomicRow(data: unknown): AtomicEraseRow | null {
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row || typeof row !== 'object') return null
+  const candidate = row as Partial<AtomicEraseRow>
+  if (
+    (candidate.status !== 'erased' && candidate.status !== 'already_erased') ||
+    typeof candidate.erased_bookings !== 'number'
+  ) {
+    return null
+  }
+  return {
+    status: candidate.status,
+    erased_bookings: candidate.erased_bookings,
+    auth_user_id: typeof candidate.auth_user_id === 'string' ? candidate.auth_user_id : null,
+  }
+}
+
+function cleanupClaim(
+  data: unknown,
+  expectedAuthUser: string,
+  expectedTenant: string,
+): CleanupClaimRow | null {
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row || typeof row !== 'object') return null
+  const candidate = row as Partial<CleanupClaimRow>
+  if (
+    typeof candidate.cleanup_id !== 'string' ||
+    candidate.auth_user_id !== expectedAuthUser ||
+    candidate.tenant_id !== expectedTenant ||
+    typeof candidate.customer_id !== 'string' ||
+    (candidate.erase_status !== 'erased' && candidate.erase_status !== 'already_erased') ||
+    typeof candidate.erased_bookings !== 'number'
+  ) {
+    return null
+  }
+  return candidate as CleanupClaimRow
+}
+
+function cleanupClaimId(data: unknown): string | null {
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row || typeof row !== 'object') return null
+  const cleanupId = (row as { cleanup_id?: unknown }).cleanup_id
+  return typeof cleanupId === 'string' ? cleanupId : null
+}
+
+function rpcFailureReason(error: RpcError | null): 'global_identity_decision_required' | 'error' {
+  return error?.message.includes('global_identity_decision_required')
+    ? 'global_identity_decision_required'
+    : 'error'
+}
 
 export async function eraseCustomerData(args: {
   userId: string
@@ -32,171 +101,217 @@ export async function eraseCustomerData(args: {
   actorId: string
 }): Promise<EraseResult> {
   const { userId, tenantId, actorId } = args
-  if (!userId || !tenantId) return { ok: false, reason: 'error' }
+  if (!userId || !tenantId || actorId !== userId) return { ok: false, reason: 'error' }
 
   const admin = createServiceClient()
   if (!admin) {
-    logger.warn('gdpr.erase.unavailable (no service role)', { userId })
+    logger.warn('gdpr.erase.unavailable', { code: 'service_role_missing' })
     return { ok: false, reason: 'unavailable' }
   }
 
+  const claimToken = crypto.randomUUID()
+  let phaseOneRow: AtomicEraseRow | null = null
+  let claimed: CleanupClaimRow | null = null
+
+  const claimPendingCleanup = async (): Promise<CleanupClaimRow | null> => {
+    try {
+      const { data, error } = await admin.rpc('claim_customer_erasure_auth_cleanup', {
+        p_auth_user: userId,
+        p_claim_token: claimToken,
+        p_lease_seconds: 60,
+      })
+      if (error) return null
+      const exactClaim = cleanupClaim(data, userId, tenantId)
+      if (exactClaim) return exactClaim
+
+      // The RPC may already have leased a row before a malformed/mismatched
+      // response is rejected locally. Release only through the token-bound CAS;
+      // the DB independently requires cleanup id + expected Auth UUID + token.
+      const rejectedCleanupId = cleanupClaimId(data)
+      if (rejectedCleanupId) {
+        const release = await admin.rpc('fail_customer_erasure_auth_cleanup', {
+          p_cleanup_id: rejectedCleanupId,
+          p_auth_user: userId,
+          p_claim_token: claimToken,
+          p_error_code: 'cleanup_identity_mismatch',
+        })
+        logger.error('gdpr.erase.cleanup_claim_rejected', {
+          code: release.error ? 'release_failed' : 'identity_mismatch',
+        })
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  const releaseContainedCleanup = async (
+    row: CleanupClaimRow,
+    code: 'auth_delete_failed' | 'auth_provider_unavailable' | 'auth_delete_uncertain',
+  ): Promise<void> => {
+    // Banning is a best-effort second containment layer. Supabase access JWTs
+    // already issued cannot be revoked, so the DB booking guard remains the
+    // authoritative fence even if the provider is unavailable.
+    try {
+      const { error: banError } = await admin.auth.admin.updateUserById(userId, {
+        ban_duration: '876000h',
+      })
+      if (banError) logger.warn('gdpr.erase.auth_ban_failed', { code: 'provider_rejected' })
+    } catch {
+      logger.warn('gdpr.erase.auth_ban_failed', { code: 'provider_unavailable' })
+    }
+
+    try {
+      const { error } = await admin.rpc('fail_customer_erasure_auth_cleanup', {
+        p_cleanup_id: row.cleanup_id,
+        p_auth_user: userId,
+        p_claim_token: claimToken,
+        p_error_code: code,
+      })
+      if (error) logger.error('gdpr.erase.cleanup_release_failed', { code: 'rpc_error' })
+    } catch {
+      logger.error('gdpr.erase.cleanup_release_failed', { code: 'rpc_unavailable' })
+    }
+  }
+
+  const authUserIsAbsent = async (): Promise<boolean | null> => {
+    try {
+      const { data, error } = await admin.auth.admin.getUserById(userId)
+      if (!error) return !data.user
+      const candidate = error as { status?: number; code?: string }
+      if (candidate.status === 404 || candidate.code === 'user_not_found') return true
+      return null
+    } catch {
+      return null
+    }
+  }
+
   try {
-    // 1. Look up the user's own contact so we can also reach UNLINKED guest
-    //    customer rows that share it (a person who booked as guest, then later
-    //    registered — the merge case the schema anticipates, 0011). Best-effort.
-    const { data: userRow } = await admin
-      .from('users')
-      .select('email, phone')
-      .eq('id', userId)
-      .maybeSingle()
-    const userEmail = userRow?.email?.trim() || null
-
-    // 2. Anonymize the customer identity ACROSS ALL TENANTS (white-label: one
-    //    person may be a customer in several salons). Reached two ways:
-    //      (a) auth_user_id = userId → rows linked to the logged-in account
-    //      (b) email = userEmail     → unlinked guest rows sharing the contact
-    //    Flipping status -> 'anonymized' fires trg_customers_anonymize_scrub_notes,
-    //    which DELETEs the internal customer_notes. PII columns nulled directly.
-    const anonPatch = {
-      full_name: null,
-      email: null,
-      phone: null,
-      contact_hash: null,
-      display_name: null,
-      status: 'anonymized',
-    }
-    const customerIds = new Set<string>()
-    {
-      const { data, error } = await admin
-        .from('customers')
-        .update(anonPatch)
-        .eq('auth_user_id', userId)
-        .select('id')
-      if (error) {
-        logger.warn('gdpr.erase.customers_failed', { userId, error: error.message })
-        return { ok: false, reason: 'error' }
-      }
-      for (const c of data ?? []) customerIds.add(c.id)
-    }
-    if (userEmail) {
-      const { data, error } = await admin
-        .from('customers')
-        .update(anonPatch)
-        .ilike('email', userEmail)
-        .eq('status', 'active')
-        .select('id')
-      if (error) {
-        logger.warn('gdpr.erase.customers_email_failed', { userId, error: error.message })
-        return { ok: false, reason: 'error' }
-      }
-      for (const c of data ?? []) customerIds.add(c.id)
-    }
-    const ids = [...customerIds]
-    const anonymizedCustomers = ids.length
-
-    // 3. Delete favorites for the anonymized customers (personal data, no
-    //    retention basis). loyalty_ledger is KEPT (append-only + PII-free);
-    //    customer_notes were already scrubbed by the status trigger above.
-    if (ids.length > 0) {
-      const { error: fErr } = await admin
-        .from('customer_favorites')
-        .delete()
-        .in('customer_id', ids)
-      if (fErr) {
-        logger.warn('gdpr.erase.favorites_failed', { userId, error: fErr.message })
-        return { ok: false, reason: 'error' }
-      }
-    }
-
-    // 3b. Plan 014/015: samtyckesrader + push-prenumerationer är personliga —
-    //     raderas. Outboxen behålls (PII-fri statistik: flaggor/kanal/kostnad, ingen
-    //     kontaktinfo), men kopplingen bryts via customers on delete set null-fencen
-    //     och kundraden är redan anonymiserad. Best-effort: tabellsaknad (migration
-    //     ej applicerad) får inte stoppa raderingen av allt annat.
-    if (ids.length > 0) {
-      const { error: pErr } = await admin
-        .from('customer_notification_prefs')
-        .delete()
-        .in('customer_id', ids)
-      if (pErr) logger.warn('gdpr.erase.prefs_failed', { userId, error: pErr.message })
-      const { error: sErr } = await admin
-        .from('push_subscriptions')
-        .delete()
-        .in('customer_id', ids)
-      if (sErr) logger.warn('gdpr.erase.push_subs_failed', { userId, error: sErr.message })
-    }
-
-    // 4. Anonymize bookings ACROSS ALL TENANTS — drop the PII note + unlink,
-    //    keep the row (schedule/financial history). Reached two ways:
-    //      (a) customer_profile_id = userId → the logged-in account's bookings
-    //      (b) customer_id IN (anonymized)  → guest bookings linked by the 0011
-    //          backfill, whose note carries the guest-PII seam.
-    //    Not tenant-scoped: erasure is global. (customer_profile_id has no FK, so
-    //    deleting the auth user would otherwise leave a dangling id behind, 0001.)
-    let erasedBookings = 0
-    {
-      const { data, error } = await admin
-        .from('bookings')
-        .update({ customer_profile_id: null, note: null })
-        .eq('customer_profile_id', userId)
-        .select('id')
-      if (error) {
-        logger.warn('gdpr.erase.bookings_failed', { userId, error: error.message })
-        return { ok: false, reason: 'error' }
-      }
-      erasedBookings += data?.length ?? 0
-    }
-    if (ids.length > 0) {
-      const { data, error } = await admin
-        .from('bookings')
-        .update({ note: null })
-        .in('customer_id', ids)
-        .not('note', 'is', null)
-        .select('id')
-      if (error) {
-        logger.warn('gdpr.erase.bookings_notes_failed', { userId, error: error.message })
-        return { ok: false, reason: 'error' }
-      }
-      erasedBookings += data?.length ?? 0
-    }
-
-    // 2. Append a PII-FREE audit record (audit_log is append-only — never put
-    //    name/email here, it can never be scrubbed back out).
-    await admin.from('audit_log').insert({
-      tenant_id: tenantId,
-      actor_profile_id: actorId,
-      action: 'gdpr.erase',
-      entity: 'user',
-      entity_id: userId,
-      meta: { erased_bookings: erasedBookings, anonymized_customers: anonymizedCustomers } as never,
+    const { data, error } = await admin.rpc('atomic_erase_self_customer_account', {
+      p_tenant: tenantId,
+      p_auth_user: userId,
     })
 
-    // 3. Delete the auth user → cascades public.users (FK on delete cascade).
-    const { error: dErr } = await admin.auth.admin.deleteUser(userId)
-    if (dErr) {
-      logger.warn('gdpr.erase.auth_delete_failed', { userId, error: dErr.message })
+    if (error) {
+      const reason = rpcFailureReason(error)
+      if (reason === 'global_identity_decision_required') {
+        logger.warn('gdpr.erase.rpc_failed', { code: reason })
+        return { ok: false, reason }
+      }
+      // A previous/lost successful phase one has no customer binding left. The
+      // durable marker, not the failed rediscovery, decides whether to resume.
+      claimed = await claimPendingCleanup()
+      if (!claimed) {
+        logger.warn('gdpr.erase.rpc_failed', { code: 'transaction_rejected' })
+        return { ok: false, reason: 'error' }
+      }
+      phaseOneRow = {
+        status: claimed.erase_status,
+        erased_bookings: claimed.erased_bookings,
+        auth_user_id: claimed.auth_user_id,
+      }
+    } else {
+      phaseOneRow = atomicRow(data)
+      if (!phaseOneRow || phaseOneRow.auth_user_id !== userId) {
+        const invalidCode = phaseOneRow
+          ? 'phase_one_auth_mismatch'
+          : 'phase_one_result_invalid'
+        // A malformed/lost success response is not proof of containment. Only
+        // an exact marker claimed by the requested Auth UUID + tenant may resume.
+        claimed = await claimPendingCleanup()
+        if (!claimed) {
+          logger.error('gdpr.erase.invalid_rpc_result', { code: invalidCode })
+          return { ok: false, reason: 'error' }
+        }
+        phaseOneRow = {
+          status: claimed.erase_status,
+          erased_bookings: claimed.erased_bookings,
+          auth_user_id: claimed.auth_user_id,
+        }
+      }
+    }
+  } catch {
+    // The request may have been lost after PostgreSQL committed. Resume only
+    // from the exact durable marker. Without that proof we do not know that any
+    // containment happened, so the UI must offer an ordinary retry instead of
+    // claiming that data is already anonymized or the account is blocked.
+    claimed = await claimPendingCleanup()
+    if (!claimed) {
+      logger.error('gdpr.erase.phase_one_uncertain', { code: 'resume_unavailable' })
       return { ok: false, reason: 'error' }
     }
+    phaseOneRow = {
+      status: claimed.erase_status,
+      erased_bookings: claimed.erased_bookings,
+      auth_user_id: claimed.auth_user_id,
+    }
+  }
 
-    logger.info('gdpr.erase.done', { userId, erasedBookings })
-    return { ok: true, erasedBookings }
-  } catch (e) {
-    logger.error('gdpr.erase.threw', { userId, error: e instanceof Error ? e.message : String(e) })
+  if (!claimed) claimed = await claimPendingCleanup()
+  if (!claimed || !phaseOneRow) {
+    logger.warn('gdpr.erase.cleanup_claim_failed', { code: 'retry_required' })
     return { ok: false, reason: 'error' }
+  }
+
+  let authDeleted = false
+  try {
+    const { error: authError } = await admin.auth.admin.deleteUser(userId)
+    if (!authError) {
+      authDeleted = true
+    } else {
+      authDeleted = (await authUserIsAbsent()) === true
+      if (!authDeleted) {
+        await releaseContainedCleanup(claimed, 'auth_delete_failed')
+        logger.warn('gdpr.erase.auth_delete_failed', { code: 'provider_rejected' })
+        return { ok: false, reason: 'auth_cleanup_required' }
+      }
+    }
+  } catch {
+    // A thrown provider call is ambiguous: verify authoritative Auth state before
+    // either acknowledging deletion or releasing the lease for operations.
+    authDeleted = (await authUserIsAbsent()) === true
+    if (!authDeleted) {
+      await releaseContainedCleanup(claimed, 'auth_delete_uncertain')
+      logger.warn('gdpr.erase.auth_delete_failed', { code: 'provider_uncertain' })
+      return { ok: false, reason: 'auth_cleanup_required' }
+    }
+  }
+
+  const ackArgs = {
+    p_cleanup_id: claimed.cleanup_id,
+    p_auth_user: userId,
+    p_claim_token: claimToken,
+  }
+  try {
+    let acknowledgement = await admin.rpc('ack_customer_erasure_auth_cleanup', ackArgs)
+    if (acknowledgement.error) {
+      acknowledgement = await admin.rpc('ack_customer_erasure_auth_cleanup', ackArgs)
+    }
+    if (acknowledgement.error || acknowledgement.data !== true) {
+      logger.error('gdpr.erase.cleanup_ack_failed', { code: 'manual_reconciliation_required' })
+      return { ok: false, reason: 'auth_cleanup_required' }
+    }
+  } catch {
+    logger.error('gdpr.erase.cleanup_ack_failed', { code: 'rpc_unavailable' })
+    return { ok: false, reason: 'auth_cleanup_required' }
+  }
+
+  logger.info('gdpr.erase.done', {
+    erasedBookings: phaseOneRow.erased_bookings,
+    status: phaseOneRow.status,
+  })
+  return {
+    ok: true,
+    erasedBookings: phaseOneRow.erased_bookings,
+    status: phaseOneRow.status,
   }
 }
 
 /**
- * ÄGAR-INITIERAD radering (plan 007, art. 17 via salongen): TENANT-SCOPAD variant.
- * Skillnader mot eraseCustomerData (kundens självbetjäning) är avsiktliga:
- *   · Nyckeln är CUSTOMER_ID (kundkortet) — de flesta salongskunder är gäster utan
- *     auth-konto, så en userId-nyckel hade inte nått dem.
- *   · Endast DENNA tenants rader röres. En ägare har inget mandat över samma persons
- *     data hos andra salonger (white-label) — cross-tenant-radering är kundens egen
- *     självbetjäningsväg (eller ett framtida plattformsverktyg, medvetet uppskjutet).
- *   · auth-användaren raderas ALDRIG här (kontot kan bära andra salongers relationer).
- * Samma retention-policy i övrigt: bokningar anonymiseras (aldrig raderas),
- * betalningar orörda (bokföringslagen), favorites raderas, audit får en PII-fri rad.
+ * Owner-initiated erasure is deliberately tenant-scoped. It anonymizes the
+ * exact customer card and every customer-linked PII band in that tenant but
+ * never deletes a potentially shared Auth identity. The customer's own account
+ * erasure path above is the only path allowed to run the external Auth phase.
  */
 export async function eraseTenantCustomerData(args: {
   customerId: string
@@ -204,101 +319,39 @@ export async function eraseTenantCustomerData(args: {
   actorId: string
 }): Promise<EraseResult> {
   const { customerId, tenantId, actorId } = args
-  if (!customerId || !tenantId) return { ok: false, reason: 'error' }
+  if (!customerId || !tenantId || !actorId) return { ok: false, reason: 'error' }
 
   const admin = createServiceClient()
   if (!admin) {
-    logger.warn('gdpr.tenant_erase.unavailable (no service role)', { customerId })
+    logger.warn('gdpr.tenant_erase.unavailable', { code: 'service_role_missing' })
     return { ok: false, reason: 'unavailable' }
   }
 
   try {
-    // 1. Tenant-fence FÖRST: kortet måste tillhöra ägarens tenant. Service-rollen
-    //    ser allt, så vakten bor här — aldrig i klientens ord.
-    const { data: customer } = await admin
-      .from('customers')
-      .select('id, auth_user_id, status')
-      .eq('id', customerId)
-      .eq('tenant_id', tenantId)
-      .maybeSingle()
-    if (!customer) return { ok: false, reason: 'error' }
-
-    // 2. Anonymisera kortet (status → 'anonymized' triggar customer_notes-scrubben).
-    const { error: cErr } = await admin
-      .from('customers')
-      .update({
-        full_name: null,
-        email: null,
-        phone: null,
-        contact_hash: null,
-        display_name: null,
-        status: 'anonymized',
-      })
-      .eq('id', customerId)
-      .eq('tenant_id', tenantId)
-    if (cErr) {
-      logger.warn('gdpr.tenant_erase.customer_failed', { customerId, error: cErr.message })
-      return { ok: false, reason: 'error' }
-    }
-
-    // 3. Favoriter = persondata utan retention-grund → radera.
-    const { error: fErr } = await admin
-      .from('customer_favorites')
-      .delete()
-      .eq('customer_id', customerId)
-    if (fErr) {
-      logger.warn('gdpr.tenant_erase.favorites_failed', { customerId, error: fErr.message })
-      return { ok: false, reason: 'error' }
-    }
-
-    // 3b. Samtyckesrad + push-prenumerationer (plan 014/015) — persondata, radera.
-    //     Best-effort: saknad tabell får inte stoppa resten av raderingen.
-    {
-      const { error } = await admin
-        .from('customer_notification_prefs')
-        .delete()
-        .eq('customer_id', customerId)
-      if (error) logger.warn('gdpr.tenant_erase.prefs_failed', { customerId, error: error.message })
-    }
-    {
-      const { error } = await admin
-        .from('push_subscriptions')
-        .delete()
-        .eq('customer_id', customerId)
-      if (error) logger.warn('gdpr.tenant_erase.push_subs_failed', { customerId, error: error.message })
-    }
-
-    // 4. Bokningar i DENNA tenant: scrubba PII-noten + släpp auth-länken, behåll
-    //    raden (schema-/ekonomihistorik). loyalty_ledger orörd (append-only, PII-fri).
-    const { data: bookingRows, error: bErr } = await admin
-      .from('bookings')
-      .update({ note: null, customer_profile_id: null })
-      .eq('tenant_id', tenantId)
-      .eq('customer_id', customerId)
-      .select('id')
-    if (bErr) {
-      logger.warn('gdpr.tenant_erase.bookings_failed', { customerId, error: bErr.message })
-      return { ok: false, reason: 'error' }
-    }
-    const erasedBookings = bookingRows?.length ?? 0
-
-    // 5. PII-FRI audit-rad (append-only — id + antal, aldrig namn/mejl).
-    await admin.from('audit_log').insert({
-      tenant_id: tenantId,
-      actor_profile_id: actorId,
-      action: 'gdpr.tenant_erase',
-      entity: 'customer',
-      entity_id: customerId,
-      meta: { erased_bookings: erasedBookings } as never,
+    const { data, error } = await admin.rpc('atomic_erase_tenant_customer', {
+      p_tenant: tenantId,
+      p_customer: customerId,
+      p_actor: actorId,
     })
 
-    logger.info('gdpr.tenant_erase.done', { customerId, erasedBookings })
-    return { ok: true, erasedBookings }
-  } catch (e) {
-    logger.error('gdpr.tenant_erase.threw', {
-      customerId,
-      error: e instanceof Error ? e.message : String(e),
+    if (error) {
+      logger.warn('gdpr.tenant_erase.rpc_failed', { code: 'transaction_rejected' })
+      return { ok: false, reason: 'error' }
+    }
+
+    const row = atomicRow(data)
+    if (!row) {
+      logger.error('gdpr.tenant_erase.invalid_rpc_result', { code: 'result_invalid' })
+      return { ok: false, reason: 'error' }
+    }
+
+    logger.info('gdpr.tenant_erase.done', {
+      erasedBookings: row.erased_bookings,
+      status: row.status,
     })
+    return { ok: true, erasedBookings: row.erased_bookings, status: row.status }
+  } catch {
+    logger.error('gdpr.tenant_erase.threw', { code: 'unexpected_exception' })
     return { ok: false, reason: 'error' }
   }
 }

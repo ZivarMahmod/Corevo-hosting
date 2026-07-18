@@ -41,6 +41,7 @@ function Ornament() {
 }
 
 export function FloraLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   const rows = services.slice(0, 6)
   const hasMore = services.length > 6
 
@@ -53,13 +54,14 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
   // EGNA sidor är fortfarande hemmet (/shop, /blogg, /presentkort, /offert).
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
-  const presentkortLive = modules?.presentkortLive ?? false
+  const presentkortReachable = modules?.presentkortReachable ?? false
   // Pelarna länkar bara dit en sida faktiskt finns (live/paused renderar; av/draft
   // → notFound). En pelare mot avstängd modul vore en 404-fälla (S9). Utan
   // modules-prop (studions statiska preview) VISAS pelarna — previewn ska se en
   // hel sida, och dess länkar är ändå inte klickbara på riktigt.
-  const shopReachable = modules ? modules.shopReachable : true
-  const offertReachable = modules ? modules.offertReachable : true
+  const shopReachable = modules?.shopReachable ?? false
+  const offertReachable = modules?.offertReachable ?? false
+  const kurserReachable = modules?.kurserReachable ?? false
   const [arch1, arch2, arch3] = [
     content.heroImages[0] ?? '',
     content.heroImages[1] ?? content.heroImages[0] ?? '',
@@ -75,7 +77,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
           <h1 className={styles.flHeroTitle}>{content.heroTitle}</h1>
           <p className={`sf-lede ${fl.heroLede}`}>{content.heroLede}</p>
           <div className={fl.heroCtaRow}>
-            <BookCta className={styles.heroCta} />
+            <BookCta enabled={bookingReachable} className={styles.heroCta} />
           </div>
         </div>
         <div className={styles.flArches}>
@@ -124,15 +126,26 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
             </Reveal>
           ) : null}
           <Reveal delay={200}>
-            <Link href="/kurser" className={`${styles.flPillar} ${fl.pillar}`}>
-              <div
-                className={`${styles.flPillarImg} ${fl.pillarImg}`}
-                style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }}
-              />
-              <h3 className={styles.flPillarName}>{content.pillar3Title ?? 'Kurser & kvällar'}</h3>
-              <p className={styles.flPillarText}>{content.pillar3Body ?? 'Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.'}</p>
-              <span className={styles.flPillarLink}>{content.pillar3Link ?? 'Boka kurs'}</span>
-            </Link>
+            {kurserReachable ? (
+              <Link href="/kurser" className={`${styles.flPillar} ${fl.pillar}`}>
+                <div
+                  className={`${styles.flPillarImg} ${fl.pillarImg}`}
+                  style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }}
+                />
+                <h3 className={styles.flPillarName}>{content.pillar3Title ?? 'Kurser & kvällar'}</h3>
+                <p className={styles.flPillarText}>{content.pillar3Body ?? 'Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.'}</p>
+                <span className={styles.flPillarLink}>{content.pillar3Link ?? 'Boka kurs'}</span>
+              </Link>
+            ) : (
+              <div className={`${styles.flPillar} ${fl.pillar}`}>
+                <div
+                  className={`${styles.flPillarImg} ${fl.pillarImg}`}
+                  style={{ backgroundImage: `url(${content.galleryImages[2] ?? arch3})` }}
+                />
+                <h3 className={styles.flPillarName}>{content.pillar3Title ?? 'Kurser & kvällar'}</h3>
+                <p className={styles.flPillarText}>{content.pillar3Body ?? 'Bukett & bubbel för ert sällskap — en kreativ stund med blommor i säsong.'}</p>
+              </div>
+            )}
           </Reveal>
         </div>
       </section>
@@ -188,7 +201,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
               <div className={styles.sfRowList}>
                 {rows.map((s, i) => (
                   <Reveal key={s.id} delay={i * 60}>
-                    <Bookable className={styles.sfRow} label={`Beställ — ${s.name}`}>
+                    <Bookable enabled={bookingReachable} className={styles.sfRow} label={`Beställ — ${s.name}`}>
                       <span className={styles.sfRowNum} aria-hidden="true">
                         {serviceNum(i)}
                       </span>
@@ -272,7 +285,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
       ) : null}
 
       {/* PRESENTKORT — en rad i temats ton, inte en hel stapel-sektion */}
-      {presentkortLive ? (
+      {presentkortReachable ? (
         <section className={fl.giftBand}>
           <Reveal className={fl.giftInner}>
             <p className={`sf-eyebrow ${fl.giftEyebrow}`}>{content.giftEyebrow ?? '— Presentkort'}</p>
@@ -348,7 +361,7 @@ export function FloraLayout({ tenant, content, services, location, modules }: St
           </h2>
           <p className={styles.sfClosingLead}>{content.closingLede ?? 'Beställ, boka en kurs eller hör av dig — vi hjälper dig gärna.'}</p>
           <div className={fl.closingActions}>
-            <BookCta className={styles.sfClosingCta} />
+            <BookCta enabled={bookingReachable} className={styles.sfClosingCta} />
           </div>
         </Reveal>
       </section>

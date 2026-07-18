@@ -35,6 +35,7 @@ import styles from './kalla.module.css'
  * samma komponent.
  */
 export function KallaLayout({ content, services, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // Filen visar TRE signatur-ritualer på hemmet (homeServices).
   const signatures = services.slice(0, 3)
   const posts = (modules?.bloggTeasers ?? []).slice(0, 3)
@@ -70,7 +71,7 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
           <p className={styles.kaHeroLede}>{content.heroLede}</p>
           <div className={styles.kaHeroCtas}>
             {/* "Boka en ritual" — boknings-drawern/-sidan, plattformens funktion. */}
-            <BookCta className={styles.kaSolid} label="Boka en ritual" />
+            <BookCta enabled={bookingReachable} className={styles.kaSolid} label="Boka en ritual" />
             <Link href="/tjanster" className={styles.kaGhost}>
               Behandlingar
             </Link>
@@ -119,6 +120,7 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
                   <p className={styles.kaCardPrice}>{formatPrice(s)}</p>
                   {/* Filens `s.book` förifyller bokningen → plattformens <Bookable>. */}
                   <Bookable
+                    enabled={bookingReachable}
                     as="span"
                     className={styles.kaCardBook}
                     label={`Boka — ${s.name}`}
@@ -168,7 +170,7 @@ export function KallaLayout({ content, services, modules }: StorefrontLayoutProp
                   />
                   <h3 className={styles.kaTeamName}>{m.name}</h3>
                   <p className={styles.kaTeamRoll}>{m.role}</p>
-                  <Bookable as="span" className={styles.kaTextLink} label={`Boka ${m.name}`}>
+                  <Bookable enabled={bookingReachable} as="span" className={styles.kaTextLink} label={`Boka ${m.name}`}>
                     Boka {m.name} →
                   </Bookable>
                 </Reveal>

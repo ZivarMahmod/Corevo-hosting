@@ -30,11 +30,12 @@ import styles from './sivsav.module.css'
  * 'use client') — onboarding-studions preview renderar samma komponent.
  */
 export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // Filen visar TRE buketter på hemmet (products.slice(0, 3)) och TRE inlägg (blog.slice(0, 3)).
   const products = (modules?.shopTeasers ?? []).slice(0, 3)
   const posts = (modules?.bloggTeasers ?? []).slice(0, 3)
-  // modules === undefined (studions statiska preview) → visa allt.
-  const shopReachable = modules ? modules.shopReachable : true
+  // Saknad reachability failar stängt; onboarding-previewns modulytor renderas separat.
+  const shopReachable = modules?.shopReachable ?? false
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const aboutPhoto = content.aboutImage ?? content.galleryImages[1] ?? ''
@@ -77,7 +78,7 @@ export function SivSavLayout({ content, modules }: StorefrontLayoutProps) {
                 {shopReachable ? 'Se buketterna' : 'Se vad vi gör'}
               </Link>
               {/* "Boka en tid →" är en HANDLING → plattformens boknings-drawer. */}
-              <BookCta className={styles.ssUnderline} label="Boka en tid →" />
+              <BookCta enabled={bookingReachable} className={styles.ssUnderline} label="Boka en tid →" />
             </div>
           </Reveal>
           <Reveal delay={140}>

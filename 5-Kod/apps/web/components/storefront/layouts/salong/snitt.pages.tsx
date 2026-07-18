@@ -44,9 +44,9 @@ export function groupServices(services: Service[]): { name: string | null; items
 
 /** Prisraden: hela raden ÄR bokningsknappen (filens `row.book`) — via plattformens
  *  <Bookable>, aldrig en egen boknings-logik. */
-export function SnittPriceRow({ service }: { service: Service }) {
+export function SnittPriceRow({ service, enabled }: { service: Service; enabled: boolean }) {
   return (
-    <Bookable className={styles.snRow} label={`Boka — ${service.name}`}>
+    <Bookable enabled={enabled} className={styles.snRow} label={`Boka — ${service.name}`}>
       <span className={styles.snRowMain}>
         <span className={styles.snRowName}>{service.name}</span>
         <span className={styles.snRowDesc}>{serviceDesc(service)}</span>
@@ -60,8 +60,9 @@ export function SnittPriceRow({ service }: { service: Service }) {
 
 /* ═════════════════════════════════ PRISLISTAN ═════════════════════════════════ */
 
-export function SnittTjanster({ content, services }: ThemePageProps) {
+export function SnittTjanster({ content, services, modules }: ThemePageProps) {
   const groups = groupServices(services)
+  const bookingReachable = modules?.bookingReachable ?? false
 
   return (
     <section className={styles.snPageNarrow}>
@@ -84,7 +85,7 @@ export function SnittTjanster({ content, services }: ThemePageProps) {
           <div key={g.name ?? `grupp-${i}`} className={styles.snGroup}>
             {g.name ? <p className={styles.snGroupName}>{g.name}</p> : null}
             {g.items.map((s) => (
-              <SnittPriceRow key={s.id} service={s} />
+                <SnittPriceRow key={s.id} service={s} enabled={bookingReachable} />
             ))}
           </div>
         ))

@@ -10,13 +10,18 @@ on:
     - cron: '*/15 * * * *' # var 15:e minut (pending-TTL är 30 min)
   workflow_dispatch: {}
 
+concurrency:
+  group: booking-cron
+  cancel-in-progress: false
+
 jobs:
   sweep:
     runs-on: ubuntu-latest
+    timeout-minutes: 4
     steps:
       - name: Expire abandoned pending bookings
         run: |
-          code=$(curl -s -o /tmp/out -w '%{http_code}' \
+          code=$(curl --silent --show-error --connect-timeout 10 --max-time 30 -o /tmp/out -w '%{http_code}' \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             https://booking.corevo.se/api/cron/pending-expiry)
           cat /tmp/out
@@ -24,8 +29,24 @@ jobs:
       - name: Send due reminders
         if: ${{ !cancelled() }}
         run: |
-          code=$(curl -s -o /tmp/out -w '%{http_code}' \
+          code=$(curl --silent --show-error --connect-timeout 10 --max-time 30 -o /tmp/out -w '%{http_code}' \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             https://booking.corevo.se/api/cron/reminders)
           cat /tmp/out
           [ "$code" = "200" ] || { echo "reminders HTTP $code"; exit 1; }
+      # During rollout GitHub remains the emergency/overlap trigger. Once the
+      # Cloudflare primary has completed at least one cycle, set the repository
+      # variable PRIMARY_SCHEDULER_ENABLED=true. A stale/failed heartbeat then
+      # makes this independent workflow red while the idempotent fallback above
+      # still queues due reminders.
+      - name: Verify primary scheduler heartbeat
+        if: ${{ !cancelled() && vars.PRIMARY_SCHEDULER_ENABLED == 'true' }}
+        run: |
+          curl --silent --show-error --fail-with-body --connect-timeout 10 --max-time 30 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://booking.corevo.se/api/cron/scheduler-health
+      - name: Report inactive primary scheduler gate
+        if: ${{ !cancelled() && vars.PRIMARY_SCHEDULER_ENABLED != 'true' }}
+        run: |
+          echo "::warning::PRIMARY_SCHEDULER_ENABLED is not true; Cloudflare heartbeat alarm is not armed."
+          echo "Primary scheduler alarm: NOT ARMED" >> "$GITHUB_STEP_SUMMARY"

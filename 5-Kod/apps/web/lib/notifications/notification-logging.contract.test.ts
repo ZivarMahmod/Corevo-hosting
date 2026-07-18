@@ -21,14 +21,32 @@ describe('notification log privacy', () => {
   it('keeps skipped SMS explicitly unavailable instead of reporting delivery', () => {
     const sms = sourceAt('lib/notifications/sms.ts')
 
-    // Utan credentials degraderar transporten till ett EXPLICIT skipped-resultat —
-    // aldrig ett tyst "levererat".
-    expect(sms).toContain("return { ok: false, skipped: true, error: 'transport_unavailable' }")
-    // Sedan 46elks kopplades in (plan 006) får ok:true bara förekomma EN gång —
-    // efter provider-svarets res.ok-vakt. Ett ok utan vakt vore ett falskt leveransbesked.
-    // (Plan 014: ok-returen bär nu även providerId/costOre till outboxen.)
-    expect(sms.match(/ok: true,/g)).toHaveLength(1)
-    expect(sms).toContain('if (!res.ok) {')
-    expect(sms.indexOf('if (!res.ok) {')).toBeLessThan(sms.indexOf('ok: true,'))
+    // Den fysiska off-grinden ligger före fetch och båda providergrenar kräver
+    // validerade svar. Dry-run heter simulated, aldrig sent/delivered.
+    expect(sms).toContain("if (mode === 'off')")
+    expect(sms.indexOf("if (mode === 'off')")).toBeLessThan(sms.indexOf('await fetch('))
+    expect(sms).toContain("mode: 'dry_run' | 'live'")
+    expect(sms).toContain('simulated: true')
+    expect(sms).toContain("return { ok: false, skipped: true, mode, error: 'transport_unavailable' }")
+    expect(sms).not.toContain('err.message')
+  })
+
+  it('has no legacy mutation path that can promote simulated SMS to delivered', () => {
+    const booking = sourceAt('lib/notifications/booking.ts')
+    const events = sourceAt('lib/notifications/booking-events.ts')
+    const reminders = sourceAt('lib/notifications/reminders.ts')
+    const cancellation = sourceAt('app/avboka/actions.ts')
+    const sms = sourceAt('lib/notifications/sms.ts')
+
+    expect(events).toContain("rpc('route_booking_notification'")
+    expect(reminders).toContain('queueBookingEvent')
+    expect(cancellation).toContain('queueBookingEvent')
+    expect(booking).not.toMatch(/\bsendSms\s*\(/)
+    expect(reminders).not.toMatch(/\bsendSms\s*\(/)
+    expect(cancellation).not.toMatch(/\bsendSms\s*\(/)
+    expect(booking).not.toContain('allowProviderDryRun')
+    expect(reminders).not.toContain('allowProviderDryRun')
+    expect(cancellation).not.toContain('allowProviderDryRun')
+    expect(sms).toContain('allowProviderDryRun: true')
   })
 })

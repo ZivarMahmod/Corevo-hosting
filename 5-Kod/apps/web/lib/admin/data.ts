@@ -3,6 +3,8 @@ import { cache } from 'react'
 import type { Tables } from '@corevo/db'
 import type { TenantBranding } from '@corevo/ui'
 import { createClient } from '@/lib/supabase/server'
+import { sanitizeBookingNote } from '@/lib/booking/note'
+import { contactWindowBounds } from '@/lib/booking/contact-window'
 import { staffColor } from './staff-colors'
 import { hmToMinutes, sumMergedMinutes } from './dashboard-view'
 
@@ -60,19 +62,25 @@ export type AdminBooking = {
 export type BookingFilters = {
   fromUtc?: string
   toUtc?: string
+  /** Active rows whose real end has passed — explicit outcome work queue. */
+  endToUtc?: string
   /** Filter on cancelled_at (NOT start_ts) — "vad avbokades under detta fönster".
    *  Använder 0060-indexet (tenant_id, cancelled_at desc). */
   cancelledFromUtc?: string
   cancelledToUtc?: string
   staffId?: string
   status?: string
+  statuses?: string[]
   locationId?: string
   /** Free-text search across service name, staff title and the (legacy) note. */
   query?: string
+  /** Explicit server-side window. Required for work queues that may exceed the
+   * PostgREST row cap; the caller displays a separate exact count. */
+  limit?: number
+  offset?: number
 }
 
-/** Statuses that count as a real visit (exclude cancelled/no_show). Shared by the
- *  dashboard counts and the customer visit tallies. */
+/** Statuses that reserve/book capacity. This is not a visit count. */
 const ACTIVE_BOOKING = ['pending', 'confirmed', 'completed'] as const
 
 /** All services (active + inactive), grouped sensibly for the admin table. */
@@ -272,11 +280,9 @@ export async function listBookings(
   // embedden null och UI:t faller ärligt tillbaka till 'Gäst', aldrig ett läckt
   // fullnamn (maskningen sker i shownNameOf, samma regel som Kunder-sidan).
   //
-  // `phone` följer med: kalendern måste kunna RINGA kunden ("sen igår, kommer du?")
-  // utan att först öppna bokningen. Det är inte en ny PII-väg — customers_rls släpper
-  // redan igenom raden till ägaren, och en kund i ägarens egen kalender är precis det
-  // driftfall get_customer_contact:s fönster beskriver. RPC:n behövs där anroparen
-  // INTE har den fencen (kundportalen, personalvyn); här har den det.
+  // Kontakt-PII hämtas separat via get_customer_contact när ett kundkort öppnas.
+  // Kalenderns breda datumfråga får aldrig lägga telefon eller legacy-kontakt i
+  // klientpayloaden utanför det tidsbundna driftfönstret.
   let q = supabase
     .from('bookings')
     .select(
@@ -285,12 +291,21 @@ export async function listBookings(
     .eq('tenant_id', tenantId)
   if (filters.fromUtc) q = q.gte('start_ts', filters.fromUtc)
   if (filters.toUtc) q = q.lt('start_ts', filters.toUtc)
+  if (filters.endToUtc) q = q.lte('end_ts', filters.endToUtc)
   if (filters.cancelledFromUtc) q = q.gte('cancelled_at', filters.cancelledFromUtc)
   if (filters.cancelledToUtc) q = q.lt('cancelled_at', filters.cancelledToUtc)
   if (filters.staffId) q = q.eq('staff_id', filters.staffId)
   if (filters.status) q = q.eq('status', filters.status)
+  if (filters.statuses?.length) q = q.in('status', filters.statuses)
   if (filters.locationId) q = q.eq('location_id', filters.locationId)
-  const { data, error } = await q.order('start_ts', { ascending: true })
+  q = q.order('start_ts', { ascending: true }).order('id', { ascending: true })
+  if (filters.limit && filters.limit > 0) {
+    q = q.range(
+      filters.offset ?? 0,
+      (filters.offset ?? 0) + Math.min(filters.limit, 200) - 1,
+    )
+  }
+  const { data, error } = await q
   // Kasta, svälj inte (B-10): ett datafel som blir [] ser ut som en TOM kalender —
   // "dagen är fri" är en farligare lögn än en felsida. error.tsx fångar + Försök igen.
   if (error) throw new Error(`listBookings: ${error.message}`)
@@ -312,13 +327,36 @@ export async function listBookings(
     locations: { name: string } | null
     customers: Pick<CustomerRow, 'display_name' | 'full_name' | 'name_hidden' | 'phone'> | null
   }
-  const mapped: AdminBooking[] = ((data ?? []) as Row[]).map((b) => ({
+  const rows = (data ?? []) as Row[]
+
+  // Samma tidskontrakt som get_customer_contact (0011): telefon får skickas till
+  // klientkalendern bara om kunden har minst en operativ bokning från 720 timmar
+  // bakåt till 24 timmar framåt. En enda batchfråga för alla kund-id:n; aldrig N+1.
+  const contactVisibleCustomerIds = new Set<string>()
+  const customerIds = [...new Set(rows.map((row) => row.customer_id).filter((id): id is string => !!id))]
+  if (customerIds.length > 0) {
+    const { fromUtc, toUtc } = contactWindowBounds()
+    const { data: contactBookings, error: contactError } = await supabase
+      .from('bookings')
+      .select('customer_id')
+      .eq('tenant_id', tenantId)
+      .in('customer_id', customerIds)
+      .in('status', ACTIVE_BOOKING as unknown as string[])
+      .gte('start_ts', fromUtc)
+      .lte('start_ts', toUtc)
+    if (contactError) throw new Error(`listBookings contactWindow: ${contactError.message}`)
+    for (const booking of contactBookings ?? []) {
+      if (booking.customer_id) contactVisibleCustomerIds.add(booking.customer_id)
+    }
+  }
+
+  const mapped: AdminBooking[] = rows.map((b) => ({
     id: b.id,
     startTs: b.start_ts,
     endTs: b.end_ts,
     status: b.status,
     priceCents: b.price_cents,
-    note: b.note,
+    note: sanitizeBookingNote(b.note),
     createdAt: b.created_at,
     staffId: b.staff_id,
     serviceId: b.service_id,
@@ -326,7 +364,10 @@ export async function listBookings(
     locationName: b.locations?.name ?? null,
     customerId: b.customer_id,
     customerName: b.customers ? shownNameOf(b.customers) : null,
-    customerPhone: b.customers?.phone?.trim() || null,
+    customerPhone:
+      b.customer_id && contactVisibleCustomerIds.has(b.customer_id)
+        ? b.customers?.phone?.trim() || null
+        : null,
     serviceName: b.services?.name ?? 'Okänd tjänst',
     staffTitle: b.staff?.title?.trim() || 'Medarbetare',
   }))
@@ -344,6 +385,31 @@ export async function listBookings(
       (b.customerName?.toLowerCase().includes(term) ?? false) ||
       (b.note?.toLowerCase().includes(term) ?? false),
   )
+}
+
+/** Exakt antal rader för en smal bokningskö. Listans `.range()` får aldrig vara
+ * samma sak som totalen som visas för användaren. */
+export async function countBookings(
+  tenantId: string,
+  filters: Omit<BookingFilters, 'limit' | 'offset' | 'query'> = {},
+): Promise<number> {
+  const supabase = await createClient()
+  let q = supabase
+    .from('bookings')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+  if (filters.fromUtc) q = q.gte('start_ts', filters.fromUtc)
+  if (filters.toUtc) q = q.lt('start_ts', filters.toUtc)
+  if (filters.endToUtc) q = q.lte('end_ts', filters.endToUtc)
+  if (filters.cancelledFromUtc) q = q.gte('cancelled_at', filters.cancelledFromUtc)
+  if (filters.cancelledToUtc) q = q.lt('cancelled_at', filters.cancelledToUtc)
+  if (filters.staffId) q = q.eq('staff_id', filters.staffId)
+  if (filters.status) q = q.eq('status', filters.status)
+  if (filters.statuses?.length) q = q.in('status', filters.statuses)
+  if (filters.locationId) q = q.eq('location_id', filters.locationId)
+  const { count, error } = await q
+  if (error) throw new Error(`countBookings: ${error.message}`)
+  return count ?? 0
 }
 
 // ── Customers (M6 §3.1 + §4 — identity vs time-bound PII) ─────────────────────
@@ -510,6 +576,7 @@ export type CustomerDetail = {
   isLinkedAccount: boolean
   history: AdminBooking[]
   visits: number
+  lastVisitTs: string | null
   /** B-25: dold ur listor/sök (soft delete — historiken kvar). */
   hidden: boolean
   /** B-25: får kunden boka själv via sajten/kundkontot? */
@@ -562,7 +629,7 @@ export async function getCustomerDetail(
     endTs: b.end_ts,
     status: b.status,
     priceCents: b.price_cents,
-    note: b.note,
+    note: sanitizeBookingNote(b.note),
     createdAt: b.created_at,
     staffId: b.staff_id,
     serviceId: b.service_id,
@@ -577,9 +644,8 @@ export async function getCustomerDetail(
     serviceName: b.services?.name ?? 'Okänd tjänst',
     staffTitle: b.staff?.title?.trim() || 'Medarbetare',
   }))
-  const visits = history.filter((b) =>
-    (ACTIVE_BOOKING as readonly string[]).includes(b.status),
-  ).length
+  const completed = history.filter((b) => b.status === 'completed')
+  const visits = completed.length
 
   return {
     id: c.id,
@@ -592,6 +658,7 @@ export async function getCustomerDetail(
     isLinkedAccount: Boolean(c.auth_user_id),
     history,
     visits,
+    lastVisitTs: completed[0]?.startTs ?? null,
     hidden: c.hidden_at != null,
     selfBook: c.self_book,
   }

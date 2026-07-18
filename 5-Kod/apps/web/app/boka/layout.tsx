@@ -7,6 +7,8 @@ import { Footer } from '@/components/brand/Footer'
 import { branschBokning } from '@/components/storefront/bransch-copy'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
 import storefront from '@/components/storefront/storefront.module.css'
+import { getTenantModuleStates } from '@/lib/tenant-modules'
+import { bookingModuleAccess } from '@/components/storefront/layouts/booking-access'
 
 // Per-request, host-resolved tenant theme → never prerender.
 export const dynamic = 'force-dynamic'
@@ -22,6 +24,8 @@ export default async function BokaLayout({ children }: { children: React.ReactNo
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings } = bundle
+  const bookingAccess = bookingModuleAccess(await getTenantModuleStates(tenant.id, tenant.slug))
+  if (bookingAccess === 'hidden') notFound()
 
   const Nav = pickNav(settings.layout.nav_variant)
   const template = pickTemplate(settings.layout.nav_variant)

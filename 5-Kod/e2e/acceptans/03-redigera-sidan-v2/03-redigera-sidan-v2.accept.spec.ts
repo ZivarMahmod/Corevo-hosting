@@ -69,7 +69,8 @@ test.describe('03 Redigera sidan v2 — source contract @readonly @contract', ()
     expect(studioSource).toContain('Typsnitten är valda för att passa ihop')
     expect(studioSource).not.toContain('const BODY_FONTS')
     expect(entrySource).toContain("path: '?boka=1'")
-    expect(entrySource).toContain("title: 'Betygsraden'")
+    expect(entrySource).toContain("title: 'Google-recensionslänk'")
+    expect(entrySource).toContain('Ingen betygs- eller recensionsdata hämtas automatiskt.')
     expect(entrySource).toContain('scheduleHours={deriveSiteScheduleHours(detail)}')
     expect(bridgeSource).toContain("data.type === 'site-field-flash'")
     expect(bridgeSource).toContain("data.type === 'img-flash'")
@@ -138,7 +139,7 @@ test.describe('03 Redigera sidan v2 — browser oracle @readonly @browser', () =
     await page.getByRole('button', { name: theme === 'kalla' ? 'Hem' : 'Postern', exact: true }).click()
     await expect(panel.locator('input[type="file"]')).toHaveCount(1)
     await expect(panel.getByRole('button', { name: 'Byt bild' }).first()).toBeVisible()
-    if (theme === 'snitt') await expect(panel.getByRole('heading', { name: 'Betygsraden' })).toBeVisible()
+    if (theme === 'snitt') await expect(panel.getByRole('heading', { name: 'Google-recensionslänk' })).toBeVisible()
 
     const businessPosts: string[] = []
     page.on('request', (request) => {

@@ -8,6 +8,7 @@ import { loadShopData } from '@/lib/storefront/shop/load-shop'
 import { resolveThemeContent } from '@/components/storefront/theme-content'
 import { getTenantCopy } from '@/components/storefront/tenant-copy'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +30,7 @@ export default async function ShopPage({
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings } = bundle
+  if (!commerceReleaseGate(tenant.id).shop) notFound()
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const paused = isModulePaused(states, 'shop')
   if (!isModuleLive(states, 'shop') && !paused) notFound()

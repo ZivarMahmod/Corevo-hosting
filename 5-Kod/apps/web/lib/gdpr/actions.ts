@@ -23,6 +23,18 @@ export async function eraseMyAccount(_prev: EraseState, formData: FormData): Pro
 
   const result = await eraseCustomerData({ userId: user.id, tenantId: user.tenantId, actorId: user.id })
   if (!result.ok) {
+    if (result.reason === 'global_identity_decision_required') {
+      return {
+        error:
+          'Kontot är kopplat till fler än ett företag och kan inte raderas automatiskt. Kontakta Corevo så hanteras hela kontot säkert.',
+      }
+    }
+    if (result.reason === 'auth_cleanup_required') {
+      return {
+        error:
+          'Kunduppgifterna är spärrade och anonymiserade, men kontoraderingen behöver slutföras av support. Du kan inte använda kontot under tiden.',
+      }
+    }
     return {
       error:
         result.reason === 'unavailable'

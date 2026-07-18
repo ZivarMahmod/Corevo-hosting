@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import type { ThemeContentDefaults, ResolvedThemeContent } from '../../theme-content'
+import type { ThemeContentDefaults, ResolvedThemeContent } from '../../theme-content.types'
 import type { ThemeCaps, ExtraField } from '@/lib/platform/theme-capabilities'
 import type { Service, TenantLocation, TenantContact } from '@/lib/tenant-data'
 import type {
@@ -18,6 +18,7 @@ import type { PresentkortConfig } from '@/lib/storefront/presentkort/types'
 import type { UpcomingEvent, KurserConfig } from '@/lib/storefront/kurser/types'
 import type { TeamMember } from '@/lib/storefront/team/types'
 import type { TenantBranding } from '@corevo/ui'
+import type { LayoutModuleTeasers } from '../types'
 import { accentForeground, accentInk, contrastRatio } from '@corevo/ui'
 
 /**
@@ -112,6 +113,7 @@ export type ThemePageProps = {
   services: Service[]
   location: TenantLocation | null
   contact: TenantContact
+  modules?: Pick<LayoutModuleTeasers, 'bookingReachable' | 'offertReachable'>
 }
 
 export type ThemeChrome = {

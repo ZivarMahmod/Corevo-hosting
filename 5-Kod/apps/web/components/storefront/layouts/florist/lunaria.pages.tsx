@@ -58,7 +58,8 @@ export function LunariaOm({ content, tenant }: ThemePageProps) {
   )
 }
 
-export function LunariaTjanster({ content, services }: ThemePageProps) {
+export function LunariaTjanster({ content, services, modules }: ThemePageProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.lnPageNarrow}>
       <h1 className={styles.lnPageTitle}>{content.servicesTitle}</h1>
@@ -74,7 +75,7 @@ export function LunariaTjanster({ content, services }: ThemePageProps) {
         ) : (
           <div className={styles.lnServiceList}>
             {services.map((s) => (
-              <Bookable key={s.id} className={styles.lnServiceRow} label={`Boka — ${s.name}`}>
+              <Bookable enabled={bookingReachable} key={s.id} className={styles.lnServiceRow} label={`Boka — ${s.name}`}>
                 <span className={styles.lnDiamond} aria-hidden="true" />
                 <span className={styles.lnServiceName}>
                   {s.name}

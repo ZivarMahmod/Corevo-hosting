@@ -68,9 +68,9 @@ export function ServicesManager({
       </PageHead>
 
       <Callout tone="gold" icon="link">
-        Aktiva tjänster syns i tjänstemenyn på startsidan och på /tjanster (ordnade efter pris) och
-        går direkt att boka. Inaktiverade döljs på sajten men behåller sin bokningshistorik.
-        Ändringar slår igenom utan kod eller deploy.
+        Aktiva tjänster syns i tjänstemenyn på startsidan och på /tjanster (ordnade efter pris).
+        En tjänst blir bokningsbar först när den är kopplad till aktiv personal med plats och
+        arbetstider. Inaktiverade tjänster döljs men behåller sin bokningshistorik.
       </Callout>
 
       {/* Kolumn-ratio i CSS (inte inline) så .bo-2col:s ≤920px-kollaps till 1fr vinner
@@ -88,7 +88,7 @@ export function ServicesManager({
               </p>
               <p className="body" style={{ margin: 0, maxWidth: 460, color: 'var(--c-ink-2)' }}>
                 Lägg till din första tjänst med <strong>Ny tjänst</strong> — namn, varaktighet och
-                pris. Den blir genast bokningsbar på din publika sajt.
+                pris. Koppla tjänsten till aktiv personal med arbetstider innan den kan bokas.
               </p>
             </div>
           ) : (
@@ -202,7 +202,7 @@ function OnlineToggle({ service }: { service: ServiceRow }) {
       notify(
         service.active
           ? `${service.name} dold på sajten — historiken finns kvar`
-          : `${service.name} syns nu på sajten och går att boka`,
+          : `${service.name} aktiverad i tjänstelistan — kontrollera Personal och Schema för bokning`,
         'success',
       )
       router.refresh()
@@ -408,7 +408,7 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     if (state.success) {
-      notify('Tjänst skapad — nu bokningsbar på din sajt', 'success')
+      notify('Tjänst skapad. Koppla den till personal och schema för bokning.', 'success')
       router.refresh()
       onClose()
     }
@@ -418,7 +418,7 @@ function CreateDrawer({ onClose }: { onClose: () => void }) {
   return (
     <Drawer
       title="Ny tjänst"
-      sub="Namn, varaktighet och pris styr den publika bokningen direkt."
+      sub="Namn, varaktighet och pris sparas här. Personal och schema avgör bokningsbarheten."
       onClose={onClose}
       ariaLabel="Ny tjänst"
       footer={
@@ -498,7 +498,7 @@ function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => 
 
   useEffect(() => {
     if (save.success) {
-      notify('Tjänst uppdaterad — speglas på din sajt', 'success')
+      notify('Tjänst uppdaterad', 'success')
       router.refresh()
       onClose()
     }
@@ -519,7 +519,7 @@ function EditDrawer({ service, onClose }: { service: ServiceRow; onClose: () => 
   return (
     <Drawer
       title={service.name}
-      sub={service.active ? 'Syns på sajten + bokning' : 'Dold på sajten'}
+      sub={service.active ? 'Aktiv i tjänstelistan' : 'Dold på sajten'}
       accent={
         <Badge tone={service.active ? 'success' : 'neutral'}>
           {service.active ? 'Aktiv' : 'Av'}

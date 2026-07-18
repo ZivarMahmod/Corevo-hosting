@@ -9,18 +9,23 @@ import {
 } from '@/lib/booking/availability'
 import { loadLocationAvailability } from '@/lib/booking/location-rules'
 import { weekdayOf, zonedTimeToUtc } from '@/lib/booking/tz'
-import { getPaymentGate } from '@/lib/booking/payment-gate'
 import { getStripe } from '@/lib/stripe/client'
 import { requestOrigin } from '@/lib/url'
-import { sendBookingConfirmation } from '@/lib/notifications/booking'
-import { getEnabledNotifications } from '@/lib/notifications/settings'
+import {
+  queueBookingEvent,
+  type BookingNotificationQueueResult,
+} from '@/lib/notifications/booking-events'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
+import { sanitizeBookingNote } from '@/lib/booking/note'
+import { getTenantModuleStates } from '@/lib/tenant-modules'
+import { bookingModuleAccess } from '@/components/storefront/layouts/booking-access'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
-// The public booking flow runs as the anon role. Reads of staff/services/
-// working_hours are gated by the anon RLS policies; proposed starts are filtered
-// through get_public_bookable_starts, which returns only bookable staff/start pairs
-// (never raw busy intervals). Inserts go through create_public_booking. Tenant
-// identity is taken from the middleware-resolved header — NEVER from the client.
+// Public reads run as anon. Proposed starts are filtered through
+// get_public_bookable_starts (never raw busy intervals). The rate-limited server
+// write uses service-role only through create_storefront_booking_with_release, whose DB contract
+// repeats the full availability check and never inherits the admin slot exception.
+// Tenant identity comes from the middleware-resolved header, never the client.
 
 export type SlotOption = { start: string; staffId: string; staffTitle: string | null }
 export type SlotsResult =
@@ -44,7 +49,13 @@ export type CreateBookingInput = {
   requestId?: string
 }
 export type CreateResult =
-  | { ok: true; bookingId: string; requiresPayment: boolean }
+  | {
+      ok: true
+      bookingId: string
+      requiresPayment: boolean
+      bookingStatus: 'pending' | 'confirmed'
+      notification: BookingNotificationQueueResult
+    }
   | { ok: false; reason: 'slot_taken' | 'invalid' | 'error'; message: string }
 
 const SLOT_STEP_MIN = 15
@@ -89,6 +100,11 @@ async function getTenantContext(): Promise<TenantContext | null> {
   }
 }
 
+async function publicBookingIsLive(ctx: TenantContext): Promise<boolean> {
+  const states = await getTenantModuleStates(ctx.tenantId, ctx.slug)
+  return bookingModuleAccess(states) === 'live'
+}
+
 /**
  * Available start times for a service on a date, optionally for one staff member
  * (null = "Alla", any staff who offers it). Each returned slot carries the staff
@@ -109,6 +125,9 @@ export async function getAvailableSlots(
 ): Promise<SlotsResult> {
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, error: 'Något gick fel — ladda om sidan och försök igen.' }
+  if (!(await publicBookingIsLive(ctx))) {
+    return { ok: true, timeZone: ctx.timeZone, slots: [] }
+  }
   const supabase = createPublicClient()
 
   // Default-scope: explicit val → annars tenantens primära plats. Saknas båda
@@ -316,10 +335,13 @@ export async function getAvailableSlots(
   return { ok: true, timeZone, slots }
 }
 
-/** Create a booking from the public flow. Leans on the EXCLUDE constraint. */
+/** Create a public booking through the storefront-only DB integrity contract. */
 export async function createBooking(input: CreateBookingInput): Promise<CreateResult> {
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'invalid', message: 'Något gick fel — ladda om sidan och försök igen.' }
+  if (!(await publicBookingIsLive(ctx))) {
+    return { ok: false, reason: 'invalid', message: 'Onlinebokningen är inte öppen just nu.' }
+  }
 
   // Rate-limit booking writes per IP+tenant (G10) — guards the public, unauthed
   // create path against spam. Fails open on DB error.
@@ -338,22 +360,37 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
     return { ok: false, reason: 'invalid', message: 'Ofullständig bokning. Börja om.' }
   }
 
-  // Guest contact has no home table yet (customers table is a future goal), so it
-  // rides `note` as a clearly-labelled temporary seam.
-  const contactNote =
-    `Gäst: ${name} <${email}> ${phone}` + (input.note?.trim() ? ` — ${input.note.trim()}` : '')
-
   const writer = createServiceClient()
   if (!writer) {
     return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
   }
-  const supabase = createPublicClient()
-  const { data: bookingId, error } = await writer.rpc('create_public_booking', {
+  type StorefrontBookingRpc = {
+    rpc: (
+      name: 'create_storefront_booking_with_release',
+      args: {
+        p_tenant_slug: string
+        p_service: string
+        p_staff: string
+        p_start: string
+        p_note?: string
+        p_guest_name: string
+        p_guest_email: string
+        p_guest_phone: string
+        p_location?: string
+        p_request_id?: string
+        p_online_payment_released: boolean
+      },
+    ) => Promise<{
+      data: { booking_id: string; requires_payment: boolean; booking_status: string }[] | null
+      error: { code?: string; message?: string } | null
+    }>
+  }
+  const { data, error } = await (writer as unknown as StorefrontBookingRpc).rpc('create_storefront_booking_with_release', {
     p_tenant_slug: ctx.slug,
     p_service: input.serviceId,
     p_staff: input.staffId,
     p_start: input.startISO,
-    p_note: contactNote,
+    p_note: sanitizeBookingNote(input.note) ?? undefined,
     p_guest_name: name,
     p_guest_email: email,
     p_guest_phone: phone,
@@ -362,7 +399,12 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
     // i de genererade typerna, så vi coalescear bort null.
     p_location: input.locationId ?? ctx.locationId ?? undefined,
     p_request_id: input.requestId ?? undefined,
+    // Samma effektiva release-sanning som svaret nedan går in i RPC-transaktionen.
+    // Då kan gamla Stripe-flaggor aldrig lämna en pay-on-site-bokning som pending.
+    p_online_payment_released: commerceReleaseGate(ctx.tenantId).bookingPayment,
   })
+  const rpcRow = data?.[0]
+  const bookingId = rpcRow?.booking_id ?? null
 
   if (error) {
     if (error.code === '23P01') {
@@ -384,53 +426,36 @@ export async function createBooking(input: CreateBookingInput): Promise<CreateRe
     }
     return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
   }
-  if (!bookingId) {
+  if (!bookingId || !rpcRow) {
     return { ok: false, reason: 'error', message: 'Något gick fel. Försök igen.' }
   }
 
-  // Bokningsbekräftelse (G10): fire at CREATION (not on the webhook) — on-site
-  // bookings never reach the webhook, so this is the only confirmation they get.
-  // Best-effort + awaited so the mail flushes before the Workers request ends.
-  // Gated on the owner's `confirmation` toggle (anon can read tenant_settings via
-  // the public-read policy, migration 0004). Also carries the self-service cancel
-  // link + opt-in SMS via the confirmation context.
-  try {
-    const prefs = await getEnabledNotifications(supabase, ctx.tenantId)
-    if (prefs.confirmation) {
-      const [{ data: tRow }, { data: sRow }, origin] = await Promise.all([
-        supabase.from('tenants').select('name').eq('id', ctx.tenantId).maybeSingle(),
-        supabase.from('services').select('name').eq('id', input.serviceId).eq('tenant_id', ctx.tenantId).maybeSingle(),
-        requestOrigin(),
-      ])
-      await sendBookingConfirmation(
-        email,
-        {
-          tenantName: tRow?.name ?? ctx.slug,
-          serviceName: sRow?.name ?? 'Behandling',
-          startISO: input.startISO,
-          timeZone: ctx.timeZone,
-        },
-        { supabase, tenantId: ctx.tenantId, bookingId, origin, phone },
-      )
-    }
-  } catch {
-    // notifications are best-effort — never block the booking on a mail error.
-  }
+  // Affärsmutationen är redan committad. Bekräftelsen blir ett separat,
+  // idempotent domänevent; inget provideranrop sker i bokningsrequesten.
+  const notification = await queueBookingEvent({
+    tenantId: ctx.tenantId,
+    bookingId,
+    type: rpcRow.booking_status === 'confirmed'
+      ? 'booking_confirmation'
+      : 'booking_request_received',
+    occurredAt: new Date().toISOString(),
+    startISO: input.startISO,
+    includeManageLink: true,
+    includeAccountClaim: true,
+  })
 
-  // requiresPayment (G09): the SINGLE gate — payments_enabled AND charges_enabled.
-  // True ⇒ the wizard starts Stripe Checkout; false ⇒ "betala på plats".
-  // Bokningen är REDAN durabel här — ett kast i gate-läsningen får aldrig unwinda
-  // svaret till ett fel (kunden skulle boka om → dold dubbelbokning, audit P1-3).
-  // Fel ⇒ betala-på-plats-vägen, som alltid är giltig.
-  let requiresPayment = false
-  try {
-    const gate = await getPaymentGate(supabase, ctx.tenantId)
-    requiresPayment = gate.canTakeOnline
-  } catch {
-    requiresPayment = false
+  // DB-raden är samma atomiska snapshot som valde initial status. Gör aldrig en
+  // separat flaggläsning efter commit: ett transient läsfel får inte förvandla en
+  // pending onlinebokning till ett falskt "betala på plats"-svar.
+  return {
+    ok: true,
+    bookingId,
+    requiresPayment: Boolean(rpcRow.requires_payment),
+    // Initialstatusen kan bara vara pending/confirmed. Ett okänt DB-värde får
+    // aldrig bli en falsk bekräftelse i klienten, så det degraderar till pending.
+    bookingStatus: rpcRow.booking_status === 'confirmed' ? 'confirmed' : 'pending',
+    notification,
   }
-
-  return { ok: true, bookingId, requiresPayment }
 }
 
 export type CheckoutResult =
@@ -450,6 +475,9 @@ export async function startBookingCheckout(bookingId: string): Promise<CheckoutR
   const ctx = await getTenantContext()
   if (!ctx) return { ok: false, reason: 'error', message: 'Något gick fel — ladda om sidan och försök igen.' }
   if (!bookingId) return { ok: false, reason: 'error', message: 'Saknar bokning.' }
+  if (!commerceReleaseGate(ctx.tenantId).bookingPayment) {
+    return { ok: false, reason: 'unavailable', message: 'Onlinebetalning är inte aktiverad.' }
+  }
 
   const stripe = getStripe()
   const admin = createServiceClient()

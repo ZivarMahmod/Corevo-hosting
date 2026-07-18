@@ -30,5 +30,11 @@ export default defineConfig({
       'scripts/**/*.test.mjs',
       'components/**/*.test.{ts,tsx}',
     ],
+    // These two exercise executable scheduler scripts with node:test. Vitest's
+    // broad scripts glob must not double-load them as empty suites.
+    exclude: [
+      'scripts/primary-scheduler.test.mjs',
+      'scripts/primary-scheduler-config.test.mjs',
+    ],
   },
 })

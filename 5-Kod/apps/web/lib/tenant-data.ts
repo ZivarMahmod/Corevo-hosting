@@ -9,6 +9,7 @@ import { headers } from 'next/headers'
 import { unstable_cache } from 'next/cache'
 import type { Tables } from '@corevo/db'
 import type { TenantBranding } from '@corevo/ui'
+import { withoutLegacySnittStats } from '@/lib/branding/legacy-stats'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createClient } from '@/lib/supabase/server'
 import { getTenantFromHost } from '@/lib/tenant'
@@ -96,7 +97,7 @@ export type TenantSettings = {
   social: { instagram: string | null; facebook: string | null; tiktok: string | null }
   /** Geokodad position för primäradressen (settings.map, skrivs best-effort av
    *  saveTenantContact via Nominatim) — driver kart-embedden på Kontakt-sidan. */
-  map: { lat: number; lon: number } | null
+  map: { lat: number; lon: number; q: string | null } | null
 }
 
 /** One opening-hours row derived from real `working_hours`, weekday-ordered. */
@@ -119,12 +120,14 @@ export type TenantBundle = {
 }
 
 function parseSettings(row: TenantSettingsRow | null): TenantSettings {
+  const raw = (row?.settings ?? {}) as Record<string, unknown>
+  const theme = parseTheme(raw.theme)
   const rawBranding = (row?.branding ?? {}) as TenantBranding
   // Owner-uploaded storefront media (read-path only). Normalise the new keys to
   // safe defaults — empty array / null — so consumers can read them without
   // guarding; existing branding fields (colours/fonts/logo) pass through
   // untouched. Unknown/malformed jsonb safely collapses to the default.
-  const branding: TenantBranding = {
+  const branding: TenantBranding = withoutLegacySnittStats(theme, {
     ...rawBranding,
     hero_images: Array.isArray(rawBranding.hero_images) ? rawBranding.hero_images : [],
     gallery_images: Array.isArray(rawBranding.gallery_images) ? rawBranding.gallery_images : [],
@@ -132,8 +135,7 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     closing_image: typeof rawBranding.closing_image === 'string' ? rawBranding.closing_image : null,
     team: Array.isArray(rawBranding.team) ? rawBranding.team : [],
     stats: Array.isArray(rawBranding.stats) ? rawBranding.stats : [],
-  }
-  const raw = (row?.settings ?? {}) as Record<string, unknown>
+  })
   const layout = (raw.layout ?? {}) as LayoutConfig
   const override = (raw.custom_override ?? null) as CustomOverride | null
   const hasCss = !!override && typeof override.css === 'string' && override.css.trim().length > 0
@@ -150,7 +152,7 @@ function parseSettings(row: TenantSettingsRow | null): TenantSettings {
     layout,
     // Lives in the settings JSON (`theme: "leander"`); validated against the known
     // preset set so an unknown/typo value safely falls back to the default.
-    theme: parseTheme(raw.theme),
+    theme,
     customOverride: hasCss ? override : null,
     paymentMode: row?.payment_mode ?? 'on_site',
     // Lives in the settings JSON (no dedicated column — same seam as
@@ -198,13 +200,14 @@ function parseOpeningHours(rawVal: unknown): OpeningHour[] | null {
   return rows.length > 0 ? rows : null
 }
 
-/** settings.map → {lat, lon} eller null (defensivt: rå jsonb). */
-function parseMap(rawVal: unknown): { lat: number; lon: number } | null {
+/** settings.map → koordinater + adressfingeravtryck, eller null (defensivt: rå jsonb). */
+function parseMap(rawVal: unknown): { lat: number; lon: number; q: string | null } | null {
   if (!rawVal || typeof rawVal !== 'object') return null
   const m = rawVal as Record<string, unknown>
   const lat = typeof m.lat === 'number' ? m.lat : Number(m.lat)
   const lon = typeof m.lon === 'number' ? m.lon : Number(m.lon)
-  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null
+  const q = typeof m.q === 'string' && m.q.trim() ? m.q.trim().slice(0, 300) : null
+  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon, q } : null
 }
 
 /** Swedish weekday labels indexed by working_hours.weekday (0 = Sunday … 6 = Saturday). */

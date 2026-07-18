@@ -57,6 +57,26 @@ inside the cancellation window. The base `seed.sql` has no customer booking, so 
 staging seed must add one (a kund user + a future pending/confirmed booking). Until
 then that spec **skips** gracefully instead of failing.
 
+`customer-relationship.spec.ts` är det deterministiska U6-beviset men körs bara
+när staging-fixturen innehåller en claimad gästkund med två genomförda besök,
+favoritpersonal och ett internt klientkort. Sätt följande variabler till exakt de
+värden som seeden skapade:
+
+```text
+E2E_RELATIONSHIP_CUSTOMER_EMAIL
+E2E_RELATIONSHIP_CUSTOMER_LABEL
+E2E_RELATIONSHIP_SERVICE
+E2E_RELATIONSHIP_STAFF
+E2E_RELATIONSHIP_PREFERENCE
+E2E_RELATIONSHIP_INTERNAL_NOTE
+```
+
+Utan dessa skippar specen tydligt. Kör den inte mot produktion: den är skrivskyddad,
+men den kräver en särskild testidentitet och privata testanteckningar som inte ska
+läggas på en riktig kund. SQL-kontraktet i
+`supabase/tests/customer_relationship_0101_test.sql` bevisar samma datakedja på en
+fresh, transaktionell databas och rullar tillbaka allt.
+
 The Stripe-test-card path (`requiresPayment=true` → Checkout → Connect webhook →
 `confirmed`) is verified via the manual checklist in
 `docs/ops/deploy-runbook.md` §6 (needs a connected account + `stripe listen`).

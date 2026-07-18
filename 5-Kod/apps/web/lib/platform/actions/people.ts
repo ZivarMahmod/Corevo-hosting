@@ -7,7 +7,52 @@ import { logPlatformAction } from '../audit'
 import { type ActionState, GENERIC, EMAIL_RE } from './shared'
 import { reportActionError } from './observe'
 import { inviteRedirectUrl } from '@/lib/auth/invite'
+import {
+  compensateFailedStaffInvite,
+  findExistingStaffInviteProfile,
+  findStaffInviteBinding,
+} from '@/lib/auth/staff-invite-service'
 import { revalidateTenantById } from '@/lib/admin/tenant'
+
+type PlatformServiceClient = NonNullable<ReturnType<typeof createServiceClient>>
+
+async function compensatePlatformStaffInvite(
+  service: PlatformServiceClient,
+  args: { authId: string; tenantId: string; roleId: string; targetStaffId?: string },
+) {
+  return compensateFailedStaffInvite(service, {
+    ...args,
+    reportIncident: async (event) => {
+      await reportActionError('inviteTenantStaff.cleanup', new Error(event.stage), {
+        stage: event.stage,
+        tenantId: event.tenantId,
+        containmentOk: event.containmentOk,
+      })
+    },
+  })
+}
+
+function failedTenantInviteState(
+  result: Awaited<ReturnType<typeof compensatePlatformStaffInvite>>,
+): ActionState | null {
+  if (result.status === 'committed') return null
+  if (result.status === 'conflict_preserved') {
+    return { error: 'Kontot är redan kopplat till en annan medarbetare och lämnades orört.' }
+  }
+  if (result.status === 'manual_cleanup_required' && result.containmentOk) {
+    return {
+      error:
+        'manual_cleanup_required: Kontot spärrades men kunde inte städas automatiskt. Kontrollera incidentloggen innan ny inbjudan.',
+    }
+  }
+  if (result.status === 'containment_failed') {
+    return {
+      error:
+        'containment_failed: Kontot kunde inte spärras fullständigt. Kontrollera incidentloggen omedelbart och skicka ingen ny inbjudan.',
+    }
+  }
+  return { error: 'Inbjudan kunde inte slutföras. Det provisoriska kontot städades; försök igen.' }
+}
 
 /**
  * Trigger a password reset for the salon's admin. Generates a recovery link via
@@ -35,14 +80,20 @@ export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<
     return { error: `Kunde inte skapa återställningslänk: ${error?.message ?? 'okänt fel'}.` }
   }
 
-  await logPlatformAction(supabase, {
+  const audit = await logPlatformAction(supabase, {
     action: 'tenant.password_reset',
     tenantId,
     actorId: user.id,
     meta: { email },
   })
+  if (!audit.ok) {
+    await reportActionError('sendPasswordReset.audit', new Error('audit_write_failed'), { tenantId })
+  }
   return {
     success: `Återställningslänk skapad för ${email}. Kopiera och dela den säkert:\n${data.properties.action_link}`,
+    ...(!audit.ok ? {
+      warning: 'Länken skapades, men auditloggen kunde inte skrivas. Logga incidenten manuellt innan länken delas.',
+    } : {}),
   }
 }
 
@@ -143,35 +194,159 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
     .maybeSingle()
   if (!role) return { error: GENERIC }
 
-  // 2) Invite the auth user (one-time magic link). redirectTo → /valkommen på
-  //    personal-dörren (annars Site URL = fel host).
-  const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email, {
-    redirectTo: inviteRedirectUrl('staff'),
+  let existing = await findExistingStaffInviteProfile(svc, {
+    email,
+    tenantId,
+    roleId: role.id,
   })
-  if (iErr || !invited?.user) {
-    return { error: `Inbjudan misslyckades: ${iErr?.message ?? 'kontot finns kanske redan'}.` }
+  if (!existing.ok) return { error: GENERIC }
+  if (existing.profile && !existing.profile.reusable) {
+    return {
+      error:
+        'manual_cleanup_required: Ett inaktivt konto finns redan för e-postadressen. Kontrollera kontot innan ny inbjudan.',
+    }
   }
-  const authId = invited.user.id
+
+  if (staffId) {
+    const target = await findStaffInviteBinding(svc, {
+      tenantId,
+      authId: existing.profile?.id ?? '',
+      targetStaffId: staffId,
+    })
+    if (!target.ok || !target.staffId) return { error: 'Medarbetaren saknas.' }
+    if (target.authBoundStaffId && target.authBoundStaffId !== staffId) {
+      return { error: 'Kontot är redan kopplat till en annan medarbetare.' }
+    }
+    if (target.profileId) {
+      if (existing.profile?.id === target.profileId) {
+        return { success: `Kontot fanns redan och är kopplat till ${email}.` }
+      }
+      return { error: 'Medarbetaren har redan ett annat inloggningskonto.' }
+    }
+  }
+
+  // 2) Invite once. A concurrent/repeated submission may reuse only the exact
+  //    tenant+role profile; Auth errors alone are never treated as proof.
+  let authId = existing.profile?.id ?? ''
+  let inviteSent = false
+  if (!authId) {
+    const { data: invited, error: iErr } = await svc.auth.admin.inviteUserByEmail(email, {
+      redirectTo: inviteRedirectUrl('staff'),
+    })
+    if (iErr || !invited?.user) {
+      existing = await findExistingStaffInviteProfile(svc, {
+        email,
+        tenantId,
+        roleId: role.id,
+      })
+      if (!existing.ok || !existing.profile || !existing.profile.reusable) {
+        return { error: 'Inbjudan misslyckades. Kontot kunde inte återfinnas säkert.' }
+      }
+      authId = existing.profile.id
+    } else {
+      authId = invited.user.id
+      inviteSent = true
+    }
+  }
+
+  if (!inviteSent) {
+    const binding = await findStaffInviteBinding(svc, {
+      tenantId,
+      authId,
+      ...(staffId ? { targetStaffId: staffId } : {}),
+    })
+    if (!binding.ok) {
+      return { error: 'manual_cleanup_required: Kontots personalkoppling kunde inte verifieras.' }
+    }
+    if (staffId && binding.authBoundStaffId && binding.authBoundStaffId !== staffId) {
+      return { error: 'Kontot är redan kopplat till en annan medarbetare.' }
+    }
+    if (binding.profileId === authId) {
+      return { success: `Kontot fanns redan och är kopplat till ${email}.` }
+    }
+    if (staffId && binding.profileId && binding.profileId !== authId) {
+      return { error: 'Medarbetaren har redan ett annat inloggningskonto.' }
+    }
+  }
 
   // 3) Bake tenant_id into app_metadata (JWT belt-and-suspenders).
-  await svc.auth.admin.updateUserById(authId, {
+  const { error: metadataError } = await svc.auth.admin.updateUserById(authId, {
     app_metadata: { tenant_id: tenantId, platform_admin: false },
   })
+  if (metadataError) {
+    if (!inviteSent) {
+      await reportActionError('inviteTenantStaff.metadata_existing', metadataError, {
+        tenantId,
+      })
+      return { error: 'manual_cleanup_required: Det befintliga kontots företagskoppling kunde inte verifieras.' }
+    }
+    const resolution = await compensatePlatformStaffInvite(svc, {
+      authId,
+      tenantId,
+      roleId: role.id,
+      ...(staffId ? { targetStaffId: staffId } : {}),
+    })
+    return failedTenantInviteState(resolution) ?? {
+      error: 'manual_cleanup_required: Kontot kopplades men metadata behöver verifieras av drift.',
+    }
+  }
 
   // 4) public.users row.
-  const { error: uErr } = await supabase
-    .from('users')
-    .insert({ id: authId, tenant_id: tenantId, email, role_id: role.id, status: 'active' })
-  if (uErr) return { error: 'Medarbetaren kunde inte kopplas (kontot finns kanske redan).' }
+  if (inviteSent) {
+    const { error: uErr } = await supabase
+      .from('users')
+      .insert({ id: authId, tenant_id: tenantId, email, role_id: role.id, status: 'active' })
+    if (uErr) {
+      const resolution = await compensatePlatformStaffInvite(svc, {
+        authId,
+        tenantId,
+        roleId: role.id,
+        ...(staffId ? { targetStaffId: staffId } : {}),
+      })
+      const failure = failedTenantInviteState(resolution)
+      if (failure) return failure
+    }
+  }
 
   // 5) Create or link the staff row → profile_id points at the new account.
   if (staffId) {
-    const { error: linkErr } = await supabase
+    const { data: linked, error: linkErr } = await supabase
       .from('staff')
       .update({ profile_id: authId })
       .eq('id', staffId)
       .eq('tenant_id', tenantId)
-    if (linkErr) return { error: GENERIC }
+      .is('profile_id', null)
+      .select('id')
+      .maybeSingle()
+    if (linkErr || !linked) {
+      if (!inviteSent) {
+        const binding = await findStaffInviteBinding(svc, {
+          tenantId,
+          authId,
+          targetStaffId: staffId,
+        })
+        if (
+          binding.ok &&
+          binding.profileId === authId &&
+          binding.authBoundStaffId === staffId
+        ) {
+          // Exact row proves an idempotent retry committed.
+        } else if (!binding.ok) {
+          return { error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.' }
+        } else {
+          return { error: 'Medarbetaren kopplades av en annan inbjudan. Det befintliga kontot lämnades orört.' }
+        }
+      } else {
+        const resolution = await compensatePlatformStaffInvite(svc, {
+          authId,
+          tenantId,
+          roleId: role.id,
+          targetStaffId: staffId,
+        })
+        const failure = failedTenantInviteState(resolution)
+        if (failure) return failure
+      }
+    }
   } else {
     const { data: loc } = await supabase
       .from('locations')
@@ -190,7 +365,26 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
         title: title || email,
         active: false,
       })
-    if (insErr) return { error: GENERIC }
+    if (insErr) {
+      if (!inviteSent) {
+        const binding = await findStaffInviteBinding(svc, { tenantId, authId })
+        if (binding.ok && binding.profileId === authId) {
+          // Exact row proves an idempotent retry committed.
+        } else if (!binding.ok) {
+          return { error: 'manual_cleanup_required: Personalkopplingen kunde inte verifieras.' }
+        } else {
+          return { error: GENERIC }
+        }
+      } else {
+        const resolution = await compensatePlatformStaffInvite(svc, {
+          authId,
+          tenantId,
+          roleId: role.id,
+        })
+        const failure = failedTenantInviteState(resolution)
+        if (failure) return failure
+      }
+    }
   }
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
@@ -201,9 +395,13 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
     tenantId,
     actorId: user.id,
     entityId: staffId || undefined,
-    meta: { email },
+    meta: { inviteSent },
   })
-  return { success: `Inbjudan skickad till ${email}. Medarbetaren skapar lösenord via länken.` }
+  return {
+    success: inviteSent
+      ? `Inbjudan skickad till ${email}. Medarbetaren skapar lösenord via länken.`
+      : `Kontot fanns redan och kopplades till ${email}. Använd Glömt lösenord om en ny länk behövs.`,
+  }
 }
 
 /**

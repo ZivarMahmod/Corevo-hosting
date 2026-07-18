@@ -6,6 +6,7 @@ import { requireAdminArea, type CurrentUser } from '@/lib/auth/session'
 import { getAdminTenant, type AdminTenant } from '@/lib/admin/tenant'
 import type { ActionState } from '@/lib/admin/actions'
 import { giftCardVoidable, giftStatusLabel, kronorToCents, type GiftCardStatus } from './types'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
@@ -21,6 +22,7 @@ async function adminCtx(): Promise<{ user: CurrentUser; tenant: AdminTenant } | 
   const user = await requireAdminArea('presentkort')
   const tenant = await getAdminTenant(user)
   if (!tenant) return null
+  if (!commerceReleaseGate(tenant.id).presentkort) return null
   return { user, tenant }
 }
 

@@ -32,7 +32,21 @@ create table if not exists public.shop_order_counters (
 );
 
 alter table public.shop_order_counters enable row level security;
--- Ingen policy: bara SECURITY DEFINER-funktionen nedan (och service_role) rör tabellen.
+
+-- Avsiktligt server-only. En uttrycklig deny-all-policy gör kontraktet synligt i
+-- katalogen (och fångas av RLS-coverage-testet) utan att ge anon/authenticated en
+-- enda rad. service_role har BYPASSRLS, men tabellprivilegier deklareras explicit
+-- så att en fresh Supabase-miljö inte beror på projektets default grants.
+drop policy if exists shop_order_counters_client_deny_all on public.shop_order_counters;
+create policy shop_order_counters_client_deny_all
+  on public.shop_order_counters
+  for all
+  to anon, authenticated
+  using (false)
+  with check (false);
+
+revoke all on table public.shop_order_counters from public, anon, authenticated;
+grant select, insert, update on table public.shop_order_counters to service_role;
 
 create or replace function private.next_shop_order_no(p_tenant uuid)
 returns text

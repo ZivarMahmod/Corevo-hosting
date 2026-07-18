@@ -51,7 +51,7 @@ export type BookingRow = {
   customerPhone: string | null
   /** Platsens namn — visas bara när tenanten har >1 aktiv plats. */
   locationName: string | null
-  /** Derived server-side: the slot's start instant is already in the past. */
+  /** Derived server-side: the booking's end instant has passed. */
   isPast: boolean
   /** REAL Stripe-mirrored payment state, or null when no payment row exists. */
   paymentStatus: BookingPaymentStatus | null
@@ -161,8 +161,8 @@ type DrawerAction = {
   danger?: boolean
 }
 
-/** `isPast` = bokningens starttid har passerat. "Uteblev" visas BARA då — en tid som
- *  inte har börjat kan inte ha uteblivit (samma vakt står på servern; knappen är
+/** `isPast` = bokningens sluttid har passerat. "Uteblev" visas BARA då — ett besök som
+ *  fortfarande pågår kan inte ha fått ett utfall (samma vakt står på servern; knappen är
  *  bekvämlighet, inte regeln). Inget bekräftelsesteg: klicket är ångerbart (Öppna
  *  igen), och en dialog för varje felklick är dyrare än ångern. */
 function actionsFor(status: string, isPast: boolean): DrawerAction[] {
@@ -170,15 +170,18 @@ function actionsFor(status: string, isPast: boolean): DrawerAction[] {
     (ALLOWED_FROM[target] as readonly string[]).includes(status)
   const out: DrawerAction[] = []
   if (isBokad(status)) {
-    if (can('cancelled'))
+    if (!isPast && can('cancelled'))
       out.push({ label: 'Avboka', target: 'cancelled', variant: 'ghost', icon: 'x', danger: true })
     if (isPast && can('no_show'))
       out.push({ label: 'Uteblev', target: 'no_show', variant: 'ghost', icon: 'clock' })
     if (isPast && can('completed'))
       out.push({ label: 'Markera klar', target: 'completed', variant: 'primary', icon: 'check' })
-  } else if (isKlar(status) || status === 'no_show') {
-    if (can('confirmed'))
-      out.push({ label: 'Öppna igen', target: 'confirmed', variant: 'ghost', icon: 'undo' })
+  } else if (isKlar(status)) {
+    if (can('no_show'))
+      out.push({ label: 'Rätta till uteblev', target: 'no_show', variant: 'ghost', icon: 'clock' })
+  } else if (status === 'no_show') {
+    if (can('completed'))
+      out.push({ label: 'Rätta till genomförd', target: 'completed', variant: 'primary', icon: 'check' })
   } else if (status === 'cancelled') {
     // "Återställ", inte "Öppna igen": det är ett ÅNGRA, och ordet ska säga det.
     if (can('confirmed'))
@@ -261,6 +264,10 @@ export function BookingDrawer({
   const [rescheduleDate, setRescheduleDate] = useState(() => dayKey(booking.startTs, tz))
   const [rescheduleTime, setRescheduleTime] = useState(() => timeLabel(booking.startTs, tz))
   const [moveError, setMoveError] = useState<string | null>(null)
+  const [outcomeReady, setOutcomeReady] = useState(booking.isPast)
+  const [bookingStartPassed, setBookingStartPassed] = useState(
+    new Date(booking.startTs).getTime() <= Date.now(),
+  )
   const [moving, startMove] = useTransition()
   const rescheduleFirstFieldRef = useRef<HTMLSelectElement>(null)
   const rescheduleTriggerRef = useRef<HTMLButtonElement>(null)
@@ -272,6 +279,32 @@ export function BookingDrawer({
     setRescheduleTime(timeLabel(booking.startTs, tz))
     setMoveError(null)
   }, [booking.id, booking.startTs, defaultRescheduleStaffId, tz])
+
+  useEffect(() => {
+    const delay = new Date(booking.endTs).getTime() - Date.now()
+    if (!Number.isFinite(delay) || delay <= 0) {
+      setOutcomeReady(true)
+      return
+    }
+    setOutcomeReady(false)
+    const timer = window.setTimeout(() => setOutcomeReady(true), delay)
+    return () => window.clearTimeout(timer)
+  }, [booking.id, booking.endTs])
+
+  useEffect(() => {
+    const delay = new Date(booking.startTs).getTime() - Date.now()
+    if (!Number.isFinite(delay) || delay <= 0) {
+      setBookingStartPassed(true)
+      return
+    }
+    setBookingStartPassed(false)
+    const timer = window.setTimeout(() => setBookingStartPassed(true), delay)
+    return () => window.clearTimeout(timer)
+  }, [booking.id, booking.startTs])
+
+  useEffect(() => {
+    if (outcomeReady) setRescheduling(false)
+  }, [outcomeReady])
 
   useEffect(() => {
     if (rescheduling) rescheduleFirstFieldRef.current?.focus()
@@ -293,17 +326,18 @@ export function BookingDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state])
 
-  const actions = canManage ? actionsFor(booking.status, booking.isPast) : []
+  const actions = canManage ? actionsFor(booking.status, outcomeReady) : []
   // En avbokad tid i det FÖRFLUTNA kan inte återställas — det vore att boka in någon
   // igår. (no_show får däremot rättas bakåt: "hen kom visst" är en korrigering av
   // historien, inte en ny bokning.) Samma regel som ångraloggen.
-  const restoreBlockedPast = booking.status === 'cancelled' && booking.isPast
-  const showAutoKlar = booking.isPast && isBokad(booking.status)
+  const restoreBlockedPast = booking.status === 'cancelled' && bookingStartPassed
+  const needsOutcome = outcomeReady && isBokad(booking.status)
   // Payment-guard: en ej betald, ej avbokad bokning får ALDRIG auto-markeras
   // "klar + betald" (sen kund / no-show).
   const showPaymentGuard =
     onlinePaymentsActive && booking.paymentStatus !== 'succeeded' && !isAvbokad(booking.status)
-  const canReschedule = canManage && isBokad(booking.status) && staff.length > 0
+  const canReschedule =
+    canManage && isBokad(booking.status) && staff.length > 0 && !outcomeReady
 
   const submitReschedule = () => {
     if (!rescheduleStaffId || !rescheduleDate || !rescheduleTime) {
@@ -506,10 +540,10 @@ export function BookingDrawer({
           </section>
         )}
 
-        {showAutoKlar && (
-          <Callout tone="info" icon="clock">
-            Tiden har passerat. Markeras <b>auto-klar</b> ikväll om du inte gör det själv —
-            bokningen försvinner aldrig.
+        {needsOutcome && (
+          <Callout tone="warning" icon="clock">
+            <b>Behöver avslutas.</b> Sluttiden har passerat men inget utfall är registrerat.
+            Välj Genomförd eller Uteblev — systemet gissar aldrig.
           </Callout>
         )}
         {showPaymentGuard && (

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { loginAccessForHost } from '@/lib/auth/roles'
 
 const web = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
 
@@ -54,16 +55,34 @@ describe('06 Frisöradmin mobil PWA contract', () => {
   it('keeps booking as primary and minbooking as an explicit legacy door', () => {
     const roles = web('lib/auth/roles.ts')
     const host = web('lib/auth/host-routing.ts')
-    const auth = web('app/(auth)/actions.ts')
     expect(roles).toContain("return '/personal'")
     expect(host).toContain("if (isPrefix(path, STAFF_GROUP)) return { action: 'pass' }")
-    expect(auth).toContain('staffOnLegacyDoor')
-    expect(auth).toContain("hostKind === 'staff_portal'")
-    expect(auth.indexOf('staffOnLegacyDoor =')).toBeLessThan(
-      auth.indexOf('if (door !== hostKind && !staffOnLegacyDoor)'),
-    )
-    expect(auth.indexOf("if (staffOnLegacyDoor) redirect('/personal')")).toBeLessThan(
-      auth.indexOf('if (next) redirect(next)'),
-    )
+    expect(
+      loginAccessForHost({
+        roleLevel: 3,
+        platformAdmin: false,
+        accountTenantId: 'tenant-a',
+        hostKind: 'platform',
+        hostTenantId: null,
+      }),
+    ).toEqual({ allowed: true, legacyStaff: false })
+    expect(
+      loginAccessForHost({
+        roleLevel: 3,
+        platformAdmin: false,
+        accountTenantId: 'tenant-a',
+        hostKind: 'staff_portal',
+        hostTenantId: null,
+      }),
+    ).toEqual({ allowed: true, legacyStaff: true })
+    expect(
+      loginAccessForHost({
+        roleLevel: 6,
+        platformAdmin: false,
+        accountTenantId: 'tenant-a',
+        hostKind: 'staff_portal',
+        hostTenantId: null,
+      }).allowed,
+    ).toBe(false)
   })
 })

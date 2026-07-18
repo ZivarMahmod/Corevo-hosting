@@ -7,8 +7,8 @@ import { authorizedCronRequest } from '@/lib/security/cron-auth'
 //
 // Auth: a static bearer in CRON_SECRET (Worker secret). Not user-facing; rejects
 // anything without the exact secret so the endpoint can't be triggered to fan out
-// mail. Degrades to a no-op when SUPABASE_SERVICE_ROLE_KEY / the email relay
-// (EMAIL_RELAY_URL/EMAIL_RELAY_SECRET) is unset.
+// mail. This endpoint only discovers due rows and durably queues events. The
+// separate multi-channel dispatcher remains physically unwired until release.
 
 export const dynamic = 'force-dynamic'
 

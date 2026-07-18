@@ -135,7 +135,7 @@ describe('rollmedveten RLS för kundadmin', () => {
     expect(atomicSql).toContain('revoke all on function public.reschedule_admin_booking(')
     expect(personal).toMatch(/createAdminServiceClient\(\)/)
     expect(personal).toContain("status === 'completed' || status === 'no_show'")
-    expect(personal).toContain(".lte('start_ts', nowIso)")
+    expect(personal).toContain(".lte('end_ts', nowIso)")
   })
 
   it('exponerar inte ägar-RPC:er för den publika anon-rollen', () => {

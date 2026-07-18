@@ -18,7 +18,7 @@ const ACTIVE = new Set(['pending', 'confirmed'])
 export default async function BookingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await requirePortal('kund')
-  const booking = await getMyBooking(user.id, id)
+  const booking = await getMyBooking(user.id, user.tenantId ?? '', id)
   if (!booking) notFound()
 
   const supabase = await createClient()

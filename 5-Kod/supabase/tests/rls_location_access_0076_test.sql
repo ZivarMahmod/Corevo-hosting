@@ -62,10 +62,10 @@ insert into public.services (id, tenant_id, location_id, name, duration_min) val
   ('00000000-0000-0000-0000-000000000033', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', 'B service', 30),
   ('00000000-0000-0000-0000-000000000034', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000013', 'X service', 30);
 
-insert into public.staff (id, tenant_id, location_id, profile_id, title) values
-  ('00000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000104', 'Staff A'),
-  ('00000000-0000-0000-0000-000000000042', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', null, 'Staff B'),
-  ('00000000-0000-0000-0000-000000000043', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000013', null, 'Staff X');
+insert into public.staff (id, tenant_id, location_id, profile_id, title, active) values
+  ('00000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000104', 'Staff A', false),
+  ('00000000-0000-0000-0000-000000000042', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', null, 'Staff B', false),
+  ('00000000-0000-0000-0000-000000000043', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000013', null, 'Staff X', false);
 insert into public.staff_services (tenant_id, staff_id, service_id) values
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000031'),
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000032'),
@@ -80,6 +80,13 @@ insert into public.location_opening_hours (tenant_id, location_id, weekday, star
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000011', 1, '09:00', '18:00', 'confirmed', now()),
   ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', 1, '09:00', '18:00', 'confirmed', now()),
   ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000013', 1, '09:00', '18:00', 'confirmed', now());
+update public.staff
+   set active = true
+ where id in (
+   '00000000-0000-0000-0000-000000000041',
+   '00000000-0000-0000-0000-000000000042',
+   '00000000-0000-0000-0000-000000000043'
+ );
 insert into public.location_closures (id, tenant_id, location_id, start_ts, end_ts) values
   ('00000000-0000-0000-0000-000000000051', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000011', current_setting('corevo.test_base_monday')::timestamptz + interval '28 days 9 hours', current_setting('corevo.test_base_monday')::timestamptz + interval '28 days 10 hours'),
   ('00000000-0000-0000-0000-000000000052', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000012', current_setting('corevo.test_base_monday')::timestamptz + interval '28 days 9 hours', current_setting('corevo.test_base_monday')::timestamptz + interval '28 days 10 hours');
@@ -137,7 +144,8 @@ do $$ begin
   exception when insufficient_privilege then null; end;
 end $$;
 
--- Platsadmin utan medlemskap: noll platsresurser, inklusive global tjänst.
+-- Platsadmin utan medlemskap: noll platsbundna resurser. Den tenant-globala
+-- tjänsten är fortsatt läsbar enligt det slutliga ägar-/områdeskontraktet.
 reset role;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000103', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
@@ -145,7 +153,14 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 set local role authenticated;
 do $$ declare n int; begin
   select count(*) into n from public.locations; if n <> 0 then raise exception 'empty_admin_locations_%', n; end if;
-  select count(*) into n from public.services; if n <> 0 then raise exception 'empty_admin_services_%', n; end if;
+  select count(*) into n from public.services where location_id is not null;
+  if n <> 0 then raise exception 'empty_admin_location_services_%', n; end if;
+  select count(*) into n from public.services;
+  if n <> 1 or not exists (
+    select 1 from public.services
+     where id = '00000000-0000-0000-0000-000000000031'
+       and location_id is null
+  ) then raise exception 'empty_admin_global_service_contract_%', n; end if;
   select count(*) into n from public.bookings; if n <> 0 then raise exception 'empty_admin_bookings_%', n; end if;
   select count(*) into n from public.customers; if n <> 0 then raise exception 'empty_admin_customers_%', n; end if;
   select count(*) into n from public.customer_notes; if n <> 0 then raise exception 'empty_admin_notes_%', n; end if;
@@ -192,7 +207,14 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 set local role authenticated;
 do $$ declare n int; begin
   if not private.is_platform_admin() then raise exception 'platform_not_recognized'; end if;
-  select count(*) into n from public.locations; if n <> 3 then raise exception 'platform_location_count_%', n; end if;
+  select count(*) into n
+    from public.locations
+   where id in (
+     '00000000-0000-0000-0000-000000000011',
+     '00000000-0000-0000-0000-000000000012',
+     '00000000-0000-0000-0000-000000000013'
+   );
+  if n <> 3 then raise exception 'platform_fixture_location_count_%', n; end if;
 end $$;
 
 reset role;

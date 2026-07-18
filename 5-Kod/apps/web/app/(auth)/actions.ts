@@ -3,7 +3,14 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { portalHomeFor, backofficeHostKindForRole, PORTAL_MIN_LEVEL } from '@/lib/auth/roles'
+import {
+  portalHomeFor,
+  backofficeHostKindForRole,
+  loginAccessForHost,
+  isActiveLoginAccount,
+  PORTAL_MIN_LEVEL,
+  type LoginHostKind,
+} from '@/lib/auth/roles'
 import { safeInternalRedirectPath } from '@/lib/auth/internal-redirect'
 import {
   getTenantFromHost,
@@ -18,6 +25,7 @@ import {
   rateLimitKey,
   LIMITS,
 } from '@/lib/security/rate-limit'
+import { currentKundTenant } from '@/lib/kund/tenant'
 
 export type SignInState = { error?: string }
 
@@ -48,26 +56,58 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   }
 
   // Role level from the just-authenticated client (RLS: own row + role).
-  const platformAdmin =
+  const platformAdminClaim =
     (data.user.app_metadata as { platform_admin?: boolean })?.platform_admin === true
   let roleLevel = 0
+  let roleTenantId: string | null = null
   const { data: profile } = await supabase
     .from('users')
-    .select('role_id')
+    .select('tenant_id, role_id, status')
     .eq('id', data.user.id)
     .maybeSingle()
   if (profile?.role_id) {
     const { data: role } = await supabase
       .from('roles')
-      .select('level')
+      .select('level, tenant_id')
       .eq('id', profile.role_id)
       .maybeSingle()
     roleLevel = role?.level ?? 0
+    roleTenantId = role?.tenant_id ?? null
+  }
+  const platformAdmin =
+    profile?.status === 'active' &&
+    platformAdminClaim &&
+    roleLevel >= 7 &&
+    roleTenantId === null
+
+  // The database row is authoritative even while an old JWT/session remains in
+  // the browser. A staff account additionally requires its active staff binding.
+  let activeStaff = false
+  if (profile?.status === 'active' && roleLevel === PORTAL_MIN_LEVEL.personal) {
+    const { data: staff } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('tenant_id', profile.tenant_id)
+      .eq('profile_id', data.user.id)
+      .eq('active', true)
+      .limit(1)
+      .maybeSingle()
+    activeStaff = Boolean(staff)
+  }
+  const accountActive = isActiveLoginAccount({
+    profileStatus: profile?.status,
+    roleLevel,
+    activeStaff,
+  })
+  if (!accountActive) {
+    await supabase.auth.signOut()
+    return { error: 'Kontot är inte aktivt. Kontakta företaget som bjöd in dig.' }
   }
 
-  // goal-27 — DOOR ISOLATION. Each back-office host accepts ONLY the role-class that
-  // belongs to it (super_admin ⇒ superbooking, salon_admin ⇒ booking, staff ⇒
-  // minbooking). A credential used on the WRONG door is signed out immediately so no
+  // U5 — DOOR ISOLATION. Each account establishes a session only on its own host:
+  // super_admin ⇒ superbooking, owner/staff ⇒ booking, customer ⇒ its exact
+  // tenant host. minbooking remains one explicit staff-only legacy exception. A
+  // credential used on the WRONG door is signed out immediately so no
   // session is ever left on that host — this is what shields the super-admin "godmode"
   // login from booking/minbooking (and a salon_admin from superbooking). Gated to
   // production: on preview/dev (*.localhost) the unified booking door still accepts
@@ -75,35 +115,41 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   const host = (await headers()).get('host')
   let staffOnLegacyDoor = false
   if (!isPreviewHost(host)) {
-    const hostKind = getTenantFromHost(host).kind
-    if (hostKind === 'superadmin' || hostKind === 'platform' || hostKind === 'staff_portal') {
+    const resolved = getTenantFromHost(host)
+    const hostTenant = await currentKundTenant()
+    const hostKind: LoginHostKind =
+      resolved.kind === 'superadmin' ||
+      resolved.kind === 'platform' ||
+      resolved.kind === 'staff_portal'
+        ? resolved.kind
+        : hostTenant
+          ? 'tenant'
+          : 'other'
+    const access = loginAccessForHost({
+      roleLevel,
+      platformAdmin,
+      accountTenantId: profile?.tenant_id ?? null,
+      hostKind,
+      hostTenantId: hostTenant?.id ?? null,
+    })
+    staffOnLegacyDoor = access.legacyStaff
+    if (!access.allowed) {
+      // Reject and clear the session on this host. Host-only cookies guarantee
+      // that parallel logins in other tabs/doors remain untouched.
+      await supabase.auth.signOut()
       const door = backofficeHostKindForRole({ roleLevel, platformAdmin })
-      // ROLL-SEPARATION: personalens dörr är numera ADMIN-dörren (kalendern), men den
-      // GAMLA personaldörren (minbooking) fortsätter acceptera dem — ingen befintlig
-      // inloggning eller bokmärkt adress går sönder. Övriga dörrar är oförändrat låsta.
-      staffOnLegacyDoor =
-        door === 'platform' &&
-        hostKind === 'staff_portal' &&
-        !platformAdmin &&
-        roleLevel < PORTAL_MIN_LEVEL.admin
-      if (door !== hostKind && !staffOnLegacyDoor) {
-        // Reject: clear the just-created session (this is the supabase client method,
-        // NOT the redirecting signOut wrapper below) and point them at THEIR own door
-        // — never reveal the door they probed.
-        await supabase.auth.signOut()
-        const rightHost =
-          door === 'superadmin'
-            ? getSuperadminHost()
-            : door === 'platform'
-              ? getPlatformHost()
-              : door === 'staff_portal'
-                ? getStaffHost()
-                : null
-        return {
-          error: rightHost
-            ? `Den här inloggningen hör hemma på ${rightHost}. Logga in där.`
-            : 'Den här inloggningen gäller inte för den här adressen.',
-        }
+      const rightHost =
+        door === 'superadmin'
+          ? getSuperadminHost()
+          : door === 'platform'
+            ? getPlatformHost()
+            : door === 'staff_portal'
+              ? getStaffHost()
+              : null
+      return {
+        error: rightHost
+          ? `Den här inloggningen hör hemma på ${rightHost}. Logga in där.`
+          : 'Den här inloggningen gäller inte för den här företagsadressen.',
       }
     }
   }

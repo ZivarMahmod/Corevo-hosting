@@ -55,7 +55,8 @@ export function BlomstertorgetOm({ content, tenant }: ThemePageProps) {
   )
 }
 
-export function BlomstertorgetTjanster({ content, services }: ThemePageProps) {
+export function BlomstertorgetTjanster({ content, services, modules }: ThemePageProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.btPageNarrow}>
       <h1 className={styles.btPageTitle}>{content.servicesTitle}</h1>
@@ -66,7 +67,7 @@ export function BlomstertorgetTjanster({ content, services }: ThemePageProps) {
       ) : (
         <div className={styles.btList}>
           {services.map((s) => (
-            <Bookable key={s.id} className={styles.btListRow} label={`Boka plats — ${s.name}`}>
+            <Bookable enabled={bookingReachable} key={s.id} className={styles.btListRow} label={`Boka plats — ${s.name}`}>
               <span>
                 <span className={styles.btListName}>{s.name}</span>
                 <span className={styles.btListDesc}>{serviceDesc(s)}</span>

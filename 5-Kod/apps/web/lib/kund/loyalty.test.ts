@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pointsPerVisit } from './loyalty'
+import { normalizeLoyaltyTotals, pointsPerVisit } from './loyalty'
 
 // Pins the per-visit loyalty grouping (goal-17 /konto history). loyalty_ledger is
 // append-only: several rows can share one booking_id (base earn + a bonus), and
@@ -53,5 +53,19 @@ describe('pointsPerVisit', () => {
       { booking_id: 'b2', points_delta: 5 },
     ])
     expect(out.map((r) => r.bookingId)).toEqual(['b2', 'b1'])
+  })
+})
+
+describe('normalizeLoyaltyTotals', () => {
+  it('keeps spendable balance separate from outcome-aware lifetime', () => {
+    expect(normalizeLoyaltyTotals({ balance: 0, lifetime: 50, entry_count: 3 })).toEqual({
+      balance: 0,
+      lifetime: 50,
+      entryCount: 3,
+    })
+  })
+
+  it('returns honest zeroes for a missing aggregate row', () => {
+    expect(normalizeLoyaltyTotals(null)).toEqual({ balance: 0, lifetime: 0, entryCount: 0 })
   })
 })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useActionState } from 'react'
+import { useEffect, useState, useActionState } from 'react'
 import {
   setBookingStatus,
   rebookOwnBooking,
@@ -17,9 +17,11 @@ import styles from './personal.module.css'
 export function BookingStatusActions({
   bookingId,
   timeZone,
+  endTs,
 }: {
   bookingId: string
   timeZone: string
+  endTs: string
 }) {
   const [status, statusAction, statusPending] = useActionState<ActionState, FormData>(
     setBookingStatus,
@@ -30,6 +32,18 @@ export function BookingStatusActions({
     {},
   )
   const [showRebook, setShowRebook] = useState(false)
+  const [outcomeReady, setOutcomeReady] = useState(false)
+
+  useEffect(() => {
+    const delay = new Date(endTs).getTime() - Date.now()
+    if (!Number.isFinite(delay) || delay <= 0) {
+      setOutcomeReady(true)
+      return
+    }
+    setOutcomeReady(false)
+    const timer = window.setTimeout(() => setOutcomeReady(true), delay)
+    return () => window.clearTimeout(timer)
+  }, [endTs])
 
   return (
     <div>
@@ -41,7 +55,7 @@ export function BookingStatusActions({
             name="status"
             value="completed"
             className={`${styles.btn} ${styles.btnDone}`}
-            disabled={statusPending}
+            disabled={statusPending || !outcomeReady}
           >
             {statusPending ? 'Sparar…' : 'Genomförd'}
           </button>
@@ -50,30 +64,42 @@ export function BookingStatusActions({
             name="status"
             value="no_show"
             className={`${styles.btn} ${styles.btnDanger}`}
-            disabled={statusPending}
+            disabled={statusPending || !outcomeReady}
           >
             Uteblev
           </button>
         </form>
 
-        <button
-          type="button"
-          className={styles.btn}
-          onClick={() => setShowRebook((v) => !v)}
-          aria-expanded={showRebook}
-        >
-          Omboka
-        </button>
+        {!outcomeReady ? (
+          <>
+            <button
+              type="button"
+              className={styles.btn}
+              onClick={() => setShowRebook((v) => !v)}
+              aria-expanded={showRebook}
+            >
+              Omboka
+            </button>
 
-        <form action={cancelAction} style={{ display: 'contents' }}>
-          <input type="hidden" name="bookingId" value={bookingId} />
-          <button type="submit" className={`${styles.btn} ${styles.btnDanger}`} disabled={cancelPending}>
-            {cancelPending ? 'Avbokar…' : 'Avboka'}
-          </button>
-        </form>
+            <form action={cancelAction} style={{ display: 'contents' }}>
+              <input type="hidden" name="bookingId" value={bookingId} />
+              <button type="submit" className={`${styles.btn} ${styles.btnDanger}`} disabled={cancelPending}>
+                {cancelPending ? 'Avbokar…' : 'Avboka'}
+              </button>
+            </form>
+          </>
+        ) : null}
       </div>
 
-      {showRebook ? <RebookForm bookingId={bookingId} timeZone={timeZone} /> : null}
+      <p className={styles.feedback} role="status">
+        {outcomeReady
+          ? 'Behöver avslutas — registrera Genomförd eller Uteblev.'
+          : 'Utfallet kan registreras efter bokningens sluttid.'}
+      </p>
+
+      {showRebook && !outcomeReady ? (
+        <RebookForm bookingId={bookingId} timeZone={timeZone} />
+      ) : null}
 
       {status.error ? (
         <p className={`${styles.feedback} auth-error`} role="alert">

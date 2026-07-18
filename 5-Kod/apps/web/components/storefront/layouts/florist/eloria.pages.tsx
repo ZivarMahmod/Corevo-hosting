@@ -60,7 +60,8 @@ export function EloriaOm({ content, tenant }: ThemePageProps) {
   )
 }
 
-export function EloriaTjanster({ content, services }: ThemePageProps) {
+export function EloriaTjanster({ content, services, modules }: ThemePageProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.elPageNarrow}>
       <p className={styles.elBandEyebrow}>{content.servicesEyebrow}</p>
@@ -72,7 +73,7 @@ export function EloriaTjanster({ content, services }: ThemePageProps) {
         <>
           <div className={styles.elPriceList}>
             {services.map((s) => (
-              <Bookable key={s.id} className={styles.elPriceRow} label={`Boka — ${s.name}`}>
+              <Bookable enabled={bookingReachable} key={s.id} className={styles.elPriceRow} label={`Boka — ${s.name}`}>
                 <span>
                   <span className={styles.elPriceName}>{s.name}</span>
                   <span className={styles.elPriceDesc}>{serviceDesc(s)}</span>
@@ -82,7 +83,7 @@ export function EloriaTjanster({ content, services }: ThemePageProps) {
             ))}
           </div>
           <p className={styles.elPriceFoot}>
-            <BookCta className={styles.elBtnDark} label="Boka konsultation" />
+            <BookCta enabled={bookingReachable} className={styles.elBtnDark} label="Boka konsultation" />
           </p>
         </>
       )}

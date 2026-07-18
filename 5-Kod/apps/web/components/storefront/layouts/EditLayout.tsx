@@ -31,9 +31,10 @@ import ed from './edit.module.css'
  * sidfot, undersidor OCH modul-rötter. Kvar: 3 bild-URL:er (genuint dynamiska).
  */
 export function EditLayout({ tenant, content, services, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
-  const presentkortLive = modules?.presentkortLive ?? false
+  const presentkortReachable = modules?.presentkortReachable ?? false
 
   return (
     <>
@@ -50,7 +51,7 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
           <h1 className={`${styles.heroTitle} ${ed.heroTitle}`}>{content.heroTitle}</h1>
           <p className={`sf-lede ${ed.heroLede}`}>{content.heroLede}</p>
           <div className={ed.heroActions}>
-            <BookCta className={styles.sfSquareCta} />
+            <BookCta enabled={bookingReachable} className={styles.sfSquareCta} />
           </div>
         </div>
       </section>
@@ -62,7 +63,7 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
           {services.length > 0 ? (
             <div className={styles.sfEditGrid}>
               {services.map((s, i) => (
-                <Bookable key={s.id} className={styles.sfEditRow} label={`Boka — ${s.name}`}>
+                <Bookable enabled={bookingReachable} key={s.id} className={styles.sfEditRow} label={`Boka — ${s.name}`}>
                   <span className={styles.sfEditNum} aria-hidden="true">
                     {serviceNum(i)}
                   </span>
@@ -176,7 +177,7 @@ export function EditLayout({ tenant, content, services, modules }: StorefrontLay
       ) : null}
 
       {/* PRESENTKORT — en hairline-rad i temats ton, inte en hel stapel-sektion */}
-      {presentkortLive ? (
+      {presentkortReachable ? (
         <section className={`${styles.sfEditServices} ${ed.sectionTight}`}>
           <div className={styles.sfWide}>
             <div className={styles.sfBandLabelInline}>Presentkort</div>

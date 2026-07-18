@@ -26,10 +26,13 @@ import styles from './ateljevinter.module.css'
  * 'use client') — onboarding-studions preview renderar samma komponent.
  */
 export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // Filen visar SEX verk i samlingen och TRE på hemmet (products.slice(1, 4)).
   const works = (modules?.shopTeasers ?? []).slice(0, 3)
-  // modules === undefined (studions statiska preview) → visa allt.
-  const shopReachable = modules ? modules.shopReachable : true
+  // Saknad reachability failar stängt; onboarding-previewns modulytor renderas separat.
+  const shopReachable = modules?.shopReachable ?? false
+  const kurserReachable = modules?.kurserReachable ?? false
+  const galleriReachable = modules?.galleriReachable ?? false
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const heroWork = works[0] ?? null
@@ -41,13 +44,13 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
       desc:
         content.pillar1Body ??
         'en timme, två stolar, era idéer om bröllop eller beställningsverk.',
-      href: '/boka',
+      href: bookingReachable ? '/boka' : null,
     },
     {
       num: 'rum ii',
       title: content.pillar2Title ?? 'seminarier',
       desc: content.pillar2Body ?? 'fyra platser per tillfälle. ett tema, två timmar, inga genvägar.',
-      href: '/kurser',
+      href: kurserReachable ? '/kurser' : null,
     },
     {
       num: 'rum iii',
@@ -55,7 +58,7 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
       desc:
         content.pillar3Body ??
         'tidigare samlingar, dokumenterade innan de lämnade huset.',
-      href: '/galleri',
+      href: galleriReachable ? '/galleri' : null,
     },
   ]
 
@@ -137,12 +140,20 @@ export function AteljeVinterLayout({ content, modules }: StorefrontLayoutProps) 
         <section className={styles.avRooms}>
           {rooms.map((r, i) => (
             <Reveal key={r.num} delay={i * 90}>
-              <Link href={r.href} className={styles.avRoom}>
-                <p className={styles.avRoomNum}>{r.num}</p>
-                <h3 className={styles.avRoomTitle}>{r.title}</h3>
-                <p className={styles.avRoomDesc}>{r.desc}</p>
-                <span className={styles.avUnderline}>gå in →</span>
-              </Link>
+              {r.href ? (
+                <Link href={r.href} className={styles.avRoom}>
+                  <p className={styles.avRoomNum}>{r.num}</p>
+                  <h3 className={styles.avRoomTitle}>{r.title}</h3>
+                  <p className={styles.avRoomDesc}>{r.desc}</p>
+                  <span className={styles.avUnderline}>gå in →</span>
+                </Link>
+              ) : (
+                <div className={styles.avRoom}>
+                  <p className={styles.avRoomNum}>{r.num}</p>
+                  <h3 className={styles.avRoomTitle}>{r.title}</h3>
+                  <p className={styles.avRoomDesc}>{r.desc}</p>
+                </div>
+              )}
             </Reveal>
           ))}
         </section>

@@ -4,9 +4,10 @@ import { createServiceClient } from '@/lib/platform/service'
 import { checkRateLimit, getClientIp, rateLimitKey, LIMITS } from '@/lib/security/rate-limit'
 import { verifyCancelToken } from '@/lib/booking/cancel-token'
 import { getCancellationCutoffHours, withinCancellationWindow } from '@/lib/kund/settings'
-import { sendBookingCancellation, parseGuestEmail } from '@/lib/notifications/booking'
-import { sendSms, parseGuestPhone } from '@/lib/notifications/sms'
-import { getSmsEnabled } from '@/lib/notifications/settings'
+import {
+  queueBookingEvent,
+  type BookingNotificationQueueResult,
+} from '@/lib/notifications/booking-events'
 import { refundBookingPayment } from '@/lib/stripe/refund'
 import { logger } from '@/lib/observability'
 
@@ -21,7 +22,7 @@ import { logger } from '@/lib/observability'
 // never reveal another tenant's/booker's booking (the token binds to ONE id).
 
 export type CancelResult =
-  | { ok: true }
+  | { ok: true; notification: BookingNotificationQueueResult }
   | { ok: false; reason: 'invalid_token' | 'not_found' | 'already_cancelled' | 'too_late' | 'error'; message: string }
 
 export async function cancelByToken(bookingId: string, token: string): Promise<CancelResult> {
@@ -46,7 +47,7 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
   // 2. Load the booking (service-role; token already proved the capability).
   const { data: b } = await admin
     .from('bookings')
-    .select('id, tenant_id, status, start_ts, note, customer_profile_id, services(name), tenants(name), locations(timezone)')
+    .select('id, tenant_id, status, start_ts')
     .eq('id', bookingId)
     .maybeSingle()
   if (!b) return { ok: false, reason: 'not_found', message: 'Bokningen hittades inte.' }
@@ -88,36 +89,13 @@ export async function cancelByToken(bookingId: string, token: string): Promise<C
   // Refund a paid booking on guest self-service cancel (parity with kund/personal).
   await refundBookingPayment(bookingId, b.tenant_id)
 
-  // Best-effort cancellation notice. Never throws into the result — the cancel
-  // itself already succeeded. The email is NOT gated on the owner's notification
-  // toggles: cancellation confirmations are transactional/legal and are never
-  // suppressed (see lib/notifications/settings.ts header). SMS stays opt-in.
-  try {
-    const tenantName = (b.tenants as { name?: string } | null)?.name ?? 'Verksamheten'
-    const serviceName = (b.services as { name?: string } | null)?.name ?? 'Behandling'
-    const timeZone = (b.locations as { timezone?: string } | null)?.timezone ?? 'Europe/Stockholm'
+  const notification = await queueBookingEvent({
+    tenantId: b.tenant_id,
+    bookingId,
+    type: 'booking_cancelled',
+    occurredAt: cancelledAt,
+    startISO: b.start_ts,
+  })
 
-    let to = parseGuestEmail(b.note)
-    let phone = parseGuestPhone(b.note)
-    if ((!to || !phone) && b.customer_profile_id) {
-      const { data: u } = await admin.from('users').select('email, phone').eq('id', b.customer_profile_id).maybeSingle()
-      to = to ?? u?.email ?? null
-      phone = phone ?? u?.phone ?? null
-    }
-
-    if (to) {
-      await sendBookingCancellation(
-        to,
-        { tenantName, serviceName, startISO: b.start_ts, timeZone },
-        { supabase: admin, tenantId: b.tenant_id },
-      )
-    }
-    if (phone && (await getSmsEnabled(admin, b.tenant_id))) {
-      await sendSms({ to: phone, body: `${tenantName}: din tid för ${serviceName} är avbokad.`, from: tenantName })
-    }
-  } catch (err) {
-    logger.warn('avboka.cancel_notify_failed', { bookingId, error: err instanceof Error ? err.message : String(err) })
-  }
-
-  return { ok: true }
+  return { ok: true, notification }
 }

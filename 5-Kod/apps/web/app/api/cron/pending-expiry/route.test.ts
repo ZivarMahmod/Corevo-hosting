@@ -47,24 +47,24 @@ describe('pending-expiry cron', () => {
     mocks.createServiceClient.mockReturnValue({ rpc })
     const response = await GET(request())
     expect(response.status).toBe(500)
-    await expect(response.json()).resolves.toEqual({ error: 'cron_failed' })
+    await expect(response.json()).resolves.toEqual({
+      error: 'cron_degraded',
+      failed: ['bookings'],
+    })
   })
 
-  it('retention- och slot-holds-fel fäller ALDRIG bokningssvepen (best-effort, null i svaret)', async () => {
+  it('rapporterar maskinläsbart degraded och 500 om retention eller slot-holds fallerar', async () => {
     const rpc = vi.fn()
       .mockResolvedValueOnce({ data: 3, error: null })
       .mockResolvedValueOnce({ data: 5, error: null })
-      // 0014_slot_holds ej applicerad i prod → funktionen saknas; svepet ska ändå gå.
       .mockResolvedValueOnce({ data: null, error: { message: 'function does not exist' } })
       .mockResolvedValueOnce({ data: null, error: { message: 'function missing' } })
     mocks.createServiceClient.mockReturnValue({ rpc })
     const response = await GET(request())
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(500)
     await expect(response.json()).resolves.toEqual({
-      swept: 3,
-      shopReservationsPruned: 5,
-      slotHoldsPruned: null,
-      contactMessagesPruned: null,
+      error: 'cron_degraded',
+      failed: ['slot_holds', 'contact_messages'],
     })
   })
 

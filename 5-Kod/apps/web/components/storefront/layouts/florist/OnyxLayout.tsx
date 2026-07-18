@@ -26,8 +26,8 @@ import styles from './onyx.module.css'
  *
  * MODUL-GATINGEN är plattformens och HELIG: drop-rutnätet ritas bara när shopen har
  * teasers, journal-raderna bara när bloggen har inlägg, "SE DROPPET" pekar på /shop bara
- * när butiken går att nå (annars boknings-drawern). `modules === undefined` (studions
- * statiska preview) → visa allt.
+ * när butiken går att nå (annars boknings-drawern). Saknad module-prop failar stängt;
+ * onboarding-previewns modulytor renderas separat.
  *
  * AVVIKELSEN ÄR ÅTGÄRDAD (goal-64): filens tredje väg "Kretsen" (lojalitet) hade ingen
  * route i Corevo, så kortet renderades som TEXT UTAN LÄNK — hellre olänkat än en 404.
@@ -39,12 +39,14 @@ import styles from './onyx.module.css'
  * renderar samma komponent.
  */
 export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // Filen visar TRE produkter i "Veckans drop" (products.slice(0, 3)) och TVÅ journal-rader.
   const drop = (modules?.shopTeasers ?? []).slice(0, 3)
   const posts = (modules?.bloggTeasers ?? []).slice(0, 2)
-  // modules === undefined (studions statiska preview) → visa allt.
-  const shopReachable = modules ? modules.shopReachable : true
-  const klubbReachable = modules ? modules.lojalitetReachable : true
+  // Saknad reachability failar stängt; onboarding-previewns modulytor renderas separat.
+  const shopReachable = modules?.shopReachable ?? false
+  const klubbReachable = modules?.lojalitetReachable ?? false
+  const kurserReachable = modules?.kurserReachable ?? false
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const closingPhoto = content.closingImage ?? content.galleryImages[2] ?? ''
@@ -60,7 +62,7 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
       num: '03',
       title: content.pillar2Title ?? 'Night classes',
       desc: content.pillar2Body ?? 'Kvällskurser i studion — bind till hög musik.',
-      href: '/kurser',
+      href: kurserReachable ? '/kurser' : null,
     },
     {
       num: '08',
@@ -87,7 +89,7 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
                 </Link>
               ) : null}
               {/* "BOKA STUDION" är en HANDLING → plattformens boknings-CTA, aldrig egen logik. */}
-              <BookCta className={styles.onGhost} label="BOKA STUDION" />
+              <BookCta enabled={bookingReachable} className={styles.onGhost} label="BOKA STUDION" />
             </div>
             <p className={styles.onHeroNote}>
               {content.findEyebrow ?? 'KVÄLLSLEVERANS 18–23 · BESTÄLL FÖRE 20:00'}
@@ -216,7 +218,7 @@ export function OnyxLayout({ content, modules }: StorefrontLayoutProps) {
                 BESTÄLL NU
               </Link>
             ) : (
-              <BookCta className={styles.onSolid} label="BESTÄLL NU" />
+              <BookCta enabled={bookingReachable} className={styles.onSolid} label="BESTÄLL NU" />
             )}
           </Reveal>
         </div>

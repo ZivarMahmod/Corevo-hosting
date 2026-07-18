@@ -77,8 +77,9 @@ function groupServices(services: Service[]): { name: string | null; items: Servi
   return groups
 }
 
-export function SiluettTjanster({ content, services }: ThemePageProps) {
+export function SiluettTjanster({ content, services, modules }: ThemePageProps) {
   const groups = groupServices(services)
+  const bookingReachable = modules?.bookingReachable ?? false
 
   return (
     <section className={styles.siPageNarrow}>
@@ -96,7 +97,7 @@ export function SiluettTjanster({ content, services }: ThemePageProps) {
               </div>
             ) : null}
             {g.items.map((s) => (
-              <Bookable key={s.id} className={styles.siPriceRow} label={`Boka — ${s.name}`}>
+              <Bookable enabled={bookingReachable} key={s.id} className={styles.siPriceRow} label={`Boka — ${s.name}`}>
                 <span className={styles.siPriceMain}>
                   <span className={styles.siPriceName}>{s.name}</span>
                   <span className={styles.siPriceDesc}>{serviceDesc(s)}</span>

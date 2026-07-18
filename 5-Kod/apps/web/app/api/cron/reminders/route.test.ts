@@ -22,10 +22,10 @@ describe('reminder cron', () => {
   })
 
   it('returnerar körresultatet när batchen lyckas', async () => {
-    mocks.sendDueReminders.mockResolvedValue({ scanned: 2, sent: 1, skipped: 1 })
+    mocks.sendDueReminders.mockResolvedValue({ scanned: 2, queued: 1, skipped: 1 })
     const response = await GET(request())
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({ ok: true, scanned: 2, sent: 1, skipped: 1 })
+    await expect(response.json()).resolves.toEqual({ ok: true, scanned: 2, queued: 1, skipped: 1 })
   })
 
   it('svarar 500 så schedulern kan larma och försöka igen', async () => {

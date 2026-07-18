@@ -95,7 +95,7 @@ export function NewBookingDrawer({
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [note, setNote] = useState('')
-  const [notifyChoice, setNotifyChoice] = useState<'ingen' | 'epost'>('ingen')
+  const [notifyChoice, setNotifyChoice] = useState<'ingen' | 'automatisk'>('ingen')
   // Samma intent-id lever genom fel/retry medan drawern är monterad. Ett förlorat
   // svar får då tillbaka samma bokning i stället för en falsk tidskonflikt.
   const [requestId] = useState(() => crypto.randomUUID())
@@ -198,11 +198,11 @@ export function NewBookingDrawer({
       new Date(iso),
     )
 
-  // Kontaktvägen avgör vad som KAN skickas. Finns ingen adress kan ingen notis gå ut,
-  // och då säger UI:t det — bokningen får aldrig se ut att ha skickat ett mejl som
-  // aldrig skickades (låst beslut, codex/00 §9).
+  // Kontaktvägen avgör vad som KAN köas. Routern avgör sedan kanal från
+  // kundens aktuella samtycke/preferenser; UI:t lovar aldrig en viss leverans.
   const contactEmail = chosen?.email ?? (email.trim() || null)
-  const canEmail = Boolean(contactEmail)
+  const contactPhone = chosen?.phone ?? (phone.trim() || null)
+  const canNotify = Boolean(contactEmail || contactPhone)
 
   const customerResolved = Boolean(chosen) || customerSearchStatus === 'settled'
   const readyToSave = Boolean(
@@ -236,7 +236,7 @@ export function NewBookingDrawer({
           <input type="hidden" name="note" value={note.trim()} />
           {/* Notisvalet måste följa med till servern — annars visar drawern ett löfte
               som ingen infriar. Saknas kontaktväg tvingas valet till "ingen". */}
-          <input type="hidden" name="notify" value={canEmail ? notifyChoice : 'ingen'} />
+          <input type="hidden" name="notify" value={canNotify ? notifyChoice : 'ingen'} />
           <Button
             type="submit"
             variant="primary"
@@ -449,27 +449,29 @@ export function NewBookingDrawer({
               />
               <span>Skicka inget</span>
             </label>
-            <label className={`${styles.radio}${canEmail ? '' : ` ${styles.radioOff}`}`}>
+            <label className={`${styles.radio}${canNotify ? '' : ` ${styles.radioOff}`}`}>
               <input
                 type="radio"
                 name="notify"
-                checked={notifyChoice === 'epost'}
-                disabled={!canEmail}
-                onChange={() => setNotifyChoice('epost')}
+                checked={notifyChoice === 'automatisk'}
+                disabled={!canNotify}
+                onChange={() => setNotifyChoice('automatisk')}
               />
               <span>
-                {canEmail ? (
+                {canNotify ? (
                   <>
-                    E-post till <span className="num">{contactEmail}</span>
+                    Köa bekräftelse via tillgänglig kanal
+                    <span className="num"> {contactEmail ?? contactPhone}</span>
                   </>
                 ) : (
-                  'E-post — kunden saknar e-postadress'
+                  'Kunden saknar e-post och telefon'
                 )}
               </span>
             </label>
           </div>
           <p className={styles.hint}>
-            SMS kommer som ett betalt tillval senare. Inget skickas utan att det står här.
+            Systemet väljer push, e-post eller SMS enligt kundens aktuella val. SMS levereras
+            inte innan den separata SMS-grinden aktiveras.
           </p>
         </section>
 

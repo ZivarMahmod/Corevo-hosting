@@ -44,11 +44,12 @@ describe('admin site editor routes', () => {
     ])
   })
 
-  it('opens a real booking preview and keeps Snitt rating data fetched-only', () => {
+  it('opens a real booking preview and describes Snitt Google support as link-only', () => {
     expect(canonical).toContain("path: '?boka=1'")
     expect(canonical).toContain('caps.homeStats && defaults.stats.length')
-    expect(canonical).toContain("title: 'Betygsraden'")
-    expect(canonical).toContain('Google-recensioner')
+    expect(canonical).toContain("title: 'Google-recensionslänk'")
+    expect(canonical).toContain('Ingen betygs- eller recensionsdata hämtas automatiskt')
+    expect(canonical).not.toContain('uppdateras automatiskt')
     expect(canonical).toContain("imageLimit: kind === 'snitt' ? 3 : kind === 'kalla' ? 1 : defaults.heroImages.length")
   })
 

@@ -1,6 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
+import { sanitizeBookingNote } from '@/lib/booking/note'
 
 // GDPR data export (G10 step 2 — "rätt till tillgång/dataportabilitet"). Gathers
 // everything we hold about ONE customer into a portable JSON document. Runs with
@@ -37,7 +38,10 @@ export async function collectCustomerData(
       .order('start_ts', { ascending: true }),
   ])
 
-  const bookingRows = bookings ?? []
+  const bookingRows = (bookings ?? []).map((booking) => ({
+    ...booking,
+    note: sanitizeBookingNote(booking.note),
+  }))
   const bookingIds = bookingRows.map((b) => b.id)
   let payments: Array<Record<string, unknown>> = []
   if (bookingIds.length > 0) {

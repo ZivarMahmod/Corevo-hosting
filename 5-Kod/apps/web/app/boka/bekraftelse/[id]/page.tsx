@@ -2,12 +2,15 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createPublicClient } from '@/lib/supabase/public'
+import { currentTenant } from '@/lib/tenant-data'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 import { buildCancelToken } from '@/lib/booking/cancel-token'
+import { bookingStatusPresentation } from '@/lib/booking/confirmation-status'
 import { GoogleReviewNudge } from '@/components/kund/GoogleReviewNudge'
 import '../../../ticket.css'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Bokning bekräftad' }
+export const metadata: Metadata = { title: 'Bokningsstatus' }
 
 const kr = new Intl.NumberFormat('sv-SE', {
   style: 'currency',
@@ -83,6 +86,8 @@ export default async function ConfirmationPage({
   const { data } = await supabase.rpc('get_public_booking', { p_id: id })
   const booking = data?.[0]
   if (!booking) notFound()
+  const bundle = await currentTenant()
+  if (!bundle || booking.tenant_slug !== bundle.tenant.slug) notFound()
 
   const tz = booking.location_timezone ?? 'Europe/Stockholm'
   const start = new Date(booking.start_ts)
@@ -94,10 +99,15 @@ export default async function ConfirmationPage({
   }).format(start)
 
   // Effektiv gate (samma som boka-flödet): online bara om BÅDA flaggorna är på.
-  const canTakeOnline = booking.payments_enabled && booking.stripe_charges_enabled
+  const canTakeOnline =
+    commerceReleaseGate(bundle.tenant.id).bookingPayment &&
+    booking.payments_enabled &&
+    booking.stripe_charges_enabled
   const paid = booking.payment_status === 'succeeded'
   const refunded = booking.payment_status === 'refunded'
   const checkoutCancelled = avbruten === '1'
+  const presentation = bookingStatusPresentation(booking.status)
+  const pending = booking.status === 'pending'
 
   // .ics-fil (lägg till i kalender). end_ts finns i RPC:n → exakt sluttid.
   const tenantName = booking.tenant_name ?? ''
@@ -126,7 +136,13 @@ export default async function ConfirmationPage({
 
   // Biljett-fotens etikett: designens "Att betala på plats" gäller obetald bokning;
   // en online-betald/återbetald bokning får inte påstå att pris återstår på plats.
-  const footLabel = paid ? 'Betald online' : refunded ? 'Återbetald' : 'Att betala på plats'
+  const footLabel = paid
+    ? 'Betald online'
+    : refunded
+      ? 'Återbetald'
+      : pending
+        ? 'Pris om tiden bekräftas'
+        : 'Att betala på plats'
 
   return (
     <section className="tkt-scope tkt-section">
@@ -146,14 +162,14 @@ export default async function ConfirmationPage({
           <path className="tkt-mark-path" d="M5 12.5l4.5 4.5L19 7.5" />
         </svg>
       </div>
-      <div className="tkt-ok">BOKAT</div>
-      <h1 className="tkt-confirm-h">Tack, din tid är bokad!</h1>
-      <p className="tkt-lede">En bekräftelse är på väg till din e-post.</p>
+      <div className="tkt-ok">{presentation.eyebrow}</div>
+      <h1 className="tkt-confirm-h">{presentation.heading}</h1>
+      <p className="tkt-lede">{presentation.message}</p>
 
       {/* Biljetten/stubben — BEKRÄFTAD-stämpel, dashed dividers, rader, pris-fot */}
       <div className="tkt-stub tkt-stub--ticket">
         <div className="tkt-stamp" aria-hidden>
-          BEKRÄFTAD
+          {presentation.stamp}
         </div>
         <div className="tkt-stub-head">
           <span className="tkt-stub-brand">{tenantName || 'Bokning'}</span>
@@ -182,7 +198,13 @@ export default async function ConfirmationPage({
       </div>
 
       {/* Betalning (G09): kvitto/status. paid > refunded > avbruten > väntar > på plats. */}
-      {paid ? (
+      {pending ? (
+        <p className="tkt-note">
+          {paid
+            ? 'Betalningen är mottagen, men tiden är inte bekräftad ännu.'
+            : 'Ingen tid är bekräftad ännu. Vänta på besked innan du planerar besöket.'}
+        </p>
+      ) : paid ? (
         <p className="tkt-note tkt-note--paid">
           ✓ Betald online — {kr.format((booking.price_cents ?? 0) / 100)}. Kvitto skickas via Stripe.
         </p>
@@ -206,18 +228,20 @@ export default async function ConfirmationPage({
       />
 
       <div className="tkt-actions">
-        <a
-          href={icsHref}
-          download="bokning.ics"
-          className="tkt-btn-ink"
-          aria-label="Lägg till bokningen i din kalender"
-        >
-          Lägg till i kalender
-        </a>
+        {presentation.canAddToCalendar ? (
+          <a
+            href={icsHref}
+            download="bokning.ics"
+            className="tkt-btn-ink"
+            aria-label="Lägg till bokningen i din kalender"
+          >
+            Lägg till i kalender
+          </a>
+        ) : null}
         <Link href="/boka" className="tkt-btn-outline">
           Boka en till tid
         </Link>
-        {cancelHref ? (
+        {presentation.canManage && cancelHref ? (
           <Link href={cancelHref} className="tkt-textlink">
             Behöver du ändra? Avboka eller boka om
           </Link>

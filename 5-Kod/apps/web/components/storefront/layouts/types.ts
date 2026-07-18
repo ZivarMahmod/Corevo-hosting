@@ -12,15 +12,19 @@ import type { ResolvedThemeContent } from '../theme-content'
  * inga modulsektioner, vilket är rätt: previewn har egna modul-mockar.
  */
 export type LayoutModuleTeasers = {
+  /** true när /boka får nås (live eller paused; off/draft döljs). */
+  bookingReachable: boolean
   /** Max 3 produkter när shop-modulen är live; annars tom. */
   shopTeasers: ShopProduct[]
   /** Max 3 publicerade inlägg när blogg-modulen är live; annars tom. */
   bloggTeasers: BloggPost[]
-  /** true när presentkort-modulen är live (→ smal band-rad). */
-  presentkortLive: boolean
-  /** true när /shop går att nå (live ELLER paused) — floras pelar-gating (S9). */
+  /** true när /presentkort renderar (live/paused + läsbar config). */
+  presentkortReachable: boolean
+  /** true när /shop går att nå och har minst en aktiv produkt. */
   shopReachable: boolean
-  /** true när /offert går att nå (live ELLER paused) — floras pelar-gating (S9). */
+  /** true när /blogg går att nå och har minst ett publicerat inlägg. */
+  bloggReachable: boolean
+  /** true när /offert renderar (live/paused + läsbar config). */
   offertReachable: boolean
   /**
    * goal-64: true när /klubb går att nå (lojalitet live ELLER paused).
@@ -31,6 +35,10 @@ export type LayoutModuleTeasers = {
    * NOLL länkar dit. Flaggan är hela skillnaden mellan en länk och en 404-fälla.
    */
   lojalitetReachable: boolean
+  /** true när /kurser renderar och har minst ett kommande öppet tillfälle. */
+  kurserReachable: boolean
+  /** true när /galleri renderar och har minst en aktiv bild. */
+  galleriReachable: boolean
 }
 
 /** Shared props every storefront layout receives from app/(public)/page.tsx. */

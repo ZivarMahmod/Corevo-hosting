@@ -27,9 +27,11 @@ import { useBooking } from '@/components/storefront/BookingProvider'
 export function BookCta({
   className = '',
   label = 'Boka tid',
+  enabled = true,
 }: {
   className?: string
   label?: string
+  enabled?: boolean
 }) {
   const booking = useBooking()
   const cls = `btn-accent${className ? ` ${className}` : ''}`
@@ -37,7 +39,15 @@ export function BookCta({
   // Embedded: open the in-page drawer. Only when the salon actually has services
   // to book; otherwise fall through to the /boka route which renders its own
   // friendly empty state.
-  if (booking && booking.available) {
+  if (!enabled || (booking && !booking.reachable)) {
+    return (
+      <span className={cls} aria-disabled="true">
+        {label}
+      </span>
+    )
+  }
+
+  if (booking?.available) {
     return (
       <button type="button" className={cls} onClick={booking.open}>
         {label}

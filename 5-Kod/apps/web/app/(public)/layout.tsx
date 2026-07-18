@@ -14,7 +14,12 @@ import { CartProvider } from '@/components/storefront/shop/CartProvider'
 import { CookieConsent } from '@/components/storefront/CookieConsent'
 import { ModulePausedBanner } from '@/components/storefront/ModulePausedBanner'
 import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
-import { countUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
+import { loadLayoutModuleTeasers } from '@/components/storefront/layouts/load-module-teasers'
+import {
+  canonicalModuleHref,
+  moduleNavigationLinks,
+  moduleRouteReachable,
+} from '@/components/storefront/layouts/module-navigation'
 import { getWizardServices, getWizardLocations, getBookingPrefs } from '@/components/storefront/wizard-services'
 import { InlineBooking } from '@/components/storefront/InlineBooking'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
@@ -72,11 +77,9 @@ export default async function PublicLayout({ children }: { children: React.React
     branding: settings.branding,
   }
   // Prestanda C1: allt nedan behöver bara tenant.id/slug/vertical_id ur bundlen och är
-  // inbördes OBEROENDE — det kördes tidigare som sex seriella await-hopp på varje
+  // inbördes OBEROENDE — det kördes tidigare som seriella await-hopp på varje
   // storefront-sidvisning (auditens vattenfall). Ett Promise.all gör dem parallella.
-  // De derivationer som behöver moduleStates (modul-grindar, CTA-gaten) är ren sync och
-  // sker efteråt, oförändrade. Navlänkarna /team och /kurser gatas nu på COUNT i stället
-  // för att ladda hela listorna bara för `.length > 0`.
+  // Modulgrindarna härleds efteråt ur samma reachability som startsidans layouts.
   //   copy        — footer-tagline (ägar-override annars tema-default; utility tema-fast)
   //   moduleStates— per-modul-livscykel (spår 5): storefronten renderar bara LIVE-moduler;
   //                 draft/off ej publikt, paused → banner + inerta CTA. Saknad rad → 'live'
@@ -91,7 +94,7 @@ export default async function PublicLayout({ children }: { children: React.React
     staffNoun,
     rawPrimaryCta,
     teamCount,
-    kurserCount,
+    layoutModules,
   ] = await Promise.all([
     getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null),
     getTenantModuleStates(tenant.id, tenant.slug),
@@ -103,7 +106,7 @@ export default async function PublicLayout({ children }: { children: React.React
     resolveStaffNoun(tenant.vertical_id),
     resolvePrimaryCta(tenant.vertical_id),
     countTeamMembers(tenant.id, tenant.slug),
-    countUpcomingEvents(tenant.id, tenant.slug),
+    loadLayoutModuleTeasers(tenant.id, tenant.slug),
   ])
 
   const themeBase = THEME_CONTENT[settings.theme]
@@ -113,9 +116,8 @@ export default async function PublicLayout({ children }: { children: React.React
   const bookingState = moduleState(moduleStates, 'booking')
   const bookingLive = bookingState === 'live'
   const bookingPaused = bookingState === 'paused'
-  // goal-55 7B: shop live/paused → korg-ikon i naven (alltid synlig, badge vid count>0).
-  const shopState = moduleState(moduleStates, 'shop')
-  const cartEnabled = shopState === 'live' || shopState === 'paused'
+  // Korgen visas bara när shop-routen är reachable och har publika produkter.
+  const cartEnabled = layoutModules.shopReachable
   // Booking gating: bara en LIVE booking-modul får riktiga tjänster; draft/off/paused
   // ger en TOM lista så varje "Boka tid"-CTA är inert (BookingProvider.available=false).
   const wizardServices = bookingLive ? allWizardServices : []
@@ -123,23 +125,12 @@ export default async function PublicLayout({ children }: { children: React.React
   const bokning = branschBokning(tenant.vertical_id)
 
   // goal-55 8A: bransch-styrd huvud-CTA i naven (config-first, aldrig if(bransch)).
-  // Modul-gaten bor HÄR (layouten har moduleStates): pekar branschens CTA på en
-  // modulsida vars modul inte är live → falla tillbaka till BookCta (null-prop).
+  // Pekar branschens CTA på en modulroute använder den samma state+data-gate som navet;
+  // annars faller den tillbaka till BookCta (null-prop).
   // Nav/NavShell får bara en färdig cta — eller null = dagens 'Boka tid' exakt.
-  const CTA_HREF_MODULE: Record<string, string> = {
-    '/shop': 'shop',
-    '/blogg': 'blogg',
-    '/offert': 'offert',
-    '/presentkort': 'presentkort',
-    '/boka': 'booking',
-    '/kurser': 'kurser',
-  }
-  const ctaModule = rawPrimaryCta
-    ? CTA_HREF_MODULE[`/${rawPrimaryCta.href.split('/')[1] ?? ''}`]
-    : undefined
   const primaryCta =
-    rawPrimaryCta && (!ctaModule || moduleState(moduleStates, ctaModule) === 'live')
-      ? rawPrimaryCta
+    rawPrimaryCta && moduleRouteReachable(rawPrimaryCta.href, layoutModules, layoutModules.bookingReachable)
+      ? { ...rawPrimaryCta, href: canonicalModuleHref(rawPrimaryCta.href) }
       : null
 
   // Salvia + FreshCut lead with the richer 3-column footer (real address/hours/contact
@@ -153,35 +144,12 @@ export default async function PublicLayout({ children }: { children: React.React
   // renderas som children i NavShell → mobilmeny, fokusfälla, korg och kundkonto följer
   // med varje mall utan att mallen kan tappa dem. Utan chrome → dagens Nav/Footer exakt.
   const chrome = themeChrome(settings.theme)
+  const moduleLinks = moduleNavigationLinks(layoutModules)
   const navLinks = [
     { href: '/', label: 'Hem' },
-    ...(cartEnabled ? [{ href: '/shop', label: 'Butik' }] : []),
+    ...moduleLinks.filter((link) => link.href === '/shop'),
     ...(allWizardServices.length > 0 ? [{ href: '/tjanster', label: 'Tjänster' }] : []),
-    ...(moduleState(moduleStates, 'kurser') === 'live' && kurserCount > 0
-      ? [{ href: '/kurser', label: 'Kurser' }]
-      : []),
-    ...(moduleState(moduleStates, 'blogg') === 'live' || moduleState(moduleStates, 'blogg') === 'paused'
-      ? [{ href: '/blogg', label: 'Blogg' }]
-      : []),
-    ...(moduleState(moduleStates, 'offert') === 'live' || moduleState(moduleStates, 'offert') === 'paused'
-      ? [{ href: '/offert', label: 'Offert' }]
-      : []),
-    ...(moduleState(moduleStates, 'presentkort') === 'live' ||
-    moduleState(moduleStates, 'presentkort') === 'paused'
-      ? [{ href: '/presentkort', label: 'Presentkort' }]
-      : []),
-    // goal-64 KLUBBEN: lojalitet-modulens publika sida (/klubb). Samma heliga gate —
-    // av/draft → sidan 404:ar, och då får den inte heller stå i menyn.
-    ...(moduleState(moduleStates, 'lojalitet') === 'live' ||
-    moduleState(moduleStates, 'lojalitet') === 'paused'
-      ? [{ href: '/klubb', label: 'Klubben' }]
-      : []),
-    // goal-64 GALLERIET: egen modul (0057). MODUL-GATEN ÄR HELIG — en modul som inte är
-    // live/paused ger NOLL länkar till sin sida (/galleri 404:ar med samma villkor).
-    ...(moduleState(moduleStates, 'galleri') === 'live' ||
-    moduleState(moduleStates, 'galleri') === 'paused'
-      ? [{ href: '/galleri', label: 'Galleri' }]
-      : []),
+    ...moduleLinks.filter((link) => link.href !== '/shop'),
     // goal-64 TEAMET: INGEN modul — det är kundens folk. Länken gatas därför på FÖREKOMST
     // (minst en aktiv medarbetare som valt att synas). Utan folk finns ingen sida att
     // länka till — samma render-on-present-regel som resten av storefronten.
@@ -213,6 +181,7 @@ export default async function PublicLayout({ children }: { children: React.React
           — sits inside the provider, so every "Boka tid" CTA opens the same
           slide-over drawer without ever leaving the salon's page. */}
       <BookingProvider
+        reachable={layoutModules.bookingReachable}
         services={wizardServices}
         locations={wizardLocations}
         tenantName={tenant.name}

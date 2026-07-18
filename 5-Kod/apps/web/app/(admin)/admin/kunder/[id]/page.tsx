@@ -28,7 +28,7 @@ const TIER_LABEL: Record<'guld' | 'silver' | 'brons' | 'ny', string> = {
   ny: 'Ny',
 }
 
-const CANCELLED = new Set(['cancelled', 'no_show'])
+const NON_VISIT = new Set(['pending', 'confirmed', 'cancelled', 'no_show'])
 
 export default async function CustomerCardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -51,7 +51,7 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
     getCustomerContact(id),
     getMyFavorites(id),
     getCustomerLoyalty(tenant.id, id),
-    getCustomerNotes(id),
+    getCustomerNotes(id, tenant.id),
   ])
 
   const tz = tenant.timeZone
@@ -60,13 +60,19 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
 
   // Härledda nyckeltal (ur historiken + ledger — aldrig fejkat).
   const totalCents = customer.history
-    .filter((b) => !CANCELLED.has(b.status))
+    .filter((b) => b.status === 'completed')
     .reduce((s, b) => s + (b.priceCents ?? 0), 0)
-  const cancelCount = customer.history.filter((b) => CANCELLED.has(b.status)).length
+  const cancelCount = customer.history.filter((b) =>
+    b.status === 'cancelled' || b.status === 'no_show',
+  ).length
 
   // NÄSTA = tidigaste kommande aktiva bokning (historiken är fallande sorterad).
   const upcoming = customer.history
-    .filter((b) => !CANCELLED.has(b.status) && new Date(b.startTs).getTime() >= now)
+    .filter(
+      (b) =>
+        (b.status === 'pending' || b.status === 'confirmed') &&
+        new Date(b.endTs).getTime() > now,
+    )
     .sort((a, b) => new Date(a.startTs).getTime() - new Date(b.startTs).getTime())[0]
 
   const favStaff = favs.find((f) => f.kind === 'staff')
@@ -92,7 +98,7 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
       shownName: customer.shownName,
       tier: loyalty ? TIER_LABEL[loyalty.tier] : '—',
       visits: customer.visits,
-      lastVisit: customer.lastSeenAt ? formatDateTime(customer.lastSeenAt, tz) : '—',
+      lastVisit: customer.lastVisitTs ? formatDateTime(customer.lastVisitTs, tz) : '—',
       favStaff: favStaff?.name ?? '—',
       loyaltyPoints: loyalty?.loyaltyPoints ?? 0,
     },
@@ -145,11 +151,11 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
           </div>
           <div className={styles.statCard}>
             <div className={styles.statNum}>{formatPrice(totalCents) || '0 kr'}</div>
-            <div className={styles.statLbl}>totalt bokat</div>
+            <div className={styles.statLbl}>genomfört tjänstevärde</div>
           </div>
           <div className={styles.statCard}>
             <div className={styles.statNum}>{cancelCount}</div>
-            <div className={styles.statLbl}>avbokningar</div>
+            <div className={styles.statLbl}>avbokat / uteblivet</div>
           </div>
           <div className={styles.statCard}>
             <div className={styles.statNum}>{loyalty ? loyalty.loyaltyPoints.toLocaleString('sv-SE') : '—'}</div>
@@ -274,13 +280,13 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
                 <div className={styles.emptyLine}>Inga bokningar kopplade till kunden ännu.</div>
               ) : (
                 customer.history.map((b) => {
-                  const cancelled = CANCELLED.has(b.status)
+                  const nonVisit = NON_VISIT.has(b.status)
                   return (
                     <div key={b.id} className={styles.hRow}>
                       <span className={styles.hDate}>{formatDateTime(b.startTs, tz)}</span>
-                      <span className={`${styles.hService} ${cancelled ? styles.hCancelled : ''}`}>
+                      <span className={`${styles.hService} ${nonVisit ? styles.hCancelled : ''}`}>
                         {b.serviceName}
-                        {cancelled ? ` — ${statusLabel(b.status).toLowerCase()}` : ''}
+                        {nonVisit ? ` — ${statusLabel(b.status).toLowerCase()}` : ''}
                       </span>
                       <span className={styles.hStaff}>
                         <span
@@ -290,8 +296,8 @@ export default async function CustomerCardPage({ params }: { params: Promise<{ i
                         />
                         {b.staffTitle}
                       </span>
-                      <span className={`${styles.hPrice} ${cancelled ? styles.hPriceCancelled : ''}`}>
-                        {cancelled ? '—' : formatPrice(b.priceCents)}
+                      <span className={`${styles.hPrice} ${nonVisit ? styles.hPriceCancelled : ''}`}>
+                        {nonVisit ? '—' : formatPrice(b.priceCents)}
                       </span>
                     </div>
                   )

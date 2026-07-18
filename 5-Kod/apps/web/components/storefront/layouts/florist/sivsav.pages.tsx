@@ -58,7 +58,8 @@ export function SivSavOm({ content, tenant }: ThemePageProps) {
   )
 }
 
-export function SivSavTjanster({ content, services }: ThemePageProps) {
+export function SivSavTjanster({ content, services, modules }: ThemePageProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.ssPage}>
       <p className={styles.ssEyebrow}>{content.servicesEyebrow}</p>
@@ -68,7 +69,7 @@ export function SivSavTjanster({ content, services }: ThemePageProps) {
       ) : (
         <div className={styles.ssServiceList}>
           {services.map((s) => (
-            <Bookable key={s.id} className={styles.ssServiceRow} label={`Boka — ${s.name}`}>
+            <Bookable enabled={bookingReachable} key={s.id} className={styles.ssServiceRow} label={`Boka — ${s.name}`}>
               <span>
                 <span className={styles.ssServiceName}>{s.name}</span>
                 <span className={styles.ssServiceDesc}>{serviceDesc(s)}</span>

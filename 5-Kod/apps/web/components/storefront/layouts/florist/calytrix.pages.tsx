@@ -71,7 +71,8 @@ export function CalytrixOm({ content, tenant }: ThemePageProps) {
   )
 }
 
-export function CalytrixTjanster({ content, services }: ThemePageProps) {
+export function CalytrixTjanster({ content, services, modules }: ThemePageProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.cxPageNarrow}>
       <h1 className={styles.cxPageTitle}>{content.servicesTitle}</h1>
@@ -85,7 +86,7 @@ export function CalytrixTjanster({ content, services }: ThemePageProps) {
       ) : (
         <div className={styles.cxCards2}>
           {services.map((s) => (
-            <Bookable key={s.id} className={styles.cxFact} label={`Beställ — ${s.name}`}>
+            <Bookable enabled={bookingReachable} key={s.id} className={styles.cxFact} label={`Beställ — ${s.name}`}>
               <span className={styles.cxFactEyebrow}>{s.name}</span>
               <span className={styles.cxFactValue}>{formatPrice(s)}</span>
               <span className={styles.cxFactText}>{serviceDesc(s)}</span>

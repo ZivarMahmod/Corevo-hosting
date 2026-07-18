@@ -10,7 +10,7 @@ import { IdentityHero } from '@/components/kund/IdentityHero'
 import { StylistCard } from '@/components/kund/StylistCard'
 import { AccountLoyalty } from '@/components/kund/AccountLoyalty'
 import { UsualCard } from '@/components/kund/UsualCard'
-import { AccountBookings, CancelledBookings } from '@/components/kund/AccountBookings'
+import { AccountBookings } from '@/components/kund/AccountBookings'
 import { AccountHistory } from '@/components/kund/AccountHistory'
 import { AccountPrivacy, type NameMode } from '@/components/kund/AccountPrivacy'
 import { PushOptIn } from '@/components/kund/PushOptIn'
@@ -101,7 +101,7 @@ export default async function KontoPage() {
     : []
 
   const [{ upcoming, past }, loyalty, favorites, staffFavorite, pointsPerVisit] = await Promise.all([
-    getMyBookings(user.id),
+    getMyBookings(user.id, tenantId),
     getLoyaltyView(user.id, tenantId, customerId),
     getMyFavorites(customerId),
     getCustomerStaffFavorite(customerId),
@@ -134,7 +134,6 @@ export default async function KontoPage() {
   }
 
   const next = upcoming.find((b) => b.status === 'pending' || b.status === 'confirmed') ?? null
-  const cancelled = past.filter((b) => b.status === 'cancelled')
   const historyTimeZone = past[0]?.timeZone ?? upcoming[0]?.timeZone ?? 'Europe/Stockholm'
   const favoriteStaffIds = favorites
     .filter((f) => f.kind === 'staff' && f.staffId)
@@ -197,8 +196,6 @@ export default async function KontoPage() {
       <UsualCard bookings={[...past, ...upcoming]} timeZone={historyTimeZone} />
 
       <AccountBookings upcoming={upcoming} />
-      <CancelledBookings cancelled={cancelled} />
-
       <AccountHistory past={past} pointsPerVisit={pointsPerVisit} />
 
       {/* Shipped capability preserved (the §4.8 mock shows only the favorited

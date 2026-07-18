@@ -29,7 +29,8 @@ import styles from './snitt.module.css'
  * SYNKRON komponent (ingen async, ingen 'use client') — onboarding-studions preview
  * renderar samma komponent.
  */
-export function SnittLayout({ content, services, location }: StorefrontLayoutProps) {
+export function SnittLayout({ content, services, location, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // Filen visar 2 + 2 + 1 rader på hemmet och HELA listan på prislistan. Vi klipper på
   // fem rader och behåller grupperingen — grupperna är tjänsternas egen kategori.
   const homeGroups = groupServices(services.slice(0, 5))
@@ -63,7 +64,7 @@ export function SnittLayout({ content, services, location }: StorefrontLayoutPro
             <div className={styles.snHeroFoot}>
               <p className={styles.snHeroLede}>{content.heroLede}</p>
               <div className={styles.snHeroCtas}>
-                <BookCta className={styles.snBtn} label="Boka nu" />
+                <BookCta enabled={bookingReachable} className={styles.snBtn} label="Boka nu" />
                 <Link href="/tjanster" className={styles.snBtnGhost}>
                   Tjänster
                 </Link>
@@ -107,7 +108,7 @@ export function SnittLayout({ content, services, location }: StorefrontLayoutPro
               <div key={g.name ?? `grupp-${i}`} className={styles.snGroup}>
                 {g.name ? <p className={styles.snGroupName}>{g.name}</p> : null}
                 {g.items.map((s) => (
-                  <SnittPriceRow key={s.id} service={s} />
+                  <SnittPriceRow key={s.id} service={s} enabled={bookingReachable} />
                 ))}
               </div>
             ))}
@@ -128,12 +129,12 @@ export function SnittLayout({ content, services, location }: StorefrontLayoutPro
               <h2 className={styles.snBandTitle}>
                 {content.pillar2Title ?? 'Hitta en tid som passar dig.'}
               </h2>
-              <BookCta className={styles.snBandCta} label="Boka nu" />
+              <BookCta enabled={bookingReachable} className={styles.snBandCta} label="Boka nu" />
             </div>
           </Reveal>
         </section>
 
-        {/* (5) OM STUDION + 5,0★-blocket */}
+        {/* (5) OM STUDION + verifierade, ägarsparade fakta när sådana finns */}
         <section className={styles.snSection}>
           <div className={styles.snAbout}>
             <Reveal>
@@ -192,6 +193,7 @@ export function SnittLayout({ content, services, location }: StorefrontLayoutPro
                       <p className={styles.snCardRole}>{m.role}</p>
                       {/* Filens "Boka Malik →" — plattformens <Bookable>, aldrig egen logik. */}
                       <Bookable
+                        enabled={bookingReachable}
                         as="span"
                         className={styles.snCardBook}
                         label={`Boka ${m.name}`}

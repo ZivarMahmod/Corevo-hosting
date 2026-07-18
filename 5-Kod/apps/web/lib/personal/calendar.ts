@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
 import { addDays, parseGuestName } from './format'
 import { resolveCustomerName } from './customer'
+import { sanitizeBookingNote } from '@/lib/booking/note'
 
 export type StaffBooking = {
   id: string
@@ -13,6 +14,7 @@ export type StaffBooking = {
   staffId: string
   serviceId: string | null
   serviceName: string | null
+  locationId: string
   /** NEW stable customer band (customers.id). null = guest/walk-in not linked. */
   customerId: string | null
   /** Resolved label for the row — never raw contact-PII (name/initial or "Kund"). */
@@ -30,6 +32,7 @@ type BookingJoinRow = {
   price_cents: number | null
   staff_id: string
   service_id: string | null
+  location_id: string
   customer_id: string | null
   note: string | null
   services: { name: string } | null
@@ -99,7 +102,7 @@ export async function getBookingsInRange(
   const { data } = await supabase
     .from('bookings')
     .select(
-      'id, status, start_ts, end_ts, price_cents, staff_id, service_id, customer_id, note, services(name), locations(timezone)',
+      'id, status, start_ts, end_ts, price_cents, staff_id, service_id, location_id, customer_id, note, services(name), locations(timezone)',
     )
     .in('staff_id', staffIds)
     .lt('start_ts', toUtc)
@@ -119,23 +122,27 @@ export async function getBookingsInRange(
     for (const c of custs ?? []) nameById.set(c.id, resolveCustomerName(c))
   }
 
-  return rows.map((r) => ({
-    id: r.id,
-    status: r.status,
-    startTs: r.start_ts,
-    endTs: r.end_ts,
-    priceCents: r.price_cents,
-    staffId: r.staff_id,
-    serviceId: r.service_id,
-    serviceName: r.services?.name ?? null,
-    customerId: r.customer_id,
-    customerLabel:
-      (r.customer_id ? nameById.get(r.customer_id) : null) ??
-      parseGuestName(r.note) ??
-      'Kund',
-    note: r.note,
-    timeZone: r.locations?.timezone ?? 'Europe/Stockholm',
-  }))
+  return rows.map((r) => {
+    const safeNote = sanitizeBookingNote(r.note)
+    return {
+      id: r.id,
+      status: r.status,
+      startTs: r.start_ts,
+      endTs: r.end_ts,
+      priceCents: r.price_cents,
+      staffId: r.staff_id,
+      serviceId: r.service_id,
+      serviceName: r.services?.name ?? null,
+      locationId: r.location_id,
+      customerId: r.customer_id,
+      customerLabel:
+        (r.customer_id ? nameById.get(r.customer_id) : null) ??
+        parseGuestName(safeNote) ??
+        'Kund',
+      note: safeNote,
+      timeZone: r.locations?.timezone ?? 'Europe/Stockholm',
+    }
+  })
 }
 
 // ── Frisör "idag" list with recognition context (M5 §3) ──────────────────────

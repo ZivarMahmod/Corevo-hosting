@@ -25,8 +25,8 @@ import card from './calytrix-modules.module.css'
  * bort mallen (CLAUDE.md § DESIGN-TROHET).
  *
  * MODUL-GATINGEN ÄR HELIG: är webshopen av finns inga köpknappar, inga produktkort och
- * ingen enda länk till /shop — heron faller då tillbaka på tjänstesidan. modules ===
- * undefined (studions statiska preview) → visa allt.
+ * ingen enda länk till /shop — heron faller då tillbaka på tjänstesidan. Saknad
+ * module-prop failar stängt; onboarding-previewns modulytor renderas separat.
  *
  * SYNKRON komponent (ingen async, ingen 'use client') — onboarding-studions preview
  * renderar samma komponent.
@@ -34,7 +34,7 @@ import card from './calytrix-modules.module.css'
 export function CalytrixLayout({ content, modules }: StorefrontLayoutProps) {
   // Filens hem visar FYRA produkter (`homeProducts = all.slice(0, 4)`).
   const products = (modules?.shopTeasers ?? []).slice(0, 4)
-  const shopReachable = modules ? modules.shopReachable : true
+  const shopReachable = modules?.shopReachable ?? false
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const deliveryPhoto = content.galleryImages[0] ?? content.heroImages[1] ?? ''

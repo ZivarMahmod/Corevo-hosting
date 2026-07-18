@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { bookingStatusPresentation } from '@/lib/booking/confirmation-status'
 import { useRouter } from 'next/navigation'
 import {
   getAvailableSlots,
@@ -214,6 +215,8 @@ export function BookingWizard({
   const [error, setError] = useState<string | null>(null)
   // Bekräftelse-steget (in-page): satt när bokningen lyckats utan online-betalning.
   const [bookingId, setBookingId] = useState<string | null>(null)
+  const [bookingStatus, setBookingStatus] = useState<'pending' | 'confirmed' | null>(null)
+  const bookingPresentation = bookingStatusPresentation(bookingStatus)
   // Step-3 specific load/error so it never gets confused with the empty state.
   const [slotsError, setSlotsError] = useState<string | null>(null)
   // "Tiden togs precis"-notis: visas överst i steg 3 efter en krock; överlever
@@ -429,6 +432,7 @@ export function BookingWizard({
           // IN-PAGE — vi byter till steg 5 i samma wizard istället för att navigera
           // bort. Rutten /boka/bekraftelse/[id] finns kvar som delbar djuplänk.
           setBookingId(res.bookingId)
+          setBookingStatus(res.bookingStatus)
           setStep(5)
         } else {
           // Fristående /boka-rutten: behåll den rika kvittosidan (med .ics +
@@ -466,6 +470,7 @@ export function BookingWizard({
     setSlotsError(null)
     setSlotTakenNotice(null)
     setBookingId(null)
+    setBookingStatus(null)
     setCalCursor(0)
     // Platsval nollställs till sitt utgångsläge (≤1 plats → auto; >1 wizard → grind;
     // >1 compact → default förvald).
@@ -1259,9 +1264,8 @@ export function BookingWizard({
           </div>
         )}
 
-        {/* Step 5 — BILJETTEN (in-page bekräftelse, ⭐ kärnkrav): ✓ BOKAT,
-            "Vi ses, {firstName}!", stub med BEKRÄFTAD-stämpel och dashed dividers.
-            Datan finns redan i wizarden (tjänst, tid, personal, pris, boknings-id). */}
+        {/* Step 5 — statusbiljetten. RPC-statusen styr all copy: en pending
+            förfrågan får aldrig presenteras som bokad eller kalenderklar. */}
         {step === 5 && service && slot && (
           <div className="fc-ticket-wrap">
             {/* H4: ritad bock (samma payoff som köp-rälsens kvitto). */}
@@ -1279,18 +1283,17 @@ export function BookingWizard({
                 <path className="fc-mark-path" d="M5 12.5l4.5 4.5L19 7.5" />
               </svg>
             </span>
-            <div className="fc-ticket-booked">BOKAT</div>
+            <div className="fc-ticket-booked">
+              {bookingPresentation.eyebrow}
+            </div>
             <h2 className="fc-ticket-title">
-              Vi ses{form.name.trim() ? `, ${form.name.trim().split(/\s+/)[0]}` : ''}!
+              {bookingPresentation.heading}
             </h2>
-            <p className="fc-ticket-sub">
-              Din tid är bokad.
-              {form.email.trim() ? ` En bekräftelse är på väg till ${form.email.trim()}.` : ''}
-            </p>
+            <p className="fc-ticket-sub">{bookingPresentation.message}</p>
 
             <div className="fc-ticket">
               <div className="fc-stamp" aria-hidden>
-                BEKRÄFTAD
+                {bookingPresentation.stamp}
               </div>
               <div className="fc-ticket-head">
                 <span className="fc-ticket-brand">{brandName || 'Bokning'}</span>
@@ -1315,13 +1318,15 @@ export function BookingWizard({
                 </span>
               </div>
               <div className="fc-ticket-foot">
-                <span className="fc-ticket-footlabel">Att betala på plats</span>
+                <span className="fc-ticket-footlabel">
+                  {bookingStatus === 'pending' ? 'Pris om tiden bekräftas' : 'Att betala på plats'}
+                </span>
                 <span className="fc-ticket-price">{kr.format(service.priceCents / 100)}</span>
               </div>
             </div>
 
             <div className="fc-ticket-actions">
-              {bookingId ? (
+              {bookingId && bookingPresentation.canAddToCalendar ? (
                 // Befintlig .ics-väg: kvittosidan bygger kalenderfilen server-side.
                 <Link href={`/boka/bekraftelse/${bookingId}`} className="fc-btn-ink">
                   Lägg till i kalender

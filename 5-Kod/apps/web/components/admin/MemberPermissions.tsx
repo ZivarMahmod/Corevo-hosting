@@ -93,7 +93,7 @@ export function MemberPermissions({ ownerEmail, members }: { ownerEmail: string;
         </div>
         {members.map((member) => <MemberRow key={member.id} member={member} />)}
       </div>
-      <p className={styles.accountNote}>Dela aldrig en inloggning. Varje ändring sparas på personligt konto och auditloggas.</p>
+      <p className={styles.accountNote}>Dela aldrig en inloggning. Sparade roll- och behörighetsändringar auditloggas med ditt konto.</p>
     </div>
   )
 }

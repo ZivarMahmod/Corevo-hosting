@@ -68,7 +68,7 @@ export function TenantContactForm({
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>Adress {flashBtn(address)}</span>
         <input name="address" defaultValue={address ?? ''} placeholder="Storgatan 1, 582 22 Linköping" />
         <span className={styles.hint}>
-          Kartan på Kontakt-sidan pekar på den här adressen (slås upp automatiskt när du sparar).
+          Om adressen kan hittas visas en karta på Kontakt-sidan. Annars visas adressen med en söklänk.
         </span>
       </label>
 

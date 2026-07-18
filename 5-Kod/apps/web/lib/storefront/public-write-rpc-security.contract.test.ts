@@ -8,7 +8,7 @@ const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replace
 describe('publika skriv-RPC:er', () => {
   it('går genom server-only writer efter appens rate-limit och validering', () => {
     const cases = [
-      ['apps/web/app/boka/actions.ts', "writer.rpc('create_public_booking'"],
+      ['apps/web/app/boka/actions.ts', "rpc('create_storefront_booking_with_release'"],
       ['apps/web/app/butik/actions.ts', "writer.rpc('reserve_shop_order'"],
       ['apps/web/lib/storefront/lojalitet/intake.ts', "writer.rpc('join_loyalty_club'"],
     ] as const
@@ -33,10 +33,26 @@ describe('publika skriv-RPC:er', () => {
       expect(migration).toContain(`grant execute on function public.${fn} to service_role`)
     }
 
-    const booking =
+    const customerBooking =
       'create_public_booking(text,uuid,uuid,timestamptz,text,uuid,text,text,text,uuid,uuid)'
-    expect(migration).toContain(`revoke all on function public.${booking} from anon`)
-    expect(migration).toContain(`grant execute on function public.${booking} to authenticated`)
-    expect(migration).toContain(`grant execute on function public.${booking} to service_role`)
+    const integrity = read('supabase/migrations/0093_public_booking_integrity.sql').toLowerCase()
+    const compactIntegrity = integrity.replace(/\s+/g, '')
+    expect(compactIntegrity).toContain(`revokeallonfunctionpublic.${customerBooking}`)
+    expect(compactIntegrity).toContain(`grantexecuteonfunctionpublic.${customerBooking}`)
+    expect(integrity).toContain('to authenticated')
+    expect(integrity).not.toMatch(
+      /grant execute on function public\.create_public_booking[\s\S]{0,180}to service_role/,
+    )
+
+    const release = read('supabase/migrations/0103_storefront_booking_release_truth.sql').toLowerCase()
+    const legacyStorefront =
+      'create_storefront_booking(text,uuid,uuid,timestamptz,text,text,text,text,uuid,uuid)'
+    const releasedStorefront =
+      'create_storefront_booking_with_release(text,uuid,uuid,timestamptz,text,text,text,text,uuid,uuid,boolean)'
+    const compactRelease = release.replace(/\s+/g, '')
+    expect(compactRelease).toContain(`revokeexecuteonfunctionpublic.${legacyStorefront}`)
+    expect(release).toContain('from service_role')
+    expect(compactRelease).toContain(`grantexecuteonfunctionpublic.${releasedStorefront}`)
+    expect(release).toContain('to service_role')
   })
 })

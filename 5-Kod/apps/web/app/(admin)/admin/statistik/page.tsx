@@ -41,20 +41,20 @@ function TopList({
   entries: Stats['topServices']
   gold?: boolean
 }) {
-  const max = Math.max(1, ...entries.map((e) => e.revenueCents))
+  const max = Math.max(1, ...entries.map((e) => e.realizedValueCents))
   return (
     <div className={styles.bars}>
       {entries.map((e) => (
         <div key={e.name} className={styles.bar}>
           <span className={styles.barName}>{e.name}</span>
-          <span className={`num ${styles.barValue}`}>{formatPrice(e.revenueCents)}</span>
+          <span className={`num ${styles.barValue}`}>{formatPrice(e.realizedValueCents)}</span>
           <div className={styles.barTrack}>
             <div
               className={`${styles.barFill} ${gold ? styles.barFillGold : ''}`}
-              style={{ width: `${Math.max(3, (e.revenueCents / max) * 100)}%` }}
+              style={{ width: `${Math.max(3, (e.realizedValueCents / max) * 100)}%` }}
             />
           </div>
-          <span className={styles.barMeta}>{e.count} bokningar</span>
+          <span className={styles.barMeta}>{e.count} genomförda</span>
         </div>
       ))}
     </div>
@@ -89,7 +89,7 @@ export default async function StatistikPage({
   searchParams: Promise<{ period?: string }>
 }) {
   const sp = await searchParams
-  // Områdesgrind, inte bara portalgolv: statistik läser verklig omsättningsdata och
+  // Områdesgrind, inte bara portalgolv: statistik läser verksamhetens bokningsdata och
   // kräver ägare (6) ELLER personligt beviljad can_view_daily_metrics (goal-71).
   const user = await requireAdminArea('statistik')
   const tenant = await getAdminTenant(user)
@@ -106,7 +106,7 @@ export default async function StatistikPage({
   const { from, to } = periodRange(period)
   const s = await getStats(tenant.id, from, to, tenant.timeZone)
 
-  const hasData = s.bookings > 0 || s.cancellations > 0
+  const hasData = s.bookings > 0 || s.cancellations > 0 || s.noShows > 0
   const customersTotal = s.newCustomers + s.returningCustomers
   const newShare = customersTotal > 0 ? (s.newCustomers / customersTotal) * 100 : 0
 
@@ -135,10 +135,10 @@ export default async function StatistikPage({
         <>
           <div className="bo-stat-grid">
             <Stat
-              label="Omsättning"
-              value={formatPrice(s.revenueCents)}
+              label="Bokningsvärde"
+              value={formatPrice(s.bookedValueCents)}
               icon="trendUp"
-              hint={<Delta value={s.deltas.revenue} />}
+              hint={<Delta value={s.deltas.bookedValue} />}
             />
             <Stat
               label="Bokningar"
@@ -153,10 +153,10 @@ export default async function StatistikPage({
               hint={<Delta value={s.deltas.occupancy} />}
             />
             <Stat
-              label="Snittpris"
-              value={formatPrice(s.avgOrderCents)}
+              label="Genomfört tjänstevärde"
+              value={formatPrice(s.realizedValueCents)}
               icon="dollar"
-              hint={<Delta value={s.deltas.avgOrder} />}
+              hint={<Delta value={s.deltas.realizedValue} />}
             />
             <Stat
               label="Avbokat"
@@ -165,20 +165,20 @@ export default async function StatistikPage({
               hint={<Delta value={s.deltas.cancellationRate} lowerIsBetter />}
             />
             {/* Uteblivna räknas på riktigt (status 'no_show', 0063). Talet bredvid är den
-                FÖRLORADE INTÄKTEN — poängen med att alls registrera en utebliven kund. */}
+                UTEBLIVNA BOKNINGSVÄRDET — inte påstådd betalning eller intäkt. */}
             <Stat
               label="Uteblivna"
               value={s.noShows}
               icon="clock"
-              hint={`${formatPrice(s.noShowLostCents)} förlorad intäkt`}
+              hint={`${formatPrice(s.noShowBookedValueCents)} bokningsvärde`}
             />
           </div>
 
           <div className={styles.section}>
             <div className={styles.sectionHead}>
-              <h2 className="h2">Vad tjänar företaget pengar på</h2>
+              <h2 className="h2">Genomförda tjänster</h2>
               <span className={`num ${styles.barValue}`}>
-                {formatPrice(s.avgPerHourCents)} / timme
+                {formatPrice(s.avgPerHourCents)} tjänstevärde / genomförd timme
               </span>
             </div>
             <div className={styles.split}>

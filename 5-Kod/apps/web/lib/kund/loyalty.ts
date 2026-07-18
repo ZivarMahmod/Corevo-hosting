@@ -11,10 +11,9 @@ import { createClient } from '@/lib/supabase/server'
 //
 // Two derived totals, deliberately distinct:
 //   · balance  = sum(points_delta)              — spendable (earns − redemptions)
-//   · lifetime = sum(positive earn_completed)   — tier basis; redeeming never
-//                                                 demotes you. Adjustments only
-//                                                 count toward lifetime when they
-//                                                 are positive earn-equivalents.
+//   · lifetime = original earn for bookings whose CURRENT outcome is completed,
+//                plus explicit positive non-booking adjustments. A no_show and
+//                its re-earn/reversal cycle can therefore never inflate a tier.
 // Tier is f(lifetime, thresholds), thresholds read from tenant_settings.settings
 // with a sane platform default (the salon may override per M6).
 
@@ -62,6 +61,28 @@ export type LoyaltyView = {
 }
 
 type SettingsShape = { loyalty?: { tiers?: unknown } }
+
+type LoyaltyTotalsRow = {
+  balance: number | string | null
+  lifetime: number | string | null
+  entry_count: number | string | null
+}
+
+export type LoyaltyTotals = { balance: number; lifetime: number; entryCount: number }
+
+function finiteInteger(value: number | string | null | undefined): number {
+  const parsed = typeof value === 'number' ? value : Number(value ?? 0)
+  return Number.isFinite(parsed) ? Math.trunc(parsed) : 0
+}
+
+/** Normalize Postgres bigint output without deriving lifetime from ledger deltas. */
+export function normalizeLoyaltyTotals(row: LoyaltyTotalsRow | null): LoyaltyTotals {
+  return {
+    balance: finiteInteger(row?.balance),
+    lifetime: Math.max(0, finiteInteger(row?.lifetime)),
+    entryCount: Math.max(0, finiteInteger(row?.entry_count)),
+  }
+}
 
 /** Read + validate per-tenant tier thresholds; fall back to the platform default
  *  for anything missing/malformed. Mirrors the safe-default pattern in
@@ -112,9 +133,9 @@ function tierFor(lifetime: number, tiers: LoyaltyTier[]): { tier: LoyaltyTier; n
  * private.tenant_id() already scope the ledger — no cross-salon aggregation.
  *
  * `customerId` is the caller-resolved customers.id (or null when none exists yet);
- * passed in so the page's single getCustomerId read is reused. The visit band is
- * keyed on customer_profile_id (the live ownership key), so it works even when
- * customerId is null.
+ * passed in so the page's single getCustomerId read is reused. The visit band
+ * accepts both the legacy profile key and the durable customer key so a securely
+ * claimed guest visit remains part of the relationship after account creation.
  */
 export async function getLoyaltyView(
   userId: string,
@@ -123,22 +144,34 @@ export async function getLoyaltyView(
 ): Promise<LoyaltyView> {
   const supabase = await createClient()
 
-  // Tier thresholds (safe default when unset). configured == owner opted in.
-  const { data: settingsRow } = await supabase
-    .from('tenant_settings')
-    .select('settings')
-    .eq('tenant_id', tenantId)
-    .maybeSingle()
-  const { tiers, configured } = parseTiers(settingsRow?.settings)
+  const totalsPromise = customerId
+    ? supabase.rpc('customer_loyalty_totals', {
+        p_tenant: tenantId,
+        p_customer: customerId,
+      })
+    : Promise.resolve({ data: null, error: null })
 
-  // Completed visits per staff — the "sett Erik X ggr" band. Keyed on
-  // customer_profile_id (the live ownership key the portal already uses), so it
-  // works even before a customers row exists. Only genuinely completed visits.
-  const { data: completedRows } = await supabase
+  // Oberoende reads parallellt. Besöksbandet har ett explicit tenantfilter även
+  // om RLS också fencar, och ledgeraggregatet görs i DB utan 1000-radstak.
+  let completedVisitsQuery = supabase
     .from('bookings')
     .select('staff_id, staff(title)')
-    .eq('customer_profile_id', userId)
+    .eq('tenant_id', tenantId)
     .eq('status', 'completed')
+  completedVisitsQuery = customerId
+    ? completedVisitsQuery.or(`customer_profile_id.eq.${userId},customer_id.eq.${customerId}`)
+    : completedVisitsQuery.eq('customer_profile_id', userId)
+
+  const [{ data: settingsRow }, { data: completedRows }, { data: totalsRows }] = await Promise.all([
+    supabase
+      .from('tenant_settings')
+      .select('settings')
+      .eq('tenant_id', tenantId)
+      .maybeSingle(),
+    completedVisitsQuery,
+    totalsPromise,
+  ])
+  const { tiers, configured } = parseTiers(settingsRow?.settings)
 
   type CompletedRow = { staff_id: string; staff: { title: string | null } | null }
   const rows = (completedRows ?? []) as unknown as CompletedRow[]
@@ -152,26 +185,11 @@ export async function getLoyaltyView(
   }
   const staffBands = [...byStaff.values()].sort((a, b) => b.visits - a.visits)
 
-  // Ledger totals — only if a customers row exists (the ledger keys on it).
-  let balance = 0
-  let lifetime = 0
-  let hasLedger = false
-  if (customerId) {
-    const { data: ledger } = await supabase
-      .from('loyalty_ledger')
-      .select('points_delta, reason')
-      .eq('customer_id', customerId)
-    const entries = (ledger ?? []) as { points_delta: number; reason: string }[]
-    hasLedger = entries.length > 0
-    for (const e of entries) {
-      balance += e.points_delta
-      // lifetime (tier basis): positive earns + positive adjustments; never
-      // reduced by redemptions or negative adjustments.
-      if (e.points_delta > 0 && (e.reason === 'earn_completed' || e.reason === 'adjustment')) {
-        lifetime += e.points_delta
-      }
-    }
-  }
+  const totals = normalizeLoyaltyTotals(
+    ((totalsRows as unknown as LoyaltyTotalsRow[] | null)?.[0] ?? null),
+  )
+  const { balance, lifetime } = totals
+  const hasLedger = totals.entryCount > 0
 
   const { tier, next } = tierFor(lifetime, tiers)
   const toNextTier = next ? Math.max(0, next.threshold - lifetime) : 0

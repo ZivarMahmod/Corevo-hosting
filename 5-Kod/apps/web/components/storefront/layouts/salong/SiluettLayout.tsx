@@ -32,11 +32,12 @@ import styles from './siluett.module.css'
  * renderar samma komponent.
  */
 export function SiluettLayout({ content, services, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // Filen visar TRE signaturer på hemmet. Datan är salongens egen prislista.
   const signatures = services.slice(0, 3)
-  // modules === undefined (studions statiska preview) → visa allt.
+  // Saknad reachability ska aldrig skapa en länk; onboarding-previewns modulytor renderas separat.
   const posts = modules ? modules.bloggTeasers.slice(0, 3) : []
-  const bloggReachable = modules ? modules.bloggTeasers.length > 0 : true
+  const bloggReachable = (modules?.bloggTeasers.length ?? 0) > 0
   // Team = ägarens uppladdade (content.team). Tom → ingen sektion.
   const team = content.team.slice(0, 4)
 
@@ -58,7 +59,7 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
           <h1 className={styles.siHeroTitle}>{content.heroTitle}</h1>
           <p className={styles.siHeroLede}>{content.heroLede}</p>
           <div className={styles.siHeroCtas}>
-            <BookCta className={styles.siSolid} label="Boka en stol" />
+            <BookCta enabled={bookingReachable} className={styles.siSolid} label="Boka en stol" />
             <Link href="/tjanster" className={styles.siUnderline}>
               Hela prislistan
             </Link>
@@ -109,7 +110,7 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
             {signatures.map((s, i) => (
               <li key={s.id}>
                 <Reveal delay={i * 90}>
-                  <Bookable className={styles.siSigCard} label={`Boka — ${s.name}`}>
+                  <Bookable enabled={bookingReachable} className={styles.siSigCard} label={`Boka — ${s.name}`}>
                     <p className={styles.siSigNo}>N°{String(i + 1).padStart(2, '0')}</p>
                     <h3 className={styles.siSigName}>{s.name}</h3>
                     <p className={styles.siSigDesc}>{serviceDesc(s)}</p>
@@ -160,7 +161,7 @@ export function SiluettLayout({ content, services, modules }: StorefrontLayoutPr
             {team.map((m, i) => (
               <li key={m.name}>
                 <Reveal delay={i * 90}>
-                  <Bookable label={`Boka ${m.name}`}>
+                  <Bookable enabled={bookingReachable} label={`Boka ${m.name}`}>
                     <div
                       className={styles.siTeamPhoto}
                       style={m.img ? { backgroundImage: `url(${m.img})` } : undefined}

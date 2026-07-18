@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { verifiedMapForAddress } from '@/lib/storefront/address-map'
 
 // Runs INSIDE the /salong-preview iframe. Listens for live brand-token patches posted
 // by the parent Sida editor (same-origin only) and applies them as CSS vars on the
@@ -390,12 +391,15 @@ function syncMapPreview(snapshot: SiteSnapshotPreview) {
   const rawMap = isRecord(snapshot.settings.map) ? snapshot.settings.map : null
   const lat = typeof rawMap?.lat === 'number' && Number.isFinite(rawMap.lat) ? rawMap.lat : null
   const lon = typeof rawMap?.lon === 'number' && Number.isFinite(rawMap.lon) ? rawMap.lon : null
-  const validMap = lat !== null && lon !== null && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
+  const q = typeof rawMap?.q === 'string' ? rawMap.q : null
+  const verifiedMap = lat !== null && lon !== null
+    ? verifiedMapForAddress({ lat, lon, q }, address)
+    : null
   const mapHref = address
     ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`
     : ''
-  const mapEmbed = validMap
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${(lon - 0.004).toFixed(5)}%2C${(lat - 0.0025).toFixed(5)}%2C${(lon + 0.004).toFixed(5)}%2C${(lat + 0.0025).toFixed(5)}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lon.toFixed(6)}`
+  const mapEmbed = verifiedMap
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${(verifiedMap.lon - 0.004).toFixed(5)}%2C${(verifiedMap.lat - 0.0025).toFixed(5)}%2C${(verifiedMap.lon + 0.004).toFixed(5)}%2C${(verifiedMap.lat + 0.0025).toFixed(5)}&layer=mapnik&marker=${verifiedMap.lat.toFixed(6)}%2C${verifiedMap.lon.toFixed(6)}`
     : ''
 
   document.querySelectorAll<HTMLAnchorElement>('[data-corevo-map-link]').forEach((link) => {

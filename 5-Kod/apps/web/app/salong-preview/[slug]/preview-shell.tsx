@@ -21,6 +21,7 @@ import { getTenantModuleStates, moduleState } from '@/lib/tenant-modules'
 import { loadUpcomingEvents } from '@/lib/storefront/kurser/load-kurser'
 import { loadTeamMembers } from '@/lib/storefront/team/load-team'
 import { themeChrome } from '@/components/storefront/layouts/florist/layouts'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 import { SidaPreviewBridge } from '@/components/platform/SidaPreviewBridge'
 import storefront from '@/components/storefront/storefront.module.css'
 
@@ -121,8 +122,9 @@ export async function PreviewShell({
   // Nu exakt samma chrome-dispatch + modul-gatade länklista + bransch-CTA som
   // app/(public)/layout.tsx. OBS: chromen följer ?theme= (previewens hela poäng).
   const chrome = themeChrome(theme)
+  const commerceRelease = commerceReleaseGate(tenant.id)
   const shopState = moduleState(moduleStates, 'shop')
-  const cartEnabled = shopState === 'live' || shopState === 'paused'
+  const cartEnabled = commerceRelease.shop && (shopState === 'live' || shopState === 'paused')
   const navLinks = [
     { href: '/', label: 'Hem' },
     ...(cartEnabled ? [{ href: '/shop', label: 'Butik' }] : []),
@@ -137,8 +139,9 @@ export async function PreviewShell({
     ...(moduleState(moduleStates, 'offert') === 'live' || moduleState(moduleStates, 'offert') === 'paused'
       ? [{ href: '/offert', label: 'Offert' }]
       : []),
-    ...(moduleState(moduleStates, 'presentkort') === 'live' ||
-    moduleState(moduleStates, 'presentkort') === 'paused'
+    ...(commerceRelease.presentkort &&
+    (moduleState(moduleStates, 'presentkort') === 'live' ||
+    moduleState(moduleStates, 'presentkort') === 'paused')
       ? [{ href: '/presentkort', label: 'Presentkort' }]
       : []),
     // goal-64: klubben (/klubb) — samma modul-gate som publika layouten, annars visar
@@ -169,7 +172,10 @@ export async function PreviewShell({
     ? CTA_HREF_MODULE[`/${rawPrimaryCta.href.split('/')[1] ?? ''}`]
     : undefined
   const primaryCta =
-    rawPrimaryCta && (!ctaModule || moduleState(moduleStates, ctaModule) === 'live')
+    rawPrimaryCta &&
+    !(ctaModule === 'shop' && !commerceRelease.shop) &&
+    !(ctaModule === 'presentkort' && !commerceRelease.presentkort) &&
+    (!ctaModule || moduleState(moduleStates, ctaModule) === 'live')
       ? rawPrimaryCta
       : null
 

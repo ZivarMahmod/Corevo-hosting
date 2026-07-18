@@ -31,10 +31,10 @@ export function EloriaLayout({ content, tenant, modules }: StorefrontLayoutProps
   // Filen visar TRE kompositioner på hemmet (`homeCatalog: catalog.slice(0, 3)`).
   const catalog = (modules?.shopTeasers ?? []).slice(0, 3)
   const posts = (modules?.bloggTeasers ?? []).slice(0, 3)
-  // modules === undefined (studions statiska preview) → visa allt.
-  const shopReachable = modules ? modules.shopReachable : true
-  const offertReachable = modules ? modules.offertReachable : true
-  const bloggReachable = modules ? modules.bloggTeasers.length > 0 : true
+  // Saknad reachability failar stängt; onboarding-previewns modulytor renderas separat.
+  const shopReachable = modules?.shopReachable ?? false
+  const offertReachable = modules?.offertReachable ?? false
+  const bloggReachable = (modules?.bloggTeasers.length ?? 0) > 0
 
   const spreadA = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const spreadB = content.heroImages[1] ?? content.galleryImages[1] ?? ''

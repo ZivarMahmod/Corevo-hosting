@@ -10,6 +10,7 @@ import { CheckoutForm } from '@/app/butik/kassa/CheckoutForm'
 import { SubpageHero } from '@/components/storefront/sections'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import s from './kassa.module.css'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 // ZIVARS LAG (goal-62): MALLEN ÄGER SIDAN. En mall med egen kassa-scen bygger sin egen;
 // funktionen (reserve/confirm, valideringar, CheckoutLoader) är EN och delad. Mallar
@@ -29,6 +30,7 @@ export default async function KassaPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant } = bundle
+  if (!commerceReleaseGate(tenant.id).shop) notFound()
 
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   if (!isModuleLive(states, 'shop')) {

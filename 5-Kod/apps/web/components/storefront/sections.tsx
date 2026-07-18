@@ -1,5 +1,6 @@
 import { BookCta } from '@/components/brand/BookCta'
 import { currentTenant } from '@/lib/tenant-data'
+import { verifiedMapForAddress } from '@/lib/storefront/address-map'
 import { Reveal } from './Reveal'
 import { Parallax } from './Parallax'
 import type { ResolvedThemeContent } from './theme-content'
@@ -172,7 +173,7 @@ export async function LocationHours({
   const location = bundle?.location ?? null
   const contact = bundle?.settings.contact ?? { email: null, phone: null }
   const social = bundle?.settings.social ?? { instagram: null, facebook: null, tiktok: null }
-  const map = bundle?.settings.map ?? null
+  const map = verifiedMapForAddress(bundle?.settings.map, bundle?.location?.address)
   const address = location?.address ?? null
   const hours = location?.hours ?? null
   const editorHours = EDITOR_DAYS.map((day) => ({

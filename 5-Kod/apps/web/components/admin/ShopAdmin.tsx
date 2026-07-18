@@ -390,7 +390,7 @@ function PaymentSection({
       <Card>
         <form action={action}>
           <TenantField />
-          {SHOP_PAYMENT_METHODS.map((m) => {
+          {SHOP_PAYMENT_METHODS.filter((method) => method.id !== 'paypal' || paypalReady).map((m) => {
             // Kort/Swish/Klarna/Apple Pay går via kundens Stripe; PayPal via plattformens.
             const connected = m.id === 'paypal' ? paypalReady : stripeReady
             return (

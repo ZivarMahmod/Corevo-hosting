@@ -17,6 +17,8 @@ export type StripeConnectCardProps = {
   payoutsEnabled: boolean
   detailsSubmitted: boolean
   paymentsEnabled: boolean
+  /** Effective code-release gate. A configured DB toggle is not a runtime release. */
+  releaseEnabled: boolean
   /** True right after returning from the Stripe-hosted onboarding (?stripe=return). */
   justReturned: boolean
   /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
@@ -60,7 +62,8 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
   // Gated DISABLED until Stripe charges are enabled (honest "can't enable yet"),
   // so it is never a dead toggle — it is the real wired payments_enabled control.
   const toggleRef = useRef<HTMLFormElement>(null)
-  const canToggle = props.paymentsEnabled || props.chargesEnabled
+  const canToggle = props.paymentsEnabled || (props.releaseEnabled && props.chargesEnabled)
+  const effectivePaymentsEnabled = props.releaseEnabled && props.paymentsEnabled
 
   const feedback =
     onboardState.error ||
@@ -97,14 +100,16 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
               }}
             >
               Betalning vid bokning
-              {props.paymentsEnabled ? (
+              {effectivePaymentsEnabled ? (
                 <span className="ppill ppill--on">Aktiv</span>
               ) : (
                 <span className="ppill ppill--off">Av</span>
               )}
             </span>
             <span style={{ opacity: 0.72, fontSize: '0.9rem' }}>
-              {canToggle
+              {!props.releaseEnabled
+                ? 'Inte frisläppt för pilotdrift — kunden betalar på plats.'
+                : canToggle
                 ? 'Kunden betalar online när tiden bokas — pengarna går rakt till ditt företag.'
                 : 'Koppla Stripe och slutför onboarding nedan för att kunna ta betalt vid bokning.'}
             </span>
@@ -112,7 +117,7 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
           <input
             className="pswitch"
             type="checkbox"
-            checked={props.paymentsEnabled}
+            checked={effectivePaymentsEnabled}
             disabled={toggling || !canToggle}
             onChange={() => toggleRef.current?.requestSubmit()}
             aria-label="Betalning vid bokning"
@@ -121,7 +126,7 @@ export function StripeConnectCard(props: StripeConnectCardProps) {
       </form>
 
       {/* No-show-skydd (mockens amber sköld). Visas medan betalning vid bokning är på. */}
-      {props.paymentsEnabled ? (
+      {effectivePaymentsEnabled ? (
         <Callout tone="warning" icon="shield">
           Skydd: en sen kund eller no-show markeras aldrig automatiskt som klar + betald.
         </Callout>

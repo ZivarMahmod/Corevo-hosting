@@ -99,6 +99,7 @@ describe('auth + api are always allowed on every back-office host', () => {
       expect(decide(h, '/ingen-atkomst')).toEqual({ action: 'pass' })
       expect(decide(h, '/glomt-losenord')).toEqual({ action: 'pass' })
       expect(decide(h, '/aterstall-losenord')).toEqual({ action: 'pass' })
+      expect(decide(h, '/fortsatt')).toEqual({ action: 'pass' })
       expect(decide(h, '/api/stripe/webhook')).toEqual({ action: 'pass' })
       expect(decide(h, '/api')).toEqual({ action: 'pass' })
     })

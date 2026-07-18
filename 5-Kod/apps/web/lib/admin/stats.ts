@@ -13,14 +13,12 @@ import { createClient } from '@/lib/supabase/server'
  * mönster som lib/admin/data.ts.
  */
 
-/** Bokningar som räknas som pengar/besök. `no_show` står MEDVETET utanför: en kund som
- *  aldrig kom är varken omsättning, genomförd bokning, bokad minut, topplistetjänst
- *  eller en punkt i trendgrafen. Räknades den med skulle statistiken påstå intäkter
- *  företaget aldrig fick. */
-const ACTIVE: readonly string[] = ['pending', 'confirmed', 'completed']
+/** Bokningar som reserverar kapacitet och därför ingår i bokningsvärde/beläggning. */
+const BOOKED: readonly string[] = ['pending', 'confirmed', 'completed']
+const COMPLETED = 'completed'
 const CANCELLED = 'cancelled'
-/** Uteblivet besök — RIKTIG status i DB:n (0063). Räknas separat: antal + förlorad
- *  intäkt (priset står kvar på raden, det är hela poängen med att kunna registrera den). */
+/** Uteblivet besök — RIKTIG status i DB:n (0063). Räknas separat: antal + den
+ *  bokade pris-snapshoten, utan att kalla den betald intäkt. */
 const NO_SHOW = 'no_show'
 
 /** Antaget arbetspass när tenanten inte lagt in några arbetstider alls. */
@@ -62,29 +60,41 @@ export type StatsInput = {
 
 // ── ut-typer ─────────────────────────────────────────────────────────────────
 
-export type TopEntry = { name: string; count: number; revenueCents: number }
+export type TopEntry = { name: string; count: number; realizedValueCents: number }
 export type HourEntry = { hour: number; count: number }
-export type MonthEntry = { month: string; bookings: number; revenueCents: number }
+export type MonthEntry = {
+  month: string
+  bookings: number
+  completedBookings: number
+  bookedValueCents: number
+  realizedValueCents: number
+}
 
 /** Förändring mot föregående period i procent. null = föregående period var 0 →
  *  "∞ %" är ingen sanning, det är en division med noll. UI:t visar "–". */
 export type Delta = number | null
 
 export type Stats = {
-  revenueCents: number
+  /** Pris-snapshot för pending + confirmed + completed. Inte betalning eller omsättning. */
+  bookedValueCents: number
+  /** Pris-snapshot endast för completed. Inte verifierad betalning utan POS/payment ledger. */
+  realizedValueCents: number
   bookings: number
+  completedBookings: number
   cancellations: number
   /** avbokade / (aktiva + avbokade), 0–1. */
   cancellationRate: number
   /** Antal bokningar med status 'no_show' i perioden. */
   noShows: number
-  /** Förlorad intäkt: summa price_cents på de uteblivna. Ingår ALDRIG i revenueCents. */
-  noShowLostCents: number
+  /** Pris-snapshot på uteblivna. Det är bokningsvärde, inte bevisad intäkt. */
+  noShowBookedValueCents: number
   /** bokade minuter / tillgängliga arbetsminuter, 0–1 (kan överstiga 1 vid dubbelbokning). */
   occupancyRate: number
   bookedMinutes: number
+  completedMinutes: number
   availableMinutes: number
-  avgOrderCents: number
+  avgBookingValueCents: number
+  avgCompletedServiceValueCents: number
   avgPerMinuteCents: number
   avgPerHourCents: number
   avgDurationMin: number
@@ -101,10 +111,11 @@ export type Stats = {
   quietHours: HourEntry[]
   byMonth: MonthEntry[]
   deltas: {
-    revenue: Delta
+    bookedValue: Delta
+    realizedValue: Delta
     bookings: Delta
     occupancy: Delta
-    avgOrder: Delta
+    avgBookingValue: Delta
     cancellationRate: Delta
   }
 }
@@ -184,23 +195,29 @@ function durationMin(b: StatBooking): number {
 }
 
 function sums(rows: StatBooking[]): {
-  active: StatBooking[]
-  revenueCents: number
+  booked: StatBooking[]
+  completed: StatBooking[]
+  bookedValueCents: number
+  realizedValueCents: number
   bookedMinutes: number
+  completedMinutes: number
   cancellations: number
   noShows: number
-  noShowLostCents: number
+  noShowBookedValueCents: number
 } {
-  const active = rows.filter((b) => ACTIVE.includes(b.status))
+  const booked = rows.filter((b) => BOOKED.includes(b.status))
+  const completed = rows.filter((b) => b.status === COMPLETED)
   const noShow = rows.filter((b) => b.status === NO_SHOW)
   return {
-    active,
-    // Uteblivna ligger utanför `active` → varken omsättning eller bokade minuter.
-    revenueCents: active.reduce((s, b) => s + (b.priceCents ?? 0), 0),
-    bookedMinutes: active.reduce((s, b) => s + durationMin(b), 0),
+    booked,
+    completed,
+    bookedValueCents: booked.reduce((s, b) => s + (b.priceCents ?? 0), 0),
+    realizedValueCents: completed.reduce((s, b) => s + (b.priceCents ?? 0), 0),
+    bookedMinutes: booked.reduce((s, b) => s + durationMin(b), 0),
+    completedMinutes: completed.reduce((s, b) => s + durationMin(b), 0),
     cancellations: rows.filter((b) => b.status === CANCELLED).length,
     noShows: noShow.length,
-    noShowLostCents: noShow.reduce((s, b) => s + (b.priceCents ?? 0), 0),
+    noShowBookedValueCents: noShow.reduce((s, b) => s + (b.priceCents ?? 0), 0),
   }
 }
 
@@ -237,13 +254,13 @@ function tops(rows: StatBooking[], keyOf: (b: StatBooking) => string): TopEntry[
   const map = new Map<string, TopEntry>()
   for (const b of rows) {
     const name = keyOf(b)
-    const e = map.get(name) ?? { name, count: 0, revenueCents: 0 }
+    const e = map.get(name) ?? { name, count: 0, realizedValueCents: 0 }
     e.count += 1
-    e.revenueCents += b.priceCents ?? 0
+    e.realizedValueCents += b.priceCents ?? 0
     map.set(name, e)
   }
   return [...map.values()]
-    .sort((a, b) => b.revenueCents - a.revenueCents || b.count - a.count)
+    .sort((a, b) => b.realizedValueCents - a.realizedValueCents || b.count - a.count)
     .slice(0, 5)
 }
 
@@ -253,14 +270,15 @@ export function aggregateStats(input: StatsInput): Stats {
   const cur = sums(rows)
   const prev = sums(prevRows)
 
-  const bookings = cur.active.length
+  const bookings = cur.booked.length
+  const completedBookings = cur.completed.length
   // Nämnaren = ALLA avgjorda bokningar, alltså även de uteblivna. En utebliven tid var
   // en verklig bokning; låg den utanför nämnaren skulle avbokningsgraden räknas på ett
   // för litet underlag och se värre ut än den är. Täljaren är fortfarande bara avbokat —
-  // uteblivet har sitt eget tal (noShows + noShowLostCents).
+  // uteblivet har sitt eget tal (noShows + noShowBookedValueCents).
   const totalDecided = bookings + cur.cancellations + cur.noShows
   const cancellationRate = totalDecided > 0 ? cur.cancellations / totalDecided : 0
-  const prevDecided = prev.active.length + prev.cancellations + prev.noShows
+  const prevDecided = prev.booked.length + prev.cancellations + prev.noShows
   const prevCancellationRate = prevDecided > 0 ? prev.cancellations / prevDecided : 0
 
   const avail = availableMinutes(shifts, activeStaff, from, to, timeZone)
@@ -271,17 +289,20 @@ export function aggregateStats(input: StatsInput): Stats {
   const occupancyRate = avail > 0 ? cur.bookedMinutes / avail : 0
   const prevOccupancy = prevAvail > 0 ? prev.bookedMinutes / prevAvail : 0
 
-  const avgOrderCents = bookings > 0 ? Math.round(cur.revenueCents / bookings) : 0
-  const prevAvgOrder = prev.active.length > 0 ? Math.round(prev.revenueCents / prev.active.length) : 0
+  const avgBookingValueCents = bookings > 0 ? Math.round(cur.bookedValueCents / bookings) : 0
+  const prevAvgBookingValue =
+    prev.booked.length > 0 ? Math.round(prev.bookedValueCents / prev.booked.length) : 0
+  const avgCompletedServiceValueCents =
+    completedBookings > 0 ? Math.round(cur.realizedValueCents / completedBookings) : 0
   const avgDurationMin = bookings > 0 ? Math.round(cur.bookedMinutes / bookings) : 0
   const avgPerMinuteCents =
-    cur.bookedMinutes > 0 ? Math.round(cur.revenueCents / cur.bookedMinutes) : 0
+    cur.completedMinutes > 0 ? Math.round(cur.realizedValueCents / cur.completedMinutes) : 0
   const avgPerHourCents = avgPerMinuteCents * 60
 
   // Kunderna: en kund vars first_seen_at ligger i perioden är NY, annars återkommande.
   const firstSeen = new Map(customers.map((c) => [c.id, c.firstSeenAt]))
   const perCustomer = new Map<string, number>()
-  for (const b of cur.active) {
+  for (const b of cur.completed) {
     if (!b.customerId) continue
     perCustomer.set(b.customerId, (perCustomer.get(b.customerId) ?? 0) + 1)
   }
@@ -299,7 +320,7 @@ export function aggregateStats(input: StatsInput): Stats {
   // Veckodag: DB:n är 0=sön, läsordningen är mån→sön. Vi vänder EN gång, här.
   const byWeekday = new Array<number>(7).fill(0)
   const hourCounts = new Map<number, number>()
-  for (const b of cur.active) {
+  for (const b of cur.booked) {
     const { weekday, hour } = partsInTz(b.startTs, timeZone)
     byWeekday[(weekday + 6) % 7]! += 1
     hourCounts.set(hour, (hourCounts.get(hour) ?? 0) + 1)
@@ -331,33 +352,48 @@ export function aggregateStats(input: StatsInput): Stats {
   for (let i = 11; i >= 0; i--) {
     const d = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - i, 1, 12))
     const key = d.toISOString().slice(0, 7)
-    monthMap.set(key, { month: key, bookings: 0, revenueCents: 0 })
+    monthMap.set(key, {
+      month: key,
+      bookings: 0,
+      completedBookings: 0,
+      bookedValueCents: 0,
+      realizedValueCents: 0,
+    })
   }
   for (const b of trendRows) {
-    if (!ACTIVE.includes(b.status)) continue
     const { month } = partsInTz(b.startTs, timeZone)
     const e = monthMap.get(month)
     if (!e) continue
-    e.bookings += 1
-    e.revenueCents += b.priceCents ?? 0
+    if (BOOKED.includes(b.status)) {
+      e.bookings += 1
+      e.bookedValueCents += b.priceCents ?? 0
+    }
+    if (b.status === COMPLETED) {
+      e.completedBookings += 1
+      e.realizedValueCents += b.priceCents ?? 0
+    }
   }
 
   return {
-    revenueCents: cur.revenueCents,
+    bookedValueCents: cur.bookedValueCents,
+    realizedValueCents: cur.realizedValueCents,
     bookings,
+    completedBookings,
     cancellations: cur.cancellations,
     cancellationRate,
     noShows: cur.noShows,
-    noShowLostCents: cur.noShowLostCents,
+    noShowBookedValueCents: cur.noShowBookedValueCents,
     occupancyRate,
     bookedMinutes: cur.bookedMinutes,
+    completedMinutes: cur.completedMinutes,
     availableMinutes: avail,
-    avgOrderCents,
+    avgBookingValueCents,
+    avgCompletedServiceValueCents,
     avgPerMinuteCents,
     avgPerHourCents,
     avgDurationMin,
-    topServices: tops(cur.active, (b) => b.serviceName),
-    topStaff: tops(cur.active, (b) => b.staffName),
+    topServices: tops(cur.completed, (b) => b.serviceName),
+    topStaff: tops(cur.completed, (b) => b.staffName),
     newCustomers,
     returningCustomers,
     retentionRate,
@@ -367,10 +403,11 @@ export function aggregateStats(input: StatsInput): Stats {
     quietHours,
     byMonth: [...monthMap.values()],
     deltas: {
-      revenue: pct(cur.revenueCents, prev.revenueCents),
-      bookings: pct(bookings, prev.active.length),
+      bookedValue: pct(cur.bookedValueCents, prev.bookedValueCents),
+      realizedValue: pct(cur.realizedValueCents, prev.realizedValueCents),
+      bookings: pct(bookings, prev.booked.length),
       occupancy: pct(occupancyRate, prevOccupancy),
-      avgOrder: pct(avgOrderCents, prevAvgOrder),
+      avgBookingValue: pct(avgBookingValueCents, prevAvgBookingValue),
       cancellationRate: pct(cancellationRate, prevCancellationRate),
     },
   }
@@ -379,6 +416,7 @@ export function aggregateStats(input: StatsInput): Stats {
 // ── läsvägen (3 selects) ─────────────────────────────────────────────────────
 
 type RawBooking = {
+  id: string
   start_ts: string
   end_ts: string
   status: string
@@ -387,6 +425,26 @@ type RawBooking = {
   customer_id: string | null
   services: { name: string } | null
   staff: { title: string | null } | null
+}
+
+type PageError = { message: string } | null
+
+/** PostgREST svarar normalt högst 1000 rader. Hämta alla sidor i stabil ordning
+ * (ordningen sätts av fetchPage-anroparen) och kasta vid minsta sidfel så en
+ * trunkerad rapport aldrig presenteras som komplett. */
+export async function collectAllPages<T>(
+  fetchPage: (from: number, to: number) => Promise<{ data: T[] | null; error: PageError }>,
+  pageSize = 1_000,
+): Promise<T[]> {
+  if (!Number.isSafeInteger(pageSize) || pageSize < 1) throw new Error('invalid page size')
+  const rows: T[] = []
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1)
+    if (error) throw new Error(error.message)
+    const page = data ?? []
+    rows.push(...page)
+    if (page.length < pageSize) return rows
+  }
 }
 
 function mapRow(b: RawBooking): StatBooking {
@@ -426,13 +484,22 @@ export async function getStats(
   ).toISOString()
   const windowFrom = prevFrom < trendFrom ? prevFrom : trendFrom
 
-  const [bookingRes, shiftRes, staffRes] = await Promise.all([
-    supabase
-      .from('bookings')
-      .select('start_ts, end_ts, status, price_cents, staff_id, customer_id, services(name), staff(title)')
-      .eq('tenant_id', tenantId)
-      .gte('start_ts', windowFrom)
-      .lt('start_ts', to),
+  const [bookingRows, shiftRes, staffRes] = await Promise.all([
+    collectAllPages<RawBooking>(async (from, toIndex) => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('id, start_ts, end_ts, status, price_cents, staff_id, customer_id, services(name), staff(title)')
+        .eq('tenant_id', tenantId)
+        .gte('start_ts', windowFrom)
+        .lt('start_ts', to)
+        .order('start_ts', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, toIndex)
+      return {
+        data: (data ?? []) as unknown as RawBooking[],
+        error: error ? { message: `getStats: ${error.message}` } : null,
+      }
+    }),
     supabase
       .from('working_hours')
       .select('staff_id, weekday, start_time, end_time')
@@ -444,11 +511,9 @@ export async function getStats(
       .eq('active', true),
   ])
 
-  // Kasta, svälj inte (B-10): en tyst tom statistiksida ser ut som "noll omsättning" —
+  // Kasta, svälj inte (B-10): en tyst tom statistiksida ser ut som "noll bokningsvärde" —
   // en farligare lögn än en felsida.
-  if (bookingRes.error) throw new Error(`getStats: ${bookingRes.error.message}`)
-
-  const all = ((bookingRes.data ?? []) as unknown as RawBooking[]).map(mapRow)
+  const all = bookingRows.map(mapRow)
   const rows = all.filter((b) => b.startTs >= from && b.startTs < to)
   const prevRows = all.filter((b) => b.startTs >= prevFrom && b.startTs < from)
   const trendRows = all.filter((b) => b.startTs >= trendFrom)
@@ -463,7 +528,7 @@ export async function getStats(
   }))
 
   // Prestanda C5: hämta first_seen_at BARA för kunderna som faktiskt bokat i perioden.
-  // aggregateStats slår bara upp firstSeen för periodens (cur.active) kunder — förr
+  // aggregateStats slår bara upp firstSeen för periodens completed-kunder — förr
   // lästes HELA kundtabellen, som PostgREST kapar vid 1000+ rader → newCustomers blev
   // TYST fel (och hela tabellen drogs in i isolatet). En scoped .in()-läsning ger
   // IDENTISKA siffror utan taket; aggregateStats-matematiken är helt oförändrad.

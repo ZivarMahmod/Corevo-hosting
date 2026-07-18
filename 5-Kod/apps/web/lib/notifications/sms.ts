@@ -1,145 +1,289 @@
 import 'server-only'
 import { logger } from '@/lib/observability'
-
-// SMS transport via 46elks (plan 006). Mirrors lib/notifications/email.ts's contract:
-// one module, one responsibility — deliver an already-rendered short message.
-//
-// Provider contract (46elks, verified against their API docs 2026-07-17):
-//   POST https://api.46elks.com/a1/sms
-//   Basic auth (api_username:api_password) — NOT Bearer.
-//   form-urlencoded body: from / to / message.
-//   `from` = alphanumeric sender id (max 11 chars a-z/0-9) OR an E.164 number.
-//   `to`   = recipient in E.164 (+46...).
-//
-// Graceful degrade (mirrors email.ts / lib/platform/service): without credentials,
-// sendSms logs a non-PII status and returns an explicit skipped result. SMS is
-// ALWAYS best-effort and a SECONDARY channel: email stays the primary
-// confirmation/reminder regardless, so a missing/failed SMS must never block a
-// booking, reminder, or cancellation.
-
-export type SmsResult = {
-  ok: boolean
-  skipped?: boolean
-  error?: string
-  /** 46elks meddelande-id — outbox.provider_ref (plan 014). */
-  providerId?: string
-  /** Kostnad i öre ur provider-svaret (46elks `cost` är i 1/10000 SEK). */
-  costOre?: number
-}
+import type { NotificationDeliveryResult } from './outbox'
+import { parseSmsDeliveryMode, type SmsDeliveryMode } from './settings'
 
 const ELKS_ENDPOINT = 'https://api.46elks.com/a1/sms'
 const DEFAULT_SENDER = 'Corevo'
+const CALLBACK_USERNAME = 'corevo'
+const PROVIDER_ID = /^s[a-f0-9]{32}$/
+const PROVIDER_TIMEOUT_MS = 8_000
 
-/**
- * Normalisera ett svenskt/internationellt nummer till E.164. Returnerar null när
- * numret är tvetydigt — vi skickar ALDRIG till en gissning.
- *  - `+46701234567` (redan E.164, med ev. mellanslag/bindestreck) → behålls rensat
- *  - `0046701234567` → `+46701234567`
- *  - `0701234567` (svenskt nationellt format, ledande 0) → `+46701234567`
- *  - allt annat → null
- */
+export type SmsResult =
+  | {
+      ok: true
+      mode: 'dry_run' | 'live'
+      simulated: boolean
+      providerId?: string
+      parts?: number
+      /** 46elks estimated_cost i 1/10000 av kontovalutan. */
+      estimatedCost?: number
+      /** Kostnad i öre, avrundad från 46elks cost/estimated_cost. */
+      costOre?: number
+    }
+  | {
+      ok: false
+      mode: SmsDeliveryMode
+      skipped?: boolean
+      providerId?: undefined
+      parts?: undefined
+      costOre?: undefined
+      error:
+        | 'transport_off'
+        | 'dry_run_requires_explicit_canary'
+        | 'tenant_sms_disabled'
+        | 'recipient_not_canary'
+        | 'transport_unavailable'
+        | 'invalid_recipient'
+        | 'empty_body'
+        | 'invalid_provider_response'
+        | 'network_error'
+        | 'request_timeout'
+        | `http_${number}`
+    }
+
+export type SendSmsArgs = {
+  to: string
+  body: string
+  from?: string
+  /** Krävs explicit i dry_run/live. Saknat värde är fail-closed. */
+  tenantSmsEnabled?: boolean
+  /** Endast den dedikerade outbox/canary-adaptern får provider-simulera. */
+  allowProviderDryRun?: boolean
+}
+
 export function toE164(raw: string): string | null {
   const cleaned = raw.replace(/[\s\-()]/g, '')
   if (/^\+\d{8,15}$/.test(cleaned)) return cleaned
   if (/^00\d{8,15}$/.test(cleaned)) return `+${cleaned.slice(2)}`
-  // Svenskt nationellt format: ledande 0 + 8-9 siffror (mobil 07x xxx xx xx).
   if (/^0\d{8,9}$/.test(cleaned)) return `+46${cleaned.slice(1)}`
   return null
 }
 
-/**
- * 46elks alfanumeriskt avsändar-ID: max 11 tecken a-z/A-Z/0-9. Tar salongsnamnet,
- * strippar allt otillåtet (mellanslag, åäö → bort), klipper till 11. Tomt resultat
- * → plattformsdefault 'Corevo'.
- */
 export function sanitizeSenderId(name?: string | null): string {
   const cleaned = (name ?? '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 11)
   return cleaned || DEFAULT_SENDER
 }
 
+function callbackUrl(): string | null {
+  const raw = process.env.SMS_46ELKS_CALLBACK_URL
+  const secret = process.env.SMS_46ELKS_CALLBACK_SECRET
+  if (!raw || !secret) return null
+  try {
+    const url = new URL(raw)
+    if (
+      url.protocol !== 'https:'
+      || url.username
+      || url.password
+      || url.search
+      || url.hash
+    ) return null
+    // 46elks dokumenterar Basic Auth via userinfo i whendelivered-URL:en.
+    // Providern omvandlar detta till Authorization; request-URL:en som når
+    // Workern saknar därför credentials och kan behållas i invocation-loggar.
+    url.username = CALLBACK_USERNAME
+    url.password = secret
+    return url.toString()
+  } catch {
+    return null
+  }
+}
+
+function canaryRecipients(): Set<string> {
+  const recipients = (process.env.SMS_CANARY_RECIPIENTS ?? '')
+    .split(',')
+    .map((value) => toE164(value.trim()))
+    .filter((value): value is string => value !== null)
+  return new Set(recipients)
+}
+
+function costOre(cost: number): number {
+  return Math.round(cost / 100)
+}
+
+function validNonNegativeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
+}
+
+function validParts(value: unknown): value is number {
+  return typeof value === 'number'
+    && Number.isSafeInteger(value)
+    && value >= 1
+    && value <= 255
+}
+
 /**
- * Send a single SMS via 46elks. NEVER throws — every failure path returns a typed
- * result so callers can treat it as fire-and-forget.
- *
- * `to` is a phone number (normalised to E.164 here; ambiguous numbers are refused);
- * `body` is a short plain-text Swedish message; `from` is the salon name (sanitised
- * to a valid alphanumeric sender id, default 'Corevo').
+ * 46elks-transport med fysisk trelägesgrind. Funktionen kastar aldrig och loggar
+ * enbart slutna koder. `off` kontrolleras innan payload/credentials och kan därför
+ * bevisas göra noll nätverkstrafik.
  */
-export async function sendSms(args: { to: string; body: string; from?: string }): Promise<SmsResult> {
+export async function sendSms(args: SendSmsArgs): Promise<SmsResult> {
+  const mode = parseSmsDeliveryMode(process.env.SMS_DELIVERY_MODE)
+  if (mode === 'off') {
+    logger.info('sms.transport_off')
+    return { ok: false, skipped: true, mode, error: 'transport_off' }
+  }
+
+  if (mode === 'dry_run' && args.allowProviderDryRun !== true) {
+    logger.info('sms.dry_run_requires_explicit_canary')
+    return {
+      ok: false,
+      skipped: true,
+      mode,
+      error: 'dry_run_requires_explicit_canary',
+    }
+  }
+
   const to = args.to?.trim()
-  // Räkna TOTALA siffror, inte siffror-i-rad: '070-123 45 67' är ett giltigt nummer
-  // fast längsta sifferrunt bara är 3 (den gamla \d{4,}-vakten tappade formaterade nummer).
   if (!to || (to.match(/\d/g)?.length ?? 0) < 4) {
-    return { ok: false, error: 'invalid_recipient' }
+    return { ok: false, mode, error: 'invalid_recipient' }
   }
-  if (!args.body?.trim()) {
-    return { ok: false, error: 'empty_body' }
-  }
+  if (!args.body?.trim()) return { ok: false, mode, error: 'empty_body' }
   const e164 = toE164(to)
   if (!e164) {
-    // Icke-PII: logga aldrig själva numret.
     logger.info('sms.skipped_unparseable_number')
-    return { ok: false, error: 'invalid_recipient' }
+    return { ok: false, mode, error: 'invalid_recipient' }
+  }
+
+  if (args.tenantSmsEnabled !== true) {
+    logger.info('sms.skipped_tenant_disabled')
+    return { ok: false, skipped: true, mode, error: 'tenant_sms_disabled' }
+  }
+
+  if (!canaryRecipients().has(e164)) {
+    logger.info('sms.skipped_not_canary')
+    return { ok: false, skipped: true, mode, error: 'recipient_not_canary' }
   }
 
   const user = process.env.SMS_46ELKS_USERNAME
   const pass = process.env.SMS_46ELKS_PASSWORD
-  if (!user || !pass) {
-    logger.info('sms.skipped_credentials_unset')
-    return { ok: false, skipped: true, error: 'transport_unavailable' }
+  const deliveryCallback = mode === 'live' ? callbackUrl() : null
+  if (!user || !pass || (mode === 'live' && !deliveryCallback)) {
+    logger.info('sms.skipped_transport_unavailable', { mode })
+    return { ok: false, skipped: true, mode, error: 'transport_unavailable' }
   }
 
+  const form = new URLSearchParams({
+    from: sanitizeSenderId(args.from),
+    to: e164,
+    message: args.body,
+    dontlog: 'message',
+  })
+  if (mode === 'dry_run') form.set('dryrun', 'yes')
+  else form.set('whendelivered', deliveryCallback!)
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS)
   try {
-    // Workers-runtime: btoa finns alltid; Buffer kräver nodejs_compat. btoa räcker
-    // (credentials är ASCII).
-    const auth = btoa(`${user}:${pass}`)
-    const res = await fetch(ELKS_ENDPOINT, {
+    const response = await fetch(ELKS_ENDPOINT, {
       method: 'POST',
       headers: {
-        authorization: `Basic ${auth}`,
+        authorization: `Basic ${btoa(`${user}:${pass}`)}`,
         'content-type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        from: sanitizeSenderId(args.from),
-        to: e164,
-        message: args.body,
-      }),
+      body: form,
+      signal: controller.signal,
     })
-    if (!res.ok) {
-      logger.warn('sms.send_failed', { status: res.status })
-      return { ok: false, error: `http_${res.status}` }
+    if (!response.ok) {
+      logger.warn('sms.provider_rejected', { status: response.status, mode })
+      return { ok: false, mode, error: `http_${response.status}` }
     }
-    logger.info('sms.sent_provider_ok')
-    // Kostnad + id ur svaret (best-effort — ett oparsebart svar ändrar inte ok).
-    const body = (await res.json().catch(() => null)) as { id?: string; cost?: number } | null
+
+    const provider = (await response.json().catch(() => null)) as Record<string, unknown> | null
+    if (mode === 'dry_run') {
+      if (
+        provider?.status !== 'created'
+        || !validParts(provider.parts)
+        || !validNonNegativeInteger(provider.estimated_cost)
+      ) {
+        logger.warn('sms.provider_response_invalid', { mode })
+        return { ok: false, mode, error: 'invalid_provider_response' }
+      }
+      logger.info('sms.simulated_provider_ok', { parts: provider.parts })
+      return {
+        ok: true,
+        mode,
+        simulated: true,
+        parts: provider.parts,
+        estimatedCost: provider.estimated_cost,
+        costOre: costOre(provider.estimated_cost),
+      }
+    }
+
+    if (
+      !provider
+      || !PROVIDER_ID.test(String(provider.id ?? ''))
+      || !['created', 'sent'].includes(String(provider.status ?? ''))
+      || (provider.parts !== undefined && !validParts(provider.parts))
+      || (provider.cost !== undefined && !validNonNegativeInteger(provider.cost))
+    ) {
+      logger.warn('sms.provider_response_invalid', { mode })
+      return { ok: false, mode, error: 'invalid_provider_response' }
+    }
+    logger.info('sms.accepted_provider_ok')
     return {
       ok: true,
-      providerId: typeof body?.id === 'string' ? body.id : undefined,
-      costOre: typeof body?.cost === 'number' ? Math.round(body.cost / 100) : undefined,
+      mode,
+      simulated: false,
+      providerId: String(provider.id),
+      ...(provider.parts === undefined ? {} : { parts: provider.parts as number }),
+      ...(provider.cost === undefined ? {} : { costOre: costOre(provider.cost as number) }),
     }
-  } catch (err) {
-    logger.warn('sms.send_threw', { error: err instanceof Error ? err.message : String(err) })
-    return { ok: false, error: 'exception' }
+  } catch {
+    if (controller.signal.aborted) {
+      logger.warn('sms.request_timeout', { mode })
+      return { ok: false, mode, error: 'request_timeout' }
+    }
+    logger.warn('sms.network_error', { mode })
+    return { ok: false, mode, error: 'network_error' }
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
-/**
- * Pull the phone number out of the guest-contact note seam (G04):
- * `Gäst: <name> <email> <phone> [— note]` — phone is the text AFTER the email
- * bracket and BEFORE any ` — `-delimited free-text note. Returns null when absent.
- *
- * Lives here (not in ./parse, which is out of revir for this wave) so the SMS path
- * is self-contained; booking.ts + reminders.ts import it.
- */
+/** Typad U1-adapter. U4 kopplar den till en explicit SMS-worker; cron gör det inte här. */
+export async function deliverSmsOutbox(args: SendSmsArgs): Promise<NotificationDeliveryResult> {
+  const result = await sendSms({ ...args, allowProviderDryRun: true })
+  if (result.ok) {
+    const receipt = {
+      ...(result.providerId === undefined ? {} : { providerRef: result.providerId }),
+      ...(result.costOre === undefined ? {} : { costOre: result.costOre }),
+      ...(result.parts === undefined ? {} : { parts: result.parts }),
+    }
+    return result.mode === 'dry_run'
+      ? { status: 'simulated', ...receipt }
+      : { status: 'sent', ...receipt }
+  }
+  if (result.error === 'transport_off') return { status: 'skipped', reason: 'transport_off' }
+  if (result.error === 'dry_run_requires_explicit_canary') {
+    return { status: 'skipped', reason: 'transport_off' }
+  }
+  if (result.error === 'tenant_sms_disabled' || result.error === 'recipient_not_canary') {
+    return { status: 'skipped', reason: 'channel_disabled' }
+  }
+  if (result.error === 'transport_unavailable') {
+    return { status: 'retry', error: 'provider_unavailable' }
+  }
+  if (result.error === 'invalid_recipient' || result.error === 'empty_body') {
+    return { status: 'failed', reason: 'payload_invalid' }
+  }
+  if (result.error === 'http_429') return { status: 'retry', error: 'provider_rate_limited' }
+  if (/^http_5\d\d$/.test(result.error)) return { status: 'failed', reason: 'delivery_uncertain' }
+  if (
+    result.error === 'network_error'
+    || result.error === 'request_timeout'
+    || result.error === 'invalid_provider_response'
+  ) {
+    return { status: 'failed', reason: 'delivery_uncertain' }
+  }
+  return { status: 'failed', reason: 'provider_rejected' }
+}
+
 export function parseGuestPhone(note: string | null | undefined): string | null {
   if (!note) return null
-  // Everything after the email bracket `>`.
   const after = /<[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+>\s*(.*)$/.exec(note)?.[1]
   if (!after) return null
-  // Strip a trailing ` — note` (em dash or hyphen) free-text segment.
   const phone = after.split(/\s+[—-]\s+/)[0]?.trim()
   if (!phone) return null
-  // Must contain at least a few digits (TOTAL, not consecutive — '070-123 45 67'
-  // is a real phone; the old \d{4,} check silently dropped formatted numbers).
   return (phone.match(/\d/g)?.length ?? 0) >= 4 ? phone : null
 }

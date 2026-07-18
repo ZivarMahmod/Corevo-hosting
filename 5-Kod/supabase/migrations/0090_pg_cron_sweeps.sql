@@ -37,11 +37,11 @@ begin
   perform cron.schedule(
     'corevo-prune-slot-holds',
     '*/15 * * * *',
-    $job$do $guard$ begin
-      if to_regproc('public.prune_expired_slot_holds()') is not null then
-        perform public.prune_expired_slot_holds();
+    'do $guard$ begin
+      if to_regprocedure(''public.prune_expired_slot_holds()'') is not null then
+        execute ''select public.prune_expired_slot_holds()'';
       end if;
-    end $guard$$job$
+    end $guard$'
   );
   -- Retention är daglig (04:10 UTC — lågtrafik i svensk natt), inte var 15:e minut.
   perform cron.schedule(

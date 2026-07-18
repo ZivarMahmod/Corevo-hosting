@@ -1,47 +1,22 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/platform/service'
-import { sendBookingReminder, parseGuestEmail } from './booking'
-import { sendSms, parseGuestPhone } from './sms'
-import { getEnabledNotifications, getSmsEnabled } from './settings'
+import { getEnabledNotifications } from './settings'
+import { queueBookingEvent } from './booking-events'
 import { logger } from '@/lib/observability'
 
-// Reminder pipeline (G10 step 3). Sends a "din tid imorgon"-mail for LIVE bookings
-// (pending OR confirmed — on-site "betala på plats" bookings stay `pending` until
-// staff confirm them, so a confirmed-only filter would silently skip them) starting
-// within the next ~30h, then stamps bookings.reminded_at so the next run can't
-// double-send (idempotent).
-//
-// Driven by an EXTERNAL scheduler (Cloudflare Cron Trigger → app/api/cron/reminders,
-// or pg_cron) — Workers have no in-process timers. Runs service-role (cross-tenant,
-// reads guest email from the note seam / the customer's users row). Best-effort:
-// one bad row never aborts the batch. Needs SUPABASE_SERVICE_ROLE_KEY + the email
-// relay (EMAIL_RELAY_URL/EMAIL_RELAY_SECRET) in prod; degrades to a no-op locally.
+// Reminder discovery keeps the 0088 lease. The lease now protects durable event
+// production rather than a provider call: one claimed booking creates one stable
+// outbox event, then reminded_at prevents another discovery. Delivery/retry lives
+// exclusively in notifications_outbox.
 
-export type ReminderRun = { scanned: number; sent: number; skipped: number }
+export type ReminderRun = { scanned: number; queued: number; skipped: number }
 
 type ReminderRow = {
   id: string
   tenant_id: string
   start_ts: string
-  note: string | null
-  customer_profile_id: string | null
-  services: { name?: string } | null
-  tenants: { name?: string } | null
-  locations: { timezone?: string } | null
 }
 
-// Short Swedish reminder SMS — plain text, no links/PII.
-/**
- * Stämpla en påminnelse som skickad — anropas ENDAST efter en lyckad leverans.
- *
- * Primärt: claim-ägar-CAS (token). DUBBLETT-SKYDDET (CodeRabbit-fynd): misslyckas
- * token-CAS:en har utskicket REDAN skett — att lämna raden ostämplad betyder
- * garanterad dubblett när leasen löper ut. Fallback därför: stämpla via CAS på
- * `reminded_at IS NULL` (tokenlöst). Slår även den fallbacken fel verifieras om
- * raden redan stämplats av en annan körning; först när raden bevisligen är
- * ostämplad OCH ostämplingsbar kastar vi (claim bevaras → lease-fördröjd retry
- * hellre än tyst tappad rad).
- */
 async function stampReminded(
   client: NonNullable<ReturnType<typeof createServiceClient>>,
   bookingId: string,
@@ -62,6 +37,8 @@ async function stampReminded(
     .maybeSingle()
   if (!stampError && stamped) return
 
+  // The outbox event may already be durable. A token-CAS miss must not leave the
+  // booking discoverable forever, so use the existing tokenless idempotent fallback.
   const { data: fallback } = await client
     .from('bookings')
     .update(patch)
@@ -74,7 +51,6 @@ async function stampReminded(
     return
   }
 
-  // Ingen rad matchade — antingen redan stämplad av annan körning (OK) eller DB-fel.
   const { data: current } = await client
     .from('bookings')
     .select('reminded_at')
@@ -84,37 +60,16 @@ async function stampReminded(
   throw new Error('reminders_stamp_failed')
 }
 
-function reminderSmsBody(tenantName: string, serviceName: string, startISO: string, timeZone: string): string {
-  let when = startISO
-  try {
-    when = new Intl.DateTimeFormat('sv-SE', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone,
-    }).format(new Date(startISO))
-  } catch {
-    /* fall back to the raw ISO string */
-  }
-  return `Påminnelse från ${tenantName}: ${serviceName} ${when}. Vi ses!`
-}
-
 export async function sendDueReminders(): Promise<ReminderRun> {
   const admin = createServiceClient()
   if (!admin) {
-    logger.info('reminders.skipped (no service role)')
-    return { scanned: 0, sent: 0, skipped: 0 }
+    logger.info('reminders.skipped_no_service_role')
+    return { scanned: 0, queued: 0, skipped: 0 }
   }
   const client = admin
 
   const now = new Date()
-  // 30h-horisont (Zivar 2026-07-10): påminnelsen ska gå ut ~30 timmar innan
-  // tiden. Cron går var 15:e min → mailet landar när bokningen passerar 30h-
-  // gränsen (bokningar närmare än så vid bokningstillfället påminns direkt).
   const horizon = new Date(now.getTime() + 30 * 60 * 60 * 1000)
-
   const claimToken = crypto.randomUUID()
   const { data: claimedIds, error: claimError } = await client.rpc(
     'claim_due_booking_reminders',
@@ -129,7 +84,7 @@ export async function sendDueReminders(): Promise<ReminderRun> {
     logger.warn('reminders.claim_failed', { error: claimError.message })
     throw new Error('reminders_claim_failed')
   }
-  if (!claimedIds?.length) return { scanned: 0, sent: 0, skipped: 0 }
+  if (!claimedIds?.length) return { scanned: 0, queued: 0, skipped: 0 }
 
   async function releaseClaims(bookingIds: string[]): Promise<void> {
     if (bookingIds.length === 0) return
@@ -146,156 +101,62 @@ export async function sendDueReminders(): Promise<ReminderRun> {
 
   const { data, error } = await client
     .from('bookings')
-    .select('id, tenant_id, start_ts, note, customer_profile_id, services(name), tenants(name), locations(timezone)')
+    .select('id, tenant_id, start_ts')
     .in('id', claimedIds)
     .eq('reminder_claim_token', claimToken)
-
   if (error) {
     logger.warn('reminders.query_failed', { error: error.message })
     await releaseClaims(claimedIds)
     throw new Error('reminders_query_failed')
   }
-  const rows = (data ?? []) as unknown as ReminderRow[]
+
+  const rows = (data ?? []) as ReminderRow[]
   const pendingClaims = new Set<string>(claimedIds)
-
-  // Per-tenant preference caches (the batch can span tenants; each lookup hits
-  // tenant_settings, so memoise to avoid N reads of the same row).
   const reminderEnabled = new Map<string, boolean>()
-  const smsEnabled = new Map<string, boolean>()
-
-  let sent = 0
+  let queued = 0
   let skipped = 0
-  let currentBookingId: string | null = null
-  let preserveCurrentClaim = false
-  try {
-    for (const b of rows) {
-      currentBookingId = b.id
-      preserveCurrentClaim = false
-    // Owner pref: skip the whole reminder for this tenant when reminders are off.
-      let enabled = reminderEnabled.get(b.tenant_id)
-      if (enabled === undefined) {
-        enabled = (await getEnabledNotifications(client, b.tenant_id)).reminder
-        reminderEnabled.set(b.tenant_id, enabled)
-      }
-      if (!enabled) {
-      // Do NOT stamp: "skip" means skip THIS send, not permanently. If the owner
-      // re-enables reminders before the appointment, the row is still unstamped and
-      // gets reminded on the next run. Re-scanning is cheap (prefs are memoised).
-        skipped++
-        await releaseClaims([b.id])
-        pendingClaims.delete(b.id)
-        currentBookingId = null
-        continue
-      }
+  let enqueueFailed = false
 
-      let to = parseGuestEmail(b.note)
-      let phone = parseGuestPhone(b.note)
-      if ((!to || !phone) && b.customer_profile_id) {
-        const { data: u, error: userError } = await client
-          .from('users')
-          .select('email, phone')
-          .eq('id', b.customer_profile_id)
-          .maybeSingle()
-        if (userError) throw new Error('reminders_customer_lookup_failed')
-        to = to ?? u?.email ?? null
-        phone = phone ?? u?.phone ?? null
-      }
-      const tenantName = b.tenants?.name ?? 'Företaget'
-      const serviceName = b.services?.name ?? 'Behandling'
-      const timeZone = b.locations?.timezone ?? 'Europe/Stockholm'
-
-      if (!to) {
-        // SMS-ONLY-MOTTAGARE (CodeRabbit-fynd): en gäst med telefon men utan mejl
-        // fick tidigare ALDRIG någon påminnelse — raden släpptes och åter-claimades
-        // var 15:e minut i hela 30-timmarsfönstret. Nu: skicka påminnelsen via SMS
-        // (om ägaren slagit på SMS) och STÄMPLA. Utan telefon/SMS: släpp som förut.
-        let smsOnlyDelivered = false
-        if (phone) {
-          let sms = smsEnabled.get(b.tenant_id)
-          if (sms === undefined) {
-            sms = await getSmsEnabled(client, b.tenant_id)
-            smsEnabled.set(b.tenant_id, sms)
-          }
-          if (sms) {
-            // Från transportanropet kan providern ha tagit emot meddelandet —
-            // behåll leasen vid osäkerhet (samma resonemang som mejlvägen nedan).
-            preserveCurrentClaim = true
-            const smsResult = await sendSms({
-              to: phone,
-              body: reminderSmsBody(tenantName, serviceName, b.start_ts, timeZone),
-              from: tenantName,
-            })
-            smsOnlyDelivered = smsResult.ok
-            if (!smsOnlyDelivered) preserveCurrentClaim = false
-          }
-        }
-        if (!smsOnlyDelivered) {
-          skipped++
-          await releaseClaims([b.id])
-          pendingClaims.delete(b.id)
-          currentBookingId = null
-          continue
-        }
-        // Levererad via SMS → stämpla via samma claim-ägar-CAS som mejlvägen.
-        await stampReminded(client, b.id, claimToken, now)
-        pendingClaims.delete(b.id)
-        currentBookingId = null
-        preserveCurrentClaim = false
-        sent++
-        continue
-      }
-      // Från och med transportanropet kan ett kast betyda att leverantören tog emot
-      // mailet. Behåll då just denna lease för att undvika en omedelbar dublett.
-      preserveCurrentClaim = true
-      const emailResult = await sendBookingReminder(
-        to,
-        { tenantName, serviceName, startISO: b.start_ts, timeZone },
-        { supabase: client, tenantId: b.tenant_id },
-      )
-      if (!emailResult.ok) {
-        preserveCurrentClaim = false
-        skipped++
-        await releaseClaims([b.id])
-        pendingClaims.delete(b.id)
-        currentBookingId = null
-        continue
-      }
-
-    // Best-effort opt-in SMS (secondary channel; email above is primary).
-      if (phone) {
-        let sms = smsEnabled.get(b.tenant_id)
-        if (sms === undefined) {
-          sms = await getSmsEnabled(client, b.tenant_id)
-          smsEnabled.set(b.tenant_id, sms)
-        }
-        if (sms) {
-          try {
-            await sendSms({ to: phone, body: reminderSmsBody(tenantName, serviceName, b.start_ts, timeZone), from: tenantName })
-          } catch {
-            // SMS is best-effort — never abort the batch on a send error.
-          }
-        }
-      }
-
-      // Bara claim-ägaren får finalisera raden. Överlappande körningar får aldrig
-      // samma token och kan därför inte dubbelstämpla eller dubbelskicka.
-      await stampReminded(client, b.id, claimToken, now)
-      pendingClaims.delete(b.id)
-      currentBookingId = null
-      preserveCurrentClaim = false
-      sent++
+  for (const booking of rows) {
+    let enabled = reminderEnabled.get(booking.tenant_id)
+    if (enabled === undefined) {
+      enabled = (await getEnabledNotifications(client, booking.tenant_id)).reminder
+      reminderEnabled.set(booking.tenant_id, enabled)
     }
-  } catch (error) {
-    const safeToRelease = [...pendingClaims].filter(
-      (id) => !(preserveCurrentClaim && id === currentBookingId),
-    )
-    await releaseClaims(safeToRelease)
-    throw error
+    if (!enabled) {
+      skipped += 1
+      await releaseClaims([booking.id])
+      pendingClaims.delete(booking.id)
+      continue
+    }
+
+    const result = await queueBookingEvent({
+      tenantId: booking.tenant_id,
+      bookingId: booking.id,
+      type: 'booking_reminder',
+      occurredAt: now.toISOString(),
+      startISO: booking.start_ts,
+      includeManageLink: true,
+    })
+
+    if (result.state === 'error') {
+      enqueueFailed = true
+      await releaseClaims([booking.id])
+      pendingClaims.delete(booking.id)
+      continue
+    }
+
+    await stampReminded(client, booking.id, claimToken, now)
+    pendingClaims.delete(booking.id)
+    if (result.state === 'queued') queued += 1
+    else skipped += 1
   }
 
-  // Defensive: a claimed id omitted by the follow-up query must not remain leased.
+  // Any claimed id omitted by the follow-up read must not remain leased.
   await releaseClaims([...pendingClaims])
+  if (enqueueFailed) throw new Error('reminders_enqueue_failed')
 
-  logger.info('reminders.run', { scanned: rows.length, sent, skipped })
-  return { scanned: rows.length, sent, skipped }
+  const run = { scanned: rows.length, queued, skipped }
+  logger.info('reminders.run', run)
+  return run
 }

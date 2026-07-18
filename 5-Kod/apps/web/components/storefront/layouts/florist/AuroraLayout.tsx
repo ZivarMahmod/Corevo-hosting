@@ -36,12 +36,13 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
   const favorites = (modules?.shopTeasers ?? []).slice(0, 3)
   // …och TVÅ blogg-rader (homeBlog = blog.slice(0, 2)).
   const posts = (modules?.bloggTeasers ?? []).slice(0, 2)
-  // modules === undefined (studions statiska preview) → visa allt.
-  const shopReachable = modules ? modules.shopReachable : true
-  const offertReachable = modules ? modules.offertReachable : true
-  const presentkortLive = modules ? modules.presentkortLive : true
+  // Saknad reachability failar stängt; onboarding-previewns modulytor renderas separat.
+  const shopReachable = modules?.shopReachable ?? false
+  const offertReachable = modules?.offertReachable ?? false
+  const presentkortReachable = modules?.presentkortReachable ?? false
   // goal-64: klubben har en publik sida nu (/klubb). Modul av → ingen länk (404-fällan).
-  const klubbReachable = modules ? modules.lojalitetReachable : true
+  const klubbReachable = modules?.lojalitetReachable ?? false
+  const kurserReachable = modules?.kurserReachable ?? false
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const [pathBukett, pathBrollop, pathKurs] = content.galleryImages
@@ -69,14 +70,16 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
           href: '/offert',
         }
       : null,
-    {
-      key: 'kurser',
-      title: 'Kurser & event',
-      desc: 'Bind din egen bukett.',
-      cta: 'se datum',
-      img: pathKurs ?? heroPhoto,
-      href: '/kurser',
-    },
+    kurserReachable
+      ? {
+          key: 'kurser',
+          title: 'Kurser & event',
+          desc: 'Bind din egen bukett.',
+          cta: 'se datum',
+          img: pathKurs ?? heroPhoto,
+          href: '/kurser',
+        }
+      : null,
   ].filter((p): p is NonNullable<typeof p> => p !== null)
 
   return (
@@ -195,7 +198,7 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
           sida i plattformen och pekade därför på kurs-vägen i stället. Klubben har nu en
           riktig sida (/klubb) → bandet är filens igen, när modulen går att nå. Lojalitet
           av → kurs-bandet som förr (aldrig en länk till en stängd modul). */}
-      {presentkortLive ? (
+      {presentkortReachable ? (
         <section className={styles.auSection}>
           <div className={styles.auBands}>
             <Reveal>
@@ -227,7 +230,7 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
                   </span>
                   <span className={styles.auLink}>till klubben →</span>
                 </Link>
-              ) : (
+              ) : kurserReachable ? (
                 <Link href="/kurser" className={styles.auBandWhite}>
                   <span className={styles.auEyebrow} style={{ display: 'block' }}>
                     Kurser &amp; event
@@ -240,6 +243,18 @@ export function AuroraLayout({ content, modules }: StorefrontLayoutProps) {
                   </span>
                   <span className={styles.auLink}>se datum →</span>
                 </Link>
+              ) : (
+                <div className={styles.auBandWhite}>
+                  <span className={styles.auEyebrow} style={{ display: 'block' }}>
+                    Kurser &amp; event
+                  </span>
+                  <span className={styles.auBandTitle} style={{ display: 'block' }}>
+                    Bind din egen bukett
+                  </span>
+                  <span className={styles.auBandText} style={{ display: 'block' }}>
+                    Nya datum publiceras här när de är klara.
+                  </span>
+                </div>
               )}
             </Reveal>
           </div>

@@ -1,6 +1,6 @@
 # HANDOFF — Corevo
 
-Senast uppdaterad: 2026-07-17.
+Senast uppdaterad: 2026-07-18.
 
 ## Läsordning
 
@@ -18,8 +18,9 @@ tenant och ett testfall, aldrig produktdefinitionen.
 ## Nuläge
 
 - Produktionens boknings-, schema- och personalgrund är live. Inställningar v2 och
-  Frisöradmin PWA driftsattes från commit `4970548` i GitHub Actions-körning
-  `29565743755` den 2026-07-17. Supabase har migrationerna 0071–0082 registrerade.
+  Frisöradmin PWA driftsattes 2026-07-17. Produktionsdatabasen är numeriskt
+  avstämd och runtime-verifierad genom migration `0107`; checkpoint och bevis
+  finns i `5-Kod/docs/ops/database-migration-drift.md`.
 - Grundens verkliga delar omfattar platsbehörighet/RLS, öppettider, schema,
   personal-readiness, frånvaro, atomisk adminbokning, ombokning och statusbyte.
 - Ägaradminens mobil-PWA, översikt och kalender Mobil v2 finns i kod och produktion.
@@ -35,14 +36,12 @@ tenant och ett testfall, aldrig produktdefinitionen.
   fullbyggda mönsterexempel; Personal och Schema behåller avsiktligt sina verkliga
   befintliga funktioner i det nya skalet. Deras framtida individuella omdesign är
   ett separat designpaket och ska inte beskrivas som en 04-lucka.
-- En samlad slutgenomgång finns på grenen `codex/corevo-final-sweep` men är ännu
-  **inte driftsatt**. Den samlar Inställningar i ett vertikalt workspace, härdar
-  publika skrivvägar/betalningar/cron och lägger migrationerna 0083–0088.
-  Produktionsdatabasen är fortfarande verifierad till 0082. Produktionens deploy
-  spärras därför tills 0083–0088 har granskats, applicerats och GitHub-variabeln
-  `PROD_DB_MIGRATION` satts till `0088`. Full rapport:
-  `5-Kod/docs/corevo-slutgenomgang-2026-07-17.md`.
-- Samma odriftsatta gren härdar Personalpanelen: oförändrade formulär ger inget
+- Första kundens relationspaket ligger samlat på `main`: säker gäst→kund-claim,
+  kund-/personalrelation, sann bokningsstatus, durable notifieringsoutbox,
+  notifieringscron, driftgrindar och fail-closed handel. Skarpt SMS är byggt bakom
+  tre grindar men `SMS_DELIVERY_MODE=off`; inget provideranrop ska ske före Zivars
+  separata canarybeslut.
+- Personalpanelen är härdad: oförändrade formulär ger inget
   falskt fel, kalenderfärg skickas explicit, historisk personal kan inte erbjudas
   permanent radering och schemahoppet behåller plats. Panelen och Schemas innehåll
   är avsiktligt befintliga implementationer inne i nya Inställningar-workspacet;
@@ -55,12 +54,11 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Goal 71:s tidigare grundversion är driftsatt. Den kompletta 04-härdningen på
-`codex/corevo-final-sweep` är lokalt verifierad men inte driftsatt och står kvar
-som `pågår` tills den säkra deploygrinden är passerad och Zivar har kört den
-autentiserade manuella acceptansen i
-`6-Testing/goal-71-installningar-frisoradmin-testlista.md`. Flytta inte goal eller
-designpaket till `klart/` före den acceptansen.
+Publicera och smoke-testa relationspaketet från exakt samma gröna commit. Därefter
+kör Zivar den autentiserade manuella acceptansen för Inställningar/Frisöradmin
+och rollflödet gäst→kund→personal→ägare. Flytta inte goal eller designpaket
+till `klart/` före den acceptansen. Provider-dry-run och live-SMS är ett separat,
+uttryckligen godkänt driftsteg.
 
 ## Hårda regler
 

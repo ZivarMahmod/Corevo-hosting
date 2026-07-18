@@ -34,8 +34,11 @@ import styles from './blomstertorget.module.css'
  * komponent.
  */
 export function BlomstertorgetLayout({ content, services, modules }: StorefrontLayoutProps) {
-  // modules === undefined (studions statiska preview) → visa allt.
-  const shopReachable = modules ? modules.shopReachable : true
+  // Saknad reachability failar stängt; onboarding-previewns modulytor renderas separat.
+  const shopReachable = modules?.shopReachable ?? false
+  const klubbReachable = modules?.lojalitetReachable ?? false
+  const kurserReachable = modules?.kurserReachable ?? false
+  const galleriReachable = modules?.galleriReachable ?? false
   // Filens högerspalt noterar SEX priser; produkterna är torgets egna.
   const ticker = (modules?.shopTeasers ?? []).slice(0, 6)
   // Filens förstasida har TRE notiser.
@@ -102,15 +105,17 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
                 </>
               ) : null}
 
-              {/* STAMKUNDSKUPONGEN — lojalitetsmodulens väg in (/stamkund). */}
+              {/* STAMKUNDSKUPONGEN — lojalitetsmodulens kanoniska väg in (/klubb). */}
               <div className={styles.btCoupon}>
                 <p className={styles.btCouponHead}>{content.pillar3Title ?? '✂ Stamkundskupong'}</p>
                 <p className={styles.btCouponBody}>
                   {content.pillar3Body ?? 'Var 8:e bunt gratis för registrerade stamkunder.'}
                 </p>
-                <Link href="/stamkund" className={styles.btCouponCta}>
-                  {content.pillar3Link ?? 'Registrera dig →'}
-                </Link>
+                {klubbReachable ? (
+                  <Link href="/klubb" className={styles.btCouponCta}>
+                    {content.pillar3Link ?? 'Registrera dig →'}
+                  </Link>
+                ) : null}
               </div>
             </aside>
           </Reveal>
@@ -153,9 +158,11 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
                     </span>
                   </div>
                 ))}
-                <Link href="/kurser" className={styles.btMoreLink}>
-                  {content.pillar1Link ?? 'alla kungörelser →'}
-                </Link>
+                {kurserReachable ? (
+                  <Link href="/kurser" className={styles.btMoreLink}>
+                    {content.pillar1Link ?? 'alla kungörelser →'}
+                  </Link>
+                ) : null}
               </div>
             </Reveal>
           ) : null}
@@ -171,9 +178,11 @@ export function BlomstertorgetLayout({ content, services, modules }: StorefrontL
               <p className={styles.btCred}>
                 {content.pillar2Body ?? 'Ur veckans arkiv — tulpanlasset & lördagens hjärtbukett'}
               </p>
-              <Link href="/galleri" className={styles.btItalicLink}>
-                {content.pillar2Link ?? 'hela bildsidan →'}
-              </Link>
+              {galleriReachable ? (
+                <Link href="/galleri" className={styles.btItalicLink}>
+                  {content.pillar2Link ?? 'hela bildsidan →'}
+                </Link>
+              ) : null}
             </div>
           </Reveal>
         </section>

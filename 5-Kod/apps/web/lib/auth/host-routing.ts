@@ -58,6 +58,7 @@ const isAlwaysAllowed = (path: string): boolean =>
     '/valkommen',
     '/glomt-losenord',
     '/aterstall-losenord',
+    '/fortsatt',
   ]) ||
   path === '/api' ||
   path.startsWith('/api/')

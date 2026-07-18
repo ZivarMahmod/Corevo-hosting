@@ -16,6 +16,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/platform/service'
 import { paypalReady } from '@/lib/payments/paypal'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 import { loadShippingOptions } from './shipping'
 import {
   availablePaymentMethods,
@@ -40,6 +41,7 @@ export async function loadCheckoutOptions(
   slug: string,
   config: ShopConfig,
 ): Promise<CheckoutOptions> {
+  const release = commerceReleaseGate(tenantId)
   const [shippingOptions, stripeReady] = await Promise.all([
     loadShippingOptions(tenantId, slug),
     tenantStripeReady(tenantId),
@@ -48,7 +50,7 @@ export async function loadCheckoutOptions(
     shippingOptions,
     paymentMethods: availablePaymentMethods(config.paymentMethods, {
       stripeReady,
-      paypalReady: paypalReady(),
+      paypalReady: release.paypal && paypalReady(),
     }),
   }
 }
@@ -68,7 +70,11 @@ export async function loadCheckoutOptions(
 export async function shopRailsStatus(
   tenantId: string,
 ): Promise<{ stripeReady: boolean; paypalReady: boolean }> {
-  return { stripeReady: await tenantStripeReady(tenantId), paypalReady: paypalReady() }
+  const release = commerceReleaseGate(tenantId)
+  return {
+    stripeReady: release.shop && (await tenantStripeReady(tenantId)),
+    paypalReady: release.paypal && paypalReady(),
+  }
 }
 
 async function tenantStripeReady(tenantId: string): Promise<boolean> {

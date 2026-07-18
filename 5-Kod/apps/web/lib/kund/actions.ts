@@ -10,14 +10,18 @@ import { getMyBooking } from './bookings'
 import { getCancellationCutoffHours, withinCancellationWindow } from './settings'
 import { refundBookingPayment } from '@/lib/stripe/refund'
 import { carryBookingPayment } from '@/lib/stripe/rebook-payment'
-import { sendBookingCancellation, sendBookingRebook } from '@/lib/notifications/booking'
-
-/** Best-effort tenant display name for notifications (RLS: own tenant readable). */
-async function tenantName(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string): Promise<string> {
-  if (!tenantId) return 'Företaget'
-  const { data } = await supabase.from('tenants').select('name').eq('id', tenantId).maybeSingle()
-  return data?.name ?? 'Företaget'
-}
+import { queueBookingEvent } from '@/lib/notifications/booking-events'
+import { safeInternalRedirectPath } from '@/lib/auth/internal-redirect'
+import {
+  customerClaimTokenFromPath,
+  hashCustomerClaimToken,
+  isCustomerClaimPath,
+} from './customer-claim'
+import {
+  consumeCustomerClaim,
+  inspectCustomerClaim,
+  reconcileCustomerClaim,
+} from './customer-claim-server'
 
 const ACTIVE_STATUSES = ['pending', 'confirmed']
 
@@ -29,22 +33,172 @@ export type SignUpState = { error?: string }
 export type ProfileState = { error?: string; success?: string }
 export type BookingActionState = { error?: string }
 
+type KundClient = Awaited<ReturnType<typeof createClient>>
+type KundAdmin = ReturnType<typeof createAdminClient>
+type ClaimCompletion = { ok: true } | { ok: false; error: string }
+
+/**
+ * Hygiene only: `pending_claim` is already denied by every normal portal/RLS
+ * fence. Delete auth only if the conditional delete proves the profile was
+ * still provisional. The claim RPC locks the same row, so a concurrent winner
+ * activates first and makes this delete a no-op instead of being erased.
+ */
+async function cleanupProvisionalClaimAccount(args: {
+  admin: KundAdmin
+  supabase: KundClient
+  userId: string
+  tenantId: string
+}): Promise<void> {
+  const { admin, supabase, userId, tenantId } = args
+  await supabase.auth.signOut()
+  const { data: removedProfile, error: profileDeleteError } = await admin
+    .from('users')
+    .delete()
+    .eq('id', userId)
+    .eq('tenant_id', tenantId)
+    .eq('status', 'pending_claim')
+    .select('id')
+    .maybeSingle()
+  if (profileDeleteError) return
+  if (!removedProfile?.id) return
+
+  // If this best-effort delete fails, the remaining auth shell has no profile,
+  // role or portal access. The authenticated recovery path can recreate the
+  // provisional profile for the same tenant and valid claim.
+  await admin.auth.admin.deleteUser(userId)
+}
+
+async function consumeOrReconcileCustomerClaim(args: {
+  admin: KundAdmin
+  supabase: KundClient
+  tenantId: string
+  tokenHash: string
+  userId: string
+  wasProvisional: boolean
+}): Promise<ClaimCompletion> {
+  const claim = await consumeCustomerClaim({
+    client: args.supabase,
+    tenantId: args.tenantId,
+    tokenHash: args.tokenHash,
+  })
+  if (claim.ok) return { ok: true }
+
+  // Reconcile against the exact consumed digest + used_by + bound customer.
+  // This cannot mistake a pre-existing customer card for this claim's commit.
+  const reconciled = await reconcileCustomerClaim({
+    tenantId: args.tenantId,
+    tokenHash: args.tokenHash,
+    authUserId: args.userId,
+  })
+  if (reconciled.ok && reconciled.claimed) return { ok: true }
+  if (!reconciled.ok) {
+    // Unknown external state: never delete. The account is either still
+    // provisional (no access) or atomically activated by the committed claim.
+    return { error: 'Kunde inte verifiera kontolänken. Försök igen.', ok: false }
+  }
+
+  if (args.wasProvisional) {
+    await cleanupProvisionalClaimAccount(args)
+  }
+  return {
+    error: 'Kontolänken kunde inte användas. Be företaget om en ny länk.',
+    ok: false,
+  }
+}
+
+/** Authenticate and resume a shell left by an interrupted earlier signup. */
+async function recoverExistingClaimAccount(args: {
+  admin: KundAdmin
+  supabase: KundClient
+  tenantId: string
+  roleId: string
+  email: string
+  phone: string
+  password: string
+  tokenHash: string
+}): Promise<ClaimCompletion> {
+  const { data: signedIn, error: signInError } = await args.supabase.auth.signInWithPassword({
+    email: args.email,
+    password: args.password,
+  })
+  if (signInError || !signedIn.user) {
+    return { error: 'E-postadressen finns redan. Logga in med rätt lösenord.', ok: false }
+  }
+
+  const authTenantId = (signedIn.user.app_metadata as { tenant_id?: string }).tenant_id
+  if (authTenantId !== args.tenantId) {
+    await args.supabase.auth.signOut()
+    return {
+      error: 'Kontot hör till ett annat företag och kan inte kopplas här ännu.',
+      ok: false,
+    }
+  }
+
+  const { data: existingProfile, error: profileError } = await args.admin
+    .from('users')
+    .select('id, tenant_id, role_id, status')
+    .eq('id', signedIn.user.id)
+    .maybeSingle()
+  if (profileError) {
+    return { error: 'Kunde inte kontrollera kontot. Försök igen.', ok: false }
+  }
+
+  let profile = existingProfile
+  if (!profile) {
+    const { data: recoveredProfile, error: recoverError } = await args.admin
+      .from('users')
+      .insert({
+        id: signedIn.user.id,
+        tenant_id: args.tenantId,
+        email: args.email,
+        phone: args.phone,
+        role_id: args.roleId,
+        status: 'pending_claim',
+      })
+      .select('id, tenant_id, role_id, status')
+      .single()
+    if (recoverError) {
+      return { error: 'Kunde inte återställa kontot. Försök igen.', ok: false }
+    }
+    profile = recoveredProfile
+  }
+
+  const exactCustomerProfile =
+    profile.tenant_id === args.tenantId &&
+    profile.role_id === args.roleId &&
+    (profile.status === 'pending_claim' || profile.status === 'active')
+  if (!exactCustomerProfile) {
+    await args.supabase.auth.signOut()
+    return { error: 'Kontot kan inte aktiveras från den här länken.', ok: false }
+  }
+
+  return consumeOrReconcileCustomerClaim({
+    admin: args.admin,
+    supabase: args.supabase,
+    tenantId: args.tenantId,
+    tokenHash: args.tokenHash,
+    userId: signedIn.user.id,
+    wasProvisional: profile.status === 'pending_claim',
+  })
+}
+
 // ── Signup / customer-row bootstrap ──────────────────────────────────────────
-// DEVIATION FROM THE GOAL TEXT (intentional, see report): instead of the plain
-// @supabase/ssr signUp(), this uses the service-role admin API. Why:
+// Claim-gated signup uses the service-role admin API instead of open
+// @supabase/ssr signUp(). Why:
 //   · it bakes app_metadata.tenant_id into the user (like the SQL seed), so RLS
 //     works immediately even though the Custom Access Token Hook Dashboard toggle
 //     is still pending on the cloud project;
-//   · email_confirm:true removes the dependency on the project's unknown "confirm
-//     email" setting, so signup → login → /konto works in one shot.
-// Trade-off: customers are auto-confirmed (no email verification this wave) and
-// SUPABASE_SERVICE_ROLE_KEY must be wired as a Worker secret in prod (it is only
-// in .env.local today). Role is hard-pinned to `kund` → no privilege escalation.
+//   · the high-entropy, expiring booking claim is the required proof; open
+//     registration without that claim is disabled;
+//   · email_confirm:true then lets the claim complete in one session.
+// SUPABASE_SERVICE_ROLE_KEY stays server-only. Role is hard-pinned to `kund` and
+// the claim RPC independently re-checks auth.uid + JWT tenant + database role.
 export async function signUpCustomer(_prev: SignUpState, formData: FormData): Promise<SignUpState> {
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   const password = String(formData.get('password') ?? '')
   const name = String(formData.get('name') ?? '').trim()
   const phone = String(formData.get('phone') ?? '').trim()
+  const next = safeInternalRedirectPath(String(formData.get('next') ?? ''))
 
   if (!email || !password || !name || !phone) {
     return { error: 'Fyll i namn, e-post, telefon och lösenord.' }
@@ -58,7 +212,19 @@ export async function signUpCustomer(_prev: SignUpState, formData: FormData): Pr
     return { error: 'Registrering sker via företagets egen sida. Öppna företagets adress och försök igen.' }
   }
 
+  // Open signup is intentionally disabled for the pilot. Possession of a still
+  // valid, tenant-bound claim is required before we create a global auth user.
+  if (!isCustomerClaimPath(next)) {
+    return { error: 'Skapa kontot från den säkra länken i din bokningsbekräftelse.' }
+  }
+  const claimToken = customerClaimTokenFromPath(next)
+  if (!claimToken || !(await inspectCustomerClaim({ tenantId: tenant.id, token: claimToken }))) {
+    return { error: 'Kontolänken är ogiltig, har gått ut eller har redan använts.' }
+  }
+  const tokenHash = await hashCustomerClaimToken(claimToken)
+
   const admin = createAdminClient()
+  const supabase = await createClient()
 
   // Ensure a `kund` role (level 2) exists for this tenant (the seed ships none).
   const { data: role, error: roleErr } = await admin
@@ -81,34 +247,55 @@ export async function signUpCustomer(_prev: SignUpState, formData: FormData): Pr
   if (createErr || !created.user) {
     const msg = createErr?.message ?? ''
     if (/registered|already|exists/i.test(msg)) {
-      return { error: 'E-postadressen är redan registrerad. Logga in i stället.' }
+      const recovered = await recoverExistingClaimAccount({
+        admin,
+        supabase,
+        tenantId: tenant.id,
+        roleId: role.id,
+        email,
+        phone,
+        password,
+        tokenHash,
+      })
+      if (recovered.ok) redirect('/konto?kopplad=1')
+      return { error: recovered.error }
     }
     return { error: 'Kunde inte skapa konto just nu. Försök igen.' }
   }
 
   // Mirror into public.users (id = auth.users.id), linked to the kund role.
-  const { error: userErr } = await admin.from('users').upsert(
-    {
-      id: created.user.id,
-      tenant_id: tenant.id,
-      email,
-      phone,
-      role_id: role.id,
-      status: 'active',
-    },
-    { onConflict: 'id' },
-  )
+  const { error: userErr } = await admin.from('users').insert({
+    id: created.user.id,
+    tenant_id: tenant.id,
+    email,
+    phone,
+    role_id: role.id,
+    status: 'pending_claim',
+  })
   if (userErr) {
+    // Avoid a global orphan auth account if the tenant profile could not be
+    // created. The claim remains unused and can safely be retried.
+    await admin.auth.admin.deleteUser(created.user.id)
     return { error: 'Kunde inte slutföra registreringen. Försök igen.' }
   }
 
   // Establish the session on the cookie client, then land in the portal.
-  const supabase = await createClient()
   const { error: signErr } = await supabase.auth.signInWithPassword({ email, password })
   if (signErr) {
-    redirect('/login')
+    redirect(`/login?next=${encodeURIComponent(next)}`)
   }
-  redirect('/konto')
+
+  const completion = await consumeOrReconcileCustomerClaim({
+    admin,
+    supabase,
+    tenantId: tenant.id,
+    tokenHash,
+    userId: created.user.id,
+    wasProvisional: true,
+  })
+  if (!completion.ok) return { error: completion.error }
+
+  redirect('/konto?kopplad=1')
 }
 
 // ── Profile (name + phone; email is read-only) ───────────────────────────────
@@ -133,23 +320,26 @@ export async function updateProfile(_prev: ProfileState, formData: FormData): Pr
 // ── Cancel ───────────────────────────────────────────────────────────────────
 // Sets status='cancelled', which frees the slot (the no_double_booking EXCLUDE
 // only blocks pending/confirmed/completed). The UPDATE itself re-asserts
-// ownership (customer_profile_id) + active status → no TOCTOU gap.
+// ownership (legacy profile OR claimed customer relation) + tenant + active
+// status → no TOCTOU gap.
 export async function cancelBooking(
   _prev: BookingActionState,
   formData: FormData,
 ): Promise<BookingActionState> {
   const user = await requirePortal('kund')
+  const tenantId = user.tenantId
+  if (!tenantId) return { error: 'Kontot saknar företagskoppling.' }
   const bookingId = String(formData.get('bookingId') ?? '')
   if (!bookingId) return { error: 'Saknar bokning.' }
 
-  const booking = await getMyBooking(user.id, bookingId)
+  const booking = await getMyBooking(user.id, tenantId, bookingId)
   if (!booking) return { error: 'Bokningen hittades inte.' }
   if (!isActiveStatus(booking.status)) {
     return { error: 'Bokningen kan inte avbokas.' }
   }
 
   const supabase = await createClient()
-  const cutoff = await getCancellationCutoffHours(supabase, user.tenantId ?? '')
+  const cutoff = await getCancellationCutoffHours(supabase, tenantId)
   if (!withinCancellationWindow(booking.startTs, cutoff)) {
     return { error: `Avbokning måste ske minst ${cutoff} timmar före tiden.` }
   }
@@ -157,39 +347,38 @@ export async function cancelBooking(
   // Kundsessionen har ingen rå UPDATE-policy på bookings. Den privilegierade
   // skrivningen sker först efter ägarskap + cutoff ovan, på servern.
   const admin = createAdminClient()
+  const cancelledAt = new Date().toISOString()
   const { error } = await admin
     .from('bookings')
     // cancelled_by: 'customer' — salongens ångralogg ska kunna svara "kunden avbokade
     // själv" utan att gissa. Skriver vi bara status här blir loggen en lista över
     // avbokningar utan avsändare, och då är den värdelös just när den behövs.
-    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancelled_by: 'customer' })
+    .update({ status: 'cancelled', cancelled_at: cancelledAt, cancelled_by: 'customer' })
     .eq('id', bookingId)
-    .eq('customer_profile_id', user.id)
+    .eq('tenant_id', tenantId)
+    .or(
+      booking.customerId
+        ? `customer_profile_id.eq.${user.id},customer_id.eq.${booking.customerId}`
+        : `customer_profile_id.eq.${user.id}`,
+    )
     .in('status', ACTIVE_STATUSES)
   if (error) return { error: 'Kunde inte avboka. Försök igen.' }
 
   // Avbokning inom regeln (kontrollerad ovan) → refund om bokningen var betald.
   // No-op när ingen lyckad betalning finns / Stripe ej konfigurerat.
-  await refundBookingPayment(bookingId, user.tenantId ?? '')
+  await refundBookingPayment(bookingId, tenantId)
 
-  // Avboknings-notis (G10) — best-effort, före redirect (redirect kastar internt).
-  if (user.email) {
-    await sendBookingCancellation(
-      user.email,
-      {
-        tenantName: await tenantName(supabase, user.tenantId ?? ''),
-        serviceName: booking.serviceName ?? 'Behandling',
-        startISO: booking.startTs,
-        timeZone: booking.timeZone,
-        staffTitle: booking.staffTitle,
-      },
-      { supabase, tenantId: user.tenantId ?? '' },
-    )
-  }
+  const notification = await queueBookingEvent({
+    tenantId,
+    bookingId,
+    type: 'booking_cancelled',
+    occurredAt: cancelledAt,
+    startISO: booking.startTs,
+  })
 
   revalidatePath('/konto')
   revalidatePath(`/konto/bokningar/${bookingId}`)
-  redirect('/konto')
+  redirect(`/konto?notis=${notification.state}`)
 }
 
 // ── Rebook (same service, new time) ──────────────────────────────────────────
@@ -205,12 +394,14 @@ export async function rebookBooking(
   formData: FormData,
 ): Promise<BookingActionState> {
   const user = await requirePortal('kund')
+  const tenantId = user.tenantId
+  if (!tenantId) return { error: 'Kontot saknar företagskoppling.' }
   const bookingId = String(formData.get('bookingId') ?? '')
   const startISO = String(formData.get('startISO') ?? '')
   const staffId = String(formData.get('staffId') ?? '')
   if (!bookingId || !startISO || !staffId) return { error: 'Ofullständig ombokning. Välj en ny tid.' }
 
-  const old = await getMyBooking(user.id, bookingId)
+  const old = await getMyBooking(user.id, tenantId, bookingId)
   if (!old) return { error: 'Bokningen hittades inte.' }
   if (!isActiveStatus(old.status)) {
     return { error: 'Bokningen kan inte ombokas.' }
@@ -233,7 +424,7 @@ export async function rebookBooking(
     return { error: 'Onlinebokning är avstängd för ditt konto. Ring oss så bokar vi åt dig.' }
   }
 
-  const cutoff = await getCancellationCutoffHours(supabase, user.tenantId ?? '')
+  const cutoff = await getCancellationCutoffHours(supabase, tenantId)
   if (!withinCancellationWindow(old.startTs, cutoff)) {
     return { error: `Ombokning måste ske minst ${cutoff} timmar före tiden.` }
   }
@@ -268,7 +459,12 @@ export async function rebookBooking(
       cancelled_by: 'customer',
     })
     .eq('id', bookingId)
-    .eq('customer_profile_id', user.id)
+    .eq('tenant_id', tenantId)
+    .or(
+      old.customerId
+        ? `customer_profile_id.eq.${user.id},customer_id.eq.${old.customerId}`
+        : `customer_profile_id.eq.${user.id}`,
+    )
     .in('status', ACTIVE_STATUSES)
     .select('id')
   if (releaseErr || !released || released.length === 0) {
@@ -282,6 +478,7 @@ export async function rebookBooking(
         cancelled_by: 'customer',
       })
       .eq('id', newId)
+      .eq('tenant_id', tenantId)
       .eq('customer_profile_id', user.id)
       .in('status', ACTIVE_STATUSES)
     return { error: 'Kunde inte omboka. Försök igen.' }
@@ -292,22 +489,17 @@ export async function rebookBooking(
   // till den nya (re-point + bekräfta), ingen refund-rundgång, ingen dubbel-charge.
   // MÅSTE ligga EFTER släppet (annars strandar betalningen på newId om släppet
   // failar och rollbacken avbokar newId). No-op för salonger utan betalning/Stripe.
-  await carryBookingPayment(bookingId, newId, user.tenantId ?? '')
+  await carryBookingPayment(bookingId, newId, tenantId)
 
-  // Ny tid-bekräftelse på den NYA tiden (M9, dedikerad rebook-mall) — best-effort, före redirect.
-  if (user.email) {
-    await sendBookingRebook(
-      user.email,
-      {
-        tenantName: await tenantName(supabase, user.tenantId ?? ''),
-        serviceName: old.serviceName ?? 'Behandling',
-        startISO: startISO,
-        timeZone: old.timeZone,
-      },
-      { supabase, tenantId: user.tenantId ?? '' },
-    )
-  }
+  const notification = await queueBookingEvent({
+    tenantId,
+    bookingId: newId,
+    type: 'booking_rebooked',
+    occurredAt: new Date().toISOString(),
+    startISO,
+    includeManageLink: true,
+  })
 
   revalidatePath('/konto')
-  redirect(`/konto/bokningar/${newId}`)
+  redirect(`/konto/bokningar/${newId}?notis=${notification.state}`)
 }

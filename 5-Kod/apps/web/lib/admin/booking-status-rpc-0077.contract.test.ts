@@ -11,11 +11,12 @@ const statusAction = source.slice(
 )
 
 describe('setBookingStatus 0077', () => {
-  it('skriver via platsfencad atomisk RPC och behåller efteråtgärderna', () => {
+  it('skriver via platsfencad atomisk RPC och lämnar completion-eventet till DB-triggern', () => {
     expect(statusAction).toContain("rpc('set_admin_booking_status'")
     expect(statusAction).not.toContain("from('bookings').update")
     expect(statusAction).not.toContain('createAdminServiceClient')
-    expect(statusAction).toContain('sendReviewNudgeForBooking')
+    expect(statusAction).not.toContain('enqueueNotification')
+    expect(statusAction).not.toContain('sendReviewNudgeForBooking')
     expect(statusAction).toContain('refundBookingPayment')
   })
 })

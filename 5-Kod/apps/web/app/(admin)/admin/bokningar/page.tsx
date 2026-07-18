@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { requireAdminArea } from '@/lib/auth/session'
 import { getAdminTenant } from '@/lib/admin/tenant'
 import { DEFAULT_MEMBER_PERMISSIONS, getMemberPermissions } from '@/lib/admin/member-permissions'
 import { resolveTerm } from '@/lib/platform/verticals-shared'
 import {
+  countBookings,
   listBookings,
   listBookingPayments,
   listLocations,
@@ -24,7 +26,7 @@ import { listTimeOffOverlapping } from '@/lib/admin/schedule-data'
 import { resolvePlats } from '@/lib/admin/plats'
 import { requiredLocationId } from '@/lib/admin/location-scope'
 import { getAdminLocationPreferences } from '@/lib/admin/location-context'
-import { PageHead } from '@/components/portal/ui'
+import { Callout, PageHead } from '@/components/portal/ui'
 import {
   CalendarBoard,
   type CalendarBlock,
@@ -121,12 +123,32 @@ export default async function KalenderPage({
   // Frånvaro = kalenderns blockeringar. EN modell för "resursen kan inte bokas" —
   // rast, frånvaro och avvikande arbetstid är samma sak (Wavys universalmekanism).
   // Intervall-överlapp, så en semester som började i förra fönstret syns ändå.
-  const [bookings, roster, timeOff, allServices, staffResources] = await Promise.all([
+  const nowIso = new Date().toISOString()
+  const unresolvedFilters = {
+    endToUtc: nowIso,
+    statuses: ['pending', 'confirmed'],
+    locationId,
+    staffId: ownCalendarOnly ? (user.staffId ?? undefined) : undefined,
+  }
+  const [
+    bookings,
+    unresolved,
+    unresolvedCount,
+    roster,
+    timeOff,
+    allServices,
+    staffResources,
+  ] = await Promise.all([
     listBookings(tenant.id, {
       fromUtc: range.fromUtc,
       toUtc: range.toUtc,
       locationId,
     }),
+    listBookings(tenant.id, {
+      ...unresolvedFilters,
+      limit: 50,
+    }),
+    countBookings(tenant.id, unresolvedFilters),
     staffDay(tenant.id, weekday, locationId),
     // Blockeringar ritas bara i dag- och veckovyn. Månadsvyn visar antal per dag, så
     // en 42-dagars frånvarofråga där vore ren spilld last.
@@ -160,6 +182,7 @@ export default async function KalenderPage({
   const visibleBookings = ownCalendarOnly
     ? bookings.filter((b) => b.staffId === user.staffId)
     : bookings
+  const visibleUnresolved = unresolved
   const visibleBlocks = ownCalendarOnly ? blocks.filter((b) => b.staffId === user.staffId) : blocks
   const visibleRoster = ownCalendarOnly ? roster.filter((s) => s.staffId === user.staffId) : roster
 
@@ -192,14 +215,43 @@ export default async function KalenderPage({
       customerPhone: b.customerPhone,
       locationName: b.locationName,
       locationId: b.locationId,
-      isPast: new Date(b.startTs).getTime() < now,
+      // Ett utfall kan registreras först när hela den bokade behandlingen är slut.
+      isPast: new Date(b.endTs).getTime() <= now,
       paymentStatus: pay.status,
       paymentAmountCents: pay.amountCents,
     }
   })
 
   return (
-    <CalendarBoard
+    <>
+      {unresolvedCount > 0 ? (
+        <div className="portal-section" style={{ paddingBottom: 0 }}>
+          <Callout tone="warning" icon="clock">
+            <strong>{unresolvedCount} bokning(ar) behöver avslutas.</strong>{' '}
+            De räknas inte som besök förrän någon registrerar Genomförd eller Uteblev.
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+              {visibleUnresolved.slice(0, 12).map((booking) => {
+                const localDate = new Intl.DateTimeFormat('en-CA', {
+                  timeZone: tz,
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                }).format(new Date(booking.startTs))
+                return (
+                  <Link
+                    key={booking.id}
+                    href={`/admin/bokningar?vy=dag&datum=${localDate}&plats=${locationId}&open=${booking.id}`}
+                    className="pbtn pbtn--ghost pbtn--sm"
+                  >
+                    {booking.serviceName} · {booking.staffTitle}
+                  </Link>
+                )
+              })}
+            </div>
+          </Callout>
+        </div>
+      ) : null}
+      <CalendarBoard
       bookings={rows}
       blocks={visibleBlocks}
       staff={visibleRoster.map((s) => ({
@@ -236,6 +288,7 @@ export default async function KalenderPage({
       openBookingId={sp.open}
       onlinePaymentsActive={tenant.paymentsEnabled && tenant.stripeChargesEnabled}
       canManageBookings={canManageBookings}
-    />
+      />
+    </>
   )
 }

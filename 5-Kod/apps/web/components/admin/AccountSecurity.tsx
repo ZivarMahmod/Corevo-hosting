@@ -76,16 +76,20 @@ export function AccountSecurity({
     // Ett lösenordsbyte är ofta ETT SVAR på ett intrång. Då ska angriparens session dö
     // med det gamla lösenordet — annars sitter hen kvar. Den här enheten är kvar
     // inloggad; alla andra kastas ut.
-    await supabase.auth.signOut({ scope: 'others' })
+    const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' })
 
     setBusy(false)
     setCurrent('')
     setPassword('')
     setRepeat('')
-    setMsg({
-      tone: 'success',
-      text: 'Lösenordet är bytt. Alla andra enheter har loggats ut.',
-    })
+    setMsg(
+      signOutError
+        ? {
+            tone: 'warning',
+            text: 'Lösenordet är bytt, men andra enheter kunde inte loggas ut. Försök igen med knappen nedan.',
+          }
+        : { tone: 'success', text: 'Lösenordet är bytt. Alla andra enheter har loggats ut.' },
+    )
     router.refresh()
   }
 

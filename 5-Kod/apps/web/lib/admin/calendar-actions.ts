@@ -8,8 +8,10 @@ import { adminDaySlots, type AdminSlot } from '@/lib/admin/calendar-slots'
 import { seriesOccurrences, REPEAT_KINDS, type RepeatKind } from '@/lib/admin/block-series'
 import { setBookingStatus } from '@/lib/admin/actions'
 import { resolveCustomerName } from '@/lib/personal/customer'
-import { sendBookingConfirmation } from '@/lib/notifications/booking'
-import { requestOrigin } from '@/lib/url'
+import {
+  notificationQueueMessage,
+  queueBookingEvent,
+} from '@/lib/notifications/booking-events'
 
 /** Kalenderns skriv- och sökvägar (goal-66). Admin-RPC:n delegerar själva slotten
  *  till samma create_public_booking som kundflödet använder — dubbelbokningsspärr,
@@ -240,7 +242,15 @@ export async function moveBooking(input: {
 
   revalidatePath('/admin/bokningar')
   revalidatePath('/admin')
-  return { success: 'Bokningen är flyttad.' }
+  const notification = await queueBookingEvent({
+    tenantId: tenant.id,
+    bookingId: input.bookingId,
+    type: 'booking_rebooked',
+    occurredAt: new Date().toISOString(),
+    startISO: input.startIso,
+    includeManageLink: true,
+  })
+  return { success: `Bokningen är flyttad. ${notificationQueueMessage(notification)}` }
 }
 
 export type BlockState = { success?: string; error?: string; blockId?: string }
@@ -804,75 +814,21 @@ export async function createAdminBooking(
   revalidatePath('/admin')
 
   const created = bookingResult.created === true
-  if (!created) {
-    return {
-      success: 'Bokningen var redan sparad. Inget nytt meddelande skickades.',
-      bookingId,
-    }
-  }
-
-  // NOTISEN. Drawern har redan visat exakt vad som skulle skickas — nu måste det
-  // faktiskt ske, annars ljuger UI:t. Valde användaren "Skicka inget" skickas inget.
-  //
-  // Skickas det: bokningen är ändå SPARAD. Ett trasigt mejlutskick får aldrig se ut
-  // som en misslyckad bokning — vi säger sanningen om båda delarna var för sig.
-  const wantsEmail = String(fd.get('notify') ?? '') === 'epost'
-  if (!wantsEmail) {
-    return {
-      success: 'Bokningen är sparad. Inget meddelande skickades.',
-      bookingId: String(bookingId),
-    }
-  }
-
-  const { data: fresh } = await supabase
-    .from('bookings')
-    .select('start_ts, services(name), staff(title), customers(email), locations(timezone)')
-    .eq('id', bookingId)
-    .eq('tenant_id', tenant.id)
-    .maybeSingle<{
-      start_ts: string
-      services: { name: string } | null
-      staff: { title: string | null } | null
-      customers: { email: string | null } | null
-      locations: { timezone: string } | null
-    }>()
-
-  const to = fresh?.customers?.email ?? (customerId ? null : guestEmail || null)
-  if (!to || !fresh) {
-    return {
-      success: 'Bokningen är sparad — men inget mejl kunde skickas (adress saknas).',
-      bookingId: String(bookingId),
-    }
-  }
-
-  try {
-    await sendBookingConfirmation(
-      to,
-      {
-        tenantName: tenant.name,
-        serviceName: fresh.services?.name ?? 'Bokning',
-        staffTitle: fresh.staff?.title ?? null,
-        startISO: fresh.start_ts,
-        // Tiden i mejlet ska stå i SALONGENS tidszon — kunden bryr sig om väggklockan,
-        // inte om UTC.
-        timeZone: fresh.locations?.timezone ?? tenant.timeZone,
-      },
-      {
-        supabase,
-        tenantId: tenant.id,
-        bookingId: String(bookingId),
-        origin: await requestOrigin(),
-      },
-    )
-  } catch {
-    return {
-      success: 'Bokningen är sparad, men bekräftelsemejlet gick inte iväg. Skicka det manuellt.',
-      bookingId: String(bookingId),
-    }
-  }
+  const wantsNotification = String(fd.get('notify') ?? '') === 'automatisk'
+  const notification = await queueBookingEvent({
+    tenantId: tenant.id,
+    bookingId,
+    type: 'booking_confirmation',
+    occurredAt: new Date().toISOString(),
+    startISO: start,
+    allow: wantsNotification,
+    skipReason: wantsNotification ? undefined : 'actor_opted_out',
+    includeManageLink: true,
+    includeAccountClaim: true,
+  })
 
   return {
-    success: `Bokningen är sparad. Bekräftelse skickad till ${to}.`,
+    success: `${created ? 'Bokningen är sparad.' : 'Bokningen var redan sparad.'} ${notificationQueueMessage(notification)}`,
     bookingId: String(bookingId),
   }
 }

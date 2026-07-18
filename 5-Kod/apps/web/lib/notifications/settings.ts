@@ -2,6 +2,13 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
 
+/** Fysisk plattformsgrind. Saknat, tomt, felstavat eller felcasing = av. */
+export type SmsDeliveryMode = 'off' | 'dry_run' | 'live'
+
+export function parseSmsDeliveryMode(value: string | undefined): SmsDeliveryMode {
+  return value === 'dry_run' || value === 'live' ? value : 'off'
+}
+
 // Owner-controlled notification settings (M9). There is no dedicated column this
 // wave (schema is shared/frozen), so — exactly like lib/kund/settings.ts'
 // getCancellationCutoffHours — these live in `tenant_settings.settings` (jsonb)

@@ -19,19 +19,25 @@ export function Bookable({
   as: Tag = 'div',
   className,
   label = 'Boka tid',
+  enabled = true,
 }: {
   children: ReactNode
   as?: ElementType
   className?: string
   /** Accessible name for the row (e.g. "Boka — Klippning dam"). */
   label?: string
+  enabled?: boolean
 }) {
   const booking = useBooking()
   const router = useRouter()
 
   const activate = () => {
-    if (booking && booking.available) booking.open()
-    else router.push('/boka')
+    if (booking) {
+      if (booking.available) booking.open()
+      else if (booking.reachable) router.push('/boka')
+      return
+    }
+    router.push('/boka')
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -39,6 +45,14 @@ export function Bookable({
       e.preventDefault()
       activate()
     }
+  }
+
+  if (!enabled || (booking && !booking.reachable)) {
+    return (
+      <Tag className={className} aria-disabled="true">
+        {children}
+      </Tag>
+    )
   }
 
   return (

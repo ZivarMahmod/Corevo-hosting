@@ -5,13 +5,9 @@
 // Auth → URL Configuration → Redirect URLs, annars ignoreras den tyst.
 
 const DEFAULT_PLATFORM = 'booking.corevo.se'
-const DEFAULT_STAFF = 'minbooking.corevo.se'
-
-/** staff → minbooking (personal-portalen), admin → booking (salongsägare). */
+/** Staff och admin accepterar invite på den primära booking-dörren. */
 export function inviteRedirectUrl(door: 'staff' | 'admin'): string {
-  const host =
-    door === 'staff'
-      ? (process.env.NEXT_PUBLIC_STAFF_HOST ?? DEFAULT_STAFF)
-      : (process.env.NEXT_PUBLIC_PLATFORM_HOST ?? DEFAULT_PLATFORM)
+  void door
+  const host = process.env.NEXT_PUBLIC_PLATFORM_HOST ?? DEFAULT_PLATFORM
   return `https://${host}/valkommen`
 }

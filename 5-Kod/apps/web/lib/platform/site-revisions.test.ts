@@ -109,6 +109,26 @@ describe('deriveSiteScheduleHours', () => {
 })
 
 describe('sanitizeSiteSnapshot', () => {
+  it('sanerar exakt legacy Snitt-standard men bevarar kundskapad statistik', () => {
+    const legacyStats = [
+      ['5,0★', 'Snittbetyg'],
+      ['Tre', 'Stolar'],
+      ['75 min', 'Snitt per besök'],
+    ]
+    const ownerStats = [['4,8★', 'Verifierat betyg']]
+
+    expect(sanitizeSiteSnapshot({
+      ...validSnapshot,
+      settings: { ...validSnapshot.settings, theme: 'snitt' },
+      branding: { stats: legacyStats },
+    })?.branding.stats).toEqual([])
+    expect(sanitizeSiteSnapshot({
+      ...validSnapshot,
+      settings: { ...validSnapshot.settings, theme: 'snitt' },
+      branding: { stats: ownerStats },
+    })?.branding.stats).toEqual(ownerStats)
+  })
+
   it('normalizes contact links and rejects invalid email/social hrefs', () => {
     expect(sanitizeSiteSnapshot({
       ...validSnapshot,

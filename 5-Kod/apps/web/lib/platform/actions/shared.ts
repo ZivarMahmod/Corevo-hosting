@@ -6,6 +6,8 @@ import type { DcvRecord } from '@/lib/cloudflare/custom-hostnames'
 export type ActionState = {
   error?: string
   success?: string
+  /** The primary action succeeded, but a secondary guarantee did not. */
+  warning?: string
   /** On a successful createTenant: the new tenant's id + slug, so the onboarding-studio
    *  result-vy (W6) can link the real /salonger/[id] + show the reserved public address.
    *  Optional + additive — message-only consumers (CreateTenantForm) ignore it. */

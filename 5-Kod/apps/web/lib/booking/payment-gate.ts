@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
+import { commerceReleaseGate } from '../release/commerce'
 
 // SINGLE source of truth for "ska denna bokning ta betalt online vid bokning?".
 // Gate = payments_enabled (salongens master-toggle) AND stripe_charges_enabled
@@ -10,13 +11,23 @@ import type { Database } from '@corevo/db'
 export type PaymentGate = {
   paymentsEnabled: boolean
   chargesEnabled: boolean
+  releaseEnabled: boolean
   /** True ⇒ boka-flödet startar Stripe Checkout; annars "betala på plats". */
   canTakeOnline: boolean
 }
 
 /** Pure form — used by the confirmation page where flags come from the RPC. */
-export function paymentGateFromFlags(paymentsEnabled: boolean, chargesEnabled: boolean): PaymentGate {
-  return { paymentsEnabled, chargesEnabled, canTakeOnline: paymentsEnabled && chargesEnabled }
+export function paymentGateFromFlags(
+  paymentsEnabled: boolean,
+  chargesEnabled: boolean,
+  releaseEnabled = false,
+): PaymentGate {
+  return {
+    paymentsEnabled,
+    chargesEnabled,
+    releaseEnabled,
+    canTakeOnline: paymentsEnabled && chargesEnabled && releaseEnabled,
+  }
 }
 
 /** Read the gate for a tenant (works with the anon public client or service-role). */
@@ -31,5 +42,6 @@ export async function getPaymentGate(
   return paymentGateFromFlags(
     settings?.payments_enabled ?? false,
     tenant?.stripe_charges_enabled ?? false,
+    commerceReleaseGate(tenantId).bookingPayment,
   )
 }

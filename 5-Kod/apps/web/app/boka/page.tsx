@@ -10,6 +10,8 @@ import {
 } from '@/components/booking/BookingWizard'
 import { resolveStaffNoun } from '@/components/storefront/staff-noun'
 import { branschBokning } from '@/components/storefront/bransch-copy'
+import { getTenantModuleStates } from '@/lib/tenant-modules'
+import { bookingModuleAccess } from '@/components/storefront/layouts/booking-access'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Boka tid' }
@@ -35,6 +37,24 @@ export default async function BokaPage({
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant } = bundle
+  const bookingAccess = bookingModuleAccess(await getTenantModuleStates(tenant.id, tenant.slug))
+  if (bookingAccess === 'hidden') notFound()
+
+  // BRANSCH-REGELN: verbet kommer ur bransch-lagret, aldrig hårdkodat. En florist
+  // bokar konsultation, en restaurang bokar bord — inte "tid".
+  const bokning = branschBokning(tenant.vertical_id)
+  if (bookingAccess === 'paused') {
+    return (
+      <section className="section">
+        <div className="section-inner">
+          <h1>
+            {bokning.hosPrefix} {tenant.name}
+          </h1>
+          <p className="prose">Onlinebokningen är tillfälligt pausad. Kontakta verksamheten för hjälp.</p>
+        </div>
+      </section>
+    )
+  }
 
   const sp = await searchParams
   const one = (v: string | string[] | undefined): string | null =>
@@ -125,10 +145,6 @@ export default async function BokaPage({
     priceCents: s.price_cents,
     staff: staffByService[s.id] ?? [],
   }))
-
-  // BRANSCH-REGELN: verbet kommer ur bransch-lagret, aldrig hårdkodat. En florist
-  // bokar konsultation, en restaurang bokar bord — inte "tid".
-  const bokning = branschBokning(tenant.vertical_id)
 
   return (
     <section className="section">

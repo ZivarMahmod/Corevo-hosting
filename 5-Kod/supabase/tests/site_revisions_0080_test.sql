@@ -14,14 +14,15 @@ insert into public.tenant_settings (tenant_id, settings, branding) values
   ('80000000-0000-0000-0000-000000000002', '{}', '{}');
 insert into public.roles (id, tenant_id, name, level) values
   ('80000000-0000-0000-0000-000000000021', '80000000-0000-0000-0000-000000000001', 'owner', 6),
-  ('80000000-0000-0000-0000-000000000022', null, 'platform', 8);
+  ('80000000-0000-0000-0000-000000000022', null, 'platform', 8),
+  ('80000000-0000-0000-0000-000000000023', '80000000-0000-0000-0000-000000000001', 'staff', 3);
 insert into auth.users (id, email) values
   ('80000000-0000-0000-0000-000000000101', 'site-owner@example.test'),
   ('80000000-0000-0000-0000-000000000102', 'site-location@example.test'),
   ('80000000-0000-0000-0000-000000000103', 'site-platform@example.test');
 insert into public.users (id, tenant_id, email, role_id, access_scope, status) values
   ('80000000-0000-0000-0000-000000000101', '80000000-0000-0000-0000-000000000001', 'site-owner@example.test', '80000000-0000-0000-0000-000000000021', 'organization', 'active'),
-  ('80000000-0000-0000-0000-000000000102', '80000000-0000-0000-0000-000000000001', 'site-location@example.test', '80000000-0000-0000-0000-000000000021', 'locations', 'active'),
+  ('80000000-0000-0000-0000-000000000102', '80000000-0000-0000-0000-000000000001', 'site-location@example.test', '80000000-0000-0000-0000-000000000023', 'locations', 'active'),
   ('80000000-0000-0000-0000-000000000103', '80000000-0000-0000-0000-000000000001', 'site-platform@example.test', '80000000-0000-0000-0000-000000000022', 'organization', 'active');
 
 -- Organization owner: create, update and publish one optimistic draft.
@@ -46,7 +47,21 @@ end $$;
 set local role authenticated;
 
 -- Direct RPC callers must submit the same complete canonical snapshot as the web action.
-do $$ begin
+do $$
+declare
+  v_base jsonb := '{
+    "tenant":{"name":"Canonical"},
+    "settings":{
+      "copy":{},"theme":"kalla",
+      "contact":{"email":null,"phone":null},
+      "social":{"instagram":null,"facebook":null,"tiktok":null},
+      "map":null,"opening_hours":null,
+      "seo":{"title":null,"description":null},
+      "booking":{"variant":"wizard","pickerMode":"calendar","staffAvatars":"initialer"}
+    },
+    "branding":{},"location":{"address":null}
+  }'::jsonb;
+begin
   begin
     perform public.save_site_draft(
       '80000000-0000-0000-0000-000000000001',
@@ -122,7 +137,7 @@ begin
   begin
     perform public.save_site_draft(
       '80000000-0000-0000-0000-000000000001',
-      jsonb_set(v_base, '{tenant,name}', to_jsonb(E'\tCanonical')),
+      jsonb_set(v_base, '{tenant,name}', to_jsonb(E'\tCanonical'::text)),
       null
     );
     raise exception 'unicode_whitespace_name_succeeded';
@@ -333,7 +348,7 @@ begin
   end if;
 end $$;
 
--- Cross-tenant and location-scoped admins are denied by current DB truth.
+-- Cross-tenant callers and staff without the explicit site grant are denied.
 do $$ begin
   begin
     perform public.save_site_draft(

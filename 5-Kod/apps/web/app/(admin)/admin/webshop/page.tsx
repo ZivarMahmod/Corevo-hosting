@@ -8,6 +8,7 @@ import { parsePaymentMethods } from '@/lib/storefront/shop/types'
 import { listMediaAssets } from '@/lib/admin/media/data'
 import { ShopAdmin } from '@/components/admin/ShopAdmin'
 import { PageHead, Callout } from '@/components/portal/ui'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Webshop · Adminpanel' }
@@ -20,6 +21,18 @@ export default async function WebshopPage() {
       <section className="portal-section">
         <PageHead eyebrow="Adminpanel" title="Webshop" />
         <p className="prose">Inget företag är kopplat till ditt konto.</p>
+      </section>
+    )
+  }
+
+  if (!commerceReleaseGate(tenant.id).shop) {
+    return (
+      <section className="portal-section">
+        <PageHead eyebrow={tenant.name} title="Webshop" />
+        <Callout tone="info" icon="info">
+          Webshop är inte frisläppt för pilotdrift. Bokning och kundrelation körs först;
+          handeln öppnas efter separat verifiering av betalning, reservationer och leverans.
+        </Callout>
       </section>
     )
   }

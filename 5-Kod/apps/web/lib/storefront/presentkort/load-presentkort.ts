@@ -22,11 +22,12 @@
 // GATING IS THE CALLER'S JOB: this loader does not check module state. The
 // storefront resolves tenant_modules.state via getTenantModuleStates() and only
 // renders PresentkortSection when presentkort === 'live' (same shape as the booking
-// + shop + offert + blogg + lojalitet gate). A draft/off/paused presentkort never
-// reaches loadPresentkortData.
+// + shop + offert + blogg + lojalitet gate). Off/draft når aldrig loadern; paused
+// laddas för den stängda publika vyn.
 
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 import { parsePresentkortConfig, type PresentkortConfig, type PresentkortData } from './types'
 
 /**
@@ -41,6 +42,7 @@ export async function loadPresentkortData(
   tenantId: string,
   slug: string,
 ): Promise<PresentkortData | null> {
+  if (!commerceReleaseGate(tenantId).presentkort) return null
   const norm = slug.trim().toLowerCase()
   const load = unstable_cache(
     async (): Promise<PresentkortData | null> => {

@@ -113,10 +113,14 @@ export function PersonalCalendarPwa({
             <div className={styles.sheetMeta}><span><i />{ownCalendar ? 'din bokning' : 'bokning'} · {day}</span><button type="button" onClick={() => setSelectedId(null)}>✕</button></div>
             <div className={styles.sheetTitle}><strong>{fmtTime(selected.startTs, selected.timeZone)}</strong><span>{selected.serviceName ?? 'Bokning'}</span></div>
             <div className={styles.sheetCustomer}>
-              {selected.customerId ? <ClientCard customerId={selected.customerId} label={selected.customerLabel} bookingNote={selected.customerNote} /> : selected.customerLabel}
+              {selected.customerId ? <ClientCard customerId={selected.customerId} locationId={selected.locationId} label={selected.customerLabel} bookingNote={selected.customerNote} /> : selected.customerLabel}
             </div>
             {(selected.status === 'pending' || selected.status === 'confirmed') ? (
-              <BookingStatusActions bookingId={selected.id} timeZone={selected.timeZone} />
+              <BookingStatusActions
+                bookingId={selected.id}
+                timeZone={selected.timeZone}
+                endTs={selected.endTs}
+              />
             ) : <p className={styles.sheetState}>Status: {selected.status}</p>}
           </section>
         </div>

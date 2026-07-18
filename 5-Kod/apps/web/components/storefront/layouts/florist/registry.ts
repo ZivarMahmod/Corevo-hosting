@@ -1,6 +1,6 @@
 import type { FloristTheme } from './types'
 import { floristThemeBlock } from './types'
-import type { ThemeContentDefaults } from '../../theme-content'
+import type { ThemeContentDefaults } from '../../theme-content.types'
 import type { ThemeCaps, ExtraField } from '@/lib/platform/theme-capabilities'
 import { calytrix } from './calytrix.theme'
 import { aurora } from './aurora.theme'

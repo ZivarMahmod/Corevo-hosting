@@ -55,9 +55,8 @@ function Row({ b }: { b: StaffScheduleEntry }) {
   const isDone = b.status === 'completed'
   const dur = durationMin(b)
   const prefs = b.customerPrefs.slice(0, 2)
-  // The booking note is the customer-channel message — but for unlinked guests it
-  // carries the "Gäst: <name> <email>" contact seam, NOT a message. Only surface
-  // the note band when the row is a linked customer (FAS0 PII guard).
+  // The server payload has already stripped legacy contact seams. Only surface a
+  // customer message for a linked customer; identity comes from customer_id.
   const kundNote = b.customerId && b.customerNote ? b.customerNote : null
 
   return (
@@ -100,6 +99,7 @@ function Row({ b }: { b: StaffScheduleEntry }) {
             {b.customerId ? (
               <ClientCard
                 customerId={b.customerId}
+                locationId={b.locationId}
                 label={b.customerLabel}
                 bookingNote={b.customerNote}
               />
@@ -167,7 +167,7 @@ function Row({ b }: { b: StaffScheduleEntry }) {
       {/* operative actions for still-active bookings */}
       {isActive && (
         <div style={{ borderTop: '1px solid var(--c-line)', padding: '12px 18px' }}>
-          <BookingStatusActions bookingId={b.id} timeZone={b.timeZone} />
+          <BookingStatusActions bookingId={b.id} timeZone={b.timeZone} endTs={b.endTs} />
         </div>
       )}
     </Card>

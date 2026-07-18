@@ -7,9 +7,9 @@ type Phase = 'loading' | 'ready' | 'saving' | 'done' | 'invalid'
 
 /**
  * Tar emot inbjudnings-tokens ur URL-hashen, loggar in sessionen och låter
- * medarbetaren välja sitt lösenord. Full sidladdning till '/' efteråt så
- * middlewaren/dörr-logiken skickar till rätt portal (staff → /personal,
- * salon_admin → /admin) med färska cookies.
+ * medarbetaren välja sitt lösenord. Efteråt görs en full sidladdning till en
+ * serververifierad landningssida som läser den aktuella DB-rollen och skickar
+ * staff → /personal respektive salon_admin → /admin.
  */
 export function AcceptInviteForm() {
   const [phase, setPhase] = useState<Phase>('loading')
@@ -35,9 +35,9 @@ export function AcceptInviteForm() {
         setPhase('ready')
         return
       }
-      // Ingen hash — kanske redan inloggad (t.ex. sidladdning efter setSession).
-      const { data } = await supabase.auth.getUser()
-      setPhase(data.user ? 'ready' : 'invalid')
+      // Utan invite-token får en befintlig session aldrig återanvändas: annars
+      // skulle en gammal/trasig invite kunna byta lösenord på fel inloggat konto.
+      setPhase('invalid')
     }
     void run()
   }, [])
@@ -65,9 +65,9 @@ export function AcceptInviteForm() {
       return
     }
     setPhase('done')
-    // Full navigering (inte router.push) så middlewaren ser sessionen och
-    // dörr-logiken skickar till rätt portal.
-    window.location.href = '/'
+    // Full navigering (inte router.push) så servern ser de färska cookies som
+    // setSession skrev och kan välja portal från den DB-verifierade rollen.
+    window.location.href = '/fortsatt'
   }
 
   if (phase === 'loading') {

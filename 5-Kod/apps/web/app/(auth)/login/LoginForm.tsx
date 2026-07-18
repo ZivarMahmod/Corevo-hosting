@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useActionState, useEffect, useState } from 'react'
 import { signIn, type SignInState } from '../actions'
+import { isCustomerClaimPath } from '@/lib/kund/customer-claim'
 
 // fix-29 — purge a stale, BROADLY-scoped (.corevo.se) Supabase auth cookie before
 // login. Pre-host-split (G12/G13, AUTH_COOKIE_DOMAIN=.corevo.se) the session cookie
@@ -81,6 +82,12 @@ export function LoginForm({ next }: { next: string }) {
       <p className="auth-links">
         <Link href="/glomt-losenord">Glömt lösenordet?</Link>
       </p>
+
+      {isCustomerClaimPath(next) ? (
+        <p className="auth-links">
+          Ny kund? <Link href={`/registrera?next=${encodeURIComponent(next)}`}>Skapa konto från din säkra länk</Link>
+        </p>
+      ) : null}
 
       {state.error ? (
         <p className="auth-error" role="alert">

@@ -84,6 +84,22 @@ describe('resolveTenantCopy — per-field owner-vs-default fallback', () => {
 })
 
 describe('resolveThemeContent — copy override threaded through', () => {
+  it('drops only the exact saved legacy Snitt fact triple', () => {
+    const legacy = [
+      ['5,0★', 'Snittbetyg'],
+      ['Tre', 'Stolar'],
+      ['75 min', 'Snitt per besök'],
+    ] as [string, string][]
+    const ownerStats = [
+      ['4,8★', 'Verifierat betyg'],
+      ['Fyra', 'Stolar'],
+    ] as [string, string][]
+
+    expect(resolveThemeContent('snitt', { stats: legacy }).stats).toEqual([])
+    expect(resolveThemeContent('snitt', { stats: ownerStats }).stats).toEqual(ownerStats)
+    expect(resolveThemeContent('salvia', { stats: legacy }).stats).toEqual(legacy)
+  })
+
   it('without the 3rd arg, behaves exactly as before (theme-default copy)', () => {
     const base = THEME_CONTENT.leander
     const out = resolveThemeContent('leander', null)

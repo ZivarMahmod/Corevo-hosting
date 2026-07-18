@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { PORTAL_MIN_LEVEL, portalHomeFor, backofficeHostKindForRole } from './roles'
+import {
+  PORTAL_MIN_LEVEL,
+  portalHomeFor,
+  backofficeHostKindForRole,
+  isActiveLoginAccount,
+  loginAccessForHost,
+} from './roles'
 
 // Real seeded DB role levels are {2,3,6,8}. The portal thresholds must stay pinned
 // to those so that seeding a phantom level (4/5/7) can never silently shift the
@@ -52,5 +58,81 @@ describe('goal-27 backofficeHostKindForRole — door isolation (one door per rol
       backofficeHostKindForRole({ roleLevel: 2, platformAdmin: false }),
     ]
     expect(new Set(doors).size).toBe(3)
+  })
+})
+
+describe('pilot login host fence', () => {
+  it('rechecks profile and staff activation instead of trusting a stale JWT', () => {
+    expect(isActiveLoginAccount({ profileStatus: 'active', roleLevel: 2, activeStaff: false })).toBe(true)
+    expect(isActiveLoginAccount({ profileStatus: 'inactive', roleLevel: 2, activeStaff: false })).toBe(false)
+    expect(isActiveLoginAccount({ profileStatus: 'pending_claim', roleLevel: 2, activeStaff: false })).toBe(false)
+    expect(isActiveLoginAccount({ profileStatus: 'active', roleLevel: 3, activeStaff: false })).toBe(false)
+    expect(isActiveLoginAccount({ profileStatus: 'active', roleLevel: 3, activeStaff: true })).toBe(true)
+  })
+
+  it('allows staff on booking and on the explicit minbooking legacy door only', () => {
+    expect(
+      loginAccessForHost({
+        roleLevel: 3,
+        platformAdmin: false,
+        accountTenantId: 'tenant-a',
+        hostKind: 'platform',
+        hostTenantId: null,
+      }),
+    ).toEqual({ allowed: true, legacyStaff: false })
+    expect(
+      loginAccessForHost({
+        roleLevel: 3,
+        platformAdmin: false,
+        accountTenantId: 'tenant-a',
+        hostKind: 'staff_portal',
+        hostTenantId: null,
+      }),
+    ).toEqual({ allowed: true, legacyStaff: true })
+  })
+
+  it('never lets an owner or platform admin establish a minbooking session', () => {
+    expect(
+      loginAccessForHost({
+        roleLevel: 6,
+        platformAdmin: false,
+        accountTenantId: 'tenant-a',
+        hostKind: 'staff_portal',
+        hostTenantId: null,
+      }).allowed,
+    ).toBe(false)
+    expect(
+      loginAccessForHost({
+        roleLevel: 8,
+        platformAdmin: true,
+        accountTenantId: null,
+        hostKind: 'staff_portal',
+        hostTenantId: null,
+      }).allowed,
+    ).toBe(false)
+  })
+
+  it('allows a customer only on the matching tenant host', () => {
+    const base = {
+      roleLevel: 2,
+      platformAdmin: false,
+      accountTenantId: 'tenant-a',
+      hostKind: 'tenant' as const,
+    }
+    expect(loginAccessForHost({ ...base, hostTenantId: 'tenant-a' }).allowed).toBe(true)
+    expect(loginAccessForHost({ ...base, hostTenantId: 'tenant-b' }).allowed).toBe(false)
+    expect(loginAccessForHost({ ...base, hostTenantId: null }).allowed).toBe(false)
+  })
+
+  it('never lets a back-office role establish a tenant-storefront session', () => {
+    expect(
+      loginAccessForHost({
+        roleLevel: 3,
+        platformAdmin: false,
+        accountTenantId: 'tenant-a',
+        hostKind: 'tenant',
+        hostTenantId: 'tenant-a',
+      }).allowed,
+    ).toBe(false)
   })
 })

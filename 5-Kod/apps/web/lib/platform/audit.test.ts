@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyAuditActor, classifyAuditTone } from './audit'
+import { classifyAuditActor, classifyAuditTone, logPlatformAction } from './audit'
 
 // Pure classification for the Drift & logg actor filter + row tone. audit_log
 // stores dotted action keys (tenant.suspend, booking.status.pending …); these map
@@ -38,5 +38,34 @@ describe('classifyAuditTone', () => {
   it('plain booking status is neutral; everything else info', () => {
     expect(classifyAuditTone('booking.status.pending')).toBe('neutral')
     expect(classifyAuditTone('tenant.branding')).toBe('info')
+  })
+})
+
+describe('logPlatformAction', () => {
+  const args = {
+    action: 'tenant.password_reset' as const,
+    tenantId: '11111111-1111-4111-8111-111111111111',
+    actorId: '22222222-2222-4222-8222-222222222222',
+  }
+
+  it('returnerar verifierad success endast när insert saknar DB-fel', async () => {
+    const insert = async () => ({ error: null })
+    const client = { from: () => ({ insert }) }
+
+    await expect(logPlatformAction(client as never, args)).resolves.toEqual({ ok: true })
+  })
+
+  it('gör DB-fel observerbart utan att kasta efter den redan utförda huvudhandlingen', async () => {
+    const insert = async () => ({ error: { message: 'audit unavailable' } })
+    const client = { from: () => ({ insert }) }
+
+    await expect(logPlatformAction(client as never, args)).resolves.toEqual({ ok: false })
+  })
+
+  it('gör kast från auditklienten observerbart utan att kasta vidare', async () => {
+    const insert = async () => { throw new Error('network down') }
+    const client = { from: () => ({ insert }) }
+
+    await expect(logPlatformAction(client as never, args)).resolves.toEqual({ ok: false })
   })
 })

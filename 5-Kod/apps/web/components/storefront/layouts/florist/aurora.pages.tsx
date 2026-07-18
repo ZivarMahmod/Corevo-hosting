@@ -62,7 +62,9 @@ export function AuroraOm({ content, tenant }: ThemePageProps) {
   )
 }
 
-export function AuroraTjanster({ content, services }: ThemePageProps) {
+export function AuroraTjanster({ content, services, modules }: ThemePageProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
+  const offertReachable = modules?.offertReachable ?? false
   return (
     <div className={styles.auPage}>
       <div className={styles.auPageHead}>
@@ -93,7 +95,7 @@ export function AuroraTjanster({ content, services }: ThemePageProps) {
               <p className={styles.auSvcName}>{s.name}</p>
               <p className={styles.auSvcDesc}>{serviceDesc(s)}</p>
               <p className={styles.auSvcPrice}>{formatPrice(s)}</p>
-              <Bookable className={styles.auSvcBook} label={`Boka — ${s.name}`}>
+              <Bookable enabled={bookingReachable} className={styles.auSvcBook} label={`Boka — ${s.name}`}>
                 Boka plats
               </Bookable>
             </Reveal>
@@ -102,8 +104,9 @@ export function AuroraTjanster({ content, services }: ThemePageProps) {
       )}
 
       <p className={styles.auSvcFoot}>
-        Privat grupp eller möhippa? <a href="/offert">Be om en offert</a> så ordnar vi ett eget
-        event.
+        Privat grupp eller möhippa?{' '}
+        {offertReachable ? <a href="/offert">Be om en offert</a> : <span>Be om en offert</span>}{' '}
+        så ordnar vi ett eget event.
       </p>
     </div>
   )

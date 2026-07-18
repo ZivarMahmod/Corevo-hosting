@@ -6,15 +6,12 @@ import {
   relativeVisitSv,
   isInactiveSince,
   restoreBlockedByRefund,
-  type BookingStatus,
 } from './format'
 
 // Pins the admin status-transition contract (VÅG 2). The verify that found the
 // original gaps was a code-read; this locks the invariant so a future edit to
 // ALLOWED_FROM can't silently re-open them.
 describe('ALLOWED_FROM status-transition matrix', () => {
-  const sources = (Object.values(ALLOWED_FROM) as BookingStatus[][]).flat()
-
   it('has an entry for every booking status', () => {
     for (const s of BOOKING_STATUSES) expect(ALLOWED_FROM[s]).toBeDefined()
   })
@@ -31,12 +28,18 @@ describe('ALLOWED_FROM status-transition matrix', () => {
     }
   })
 
-  it('lets `completed` be corrected — it appears as a source', () => {
-    expect(sources).toContain('completed')
+  it('corrects completed only directly to no_show', () => {
+    expect(ALLOWED_FROM.no_show).toContain('completed')
+    for (const target of ['pending', 'confirmed', 'cancelled'] as const) {
+      expect(ALLOWED_FROM[target]).not.toContain('completed')
+    }
   })
 
-  it('lets `no_show` be corrected — it appears as a source', () => {
-    expect(sources).toContain('no_show')
+  it('corrects no_show only directly to completed', () => {
+    expect(ALLOWED_FROM.completed).toContain('no_show')
+    for (const target of ['pending', 'confirmed', 'cancelled'] as const) {
+      expect(ALLOWED_FROM[target]).not.toContain('no_show')
+    }
   })
 
   it('never lists a status as a source of itself (same-status save is a no-op, not a transition)', () => {
@@ -45,8 +48,9 @@ describe('ALLOWED_FROM status-transition matrix', () => {
     }
   })
 
-  it('completed→cancelled is reachable (paid+completed booking can be cancelled+refunded)', () => {
-    expect(ALLOWED_FROM.cancelled).toContain('completed')
+  it('does not reopen a terminal outcome through cancelled', () => {
+    expect(ALLOWED_FROM.cancelled).not.toContain('completed')
+    expect(ALLOWED_FROM.cancelled).not.toContain('no_show')
   })
 })
 

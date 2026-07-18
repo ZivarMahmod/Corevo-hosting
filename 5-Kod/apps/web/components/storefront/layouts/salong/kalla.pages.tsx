@@ -83,8 +83,9 @@ function groupServices(services: Service[]): { name: string | null; items: Servi
   return groups
 }
 
-export function KallaTjanster({ content, services }: ThemePageProps) {
+export function KallaTjanster({ content, services, modules }: ThemePageProps) {
   const groups = groupServices(services)
+  const bookingReachable = modules?.bookingReachable ?? false
 
   return (
     <section className={styles.kaPage}>
@@ -106,7 +107,7 @@ export function KallaTjanster({ content, services }: ThemePageProps) {
               </div>
             ) : null}
             {g.items.map((s) => (
-              <Bookable key={s.id} className={styles.kaPriceRow} label={`Boka — ${s.name}`}>
+              <Bookable enabled={bookingReachable} key={s.id} className={styles.kaPriceRow} label={`Boka — ${s.name}`}>
                 <span className={styles.kaPriceMain}>
                   <span className={styles.kaPriceName}>{s.name}</span>
                   <span className={styles.kaPriceDesc}>{serviceDesc(s)}</span>

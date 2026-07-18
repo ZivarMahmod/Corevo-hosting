@@ -2,12 +2,42 @@ import { describe, it, expect } from 'vitest'
 import {
   aggregateStats,
   availableMinutes,
+  collectAllPages,
   isPeriod,
   periodRange,
   DEFAULT_WORKDAY_MIN,
   type StatBooking,
   type StatsInput,
 } from './stats'
+
+describe('statistikens stabila pagination', () => {
+  it('hämtar fler än PostgRESTs vanliga 1000 rader utan att tappa svansen', async () => {
+    const source = Array.from({ length: 2_501 }, (_, id) => ({ id }))
+    const calls: Array<[number, number]> = []
+    const rows = await collectAllPages(async (from, to) => {
+      calls.push([from, to])
+      return { data: source.slice(from, to + 1), error: null }
+    })
+
+    expect(rows).toHaveLength(2_501)
+    expect(rows.at(-1)).toEqual({ id: 2_500 })
+    expect(calls).toEqual([
+      [0, 999],
+      [1_000, 1_999],
+      [2_000, 2_999],
+    ])
+  })
+
+  it('kastar vid ett sidfel i stället för att visa trunkerad statistik', async () => {
+    await expect(
+      collectAllPages(async (from) =>
+        from === 0
+          ? { data: Array.from({ length: 1_000 }, (_, id) => ({ id })), error: null }
+          : { data: null, error: { message: 'page failed' } },
+      ),
+    ).rejects.toThrow('page failed')
+  })
+})
 
 // Aggregeringen är ren (ingen DB) just för att kunna låsas här. Fönstret nedan är
 // EN vecka i Europe/Stockholm: mån 2026-06-01 → mån 2026-06-08.
@@ -45,17 +75,18 @@ function input(over: Partial<StatsInput> = {}): StatsInput {
 }
 
 describe('aggregateStats — pengarna', () => {
-  it('summerar omsättning på aktiva bokningar och hoppar över avbokade', () => {
+  it('skiljer bokningsvärde från genomfört tjänstevärde', () => {
     const s = aggregateStats(
       input({
         rows: [
           booking({ priceCents: 60_000 }),
-          booking({ priceCents: 40_000 }),
+          booking({ priceCents: 40_000, status: 'completed' }),
           booking({ priceCents: 99_900, status: 'cancelled' }),
         ],
       }),
     )
-    expect(s.revenueCents).toBe(100_000)
+    expect(s.bookedValueCents).toBe(100_000)
+    expect(s.realizedValueCents).toBe(40_000)
     expect(s.bookings).toBe(2)
     expect(s.cancellations).toBe(1)
   })
@@ -78,18 +109,19 @@ describe('aggregateStats — pengarna', () => {
       }),
     )
     expect(s.noShows).toBe(2)
-    expect(s.noShowLostCents).toBe(75_000)
+    expect(s.noShowBookedValueCents).toBe(75_000)
     // Uteblivna får ALDRIG smyga in i pengarna eller besöken.
-    expect(s.revenueCents).toBe(60_000)
+    expect(s.bookedValueCents).toBe(60_000)
+    expect(s.realizedValueCents).toBe(0)
     expect(s.bookings).toBe(1)
-    expect(s.avgOrderCents).toBe(60_000)
+    expect(s.avgBookingValueCents).toBe(60_000)
   })
 
   it('uteblivna är varken bokade minuter, topplista eller trendgraf', () => {
     const s = aggregateStats(
       input({
         rows: [
-          booking({ serviceName: 'Klippning', priceCents: 60_000 }),
+          booking({ status: 'completed', serviceName: 'Klippning', priceCents: 60_000 }),
           booking({
             status: 'no_show',
             serviceName: 'Färgning',
@@ -103,7 +135,7 @@ describe('aggregateStats — pengarna', () => {
     expect(s.bookedMinutes).toBe(60) // bara den aktiva timmen
     expect(s.topServices.map((t) => t.name)).toEqual(['Klippning'])
     expect(s.topStaff.map((t) => t.name)).toEqual(['Alex'])
-    expect(s.byMonth.reduce((sum, m) => sum + m.revenueCents, 0)).toBe(0)
+    expect(s.byMonth.reduce((sum, m) => sum + m.bookedValueCents, 0)).toBe(0)
     expect(s.byMonth.reduce((sum, m) => sum + m.bookings, 0)).toBe(0)
     // och de bär inte veckodags-/timfördelningen heller
     expect(s.byWeekday.reduce((a, b) => a + b, 0)).toBe(1)
@@ -124,13 +156,14 @@ describe('aggregateStats — pengarna', () => {
       input({
         rows: [
           // 60 min / 600 kr
-          booking({ startTs: '2026-06-01T08:00:00.000Z', endTs: '2026-06-01T09:00:00.000Z', priceCents: 60_000 }),
+          booking({ status: 'completed', startTs: '2026-06-01T08:00:00.000Z', endTs: '2026-06-01T09:00:00.000Z', priceCents: 60_000 }),
           // 30 min / 300 kr
-          booking({ startTs: '2026-06-02T08:00:00.000Z', endTs: '2026-06-02T08:30:00.000Z', priceCents: 30_000 }),
+          booking({ status: 'completed', startTs: '2026-06-02T08:00:00.000Z', endTs: '2026-06-02T08:30:00.000Z', priceCents: 30_000 }),
         ],
       }),
     )
-    expect(s.avgOrderCents).toBe(45_000) // 900 kr / 2
+    expect(s.avgBookingValueCents).toBe(45_000) // 900 kr / 2
+    expect(s.avgCompletedServiceValueCents).toBe(45_000)
     expect(s.avgDurationMin).toBe(45)
     expect(s.avgPerMinuteCents).toBe(1_000) // 90 000 öre / 90 min = 10 kr/min
     expect(s.avgPerHourCents).toBe(60_000) // 600 kr/timme
@@ -138,11 +171,11 @@ describe('aggregateStats — pengarna', () => {
 
   it('delar aldrig med noll — tom period ger nollor, inte NaN', () => {
     const s = aggregateStats(input())
-    expect(s.avgOrderCents).toBe(0)
+    expect(s.avgBookingValueCents).toBe(0)
     expect(s.cancellationRate).toBe(0)
     expect(s.occupancyRate).toBe(0)
     expect(s.retentionRate).toBe(0)
-    expect(s.deltas.revenue).toBeNull()
+    expect(s.deltas.bookedValue).toBeNull()
   })
 })
 
@@ -176,14 +209,14 @@ describe('aggregateStats — jämförelse mot föregående period', () => {
         prevRows: [booking({ priceCents: 100_000 })],
       }),
     )
-    expect(s.deltas.revenue).toBeCloseTo(50, 6) // 1000 kr → 1500 kr
+    expect(s.deltas.bookedValue).toBeCloseTo(50, 6) // 1000 kr → 1500 kr
     expect(s.deltas.bookings).toBeCloseTo(100, 6) // 1 → 2
   })
 
   it('null när föregående period var noll — inte Infinity', () => {
     const s = aggregateStats(input({ rows: [booking()] }))
     expect(s.deltas.bookings).toBeNull()
-    expect(s.deltas.avgOrder).toBeNull()
+    expect(s.deltas.avgBookingValue).toBeNull()
   })
 })
 
@@ -192,18 +225,18 @@ describe('aggregateStats — topplistor', () => {
     const s = aggregateStats(
       input({
         rows: [
-          booking({ serviceName: 'A', staffName: 'Alex', priceCents: 10_000 }),
-          booking({ serviceName: 'B', staffName: 'Bo', priceCents: 90_000 }),
-          booking({ serviceName: 'B', staffName: 'Bo', priceCents: 10_000 }),
-          booking({ serviceName: 'C', staffName: 'Cleo', priceCents: 5_000 }),
-          booking({ serviceName: 'D', staffName: 'Dana', priceCents: 4_000 }),
-          booking({ serviceName: 'E', staffName: 'Eli', priceCents: 3_000 }),
-          booking({ serviceName: 'F', staffName: 'Fry', priceCents: 2_000 }),
+          booking({ status: 'completed', serviceName: 'A', staffName: 'Alex', priceCents: 10_000 }),
+          booking({ status: 'completed', serviceName: 'B', staffName: 'Bo', priceCents: 90_000 }),
+          booking({ status: 'completed', serviceName: 'B', staffName: 'Bo', priceCents: 10_000 }),
+          booking({ status: 'completed', serviceName: 'C', staffName: 'Cleo', priceCents: 5_000 }),
+          booking({ status: 'completed', serviceName: 'D', staffName: 'Dana', priceCents: 4_000 }),
+          booking({ status: 'completed', serviceName: 'E', staffName: 'Eli', priceCents: 3_000 }),
+          booking({ status: 'completed', serviceName: 'F', staffName: 'Fry', priceCents: 2_000 }),
         ],
       }),
     )
     expect(s.topServices).toHaveLength(5)
-    expect(s.topServices[0]).toEqual({ name: 'B', count: 2, revenueCents: 100_000 })
+    expect(s.topServices[0]).toEqual({ name: 'B', count: 2, realizedValueCents: 100_000 })
     expect(s.topStaff[0]!.name).toBe('Bo')
     expect(s.topServices.map((e) => e.name)).not.toContain('F')
   })
@@ -213,7 +246,10 @@ describe('aggregateStats — kunderna', () => {
   it('ny = first_seen_at inom perioden, återkommande = resten', () => {
     const s = aggregateStats(
       input({
-        rows: [booking({ customerId: 'c1' }), booking({ customerId: 'c2' })],
+        rows: [
+          booking({ status: 'completed', customerId: 'c1' }),
+          booking({ status: 'completed', customerId: 'c2' }),
+        ],
         customers: [
           { id: 'c1', firstSeenAt: '2026-06-02T10:00:00.000Z' }, // inom
           { id: 'c2', firstSeenAt: '2025-01-02T10:00:00.000Z' }, // före
@@ -228,9 +264,9 @@ describe('aggregateStats — kunderna', () => {
     const s = aggregateStats(
       input({
         rows: [
-          booking({ customerId: 'c1' }),
-          booking({ customerId: 'c1' }),
-          booking({ customerId: 'c2' }),
+          booking({ status: 'completed', customerId: 'c1' }),
+          booking({ status: 'completed', customerId: 'c1' }),
+          booking({ status: 'completed', customerId: 'c2' }),
         ],
         customers: [
           { id: 'c1', firstSeenAt: '2020-01-01T00:00:00.000Z' },
@@ -280,7 +316,8 @@ describe('aggregateStats — tiden', () => {
     expect(s.byMonth).toHaveLength(12)
     expect(s.byMonth.at(-1)!.month).toBe('2026-06')
     expect(s.byMonth.at(-1)!.bookings).toBe(1)
-    expect(s.byMonth.at(-1)!.revenueCents).toBe(20_000)
+    expect(s.byMonth.at(-1)!.bookedValueCents).toBe(20_000)
+    expect(s.byMonth.at(-1)!.realizedValueCents).toBe(0)
     expect(s.byMonth[0]!.bookings).toBe(0)
   })
 })

@@ -305,11 +305,11 @@ function manifestFor(kind: EditorManifestKind, defaults: ResolvedThemeContent, t
       }] : []),
       ...(kind === 'snitt' ? [{
         id: 'rating-data',
-        title: 'Betygsraden',
+        title: 'Google-recensionslänk',
         info: {
-          text: 'Betyget och antalet recensioner hämtas från era Google-recensioner och uppdateras automatiskt.',
+          text: 'Länken kan användas i recensionsförfrågan efter ett genomfört besök. Ingen betygs- eller recensionsdata hämtas automatiskt.',
           href: '/admin/installningar/integrationer',
-          label: 'Koppla under Inställningar → Integrationer',
+          label: 'Lägg in länk under Inställningar → Integrationer',
         },
       }] : []),
       {

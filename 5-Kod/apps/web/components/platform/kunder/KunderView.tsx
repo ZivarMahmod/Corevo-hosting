@@ -341,7 +341,7 @@ export function KunderView({
 
             <p className={styles.auditNote}>
               <Icon name="info" size={14} />
-              <span>Varje åtgärd loggas i audit-loggen med dig som aktör.</span>
+            <span>Om auditloggen inte kan skrivas visas en varning efter reset. Kopiera e-post sker bara i webbläsaren och loggas inte.</span>
             </p>
           </div>
         </Drawer>
@@ -492,6 +492,7 @@ export function KunderView({
     startTransition(async () => {
       const res = await sendPasswordReset({}, fd)
       if (res.error) notify(res.error, 'warning')
+      else if (res.warning) notify(res.warning, 'warning')
       else notify(`Återställningslänk skapad för ${c.email}.`, 'success')
     })
   }

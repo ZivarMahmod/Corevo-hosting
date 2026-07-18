@@ -24,7 +24,7 @@ describe('personalens bokningsbara onboarding', () => {
     expect(migration).toContain('and other_staff.active = true')
     expect(migration).toContain("set status = 'inactive'")
     expect(actions).toContain("rpc('set_staff_active'")
-    expect(actions).toContain('removeInvitedStaffUser')
+    expect(actions).toContain('compensateAdminStaffInvite')
     expect(actions).toContain('if (metadataError)')
     expect(actions).toContain('if (linkErr || !linked)')
   })
@@ -63,6 +63,36 @@ describe('personalens bokningsbara onboarding', () => {
     expect(actions.slice(inviteStart, inviteAuth)).toContain("fd.get('location_id')")
     expect(actions.slice(inviteStart, inviteAuth)).toContain('resolveActiveStaffLocation')
     expect(actions.slice(inviteStart)).toContain('p_location: locationId')
+  })
+
+  it('verifierar exakt personalrad och kompenserar invite-fel utan att radera en vinnare', () => {
+    const adminActions = readWeb('lib/admin/actions.ts')
+    const platformActions = readWeb('lib/platform/actions/people.ts')
+    const adminStart = adminActions.indexOf('export async function inviteStaff')
+    const adminEnd = adminActions.indexOf('// ── Working hours', adminStart)
+    const adminInvite = adminActions.slice(adminStart, adminEnd)
+    const platformStart = platformActions.indexOf('export async function inviteTenantStaff')
+    const platformEnd = platformActions.indexOf('export async function updateTenantStaff', platformStart)
+    const platformInvite = platformActions.slice(platformStart, platformEnd)
+
+    expect(adminInvite.indexOf('findStaffInviteBinding')).toBeLessThan(
+      adminInvite.indexOf('inviteUserByEmail'),
+    )
+    expect(adminInvite).toContain(".is('profile_id', null)")
+    expect(adminInvite).toContain('compensateAdminStaffInvite')
+    expect(adminInvite).toContain('manual_cleanup_required')
+    expect(adminInvite).toContain('binding.authBoundStaffId && binding.authBoundStaffId !== staffId')
+
+    expect(platformInvite.indexOf('findStaffInviteBinding')).toBeLessThan(
+      platformInvite.indexOf('inviteUserByEmail'),
+    )
+    expect(platformInvite).toContain('compensatePlatformStaffInvite')
+    expect(platformInvite).toContain('manual_cleanup_required')
+    expect(platformInvite).toContain('binding.authBoundStaffId && binding.authBoundStaffId !== staffId')
+    expect(platformInvite).toContain('if (metadataError)')
+    expect(platformInvite).toContain('if (uErr)')
+    expect(platformInvite).toContain('if (linkErr || !linked)')
+    expect(platformInvite).toContain('if (insErr)')
   })
 
   it('erbjuder platsval i båda flödena för ny personal', () => {

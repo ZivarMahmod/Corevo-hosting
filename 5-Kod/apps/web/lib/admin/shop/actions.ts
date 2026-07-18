@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { moduleCtx } from '@/lib/admin/module-ctx'
+import { moduleCtx as resolveModuleCtx } from '@/lib/admin/module-ctx'
 import { revalidateTenant } from '@/lib/admin/tenant'
 import { kronorToCents } from '@/lib/admin/format'
 import type { ActionState } from '@/lib/admin/actions'
@@ -10,9 +10,16 @@ import { refundShopOrder } from '@/lib/stripe/refund'
 import { SHOP_ORDER_STATUSES, isShopOrderTransitionAllowed, type ShopOrderStatus } from './types'
 import { parsePaymentMethods } from '@/lib/storefront/shop/types'
 import { sendOrderStatusEmail } from '@/lib/notifications/shop'
+import { commerceReleaseGate } from '@/lib/release/commerce'
+import { paypalReady } from '@/lib/payments/paypal'
 
 const NO_TENANT = 'Inget företag är kopplat till ditt konto.'
 const GENERIC = 'Något gick fel. Försök igen.'
+
+async function moduleCtx(fd: FormData) {
+  const ctx = await resolveModuleCtx(fd)
+  return ctx && commerceReleaseGate(ctx.tenant.id).shop ? ctx : null
+}
 
 /**
  * Resolve a submitted media asset id to a value safe to persist.
@@ -522,6 +529,10 @@ export async function setShopPaymentMethods(_p: ActionState, fd: FormData): Prom
   // filtreras bort av parsePaymentMethods: configen kan aldrig bära ett betalsätt
   // motorn saknar räls för.
   const methods = parsePaymentMethods(fd.getAll('method').map(String))
+  const paypalAvailable = commerceReleaseGate(ctx.tenant.id).paypal && paypalReady()
+  if (methods.includes('paypal') && !paypalAvailable) {
+    return { error: 'PayPal är inte frisläppt och anslutet ännu.' }
+  }
 
   const supabase = await createClient()
   const { data: row } = await supabase

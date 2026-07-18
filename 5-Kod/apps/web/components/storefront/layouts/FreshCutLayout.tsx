@@ -32,7 +32,8 @@ const SEC2_SUB = 'Välj den bästa. Såklart.'
 const SEC2_BODY =
   'Fresh Cut är en utmärkt val för herrklippning av flera anledningar. För det första är våra frisörer mycket erfarna och kunniga när det gäller att klippa herrhår, vilket garanterar en hög kvalitet på klippningen. För det andra använder Fresh Cut endast de bästa produkterna för att se till att varje klippning resulterar i ett snyggt och välvårdat hår. Slutligen har Fresh Cut en avslappnad och trevlig atmosfär, vilket gör det till en bekväm och avkopplande plats att besöka för en klippning.'
 
-export function FreshCutLayout({ content }: StorefrontLayoutProps) {
+export function FreshCutLayout({ content, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   return (
     <>
       {/* HERO — full-bleed dark photo, wordmark + tagline bottom-left. No hero CTA:
@@ -71,7 +72,7 @@ export function FreshCutLayout({ content }: StorefrontLayoutProps) {
             {content.whyBody ?? SEC2_BODY}
           </p>
           <div className={fc.closingActions}>
-            <BookCta className={styles.sfClosingCta} />
+            <BookCta enabled={bookingReachable} className={styles.sfClosingCta} />
           </div>
         </Reveal>
       </section>

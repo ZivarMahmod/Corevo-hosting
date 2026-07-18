@@ -38,7 +38,8 @@ export function AteljeVinterOm({ content, tenant }: ThemePageProps) {
   )
 }
 
-export function AteljeVinterTjanster({ content, services }: ThemePageProps) {
+export function AteljeVinterTjanster({ content, services, modules }: ThemePageProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.avPageNarrow}>
       <p className={styles.avEyebrow}>{content.servicesEyebrow}</p>
@@ -48,7 +49,7 @@ export function AteljeVinterTjanster({ content, services }: ThemePageProps) {
       ) : (
         <div className={styles.avList}>
           {services.map((s) => (
-            <Bookable key={s.id} className={styles.avListRow} label={`beställ — ${s.name}`}>
+            <Bookable enabled={bookingReachable} key={s.id} className={styles.avListRow} label={`beställ — ${s.name}`}>
               <span>
                 <span className={styles.avListName}>{s.name}</span>
                 <span className={styles.avListDesc}>{serviceDesc(s)}</span>

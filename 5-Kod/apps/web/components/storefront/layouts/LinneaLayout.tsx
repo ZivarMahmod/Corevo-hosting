@@ -28,9 +28,10 @@ import ln from './linnea.module.css'
  * så de även når nav, sidfot och undersidorna (som inte laddar den här modulen).
  */
 export function LinneaLayout({ tenant, content, services, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
-  const presentkortLive = modules?.presentkortLive ?? false
+  const presentkortReachable = modules?.presentkortReachable ?? false
 
   return (
     <>
@@ -41,7 +42,7 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
           <h1 className={`${styles.heroTitle} ${ln.heroTitle}`}>{content.heroTitle}</h1>
           <p className={`sf-lede ${ln.heroLede}`}>{content.heroLede}</p>
           <div className={styles.sfSideActions}>
-            <BookCta className={styles.heroCta} />
+            <BookCta enabled={bookingReachable} className={styles.heroCta} />
             <span className={styles.sfSideNote}>eller drop in →</span>
           </div>
         </div>
@@ -65,7 +66,7 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
           <div className={styles.sfCardGrid}>
             {services.map((s, i) => (
               <Reveal as="div" key={s.id} delay={i * 60}>
-                <Bookable className={`${styles.sfCard} ${ln.card}`} label={`Boka — ${s.name}`}>
+                <Bookable enabled={bookingReachable} className={`${styles.sfCard} ${ln.card}`} label={`Boka — ${s.name}`}>
                   <span className={styles.sfCardIcon}>
                     <StorefrontIcon name="scissors" size={20} />
                   </span>
@@ -155,7 +156,7 @@ export function LinneaLayout({ tenant, content, services, modules }: StorefrontL
       ) : null}
 
       {/* PRESENTKORT — ett mjukt band i temats ton, inte en hel stapel-sektion */}
-      {presentkortLive ? (
+      {presentkortReachable ? (
         <section className={ln.giftBand}>
           <Reveal>
             <p className="sf-eyebrow">— Presentkort</p>

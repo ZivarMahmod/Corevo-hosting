@@ -1,16 +1,17 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
+import { sanitizeBookingNote } from '@/lib/booking/note'
+import { getCustomerId } from './customer'
 
 // ── Customer booking reads ──────────────────────────────────────────────────
 // SECURITY (two-layer, mirrors migration 0004's documented pattern):
 //   · cross-tenant isolation  → the bookings_rls policy (tenant_id = the JWT's
 //     private.tenant_id()) is a HARD fence; a kund of tenant A physically cannot
 //     read tenant B's rows. This is the DoD's "tenant A ser ej tenant B".
-//   · own-only, within a tenant → an APP-LAYER filter .eq('customer_profile_id',
-//     user.id). The authenticated bookings RLS is tenant-wide (it must be, for
-//     staff/admin), so the per-customer scope is enforced here AND re-checked in
-//     every mutating action. (A role-aware RLS policy that pins kund to their own
-//     rows is flagged as a follow-up migration — out of scope this wave.)
+//   · own-only, within a tenant → both the legacy customer_profile_id band and
+//     the durable customer_id resolved from auth_user_id. The 0076 RLS policy and
+//     these app filters enforce the same OR; privileged mutations re-check tenant,
+//     booking id, active status and the same ownership pair.
 
 export type KundBooking = {
   id: string
@@ -24,6 +25,7 @@ export type KundBooking = {
   staffTitle: string | null
   timeZone: string
   note: string | null
+  customerId?: string | null
 }
 
 type BookingJoinRow = {
@@ -35,13 +37,14 @@ type BookingJoinRow = {
   service_id: string
   staff_id: string
   note: string | null
+  customer_id: string | null
   services: { name: string } | null
   staff: { title: string | null } | null
   locations: { timezone: string } | null
 }
 
 const SELECT =
-  'id, status, start_ts, end_ts, price_cents, service_id, staff_id, note, ' +
+  'id, status, start_ts, end_ts, price_cents, service_id, staff_id, customer_id, note, ' +
   'services(name), staff(title), locations(timezone)'
 
 function map(r: BookingJoinRow): KundBooking {
@@ -56,7 +59,8 @@ function map(r: BookingJoinRow): KundBooking {
     serviceName: r.services?.name ?? null,
     staffTitle: r.staff?.title ?? null,
     timeZone: r.locations?.timezone ?? 'Europe/Stockholm',
-    note: r.note,
+    note: sanitizeBookingNote(r.note),
+    customerId: r.customer_id,
   }
 }
 
@@ -66,23 +70,28 @@ export type MyBookings = { upcoming: KundBooking[]; past: KundBooking[] }
 
 /**
  * All bookings belonging to the signed-in customer, split into upcoming
- * (active + not yet ended) and history. RLS scopes to the tenant; the
- * customer_profile_id filter scopes to this customer.
+ * (active + not yet ended) and everything that needs a truthful outcome label.
+ * `past` is not synonymous with visits: only status=completed is a visit.
+ * The legacy profile id and claimed durable customer id both scope to this user.
  */
-export async function getMyBookings(userId: string): Promise<MyBookings> {
+export async function getMyBookings(userId: string, tenantId: string): Promise<MyBookings> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const customerId = await getCustomerId(userId, tenantId)
+  let query = supabase
     .from('bookings')
     .select(SELECT)
-    .eq('customer_profile_id', userId)
     .order('start_ts', { ascending: true })
+  query = customerId
+    ? query.or(`customer_profile_id.eq.${userId},customer_id.eq.${customerId}`)
+    : query.eq('customer_profile_id', userId)
+  const { data } = await query
 
   const rows = ((data ?? []) as unknown as BookingJoinRow[]).map(map)
   const now = Date.now()
   const upcoming: KundBooking[] = []
   const past: KundBooking[] = []
   for (const b of rows) {
-    const isFuture = new Date(b.endTs).getTime() >= now
+    const isFuture = new Date(b.endTs).getTime() > now
     if (isFuture && ACTIVE_STATUSES.has(b.status)) upcoming.push(b)
     else past.push(b)
   }
@@ -92,14 +101,21 @@ export async function getMyBookings(userId: string): Promise<MyBookings> {
 }
 
 /** A single booking owned by the customer, or null (not found / not theirs). */
-export async function getMyBooking(userId: string, bookingId: string): Promise<KundBooking | null> {
+export async function getMyBooking(
+  userId: string,
+  tenantId: string,
+  bookingId: string,
+): Promise<KundBooking | null> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const customerId = await getCustomerId(userId, tenantId)
+  let query = supabase
     .from('bookings')
     .select(SELECT)
     .eq('id', bookingId)
-    .eq('customer_profile_id', userId)
-    .maybeSingle()
+  query = customerId
+    ? query.or(`customer_profile_id.eq.${userId},customer_id.eq.${customerId}`)
+    : query.eq('customer_profile_id', userId)
+  const { data } = await query.maybeSingle()
   const row = data as unknown as BookingJoinRow | null
   return row ? map(row) : null
 }

@@ -12,7 +12,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: () => {} }) }))
 import type { StorefrontTheme, Service, TenantLocation } from '@/lib/tenant-data'
 import { STOREFRONT_THEMES } from '@/lib/tenant-data'
 import { STOREFRONT_LAYOUTS, THEME_OWNS_MODULES } from '../index'
-import { resolveThemeContent } from '../../theme-content'
+import { resolveThemeContent, THEME_CONTENT } from '../../theme-content'
 import { THEME_PALETTES } from '@/lib/platform/theme-palettes'
 import { THEME_CAPS } from '@/lib/platform/theme-capabilities'
 import { FLORIST_THEMES, FLORIST_THEME_CSS } from './registry'
@@ -31,6 +31,7 @@ const SERVICES: Service[] = [
 ] as unknown as Service[]
 
 const ALL_LIVE: LayoutModuleTeasers = {
+  bookingReachable: true,
   shopTeasers: [
     { id: 'p1', name: 'Vårbukett', priceCents: 39900, currency: 'SEK', imageUrl: null },
     { id: 'p2', name: 'Pioner', priceCents: 49900, currency: 'SEK', imageUrl: null },
@@ -38,18 +39,25 @@ const ALL_LIVE: LayoutModuleTeasers = {
   bloggTeasers: [
     { id: 'b1', title: 'Säsongens blommor', slug: 'sasong', excerpt: 'Vad som blommar nu', coverImageUrl: null },
   ] as unknown as LayoutModuleTeasers['bloggTeasers'],
-  presentkortLive: true,
+  presentkortReachable: true,
   shopReachable: true,
+  bloggReachable: true,
   offertReachable: true,
   lojalitetReachable: true,
+  kurserReachable: true,
+  galleriReachable: true,
 }
 const ALL_OFF: LayoutModuleTeasers = {
+  bookingReachable: false,
   shopTeasers: [],
   bloggTeasers: [],
-  presentkortLive: false,
+  presentkortReachable: false,
   shopReachable: false,
+  bloggReachable: false,
   offertReachable: false,
   lojalitetReachable: false,
+  kurserReachable: false,
+  galleriReachable: false,
 }
 
 function render(key: string, modules: LayoutModuleTeasers | undefined, services: Service[] = SERVICES) {
@@ -85,8 +93,11 @@ function renderPackage(key: string, modules: LayoutModuleTeasers, services: Serv
   const links = [
     ...(modules.shopReachable ? [{ href: '/shop', label: 'Butik' }] : []),
     ...(modules.bloggTeasers.length > 0 ? [{ href: '/blogg', label: 'Blogg' }] : []),
-    ...(modules.presentkortLive ? [{ href: '/presentkort', label: 'Presentkort' }] : []),
+    ...(modules.presentkortReachable ? [{ href: '/presentkort', label: 'Presentkort' }] : []),
     ...(modules.offertReachable ? [{ href: '/offert', label: 'Offert' }] : []),
+    ...(modules.lojalitetReachable ? [{ href: '/klubb', label: 'Klubb' }] : []),
+    ...(modules.kurserReachable ? [{ href: '/kurser', label: 'Kurser' }] : []),
+    ...(modules.galleriReachable ? [{ href: '/galleri', label: 'Galleri' }] : []),
   ]
   const foot = Footer
     ? renderToStaticMarkup(
@@ -114,6 +125,9 @@ describe.each(FLORIST_THEMES.map((t) => [t.key, t.name, t] as const))(
     it('är registrerad i alla ytor (layout, nyckel, palett, caps, tokens-CSS, modul-ägarskap)', () => {
       expect(STOREFRONT_THEMES).toContain(key)
       expect(STOREFRONT_LAYOUTS[key as StorefrontTheme]).toBeTypeOf('function')
+      // Importordningen är en del av kontraktet: layouts/index laddas före
+      // theme-content i produkten. Record-exporten måste fortfarande vara total.
+      expect(THEME_CONTENT[key as StorefrontTheme]).toBe(theme.content)
       expect(THEME_PALETTES.some((p) => p.key === key)).toBe(true)
       expect(THEME_CAPS[key]).toBeDefined()
       expect(THEME_OWNS_MODULES.has(key as StorefrontTheme)).toBe(true)
@@ -141,10 +155,19 @@ describe.each(FLORIST_THEMES.map((t) => [t.key, t.name, t] as const))(
       expect(links.filter((h) => h.startsWith('/offert'))).toEqual([])
       expect(links.filter((h) => h.startsWith('/blogg'))).toEqual([])
       expect(links.filter((h) => h.startsWith('/presentkort'))).toEqual([])
+      expect(links.filter((h) => h.startsWith('/klubb'))).toEqual([])
+      expect(links.filter((h) => h.startsWith('/stamkund'))).toEqual([])
+      expect(links.filter((h) => h.startsWith('/kurser'))).toEqual([])
+      expect(links.filter((h) => h.startsWith('/galleri'))).toEqual([])
     })
 
     it('utan modules-prop (studions preview) renderar mallen ändå', () => {
-      expect(render(key, undefined)).toContain('</section>')
+      const html = render(key, undefined)
+      expect(html).toContain('</section>')
+      const links = hrefs(html)
+      for (const path of ['/shop', '/offert', '/presentkort', '/klubb', '/stamkund', '/kurser', '/galleri', '/blogg']) {
+        expect(links.filter((href) => href.startsWith(path))).toEqual([])
+      }
     })
 
     it('services=[] kraschar inte och hittar inte på tjänster', () => {
@@ -167,6 +190,23 @@ describe.each(FLORIST_THEMES.map((t) => [t.key, t.name, t] as const))(
 )
 
 describe('florist-sviten som helhet', () => {
+  it('theme-content-registret är totalt för varje tillåten StorefrontTheme', () => {
+    expect(Object.keys(THEME_CONTENT).sort()).toEqual([...STOREFRONT_THEMES].sort())
+    for (const theme of STOREFRONT_THEMES) {
+      expect(theme in THEME_CONTENT, theme).toBe(true)
+      expect(THEME_CONTENT[theme], theme).toBeDefined()
+    }
+  })
+
+  it('theme-content-registret kan inte skuggas eller raderas vid runtime', () => {
+    const key = FLORIST_THEMES[0]!.key as StorefrontTheme
+    const original = THEME_CONTENT[key]
+    expect(Reflect.set(THEME_CONTENT, key, original)).toBe(false)
+    expect(Reflect.deleteProperty(THEME_CONTENT, key)).toBe(false)
+    expect(Reflect.defineProperty(THEME_CONTENT, key, { value: original })).toBe(false)
+    expect(THEME_CONTENT[key]).toBe(original)
+  })
+
   it('unika nycklar — ingen mall skuggar en annan', () => {
     expect(FLORIST_THEMES.length).toBeGreaterThan(0)
     expect(new Set(FLORIST_THEMES.map((t) => t.key)).size).toBe(FLORIST_THEMES.length)

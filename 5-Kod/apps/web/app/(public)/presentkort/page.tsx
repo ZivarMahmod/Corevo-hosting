@@ -6,6 +6,7 @@ import { PresentkortSection } from '@/components/storefront/PresentkortSection'
 import { themeModuleViews } from '@/components/storefront/layouts/florist/layouts'
 import { loadPresentkortData } from '@/lib/storefront/presentkort/load-presentkort'
 import { pageMetadata } from '@/components/storefront/seo'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,7 @@ export default async function PresentkortPage() {
   const bundle = await currentTenant()
   if (!bundle) notFound()
   const { tenant, settings } = bundle
+  if (!commerceReleaseGate(tenant.id).presentkort) notFound()
   const states = await getTenantModuleStates(tenant.id, tenant.slug)
   const paused = isModulePaused(states, 'presentkort')
   if (!isModuleLive(states, 'presentkort') && !paused) notFound()

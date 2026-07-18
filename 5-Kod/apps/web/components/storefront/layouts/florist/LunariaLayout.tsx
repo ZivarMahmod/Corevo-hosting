@@ -28,15 +28,17 @@ import styles from './lunaria.module.css'
  * preview renderar samma komponent.
  */
 export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // Filen visar TRE verk på hemmet (products.slice(0, 3)) och tre krönike-inlägg.
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
-  // modules === undefined (studions statiska preview) → visa allt.
-  const shopReachable = modules ? modules.shopReachable : true
+  // Saknad reachability failar stängt; onboarding-previewns modulytor renderas separat.
+  const shopReachable = modules?.shopReachable ?? false
   // goal-64: klubben (III Cirkeln) pekade på /klubb — en route som INTE FANNS. Varje
   // besökare som klickade landade i en 404. Sidan finns nu, och länken är modul-gatad:
   // lojalitet av/draft → kortet står kvar men olänkat (filens form utan 404-fällan).
-  const klubbReachable = modules ? modules.lojalitetReachable : true
+  const klubbReachable = modules?.lojalitetReachable ?? false
+  const kurserReachable = modules?.kurserReachable ?? false
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
 
@@ -48,14 +50,14 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
       title: content.pillar1Title ?? 'Bröllop',
       desc: content.pillar1Body ?? 'Brudbukett och dekor komponerad i decostil.',
       cta: 'Boka möte',
-      href: '/boka',
+      href: bookingReachable ? '/boka' : null,
     },
     {
       no: 'II',
       title: content.pillar2Title ?? 'Bindkvällar',
       desc: content.pillar2Body ?? 'Lär dig binda med balans och proportion.',
       cta: 'Se kurser',
-      href: '/kurser',
+      href: kurserReachable ? '/kurser' : null,
     },
     {
       no: 'III',
@@ -86,9 +88,15 @@ export function LunariaLayout({ content, modules }: StorefrontLayoutProps) {
                     >
                       Kliv in i butiken
                     </Link>
-                    <Link href="/boka" className={styles.lnUnderline}>
-                      Boka →
-                    </Link>
+                    {bookingReachable ? (
+                      <Link href="/boka" className={styles.lnUnderline}>
+                        Boka →
+                      </Link>
+                    ) : (
+                      <span className={styles.lnUnderline} aria-disabled="true">
+                        Boka →
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div

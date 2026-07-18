@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requirePortal } from '@/lib/auth/session'
 import { zonedTimeToUtc } from '@/lib/booking/tz'
-import { sendReviewNudgeForBooking } from '@/lib/notifications/google-review'
 import { refundBookingPayment } from '@/lib/stripe/refund'
 import { getMyStaff } from './staff'
 import {
@@ -14,6 +13,10 @@ import {
   type CustomerNotes,
 } from './customer'
 import { createAdminServiceClient } from '@/lib/admin/service'
+import {
+  notificationQueueMessage,
+  queueBookingEvent,
+} from '@/lib/notifications/booking-events'
 
 export type ActionState = { error?: string; success?: string }
 
@@ -50,18 +53,27 @@ export async function setBookingStatus(
   const nowIso = new Date().toISOString()
   const { data: current } = await supabase
     .from('bookings')
-    .select('id, start_ts')
+    .select('id, status, end_ts, customer_id, staff_id')
     .eq('id', bookingId)
     .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
-    .in('status', ['pending', 'confirmed'])
     .maybeSingle()
   if (!current) return { error: 'Bokningen kan inte ändras längre.' }
+  if (current.status === status) {
+    return { success: 'Status sparad.' }
+  }
+  const activeOutcome = current.status === 'pending' || current.status === 'confirmed'
+  const directCorrection =
+    (current.status === 'completed' && status === 'no_show') ||
+    (current.status === 'no_show' && status === 'completed')
+  if (!activeOutcome && !directCorrection) {
+    return { error: 'Bokningen kan inte ändras längre.' }
+  }
   if (
     (status === 'completed' || status === 'no_show') &&
-    new Date(current.start_ts).getTime() > Date.now()
+    new Date(current.end_ts).getTime() > Date.now()
   ) {
-    return { error: 'Tiden har inte börjat än.' }
+    return { error: 'Besöket har inte nått sin sluttid än.' }
   }
 
   const writer = createAdminServiceClient()
@@ -72,18 +84,26 @@ export async function setBookingStatus(
     .eq('id', bookingId)
     .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
-    .in('status', ['pending', 'confirmed'])
-    .lte('start_ts', nowIso)
+    .in('status', activeOutcome ? ['pending', 'confirmed'] : [current.status])
+    .lte('end_ts', nowIso)
     .select('id')
   if (error) return { error: 'Kunde inte spara statusen. Försök igen.' }
   if (!updated || updated.length === 0) return { error: 'Bokningen kan inte ändras längre.' }
 
-  // Visit done → nudge the customer for a Google review (M9). Best-effort: the
-  // helper never throws, so a mail hiccup can't fail the status the staff just set.
-  if (status === 'completed') await sendReviewNudgeForBooking(supabase, bookingId)
+  let notificationMessage = ''
+  if (status === 'completed') {
+    const notification = await queueBookingEvent({
+      tenantId: user.tenantId ?? '',
+      bookingId,
+      type: 'booking_completed',
+      occurredAt: nowIso,
+      staffId: current.staff_id,
+    })
+    notificationMessage = ` ${notificationQueueMessage(notification)}`
+  }
 
   revalidatePath('/personal')
-  return { success: 'Status sparad.' }
+  return { success: `Status sparad.${notificationMessage}` }
 }
 
 // NOTE: the frisör's self-edit of the working-hours BASELINE (addWorkingHours /
@@ -93,12 +113,10 @@ export async function setBookingStatus(
 // rebook, cancel, own time-off.
 
 // ── Walk-in / drop-in (own staff_id) ─────────────────────────────────────────
-// The frisör logs a customer who walked in. Direct authenticated insert (staff is
-// role_level >= 3 → bookings_staff_insert lets them write in their own tenant). The
-// no_double_booking EXCLUDE is the only conflict guard — a 23P01 means the slot is
-// already taken. staff_id is pinned to the caller's OWN id (never a colleague's).
-// No customer row is created (customer_id stays null); an optional name rides the
-// note as the "Gäst: …" seam so the existing label path renders it.
+// The frisör logs a customer who walked in. One authenticated RPC proves tenant,
+// own staff profile, location and service, then atomically creates an optional
+// name-only customer relation plus the booking. A booking collision rolls both
+// writes back. Contact identity never rides bookings.note.
 export async function createWalkIn(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requirePortal('personal')
   const serviceId = String(formData.get('serviceId') ?? '')
@@ -106,6 +124,7 @@ export async function createWalkIn(_prev: ActionState, formData: FormData): Prom
   const name = String(formData.get('name') ?? '').trim()
   if (!serviceId) return { error: 'Välj en tjänst.' }
   if (!startLocal) return { error: 'Ange en starttid.' }
+  if (name.length > 200) return { error: 'Kundnamnet får vara högst 200 tecken.' }
 
   const me = (await getMyStaff(user.id))[0]
   if (!me) return { error: NO_PROFILE }
@@ -116,37 +135,36 @@ export async function createWalkIn(_prev: ActionState, formData: FormData): Prom
     return { error: 'Din profil saknar en kopplad plats. Kontakta din administratör.' }
 
   const supabase = await createClient()
-
-  // Service must belong to this tenant; its duration sets the booking length.
-  const { data: service } = await supabase
-    .from('services')
-    .select('duration_min, price_cents')
-    .eq('id', serviceId)
-    .eq('tenant_id', user.tenantId ?? '')
-    .eq('active', true)
-    .maybeSingle()
-  if (!service) return { error: 'Tjänsten hittades inte.' }
-
   const startUtc = localToUtc(startLocal, me.timeZone)
   if (!startUtc) return { error: 'Ogiltig starttid.' }
-  const endUtc = new Date(startUtc.getTime() + service.duration_min * 60_000)
 
-  const note = name ? `Gäst: ${name} <> ` : null
-
-  const { error } = await supabase.from('bookings').insert({
-    tenant_id: user.tenantId ?? '',
-    location_id: me.locationId,
-    staff_id: me.id,
-    service_id: serviceId,
-    start_ts: startUtc.toISOString(),
-    end_ts: endUtc.toISOString(),
-    status: 'confirmed',
-    price_cents: service.price_cents,
-    note,
+  const walkInRpc = supabase as unknown as {
+    rpc(
+      name: 'create_staff_walk_in',
+      args: {
+        p_staff: string
+        p_location: string
+        p_service: string
+        p_start: string
+        p_name?: string
+      },
+    ): PromiseLike<{
+      data: string | null
+      error: { code?: string; message: string } | null
+    }>
+  }
+  const { error } = await walkInRpc.rpc('create_staff_walk_in', {
+    p_staff: me.id,
+    p_location: me.locationId,
+    p_service: serviceId,
+    p_start: startUtc.toISOString(),
+    p_name: name || undefined,
   })
   if (error) {
     if (error.code === '23P01')
       return { error: 'Tiden krockar med en annan bokning. Välj en annan tid.' }
+    if (error.code === '42501')
+      return { error: 'Tjänsten eller platsen är inte kopplad till din personalprofil.' }
     return { error: 'Kunde inte lägga in besöket. Försök igen.' }
   }
 
@@ -176,6 +194,7 @@ export async function rebookOwnBooking(
   const tz = staff[0]?.timeZone ?? 'Europe/Stockholm'
 
   const supabase = await createClient()
+  const nowIso = new Date().toISOString()
 
   // Load the OWN active booking and preserve its original duration snapshot.
   const { data: booking } = await supabase
@@ -185,8 +204,9 @@ export async function rebookOwnBooking(
     .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
     .in('status', [...ACTIVE_STATUSES])
+    .gt('end_ts', nowIso)
     .maybeSingle()
-  if (!booking) return { error: 'Bokningen kan inte ombokas.' }
+  if (!booking) return { error: 'Bokningen behöver avslutas som Genomförd eller Uteblev.' }
   const durationMs = new Date(booking.end_ts).getTime() - new Date(booking.start_ts).getTime()
   if (!Number.isFinite(durationMs) || durationMs <= 0) {
     return { error: 'Bokningens längd är ogiltig — kan inte omboka.' }
@@ -205,6 +225,7 @@ export async function rebookOwnBooking(
     .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
     .in('status', [...ACTIVE_STATUSES])
+    .gt('end_ts', nowIso)
     .select('id')
   if (error) {
     if (error.code === '23P01')
@@ -213,8 +234,17 @@ export async function rebookOwnBooking(
   }
   if (!updated || updated.length === 0) return { error: 'Bokningen kan inte ombokas.' }
 
+  const notification = await queueBookingEvent({
+    tenantId: user.tenantId ?? '',
+    bookingId,
+    type: 'booking_rebooked',
+    occurredAt: new Date().toISOString(),
+    startISO: startUtc.toISOString(),
+    includeManageLink: true,
+  })
+
   revalidatePath('/personal')
-  return { success: 'Bokningen ombokad.' }
+  return { success: `Bokningen ombokad. ${notificationQueueMessage(notification)}` }
 }
 
 // ── Cancel (own booking) ──────────────────────────────────────────────────────
@@ -237,30 +267,42 @@ export async function cancelOwnBooking(
   const supabase = await createClient()
   const writer = createAdminServiceClient()
   if (!writer) return { error: 'Bokningsändringar är inte tillgängliga just nu.' }
+  const nowIso = new Date().toISOString()
+  const cancelledAt = new Date().toISOString()
   const { data: released, error } = await writer
     .from('bookings')
     // cancelled_by: 'business' — personalen ÄR salongen sett från kunden. Loggen
     // skiljer på "kunden avbokade" och "vi avbokade", inte på vilken anställd.
     .update({
       status: 'cancelled',
-      cancelled_at: new Date().toISOString(),
+      cancelled_at: cancelledAt,
       cancelled_by: 'business',
     })
     .eq('id', bookingId)
     .eq('tenant_id', user.tenantId ?? '')
     .in('staff_id', myStaffIds)
     .in('status', [...ACTIVE_STATUSES])
+    .gt('end_ts', nowIso)
     .select('id')
   if (error) return { error: 'Kunde inte avboka. Försök igen.' }
-  if (!released || released.length === 0) return { error: 'Bokningen kan inte avbokas.' }
+  if (!released || released.length === 0) {
+    return { error: 'Bokningen behöver avslutas som Genomförd eller Uteblev.' }
+  }
 
   // Frigör pengarna om bokningen var betald (no-op utan lyckad betalning/Stripe).
   // Kund-notis om avbokningen är M9/notifications-revir, inte M5:s — och kontakt-
   // PII ska bara flöda via get_customer_contact (0011), aldrig läsas rått här.
   await refundBookingPayment(bookingId, user.tenantId ?? '')
 
+  const notification = await queueBookingEvent({
+    tenantId: user.tenantId ?? '',
+    bookingId,
+    type: 'booking_cancelled',
+    occurredAt: cancelledAt,
+  })
+
   revalidatePath('/personal')
-  return { success: 'Bokningen avbokad.' }
+  return { success: `Bokningen avbokad. ${notificationQueueMessage(notification)}` }
 }
 
 // ── Customer notes (internal client card, M5 §2.3) ───────────────────────────
@@ -273,7 +315,9 @@ export async function upsertCustomerNotes(
 ): Promise<ActionState> {
   const user = await requirePortal('personal')
   const customerId = String(formData.get('customerId') ?? '')
+  const locationId = String(formData.get('locationId') ?? '')
   if (!customerId) return { error: 'Saknar kund.' }
+  if (!locationId) return { error: 'Saknar plats för klientkortet.' }
 
   const toArr = (raw: string): string[] =>
     raw
@@ -294,10 +338,30 @@ export async function upsertCustomerNotes(
   const internalNote = internalNoteRaw ? internalNoteRaw.slice(0, 2000) : null
 
   const supabase = await createClient()
+  const tenantId = user.tenantId ?? ''
+  const [{ data: customerBooking }, { data: existingNote }] = await Promise.all([
+    supabase
+      .from('bookings')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('customer_id', customerId)
+      .eq('location_id', locationId)
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('customer_notes')
+      .select('location_id')
+      .eq('tenant_id', tenantId)
+      .eq('customer_id', customerId)
+      .maybeSingle(),
+  ])
+  if (!customerBooking) return { error: 'Kundrelationen är inte tillgänglig på den här platsen.' }
+
   const { error } = await supabase.from('customer_notes').upsert(
     {
-      tenant_id: user.tenantId ?? '',
+      tenant_id: tenantId,
       customer_id: customerId,
+      location_id: existingNote?.location_id ?? locationId,
       preferences,
       allergies,
       products,
@@ -340,7 +404,7 @@ export async function getClientCard(customerId: string): Promise<ClientCardResul
   if (!customerId) return { ok: false }
   const card = await getCustomerCard(customerId, user.tenantId ?? '')
   if (!card) return { ok: false }
-  const notes = await getCustomerNotes(customerId)
+  const notes = await getCustomerNotes(customerId, user.tenantId ?? '')
   return { ok: true, card, notes }
 }
 

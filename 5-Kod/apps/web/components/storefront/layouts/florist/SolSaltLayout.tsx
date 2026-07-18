@@ -30,12 +30,13 @@ import styles from './solsalt.module.css'
  * 'use client') — onboarding-studions preview renderar samma komponent.
  */
 export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // Filen visar TRE produkter och TRE inlägg på hemmet (products.slice(0,3) / blog.slice(0,3)).
   const products = (modules?.shopTeasers ?? []).slice(0, 3)
   const posts = (modules?.bloggTeasers ?? []).slice(0, 3)
-  // modules === undefined (studions statiska preview) → visa allt.
-  const shopReachable = modules ? modules.shopReachable : true
-  const presentkortLive = modules ? modules.presentkortLive : true
+  // Saknad reachability failar stängt; onboarding-previewns modulytor renderas separat.
+  const shopReachable = modules?.shopReachable ?? false
+  const presentkortReachable = modules?.presentkortReachable ?? false
 
   const heroPhoto = content.heroImages[0] ?? content.galleryImages[0] ?? ''
   const aboutPhoto = content.aboutImage ?? content.galleryImages[1] ?? ''
@@ -72,7 +73,7 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
           href: '/shop',
         }
       : null,
-    presentkortLive
+    presentkortReachable
       ? {
           key: 'presentkort',
           cls: styles.slTilePeach,
@@ -101,7 +102,7 @@ export function SolSaltLayout({ content, modules }: StorefrontLayoutProps) {
                     Till boden
                   </Link>
                 ) : null}
-                <BookCta className={styles.slPillGhost} label="Boka" />
+                <BookCta enabled={bookingReachable} className={styles.slPillGhost} label="Boka" />
               </div>
             </Reveal>
             <div className={styles.slHeroPhoto} style={{ backgroundImage: `url(${heroPhoto})` }} />

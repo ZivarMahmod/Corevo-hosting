@@ -16,9 +16,11 @@ const SENSITIVITIES = ['normal', 'känslig hårbotten', 'känslig hud']
  */
 export function CustomerNotesForm({
   customerId,
+  locationId,
   notes,
 }: {
   customerId: string
+  locationId: string
   notes: CustomerNotes
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(upsertCustomerNotes, {})
@@ -26,6 +28,7 @@ export function CustomerNotesForm({
   return (
     <form action={formAction} className={styles.notesForm}>
       <input type="hidden" name="customerId" value={customerId} />
+      <input type="hidden" name="locationId" value={locationId} />
 
       <label className={styles.field}>
         <span>Önskemål (komma-separerat)</span>

@@ -10,6 +10,7 @@ import { reportActionError } from './observe'
 import { recordMediaAsset } from './media-record'
 import { GENERIC } from './shared'
 import { geocodeAddress } from './geocode'
+import { verifiedMapForAddress } from '@/lib/storefront/address-map'
 
 export type SiteRevisionActionState = {
   error?: string
@@ -107,16 +108,21 @@ async function snapshotWithCurrentMap(
     ? sanitizeSiteSnapshot(draftResult.data.snapshot)
     : null
   const reusableMap = previousDraft?.location.address === address
+    && verifiedMapForAddress(previousDraft.settings.map, address)
     ? previousDraft.settings.map
     : null
   const liveAddress = String(locationResult.data?.address ?? '').trim() || null
   const liveSettings = settingsResult.data?.settings
-  const liveMap = liveSettings && typeof liveSettings === 'object' && !Array.isArray(liveSettings)
+  const rawLiveMap = liveSettings && typeof liveSettings === 'object' && !Array.isArray(liveSettings)
     ? readSiteMap((liveSettings as Record<string, unknown>).map)
     : null
+  const liveMap = verifiedMapForAddress(rawLiveMap, address) ? rawLiveMap : null
+  const geocoded = reusableMap || (liveAddress === address ? liveMap : null)
+    ? null
+    : await geocodeAddress(address)
   const map = reusableMap
     ?? (liveAddress === address ? liveMap : null)
-    ?? await geocodeAddress(address)
+    ?? (geocoded ? { ...geocoded, q: address } : null)
 
   return map === snapshot.settings.map
     ? snapshot

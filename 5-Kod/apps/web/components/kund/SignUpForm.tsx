@@ -4,12 +4,13 @@ import { useActionState } from 'react'
 import Link from 'next/link'
 import { signUpCustomer, type SignUpState } from '@/lib/kund/actions'
 
-export function SignUpForm() {
+export function SignUpForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState<SignUpState, FormData>(signUpCustomer, {})
 
   return (
     <form action={formAction} className="auth-form">
       <h1>Skapa konto</h1>
+      <input type="hidden" name="next" value={next} />
 
       <label className="auth-field">
         <span>Namn</span>
@@ -42,7 +43,7 @@ export function SignUpForm() {
       </button>
 
       <p className="auth-links">
-        Har du redan ett konto? <Link href="/login">Logga in</Link>
+        Har du redan ett konto? <Link href={`/login?next=${encodeURIComponent(next)}`}>Logga in</Link>
       </p>
     </form>
   )

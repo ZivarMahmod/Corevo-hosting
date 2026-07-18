@@ -58,7 +58,8 @@ export function OnyxOm({ content, tenant }: ThemePageProps) {
   )
 }
 
-export function OnyxTjanster({ content, services }: ThemePageProps) {
+export function OnyxTjanster({ content, services, modules }: ThemePageProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   return (
     <section className={styles.onPageNarrow}>
       <p className={styles.onEyebrow}>{content.servicesEyebrow}</p>
@@ -68,7 +69,7 @@ export function OnyxTjanster({ content, services }: ThemePageProps) {
       ) : (
         <div className={styles.onList}>
           {services.map((s) => (
-            <Bookable key={s.id} className={styles.onListRow} label={`BOKA — ${s.name}`}>
+            <Bookable enabled={bookingReachable} key={s.id} className={styles.onListRow} label={`BOKA — ${s.name}`}>
               <span>
                 <span className={styles.onListName}>{s.name}</span>
                 <span className={styles.onListDesc}>{serviceDesc(s)}</span>

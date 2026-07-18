@@ -28,6 +28,7 @@ import sv from './salvia.module.css'
  * når nav, sidfot och undersidorna (som inte laddar den här modulen).
  */
 export function SalviaLayout({ tenant, content, services, location, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   const rows = services.slice(0, 5)
   const hasMore = services.length > 5
 
@@ -39,7 +40,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
   // Modulernas EGNA sidor är fortfarande hemmet för hela innehållet.
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
-  const presentkortLive = modules?.presentkortLive ?? false
+  const presentkortReachable = modules?.presentkortReachable ?? false
 
   return (
     <>
@@ -53,7 +54,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
           <h1 className={`${styles.heroTitle} ${sv.heroTitle}`}>{content.heroTitle}</h1>
           <p className={styles.heroLead}>{content.heroLede}</p>
           <div className={styles.heroActions}>
-            <BookCta className={styles.heroCta} />
+            <BookCta enabled={bookingReachable} className={styles.heroCta} />
           </div>
         </HeroCarousel>
       </section>
@@ -69,7 +70,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
             <div className={styles.sfRowList}>
               {rows.map((s, i) => (
                 <Reveal key={s.id} delay={i * 60}>
-                  <Bookable className={styles.sfRow} label={`Boka — ${s.name}`}>
+                  <Bookable enabled={bookingReachable} className={styles.sfRow} label={`Boka — ${s.name}`}>
                     <span className={styles.sfRowNum} aria-hidden="true">
                       {serviceNum(i)}
                     </span>
@@ -247,7 +248,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
 
       {/* PRESENTKORT — smal band-rad i accent-soft-ytan (samma yta som Om-bandet),
           inte en hel stapel-sektion. */}
-      {presentkortLive ? (
+      {presentkortReachable ? (
         <section className={`${styles.sfAboutBand} ${sv.giftBand}`}>
           <Reveal>
             <p className="sf-eyebrow">— Presentkort</p>
@@ -314,7 +315,7 @@ export function SalviaLayout({ tenant, content, services, location, modules }: S
           <h2 className={`sf-h1 ${sv.closingTitle}`}>Redo för en ny stil?</h2>
           <p className={styles.sfClosingLead}>Boka din tid på under en minut.</p>
           <div className={sv.closingActions}>
-            <BookCta className={styles.sfClosingCta} />
+            <BookCta enabled={bookingReachable} className={styles.sfClosingCta} />
           </div>
         </Reveal>
       </section>

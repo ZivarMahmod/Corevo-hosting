@@ -62,8 +62,9 @@ export function portalHomeFor(opts: { roleLevel: number; platformAdmin: boolean 
 
 /**
  * goal-27 — DOOR ISOLATION. Which single back-office host (TenantResolution kind) a
- * role is allowed to SIGN IN on: super_admin ⇒ superbooking ('superadmin'),
- * salon_admin ⇒ booking ('platform'), staff ⇒ minbooking ('staff_portal'). A
+ * role uses as its PRIMARY sign-in host: super_admin ⇒ superbooking
+ * ('superadmin'), salon_admin/staff ⇒ booking ('platform'). minbooking is an
+ * explicit staff-only legacy exception enforced by loginAccessForHost. A
  * customer (below the staff floor) has no back-office door → 'tenant'. The login
  * action rejects + signs out any credential used on a host whose kind ≠ this, so a
  * super-admin credential can NEVER establish a session on booking/minbooking (and
@@ -81,4 +82,60 @@ export function backofficeHostKindForRole(opts: {
   // minbooking-dörren (staff_portal) lever kvar och serverar /personal som förr.
   if (opts.roleLevel >= PORTAL_MIN_LEVEL.personal) return 'platform'
   return 'tenant'
+}
+
+export type LoginHostKind = 'superadmin' | 'platform' | 'staff_portal' | 'tenant' | 'other'
+export type LoginHostAccess =
+  | { allowed: true; legacyStaff: boolean }
+  | { allowed: false; legacyStaff: false }
+
+/** Database-backed activation state used after authentication, not JWT claims. */
+export function isActiveLoginAccount(input: {
+  profileStatus: string | null | undefined
+  roleLevel: number
+  activeStaff: boolean
+}): boolean {
+  return (
+    input.profileStatus === 'active' &&
+    input.roleLevel >= PORTAL_MIN_LEVEL.kund &&
+    (input.roleLevel !== PORTAL_MIN_LEVEL.personal || input.activeStaff)
+  )
+}
+
+/**
+ * Authoritative production login-door contract. A role may establish a session
+ * only on its own host. Staff additionally retain the explicit minbooking
+ * legacy door, but that exception never applies to owners or platform admins.
+ * Customers are bound to the exact resolved storefront tenant.
+ */
+export function loginAccessForHost(opts: {
+  roleLevel: number
+  platformAdmin: boolean
+  accountTenantId: string | null
+  hostKind: LoginHostKind
+  hostTenantId: string | null
+}): LoginHostAccess {
+  const accountDoor = backofficeHostKindForRole(opts)
+
+  if (accountDoor === 'tenant') {
+    const matchingTenant =
+      opts.hostKind === 'tenant' &&
+      Boolean(opts.accountTenantId) &&
+      opts.accountTenantId === opts.hostTenantId
+    return matchingTenant
+      ? { allowed: true, legacyStaff: false }
+      : { allowed: false, legacyStaff: false }
+  }
+
+  if (accountDoor === opts.hostKind) return { allowed: true, legacyStaff: false }
+
+  const legacyStaff =
+    accountDoor === 'platform' &&
+    opts.hostKind === 'staff_portal' &&
+    !opts.platformAdmin &&
+    opts.roleLevel >= PORTAL_MIN_LEVEL.personal &&
+    opts.roleLevel < PORTAL_MIN_LEVEL.admin
+  return legacyStaff
+    ? { allowed: true, legacyStaff: true }
+    : { allowed: false, legacyStaff: false }
 }

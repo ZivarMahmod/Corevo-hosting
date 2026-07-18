@@ -25,6 +25,7 @@ import ld from './leander.module.css'
  * den enda rot som når nav, sidfot, undersidor OCH modul-rötter.
  */
 export function LeanderLayout({ content, services, modules }: StorefrontLayoutProps) {
+  const bookingReachable = modules?.bookingReachable ?? false
   // LEANDER ÄGER SINA MODULER (S10): butik/blogg/presentkort vävs in i temats
   // centrerade, återhållsamma grammatik (punktade prisrader, quote-band) istället
   // för den generiska sektions-stapeln — page.tsx hoppar över
@@ -34,7 +35,7 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
   // hemmet för hela innehållet (/shop, /blogg, /presentkort).
   const shopTeasers = (modules?.shopTeasers ?? []).slice(0, 3)
   const bloggTeasers = (modules?.bloggTeasers ?? []).slice(0, 3)
-  const presentkortLive = modules?.presentkortLive ?? false
+  const presentkortReachable = modules?.presentkortReachable ?? false
 
   return (
     <>
@@ -48,7 +49,7 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
           <h1 className={`${styles.heroTitle} ${ld.heroTitleCentered}`}>{content.heroTitle}</h1>
           <p className={`${styles.heroLead} ${ld.heroLeadNarrow}`}>{content.heroLede}</p>
           <div className={styles.heroActions}>
-            <BookCta className={styles.heroCta} />
+            <BookCta enabled={bookingReachable} className={styles.heroCta} />
           </div>
         </HeroCarousel>
       </section>
@@ -62,7 +63,7 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
         {services.length > 0 ? (
           <div className={styles.sfPriceGrid}>
             {services.map((s) => (
-              <Bookable key={s.id} className={styles.sfPriceRow} label={`Boka — ${s.name}`}>
+              <Bookable enabled={bookingReachable} key={s.id} className={styles.sfPriceRow} label={`Boka — ${s.name}`}>
                 <span className={styles.sfPriceName}>{s.name}</span>
                 <span className={styles.sfPriceDots} aria-hidden="true" />
                 <span className={styles.sfPriceVal}>{formatPrice(s)}</span>
@@ -146,7 +147,7 @@ export function LeanderLayout({ content, services, modules }: StorefrontLayoutPr
       ) : null}
 
       {/* PRESENTKORT — smal band-rad i quote-bandets accent-soft-yta. */}
-      {presentkortLive ? (
+      {presentkortReachable ? (
         <section className={`${styles.sfQuoteBand} ${ld.giftBand}`}>
           <Reveal>
             <p className="sf-eyebrow">— Presentkort</p>

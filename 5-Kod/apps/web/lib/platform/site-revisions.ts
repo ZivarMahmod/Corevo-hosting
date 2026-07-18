@@ -5,6 +5,8 @@ import type { TenantBranding } from '@corevo/ui'
 import { COPY_OVERRIDE_KEYS } from '@/components/storefront/theme-content'
 import type { TenantDetail } from './tenants'
 import { normalizeContactEmail, normalizeSocialUrl } from './contact-validation'
+import type { AddressBoundMap } from '@/lib/storefront/address-map'
+import { withoutLegacySnittStats } from '@/lib/branding/legacy-stats'
 import {
   isBookingVariant,
   PICKER_MODES,
@@ -24,7 +26,7 @@ export type SiteSnapshot = {
     theme: string
     contact: { email: string | null; phone: string | null }
     social: { instagram: string | null; facebook: string | null; tiktok: string | null }
-    map: { lat: number; lon: number } | null
+    map: AddressBoundMap | null
     opening_hours: { day: string; time: string }[] | null
     seo: { title: string | null; description: string | null }
     booking: {
@@ -116,12 +118,13 @@ export function deriveSiteScheduleHours(detail: TenantDetail): { day: string; ti
   })
 }
 
-export function readSiteMap(value: unknown): { lat: number; lon: number } | null {
+export function readSiteMap(value: unknown): AddressBoundMap | null {
   const raw = record(value)
   const lat = typeof raw.lat === 'number' ? raw.lat : Number(raw.lat)
   const lon = typeof raw.lon === 'number' ? raw.lon : Number(raw.lon)
+  const q = cleanString(raw.q, 300)
   return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180
-    ? { lat, lon }
+    ? { lat, lon, ...(q ? { q } : {}) }
     : null
 }
 
@@ -210,6 +213,7 @@ function cleanBranding(input: unknown, strict: boolean): SiteSnapshot['branding'
  * such as services, staff and the legacy branding.team can never leak in. */
 export function buildSiteSnapshot(detail: TenantDetail): SiteSnapshot {
   const raw = record(detail.settings?.settings)
+  const theme = cleanString(raw.theme, 64) ?? 'leander'
   const contact = record(raw.contact)
   const social = record(raw.social)
   const seo = record(raw.seo)
@@ -221,7 +225,7 @@ export function buildSiteSnapshot(detail: TenantDetail): SiteSnapshot {
     tenant: { name: cleanString(detail.tenant.name, 200) ?? '' },
     settings: {
       copy: cleanCopy(raw.copy),
-      theme: cleanString(raw.theme, 64) ?? 'leander',
+      theme,
       contact: { email: email === undefined ? null : email, phone: cleanString(contact.phone, 320) },
       social: {
         instagram: instagram === undefined ? null : instagram,
@@ -237,7 +241,7 @@ export function buildSiteSnapshot(detail: TenantDetail): SiteSnapshot {
         staffAvatars: readStaffAvatarMode(raw),
       },
     },
-    branding: cleanBranding(detail.branding, false) ?? {},
+    branding: withoutLegacySnittStats(theme, cleanBranding(detail.branding, false) ?? {}),
     location: { address: cleanString(detail.primaryAddress, 500) },
   }
 }
@@ -294,7 +298,7 @@ export function sanitizeSiteSnapshot(input: unknown): SiteSnapshot | null {
         staffAvatars: booking.staffAvatars as StaffAvatarMode,
       },
     },
-    branding: cleanSnapshotBranding,
+    branding: withoutLegacySnittStats(theme, cleanSnapshotBranding),
     location: { address: cleanString(location.address, 500) },
   }
 }

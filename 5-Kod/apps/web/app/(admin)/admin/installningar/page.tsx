@@ -20,6 +20,7 @@ import {
   DEFAULT_MEMBER_PERMISSIONS,
   listTenantMemberPermissions,
 } from '@/lib/admin/member-permissions'
+import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Inställningar · Adminpanel' }
@@ -82,6 +83,7 @@ export default async function SettingsPage({
     'booking' in moduleStates ? moduleAdminState(moduleStates, 'booking') : undefined,
   )
   const chargesOn = tenantResult.data?.stripe_charges_enabled === true
+  const bookingPaymentReleased = commerceReleaseGate(tenant.id).bookingPayment
   const published = tenantResult.data?.status === 'active'
   const remindersOn = settingsJson.notifications?.reminder !== false
 
@@ -105,9 +107,11 @@ export default async function SettingsPage({
     bokningsflode: published
       ? { label: 'Publicerat', tone: 'success' }
       : { label: 'Inte publicerat', tone: 'warning' },
-    betalning: chargesOn
-      ? { label: settings?.payments_enabled ? 'PÅ' : 'AKTIVT', tone: 'success' }
-      : { label: 'Inte kopplat', tone: 'neutral' },
+    betalning: !bookingPaymentReleased
+      ? { label: 'AV I PILOT', tone: 'neutral' }
+      : chargesOn
+        ? { label: settings?.payments_enabled ? 'PÅ' : 'AKTIVT', tone: 'success' }
+        : { label: 'Inte kopplat', tone: 'neutral' },
     paminnelser: remindersOn
       ? { label: 'PÅ', tone: 'success' }
       : { label: 'Kontrollera', tone: 'warning' },

@@ -82,17 +82,15 @@ export type BookingStatus = (typeof BOOKING_STATUSES)[number]
 // an empty source list ⇒ unreachable. Re-saving the current status is a no-op
 // handled in the action, not via this matrix.
 //
-// `cancelled` was the one non-revivable terminal state, because cancelling refunds
-// the payment and reviving a refunded booking would desync Stripe. B-24 (ångraloggen)
-// opens `cancelled → confirmed` — but the refund invariant is NOT dropped, it moves
-// to where it can actually be checked: setBookingStatus refuses the restore when a
-// payment was refunded. The matrix cannot see money; the action can.
+// Cancelled kan återställas till confirmed före originalstarten om ingen refund
+// finns. Historiska utfall återöppnas däremot aldrig som aktiva: en felmarkering
+// rättas direkt completed ↔ no_show så DB:n kan reversera/re-earn lojalitet atomiskt.
 export const ALLOWED_FROM: Record<BookingStatus, BookingStatus[]> = {
-  pending: ['confirmed', 'completed', 'no_show'],
-  confirmed: ['pending', 'completed', 'no_show', 'cancelled'],
-  completed: ['pending', 'confirmed'],
-  no_show: ['pending', 'confirmed'],
-  cancelled: ['pending', 'confirmed', 'completed', 'no_show'],
+  pending: ['confirmed'],
+  confirmed: ['pending', 'cancelled'],
+  completed: ['pending', 'confirmed', 'no_show'],
+  no_show: ['pending', 'confirmed', 'completed'],
+  cancelled: ['pending', 'confirmed'],
 }
 
 /** Refund-vakten (B-24): en ÅTERBETALD bokning får aldrig väckas — då skulle systemet

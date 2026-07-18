@@ -41,9 +41,9 @@ insert into public.user_location_access (tenant_id, user_id, location_id) values
 insert into public.services (id, tenant_id, location_id, name, duration_min) values
   ('77000000-0000-0000-0000-000000000031', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000011', 'A service', 30),
   ('77000000-0000-0000-0000-000000000032', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000012', 'B service', 30);
-insert into public.staff (id, tenant_id, location_id, title) values
-  ('77000000-0000-0000-0000-000000000041', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000011', 'Staff A'),
-  ('77000000-0000-0000-0000-000000000042', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000012', 'Staff B');
+insert into public.staff (id, tenant_id, location_id, title, active) values
+  ('77000000-0000-0000-0000-000000000041', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000011', 'Staff A', false),
+  ('77000000-0000-0000-0000-000000000042', '77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000012', 'Staff B', false);
 insert into public.staff_services (tenant_id, staff_id, service_id) values
   ('77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000041', '77000000-0000-0000-0000-000000000031'),
   ('77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000042', '77000000-0000-0000-0000-000000000032');
@@ -55,6 +55,12 @@ insert into public.location_opening_hours (
 ) values
   ('77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000011', 1, '09:00', '18:00', 'confirmed', now()),
   ('77000000-0000-0000-0000-000000000001', '77000000-0000-0000-0000-000000000012', 1, '09:00', '18:00', 'confirmed', now());
+update public.staff
+   set active = true
+ where id in (
+   '77000000-0000-0000-0000-000000000041',
+   '77000000-0000-0000-0000-000000000042'
+ );
 insert into public.location_closures (
   id, tenant_id, location_id, start_ts, end_ts, reason
 ) values (
@@ -271,7 +277,7 @@ begin
     perform public.set_admin_booking_status(bid, 'completed');
     raise exception 'future_completion_succeeded';
   exception when raise_exception then
-    if sqlerrm not like '%future_booking_cannot_be_completed%' then raise; end if;
+    if sqlerrm <> 'booking_not_ended_for_completed' then raise; end if;
   end;
 end $$;
 

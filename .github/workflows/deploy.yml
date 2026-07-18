@@ -32,6 +32,10 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  actions: read
+
 defaults:
   run:
     working-directory: 5-Kod
@@ -43,7 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     # MANUAL ONLY — never auto-runs on push. Needs a staging Supabase project +
     # secrets that don't exist yet; auto-on-main failed every push (G11 ops-pending).
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'staging'
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.target == 'staging' &&
+      vars.ISOLATED_STAGING_READY == 'true'
     environment: staging
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +75,18 @@ jobs:
           supabase link --project-ref "${{ secrets.STAGING_SUPABASE_PROJECT_REF }}"
           supabase db push
 
+      - name: Verify staging migration history parity
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase migration list --linked > "$RUNNER_TEMP/staging-migrations.txt"
+          node scripts/verify-database-release.mjs \
+            --expected-latest 0107 \
+            --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107 \
+            --history-file "$RUNNER_TEMP/staging-migrations.txt" \
+            --history-side remote
+
       # 2) OpenNext build — NEXT_PUBLIC_* inlined at build time (live-blocker #1)
       - name: Build (OpenNext, staging env)
         run: pnpm --filter @corevo/web exec opennextjs-cloudflare build
@@ -79,17 +98,64 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
 
+      - name: Enforce Worker gzip budget (staging)
+        env:
+          STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          STAGING_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+          STAGING_R2_PUBLIC_BASE_URL: ${{ secrets.STAGING_R2_PUBLIC_BASE_URL }}
+        run: |
+          set -o pipefail
+          pnpm --filter @corevo/web exec wrangler deploy --env staging --dry-run \
+            --var "NEXT_PUBLIC_SUPABASE_URL:$STAGING_SUPABASE_URL" \
+            --var "NEXT_PUBLIC_SUPABASE_ANON_KEY:$STAGING_SUPABASE_ANON_KEY" \
+            --var "R2_PUBLIC_BASE_URL:$STAGING_R2_PUBLIC_BASE_URL" \
+            --outdir "$RUNNER_TEMP/worker-bundle" 2>&1 | tee "$RUNNER_TEMP/wrangler-dry-run.txt"
+          node scripts/check-worker-bundle.mjs \
+            --input "$RUNNER_TEMP/wrangler-dry-run.txt" \
+            --max-gzip-bytes 3145728
+
       # 3) Deploy Worker (staging). Secrets are pre-set via `wrangler secret put`.
       - name: Deploy (wrangler --env staging)
-        run: pnpm --filter @corevo/web exec wrangler deploy --env staging
+        run: >-
+          pnpm --filter @corevo/web exec wrangler deploy --env staging
+          --var "NEXT_PUBLIC_SUPABASE_URL:$STAGING_SUPABASE_URL"
+          --var "NEXT_PUBLIC_SUPABASE_ANON_KEY:$STAGING_SUPABASE_ANON_KEY"
+          --var "R2_PUBLIC_BASE_URL:$STAGING_R2_PUBLIC_BASE_URL"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          STAGING_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+          STAGING_R2_PUBLIC_BASE_URL: ${{ secrets.STAGING_R2_PUBLIC_BASE_URL }}
 
   # ── PRODUCTION ───────────────────────────────────────────────────────────────
+  verify-production-ci:
+    name: verify same-SHA release CI
+    runs-on: ubuntu-latest
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && inputs.target == 'production')
+    steps:
+      - name: Require successful main CI for exact deployment SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$(gh api \
+            --method GET \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$GITHUB_SHA" \
+            -f per_page=100 \
+            --jq '[.workflow_runs[] | select(.head_branch == "main" and .status == "completed" and .conclusion == "success")] | length')
+          [ "$count" -gt 0 ] || {
+            echo "::error::No successful main CI (including mandatory E2E) exists for $GITHUB_SHA"
+            exit 1
+          }
+
   production:
     name: deploy production
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: verify-production-ci
     if: >-
       startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.target == 'production')
@@ -107,18 +173,19 @@ jobs:
 
       # Migrationer körs OUT-OF-BAND (via Supabase MCP / manuellt med granskning),
       # INTE i CI — undviker dubbelt DB-ägarskap + tar bort behovet av Supabase-secrets.
-      # Koden i denna release kräver MINST 0091 (engagemangsryggraden: prefs/outbox/
-      # push-subs). Grinden är >= — en databas som ligger FÖRE koden (additiva
-      # migrationer applicerade och verifierade, t.ex. 0107) blockerar inte äldre
-      # kod. Operatören sätter PROD_DB_MIGRATION först EFTER verifierad apply.
+      # En ensam versionsvariabel räcker inte. Den versionsbundna checkpoint-filen
+      # måste också visa att historik och schema har verifierats av en operatör.
+      # Checkpointen är versions- och fingerprintbunden; deployen failar stängt om
+      # repo, granskad produktionshistorik och GitHub-variabel inte beskriver samma schema.
       - name: Verify production database migration checkpoint
         env:
           PROD_DB_MIGRATION: ${{ vars.PROD_DB_MIGRATION }}
-        run: |
-          if [ "$((10#$PROD_DB_MIGRATION))" -lt 91 ]; then
-            echo "::error::Prod DB must be verified through at least migration 0091 (PROD_DB_MIGRATION=$PROD_DB_MIGRATION)."
-            exit 1
-          fi
+        run: >-
+          node scripts/verify-database-release.mjs
+          --expected-latest 0107
+          --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107
+          --production-checkpoint docs/ops/production-schema-checkpoint.json
+          --declared-latest "$PROD_DB_MIGRATION"
 
       - name: Build (OpenNext, production env)
         run: pnpm --filter @corevo/web exec opennextjs-cloudflare build
@@ -129,6 +196,15 @@ jobs:
           NEXT_PUBLIC_SITE_URL: https://booking.corevo.se
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+
+      - name: Enforce Worker gzip budget (production)
+        run: |
+          set -o pipefail
+          pnpm --filter @corevo/web exec wrangler deploy --dry-run \
+            --outdir "$RUNNER_TEMP/worker-bundle" 2>&1 | tee "$RUNNER_TEMP/wrangler-dry-run.txt"
+          node scripts/check-worker-bundle.mjs \
+            --input "$RUNNER_TEMP/wrangler-dry-run.txt" \
+            --max-gzip-bytes 3145728
 
       # fix-35 — deploy via deploy-prod.mjs, NOT bare `wrangler deploy`. Customer domains
       # now live in COMMITTED wrangler.jsonc (top-level routes[], alongside the 3 fixed
