@@ -10,12 +10,13 @@ Varje mock bor i egen mapp (html + NOTES ihop). **Klart+deployat → `klar/`.** 
 - **Toppbanner universal v2** — LIVE (v1.34.4)
 - **Redigera sidan v2** — integrerad på `main`; revisioner/utkast finns i migration 0080.
 
-## ⏳ Kvar (byggordning)
+## ⏳ Kvar / väntar på livscykelgrind
 | # | Paket | Status |
 |---|---|---|
-| 04 | `04-installningar-v2/` | Ej byggt. |
+| 04 | `04-installningar-v2/` | Driftsatt; Zivars autentiserade acceptans återstår före flytt till `klar/`. |
 | 05 | `05-kundportal/` | Ej byggt — kundportal (Desktop/Mobil/Mina Företag), egen yta. |
-| 06 | `06-frisoradmin-mobil-pwa/` | Parkerad — minbooking/personal-PWA (eget spår). |
+| 06 | `06-frisoradmin-mobil-pwa/` | Driftsatt; Zivars autentiserade acceptans återstår före flytt till `klar/`. |
+| — | `Mobil pwa/` | Nytt inkommet chrome-/landskapspaket; läst, men goal-73 saknas. Byggs som egen del efter goal-72. |
 
 `_referens/` = gammalt fullt admin-referensmaterial (`Frisör admin.html`), inte ett byggpaket.
 
