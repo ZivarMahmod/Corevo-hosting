@@ -111,7 +111,6 @@ const nextConfig: NextConfig = {
       {
         source: '/installningar/:kategori',
         destination: '/installningar?kategori=:kategori',
-        has: [{ type: 'host', value: `^${escapedSuperadminHost}$` }],
       },
     ]
   },

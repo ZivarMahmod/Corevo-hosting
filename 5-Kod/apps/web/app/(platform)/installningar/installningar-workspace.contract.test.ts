@@ -20,6 +20,7 @@ describe('platform settings workspace route contract', () => {
   it('serves every category through one gated route while preserving category URLs', () => {
     const root = readWeb('app/(platform)/installningar/page.tsx')
     const nextConfig = readWeb('next.config.ts')
+    const platformRoutes = readWeb('lib/auth/platform-routes.ts')
 
     expect(root).toContain('await requirePlatformAdmin()')
     expect(root).toContain("category.id === 'sakerhet'")
@@ -28,7 +29,7 @@ describe('platform settings workspace route contract', () => {
     expect(root).toContain('mobileIndex={!requestedCategory}')
     expect(nextConfig).toContain("source: '/installningar/:kategori'")
     expect(nextConfig).toContain("destination: '/installningar?kategori=:kategori'")
-    expect(nextConfig).toContain('escapedSuperadminHost')
+    expect(platformRoutes).toContain("'/installningar'")
   })
 
   it('generalizes the shared workspace without changing admin defaults or CSS', () => {
