@@ -491,7 +491,7 @@
   .stats { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .board {
     grid-template-columns: 1fr;
     height: calc(

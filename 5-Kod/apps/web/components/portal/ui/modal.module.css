@@ -133,7 +133,7 @@
 /* ---- mobil: bottenark ----
    Dialogen ankras i underkant och fyller bredden. Tummen når knappen; ingen smal
    remsa i skärmkanten. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .overlay {
     place-items: end center;
     padding: 0;

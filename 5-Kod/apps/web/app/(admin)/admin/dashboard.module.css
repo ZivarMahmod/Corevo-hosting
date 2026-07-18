@@ -552,7 +552,7 @@
 
 /* Mobil <768: samma data och handlingar som desktop, omarrangerade till kanonens
    enkla kortflöde. Ny bokning + kalender ligger redan i det globala bottennavet. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .page {
     padding: 2px 0 0;
   }

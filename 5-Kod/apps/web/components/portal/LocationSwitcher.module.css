@@ -120,7 +120,7 @@
   line-height: 1.4;
 }
 
-@media (min-width: 768px) and (max-width: 1199px) {
+@media (min-width: 768px) and (max-width: 1199px) and (min-height: 501px) {
   .summary {
     width: 34px;
     min-height: 34px;
@@ -134,7 +134,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .switcher {
     width: 100%;
   }

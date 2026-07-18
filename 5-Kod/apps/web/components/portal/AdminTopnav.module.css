@@ -88,13 +88,13 @@
   display: none;
 }
 
-@media (min-width: 768px) and (max-width: 1199px) {
+@media (min-width: 768px) and (max-width: 1199px) and (min-height: 501px) {
   .contextCompact {
     display: inline;
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .mobileNavIcon {
     font-size: 16px;
     font-weight: 400;

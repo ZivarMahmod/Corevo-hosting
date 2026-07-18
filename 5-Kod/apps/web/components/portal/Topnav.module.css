@@ -727,7 +727,7 @@
 
 /* iPad 768–1199: en komprimerad rad enligt responsivkanon. Om en kund har många
    moduler scrollar bara destinationsremsan; kontrollerna till höger försvinner inte. */
-@media (min-width: 768px) and (max-width: 1199px) {
+@media (min-width: 768px) and (max-width: 1199px) and (min-height: 501px) {
   .mobileAdmin .bar {
     height: 56px;
     min-height: 56px;
@@ -782,7 +782,7 @@
 
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .mobileAdmin {
     min-height: calc(52px + env(safe-area-inset-top));
     padding-top: env(safe-area-inset-top);

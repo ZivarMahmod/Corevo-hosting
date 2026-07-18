@@ -1812,7 +1812,7 @@
 /* ---- responsivt ----
    Mobilkanon visar alltid samtliga resurskolumner samtidigt. Desktop och iPad får
    fortfarande en läsbar minbredd och intern sidscroll vid riktigt stora team. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .board {
     position: relative;
     height: calc(100dvh - 130px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
@@ -2317,7 +2317,7 @@
    Egen nivå, inte "stor mobil" och inte "liten desktop". Plattan har gott om bredd men
    används med FINGER: touchmålen måste vara kvar i full storlek, medan kolumnerna får
    vara smalare än på desktop så en hel personalstyrka ryms utan att man scrollar i sidled. */
-@media (min-width: 768px) and (max-width: 1199px) {
+@media (min-width: 768px) and (max-width: 1199px) and (min-height: 501px) {
   .dayWrap {
     --axis-w: 50px;
     --col-min: 132px;
@@ -2332,7 +2332,7 @@
 
 /* Telefon: kolumnen är för smal för ett telefonnummer. Numret försvinner INTE — det
    står i kortet man öppnar. Ett avhugget nummer är värre än inget nummer. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   .blockPhone {
     display: none;
   }

@@ -829,7 +829,7 @@
 
 /* Kund-admin mobil <768: samma drawers, samma formulär och actions, omarrangerade
    som kanonens bottenark. Personal- och plattformsportalerna behåller sin chrome. */
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
   [data-world="backoffice"][data-portal="admin"] .bo-drawer-overlay {
     align-items: flex-end;
     justify-content: stretch;
