@@ -4,7 +4,7 @@
 
 - Supabase-projektet är `ACTIVE_HEALTHY`, PostgreSQL 17.6.1 och organisationen
   ligger på Pro.
-- Produktionshistoriken är avstämd till 108 numeriska versioner `0001–0109`
+- Produktionshistoriken är avstämd till 115 numeriska versioner `0001–0116`
   (projektets historiska lucka `0013` finns varken lokalt eller remote), utan
   datumversioner eller andra ogiltiga versionsnamn.
 - De 14 gamla datumversionerna som motsvarade `0069–0082` har bevisats motsvara
@@ -20,8 +20,25 @@
   `db push --dry-run` exakt `0092–0106`; den senare driftluckan erbjöd exakt
   `0107` och inget annat. Den senare Data API-avstämningen erbjöd därefter
   exakt `0108` och sedan den avgränsade kompletteringen `0109`.
-- Produktionscheckpointen är verifierad till `0109`. Det tar bort just
+- Produktionscheckpointen är verifierad till `0116`. Det tar bort just
   migrationsdriftgrinden, inte de övriga lanseringsgrindarna.
+
+## Superadmin v2-avstämning 2026-07-18 (`0110–0116`)
+
+- Migrationerna `0110–0116` provkördes först tillsammans med sina sju SQL-runtimeprov
+  i en enda transaktion mot produktionsmotorn och rullades tillbaka utan fixturedata.
+- Samma sju migrationer applicerades därefter i ordning. Supabase MCP:s tidsstämplade
+  historikrader normaliserades omedelbart, en i taget och med exakta radgrindar, till
+  repots kanonversioner `0110–0116`.
+- Efterkontroll: 115 historikrader, senaste `0116`, inga ogiltiga versionsnamn.
+- Alla sju fristående `0110–0116`-prov passerade mot det skarpa schemat med egna
+  `BEGIN/ROLLBACK`; ingen testdata lämnades kvar.
+- Releaseinventeringen verifierades med fingeravtrycket
+  `sha256:5e209e8dfdae80d59fc806ff23a35923b49a339150708e69e52c007f1fae682c`.
+- Supabase Advisors: 0 `ERROR` för security och performance. RLS-discoverability,
+  avsiktliga authenticated `SECURITY DEFINER`-RPC:er och policyoptimeringar ligger
+  kvar som varningar; funktionerna har uttryckliga DB-scopegrindar och runtimeprov.
+- Produktionscheckpointen är nu verifierad till `0116`.
 
 ## Produktionsavstämning 2026-07-18
 
@@ -47,13 +64,13 @@ migration.
 CI gör tre separata kontroller:
 
 1. unika migrationsnummer + förväntad senaste version,
-2. en SQL-runtimefil för varje lanseringsmigration 0092–0109,
+2. en SQL-runtimefil för varje lanseringsmigration 0092–0116,
 3. fresh Supabase från 0001 till senaste följt av `supabase test db` och lokal
    historikparitet.
 
 Staging kör dessutom `supabase migration list --linked` efter `db push` och
 jämför den länkade historiken med repots hela migrationslista. Produktion kräver
-både `PROD_DB_MIGRATION=0109` och ett granskat `verified`-checkpoint. Checkpointen
+både `PROD_DB_MIGRATION=0116` och ett granskat `verified`-checkpoint. Checkpointen
 måste bära exakt `sha256:`-fingeravtryck som verifieringskommandot skriver ut samt
 en referens till det sparade read-only schema-/historikbeviset. En ensam GitHub-
 variabel eller en gammal checkpoint kan alltså inte låtsas att databasen är klar.
@@ -121,7 +138,7 @@ från denna dokumentationskontroll. Efteråt:
 
 ```text
 supabase migration list --linked
-node scripts/verify-database-release.mjs --expected-latest 0109 --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109 --history-file <migration-list.txt> --history-side remote
+node scripts/verify-database-release.mjs --expected-latest 0116 --required-test-versions 0092,0093,0094,0095,0096,0097,0098,0099,0100,0101,0102,0103,0104,0105,0106,0107,0108,0109,0110,0111,0112,0113,0114,0115,0116 --history-file <migration-list.txt> --history-side remote
 ```
 
 Uppdatera därefter checkpoint-filen till `verified`, sätt både
@@ -129,7 +146,7 @@ Uppdatera därefter checkpoint-filen till `verified`, sätt både
 kopiera kommandots utskrivna `sha256:` till `migrationFingerprint` och sätt
 `verificationEvidence` till CI-/ärende-/artefaktreferensen där rå historiklista
 och schemadiff sparats. Sätt sedan GitHub Environment-variabeln
-`PROD_DB_MIGRATION=0109`. Ändringarna granskas i samma release. Kopiera aldrig
+`PROD_DB_MIGRATION=0116`. Ändringarna granskas i samma release. Kopiera aldrig
 fingeravtrycket från en äldre commit.
 
 Källor: [Supabase migration list/repair](https://supabase.com/docs/reference/cli/supabase-migration-list),

@@ -48,7 +48,7 @@ Cloudflare Worker: `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`,
 `EMAIL_RELAY_URL`, `EMAIL_RELAY_SECRET`, `NOTIFICATIONS_FROM`, eventuellt
 `SENTRY_DSN`. GitHub production environment: `CRON_SECRET` och befintliga
 Cloudflare/Supabase deploy-secrets. GitHub-variabler:
-`PROD_DB_MIGRATION=0109`, `PRIMARY_SCHEDULER_ENABLED=true` först efter respektive
+`PROD_DB_MIGRATION=0116`, `PRIMARY_SCHEDULER_ENABLED=true` först efter respektive
 bevis.
 
 SMS-hemligheter får finnas utan att aktivera transport, men
