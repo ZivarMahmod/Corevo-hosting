@@ -1,7 +1,7 @@
 'use client'
 
 import { PlatformError } from '@/components/platform/PlatformError'
-import styles from '@/components/platform/salonger-v2.module.css'
+import styles from '@/components/platform/kunder-v2.module.css'
 
 export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (

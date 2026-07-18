@@ -4,7 +4,7 @@ import { createContext, useContext, type ReactNode } from 'react'
 
 /**
  * Tenant scope for the module admin tools (ShopAdmin/BloggAdmin/MediaLibrary/
- * OffertInbox) — goal-54 §1. When the super-admin kundkort (/salonger/[id])
+ * OffertInbox) — goal-54 §1. When the super-admin kundkort (/kunder/[id])
  * mounts a tool with a tenantId prop, every form inside must carry a hidden
  * `tenantId` field so the dual-guard (lib/admin/module-ctx.ts moduleCtx) knows
  * WHICH tenant the platform admin is editing. In the customer's own admin the

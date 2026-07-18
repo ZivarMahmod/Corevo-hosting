@@ -11,16 +11,16 @@ import { NAV, isGroup, isNavItemVisible, type PortalRole } from './nav-items'
 export type { PortalRole }
 
 // Exact-match roots that must not be active for every sub-path.
-const EXACT = new Set(['/', '/admin', '/personal', '/salonger/ny'])
+const EXACT = new Set(['/', '/admin', '/personal', '/kunder/ny'])
 
 function isActive(href: string, pathname: string) {
   if (EXACT.has(href)) {
-    // /salonger/ny must win over /salonger when on the create page.
-    if (href === '/salonger/ny') return pathname === '/salonger/ny'
+    // /kunder/ny must win over /kunder when on the create page.
+    if (href === '/kunder/ny') return pathname === '/kunder/ny'
     return pathname === href
   }
-  // /salonger should not light up while on /salonger/ny.
-  if (href === '/salonger') return pathname === '/salonger' || /^\/salonger\/(?!ny$)/.test(pathname)
+  // /kunder should not light up while on /kunder/ny.
+  if (href === '/kunder') return pathname === '/kunder' || /^\/kunder\/(?!ny$)/.test(pathname)
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 

@@ -15,13 +15,13 @@ export type PlatformArea = PlatformNavItem & {
 /** The five destinations in the superadmin handoff, mapped to today's real URLs. */
 export const PLATFORM_AREAS: readonly PlatformArea[] = [
   { id: 'overview', href: '/', label: 'Översikt', prefixes: ['/', '/platform'] },
-  { id: 'customers', href: '/salonger', label: 'Kunder', prefixes: ['/salonger'] },
+  { id: 'customers', href: '/kunder', label: 'Kunder', prefixes: ['/kunder'] },
   { id: 'finance', href: '/fakturering', label: 'Ekonomi', prefixes: ['/fakturering'] },
   {
     id: 'insight',
-    href: '/kunder',
+    href: '/slutkunder',
     label: 'Insyn',
-    prefixes: ['/kunder', '/personal-plattform', '/utskick', '/drift-och-logg'],
+    prefixes: ['/slutkunder', '/personal-plattform', '/utskick', '/drift-och-logg'],
   },
   {
     id: 'platform',
@@ -33,7 +33,7 @@ export const PLATFORM_AREAS: readonly PlatformArea[] = [
 
 export const PLATFORM_SUBNAV: Partial<Record<PlatformAreaId, readonly PlatformNavItem[]>> = {
   insight: [
-    { href: '/kunder', label: 'Slutkunder' },
+    { href: '/slutkunder', label: 'Slutkunder' },
     { href: '/personal-plattform', label: 'Personal' },
     { href: '/utskick', label: 'Utskick' },
     { href: '/drift-och-logg', label: 'Loggar' },
@@ -80,7 +80,7 @@ export function platformMobileNavigation(
     ...(customers ? [customers] : []),
     ...(insight
       ? [
-          { ...insight, prefixes: ['/kunder'] },
+          { ...insight, prefixes: ['/slutkunder'] },
           {
             id: 'drift',
             href: '/drift-och-logg',
@@ -133,6 +133,6 @@ export function platformMobileNavigation(
   return {
     tabs,
     more,
-    ...(customers ? { action: { href: '/salonger/ny', label: 'Ny kund' } } : {}),
+    ...(customers ? { action: { href: '/kunder/ny', label: 'Ny kund' } } : {}),
   }
 }

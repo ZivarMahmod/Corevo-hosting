@@ -93,7 +93,7 @@ export function TenantDangerCard({ tenantId, tenantName }: { tenantId: string; t
       if (res.error) notify(res.error, 'warning')
       else {
         notify(res.success ?? 'Kunden är borttagen.', 'success')
-        router.push('/salonger')
+        router.push('/kunder')
       }
     })
   }

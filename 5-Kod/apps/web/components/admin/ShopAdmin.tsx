@@ -75,7 +75,7 @@ export function ShopAdmin({
   fulfilment: string
   tenantName: string
   assets: MediaAssetRow[]
-  /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
+  /** Set ONLY by the super-admin kundkort (/kunder/[id]) — scopes every form's hidden tenantId for the dual-guard. */
   tenantId?: string
   shippingOptions?: ShippingOptionRow[]
   paymentMethods?: ShopPaymentMethod[]

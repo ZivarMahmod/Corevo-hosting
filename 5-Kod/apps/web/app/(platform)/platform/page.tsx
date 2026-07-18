@@ -108,7 +108,7 @@ function statusBadge(status: string) {
 
 export default async function PlatformOverviewPage() {
   // platform_admin → RLS grants cross-tenant read (private.is_platform_admin()).
-  // Every figure here aggregates ÖVER alla salonger; seeing more than one is the
+  // Every figure here aggregates ÖVER alla kunder; seeing more than one is the
   // proof that the platform reaches across. No fabricated numbers — bookings/
   // underlag are LIVE month aggregates. Unconnected telemetry is not rendered as UI.
   const [overview, tenants, audit, trend] = await Promise.all([
@@ -126,7 +126,7 @@ export default async function PlatformOverviewPage() {
         title="Översikt"
         lede="Din insyn över alla kunder — klicka in på vilken som helst och styr allt utan kod."
       >
-        <Button href="/salonger/ny" variant="primary" icon="plus">
+        <Button href="/kunder/ny" variant="primary" icon="plus">
           Onboarda kund
         </Button>
       </PageHead>
@@ -196,7 +196,7 @@ export default async function PlatformOverviewPage() {
         <Card pad={0}>
           <div className={styles.cardHead}>
             <h2 className="h2">Alla kunder</h2>
-            <Link href="/salonger" className={styles.linkBtn}>
+            <Link href="/kunder" className={styles.linkBtn}>
               Hantera <Icon name="arrowRight" size={15} />
             </Link>
           </div>
@@ -208,7 +208,7 @@ export default async function PlatformOverviewPage() {
                 Onboarda din första kund — skapa kontot, välj temamall och färger, så
                 är den live på en egen subdomän direkt.
               </p>
-              <Button href="/salonger/ny" variant="primary" icon="plus">
+              <Button href="/kunder/ny" variant="primary" icon="plus">
                 Skapa den första kunden
               </Button>
             </div>
@@ -218,7 +218,7 @@ export default async function PlatformOverviewPage() {
               rows={tenants.slice(0, 8).map((t) => [
                 <Link
                   key={`${t.id}-name`}
-                  href={`/salonger/${t.id}`}
+                  href={`/kunder/${t.id}`}
                   className={styles.tenantCell}
                   style={{ textDecoration: 'none' }}
                 >

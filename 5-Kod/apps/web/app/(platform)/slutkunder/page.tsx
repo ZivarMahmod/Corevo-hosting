@@ -6,7 +6,7 @@ import { hasServiceRole } from '@/lib/platform/service'
 import { KunderView } from '@/components/platform/kunder/KunderView'
 
 export const dynamic = 'force-dynamic'
-export const metadata: Metadata = { title: 'Plattform · Kunder' }
+export const metadata: Metadata = { title: 'Plattform · Slutkunder' }
 
 /**
  * §2.1B "Supabase med mitt UI" — cross-tenant kundsök (law: SuperData.jsx →
@@ -20,11 +20,11 @@ export const metadata: Metadata = { title: 'Plattform · Kunder' }
  * drawers) so the "Exportera" / "Lägg till kund" actions can be wired client-side.
  *
  * HONESTY (NEVER FAKE): stat cards bind LIVE aggregates derived from the actual
- * list (total / med konto / gäster / salonger), NOT the mock's hardcoded
+ * list (total / med konto / gäster / företag), NOT the mock's hardcoded
  * "3 087 · 412 · 9". The mock's "Reset (7 dgr)" pill is dropped — no telemetry
  * backs a 7-day reset count, and a fake live number is worse than an honest swap.
  */
-export default async function CustomersPage({
+export default async function EndCustomersPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string; tenant?: string }>
@@ -35,7 +35,7 @@ export default async function CustomersPage({
   const q = sp.q ?? ''
   const tenant = sp.tenant ?? 'all'
 
-  // The salong dropdown binds the real tenant list (id + name + slug). It also
+  // The company dropdown binds the real tenant list (id + name + slug). It also
   // resolves a customer's slug → tenant id when wiring the password-reset action,
   // since the foundation read exposes only the slug (not the id).
   const [customers, tenants] = await Promise.all([

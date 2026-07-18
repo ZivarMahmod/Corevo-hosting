@@ -12,7 +12,9 @@ describe('booking realtime route budget', () => {
     '/admin/tjanster',
     '/admin/personal',
     '/admin/kunder',
-    '/salonger',
+    '/kunder',
+    '/slutkunder',
+    '/salonger', // permanent legacy alias
     '/fakturering',
     '/login',
   ])('does not download realtime on unrelated surfaces: %s', (pathname) => {

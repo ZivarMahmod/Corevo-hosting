@@ -7,7 +7,7 @@ import { StorefrontModuleSections } from '@/components/storefront/StorefrontModu
 import { loadPreviewBundle, resolvePreviewTheme, PreviewShell } from './preview-shell'
 
 // Super-admin LIVE STOREFRONT PREVIEW, startsidan — iframe-målet för Sida-fliken på
-// /salonger/[id]. Renderar tenantens RIKTIGA storefront med FULL chrome (Nav +
+// /kunder/[id]. Renderar tenantens RIKTIGA storefront med FULL chrome (Nav +
 // sektioner + moduler + footer) SAME-ORIGIN på plattform-hosten, så den kan framas
 // under `frame-ancestors 'self'`. Undersidorna (tjanster/om/kontakt) är egna rutter
 // bredvid denna — SidaPreviewBridge skriver om nav-länkarna dit, så operatören kan

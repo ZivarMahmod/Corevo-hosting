@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PLATFORM_ROUTE_PREFIXES } from '@/lib/auth/platform-routes'
+import { CANONICAL_PLATFORM_ROUTE_PREFIXES } from '@/lib/auth/platform-routes'
 import { NAV, isGroup, paletteFromNav } from './nav-items'
 import {
   PLATFORM_AREAS,
@@ -12,7 +12,7 @@ import { activeTopnavArea } from './Topnav'
 
 const isRegistered = (href: string) =>
   href === '/' ||
-  PLATFORM_ROUTE_PREFIXES.some(
+  CANONICAL_PLATFORM_ROUTE_PREFIXES.some(
     (prefix) => href === prefix || href.startsWith(`${prefix}/`),
   )
 
@@ -20,8 +20,9 @@ describe('superadmin navigation contract', () => {
   it('maps nested production routes to the correct five-area IA', () => {
     expect(activePlatformArea('/').id).toBe('overview')
     expect(activePlatformArea('/platform').id).toBe('overview')
-    expect(activePlatformArea('/salonger/ny').id).toBe('customers')
-    expect(activePlatformArea('/salonger/tenant-id').id).toBe('customers')
+    expect(activePlatformArea('/kunder/ny').id).toBe('customers')
+    expect(activePlatformArea('/kunder/tenant-id').id).toBe('customers')
+    expect(activePlatformArea('/slutkunder').id).toBe('insight')
     expect(activePlatformArea('/fakturering').id).toBe('finance')
     expect(activePlatformArea('/personal-plattform').id).toBe('insight')
     expect(activePlatformArea('/utskick').id).toBe('insight')
@@ -55,7 +56,8 @@ describe('superadmin navigation contract', () => {
 
   it('uses whole route segments, not ambiguous string prefixes', () => {
     expect(platformPathMatches('/personal-plattform', '/personal')).toBe(false)
-    expect(platformPathMatches('/salonger/abc', '/salonger')).toBe(true)
+    expect(platformPathMatches('/kunder/abc', '/kunder')).toBe(true)
+    expect(platformPathMatches('/slutkunder/abc', '/kunder')).toBe(false)
   })
 
   it('arrangerar exakt fyra driftflikar och Ny kund som mobil FAB', () => {
@@ -63,11 +65,11 @@ describe('superadmin navigation contract', () => {
 
     expect(mobile.tabs.map(({ id, href, label }) => ({ id, href, label }))).toEqual([
       { id: 'overview', href: '/', label: 'Översikt' },
-      { id: 'customers', href: '/salonger', label: 'Kunder' },
-      { id: 'insight', href: '/kunder', label: 'Insyn' },
+      { id: 'customers', href: '/kunder', label: 'Kunder' },
+      { id: 'insight', href: '/slutkunder', label: 'Insyn' },
       { id: 'drift', href: '/drift-och-logg', label: 'Drift' },
     ])
-    expect(mobile.action).toEqual({ href: '/salonger/ny', label: 'Ny kund' })
+    expect(mobile.action).toEqual({ href: '/kunder/ny', label: 'Ny kund' })
   })
 
   it('gör varje registrerad plattformsdestination nåbar exakt en gång på mobil', () => {
@@ -98,7 +100,7 @@ describe('superadmin navigation contract', () => {
     const mobileAreas = [...mobile.tabs, ...mobile.more]
     const activeMobileId = (pathname: string) => activeTopnavArea(pathname, mobileAreas)?.id
 
-    expect(activeMobileId('/salonger/ny')).toBe('customers')
+    expect(activeMobileId('/kunder/ny')).toBe('customers')
     expect(activeMobileId('/drift-och-logg/events')).toBe('drift')
     expect(activeMobileId('/utskick')).toBe('outbox')
     expect(activeMobileId('/integrationer')).toBe('integrations')

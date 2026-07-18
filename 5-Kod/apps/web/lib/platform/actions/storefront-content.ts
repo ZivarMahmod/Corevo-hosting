@@ -13,7 +13,7 @@ import { recordMediaAsset } from './media-record'
 
 // ── Super-admin storefront CONTENT (editorial copy + hero/gallery photos) ─────────
 // The platform operator manages a CHOSEN tenant's public storefront from
-// /salonger/[id] without logging into the salon's own admin. Two co-owned jsonb
+// /kunder/[id] without logging into the customer's own admin. Two co-owned jsonb
 // columns are touched, each by the ONE action that owns its slice:
 //   • COPY   → tenant_settings.settings.copy   (the M2↔M6 CopyOverride contract)
 //   • MEDIA  → tenant_settings.branding.{hero_images,gallery_images}
@@ -94,7 +94,7 @@ export async function saveTenantStorefrontCopy(_p: ActionState, fd: FormData): P
 
   // Bust the cached public bundle so the copy shows live, + refresh the admin view.
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.storefront_copy',
@@ -175,7 +175,7 @@ export async function uploadTenantStorefrontImage(_p: ActionState, fd: FormData)
   await recordMediaAsset(supabase, tenantId, image, res, 'sajtbyggare')
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.storefront_image_add',
@@ -236,7 +236,7 @@ export async function removeTenantStorefrontImage(_p: ActionState, fd: FormData)
   await deleteByPublicUrl(url)
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.storefront_image_remove',

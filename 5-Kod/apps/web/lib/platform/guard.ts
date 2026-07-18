@@ -21,7 +21,7 @@ export async function platformCtx(): Promise<{
 /**
  * Dual guard for the SIDA actions (storefront copy/images/branding/theme/contact/
  * opening hours/booking view/name) — the ONE set of actions shared between the
- * super-admin kundkort (/salonger/[id]) and the customer's own /admin/sida.
+ * super-admin kundkort (/kunder/[id]) and the customer's own /admin/sida.
  *
  * Trust model: a platform admin edits ANY tenant, so tenantId comes from the form
  * (validated server-side by each action's tenant read). A salon admin (role level

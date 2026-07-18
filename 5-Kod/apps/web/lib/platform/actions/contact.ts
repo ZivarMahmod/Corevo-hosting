@@ -103,7 +103,7 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, { action: 'tenant.contact', tenantId, actorId: user.id })
   return {
@@ -144,7 +144,7 @@ export async function setContactMessageStatus(_p: ActionState, fd: FormData): Pr
     return { error: GENERIC }
   }
 
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/kontakt')
   await logPlatformAction(supabase, {
     action: 'tenant.contact',
@@ -196,7 +196,7 @@ export async function saveTenantOpeningHours(_p: ActionState, fd: FormData): Pro
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.contact',

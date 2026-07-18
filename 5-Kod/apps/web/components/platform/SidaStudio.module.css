@@ -1,5 +1,5 @@
 /* Sida-fliken: split-view. Vänster = redigering (scrollar med sidan), höger = sticky
-   live-preview. Plattform-tokens (--c-*) i scope på /salonger/[id]. */
+   live-preview. Plattform-tokens (--c-*) i scope på /kunder/[id]. */
 
 .grid {
   display: grid;

@@ -20,7 +20,7 @@ import { reportActionError } from './observe'
 // The DOMAIN_PROVISIONING_ENABLED flag gates the UI; these actions are an additional
 // (server-side) fence only in that they require the CF creds the flag implies.
 
-const DOMAIN_PATH = (tenantId: string) => `/salonger/${tenantId}`
+const DOMAIN_PATH = (tenantId: string) => `/kunder/${tenantId}`
 
 // audit_log.entity_id is a uuid column — NEVER pass a domain string as entityId (the
 // insert would 22P02 and silently drop the audit row). We omit entityId (it falls back

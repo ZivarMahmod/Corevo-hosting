@@ -82,7 +82,7 @@ export async function createLoyaltyPlan(_p: ActionState, fd: FormData): Promise<
   }
 
   await revalidateTenantById(supabase, tenantId) // klubbsidan cachas under tenant:<slug>
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.loyalty_plan_create',
     tenantId,
@@ -122,7 +122,7 @@ export async function updateLoyaltyPlan(_p: ActionState, fd: FormData): Promise<
   }
 
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.loyalty_plan_update',
     tenantId,
@@ -153,7 +153,7 @@ export async function deleteLoyaltyPlan(_p: ActionState, fd: FormData): Promise<
   }
 
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.loyalty_plan_delete',
     tenantId,

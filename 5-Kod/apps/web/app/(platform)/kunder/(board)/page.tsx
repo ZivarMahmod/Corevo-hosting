@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Card, Icon } from '@/components/portal/ui'
-import styles from '@/components/platform/salonger-v2.module.css'
+import styles from '@/components/platform/kunder-v2.module.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Kunder' }

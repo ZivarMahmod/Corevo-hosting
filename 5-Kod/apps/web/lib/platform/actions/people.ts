@@ -221,7 +221,7 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_create',
     tenantId,
@@ -477,7 +477,7 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_invite',
     tenantId,
@@ -523,7 +523,7 @@ export async function updateTenantStaff(_p: ActionState, fd: FormData): Promise<
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_update',
     tenantId,
@@ -588,7 +588,7 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_staff_set',
     tenantId,
@@ -632,7 +632,7 @@ export async function removeTenantStaff(_p: ActionState, fd: FormData): Promise<
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_remove',
     tenantId,
@@ -727,7 +727,7 @@ export async function setStaffSchedule(_p: ActionState, fd: FormData): Promise<A
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_schedule',
     tenantId,
@@ -802,7 +802,7 @@ export async function createPlatformCustomer(_p: ActionState, fd: FormData): Pro
     return { error: GENERIC }
   }
 
-  revalidatePath('/kunder')
+  revalidatePath('/slutkunder')
   await logPlatformAction(supabase, {
     action: 'tenant.customer_create',
     tenantId,

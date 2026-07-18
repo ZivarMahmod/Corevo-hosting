@@ -14,9 +14,9 @@ import {
 import { Badge, Icon, useToast, type BadgeTone } from '@/components/portal/ui'
 import { setTenantStatus } from '@/lib/platform/actions'
 import type { TenantDisplayStatus } from '@/lib/platform/tenants'
-import styles from './salonger-v2.module.css'
+import styles from './kunder-v2.module.css'
 
-export type SalongCardVM = {
+export type KundCardVM = {
   id: string
   slug: string
   name: string
@@ -60,7 +60,7 @@ function storefrontHost(url: string): string {
   }
 }
 
-export function buildSalongerCsv(rows: SalongCardVM[]): string {
+export function buildKunderCsv(rows: KundCardVM[]): string {
   const header = [
     'Namn',
     'Subdomän',
@@ -92,11 +92,11 @@ export function buildSalongerCsv(rows: SalongCardVM[]): string {
     .join('\r\n')
 }
 
-export function SalongerBoard({
+export function KunderBoard({
   tenants,
   children,
 }: {
-  tenants: SalongCardVM[]
+  tenants: KundCardVM[]
   children: ReactNode
 }) {
   const pathname = usePathname()
@@ -115,8 +115,8 @@ export function SalongerBoard({
   const latestPathname = useRef(pathname)
   const deleteRequest = useRef(0)
   latestPathname.current = pathname
-  const hasSelection = /^\/salonger\/(?:[^/]+)$/.test(pathname)
-  const isCreating = pathname === '/salonger/ny'
+  const hasSelection = /^\/kunder\/(?:[^/]+)$/.test(pathname)
+  const isCreating = pathname === '/kunder/ny'
 
   const visible = useMemo(() => {
     const term = query.trim().toLowerCase()
@@ -175,13 +175,13 @@ export function SalongerBoard({
   }, [pathname])
 
   function exportCsv() {
-    const blob = new Blob(['\ufeff' + buildSalongerCsv(visible)], {
+    const blob = new Blob(['\ufeff' + buildKunderCsv(visible)], {
       type: 'text/csv;charset=utf-8;',
     })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = 'salonger.csv'
+    anchor.download = 'kunder.csv'
     anchor.click()
     URL.revokeObjectURL(url)
   }
@@ -190,13 +190,13 @@ export function SalongerBoard({
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
     if (!(event.target instanceof Element)) return
     const href = event.target.closest('a')?.getAttribute('href')
-    if (!href?.startsWith('/salonger')) return
+    if (!href?.startsWith('/kunder')) return
     const targetPathname = href.split(/[?#]/, 1)[0]?.replace(/\/+$/, '') || '/'
     const currentPathname = pathname.replace(/\/+$/, '') || '/'
     if (targetPathname !== currentPathname) deleteRequest.current += 1
   }
 
-  function remove(tenant: SalongCardVM) {
+  function remove(tenant: KundCardVM) {
     clearArmTimer()
     const requestId = ++deleteRequest.current
     const requestPathname = pathname
@@ -225,8 +225,8 @@ export function SalongerBoard({
       } else {
         notify(result.success ?? 'Kunden är borttagen.', 'success')
         if (belongsToCurrentView()) setArmedId(null)
-        if (belongsToCurrentView() && requestPathname === `/salonger/${tenant.id}`) {
-          router.push('/salonger')
+        if (belongsToCurrentView() && requestPathname === `/kunder/${tenant.id}`) {
+          router.push('/kunder')
         }
         router.refresh()
       }
@@ -256,7 +256,7 @@ export function SalongerBoard({
               <div className={styles.listTitle}>Kunder</div>
               <div className={styles.stat}>{tenants.length} kunder</div>
             </div>
-            <Link href="/salonger/ny" className={styles.newBtn}>
+            <Link href="/kunder/ny" className={styles.newBtn}>
               + Onboarda
             </Link>
           </div>
@@ -298,13 +298,13 @@ export function SalongerBoard({
             <div className={styles.empty}>Ingen kund matchar.</div>
           ) : (
             visible.map((tenant) => {
-              const selected = pathname === `/salonger/${tenant.id}`
+              const selected = pathname === `/kunder/${tenant.id}`
               const menuOpen = menuId === tenant.id
               const armed = armedId === tenant.id
               return (
                 <div key={tenant.id} className={`${styles.row} ${selected ? styles.rowOn : ''}`}>
                   <Link
-                    href={`/salonger/${tenant.id}`}
+                    href={`/kunder/${tenant.id}`}
                     className={styles.rowLink}
                     aria-current={selected ? 'page' : undefined}
                   >

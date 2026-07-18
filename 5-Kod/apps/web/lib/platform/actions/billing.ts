@@ -33,7 +33,7 @@ export async function saveBilling(_p: ActionState, fd: FormData): Promise<Action
     return { error: GENERIC }
   }
 
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/fakturering')
   await logPlatformAction(supabase, {
     action: 'tenant.billing',

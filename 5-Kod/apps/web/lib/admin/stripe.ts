@@ -12,7 +12,7 @@ import { createAdminServiceClient } from './service'
 import { commerceReleaseGate } from '@/lib/release/commerce'
 
 // Stripe Connect onboarding actions (G09 step 2), delade mellan kund-adminens
-// /admin/installningar och super-admin-kundkortet /salonger/[id] (goal-54 körning 5)
+// /admin/installningar och super-admin-kundkortet /kunder/[id] (goal-54 körning 5)
 // via moduleCtx-dual-guarden: platform_admin väljer tenant ur formulärets hidden
 // tenantId, salon_admin tvingas ur JWT. RLS isolates tenants but is not role-aware —
 // the role gate lives here; platform-adminens writes går via platform_admin-claimet.
@@ -67,7 +67,7 @@ export async function startStripeOnboarding(
   const origin = await requestOrigin()
   // Tillbaka till ytan man kom ifrån: kundkortet för platform-admin, annars
   // kund-adminens betalningskategori (L3 C-01: Stripe-kortet bor på egen route).
-  const backPath = user.platformAdmin ? `/salonger/${tenant.id}` : '/admin/installningar/betalning'
+  const backPath = user.platformAdmin ? `/kunder/${tenant.id}` : '/admin/installningar/betalning'
   let url: string
   try {
     url = await createOnboardingLink(stripe, accountId, {
@@ -123,7 +123,7 @@ export async function refreshStripeStatus(
   // tag-bust ser betalnings-gaten gammal Stripe-status i upp till 300 s.
   revalidateTenant(tenant.slug)
   revalidatePath('/admin/installningar/betalning')
-  revalidatePath(`/salonger/${tenant.id}`)
+  revalidatePath(`/kunder/${tenant.id}`)
   return {
     success: status.chargesEnabled
       ? 'Stripe aktiv — kortbetalning möjlig.'
@@ -170,6 +170,6 @@ export async function setPaymentsEnabled(
 
   revalidateTenant(tenant.slug)
   revalidatePath('/admin/installningar/betalning')
-  revalidatePath(`/salonger/${tenant.id}`)
+  revalidatePath(`/kunder/${tenant.id}`)
   return { success: enabled ? 'Onlinebetalning vid bokning: PÅ.' : 'Onlinebetalning vid bokning: AV.' }
 }

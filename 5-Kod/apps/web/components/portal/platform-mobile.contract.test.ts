@@ -36,7 +36,7 @@ describe('goal-72 S5: superadminens mobilkontrakt', () => {
   })
 
   it('låter kundlistan växla list/detalj och håller onboarding inom telefonbredden', () => {
-    const board = read('components/platform/salonger-v2.module.css')
+    const board = read('components/platform/kunder-v2.module.css')
     const studioPanel = read('components/platform/onboarding-studio/PanelHost.tsx')
     const fallback = read('components/platform/CreateTenantForm.module.css')
 

@@ -8,30 +8,30 @@ const readWeb = (relative: string) => {
   return existsSync(file) ? readFileSync(file, 'utf8') : ''
 }
 
-describe('goal-72 S4 salonger master–detalj route contract', () => {
+describe('goal-72 customer master–detail route contract', () => {
   it('owns the tenant fetch and honest card mapping in a persistent layout', () => {
-    const layout = readWeb('app/(platform)/salonger/(board)/layout.tsx')
+    const layout = readWeb('app/(platform)/kunder/(board)/layout.tsx')
 
-    expect(readWeb('app/(platform)/salonger/layout.tsx')).toBe('')
+    expect(readWeb('app/(platform)/kunder/layout.tsx')).toBe('')
 
     expect(layout).toContain("import { listTenantsWithStats } from '@/lib/platform/tenants'")
     expect(layout).toContain(
-      "import { SalongerBoard, type SalongCardVM } from '@/components/platform/SalongerBoard'",
+      "import { KunderBoard, type KundCardVM } from '@/components/platform/KunderBoard'",
     )
     expect(layout).toContain('const tenants = await listTenantsWithStats()')
-    expect(layout).toContain('const rows: SalongCardVM[] = tenants.map((tenant) => ({')
+    expect(layout).toContain('const rows: KundCardVM[] = tenants.map((tenant) => ({')
     expect(layout).toContain('owner: tenant.ownerName ?? tenant.owner')
     expect(layout).toContain('lastLabel: relativeTenantActivity(tenant.lastActivityAt)')
-    expect(layout).toContain('<SalongerBoard tenants={rows}>{children}</SalongerBoard>')
+    expect(layout).toContain('<KunderBoard tenants={rows}>{children}</KunderBoard>')
 
-    const page = readWeb('app/(platform)/salonger/(board)/page.tsx')
+    const page = readWeb('app/(platform)/kunder/(board)/page.tsx')
     expect(page).not.toContain('listTenantsWithStats')
-    expect(page).not.toContain('SalongerClient')
+    expect(page).not.toContain('LegacyCustomersClient')
   })
 
   it('keeps the workbench as the direct platform-main child with the canonical skeleton', () => {
-    const board = readWeb('components/platform/SalongerBoard.tsx')
-    const css = readWeb('components/platform/salonger-v2.module.css')
+    const board = readWeb('components/platform/KunderBoard.tsx')
+    const css = readWeb('components/platform/kunder-v2.module.css')
 
     expect(board).toContain('className={`workbench ${styles.board}`}')
     expect(board).toContain("data-mobile-view={hasSelection ? 'card' : 'list'}")
@@ -46,24 +46,24 @@ describe('goal-72 S4 salonger master–detalj route contract', () => {
   })
 
   it('renders index, create, loading and error states as pane children', () => {
-    const index = readWeb('app/(platform)/salonger/(board)/page.tsx')
+    const index = readWeb('app/(platform)/kunder/(board)/page.tsx')
     expect(index).toContain('className={styles.pane}')
     expect(index).toContain('className={`${styles.paneInner} ${styles.prompt}`}')
     expect(index).toContain('Välj en kund')
     expect(index).not.toContain('<main className={styles.pane}>')
 
-    const create = readWeb('app/(platform)/salonger/(board)/ny/page.tsx')
+    const create = readWeb('app/(platform)/kunder/(board)/ny/page.tsx')
     expect(create).toContain('className={styles.pane}')
     expect(create).toContain('styles.paneInnerWide')
     expect(create).toContain('<OnboardingStudio')
-    expect(create).toContain('<Link href="/salonger" className={styles.back}>')
+    expect(create).toContain('<Link href="/kunder" className={styles.back}>')
     expect(create).not.toContain('<main className={styles.pane}>')
 
     for (const relative of [
-      'app/(platform)/salonger/loading.tsx',
-      'app/(platform)/salonger/error.tsx',
-      'app/(platform)/salonger/(board)/[id]/loading.tsx',
-      'app/(platform)/salonger/(board)/[id]/error.tsx',
+      'app/(platform)/kunder/loading.tsx',
+      'app/(platform)/kunder/error.tsx',
+      'app/(platform)/kunder/(board)/[id]/loading.tsx',
+      'app/(platform)/kunder/(board)/[id]/error.tsx',
     ]) {
       const source = readWeb(relative)
       expect(source, relative).toContain('className={styles.pane}')
@@ -72,8 +72,8 @@ describe('goal-72 S4 salonger master–detalj route contract', () => {
     }
 
     for (const relative of [
-      'app/(platform)/salonger/loading.tsx',
-      'app/(platform)/salonger/error.tsx',
+      'app/(platform)/kunder/loading.tsx',
+      'app/(platform)/kunder/error.tsx',
     ]) {
       const source = readWeb(relative)
       expect(source, relative).toContain('styles.boardState')
@@ -81,7 +81,7 @@ describe('goal-72 S4 salonger master–detalj route contract', () => {
   })
 
   it('changes only the detail shell while preserving all 14 tab keys and module gates', () => {
-    const page = readWeb('app/(platform)/salonger/(board)/[id]/page.tsx')
+    const page = readWeb('app/(platform)/kunder/(board)/[id]/page.tsx')
     const tabs = readWeb('components/platform/TenantDetailTabs.tsx')
     const keys = [...tabs.matchAll(/\| '([^']+)'/g)].map((match) => match[1])
 

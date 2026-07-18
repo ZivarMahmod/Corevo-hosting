@@ -155,9 +155,11 @@ typecheck och produktionsbuild gröna; autentiserad enhets-/prod-rök körs efte
 **Mål**: `/salonger`→`/kunder` (tenants = kunder), `/kunder`→`/slutkunder`,
 `/salonger/ny`→`/kunder/ny`. Inga döda länkar.
 
-1. **Ordningen är ALLT** (krock): först `app/(platform)/kunder` → `app/(platform)/slutkunder`
-   + redirect `/kunder`→`/slutkunder` — SEDAN `app/(platform)/salonger` →
-   `app/(platform)/kunder` + redirect `/salonger/:path*`→`/kunder/:path*`.
+1. **Ordningen är ALLT** (krock): först `app/(platform)/kunder` → `app/(platform)/slutkunder`,
+   SEDAN `app/(platform)/salonger` → `app/(platform)/kunder` + redirect
+   `/salonger/:path*`→`/kunder/:path*`. Den planerade beständiga redirecten
+   `/kunder`→`/slutkunder` kan inte finnas i slutläget: den skulle kapa den nya
+   kanoniska tenant-rutten på samma URL. Kollisionen är låst med negativt kontraktstest.
    Redirects permanenta i `next.config` (host-scopade till platform-dörren om
    config-nivån kräver — verifiera mot middlewarens host-split först).
 2. **Intern href-svep**: grep `'/salonger` + `'/kunder` över `app/(platform)` +
@@ -170,6 +172,14 @@ typecheck och produktionsbuild gröna; autentiserad enhets-/prod-rök körs efte
 **Verifiering**: gamla bokmärken följer redirect (curl -I 308); alla navlänkar
 200; render-probe på nya rutterna; kund-adminens `/admin/kunder` ORÖRD
 (annan dörr — bara platform-routes byter).
+
+**Status 2026-07-18**: lokalt klar. `/kunder` äger tenant-master/detalj/ny,
+`/slutkunder` äger slutkundsinsyn och `/salonger/:path*` får permanent host-scopead
+308 i prod samt preview-motsvarighet med bevarad query. Alla interna hrefs,
+cacheinvalidations, nav-/palettposter och berörda E2E-rutter är flyttade;
+`/admin/kunder` är kontraktslåst orörd. Full Vitest före sista preview-fixen:
+245 filer/2 026 tester gröna; fixens 38 riktade tester och typecheck gröna.
+Fable: inga P0–P2. Codex-reviewns enda P2 (preview-legacy-404) är åtgärdad.
 
 ## S7 — Partner-rollen (etapp 4, skiss — designas när S1–S6 landat)
 

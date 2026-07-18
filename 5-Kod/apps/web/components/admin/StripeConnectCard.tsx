@@ -21,7 +21,7 @@ export type StripeConnectCardProps = {
   releaseEnabled: boolean
   /** True right after returning from the Stripe-hosted onboarding (?stripe=return). */
   justReturned: boolean
-  /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
+  /** Set ONLY by the super-admin kundkort (/kunder/[id]) — scopes every form's hidden tenantId for the dual-guard. */
   tenantId?: string
 }
 

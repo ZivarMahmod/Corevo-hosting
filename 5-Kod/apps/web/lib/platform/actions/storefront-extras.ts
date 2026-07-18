@@ -77,7 +77,7 @@ export async function saveTenantSingleImage(_p: ActionState, fd: FormData): Prom
   if (uploaded) await recordMediaAsset(supabase, tenantId, uploaded.file, uploaded, 'sajtbyggare')
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: remove ? 'tenant.storefront_image_remove' : 'tenant.storefront_image_add',
@@ -127,7 +127,7 @@ export async function saveTenantStats(_p: ActionState, fd: FormData): Promise<Ac
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, { action: 'tenant.storefront_copy', tenantId, actorId: user.id, meta: { stats: stats.length } })
   return { success: 'Fakta sparad. Publika sajten uppdaterad.' }
@@ -209,7 +209,7 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
   if (uploaded) await recordMediaAsset(supabase, tenantId, uploaded.file, uploaded, 'sajtbyggare')
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.storefront_copy',
@@ -225,7 +225,7 @@ export async function saveTenantTeamMember(_p: ActionState, fd: FormData): Promi
 // loadStaffTeam): aktiva medarbetare med show_on_site=true VINNER över den gamla
 // settings-listan (branding.team) så fort minst en synlig medlem finns. De två
 // actions nedan redigerar den källan från Sida-ytan — delad mellan super-adminens
-// kundkort (/salonger/[id]) och kundens /admin/sida via sidaCtx-dubbelguarden,
+// kundkort (/kunder/[id]) och kundens /admin/sida via sidaCtx-dubbelguarden,
 // precis som övriga SIDA-actions i den här filen.
 
 /**
@@ -292,7 +292,7 @@ export async function saveTenantStaffPhoto(_p: ActionState, fd: FormData): Promi
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   revalidatePath('/admin/personal')
   await logPlatformAction(supabase, {
@@ -346,7 +346,7 @@ export async function setTenantStaffOnSite(_p: ActionState, fd: FormData): Promi
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   revalidatePath('/admin/personal')
   await logPlatformAction(supabase, {
@@ -415,7 +415,7 @@ export async function saveTenantStaffProfile(_p: ActionState, fd: FormData): Pro
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   revalidatePath('/admin/personal')
   await logPlatformAction(supabase, {

@@ -181,7 +181,7 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
     expect(html).toContain('Lansera')
   })
 
-  it('the result-vy (W6) links the real /salonger/[id], shows the reserved address, no theater', () => {
+  it('the result-vy (W6) links the real /kunder/[id], shows the reserved address, no theater', () => {
     const html = mounts(
       <ResultView
         name="Klippoteket"
@@ -191,16 +191,16 @@ describe('W1 studio — render smoke (mounts without throwing)', () => {
         onRestart={noop}
       />,
     )
-    expect(html).toContain('href="/salonger/t9"') // real, working platform link
+    expect(html).toContain('href="/kunder/t9"') // real, working platform link
     expect(html).toContain('klippoteket.corevo.se') // reserved address shown
     expect(html).toContain('Onboarda nästa kund')
     expect(html).toContain('är skapad') // honest header, NOT "är live" (host doesn't resolve yet)
     expect(html).not.toContain('byggs i senare vågor') // old placeholder copy is gone
   })
 
-  it('the result-vy falls back to /salonger when the tenant id is missing (W6)', () => {
+  it('the result-vy falls back to /kunder when the tenant id is missing (W6)', () => {
     const html = mounts(<ResultView name="X" slug="x" message="" onRestart={noop} />)
-    expect(html).toContain('href="/salonger"')
+    expect(html).toContain('href="/kunder"')
   })
 
   it('OnboardingStudio (root machine) mounts DIRECTLY in the studio stage', () => {

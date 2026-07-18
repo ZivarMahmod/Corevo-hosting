@@ -1,5 +1,5 @@
 import { listTenantsWithStats } from '@/lib/platform/tenants'
-import { SalongerBoard, type SalongCardVM } from '@/components/platform/SalongerBoard'
+import { KunderBoard, type KundCardVM } from '@/components/platform/KunderBoard'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,9 +25,9 @@ function relativeTenantActivity(iso: string | null): string {
 }
 
 /** Masterlistan ägs av layouten och lever kvar när bara detalj-childen byts. */
-export default async function SalongerLayout({ children }: { children: React.ReactNode }) {
+export default async function KunderLayout({ children }: { children: React.ReactNode }) {
   const tenants = await listTenantsWithStats()
-  const rows: SalongCardVM[] = tenants.map((tenant) => ({
+  const rows: KundCardVM[] = tenants.map((tenant) => ({
     id: tenant.id,
     slug: tenant.slug,
     name: tenant.name,
@@ -44,5 +44,5 @@ export default async function SalongerLayout({ children }: { children: React.Rea
     storefrontUrl: tenantPublicUrl(tenant.slug),
   }))
 
-  return <SalongerBoard tenants={rows}>{children}</SalongerBoard>
+  return <KunderBoard tenants={rows}>{children}</KunderBoard>
 }

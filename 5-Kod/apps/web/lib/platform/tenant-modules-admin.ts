@@ -5,7 +5,7 @@
 // Sibling to tenant-modules-write.ts (the CREATE-path) and lib/tenant-modules.ts (the
 // public storefront READ). This module owns the super-admin DETAIL surface: list a
 // tenant's modules (modules catalog LEFT-joined onto its tenant_modules rows) and the
-// per-module state writer behind the "Moduler"-card on /salonger/[id].
+// per-module state writer behind the "Moduler"-card on /kunder/[id].
 //
 // Why the write passes the DB state-guard (migration 0026 §9): off→draft (module
 // ACTIVATION) is super-admin only. Every write here runs under platformCtx → the authed
@@ -125,8 +125,8 @@ export async function setModuleState(_p: ActionState, fd: FormData): Promise<Act
   // Bust the per-tenant storefront cache (module gating reads tenant_modules, tagged
   // tenant:<slug>) + the platform detail/list pages.
   revalidateTenant(tenant.slug)
-  revalidatePath('/salonger')
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/kunder')
+  revalidatePath(`/kunder/${tenantId}`)
 
   await logPlatformAction(supabase, {
     action: 'tenant.module_state',

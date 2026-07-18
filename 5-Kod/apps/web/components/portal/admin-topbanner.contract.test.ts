@@ -98,8 +98,8 @@ describe('del 02: universal toppbanner v2', () => {
     const { platform, admin } = quickActionsFromPortalShell(portalShell)
 
     expect(platform).toEqual([
-      { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' },
-      { href: '/kunder', label: 'Slutkunder', icon: 'users' },
+      { href: '/kunder/ny', label: 'Ny kund', icon: 'plus' },
+      { href: '/slutkunder', label: 'Slutkunder', icon: 'users' },
       { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
       { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
     ])

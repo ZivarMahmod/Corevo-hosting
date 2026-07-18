@@ -188,7 +188,7 @@ describe('createTenant writes the goal-20 columns', () => {
     const res = await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
 
     expect(res.error).toBeUndefined()
-    expect(revalidatePathMock).toHaveBeenCalledWith('/salonger', 'layout')
+    expect(revalidatePathMock).toHaveBeenCalledWith('/kunder', 'layout')
   })
 
   it('creates the role from the resolved seam — default salon_admin/6 (#11)', async () => {

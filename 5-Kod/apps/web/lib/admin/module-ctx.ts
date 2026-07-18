@@ -5,7 +5,7 @@ import { getAdminTenant, loadAdminTenantById, type AdminTenant } from '@/lib/adm
 /**
  * Dual-guard authorization fence for MODULE actions (webshop/blogg/media/offert) —
  * the ONE ctx shared between the customer's own admin (booking.corevo.se/admin/*)
- * and the super-admin kundkort (/salonger/[id]), goal-54 §1. Same trust model as
+ * and the super-admin kundkort (/kunder/[id]), goal-54 §1. Same trust model as
  * sidaCtx (lib/platform/guard.ts):
  *
  *   • platform_admin  → tenantId comes from the form's hidden `tenantId` field

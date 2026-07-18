@@ -68,7 +68,7 @@ import {
 } from '@/components/portal/ui'
 import type { TenantBranding } from '@corevo/ui'
 import styles from '@/components/platform/tenant-detail.module.css'
-import boardStyles from '@/components/platform/salonger-v2.module.css'
+import boardStyles from '@/components/platform/kunder-v2.module.css'
 import { commerceReleaseGate } from '@/lib/release/commerce'
 
 export const dynamic = 'force-dynamic'
@@ -403,7 +403,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
                     {(salonAdmin.fullName || salonAdmin.email).charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    {/* #10 — owner name from users.full_name; honest "Salongsägare"
+                    {/* #10 — owner name from users.full_name; honest owner label
                         label when no name was captured (never a fabricated name). */}
                     <div className={styles.ownerName}>{salonAdmin.fullName || 'Företagsägare'}</div>
                     <div className={styles.ownerRole}>{salonAdmin.status === 'active' ? 'Aktivt konto' : 'Inbjuden'}</div>
@@ -622,7 +622,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
         }
       : {}),
 
-    // Sida = ALLT som rör salongens publika webbsida på ett ställe (Zivar: "samla allt
+    // Sida = ALLT som rör kundens publika webbsida på ett ställe (Zivar: "samla allt
     // som har med sidan att göra"): förhandsvisning + utseende + text/bilder + kund-
     // editor-reglaget. Drift hålls fri från sido-grejer (ren drift).
     Sida: (
@@ -820,7 +820,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     <div className={boardStyles.pane}>
       <section className={boardStyles.paneInner}>
       <div className={styles.crumb}>
-        <Button href="/salonger" variant="ghost" icon="arrowLeft" size="sm" className={boardStyles.back}>
+        <Button href="/kunder" variant="ghost" icon="arrowLeft" size="sm" className={boardStyles.back}>
           Kunder
         </Button>
         <span>/ {tenant.slug}.{ROOT}</span>

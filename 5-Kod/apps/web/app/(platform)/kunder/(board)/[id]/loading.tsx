@@ -1,5 +1,5 @@
 import { PageSkeleton } from '@/components/platform/PlatformSkeleton'
-import styles from '@/components/platform/salonger-v2.module.css'
+import styles from '@/components/platform/kunder-v2.module.css'
 
 export default function Loading() {
   return (

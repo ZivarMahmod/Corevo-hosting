@@ -3,10 +3,10 @@
 import { act, type ComponentType, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { SalongerBoard, buildSalongerCsv, type SalongCardVM } from './SalongerBoard'
+import { KunderBoard, buildKunderCsv, type KundCardVM } from './KunderBoard'
 
 const mocks = vi.hoisted(() => ({
-  pathname: '/salonger',
+  pathname: '/kunder',
   refresh: vi.fn(),
   push: vi.fn(),
   notify: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('@/components/portal/ui', () => ({
 
 vi.mock('@/lib/platform/actions', () => ({ setTenantStatus: mocks.setTenantStatus }))
 
-const TENANTS: SalongCardVM[] = [
+const TENANTS: KundCardVM[] = [
   {
     id: 'tenant-a',
     slug: 'alpha',
@@ -78,7 +78,7 @@ function button(label: string): HTMLButtonElement {
 }
 
 async function render(children: ReactNode = <div data-testid="detail">Detalj</div>) {
-  await act(async () => root.render(<SalongerBoard tenants={TENANTS}>{children}</SalongerBoard>))
+  await act(async () => root.render(<KunderBoard tenants={TENANTS}>{children}</KunderBoard>))
 }
 
 async function setInput(input: HTMLInputElement, value: string) {
@@ -104,7 +104,7 @@ beforeEach(() => {
   ;(
     globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
   ).IS_REACT_ACT_ENVIRONMENT = true
-  mocks.pathname = '/salonger'
+  mocks.pathname = '/kunder'
   mocks.refresh.mockReset()
   mocks.push.mockReset()
   mocks.notify.mockReset()
@@ -120,11 +120,11 @@ afterEach(async () => {
   vi.useRealTimers()
 })
 
-describe('goal-72 S4 SalongerBoard behavior', () => {
+describe('goal-72 customer board behavior', () => {
   it.each([
-    ['/salonger', 'list'],
-    ['/salonger/tenant-b', 'card'],
-    ['/salonger/ny', 'card'],
+    ['/kunder', 'list'],
+    ['/kunder/tenant-b', 'card'],
+    ['/kunder/ny', 'card'],
   ])('derives mobile view from route %s', async (pathname, expected) => {
     mocks.pathname = pathname
     await render()
@@ -132,14 +132,14 @@ describe('goal-72 S4 SalongerBoard behavior', () => {
   })
 
   it('marks only the selected master row', async () => {
-    mocks.pathname = '/salonger/tenant-b'
+    mocks.pathname = '/kunder/tenant-b'
     await render()
 
     expect(
-      container.querySelector('a[href="/salonger/tenant-b"]')?.getAttribute('aria-current'),
+      container.querySelector('a[href="/kunder/tenant-b"]')?.getAttribute('aria-current'),
     ).toBe('page')
     expect(
-      container.querySelector('a[href="/salonger/tenant-a"]')?.hasAttribute('aria-current'),
+      container.querySelector('a[href="/kunder/tenant-a"]')?.hasAttribute('aria-current'),
     ).toBe(false)
   })
 
@@ -169,7 +169,7 @@ describe('goal-72 S4 SalongerBoard behavior', () => {
   })
 
   it('builds CSV from the filtered rows with honest fields', () => {
-    const csv = buildSalongerCsv([TENANTS[1]!])
+    const csv = buildKunderCsv([TENANTS[1]!])
     expect(csv).toBe(
       'Namn,Subdomän,Ägare,Status,Bokningar,Genomförda,Personal,Senast,Tema,Variant,Nivå\r\n' +
         'Beta AB,beta.corevo.se,Bea Boss,Pausad,0,0,1,—,Edit,Lugn,Nivå 2',
@@ -230,7 +230,7 @@ describe('goal-72 S4 SalongerBoard behavior', () => {
 
   it('does not redirect away from a newer selection when delete resolves late', async () => {
     const action = deferred<{ success: string }>()
-    mocks.pathname = '/salonger/tenant-a'
+    mocks.pathname = '/kunder/tenant-a'
     mocks.setTenantStatus.mockReturnValueOnce(action.promise)
     await render()
 
@@ -238,20 +238,20 @@ describe('goal-72 S4 SalongerBoard behavior', () => {
     await act(async () => button('Ta bort kund').click())
     await act(async () => button('Bekräfta borttagning').click())
 
-    mocks.pathname = '/salonger/tenant-b'
+    mocks.pathname = '/kunder/tenant-b'
     await render()
     await act(async () => action.resolve({ success: 'Kunden är borttagen.' }))
 
     expect(mocks.push).not.toHaveBeenCalled()
     expect(mocks.refresh).toHaveBeenCalledTimes(1)
     expect(
-      container.querySelector('a[href="/salonger/tenant-b"]')?.getAttribute('aria-current'),
+      container.querySelector('a[href="/kunder/tenant-b"]')?.getAttribute('aria-current'),
     ).toBe('page')
   })
 
   it('invalidates a pending delete as soon as a newer customer link is clicked', async () => {
     const action = deferred<{ success: string }>()
-    mocks.pathname = '/salonger/tenant-a'
+    mocks.pathname = '/kunder/tenant-a'
     mocks.setTenantStatus.mockReturnValueOnce(action.promise)
     await render()
 
@@ -259,7 +259,7 @@ describe('goal-72 S4 SalongerBoard behavior', () => {
     await act(async () => button('Ta bort kund').click())
     await act(async () => button('Bekräfta borttagning').click())
 
-    const newerCustomer = container.querySelector('a[href="/salonger/tenant-b"]')
+    const newerCustomer = container.querySelector('a[href="/kunder/tenant-b"]')
     if (!(newerCustomer instanceof HTMLAnchorElement)) throw new Error('Customer link missing')
     await act(async () => newerCustomer.click())
     await act(async () => action.resolve({ success: 'Kunden är borttagen.' }))
@@ -270,7 +270,7 @@ describe('goal-72 S4 SalongerBoard behavior', () => {
 
   it('keeps the delete redirect when the already-selected customer link is clicked', async () => {
     const action = deferred<{ success: string }>()
-    mocks.pathname = '/salonger/tenant-a'
+    mocks.pathname = '/kunder/tenant-a'
     mocks.setTenantStatus.mockReturnValueOnce(action.promise)
     await render()
 
@@ -278,18 +278,18 @@ describe('goal-72 S4 SalongerBoard behavior', () => {
     await act(async () => button('Ta bort kund').click())
     await act(async () => button('Bekräfta borttagning').click())
 
-    const selectedCustomer = container.querySelector('a[href="/salonger/tenant-a"]')
+    const selectedCustomer = container.querySelector('a[href="/kunder/tenant-a"]')
     if (!(selectedCustomer instanceof HTMLAnchorElement)) throw new Error('Customer link missing')
     await act(async () => selectedCustomer.click())
     await act(async () => action.resolve({ success: 'Kunden är borttagen.' }))
 
-    expect(mocks.push).toHaveBeenCalledWith('/salonger')
+    expect(mocks.push).toHaveBeenCalledWith('/kunder')
     expect(mocks.refresh).toHaveBeenCalledTimes(1)
   })
 
   it('does not re-arm an old customer when a late delete fails after navigation', async () => {
     const action = deferred<{ error: string }>()
-    mocks.pathname = '/salonger/tenant-a'
+    mocks.pathname = '/kunder/tenant-a'
     mocks.setTenantStatus.mockReturnValueOnce(action.promise)
     await render()
 
@@ -297,7 +297,7 @@ describe('goal-72 S4 SalongerBoard behavior', () => {
     await act(async () => button('Ta bort kund').click())
     await act(async () => button('Bekräfta borttagning').click())
 
-    mocks.pathname = '/salonger/tenant-b'
+    mocks.pathname = '/kunder/tenant-b'
     await render()
     await act(async () => action.resolve({ error: 'Försök igen.' }))
 
@@ -306,14 +306,14 @@ describe('goal-72 S4 SalongerBoard behavior', () => {
   })
 
   it('navigates away from a deleted selected customer and refreshes the master list', async () => {
-    mocks.pathname = '/salonger/tenant-a'
+    mocks.pathname = '/kunder/tenant-a'
     await render()
 
     await act(async () => button('Fler åtgärder för Alpha AB').click())
     await act(async () => button('Ta bort kund').click())
     await act(async () => button('Bekräfta borttagning').click())
 
-    expect(mocks.push).toHaveBeenCalledWith('/salonger')
+    expect(mocks.push).toHaveBeenCalledWith('/kunder')
     expect(mocks.refresh).toHaveBeenCalledTimes(1)
   })
 

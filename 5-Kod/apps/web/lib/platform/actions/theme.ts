@@ -42,7 +42,7 @@ export async function setTenantTheme(_p: ActionState, fd: FormData): Promise<Act
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, { action: 'tenant.theme', tenantId, actorId: user.id, meta: { theme } })
   return { success: 'Mall bytt. Publika sajten uppdaterad.' }

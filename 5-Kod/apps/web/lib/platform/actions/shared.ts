@@ -9,7 +9,7 @@ export type ActionState = {
   /** The primary action succeeded, but a secondary guarantee did not. */
   warning?: string
   /** On a successful createTenant: the new tenant's id + slug, so the onboarding-studio
-   *  result-vy (W6) can link the real /salonger/[id] + show the reserved public address.
+   *  result-vy (W6) can link the real /kunder/[id] + show the reserved public address.
    *  Optional + additive — message-only consumers (CreateTenantForm) ignore it. */
   tenant?: { id: string; slug: string }
 }

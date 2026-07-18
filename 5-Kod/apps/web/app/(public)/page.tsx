@@ -37,7 +37,7 @@ export default async function HomePage() {
   const baseCopy = await getTenantCopy(tenant.id, tenant.slug, tenant.vertical_id ?? null)
 
   // Template-bron option 1: a salvia tenant with authored content_slots (written by
-  // the super-admin visual hub at /salonger/[id]) renders those values THROUGH this
+  // the super-admin visual hub at /kunder/[id]) renders those values THROUGH this
   // same hand-built layout — precedence content_slots > tenant_settings > theme
   // default. We resolve the DB skin and fold it onto copy/branding via the salvia
   // manifest's bindings (applySkinOverlay), then the normal resolveThemeContent

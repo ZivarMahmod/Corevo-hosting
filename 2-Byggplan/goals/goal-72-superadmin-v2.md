@@ -162,5 +162,11 @@ Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
       Ny kund-FAB, komplett Mer-ark, separat mobil aktiv-route, bottenark och
       320 px-overflowhärdning; Fable/Codex-review utan P0–P2 och full test/build
       grön (2026-07-18; autentiserad prod-rök efter deploy).
-- [ ] Etapp 3 IA-svängen
+- [x] Etapp 3 IA-svängen — tenant-master/detalj är kanonisk på `/kunder`,
+      tvärtenant slutkundsinsyn på `/slutkunder`, alla href/revalidate/nav/E2E-kontrakt
+      är flyttade och kund-adminens `/admin/kunder` är orörd. Gamla
+      `/salonger/:path*` får host-scopead 308 i prod och preview; den gamla exakta
+      `/kunder`-betydelsen kan inte redirectas eftersom URL:en nu är den nya kanoniska
+      kundytan. Fable-review utan P0–P2; oberoende Codex-reviewns preview-fynd är
+      åtgärdat och regressionstestat (2026-07-18).
 - [ ] Etapp 4 Partner-rollen (4a–4d — direkt efter 1–3)

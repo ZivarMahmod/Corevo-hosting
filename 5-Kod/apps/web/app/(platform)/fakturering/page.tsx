@@ -68,7 +68,7 @@ export default async function FaktureringPage({
             {rows.map((r) => (
               <tr key={r.tenantId}>
                 <td>
-                  <Link href={`/salonger/${r.tenantId}`}>
+                  <Link href={`/kunder/${r.tenantId}`}>
                     <code className={styles.code}>{r.slug}</code>
                   </Link>{' '}
                   {r.name}
@@ -89,7 +89,7 @@ export default async function FaktureringPage({
               <tr>
                 <td colSpan={5} className={styles.muted}>
                   Inga kunder att fakturera för {label}.{' '}
-                  <Link href="/salonger/ny">Skapa en kund →</Link>
+                  <Link href="/kunder/ny">Skapa en kund →</Link>
                 </td>
               </tr>
             ) : null}

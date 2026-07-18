@@ -165,7 +165,7 @@ export async function PortalShell({
       paletteItems = [
         ...paletteItems,
         ...tenantOptions.map(({ id, name, slug }) => ({
-          href: `/salonger/${id}`,
+          href: `/kunder/${id}`,
           label: name,
           sub: `${slug}.corevo.se`,
           icon: 'building' as const,
@@ -288,7 +288,7 @@ export async function PortalShell({
             brandSub={isPlatform ? 'Superadmin' : 'via Corevo'}
             brandLabel={isPlatform ? 'Corevo superadmin – översikt' : `${brand} – översikt`}
             primaryAction={
-              isPlatform ? { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' } : undefined
+              isPlatform ? { href: '/kunder/ny', label: 'Ny kund', icon: 'plus' } : undefined
             }
             // Genvägsraden (Zivar 2026-07-18): dashboardens GENVÄGAR-kort flyttat hit
             // som cirkulära ikonknappar — nåbara från varje adminyta, inte bara Översikt.
@@ -296,8 +296,8 @@ export async function PortalShell({
             quickActions={
               isPlatform
                 ? [
-                    { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' },
-                    { href: '/kunder', label: 'Slutkunder', icon: 'users' },
+                    { href: '/kunder/ny', label: 'Ny kund', icon: 'plus' },
+                    { href: '/slutkunder', label: 'Slutkunder', icon: 'users' },
                     { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
                     { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
                   ]

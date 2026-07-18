@@ -31,11 +31,12 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
     expect(page.url()).not.toContain('/platform')
 
     // Clean back-office routes resolve (no /platform prefix).
-    await page.goto(`${BOOKING}/salonger`)
-    // Rubriken heter "Kunder", inte "Salonger": tenants ÄR kunderna, och plattformen
-    // säljer till fler branscher än salonger. Rutten behåller sitt gamla namn (den är
-    // en URL, inte en etikett) — men ytan säger det den är.
-    await expect(page.getByRole('heading', { name: 'Kunder' })).toBeVisible()
+    await page.goto(`${BOOKING}/kunder`)
+    // Tenants ÄR plattformens kunder; slutkunder har en egen insynsrutt.
+    await expect(page.getByRole('complementary', { name: 'Kunder' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Välj en kund' })).toBeVisible()
+    await page.goto(`${BOOKING}/slutkunder`)
+    await expect(page.getByRole('heading', { name: 'Slutkunder' })).toBeVisible()
     await page.goto(`${BOOKING}/fakturering`)
     await expect(page.getByRole('heading', { name: 'Faktureringsunderlag' })).toBeVisible()
 
@@ -57,7 +58,7 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
     await expect(page).toHaveURL(new RegExp(`${BOOKING}/admin`))
     // Platform surfaces are flag-gated (requirePlatformAdmin) — a salon_admin (level
     // 6, platform_admin=false) is denied to /ingen-atkomst, never sees other tenants.
-    for (const p of ['/salonger', '/fakturering']) {
+    for (const p of ['/kunder', '/slutkunder', '/fakturering']) {
       await page.goto(`${BOOKING}${p}`)
       await expect(page, `${p} must deny a salon_admin`).toHaveURL(new RegExp(`${BOOKING}/ingen-atkomst`))
     }
@@ -92,7 +93,7 @@ test.describe('@backoffice platform host = back-office, clean URLs', () => {
 test.describe('@backoffice tenant host = storefront only', () => {
   test('back-office paths are bounced off the storefront host', async ({ page }) => {
     // No login needed — the bounce happens in middleware before the auth gate.
-    for (const p of ['/admin', '/personal', '/salonger', '/platform']) {
+    for (const p of ['/admin', '/personal', '/kunder', '/slutkunder', '/salonger', '/platform']) {
       await page.goto(`${STORE}${p}`)
       await expect(page, `${p} should bounce to storefront root`).toHaveURL(`${STORE}/`)
     }

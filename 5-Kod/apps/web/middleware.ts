@@ -3,7 +3,7 @@
 // G12 — back-office vs storefront, split by host:
 //  • PLATFORM host (booking.corevo.se) = back-office for super_admin / salon_admin
 //    / staff. Clean URLs at the root: `/` serves the platform dashboard (the
-//    internal `/platform` route, via rewrite); `/salonger`, `/fakturering`,
+//    internal `/platform` route, via rewrite); `/kunder`, `/fakturering`,
 //    `/admin/*`, `/personal/*`, `/login` are served as-is. The bare `/platform*`
 //    prefix is redirected to `/` so it never appears in the URL.
 //  • TENANT host (frisorN.corevo.se) = storefront only: `(public)`, `/boka`,
@@ -34,11 +34,12 @@ import { resolveCustomDomainSlug } from '@/lib/custom-domain'
 import { PROTECTED_PREFIXES } from '@/lib/auth/roles'
 import { decideBackofficeRoute, type BackofficeHostKind } from '@/lib/auth/host-routing'
 import { PLATFORM_ROUTE_PREFIXES } from '@/lib/auth/platform-routes'
+import { canonicalPreviewPlatformLegacyUrl } from '@/lib/auth/platform-route-canonical'
 
 // Internal dashboard route (file lives at app/(platform)/platform); served at `/`.
 const DASHBOARD_ROUTE = '/platform'
 // Back-office surfaces that must NOT be served on a tenant (storefront) host.
-// goal-17 added the six platform control-center routes (siblings of /salonger +
+// goal-17 added the six platform control-center routes (siblings of /kunder +
 // /fakturering); listing them bounces them to `/` on a tenant host, exactly like
 // the existing platform surfaces. NOTE: '/personal-plattform' is listed explicitly
 // — isPrefix only matches '/personal' as a whole segment ('/personal' or
@@ -52,7 +53,7 @@ const BACKOFFICE_PREFIXES = [
 // logged-in account. A platform_admin has no single tenant to scope to, so these
 // would silently render/mutate whatever tenant the account is anchored to —
 // they're bounced to the platform dashboard (step 4b). The platform surfaces
-// (/platform, /salonger, /fakturering) are NOT here: a platform_admin SHOULD reach
+// (/platform, /kunder, /fakturering) are NOT here: a platform_admin SHOULD reach
 // them, and they're already flag-gated by requirePlatformAdmin() in the layout.
 const TENANT_SCOPED_BACKOFFICE = ['/admin', '/personal']
 
@@ -156,10 +157,22 @@ export async function middleware(request: NextRequest) {
     return persistOverride(carryAuthCookies(NextResponse.redirect(dest)))
   }
 
-  // 3c. Super-admin live storefront preview (Sida-fliken på /salonger/[id]) — same-origin
+  // The production superadmin host gets the permanent legacy redirect from
+  // next.config before middleware. Preview/dev deliberately shares the booking
+  // host, so mirror that 308 only for its platform resolution. Tenant/custom
+  // hosts never enter this branch and continue to bounce back-office paths.
+  const previewCanonicalUrl = canonicalPreviewPlatformLegacyUrl(new URL(request.url), {
+    preview: previewHost,
+    platform: isPlatformHost,
+  })
+  if (previewCanonicalUrl) {
+    return persistOverride(carryAuthCookies(NextResponse.redirect(previewCanonicalUrl, 308)))
+  }
+
+  // 3c. Super-admin live storefront preview (Sida-fliken på /kunder/[id]) — same-origin
   //     iframe-mål. Renderar en tenants PUBLIKA storefront ur SLUG i URL:en (värd-
   //     oberoende), så den måste serveras på admin-dörren (superbooking) utan att
-  //     back-office-routern nedan bouncar den till `/` (den är ingen /salonger-path).
+  //     back-office-routern nedan bouncar den till `/` (den är ingen /kunder-path).
   //     EJ flagg-gatad (riktig admin-funktion, ej spike); rutten själv-gatar med
   //     requirePlatformAdmin() → en oinloggad get 307:ar ändå till /login på sidnivå.
   //     Före host-routningen så bouncen aldrig hinner före.

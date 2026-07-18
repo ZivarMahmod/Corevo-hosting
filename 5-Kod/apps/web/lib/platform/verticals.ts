@@ -5,7 +5,7 @@ import 'server-only'
 //
 // Client-safe types + the pure `modulesForVertical` helper live in ./verticals-shared
 // (imported by the client wizard). This file is server-only (uses platformCtx); a
-// server component (/salonger/ny) calls loadVerticalPresets() and passes the plain
+// server component (/kunder/ny) calls loadVerticalPresets() and passes the plain
 // JSON down to the client wizard as props.
 import { platformCtx } from './guard'
 import { MODULE_STATES, type ModuleState } from '@/lib/tenant-modules'

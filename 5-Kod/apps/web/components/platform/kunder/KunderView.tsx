@@ -54,8 +54,8 @@ export function KunderView({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [revealedContact, setRevealedContact] = useState<PiiContact | null>(null)
   const [adding, setAdding] = useState(false)
-  // Add-customer form state (goal-22). The view is cross-tenant, so a salong choice is
-  // mandatory — prefilled with the active salong filter when one is set.
+  // Add-customer form state (goal-22). The view is cross-tenant, so a company choice is
+  // mandatory — prefilled with the active company filter when one is set.
   const [addTenant, setAddTenant] = useState('')
   const [addName, setAddName] = useState('')
   const [addEmail, setAddEmail] = useState('')
@@ -67,7 +67,7 @@ export function KunderView({
     [customers, selectedId],
   )
   // Add-customer can only target an ACTIVE salon (the server rejects others), so the
-  // form's salong-select offers only those — the search filter above still lists ALL
+  // form's company select offers only those — the search filter above still lists ALL
   // (you may legitimately filter customers by a suspended salon).
   const activeTenants = useMemo(() => tenants.filter((t) => t.status === 'active'), [tenants])
 
@@ -76,7 +76,7 @@ export function KunderView({
     if (nextQ.trim()) params.set('q', nextQ.trim())
     if (nextTenant !== 'all') params.set('tenant', nextTenant)
     const qs = params.toString()
-    startTransition(() => router.push(qs ? `/kunder?${qs}` : '/kunder'))
+    startTransition(() => router.push(qs ? `/slutkunder?${qs}` : '/slutkunder'))
   }
 
   const isFiltered = q.trim() !== '' || tenant !== 'all'
@@ -137,7 +137,7 @@ export function KunderView({
         <Stat label="Företag" value={<span className="num">{salons}</span>} icon="building" />
       </div>
 
-      {/* Search + salong filter — a real cross-tenant query (server re-reads). */}
+      {/* Search + company filter — a real cross-tenant query (server re-reads). */}
       <form
         className={styles.filters}
         onSubmit={(e) => {
@@ -173,7 +173,7 @@ export function KunderView({
         </select>
         {/* Submit trigger — the mock filters its in-memory array on each keypress;
             we run a REAL cross-tenant server query, so the search needs a submit
-            (salong-byte navigates immediately via onChange above). */}
+            (company changes navigate immediately via onChange above). */}
         <Button type="submit" variant="ghost" icon="search">
           Sök
         </Button>
@@ -362,7 +362,7 @@ export function KunderView({
       )}
 
       {/* ── Add-customer drawer (goal-22): a REAL form that inserts a customers row on
-            the chosen salong. The honest callout stays — most rows are still minted on
+            the chosen company. The honest callout stays — most rows are still minted on
             first booking — but the manual path now creates a real, immediately visible
             row instead of a dead "Stäng"-stub. ── */}
       {adding && (
@@ -518,7 +518,7 @@ export function KunderView({
 
   // ── add-customer (goal-22) ──────────────────────────────────────────────────────
   function openAdd() {
-    // Prefill the salong with the active filter so the common "add to this salong" flow
+    // Prefill the company with the active filter so the common "add to this company" flow
     // is one field shorter — but only if that salon is active (the select lists active
     // salons only; prefilling a suspended one would set a value with no matching option).
     const prefill = activeTenants.some((t) => t.id === tenant) ? tenant : ''

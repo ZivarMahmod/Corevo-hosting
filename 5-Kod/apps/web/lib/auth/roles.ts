@@ -32,7 +32,7 @@ export const PORTAL_MIN_LEVEL: Record<Portal, number> = {
 
 // Path prefixes the middleware treats as authenticated-only (cheap gate).
 // G12: back-office now lives on the platform host (booking.corevo.se) at clean
-// URLs — `/salonger` + `/fakturering` join the list; the dashboard route is
+// URLs — `/kunder` + `/fakturering` join the list; the dashboard route is
 // `/platform` (served at `/` via middleware rewrite, so the gate is applied to
 // the post-rewrite path).
 export const PROTECTED_PREFIXES = [
