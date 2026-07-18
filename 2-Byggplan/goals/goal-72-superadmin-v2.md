@@ -158,6 +158,9 @@ Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
 - [x] Etapp 2f Kundkortets master–detalj — beständig kundlista, URL-neutral
       route-group, bevarade flikar/modulgates och race-säker tvåstegsradering;
       oberoende review utan kvarvarande P0–P2 (2026-07-18).
-- [ ] Etapp 2g Mobilparitet för superadmin.
+- [x] Etapp 2g Mobilparitet för superadmin — fyra plattformsflikar, scope-gatad
+      Ny kund-FAB, komplett Mer-ark, separat mobil aktiv-route, bottenark och
+      320 px-overflowhärdning; Fable/Codex-review utan P0–P2 och full test/build
+      grön (2026-07-18; autentiserad prod-rök efter deploy).
 - [ ] Etapp 3 IA-svängen
 - [ ] Etapp 4 Partner-rollen (4a–4d — direkt efter 1–3)

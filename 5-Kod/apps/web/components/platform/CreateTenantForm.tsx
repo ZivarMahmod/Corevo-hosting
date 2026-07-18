@@ -17,6 +17,7 @@ import { ONBOARDING_STEPS } from '@/lib/platform/onboarding-steps'
 import { PageHead, Card, Button, Badge, Icon } from '@/components/portal/ui'
 import { Callout } from '@/components/portal/ui'
 import { FLORIST_THEMES } from '@/components/storefront/layouts/florist/registry'
+import mobileStyles from './CreateTenantForm.module.css'
 
 const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
@@ -303,7 +304,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
     setModuleStates((prev) => ({ ...prev, [key]: next }))
 
   return (
-    <div style={{ maxWidth: 820 }}>
+    <div style={{ maxWidth: 820, width: '100%', minWidth: 0 }}>
       <PageHead
         eyebrow="Plattform"
         title="Onboarda ny kund"
@@ -349,7 +350,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
 
         <Card>
           {/* ── Stepper ── */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 26 }}>
+          <div className={mobileStyles.stepper} style={{ display: 'flex', gap: 6, marginBottom: 26 }}>
             {STEPS.map((s, i) => (
               <div key={s} style={{ flex: 1 }}>
                 <div
@@ -388,7 +389,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                   manuellt i steget &quot;Moduler&quot;.
                 </Callout>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+                <div className={mobileStyles.twoColumnGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
                   {presets.verticals.map((v) => {
                     const on = verticalKey === v.key
                     const mods = modulesForVertical(presets, v.key).filter((m) => m.defaultState !== 'off')
@@ -442,7 +443,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                     placeholder="klippoteket"
                     autoCapitalize="none"
                     spellCheck={false}
-                    style={{ flex: 1, padding: '11px 13px', border: 'none', outline: 'none', fontFamily: 'var(--font-ui)', fontSize: 14, background: 'transparent', color: 'var(--c-ink)' }}
+                    style={{ flex: 1, minWidth: 0, padding: '11px 13px', border: 'none', outline: 'none', fontFamily: 'var(--font-ui)', fontSize: 14, background: 'transparent', color: 'var(--c-ink)' }}
                   />
                   <span style={{ padding: '0 14px', color: 'var(--c-ink-3)', fontSize: 14, fontFamily: 'var(--font-ui)', borderLeft: '1px solid var(--c-line)', alignSelf: 'stretch', display: 'grid', placeItems: 'center' }}>
                     .{ROOT}
@@ -466,6 +467,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                   : <>Välj utseendet — du ser kundens riktiga startsida live nedan. (Välj en bransch i steg 1 för att se branschens egna mallar.)</>}
               </p>
               <div
+                className={mobileStyles.templateGrid}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: `repeat(${Math.min(5, Math.max(2, templateOptions.length))},1fr)`,
@@ -537,7 +539,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                         background: 'var(--c-paper)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                      <div className={mobileStyles.moduleHead} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
                         <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--c-ink)' }}>
                           {m.name}
                           {isBooking ? <span style={{ fontSize: 11.5, color: 'var(--c-ink-3)', fontWeight: 600, marginLeft: 8 }}>Kärnmodul</span> : null}
@@ -575,7 +577,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
                           <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--c-ink)', marginBottom: 8 }}>
                             Bokningsvariant — hur bokningen presenteras (99 % sker på mobil)
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                          <div className={mobileStyles.twoColumnGrid} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                             {BOOKING_VARIANTS.map((v) => {
                               const von = variant === v
                               const rec = v === RECOMMENDED_BOOKING_VARIANT
@@ -715,7 +717,7 @@ export function CreateTenantForm({ presets }: { presets: VerticalPresetData }) {
           )}
 
           {/* ── Footer ── */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--c-line)' }}>
+          <div className={mobileStyles.footer} style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28, paddingTop: 20, borderTop: '1px solid var(--c-line)' }}>
             <Button variant="ghost" icon="arrowLeft" onClick={() => setStep((s) => Math.max(0, s - 1))} style={{ opacity: step === 0 ? 0.4 : 1 }}>
               Tillbaka
             </Button>
@@ -831,12 +833,12 @@ function ThemePreview({
       {/* browser chrome */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', background: '#EDEAE3', borderBottom: '1px solid var(--c-line)' }}>
         {dot('#E0726A')}{dot('#E6B34D')}{dot('#7FB47F')}
-        <div style={{ marginLeft: 8, fontSize: 11.5, color: 'var(--c-ink-3)', fontFamily: 'var(--font-ui)', background: '#fff', padding: '3px 11px', borderRadius: 999 }}>
+        <div className={mobileStyles.previewAddress} style={{ marginLeft: 8, fontSize: 11.5, color: 'var(--c-ink-3)', fontFamily: 'var(--font-ui)', background: '#fff', padding: '3px 11px', borderRadius: 999 }}>
           {slug}.{ROOT}
         </div>
       </div>
       {/* two-column hero */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', background: t.bg, minHeight: 280 }}>
+      <div className={mobileStyles.previewGrid} style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', background: t.bg, minHeight: 280 }}>
         <div style={{ padding: '26px 28px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontFamily: t.display, fontSize: t.caps ? 20 : 18, fontWeight: 600, color: t.fg, textTransform: t.caps ? 'uppercase' : 'none', letterSpacing: t.caps ? '.04em' : 0 }}>{salon}</span>

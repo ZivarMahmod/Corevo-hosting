@@ -264,3 +264,18 @@
     min-height: 44px;
   }
 }
+
+@media (max-width: 620px) {
+  .row {
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+    display: grid;
+  }
+  .actor,
+  .time {
+    width: auto;
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
+  }
+}

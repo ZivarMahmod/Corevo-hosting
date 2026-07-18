@@ -18,7 +18,11 @@ import { getAdminLocationPreferences } from '@/lib/admin/location-context'
 import { PortalTopbar } from './PortalTopbar'
 import { Topnav } from './Topnav'
 import topnavStyles from './Topnav.module.css'
-import { PLATFORM_AREAS, PLATFORM_SUBNAV } from './platform-navigation'
+import {
+  PLATFORM_AREAS,
+  PLATFORM_SUBNAV,
+  platformMobileNavigation,
+} from './platform-navigation'
 import { adminAreas, adminMobileNavigation } from './admin-navigation'
 import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
@@ -270,7 +274,9 @@ export async function PortalShell({
         >
           <Topnav
             areas={topAreas}
-            mobileNavigation={isPlatform ? undefined : adminMobileNavigation(topAreas)}
+            mobileNavigation={
+              isPlatform ? platformMobileNavigation(topAreas) : adminMobileNavigation(topAreas)
+            }
             subnav={isPlatform ? PLATFORM_SUBNAV : undefined}
             paletteItems={paletteItems}
             remoteAdminSearch={!isPlatform}

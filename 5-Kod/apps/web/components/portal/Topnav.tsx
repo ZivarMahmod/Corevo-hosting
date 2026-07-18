@@ -53,7 +53,7 @@ export type TopnavQuickAction = {
 export type TopnavMobileNavigation = {
   tabs: readonly TopnavArea[]
   more: readonly TopnavArea[]
-  action: { href: string; label: string }
+  action?: { href: string; label: string }
 }
 
 export function topnavPathMatches(pathname: string, prefix: string, exact = false): boolean {
@@ -105,9 +105,11 @@ function AccountIdentity({
 }
 
 function mobileNavGlyph(areaId: string) {
-  if (areaId === 'oversikt') return '▦'
+  if (areaId === 'oversikt' || areaId === 'overview') return '▦'
   if (areaId === 'kalender') return '▤'
-  if (areaId === 'kunder') return '◉'
+  if (areaId === 'kunder' || areaId === 'customers') return '◉'
+  if (areaId === 'insight') return '◎'
+  if (areaId === 'drift') return '!'
   return '≡'
 }
 
@@ -162,7 +164,7 @@ export function Topnav({
   signOut,
 }: {
   areas: readonly TopnavArea[]
-  /** Kund-adminens responsiva omarrangering. Utebliven för plattformen. */
+  /** Rollens responsiva omarrangering av samma, redan servergodkända navigation. */
   mobileNavigation?: TopnavMobileNavigation
   /** Subnav per område-id (superadminens befintliga karta). Områdets egen `subnav` vinner. */
   subnav?: Partial<Record<string, readonly TopnavItem[]>>
@@ -196,6 +198,12 @@ export function Topnav({
   const activeArea = activeTopnavArea(pathname, areas) ?? areas[0]
   const subnav = activeArea ? (activeArea.subnav ?? subnavByArea?.[activeArea.id]) : undefined
   const activeSubitem = subnav ? activeTopnavSubitem(pathname, subnav) : undefined
+  const mobileAreas = mobileNavigation
+    ? [...mobileNavigation.tabs, ...mobileNavigation.more]
+    : []
+  const activeMobileArea = mobileNavigation
+    ? activeTopnavArea(pathname, mobileAreas)
+    : undefined
   const [commandOpen, setCommandOpen] = useState(false)
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
   const [mobileAccountOpen, setMobileAccountOpen] = useState(false)
@@ -270,7 +278,7 @@ export function Topnav({
   }, [mobileNavigation])
 
   const mobileMoreActive =
-    mobileNavigation?.more.some((area) => area.id === activeArea?.id) ?? false
+    mobileNavigation?.more.some((area) => area.id === activeMobileArea?.id) ?? false
 
   return (
     <>
@@ -443,11 +451,11 @@ export function Topnav({
 
         {mobileNavigation ? (
           <nav
-            className={`${styles.mobileNav}${pathname.startsWith('/admin/bokningar') ? ` ${styles.mobileNavSixCol}` : ''}`}
+            className={`${styles.mobileNav}${mobileNavigation.tabs.length > 3 || pathname.startsWith('/admin/bokningar') ? ` ${styles.mobileNavSixCol}` : ''}`}
             aria-label="Mobilnavigering"
           >
             {mobileNavigation.tabs.slice(0, 2).map((area) => {
-              const active = area.id === activeArea?.id
+              const active = area.id === activeMobileArea?.id
               return (
                 <Link
                   key={area.id}
@@ -465,16 +473,18 @@ export function Topnav({
                 </Link>
               )
             })}
-            <Link
-              href={mobileNavigation.action.href}
-              className={styles.mobileFab}
-              aria-label={mobileNavigation.action.label}
-            >
-              <span className={styles.mobileFabButton} aria-hidden="true">
-                <Icon name="plus" size={20} />
-              </span>
-              <span className={styles.mobileFabLabel}>{mobileNavigation.action.label}</span>
-            </Link>
+            {mobileNavigation.action ? (
+              <Link
+                href={mobileNavigation.action.href}
+                className={styles.mobileFab}
+                aria-label={mobileNavigation.action.label}
+              >
+                <span className={styles.mobileFabButton} aria-hidden="true">
+                  <Icon name="plus" size={20} />
+                </span>
+                <span className={styles.mobileFabLabel}>{mobileNavigation.action.label}</span>
+              </Link>
+            ) : null}
             {/* Sök bor BREDVID plus-knappen (Zivar 2026-07-18) — bara på kalendern,
                 arket ägs av CalendarSearch och öppnas via fönster-eventet. */}
             {pathname.startsWith('/admin/bokningar') && (
@@ -491,7 +501,7 @@ export function Topnav({
               </button>
             )}
             {mobileNavigation.tabs.slice(2).map((area) => {
-              const active = area.id === activeArea?.id
+              const active = area.id === activeMobileArea?.id
               return (
                 <Link
                   key={area.id}
@@ -558,7 +568,7 @@ export function Topnav({
                   </div>
                 )
               }
-              const active = area.id === activeArea?.id
+              const active = area.id === activeMobileArea?.id
               return (
                 <div key={area.id} className={styles.mobileMoreGroup}>
                   <Link

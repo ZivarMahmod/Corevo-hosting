@@ -827,14 +827,16 @@
   border-top: 1px solid var(--c-line);
 }
 
-/* Kund-admin mobil <768: samma drawers, samma formulär och actions, omarrangerade
-   som kanonens bottenark. Personal- och plattformsportalerna behåller sin chrome. */
+/* Kund-admin och superadmin mobil <768: samma drawers, formulär och actions,
+   omarrangerade som kanonens bottenark. Personalportalen behåller sin chrome. */
 @media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
-  [data-world="backoffice"][data-portal="admin"] .bo-drawer-overlay {
+  [data-world="backoffice"][data-portal="admin"] .bo-drawer-overlay,
+  [data-world="backoffice"][data-portal="platform"] .bo-drawer-overlay {
     align-items: flex-end;
     justify-content: stretch;
   }
-  [data-world="backoffice"][data-portal="admin"] .bo-drawer {
+  [data-world="backoffice"][data-portal="admin"] .bo-drawer,
+  [data-world="backoffice"][data-portal="platform"] .bo-drawer {
     width: 100%;
     max-width: none;
     height: auto;
@@ -842,7 +844,8 @@
     border-radius: 20px 20px 0 0;
     animation: bo-sheet-in 220ms var(--ease-out);
   }
-  [data-world="backoffice"][data-portal="admin"] .bo-drawer::before {
+  [data-world="backoffice"][data-portal="admin"] .bo-drawer::before,
+  [data-world="backoffice"][data-portal="platform"] .bo-drawer::before {
     width: 40px;
     height: 4px;
     margin: 8px auto 0;
@@ -851,12 +854,16 @@
     background: var(--c-line-strong);
     content: '';
   }
-  [data-world="backoffice"][data-portal="admin"] .bo-drawer.is-closing {
+  [data-world="backoffice"][data-portal="admin"] .bo-drawer.is-closing,
+  [data-world="backoffice"][data-portal="platform"] .bo-drawer.is-closing {
     animation: bo-sheet-out 220ms var(--ease-out) forwards;
   }
-  [data-world="backoffice"][data-portal="admin"] .bo-drawer-head { padding: 12px 18px 16px; }
-  [data-world="backoffice"][data-portal="admin"] .bo-drawer-body { padding: 20px 18px; }
-  [data-world="backoffice"][data-portal="admin"] .bo-drawer-foot {
+  [data-world="backoffice"][data-portal="admin"] .bo-drawer-head,
+  [data-world="backoffice"][data-portal="platform"] .bo-drawer-head { padding: 12px 18px 16px; }
+  [data-world="backoffice"][data-portal="admin"] .bo-drawer-body,
+  [data-world="backoffice"][data-portal="platform"] .bo-drawer-body { padding: 20px 18px; }
+  [data-world="backoffice"][data-portal="admin"] .bo-drawer-foot,
+  [data-world="backoffice"][data-portal="platform"] .bo-drawer-foot {
     padding: 14px 18px max(14px, env(safe-area-inset-bottom));
   }
 }

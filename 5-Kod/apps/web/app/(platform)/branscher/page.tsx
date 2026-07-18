@@ -37,7 +37,7 @@ export default async function BranscherPage() {
         title="Branscher"
         lede="Bransch-nivåns inställningar — det som gäller ALLA kunder i branschen: moduler, terminologi och mallar. Kundens egna val bor i kundkortet."
       />
-      <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+      <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))' }}>
         {(verticals ?? []).map((v) => {
           const mods = (v.default_modules ?? {}) as Record<string, string>
           const activeMods = Object.entries(mods).filter(([, s]) => s !== 'off')

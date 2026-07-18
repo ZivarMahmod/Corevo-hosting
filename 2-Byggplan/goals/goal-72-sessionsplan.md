@@ -142,6 +142,14 @@ inga regressioner i modul-flikarna (delade komponenter med kund-adminen).
 kundkortet nåbart, ingen vågrät scroll. Körs EFTER S4 (mobilviket byggs mot
 den nya master–detaljen, inte dagens grid).
 
+**Status 2026-07-18**: lokalt klar. Fyra serverlistederiverade flikar + FAB +
+fullständigt Mer-ark är inkopplade; mobilens aktiva route är separerad från
+desktop-IA:n. Drawers är bottenark och de verifierade 320 px-overflowpunkterna i
+kundkort, onboarding, drift, integrationer, branscher och domänrader är härdade.
+Fable 5 + oberoende Codex-review: inga kvarvarande P0–P2. `pnpm test` 243/2 013,
+typecheck och produktionsbuild gröna; autentiserad enhets-/prod-rök körs efter deploy
+(den lokala browsern saknade en inloggad superadminsession).
+
 ## S6 — IA-svängen: Salonger→Kunder (etapp 3, SIST)
 
 **Mål**: `/salonger`→`/kunder` (tenants = kunder), `/kunder`→`/slutkunder`,
