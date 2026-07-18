@@ -36,22 +36,25 @@ function MemberRow({ member }: { member: PermissionMember }) {
     can_view_daily_metrics: member.permissions.canViewDailyMetrics,
   }
 
-  if (!member.hasAccount) {
-    return (
-      <div className={styles.memberRow}>
-        <span className={styles.avatar}>{member.name.slice(0, 1).toUpperCase()}</span>
-        <span className={styles.memberCopy}><strong>{member.name}</strong><small>{member.subtitle} · inget personligt konto</small></span>
-        <Link href="/admin/personal">Bjud in</Link>
-      </div>
-    )
-  }
-
+  // Rollen sparas på staff_id — inget konto krävs (RPC:n kräver bara aktiv staff).
+  // Sätts rollen före inbjudan ligger den redan där när kontot kopplas.
   return (
     <form action={action} className={styles.memberForm}>
       <input type="hidden" name="staff_id" value={member.id} />
       <div className={styles.memberRow}>
         <span className={styles.avatar}>{member.name.slice(0, 1).toUpperCase()}</span>
-        <span className={styles.memberCopy}><strong>{member.name}</strong><small>{member.subtitle}</small></span>
+        <span className={styles.memberCopy}>
+          <strong>{member.name}</strong>
+          <small>
+            {member.subtitle}
+            {!member.hasAccount && (
+              <>
+                {' · inget konto ännu — '}
+                <Link href="/admin/personal">bjud in</Link>
+              </>
+            )}
+          </small>
+        </span>
         <select name="operational_role" defaultValue={member.permissions.operationalRole}>
           <option value="manager">PLATSCHEF</option>
           <option value="staff">FRISÖR</option>
@@ -66,7 +69,11 @@ function MemberRow({ member }: { member: PermissionMember }) {
         ))}
         <div className={styles.permissionSave}>
           <span className={state.error ? styles.actionError : styles.actionSuccess} role="status">
-            {state.error ?? state.success ?? 'Tillägg utöver rollen — gäller bara den här personen.'}
+            {state.error ??
+              state.success ??
+              (member.hasAccount
+                ? 'Tillägg utöver rollen — gäller bara den här personen.'
+                : 'Sparas nu — gäller så fort hen har bjudits in.')}
           </span>
           <button type="submit" disabled={pending}>{pending ? 'Sparar…' : 'Spara'}</button>
         </div>
