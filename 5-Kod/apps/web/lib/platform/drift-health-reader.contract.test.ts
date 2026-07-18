@@ -4,17 +4,17 @@ import { describe, expect, it } from 'vitest'
 
 const migrationPath = resolve(
   import.meta.dirname,
-  '../../../../supabase/migrations/0111_platform_drift_health.sql',
+  '../../../../supabase/migrations/0113_platform_drift_health_truth.sql',
 )
 const runtimePath = resolve(
   import.meta.dirname,
-  '../../../../supabase/tests/platform_drift_health_0111_test.sql',
+  '../../../../supabase/tests/platform_drift_health_0113_test.sql',
 )
 const typesPath = resolve(import.meta.dirname, '../../../../packages/db/types.ts')
 
 describe('platform drift health reader', () => {
   it('ships a platform-gated, PII-free and tenant-filterable aggregate RPC', () => {
-    expect(existsSync(migrationPath), 'migration 0111 is missing').toBe(true)
+    expect(existsSync(migrationPath), 'migration 0113 is missing').toBe(true)
     if (!existsSync(migrationPath)) return
 
     const sql = readFileSync(migrationPath, 'utf8')
@@ -28,8 +28,15 @@ describe('platform drift health reader', () => {
     expect(sql).toContain("o.status = 'attempting'")
     expect(sql).toContain("o.status = 'delivery_started'")
     expect(sql).toContain("o.status = 'failed'")
+    expect(sql).toMatch(
+      /where \(p_tenant is null or o\.tenant_id = p_tenant\)[\s\S]*?and \([\s\S]*?o\.status in \('routing', 'queued', 'attempting', 'delivery_started'\)[\s\S]*?or \(o\.status = 'failed' and o\.updated_at > now\(\) - interval '24 hours'\)[\s\S]*?\)/,
+    )
+    expect(sql).toContain('create index if not exists notifications_outbox_drift_active_global_idx')
+    expect(sql).toContain('create index if not exists notifications_outbox_drift_active_tenant_idx')
+    expect(sql).toMatch(/where status in \([\s\S]*?'routing'[\s\S]*?'failed'[\s\S]*?\)/)
     expect(sql).toContain('scheduler_healthy')
     expect(sql).toContain('scheduler_age_seconds')
+    expect(sql).not.toContain("h.last_status = 'succeeded'")
     expect(sql).toContain(
       'revoke all on function public.platform_drift_health(uuid) from public, anon;',
     )
@@ -40,7 +47,7 @@ describe('platform drift health reader', () => {
   })
 
   it('ships a rollback-safe runtime proof for denial, grants and platform success', () => {
-    expect(existsSync(runtimePath), '0111 runtime test is missing').toBe(true)
+    expect(existsSync(runtimePath), '0113 runtime test is missing').toBe(true)
     if (!existsSync(runtimePath)) return
 
     const sql = readFileSync(runtimePath, 'utf8')
@@ -48,6 +55,11 @@ describe('platform drift health reader', () => {
     expect(sql).toContain('rollback;')
     expect(sql).toContain('non_platform_drift_health_succeeded')
     expect(sql).toContain('platform_drift_health_aggregate_failed')
+    expect(sql).toContain('future_queued_row_missing')
+    expect(sql).toContain('started_fresh_success_not_healthy')
+    expect(sql).toContain('newer_failure_not_unhealthy')
+    expect(sql).toContain('drift_global_index_missing')
+    expect(sql).toContain('drift_tenant_index_missing')
     expect(sql).toMatch(/has_function_privilege\(\s*'anon'/)
     expect(sql).toMatch(/has_function_privilege\(\s*'authenticated'/)
     expect(sql).toMatch(/has_function_privilege\(\s*'service_role'/)

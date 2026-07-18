@@ -56,11 +56,23 @@ describe('DriftHealth', () => {
     expect(html).toContain('scheduler')
     expect(html).toContain('notifications')
     expect(html).toContain('1,2 s')
-    expect(html).toContain('Meddelande:')
-    expect(html).toContain('provider unavailable')
-    expect(html).toContain('Redo nu')
+    expect(html).not.toContain('provider unavailable')
+    expect(html).toContain('Köade totalt')
     expect(html).toContain('Cloudflare-svep')
     expect(html).toContain('Aktuell heartbeat')
+  })
+
+  it('shows an in-progress sweep without downgrading a canonically healthy heartbeat', () => {
+    const html = renderToStaticMarkup(
+      <DriftHealth
+        rows={[]}
+        snapshot={{ ...healthySnapshot, scheduler_last_status: 'started' }}
+      />,
+    )
+
+    expect(html).toContain('Svep pågår')
+    expect(html).not.toContain('Aktuell heartbeat')
+    expect(html).not.toContain('Heartbeat ej kvitterad')
   })
 
   it('uses an honest empty state when cron has no registered jobs', () => {

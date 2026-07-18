@@ -30,23 +30,15 @@ function duration(value: number | null): string {
   return `${fmtDecimal.format(value / 1000)} s`
 }
 
-function safeMessage(value: string | null): string | null {
-  if (!value) return null
-  const firstLine = value.split(/\r?\n/, 1)[0] ?? ''
-  return firstLine
-    .replace(/https?:\/\/\S+/gi, '[url maskerad]')
-    .replace(/\b(bearer|token|secret|password|api[_-]?key)\s*[:=]\s*\S+/gi, '$1: [maskerat]')
-    .replace(/[\u0000-\u001f\u007f]/g, '')
-    .trim()
-    .slice(0, 160) || null
-}
-
 function heartbeatStatus(snapshot: DriftHealthSnapshot): {
   label: string
-  tone: 'success' | 'danger'
+  tone: 'success' | 'warning' | 'danger'
 } {
   if (!snapshot.scheduler_name || !snapshot.scheduler_last_status) {
     return { label: 'Heartbeat saknas', tone: 'danger' }
+  }
+  if (snapshot.scheduler_healthy && snapshot.scheduler_last_status === 'started') {
+    return { label: 'Svep pågår', tone: 'warning' }
   }
   if (snapshot.scheduler_healthy) return { label: 'Aktuell heartbeat', tone: 'success' }
   if (snapshot.scheduler_last_status === 'failed') {
@@ -77,7 +69,7 @@ function QueueHealth({ snapshot }: { snapshot: DriftHealthSnapshot }) {
       </div>
 
       <div className="bo-stat-grid" style={{ marginBottom: 14 }}>
-        <Stat label="Redo nu" value={snapshot.queued_count} icon="mail" />
+        <Stat label="Köade totalt" value={snapshot.queued_count} icon="mail" />
         <Stat label="Pågående" value={snapshot.attempting_count} icon="repeat" />
         <Stat label="Fastnade" value={snapshot.stalled_count} icon="alert" />
         <Stat label="Misslyckade 24 h" value={snapshot.failed_24h_count} icon="alert" />
@@ -163,7 +155,6 @@ function CronHealth({ rows }: { rows: readonly CronHealthRow[] }) {
             </div>
             {rows.map((row) => {
               const status = statusFor(row)
-              const message = safeMessage(row.last_message)
               return (
                 <div key={row.jobname} className={`${styles.healthRow} ${styles.healthColumns}`} role="row">
                   <strong role="cell">{row.jobname}</strong>
@@ -171,12 +162,6 @@ function CronHealth({ rows }: { rows: readonly CronHealthRow[] }) {
                   <span role="cell"><Badge tone={status.tone}>{status.label}</Badge></span>
                   <span role="cell" className={styles.runDetail}>
                     <span className={`num ${styles.healthTime}`}>{startTime(row.last_start)} · {duration(row.last_duration_ms)}</span>
-                    {message && (
-                      <span className={styles.healthMessage}>
-                        <span className={styles.visuallyHidden}>Meddelande: </span>
-                        {message}
-                      </span>
-                    )}
                   </span>
                 </div>
               )

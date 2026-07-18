@@ -57,9 +57,9 @@ describe('platform outbox summary correction', () => {
     expect(sql).toMatch(/has_function_privilege\(\s*'service_role'/)
   })
 
-  it('keeps the database release inventory on migration 0112', () => {
+  it('keeps 0112 in the database release inventory through migration 0113', () => {
     const workflow = readFileSync(ciPath, 'utf8')
-    expect(workflow.match(/--expected-latest 0112/g)).toHaveLength(2)
-    expect(workflow.match(/--required-test-versions .*0112/g)).toHaveLength(2)
+    expect(workflow.match(/--expected-latest 0113/g)).toHaveLength(2)
+    expect(workflow.match(/--required-test-versions .*0112,0113/g)).toHaveLength(2)
   })
 })

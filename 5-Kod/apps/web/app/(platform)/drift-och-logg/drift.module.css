@@ -255,23 +255,6 @@
   gap: 4px;
   min-width: 0;
 }
-.healthMessage {
-  color: var(--c-ink-3);
-  font-size: 11px;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-.visuallyHidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
 
 /* tablet tap targets (Våg 4) — desktop byte-identical (fine pointer untouched).
    The export button is the Button primitive (its own pointer:coarse rule); only the
