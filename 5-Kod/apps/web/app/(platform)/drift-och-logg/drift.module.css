@@ -163,11 +163,119 @@
   line-height: 1.5;
 }
 
+/* ── server-rendered cron health (goal-72 S1b) ──────────────────────────── */
+.healthSection {
+  margin-bottom: 30px;
+}
+.healthHead {
+  margin-bottom: 14px;
+}
+.healthHead .eyebrow {
+  margin: 0 0 5px;
+}
+.healthHead .h2 {
+  margin: 0;
+}
+.healthLede,
+.healthError {
+  margin: 6px 0 0;
+  color: var(--c-ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.healthBlock {
+  margin-top: 22px;
+}
+.subhead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.subhead .h3 {
+  margin: 0;
+}
+.healthFacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+.healthFacts div {
+  min-width: 0;
+}
+.healthFacts dt {
+  color: var(--c-ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.healthFacts dd {
+  margin: 5px 0 0;
+  color: var(--c-ink);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.healthTable {
+  overflow-x: auto;
+}
+.healthColumns {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) minmax(130px, 1fr) minmax(145px, 1fr) minmax(170px, 1.1fr);
+  gap: 16px;
+  align-items: center;
+}
+.healthRow {
+  min-width: 650px;
+  padding: 13px 20px;
+  border-top: 1px solid var(--c-line);
+  color: var(--c-ink);
+  font-size: 13px;
+}
+.healthTableHead {
+  border-top: 0;
+  color: var(--c-ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.schedule {
+  color: var(--c-ink-2);
+  font-size: 12px;
+}
+.healthTime {
+  color: var(--c-ink-2);
+  font-size: 12px;
+}
+.runDetail {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
 /* tablet tap targets (Våg 4) — desktop byte-identical (fine pointer untouched).
    The export button is the Button primitive (its own pointer:coarse rule); only the
    actor pills need a min-height here. */
 @media (pointer: coarse) {
   .pill {
     min-height: 44px;
+  }
+}
+
+@media (max-width: 620px) {
+  .row {
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+    display: grid;
+  }
+  .actor,
+  .time {
+    width: auto;
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
   }
 }

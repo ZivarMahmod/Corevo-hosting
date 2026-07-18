@@ -95,7 +95,7 @@ export async function savePlatformBranding(_p: ActionState, fd: FormData): Promi
 
   // CRITICAL: bust the cached public bundle so branding shows immediately (M2/M3).
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, { action: 'tenant.branding', tenantId, actorId: user.id })
   return warning ? { error: warning } : { success: 'Varumärke sparat. Publika sajten uppdaterad.' }

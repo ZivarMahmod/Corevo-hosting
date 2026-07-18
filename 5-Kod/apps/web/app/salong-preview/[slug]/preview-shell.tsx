@@ -69,7 +69,15 @@ export async function loadPreviewBundle(slug: string): Promise<TenantBundle> {
   // preview ANY tenant; a salon admin (portal level) only their OWN slug — the
   // kund-adminens /admin/sida uses exactly this route for its live preview.
   const user = await requirePortal('admin')
-  if (!user.platformAdmin) {
+  if (user.partnerAdmin) {
+    const supabase = await createClient()
+    const { data: scoped } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle()
+    if (!scoped) notFound()
+  } else if (!user.platformAdmin) {
     const supabase = await createClient()
     const { data: own } = await supabase
       .from('tenants')

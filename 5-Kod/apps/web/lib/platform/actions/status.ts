@@ -32,8 +32,8 @@ export async function setTenantStatus(_p: ActionState, fd: FormData): Promise<Ac
   // Without busting the tag a suspend stays live up to 5 min — DoD would "fail".
   revalidateTenant(tenant.slug)
   revalidatePath('/platform')
-  revalidatePath('/salonger')
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath('/kunder')
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action:
       status === 'deleted'

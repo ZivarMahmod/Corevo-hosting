@@ -36,6 +36,7 @@ export type NotificationOutboxRow = {
   status: NotificationOutboxStatus
   skip_reason: string | null
   cost_ore: number | null
+  cost_currency: string | null
   parts: number | null
   provider_ref: string | null
   attempt_count: number
@@ -133,6 +134,7 @@ export type NotificationDeliveryResult =
       status: 'sent' | 'delivered' | 'simulated'
       providerRef?: string | null
       costOre?: number | null
+      costCurrency?: string | null
       parts?: number | null
     }
   | { status: 'skipped'; reason: DeliverySkipCode }
@@ -191,6 +193,10 @@ function safeCostOre(value: unknown): number | null {
     : null
 }
 
+function safeCostCurrency(value: unknown): string | null {
+  return typeof value === 'string' && /^[A-Z]{3}$/.test(value) ? value : null
+}
+
 function safeParts(value: unknown): number | null {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= 255
     ? value
@@ -236,6 +242,7 @@ function nextRetryAt(row: ClaimedNotificationOutboxRow, now: Date): string {
  */
 export async function dispatchNotificationOutbox(options: {
   deliver?: NotificationDelivery
+  channel?: 'sms'
   limit?: number
   leaseSeconds?: number
   now?: Date
@@ -247,7 +254,10 @@ export async function dispatchNotificationOutbox(options: {
 
   const now = options.now ?? new Date()
   const leaseToken = crypto.randomUUID()
-  const { data, error } = await admin.rpc('claim_notification_outbox', {
+  const claimRpc = options.channel === 'sms'
+    ? 'claim_sms_notification_outbox'
+    : 'claim_notification_outbox'
+  const { data, error } = await admin.rpc(claimRpc, {
     p_lease_token: leaseToken,
     p_now: now.toISOString(),
     p_lease_seconds: options.leaseSeconds ?? 120,
@@ -284,6 +294,7 @@ export async function dispatchNotificationOutbox(options: {
         p_status: 'failed',
         p_provider_ref: null,
         p_cost_ore: null,
+        p_cost_currency: null,
         p_skip_reason: 'payload_invalid',
         p_parts: null,
       },
@@ -357,6 +368,9 @@ export async function dispatchNotificationOutbox(options: {
         p_cost_ore: accepted && 'costOre' in result
           ? safeCostOre(result.costOre)
           : null,
+        p_cost_currency: accepted && 'costCurrency' in result
+          ? safeCostCurrency(result.costCurrency)
+          : null,
         p_parts: accepted && 'parts' in result
           ? safeParts(result.parts)
           : null,
@@ -395,6 +409,7 @@ export type OutboxWrite = {
   usedChannel?: NotificationChannel | null
   skipReason?: string | null
   costOre?: number | null
+  costCurrency?: string | null
   parts?: number | null
   providerRef?: string | null
 }
@@ -419,6 +434,9 @@ export async function logOutbox(entry: OutboxWrite): Promise<void> {
       status: entry.status,
       skip_reason: entry.skipReason ?? entry.decision.skipReason ?? null,
       cost_ore: entry.costOre ?? null,
+      cost_currency: entry.costOre === null || entry.costOre === undefined
+        ? null
+        : safeCostCurrency(entry.costCurrency) ?? 'SEK',
       parts: safeParts(entry.parts),
       provider_ref: entry.providerRef ?? null,
       sent_at: entry.status === 'sent' ? new Date().toISOString() : null,

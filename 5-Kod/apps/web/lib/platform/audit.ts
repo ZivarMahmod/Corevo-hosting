@@ -40,19 +40,20 @@ export type PlatformAuditAction =
   | 'tenant.service_image_add' // super-admin uploads a service photo (services.image_url)
   | 'tenant.service_image_remove' // super-admin removes a service photo
   | 'tenant.customer_create' // goal-22: manual customer row on a chosen tenant (a Zivar/platform act — NOT a customer.* event, so the actor-classifier reads it as Zivar)
-  | 'tenant.module_state' // multi-bransch spår 5: super-admin set a tenant module's lifecycle state (off/draft/live/paused) on /salonger/[id]
-  | 'tenant.module_config' // goal-64: super-admin redigerar en moduls config-jsonb (t.ex. offertens förfrågningstyper) på /salonger/[id]
-  | 'tenant.content_slot' // multi-bransch spår 4: super-admin swapped a storefront content slot's image (visual hub) on /salonger/[id]
-  | 'tenant.storefront_copy' // super-admin edits a tenant's storefront editorial copy (settings.copy) on /salonger/[id]
-  | 'tenant.storefront_image_add' // super-admin uploads a hero/gallery storefront photo (branding.{hero,gallery}_images) on /salonger/[id]
-  | 'tenant.storefront_image_remove' // super-admin removes a hero/gallery storefront photo on /salonger/[id]
-  | 'tenant.theme' // super-admin bytte storefront-mall (settings.theme) på /salonger/[id]
+  | 'tenant.customer_pii_reveal' // explicit, window-gated platform reveal; audit meta must stay PII-free
+  | 'tenant.module_state' // multi-bransch spår 5: super-admin set a tenant module's lifecycle state (off/draft/live/paused) on /kunder/[id]
+  | 'tenant.module_config' // goal-64: super-admin redigerar en moduls config-jsonb (t.ex. offertens förfrågningstyper) på /kunder/[id]
+  | 'tenant.content_slot' // multi-bransch spår 4: super-admin swapped a storefront content slot's image (visual hub) on /kunder/[id]
+  | 'tenant.storefront_copy' // super-admin edits a tenant's storefront editorial copy (settings.copy) on /kunder/[id]
+  | 'tenant.storefront_image_add' // super-admin uploads a hero/gallery storefront photo (branding.{hero,gallery}_images) on /kunder/[id]
+  | 'tenant.storefront_image_remove' // super-admin removes a hero/gallery storefront photo on /kunder/[id]
+  | 'tenant.theme' // super-admin bytte storefront-mall (settings.theme) på /kunder/[id]
   | 'tenant.site_draft_save'
   | 'tenant.site_draft_image_upload'
   | 'tenant.site_draft_publish'
   | 'tenant.site_draft_discard'
   | 'tenant.site_revision_restore'
-  | 'tenant.contact' // super-admin edits a tenant's public contact (settings.contact email/phone + primär location-adress) on /salonger/[id]
+  | 'tenant.contact' // super-admin edits a tenant's public contact (settings.contact email/phone + primär location-adress) on /kunder/[id]
   | 'platform.help_mode_open' // platform admin opens help-mode for a tenant (logged platform-side)
   | 'platform.role_permissions_save' // goal-21: edit the global RBAC permission matrix
   | 'domain.add' // goal-23: provision a custom hostname + tenant_domains row

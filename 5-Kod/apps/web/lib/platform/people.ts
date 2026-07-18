@@ -24,8 +24,11 @@ export type CustomerRole = 'Kund' | 'Gäst'
 export type CustomerListItem = {
   id: string
   name: string
-  email: string | null
-  phone: string | null
+  tenantId: string
+  maskedEmail: string
+  maskedPhone: string
+  hasEmail: boolean
+  hasPhone: boolean
   tenant: string // salon NAME (mock column "Salong")
   slug: string
   role: CustomerRole
@@ -66,14 +69,17 @@ type CustomerRow = {
   full_name: string | null
   display_name: string | null
   name_hidden: boolean
-  email: string | null
-  phone: string | null
+  masked_email: string
+  masked_phone: string
+  has_email: boolean
+  has_phone: boolean
   status: string
   last_seen_at: string | null
   auth_user_id: string | null
   tenant_id: string
-  tenants: { slug: string; name: string } | { slug: string; name: string }[] | null
-  bookings: { count: number }[] | null
+  tenant_slug: string
+  tenant_name: string
+  visits: number
 }
 
 /**
@@ -85,35 +91,25 @@ export async function listCustomersAllTenants(
   filters: CustomerFilters = {},
 ): Promise<CustomerListItem[]> {
   const { supabase } = await platformCtx()
-  let q = supabase
-    .from('customers')
-    .select(
-      'id, full_name, display_name, name_hidden, email, phone, status, last_seen_at, auth_user_id, tenant_id, tenants(slug, name), bookings(count)',
-    )
-    .order('last_seen_at', { ascending: false })
-
-  if (filters.tenant && filters.tenant !== 'all') q = q.eq('tenant_id', filters.tenant)
-  if (filters.q && filters.q.trim()) {
-    // PostgREST .or() takes a comma-list — strip chars that break the parse.
-    const safe = filters.q.trim().replace(/[,()*"\\]/g, ' ')
-    const term = `%${safe}%`
-    q = q.or(`full_name.ilike.${term},display_name.ilike.${term},email.ilike.${term}`)
-  }
-
-  const { data } = await q
+  const { data } = await supabase.rpc('platform_customer_safe_rows', {
+    p_tenant: filters.tenant && filters.tenant !== 'all' ? filters.tenant : undefined,
+    p_query: filters.q?.trim() || undefined,
+    p_limit: 1000,
+  })
   return ((data ?? []) as CustomerRow[]).map((c) => {
-    const t = Array.isArray(c.tenants) ? c.tenants[0] : c.tenants
-    const visits = Array.isArray(c.bookings) ? (c.bookings[0]?.count ?? 0) : 0
     return {
       id: c.id,
       name: customerDisplayName(c),
-      email: c.email,
-      phone: c.phone,
-      tenant: t?.name ?? '—',
-      slug: t?.slug ?? '',
+      tenantId: c.tenant_id,
+      maskedEmail: c.masked_email,
+      maskedPhone: c.masked_phone,
+      hasEmail: c.has_email,
+      hasPhone: c.has_phone,
+      tenant: c.tenant_name,
+      slug: c.tenant_slug,
       role: customerRole(c.auth_user_id),
       auth: customerAuthLabel(c.auth_user_id),
-      visits,
+      visits: c.visits,
       status: customerStatusLabel(c.status, c.name_hidden),
       lastLogin: c.last_seen_at,
     }

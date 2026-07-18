@@ -3,7 +3,7 @@
 begin;
 
 insert into public.roles (id, tenant_id, name, level) values
-  ('a1060000-0000-0000-0000-000000000001', null, 'platform-0106', 8);
+  ('a1060000-0000-0000-0000-000000000001', null, 'super_admin', 8);
 insert into auth.users (id, email) values
   ('a1060000-0000-0000-0000-000000000002', 'platform-0106@example.test');
 insert into public.users (id, tenant_id, email, role_id, status, access_scope) values

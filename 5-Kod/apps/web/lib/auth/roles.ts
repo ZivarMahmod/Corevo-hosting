@@ -32,7 +32,7 @@ export const PORTAL_MIN_LEVEL: Record<Portal, number> = {
 
 // Path prefixes the middleware treats as authenticated-only (cheap gate).
 // G12: back-office now lives on the platform host (booking.corevo.se) at clean
-// URLs — `/salonger` + `/fakturering` join the list; the dashboard route is
+// URLs — `/kunder` + `/fakturering` join the list; the dashboard route is
 // `/platform` (served at `/` via middleware rewrite, so the gate is applied to
 // the post-rewrite path).
 export const PROTECTED_PREFIXES = [
@@ -51,8 +51,12 @@ export const PROTECTED_PREFIXES = [
  * salon_admin → `/admin`; staff → `/personal` (both back-office on booking.corevo.se);
  * customer → `/konto` (storefront on the tenant host).
  */
-export function portalHomeFor(opts: { roleLevel: number; platformAdmin: boolean }): string {
-  if (opts.platformAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return '/'
+export function portalHomeFor(opts: {
+  roleLevel: number
+  platformAdmin: boolean
+  partnerAdmin?: boolean
+}): string {
+  if (opts.platformAdmin || opts.partnerAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return '/'
   if (opts.roleLevel >= PORTAL_MIN_LEVEL.admin) return '/admin'
   // Paket 06: personalens egen mobil-PWA är primär på booking.corevo.se.
   // Kundadminens kalender finns kvar för uttryckligen delegerade adminytor.
@@ -74,8 +78,11 @@ export function portalHomeFor(opts: { roleLevel: number; platformAdmin: boolean 
 export function backofficeHostKindForRole(opts: {
   roleLevel: number
   platformAdmin: boolean
+  partnerAdmin?: boolean
 }): 'superadmin' | 'platform' | 'staff_portal' | 'tenant' {
-  if (opts.platformAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) return 'superadmin'
+  if (opts.platformAdmin || opts.partnerAdmin || opts.roleLevel >= PORTAL_MIN_LEVEL.platform) {
+    return 'superadmin'
+  }
   // ROLL-SEPARATION: personal (nivå 3) jobbar i adminportalens kalender och därför på
   // ADMIN-dörren (booking). Den dörren serverar även /personal (schema/frånvaro), så
   // hela arbetsdagen ligger bakom EN inloggning — noll extra klick, ingen värdbyte.
@@ -111,6 +118,7 @@ export function isActiveLoginAccount(input: {
 export function loginAccessForHost(opts: {
   roleLevel: number
   platformAdmin: boolean
+  partnerAdmin?: boolean
   accountTenantId: string | null
   hostKind: LoginHostKind
   hostTenantId: string | null

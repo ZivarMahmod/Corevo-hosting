@@ -1,4 +1,5 @@
-import { Card, Callout, Badge } from '@/components/portal/ui'
+import { AccountSecurity } from '@/components/admin/AccountSecurity'
+import { Badge, Button, Callout, Card, PageHead } from '@/components/portal/ui'
 import styles from './installningar.module.css'
 
 /**
@@ -39,29 +40,56 @@ function Invariant({ title, desc }: { title: string; desc: string }) {
   )
 }
 
-export function Settings() {
+export function SecuritySettings({
+  email,
+  lastSignInAt,
+}: {
+  email: string | null
+  lastSignInAt: string | null
+}) {
   return (
     <div className={styles.wrap}>
-      {/* Honest band: this page only shows what is actually true + live. The broader
-          superadmin-settings catalog is a separate iteration — no fake toggles here. */}
+      <PageHead
+        eyebrow="Inställningar"
+        title="Konto & säkerhet"
+        lede="Ditt lösenord, dina inloggningar och plattformens aktiva dataskydd."
+      />
+      <AccountSecurity email={email} lastSignInAt={lastSignInAt} />
+
       <Callout tone="info" icon="info">
-        Plattformsinställningarna nedan speglar hur plattformen faktiskt beter sig i
-        dag — audit-guarden och faktureringsmodellen är sanna och live. Fler reglage
-        (MFA, IP-whitelist m.m.) byggs i en egen iteration när de kopplas till ett
-        riktigt sparat läge.
+        Plattformens audit-guard är aktiv och kan inte stängas av från gränssnittet.
+        Fler reglage visas först när de har ett riktigt sparat läge.
       </Callout>
 
-      {/* ── Säkerhet (endast den live-enforced invarianten) ── */}
       <Card className={styles.cardGap}>
         <h2 className={`h2 ${styles.cardHead}`}>Säkerhet</h2>
         <Invariant
           title="Audit-guard mot radering"
           desc="Skyddade rader kan aldrig raderas, bara suspenderas. Skyddat i koden — build-once-never-delete."
         />
+        <div className={styles.linkRow}>
+          <div>
+            <div className={styles.rowTitle}>Personal på plattformen</div>
+            <div className={styles.rowDesc}>Hantera plattformens personal och åtkomst på den befintliga ägandeytan.</div>
+          </div>
+          <Button href="/personal-plattform" variant="subtle" size="sm">
+            Öppna personal
+          </Button>
+        </div>
       </Card>
+    </div>
+  )
+}
 
-      {/* ── Fakturering (LIVE: the platform's real billing posture, flöde 2) ── */}
-      <Card className={styles.cardGap}>
+export function BillingSettings() {
+  return (
+    <div className={styles.wrap}>
+      <PageHead
+        eyebrow="Inställningar"
+        title="Fakturering"
+        lede="Plattformens nuvarande faktureringsmodell och vägen till det kanoniska underlaget."
+      />
+      <Card>
         <h2 className={`h2 ${styles.cardHeadGap}`}>Fakturering</h2>
         <div className={styles.billRow}>
           <div>
@@ -74,6 +102,11 @@ export function Settings() {
           <Badge tone="gold" dot={false}>
             Aktiv
           </Badge>
+        </div>
+        <div className={styles.billingAction}>
+          <Button href="/fakturering" icon="arrowRight">
+            Öppna faktureringsunderlag
+          </Button>
         </div>
       </Card>
     </div>

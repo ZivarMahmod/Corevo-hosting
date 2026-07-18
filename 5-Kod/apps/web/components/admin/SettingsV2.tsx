@@ -10,6 +10,10 @@ import {
   type SettingsCategory,
   type SettingsCategoryId,
 } from '@/lib/admin/settings-map'
+import type {
+  SettingsNavigationCategory,
+  SettingsNavigationSearchEntry,
+} from '@/lib/settings-navigation'
 import styles from './settings-v2.module.css'
 
 export type SettingsV2Status = {
@@ -23,16 +27,23 @@ export function SettingsNavigation({
   selectedId,
   onChoose,
   className,
+  groups = SETTINGS_GROUPS,
+  searchEntries: providedSearchEntries,
 }: {
-  categories: SettingsCategory[]
-  statuses?: Partial<Record<SettingsCategoryId, SettingsV2Status>>
-  selectedId: SettingsCategoryId
-  onChoose: (category: SettingsCategory) => void
+  categories: SettingsNavigationCategory[]
+  statuses?: Partial<Record<string, SettingsV2Status>>
+  selectedId: string
+  onChoose: (category: SettingsNavigationCategory) => void
   className?: string
+  groups?: readonly string[]
+  searchEntries?: SettingsNavigationSearchEntry[]
 }) {
   const [query, setQuery] = useState('')
   const normalized = query.trim().toLocaleLowerCase('sv')
-  const searchEntries = useMemo(() => settingsSearchEntries(categories), [categories])
+  const searchEntries = useMemo(
+    () => providedSearchEntries ?? settingsSearchEntries(categories),
+    [categories, providedSearchEntries],
+  )
   const hits = useMemo(
     () =>
       normalized
@@ -45,7 +56,7 @@ export function SettingsNavigation({
     [normalized, searchEntries],
   )
 
-  function choose(category: SettingsCategory) {
+  function choose(category: SettingsNavigationCategory) {
     setQuery('')
     onChoose(category)
   }
@@ -81,7 +92,7 @@ export function SettingsNavigation({
           )}
         </div>
       ) : (
-        SETTINGS_GROUPS.map((group) => (
+        groups.map((group) => (
           <div key={group} className={styles.group}>
             <h2>{group}</h2>
             {categories
@@ -157,7 +168,7 @@ export function SettingsV2({
         categories={categories}
         statuses={statuses}
         selectedId={selected.id}
-        onChoose={choose}
+        onChoose={(category) => choose(category as SettingsCategory)}
         className={mobilePaneOpen ? styles.mobileHidden : undefined}
       />
 

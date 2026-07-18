@@ -36,6 +36,8 @@ export function Drawer({
   const panelRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const closingRef = useRef(false)
+  const closeTimerRef = useRef<number | null>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
 
   // animate out, then unmount via the parent's onClose
   function close() {
@@ -43,13 +45,38 @@ export function Drawer({
     closingRef.current = true
     overlayRef.current?.classList.add('is-closing')
     panelRef.current?.classList.add('is-closing')
-    window.setTimeout(onClose, 330)
+    closeTimerRef.current = window.setTimeout(onClose, 330)
   }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        close()
+        return
+      }
+      if (e.key !== 'Tab' || !panelRef.current) return
+      const focusable = [...panelRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )].filter((element) => !element.hasAttribute('hidden'))
+      if (focusable.length === 0) {
+        e.preventDefault()
+        panelRef.current.focus()
+        return
+      }
+      const first = focusable[0]!
+      const last = focusable[focusable.length - 1]!
+      if (e.shiftKey && (document.activeElement === first || !panelRef.current.contains(document.activeElement))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
+    previousFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
     document.addEventListener('keydown', onKey)
     panelRef.current?.focus()
     const prevOverflow = document.body.style.overflow
@@ -57,6 +84,9 @@ export function Drawer({
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = prevOverflow
+      if (closeTimerRef.current !== null) window.clearTimeout(closeTimerRef.current)
+      const previousFocus = previousFocusRef.current
+      if (previousFocus?.isConnected) previousFocus.focus()
     }
     // mount/unmount only — close() reads refs, not state
     // eslint-disable-next-line react-hooks/exhaustive-deps

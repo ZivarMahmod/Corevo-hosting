@@ -3,13 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { platformCtx } from '../guard'
 import { isBillingModel, kronorToCents } from '../billing'
-import { logPlatformAction } from '../audit'
 import { type ActionState, GENERIC } from './shared'
 import { reportActionError } from './observe'
 
 // ── FLÖDE 2: billing model + fees ───────────────────────────────────────────────
 export async function saveBilling(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
+  const { supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
   if (!tenantId) return { error: 'Saknar kund.' }
   const billingModel = String(fd.get('billing_model') ?? 'per_booking')
@@ -18,28 +17,19 @@ export async function saveBilling(_p: ActionState, fd: FormData): Promise<Action
   const perBookingFee = kronorToCents(String(fd.get('per_booking_fee') ?? '')) ?? 0
   const flatMonthlyFee = kronorToCents(String(fd.get('flat_monthly_fee') ?? '')) ?? 0
 
-  const { error } = await supabase.from('tenant_settings').upsert(
-    {
-      tenant_id: tenantId,
-      billing_model: billingModel,
-      setup_fee_cents: setupFee,
-      per_booking_fee_cents: perBookingFee,
-      flat_monthly_fee_cents: flatMonthlyFee,
-    },
-    { onConflict: 'tenant_id' },
-  )
+  const { error } = await supabase.rpc('platform_save_tenant_billing', {
+    p_tenant: tenantId,
+    p_billing_model: billingModel,
+    p_setup_fee_cents: setupFee,
+    p_per_booking_fee_cents: perBookingFee,
+    p_flat_monthly_fee_cents: flatMonthlyFee,
+  })
   if (error) {
-    await reportActionError('saveBilling.upsert', error, { tenantId })
+    await reportActionError('saveBilling.rpc', error, { tenantId })
     return { error: GENERIC }
   }
 
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/fakturering')
-  await logPlatformAction(supabase, {
-    action: 'tenant.billing',
-    tenantId,
-    actorId: user.id,
-    meta: { billing_model: billingModel },
-  })
   return { success: 'Prismodell sparad.' }
 }

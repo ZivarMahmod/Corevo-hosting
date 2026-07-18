@@ -76,7 +76,8 @@ export function PanelHost({ cfg, step, dispatch, presets, onPrev, onNext, onLaun
   return (
     <div
       style={{
-        width: 420,
+        width: 'min(420px, 100%)',
+        boxSizing: 'border-box',
         flex: 'none',
         borderRight: '1px solid var(--c-line)',
         background: 'var(--c-cream)',

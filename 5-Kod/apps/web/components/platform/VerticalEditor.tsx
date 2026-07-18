@@ -160,7 +160,7 @@ export function VerticalEditor({
           </p>
           <form action={copyAction}>
             <input type="hidden" name="vertical" value={verticalKey} />
-            <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+            <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))' }}>
               {COPY_FIELDS.map((f) => (
                 <label key={f.key} style={{ display: 'grid', gap: 5, fontSize: 12.5, color: 'var(--c-ink-2)', fontWeight: 600 }}>
                   {f.label}

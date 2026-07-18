@@ -49,6 +49,12 @@ describe('platform host (booking) — salon admin only', () => {
   })
   it('redirects platform surfaces to superbooking', () => {
     expect(decide('platform', '/salonger')).toEqual({ action: 'redirectHost', host: HOSTS.superadmin, to: '/salonger' })
+    expect(decide('platform', '/kunder')).toEqual({ action: 'redirectHost', host: HOSTS.superadmin, to: '/kunder' })
+    expect(decide('platform', '/slutkunder')).toEqual({
+      action: 'redirectHost',
+      host: HOSTS.superadmin,
+      to: '/slutkunder',
+    })
     expect(decide('platform', '/fakturering')).toEqual({
       action: 'redirectHost',
       host: HOSTS.superadmin,
@@ -82,6 +88,16 @@ describe('staff_portal host (minbooking) — staff schedule only', () => {
       action: 'redirectHost',
       host: HOSTS.superadmin,
       to: '/salonger',
+    })
+    expect(decide('staff_portal', '/kunder')).toEqual({
+      action: 'redirectHost',
+      host: HOSTS.superadmin,
+      to: '/kunder',
+    })
+    expect(decide('staff_portal', '/slutkunder')).toEqual({
+      action: 'redirectHost',
+      host: HOSTS.superadmin,
+      to: '/slutkunder',
     })
     expect(decide('staff_portal', '/admin')).toEqual({ action: 'redirectHost', host: HOSTS.platform, to: '/admin' })
   })

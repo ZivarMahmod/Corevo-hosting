@@ -1,7 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@corevo/db'
-import { platformCtx } from './guard'
+import { platformAdminCtx } from './guard'
 import {
   PERMISSION_AREAS,
   dbToPerm,
@@ -148,7 +148,7 @@ async function readMatrixOverlay(
  * affecting the user-count join, and vice-versa.
  */
 export async function getRolePermissions(): Promise<RolePermissions[]> {
-  const { supabase } = await platformCtx()
+  const { supabase } = await platformAdminCtx()
 
   const overlay = await readMatrixOverlay(supabase)
 
@@ -214,7 +214,7 @@ export type SaveRolePermissionsResult = { error?: string; success?: string }
 export async function saveRolePermissions(
   changes: RolePermissionChange[],
 ): Promise<SaveRolePermissionsResult> {
-  const { user, supabase } = await platformCtx()
+  const { user, supabase } = await platformAdminCtx()
 
   if (changes.length === 0) return { success: 'Inget att spara.' }
 

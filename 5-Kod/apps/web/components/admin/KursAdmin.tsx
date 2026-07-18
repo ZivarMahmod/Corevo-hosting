@@ -65,7 +65,7 @@ export function KursAdmin({
   events: EventRow[]
   registrations: RegistrationRow[]
   tenantName: string
-  /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
+  /** Set ONLY by the super-admin kundkort (/kunder/[id]) — scopes every form's hidden tenantId for the dual-guard. */
   tenantId?: string
 }) {
   const [editing, setEditing] = useState<EventRow | null>(null)

@@ -122,6 +122,30 @@ describe('46elks delivery webhook', () => {
       p_provider_ref: PROVIDER_ID,
       p_status: 'delivered',
       p_delivered_at: '2026-07-18T10:00:00.000Z',
+      p_partner: undefined,
+    })
+  })
+
+  it('verifierar partnerägd callback mot dess Vault-hemlighet', async () => {
+    const partnerId = 'a1140000-0000-4000-8000-000000000001'
+    rpc.mockImplementation(async (name: string) => name === 'resolve_partner_sms_callback'
+      ? { data: 'partner-secret', error: null }
+      : { data: 'updated', error: null })
+
+    const response = await POST(request(
+      { id: PROVIDER_ID, status: 'sent' },
+      { auth: `Basic ${btoa(`partner-${partnerId}:partner-secret`)}` },
+    ))
+
+    expect(response.status).toBe(204)
+    expect(rpc).toHaveBeenNthCalledWith(1, 'resolve_partner_sms_callback', {
+      p_partner: partnerId,
+    })
+    expect(rpc).toHaveBeenNthCalledWith(2, 'record_sms_delivery', {
+      p_provider_ref: PROVIDER_ID,
+      p_status: 'sent',
+      p_delivered_at: null,
+      p_partner: partnerId,
     })
   })
 

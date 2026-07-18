@@ -32,6 +32,15 @@ describe('role thresholds (pinned to real DB levels {2,3,6,8})', () => {
     expect(portalHomeFor({ roleLevel: 6, platformAdmin: false })).not.toBe('/')
     expect(portalHomeFor({ roleLevel: 0, platformAdmin: true })).toBe('/')
   })
+
+  it('routes a verified partner operator to the isolated platform home', () => {
+    expect(
+      portalHomeFor({ roleLevel: 7, platformAdmin: false, partnerAdmin: true }),
+    ).toBe('/')
+    expect(
+      portalHomeFor({ roleLevel: 7, platformAdmin: false, partnerAdmin: false }),
+    ).toBe('/admin')
+  })
 })
 
 describe('goal-27 backofficeHostKindForRole — door isolation (one door per role)', () => {
@@ -68,6 +77,16 @@ describe('pilot login host fence', () => {
     expect(isActiveLoginAccount({ profileStatus: 'pending_claim', roleLevel: 2, activeStaff: false })).toBe(false)
     expect(isActiveLoginAccount({ profileStatus: 'active', roleLevel: 3, activeStaff: false })).toBe(false)
     expect(isActiveLoginAccount({ profileStatus: 'active', roleLevel: 3, activeStaff: true })).toBe(true)
+  })
+
+  it('uses the superadmin door for a scoped partner without granting godmode', () => {
+    expect(
+      backofficeHostKindForRole({
+        roleLevel: 7,
+        platformAdmin: false,
+        partnerAdmin: true,
+      }),
+    ).toBe('superadmin')
   })
 
   it('allows staff on booking and on the explicit minbooking legacy door only', () => {
@@ -134,5 +153,18 @@ describe('pilot login host fence', () => {
         hostTenantId: 'tenant-a',
       }).allowed,
     ).toBe(false)
+  })
+
+  it('allows a verified partner only on the superadmin door', () => {
+    const partner = {
+      roleLevel: 7,
+      platformAdmin: false,
+      partnerAdmin: true,
+      accountTenantId: null,
+      hostTenantId: null,
+    }
+    expect(loginAccessForHost({ ...partner, hostKind: 'superadmin' }).allowed).toBe(true)
+    expect(loginAccessForHost({ ...partner, hostKind: 'platform' }).allowed).toBe(false)
+    expect(loginAccessForHost({ ...partner, hostKind: 'tenant' }).allowed).toBe(false)
   })
 })

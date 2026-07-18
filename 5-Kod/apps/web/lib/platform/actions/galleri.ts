@@ -85,7 +85,7 @@ export async function createGalleryItem(_p: ActionState, fd: FormData): Promise<
   }
 
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.gallery_item_create',
     tenantId,
@@ -124,7 +124,7 @@ export async function updateGalleryItem(_p: ActionState, fd: FormData): Promise<
   }
 
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.gallery_item_update',
     tenantId,
@@ -158,7 +158,7 @@ export async function deleteGalleryItem(_p: ActionState, fd: FormData): Promise<
   }
 
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.gallery_item_delete',
     tenantId,

@@ -1,5 +1,9 @@
 import type { NextConfig } from 'next'
 import { fileURLToPath } from 'node:url'
+import {
+  PLATFORM_CUSTOMERS_PREFIX,
+  PLATFORM_LEGACY_CUSTOMERS_PREFIX,
+} from './lib/auth/platform-route-canonical'
 
 // Pin the file-tracing root to the monorepo (avoids picking up a stray
 // lockfile elsewhere on disk; matters for OpenNext output tracing).
@@ -21,6 +25,8 @@ const monorepoRoot = fileURLToPath(new URL('../..', import.meta.url))
 // policy is proven in `next dev` here; confirm the response headers after deploy.
 const isProd = process.env.NODE_ENV === 'production'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+const superadminHost = process.env.NEXT_PUBLIC_SUPERADMIN_HOST ?? 'superbooking.corevo.se'
+const escapedSuperadminHost = superadminHost.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const cspDirectives = [
   `default-src 'self'`,
@@ -87,6 +93,27 @@ const nextConfig: NextConfig = {
   // Lint runs as its own task (`pnpm lint`); don't couple it to build.
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: false },
+  async redirects() {
+    return [
+      {
+        source: `${PLATFORM_LEGACY_CUSTOMERS_PREFIX}/:path*`,
+        destination: `${PLATFORM_CUSTOMERS_PREFIX}/:path*`,
+        permanent: true,
+        // Config redirects run before middleware. Restrict this compatibility
+        // redirect to the superadmin door so a tenant/custom-domain request can
+        // never be rewritten into a back-office URL before host routing runs.
+        has: [{ type: 'host', value: `^${escapedSuperadminHost}$` }],
+      },
+    ]
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/installningar/:kategori',
+        destination: '/installningar?kategori=:kategori',
+      },
+    ]
+  },
   async headers() {
     // Global DENY first (covers EVERY route — never a CSP regression). The preview
     // override is listed LAST so that for that path it wins (Next applies matching header
@@ -95,7 +122,7 @@ const nextConfig: NextConfig = {
     return [
       { source: '/:path*', headers: securityHeaders },
       // Super-admin live storefront preview (Sida tab) — framed SAME-ORIGIN by
-      // /salonger/[id]: the 'self' frame-ancestors carve-out.
+      // /kunder/[id]: the 'self' frame-ancestors carve-out.
       { source: '/salong-preview/:slug*', headers: framableSecurityHeaders },
     ]
   },

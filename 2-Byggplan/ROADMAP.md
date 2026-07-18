@@ -13,12 +13,18 @@ avslutade goals; skapa inte nya parallella roadmap-filer.
 
 ## Byggordning
 
-1. **04 Inställningar v2** — aktiv byggdel.
-2. **06 Personaladmin mobil-PWA** — byggs direkt efter 04 och kopplas till
-   `booking.corevo.se`; `minbooking.corevo.se` behålls som parallell legacy-dörr tills
-   Zivar uttryckligen stänger den.
-3. **05 Kundportal** — överhoppad i denna byggomgång; paketet ligger kvar orört.
-4. **Lanseringsgrindar** — betalning, juridik, secrets, domänsmoke och driftbevis.
+1. **Goal-71 acceptansstängning** — 04 Inställningar v2 och 06 Personaladmin
+   mobil-PWA är driftsatta. Ingen ny koddel återstår, men Zivars autentiserade
+   manuella acceptans krävs före flytt till `klart/`. `minbooking.corevo.se`
+   behålls tills Zivar uttryckligen stänger dörren.
+2. **Goal-72 Superadmin v2** — aktiv koddel. Kör S1–S6 i
+   `2-Byggplan/goals/goal-72-sessionsplan.md`; därefter S7 partnerrollen när dess
+   tre öppna produktbeslut är låsta.
+3. **Senaste admin-chrome-paketet** — `Dagens genomgångar/Mobil pwa/` är inkommet
+   underlag men saknar goal-73. Det blir en egen byggdel efter goal-72, inte ett
+   parallellt svep.
+4. **05 Kundportal** — överhoppad i denna byggomgång; paketet ligger kvar orört.
+5. **Lanseringsgrindar** — betalning, juridik, secrets, domänsmoke och driftbevis.
 
 Designpaketen ligger i `4-Dokument-Underlag/01-acceptans/Dagens genomgångar/`.
 Numrerade paket byggs i ordning; verifierat och deployat paket flyttas till `klar/`.
@@ -34,4 +40,4 @@ Numrerade paket byggs i ordning; verifierat och deployat paket flyttas till `kla
 
 ## Nästa startpunkt
 
-`4-Dokument-Underlag/01-acceptans/Dagens genomgångar/04-installningar-v2/`
+`2-Byggplan/goals/goal-72-sessionsplan.md` — S1.

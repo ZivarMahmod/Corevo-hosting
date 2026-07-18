@@ -33,9 +33,12 @@ export type CustomerInquiry = {
 }
 export type TenantCustomer = {
   id: string
+  tenantId: string
   name: string
-  email: string | null
-  phone: string | null
+  maskedEmail: string
+  maskedPhone: string
+  hasEmail: boolean
+  hasPhone: boolean
   role: string
   auth: string
   status: string
@@ -63,8 +66,10 @@ type CustomerRow = {
   full_name: string | null
   display_name: string | null
   name_hidden: boolean
-  email: string | null
-  phone: string | null
+  masked_email: string
+  masked_phone: string
+  has_email: boolean
+  has_phone: boolean
   status: string
   auth_user_id: string | null
   first_seen_at: string | null
@@ -95,14 +100,10 @@ export async function getTenantCustomers(tenantId: string): Promise<TenantCustom
   const { supabase } = await platformCtx()
 
   const [custRes, bookRes, offertRes] = await Promise.all([
-    supabase
-      .from('customers')
-      .select('id, full_name, display_name, name_hidden, email, phone, status, auth_user_id, first_seen_at, last_seen_at')
-      .eq('tenant_id', tenantId)
-      .order('last_seen_at', { ascending: false })
-      // ponytail: caps (goal-56 A2) — newest-first so recent activity is always complete;
-      // per-customer stats undercount only past these ceilings. Upgrade = DB-side aggregates.
-      .limit(1000),
+    supabase.rpc('platform_customer_safe_rows', {
+      p_tenant: tenantId,
+      p_limit: 1000,
+    }),
     supabase
       .from('bookings')
       .select('id, customer_id, status, start_ts, price_cents, services(name), staff(title)')
@@ -184,9 +185,12 @@ export async function getTenantCustomers(tenantId: string): Promise<TenantCustom
 
     return {
       id: c.id,
+      tenantId,
       name: customerDisplayName(c),
-      email: c.email,
-      phone: c.phone,
+      maskedEmail: c.masked_email,
+      maskedPhone: c.masked_phone,
+      hasEmail: c.has_email,
+      hasPhone: c.has_phone,
       role: customerRole(c.auth_user_id),
       auth: customerAuthLabel(c.auth_user_id),
       status: customerStatusLabel(c.status, c.name_hidden),

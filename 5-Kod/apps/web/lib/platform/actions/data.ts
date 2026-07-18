@@ -100,7 +100,7 @@ export async function saveTenantData(_p: ActionState, fd: FormData): Promise<Act
 
   // Bust the cached public bundle so the new name/review link/variant show live.
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.update',
     tenantId,
@@ -153,7 +153,7 @@ export async function saveTenantLegal(_p: ActionState, fd: FormData): Promise<Ac
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.update',
     tenantId,
@@ -185,7 +185,7 @@ export async function saveTenantName(_p: ActionState, fd: FormData): Promise<Act
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.update',
@@ -247,7 +247,7 @@ export async function updateBookingSettings(_p: ActionState, fd: FormData): Prom
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   revalidatePath('/admin/bokning')
   await logPlatformAction(supabase, {
@@ -296,7 +296,7 @@ export async function setTenantCustomerAccounts(_p: ActionState, fd: FormData): 
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/installningar')
   await logPlatformAction(supabase, {
     action: 'tenant.update',

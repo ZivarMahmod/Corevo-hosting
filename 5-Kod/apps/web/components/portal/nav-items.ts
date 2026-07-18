@@ -43,21 +43,23 @@ export const NAV: Record<PortalRole, NavConfig> = {
     //   in build paths is documented-fragile here). All icons are in IconName.
     items: [
       // Insyn = plattform-övergripande. IA-vision punkt 3: den gamla egna gruppen
-      // "Data & drift" är borta; per-kund-data bor i kundkortet (/salonger/[id] →
+      // "Data & drift" är borta; per-kund-data bor i kundkortet (/kunder/[id] →
       // flikar Data/Personal/Drift). De GLOBALA tvär-kund-verktygen (slutkund-sök
       // över alla, all-personal, alla loggar) hör hemma här under Insyn, inte som
       // egen konkurrerande grupp — de är insyn över hela plattformen.
       { group: 'Insyn' },
       { href: '/', label: 'Översikt', icon: 'grid' },
       { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
-      { href: '/kunder', label: 'Slutkunder', icon: 'users' },
+      { href: '/slutkunder', label: 'Slutkunder', icon: 'users' },
       { href: '/personal-plattform', label: 'Personal', icon: 'scissors' },
+      { href: '/utskick', label: 'Utskick', icon: 'message' },
       { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
       { group: 'Kunder' },
-      { href: '/salonger', label: 'Kunder', icon: 'building' },
-      { href: '/salonger/ny', label: 'Onboarda kund', icon: 'plus' },
+      { href: '/kunder', label: 'Kunder', icon: 'building' },
+      { href: '/kunder/ny', label: 'Onboarda kund', icon: 'plus' },
       { href: '/branscher', label: 'Branscher', icon: 'layers' },
       { group: 'Plattform' },
+      { href: '/partners', label: 'Partners', icon: 'building' },
       { href: '/integrationer', label: 'Integrationer', icon: 'layers' },
       { href: '/domaner', label: 'Domäner', icon: 'link' },
       { href: '/roller', label: 'Roller', icon: 'shield' },

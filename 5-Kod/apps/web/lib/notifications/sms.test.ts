@@ -3,10 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
+  rpc: vi.fn(),
 }))
 
 vi.mock('@/lib/observability', () => ({
   logger: { info: mocks.info, warn: mocks.warn },
+}))
+vi.mock('@/lib/platform/service', () => ({
+  createServiceClient: () => ({ rpc: mocks.rpc }),
 }))
 
 import { parseSmsDeliveryMode } from './settings'
@@ -69,6 +73,18 @@ describe('sendSms fysisk leveransgrind', () => {
       delete process.env[key]
     }
     vi.clearAllMocks()
+    mocks.rpc.mockResolvedValue({
+      data: [{
+        provider_key: 'corevo_46elks',
+        sender: null,
+        username: null,
+        password: null,
+        callback_secret: null,
+        callback_username: 'corevo',
+        cost_currency: 'SEK',
+      }],
+      error: null,
+    })
     vi.stubGlobal('fetch', fetchMock)
   })
 
@@ -126,6 +142,7 @@ describe('sendSms fysisk leveransgrind', () => {
       parts: 2,
       estimatedCost: 10_000,
       costOre: 100,
+      costCurrency: 'SEK',
     })
     const [url, init] = fetchMock.mock.calls[0]!
     expect(url).toBe('https://api.46elks.com/a1/sms')
@@ -277,6 +294,7 @@ describe('sendSms fysisk leveransgrind', () => {
       providerId: 's70df59406a1b4643b96f3f91e0bfb7b0',
       parts: 1,
       costOre: 35,
+      costCurrency: 'SEK',
     })
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const body = fetchMock.mock.calls[0]![1].body as URLSearchParams
@@ -322,17 +340,17 @@ describe('sendSms fysisk leveransgrind', () => {
       json: async () => ({ status: 'created', parts: 1, estimated_cost: 3500 }),
     })
     await expect(
-      deliverSmsOutbox({ to: '0701234567', body: 'Hej', tenantSmsEnabled: true }),
-    ).resolves.toEqual({ status: 'simulated', costOre: 35, parts: 1 })
+      deliverSmsOutbox({ tenantId: 'tenant-a', to: '0701234567', body: 'Hej', tenantSmsEnabled: true }),
+    ).resolves.toEqual({ status: 'simulated', costOre: 35, costCurrency: 'SEK', parts: 1 })
 
     fetchMock.mockResolvedValueOnce({ ok: false, status: 429 })
     await expect(
-      deliverSmsOutbox({ to: '0701234567', body: 'Hej', tenantSmsEnabled: true }),
+      deliverSmsOutbox({ tenantId: 'tenant-a', to: '0701234567', body: 'Hej', tenantSmsEnabled: true }),
     ).resolves.toEqual({ status: 'retry', error: 'provider_rate_limited' })
 
     fetchMock.mockResolvedValueOnce({ ok: false, status: 503 })
     await expect(
-      deliverSmsOutbox({ to: '0701234567', body: 'Hej', tenantSmsEnabled: true }),
+      deliverSmsOutbox({ tenantId: 'tenant-a', to: '0701234567', body: 'Hej', tenantSmsEnabled: true }),
     ).resolves.toEqual({ status: 'failed', reason: 'delivery_uncertain' })
   })
 
@@ -349,6 +367,7 @@ describe('sendSms fysisk leveransgrind', () => {
     }))
 
     const delivery = deliverSmsOutbox({
+      tenantId: 'tenant-a',
       to: '0701234567',
       body: 'Hej',
       tenantSmsEnabled: true,
@@ -357,6 +376,77 @@ describe('sendSms fysisk leveransgrind', () => {
 
     await expect(delivery).resolves.toEqual({ status: 'failed', reason: 'delivery_uncertain' })
     expect((fetchMock.mock.calls[0]![1] as RequestInit).signal).toBeInstanceOf(AbortSignal)
+  })
+
+  it('resolves and uses the owning partner provider without exposing its credentials', async () => {
+    process.env.SMS_DELIVERY_MODE = 'live'
+    process.env.SMS_CANARY_RECIPIENTS = '+46701234567'
+    process.env.SMS_46ELKS_CALLBACK_URL = 'https://booking.corevo.se/api/webhooks/46elks/delivery'
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{
+        provider_key: 'partner_46elks',
+        sender: 'Partner A',
+        username: 'partner-user',
+        password: 'partner-pass',
+        callback_secret: 'partner-callback',
+        callback_username: 'partner-a1140000-0000-0000-0000-000000000001',
+        cost_currency: 'EUR',
+      }],
+      error: null,
+    })
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: 'created',
+        id: 's70df59406a1b4643b96f3f91e0bfb7b0',
+        parts: 1,
+      }),
+    })
+
+    await expect(deliverSmsOutbox({
+      tenantId: 'tenant-a',
+      to: '0701234567',
+      body: 'Hej',
+      tenantSmsEnabled: true,
+    })).resolves.toEqual({
+      status: 'sent',
+      providerRef: 's70df59406a1b4643b96f3f91e0bfb7b0',
+      parts: 1,
+    })
+
+    expect(mocks.rpc).toHaveBeenCalledWith('resolve_partner_sms_config', { p_tenant: 'tenant-a' })
+    const init = fetchMock.mock.calls[0]![1] as RequestInit
+    expect((init.headers as Record<string, string>).authorization).toBe(
+      `Basic ${btoa('partner-user:partner-pass')}`,
+    )
+    const body = init.body as URLSearchParams
+    expect(body.get('from')).toBe('PartnerA')
+    expect(body.get('whendelivered')).toBe(
+      'https://partner-a1140000-0000-0000-0000-000000000001:partner-callback@booking.corevo.se/api/webhooks/46elks/delivery',
+    )
+    expect(JSON.stringify(mocks.info.mock.calls)).not.toMatch(/partner-user|partner-pass|partner-callback/)
+    expect(JSON.stringify(mocks.warn.mock.calls)).not.toMatch(/partner-user|partner-pass|partner-callback/)
+  })
+
+  it('keeps global off and canary gates ahead of partner credential resolution', async () => {
+    await expect(deliverSmsOutbox({
+      tenantId: 'tenant-a',
+      to: '0701234567',
+      body: 'Hej',
+      tenantSmsEnabled: true,
+    })).resolves.toEqual({ status: 'skipped', reason: 'transport_off' })
+    expect(mocks.rpc).not.toHaveBeenCalled()
+
+    process.env.SMS_DELIVERY_MODE = 'dry_run'
+    process.env.SMS_CANARY_RECIPIENTS = '+46709999999'
+    await expect(deliverSmsOutbox({
+      tenantId: 'tenant-a',
+      to: '0701234567',
+      body: 'Hej',
+      tenantSmsEnabled: true,
+    })).resolves.toEqual({ status: 'skipped', reason: 'channel_disabled' })
+    expect(mocks.rpc).not.toHaveBeenCalled()
   })
 })
 

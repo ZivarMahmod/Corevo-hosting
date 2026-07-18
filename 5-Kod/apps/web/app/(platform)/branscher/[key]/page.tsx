@@ -114,7 +114,7 @@ export default async function BranschPage({ params }: { params: Promise<{ key: s
         ) : (
           <div style={{ display: 'grid', gap: 10 }}>
             {inBransch.map((t) => (
-              <Link key={t.id} href={`/salonger/${t.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link key={t.id} href={`/kunder/${t.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                 <Card>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontWeight: 600, fontSize: 14.5 }}>{t.name}</span>

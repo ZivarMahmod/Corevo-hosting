@@ -113,6 +113,11 @@
   flex-wrap: wrap;
   align-items: center;
 }
+.armWarning {
+  flex-basis: 100%;
+  font-size: 0.82rem;
+  color: var(--c-ink-2);
+}
 
 /* ── filters (search/status on the tenant list) ── */
 .filters {
@@ -227,6 +232,7 @@
 .domainRow {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.55rem;
   padding: 0.55rem 0.7rem;
   border: 1px solid var(--c-line);
@@ -268,11 +274,13 @@
   color: color-mix(in srgb, var(--c-danger, #9e5a57) 80%, #000);
 }
 .code {
+  max-width: 100%;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.82rem;
   background: color-mix(in srgb, currentColor 8%, transparent);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
+  overflow-wrap: anywhere;
 }
 .logoPreview {
   max-height: 56px;

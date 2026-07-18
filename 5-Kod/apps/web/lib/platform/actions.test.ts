@@ -35,11 +35,19 @@ function makeSupabase(results: Record<string, { data?: unknown; error?: unknown 
     }
     return chain
   }
-  return { client: { from }, captured }
+  const rpc = async (name: string, args?: unknown) => {
+    push(`rpc.${name}`, args)
+    return results[`rpc.${name}`]
+      ?? { data: name === 'platform_create_customer' ? 'cust-1' : null, error: null }
+  }
+  return { client: { from, rpc }, captured }
 }
 
 const platformCtxMock = vi.fn()
-vi.mock('./guard', () => ({ platformCtx: () => platformCtxMock() }))
+vi.mock('./guard', () => ({
+  platformCtx: () => platformCtxMock(),
+  platformAdminCtx: () => platformCtxMock(),
+}))
 
 const createServiceClientMock = vi.fn()
 vi.mock('./service', () => ({
@@ -47,8 +55,9 @@ vi.mock('./service', () => ({
   hasServiceRole: () => true,
 }))
 
-vi.mock('./audit', () => ({ logPlatformAction: vi.fn(async () => {}) }))
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('./audit', () => ({ logPlatformAction: vi.fn(async () => ({ ok: true })) }))
+const revalidatePathMock = vi.hoisted(() => vi.fn())
+vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }))
 
 // goal-23: control the Cloudflare client so domain-action tests never touch network.
 type CfDcv = { type: string; name: string; value: string; purpose: string }
@@ -81,6 +90,7 @@ vi.mock('@/lib/r2/upload', () => ({
 import {
   createTenant,
   createPlatformCustomer,
+  sendPasswordReset,
   addCustomDomain,
   verifyCustomDomain,
   removeCustomDomain,
@@ -148,13 +158,18 @@ describe('resolveOwnerRole (#11 owner-role seam)', () => {
 
 // ── createTenant write-path: city + full_name + resolved role_id ──────────────────
 describe('createTenant writes the goal-20 columns', () => {
-  function seedCtx() {
+  function seedCtx(
+    scope: { kind: 'global'; partnerId: null } | { kind: 'partner'; partnerId: string } = {
+      kind: 'global',
+      partnerId: null,
+    },
+  ) {
     const { client, captured } = makeSupabase({
       tenants: { data: { id: 't1', slug: 'klippoteket' }, error: null },
       roles: { data: { id: 'role-1' }, error: null },
     })
     platformCtxMock.mockReturnValue(
-      Promise.resolve({ user: { id: 'admin-1' }, supabase: client }),
+      Promise.resolve({ user: { id: 'admin-1' }, supabase: client, scope }),
     )
     return captured
   }
@@ -173,11 +188,35 @@ describe('createTenant writes the goal-20 columns', () => {
     expect(captured.tenants?.[0]).toMatchObject({ slug: 'klippoteket', name: 'Klippoteket', city: 'Göteborg' })
   })
 
+  it('binds a partner-created tenant to that partner and activates only after provisioning', async () => {
+    const captured = seedCtx({ kind: 'partner', partnerId: 'partner-a' })
+    createServiceClientMock.mockReturnValue(null)
+
+    const res = await createTenant({}, fd({ name: 'Partnerkund', slug: 'partnerkund' }))
+
+    expect(res.error).toBeUndefined()
+    expect(captured.tenants?.[0]).toMatchObject({
+      partner_id: 'partner-a',
+      status: 'provisioning',
+    })
+    expect(captured['tenants.update']?.at(-1)).toMatchObject({ status: 'active' })
+  })
+
   it('writes null city (never empty string) when no city is given (#14)', async () => {
     const captured = seedCtx()
     createServiceClientMock.mockReturnValue(null)
     await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
     expect((captured.tenants?.[0] as { city: unknown }).city).toBeNull()
+  })
+
+  it('invalidates the persistent customer layout after a successful create', async () => {
+    seedCtx()
+    createServiceClientMock.mockReturnValue(null)
+
+    const res = await createTenant({}, fd({ name: 'Klippoteket', slug: 'klippoteket' }))
+
+    expect(res.error).toBeUndefined()
+    expect(revalidatePathMock).toHaveBeenCalledWith('/kunder', 'layout')
   })
 
   it('creates the role from the resolved seam — default salon_admin/6 (#11)', async () => {
@@ -230,7 +269,11 @@ describe('createTenant rolls back on owner-creation failure (no ghost salons)', 
       roles: { data: { id: 'role-1' }, error: null },
       users: { data: null, error: opts.usersError ?? null },
     })
-    platformCtxMock.mockReturnValue(Promise.resolve({ user: { id: 'admin-1' }, supabase: client }))
+    platformCtxMock.mockReturnValue(Promise.resolve({
+      user: { id: 'admin-1' },
+      supabase: client,
+      scope: { kind: 'global', partnerId: null },
+    }))
     return captured
   }
   const ownerFd = () => fd({ name: 'Klippoteket', slug: 'klippoteket', owner_email: 'anna@x.se' })
@@ -279,7 +322,7 @@ describe('createPlatformCustomer (goal-22 #6)', () => {
   function seedCtx(tenantResult: { data?: unknown; error?: unknown }) {
     const { client, captured } = makeSupabase({
       tenants: tenantResult,
-      customers: { data: { id: 'cust-1' }, error: null },
+      'rpc.platform_create_customer': { data: 'cust-1', error: null },
     })
     platformCtxMock.mockReturnValue(
       Promise.resolve({ user: { id: 'admin-1' }, supabase: client }),
@@ -295,20 +338,18 @@ describe('createPlatformCustomer (goal-22 #6)', () => {
       fd({ tenantId: 't1', full_name: 'Anna Svensson', email: 'Anna@X.se', phone: '070-1' }),
     )
     expect(res.success).toBeTruthy()
-    expect(captured.customers?.[0]).toMatchObject({
-      tenant_id: 't1',
-      full_name: 'Anna Svensson',
-      display_name: 'Anna Svensson',
-      email: 'anna@x.se', // lowercased
-      phone: '070-1',
-      status: 'active',
+    expect(captured['rpc.platform_create_customer']?.[0]).toMatchObject({
+      p_tenant: 't1',
+      p_full_name: 'Anna Svensson',
+      p_email: 'anna@x.se', // lowercased
+      p_phone: '070-1',
     })
   })
 
   it('never sets auth_user_id or contact_hash (no faked auth identity)', async () => {
     const captured = seedCtx(activeTenant)
     await createPlatformCustomer({}, fd({ tenantId: 't1', full_name: 'Bo' }))
-    const row = captured.customers?.[0] as Record<string, unknown>
+    const row = captured['rpc.platform_create_customer']?.[0] as Record<string, unknown>
     expect('auth_user_id' in row).toBe(false)
     expect('contact_hash' in row).toBe(false)
   })
@@ -316,23 +357,23 @@ describe('createPlatformCustomer (goal-22 #6)', () => {
   it('writes null email/phone (never empty string) when omitted', async () => {
     const captured = seedCtx(activeTenant)
     await createPlatformCustomer({}, fd({ tenantId: 't1', full_name: 'Bo' }))
-    const row = captured.customers?.[0] as { email: unknown; phone: unknown }
-    expect(row.email).toBeNull()
-    expect(row.phone).toBeNull()
+    const row = captured['rpc.platform_create_customer']?.[0] as { p_email: unknown; p_phone: unknown }
+    expect(row.p_email).toBeUndefined()
+    expect(row.p_phone).toBeUndefined()
   })
 
   it('rejects an empty name — no insert', async () => {
     const captured = seedCtx(activeTenant)
     const res = await createPlatformCustomer({}, fd({ tenantId: 't1', full_name: '   ' }))
     expect(res.error).toBeTruthy()
-    expect(captured.customers).toBeUndefined()
+    expect(captured['rpc.platform_create_customer']).toBeUndefined()
   })
 
   it('rejects a missing tenant — no insert', async () => {
     const captured = seedCtx(activeTenant)
     const res = await createPlatformCustomer({}, fd({ full_name: 'Anna' }))
     expect(res.error).toBeTruthy()
-    expect(captured.customers).toBeUndefined()
+    expect(captured['rpc.platform_create_customer']).toBeUndefined()
   })
 
   it('rejects an invalid email — no insert', async () => {
@@ -342,21 +383,21 @@ describe('createPlatformCustomer (goal-22 #6)', () => {
       fd({ tenantId: 't1', full_name: 'Anna', email: 'not-an-email' }),
     )
     expect(res.error).toBeTruthy()
-    expect(captured.customers).toBeUndefined()
+    expect(captured['rpc.platform_create_customer']).toBeUndefined()
   })
 
   it('rejects a non-existent tenant — no insert', async () => {
     const captured = seedCtx({ data: null, error: null })
     const res = await createPlatformCustomer({}, fd({ tenantId: 'ghost', full_name: 'Anna' }))
     expect(res.error).toBeTruthy()
-    expect(captured.customers).toBeUndefined()
+    expect(captured['rpc.platform_create_customer']).toBeUndefined()
   })
 
   it('rejects a non-active (suspended/deleted) tenant — no insert', async () => {
     const captured = seedCtx({ data: { id: 't1', status: 'suspended' }, error: null })
     const res = await createPlatformCustomer({}, fd({ tenantId: 't1', full_name: 'Anna' }))
     expect(res.error).toBeTruthy()
-    expect(captured.customers).toBeUndefined()
+    expect(captured['rpc.platform_create_customer']).toBeUndefined()
   })
 })
 
@@ -371,6 +412,7 @@ describe('addCustomDomain (goal-23 #9)', () => {
   ) {
     const { client, captured } = makeSupabase({ tenants: tenantResult, tenant_domains: tdResult })
     platformCtxMock.mockReturnValue(Promise.resolve({ user: { id: 'admin-1' }, supabase: client }))
+    createServiceClientMock.mockReturnValue(client)
     return captured
   }
 
@@ -452,14 +494,27 @@ describe('addCustomDomain (goal-23 #9)', () => {
 
 // ── goal-23 — verifyCustomDomain (fail-CLOSED gate: only flip on active+active) ─────
 describe('verifyCustomDomain (goal-23)', () => {
-  function seedCtx() {
-    const { client, captured } = makeSupabase({ tenant_domains: { data: null, error: null } })
+  function seedCtx(domainExists = true) {
+    const { client, captured } = makeSupabase({
+      tenant_domains: {
+        data: domainExists ? { id: 'domain-1', tenant_id: 't1', domain: 'boka.salong.se' } : null,
+        error: null,
+      },
+    })
     platformCtxMock.mockReturnValue(Promise.resolve({ user: { id: 'admin-1' }, supabase: client }))
+    createServiceClientMock.mockReturnValue(client)
     return captured
   }
   const host = (status: string, sslStatus: string | null) => ({
     ok: true as const,
     data: { id: 'ch-1', hostname: 'boka.salong.se', status, sslStatus, dcv: [] },
+  })
+
+  it('never calls Cloudflare when the scoped domain row is not readable', async () => {
+    seedCtx(false)
+    const res = await verifyCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.error).toBeTruthy()
+    expect(cfGet).not.toHaveBeenCalled()
   })
 
   it('flips verified=true ONLY when status active AND ssl active', async () => {
@@ -496,11 +551,25 @@ describe('verifyCustomDomain (goal-23)', () => {
 
 // ── goal-23 — removeCustomDomain (CF delete, then row delete; fail-closed) ──────────
 describe('removeCustomDomain (goal-23)', () => {
-  function seedCtx() {
-    const { client, captured } = makeSupabase({ tenant_domains: { data: null, error: null } })
+  function seedCtx(domainExists = true) {
+    const { client, captured } = makeSupabase({
+      tenant_domains: {
+        data: domainExists ? { id: 'domain-1', tenant_id: 't1', domain: 'boka.salong.se' } : null,
+        error: null,
+      },
+    })
     platformCtxMock.mockReturnValue(Promise.resolve({ user: { id: 'admin-1' }, supabase: client }))
+    createServiceClientMock.mockReturnValue(client)
     return captured
   }
+
+  it('never calls Cloudflare when the scoped domain row is not readable', async () => {
+    seedCtx(false)
+    const res = await removeCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
+    expect(res.error).toBeTruthy()
+    expect(cfGet).not.toHaveBeenCalled()
+    expect(cfDelete).not.toHaveBeenCalled()
+  })
 
   it('deletes the CF hostname then the row', async () => {
     const captured = seedCtx()
@@ -524,5 +593,25 @@ describe('removeCustomDomain (goal-23)', () => {
     const res = await removeCustomDomain({}, fd({ tenantId: 't1', domain: 'boka.salong.se' }))
     expect(res.error).toBeTruthy()
     expect(captured['tenant_domains.delete']).toBeUndefined()
+  })
+})
+
+describe('sendPasswordReset partner scope', () => {
+  it('verifies the tenant-bound account before invoking service-role auth', async () => {
+    const { client } = makeSupabase({ users: { data: null, error: null } })
+    platformCtxMock.mockResolvedValue({ user: { id: 'partner-user' }, supabase: client })
+    const generateLink = vi.fn(async () => ({
+      data: { properties: { action_link: 'https://example.test/reset' } },
+      error: null,
+    }))
+    createServiceClientMock.mockReturnValue({ auth: { admin: { generateLink } } })
+
+    const res = await sendPasswordReset(
+      {},
+      fd({ tenantId: 'tenant-foreign', email: 'owner@example.test' }),
+    )
+
+    expect(res.error).toBeTruthy()
+    expect(generateLink).not.toHaveBeenCalled()
   })
 })

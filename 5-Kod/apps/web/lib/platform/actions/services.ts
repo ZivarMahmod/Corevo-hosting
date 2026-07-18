@@ -90,7 +90,7 @@ export async function createTenantService(_p: ActionState, fd: FormData): Promis
   // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
   // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_create',
     tenantId,
@@ -157,7 +157,7 @@ export async function updateTenantService(_p: ActionState, fd: FormData): Promis
   // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
   // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_update',
     tenantId,
@@ -204,7 +204,7 @@ export async function deleteTenantService(_p: ActionState, fd: FormData): Promis
   // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
   // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_delete',
     tenantId,
@@ -221,7 +221,7 @@ export async function deleteTenantService(_p: ActionState, fd: FormData): Promis
  * on every write; each staff_id is verified to belong to the tenant before insert.
  */
 export async function setServiceStaff(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
+  const { supabase } = await platformCtx()
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const serviceId = String(fd.get('serviceId') ?? '')
@@ -243,36 +243,20 @@ export async function setServiceStaff(_p: ActionState, fd: FormData): Promise<Ac
   const allowed = new Set((validStaff ?? []).map((s) => s.id))
   const staffIds = [...new Set(submitted)].filter((id) => allowed.has(id))
 
-  // Replace: clear this service's assignments, then insert the new set.
-  const { error: delErr } = await supabase
-    .from('staff_services')
-    .delete()
-    .eq('tenant_id', tenantId)
-    .eq('service_id', serviceId)
-  if (delErr) {
-    await reportActionError('setServiceStaff.delete', delErr, { tenantId })
+  const { error } = await supabase.rpc('platform_replace_service_staff', {
+    p_tenant: tenantId,
+    p_service: serviceId,
+    p_staff_ids: staffIds,
+  })
+  if (error) {
+    await reportActionError('setServiceStaff.replace', error, { tenantId })
     return { error: GENERIC }
-  }
-  if (staffIds.length > 0) {
-    const rows = staffIds.map((staff_id) => ({ tenant_id: tenantId, service_id: serviceId, staff_id }))
-    const { error: insErr } = await supabase.from('staff_services').insert(rows)
-    if (insErr) {
-      await reportActionError('setServiceStaff.insert', insErr, { tenantId })
-      return { error: GENERIC }
-    }
   }
 
   // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
   // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
-  await logPlatformAction(supabase, {
-    action: 'tenant.service_staff_set',
-    tenantId,
-    actorId: user.id,
-    entityId: serviceId,
-    meta: { count: staffIds.length },
-  })
+  revalidatePath(`/kunder/${tenantId}`)
   return {
     success:
       staffIds.length > 0
@@ -328,7 +312,7 @@ export async function uploadServiceImage(_p: ActionState, fd: FormData): Promise
   // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
   // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_image_add',
     tenantId,
@@ -371,7 +355,7 @@ export async function removeServiceImage(_p: ActionState, fd: FormData): Promise
   // goal-61 preview-parity: tjänsterna cachas under `tenant:<slug>` (getServices) —
   // utan tag-bust visade preview + publika sajten gamla tjänster i upp till 300 s.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.service_image_remove',
     tenantId,

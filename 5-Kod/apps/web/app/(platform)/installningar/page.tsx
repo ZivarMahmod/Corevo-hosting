@@ -1,36 +1,54 @@
 import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
+import { SettingsWorkspace } from '@/components/admin/SettingsWorkspace'
 import { requirePlatformAdmin } from '@/lib/auth/session'
-import { PageHead } from '@/components/portal/ui'
-import { Settings } from './Settings'
+import {
+  PLATFORM_SETTINGS_GROUPS,
+  platformSettingsCategories,
+  platformSettingsSearchEntries,
+} from '@/lib/platform/settings-map'
+import { createClient } from '@/lib/supabase/server'
+import { BillingSettings, SecuritySettings } from './Settings'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Inställningar' }
 
-/**
- * Inställningar (goal-17 PLATFORM). EXACT-copy of the design-system law source
- * (components/SuperPlatform.jsx → SuperSettings): plattformsövergripande reglage —
- * Säkerhet · Drift · Fakturering.
- *
- * No live read is needed: there is NO platform-settings store (foundation confirmed
- * a backing table is out of the frozen migration scope), so the security/drift
- * reglage are rendered honestly read-only ("Kommer snart", disabled) and the two
- * genuine signals (the audit-guard build-once-never-delete invariant + the manual
- * flöde-2 billing posture) are stated as the architectural facts they are. The view
- * therefore takes no props — see Settings.tsx for the honesty contract per reglage.
- */
-export default async function InstallningarPage() {
-  // Strict role fence — also enforced by the (platform) layout; kept explicit per
-  // the goal-17 self-gate rule (every platform page re-checks requirePlatformAdmin).
+export default async function InstallningarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ kategori?: string | string[] }>
+}) {
   await requirePlatformAdmin()
+  const requestedValue = (await searchParams).kategori
+  const requestedCategory = Array.isArray(requestedValue) ? requestedValue[0] : requestedValue
+  const categories = platformSettingsCategories()
+  const category = categories.find((item) => item.id === (requestedCategory ?? 'sakerhet'))
+  if (!category) redirect('/installningar')
+
+  let content
+  if (category.id === 'sakerhet') {
+    const supabase = await createClient()
+    const { data } = await supabase.auth.getUser()
+    content = (
+      <SecuritySettings
+        email={data.user?.email ?? null}
+        lastSignInAt={data.user?.last_sign_in_at ?? null}
+      />
+    )
+  } else {
+    content = <BillingSettings />
+  }
 
   return (
-    <section className="portal-section">
-      <PageHead
-        eyebrow="Plattform"
-        title="Inställningar"
-        lede="Plattformsövergripande reglage. Varje reglage som är kopplat är sant-kopplat — inga döda kontroller."
-      />
-      <Settings />
-    </section>
+    <SettingsWorkspace
+      categories={categories}
+      currentCategory={category.id}
+      rootHref="/installningar"
+      groups={PLATFORM_SETTINGS_GROUPS}
+      searchEntries={platformSettingsSearchEntries(categories)}
+      mobileIndex={!requestedCategory}
+    >
+      {content}
+    </SettingsWorkspace>
   )
 }

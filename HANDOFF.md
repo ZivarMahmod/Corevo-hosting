@@ -54,10 +54,20 @@ tenant och ett testfall, aldrig produktdefinitionen.
 
 ## Nästa del
 
-Publicera och smoke-testa relationspaketet från exakt samma gröna commit. Därefter
-kör Zivar den autentiserade manuella acceptansen för Inställningar/Frisöradmin
-och rollflödet gäst→kund→personal→ägare. Flytta inte goal eller designpaket
-till `klart/` före den acceptansen. Provider-dry-run och live-SMS är ett separat,
+Relationspaketet är publicerat från den verifierade leveransen och produktionen
+svarar på boknings- och tenantdörrarna. Zivars autentiserade manuella acceptans av
+Inställningar/Frisöradmin och rollflödet gäst→kund→personal→ägare återstår; därför
+ligger goal-71 och dess designpaket kvar utanför `klart/`.
+
+Aktiv koddel enligt Zivars uppdrag 2026-07-18 är goal-72 Superadmin v2. S1–S6
+(kommunikation, drift, workspace/genvägar, PII, tvåstegsarm, sann statistik,
+kundkortets master–detalj, mobilparitet och IA-svängen till `/kunder` +
+`/slutkunder`) är lokalt implementerade, oberoende granskade och verifierade på
+`codex/goal-72-superadmin-v2`. Nästa koddel är S7, men goalen kräver först Zivars
+beslut om partnerns exakta behörigheter, definitionen av licensgrundande aktiv kund
+och onboarding/inbjudan. Det senast inkomna designpaketet
+`Dagens genomgångar/Mobil pwa/` är läst men har ännu inget goal-73; bygg det inte
+parallellt med goal-72. Provider-dry-run och live-SMS är fortsatt ett separat,
 uttryckligen godkänt driftsteg.
 
 ## Hårda regler

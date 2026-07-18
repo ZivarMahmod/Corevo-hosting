@@ -18,7 +18,12 @@ import { getAdminLocationPreferences } from '@/lib/admin/location-context'
 import { PortalTopbar } from './PortalTopbar'
 import { Topnav } from './Topnav'
 import topnavStyles from './Topnav.module.css'
-import { PLATFORM_AREAS, PLATFORM_SUBNAV } from './platform-navigation'
+import {
+  platformAreasForUser,
+  platformLinkAllowed,
+  platformMobileNavigation,
+  platformSubnavForUser,
+} from './platform-navigation'
 import { adminAreas, adminMobileNavigation } from './admin-navigation'
 import { LocationSwitcher } from './LocationSwitcher'
 import type { CommandItem } from './ui/CommandPalette'
@@ -157,11 +162,12 @@ export async function PortalShell({
     }
     let paletteItems: CommandItem[] = paletteFromNav(portal, activeModuleKeys, navRoleLevel, grantedAreas)
     if (portal === 'platform') {
+      paletteItems = paletteItems.filter((item) => platformLinkAllowed(item.href, user.platformAdmin))
       const tenantOptions = await listTenantNavOptions()
       paletteItems = [
         ...paletteItems,
         ...tenantOptions.map(({ id, name, slug }) => ({
-          href: `/salonger/${id}`,
+          href: `/kunder/${id}`,
           label: name,
           sub: `${slug}.corevo.se`,
           icon: 'building' as const,
@@ -201,6 +207,7 @@ export async function PortalShell({
       owner: 'Ägare',
       staff: resolveTerm(terminology, 'staff', 'Personal'),
       platform_admin: 'Plattform',
+      partner_admin: 'Partner',
     }
     const userSub = user.platformAdmin
       ? 'Corevo AB'
@@ -253,7 +260,7 @@ export async function PortalShell({
     if (portal === 'platform' || portal === 'admin') {
       const isPlatform = portal === 'platform'
       const topAreas = isPlatform
-        ? PLATFORM_AREAS
+        ? platformAreasForUser(user.platformAdmin)
         : adminAreas(
             activeModuleKeys,
             navRoleLevel,
@@ -270,8 +277,10 @@ export async function PortalShell({
         >
           <Topnav
             areas={topAreas}
-            mobileNavigation={isPlatform ? undefined : adminMobileNavigation(topAreas)}
-            subnav={isPlatform ? PLATFORM_SUBNAV : undefined}
+            mobileNavigation={
+              isPlatform ? platformMobileNavigation(topAreas) : adminMobileNavigation(topAreas)
+            }
+            subnav={isPlatform ? platformSubnavForUser(user.platformAdmin) : undefined}
             paletteItems={paletteItems}
             remoteAdminSearch={!isPlatform}
             brandHref={isPlatform ? '/' : '/admin'}
@@ -279,17 +288,22 @@ export async function PortalShell({
             // "via Corevo" bär rollgränsen. Ordet "Superadmin" får aldrig synas här.
             brandMark={isPlatform ? 'C' : brand.charAt(0).toUpperCase() || 'C'}
             brandName={brand}
-            brandSub={isPlatform ? 'Superadmin' : 'via Corevo'}
-            brandLabel={isPlatform ? 'Corevo superadmin – översikt' : `${brand} – översikt`}
+            brandSub={isPlatform ? (user.platformAdmin ? 'Superadmin' : 'Partnerportal') : 'via Corevo'}
+            brandLabel={isPlatform ? `Corevo ${user.platformAdmin ? 'superadmin' : 'partnerportal'} – översikt` : `${brand} – översikt`}
             primaryAction={
-              isPlatform ? { href: '/salonger/ny', label: 'Ny kund', icon: 'plus' } : undefined
+              isPlatform ? { href: '/kunder/ny', label: 'Ny kund', icon: 'plus' } : undefined
             }
             // Genvägsraden (Zivar 2026-07-18): dashboardens GENVÄGAR-kort flyttat hit
             // som cirkulära ikonknappar — nåbara från varje adminyta, inte bara Översikt.
             // (Ersätter codex/00 §2-beslutet om att inte dubblera kalenderns skapaflöde.)
             quickActions={
               isPlatform
-                ? undefined
+                ? [
+                    { href: '/kunder/ny', label: 'Ny kund', icon: 'plus' },
+                    { href: '/slutkunder', label: 'Slutkunder', icon: 'users' },
+                    { href: '/drift-och-logg', label: 'Loggar', icon: 'alert' },
+                    { href: '/fakturering', label: 'Fakturering', icon: 'dollar' },
+                  ]
                 : [
                     { href: '/admin/bokningar?ny=1', label: 'Ny bokning', icon: 'plus' },
                     { href: '/admin/bokningar?blockera=1', label: 'Blockera tid', icon: 'block' },
@@ -307,7 +321,7 @@ export async function PortalShell({
             extra={isPlatform ? null : locationSwitcher}
             userLabel={userLabel}
             email={email}
-            roleLabel={isPlatform ? 'Super admin' : userSub}
+            roleLabel={isPlatform ? (user.platformAdmin ? 'Super admin' : 'Partner') : userSub}
             signOut={<SignOutButton />}
           />
           <main className={`portal-main ${topnavStyles.main}`}>

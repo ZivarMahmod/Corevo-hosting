@@ -11,6 +11,7 @@ const ALLOWED_SOURCE_IPS = new Set([
 const PROVIDER_ID = /^s[a-f0-9]{32}$/
 const DELIVERED_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/
 const CALLBACK_USERNAME = 'corevo'
+const PARTNER_CALLBACK_USERNAME = /^partner-([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i
 
 async function constantTimeEqual(left: string, right: string): Promise<boolean> {
   const encoder = new TextEncoder()
@@ -31,6 +32,19 @@ function strictDeliveryTimestamp(raw: string): string | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
 }
 
+function parseBasicAuthorization(raw: string): { username: string; secret: string } | null {
+  const match = /^Basic ([A-Za-z0-9+/]+={0,2})$/.exec(raw)
+  if (!match) return null
+  try {
+    const decoded = atob(match[1]!)
+    const separator = decoded.indexOf(':')
+    if (separator < 1) return null
+    return { username: decoded.slice(0, separator), secret: decoded.slice(separator + 1) }
+  } catch {
+    return null
+  }
+}
+
 export async function POST(request: Request): Promise<Response> {
   const sourceIp = request.headers.get('cf-connecting-ip') ?? ''
   if (!ALLOWED_SOURCE_IPS.has(sourceIp)) {
@@ -38,20 +52,42 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
-  const secret = process.env.SMS_46ELKS_CALLBACK_SECRET
-  if (!secret) {
-    logger.warn('sms.delivery.unconfigured')
-    return NextResponse.json({ error: 'unavailable' }, { status: 503 })
-  }
   const authorization = request.headers.get('authorization') ?? ''
-  let expectedAuthorization: string
-  try {
-    expectedAuthorization = `Basic ${btoa(`${CALLBACK_USERNAME}:${secret}`)}`
-  } catch {
+  const credential = parseBasicAuthorization(authorization)
+  if (!credential) {
+    logger.warn('sms.delivery.auth_denied')
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
+
+  let adminForPartner: ReturnType<typeof createServiceClient> = null
+  let expectedSecret: string | null = null
+  if (credential.username === CALLBACK_USERNAME) {
+    expectedSecret = process.env.SMS_46ELKS_CALLBACK_SECRET ?? null
+  } else {
+    const partnerMatch = PARTNER_CALLBACK_USERNAME.exec(credential.username)
+    if (!partnerMatch) {
+      logger.warn('sms.delivery.auth_denied')
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    }
+    adminForPartner = createServiceClient()
+    if (!adminForPartner) {
+      logger.warn('sms.delivery.db_unavailable')
+      return NextResponse.json({ error: 'unavailable' }, { status: 503 })
+    }
+    const { data, error } = await adminForPartner.rpc('resolve_partner_sms_callback', {
+      p_partner: partnerMatch[1]!,
+    })
+    if (error) {
+      logger.warn('sms.delivery.db_failed')
+      return NextResponse.json({ error: 'unavailable' }, { status: 503 })
+    }
+    expectedSecret = typeof data === 'string' ? data : null
+  }
+  if (!expectedSecret) {
     logger.warn('sms.delivery.unconfigured')
     return NextResponse.json({ error: 'unavailable' }, { status: 503 })
   }
-  if (!(await constantTimeEqual(authorization, expectedAuthorization))) {
+  if (!(await constantTimeEqual(credential.secret, expectedSecret))) {
     logger.warn('sms.delivery.auth_denied')
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
@@ -104,7 +140,7 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'invalid_payload' }, { status: 400 })
   }
 
-  const admin = createServiceClient()
+  const admin = adminForPartner ?? createServiceClient()
   if (!admin) {
     logger.warn('sms.delivery.db_unavailable')
     return NextResponse.json({ error: 'unavailable' }, { status: 503 })
@@ -113,6 +149,9 @@ export async function POST(request: Request): Promise<Response> {
     p_provider_ref: providerRef,
     p_status: status,
     p_delivered_at: deliveredAt,
+    p_partner: credential.username === CALLBACK_USERNAME
+      ? undefined
+      : PARTNER_CALLBACK_USERNAME.exec(credential.username)?.[1],
   })
   if (error) {
     logger.warn('sms.delivery.db_failed')

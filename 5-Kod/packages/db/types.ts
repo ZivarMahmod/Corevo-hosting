@@ -1180,6 +1180,7 @@ export type Database = {
           category: string
           chosen_channel: string | null
           consent_state: Json | null
+          cost_currency: string | null
           cost_ore: number | null
           created_at: string
           customer_id: string | null
@@ -1192,6 +1193,7 @@ export type Database = {
           lease_expires_at: string | null
           lease_token: string | null
           max_attempts: number
+          partner_id: string | null
           parts: number | null
           payload: Json
           provider_ref: string | null
@@ -1209,6 +1211,7 @@ export type Database = {
           category: string
           chosen_channel?: string | null
           consent_state?: Json | null
+          cost_currency?: string | null
           cost_ore?: number | null
           created_at?: string
           customer_id?: string | null
@@ -1221,6 +1224,7 @@ export type Database = {
           lease_expires_at?: string | null
           lease_token?: string | null
           max_attempts?: number
+          partner_id?: string | null
           parts?: number | null
           payload?: Json
           provider_ref?: string | null
@@ -1238,6 +1242,7 @@ export type Database = {
           category?: string
           chosen_channel?: string | null
           consent_state?: Json | null
+          cost_currency?: string | null
           cost_ore?: number | null
           created_at?: string
           customer_id?: string | null
@@ -1250,6 +1255,7 @@ export type Database = {
           lease_expires_at?: string | null
           lease_token?: string | null
           max_attempts?: number
+          partner_id?: string | null
           parts?: number | null
           payload?: Json
           provider_ref?: string | null
@@ -1273,6 +1279,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_outbox_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
             referencedColumns: ["id"]
           },
           {
@@ -1492,6 +1505,261 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      partner_license_months: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          month: string
+          partner_id: string
+          qualified_at: string
+          tenant_id: string
+          unit_price_ore: number
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          month: string
+          partner_id: string
+          qualified_at: string
+          tenant_id: string
+          unit_price_ore: number
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          month?: string
+          partner_id?: string
+          qualified_at?: string
+          tenant_id?: string
+          unit_price_ore?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_license_months_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_license_months_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_license_price_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          effective_at: string
+          id: string
+          new_price_ore: number
+          old_price_ore: number | null
+          partner_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          effective_at?: string
+          id?: string
+          new_price_ore: number
+          old_price_ore?: number | null
+          partner_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          effective_at?: string
+          id?: string
+          new_price_ore?: number
+          old_price_ore?: number | null
+          partner_id?: string
+        }
+        Relationships: [{
+          foreignKeyName: "partner_license_price_events_partner_id_fkey"
+          columns: ["partner_id"]
+          isOneToOne: false
+          referencedRelation: "partners"
+          referencedColumns: ["id"]
+        }]
+      }
+      partner_members: {
+        Row: {
+          created_at: string
+          invited_at: string
+          joined_at: string | null
+          partner_id: string
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          invited_at?: string
+          joined_at?: string | null
+          partner_id: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          invited_at?: string
+          joined_at?: string | null
+          partner_id?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [{
+          foreignKeyName: "partner_members_partner_id_fkey"
+          columns: ["partner_id"]
+          isOneToOne: false
+          referencedRelation: "partners"
+          referencedColumns: ["id"]
+        }]
+      }
+      partner_sms_configs: {
+        Row: {
+          callback_secret_id: string | null
+          configured_at: string | null
+          created_at: string
+          enabled: boolean
+          partner_id: string
+          password_secret_id: string | null
+          provider_key: string
+          sender: string | null
+          updated_at: string
+          username_secret_id: string | null
+        }
+        Insert: {
+          callback_secret_id?: string | null
+          configured_at?: string | null
+          created_at?: string
+          enabled?: boolean
+          partner_id: string
+          password_secret_id?: string | null
+          provider_key?: string
+          sender?: string | null
+          updated_at?: string
+          username_secret_id?: string | null
+        }
+        Update: {
+          callback_secret_id?: string | null
+          configured_at?: string | null
+          created_at?: string
+          enabled?: boolean
+          partner_id?: string
+          password_secret_id?: string | null
+          provider_key?: string
+          sender?: string | null
+          updated_at?: string
+          username_secret_id?: string | null
+        }
+        Relationships: [{
+          foreignKeyName: "partner_sms_configs_partner_id_fkey"
+          columns: ["partner_id"]
+          isOneToOne: true
+          referencedRelation: "partners"
+          referencedColumns: ["id"]
+        }]
+      }
+      partner_tenant_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          occurred_at: string
+          partner_id: string
+          tenant_id: string
+          tenant_status: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          occurred_at?: string
+          partner_id: string
+          tenant_id: string
+          tenant_status: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          partner_id?: string
+          tenant_id?: string
+          tenant_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_tenant_events_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_tenant_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          country_code: string
+          created_at: string
+          currency: string
+          id: string
+          license_price_ore: number
+          name: string
+          slug: string
+          status: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          country_code?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          license_price_ore: number
+          name: string
+          slug: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          license_price_ore?: number
+          name?: string
+          slug?: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       push_subscriptions: {
         Row: {
@@ -2716,6 +2984,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          partner_id: string | null
           plan: string
           slug: string
           status: string
@@ -2731,6 +3000,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          partner_id?: string | null
           plan?: string
           slug: string
           status?: string
@@ -2746,6 +3016,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          partner_id?: string | null
           plan?: string
           slug?: string
           status?: string
@@ -2757,6 +3028,13 @@ export type Database = {
           vertical_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tenants_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tenants_vertical_id_fkey"
             columns: ["vertical_id"]
@@ -2833,7 +3111,7 @@ export type Database = {
           phone: string | null
           role_id: string | null
           status: string
-          tenant_id: string
+          tenant_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -2844,7 +3122,7 @@ export type Database = {
           phone?: string | null
           role_id?: string | null
           status?: string
-          tenant_id: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -2855,7 +3133,7 @@ export type Database = {
           phone?: string | null
           role_id?: string | null
           status?: string
-          tenant_id?: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -3313,6 +3591,7 @@ export type Database = {
           lease_expires_at: string | null
           lease_token: string | null
           max_attempts: number
+          partner_id: string | null
           parts: number | null
           payload: Json
           provider_ref: string | null
@@ -3324,6 +3603,15 @@ export type Database = {
           updated_at: string
         }[]
       }
+      claim_sms_notification_outbox: {
+        Args: {
+          p_lease_seconds: number
+          p_lease_token: string
+          p_limit: number
+          p_now: string
+        }
+        Returns: Database["public"]["Tables"]["notifications_outbox"]["Row"][]
+      }
       begin_notification_delivery: {
         Args: {
           p_id: string
@@ -3333,6 +3621,7 @@ export type Database = {
       }
       ack_notification_outbox: {
         Args: {
+          p_cost_currency?: string | null
           p_cost_ore: number | null
           p_id: string
           p_lease_token: string
@@ -3355,6 +3644,7 @@ export type Database = {
       record_sms_delivery: {
         Args: {
           p_delivered_at: string | null
+          p_partner?: string
           p_provider_ref: string
           p_status: string
         }
@@ -3456,6 +3746,220 @@ export type Database = {
       prune_expired_shop_reserves: { Args: never; Returns: number }
       prune_contact_messages: { Args: { p_months?: number }; Returns: number }
       prune_expired_slot_holds: { Args: never; Returns: number }
+      platform_booking_stats: {
+        Args: never
+        Returns: {
+          completed: number
+          last_at: string | null
+          tenant_id: string
+          total: number
+        }[]
+      }
+      platform_cron_health: {
+        Args: never
+        Returns: {
+          active: boolean
+          jobname: string
+          last_duration_ms: number | null
+          last_message: string | null
+          last_start: string | null
+          last_status: string | null
+          schedule: string
+        }[]
+      }
+      platform_drift_health: {
+        Args: { p_tenant?: string }
+        Returns: {
+          attempting_count: number
+          delivery_started_count: number
+          failed_24h_count: number
+          oldest_ready_at: string | null
+          queued_count: number
+          routing_count: number
+          scheduler_age_seconds: number | null
+          scheduler_healthy: boolean
+          scheduler_last_error_code: string | null
+          scheduler_last_failed_at: string | null
+          scheduler_last_started_at: string | null
+          scheduler_last_status: string | null
+          scheduler_last_succeeded_at: string | null
+          scheduler_name: string | null
+          scheduler_updated_at: string | null
+          stalled_count: number
+          tenant_id: string | null
+        }[]
+      }
+      platform_outbox_rows: {
+        Args: {
+          p_category?: string
+          p_channel?: string
+          p_limit?: number
+          p_status?: string
+          p_tenant?: string
+        }
+        Returns: {
+          category: string
+          chosen_channel: string | null
+          cost_ore: number | null
+          created_at: string
+          delivered_at: string | null
+          event_type: string
+          id: string
+          provider_ref: string | null
+          sent_at: string | null
+          skip_reason: string | null
+          status: string
+          tenant_id: string
+          tenant_name: string
+          tenant_slug: string
+        }[]
+      }
+      platform_outbox_summary: {
+        Args: never
+        Returns: {
+          customers_total: number
+          failed_30d: number
+          name: string
+          prefs_rows: number
+          push_subs_active: number
+          sent_30d: number
+          skipped_30d: number
+          slug: string
+          sms_cost_ore_30d: number
+          tenant_id: string
+        }[]
+      }
+      platform_partner_summaries: {
+        Args: never
+        Returns: {
+          active_tenants: number
+          country_code: string
+          currency: string
+          license_month: string
+          license_price_ore: number
+          license_total_ore: number
+          licensed_tenants: number
+          member_email: string | null
+          member_joined_at: string | null
+          member_status: string | null
+          partner_id: string
+          partner_name: string
+          partner_slug: string
+          partner_status: string
+          sms_cost_ore: number
+          sms_cost_currency: string
+          sms_provider_enabled: boolean
+          sms_provider_key: string
+          timezone: string
+        }[]
+      }
+      platform_create_customer: {
+        Args: {
+          p_email?: string
+          p_full_name: string
+          p_phone?: string
+          p_tenant: string
+        }
+        Returns: string
+      }
+      platform_customer_safe_rows: {
+        Args: {
+          p_customer?: string
+          p_limit?: number
+          p_query?: string
+          p_tenant?: string
+        }
+        Returns: {
+          auth_user_id: string | null
+          display_name: string | null
+          first_seen_at: string | null
+          full_name: string | null
+          has_email: boolean
+          has_phone: boolean
+          id: string
+          last_seen_at: string | null
+          masked_email: string
+          masked_phone: string
+          name_hidden: boolean
+          status: string
+          tenant_id: string
+          tenant_name: string
+          tenant_slug: string
+          visits: number
+        }[]
+      }
+      platform_replace_service_staff: {
+        Args: { p_staff_ids?: string[]; p_service: string; p_tenant: string }
+        Returns: number
+      }
+      platform_replace_staff_schedule: {
+        Args: { p_rows?: Json; p_staff: string; p_tenant: string }
+        Returns: number
+      }
+      platform_replace_staff_services: {
+        Args: { p_service_ids?: string[]; p_staff: string; p_tenant: string }
+        Returns: number
+      }
+      platform_save_tenant_billing: {
+        Args: {
+          p_billing_model: string
+          p_flat_monthly_fee_cents: number
+          p_per_booking_fee_cents: number
+          p_setup_fee_cents: number
+          p_tenant: string
+        }
+        Returns: undefined
+      }
+      platform_set_contact_message_status: {
+        Args: { p_message: string; p_status: string; p_tenant: string }
+        Returns: boolean
+      }
+      partner_update_tenant_user: {
+        Args: {
+          p_access_scope: string
+          p_role: string
+          p_status: string
+          p_tenant: string
+          p_user: string
+        }
+        Returns: undefined
+      }
+      refresh_partner_license_month: {
+        Args: { p_month?: string }
+        Returns: number
+      }
+      resolve_partner_sms_config: {
+        Args: { p_tenant: string }
+        Returns: {
+          callback_secret: string | null
+          callback_username: string
+          cost_currency: string
+          password: string | null
+          provider_key: string
+          sender: string | null
+          username: string | null
+        }[]
+      }
+      resolve_partner_sms_callback: {
+        Args: { p_partner: string }
+        Returns: string | null
+      }
+      save_partner_sms_config: {
+        Args: {
+          p_callback_secret?: string
+          p_enabled?: boolean
+          p_partner: string
+          p_password?: string
+          p_provider_key: string
+          p_sender: string
+          p_username?: string
+        }
+        Returns: undefined
+      }
+      sync_partner_license_open_month: {
+        Args: { p_partner?: string }
+        Returns: number
+      }
       record_shop_order_refund: { Args: { p_order_id: string }; Returns: boolean }
       release_shop_order: {
         Args: { p_order_id: string; p_status?: string; p_token?: string }

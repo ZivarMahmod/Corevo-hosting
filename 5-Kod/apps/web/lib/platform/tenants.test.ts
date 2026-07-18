@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { deriveCustomizationLevel, listTenants } from './tenants'
+import { deriveCustomizationLevel, listTenants, listTenantsWithStats } from './tenants'
 
 // listTenants reads through platformCtx — mock that boundary so we can assert it
 // SELECTs city and surfaces both city + ownerName (#10/#14). A tiny chainable stub
@@ -124,5 +124,72 @@ describe('listTenants (#14 city + #10 ownerName)', () => {
 
     const rows = await listTenants()
     expect(rows[0]!.ownerName).toBeNull()
+  })
+})
+
+describe('listTenantsWithStats aggregate feed', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('loads booking totals for every customer with one aggregate RPC', async () => {
+    const tableReads: string[] = []
+    const rowsByTable: Record<string, unknown[]> = {
+      tenants: [
+        {
+          id: 't1',
+          slug: 'alpha',
+          name: 'Alpha',
+          status: 'active',
+          plan: 'standard',
+          city: 'Malmö',
+          created_at: '2026-01-01T00:00:00.000Z',
+          tenant_settings: { billing_model: 'per_booking', settings: {}, branding: {} },
+        },
+      ],
+      staff: [{ tenant_id: 't1' }],
+      users: [{ tenant_id: 't1', email: 'owner@example.com', full_name: 'Owner' }],
+      services: [{ tenant_id: 't1' }],
+      working_hours: [{ tenant_id: 't1' }],
+    }
+    const from = (table: string) => {
+      tableReads.push(table)
+      const result = { data: rowsByTable[table] ?? [], error: null }
+      const chain: Record<string, unknown> = {
+        select: () => chain,
+        eq: () => chain,
+        neq: () => chain,
+        order: () => chain,
+        limit: () => chain,
+        maybeSingle: async () => ({ data: null, error: null }),
+        then: (resolve: (value: typeof result) => unknown) => Promise.resolve(result).then(resolve),
+      }
+      return chain
+    }
+    const rpc = vi.fn(async () => ({
+      data: [
+        {
+          tenant_id: 't1',
+          total: 7,
+          completed: 5,
+          last_at: '2026-07-18T10:00:00.000Z',
+        },
+      ],
+      error: null,
+    }))
+    platformCtxMock.mockResolvedValue({ supabase: { from, rpc } })
+
+    const rows = await listTenantsWithStats()
+
+    expect(rpc).toHaveBeenCalledTimes(1)
+    expect(rpc).toHaveBeenCalledWith('platform_booking_stats')
+    expect(tableReads).not.toContain('bookings')
+    expect(rows[0]).toMatchObject({
+      id: 't1',
+      bookings: 7,
+      completed: 5,
+      bookingsCount: 7,
+      lastActivityAt: '2026-07-18T10:00:00.000Z',
+    })
   })
 })

@@ -41,7 +41,7 @@ red-washed.
 - **Production** — only on a `v*` **tag** or manual dispatch → production, behind the
   `production` GitHub Environment approval gate. **Never auto from a PR** (DoD).
   Production migrations appliceras **out-of-band** efter granskning. Workflowen
-  kräver därefter GitHub Environment-variabeln `PROD_DB_MIGRATION=0088` innan
+  kräver därefter GitHub Environment-variabeln `PROD_DB_MIGRATION=0117` innan
   OpenNext build (prod env), sedan **`node scripts/deploy-prod.mjs`**
   — NOT bare `wrangler deploy`. Since **fix-35** the per-customer storefront domains
   (`<slug>.corevo.se`) live in **committed `wrangler.jsonc`** top-level `routes[]`
@@ -121,7 +121,7 @@ Rules:
 
 ### GitHub → repo Settings → Secrets and variables → Actions
 **Variables:** `E2E_ENABLED=true` (efter seedad staging) och
-`PROD_DB_MIGRATION=0088` i production-miljön **först efter verifierad DB-apply**.
+`PROD_DB_MIGRATION=0117` i production-miljön **först efter verifierad DB-apply**.
 **Secrets:**
 
 | Secret | Used by |
@@ -167,7 +167,7 @@ dashboard-only value is wiped on the next deploy. Change them in `wrangler.jsonc
 | 4 | Stripe `STRIPE_SECRET_KEY` (test) + `STRIPE_WEBHOOK_SECRET` | **OPS.** Webhook **MUST** be a Stripe **Connect** endpoint at `/api/stripe/webhook` (events carry `account`); a plain account endpoint silently never flips bookings to `confirmed`. Verify test-mode: onboarding · payment (`application_fee`=0) · refund · idempotency. |
 | 5 | Activate G10: email relay (`EMAIL_RELAY_URL`/`EMAIL_RELAY_SECRET`/`NOTIFICATIONS_FROM` + one.com Edge Function secrets, goal-14), Sentry DSN, CF WAF rate-limit (login/boka), Cron `/api/cron/reminders` | **OPS.** Email = Worker + Edge Function secrets (`docs/ops/mejl-egen-smtp.md`). Sentry = Worker secret. WAF rule = dashboard. Cron = a CF Cron Trigger or external scheduler hitting the route. |
 | 6 | R2 binding `corevo-media` | ✅ **Bucket exists** (verified). Binding present in both envs in `wrangler.jsonc`. `R2_PUBLIC_BASE_URL` set as a committed var in `wrangler.jsonc` (r2.dev origin, FX-14) so public image URLs resolve and survive deploys. |
-| 7 | Prod-schema matchar Worker-koden | ⛔ Prod är på 0082; applicera och verifiera 0083–0088, därefter `PROD_DB_MIGRATION=0088`. Workflowen stoppar annars före build. |
+| 7 | Prod-schema matchar Worker-koden | ✅ Prod verifierad till `0117`; checkpoint + `PROD_DB_MIGRATION=0117` krävs av workflowen. |
 
 ## 6. Stripe Connect webhook (live-blocker #4 detail)
 
@@ -202,7 +202,7 @@ See `docs/ops/backup-restore.md`.
 
 1. Set all GitHub secrets (§4) + Worker secrets for production.
 2. Ta backup-checkpoint, granska/applicera 0083–0088 på prod och verifiera
-   `supabase_migrations.schema_migrations`; sätt därefter `PROD_DB_MIGRATION=0088`.
+   `supabase_migrations.schema_migrations`; sätt därefter `PROD_DB_MIGRATION=0117`.
 3. Decide tenant routing (#2) with Zivar; add Custom Domains or the wildcard route.
 4. Register the Stripe **Connect** webhook (§6); set `STRIPE_WEBHOOK_SECRET`.
 5. Tag `vX.Y.Z` → approve the `production` environment → CD deploys.

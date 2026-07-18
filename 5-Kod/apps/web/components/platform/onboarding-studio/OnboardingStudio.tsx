@@ -24,7 +24,6 @@ import {
 } from 'react'
 import { Button, Icon } from '@/components/portal/ui'
 import { createTenant } from '@/lib/platform/actions'
-import type { TenantCardItem } from '@/lib/platform/tenants'
 import type { VerticalPresetData } from '@/lib/platform/verticals-shared'
 import { initStudioCfg } from '@/lib/platform/onboarding-studio/model'
 import {
@@ -43,8 +42,6 @@ const ROOT = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'corevo.se'
 
 export type OnboardingStudioProps = {
   presets: VerticalPresetData
-  /** The real cross-tenant card feed (listTenantsWithStats) → SuperEntry (§8). */
-  tenants: TenantCardItem[]
 }
 
 /**
@@ -78,7 +75,7 @@ function StudioMachine({
   const [cfg, dispatch] = useReducer(reducer, undefined, () => initStudioCfg('salvia'))
 
   // Dunder-fix 2026-07-11: starta DIREKT i studion. Gamla 'super'-entrén var en
-  // dubblett av /salonger-kundlistan (med två döda stat-kort) som man tvingades
+  // dubblett av /kunder-listan (med två döda stat-kort) som man tvingades
   // klicka sig förbi — "Onboarda kund" i menyn ska öppna wizarden, punkt.
   const [stage, setStage] = useState<StudioStage>('studio')
   const [step, setStep] = useState<StepId>('branch')
@@ -211,7 +208,7 @@ export function ResultView({
   // The platform tenant-detail always works (platform route). Its embedded storefront
   // preview iframe points at the same unresolvable host, so we label this "öppna &
   // hantera" — NOT "se den publika sidan".
-  const manageHref = tenant?.id ? `/salonger/${tenant.id}` : '/salonger'
+  const manageHref = tenant?.id ? `/kunder/${tenant.id}` : '/kunder'
 
   const cardStyle: CSSProperties = {
     display: 'flex',

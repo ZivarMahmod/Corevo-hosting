@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
-import { CreateTenantForm } from '@/components/platform/CreateTenantForm'
-import { OnboardingStudio } from '@/components/platform/onboarding-studio/OnboardingStudio'
+import Link from 'next/link'
+import { OnboardingEntryLazy } from '@/components/platform/OnboardingEntryLazy'
 import { loadVerticalPresets } from '@/lib/platform/verticals'
-import { listTenantsWithStats } from '@/lib/platform/tenants'
 import { onboardingStudioEnabled } from '@/lib/platform/onboarding-studio/flag'
+import styles from '@/components/platform/kunder-v2.module.css'
+import { Icon } from '@/components/portal/ui'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Plattform · Onboarda kund' }
 
 // The onboarding wizard owns its own PageHead + intro callout (design "Onboarda ny
-// salong"), so the page is just the host section. Multi-bransch (spår 5): we fetch
+// kund"), so the page is just the host section. Multi-bransch (spår 5): we fetch
 // the verticals + modules catalog server-side (platform-gated) and pass it down so
 // the wizard can lead with "Välj bransch" + prefill the module-state preset.
 export default async function NewTenantPage() {
@@ -24,12 +25,16 @@ export default async function NewTenantPage() {
   // the studio fills the content area edge-to-edge below the topbar (not a boxed card).
   // The legacy form keeps the normal padded `portal-section`.
   return (
-    <section className={studioEnabled ? 'onboarding-host' : 'portal-section'}>
-      {studioEnabled ? (
-        <OnboardingStudio presets={presets} tenants={await listTenantsWithStats()} />
-      ) : (
-        <CreateTenantForm presets={presets} />
-      )}
-    </section>
+    <div className={styles.pane}>
+      <div className={`${styles.paneInner} ${studioEnabled ? styles.paneInnerWide : ''}`}>
+        <Link href="/kunder" className={styles.back}>
+          <Icon name="arrowLeft" size={15} />
+          Kunder
+        </Link>
+        <section className={studioEnabled ? 'onboarding-host' : 'portal-section'}>
+          <OnboardingEntryLazy presets={presets} studioEnabled={studioEnabled} />
+        </section>
+      </div>
+    </div>
   )
 }

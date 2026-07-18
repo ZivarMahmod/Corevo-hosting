@@ -103,7 +103,7 @@ export async function saveTenantContact(_p: ActionState, fd: FormData): Promise<
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, { action: 'tenant.contact', tenantId, actorId: user.id })
   return {
@@ -126,7 +126,7 @@ type ContactStatus = (typeof CONTACT_STATUSES)[number]
  * skickar in.
  */
 export async function setContactMessageStatus(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase, tenantId } = await sidaCtx(fd)
+  const { supabase, tenantId } = await sidaCtx(fd)
   if (!tenantId) return { error: 'Saknar kund.' }
 
   const id = String(fd.get('id') ?? '').trim()
@@ -134,24 +134,18 @@ export async function setContactMessageStatus(_p: ActionState, fd: FormData): Pr
   if (!id) return { error: 'Saknar meddelande.' }
   if (!CONTACT_STATUSES.includes(status)) return { error: 'Ogiltig status.' }
 
-  const { error } = await supabase
-    .from('contact_messages')
-    .update({ status })
-    .eq('id', id)
-    .eq('tenant_id', tenantId) // tenant-fencen — aldrig klientens ord
+  const { error } = await supabase.rpc('platform_set_contact_message_status', {
+    p_tenant: tenantId,
+    p_message: id,
+    p_status: status,
+  })
   if (error) {
     await reportActionError('setContactMessageStatus', error, { tenantId })
     return { error: GENERIC }
   }
 
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/kontakt')
-  await logPlatformAction(supabase, {
-    action: 'tenant.contact',
-    tenantId,
-    actorId: user.id,
-    meta: { contact_message: status }, // ALDRIG PII i loggen — bara den nya statusen
-  })
   return { success: status === 'archived' ? 'Meddelandet arkiverat.' : 'Meddelandet markerat som läst.' }
 }
 
@@ -196,7 +190,7 @@ export async function saveTenantOpeningHours(_p: ActionState, fd: FormData): Pro
   }
 
   revalidateTenant(tenant.slug)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/sida')
   await logPlatformAction(supabase, {
     action: 'tenant.contact',

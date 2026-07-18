@@ -69,7 +69,7 @@ export async function saveOffertSubjects(_p: ActionState, fd: FormData): Promise
 
   // Storefronten cachar per tenant — offertsidan måste visa de nya chipsen direkt.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   revalidatePath('/admin/offerter')
   await logPlatformAction(supabase, {
     action: 'tenant.module_config',

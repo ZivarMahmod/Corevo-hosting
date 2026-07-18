@@ -3,7 +3,7 @@
    [data-world="backoffice"] --c-* tokens (forest/gold on cream, Playfair+Inter) set
    by the platform shell; never hardcodes brand colours. */
 
-/* ── search + salong filter ── */
+/* ── search + company filter ── */
 .filters {
   display: flex;
   gap: 10px;

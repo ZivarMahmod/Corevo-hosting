@@ -48,7 +48,10 @@ function makeSupabase(results: Record<string, TableResult> = {}) {
 }
 
 const platformCtxMock = vi.fn()
-vi.mock('./guard', () => ({ platformCtx: () => platformCtxMock() }))
+vi.mock('./guard', () => ({
+  platformCtx: () => platformCtxMock(),
+  platformAdminCtx: () => platformCtxMock(),
+}))
 const logPlatformAction = vi.fn(async () => {})
 vi.mock('./audit', () => ({ logPlatformAction }))
 

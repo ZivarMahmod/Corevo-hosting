@@ -1,4 +1,10 @@
-import { Icon, Stat, Badge, type BadgeTone } from '@/components/portal/ui'
+import {
+  Badge,
+  Icon,
+  Stat,
+  type BadgeTone,
+} from '@/components/portal/ui'
+import { PlatformPiiReveal } from './PlatformPiiReveal'
 import type { TenantCustomersData, TenantCustomer, CustomerBooking, CustomerInquiry } from '@/lib/platform/tenant-customers'
 import styles from './platform.module.css'
 
@@ -7,7 +13,8 @@ import styles from './platform.module.css'
  * senaste besök, av/uteblivna, och (om offert-modulen är på) förfrågningar. Server-
  * komponent: all data läses server-side i getTenantCustomers, här bara render. Varje
  * kund = hopfälld rad (native <details>); klick fäller ut bokningshistorik + kontakt +
- * förfrågningar. Ingen fabricerad data — allt härlett ur customers/bookings/offert.
+ * förfrågningar. Kontaktuppgifter maskas i den statiska raden och visas endast via
+ * delad PiiReveal. Ingen fabricerad data — allt härlett ur customers/bookings/offert.
  */
 
 const kr = new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK', maximumFractionDigits: 0 })
@@ -84,7 +91,9 @@ export function TenantCustomers({ data }: { data: TenantCustomersData }) {
 }
 
 function CustomerRow({ c }: { c: TenantCustomer }) {
-  const contact = c.email || c.phone || '—'
+  const contact = [c.maskedEmail, c.maskedPhone]
+    .filter((value) => value !== '—')
+    .join(' · ') || '—'
   const meta = [
     `${c.total} bokning${c.total === 1 ? '' : 'ar'}`,
     `${c.completed} genomförda`,
@@ -156,9 +165,14 @@ function CustomerRow({ c }: { c: TenantCustomer }) {
 
         <div className={styles.svcSub}>
           <p className={styles.svcSubTitle}>Kontakt</p>
+          <PlatformPiiReveal
+            customerId={c.id}
+            tenantId={c.tenantId}
+            maskedEmail={c.maskedEmail}
+            maskedPhone={c.maskedPhone}
+          />
           <span className={styles.svcSumMeta} style={{ marginTop: 0 }}>
-            {c.email ?? '— ingen e-post'} · {c.phone ?? 'ingen telefon'} · {c.role} ({c.auth}) · kund
-            sedan {fmtDate(c.firstSeen)}
+            {c.role} ({c.auth}) · kund sedan {fmtDate(c.firstSeen)}
           </span>
         </div>
       </div>

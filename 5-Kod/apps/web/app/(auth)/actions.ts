@@ -26,6 +26,10 @@ import {
   LIMITS,
 } from '@/lib/security/rate-limit'
 import { currentKundTenant } from '@/lib/kund/tenant'
+import {
+  isRejectedPartnerIdentity,
+  resolvePlatformIdentity,
+} from '@/lib/auth/platform-identity'
 
 export type SignInState = { error?: string }
 
@@ -59,6 +63,7 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   const platformAdminClaim =
     (data.user.app_metadata as { platform_admin?: boolean })?.platform_admin === true
   let roleLevel = 0
+  let roleName: string | null = null
   let roleTenantId: string | null = null
   const { data: profile } = await supabase
     .from('users')
@@ -68,22 +73,22 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   if (profile?.role_id) {
     const { data: role } = await supabase
       .from('roles')
-      .select('level, tenant_id')
+      .select('level, name, tenant_id')
       .eq('id', profile.role_id)
       .maybeSingle()
     roleLevel = role?.level ?? 0
+    roleName = role?.name ?? null
     roleTenantId = role?.tenant_id ?? null
   }
-  const platformAdmin =
-    profile?.status === 'active' &&
-    platformAdminClaim &&
-    roleLevel >= 7 &&
-    roleTenantId === null
 
   // The database row is authoritative even while an old JWT/session remains in
   // the browser. A staff account additionally requires its active staff binding.
   let activeStaff = false
-  if (profile?.status === 'active' && roleLevel === PORTAL_MIN_LEVEL.personal) {
+  if (
+    profile?.status === 'active' &&
+    roleLevel === PORTAL_MIN_LEVEL.personal &&
+    profile.tenant_id
+  ) {
     const { data: staff } = await supabase
       .from('staff')
       .select('id')
@@ -102,6 +107,49 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   if (!accountActive) {
     await supabase.auth.signOut()
     return { error: 'Kontot är inte aktivt. Kontakta företaget som bjöd in dig.' }
+  }
+
+  let membership: {
+    partnerId: string
+    memberStatus: string | null
+    partnerStatus: string | null
+  } | null = null
+  if (roleName === 'partner_admin' && roleLevel === 7 && roleTenantId === null) {
+    const { data: member } = await supabase
+      .from('partner_members')
+      .select('partner_id, status, partners:partner_id(status)')
+      .eq('user_id', data.user.id)
+      .maybeSingle()
+    const partnerEmbed = (member as { partners?: unknown } | null)?.partners
+    const partner = (Array.isArray(partnerEmbed) ? partnerEmbed[0] : partnerEmbed) as
+      | { status: string | null }
+      | null
+      | undefined
+    if (member?.partner_id) {
+      membership = {
+        partnerId: member.partner_id,
+        memberStatus: member.status,
+        partnerStatus: partner?.status ?? null,
+      }
+    }
+  }
+  const { platformAdmin, partnerAdmin } = resolvePlatformIdentity({
+    accountAuthorized: accountActive,
+    roleLevel,
+    roleName,
+    roleTenantId,
+    appPlatformAdmin: platformAdminClaim,
+    membership,
+  })
+  if (isRejectedPartnerIdentity({
+    accountAuthorized: accountActive,
+    roleLevel,
+    roleName,
+    roleTenantId,
+    partnerAdmin,
+  })) {
+    await supabase.auth.signOut()
+    return { error: 'Partnerkontot är inte aktivt. Kontakta Corevo.' }
   }
 
   // U5 — DOOR ISOLATION. Each account establishes a session only on its own host:
@@ -128,6 +176,7 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
     const access = loginAccessForHost({
       roleLevel,
       platformAdmin,
+      partnerAdmin,
       accountTenantId: profile?.tenant_id ?? null,
       hostKind,
       hostTenantId: hostTenant?.id ?? null,
@@ -137,7 +186,7 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
       // Reject and clear the session on this host. Host-only cookies guarantee
       // that parallel logins in other tabs/doors remain untouched.
       await supabase.auth.signOut()
-      const door = backofficeHostKindForRole({ roleLevel, platformAdmin })
+      const door = backofficeHostKindForRole({ roleLevel, platformAdmin, partnerAdmin })
       const rightHost =
         door === 'superadmin'
           ? getSuperadminHost()
@@ -159,7 +208,7 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   if (staffOnLegacyDoor) redirect('/personal')
   // Honor the originally requested page (same host) only AFTER the door check.
   if (next) redirect(next)
-  redirect(portalHomeFor({ roleLevel, platformAdmin }))
+  redirect(portalHomeFor({ roleLevel, platformAdmin, partnerAdmin }))
 }
 
 export async function signOut() {

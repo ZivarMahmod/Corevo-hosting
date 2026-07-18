@@ -48,6 +48,7 @@ const row: ClaimedNotificationOutboxRow = {
   status: 'attempting',
   skip_reason: null,
   cost_ore: null,
+  cost_currency: null,
   parts: null,
   provider_ref: null,
   attempt_count: 1,

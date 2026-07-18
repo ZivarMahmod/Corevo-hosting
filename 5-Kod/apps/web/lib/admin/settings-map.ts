@@ -1,5 +1,8 @@
-import type { IconName } from '@/components/portal/ui/Icon'
 import type { AdminArea } from '@/lib/auth/admin-areas'
+import type {
+  SettingsNavigationCategory,
+  SettingsNavigationSearchEntry,
+} from '@/lib/settings-navigation'
 import { resolveTerm, termPlural, type Terminology } from '@/lib/platform/verticals-shared'
 
 export type SettingsGroup = 'VERKSAMHET' | 'BOKNING' | 'PENGAR' | 'KOMMUNIKATION' | 'KONTO'
@@ -18,25 +21,15 @@ export type SettingsCategoryId =
   | 'konto'
   | 'sekretess'
 
-export type SettingsCategory = {
+export type SettingsCategory = SettingsNavigationCategory & {
   id: SettingsCategoryId
   group: SettingsGroup
-  href: string
-  label: string
-  hint: string
-  icon: IconName
   area: AdminArea
-  keywords: string
   warning?: 'warning' | 'danger'
 }
 
-export type SettingsSearchEntry = {
-  id: string
-  label: string
-  hint: string
+export type SettingsSearchEntry = SettingsNavigationSearchEntry & {
   categoryId: SettingsCategoryId
-  href: string
-  keywords: string
   category: SettingsCategory
 }
 
@@ -149,7 +142,13 @@ const SETTINGS_SEARCH_DEFS: ReadonlyArray<{
 ]
 
 /** Samma sökindex driver både inställningsnavet och den globala Ctrl-K-paletten. */
-export function settingsSearchEntries(categories: SettingsCategory[]): SettingsSearchEntry[] {
+export function settingsSearchEntries(categories: SettingsCategory[]): SettingsSearchEntry[]
+export function settingsSearchEntries(
+  categories: SettingsNavigationCategory[],
+): SettingsNavigationSearchEntry[]
+export function settingsSearchEntries(
+  categories: SettingsNavigationCategory[],
+): SettingsNavigationSearchEntry[] {
   const byId = new Map(categories.map((category) => [category.id, category]))
   return SETTINGS_SEARCH_DEFS.flatMap((entry) => {
     const category = byId.get(entry.categoryId)

@@ -16,6 +16,14 @@ import { revalidateTenantById } from '@/lib/admin/tenant'
 
 type PlatformServiceClient = NonNullable<ReturnType<typeof createServiceClient>>
 
+export type PlatformCustomerContactResult =
+  | {
+      ok: true
+      contact: { email: string | null; phone: string | null }
+      expiresAt: string
+    }
+  | { ok: false; error: string }
+
 async function compensatePlatformStaffInvite(
   service: PlatformServiceClient,
   args: { authId: string; tenantId: string; roleId: string; targetStaffId?: string },
@@ -55,6 +63,86 @@ function failedTenantInviteState(
 }
 
 /**
+ * Lazy platform reveal for customer contact PII. The initial page models never
+ * contain raw contact fields; an explicit click reaches this action instead.
+ * platformCtx is the role gate, the tenant-scoped customer read rejects a
+ * tampered customer/tenant pair, and get_customer_contact remains authoritative
+ * for the operational booking window. Audit is fail-closed: no successful audit,
+ * no contact leaves the server.
+ */
+export async function revealPlatformCustomerContact(input: {
+  customerId: string
+  tenantId: string
+}): Promise<PlatformCustomerContactResult> {
+  const { user, supabase } = await platformCtx()
+  const customerId = String(input.customerId ?? '').trim()
+  const tenantId = String(input.tenantId ?? '').trim()
+  if (!customerId || !tenantId) {
+    return { ok: false, error: 'Saknar kund eller företag.' }
+  }
+
+  const { data: customers, error: relationshipError } = await supabase
+    .rpc('platform_customer_safe_rows', {
+      p_tenant: tenantId,
+      p_customer: customerId,
+      p_limit: 1,
+    })
+  if (relationshipError) {
+    await reportActionError('revealPlatformCustomerContact.relationship', relationshipError, {
+      tenantId,
+      customerId,
+    })
+    return { ok: false, error: 'Kontaktuppgifterna kunde inte hämtas. Försök igen.' }
+  }
+  if (!customers?.[0]) return { ok: false, error: 'Kunden finns inte hos det här företaget.' }
+
+  const { data, error: rpcError } = await supabase.rpc('get_customer_contact', {
+    p_customer: customerId,
+  })
+  if (rpcError || !data || data.length === 0) {
+    await reportActionError('revealPlatformCustomerContact.rpc', rpcError, {
+      tenantId,
+      customerId,
+    })
+    return { ok: false, error: 'Kontaktuppgifterna kunde inte hämtas. Försök igen.' }
+  }
+
+  const row = data[0]
+  if (!row?.pii_visible) {
+    return {
+      ok: false,
+      error: 'Kontaktuppgifterna är inte tillgängliga utanför driftfönstret.',
+    }
+  }
+  if (!row.email && !row.phone) {
+    return { ok: false, error: 'Kunden saknar kontaktuppgifter.' }
+  }
+
+  const audit = await logPlatformAction(supabase, {
+    action: 'tenant.customer_pii_reveal',
+    tenantId,
+    actorId: user.id,
+    entityId: customerId,
+  })
+  if (!audit.ok) {
+    await reportActionError('revealPlatformCustomerContact.audit', new Error('audit_write_failed'), {
+      tenantId,
+      customerId,
+    })
+    return {
+      ok: false,
+      error: 'Kontaktuppgifterna kunde inte loggas och visas därför inte.',
+    }
+  }
+
+  return {
+    ok: true,
+    contact: { email: row.email, phone: row.phone },
+    expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
+  }
+}
+
+/**
  * Trigger a password reset for the salon's admin. Generates a recovery link via
  * the service role and surfaces it for Zivar to hand over (no cross-revir email
  * wiring in v1). Gated on hasServiceRole() — degrades with a clear ops message
@@ -69,6 +157,20 @@ export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<
   if (!tenantId) return { error: 'Saknar kund.' }
   if (!email || !EMAIL_RE.test(email)) return { error: 'Ogiltig e-postadress.' }
 
+  // Resolve the exact active account through the scoped cookie client before
+  // service-role Auth can generate anything. A foreign partner tenant is hidden
+  // by RLS and therefore fails here without an external side effect.
+  const { data: account, error: accountError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('email', email)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (accountError || !account) {
+    return { error: 'Inget aktivt konto med den e-postadressen finns hos kunden.' }
+  }
+
   if (!hasServiceRole())
     return { error: 'Lösenords-reset kräver SUPABASE_SERVICE_ROLE_KEY (sätts av ops).' }
   const svc = createServiceClient()
@@ -78,6 +180,21 @@ export async function sendPasswordReset(_p: ActionState, fd: FormData): Promise<
   if (error || !data?.properties?.action_link) {
     await reportActionError('sendPasswordReset.generateLink', error, { tenantId })
     return { error: `Kunde inte skapa återställningslänk: ${error?.message ?? 'okänt fel'}.` }
+  }
+
+  // Auth is an external boundary. Reassert the exact scoped account before the
+  // privileged recovery URL is returned; a concurrent root tenant move must make
+  // the old partner fail closed.
+  const { data: reassertedAccount, error: reassertError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('id', account.id)
+    .eq('tenant_id', tenantId)
+    .eq('email', email)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (reassertError || !reassertedAccount) {
+    return { error: 'Kundåtkomsten ändrades under återställningen. Länken lämnas inte ut.' }
   }
 
   const audit = await logPlatformAction(supabase, {
@@ -133,7 +250,7 @@ export async function createTenantStaff(_p: ActionState, fd: FormData): Promise<
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_create',
     tenantId,
@@ -389,7 +506,7 @@ export async function inviteTenantStaff(_p: ActionState, fd: FormData): Promise<
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_invite',
     tenantId,
@@ -435,7 +552,7 @@ export async function updateTenantStaff(_p: ActionState, fd: FormData): Promise<
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_update',
     tenantId,
@@ -454,7 +571,7 @@ export async function updateTenantStaff(_p: ActionState, fd: FormData): Promise<
  * staff_services). Scoped to the tenant; each service_id verified to belong to the tenant.
  */
 export async function setStaffServices(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
+  const { supabase } = await platformCtx()
   const tenantId = String(fd.get('tenantId') ?? '')
   const staffId = String(fd.get('staffId') ?? '')
   if (!tenantId) return { error: 'Saknar kund.' }
@@ -476,38 +593,19 @@ export async function setStaffServices(_p: ActionState, fd: FormData): Promise<A
   const allowed = new Set((validSvc ?? []).map((s) => s.id))
   const serviceIds = [...new Set(submitted)].filter((id) => allowed.has(id))
 
-  const { error: delErr } = await supabase
-    .from('staff_services')
-    .delete()
-    .eq('tenant_id', tenantId)
-    .eq('staff_id', staffId)
-  if (delErr) {
-    await reportActionError('setStaffServices.delete', delErr, { tenantId })
+  const { error } = await supabase.rpc('platform_replace_staff_services', {
+    p_tenant: tenantId,
+    p_staff: staffId,
+    p_service_ids: serviceIds,
+  })
+  if (error) {
+    await reportActionError('setStaffServices.replace', error, { tenantId })
     return { error: GENERIC }
-  }
-  if (serviceIds.length > 0) {
-    const rows = serviceIds.map((service_id) => ({
-      tenant_id: tenantId,
-      service_id,
-      staff_id: staffId,
-    }))
-    const { error: insErr } = await supabase.from('staff_services').insert(rows)
-    if (insErr) {
-      await reportActionError('setStaffServices.insert', insErr, { tenantId })
-      return { error: GENERIC }
-    }
   }
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
-  await logPlatformAction(supabase, {
-    action: 'tenant.service_staff_set',
-    tenantId,
-    actorId: user.id,
-    entityId: staffId,
-    meta: { services: serviceIds.length },
-  })
+  revalidatePath(`/kunder/${tenantId}`)
   return {
     success:
       serviceIds.length > 0
@@ -544,7 +642,7 @@ export async function removeTenantStaff(_p: ActionState, fd: FormData): Promise<
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
   await logPlatformAction(supabase, {
     action: 'tenant.staff_remove',
     tenantId,
@@ -562,28 +660,23 @@ export async function removeTenantStaff(_p: ActionState, fd: FormData): Promise<
  * Field encoding (per weekday d in 0..6, DB semantics 0=Sunday..6=Saturday):
  *   open_${d}  checkbox · start_${d} / end_${d}  <input type="time"> ("HH:MM").
  *
- * SAFETY (the DELETE+INSERT is two round-trips, NOT one transaction): we parse and
- * validate ALL 7 rows FIRST and bail on the first invalid open row BEFORE touching
- * the DB — so a bad input never leaves the schedule half-wiped. location_id is
- * lifted from the staff row: migration 0022's staff↔location fence means a staff
- * member is only bookable where they have a working_hours row, so every inserted
- * row must carry the staff's location_id or bookability silently breaks. The
- * tenant-scoped staff read is ALSO the security check (rejects a tampered staffId
- * from another salon).
+ * SAFETY: all rows are validated before one atomic DB replace RPC. The RPC derives
+ * location_id from the tenant-scoped staff row and applies DELETE+INSERT inside one
+ * transaction, so readiness checks never observe a half-wiped schedule.
  */
 export async function setStaffSchedule(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
+  const { supabase } = await platformCtx()
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const staffId = String(fd.get('staffId') ?? '')
   if (!tenantId) return { error: 'Saknar kund.' }
   if (!staffId) return { error: 'Saknar medarbetare.' }
 
-  // Security + location source in one read: a staffId from another tenant fails the
+  // Security check: a staffId from another tenant fails the
   // .eq('tenant_id') filter → maybeSingle returns null → we bail.
   const { data: staffRow } = await supabase
     .from('staff')
-    .select('id, location_id')
+    .select('id')
     .eq('id', staffId)
     .eq('tenant_id', tenantId)
     .maybeSingle()
@@ -592,12 +685,9 @@ export async function setStaffSchedule(_p: ActionState, fd: FormData): Promise<A
   const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
   // Front-load ALL validation before any DB write (no half-wiped schedule).
   const rows: {
-    tenant_id: string
-    staff_id: string
     weekday: number
     start_time: string
     end_time: string
-    location_id: string | null
   }[] = []
   const SV = ['Söndag', 'Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag']
   for (let d = 0; d <= 6; d++) {
@@ -609,44 +699,29 @@ export async function setStaffSchedule(_p: ActionState, fd: FormData): Promise<A
     // Zero-padded 24h → lexical compare matches chronological order (schema CHECK end>start).
     if (end <= start) return { error: `${SV[d]}: sluttid måste vara efter starttid.` }
     rows.push({
-      tenant_id: tenantId,
-      staff_id: staffId,
       weekday: d,
       start_time: start,
       end_time: end,
-      location_id: staffRow.location_id ?? null,
     })
   }
 
-  // Replace: clear the staff's existing week (scoped tenant), then insert the enabled
-  // rows. Skip the insert entirely when the staff is closed all week (a legit state).
-  const { error: delErr } = await supabase
-    .from('working_hours')
-    .delete()
-    .eq('staff_id', staffId)
-    .eq('tenant_id', tenantId)
-  if (delErr) {
-    await reportActionError('setStaffSchedule.delete', delErr, { tenantId })
+  const { error } = await supabase.rpc('platform_replace_staff_schedule', {
+    p_tenant: tenantId,
+    p_staff: staffId,
+    p_rows: rows.map(({ weekday, start_time, end_time }) => ({
+      weekday,
+      start_time,
+      end_time,
+    })),
+  })
+  if (error) {
+    await reportActionError('setStaffSchedule.replace', error, { tenantId })
     return { error: GENERIC }
-  }
-  if (rows.length > 0) {
-    const { error: insErr } = await supabase.from('working_hours').insert(rows)
-    if (insErr) {
-      await reportActionError('setStaffSchedule.insert', insErr, { tenantId })
-      return { error: GENERIC }
-    }
   }
 
   // goal-61 preview-parity: personal syns i bokningsflöde/team — busta `tenant:<slug>`.
   await revalidateTenantById(supabase, tenantId)
-  revalidatePath(`/salonger/${tenantId}`)
-  await logPlatformAction(supabase, {
-    action: 'tenant.staff_schedule',
-    tenantId,
-    actorId: user.id,
-    entityId: staffId,
-    meta: { days: rows.length },
-  })
+  revalidatePath(`/kunder/${tenantId}`)
   return {
     success:
       rows.length > 0
@@ -667,7 +742,7 @@ export async function setStaffSchedule(_p: ActionState, fd: FormData): Promise<A
  * (private.resolve_customer_id) still owns the hashed/identity columns.
  */
 export async function createPlatformCustomer(_p: ActionState, fd: FormData): Promise<ActionState> {
-  const { user, supabase } = await platformCtx()
+  const { supabase } = await platformCtx()
 
   const tenantId = String(fd.get('tenantId') ?? '')
   const fullName = String(fd.get('full_name') ?? '')
@@ -697,30 +772,17 @@ export async function createPlatformCustomer(_p: ActionState, fd: FormData): Pro
   if (tenant.status !== 'active')
     return { error: 'Företaget är inte aktivt — kan inte lägga till kund.' }
 
-  const { data: created, error } = await supabase
-    .from('customers')
-    .insert({
-      tenant_id: tenantId,
-      full_name: fullName,
-      display_name: fullName,
-      email: email || null,
-      phone: phone || null,
-      status: 'active',
-    })
-    .select('id')
-    .single()
+  const { data: created, error } = await supabase.rpc('platform_create_customer', {
+    p_tenant: tenantId,
+    p_full_name: fullName,
+    p_email: email || undefined,
+    p_phone: phone || undefined,
+  })
   if (error || !created) {
     await reportActionError('createPlatformCustomer.insert', error, { tenantId })
     return { error: GENERIC }
   }
 
-  revalidatePath('/kunder')
-  await logPlatformAction(supabase, {
-    action: 'tenant.customer_create',
-    tenantId,
-    actorId: user.id,
-    entityId: created.id,
-    meta: { full_name: fullName, email: email || null },
-  })
+  revalidatePath('/slutkunder')
   return { success: `Kund "${fullName}" tillagd.` }
 }

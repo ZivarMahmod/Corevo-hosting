@@ -103,7 +103,7 @@ export function BloggAdmin({
   tenantName: string
   layoutVariant: string | null
   assets: MediaAssetRow[]
-  /** Set ONLY by the super-admin kundkort (/salonger/[id]) — scopes every form's hidden tenantId for the dual-guard. */
+  /** Set ONLY by the super-admin kundkort (/kunder/[id]) — scopes every form's hidden tenantId for the dual-guard. */
   tenantId?: string
 }) {
   const [editing, setEditing] = useState<BlogPostRow | null>(null)

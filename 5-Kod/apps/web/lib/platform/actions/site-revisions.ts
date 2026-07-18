@@ -52,7 +52,7 @@ type RevisionError = { code?: string; message?: string }
 function refreshEditors(tenantId: string): void {
   revalidatePath('/admin/sida')
   revalidatePath('/admin/sida/redigera')
-  revalidatePath(`/salonger/${tenantId}`)
+  revalidatePath(`/kunder/${tenantId}`)
 }
 
 function mappedError(error: RevisionError): SiteRevisionActionState {

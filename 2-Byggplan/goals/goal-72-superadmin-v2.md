@@ -131,13 +131,42 @@ cron-hälsa, juridik-fält, domänpanelen flag-gated AV, fakturering manuell).
 Körbar plan per etapp (S1–S6, fil:rad-konkret): `goal-72-sessionsplan.md`.
 
 ## Status
-- [ ] Etapp 1a Kommunikationscenter
-- [ ] Etapp 1b Drift-hälsa
+- [x] Etapp 1a Kommunikationscenter — serverfiltrerad, PII-fri utskicksledger,
+      sann 30-dagarssummering, SMS-kostnad och preferens-/push-adoption är byggda
+      och testade (2026-07-18; 0110 + sanningsrättning 0112).
+- [x] Etapp 1b Drift-hälsa — serverläst pg_cron-hälsa, PII-fria
+      outbox-köaggregat och Cloudflare-schedulerns heartbeat är byggda med ärliga
+      tom-/partial-/fellägen (2026-07-18; 0113-runtimeprovet körs i CI eftersom
+      lokal Supabase CLI/Docker saknas).
 - [x] Etapp 1c Juridik-fält — LIVE v1.37.3 (2026-07-18; v1.37.2 föll på
       parallellsessions-kontaminering, de-kontaminerad i 4557376)
 - [x] Etapp 1d Domänpanelen tänd — VAR REDAN PÅ i prod (wrangler.jsonc:60, sedan
       2026-06-06, CF-secrets satta). Inventerings-agentens "AV" kom från en stale
       kodkommentar i DomainPanel.tsx.
-- [ ] Etapp 2a–2e Mönster-paritet
-- [ ] Etapp 3 IA-svängen
+- [ ] Etapp 2a Inställningsworkspace — delat workspace med verkliga
+      Säkerhet-/Faktureringsytor är klart; global branding saknar fortfarande en
+      sann global datakälla och är därför inte fejkat eller avbockat.
+- [x] Etapp 2b Genvägsrad och låsta navmönster (2026-07-18).
+- [x] Etapp 2c PII-hygien — initiala kundmodeller/CSV innehåller bara
+      servermasker; reveal är tenantverifierad, driftfönstergatad, PII-fritt
+      auditerad, fail-closed och auto-maskeras vid serverägd expiry (2026-07-18).
+- [x] Etapp 2d Bekräftelse-svep — paus och domänborttagning kräver två steg,
+      auto-avväpnas och behåller korrekt fokus/pending-beteende (2026-07-18).
+- [x] Etapp 2e Statistik-paritet — delade Stat/EmptyState, aktiv personal och
+      tenant-scopad exakt `no_show`; count-fel degraderas inte till falska nollor
+      (2026-07-18).
+- [x] Etapp 2f Kundkortets master–detalj — beständig kundlista, URL-neutral
+      route-group, bevarade flikar/modulgates och race-säker tvåstegsradering;
+      oberoende review utan kvarvarande P0–P2 (2026-07-18).
+- [x] Etapp 2g Mobilparitet för superadmin — fyra plattformsflikar, scope-gatad
+      Ny kund-FAB, komplett Mer-ark, separat mobil aktiv-route, bottenark och
+      320 px-overflowhärdning; Fable/Codex-review utan P0–P2 och full test/build
+      grön (2026-07-18; autentiserad prod-rök efter deploy).
+- [x] Etapp 3 IA-svängen — tenant-master/detalj är kanonisk på `/kunder`,
+      tvärtenant slutkundsinsyn på `/slutkunder`, alla href/revalidate/nav/E2E-kontrakt
+      är flyttade och kund-adminens `/admin/kunder` är orörd. Gamla
+      `/salonger/:path*` får host-scopead 308 i prod och preview; den gamla exakta
+      `/kunder`-betydelsen kan inte redirectas eftersom URL:en nu är den nya kanoniska
+      kundytan. Fable-review utan P0–P2; oberoende Codex-reviewns preview-fynd är
+      åtgärdat och regressionstestat (2026-07-18).
 - [ ] Etapp 4 Partner-rollen (4a–4d — direkt efter 1–3)

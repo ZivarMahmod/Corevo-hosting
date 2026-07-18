@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { platformCtx } from '../guard'
+import { createServiceClient } from '../service'
 import { logPlatformAction } from '../audit'
 import { validateDomainInput } from '../domains'
 import {
@@ -20,7 +21,34 @@ import { reportActionError } from './observe'
 // The DOMAIN_PROVISIONING_ENABLED flag gates the UI; these actions are an additional
 // (server-side) fence only in that they require the CF creds the flag implies.
 
-const DOMAIN_PATH = (tenantId: string) => `/salonger/${tenantId}`
+const DOMAIN_PATH = (tenantId: string) => `/kunder/${tenantId}`
+
+async function reassertActiveTenantScope(
+  supabase: Awaited<ReturnType<typeof platformCtx>>['supabase'],
+  tenantId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('id', tenantId)
+    .eq('status', 'active')
+    .maybeSingle()
+  return !error && Boolean(data)
+}
+
+async function reassertDomainScope(
+  supabase: Awaited<ReturnType<typeof platformCtx>>['supabase'],
+  tenantId: string,
+  domain: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('tenant_domains')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('domain', domain)
+    .maybeSingle()
+  return !error && Boolean(data)
+}
 
 // audit_log.entity_id is a uuid column — NEVER pass a domain string as entityId (the
 // insert would 22P02 and silently drop the audit row). We omit entityId (it falls back
@@ -51,9 +79,12 @@ export async function addCustomDomain(_p: DomainActionState, fd: FormData): Prom
   if (!tenant) return { error: 'Kunden finns inte.' }
   if (tenant.status !== 'active') return { error: 'Kunden är inte aktiv — kan inte lägga till domän.' }
 
+  const writer = createServiceClient()
+  if (!writer) return { error: 'Domänhantering kräver service-konfiguration i driftmiljön.' }
+
   // Globally unique (tenant_domains.domain unique). Reject up front so we never create
   // an orphan CF hostname for a domain we then can't persist.
-  const { data: existing } = await supabase
+  const { data: existing } = await writer
     .from('tenant_domains')
     .select('id')
     .eq('domain', domain)
@@ -63,7 +94,12 @@ export async function addCustomDomain(_p: DomainActionState, fd: FormData): Prom
   const cf = await createCustomHostname(domain)
   if (!cf.ok) return { error: cf.error }
 
-  const { error } = await supabase.from('tenant_domains').insert({
+  if (!(await reassertActiveTenantScope(supabase, tenantId))) {
+    if (cf.data.id) await deleteCustomHostname(cf.data.id)
+    return { error: 'Kundåtkomsten ändrades under domänprovisioneringen. Ingen domän sparades.' }
+  }
+
+  const { error } = await writer.from('tenant_domains').insert({
     tenant_id: tenantId,
     domain,
     verified: false,
@@ -103,6 +139,20 @@ export async function verifyCustomDomain(_p: DomainActionState, fd: FormData): P
   const domain = validateDomainInput(String(fd.get('domain') ?? '')).domain
   if (!tenantId || !domain) return { error: 'Saknar kund eller domän.' }
 
+  // Authorize the exact tenant+domain row with the cookie client before any
+  // Cloudflare side effect. Partner RLS makes a foreign row indistinguishable
+  // from a missing row.
+  const { data: scopedDomain, error: scopeError } = await supabase
+    .from('tenant_domains')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('domain', domain)
+    .maybeSingle()
+  if (scopeError || !scopedDomain) return { error: 'Domänen finns inte hos den här kunden.' }
+
+  const writer = createServiceClient()
+  if (!writer) return { error: 'Domänhantering kräver service-konfiguration i driftmiljön.' }
+
   const cf = await getCustomHostnameByName(domain)
   if (!cf.ok) return { error: cf.error }
   if (!cf.data) return { error: 'Cloudflare känner inte till domänen — lägg till den igen.' }
@@ -118,7 +168,11 @@ export async function verifyCustomDomain(_p: DomainActionState, fd: FormData): P
     }
   }
 
-  const { error } = await supabase
+  if (!(await reassertDomainScope(supabase, tenantId, domain))) {
+    return { error: 'Kundåtkomsten ändrades under verifieringen. Domänstatusen ändrades inte.' }
+  }
+
+  const { error } = await writer
     .from('tenant_domains')
     .update({ verified: true })
     .eq('tenant_id', tenantId)
@@ -156,14 +210,28 @@ export async function removeCustomDomain(_p: DomainActionState, fd: FormData): P
   const domain = validateDomainInput(String(fd.get('domain') ?? '')).domain
   if (!tenantId || !domain) return { error: 'Saknar kund eller domän.' }
 
+  const { data: scopedDomain, error: scopeError } = await supabase
+    .from('tenant_domains')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('domain', domain)
+    .maybeSingle()
+  if (scopeError || !scopedDomain) return { error: 'Domänen finns inte hos den här kunden.' }
+
+  const writer = createServiceClient()
+  if (!writer) return { error: 'Domänhantering kräver service-konfiguration i driftmiljön.' }
+
   const cf = await getCustomHostnameByName(domain)
   if (!cf.ok) return { error: cf.error }
+  if (!(await reassertDomainScope(supabase, tenantId, domain))) {
+    return { error: 'Kundåtkomsten ändrades under borttagningen. Domänen lämnades orörd.' }
+  }
   if (cf.data?.id) {
     const del = await deleteCustomHostname(cf.data.id)
     if (!del.ok) return { error: del.error }
   }
 
-  const { error } = await supabase
+  const { error } = await writer
     .from('tenant_domains')
     .delete()
     .eq('tenant_id', tenantId)
