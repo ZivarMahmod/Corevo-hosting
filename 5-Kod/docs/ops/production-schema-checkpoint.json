@@ -1,12 +1,12 @@
 {
   "status": "verified",
-  "requiredLatest": "0116",
-  "observedHistoryLatest": "0116",
+  "requiredLatest": "0117",
+  "observedHistoryLatest": "0117",
   "historyAligned": true,
   "schemaAligned": true,
-  "verifiedAt": "2026-07-18T20:11:45Z",
+  "verifiedAt": "2026-07-18T20:23:31Z",
   "verifiedBy": "Codex production operator",
-  "migrationFingerprint": "sha256:5e209e8dfdae80d59fc806ff23a35923b49a339150708e69e52c007f1fae682c",
+  "migrationFingerprint": "sha256:5f4bb035167da035bf871a2d300ce71945e06a6c11322227e9478c6c4815fddd",
   "verificationEvidence": "docs/ops/database-migration-drift.md#produktionsavstamning-2026-07-18",
   "reason": null
 }
