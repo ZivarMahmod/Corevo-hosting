@@ -1098,3 +1098,22 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* ── Liggande fokusläge (telefon på sidan) ────────────────────────────────────
+   Kalender-arbetsytan får hela höjden: toppraden bort (allt i den nås via
+   bottennaven/dockan), bottennaven slimmad. Övriga adminsidor behåller sin
+   topprad — det är schemat som ska maximeras, inte allt. */
+@media (max-height: 500px) and (pointer: coarse) {
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .header {
+    display: none;
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileNavItem {
+    min-height: 38px;
+  }
+
+  .shell[data-portal='admin']:has(.main > :global(.workbench)) .mobileFabButton {
+    width: 40px;
+    height: 40px;
+  }
+}

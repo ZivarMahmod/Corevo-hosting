@@ -29,6 +29,9 @@ export function Modal({
   ariaLabel,
   /** 'md' (default) för formulär, 'sm' för en kort bekräftelse. */
   size = 'md',
+  /** Mobil-arkets kant. 'top' för dialoger med textinmatning — ett bottenark
+   *  hamnar bakom tangentbordet (sök i kalendern var osynlig). Desktop opåverkad. */
+  anchor = 'center',
 }: {
   title: ReactNode
   sub?: ReactNode
@@ -39,6 +42,7 @@ export function Modal({
   children: ReactNode
   ariaLabel?: string
   size?: 'sm' | 'md'
+  anchor?: 'center' | 'top'
 }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
@@ -101,6 +105,7 @@ export function Modal({
     <div
       ref={overlayRef}
       className={styles.overlay}
+      data-anchor={anchor}
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) close()

@@ -2373,3 +2373,43 @@
     animation: none;
   }
 }
+
+/* ── Liggande fokusläge (telefon på sidan: kort skärm + touch) ────────────────
+   Schemat äger höjden (Zivar 2026-07-18: "så mycket schemayta som möjligt").
+   Toppraden försvinner i Topnav.module.css; här pressas dockan till EN rad och
+   kolumnhuvudena till en tunn list. Inga funktioner tas bort — bara ytan. */
+@media (max-height: 500px) and (pointer: coarse) {
+  .mobileCalendarDock {
+    display: flex;
+    align-items: center;
+  }
+
+  .mobileCalendarDateRow {
+    flex: none;
+    min-height: 40px;
+    padding: 3px 4px 3px 10px;
+  }
+
+  .mobileCalendarActionRow {
+    flex: 1;
+    justify-content: flex-end;
+    min-height: 40px;
+    padding: 3px 10px 3px 4px;
+  }
+
+  .mobileDateStats {
+    display: none;
+  }
+
+  .mobileCalendarHeaderHelp {
+    display: none;
+  }
+
+  .headCell {
+    padding: 3px 2px 2px;
+  }
+
+  .headHours {
+    display: none;
+  }
+}

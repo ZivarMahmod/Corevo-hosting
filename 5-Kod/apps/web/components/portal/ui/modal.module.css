@@ -175,11 +175,39 @@
        hemindikatorn, inte bara ark som råkar ha en separat footer. */
     padding-bottom: max(20px, env(safe-area-inset-bottom));
   }
+
+  /* anchor='top': ark med textinmatning dockar ÖVERKANTEN — ett bottenark
+     hamnar bakom det uppfällda tangentbordet. Draghandtaget hör till underkant,
+     bort här. */
+  .overlay[data-anchor='top'] {
+    place-items: start center;
+  }
+
+  .overlay[data-anchor='top'] .card,
+  .overlay[data-anchor='top'] .cardSm {
+    border-radius: 0 0 22px 22px;
+    animation: sheetInTop 220ms var(--ease-out, ease-out);
+  }
+
+  .overlay[data-anchor='top'] .head::before {
+    content: none;
+  }
+
+  .overlay[data-anchor='top'] .head {
+    padding-top: max(20px, env(safe-area-inset-top));
+  }
 }
 
 @keyframes sheetIn {
   from {
     transform: translateY(14px);
+    opacity: 0;
+  }
+}
+
+@keyframes sheetInTop {
+  from {
+    transform: translateY(-14px);
     opacity: 0;
   }
 }

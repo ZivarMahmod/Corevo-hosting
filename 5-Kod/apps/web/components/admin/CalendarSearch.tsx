@@ -151,6 +151,7 @@ export function CalendarSearch({
           sub="Kund eller bokning"
           onClose={closeSheet}
           ariaLabel="Sök i kalendern"
+          anchor="top"
         >
           {searchField}
           <p className={styles.mobileSearchHint}>
