@@ -163,6 +163,59 @@
   line-height: 1.5;
 }
 
+/* ── server-rendered cron health (goal-72 S1b) ──────────────────────────── */
+.healthSection {
+  margin-bottom: 30px;
+}
+.healthHead {
+  margin-bottom: 14px;
+}
+.healthHead .eyebrow {
+  margin: 0 0 5px;
+}
+.healthHead .h2 {
+  margin: 0;
+}
+.healthLede,
+.healthError {
+  margin: 6px 0 0;
+  color: var(--c-ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.healthTable {
+  overflow-x: auto;
+}
+.healthColumns {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) minmax(130px, 1fr) minmax(145px, 1fr) minmax(170px, 1.1fr);
+  gap: 16px;
+  align-items: center;
+}
+.healthRow {
+  min-width: 650px;
+  padding: 13px 20px;
+  border-top: 1px solid var(--c-line);
+  color: var(--c-ink);
+  font-size: 13px;
+}
+.healthTableHead {
+  border-top: 0;
+  color: var(--c-ink-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.schedule {
+  color: var(--c-ink-2);
+  font-size: 12px;
+}
+.healthTime {
+  color: var(--c-ink-2);
+  font-size: 12px;
+}
+
 /* tablet tap targets (Våg 4) — desktop byte-identical (fine pointer untouched).
    The export button is the Button primitive (its own pointer:coarse rule); only the
    actor pills need a min-height here. */

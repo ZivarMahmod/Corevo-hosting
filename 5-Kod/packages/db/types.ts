@@ -3456,6 +3456,18 @@ export type Database = {
       prune_expired_shop_reserves: { Args: never; Returns: number }
       prune_contact_messages: { Args: { p_months?: number }; Returns: number }
       prune_expired_slot_holds: { Args: never; Returns: number }
+      platform_cron_health: {
+        Args: never
+        Returns: {
+          active: boolean
+          jobname: string
+          last_duration_ms: number | null
+          last_message: string | null
+          last_start: string | null
+          last_status: string | null
+          schedule: string
+        }[]
+      }
       record_shop_order_refund: { Args: { p_order_id: string }; Returns: boolean }
       release_shop_order: {
         Args: { p_order_id: string; p_status?: string; p_token?: string }
